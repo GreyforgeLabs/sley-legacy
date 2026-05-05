@@ -1,0 +1,5 @@
+{
+  "op": "ReplaceCallArg",
+  "target": "task:main.double",
+  "payload": { "source": "2", "position": 1 }
+}

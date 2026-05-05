@@ -178,7 +178,8 @@ Priority diagnostic families:
 - unknown tasks: implemented with `declare_or_import_task`
 - unknown types: implemented with `declare_or_import_type`
 - call arity mismatch: implemented with `match_task_arity`
-- call argument type mismatch: implemented with `replace_argument`
+- call argument type mismatch: implemented with `replace_argument` and
+  `ReplaceCallArg`
 - call arity contraction after parameter removal: implemented with
   `RemoveCallArg` and safe remove-take transaction templates for unused takes
 - return type mismatch: implemented with `change_return_type` and
@@ -208,16 +209,17 @@ Minimum useful graft operations:
 - `AddTypeDeclaration`
 - `UpdateCallSites`
 - `UpdateCallArgs`
+- `ReplaceCallArg`
 - `RemoveCallArg`
 - `InsertStatement`
 - `ReplaceExpression`
 - `MoveNode`
 - `DeleteNode`
 
-`UpdateCallSites`, `UpdateCallArgs`, `RemoveCallArg`, `InsertStatement`,
-`ReplaceExpression`, `DeleteNode`, and `MoveNode` are now implemented for the
-v0 in-memory checked program. `DeleteNode` supports checked deletion of
-declarations, imports, takes, and statements.
+`UpdateCallSites`, `UpdateCallArgs`, `ReplaceCallArg`, `RemoveCallArg`,
+`InsertStatement`, `ReplaceExpression`, `DeleteNode`, and `MoveNode` are now
+implemented for the v0 in-memory checked program. `DeleteNode` supports checked
+deletion of declarations, imports, takes, and statements.
 `MoveNode` supports checked in-parent statement reordering and top-level
 declaration ordering. Project-aware multi-file writeback now updates existing
 module files, creates checked new module files declared by the graft candidate,

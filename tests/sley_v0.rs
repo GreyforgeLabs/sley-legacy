@@ -958,6 +958,66 @@ task main -> Int {
 }
 
 #[test]
+fn replace_call_arg_graft_replaces_checked_call_arguments() {
+    let source = r#"
+task double -> Int {
+  take value: Int
+  take scale: Int
+
+  return value * scale
+}
+
+task main -> Int {
+  return call double(21, 1)
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let graft_source = r#"
+{
+  "op": "ReplaceCallArg",
+  "target": "task:main.double",
+  "payload": { "source": "2", "position": 1 }
+}
+"#;
+    let graft: GraftInput = serde_json::from_str(graft_source).expect("parse graft");
+    let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
+
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted_source = outcome.source.expect("grafted source");
+    assert!(grafted_source.contains("return call double(21, 2)"));
+    let grafted = parse_program(&grafted_source).expect("parse grafted source");
+    assert_eq!(run_main(&grafted), Ok(Value::Int(42)));
+}
+
+#[test]
+fn replace_call_arg_rejects_out_of_range_positions() {
+    let source = r#"
+task double -> Int {
+  take value: Int
+
+  return value * 2
+}
+
+task main -> Int {
+  return call double(21)
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let graft_source = r#"
+{
+  "op": "ReplaceCallArg",
+  "target": "task:main.double",
+  "payload": { "source": "2", "position": 1 }
+}
+"#;
+    let graft: GraftInput = serde_json::from_str(graft_source).expect("parse graft");
+    let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
+
+    assert_eq!(outcome.status, "rejected");
+    assert_eq!(outcome.diagnostics[0].id, "GRAFT_POSITION_OUT_OF_RANGE");
+}
+
+#[test]
 fn remove_call_arg_graft_removes_checked_call_arguments() {
     let source = r#"
 task double -> Int {
@@ -2063,6 +2123,11 @@ task main -> Int {
         call_source,
         include_str!("../fixtures/grafts/invalid_update_call_sites_callee.json"),
         "GRAFT_INVALID_CALLEE",
+    );
+    assert_rejected_graft(
+        call_source,
+        include_str!("../fixtures/grafts/replace_call_arg_out_of_range.json"),
+        "GRAFT_POSITION_OUT_OF_RANGE",
     );
     assert_rejected_graft(
         call_source,

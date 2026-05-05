@@ -409,14 +409,14 @@ and provenance checks pass for the implemented v0 surface.
 
 Current graft operations include adding/removing takes, replacing task bodies,
 adding imports/effects/types/tasks, renaming declarations, updating call-sites,
-updating or removing call arguments, inserting checked task-body statements,
-replacing expressions by node id, and deleting checked graph nodes such as
-declarations, imports, takes, and statements. `MoveNode` reorders statements
-within their existing block, moves statements across existing block parents with
-`payload.destination`, reorders takes within their owning task, and reorders
-top-level imports, types, effects, or tasks within their declaration lists. It
-can also move top-level types, effects, or tasks into a known loaded or imported
-module parent such as `module:app.extra:tasks`.
+updating, replacing, or removing call arguments, inserting checked task-body
+statements, replacing expressions by node id, and deleting checked graph nodes
+such as declarations, imports, takes, and statements. `MoveNode` reorders
+statements within their existing block, moves statements across existing block
+parents with `payload.destination`, reorders takes within their owning task, and
+reorders top-level imports, types, effects, or tasks within their declaration
+lists. It can also move top-level types, effects, or tasks into a known loaded
+or imported module parent such as `module:app.extra:tasks`.
 Unsupported graph movement returns explicit diagnostics until implemented.
 
 Implemented graph-edit payloads:
@@ -425,6 +425,7 @@ Implemented graph-edit payloads:
 { "op": "UpdateCallSites", "target": "task:app.math.double", "payload": { "replacement": "math.twice" } }
 { "op": "UpdateCallSites", "target": "task:app.math.twice", "payload": { "from": "math.double", "replacement": "math.twice", "scope": "module:app.main" } }
 { "op": "UpdateCallArgs", "target": "task:app.math.double", "payload": { "from": "math.double", "source": "\"\"", "position": 1, "scope": "module:app.main" } }
+{ "op": "ReplaceCallArg", "target": "task:app.math.double", "payload": { "from": "math.double", "source": "42", "position": 0, "scope": "module:app.main" } }
 { "op": "RemoveCallArg", "target": "task:app.math.double", "payload": { "from": "math.double", "position": 1, "scope": "module:app.main" } }
 { "op": "InsertStatement", "target": "task:app.main.main", "payload": { "position": 1, "source": "set total = total + 1" } }
 { "op": "ReplaceExpression", "target": "block:task:app.main.main:stmt:0:expr:right", "payload": { "source": "41" } }
@@ -439,9 +440,9 @@ Implemented graph-edit payloads:
 `UpdateCallSites` rewrites call expressions that either resolve to the target
 task or match the optional raw `from` callee. `UpdateCallArgs` inserts one
 checked argument expression into matching calls; `position` defaults to append.
-`RemoveCallArg` removes one argument at a required `position` from matching
-calls. For all three operations, `scope` can limit the rewrite to a task or
-module.
+`ReplaceCallArg` replaces one argument at a required `position`. `RemoveCallArg`
+removes one argument at a required `position` from matching calls. For all four
+operations, `scope` can limit the rewrite to a task or module.
 `InsertStatement` currently targets a task body. `DeleteNode`
 can remove declarations, imports, takes, and statements, but rejects expression
 targets unless the agent uses `ReplaceExpression` instead. `MoveNode` currently

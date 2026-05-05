@@ -130,10 +130,11 @@ Implemented now:
   slices, and trace receipts
 - structural graft operations for adding/removing takes, replacing task bodies,
   adding imports/effects/types/tasks, renaming declarations, updating
-  call-sites, updating or removing call arguments, inserting checked task-body
-  statements, replacing nested expressions by node id, deleting checked graph
-  nodes such as declarations, imports, takes, and statements, and moving checked
-  statements or top-level declaration order within their current parent
+  call-sites, updating/replacing/removing call arguments, inserting checked
+  task-body statements, replacing nested expressions by node id, deleting
+  checked graph nodes such as declarations, imports, takes, and statements, and
+  moving checked statements or top-level declaration order within their current
+  parent
 - strict graft input JSON for the v0 operation shapes; unknown graft fields are
   rejected instead of silently ignored
 - versioned JSON report roots for diagnostics and graft outcomes

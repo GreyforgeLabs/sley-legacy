@@ -96,6 +96,12 @@ pub enum GraftOperation {
         precondition: Option<JsonValue>,
         payload: UpdateCallArgsPayload,
     },
+    ReplaceCallArg {
+        target: String,
+        #[serde(default)]
+        precondition: Option<JsonValue>,
+        payload: ReplaceCallArgPayload,
+    },
     RemoveCallArg {
         target: String,
         #[serde(default)]
@@ -187,6 +193,17 @@ pub struct UpdateCallArgsPayload {
     pub source: String,
     #[serde(default)]
     pub position: Option<usize>,
+    #[serde(default)]
+    pub from: Option<String>,
+    #[serde(default)]
+    pub scope: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReplaceCallArgPayload {
+    pub source: String,
+    pub position: usize,
     #[serde(default)]
     pub from: Option<String>,
     #[serde(default)]
@@ -669,6 +686,55 @@ fn apply_one(
                 graft_id,
                 actor,
                 "UpdateCallArgs",
+                vec![target, format!("calls:{updated}")],
+            ))
+        }
+        GraftOperation::ReplaceCallArg {
+            target,
+            precondition,
+            payload,
+        } => {
+            check_preconditions(program, None, precondition.as_ref())?;
+            let target_index = find_task_or_reject(program, &target)?;
+            let target_fq_name = task_fq_name(&program.tasks[target_index]);
+            let argument = parse_expr_source(&payload.source)?;
+            let call_ids = matching_call_expr_ids(
+                program,
+                &target_fq_name,
+                payload.from.as_deref(),
+                payload.scope.as_deref(),
+            );
+            if call_ids.is_empty() {
+                return Err(vec![
+                    Diagnostic::error(
+                        "GRAFT_CALLSITE_MISSING",
+                        format!("no call sites matched `{target}`"),
+                    )
+                    .with_node(program.tasks[target_index].id.clone()),
+                ]);
+            }
+            let updated = edit_call_args(
+                program,
+                &call_ids,
+                CallArgMutation::Replace {
+                    argument: &argument,
+                    position: payload.position,
+                },
+            )?;
+            if updated == 0 {
+                return Err(vec![
+                    Diagnostic::error(
+                        "GRAFT_CALLSITE_MISSING",
+                        format!("no call-site arguments could be replaced for `{target}`"),
+                    )
+                    .with_node(program.tasks[target_index].id.clone()),
+                ]);
+            }
+            program.assign_ids();
+            Ok(record(
+                graft_id,
+                actor,
+                "ReplaceCallArg",
                 vec![target, format!("calls:{updated}")],
             ))
         }
@@ -2281,6 +2347,10 @@ enum CallArgMutation<'a> {
         argument: &'a Expr,
         position: Option<usize>,
     },
+    Replace {
+        argument: &'a Expr,
+        position: usize,
+    },
     Remove {
         position: usize,
     },
@@ -2396,6 +2466,19 @@ fn edit_call_args_in_expr(
                             .with_node(current_id));
                         }
                         args.insert(position, argument.clone());
+                    }
+                    CallArgMutation::Replace { argument, position } => {
+                        if position >= args.len() {
+                            return Err(Diagnostic::error(
+                                "GRAFT_POSITION_OUT_OF_RANGE",
+                                format!(
+                                    "call argument position {position} is outside call argument length {}",
+                                    args.len()
+                                ),
+                            )
+                            .with_node(current_id));
+                        }
+                        args[position] = argument.clone();
                     }
                     CallArgMutation::Remove { position } => {
                         if position >= args.len() {
