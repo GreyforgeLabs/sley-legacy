@@ -141,7 +141,11 @@ fn run(cli: Cli) -> Result<()> {
                 Err(diagnostics) => emit_diagnostics_and_fail(diagnostics, json),
             }
         }
-        Command::Ast { json, node, file } => {
+        Command::Ast {
+            json: _json,
+            node,
+            file,
+        } => {
             let source = read_source(&file)?;
             let program = parse_program_or_fail(&source)?;
             if let Some(node) = node {
@@ -151,11 +155,7 @@ fn run(cli: Cli) -> Result<()> {
                 }
                 anyhow::bail!("node `{node}` was not found");
             }
-            if json {
-                print_json(&program)?;
-            } else {
-                print_json(&program)?;
-            }
+            print_json(&program)?;
             Ok(())
         }
         Command::Patch {
@@ -182,11 +182,9 @@ fn run(cli: Cli) -> Result<()> {
             if outcome.status != "accepted" {
                 anyhow::bail!("patch rejected");
             }
-            if write {
-                if let Some(source) = outcome.source {
-                    fs::write(&file, source)
-                        .with_context(|| format!("failed to write {}", file.display()))?;
-                }
+            if write && let Some(source) = outcome.source {
+                fs::write(&file, source)
+                    .with_context(|| format!("failed to write {}", file.display()))?;
             }
             Ok(())
         }

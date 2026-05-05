@@ -422,27 +422,25 @@ fn apply_one(
                 program.assign_ids();
                 return Ok(record(patch_id, actor, "RenameDeclaration", vec![target]));
             }
-            if let Some(name) = target.strip_prefix("type:") {
-                if let Some(ty) = program
+            if let Some(name) = target.strip_prefix("type:")
+                && let Some(ty) = program
                     .types
                     .iter_mut()
                     .find(|ty| ty.name == name || ty.id == target)
-                {
-                    ty.name = payload.name.clone();
-                    program.assign_ids();
-                    return Ok(record(patch_id, actor, "RenameDeclaration", vec![target]));
-                }
+            {
+                ty.name = payload.name.clone();
+                program.assign_ids();
+                return Ok(record(patch_id, actor, "RenameDeclaration", vec![target]));
             }
-            if let Some(name) = target.strip_prefix("effect:") {
-                if let Some(effect) = program
+            if let Some(name) = target.strip_prefix("effect:")
+                && let Some(effect) = program
                     .effects
                     .iter_mut()
                     .find(|effect| effect.name == name || effect.id == target)
-                {
-                    effect.name = payload.name.clone();
-                    program.assign_ids();
-                    return Ok(record(patch_id, actor, "RenameDeclaration", vec![target]));
-                }
+            {
+                effect.name = payload.name.clone();
+                program.assign_ids();
+                return Ok(record(patch_id, actor, "RenameDeclaration", vec![target]));
             }
             Err(vec![Diagnostic::error(
                 "PATCH_TARGET_MISSING",
