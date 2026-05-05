@@ -1,6 +1,6 @@
 # Sley Language Specification
 
-Status: v0 executable slice plus module task/type/effect namespace, runtime gates, Sley-level Result flow, typed host fallibility, seeded database host reads/writes, seeded secret values, seeded deploy stage results, seeded network host text, seeded shell host output, seeded model completions, and trace tooling
+Status: v0 executable slice plus module task/type/effect namespace, runtime gates, Sley-level Result flow, typed host fallibility, seeded database host reads/writes, seeded secret values, seeded deploy stage results, seeded spend authorizations, seeded network host text, seeded shell host output, seeded model completions, and trace tooling
 
 Sley is a human-readable, agent-writable structural language. The canonical
 program model is a typed graph. `.sley` source is the stable review projection,
@@ -181,7 +181,7 @@ Type lookup rules:
 
 Custom effect lookup follows the same boundary:
 
-- builtin effects such as `FileRead`, `Network`, and `Deploy` are always
+- builtin effects such as `FileRead`, `Network`, `Deploy`, and `Spend` are always
   visible by simple name
 - same-module declared effects are visible by simple name
 - imported effects must be `export effect`
@@ -317,6 +317,29 @@ artifacts, push branches, start services, mutate infrastructure, or call
 providers. Missing target seeds produce `RUNTIME_DEPLOY_RESULT_NOT_FOUND`;
 empty targets produce `RUNTIME_DEPLOY_TARGET_INVALID`; missing `Deploy`
 remains a runtime capability diagnostic.
+
+`Spend` backs `spend.try_authorize(request)`. The adapter reads exact seeded
+spend authorization results supplied by the host and returns
+`Result<Text, Error>`:
+
+```bash
+sley run --cap Spend --spend-result ads-budget authorized examples/spend_gate.sley
+```
+
+```sley
+task main -> Result<Text, Error> uses Spend {
+  bind result = call spend.try_authorize("ads-budget")?
+
+  return Ok(result)
+}
+```
+
+This is deterministic host I/O, not live spending. It does not create
+transactions, make payments, place market orders, call wallets, buy credits,
+mutate cloud-billing state, or call providers. Missing request seeds produce
+`RUNTIME_SPEND_RESULT_NOT_FOUND`; empty requests produce
+`RUNTIME_SPEND_REQUEST_INVALID`; missing `Spend` remains a runtime capability
+diagnostic.
 
 `Network` backs `http.try_get_text(url)`. The adapter reads exact seeded URL
 responses supplied by the host and returns `Result<Text, Error>`:
@@ -542,12 +565,12 @@ archive.
 
 - runtime gates currently back filesystem text reads/writes, deterministic
   seeded database reads, per-run deterministic database inserts, seeded secret
-  values, seeded deployment stage results, seeded network text responses,
-  seeded shell command outputs, and seeded model prompt completions; `Spend`
-  still needs a host adapter
+  values, seeded deployment stage results, seeded spend authorizations, seeded
+  network text responses, seeded shell command outputs, and seeded model prompt
+  completions
 - Sley-level `Result` values, `?` propagation, and typed filesystem,
-  database, secret, deploy, network, shell, and model host fallibility execute;
-  `Spend` still needs a `Result<T, Error>` adapter
+  database, secret, deploy, spend, network, shell, and model host fallibility
+  execute
 - trace receipts can be sealed, but sidecar storage is not yet a compressed ZJX
   archive
 - the AST JSON Schema covers nested AST and expression variants; the remaining

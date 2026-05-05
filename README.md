@@ -65,6 +65,10 @@ Implemented now:
   --deploy-result TARGET TEXT`; `deploy.try_stage` returns seeded deployment
   stage results as `Result<Text, Error>` without uploading, starting services,
   or calling deployment providers
+- deterministic spend host seeding with `sley run --cap Spend --spend-result
+  REQUEST TEXT`; `spend.try_authorize` returns seeded spend authorization
+  results as `Result<Text, Error>` without transactions, payments, market
+  orders, wallet calls, credits, or provider spend
 - deterministic network host seeding with `sley run --cap Network --http-text
   URL TEXT`; `http.try_get_text` returns seeded text responses as
   `Result<Text, Error>` without live outbound network access
@@ -220,6 +224,28 @@ task main -> Result<Text, Error> uses Deploy {
 }
 ```
 
+Seeded spend runtime:
+
+```bash
+sley run --json --cap Spend --spend-result ads-budget authorized examples/spend_gate.sley
+```
+
+`spend.try_authorize(request)` reads an exact seeded spend authorization result
+and returns `Result<Text, Error>`. This is a deterministic v0 host adapter, not
+a payment, broker, wallet, cloud-billing, or market-order client. It does not
+move money, buy credits, place orders, call providers, or mutate external
+accounts. Missing request seeds produce `RUNTIME_SPEND_RESULT_NOT_FOUND` as a
+typed host error; empty requests produce `RUNTIME_SPEND_REQUEST_INVALID`;
+missing `Spend` remains a runtime capability diagnostic.
+
+```sley
+task main -> Result<Text, Error> uses Spend {
+  bind result = call spend.try_authorize("ads-budget")?
+
+  return Ok(result)
+}
+```
+
 Seeded network runtime:
 
 ```bash
@@ -307,7 +333,8 @@ task load -> Result<Text, Error> uses FileRead {
 The standard runtime `Error` payload is a record with `code: Text` and
 `message: Text`. `fs.try_read_text`, `fs.try_write_text`, `db.try_query_one`,
 `db.try_query`, `db.try_insert`, `http.try_get_text`, `shell.try_run`,
-`model.try_complete`, `secrets.try_get`, and `deploy.try_stage` return
+`model.try_complete`, `secrets.try_get`, `deploy.try_stage`, and
+`spend.try_authorize` return
 `Result<T, Error>`. Missing
 capabilities and gate scope violations remain diagnostics because they are
 authority failures, not recoverable host values. The legacy raw adapters still
@@ -330,11 +357,12 @@ Known v0 limits:
   deterministic seeded command-output adapter, and `ModelCall` has a
   deterministic seeded prompt-completion adapter. `SecretRead` has a
   deterministic seeded secret-value adapter. The `Deploy` adapter returns
-  deterministic seeded stage results. `Spend` still needs a
-  dedicated host adapter.
+  deterministic seeded stage results, and the `Spend` adapter returns
+  deterministic seeded authorization results. None of the seeded host adapters
+  perform live network, shell, model, secret, deploy, or spend actions.
 - Sley-level `Result` values and `?` propagation execute, and fallible
-  filesystem, database, network, shell, model, secret, and deploy host variants
-  return typed `Error` records. `Spend` still needs the same bridge.
+  filesystem, database, network, shell, model, secret, deploy, and spend host
+  variants return typed `Error` records.
 - Project graft writeback supports existing module files. Grafts that would
   create unknown module files or import modules outside the loaded project
   reject before any source or trace mutation.
@@ -346,7 +374,7 @@ Known v0 limits:
   Cross-parent movement, take movement, and expression movement still reject
   explicitly.
 
-The next logical phase is to expand the remaining capability-backed host
-adapters on top of typed fallibility: `Spend` should define authority gates,
-deterministic tests, and `Result<T, Error>` surfaces before broader language
-features depend on it.
+The next logical phase is release-readiness work for the executable slice:
+grow the accepted/rejected gold corpus around authority and host behavior,
+turn CLI smokes into stable conformance gates, and start lint/query tooling on
+top of the checked graph surface before broadening the language again.

@@ -92,6 +92,7 @@ pub struct RuntimeGates {
     db_tables: BTreeMap<String, DbRows>,
     secret_values: BTreeMap<String, String>,
     deploy_results: BTreeMap<String, String>,
+    spend_results: BTreeMap<String, String>,
     http_text_responses: BTreeMap<String, String>,
     shell_outputs: BTreeMap<String, String>,
     model_outputs: BTreeMap<String, String>,
@@ -125,6 +126,7 @@ impl RuntimeGates {
             && self.db_tables.is_empty()
             && self.secret_values.is_empty()
             && self.deploy_results.is_empty()
+            && self.spend_results.is_empty()
             && self.http_text_responses.is_empty()
             && self.shell_outputs.is_empty()
             && self.model_outputs.is_empty()
@@ -173,6 +175,14 @@ impl RuntimeGates {
 
     pub fn deploy_result(&self, target: &str) -> Option<&str> {
         self.deploy_results.get(target).map(String::as_str)
+    }
+
+    pub fn grant_spend_result(&mut self, request: impl Into<String>, result: impl Into<String>) {
+        self.spend_results.insert(request.into(), result.into());
+    }
+
+    pub fn spend_result(&self, request: &str) -> Option<&str> {
+        self.spend_results.get(request).map(String::as_str)
     }
 
     pub fn grant_http_text(&mut self, url: impl Into<String>, body: impl Into<String>) {
@@ -961,6 +971,9 @@ fn eval_host_call(
         "deploy.try_stage" => {
             eval_deploy_stage(program, task, expr, callee_name, args, locals, gates)
         }
+        "spend.try_authorize" => {
+            eval_spend_authorize(program, task, expr, callee_name, args, locals, gates)
+        }
         "http.try_get_text" => {
             eval_http_get_text(program, task, expr, callee_name, args, locals, gates)
         }
@@ -1294,6 +1307,37 @@ fn eval_deploy_stage(
 }
 
 #[allow(clippy::too_many_arguments)]
+fn eval_spend_authorize(
+    program: &Program,
+    task: &TaskDecl,
+    expr: &Expr,
+    callee_name: &str,
+    args: &[Expr],
+    locals: &HashMap<String, Value>,
+    gates: &mut RuntimeGates,
+) -> Result<EvalOutcome, Vec<Diagnostic>> {
+    if args.len() != 1 {
+        return host_arity_error(expr, callee_name, 1, args.len()).map(EvalOutcome::value);
+    }
+
+    let request = arg_or_propagate!(eval_text_arg(program, task, expr, args, 0, locals, gates));
+    if request.trim().is_empty() {
+        return Ok(host_err(
+            "RUNTIME_SPEND_REQUEST_INVALID",
+            "spend request cannot be empty",
+        ));
+    }
+
+    match gates.spend_result(&request) {
+        Some(result) => Ok(host_ok(Value::Text(result.to_string()))),
+        None => Ok(host_err(
+            "RUNTIME_SPEND_RESULT_NOT_FOUND",
+            format!("spend result for request `{request}` was not seeded"),
+        )),
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
 fn eval_shell_run(
     program: &Program,
     task: &TaskDecl,
@@ -1490,6 +1534,7 @@ fn host_required_effects(name: &str) -> Option<&'static [&'static str]> {
         "model.try_complete" => Some(&["ModelCall"]),
         "secrets.try_get" => Some(&["SecretRead"]),
         "deploy.try_stage" => Some(&["Deploy"]),
+        "spend.try_authorize" => Some(&["Spend"]),
         _ => None,
     }
 }
@@ -1706,6 +1751,6 @@ fn runtime_type_error(expr: &Expr, message: impl Into<String>) -> Result<Value, 
 fn is_host_callee_path(name: &str) -> bool {
     matches!(
         name.split('.').next(),
-        Some("db" | "fs" | "http" | "shell" | "model" | "secrets" | "deploy")
+        Some("db" | "fs" | "http" | "shell" | "model" | "secrets" | "deploy" | "spend")
     )
 }

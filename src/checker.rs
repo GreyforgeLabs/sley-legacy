@@ -2023,6 +2023,7 @@ fn host_effect_patterns() -> Vec<(&'static str, Vec<&'static str>)> {
         ("shell.try_run(", vec!["Shell"]),
         ("secrets.try_get(", vec!["SecretRead"]),
         ("deploy.try_stage(", vec!["Deploy"]),
+        ("spend.try_authorize(", vec!["Spend"]),
     ]
 }
 
@@ -2342,6 +2343,7 @@ fn host_call_return_type(name: &str) -> Option<TypeExpr> {
         "model.try_complete" => Some(result_type(TypeExpr::named("Text"))),
         "secrets.try_get" => Some(result_type(TypeExpr::named("Text"))),
         "deploy.try_stage" => Some(result_type(TypeExpr::named("Text"))),
+        "spend.try_authorize" => Some(result_type(TypeExpr::named("Text"))),
         _ => None,
     }
 }
@@ -2364,7 +2366,7 @@ fn is_builtin_task(name: &str) -> bool {
 fn is_host_root(name: &str) -> bool {
     matches!(
         name,
-        "db" | "fs" | "http" | "shell" | "model" | "secrets" | "deploy"
+        "db" | "fs" | "http" | "shell" | "model" | "secrets" | "deploy" | "spend"
     )
 }
 

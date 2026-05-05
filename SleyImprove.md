@@ -376,11 +376,12 @@ Failure modes to watch:
 
 Near-term:
 
-1. Expand capability-backed host adapters beyond root-scoped filesystem gates,
-   deterministic seeded database surfaces, seeded network text, and seeded
-   shell command output. Model completions, secret values, and deployment stage
-   results now have seeded adapters; the remaining near term spend adapter
-   should preserve `Result<T, Error>` surfaces for recoverable host failures.
+1. Harden capability-backed host adapters beyond root-scoped filesystem gates,
+   deterministic seeded database surfaces, seeded network text, seeded shell
+   command output, seeded model completions, seeded secret values, seeded
+   deployment stage results, and seeded spend authorizations. Preserve
+   `Result<T, Error>` surfaces for recoverable host failures and keep
+   authority failures as diagnostics.
 2. Grow the accepted/rejected synthetic gold corpus with graft, module, and
    runtime authority cases.
 3. Extend graph-slice grafts around move/delete planning.
@@ -393,10 +394,11 @@ Medium-term:
    delete edits.
 2. Move trace seals and ZJX preview payloads into a compressed binary `.zjx`
    handoff.
-3. Expand runtime host capability values across `Spend` boundaries, then grow
-   deploy beyond seeded stage results, secret beyond seeded values, model beyond
-   seeded completions, shell beyond seeded command output, network beyond
-   seeded text, and database write beyond per-run inserts.
+3. Expand runtime host capability values beyond seeded v0 adapters: deploy
+   beyond seeded stage results, spend beyond seeded authorization text, secret
+   beyond seeded values, model beyond seeded completions, shell beyond seeded
+   command output, network beyond seeded text, and database write beyond
+   per-run inserts.
 4. Build the synthetic gold corpus into a release gate.
 5. Shadow selected compiler helper passes in Sley.
 

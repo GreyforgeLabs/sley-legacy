@@ -203,13 +203,13 @@ because Sley's primary editor may be an agent.
 Near-term:
 
 1. Keep expanding parser/checker/runtime coverage in Rust.
-2. Expand capability-backed host adapters on top of typed fallibility:
-   `Spend` still needs an authority gate plus a `Result<T, Error>` surface.
-   Database write has the first deterministic `db.try_insert` slice, secrets
+2. Harden capability-backed host adapters on top of typed fallibility:
+   database write has the first deterministic `db.try_insert` slice, secrets
    have deterministic seeded `secrets.try_get`, deploy has deterministic seeded
-   `deploy.try_stage`, network has deterministic seeded `http.try_get_text`,
-   shell has deterministic seeded `shell.try_run`, and model calls have
-   deterministic seeded `model.try_complete`.
+   `deploy.try_stage`, spend has deterministic seeded
+   `spend.try_authorize`, network has deterministic seeded
+   `http.try_get_text`, shell has deterministic seeded `shell.try_run`, and
+   model calls have deterministic seeded `model.try_complete`.
 3. Grow the accepted/rejected synthetic gold corpus beyond the initial seed,
    including runtime authority cases.
 4. Extend graph-slice graft planning around checked move/delete operations.
@@ -220,10 +220,11 @@ Medium-term:
 1. Extend graph-slice grafts beyond call-site, statement, expression, move, and
    delete edits.
 2. Move trace seals into a compressed binary `.zjx` handoff.
-3. Expand capability-backed runtime host values across `Spend` boundaries, then
-   grow deploy beyond seeded stage results, secret beyond seeded values, model
-   beyond seeded completions, shell beyond seeded command output, network
-   beyond seeded text, and database write beyond per-run inserts.
+3. Grow capability-backed runtime host values beyond seeded v0 adapters:
+   deploy beyond seeded stage results, spend beyond seeded authorization text,
+   secret beyond seeded values, model beyond seeded completions, shell beyond
+   seeded command output, network beyond seeded text, and database write beyond
+   per-run inserts.
 4. Build Sley lint/helper passes on top of the graph query surface.
 
 Long-term:

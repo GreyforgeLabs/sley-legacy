@@ -58,6 +58,8 @@ enum Command {
         secret: Vec<String>,
         #[arg(long = "deploy-result", value_names = ["TARGET", "TEXT"], num_args = 2)]
         deploy_result: Vec<String>,
+        #[arg(long = "spend-result", value_names = ["REQUEST", "TEXT"], num_args = 2)]
+        spend_result: Vec<String>,
         #[arg(long = "http-text", value_names = ["URL", "TEXT"], num_args = 2)]
         http_text: Vec<String>,
         #[arg(long = "shell-output", value_names = ["COMMAND", "TEXT"], num_args = 2)]
@@ -187,6 +189,7 @@ fn run(cli: Cli) -> Result<()> {
             db_table,
             secret,
             deploy_result,
+            spend_result,
             http_text,
             shell_output,
             model_output,
@@ -204,6 +207,7 @@ fn run(cli: Cli) -> Result<()> {
             load_runtime_db_tables(&mut runtime_gates, &db_table)?;
             load_runtime_secrets(&mut runtime_gates, &secret)?;
             load_runtime_deploy_results(&mut runtime_gates, &deploy_result)?;
+            load_runtime_spend_results(&mut runtime_gates, &spend_result)?;
             load_runtime_http_texts(&mut runtime_gates, &http_text)?;
             load_runtime_shell_outputs(&mut runtime_gates, &shell_output)?;
             load_runtime_model_outputs(&mut runtime_gates, &model_output)?;
@@ -677,6 +681,21 @@ fn load_runtime_deploy_results(gates: &mut RuntimeGates, values: &[String]) -> R
     }
     if !chunks.remainder().is_empty() {
         anyhow::bail!("deploy result seed must use TARGET TEXT pairs");
+    }
+    Ok(())
+}
+
+fn load_runtime_spend_results(gates: &mut RuntimeGates, values: &[String]) -> Result<()> {
+    let mut chunks = values.chunks_exact(2);
+    for pair in &mut chunks {
+        let request = pair[0].trim();
+        if request.is_empty() {
+            anyhow::bail!("spend result seed request cannot be empty");
+        }
+        gates.grant_spend_result(request, pair[1].clone());
+    }
+    if !chunks.remainder().is_empty() {
+        anyhow::bail!("spend result seed must use REQUEST TEXT pairs");
     }
     Ok(())
 }

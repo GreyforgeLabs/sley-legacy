@@ -2355,6 +2355,163 @@ task main -> Result<Text, Error> uses Deploy {
 }
 
 #[test]
+fn checker_requires_spend_for_spend_adapter() {
+    let source = r#"
+task main -> Result<Text, Error> {
+  return call spend.try_authorize("ads-budget")
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    let effect_diagnostics = diagnostics
+        .iter()
+        .filter(|diagnostic| diagnostic.id == "EFFECT_UNAUTHORIZED")
+        .collect::<Vec<_>>();
+    assert_eq!(
+        effect_diagnostics.len(),
+        1,
+        "expected one effect diagnostic, got {diagnostics:#?}"
+    );
+    assert!(
+        effect_diagnostics[0].message.contains("Spend"),
+        "expected Spend diagnostic, got {diagnostics:#?}"
+    );
+}
+
+#[test]
+fn runtime_try_spend_authorize_reads_seeded_result() {
+    let source = r#"
+task main -> Result<Text, Error> uses Spend {
+  bind result = call spend.try_authorize("ads-budget")?
+  return Ok(result)
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+    let mut gates = RuntimeGates::new();
+    gates.grant_effect("Spend");
+    gates.grant_spend_result("ads-budget", "authorized");
+    assert_eq!(
+        run_main_with_gates(&program, &gates),
+        Ok(Value::Ok(Box::new(Value::Text("authorized".to_string()))))
+    );
+}
+
+#[test]
+fn runtime_try_spend_authorize_returns_error_for_missing_seed() {
+    let source = r#"
+task main -> Result<Text, Error> uses Spend {
+  return call spend.try_authorize("ads-budget")
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+    let mut gates = RuntimeGates::new();
+    gates.grant_effect("Spend");
+    let result = run_main_with_gates(&program, &gates).expect("run main");
+    let Value::Err(error) = result else {
+        panic!("expected host error result, got {result:#?}");
+    };
+    assert_error_record(&error, "RUNTIME_SPEND_RESULT_NOT_FOUND", "was not seeded");
+}
+
+#[test]
+fn runtime_try_spend_authorize_returns_error_for_empty_request() {
+    let source = r#"
+task main -> Result<Text, Error> uses Spend {
+  return call spend.try_authorize("")
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+    let mut gates = RuntimeGates::new();
+    gates.grant_effect("Spend");
+    let result = run_main_with_gates(&program, &gates).expect("run main");
+    let Value::Err(error) = result else {
+        panic!("expected host error result, got {result:#?}");
+    };
+    assert_error_record(&error, "RUNTIME_SPEND_REQUEST_INVALID", "spend request");
+}
+
+#[test]
+fn runtime_try_spend_authorize_requires_spend_capability() {
+    let source = r#"
+task main -> Result<Text, Error> uses Spend {
+  return call spend.try_authorize("ads-budget")
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+    let mut gates = RuntimeGates::new();
+    gates.grant_spend_result("ads-budget", "authorized");
+    let diagnostics = run_main_with_gates(&program, &gates).expect_err("missing Spend gate");
+    assert!(
+        diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.id == "RUNTIME_CAPABILITY_REQUIRED"
+                && diagnostic.message.contains("Spend")),
+        "expected missing Spend capability diagnostic, got {diagnostics:#?}"
+    );
+}
+
+#[test]
+fn cli_run_accepts_spend_result_seed() {
+    let root = temp_project_dir("runtime-spend-cli");
+    fs::create_dir_all(&root).expect("create temp dir");
+    let source_path = root.join("main.sley");
+    fs::write(
+        &source_path,
+        r#"
+task main -> Result<Text, Error> uses Spend {
+  return call spend.try_authorize("ads-budget")
+}
+"#,
+    )
+    .expect("write source");
+
+    let output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args([
+            "run",
+            "--json",
+            "--cap",
+            "Spend",
+            "--spend-result",
+            "ads-budget",
+            "authorized",
+            source_path.to_str().expect("utf-8 path"),
+        ])
+        .output()
+        .expect("run sley");
+    assert!(
+        output.status.success(),
+        "sley run failed: stdout={} stderr={}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let value: Value = serde_json::from_slice(&output.stdout).expect("parse value");
+    assert_eq!(
+        value,
+        Value::Ok(Box::new(Value::Text("authorized".to_string())))
+    );
+}
+
+#[test]
 fn cli_run_accepts_database_table_seed() {
     let root = temp_project_dir("runtime-db-cli");
     fs::create_dir_all(&root).expect("create temp dir");

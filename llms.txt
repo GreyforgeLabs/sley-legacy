@@ -23,6 +23,7 @@ cargo run -- run --json --cap Shell --shell-output date 2026-05-05 examples/shel
 cargo run -- run --json --cap ModelCall --model-output name Ada examples/model_gate.sley
 cargo run -- run --json --cap SecretRead --secret api_key redacted examples/secret_gate.sley
 cargo run -- run --json --cap Deploy --deploy-result staging staged examples/deploy_gate.sley
+cargo run -- run --json --cap Spend --spend-result ads-budget authorized examples/spend_gate.sley
 ```
 
 Agent rules:
@@ -41,7 +42,8 @@ Agent rules:
   database reads, per-run `db.try_insert` writes, seeded `http.try_get_text`
   network text reads, seeded `shell.try_run` command output reads, and seeded
   `model.try_complete` prompt completions, plus seeded `secrets.try_get`
-  secret values and seeded `deploy.try_stage` deployment stage results.
+  secret values, seeded `deploy.try_stage` deployment stage results, and
+  seeded `spend.try_authorize` spend authorization results.
 
 Stable v0 JSON roots:
 
@@ -65,12 +67,12 @@ Current development phase:
 
 - typed host fallibility is in place for filesystem and seeded database
   adapters plus seeded network text, seeded shell output, seeded model
-  completions, seeded secret values, and seeded deployment stage results
-  through explicit fallible calls
-  returning `Result<T, Error>`
-- next host-adapter work should add a deterministic `Spend` surface while
-  preserving typed recoverable failure records and keeping authority failures
-  as diagnostics
+  completions, seeded secret values, seeded deployment stage results, and
+  seeded spend authorization results through explicit fallible calls returning
+  `Result<T, Error>`
+- next host-adapter work should harden the deterministic seeded surfaces into
+  stable release/conformance gates while preserving typed recoverable failure
+  records and keeping authority failures as diagnostics
 - project graft writeback hardening beyond existing modules
 - accepted/rejected synthetic gold corpus growth
 - broader graph-slice graft operations around move/delete planning
