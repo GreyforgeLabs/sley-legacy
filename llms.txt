@@ -105,6 +105,7 @@ Current development phase:
 - `MoveNode` supports cross-parent statement movement between existing block
   parents with `payload.destination`, plus take reordering within the owning
   task; cross-task take movement and expression movement remain explicit
-  rejections
+  rejections, and expression move rejection carries a `replace_expression`
+  repair hint
 - manifest-backed accepted/rejected synthetic gold corpus growth
 - broader graph-slice graft operations around move/delete planning

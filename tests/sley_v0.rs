@@ -937,6 +937,11 @@ fn move_node_rejects_expression_targets() {
         "expected move unsupported diagnostic, got {:#?}",
         outcome.diagnostics
     );
+    assert_has_repair_hint(
+        &outcome.diagnostics,
+        "GRAFT_MOVE_UNSUPPORTED",
+        "replace_expression",
+    );
 }
 
 #[test]

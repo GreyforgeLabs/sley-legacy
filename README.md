@@ -431,7 +431,8 @@ Known v0 limits:
   effects, or tasks into known module parents such as `module:app.extra:tasks`.
   An all-or-nothing transaction can add the destination import before the move
   and create the new module file from the moved declaration. Cross-task take
-  movement and expression movement still reject explicitly.
+  movement and expression movement still reject explicitly; expression movement
+  rejection carries a `replace_expression` repair hint.
 
 The current release-readiness phase is underway for the executable slice. The
 gold corpus and CLI smoke suite now have manifests with required coverage tags

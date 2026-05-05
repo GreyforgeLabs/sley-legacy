@@ -625,10 +625,13 @@ scopes the lint to one module. `--rule unused-private-task`,
 one rule explicitly, and `--deny-warnings` turns findings into a nonzero CLI
 exit after printing the report. The v0 JSON root is `sley.lint.report.v0`.
 
-Diagnostics include machine-readable repair hints for common checker failures.
-Hints are intentionally small and structural: `kind` identifies the action,
-`target` names the graph node when available, `effect` names required authority
-when relevant, and `replacement` carries a compact source or type suggestion.
+Diagnostics include machine-readable repair hints for common checker failures
+and selected graft planning failures. Hints are intentionally small and
+structural: `kind` identifies the action, `target` names the graph node when
+available, `effect` names required authority when relevant, and `replacement`
+carries a compact source or type suggestion. For example, unsupported
+expression `MoveNode` targets carry a `replace_expression` hint so agents can
+switch to `ReplaceExpression` instead of retrying an unsupported move.
 
 ## ZJX Boundary
 

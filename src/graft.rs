@@ -9,7 +9,7 @@ use crate::ast::{
     Program, ProvenanceRecord, Statement, StatementKind, TakeDecl, TaskDecl, TypeDecl,
 };
 use crate::checker::{check_program, has_errors};
-use crate::diagnostics::Diagnostic;
+use crate::diagnostics::{Diagnostic, RepairHint};
 use crate::formatter::format_program;
 use crate::parser::{parse_block_source, parse_expr_source, parse_program, parse_type_expr_source};
 use crate::symbols::{
@@ -976,6 +976,11 @@ fn move_node(
             Diagnostic::error(
                 "GRAFT_MOVE_UNSUPPORTED",
                 format!("expression target `{target}` cannot be moved by v0 MoveNode"),
+            )
+            .with_repair_hint(
+                RepairHint::new("replace_expression")
+                    .with_target(target)
+                    .with_replacement("Use ReplaceExpression with payload.source"),
             )
             .with_node(target.to_string()),
         ]);
