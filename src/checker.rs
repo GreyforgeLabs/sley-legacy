@@ -1,8 +1,8 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::ast::{
-    BinaryOp, Block, Expr, ExprKind, FunctionDecl, Program, RecordField, StatementKind, TypeExpr,
-    UnaryOp,
+    BinaryOp, Block, Expr, ExprKind, ExprMapEntry, FunctionDecl, Program, RecordField,
+    StatementKind, TypeExpr, UnaryOp,
 };
 use crate::diagnostics::{Diagnostic, RepairHint};
 
@@ -469,6 +469,68 @@ fn check_block(
                     diagnostics,
                 );
             }
+            StatementKind::For {
+                item,
+                collection,
+                body,
+            } => {
+                check_expr_common(
+                    function,
+                    collection,
+                    locals,
+                    declared_effects,
+                    known_types,
+                    known_functions,
+                    record_types,
+                    diagnostics,
+                );
+                let collection_type = infer_expr_type(
+                    collection,
+                    locals,
+                    &function.return_type,
+                    known_functions,
+                    record_types,
+                );
+                let item_type = collection_type.as_ref().and_then(list_element_type);
+                if item_type.is_none() {
+                    let collection_type = collection_type
+                        .as_ref()
+                        .map(TypeExpr::display)
+                        .unwrap_or_else(|| "unknown".to_string());
+                    diagnostics.push(
+                        Diagnostic::error(
+                            "FOR_COLLECTION_NOT_ITERABLE",
+                            format!("for loop expects `List<T>`, not `{collection_type}`"),
+                        )
+                        .with_node(collection.id.clone()),
+                    );
+                }
+                let mut body_locals = locals.clone();
+                if body_locals.contains_key(item) {
+                    diagnostics.push(
+                        Diagnostic::error(
+                            "LOCAL_ALREADY_BOUND",
+                            format!("loop binding `{item}` is already in scope"),
+                        )
+                        .with_node(statement.id.clone()),
+                    );
+                } else {
+                    body_locals.insert(
+                        item.clone(),
+                        item_type.unwrap_or_else(|| TypeExpr::named("Unit")),
+                    );
+                }
+                check_block(
+                    function,
+                    body,
+                    &mut body_locals,
+                    declared_effects,
+                    known_types,
+                    known_functions,
+                    record_types,
+                    diagnostics,
+                );
+            }
         }
     }
 }
@@ -740,6 +802,39 @@ fn check_expr_structure(
                 function,
                 expr,
                 items,
+                locals,
+                known_functions,
+                record_types,
+                diagnostics,
+            );
+        }
+        ExprKind::MapLiteral { entries } => {
+            for entry in entries {
+                check_expr_structure(
+                    function,
+                    &entry.key,
+                    locals,
+                    declared_effects,
+                    known_types,
+                    known_functions,
+                    record_types,
+                    diagnostics,
+                );
+                check_expr_structure(
+                    function,
+                    &entry.value,
+                    locals,
+                    declared_effects,
+                    known_types,
+                    known_functions,
+                    record_types,
+                    diagnostics,
+                );
+            }
+            check_map_literal(
+                function,
+                expr,
+                entries,
                 locals,
                 known_functions,
                 record_types,
@@ -1083,13 +1178,14 @@ fn check_builtin_call(
         known_functions,
         record_types,
     ) && !is_list_type(&actual)
+        && !is_map_type(&actual)
         && !is_named_type(&actual, "Text")
     {
         diagnostics.push(
             Diagnostic::error(
                 "BUILTIN_ARGUMENT_TYPE_MISMATCH",
                 format!(
-                    "builtin `len` expects `List<T>` or `Text`, not `{}`",
+                    "builtin `len` expects `List<T>`, `Map<Text, T>`, or `Text`, not `{}`",
                     actual.display()
                 ),
             )
@@ -1145,6 +1241,83 @@ fn check_list_literal(
 }
 
 #[allow(clippy::too_many_arguments)]
+fn check_map_literal(
+    function: &FunctionDecl,
+    expr: &Expr,
+    entries: &[ExprMapEntry],
+    locals: &HashMap<String, TypeExpr>,
+    known_functions: &HashMap<String, FunctionSignature>,
+    record_types: &HashMap<String, Vec<RecordField>>,
+    diagnostics: &mut Vec<Diagnostic>,
+) {
+    let mut seen_literal_keys = HashSet::new();
+    for entry in entries {
+        if let Some(key_type) = infer_expr_type(
+            &entry.key,
+            locals,
+            &function.return_type,
+            known_functions,
+            record_types,
+        ) && !is_named_type(&key_type, "Text")
+        {
+            diagnostics.push(
+                Diagnostic::error(
+                    "MAP_KEY_TYPE_MISMATCH",
+                    format!("map keys must be `Text`, not `{}`", key_type.display()),
+                )
+                .with_node(entry.key.id.clone()),
+            );
+        }
+        if let ExprKind::StringLiteral { value } = &entry.key.kind
+            && !seen_literal_keys.insert(value.clone())
+        {
+            diagnostics.push(
+                Diagnostic::error(
+                    "DUPLICATE_MAP_KEY",
+                    format!("map key `{value}` is repeated"),
+                )
+                .with_node(entry.key.id.clone()),
+            );
+        }
+    }
+
+    let Some(first) = entries.first() else {
+        return;
+    };
+    let Some(first_type) = infer_expr_type(
+        &first.value,
+        locals,
+        &function.return_type,
+        known_functions,
+        record_types,
+    ) else {
+        return;
+    };
+    for entry in entries.iter().skip(1) {
+        if let Some(actual) = infer_expr_type(
+            &entry.value,
+            locals,
+            &function.return_type,
+            known_functions,
+            record_types,
+        ) && !types_compatible(&first_type, &actual)
+        {
+            diagnostics.push(
+                Diagnostic::error(
+                    "MAP_VALUE_TYPE_MISMATCH",
+                    format!(
+                        "map literal mixes `{}` and `{}` values",
+                        first_type.display(),
+                        actual.display()
+                    ),
+                )
+                .with_node(expr.id.clone()),
+            );
+        }
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
 fn check_index_expression(
     function: &FunctionDecl,
     expr: &Expr,
@@ -1161,34 +1334,55 @@ fn check_index_expression(
         &function.return_type,
         known_functions,
         record_types,
-    ) && !is_list_type(&collection_type)
-    {
+    ) {
+        if list_element_type(&collection_type).is_some() {
+            if let Some(index_type) = infer_expr_type(
+                index,
+                locals,
+                &function.return_type,
+                known_functions,
+                record_types,
+            ) && !is_named_type(&index_type, "Int")
+            {
+                diagnostics.push(
+                    Diagnostic::error(
+                        "INDEX_NOT_INT",
+                        format!("list index must be `Int`, not `{}`", index_type.display()),
+                    )
+                    .with_node(index.id.clone()),
+                );
+            }
+            return;
+        }
+        if text_key_map_value_type(&collection_type).is_some() {
+            if let Some(index_type) = infer_expr_type(
+                index,
+                locals,
+                &function.return_type,
+                known_functions,
+                record_types,
+            ) && !is_named_type(&index_type, "Text")
+            {
+                diagnostics.push(
+                    Diagnostic::error(
+                        "INDEX_KEY_TYPE_MISMATCH",
+                        format!("map key must be `Text`, not `{}`", index_type.display()),
+                    )
+                    .with_node(index.id.clone()),
+                );
+            }
+            return;
+        }
+
         diagnostics.push(
             Diagnostic::error(
                 "INDEX_COLLECTION_NOT_INDEXABLE",
                 format!(
-                    "indexing expects `List<T>`, not `{}`",
+                    "indexing expects `List<T>` or `Map<Text, T>`, not `{}`",
                     collection_type.display()
                 ),
             )
             .with_node(expr.id.clone()),
-        );
-    }
-
-    if let Some(index_type) = infer_expr_type(
-        index,
-        locals,
-        &function.return_type,
-        known_functions,
-        record_types,
-    ) && !is_named_type(&index_type, "Int")
-    {
-        diagnostics.push(
-            Diagnostic::error(
-                "INDEX_NOT_INT",
-                format!("list index must be `Int`, not `{}`", index_type.display()),
-            )
-            .with_node(index.id.clone()),
         );
     }
 }
@@ -1373,6 +1567,9 @@ fn expr_uses_try(expr: &Expr) -> bool {
         } => expr_uses_try(condition) || expr_uses_try(then_branch) || expr_uses_try(else_branch),
         ExprKind::Call { callee, args } => expr_uses_try(callee) || args.iter().any(expr_uses_try),
         ExprKind::ListLiteral { items } => items.iter().any(expr_uses_try),
+        ExprKind::MapLiteral { entries } => entries
+            .iter()
+            .any(|entry| expr_uses_try(&entry.key) || expr_uses_try(&entry.value)),
         ExprKind::Index { collection, index } => expr_uses_try(collection) || expr_uses_try(index),
         ExprKind::FieldAccess { receiver, .. } => expr_uses_try(receiver),
         ExprKind::RecordLiteral { fields, .. } => {
@@ -1475,6 +1672,49 @@ fn infer_expr_type(
                 args: vec![first_type],
             })
         }
+        ExprKind::MapLiteral { entries } => {
+            let Some(first) = entries.first() else {
+                return Some(TypeExpr::Generic {
+                    name: "Map".to_string(),
+                    args: vec![TypeExpr::named("Text"), TypeExpr::named("Unit")],
+                });
+            };
+            for entry in entries {
+                let key_type = infer_expr_type(
+                    &entry.key,
+                    locals,
+                    return_type,
+                    known_functions,
+                    record_types,
+                )?;
+                if !is_named_type(&key_type, "Text") {
+                    return None;
+                }
+            }
+            let first_value_type = infer_expr_type(
+                &first.value,
+                locals,
+                return_type,
+                known_functions,
+                record_types,
+            )?;
+            for entry in entries.iter().skip(1) {
+                let value_type = infer_expr_type(
+                    &entry.value,
+                    locals,
+                    return_type,
+                    known_functions,
+                    record_types,
+                )?;
+                if !types_compatible(&first_value_type, &value_type) {
+                    return None;
+                }
+            }
+            Some(TypeExpr::Generic {
+                name: "Map".to_string(),
+                args: vec![TypeExpr::named("Text"), first_value_type],
+            })
+        }
         ExprKind::Index { collection, index } => {
             let collection_type = infer_expr_type(
                 collection,
@@ -1485,15 +1725,13 @@ fn infer_expr_type(
             )?;
             let index_type =
                 infer_expr_type(index, locals, return_type, known_functions, record_types)?;
-            if !is_named_type(&index_type, "Int") {
-                return None;
+            if is_named_type(&index_type, "Int") {
+                return list_element_type(&collection_type);
             }
-            match collection_type {
-                TypeExpr::Generic { name, mut args } if name == "List" && args.len() == 1 => {
-                    Some(args.remove(0))
-                }
-                _ => None,
+            if is_named_type(&index_type, "Text") {
+                return text_key_map_value_type(&collection_type);
             }
+            None
         }
         ExprKind::FieldAccess { receiver, field } => {
             if let Some(TypeExpr::Named { name }) =
@@ -1592,6 +1830,30 @@ fn is_numeric_type(ty: &TypeExpr) -> bool {
 
 fn is_list_type(ty: &TypeExpr) -> bool {
     matches!(ty, TypeExpr::Generic { name, args } if name == "List" && args.len() == 1)
+}
+
+fn list_element_type(ty: &TypeExpr) -> Option<TypeExpr> {
+    match ty {
+        TypeExpr::Generic { name, args } if name == "List" && args.len() == 1 => {
+            Some(args[0].clone())
+        }
+        _ => None,
+    }
+}
+
+fn is_map_type(ty: &TypeExpr) -> bool {
+    matches!(ty, TypeExpr::Generic { name, args } if name == "Map" && args.len() == 2)
+}
+
+fn text_key_map_value_type(ty: &TypeExpr) -> Option<TypeExpr> {
+    match ty {
+        TypeExpr::Generic { name, args }
+            if name == "Map" && args.len() == 2 && is_named_type(&args[0], "Text") =>
+        {
+            Some(args[1].clone())
+        }
+        _ => None,
+    }
 }
 
 fn binary_operands_compatible(op: &BinaryOp, left: &TypeExpr, right: &TypeExpr) -> bool {

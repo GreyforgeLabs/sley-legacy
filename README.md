@@ -15,19 +15,19 @@ Implemented now:
 - explicit function parameters and return types
 - structured expressions for literals, identifiers, unary/binary operators,
   `if` expressions, calls, field access, list literals, indexing, record
-  literals, and `?`
-- statement-level `if`/`else`, `while`, and `set` local mutation
-- builtin `len` for lists and text
+  literals, map literals, and `?`
+- statement-level `if`/`else`, `while`, `for`, and `set` local mutation
+- builtin `len` for lists, maps, and text
 - static checks for duplicate declarations, unknown types, unknown effects,
   simple return mismatches, `?` result flow, host-effect authority, user
   function call arity/types, called-function effect propagation, lexical
   locals, operator operand types, `if` condition/branch types, and typed record
-  literal fields, list element types, indexing, control-flow conditions, and
-  `set` mutation types
+  literal fields, list element types, map key/value types, indexing,
+  control-flow conditions, `for` loop collections, and `set` mutation types
 - runtime evaluation for zero-argument pure `main`, literal values, pure
   function calls, lexical locals, `set`, operators, `if` expressions,
-  statement-level `if`/`else`, `while`, list literals, indexing, `len`, record
-  literals, and record field access
+  statement-level `if`/`else`, `while`, `for`, list literals, map literals,
+  indexing, `len`, record literals, and record field access
 - structural patch operations for adding/removing parameters, replacing
   function bodies, adding imports/effects/types/functions, and renaming
   declarations
@@ -35,8 +35,7 @@ Implemented now:
 Known v0 limits:
 
 - Expression parsing still falls back to raw nodes for unsupported syntax such
-  as map literals, lambdas, pattern matching, and multi-statement expression
-  blocks.
+  as lambdas, pattern matching, and multi-statement expression blocks.
 - Comment attachment and durable provenance storage are not complete. Accepted
   patch provenance is returned by the patch command, but not written into a
   sidecar store.
@@ -47,6 +46,6 @@ Known v0 limits:
   `DeleteNode` are declared but return explicit unsupported-operation
   diagnostics.
 
-The useful next step is to add richer data and dispatch semantics: map
-literals, `for`, `match`, multi-statement expression blocks, module resolution,
+The useful next step is to add richer dispatch and module semantics: `match`,
+multi-statement expression blocks, module resolution, broader map key support,
 and a capability-backed host boundary.

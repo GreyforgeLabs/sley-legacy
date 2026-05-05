@@ -170,6 +170,12 @@ impl Statement {
                 condition.assign_ids(format!("{id}:condition"));
                 body.assign_ids(format!("{id}:body"));
             }
+            StatementKind::For {
+                collection, body, ..
+            } => {
+                collection.assign_ids(format!("{id}:collection"));
+                body.assign_ids(format!("{id}:body"));
+            }
         }
     }
 }
@@ -201,6 +207,11 @@ pub enum StatementKind {
     },
     While {
         condition: Expr,
+        body: Block,
+    },
+    For {
+        item: String,
+        collection: Expr,
         body: Block,
     },
 }
@@ -248,6 +259,14 @@ impl Expr {
             ExprKind::ListLiteral { items } => {
                 for (index, item) in items.iter_mut().enumerate() {
                     item.assign_ids_at(format!("{id}:item:{index}"));
+                }
+            }
+            ExprKind::MapLiteral { entries } => {
+                for (index, entry) in entries.iter_mut().enumerate() {
+                    entry.key.assign_ids_at(format!("{id}:entry:{index}:key"));
+                    entry
+                        .value
+                        .assign_ids_at(format!("{id}:entry:{index}:value"));
                 }
             }
             ExprKind::Index { collection, index } => {
@@ -319,6 +338,9 @@ pub enum ExprKind {
     ListLiteral {
         items: Vec<Expr>,
     },
+    MapLiteral {
+        entries: Vec<ExprMapEntry>,
+    },
     Index {
         collection: Box<Expr>,
         index: Box<Expr>,
@@ -341,6 +363,12 @@ pub enum ExprKind {
 pub struct ExprField {
     pub name: String,
     pub expr: Expr,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ExprMapEntry {
+    pub key: Expr,
+    pub value: Expr,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]

@@ -149,6 +149,20 @@ fn format_statement(out: &mut String, kind: &StatementKind, indent_level: usize)
             push_indent(out, indent_level);
             out.push_str("}\n");
         }
+        StatementKind::For {
+            item,
+            collection,
+            body,
+        } => {
+            out.push_str("for ");
+            out.push_str(item);
+            out.push_str(" in ");
+            out.push_str(&collection.source);
+            out.push_str(" {\n");
+            format_block_statements(out, body, indent_level + 1);
+            push_indent(out, indent_level);
+            out.push_str("}\n");
+        }
     }
 }
 

@@ -16,6 +16,7 @@ pub enum Value {
     Float(f64),
     Bool(bool),
     List(Vec<Value>),
+    Map(BTreeMap<String, Value>),
     Record(BTreeMap<String, Value>),
     Raw(String),
 }
@@ -132,6 +133,21 @@ fn eval_scoped_block(
     result
 }
 
+fn eval_for_body(
+    program: &Program,
+    block: &crate::ast::Block,
+    locals: &mut HashMap<String, Value>,
+    return_type: &TypeExpr,
+    item: &str,
+    value: Value,
+) -> Result<Option<Value>, Vec<Diagnostic>> {
+    let existing = locals.keys().cloned().collect::<HashSet<_>>();
+    locals.insert(item.to_string(), value);
+    let result = eval_block(program, block, locals, return_type);
+    locals.retain(|name, _| existing.contains(name));
+    result
+}
+
 fn eval_statement(
     program: &Program,
     statement: &crate::ast::Statement,
@@ -194,6 +210,29 @@ fn eval_statement(
                 )
                 .with_node(statement.id.clone()),
             ])
+        }
+        StatementKind::For {
+            item,
+            collection,
+            body,
+        } => {
+            let collection_value = eval_expr(program, collection, locals, return_type)?;
+            match collection_value {
+                Value::List(items) => {
+                    for value in items {
+                        if let Some(return_value) =
+                            eval_for_body(program, body, locals, return_type, item, value)?
+                        {
+                            return Ok(Some(return_value));
+                        }
+                    }
+                    Ok(None)
+                }
+                _ => Err(vec![
+                    Diagnostic::error("RUNTIME_TYPE_ERROR", "for loop expects a list value")
+                        .with_node(statement.id.clone()),
+                ]),
+            }
         }
     }
 }
@@ -261,8 +300,11 @@ fn eval_expr(
                 }
                 return match eval_expr(program, &args[0], locals, return_type)? {
                     Value::List(items) => Ok(Value::Int(items.len() as i64)),
+                    Value::Map(items) => Ok(Value::Int(items.len() as i64)),
                     Value::Text(value) => Ok(Value::Int(value.chars().count() as i64)),
-                    _ => runtime_type_error(expr, "builtin `len` expects a list or text value"),
+                    _ => {
+                        runtime_type_error(expr, "builtin `len` expects a list, map, or text value")
+                    }
                 };
             }
             if let Some(callee_name) = direct_callee_name(callee)
@@ -286,6 +328,17 @@ fn eval_expr(
             }
             Ok(Value::List(values))
         }
+        ExprKind::MapLiteral { entries } => {
+            let mut values = BTreeMap::new();
+            for entry in entries {
+                let key = eval_expr(program, &entry.key, locals, return_type)?;
+                let Value::Text(key) = key else {
+                    return runtime_type_error(expr, "map literal keys must be text values");
+                };
+                values.insert(key, eval_expr(program, &entry.value, locals, return_type)?);
+            }
+            Ok(Value::Map(values))
+        }
         ExprKind::Index { collection, index } => {
             let collection = eval_expr(program, collection, locals, return_type)?;
             let index = eval_expr(program, index, locals, return_type)?;
@@ -308,7 +361,21 @@ fn eval_expr(
                     )
                     .with_node(expr.id.clone()),
                 ]),
-                _ => runtime_type_error(expr, "indexing expects `List<T>` and `Int`"),
+                (Value::Map(items), Value::Text(key)) => {
+                    items.get(&key).cloned().ok_or_else(|| {
+                        vec![
+                            Diagnostic::error(
+                                "RUNTIME_MAP_KEY_NOT_FOUND",
+                                format!("map key `{key}` was not found"),
+                            )
+                            .with_node(expr.id.clone()),
+                        ]
+                    })
+                }
+                _ => runtime_type_error(
+                    expr,
+                    "indexing expects `List<T>` with `Int` or `Map<Text, T>` with `Text`",
+                ),
             }
         }
         ExprKind::FieldAccess { receiver, field } => {

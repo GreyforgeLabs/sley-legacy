@@ -1,0 +1,15 @@
+module app.maps_for
+
+fn main() -> Int {
+  let names = ["ada", "grace", "linus"]
+  let scores: Map<Text, Int> = map {
+    "ada": 3,
+    "grace": 5,
+    "linus": 7,
+  }
+  let total = 0
+  for name in names {
+    set total = total + scores[name]
+  }
+  return total
+}

@@ -1,6 +1,6 @@
 use crate::ast::{
-    BinaryOp, Block, EffectDecl, Expr, ExprField, ExprKind, FunctionDecl, ImportDecl, Param,
-    Program, RecordField, Statement, StatementKind, TypeDecl, TypeExpr, UnaryOp,
+    BinaryOp, Block, EffectDecl, Expr, ExprField, ExprKind, ExprMapEntry, FunctionDecl, ImportDecl,
+    Param, Program, RecordField, Statement, StatementKind, TypeDecl, TypeExpr, UnaryOp,
 };
 use crate::diagnostics::{Diagnostic, SourceSpan};
 
@@ -613,6 +613,21 @@ impl Parser {
                 kind: StatementKind::While { condition, body },
                 span: Some(span),
             })
+        } else if self.current().is_ident("for") {
+            self.bump();
+            let item = self.expect_ident("expected loop binding name")?;
+            self.expect_keyword("in", "expected `in` after loop binding")?;
+            let collection = self.parse_expr_before_block(span.clone())?;
+            let body = self.parse_block()?;
+            Ok(Statement {
+                id: String::new(),
+                kind: StatementKind::For {
+                    item,
+                    collection,
+                    body,
+                },
+                span: Some(span),
+            })
         } else {
             let expr = self.parse_statement_expr(span.clone())?;
             Ok(Statement {
@@ -1035,6 +1050,9 @@ impl<'a> ExprParser<'a> {
                 }
             }
             TokenKind::Ident(name) if name == "if" => self.parse_if_expression(token.span),
+            TokenKind::Ident(name) if name == "map" && self.next_is_symbol('{') => {
+                self.parse_map_literal(token.span)
+            }
             TokenKind::Ident(name) if name == "true" || name == "false" => {
                 self.bump();
                 Ok(Expr {
@@ -1078,6 +1096,36 @@ impl<'a> ExprParser<'a> {
             }
             _ => Err(()),
         }
+    }
+
+    fn parse_map_literal(&mut self, span: SourceSpan) -> Result<Expr, ()> {
+        self.expect_keyword("map")?;
+        self.expect_symbol('{')?;
+        let mut entries = Vec::new();
+        if !self.current_is_symbol('}') {
+            loop {
+                let key = self.parse_expression()?;
+                self.expect_symbol(':')?;
+                let value = self.parse_expression()?;
+                entries.push(ExprMapEntry { key, value });
+                if self.current_is_symbol(',') {
+                    self.bump();
+                    if self.current_is_symbol('}') {
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            }
+        }
+        self.expect_symbol('}')?;
+        let source = format!("map {{ {} }}", format_map_entries(&entries));
+        Ok(Expr {
+            id: String::new(),
+            source,
+            kind: ExprKind::MapLiteral { entries },
+            span: Some(span),
+        })
     }
 
     fn parse_list_literal(&mut self, span: SourceSpan) -> Result<Expr, ()> {
@@ -1197,6 +1245,10 @@ impl<'a> ExprParser<'a> {
         matches!(self.current().map(|token| &token.kind), Some(TokenKind::Symbol(value)) if *value == expected)
     }
 
+    fn next_is_symbol(&self, expected: char) -> bool {
+        matches!(self.tokens.get(self.pos + 1).map(|token| &token.kind), Some(TokenKind::Symbol(value)) if *value == expected)
+    }
+
     fn current_unary_op(&self) -> Option<UnaryOp> {
         match self.current().map(|token| &token.kind) {
             Some(TokenKind::Symbol('!')) => Some(UnaryOp::Not),
@@ -1241,6 +1293,14 @@ fn format_expr_fields(fields: &[ExprField]) -> String {
     fields
         .iter()
         .map(|field| format!("{}: {}", field.name, field.expr.source))
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
+fn format_map_entries(entries: &[ExprMapEntry]) -> String {
+    entries
+        .iter()
+        .map(|entry| format!("{}: {}", entry.key.source, entry.value.source))
         .collect::<Vec<_>>()
         .join(", ")
 }

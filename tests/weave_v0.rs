@@ -124,6 +124,29 @@ fn main() -> Int {
 }
 
 #[test]
+fn parser_builds_for_loops_and_map_literals() {
+    let source = r#"
+fn main() -> Int {
+  let scores: Map<Text, Int> = map { "ada": 3, "grace": 5 }
+  let total = 0
+  for name in ["ada", "grace"] {
+    set total = total + scores[name]
+  }
+  return total
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let StatementKind::Let { expr, .. } = &program.functions[0].body.statements[0].kind else {
+        panic!("expected map let statement");
+    };
+    assert!(matches!(expr.kind, ExprKind::MapLiteral { .. }));
+    assert!(matches!(
+        program.functions[0].body.statements[2].kind,
+        StatementKind::For { .. }
+    ));
+}
+
+#[test]
 fn checker_validates_user_function_calls() {
     let source = r#"
 fn takes_text(value: Text) -> Text {
@@ -178,7 +201,8 @@ fn main() -> Int {
 fn checker_validates_collections_indexes_and_statement_control_flow() {
     let source = r#"
 fn main() -> Int {
-  let values = [1, "x"]
+  let mixed = [1, "x"]
+  let values = [1, 2]
   while values {
     set missing = 1
   }
@@ -210,6 +234,46 @@ fn main() -> Int {
             .iter()
             .any(|diagnostic| diagnostic.id == "INDEX_NOT_INT"),
         "expected index diagnostic, got {diagnostics:#?}"
+    );
+}
+
+#[test]
+fn checker_validates_maps_and_for_loops() {
+    let source = r#"
+fn main() -> Int {
+  let scores = map { 1: 2, "two": "bad" }
+  for score in scores {
+    set missing = score
+  }
+  let valid = map { "one": 1 }
+  return valid[1]
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.id == "MAP_KEY_TYPE_MISMATCH"),
+        "expected map key diagnostic, got {diagnostics:#?}"
+    );
+    assert!(
+        diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.id == "MAP_VALUE_TYPE_MISMATCH"),
+        "expected map value diagnostic, got {diagnostics:#?}"
+    );
+    assert!(
+        diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.id == "FOR_COLLECTION_NOT_ITERABLE"),
+        "expected for-loop collection diagnostic, got {diagnostics:#?}"
+    );
+    assert!(
+        diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.id == "INDEX_KEY_TYPE_MISMATCH"),
+        "expected map index diagnostic, got {diagnostics:#?}"
     );
 }
 
@@ -273,6 +337,28 @@ fn sum(values: List<Int>) -> Int {
 fn main() -> Int {
   let values = [2, 3, 5]
   return sum(values)
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+    assert_eq!(run_main(&program), Ok(Value::Int(10)));
+}
+
+#[test]
+fn runtime_evaluates_for_loops_maps_len_and_text_indexing() {
+    let source = r#"
+fn main() -> Int {
+  let names = ["ada", "grace"]
+  let scores: Map<Text, Int> = map { "ada": 3, "grace": 5 }
+  let total = 0
+  for name in names {
+    set total = total + scores[name]
+  }
+  return total + len(scores)
 }
 "#;
     let program = parse_program(source).expect("parse source");
