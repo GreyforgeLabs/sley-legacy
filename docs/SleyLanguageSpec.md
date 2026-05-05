@@ -1,6 +1,6 @@
 # Sley Language Specification
 
-Status: v0 executable slice plus module task/type/effect namespace, runtime gates, seeded database host reads, and trace tooling
+Status: v0 executable slice plus module task/type/effect namespace, runtime gates, Sley-level Result flow, seeded database host reads, and trace tooling
 
 Sley is a human-readable, agent-writable structural language. The canonical
 program model is a typed graph. `.sley` source is the stable review projection,
@@ -89,6 +89,35 @@ task sum -> Int {
 ```
 
 `set` is only valid for mutable binding kinds. `bind` is immutable.
+
+## Result And Error Flow
+
+`Result<T, E>` is the standard fallible return shape. `Ok(value)` and
+`Err(error)` construct runtime result values. In a task returning `Result`, the
+postfix `?` operator unwraps `Ok(value)` and propagates `Err(error)` as the
+current task's return value.
+
+```sley
+task parse_score -> Result<Int, Error> {
+  take raw: Text
+
+  if raw == "bad" {
+    return Err("bad score")
+  }
+  return Ok(41)
+}
+
+task main -> Result<Int, Error> {
+  bind score = call parse_score("41")?
+  return Ok(score + 1)
+}
+```
+
+The checker enforces that `?` appears only inside tasks returning `Result`.
+Runtime propagation is implemented for Sley-level `Ok`/`Err` values. Current
+host adapter failures still surface as runtime diagnostics rather than typed
+`Error` values; converting host failures into first-class `Result<T, Error>`
+values is a later bridge.
 
 ## Module Semantics
 
@@ -382,6 +411,8 @@ archive.
 - runtime gates currently back filesystem text reads/writes and deterministic
   seeded database reads only; database writes, network, shell, model, secret,
   deploy, and spending effects still need host adapters
+- Sley-level `Result` values and `?` propagation execute, but host adapter
+  failures still surface as diagnostics instead of first-class `Error` values
 - trace receipts can be sealed, but sidecar storage is not yet a compressed ZJX
   archive
 - the AST JSON Schema covers nested AST and expression variants; the remaining

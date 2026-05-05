@@ -27,6 +27,8 @@ pub enum Value {
     List(Vec<Value>),
     Map(BTreeMap<String, Value>),
     Record(BTreeMap<String, Value>),
+    Ok(Box<Value>),
+    Err(Box<Value>),
     Raw(String),
 }
 
@@ -141,6 +143,43 @@ impl RuntimeGates {
 }
 
 const MAX_LOOP_ITERATIONS: usize = 1_000_000;
+
+#[derive(Debug, Clone, PartialEq)]
+enum EvalOutcome {
+    Value(Value),
+    Propagate(Value),
+}
+
+impl EvalOutcome {
+    fn value(value: Value) -> Self {
+        Self::Value(value)
+    }
+
+    fn into_task_return(self) -> Value {
+        match self {
+            Self::Value(value) => value,
+            Self::Propagate(error) => Value::Err(Box::new(error)),
+        }
+    }
+}
+
+macro_rules! value_or_propagate {
+    ($outcome:expr) => {
+        match $outcome? {
+            EvalOutcome::Value(value) => value,
+            EvalOutcome::Propagate(error) => return Ok(EvalOutcome::Propagate(error)),
+        }
+    };
+}
+
+macro_rules! arg_or_propagate {
+    ($arg:expr) => {
+        match $arg? {
+            Ok(value) => value,
+            Err(error) => return Ok(EvalOutcome::Propagate(error)),
+        }
+    };
+}
 
 pub fn run_main(program: &Program) -> Result<Value, Vec<Diagnostic>> {
     let gates = RuntimeGates::new();
@@ -281,7 +320,12 @@ fn eval_statement(
 ) -> Result<Option<Value>, Vec<Diagnostic>> {
     match &statement.kind {
         StatementKind::Binding { name, expr, .. } => {
-            let value = eval_expr(program, task, expr, locals, gates)?;
+            let value = match eval_expr(program, task, expr, locals, gates)? {
+                EvalOutcome::Value(value) => value,
+                EvalOutcome::Propagate(error) => {
+                    return Ok(Some(Value::Err(Box::new(error))));
+                }
+            };
             locals.insert(name.clone(), value);
             Ok(None)
         }
@@ -295,13 +339,22 @@ fn eval_statement(
                     .with_node(statement.id.clone()),
                 ]);
             }
-            let value = eval_expr(program, task, expr, locals, gates)?;
+            let value = match eval_expr(program, task, expr, locals, gates)? {
+                EvalOutcome::Value(value) => value,
+                EvalOutcome::Propagate(error) => {
+                    return Ok(Some(Value::Err(Box::new(error))));
+                }
+            };
             locals.insert(name.clone(), value);
             Ok(None)
         }
-        StatementKind::Return { expr } => Ok(Some(eval_expr(program, task, expr, locals, gates)?)),
+        StatementKind::Return { expr } => Ok(Some(
+            eval_expr(program, task, expr, locals, gates)?.into_task_return(),
+        )),
         StatementKind::Expr { expr } => {
-            eval_expr(program, task, expr, locals, gates)?;
+            if let EvalOutcome::Propagate(error) = eval_expr(program, task, expr, locals, gates)? {
+                return Ok(Some(Value::Err(Box::new(error))));
+            }
             Ok(None)
         }
         StatementKind::If {
@@ -309,7 +362,12 @@ fn eval_statement(
             then_block,
             else_block,
         } => {
-            let condition_value = eval_expr(program, task, condition, locals, gates)?;
+            let condition_value = match eval_expr(program, task, condition, locals, gates)? {
+                EvalOutcome::Value(value) => value,
+                EvalOutcome::Propagate(error) => {
+                    return Ok(Some(Value::Err(Box::new(error))));
+                }
+            };
             if expect_bool(condition_value, condition)? {
                 eval_scoped_block(program, task, then_block, locals, gates)
             } else if let Some(else_block) = else_block {
@@ -320,7 +378,12 @@ fn eval_statement(
         }
         StatementKind::While { condition, body } => {
             for _ in 0..MAX_LOOP_ITERATIONS {
-                let condition_value = eval_expr(program, task, condition, locals, gates)?;
+                let condition_value = match eval_expr(program, task, condition, locals, gates)? {
+                    EvalOutcome::Value(value) => value,
+                    EvalOutcome::Propagate(error) => {
+                        return Ok(Some(Value::Err(Box::new(error))));
+                    }
+                };
                 if !expect_bool(condition_value, condition)? {
                     return Ok(None);
                 }
@@ -341,7 +404,12 @@ fn eval_statement(
             collection,
             body,
         } => {
-            let collection_value = eval_expr(program, task, collection, locals, gates)?;
+            let collection_value = match eval_expr(program, task, collection, locals, gates)? {
+                EvalOutcome::Value(value) => value,
+                EvalOutcome::Propagate(error) => {
+                    return Ok(Some(Value::Err(Box::new(error))));
+                }
+            };
             match collection_value {
                 Value::List(items) => {
                     for value in items {
@@ -369,40 +437,50 @@ fn eval_expr(
     expr: &Expr,
     locals: &HashMap<String, Value>,
     gates: &RuntimeGates,
-) -> Result<Value, Vec<Diagnostic>> {
+) -> Result<EvalOutcome, Vec<Diagnostic>> {
     match &expr.kind {
-        ExprKind::StringLiteral { value } => Ok(Value::Text(value.clone())),
-        ExprKind::IntLiteral { value } => Ok(Value::Int(*value)),
-        ExprKind::FloatLiteral { value } => Ok(Value::Float(*value)),
-        ExprKind::BoolLiteral { value } => Ok(Value::Bool(*value)),
-        ExprKind::Identifier { name } => Ok(locals.get(name).cloned().unwrap_or(Value::Unit)),
+        ExprKind::StringLiteral { value } => Ok(EvalOutcome::value(Value::Text(value.clone()))),
+        ExprKind::IntLiteral { value } => Ok(EvalOutcome::value(Value::Int(*value))),
+        ExprKind::FloatLiteral { value } => Ok(EvalOutcome::value(Value::Float(*value))),
+        ExprKind::BoolLiteral { value } => Ok(EvalOutcome::value(Value::Bool(*value))),
+        ExprKind::Identifier { name } => Ok(EvalOutcome::value(
+            locals.get(name).cloned().unwrap_or(Value::Unit),
+        )),
         ExprKind::Unary { op, expr: inner } => {
-            let value = eval_expr(program, task, inner, locals, gates)?;
-            eval_unary(op, value, expr)
+            let value = value_or_propagate!(eval_expr(program, task, inner, locals, gates));
+            eval_unary(op, value, expr).map(EvalOutcome::value)
         }
         ExprKind::Binary { op, left, right } => match op {
             BinaryOp::And => {
-                let left_value = eval_expr(program, task, left, locals, gates)?;
+                let left_value = value_or_propagate!(eval_expr(program, task, left, locals, gates));
                 let left_value = expect_bool(left_value, left)?;
                 if !left_value {
-                    return Ok(Value::Bool(false));
+                    return Ok(EvalOutcome::value(Value::Bool(false)));
                 }
-                let right_value = eval_expr(program, task, right, locals, gates)?;
-                Ok(Value::Bool(expect_bool(right_value, right)?))
+                let right_value =
+                    value_or_propagate!(eval_expr(program, task, right, locals, gates));
+                Ok(EvalOutcome::value(Value::Bool(expect_bool(
+                    right_value,
+                    right,
+                )?)))
             }
             BinaryOp::Or => {
-                let left_value = eval_expr(program, task, left, locals, gates)?;
+                let left_value = value_or_propagate!(eval_expr(program, task, left, locals, gates));
                 let left_value = expect_bool(left_value, left)?;
                 if left_value {
-                    return Ok(Value::Bool(true));
+                    return Ok(EvalOutcome::value(Value::Bool(true)));
                 }
-                let right_value = eval_expr(program, task, right, locals, gates)?;
-                Ok(Value::Bool(expect_bool(right_value, right)?))
+                let right_value =
+                    value_or_propagate!(eval_expr(program, task, right, locals, gates));
+                Ok(EvalOutcome::value(Value::Bool(expect_bool(
+                    right_value,
+                    right,
+                )?)))
             }
             _ => {
-                let left = eval_expr(program, task, left, locals, gates)?;
-                let right = eval_expr(program, task, right, locals, gates)?;
-                eval_binary(op, left, right, expr)
+                let left = value_or_propagate!(eval_expr(program, task, left, locals, gates));
+                let right = value_or_propagate!(eval_expr(program, task, right, locals, gates));
+                eval_binary(op, left, right, expr).map(EvalOutcome::value)
             }
         },
         ExprKind::If {
@@ -410,7 +488,8 @@ fn eval_expr(
             then_branch,
             else_branch,
         } => {
-            let condition_value = eval_expr(program, task, condition, locals, gates)?;
+            let condition_value =
+                value_or_propagate!(eval_expr(program, task, condition, locals, gates));
             if expect_bool(condition_value, condition)? {
                 eval_expr(program, task, then_branch, locals, gates)
             } else {
@@ -424,18 +503,23 @@ fn eval_expr(
                 return value;
             }
             if callee_path(callee).is_some_and(|name| name == "Ok" || name == "Err") {
-                return Ok(Value::Raw(expr.source.clone()));
+                return eval_result_constructor(program, task, expr, callee, args, locals, gates);
             }
             if callee_path(callee).is_some_and(|name| name == "len") {
                 if args.len() != 1 {
-                    return runtime_type_error(expr, "builtin `len` expects one argument");
+                    return runtime_type_error(expr, "builtin `len` expects one argument")
+                        .map(EvalOutcome::value);
                 }
-                return match eval_expr(program, task, &args[0], locals, gates)? {
-                    Value::List(items) => Ok(Value::Int(items.len() as i64)),
-                    Value::Map(items) => Ok(Value::Int(items.len() as i64)),
-                    Value::Text(value) => Ok(Value::Int(value.chars().count() as i64)),
+                let value = value_or_propagate!(eval_expr(program, task, &args[0], locals, gates));
+                return match value {
+                    Value::List(items) => Ok(EvalOutcome::value(Value::Int(items.len() as i64))),
+                    Value::Map(items) => Ok(EvalOutcome::value(Value::Int(items.len() as i64))),
+                    Value::Text(value) => {
+                        Ok(EvalOutcome::value(Value::Int(value.chars().count() as i64)))
+                    }
                     _ => {
                         runtime_type_error(expr, "builtin `len` expects a list, map, or text value")
+                            .map(EvalOutcome::value)
                     }
                 };
             }
@@ -450,36 +534,49 @@ fn eval_expr(
             {
                 let mut values = Vec::new();
                 for arg in args {
-                    values.push(eval_expr(program, task, arg, locals, gates)?);
+                    values.push(value_or_propagate!(eval_expr(
+                        program, task, arg, locals, gates
+                    )));
                 }
-                return eval_task(program, &program.tasks[index], values, gates);
+                return eval_task(program, &program.tasks[index], values, gates)
+                    .map(EvalOutcome::value);
             }
-            Ok(Value::Raw(expr.source.clone()))
+            Ok(EvalOutcome::value(Value::Raw(expr.source.clone())))
         }
         ExprKind::ListLiteral { items } => {
             let mut values = Vec::new();
             for item in items {
-                values.push(eval_expr(program, task, item, locals, gates)?);
+                values.push(value_or_propagate!(eval_expr(
+                    program, task, item, locals, gates
+                )));
             }
-            Ok(Value::List(values))
+            Ok(EvalOutcome::value(Value::List(values)))
         }
         ExprKind::MapLiteral { entries } => {
             let mut values = BTreeMap::new();
             for entry in entries {
-                let key = eval_expr(program, task, &entry.key, locals, gates)?;
+                let key = value_or_propagate!(eval_expr(program, task, &entry.key, locals, gates));
                 let Value::Text(key) = key else {
-                    return runtime_type_error(expr, "map literal keys must be text values");
+                    return runtime_type_error(expr, "map literal keys must be text values")
+                        .map(EvalOutcome::value);
                 };
-                values.insert(key, eval_expr(program, task, &entry.value, locals, gates)?);
+                values.insert(
+                    key,
+                    value_or_propagate!(eval_expr(program, task, &entry.value, locals, gates)),
+                );
             }
-            Ok(Value::Map(values))
+            Ok(EvalOutcome::value(Value::Map(values)))
         }
         ExprKind::Index { collection, index } => {
-            let collection = eval_expr(program, task, collection, locals, gates)?;
-            let index = eval_expr(program, task, index, locals, gates)?;
+            let collection =
+                value_or_propagate!(eval_expr(program, task, collection, locals, gates));
+            let index = value_or_propagate!(eval_expr(program, task, index, locals, gates));
             match (collection, index) {
-                (Value::List(items), Value::Int(index)) if index >= 0 => {
-                    items.get(index as usize).cloned().ok_or_else(|| {
+                (Value::List(items), Value::Int(index)) if index >= 0 => items
+                    .get(index as usize)
+                    .cloned()
+                    .map(EvalOutcome::value)
+                    .ok_or_else(|| {
                         vec![
                             Diagnostic::error(
                                 "RUNTIME_INDEX_OUT_OF_BOUNDS",
@@ -487,8 +584,7 @@ fn eval_expr(
                             )
                             .with_node(expr.id.clone()),
                         ]
-                    })
-                }
+                    }),
                 (Value::List(_), Value::Int(index)) => Err(vec![
                     Diagnostic::error(
                         "RUNTIME_INDEX_OUT_OF_BOUNDS",
@@ -496,8 +592,11 @@ fn eval_expr(
                     )
                     .with_node(expr.id.clone()),
                 ]),
-                (Value::Map(items), Value::Text(key)) => {
-                    items.get(&key).cloned().ok_or_else(|| {
+                (Value::Map(items), Value::Text(key)) => items
+                    .get(&key)
+                    .cloned()
+                    .map(EvalOutcome::value)
+                    .ok_or_else(|| {
                         vec![
                             Diagnostic::error(
                                 "RUNTIME_MAP_KEY_NOT_FOUND",
@@ -505,18 +604,20 @@ fn eval_expr(
                             )
                             .with_node(expr.id.clone()),
                         ]
-                    })
-                }
+                    }),
                 _ => runtime_type_error(
                     expr,
                     "indexing expects `List<T>` with `Int` or `Map<Text, T>` with `Text`",
-                ),
+                )
+                .map(EvalOutcome::value),
             }
         }
         ExprKind::FieldAccess { receiver, field } => {
-            match eval_expr(program, task, receiver, locals, gates)? {
-                Value::Record(fields) => Ok(fields.get(field).cloned().unwrap_or(Value::Unit)),
-                _ => Ok(Value::Raw(expr.source.clone())),
+            match value_or_propagate!(eval_expr(program, task, receiver, locals, gates)) {
+                Value::Record(fields) => Ok(EvalOutcome::value(
+                    fields.get(field).cloned().unwrap_or(Value::Unit),
+                )),
+                _ => Ok(EvalOutcome::value(Value::Raw(expr.source.clone()))),
             }
         }
         ExprKind::RecordLiteral { fields, .. } => {
@@ -524,20 +625,18 @@ fn eval_expr(
             for field in fields {
                 values.insert(
                     field.name.clone(),
-                    eval_expr(program, task, &field.expr, locals, gates)?,
+                    value_or_propagate!(eval_expr(program, task, &field.expr, locals, gates)),
                 );
             }
-            Ok(Value::Record(values))
+            Ok(EvalOutcome::value(Value::Record(values)))
         }
-        ExprKind::Try { expr } => eval_expr(program, task, expr, locals, gates),
-        ExprKind::Raw { .. } => {
-            let trimmed = expr.source.trim();
-            if task.return_type.generic_name() == Some("Result") && trimmed.starts_with("Ok(") {
-                Ok(Value::Raw(trimmed.to_string()))
-            } else {
-                Ok(Value::Raw(expr.source.clone()))
-            }
-        }
+        ExprKind::Try { expr } => match eval_expr(program, task, expr, locals, gates)? {
+            EvalOutcome::Value(Value::Ok(value)) => Ok(EvalOutcome::value(*value)),
+            EvalOutcome::Value(Value::Err(error)) => Ok(EvalOutcome::Propagate(*error)),
+            EvalOutcome::Value(value) => Ok(EvalOutcome::value(value)),
+            EvalOutcome::Propagate(error) => Ok(EvalOutcome::Propagate(error)),
+        },
+        ExprKind::Raw { .. } => Ok(EvalOutcome::value(Value::Raw(expr.source.clone()))),
     }
 }
 
@@ -614,6 +713,36 @@ fn normalize_effect_name(program: &Program, module: &str, name: &str) -> String 
     }
 }
 
+fn eval_result_constructor(
+    program: &Program,
+    task: &TaskDecl,
+    expr: &Expr,
+    callee: &Expr,
+    args: &[Expr],
+    locals: &HashMap<String, Value>,
+    gates: &RuntimeGates,
+) -> Result<EvalOutcome, Vec<Diagnostic>> {
+    if args.len() != 1 {
+        return Err(vec![
+            Diagnostic::error(
+                "RUNTIME_RESULT_ARITY_MISMATCH",
+                format!(
+                    "result constructor `{}` expected 1 argument but received {}",
+                    callee.source,
+                    args.len()
+                ),
+            )
+            .with_node(expr.id.clone()),
+        ]);
+    }
+    let value = value_or_propagate!(eval_expr(program, task, &args[0], locals, gates));
+    match callee_path(callee).as_deref() {
+        Some("Ok") => Ok(EvalOutcome::value(Value::Ok(Box::new(value)))),
+        Some("Err") => Ok(EvalOutcome::value(Value::Err(Box::new(value)))),
+        _ => Ok(EvalOutcome::value(Value::Raw(expr.source.clone()))),
+    }
+}
+
 fn eval_host_call(
     program: &Program,
     task: &TaskDecl,
@@ -622,7 +751,7 @@ fn eval_host_call(
     args: &[Expr],
     locals: &HashMap<String, Value>,
     gates: &RuntimeGates,
-) -> Result<Value, Vec<Diagnostic>> {
+) -> Result<EvalOutcome, Vec<Diagnostic>> {
     let Some(required_effects) = host_required_effects(callee_name) else {
         return Err(vec![
             Diagnostic::error(
@@ -648,12 +777,13 @@ fn eval_host_call(
     match callee_name {
         "fs.read_text" => {
             if args.len() != 1 {
-                return host_arity_error(expr, callee_name, 1, args.len());
+                return host_arity_error(expr, callee_name, 1, args.len()).map(EvalOutcome::value);
             }
-            let path = eval_text_arg(program, task, expr, args, 0, locals, gates)?;
+            let path =
+                arg_or_propagate!(eval_text_arg(program, task, expr, args, 0, locals, gates));
             let path = gate_path(gate, &path, expr)?;
             match std::fs::read_to_string(&path) {
-                Ok(value) => Ok(Value::Text(value)),
+                Ok(value) => Ok(EvalOutcome::value(Value::Text(value))),
                 Err(error) => Err(vec![
                     Diagnostic::error(
                         "RUNTIME_HOST_IO_ERROR",
@@ -668,13 +798,15 @@ fn eval_host_call(
         }
         "fs.write_text" => {
             if args.len() != 2 {
-                return host_arity_error(expr, callee_name, 2, args.len());
+                return host_arity_error(expr, callee_name, 2, args.len()).map(EvalOutcome::value);
             }
-            let path = eval_text_arg(program, task, expr, args, 0, locals, gates)?;
-            let contents = eval_text_arg(program, task, expr, args, 1, locals, gates)?;
+            let path =
+                arg_or_propagate!(eval_text_arg(program, task, expr, args, 0, locals, gates));
+            let contents =
+                arg_or_propagate!(eval_text_arg(program, task, expr, args, 1, locals, gates));
             let path = gate_path(gate, &path, expr)?;
             match std::fs::write(&path, contents) {
-                Ok(()) => Ok(Value::Unit),
+                Ok(()) => Ok(EvalOutcome::value(Value::Unit)),
                 Err(error) => Err(vec![
                     Diagnostic::error(
                         "RUNTIME_HOST_IO_ERROR",
@@ -709,7 +841,7 @@ fn eval_value_method_call(
     args: &[Expr],
     locals: &HashMap<String, Value>,
     gates: &RuntimeGates,
-) -> Option<Result<Value, Vec<Diagnostic>>> {
+) -> Option<Result<EvalOutcome, Vec<Diagnostic>>> {
     let ExprKind::FieldAccess { receiver, field } = &callee.kind else {
         return None;
     };
@@ -731,7 +863,7 @@ fn eval_row_method(
     args: &[Expr],
     locals: &HashMap<String, Value>,
     gates: &RuntimeGates,
-) -> Result<Value, Vec<Diagnostic>> {
+) -> Result<EvalOutcome, Vec<Diagnostic>> {
     if args.len() != 1 {
         return Err(vec![
             Diagnostic::error(
@@ -744,8 +876,8 @@ fn eval_row_method(
             .with_node(expr.id.clone()),
         ]);
     }
-    let key = eval_text_arg(program, task, expr, args, 0, locals, gates)?;
-    let value = match eval_expr(program, task, receiver, locals, gates)? {
+    let key = arg_or_propagate!(eval_text_arg(program, task, expr, args, 0, locals, gates));
+    let value = match value_or_propagate!(eval_expr(program, task, receiver, locals, gates)) {
         Value::Record(fields) | Value::Map(fields) => {
             fields.get(&key).cloned().ok_or_else(|| {
                 vec![
@@ -761,24 +893,26 @@ fn eval_row_method(
             return runtime_type_error(
                 expr,
                 format!("row method `{field}` expects a record or map receiver"),
-            );
+            )
+            .map(EvalOutcome::value);
         }
     };
 
     match (field, value) {
-        ("get", value) => Ok(value),
-        ("text", Value::Text(value)) => Ok(Value::Text(value)),
-        ("int", Value::Int(value)) => Ok(Value::Int(value)),
-        ("float", Value::Float(value)) => Ok(Value::Float(value)),
-        ("float", Value::Int(value)) => Ok(Value::Float(value as f64)),
-        ("bool", Value::Bool(value)) => Ok(Value::Bool(value)),
+        ("get", value) => Ok(EvalOutcome::value(value)),
+        ("text", Value::Text(value)) => Ok(EvalOutcome::value(Value::Text(value))),
+        ("int", Value::Int(value)) => Ok(EvalOutcome::value(Value::Int(value))),
+        ("float", Value::Float(value)) => Ok(EvalOutcome::value(Value::Float(value))),
+        ("float", Value::Int(value)) => Ok(EvalOutcome::value(Value::Float(value as f64))),
+        ("bool", Value::Bool(value)) => Ok(EvalOutcome::value(Value::Bool(value))),
         (method, value) => runtime_type_error(
             expr,
             format!(
                 "row method `{method}` cannot read `{key}` as requested from `{}`",
                 value_kind(&value)
             ),
-        ),
+        )
+        .map(EvalOutcome::value),
     }
 }
 
@@ -792,20 +926,23 @@ fn eval_db_query(
     locals: &HashMap<String, Value>,
     gates: &RuntimeGates,
     one: bool,
-) -> Result<Value, Vec<Diagnostic>> {
+) -> Result<EvalOutcome, Vec<Diagnostic>> {
     if args.is_empty() {
-        return host_arity_error(expr, callee_name, 1, args.len());
+        return host_arity_error(expr, callee_name, 1, args.len()).map(EvalOutcome::value);
     }
 
-    let query = eval_text_arg(program, task, expr, args, 0, locals, gates)?;
+    let query = arg_or_propagate!(eval_text_arg(program, task, expr, args, 0, locals, gates));
     let parsed = parse_db_query(&query, expr)?;
     let expected_args = if parsed.filter.is_some() { 2 } else { 1 };
     if args.len() != expected_args {
-        return host_arity_error(expr, callee_name, expected_args, args.len());
+        return host_arity_error(expr, callee_name, expected_args, args.len())
+            .map(EvalOutcome::value);
     }
 
     let filter_value = if parsed.filter.is_some() {
-        Some(eval_expr(program, task, &args[1], locals, gates)?)
+        Some(value_or_propagate!(eval_expr(
+            program, task, &args[1], locals, gates
+        )))
     } else {
         None
     };
@@ -838,6 +975,7 @@ fn eval_db_query(
             .into_iter()
             .next()
             .map(Value::Record)
+            .map(EvalOutcome::value)
             .ok_or_else(|| {
                 vec![
                     Diagnostic::error(
@@ -848,9 +986,9 @@ fn eval_db_query(
                 ]
             })
     } else {
-        Ok(Value::List(
+        Ok(EvalOutcome::value(Value::List(
             filtered.into_iter().map(Value::Record).collect(),
-        ))
+        )))
     }
 }
 
@@ -931,6 +1069,8 @@ fn value_kind(value: &Value) -> &'static str {
         Value::List(_) => "List",
         Value::Map(_) => "Map",
         Value::Record(_) => "Record",
+        Value::Ok(_) => "Ok",
+        Value::Err(_) => "Err",
         Value::Raw(_) => "Raw",
     }
 }
@@ -952,10 +1092,10 @@ fn eval_text_arg(
     index: usize,
     locals: &HashMap<String, Value>,
     gates: &RuntimeGates,
-) -> Result<String, Vec<Diagnostic>> {
+) -> Result<Result<String, Value>, Vec<Diagnostic>> {
     match eval_expr(program, task, &args[index], locals, gates)? {
-        Value::Text(value) => Ok(value),
-        _ => Err(vec![
+        EvalOutcome::Value(Value::Text(value)) => Ok(Ok(value)),
+        EvalOutcome::Value(_) => Err(vec![
             Diagnostic::error(
                 "RUNTIME_TYPE_ERROR",
                 format!("host call argument {index} must be `Text`"),
@@ -966,6 +1106,7 @@ fn eval_text_arg(
                 args[index].id.clone()
             }),
         ]),
+        EvalOutcome::Propagate(error) => Ok(Err(error)),
     }
 }
 

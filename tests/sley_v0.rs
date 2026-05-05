@@ -1345,6 +1345,82 @@ task main -> Text uses DatabaseRead {
 }
 
 #[test]
+fn runtime_returns_result_constructor_values() {
+    let ok_source = r#"
+task main -> Result<Int, Error> {
+  return Ok(42)
+}
+"#;
+    let ok_program = parse_program(ok_source).expect("parse ok source");
+    let ok_diagnostics = check_program(&ok_program);
+    assert!(
+        !has_errors(&ok_diagnostics),
+        "unexpected diagnostics: {ok_diagnostics:#?}"
+    );
+    assert_eq!(
+        run_main(&ok_program),
+        Ok(Value::Ok(Box::new(Value::Int(42))))
+    );
+
+    let err_source = r#"
+task main -> Result<Int, Error> {
+  return Err("bad")
+}
+"#;
+    let err_program = parse_program(err_source).expect("parse err source");
+    let err_diagnostics = check_program(&err_program);
+    assert!(
+        !has_errors(&err_diagnostics),
+        "unexpected diagnostics: {err_diagnostics:#?}"
+    );
+    assert_eq!(
+        run_main(&err_program),
+        Ok(Value::Err(Box::new(Value::Text("bad".to_string()))))
+    );
+}
+
+#[test]
+fn runtime_unwraps_ok_with_try_operator() {
+    let source = r#"
+task main -> Result<Int, Error> {
+  bind value = Ok(41)?
+  return Ok(value + 1)
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+    assert_eq!(run_main(&program), Ok(Value::Ok(Box::new(Value::Int(42)))));
+}
+
+#[test]
+fn runtime_propagates_err_with_try_operator() {
+    let source = r#"
+task fail -> Result<Int, Error> {
+  return Err("bad")
+}
+
+task main -> Result<Int, Error> {
+  bind value = call fail()?
+  return Ok(value + 1)
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+    assert_eq!(
+        run_main(&program),
+        Ok(Value::Err(Box::new(Value::Text("bad".to_string()))))
+    );
+}
+
+#[test]
 fn cli_run_accepts_database_table_seed() {
     let root = temp_project_dir("runtime-db-cli");
     fs::create_dir_all(&root).expect("create temp dir");

@@ -1,0 +1,13 @@
+task parse_score -> Result<Int, Error> {
+  take raw: Text
+
+  if raw == "bad" {
+    return Err("bad score")
+  }
+  return Ok(41)
+}
+
+task main -> Result<Int, Error> {
+  bind score = call parse_score("41")?
+  return Ok(score + 1)
+}

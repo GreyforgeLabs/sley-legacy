@@ -126,6 +126,9 @@ Rules:
   of being silently ignored.
 - Accepted write-mode grafts emit trace receipts, and `sley seal` produces a
   content-addressed digest over source, graph, and receipt content.
+- Runtime `Ok(value)`/`Err(error)` values and `?` propagation are implemented
+  for Sley-level `Result` flow; host adapter failures still need a typed
+  `Error` bridge.
 - Source text should remain the human review projection, not the primary agent
   edit surface.
 

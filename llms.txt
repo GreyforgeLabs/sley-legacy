@@ -52,8 +52,10 @@ Contract references:
 
 Current development phase:
 
+- host-fallibility bridge: standard typed `Error` payloads and host adapter
+  `Result<T, Error>` returns for filesystem/database failures
 - runtime host adapters beyond root-scoped filesystem gates and deterministic
-  seeded database reads
+  seeded database reads after the typed error bridge is stable
 - project graft writeback hardening beyond existing modules
 - accepted/rejected synthetic gold corpus growth
 - broader graph-slice graft operations around move/delete planning

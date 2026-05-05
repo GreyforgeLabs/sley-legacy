@@ -46,7 +46,9 @@ Implemented now:
 - runtime evaluation for zero-take pure `main`, literal values, pure task calls,
   lexical locals, `set`, operators, `if` expressions, statement-level
   `if`/`else`, `while`, `each`, `forge` blocks, list literals, map literals,
-  indexing, `len`, record literals, and record field access
+  indexing, `len`, record literals, record field access, explicit
+  `Ok(value)`/`Err(error)` result values, and `?` propagation for Sley-level
+  results
 - runtime gates with `sley run --cap EFFECT[=ROOT]`; effectful tasks reject
   without matching gates, `Gate<Effect>` takes are injected at runtime, and
   `fs.read_text`/`fs.write_text` are backed by root-scoped file capabilities
@@ -145,6 +147,20 @@ sley run --json --cap DatabaseRead --db-table users=examples/users.json examples
 accessors such as `row.text("name")` read typed fields from the seeded JSON
 rows. This is a deterministic v0 host adapter, not a real database connection.
 
+Result flow:
+
+```sley
+task main -> Result<Int, Error> {
+  bind value = Ok(41)?
+  return Ok(value + 1)
+}
+```
+
+`Ok(value)` and `Err(error)` are real runtime values. `expr?` unwraps `Ok` and
+propagates `Err` as the current task's result. Host adapter failures still
+surface as runtime diagnostics in v0; mapping host failures into typed
+`Error` values is the next bridge.
+
 Known v0 limits:
 
 - Expression parsing still falls back to raw nodes for unsupported syntax such
@@ -159,6 +175,8 @@ Known v0 limits:
   root-scoped filesystem handlers, and `DatabaseRead` has a deterministic
   seeded-table adapter. Network, shell, model, secret, deploy, database write,
   and spending effects still need dedicated host adapters.
+- Sley-level `Result` values and `?` propagation execute now, but host adapter
+  failures still return runtime diagnostics instead of typed `Error` values.
 - Project graft writeback supports existing module files. Grafts that would
   create unknown module files or import modules outside the loaded project
   reject before any source or trace mutation.
@@ -170,7 +188,7 @@ Known v0 limits:
   Cross-parent movement, take movement, and expression movement still reject
   explicitly.
 
-The next logical phase is runtime and graph hardening: add the next
-capability-backed adapters beyond filesystem and seeded database reads, grow
-the accepted/rejected corpus around project grafts and runtime authority, and
-extend graph-slice planning around move/delete operations.
+The next logical phase is the host-fallibility bridge: define the standard
+runtime `Error` payload, let filesystem and database adapters return typed
+`Result<T, Error>` values where appropriate, and then add the next
+capability-backed adapters on top of that error flow.

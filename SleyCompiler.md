@@ -47,6 +47,8 @@ These parts are normal compiler work and are already in the Sley v0 direction:
 - format source consistently
 - check basic types
 - check simple return values
+- evaluate explicit `Ok(value)`/`Err(error)` result values and `?`
+  propagation for Sley-level results
 - run pure zero-take `main`
 - expose JSON diagnostics
 - expose AST or graph JSON
@@ -201,8 +203,9 @@ because Sley's primary editor may be an agent.
 Near-term:
 
 1. Keep expanding parser/checker/runtime coverage in Rust.
-2. Expand runtime host adapters beyond the initial root-scoped filesystem gates
-   and deterministic seeded database reads.
+2. Bridge host adapter failures into typed `Result<T, Error>` values so `?`
+   can carry filesystem and database errors as Sley values instead of runtime
+   diagnostics.
 3. Grow the accepted/rejected synthetic gold corpus beyond the initial seed,
    including runtime authority cases.
 4. Extend graph-slice graft planning around checked move/delete operations.
