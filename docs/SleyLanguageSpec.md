@@ -442,12 +442,14 @@ must identify the current parent. Statement moves use a block parent such as
 and task moves can use `module:<path>:types`, `module:<path>:effects`, or
 `module:<path>:tasks` to change declaration ownership and place the declaration
 at a module-local position. The destination module must already be loaded or
-imported in the checked candidate; otherwise `GRAFT_MODULE_MISSING` rejects the
-move before mutation. Expression moves, take moves, import cross-module moves,
-and cross-parent statement moves reject with `GRAFT_MOVE_UNSUPPORTED`. Each
-accepted edit reparses the payload when applicable, rewrites the AST, refreshes
-expression source text, and reruns the checker before returning formatted
-source.
+imported in the checked candidate; an all-or-nothing transaction can therefore
+`AddImport` for the destination module before `MoveNode`, and project writeback
+will create the new checked module file when the moved declaration is its first
+declaration. Otherwise `GRAFT_MODULE_MISSING` rejects the move before mutation.
+Expression moves, take moves, import cross-module moves, and cross-parent
+statement moves reject with `GRAFT_MOVE_UNSUPPORTED`. Each accepted edit
+reparses the payload when applicable, rewrites the AST, refreshes expression
+source text, and reruns the checker before returning formatted source.
 
 Accepted grafts written with `sley graft --write` append receipt records to a
 local `.sley/trace.jsonl` sidecar unless the caller passes an explicit trace

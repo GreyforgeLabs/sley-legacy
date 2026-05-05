@@ -4703,6 +4703,93 @@ task main -> Int {
 }
 
 #[test]
+fn project_graft_write_adds_import_and_moves_task_to_new_module() {
+    let root = temp_project_dir("project-graft-import-assisted-move");
+    fs::create_dir_all(root.join("src/app")).expect("create project dirs");
+    fs::write(
+        root.join("sley.toml"),
+        r#"
+[project]
+entry = "app.main"
+"#,
+    )
+    .expect("write manifest");
+    let main_source = r#"module app.main
+
+export task helper -> Int {
+  return 2
+}
+
+task main -> Int {
+  return call helper()
+}
+"#;
+    let main_path = root.join("src/app/main.sley");
+    let extra_path = root.join("src/app/extra.sley");
+    let graft_path = root.join("import_and_move_helper.json");
+    fs::write(&main_path, main_source).expect("write main module");
+    fs::write(
+        &graft_path,
+        r#"
+{
+  "transaction": "graft_import_assisted_move",
+  "mode": "all_or_nothing",
+  "ops": [
+    { "op": "AddImport", "payload": { "module": "app.extra" } },
+    {
+      "op": "MoveNode",
+      "target": "task:app.main.helper",
+      "payload": { "parent": "module:app.extra:tasks", "position": 0 }
+    }
+  ]
+}
+"#,
+    )
+    .expect("write graft");
+
+    let output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args(["graft", "--json", "--write"])
+        .arg(&root)
+        .arg(&graft_path)
+        .output()
+        .expect("run project graft");
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+    assert!(
+        output.status.success(),
+        "project writeback should add import and move task; stderr={}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let outcome: GraftOutcome = serde_json::from_str(&stdout).expect("parse outcome");
+    assert_eq!(outcome.status, "accepted");
+    assert_eq!(
+        fs::read_to_string(&main_path).expect("read main"),
+        "module app.main\n\nimport app.extra\n\ntask main -> Int {\n  return call helper()\n}\n"
+    );
+    assert_eq!(
+        fs::read_to_string(&extra_path).expect("read extra"),
+        "module app.extra\n\nexport task helper -> Int {\n  return 2\n}\n"
+    );
+    let run = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args(["run", "--json"])
+        .arg(&root)
+        .output()
+        .expect("run moved project");
+    assert!(
+        run.status.success(),
+        "import-assisted moved project should run; stdout={} stderr={}",
+        String::from_utf8_lossy(&run.stdout),
+        String::from_utf8_lossy(&run.stderr)
+    );
+    let receipts = read_trace_receipts(&root.join(".sley/trace.jsonl")).expect("read trace");
+    assert_eq!(receipts.len(), 1);
+    assert_eq!(receipts[0].provenance.len(), 2);
+    assert_eq!(receipts[0].provenance[0].operation, "AddImport");
+    assert_eq!(receipts[0].provenance[1].operation, "MoveNode");
+
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
 fn project_graft_write_rejects_import_without_new_module_declarations() {
     let root = temp_project_dir("project-graft-unknown-import");
     fs::create_dir_all(root.join("src/app")).expect("create project dirs");

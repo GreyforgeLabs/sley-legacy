@@ -427,8 +427,10 @@ Known v0 limits:
 - `MoveNode` currently reorders statements within their existing block,
   reorders top-level imports, types, effects, or tasks within their declaration
   lists, and moves top-level types, effects, or tasks into known module parents
-  such as `module:app.extra:tasks`. Cross-parent statement movement, take
-  movement, and expression movement still reject explicitly.
+  such as `module:app.extra:tasks`. An all-or-nothing transaction can add the
+  destination import before the move and create the new module file from the
+  moved declaration. Cross-parent statement movement, take movement, and
+  expression movement still reject explicitly.
 
 The current release-readiness phase is underway for the executable slice. The
 gold corpus and CLI smoke suite now have manifests with required coverage tags

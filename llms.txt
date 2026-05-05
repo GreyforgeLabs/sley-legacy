@@ -100,7 +100,7 @@ Current development phase:
 - next development work should broaden style and migration lints
 - project graft writeback now supports create/update/delete module files and
   module rename, including manifest entry updates; top-level type/effect/task
-  movement into known modules is supported, with import-assisted declaration
-  moves and cross-parent statement movement still next hardening work
+  movement into known modules is supported, including AddImport-then-MoveNode
+  transactions that create new module files from moved declarations
 - manifest-backed accepted/rejected synthetic gold corpus growth
 - broader graph-slice graft operations around move/delete planning
