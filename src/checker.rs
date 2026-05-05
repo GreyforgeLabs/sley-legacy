@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::ast::{
-    BinaryOp, BindingKind, Block, Expr, ExprKind, ExprMapEntry, Program, RecordField,
+    BinaryOp, BindingKind, Block, Expr, ExprField, ExprKind, ExprMapEntry, Program, RecordField,
     StatementKind, TaskDecl, TypeExpr, UnaryOp,
 };
 use crate::authority::{host_effect_contracts, is_host_callee_path, is_host_root};
@@ -1746,7 +1746,12 @@ fn check_record_literal_fields(
                     "RECORD_FIELD_MISSING",
                     format!("record literal is missing field `{}`", expected.name),
                 )
-                .with_node(expr.id.clone()),
+                .with_node(expr.id.clone())
+                .with_repair_hint(record_literal_shape_graft_hint(
+                    expr,
+                    fields,
+                    expected_fields,
+                )),
             ),
         }
     }
@@ -1761,10 +1766,42 @@ fn check_record_literal_fields(
                     "RECORD_FIELD_UNKNOWN",
                     format!("record literal has unknown field `{}`", field.name),
                 )
-                .with_node(field.expr.id.clone()),
+                .with_node(field.expr.id.clone())
+                .with_repair_hint(record_literal_shape_graft_hint(
+                    expr,
+                    fields,
+                    expected_fields,
+                )),
             );
         }
     }
+}
+
+fn record_literal_shape_graft_hint(
+    expr: &Expr,
+    fields: &[ExprField],
+    expected_fields: &[RecordField],
+) -> RepairHint {
+    let field_source = expected_fields
+        .iter()
+        .map(|expected| {
+            let source = fields
+                .iter()
+                .find(|field| field.name == expected.name)
+                .map(|field| field.expr.source.clone())
+                .unwrap_or_else(|| default_expr_source_for_type(&expected.ty));
+            format!("{}: {source}", expected.name)
+        })
+        .collect::<Vec<_>>()
+        .join(", ");
+    let source = match &expr.kind {
+        ExprKind::RecordLiteral {
+            type_name: Some(type_name),
+            ..
+        } => format!("{type_name} {{ {field_source} }}"),
+        _ => format!("{{ {field_source} }}"),
+    };
+    replace_expression_source_graft_hint(expr, &source)
 }
 
 fn validate_type_expr(

@@ -48,6 +48,9 @@ Agent rules:
   record-field type diagnostics, prefer structural `replace_expression` graft
   JSON when the surrounding structure is correct and only the expression should
   change.
+- For record literal missing/unknown field diagnostics, inspect the
+  whole-record `replace_expression` graft JSON; it preserves known expected
+  fields and removes unknown fields.
 - For unary or binary operator type diagnostics, prefer structural
   `replace_expression` graft JSON when present; the checker omits it for
   ambiguous operator families.

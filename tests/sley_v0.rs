@@ -2544,6 +2544,52 @@ task main -> Int {
 }
 
 #[test]
+fn checker_record_shape_hints_apply_as_expression_grafts() {
+    let source = r#"
+type User = {
+  slot name: Text
+  slot age: Int
+}
+
+task main -> User {
+  return User { name: "Ada", extra: false }
+}
+"#;
+    let program = parse_program(source).expect("parse record repair source");
+    let diagnostics = check_program(&program);
+
+    let missing_hint = find_repair_hint(&diagnostics, "RECORD_FIELD_MISSING", "replace_expression");
+    let target =
+        assert_replace_expression_hint_json(missing_hint, "User { name: \"Ada\", age: 0 }");
+    assert!(
+        target.ends_with(":expr"),
+        "expected whole record literal target, got {target}"
+    );
+    let unknown_hint = find_repair_hint(&diagnostics, "RECORD_FIELD_UNKNOWN", "replace_expression");
+    assert_replace_expression_hint_json(unknown_hint, "User { name: \"Ada\", age: 0 }");
+
+    let graft: GraftInput = serde_json::from_str(
+        missing_hint
+            .replacement
+            .as_deref()
+            .expect("record repair replacement"),
+    )
+    .expect("record repair hint parses as graft");
+    let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted_source = outcome.source.expect("record graft source");
+    assert!(
+        grafted_source.contains("return User { name: \"Ada\", age: 0 }"),
+        "record repair should replace shape:\n{grafted_source}"
+    );
+    let grafted = parse_program(&grafted_source).expect("parse grafted record source");
+    assert!(
+        !has_errors(&check_program(&grafted)),
+        "record repair graft should check cleanly"
+    );
+}
+
+#[test]
 fn checker_iterable_and_builtin_argument_hints_apply_as_expression_grafts() {
     let for_source = r#"
 task main -> Int {

@@ -182,6 +182,8 @@ Priority diagnostic families:
 - condition, collection, index, and record-field expression mismatches:
   implemented with structural `ReplaceExpression` hints where the expected
   replacement type is clear
+- record literal missing/unknown fields: implemented with whole-record
+  structural `ReplaceExpression` hints that preserve known fields
 - if branch type mismatch: implemented with alternative structural
   `ReplaceExpression` hints for the then and else branch expressions
 - non-iterable `each` collections and invalid `len` arguments: implemented with
