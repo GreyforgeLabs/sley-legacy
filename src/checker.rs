@@ -914,6 +914,8 @@ fn check_expr_structure(
                                     .with_replacement(expected.display()),
                             )
                             .with_repair_hint(replace_call_arg_hint(
+                                task,
+                                &raw_callee,
                                 &callee_name,
                                 index,
                                 expected,
@@ -1992,12 +1994,21 @@ fn call_arity_graft_hint(
     None
 }
 
-fn replace_call_arg_hint(callee_name: &str, position: usize, expected: &TypeExpr) -> RepairHint {
+fn replace_call_arg_hint(
+    task: &TaskDecl,
+    raw_callee: &str,
+    callee_name: &str,
+    position: usize,
+    expected: &TypeExpr,
+) -> RepairHint {
+    let scope = format!("task:{}", task_fq_name(task));
     let graft = serde_json::json!({
         "op": "ReplaceCallArg",
         "target": format!("task:{callee_name}"),
         "payload": {
+            "from": raw_callee,
             "position": position,
+            "scope": scope,
             "source": default_expr_source_for_type(expected),
         }
     });

@@ -661,7 +661,8 @@ expression `MoveNode` targets carry a `replace_expression` hint so agents can
 switch to `ReplaceExpression` instead of retrying an unsupported move. Call
 argument type mismatches carry both an expression-level `replace_argument` hint
 and a structural `replace_call_arg` hint whose `replacement` is a starter
-`ReplaceCallArg` graft JSON payload. Call arity mismatches keep the generic
+`ReplaceCallArg` graft JSON payload scoped to the current caller and raw
+callee text. Call arity mismatches keep the generic
 `match_task_arity` hint and add structural `update_call_args` or
 `remove_call_arg` hints when a missing or extra argument can be repaired with a
 starter graft. Return type mismatches carry both the declaration-level

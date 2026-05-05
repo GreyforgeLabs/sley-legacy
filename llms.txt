@@ -40,7 +40,8 @@ Agent rules:
   `remove_call_arg` hints when present; their replacements are starter
   `UpdateCallArgs` or `RemoveCallArg` graft JSON.
 - For `CALL_ARGUMENT_TYPE_MISMATCH`, prefer the structural `replace_call_arg`
-  hint when present; its replacement is starter `ReplaceCallArg` graft JSON.
+  hint when present; its replacement is caller-scoped starter
+  `ReplaceCallArg` graft JSON.
 - For binding or assignment type mismatches, prefer structural
   `replace_expression` graft JSON when the declared/local type should remain.
 - For Bool condition, collection element, map key/value, index key, and

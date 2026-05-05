@@ -2173,6 +2173,14 @@ task main -> Int {
         Some(&serde_json::json!(0))
     );
     assert_eq!(
+        replacement.pointer("/payload/from"),
+        Some(&serde_json::json!("takes_text"))
+    );
+    assert_eq!(
+        replacement.pointer("/payload/scope"),
+        Some(&serde_json::json!("task:main.main"))
+    );
+    assert_eq!(
         replacement.pointer("/payload/source"),
         Some(&serde_json::json!("\"\""))
     );
@@ -2225,6 +2233,54 @@ task main -> Int {
         parse_program("task main -> Int {\n  return call missing()\n}\n").expect("parse source");
     let diagnostics = check_program(&unknown_task);
     assert_has_repair_hint(&diagnostics, "UNKNOWN_TASK", "declare_or_import_task");
+}
+
+#[test]
+fn checker_call_argument_replace_call_arg_hint_is_scoped_to_calling_task() {
+    let source = r#"
+task takes_text -> Text {
+  take value: Text
+
+  return value
+}
+
+task helper -> Text {
+  return call takes_text("ready")
+}
+
+task main -> Text {
+  return call takes_text(42)
+}
+"#;
+    let program = parse_program(source).expect("parse call argument source");
+    let diagnostics = check_program(&program);
+    let hint = find_repair_hint(
+        &diagnostics,
+        "CALL_ARGUMENT_TYPE_MISMATCH",
+        "replace_call_arg",
+    );
+    let graft: GraftInput = serde_json::from_str(
+        hint.replacement
+            .as_deref()
+            .expect("replace call arg replacement"),
+    )
+    .expect("replace call arg hint parses as graft");
+
+    let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted_source = outcome.source.expect("grafted source");
+    assert!(
+        grafted_source.contains("return call takes_text(\"ready\")"),
+        "scoped hint should leave helper call alone:\n{grafted_source}"
+    );
+    assert!(
+        grafted_source.contains("return call takes_text(\"\")"),
+        "scoped hint should repair main call:\n{grafted_source}"
+    );
+    assert!(
+        !grafted_source.contains("return call takes_text(42)"),
+        "scoped hint should replace the bad main argument:\n{grafted_source}"
+    );
 }
 
 #[test]

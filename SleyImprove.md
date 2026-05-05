@@ -189,7 +189,7 @@ Priority diagnostic families:
 - call arity mismatch: implemented with `match_task_arity`, `UpdateCallArgs`,
   and `RemoveCallArg`
 - call argument type mismatch: implemented with `replace_argument` and
-  `ReplaceCallArg`
+  caller-scoped `ReplaceCallArg`
 - call arity contraction after parameter removal: implemented with
   `RemoveCallArg` and safe remove-take transaction templates for unused takes
 - return type mismatch: implemented with `change_return_type`,
