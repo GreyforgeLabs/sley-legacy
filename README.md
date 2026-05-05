@@ -114,7 +114,8 @@ Implemented now:
 - JSONL trace sidecars for accepted graft receipts when `sley graft --write`
   applies a change, plus content-addressed trace seals with `sley seal`
 - project-aware `sley graft --write <project>` source-file writeback for
-  accepted edits that resolve to existing modules in a multi-file project
+  accepted edits that resolve to existing modules, plus checked creation of new
+  module files declared by the graft candidate
 - a first ZJX-ready JSON envelope command for graph snapshots, optional graph
   slices, and trace receipts
 - structural graft operations for adding/removing takes, replacing task bodies,
@@ -410,9 +411,10 @@ Known v0 limits:
 - Sley-level `Result` values and `?` propagation execute, and fallible
   filesystem, database, network, shell, model, secret, deploy, and spend host
   variants return typed `Error` records.
-- Project graft writeback supports existing module files. Grafts that would
-  create unknown module files or import modules outside the loaded project
-  reject before any source or trace mutation.
+- Project graft writeback supports existing module files and checked new module
+  file creation under the project source root. Grafts that import modules
+  without adding checked declarations for those modules still reject before any
+  source or trace mutation.
 - The AST JSON Schema now covers declarations, statements, expressions, type
   expressions, spans, and provenance recursively. Other external JSON Schema
   files remain narrower v0 root-contract schemas.

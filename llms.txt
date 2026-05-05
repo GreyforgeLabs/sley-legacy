@@ -98,6 +98,7 @@ Current development phase:
   diagnostics, checked query/lint summaries, and deterministic runtime
   execution into one CI/pre-deploy gate
 - next development work should broaden style and migration lints
-- project graft writeback hardening beyond existing modules
+- project graft writeback hardening for module rename and richer multi-module
+  declaration movement
 - manifest-backed accepted/rejected synthetic gold corpus growth
 - broader graph-slice graft operations around move/delete planning

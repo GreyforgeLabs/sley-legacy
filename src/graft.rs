@@ -12,7 +12,7 @@ use crate::checker::{check_program, has_errors};
 use crate::diagnostics::Diagnostic;
 use crate::formatter::format_program;
 use crate::parser::{parse_block_source, parse_expr_source, parse_program, parse_type_expr_source};
-use crate::symbols::{callee_path, collect_task_calls, task_fq_name};
+use crate::symbols::{callee_path, collect_task_calls, task_fq_name, task_module, type_module};
 
 pub const GRAFT_OUTCOME_SCHEMA: &str = "sley.graft.outcome.v0";
 
@@ -447,10 +447,15 @@ fn apply_one(
                     "AddTask payload.source must contain a task",
                 )]);
             };
-            if program.tasks.iter().any(|item| item.name == task.name) {
+            let module = task_module(&task);
+            if program
+                .tasks
+                .iter()
+                .any(|item| item.name == task.name && task_module(item) == module)
+            {
                 return Err(vec![Diagnostic::error(
                     "GRAFT_TASK_EXISTS",
-                    format!("task `{}` already exists", task.name),
+                    format!("task `{module}.{}` already exists", task.name),
                 )]);
             }
             let target = task.name.clone();
@@ -475,10 +480,15 @@ fn apply_one(
                     "AddTypeDeclaration payload.source must contain a type declaration",
                 )]);
             };
-            if program.types.iter().any(|item| item.name == ty.name) {
+            let module = type_module(&ty);
+            if program
+                .types
+                .iter()
+                .any(|item| item.name == ty.name && type_module(item) == module)
+            {
                 return Err(vec![Diagnostic::error(
                     "GRAFT_TYPE_EXISTS",
-                    format!("type `{}` already exists", ty.name),
+                    format!("type `{module}.{}` already exists", ty.name),
                 )]);
             }
             let target = ty.name.clone();

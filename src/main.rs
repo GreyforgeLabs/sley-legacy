@@ -1,5 +1,6 @@
 use std::collections::BTreeSet;
-use std::fs;
+use std::fs::{self, OpenOptions};
+use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
@@ -704,19 +705,67 @@ fn write_project_graft(
 ) -> Result<(), Vec<Diagnostic>> {
     let writes = plan_project_writeback(project, candidate)?;
     for write in writes {
-        fs::write(&write.path, write.source).map_err(|error| {
-            vec![
-                Diagnostic::error(
-                    "PROJECT_WRITEBACK_FAILED",
-                    format!(
-                        "failed to write module `{}` at {}: {error}",
-                        write.module,
-                        write.path.display()
-                    ),
-                )
-                .with_node(format!("module:{}", write.module)),
-            ]
-        })?;
+        if let Some(parent) = write.path.parent() {
+            fs::create_dir_all(parent).map_err(|error| {
+                vec![
+                    Diagnostic::error(
+                        "PROJECT_WRITEBACK_FAILED",
+                        format!(
+                            "failed to create parent directory for module `{}` at {}: {error}",
+                            write.module,
+                            parent.display()
+                        ),
+                    )
+                    .with_node(format!("module:{}", write.module)),
+                ]
+            })?;
+        }
+        if write.create {
+            let mut file = OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(&write.path)
+                .map_err(|error| {
+                    vec![
+                        Diagnostic::error(
+                            "PROJECT_WRITEBACK_FAILED",
+                            format!(
+                                "failed to create module `{}` at {}: {error}",
+                                write.module,
+                                write.path.display()
+                            ),
+                        )
+                        .with_node(format!("module:{}", write.module)),
+                    ]
+                })?;
+            file.write_all(write.source.as_bytes()).map_err(|error| {
+                vec![
+                    Diagnostic::error(
+                        "PROJECT_WRITEBACK_FAILED",
+                        format!(
+                            "failed to write module `{}` at {}: {error}",
+                            write.module,
+                            write.path.display()
+                        ),
+                    )
+                    .with_node(format!("module:{}", write.module)),
+                ]
+            })?;
+        } else {
+            fs::write(&write.path, write.source).map_err(|error| {
+                vec![
+                    Diagnostic::error(
+                        "PROJECT_WRITEBACK_FAILED",
+                        format!(
+                            "failed to write module `{}` at {}: {error}",
+                            write.module,
+                            write.path.display()
+                        ),
+                    )
+                    .with_node(format!("module:{}", write.module)),
+                ]
+            })?;
+        }
     }
 
     if !provenance.is_empty() {
@@ -738,6 +787,7 @@ struct ProjectWrite {
     module: String,
     path: PathBuf,
     source: String,
+    create: bool,
 }
 
 fn plan_project_writeback(
@@ -749,15 +799,27 @@ fn plan_project_writeback(
         .iter()
         .map(|module| module.module.clone())
         .collect::<BTreeSet<_>>();
+    let declared_modules = candidate_declared_modules(candidate);
+    let new_modules = declared_modules
+        .iter()
+        .filter(|module| !known_modules.contains(*module))
+        .cloned()
+        .collect::<BTreeSet<_>>();
     let mut diagnostics = Vec::new();
 
-    for module in candidate_declared_modules(candidate) {
-        if !known_modules.contains(&module) {
+    for module in &new_modules {
+        if let Some(diagnostic) = validate_project_writeback_module(module) {
+            diagnostics.push(diagnostic);
+            continue;
+        }
+        let path = module_source_path(&project.module_root, module);
+        if path.exists() {
             diagnostics.push(
                 Diagnostic::error(
-                    "PROJECT_WRITEBACK_UNKNOWN_MODULE",
+                    "PROJECT_WRITEBACK_FILE_EXISTS",
                     format!(
-                        "graft candidate changed module `{module}`, which is not in this project"
+                        "refusing to create module `{module}` because {} already exists",
+                        path.display()
                     ),
                 )
                 .with_node(format!("module:{module}")),
@@ -766,7 +828,7 @@ fn plan_project_writeback(
     }
 
     for import in &candidate.imports {
-        if !known_modules.contains(&import.module) {
+        if !known_modules.contains(&import.module) && !new_modules.contains(&import.module) {
             diagnostics.push(
                 Diagnostic::error(
                     "PROJECT_WRITEBACK_UNKNOWN_IMPORT",
@@ -794,10 +856,60 @@ fn plan_project_writeback(
                 module: module.module.clone(),
                 path: module.path.clone(),
                 source: next_source,
+                create: false,
             });
         }
     }
+    for module in new_modules {
+        let next_program = project_module_program(candidate, &module);
+        let next_source = format_program(&next_program);
+        writes.push(ProjectWrite {
+            module: module.clone(),
+            path: module_source_path(&project.module_root, &module),
+            source: next_source,
+            create: true,
+        });
+    }
     Ok(writes)
+}
+
+fn module_source_path(root: &Path, module: &str) -> PathBuf {
+    let mut path = root.to_path_buf();
+    for segment in module.split('.') {
+        path.push(segment);
+    }
+    path.set_extension("sley");
+    path
+}
+
+fn validate_project_writeback_module(module: &str) -> Option<Diagnostic> {
+    if module.trim().is_empty() {
+        return Some(Diagnostic::error(
+            "PROJECT_WRITEBACK_INVALID_MODULE",
+            "new module path cannot be empty",
+        ));
+    }
+    for segment in module.split('.') {
+        if !is_module_segment(segment) {
+            return Some(
+                Diagnostic::error(
+                    "PROJECT_WRITEBACK_INVALID_MODULE",
+                    format!("new module path `{module}` contains invalid segment `{segment}`"),
+                )
+                .with_node(format!("module:{module}")),
+            );
+        }
+    }
+    None
+}
+
+fn is_module_segment(segment: &str) -> bool {
+    let mut chars = segment.chars();
+    let Some(first) = chars.next() else {
+        return false;
+    };
+    (first.is_ascii_alphabetic() || first == '_')
+        && chars.all(|ch| ch.is_ascii_alphanumeric() || ch == '_')
 }
 
 fn candidate_declared_modules(program: &Program) -> BTreeSet<String> {

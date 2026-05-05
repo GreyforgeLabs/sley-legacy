@@ -4244,7 +4244,7 @@ export task double -> Int {
 }
 
 #[test]
-fn project_graft_write_rejects_new_module_writeback_without_mutation() {
+fn project_graft_write_creates_checked_new_module() {
     let root = temp_project_dir("project-graft-new-module");
     fs::create_dir_all(root.join("src/app")).expect("create project dirs");
     fs::write(
@@ -4268,10 +4268,89 @@ task main -> Int {
         &graft_path,
         r#"
 {
-  "op": "AddTask",
-  "payload": {
-    "source": "module app.extra\n\ntask helper -> Int {\n  return 2\n}\n"
-  }
+  "transaction": "graft_new_module",
+  "mode": "all_or_nothing",
+  "ops": [
+    { "op": "AddImport", "payload": { "module": "app.extra" } },
+    {
+      "op": "AddTask",
+      "payload": {
+        "source": "module app.extra\n\nexport task main -> Int {\n  return 2\n}\n"
+      }
+    }
+  ]
+}
+"#,
+    )
+    .expect("write graft");
+
+    let output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args(["graft", "--json", "--write"])
+        .arg(&root)
+        .arg(&graft_path)
+        .output()
+        .expect("run project graft");
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+    assert!(
+        output.status.success(),
+        "project writeback should create checked new module; stderr={}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let outcome: GraftOutcome = serde_json::from_str(&stdout).expect("parse outcome");
+    assert_eq!(outcome.status, "accepted");
+    assert_eq!(
+        fs::read_to_string(&main_path).expect("read main"),
+        "module app.main\n\nimport app.extra\n\ntask main -> Int {\n  return 1\n}\n"
+    );
+    assert_eq!(
+        fs::read_to_string(root.join("src/app/extra.sley")).expect("read extra module"),
+        "module app.extra\n\nexport task main -> Int {\n  return 2\n}\n"
+    );
+    let check = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args(["check", "--json"])
+        .arg(&root)
+        .output()
+        .expect("check project");
+    assert!(
+        check.status.success(),
+        "created project should check; stdout={} stderr={}",
+        String::from_utf8_lossy(&check.stdout),
+        String::from_utf8_lossy(&check.stderr)
+    );
+    let receipts = read_trace_receipts(&root.join(".sley/trace.jsonl")).expect("read trace");
+    assert_eq!(receipts.len(), 1);
+    assert_eq!(receipts[0].provenance.len(), 2);
+
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn project_graft_write_rejects_import_without_new_module_declarations() {
+    let root = temp_project_dir("project-graft-unknown-import");
+    fs::create_dir_all(root.join("src/app")).expect("create project dirs");
+    fs::write(
+        root.join("sley.toml"),
+        r#"
+[project]
+entry = "app.main"
+"#,
+    )
+    .expect("write manifest");
+    let main_source = r#"module app.main
+
+task main -> Int {
+  return 1
+}
+"#;
+    let main_path = root.join("src/app/main.sley");
+    let graft_path = root.join("add_missing_import.json");
+    fs::write(&main_path, main_source).expect("write main module");
+    fs::write(
+        &graft_path,
+        r#"
+{
+  "op": "AddImport",
+  "payload": { "module": "app.missing" }
 }
 "#,
     )
@@ -4286,7 +4365,7 @@ task main -> Int {
     let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
     assert!(
         !output.status.success(),
-        "project writeback should reject new module writes"
+        "project writeback should reject missing imported modules"
     );
     let outcome: GraftOutcome = serde_json::from_str(&stdout).expect("parse outcome");
     assert_eq!(outcome.status, "rejected");
@@ -4294,15 +4373,15 @@ task main -> Int {
         outcome
             .diagnostics
             .iter()
-            .any(|diagnostic| diagnostic.id == "PROJECT_WRITEBACK_UNKNOWN_MODULE"),
-        "expected PROJECT_WRITEBACK_UNKNOWN_MODULE, got {:#?}",
+            .any(|diagnostic| diagnostic.id == "PROJECT_WRITEBACK_UNKNOWN_IMPORT"),
+        "expected PROJECT_WRITEBACK_UNKNOWN_IMPORT, got {:#?}",
         outcome.diagnostics
     );
     assert_eq!(
         fs::read_to_string(&main_path).expect("read main"),
         main_source
     );
-    assert!(!root.join("src/app/extra.sley").exists());
+    assert!(!root.join("src/app/missing.sley").exists());
     assert!(!root.join(".sley/trace.jsonl").exists());
 
     let _ = fs::remove_dir_all(root);

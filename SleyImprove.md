@@ -208,9 +208,10 @@ Minimum useful graft operations:
 supports checked deletion of declarations, imports, takes, and statements.
 `MoveNode` supports checked in-parent statement reordering and top-level
 declaration ordering. Project-aware multi-file writeback now updates existing
-module files and rejects unknown module creation before mutation. Cross-parent
-movement, take movement, expression movement, new module file creation, module
-rename, and broader graph-contract hardening remain open.
+module files and creates checked new module files declared by the graft
+candidate; bare imports to missing modules still reject before mutation.
+Cross-parent movement, take movement, expression movement, module rename, and
+broader graph-contract hardening remain open.
 
 The important rule is not that all operations exist immediately. The important
 rule is that unsupported operations reject cleanly with explicit diagnostics.
@@ -465,7 +466,8 @@ Near-term:
 3. Start consuming `sley.query.report.v0` and `sley.lint.report.v0` from Sley
    helper passes, then broaden authority, style, and migration lints.
 4. Extend graph-slice grafts around move/delete planning.
-5. Harden project graft writeback for new module creation and module rename.
+5. Harden project graft writeback for module rename and richer multi-module
+   declaration movement.
 
 Medium-term:
 
