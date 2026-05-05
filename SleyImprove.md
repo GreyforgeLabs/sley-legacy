@@ -1,0 +1,380 @@
+# Sley Improvement Plan
+
+Date: 2026-05-05
+Status: working design note
+Scope: agent usability, self-hosting path, compiler feedback loop, binding ontology governance
+
+## Short Version
+
+Sley should not depend on Codex already knowing Sley from training data.
+
+The first Rust Loom should act like a strict teacher, referee, and translator:
+it reads Sley, exposes typed graph shards, accepts or rejects grafts, and gives
+machine-readable diagnostics. Agents learn Sley through that loop.
+
+The language does not "live in Rust" forever. Rust is the trusted bootstrap
+implementation. Sley lives in its specification, typed graph model, examples,
+tests, diagnostics, and eventually self-hosted compiler passes.
+
+## Explain It Like I Am 5
+
+Think of Sley as a new game.
+
+Codex has not played this game before, so we do not ask Codex to guess all the
+rules from memory.
+
+Instead, we give Codex:
+
+- the rulebook: the Sley spec
+- a picture of the board: the typed graph or AST
+- legal moves: graft operations
+- a referee: the Rust Loom
+- correction notes: diagnostics and repair hints
+
+At first, the referee is written in Rust because Rust is already strong,
+stable, and known. That does not mean Sley is secretly Rust. It means Rust is
+holding the training wheels while Sley grows.
+
+Later, parts of the referee can be rewritten in Sley. When Sley can explain and
+check more of itself, the training wheels come off one by one.
+
+## Correct Mental Model
+
+Wrong:
+
+```text
+Sley exists only inside the Rust compiler.
+```
+
+Better:
+
+```text
+Sley semantics -> implemented first by Rust Loom
+Sley source -> human review projection
+Sley graph -> canonical program structure
+ZJX -> compact transport/cache envelope
+Rust Loom -> bootstrap oracle and safety gate
+Future Sley Loom passes -> self-hosted implementation pieces
+```
+
+The Rust compiler is the first trustworthy executable version of the rules. It
+should stay in charge until Sley has enough tests, examples, graph stability,
+diagnostics, and self-hosted passes to safely take over parts of itself.
+
+## The Real Training Data Strategy
+
+The training-data problem is real: a new language has little or no model
+pretraining corpus.
+
+Sley should reduce that problem by making the agent workflow structural instead
+of relying on raw text prediction.
+
+The agent should not need to "remember" Sley perfectly. It should be able to:
+
+1. Read compact docs and examples.
+2. Request a bounded graph shard.
+3. Propose a graft operation.
+4. Receive structured diagnostics.
+5. Repair the graft.
+6. Repeat until the Loom accepts it.
+
+This makes Sley learnable in-context.
+
+The goal is not to beat pretraining with vibes. The goal is to replace guessing
+with a tight compiler-mediated feedback loop.
+
+## Improvement 1: Agent-First Tool Contract
+
+Codex and other agents need a small stable command contract:
+
+```bash
+sley parse --json <target>
+sley check --json <target>
+sley ast --json <target>
+sley ast --json --node <node-id> <target>
+sley graft --json <target> <graft.json>
+sley format <target>
+```
+
+Next target commands:
+
+```bash
+sley graph --json --slice <node-id> <target>
+sley graft --json --dry-run <target> <graft.zjx>
+sley trace --json <target>
+sley seal --json <target>
+```
+
+Rules:
+
+- JSON output must be stable and versioned.
+- Diagnostics must include stable IDs, node IDs, spans where possible, and
+  repair hints.
+- Grafts should support dry-run by default.
+- Source text should remain the human review projection, not the primary agent
+  edit surface.
+
+## Improvement 2: Strong Diagnostics And Repair Hints
+
+Every common compiler rejection should be useful to an agent.
+
+Good diagnostic shape:
+
+```json
+{
+  "id": "EFFECT_UNAUTHORIZED",
+  "severity": "error",
+  "node": "task:app.profile.get_user",
+  "span": {"line": 12, "column": 10},
+  "message": "task `get_user` requires `DatabaseRead`",
+  "repair_hints": [
+    {
+      "kind": "add_required_effect",
+      "target": "task:app.profile.get_user",
+      "effect": "DatabaseRead"
+    }
+  ]
+}
+```
+
+Priority diagnostic families:
+
+- parse errors with expected tokens
+- unknown identifiers
+- unknown tasks
+- unknown types
+- call arity mismatch
+- call argument type mismatch
+- return type mismatch
+- immutable binding mutation
+- undeclared effects
+- unauthorized host authority
+- stale graft preconditions
+- unsupported graft operation
+- module namespace conflicts
+
+## Improvement 3: Graft-First Editing
+
+Agents should be trained to prefer grafts over raw file edits.
+
+Minimum useful graft operations:
+
+- `AddTake`
+- `RemoveTake`
+- `ReplaceTaskBody`
+- `AddTask`
+- `RenameDeclaration`
+- `AddImport`
+- `AddEffectDeclaration`
+- `AddTypeDeclaration`
+- `UpdateCallSites`
+- `InsertStatement`
+- `ReplaceExpression`
+- `MoveNode`
+- `DeleteNode`
+
+The important rule is not that all operations exist immediately. The important
+rule is that unsupported operations reject cleanly with explicit diagnostics.
+
+## Improvement 4: Self-Hosting Ladder
+
+Do not jump from Rust bootstrap to full Sley self-hosting in one leap.
+
+Use a staged ladder:
+
+1. **Rust-only oracle**
+   Rust Loom parses, checks, formats, runs, and applies grafts.
+
+2. **Sley standard library**
+   Pure libraries and examples are written in Sley and validated by Rust Loom.
+
+3. **Sley compiler helpers**
+   Non-authoritative helper passes are written in Sley: graph queries,
+   lint rules, migrations, fixture generators, and docs examples.
+
+4. **Shadow compiler passes**
+   Sley implementations run beside Rust implementations and must match output.
+
+5. **Promoted Sley passes**
+   Specific compiler passes become authoritative after conformance evidence.
+
+6. **Self-hosted Loom core**
+   Sley can build, inspect, and evolve large parts of its own compiler.
+
+7. **Rust remains recovery oracle**
+   Even after self-hosting, keep a small Rust or frozen reference implementation
+   as the recovery checker until the ecosystem is mature.
+
+## Improvement 5: Binding Ontology Governance
+
+Agents may propose new binding kinds, but they should not directly mutate the
+stable core ontology.
+
+Core binding kinds should be human-ratified and versioned.
+
+New binding kind proposal template:
+
+```text
+name:
+status: proposed | experimental | stable | deprecated
+purpose:
+mutability:
+authority behavior:
+lifetime behavior:
+sharing behavior:
+checker rules:
+runtime rules:
+serialization shape:
+example:
+counterexample:
+migration impact:
+why existing binding kinds are insufficient:
+```
+
+Recommended process:
+
+1. Agent proposes a binding kind as an experimental extension.
+2. Loom validates that the proposal has semantics, examples, and checker rules.
+3. Human reviews whether it deserves core status.
+4. Experimental use collects evidence.
+5. Promotion requires tests, docs, examples, and migration notes.
+
+This keeps the ontology from becoming random model-generated vocabulary.
+
+## Improvement 6: Canonical Agent Onboarding Pack
+
+Codex will use Sley better if each repo exposes a compact onboarding pack:
+
+- `README.md`
+- `docs/SleyLanguageSpec.md`
+- `llms.txt` or equivalent compact model-facing summary
+- `examples/*.sley`
+- `fixtures/grafts/*.json`
+- `tests/*`
+- `sley check --json`
+- `sley ast --json`
+- `sley graft --json`
+
+The pack should include a short "agent rules" section:
+
+```text
+Prefer grafts over raw text edits.
+Run `sley check --json` after each proposed change.
+Use `sley ast --json --node` before editing a bounded target.
+Do not invent binding kinds.
+Do not add effects to silence errors unless the authority is semantically real.
+Keep source formatting controlled by `sley format`.
+```
+
+## Improvement 7: Synthetic Gold Corpus
+
+Once Sley has enough stable examples, build a synthetic corpus deliberately.
+
+Corpus categories:
+
+- small pure functions
+- records and slots
+- list and map logic
+- result flow with `?`
+- effect propagation
+- authority and gate examples
+- successful grafts
+- rejected stale grafts
+- rejected unauthorized grafts
+- refactor migrations
+- module namespace examples
+- formatter round trips
+
+Each corpus item should include:
+
+- source
+- AST or graph shard
+- expected diagnostics
+- accepted grafts
+- rejected grafts
+- final formatted output
+- human explanation
+
+This corpus becomes the real bridge from "Codex does not know Sley" to "agents
+can operate Sley reliably."
+
+## Improvement 8: ZJX Boundary Discipline
+
+ZJX should be the transport/cache envelope, not the semantic identity, until the
+canonical graph encoding and canonical ZJX encoding are frozen.
+
+Correct pipeline:
+
+```text
+canonical graph bytes -> semantic hash
+canonical graph bytes -> ZJX envelope
+ZJX envelope -> transport/cache/storage
+```
+
+Do not make the compressed envelope define the language semantics too early.
+That would couple language correctness to compression implementation details.
+
+## Improvement 9: Safety Against Bad Self-Evolution
+
+The recursive loop needs brakes.
+
+Hard gates:
+
+- no accepted graft without parse/check success
+- no compiler change without conformance tests
+- no ontology change without human ratification
+- no authority/effect change without explicit semantic reason
+- no public claim that Sley is production-ready until runtime and host gates are
+  mature
+- no self-hosted pass becomes authoritative until it matches the Rust oracle on
+  a large fixture set
+
+Failure modes to watch:
+
+- agents adding effects just to silence diagnostics
+- binding vocabulary bloat
+- unstable JSON schemas
+- text edits bypassing graft provenance
+- ZJX format churn becoming language churn
+- self-hosted passes matching happy paths but missing rejection cases
+
+## Practical Next Milestones
+
+Near-term:
+
+1. Freeze v0 JSON schemas for diagnostics, AST nodes, and graft outcomes.
+2. Add `--dry-run` as an explicit graft mode.
+3. Add more repair hints to common checker errors.
+4. Add `graph` as the canonical name or alias for `ast` when graph shards are
+   ready.
+5. Add an agent onboarding section to docs and `llms.txt`.
+
+Medium-term:
+
+1. Implement `UpdateCallSites`, `InsertStatement`, and `ReplaceExpression`.
+2. Add durable trace sidecars for accepted grafts.
+3. Add proper module namespace semantics.
+4. Add capability-backed gate values.
+5. Build the synthetic gold corpus.
+
+Long-term:
+
+1. Write Sley lints and graph query helpers in Sley.
+2. Shadow Rust checker passes with Sley equivalents.
+3. Promote self-hosted passes only after conformance evidence.
+4. Keep a frozen recovery oracle.
+
+## Bottom Line
+
+Keeping the first Loom in Rust is not a retreat from Sley. It is how Sley gets a
+strict, trustworthy teacher while agents learn the language.
+
+The path is:
+
+```text
+Rust bootstrap -> structural agent loop -> gold corpus -> Sley helper passes ->
+shadow compiler passes -> promoted self-hosting -> recovery oracle
+```
+
+That is the safe version of an AI-native language that can eventually improve
+itself without turning into unreviewable model-written mush.
