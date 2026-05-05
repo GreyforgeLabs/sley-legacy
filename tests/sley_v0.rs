@@ -10,7 +10,7 @@ use sley::formatter::format_program;
 use sley::graft::{GRAFT_OUTCOME_SCHEMA, GraftInput, GraftOutcome, apply_graft_input};
 use sley::parser::parse_program;
 use sley::project::load_project;
-use sley::runtime::{Value, run_main};
+use sley::runtime::{RuntimeGates, Value, run_main, run_main_with_gates};
 use sley::symbols::{SYMBOL_GRAPH_SCHEMA, SYMBOL_GRAPH_SLICE_SCHEMA, slice_symbol_graph};
 use sley::trace::{
     TRACE_RECEIPT_SCHEMA, TRACE_SEAL_SCHEMA, TraceReceipt, append_trace_receipt,
@@ -1026,6 +1026,187 @@ task main -> Result<Text, Error> {
 }
 
 #[test]
+fn checker_requires_gate_takes_to_match_declared_effects() {
+    let source = r#"
+task main -> Int {
+  take gate files: Gate<FileRead>
+
+  return 1
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.id == "GATE_EFFECT_UNDECLARED"),
+        "expected gate effect diagnostic, got {diagnostics:#?}"
+    );
+}
+
+#[test]
+fn runtime_requires_and_accepts_capability_gates() {
+    let source = r#"
+task main -> Int uses FileRead {
+  return 42
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+    let rejected = run_main(&program).expect_err("missing gate should reject");
+    assert!(
+        rejected
+            .iter()
+            .any(|diagnostic| diagnostic.id == "RUNTIME_CAPABILITY_REQUIRED"),
+        "expected runtime capability diagnostic, got {rejected:#?}"
+    );
+
+    let gates = RuntimeGates::allow("FileRead");
+    assert_eq!(run_main_with_gates(&program, &gates), Ok(Value::Int(42)));
+}
+
+#[test]
+fn runtime_injects_gate_takes_and_reads_text_under_root() {
+    let root = temp_project_dir("runtime-gate-read");
+    fs::create_dir_all(&root).expect("create temp dir");
+    let input = root.join("input.txt");
+    fs::write(&input, "sley gate read").expect("write input");
+    let source = format!(
+        r#"
+task read -> Text uses FileRead {{
+  take gate file: Gate<FileRead>
+  take path: Text
+
+  return fs.read_text(path)
+}}
+
+task main -> Text uses FileRead {{
+  return call read("{}")
+}}
+"#,
+        sley_string(&input)
+    );
+    let program = parse_program(&source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+    let mut gates = RuntimeGates::new();
+    gates.grant_effect_root("FileRead", &root);
+    assert_eq!(
+        run_main_with_gates(&program, &gates),
+        Ok(Value::Text("sley gate read".to_string()))
+    );
+}
+
+#[test]
+fn runtime_writes_text_under_file_write_gate() {
+    let root = temp_project_dir("runtime-gate-write");
+    fs::create_dir_all(&root).expect("create temp dir");
+    let output = root.join("output.txt");
+    let source = format!(
+        r#"
+task main -> Unit uses FileWrite {{
+  return fs.write_text("{}", "sley gate write")
+}}
+"#,
+        sley_string(&output)
+    );
+    let program = parse_program(&source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+    let mut gates = RuntimeGates::new();
+    gates.grant_effect_root("FileWrite", &root);
+    assert_eq!(run_main_with_gates(&program, &gates), Ok(Value::Unit));
+    assert_eq!(
+        fs::read_to_string(&output).expect("read output"),
+        "sley gate write"
+    );
+}
+
+#[test]
+fn runtime_rejects_file_access_outside_gate_root() {
+    let root = temp_project_dir("runtime-gate-root");
+    let outside = temp_project_dir("runtime-gate-outside");
+    fs::create_dir_all(&root).expect("create root dir");
+    fs::create_dir_all(&outside).expect("create outside dir");
+    let input = outside.join("secret.txt");
+    fs::write(&input, "outside").expect("write outside input");
+    let source = format!(
+        r#"
+task main -> Text uses FileRead {{
+  return fs.read_text("{}")
+}}
+"#,
+        sley_string(&input)
+    );
+    let program = parse_program(&source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+    let mut gates = RuntimeGates::new();
+    gates.grant_effect_root("FileRead", &root);
+    let rejected = run_main_with_gates(&program, &gates).expect_err("outside root should reject");
+    assert!(
+        rejected
+            .iter()
+            .any(|diagnostic| diagnostic.id == "RUNTIME_CAPABILITY_SCOPE_DENIED"),
+        "expected root-scope diagnostic, got {rejected:#?}"
+    );
+}
+
+#[test]
+fn cli_run_accepts_runtime_capability_root() {
+    let root = temp_project_dir("runtime-gate-cli");
+    fs::create_dir_all(&root).expect("create temp dir");
+    let input = root.join("input.txt");
+    let source_path = root.join("main.sley");
+    fs::write(&input, "cli gate read").expect("write input");
+    fs::write(
+        &source_path,
+        format!(
+            r#"
+task main -> Text uses FileRead {{
+  return fs.read_text("{}")
+}}
+"#,
+            sley_string(&input)
+        ),
+    )
+    .expect("write source");
+
+    let cap = format!("FileRead={}", root.display());
+    let output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args([
+            "run",
+            "--json",
+            "--cap",
+            &cap,
+            source_path.to_str().expect("utf-8 path"),
+        ])
+        .output()
+        .expect("run sley");
+    assert!(
+        output.status.success(),
+        "sley run failed: stdout={} stderr={}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let value: Value = serde_json::from_slice(&output.stdout).expect("parse value");
+    assert_eq!(value, Value::Text("cli gate read".to_string()));
+}
+
+#[test]
 fn runtime_evaluates_locals_operators_and_if_expressions() {
     let source = r#"
 task score -> Int {
@@ -1964,6 +2145,12 @@ fn temp_project_dir(name: &str) -> PathBuf {
         .expect("clock is before unix epoch")
         .as_nanos();
     std::env::temp_dir().join(format!("sley-{name}-{}-{timestamp}", std::process::id()))
+}
+
+fn sley_string(path: &Path) -> String {
+    path.to_string_lossy()
+        .replace('\\', "\\\\")
+        .replace('"', "\\\"")
 }
 
 fn assert_rejected_graft(source: &str, graft_source: &str, diagnostic_id: &str) -> GraftOutcome {

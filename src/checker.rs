@@ -76,6 +76,7 @@ fn collect_known_tasks(program: &Program, diagnostics: &mut Vec<Diagnostic>) -> 
                 takes: task
                     .takes
                     .iter()
+                    .filter(|take| take.binding_kind != BindingKind::Gate)
                     .map(|take| normalize_type_expr_silent(program, &task_module(task), &take.ty))
                     .collect(),
                 return_type: normalize_type_expr_silent(
@@ -162,6 +163,11 @@ fn check_task(
     let mut takes = HashSet::new();
     let mut locals = HashMap::new();
     let mut local_bindings = HashMap::new();
+    let declared_effects = task
+        .effects
+        .iter()
+        .map(|effect| normalize_effect_name_silent(program, &task_module(task), effect))
+        .collect::<HashSet<_>>();
 
     for take in &task.takes {
         if !takes.insert(take.name.clone()) {
@@ -176,7 +182,18 @@ fn check_task(
                 .with_node(task.id.clone()),
             );
         }
-        validate_type_expr(&take.ty, program, &task_module(task), diagnostics, &take.id);
+        if take.binding_kind == BindingKind::Gate {
+            validate_gate_take(
+                take,
+                program,
+                &task_module(task),
+                &declared_effects,
+                task,
+                diagnostics,
+            );
+        } else {
+            validate_type_expr(&take.ty, program, &task_module(task), diagnostics, &take.id);
+        }
         locals.insert(
             take.name.clone(),
             normalize_type_expr_silent(program, &task_module(task), &take.ty),
@@ -192,11 +209,6 @@ fn check_task(
         &task.id,
     );
 
-    let declared_effects = task
-        .effects
-        .iter()
-        .map(|effect| normalize_effect_name_silent(program, &task_module(task), effect))
-        .collect::<HashSet<_>>();
     for effect in &task.effects {
         validate_effect_name(effect, program, &task_module(task), task, diagnostics);
     }
@@ -1595,8 +1607,21 @@ fn validate_type_expr(
     match ty {
         TypeExpr::Named { name } => {
             validate_type_name(name, program, module, diagnostics, node, "type");
+            if name == "Gate" {
+                diagnostics.push(
+                    Diagnostic::error(
+                        "GATE_TYPE_ARGUMENT_REQUIRED",
+                        "`Gate` requires exactly one effect argument, such as `Gate<FileRead>`",
+                    )
+                    .with_node(node.to_string()),
+                );
+            }
         }
         TypeExpr::Generic { name, args } => {
+            if name == "Gate" {
+                validate_gate_type_expr(ty, program, module, diagnostics, node);
+                return;
+            }
             validate_type_name(name, program, module, diagnostics, node, "generic type");
             for arg in args {
                 validate_type_expr(arg, program, module, diagnostics, node);
@@ -1617,6 +1642,133 @@ fn validate_type_expr(
                 validate_type_expr(&field.ty, program, module, diagnostics, node);
             }
         }
+    }
+}
+
+fn validate_gate_take(
+    take: &crate::ast::TakeDecl,
+    program: &Program,
+    module: &str,
+    declared_effects: &HashSet<String>,
+    task: &TaskDecl,
+    diagnostics: &mut Vec<Diagnostic>,
+) {
+    let Some(effect) = validate_gate_type_expr(&take.ty, program, module, diagnostics, &take.id)
+    else {
+        diagnostics.push(
+            Diagnostic::error(
+                "GATE_TAKE_TYPE_MISMATCH",
+                format!(
+                    "gate take `{}` must use `Gate<Effect>`, not `{}`",
+                    take.name,
+                    take.ty.display()
+                ),
+            )
+            .with_node(take.id.clone()),
+        );
+        return;
+    };
+
+    if !declared_effects.contains(&effect) {
+        diagnostics.push(
+            Diagnostic::error(
+                "GATE_EFFECT_UNDECLARED",
+                format!(
+                    "gate take `{}` provides `{effect}` but task `{}` does not declare that effect",
+                    take.name, task.name
+                ),
+            )
+            .with_node(take.id.clone())
+            .with_repair_hint(add_required_effect_hint(task, &effect)),
+        );
+    }
+}
+
+fn validate_gate_type_expr(
+    ty: &TypeExpr,
+    program: &Program,
+    module: &str,
+    diagnostics: &mut Vec<Diagnostic>,
+    node: &str,
+) -> Option<String> {
+    let TypeExpr::Generic { name, args } = ty else {
+        return None;
+    };
+    if name != "Gate" {
+        return None;
+    }
+    validate_type_name(name, program, module, diagnostics, node, "generic type");
+    if args.len() != 1 {
+        diagnostics.push(
+            Diagnostic::error(
+                "GATE_TYPE_ARITY_MISMATCH",
+                format!(
+                    "`Gate` expects 1 effect argument but received {}",
+                    args.len()
+                ),
+            )
+            .with_node(node.to_string()),
+        );
+        return None;
+    }
+    let TypeExpr::Named { name: effect } = &args[0] else {
+        diagnostics.push(
+            Diagnostic::error(
+                "GATE_EFFECT_TYPE_MISMATCH",
+                "`Gate` expects an effect name argument",
+            )
+            .with_node(node.to_string()),
+        );
+        return None;
+    };
+    validate_effect_reference(effect, program, module, diagnostics, node);
+    Some(normalize_effect_name_silent(program, module, effect))
+}
+
+fn validate_effect_reference(
+    name: &str,
+    program: &Program,
+    module: &str,
+    diagnostics: &mut Vec<Diagnostic>,
+    node: &str,
+) {
+    match resolve_effect(program, module, name) {
+        EffectResolution::Builtin(_) | EffectResolution::Resolved { .. } => {}
+        EffectResolution::Unknown => diagnostics.push(
+            Diagnostic::error("UNKNOWN_EFFECT", format!("unknown effect `{name}`"))
+                .with_node(node.to_string())
+                .with_repair_hint(
+                    RepairHint::new("declare_or_import_effect")
+                        .with_target(node.to_string())
+                        .with_effect(name.to_string())
+                        .with_replacement(format!("effect {name}")),
+                ),
+        ),
+        EffectResolution::Ambiguous(matches) => diagnostics.push(
+            Diagnostic::error(
+                "AMBIGUOUS_EFFECT",
+                format!("effect `{name}` is ambiguous: {}", matches.join(", ")),
+            )
+            .with_node(node.to_string())
+            .with_repair_hint(
+                RepairHint::new("qualify_effect_reference")
+                    .with_target(node.to_string())
+                    .with_replacement(matches.join(" | ")),
+            ),
+        ),
+        EffectResolution::Private(target) => diagnostics.push(
+            Diagnostic::error(
+                "PRIVATE_EFFECT",
+                format!("effect `{target}` is not exported for module `{module}`"),
+            )
+            .with_node(node.to_string())
+            .with_repair_hint(
+                RepairHint::new("export_effect")
+                    .with_target(format!("effect:{target}"))
+                    .with_effect(target.clone())
+                    .with_replacement(format!("export effect {}", short_name(&target))),
+            ),
+        ),
     }
 }
 
@@ -1774,6 +1926,13 @@ fn normalize_type_expr_silent(program: &Program, module: &str, ty: &TypeExpr) ->
         TypeExpr::Named { name } => {
             TypeExpr::named(normalize_type_name_silent(program, module, name))
         }
+        TypeExpr::Generic { name, args } if name == "Gate" => TypeExpr::Generic {
+            name: "Gate".to_string(),
+            args: args
+                .iter()
+                .map(|arg| normalize_gate_type_arg_silent(program, module, arg))
+                .collect(),
+        },
         TypeExpr::Generic { name, args } => TypeExpr::Generic {
             name: normalize_type_name_silent(program, module, name),
             args: args
@@ -1790,6 +1949,15 @@ fn normalize_type_expr_silent(program: &Program, module: &str, ty: &TypeExpr) ->
                 })
                 .collect(),
         },
+    }
+}
+
+fn normalize_gate_type_arg_silent(program: &Program, module: &str, ty: &TypeExpr) -> TypeExpr {
+    match ty {
+        TypeExpr::Named { name } => {
+            TypeExpr::named(normalize_effect_name_silent(program, module, name))
+        }
+        _ => normalize_type_expr_silent(program, module, ty),
     }
 }
 

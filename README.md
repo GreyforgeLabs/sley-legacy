@@ -2,8 +2,8 @@
 
 Sley is an agent-native structural programming language. The Loom compiler reads
 human-reviewable `.sley` source, exposes typed graph-shaped AST data, checks
-task/effect/binding semantics, runs pure v0 tasks, and accepts verified grafts
-instead of blind text edits.
+task/effect/binding semantics, runs pure and explicitly gated v0 tasks, and
+accepts verified grafts instead of blind text edits.
 
 Implemented now:
 
@@ -24,6 +24,8 @@ Implemented now:
 - import aliases with `import app.math as math`
 - exported declarations with `export task`, `export type`, and `export effect`
 - `task` declarations with explicit `take` inputs in the task body
+- `take gate name: Gate<Effect>` runtime capability inputs that do not count as
+  ordinary call arguments
 - canonical binding forms for the first executable slice: `bind`, `state`,
   `tally`, and `forge`, plus the wider binding-kind enum for the Sley ontology
 - `slot` fields in record type declarations
@@ -45,6 +47,9 @@ Implemented now:
   lexical locals, `set`, operators, `if` expressions, statement-level
   `if`/`else`, `while`, `each`, `forge` blocks, list literals, map literals,
   indexing, `len`, record literals, and record field access
+- runtime gates with `sley run --cap EFFECT[=ROOT]`; effectful tasks reject
+  without matching gates, `Gate<Effect>` takes are injected at runtime, and
+  `fs.read_text`/`fs.write_text` are backed by root-scoped file capabilities
 - project loading for a manifest entry module plus transitively imported
   `.sley` modules under the configured source root
 - checker and runtime task lookup by entry module, local module, full module
@@ -136,9 +141,9 @@ Known v0 limits:
 - `sley zjx` emits the first Sley ZJX envelope payload as JSON with
   `compression=none`; the binary compressed archive handoff remains a later
   integration step.
-- `run` only supports pure execution. Host calls and capability-backed runtime
-  objects are still represented as raw values unless a future host boundary is
-  supplied.
+- Runtime host support is intentionally narrow: `FileRead` and `FileWrite` have
+  root-scoped filesystem handlers, while database, network, shell, model,
+  secret, deploy, and spending effects still need dedicated host adapters.
 - Project graft writeback supports existing module files. Grafts that would
   create unknown module files or import modules outside the loaded project
   reject before any source or trace mutation.
@@ -150,6 +155,7 @@ Known v0 limits:
   Cross-parent movement, take movement, and expression movement still reject
   explicitly.
 
-The next logical phase is runtime and graph hardening: start capability-backed
-runtime gate values for host calls, grow the accepted/rejected corpus around
-project grafts, and extend graph-slice planning around move/delete operations.
+The next logical phase is runtime and graph hardening: expand host adapters
+beyond filesystem gates, grow the accepted/rejected corpus around project
+grafts and runtime authority, and extend graph-slice planning around
+move/delete operations.

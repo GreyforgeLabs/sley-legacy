@@ -1,6 +1,6 @@
 # Sley Language Specification
 
-Status: v0 executable slice plus module task/type/effect namespace and trace tooling
+Status: v0 executable slice plus module task/type/effect namespace, runtime gates, and trace tooling
 
 Sley is a human-readable, agent-writable structural language. The canonical
 program model is a typed graph. `.sley` source is the stable review projection,
@@ -55,8 +55,10 @@ port tally hole draft taint witness seal anchor view cursor
 ```
 
 The v0 executable syntax supports `take`, `bind`, `state`, `tally`, `slot`, and
-`forge` directly. The AST already carries `BindingKind` so later syntax can land
-without replacing the graph model.
+`forge` directly. Task inputs may also use `take gate`, `take veil`,
+`take taint`, and `take view` qualifiers; only `take gate` currently has
+runtime capability semantics. The AST already carries `BindingKind` so later
+syntax can land without replacing the graph model.
 
 Hard rules:
 
@@ -69,6 +71,8 @@ Hard rules:
 
 Tasks have names, explicit `take` inputs, return types, declared effects, and a
 block of statements. Pure zero-take `main` can run in the current interpreter.
+Effectful `main` can run only when the caller supplies matching runtime gates,
+and `main` still cannot require ordinary non-gate takes.
 
 ```sley
 task sum -> Int {
@@ -126,8 +130,8 @@ Task lookup rules:
 
 Type lookup rules:
 
-- builtin types such as `Int`, `Text`, `List`, `Map`, `Result`, and `Error`
-  are always visible by simple name
+- builtin types such as `Int`, `Text`, `List`, `Map`, `Result`, `Error`, and
+  `Gate` are always visible by simple name
 - same-module declared types are visible by simple name
 - imported types must be `export type`
 - simple imported type references are valid only when one imported module
@@ -154,6 +158,43 @@ identity before comparing task signatures, local annotations, record literals,
 record fields, and called-task effects. This means `math.User` and
 `app.math.User` resolve to the same type when they name the same exported
 declaration.
+
+## Runtime Gate Semantics
+
+Sley separates static authority from runtime authority. A task declares the
+effects it may use with `uses EffectName`; the runtime then requires explicit
+gate values before executing any task with effects.
+
+```sley
+task read -> Text uses FileRead {
+  take gate fs: Gate<FileRead>
+  take path: Text
+
+  return fs.read_text(path)
+}
+
+task main -> Text uses FileRead {
+  return call read("/tmp/sley/input.txt")
+}
+```
+
+`take gate name: Gate<Effect>` binds a first-class gate value inside the task
+but does not count as a normal call argument. The checker treats `call read(x)`
+as valid in the example above because only `path` is an ordinary take. The gate
+effect must also appear in the task's `uses` list; otherwise the checker emits
+`GATE_EFFECT_UNDECLARED`.
+
+The CLI grants runtime gates with repeated `--cap EFFECT[=ROOT]` flags:
+
+```bash
+sley run --cap FileRead=/tmp/sley program.sley
+```
+
+Without a matching gate, effectful execution fails with
+`RUNTIME_CAPABILITY_REQUIRED` or `RUNTIME_GATE_REQUIRED`. `FileRead` and
+`FileWrite` currently back `fs.read_text(path)` and `fs.write_text(path, text)`.
+When a gate has a root, filesystem host calls reject paths outside that root
+with `RUNTIME_CAPABILITY_SCOPE_DENIED`.
 
 ## Graft Model
 
@@ -317,7 +358,9 @@ archive.
 
 ## Current Gaps
 
-- host capabilities are checked statically but not backed by runtime gate values
+- runtime gates currently back filesystem text reads/writes only; database,
+  network, shell, model, secret, deploy, and spending effects still need host
+  adapters
 - trace receipts can be sealed, but sidecar storage is not yet a compressed ZJX
   archive
 - the AST JSON Schema covers nested AST and expression variants; the remaining

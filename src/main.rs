@@ -11,7 +11,7 @@ use sley::formatter::format_program;
 use sley::graft::{GRAFT_OUTCOME_SCHEMA, GraftInput, GraftOutcome, apply_graft_program};
 use sley::parser::parse_program;
 use sley::project::{ProjectGraph, load_project};
-use sley::runtime::run_main;
+use sley::runtime::{RuntimeGate, RuntimeGates, run_main, run_main_with_gates};
 use sley::symbols::{
     SymbolGraphSlice, build_symbol_graph, effect_module, import_owner_module, slice_symbol_graph,
     task_module, type_module,
@@ -50,6 +50,8 @@ enum Command {
     Run {
         #[arg(long)]
         json: bool,
+        #[arg(long = "cap", value_name = "EFFECT[=ROOT]")]
+        cap: Vec<String>,
         file: PathBuf,
     },
     Ast {
@@ -167,7 +169,7 @@ fn run(cli: Cli) -> Result<()> {
             }
             Ok(())
         }
-        Command::Run { json, file } => {
+        Command::Run { json, cap, file } => {
             let program = match load_target_program(&file) {
                 Ok(program) => program,
                 Err(diagnostics) => return emit_diagnostics_and_fail(diagnostics, json),
@@ -176,7 +178,13 @@ fn run(cli: Cli) -> Result<()> {
             if has_errors(&diagnostics) {
                 return emit_diagnostics_and_fail(diagnostics, json);
             }
-            match run_main(&program) {
+            let runtime_gates = parse_runtime_gates(&cap)?;
+            let result = if runtime_gates.is_empty() {
+                run_main(&program)
+            } else {
+                run_main_with_gates(&program, &runtime_gates)
+            };
+            match result {
                 Ok(value) => {
                     if json {
                         print_json(&value)?;
@@ -551,6 +559,29 @@ fn rejected_graft_outcome(diagnostics: Vec<Diagnostic>) -> GraftOutcome {
         source: None,
         provenance: Vec::new(),
     }
+}
+
+fn parse_runtime_gates(values: &[String]) -> Result<RuntimeGates> {
+    let mut gates = RuntimeGates::new();
+    for value in values {
+        let (effect, root) = value
+            .split_once('=')
+            .map_or((value.as_str(), None), |(effect, root)| {
+                (effect, Some(root))
+            });
+        let effect = effect.trim();
+        if effect.is_empty() {
+            anyhow::bail!("runtime capability effect cannot be empty");
+        }
+        match root {
+            Some(root) if !root.trim().is_empty() => {
+                gates.grant(RuntimeGate::with_root(effect, PathBuf::from(root.trim())));
+            }
+            Some(_) => anyhow::bail!("runtime capability `{effect}` has an empty root"),
+            None => gates.grant_effect(effect),
+        }
+    }
+    Ok(gates)
 }
 
 fn read_source(file: &PathBuf) -> Result<String> {

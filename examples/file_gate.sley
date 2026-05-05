@@ -1,0 +1,10 @@
+task read_example -> Text uses FileRead {
+  take gate files: Gate<FileRead>
+  take path: Text
+
+  return fs.read_text(path)
+}
+
+task main -> Text uses FileRead {
+  return call read_example("examples/hello.sley")
+}
