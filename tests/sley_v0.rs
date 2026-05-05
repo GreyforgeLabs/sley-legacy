@@ -11,6 +11,7 @@ use sley::formatter::format_program;
 use sley::graft::{GRAFT_OUTCOME_SCHEMA, GraftInput, GraftOutcome, apply_graft_input};
 use sley::parser::parse_program;
 use sley::project::load_project;
+use sley::query::{QUERY_REPORT_SCHEMA, QueryKind, QueryOptions, build_query_report};
 use sley::runtime::{RuntimeGates, Value, run_main, run_main_with_gates};
 use sley::symbols::{SYMBOL_GRAPH_SCHEMA, SYMBOL_GRAPH_SLICE_SCHEMA, slice_symbol_graph};
 use sley::trace::{
@@ -654,6 +655,21 @@ fn json_contract_snapshots_are_locked() {
         include_str!("../fixtures/contracts/graph_slice_minimal_task.json"),
     );
 
+    let project_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("examples/project");
+    let project = load_project(&project_root).expect("load project");
+    let query = build_query_report(
+        &project.program,
+        QueryOptions {
+            kind: QueryKind::Tasks,
+            module: Some("app.main".to_string()),
+            exported_only: false,
+        },
+    );
+    assert_json_snapshot(
+        &query,
+        include_str!("../fixtures/contracts/query_project_tasks.json"),
+    );
+
     let hello_source = include_str!("../examples/hello.sley");
     let hello_program = parse_program(hello_source).expect("parse hello fixture");
     let seal = build_trace_seal(
@@ -687,6 +703,10 @@ fn json_contract_snapshots_are_locked() {
     assert_schema_file(
         include_str!("../docs/schemas/sley.symbol_graph.slice.v0.schema.json"),
         SYMBOL_GRAPH_SLICE_SCHEMA,
+    );
+    assert_schema_file(
+        include_str!("../docs/schemas/sley.query.report.v0.schema.json"),
+        QUERY_REPORT_SCHEMA,
     );
     assert_schema_file(
         include_str!("../docs/schemas/sley.zjx.envelope.v0.schema.json"),
@@ -3295,6 +3315,39 @@ fn graph_slice_reports_resolved_project_task_calls() {
 }
 
 #[test]
+fn query_report_lists_checked_project_tasks() {
+    let project_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("examples/project");
+    let project = load_project(&project_root).expect("load project");
+    let diagnostics = check_program(&project.program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+
+    let report = build_query_report(
+        &project.program,
+        QueryOptions {
+            kind: QueryKind::Tasks,
+            module: Some("app.main".to_string()),
+            exported_only: false,
+        },
+    );
+
+    assert_eq!(report.schema, QUERY_REPORT_SCHEMA);
+    assert_eq!(report.kind, "tasks");
+    assert_eq!(report.entry_module, "app.main");
+    assert_eq!(report.filters.module.as_deref(), Some("app.main"));
+    assert_eq!(report.modules.len(), 0);
+    assert_eq!(report.calls.len(), 0);
+    assert_eq!(report.tasks.len(), 1);
+    assert_eq!(report.tasks[0].id, "task:app.main.main");
+    assert_eq!(report.tasks[0].qualified_name, "app.main.main");
+    assert_eq!(report.tasks[0].return_type, "Int");
+    assert_eq!(report.tasks[0].outbound_call_count, 1);
+    assert_eq!(report.tasks[0].inbound_call_count, 0);
+}
+
+#[test]
 fn trace_receipts_round_trip_as_jsonl() {
     let root = temp_project_dir("trace-round-trip");
     let trace_path = root.join(".sley/trace.jsonl");
@@ -3773,6 +3826,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "cli:ast",
         "cli:graph",
         "cli:graph-slice",
+        "cli:query",
         "cli:trace",
         "cli:seal",
         "cli:zjx",
@@ -3792,6 +3846,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "json:sley.graft.outcome.v0",
         "json:sley.symbol_graph.v0",
         "json:sley.symbol_graph.slice.v0",
+        "json:sley.query.report.v0",
         "json:sley.trace.seal.v0",
         "json:sley.zjx.envelope.v0",
     ];

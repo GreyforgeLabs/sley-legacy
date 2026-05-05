@@ -13,6 +13,7 @@ Implemented now:
 - `sley run`
 - `sley ast`
 - `sley graph`
+- `sley query`
 - `sley trace`
 - `sley seal`
 - `sley zjx`
@@ -88,6 +89,9 @@ Implemented now:
 - JSON module symbol graph output for module imports and exported declarations,
   plus bounded graph slices with `sley graph --slice <node-id>`; symbol graph
   and graph-slice JSON carry v0 schema IDs
+- checked JSON query reports with `sley query --kind all|modules|tasks|calls`,
+  optional `--module` and `--exported` filters, and
+  `schema: "sley.query.report.v0"` for tool-facing graph inspection
 - JSONL trace sidecars for accepted graft receipts when `sley graft --write`
   applies a change, plus content-addressed trace seals with `sley seal`
 - project-aware `sley graft --write <project>` source-file writeback for
@@ -106,7 +110,8 @@ Implemented now:
 - repair hints on common checker diagnostics, including unknown identifiers,
   unknown tasks, type mismatches, return mismatches, call argument mismatches,
   condition mismatches, effect authority, and private or ambiguous names
-- locked JSON contract snapshots under `fixtures/contracts/`
+- locked JSON contract snapshots under `fixtures/contracts/`, including the
+  first checked query report
 - external v0 JSON Schema files under `docs/schemas/`
 - manifest-backed accepted/rejected synthetic conformance corpus fixtures under
   `fixtures/corpus/`, including declared and missing authority cases for the
@@ -126,10 +131,11 @@ entry = "app.main"
 ```
 
 Module `app.main` resolves to `src/app/main.sley`. `sley parse`,
-`sley check`, `sley run`, `sley ast`, `sley graph`, `sley seal`, `sley zjx`,
-and `sley graft` accept either a single `.sley` file or a project directory
-containing `sley.toml`. Project graft writeback projects the checked candidate
-back to existing owning module files and leaves unchanged module files alone.
+`sley check`, `sley run`, `sley ast`, `sley graph`, `sley query`,
+`sley seal`, `sley zjx`, and `sley graft` accept either a single `.sley` file
+or a project directory containing `sley.toml`. Project graft writeback projects
+the checked candidate back to existing owning module files and leaves unchanged
+module files alone.
 
 Module visibility:
 
@@ -381,6 +387,7 @@ Known v0 limits:
 
 The current release-readiness phase is underway for the executable slice. The
 gold corpus and CLI smoke suite now have manifests with required coverage tags
-for seeded host adapters, stable JSON roots, graph/ZJX output, and graft dry
-runs. The next logical phase is to start lint/query tooling on top of the
-checked graph surface before broadening the language again.
+for seeded host adapters, stable JSON roots, graph/ZJX output, graft dry runs,
+and the first checked graph query report. The next logical phase is to build
+lint helpers on top of `sley.query.report.v0` before broadening the language
+again.

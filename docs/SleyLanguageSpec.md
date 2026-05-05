@@ -488,6 +488,7 @@ sley ast --json <target>
 sley ast --json --node task:app.main.main <target>
 sley graph --json <target>
 sley graph --json --slice task:app.main.main <target>
+sley query --json --kind tasks --module app.main <target>
 sley trace --json <target>
 sley seal --json <target>
 ```
@@ -496,7 +497,8 @@ AST roots carry `schema: "sley.ast.program.v0"`. Diagnostic reports carry
 `schema: "sley.diagnostics.report.v0"`. Full symbol graphs carry
 `schema: "sley.symbol_graph.v0"`, graph slices carry
 `schema: "sley.symbol_graph.slice.v0"`, graft outcomes carry
-`schema: "sley.graft.outcome.v0"`, trace seals carry
+`schema: "sley.graft.outcome.v0"`, checked query reports carry
+`schema: "sley.query.report.v0"`, trace seals carry
 `schema: "sley.trace.seal.v0"`, and ZJX preview envelopes carry
 `schema: "sley.zjx.envelope.v0"`.
 The CLI smoke manifest carries
@@ -536,10 +538,10 @@ The executable CLI conformance smokes live under `fixtures/cli_smokes/`. Their
 `manifest.json` lists stable commands, working-directory mode, coverage tags,
 and stdout expectations. The integration suite runs the manifest against the
 built `sley` binary and locks stable command exits, selected stdout substrings,
-JSON root schemas, graph slices, ZJX preview envelopes, graft dry runs, and
-seeded host-adapter execution for `FileRead`, `FileWrite`, `DatabaseRead`,
-`DatabaseWrite`, `Network`, `Shell`, `ModelCall`, `SecretRead`, `Deploy`, and
-`Spend`.
+JSON root schemas, graph slices, checked query reports, ZJX preview envelopes,
+graft dry runs, and seeded host-adapter execution for `FileRead`, `FileWrite`,
+`DatabaseRead`, `DatabaseWrite`, `Network`, `Shell`, `ModelCall`,
+`SecretRead`, `Deploy`, and `Spend`.
 
 A graph slice is a bounded shard around a module, task, type, effect, or import.
 Task slices include the selected task AST, visible module declarations,
@@ -547,6 +549,16 @@ outbound calls, and inbound calls from other tasks that resolve to the selected
 task. This is the first stable agent-facing query surface for graft planning.
 Call-site and expression grafts now consume node ids and task identities from
 this shard.
+
+`sley query` is the first checked graph query report. It parses and checks the
+target before emitting results, so semantic failures return the normal
+diagnostic report instead of a partial query. `--kind all|modules|tasks|calls`
+selects the report body. `--module <module>` filters module summaries, task
+summaries, and calls that originate from or resolve into that module.
+`--exported` restricts declaration and task summaries to exported declarations.
+Task query rows include stable ids, qualified names, takes, return type text,
+declared effects, and inbound/outbound call counts. The v0 JSON root is
+`sley.query.report.v0`.
 
 Diagnostics include machine-readable repair hints for common checker failures.
 Hints are intentionally small and structural: `kind` identifies the action,

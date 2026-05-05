@@ -73,6 +73,22 @@
       }
     },
     {
+      "name": "query_project_tasks_json",
+      "args": ["query", "--json", "--kind", "tasks", "--module", "app.main", "examples/project"],
+      "covers": ["cli:query", "json:sley.query.report.v0"],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.query.report.v0" },
+          { "pointer": "/kind", "value": "tasks" },
+          { "pointer": "/entry_module", "value": "app.main" },
+          { "pointer": "/filters/module", "value": "app.main" },
+          { "pointer": "/tasks/0/qualified_name", "value": "app.main.main" },
+          { "pointer": "/tasks/0/outbound_call_count", "value": 1 }
+        ]
+      }
+    },
+    {
       "name": "trace_hello_json",
       "args": ["trace", "--json", "examples/hello.sley"],
       "covers": ["cli:trace"],

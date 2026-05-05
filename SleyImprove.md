@@ -94,6 +94,7 @@ sley ast --json <target>
 sley ast --json --node <node-id> <target>
 sley graph --json <target>
 sley graph --json --slice <node-id> <target>
+sley query --json [--kind all|modules|tasks|calls] [--module <module>] <target>
 sley trace --json <target>
 sley seal --json <target>
 sley zjx --json [--slice <node-id>] <target>
@@ -111,10 +112,10 @@ sley lint --json <target>
 Rules:
 
 - JSON output must be stable and versioned.
-- AST roots, diagnostic reports, symbol graphs, graph slices, trace seals, ZJX
-  envelopes, and graft outcomes carry v0 schema IDs.
-- AST, diagnostic-report, graph-slice, and trace-seal snapshots are locked under
-  `fixtures/contracts/`.
+- AST roots, diagnostic reports, symbol graphs, graph slices, query reports,
+  trace seals, ZJX envelopes, and graft outcomes carry v0 schema IDs.
+- AST, diagnostic-report, graph-slice, query-report, and trace-seal snapshots
+  are locked under `fixtures/contracts/`.
 - JSON Schema files live under `docs/schemas/`; the AST schema covers nested
   declarations, statements, expressions, type expressions, spans, and
   provenance, while the remaining schema files are still root-contract v0
@@ -348,17 +349,35 @@ Rust integration suite runs those cases against the built `sley` binary.
 
 The current smoke manifest covers:
 
-- parse, format, check, run, ast, graph, graph-slice, trace, seal, zjx, and
-  graft dry-run commands
+- parse, format, check, run, ast, graph, graph-slice, query, trace, seal, zjx,
+  and graft dry-run commands
 - stable JSON roots for AST programs, diagnostics, symbol graphs, graph slices,
-  trace seals, graft outcomes, and ZJX preview envelopes
+  query reports, trace seals, graft outcomes, and ZJX preview envelopes
 - deterministic seeded execution for `FileRead`, `FileWrite`, `DatabaseRead`,
   `DatabaseWrite`, `Network`, `Shell`, `ModelCall`, `SecretRead`, `Deploy`,
   and `Spend`
 - temp-directory execution for the file-write case so release tests do not
   mutate the repo checkout
 
-## Improvement 9: ZJX Boundary Discipline
+## Improvement 9: Checked Graph Query Reports
+
+`sley query` is the first explicit tooling command on top of the checked symbol
+graph. Unlike `sley graph`, it runs the checker before emitting the report, so
+tool consumers do not treat an invalid program as a reliable semantic surface.
+
+The v0 query report carries `schema: "sley.query.report.v0"` and supports:
+
+- `--kind all|modules|tasks|calls`
+- `--module <module>` filtering
+- `--exported` filtering for declaration and task summaries
+- task rows with stable ids, qualified names, takes, return types, declared
+  effects, and inbound/outbound call counts
+- call rows reused from the symbol graph call summary
+
+This is the immediate substrate for lints, migration hints, project dashboards,
+and eventually non-authoritative Sley helper passes.
+
+## Improvement 10: ZJX Boundary Discipline
 
 ZJX should be the transport/cache envelope, not the semantic identity, until the
 canonical graph encoding and canonical ZJX encoding are frozen.
@@ -374,7 +393,7 @@ ZJX envelope -> transport/cache/storage
 Do not make the compressed envelope define the language semantics too early.
 That would couple language correctness to compression implementation details.
 
-## Improvement 10: Safety Against Bad Self-Evolution
+## Improvement 11: Safety Against Bad Self-Evolution
 
 The recursive loop needs brakes.
 
@@ -410,7 +429,7 @@ Near-term:
    authority failures as diagnostics.
 2. Grow the accepted/rejected synthetic gold corpus and CLI smoke manifest with
    graft, module, and runtime authority cases.
-3. Start Sley lint/query helpers on top of the graph surface.
+3. Build lints on top of `sley.query.report.v0`.
 4. Extend graph-slice grafts around move/delete planning.
 5. Harden project graft writeback for new module creation and module rename.
 

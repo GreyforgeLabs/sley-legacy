@@ -5,6 +5,7 @@ pub mod formatter;
 pub mod graft;
 pub mod parser;
 pub mod project;
+pub mod query;
 pub mod runtime;
 pub mod symbols;
 pub mod trace;

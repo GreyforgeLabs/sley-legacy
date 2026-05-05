@@ -131,8 +131,9 @@ Recommended path:
    Real Sley code is validated by Rust.
 
 3. **Sley helper tools**
-   Write non-authoritative helpers in Sley: graph queries, lints, migration
-   suggestions, docs examples, fixture generators.
+   Write non-authoritative helpers in Sley: lints, migration suggestions, docs
+   examples, and fixture generators. Rust now exposes the first checked graph
+   query report for those helpers to consume.
 
 4. **Shadow compiler passes**
    Write a Sley version of a compiler pass, but run it beside the Rust pass.
@@ -213,9 +214,10 @@ Near-term:
 3. Keep expanding the manifest-backed accepted/rejected gold corpus and CLI
    smoke conformance suite. They now cover runtime authority for the seeded
    host adapter surface, stable JSON roots, graph/ZJX output, and graft dry
-   runs.
-4. Extend graph-slice graft planning around checked move/delete operations.
-5. Harden project graft writeback beyond existing-module edits.
+   runs, plus the first checked graph query report.
+4. Build lint helpers on top of `sley.query.report.v0`.
+5. Extend graph-slice graft planning around checked move/delete operations.
+6. Harden project graft writeback beyond existing-module edits.
 
 Medium-term:
 
@@ -227,7 +229,7 @@ Medium-term:
    secret beyond seeded values, model beyond seeded completions, shell beyond
    seeded command output, network beyond seeded text, and database write beyond
    per-run inserts.
-4. Build Sley lint/helper passes on top of the graph query surface.
+4. Move selected Sley lint/helper passes onto the checked graph query surface.
 
 Long-term:
 

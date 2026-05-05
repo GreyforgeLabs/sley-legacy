@@ -75,8 +75,10 @@ Current development phase:
   output, JSON roots, graph/ZJX surfaces, graft dry runs, and seeded
   host-adapter execution while preserving typed recoverable failure records and
   keeping authority failures as diagnostics
-- next development work should start Sley lint/query helpers on top of the
-  checked graph surface
+- checked graph query reports are available through `sley query --json` with
+  root schema `sley.query.report.v0`
+- next development work should build Sley lint helpers on top of the checked
+  query report
 - project graft writeback hardening beyond existing modules
 - manifest-backed accepted/rejected synthetic gold corpus growth
 - broader graph-slice graft operations around move/delete planning

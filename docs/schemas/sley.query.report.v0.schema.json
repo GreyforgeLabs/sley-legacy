@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.query.report.v0",
+  "title": "Sley Query Report v0",
+  "type": "object",
+  "required": [
+    "schema",
+    "kind",
+    "entry_module",
+    "filters",
+    "modules",
+    "tasks",
+    "calls"
+  ],
+  "properties": {
+    "schema": { "const": "sley.query.report.v0" },
+    "kind": { "enum": ["all", "modules", "tasks", "calls"] },
+    "entry_module": { "type": "string" },
+    "filters": {
+      "type": "object",
+      "required": ["module", "exported_only"],
+      "properties": {
+        "module": { "type": ["string", "null"] },
+        "exported_only": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "modules": { "type": "array", "items": { "type": "object" } },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "module",
+          "qualified_name",
+          "exported",
+          "takes",
+          "return_type",
+          "effects",
+          "outbound_call_count",
+          "inbound_call_count"
+        ],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "module": { "type": "string" },
+          "qualified_name": { "type": "string" },
+          "exported": { "type": "boolean" },
+          "takes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["name", "binding_kind", "type"],
+              "properties": {
+                "name": { "type": "string" },
+                "binding_kind": { "type": "string" },
+                "type": { "type": "string" }
+              },
+              "additionalProperties": false
+            }
+          },
+          "return_type": { "type": "string" },
+          "effects": { "type": "array", "items": { "type": "string" } },
+          "outbound_call_count": { "type": "integer", "minimum": 0 },
+          "inbound_call_count": { "type": "integer", "minimum": 0 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "calls": { "type": "array", "items": { "type": "object" } }
+  },
+  "additionalProperties": false
+}

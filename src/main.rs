@@ -3,7 +3,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
 use sley::Program;
 use sley::checker::{check_program, has_errors};
 use sley::diagnostics::{Diagnostic, DiagnosticReport};
@@ -11,6 +11,7 @@ use sley::formatter::format_program;
 use sley::graft::{GRAFT_OUTCOME_SCHEMA, GraftInput, GraftOutcome, apply_graft_program};
 use sley::parser::parse_program;
 use sley::project::{ProjectGraph, load_project};
+use sley::query::{QueryKind, QueryOptions, QueryReport, build_query_report};
 use sley::runtime::{RuntimeGate, RuntimeGates, run_main, run_main_with_gates};
 use sley::symbols::{
     SymbolGraphSlice, build_symbol_graph, effect_module, import_owner_module, slice_symbol_graph,
@@ -80,6 +81,17 @@ enum Command {
         json: bool,
         #[arg(long)]
         slice: Option<String>,
+        file: PathBuf,
+    },
+    Query {
+        #[arg(long)]
+        json: bool,
+        #[arg(long, value_enum, default_value = "all")]
+        kind: CliQueryKind,
+        #[arg(long)]
+        module: Option<String>,
+        #[arg(long)]
+        exported: bool,
         file: PathBuf,
     },
     Trace {
@@ -282,6 +294,36 @@ fn run(cli: Cli) -> Result<()> {
             }
             Ok(())
         }
+        Command::Query {
+            json,
+            kind,
+            module,
+            exported,
+            file,
+        } => {
+            let program = match load_target_program(&file) {
+                Ok(program) => program,
+                Err(diagnostics) => return emit_diagnostics_and_fail(diagnostics, json),
+            };
+            let diagnostics = check_program(&program);
+            if has_errors(&diagnostics) {
+                return emit_diagnostics_and_fail(diagnostics, json);
+            }
+            let report = build_query_report(
+                &program,
+                QueryOptions {
+                    kind: kind.into(),
+                    module,
+                    exported_only: exported,
+                },
+            );
+            if json {
+                print_json(&report)?;
+            } else {
+                print_human_query_report(&report);
+            }
+            Ok(())
+        }
         Command::Trace { json, trace, file } => {
             let trace_path = trace.unwrap_or_else(|| default_trace_path(&file));
             let receipts = read_trace_receipts(&trace_path)?;
@@ -414,6 +456,25 @@ fn run(cli: Cli) -> Result<()> {
                 }
             }
             Ok(())
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+enum CliQueryKind {
+    All,
+    Modules,
+    Tasks,
+    Calls,
+}
+
+impl From<CliQueryKind> for QueryKind {
+    fn from(kind: CliQueryKind) -> Self {
+        match kind {
+            CliQueryKind::All => Self::All,
+            CliQueryKind::Modules => Self::Modules,
+            CliQueryKind::Tasks => Self::Tasks,
+            CliQueryKind::Calls => Self::Calls,
         }
     }
 }
@@ -857,6 +918,48 @@ fn print_human_graph_slice(slice: &SymbolGraphSlice) {
     for call in &slice.outbound_calls {
         let target = call.target.as_deref().unwrap_or(call.status.as_str());
         println!("call {} -> {}", call.callee, target);
+    }
+}
+
+fn print_human_query_report(report: &QueryReport) {
+    println!(
+        "query schema={} kind={} entry={} modules={} tasks={} calls={}",
+        report.schema,
+        report.kind,
+        report.entry_module,
+        report.modules.len(),
+        report.tasks.len(),
+        report.calls.len()
+    );
+    for module in &report.modules {
+        println!(
+            "module {} imports={} types={} effects={} tasks={}",
+            module.module,
+            module.imports.len(),
+            module.types.len(),
+            module.effects.len(),
+            module.tasks.len()
+        );
+    }
+    for task in &report.tasks {
+        let effects = if task.effects.is_empty() {
+            "none".to_string()
+        } else {
+            task.effects.join(",")
+        };
+        println!(
+            "task {} -> {} takes={} effects={} outbound_calls={} inbound_calls={}",
+            task.qualified_name,
+            task.return_type,
+            task.takes.len(),
+            effects,
+            task.outbound_call_count,
+            task.inbound_call_count
+        );
+    }
+    for call in &report.calls {
+        let target = call.target.as_deref().unwrap_or(call.status.as_str());
+        println!("call {} -> {}", call.from, target);
     }
 }
 
