@@ -38,6 +38,9 @@ Agent rules:
 - Treat diagnostic `repair_hints` as suggestions, not authority bypasses.
 - For `GRAFT_PRECONDITION_FAILED`, inspect `refresh_graft_precondition` hints;
   stale grafts should be rebuilt from current AST/query state before retrying.
+- For `GRAFT_MOVE_UNSUPPORTED` and `GRAFT_DELETE_UNSUPPORTED`, inspect
+  `use_supported_graft_operation` hints before retrying; expression targets
+  should normally switch to `ReplaceExpression` instead of move/delete.
 - For `CALL_ARITY_MISMATCH`, prefer structural `update_call_args` or
   `remove_call_arg` hints when present; their replacements are starter
   `UpdateCallArgs` or `RemoveCallArg` graft JSON.

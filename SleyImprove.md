@@ -207,7 +207,8 @@ Priority diagnostic families:
 - ambiguous imported task/type/effect: implemented with qualification hints
 - stale graft preconditions: implemented with `refresh_graft_precondition`
   hints that tell agents to re-read current target state before retrying
-- unsupported graft operation
+- unsupported graft operation: implemented with `use_supported_graft_operation`
+  hints, plus `replace_expression` guidance for expression move/delete attempts
 - module namespace conflicts
 
 ## Improvement 3: Graft-First Editing

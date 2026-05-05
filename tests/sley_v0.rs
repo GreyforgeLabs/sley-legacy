@@ -1319,6 +1319,11 @@ task main -> Int {
         "expected move unsupported diagnostic, got {:#?}",
         outcome.diagnostics
     );
+    assert_has_repair_hint(
+        &outcome.diagnostics,
+        "GRAFT_MOVE_UNSUPPORTED",
+        "use_supported_graft_operation",
+    );
 }
 
 #[test]
@@ -1358,6 +1363,11 @@ task main -> Int {
         "expected move unsupported diagnostic, got {:#?}",
         outcome.diagnostics
     );
+    assert_has_repair_hint(
+        &outcome.diagnostics,
+        "GRAFT_MOVE_UNSUPPORTED",
+        "use_supported_graft_operation",
+    );
 }
 
 #[test]
@@ -1395,6 +1405,11 @@ task main -> Int {
         "expected move unsupported diagnostic, got {:#?}",
         outcome.diagnostics
     );
+    assert_has_repair_hint(
+        &outcome.diagnostics,
+        "GRAFT_MOVE_UNSUPPORTED",
+        "use_supported_graft_operation",
+    );
 }
 
 #[test]
@@ -1418,6 +1433,11 @@ fn move_node_rejects_expression_targets() {
         &outcome.diagnostics,
         "GRAFT_MOVE_UNSUPPORTED",
         "replace_expression",
+    );
+    assert_has_repair_hint(
+        &outcome.diagnostics,
+        "GRAFT_MOVE_UNSUPPORTED",
+        "use_supported_graft_operation",
     );
 }
 
@@ -1527,6 +1547,16 @@ fn delete_node_rejects_expression_targets_without_replacement() {
             .any(|diagnostic| diagnostic.id == "GRAFT_DELETE_UNSUPPORTED"),
         "expected delete unsupported diagnostic, got {:#?}",
         outcome.diagnostics
+    );
+    assert_has_repair_hint(
+        &outcome.diagnostics,
+        "GRAFT_DELETE_UNSUPPORTED",
+        "replace_expression",
+    );
+    assert_has_repair_hint(
+        &outcome.diagnostics,
+        "GRAFT_DELETE_UNSUPPORTED",
+        "use_supported_graft_operation",
     );
 }
 

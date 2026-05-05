@@ -659,9 +659,12 @@ available, `effect` names required authority when relevant, and `replacement`
 carries compact source, type, graft JSON, or retry guidance. For example,
 unsupported expression `MoveNode` targets carry a `replace_expression` hint so
 agents can switch to `ReplaceExpression` instead of retrying an unsupported
-move. Stale graft precondition failures carry a `refresh_graft_precondition`
-hint so agents re-read current target state and rebuild the graft before
-retrying. Call
+move. Unsupported graft shapes also carry `use_supported_graft_operation`
+guidance that points agents toward the supported parent, destination, or
+operation shape; expression `DeleteNode` targets additionally carry
+`replace_expression` because expressions require replacement, not deletion.
+Stale graft precondition failures carry a `refresh_graft_precondition` hint so
+agents re-read current target state and rebuild the graft before retrying. Call
 argument type mismatches carry both an expression-level `replace_argument` hint
 and a structural `replace_call_arg` hint whose `replacement` is a starter
 `ReplaceCallArg` graft JSON payload scoped to the current caller and raw

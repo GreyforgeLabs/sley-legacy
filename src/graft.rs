@@ -1037,6 +1037,15 @@ fn delete_node(program: &mut Program, target: &str) -> Result<String, Vec<Diagno
                 "GRAFT_DELETE_UNSUPPORTED",
                 format!("expression target `{target}` cannot be deleted without replacement"),
             )
+            .with_repair_hint(
+                RepairHint::new("replace_expression")
+                    .with_target(target)
+                    .with_replacement("Use ReplaceExpression with payload.source"),
+            )
+            .with_repair_hint(unsupported_graft_operation_hint(
+                target,
+                "DeleteNode only removes declarations, imports, takes, and statements",
+            ))
             .with_node(target.to_string()),
         ]);
     }
@@ -1168,6 +1177,10 @@ fn move_node(
                 "GRAFT_MOVE_UNSUPPORTED",
                 format!("take target `{target}` cannot be moved by v0 MoveNode"),
             )
+            .with_repair_hint(unsupported_graft_operation_hint(
+                target,
+                "Move takes only within their owning task with the owning task takes parent",
+            ))
             .with_node(target.to_string()),
         ]);
     }
@@ -1183,6 +1196,10 @@ fn move_node(
                     .with_target(target)
                     .with_replacement("Use ReplaceExpression with payload.source"),
             )
+            .with_repair_hint(unsupported_graft_operation_hint(
+                target,
+                "Expression targets cannot be moved; replace the expression source instead",
+            ))
             .with_node(target.to_string()),
         ]);
     }
@@ -1205,6 +1222,10 @@ fn ensure_no_move_destination(
             "GRAFT_MOVE_UNSUPPORTED",
             "MoveNode payload.destination is only supported for statement targets",
         )
+        .with_repair_hint(unsupported_graft_operation_hint(
+            target,
+            "Omit payload.destination for declaration reordering, or use a module parent for cross-module declaration moves",
+        ))
         .with_node(target.to_string()),
     ])
 }
@@ -1221,6 +1242,10 @@ fn move_take(
                     "GRAFT_MOVE_UNSUPPORTED",
                     "MoveNode payload.destination is not supported for take targets",
                 )
+                .with_repair_hint(unsupported_graft_operation_hint(
+                    target,
+                    "Omit payload.destination and reorder the take within its owning task",
+                ))
                 .with_node(target.to_string()),
             ])
         } else {
@@ -1287,6 +1312,10 @@ fn ensure_parent_in_strings(
                     accepted_parents.join(", ")
                 ),
             )
+            .with_repair_hint(unsupported_graft_operation_hint(
+                target,
+                "Re-read the graph slice and set payload.parent to an accepted parent",
+            ))
             .with_node(target.to_string()),
         ])
     }
@@ -1311,6 +1340,10 @@ fn declaration_move_parent_module(
                 "GRAFT_MOVE_UNSUPPORTED",
                 format!("MoveNode {kind} parent `{parent}` must use `module:<path>:{parent_kind}`"),
             )
+            .with_repair_hint(unsupported_graft_operation_hint(
+                target,
+                format!("Use parent `module:<path>:{parent_kind}` or omit parent for top-level reordering"),
+            ))
             .with_node(target.to_string()),
         ]);
     };
@@ -1320,6 +1353,10 @@ fn declaration_move_parent_module(
                 "GRAFT_MOVE_UNSUPPORTED",
                 format!("MoveNode {kind} parent `{parent}` must use `module:<path>:{parent_kind}`"),
             )
+            .with_repair_hint(unsupported_graft_operation_hint(
+                target,
+                format!("Use parent `module:<path>:{parent_kind}` or omit parent for top-level reordering"),
+            ))
             .with_node(target.to_string()),
         ]);
     }
@@ -1459,6 +1496,10 @@ fn move_statement_to_destination(
                 "GRAFT_MOVE_UNSUPPORTED",
                 format!("MoveNode cannot move statement `{target}` into its own child block"),
             )
+            .with_repair_hint(unsupported_graft_operation_hint(
+                target,
+                "Choose an existing sibling or ancestor block destination outside the moved statement",
+            ))
             .with_node(target.to_string()),
         ]);
     }
@@ -1880,6 +1921,10 @@ fn ensure_parent_in_set(
                     accepted_parents.join(", ")
                 ),
             )
+            .with_repair_hint(unsupported_graft_operation_hint(
+                target,
+                "Re-read the graph slice and set payload.parent to an accepted parent",
+            ))
             .with_node(target.to_string()),
         ])
     }
@@ -1903,6 +1948,10 @@ fn ensure_parent_matches(
                     "MoveNode for `{target}` cannot move across parents; expected `{expected_parent}` but got `{parent}`"
                 ),
             )
+            .with_repair_hint(unsupported_graft_operation_hint(
+                target,
+                "Re-read the graph slice and set payload.parent to the current statement parent",
+            ))
             .with_node(target.to_string()),
         ])
     }
@@ -2182,6 +2231,12 @@ fn stale_precondition_hint(target: Option<String>) -> RepairHint {
     } else {
         hint
     }
+}
+
+fn unsupported_graft_operation_hint(target: &str, guidance: impl Into<String>) -> RepairHint {
+    RepairHint::new("use_supported_graft_operation")
+        .with_target(target)
+        .with_replacement(guidance)
 }
 
 fn parse_callee_source(source: &str) -> Result<Expr, Vec<Diagnostic>> {
