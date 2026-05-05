@@ -700,6 +700,41 @@ task main -> Int {
 }
 
 #[test]
+fn move_node_rejects_unknown_destination_module() {
+    let source = r#"
+module app.main
+
+task helper -> Int {
+  return 1
+}
+
+task main -> Int {
+  return 2
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let graft_source = r#"
+{
+  "op": "MoveNode",
+  "target": "task:app.main.helper",
+  "payload": { "parent": "module:app.extra:tasks", "position": 0 }
+}
+"#;
+    let graft: GraftInput = serde_json::from_str(graft_source).expect("parse graft");
+    let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
+
+    assert_eq!(outcome.status, "rejected");
+    assert!(
+        outcome
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.id == "GRAFT_MODULE_MISSING"),
+        "expected missing module diagnostic, got {:#?}",
+        outcome.diagnostics
+    );
+}
+
+#[test]
 fn move_node_rejects_expression_targets() {
     let source = "task main -> Int {\n  return 1 + 41\n}\n";
     let program = parse_program(source).expect("parse source");
@@ -4579,6 +4614,90 @@ task main -> Int {
     assert_eq!(receipts.len(), 1);
     assert_eq!(receipts[0].provenance.len(), 1);
     assert_eq!(receipts[0].provenance[0].operation, "RenameDeclaration");
+
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn project_graft_write_moves_task_between_modules() {
+    let root = temp_project_dir("project-graft-move-task-module");
+    fs::create_dir_all(root.join("src/app")).expect("create project dirs");
+    fs::write(
+        root.join("sley.toml"),
+        r#"
+[project]
+entry = "app.main"
+"#,
+    )
+    .expect("write manifest");
+    let main_source = r#"module app.main
+
+import app.extra
+
+export task helper -> Int {
+  return 2
+}
+
+task main -> Int {
+  return 1
+}
+"#;
+    let extra_source = r#"module app.extra
+"#;
+    let main_path = root.join("src/app/main.sley");
+    let extra_path = root.join("src/app/extra.sley");
+    let graft_path = root.join("move_helper_module.json");
+    fs::write(&main_path, main_source).expect("write main module");
+    fs::write(&extra_path, extra_source).expect("write extra module");
+    fs::write(
+        &graft_path,
+        r#"
+{
+  "op": "MoveNode",
+  "target": "task:app.main.helper",
+  "payload": { "parent": "module:app.extra:tasks", "position": 0 }
+}
+"#,
+    )
+    .expect("write graft");
+
+    let output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args(["graft", "--json", "--write"])
+        .arg(&root)
+        .arg(&graft_path)
+        .output()
+        .expect("run project graft");
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+    assert!(
+        output.status.success(),
+        "project writeback should move task between modules; stderr={}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let outcome: GraftOutcome = serde_json::from_str(&stdout).expect("parse outcome");
+    assert_eq!(outcome.status, "accepted");
+    assert_eq!(
+        fs::read_to_string(&main_path).expect("read main"),
+        "module app.main\n\nimport app.extra\n\ntask main -> Int {\n  return 1\n}\n"
+    );
+    assert_eq!(
+        fs::read_to_string(&extra_path).expect("read extra"),
+        "module app.extra\n\nexport task helper -> Int {\n  return 2\n}\n"
+    );
+    let check = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args(["check", "--json"])
+        .arg(&root)
+        .output()
+        .expect("check moved project");
+    assert!(
+        check.status.success(),
+        "moved project should check; stdout={} stderr={}",
+        String::from_utf8_lossy(&check.stdout),
+        String::from_utf8_lossy(&check.stderr)
+    );
+    let receipts = read_trace_receipts(&root.join(".sley/trace.jsonl")).expect("read trace");
+    assert_eq!(receipts.len(), 1);
+    assert_eq!(receipts[0].provenance.len(), 1);
+    assert_eq!(receipts[0].provenance[0].operation, "MoveNode");
 
     let _ = fs::remove_dir_all(root);
 }

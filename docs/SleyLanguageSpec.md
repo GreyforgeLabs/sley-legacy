@@ -413,6 +413,8 @@ inserting checked task-body statements, replacing expressions by node id, and
 deleting checked graph nodes such as declarations, imports, takes, and
 statements. `MoveNode` reorders statements within their existing block and
 top-level imports, types, effects, or tasks within their declaration lists.
+It can also move top-level types, effects, or tasks into a known loaded or
+imported module parent such as `module:app.extra:tasks`.
 Unsupported graph movement returns explicit diagnostics until implemented.
 
 Implemented graph-edit payloads:
@@ -425,6 +427,7 @@ Implemented graph-edit payloads:
 { "op": "DeleteNode", "target": "block:task:app.main.main:stmt:1" }
 { "op": "MoveNode", "target": "block:task:app.main.main:stmt:1", "payload": { "parent": "block:task:app.main.main", "position": 0 } }
 { "op": "MoveNode", "target": "task:app.main.helper", "payload": { "parent": "program.tasks", "position": 0 } }
+{ "op": "MoveNode", "target": "task:app.main.helper", "payload": { "parent": "module:app.extra:tasks", "position": 0 } }
 ```
 
 `UpdateCallSites` rewrites call expressions that either resolve to the target
@@ -435,8 +438,13 @@ targets unless the agent uses `ReplaceExpression` instead. `MoveNode` currently
 requires `payload.position`; `payload.parent` is optional but, when present,
 must identify the current parent. Statement moves use a block parent such as
 `block:task:app.main.main`; top-level declaration moves accept `program.imports`,
-`program.types`, `program.effects`, or `program.tasks`. Expression moves, take
-moves, and cross-parent moves reject with `GRAFT_MOVE_UNSUPPORTED`. Each
+`program.types`, `program.effects`, or `program.tasks`. Top-level type, effect,
+and task moves can use `module:<path>:types`, `module:<path>:effects`, or
+`module:<path>:tasks` to change declaration ownership and place the declaration
+at a module-local position. The destination module must already be loaded or
+imported in the checked candidate; otherwise `GRAFT_MODULE_MISSING` rejects the
+move before mutation. Expression moves, take moves, import cross-module moves,
+and cross-parent statement moves reject with `GRAFT_MOVE_UNSUPPORTED`. Each
 accepted edit reparses the payload when applicable, rewrites the AST, refreshes
 expression source text, and reruns the checker before returning formatted
 source.
@@ -656,10 +664,10 @@ archive.
   remain outside v0
 - no `match`, agent declarations, spawn/cast/join, or compressed ZJX archive
   writer yet
-- `MoveNode` supports checked in-parent statement reordering and top-level
-  declaration ordering; cross-parent movement, take movement, and expression
+- `MoveNode` supports checked in-parent statement reordering, top-level
+  declaration ordering, and top-level type/effect/task movement into known
+  modules; cross-parent statement movement, take movement, and expression
   movement are still explicit rejections
 - project graft writeback updates existing module files, creates checked new
   module files, deletes removed module files, renames module files, and updates
-  the project manifest for entry-module renames; cross-parent declaration
-  movement remains a later step
+  the project manifest for entry-module renames

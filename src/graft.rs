@@ -850,6 +850,20 @@ fn move_node(
     payload: &MoveNodePayload,
 ) -> Result<String, Vec<Diagnostic>> {
     if let Some(index) = program.find_task_index(target) {
+        if let Some(module) =
+            declaration_move_parent_module(program, payload, target, "task", "tasks")?
+        {
+            return move_declaration_to_module(
+                &mut program.tasks,
+                index,
+                &module,
+                payload,
+                target,
+                "task",
+                task_module,
+                |task, module| task.module = Some(module),
+            );
+        }
         return move_index(
             &mut program.tasks,
             index,
@@ -865,6 +879,20 @@ fn move_node(
         .iter()
         .position(|ty| declaration_matches_target("type", &ty.id, &ty.name, target))
     {
+        if let Some(module) =
+            declaration_move_parent_module(program, payload, target, "type", "types")?
+        {
+            return move_declaration_to_module(
+                &mut program.types,
+                index,
+                &module,
+                payload,
+                target,
+                "type",
+                type_module,
+                |ty, module| ty.module = Some(module),
+            );
+        }
         return move_index(
             &mut program.types,
             index,
@@ -880,6 +908,20 @@ fn move_node(
         .iter()
         .position(|effect| declaration_matches_target("effect", &effect.id, &effect.name, target))
     {
+        if let Some(module) =
+            declaration_move_parent_module(program, payload, target, "effect", "effects")?
+        {
+            return move_declaration_to_module(
+                &mut program.effects,
+                index,
+                &module,
+                payload,
+                target,
+                "effect",
+                effect_module,
+                |effect, module| effect.module = Some(module),
+            );
+        }
         return move_index(
             &mut program.effects,
             index,
@@ -933,6 +975,106 @@ fn move_node(
         "GRAFT_TARGET_MISSING",
         format!("target `{target}` does not exist"),
     )])
+}
+
+fn declaration_move_parent_module(
+    program: &Program,
+    payload: &MoveNodePayload,
+    target: &str,
+    kind: &str,
+    parent_kind: &str,
+) -> Result<Option<String>, Vec<Diagnostic>> {
+    let Some(parent) = payload.parent.as_deref() else {
+        return Ok(None);
+    };
+    let Some(value) = parent.strip_prefix("module:") else {
+        return Ok(None);
+    };
+    let Some((module, suffix)) = value.rsplit_once(':') else {
+        return Err(vec![
+            Diagnostic::error(
+                "GRAFT_MOVE_UNSUPPORTED",
+                format!("MoveNode {kind} parent `{parent}` must use `module:<path>:{parent_kind}`"),
+            )
+            .with_node(target.to_string()),
+        ]);
+    };
+    if suffix != parent_kind {
+        return Err(vec![
+            Diagnostic::error(
+                "GRAFT_MOVE_UNSUPPORTED",
+                format!("MoveNode {kind} parent `{parent}` must use `module:<path>:{parent_kind}`"),
+            )
+            .with_node(target.to_string()),
+        ]);
+    }
+    if let Some(diagnostic) = validate_module_name(module) {
+        return Err(vec![diagnostic]);
+    }
+    if !program_modules(program).contains(module) {
+        return Err(vec![
+            Diagnostic::error(
+                "GRAFT_MODULE_MISSING",
+                format!("MoveNode destination module `{module}` is not loaded or imported"),
+            )
+            .with_node(format!("module:{module}")),
+        ]);
+    }
+    Ok(Some(module.to_string()))
+}
+
+fn move_declaration_to_module<T>(
+    items: &mut Vec<T>,
+    index: usize,
+    destination_module: &str,
+    payload: &MoveNodePayload,
+    target: &str,
+    kind: &str,
+    module_of: impl Fn(&T) -> String,
+    set_module: impl Fn(&mut T, String),
+) -> Result<String, Vec<Diagnostic>> {
+    let source_module = module_of(&items[index]);
+    let destination_len = items
+        .iter()
+        .enumerate()
+        .filter(|(item_index, item)| *item_index != index && module_of(item) == destination_module)
+        .count();
+    if payload.position > destination_len {
+        return Err(position_out_of_range(
+            target,
+            payload.position,
+            destination_len + 1,
+            &format!("module:{destination_module}:{kind}s"),
+        ));
+    }
+
+    let mut item = items.remove(index);
+    set_module(&mut item, destination_module.to_string());
+    let insert_index =
+        declaration_insert_index(items, destination_module, payload.position, module_of);
+    items.insert(insert_index, item);
+    Ok(format!(
+        "{kind}:{source_module}->{}:{}",
+        destination_module, payload.position
+    ))
+}
+
+fn declaration_insert_index<T>(
+    items: &[T],
+    destination_module: &str,
+    position: usize,
+    module_of: impl Fn(&T) -> String,
+) -> usize {
+    let mut seen = 0usize;
+    for (index, item) in items.iter().enumerate() {
+        if module_of(item) == destination_module {
+            if seen == position {
+                return index;
+            }
+            seen += 1;
+        }
+    }
+    items.len()
 }
 
 fn move_index<T>(
