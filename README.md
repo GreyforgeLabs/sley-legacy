@@ -10,6 +10,7 @@ Implemented now:
 - `weave run`
 - `weave ast`
 - `weave patch`
+- `weave.toml` project manifests for multi-file module graphs
 - module, import, type, effect, and function declarations
 - record type declarations
 - explicit function parameters and return types
@@ -28,14 +29,32 @@ Implemented now:
   function calls, lexical locals, `set`, operators, `if` expressions,
   statement-level `if`/`else`, `while`, `for`, list literals, map literals,
   indexing, `len`, record literals, and record field access
+- project loading for a manifest entry module plus transitively imported
+  `.weave` modules under the configured source root
 - structural patch operations for adding/removing parameters, replacing
   function bodies, adding imports/effects/types/functions, and renaming
   declarations
+
+Project form:
+
+```toml
+[project]
+name = "module-demo"
+root = "src"
+entry = "app.main"
+```
+
+Module `app.main` resolves to `src/app/main.weave`. `weave parse`,
+`weave check`, `weave run`, and `weave ast` accept either a single `.weave`
+file or a project directory containing `weave.toml`.
 
 Known v0 limits:
 
 - Expression parsing still falls back to raw nodes for unsupported syntax such
   as lambdas, pattern matching, and multi-statement expression blocks.
+- Project imports are bundled into one v0 namespace. Cross-module visibility is
+  intentionally simple, so duplicate function/type/effect names across imported
+  modules are still rejected.
 - Comment attachment and durable provenance storage are not complete. Accepted
   patch provenance is returned by the patch command, but not written into a
   sidecar store.
@@ -46,6 +65,7 @@ Known v0 limits:
   `DeleteNode` are declared but return explicit unsupported-operation
   diagnostics.
 
-The useful next step is to add richer dispatch and module semantics: `match`,
-multi-statement expression blocks, module resolution, broader map key support,
-and a capability-backed host boundary.
+The useful next step is to add richer module semantics and agent tooling:
+qualified names or explicit exports, `weave test`, durable provenance sidecars,
+`match`, multi-statement expression blocks, broader map key support, and a
+capability-backed host boundary.

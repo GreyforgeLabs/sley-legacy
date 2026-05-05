@@ -1,0 +1,7 @@
+module app.main
+
+import app.math
+
+fn main() -> Int {
+  return double(21)
+}

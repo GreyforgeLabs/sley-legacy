@@ -1,5 +1,5 @@
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
@@ -8,6 +8,7 @@ use weavelang::diagnostics::{Diagnostic, DiagnosticReport};
 use weavelang::formatter::format_program;
 use weavelang::parser::parse_program;
 use weavelang::patch::{PatchInput, apply_patch_input};
+use weavelang::project::load_project;
 use weavelang::runtime::run_main;
 
 #[derive(Debug, Parser)]
@@ -73,27 +74,24 @@ fn main() -> Result<()> {
 
 fn run(cli: Cli) -> Result<()> {
     match cli.command {
-        Command::Parse { json, file } => {
-            let source = read_source(&file)?;
-            match parse_program(&source) {
-                Ok(program) => {
-                    if json {
-                        print_json(&program)?;
-                    } else {
-                        println!(
-                            "parsed module={} imports={} types={} effects={} functions={}",
-                            program.module_name(),
-                            program.imports.len(),
-                            program.types.len(),
-                            program.effects.len(),
-                            program.functions.len()
-                        );
-                    }
-                    Ok(())
+        Command::Parse { json, file } => match load_target_program(&file) {
+            Ok(program) => {
+                if json {
+                    print_json(&program)?;
+                } else {
+                    println!(
+                        "parsed module={} imports={} types={} effects={} functions={}",
+                        program.module_name(),
+                        program.imports.len(),
+                        program.types.len(),
+                        program.effects.len(),
+                        program.functions.len()
+                    );
                 }
-                Err(diagnostics) => emit_diagnostics_and_fail(diagnostics, json),
+                Ok(())
             }
-        }
+            Err(diagnostics) => emit_diagnostics_and_fail(diagnostics, json),
+        },
         Command::Format { write, file } => {
             let source = read_source(&file)?;
             let program = parse_program_or_fail(&source)?;
@@ -107,8 +105,10 @@ fn run(cli: Cli) -> Result<()> {
             Ok(())
         }
         Command::Check { json, file } => {
-            let source = read_source(&file)?;
-            let program = parse_program_or_fail(&source)?;
+            let program = match load_target_program(&file) {
+                Ok(program) => program,
+                Err(diagnostics) => return emit_diagnostics_and_fail(diagnostics, json),
+            };
             let diagnostics = check_program(&program);
             if json {
                 print_json(&DiagnosticReport::from_diagnostics(diagnostics.clone()))?;
@@ -123,8 +123,10 @@ fn run(cli: Cli) -> Result<()> {
             Ok(())
         }
         Command::Run { json, file } => {
-            let source = read_source(&file)?;
-            let program = parse_program_or_fail(&source)?;
+            let program = match load_target_program(&file) {
+                Ok(program) => program,
+                Err(diagnostics) => return emit_diagnostics_and_fail(diagnostics, json),
+            };
             let diagnostics = check_program(&program);
             if has_errors(&diagnostics) {
                 return emit_diagnostics_and_fail(diagnostics, json);
@@ -146,8 +148,7 @@ fn run(cli: Cli) -> Result<()> {
             node,
             file,
         } => {
-            let source = read_source(&file)?;
-            let program = parse_program_or_fail(&source)?;
+            let program = load_target_program_or_fail(&file)?;
             if let Some(node) = node {
                 if let Some(function_index) = program.find_function_index(&node) {
                     print_json(&program.functions[function_index])?;
@@ -193,6 +194,28 @@ fn run(cli: Cli) -> Result<()> {
 
 fn read_source(file: &PathBuf) -> Result<String> {
     fs::read_to_string(file).with_context(|| format!("failed to read {}", file.display()))
+}
+
+fn load_target_program(file: &PathBuf) -> Result<weavelang::Program, Vec<Diagnostic>> {
+    if is_project_target(file) {
+        return load_project(file).map(|project| project.program);
+    }
+    let source = fs::read_to_string(file).map_err(|error| {
+        vec![Diagnostic::error(
+            "SOURCE_READ_FAILED",
+            format!("failed to read {}: {error}", file.display()),
+        )]
+    })?;
+    parse_program(&source)
+}
+
+fn load_target_program_or_fail(file: &PathBuf) -> Result<weavelang::Program> {
+    load_target_program(file)
+        .map_err(|diagnostics| anyhow::anyhow!(format_diagnostics(&diagnostics)))
+}
+
+fn is_project_target(file: &Path) -> bool {
+    file.is_dir() || file.file_name().and_then(|name| name.to_str()) == Some("weave.toml")
 }
 
 fn parse_program_or_fail(source: &str) -> Result<weavelang::Program> {

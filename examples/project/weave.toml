@@ -1,0 +1,4 @@
+[project]
+name = "module-demo"
+root = "src"
+entry = "app.main"

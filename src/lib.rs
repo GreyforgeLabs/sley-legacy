@@ -4,6 +4,7 @@ pub mod diagnostics;
 pub mod formatter;
 pub mod parser;
 pub mod patch;
+pub mod project;
 pub mod runtime;
 
 pub use ast::Program;

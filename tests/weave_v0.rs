@@ -1,8 +1,13 @@
+use std::fs;
+use std::path::PathBuf;
+use std::time::{SystemTime, UNIX_EPOCH};
+
 use weavelang::ast::{ExprKind, StatementKind};
 use weavelang::checker::{check_program, has_errors};
 use weavelang::formatter::format_program;
 use weavelang::parser::parse_program;
 use weavelang::patch::{PatchInput, apply_patch_input};
+use weavelang::project::load_project;
 use weavelang::runtime::{Value, run_main};
 
 #[test]
@@ -393,4 +398,110 @@ fn main() -> Text {
         "unexpected diagnostics: {diagnostics:#?}"
     );
     assert_eq!(run_main(&program), Ok(Value::Text("Ada".to_string())));
+}
+
+#[test]
+fn project_loader_resolves_imports_and_bundles_modules() {
+    let root = temp_project_dir("resolves-imports");
+    fs::create_dir_all(root.join("src/app")).expect("create project dirs");
+    fs::write(
+        root.join("weave.toml"),
+        r#"
+[project]
+name = "test-project"
+root = "src"
+entry = "app.main"
+"#,
+    )
+    .expect("write manifest");
+    fs::write(
+        root.join("src/app/main.weave"),
+        r#"
+module app.main
+
+import app.math
+
+fn main() -> Int {
+  return double(21)
+}
+"#,
+    )
+    .expect("write main module");
+    fs::write(
+        root.join("src/app/math.weave"),
+        r#"
+module app.math
+
+fn double(value: Int) -> Int {
+  return value * 2
+}
+"#,
+    )
+    .expect("write math module");
+
+    let project = load_project(&root).expect("load project");
+    assert_eq!(project.entry, "app.main");
+    assert_eq!(project.modules.len(), 2);
+    assert!(
+        project
+            .program
+            .find_function_index("function:app.math.double")
+            .is_some()
+    );
+    let diagnostics = check_program(&project.program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+    assert_eq!(run_main(&project.program), Ok(Value::Int(42)));
+
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn project_loader_reports_missing_imports() {
+    let root = temp_project_dir("missing-imports");
+    fs::create_dir_all(root.join("src/app")).expect("create project dirs");
+    fs::write(
+        root.join("weave.toml"),
+        r#"
+[project]
+entry = "app.main"
+"#,
+    )
+    .expect("write manifest");
+    fs::write(
+        root.join("src/app/main.weave"),
+        r#"
+module app.main
+
+import app.missing
+
+fn main() -> Int {
+  return 1
+}
+"#,
+    )
+    .expect("write main module");
+
+    let diagnostics = load_project(&root).expect_err("project should not load");
+    assert!(
+        diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.id == "PROJECT_MODULE_NOT_FOUND"),
+        "expected missing module diagnostic, got {diagnostics:#?}"
+    );
+
+    let _ = fs::remove_dir_all(root);
+}
+
+fn temp_project_dir(name: &str) -> PathBuf {
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("clock is before unix epoch")
+        .as_nanos();
+    std::env::temp_dir().join(format!(
+        "weavelang-{name}-{}-{timestamp}",
+        std::process::id()
+    ))
 }

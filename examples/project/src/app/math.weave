@@ -1,0 +1,5 @@
+module app.math
+
+fn double(value: Int) -> Int {
+  return value * 2
+}
