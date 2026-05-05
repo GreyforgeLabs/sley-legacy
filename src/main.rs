@@ -13,7 +13,7 @@ use sley::formatter::format_program;
 use sley::graft::{GRAFT_OUTCOME_SCHEMA, GraftInput, GraftOutcome, apply_graft_program};
 use sley::lint::{LintOptions, LintReport, LintRule, build_lint_report};
 use sley::parser::parse_program;
-use sley::plan::{EditPlanReport, build_edit_plan_report};
+use sley::plan::{EditPlanOptions, EditPlanReport, build_edit_plan_report_with_options};
 use sley::project::{ProjectGraph, load_project};
 use sley::query::{QueryKind, QueryOptions, QueryReport, build_query_report};
 use sley::runtime::{RuntimeGate, RuntimeGates, run_main, run_main_with_gates};
@@ -134,6 +134,8 @@ enum Command {
         json: bool,
         #[arg(long)]
         deny_warnings: bool,
+        #[arg(long)]
+        graft_templates: bool,
         file: PathBuf,
     },
     Verify {
@@ -478,10 +480,18 @@ fn run(cli: Cli) -> Result<()> {
         Command::Plan {
             json,
             deny_warnings,
+            graft_templates,
             file,
         } => {
             let target = file.display().to_string();
-            let report = build_edit_plan_report(target, load_target_program(&file), deny_warnings);
+            let report = build_edit_plan_report_with_options(
+                target,
+                load_target_program(&file),
+                EditPlanOptions {
+                    deny_warnings,
+                    include_graft_templates: graft_templates,
+                },
+            );
             if json {
                 print_json(&report)?;
             } else {
@@ -1508,6 +1518,9 @@ fn print_human_edit_plan_report(report: &EditPlanReport) {
         report.summary.lint_finding_count,
         report.summary.task_surface_count
     );
+    if !report.graft_templates.is_empty() {
+        println!("graft_templates={}", report.graft_templates.len());
+    }
     for surface in &report.task_surfaces {
         println!(
             "surface {} inbound_calls={} outbound_calls={} notes={}",

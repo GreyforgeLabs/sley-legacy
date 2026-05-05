@@ -108,7 +108,8 @@ Implemented now:
   `schema: "sley.doctor.report.v0"` for agent pre-edit gates
 - checked JSON edit-plan reports with `sley plan`, consuming strict
   diagnostics plus query and lint findings into ranked task edit surfaces,
-  graft target ids, and `schema: "sley.edit_plan.report.v0"`
+  graft target ids, optional `--graft-templates` starter operation payloads,
+  and `schema: "sley.edit_plan.report.v0"`
 - checked JSON verification reports with `sley verify`, consuming strict
   diagnostics, query summaries, lint findings, and deterministic runtime
   execution into `schema: "sley.verify.report.v0"` for CI and pre-deploy gates

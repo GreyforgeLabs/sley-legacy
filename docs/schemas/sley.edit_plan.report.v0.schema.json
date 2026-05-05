@@ -29,6 +29,10 @@
       "type": "array",
       "items": { "$ref": "#/$defs/taskSurface" }
     },
+    "graft_templates": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/graftTemplate" }
+    },
     "next_actions": {
       "type": "array",
       "items": { "$ref": "#/$defs/action" }
@@ -167,6 +171,35 @@
           "type": "array",
           "minItems": 1,
           "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "graftTemplate": {
+      "type": "object",
+      "required": [
+        "kind",
+        "reason",
+        "surface",
+        "operation",
+        "editable_json_pointers"
+      ],
+      "properties": {
+        "kind": { "type": "string", "minLength": 1 },
+        "reason": { "type": "string", "minLength": 1 },
+        "surface": { "type": "string", "minLength": 1 },
+        "operation": {
+          "type": "object",
+          "required": ["op", "target"],
+          "properties": {
+            "op": { "type": "string", "minLength": 1 },
+            "target": { "type": "string", "minLength": 1 }
+          },
+          "additionalProperties": true
+        },
+        "editable_json_pointers": {
+          "type": "array",
+          "items": { "type": "string" }
         }
       },
       "additionalProperties": false

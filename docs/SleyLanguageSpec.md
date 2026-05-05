@@ -519,7 +519,7 @@ sley graph --json <target>
 sley graph --json --slice task:app.main.main <target>
 sley new --json --template deploy --name agent-app agent-app
 sley doctor --json <target>
-sley plan --json <target>
+sley plan --json [--graft-templates] <target>
 sley query --json --kind tasks --module app.main <target>
 sley lint --json <target>
 sley trace --json <target>
@@ -603,7 +603,10 @@ with stable task ids, qualified names, takes, call counts, declared effects,
 graft target ids, and planning notes; and gives next-command vectors for graph
 slice inspection plus post-edit doctor and verify gates. `--deny-warnings`
 treats lint findings as blocked while still printing
-`schema: "sley.edit_plan.report.v0"`.
+`schema: "sley.edit_plan.report.v0"`. `--graft-templates` adds starter strict
+graft operation payloads for the highest-ranked task surface, plus JSON
+pointers naming the fields an agent should edit before running
+`sley graft --json --dry-run`.
 
 A graph slice is a bounded shard around a module, task, type, effect, or import.
 Task slices include the selected task AST, visible module declarations,
@@ -683,8 +686,9 @@ archive.
 - `sley lint` currently ships warning-grade private-task graph rules, authority
   hygiene for unused declared effects, and raw-host-adapter migration warnings;
   broader style and migration lints remain later work
-- `sley plan` emits deterministic ranked task edit surfaces and post-edit gate
-  commands, but does not synthesize graft payloads yet
+- `sley plan` emits deterministic ranked task edit surfaces, optional starter
+  graft operation templates, and post-edit gate commands; it does not yet
+  choose or execute a final graft for the agent
 - `sley verify` emits a deterministic CI/pre-deploy report over strict check,
   query/lint summaries, and runtime execution; live deploy/provider calls
   remain outside v0

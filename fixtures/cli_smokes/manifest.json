@@ -198,6 +198,26 @@
       }
     },
     {
+      "name": "plan_project_graft_templates_json",
+      "args": ["plan", "--json", "--graft-templates", "examples/project"],
+      "covers": [
+        "cli:plan",
+        "graft:templates",
+        "json:sley.edit_plan.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.edit_plan.report.v0" },
+          { "pointer": "/graft_templates/0/kind", "value": "replace_task_body" },
+          { "pointer": "/graft_templates/0/surface", "value": "task:app.main.main" },
+          { "pointer": "/graft_templates/0/operation/op", "value": "ReplaceTaskBody" },
+          { "pointer": "/graft_templates/0/operation/payload/statements/0", "value": "return 0" },
+          { "pointer": "/graft_templates/1/operation/op", "value": "RenameDeclaration" }
+        ]
+      }
+    },
+    {
       "name": "verify_project_json",
       "args": ["verify", "--json", "examples/project"],
       "covers": [

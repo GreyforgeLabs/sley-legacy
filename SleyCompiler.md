@@ -219,7 +219,9 @@ Near-term:
    reports.
 4. Consume `sley.query.report.v0` and `sley.lint.report.v0` from helper
    passes. `sley doctor` is the first deterministic readiness helper on top of
-   those surfaces; next broaden authority, style, and migration lints.
+   those surfaces, and `sley plan --graft-templates` now turns them into ranked
+   edit surfaces plus starter graft operation payloads. Next broaden authority,
+   style, and migration lints.
 5. Extend graph-slice graft planning around checked move/delete operations.
 6. Harden project graft writeback beyond existing-module edits.
 

@@ -13,7 +13,10 @@ use sley::formatter::format_program;
 use sley::graft::{GRAFT_OUTCOME_SCHEMA, GraftInput, GraftOutcome, apply_graft_input};
 use sley::lint::{LINT_REPORT_SCHEMA, LintOptions, LintRule, build_lint_report};
 use sley::parser::parse_program;
-use sley::plan::{EDIT_PLAN_REPORT_SCHEMA, build_edit_plan_report};
+use sley::plan::{
+    EDIT_PLAN_REPORT_SCHEMA, EditPlanOptions, build_edit_plan_report,
+    build_edit_plan_report_with_options,
+};
 use sley::project::load_project;
 use sley::query::{QUERY_REPORT_SCHEMA, QueryKind, QueryOptions, build_query_report};
 use sley::runtime::{RuntimeGates, Value, run_main, run_main_with_gates};
@@ -565,6 +568,10 @@ task orphan -> Int {
         report.next_actions[0].kind, "repair_lint_findings",
         "warning plans should lead with the lint repair surface"
     );
+    assert!(
+        report.graft_templates.is_empty(),
+        "default plan reports should stay compact unless templates are requested"
+    );
 
     let denied = build_edit_plan_report("app.plan", Ok(program), true);
     assert_eq!(denied.status, "blocked");
@@ -573,6 +580,62 @@ task orphan -> Int {
         denied.lint.as_ref().expect("denied lint").findings[0].id,
         "UNUSED_PRIVATE_TASK"
     );
+}
+
+#[test]
+fn edit_plan_report_can_emit_primary_surface_graft_templates() {
+    let source = r#"
+module app.plan
+
+task main -> Result<Text, Error> {
+  return Ok("ready")
+}
+"#;
+    let program = parse_program(source).expect("parse template plan fixture");
+    let report = build_edit_plan_report_with_options(
+        "app.plan",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+        },
+    );
+    assert_eq!(report.status, "ready");
+    assert_eq!(report.graft_templates.len(), 4);
+    assert_eq!(report.graft_templates[0].kind, "replace_task_body");
+    assert_eq!(
+        report.graft_templates[0]
+            .operation
+            .pointer("/payload/statements/0"),
+        Some(&serde_json::json!("return Ok(\"\")"))
+    );
+    assert_eq!(
+        report.graft_templates[1].operation.pointer("/op"),
+        Some(&serde_json::json!("RenameDeclaration"))
+    );
+    assert_eq!(
+        report.graft_templates[2].editable_json_pointers,
+        vec!["/payload/name", "/payload/type", "/payload/position"]
+    );
+    assert_eq!(
+        report.graft_templates[3]
+            .operation
+            .pointer("/payload/parent"),
+        Some(&serde_json::json!("module:app.plan:tasks"))
+    );
+    for template in &report.graft_templates {
+        serde_json::from_value::<GraftInput>(template.operation.clone())
+            .expect("template should be strict graft JSON");
+    }
+    let replace_template: GraftInput =
+        serde_json::from_value(report.graft_templates[0].operation.clone())
+            .expect("parse replace template");
+    let outcome = apply_graft_input(
+        &program,
+        replace_template,
+        Some("agent:template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted");
 }
 
 #[test]
@@ -1412,6 +1475,19 @@ task main -> Text uses Network {
     assert_json_snapshot(
         &edit_plan,
         include_str!("../fixtures/contracts/edit_plan_project_ready.json"),
+    );
+
+    let edit_plan_with_templates = build_edit_plan_report_with_options(
+        "examples/project",
+        Ok(project.program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+        },
+    );
+    assert_json_snapshot(
+        &edit_plan_with_templates,
+        include_str!("../fixtures/contracts/edit_plan_project_graft_templates.json"),
     );
 
     let verify = build_verify_report(

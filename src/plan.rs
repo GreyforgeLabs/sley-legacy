@@ -1,4 +1,5 @@
 use serde::Serialize;
+use serde_json::{Value as JsonValue, json};
 
 use crate::Program;
 use crate::checker::{check_program, has_errors};
@@ -21,7 +22,15 @@ pub struct EditPlanReport {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub lint: Option<EditPlanLintSummary>,
     pub task_surfaces: Vec<EditPlanTaskSurface>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub graft_templates: Vec<EditPlanGraftTemplate>,
     pub next_actions: Vec<EditPlanAction>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct EditPlanOptions {
+    pub deny_warnings: bool,
+    pub include_graft_templates: bool,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -95,12 +104,37 @@ pub struct EditPlanAction {
     pub command: Vec<String>,
 }
 
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct EditPlanGraftTemplate {
+    pub kind: String,
+    pub reason: String,
+    pub surface: String,
+    pub operation: JsonValue,
+    pub editable_json_pointers: Vec<String>,
+}
+
 pub fn build_edit_plan_report(
     target: impl Into<String>,
     program_result: Result<Program, Vec<Diagnostic>>,
     deny_warnings: bool,
 ) -> EditPlanReport {
+    build_edit_plan_report_with_options(
+        target,
+        program_result,
+        EditPlanOptions {
+            deny_warnings,
+            include_graft_templates: false,
+        },
+    )
+}
+
+pub fn build_edit_plan_report_with_options(
+    target: impl Into<String>,
+    program_result: Result<Program, Vec<Diagnostic>>,
+    options: EditPlanOptions,
+) -> EditPlanReport {
     let target = target.into();
+    let deny_warnings = options.deny_warnings;
     let program = match program_result {
         Ok(program) => program,
         Err(diagnostics) => {
@@ -115,6 +149,7 @@ pub fn build_edit_plan_report(
                 query: None,
                 lint: None,
                 task_surfaces: Vec::new(),
+                graft_templates: Vec::new(),
                 next_actions: blocked_actions(&target),
             };
         }
@@ -133,6 +168,7 @@ pub fn build_edit_plan_report(
             query: None,
             lint: None,
             task_surfaces: Vec::new(),
+            graft_templates: Vec::new(),
             next_actions: blocked_actions(&target),
         };
     }
@@ -175,6 +211,11 @@ pub fn build_edit_plan_report(
     } else {
         ready_actions(&target, &query_report, &task_surfaces)
     };
+    let graft_templates = if options.include_graft_templates {
+        build_graft_templates(&task_surfaces)
+    } else {
+        Vec::new()
+    };
 
     EditPlanReport {
         schema: EDIT_PLAN_REPORT_SCHEMA.to_string(),
@@ -186,6 +227,7 @@ pub fn build_edit_plan_report(
         query: Some(query),
         lint: Some(lint),
         task_surfaces,
+        graft_templates,
         next_actions,
     }
 }
@@ -318,6 +360,156 @@ fn surface_rank(surface: &EditPlanTaskSurface, entry_task: &str) -> u8 {
     } else {
         4
     }
+}
+
+fn build_graft_templates(surfaces: &[EditPlanTaskSurface]) -> Vec<EditPlanGraftTemplate> {
+    let Some(surface) = surfaces.first() else {
+        return Vec::new();
+    };
+
+    let mut templates = vec![
+        replace_task_body_template(surface),
+        rename_declaration_template(surface),
+        add_take_template(surface),
+        move_task_template(surface),
+    ];
+    if !surface.exported
+        && !surface
+            .planning_notes
+            .iter()
+            .any(|note| note == "entrypoint_surface")
+    {
+        templates.push(delete_task_template(surface));
+    }
+    templates
+}
+
+fn replace_task_body_template(surface: &EditPlanTaskSurface) -> EditPlanGraftTemplate {
+    EditPlanGraftTemplate {
+        kind: "replace_task_body".to_string(),
+        reason: "replace the checked task body when the planned edit changes task logic"
+            .to_string(),
+        surface: surface.id.clone(),
+        operation: json!({
+            "op": "ReplaceTaskBody",
+            "target": surface.id,
+            "payload": {
+                "statements": [default_return_statement(&surface.return_type)]
+            }
+        }),
+        editable_json_pointers: vec!["/payload/statements".to_string()],
+    }
+}
+
+fn rename_declaration_template(surface: &EditPlanTaskSurface) -> EditPlanGraftTemplate {
+    EditPlanGraftTemplate {
+        kind: "rename_declaration".to_string(),
+        reason: "rename the task declaration; pair with UpdateCallSites when callers must change"
+            .to_string(),
+        surface: surface.id.clone(),
+        operation: json!({
+            "op": "RenameDeclaration",
+            "target": surface.id,
+            "payload": {
+                "name": format!("renamed_{}", declaration_name(&surface.qualified_name))
+            }
+        }),
+        editable_json_pointers: vec!["/payload/name".to_string()],
+    }
+}
+
+fn add_take_template(surface: &EditPlanTaskSurface) -> EditPlanGraftTemplate {
+    EditPlanGraftTemplate {
+        kind: "add_take".to_string(),
+        reason: "add one checked task parameter before updating callers".to_string(),
+        surface: surface.id.clone(),
+        operation: json!({
+            "op": "AddTake",
+            "target": surface.id,
+            "payload": {
+                "name": "new_value",
+                "type": "Text",
+                "position": surface.takes.len()
+            }
+        }),
+        editable_json_pointers: vec![
+            "/payload/name".to_string(),
+            "/payload/type".to_string(),
+            "/payload/position".to_string(),
+        ],
+    }
+}
+
+fn move_task_template(surface: &EditPlanTaskSurface) -> EditPlanGraftTemplate {
+    EditPlanGraftTemplate {
+        kind: "move_node".to_string(),
+        reason: "move or reorder this task by editing the parent module target and position"
+            .to_string(),
+        surface: surface.id.clone(),
+        operation: json!({
+            "op": "MoveNode",
+            "target": surface.id,
+            "payload": {
+                "parent": format!("module:{}:tasks", surface.module),
+                "position": 0
+            }
+        }),
+        editable_json_pointers: vec![
+            "/payload/parent".to_string(),
+            "/payload/position".to_string(),
+        ],
+    }
+}
+
+fn delete_task_template(surface: &EditPlanTaskSurface) -> EditPlanGraftTemplate {
+    EditPlanGraftTemplate {
+        kind: "delete_node".to_string(),
+        reason: "delete a private non-entry task after query and lint prove it is safe".to_string(),
+        surface: surface.id.clone(),
+        operation: json!({
+            "op": "DeleteNode",
+            "target": surface.id
+        }),
+        editable_json_pointers: Vec::new(),
+    }
+}
+
+fn default_return_statement(return_type: &str) -> String {
+    if let Some(ok_type) = result_ok_type(return_type) {
+        return format!("return Ok({})", default_expression(ok_type));
+    }
+    format!("return {}", default_expression(return_type))
+}
+
+fn default_expression(ty: &str) -> &'static str {
+    match ty.trim() {
+        "Int" => "0",
+        "Text" => "\"\"",
+        "Bool" => "false",
+        _ => "TODO_VALUE",
+    }
+}
+
+fn result_ok_type(return_type: &str) -> Option<&str> {
+    let trimmed = return_type.trim();
+    let inner = trimmed.strip_prefix("Result<")?.strip_suffix('>')?.trim();
+    let mut depth = 0usize;
+    for (index, ch) in inner.char_indices() {
+        match ch {
+            '<' => depth += 1,
+            '>' => depth = depth.saturating_sub(1),
+            ',' if depth == 0 => return Some(inner[..index].trim()),
+            _ => {}
+        }
+    }
+    None
+}
+
+fn declaration_name(qualified_name: &str) -> &str {
+    qualified_name
+        .rsplit_once('.')
+        .map(|(_module, name)| name)
+        .unwrap_or(qualified_name)
 }
 
 fn blocked_actions(target: &str) -> Vec<EditPlanAction> {

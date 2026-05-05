@@ -1,0 +1,190 @@
+{
+  "schema": "sley.edit_plan.report.v0",
+  "status": "ready",
+  "target": "examples/project",
+  "entry_module": "app.main",
+  "summary": {
+    "error_count": 0,
+    "warning_count": 0,
+    "module_count": 2,
+    "task_count": 2,
+    "call_count": 1,
+    "lint_finding_count": 0,
+    "task_surface_count": 2
+  },
+  "diagnostics": [],
+  "query": {
+    "source_schema": "sley.query.report.v0",
+    "kind": "all",
+    "module_count": 2,
+    "task_count": 2,
+    "call_count": 1,
+    "entrypoints": [
+      "app.main.main",
+      "app.math.double"
+    ]
+  },
+  "lint": {
+    "source_schema": "sley.lint.report.v0",
+    "status": "ok",
+    "rules": [
+      "unused_private_task",
+      "unreachable_private_task",
+      "unused_declared_effect",
+      "raw_host_adapter"
+    ],
+    "finding_count": 0,
+    "findings": []
+  },
+  "task_surfaces": [
+    {
+      "id": "task:app.main.main",
+      "module": "app.main",
+      "qualified_name": "app.main.main",
+      "exported": false,
+      "takes": [],
+      "return_type": "Int",
+      "effects": [],
+      "inbound_call_count": 0,
+      "outbound_call_count": 1,
+      "graft_targets": [
+        "task:app.main.main",
+        "module:app.main:tasks"
+      ],
+      "planning_notes": [
+        "entrypoint_surface",
+        "has_outbound_calls"
+      ]
+    },
+    {
+      "id": "task:app.math.double",
+      "module": "app.math",
+      "qualified_name": "app.math.double",
+      "exported": true,
+      "takes": [
+        {
+          "name": "value",
+          "binding_kind": "take",
+          "type": "Int"
+        }
+      ],
+      "return_type": "Int",
+      "effects": [],
+      "inbound_call_count": 1,
+      "outbound_call_count": 0,
+      "graft_targets": [
+        "task:app.math.double",
+        "module:app.math:tasks"
+      ],
+      "planning_notes": [
+        "exported_surface",
+        "has_inbound_callers"
+      ]
+    }
+  ],
+  "graft_templates": [
+    {
+      "kind": "replace_task_body",
+      "reason": "replace the checked task body when the planned edit changes task logic",
+      "surface": "task:app.main.main",
+      "operation": {
+        "op": "ReplaceTaskBody",
+        "payload": {
+          "statements": [
+            "return 0"
+          ]
+        },
+        "target": "task:app.main.main"
+      },
+      "editable_json_pointers": [
+        "/payload/statements"
+      ]
+    },
+    {
+      "kind": "rename_declaration",
+      "reason": "rename the task declaration; pair with UpdateCallSites when callers must change",
+      "surface": "task:app.main.main",
+      "operation": {
+        "op": "RenameDeclaration",
+        "payload": {
+          "name": "renamed_main"
+        },
+        "target": "task:app.main.main"
+      },
+      "editable_json_pointers": [
+        "/payload/name"
+      ]
+    },
+    {
+      "kind": "add_take",
+      "reason": "add one checked task parameter before updating callers",
+      "surface": "task:app.main.main",
+      "operation": {
+        "op": "AddTake",
+        "payload": {
+          "name": "new_value",
+          "position": 0,
+          "type": "Text"
+        },
+        "target": "task:app.main.main"
+      },
+      "editable_json_pointers": [
+        "/payload/name",
+        "/payload/type",
+        "/payload/position"
+      ]
+    },
+    {
+      "kind": "move_node",
+      "reason": "move or reorder this task by editing the parent module target and position",
+      "surface": "task:app.main.main",
+      "operation": {
+        "op": "MoveNode",
+        "payload": {
+          "parent": "module:app.main:tasks",
+          "position": 0
+        },
+        "target": "task:app.main.main"
+      },
+      "editable_json_pointers": [
+        "/payload/parent",
+        "/payload/position"
+      ]
+    }
+  ],
+  "next_actions": [
+    {
+      "kind": "inspect_primary_surface",
+      "reason": "graph slice gives bounded AST and call context for the highest-ranked edit surface",
+      "command": [
+        "sley",
+        "graph",
+        "--json",
+        "--slice",
+        "task:app.main.main",
+        "examples/project"
+      ]
+    },
+    {
+      "kind": "post_edit_doctor",
+      "reason": "preserve strict diagnostics and lint readiness after structural edits",
+      "command": [
+        "sley",
+        "doctor",
+        "--json",
+        "--deny-warnings",
+        "examples/project"
+      ]
+    },
+    {
+      "kind": "post_edit_verify",
+      "reason": "run deterministic verification after the planned graft is applied",
+      "command": [
+        "sley",
+        "verify",
+        "--json",
+        "examples/project"
+      ]
+    }
+  ]
+}
