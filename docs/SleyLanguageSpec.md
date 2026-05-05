@@ -1,6 +1,6 @@
 # Sley Language Specification
 
-Status: v0 executable slice plus module task/type/effect namespace, runtime gates, Sley-level Result flow, typed host fallibility, seeded database host reads/writes, seeded network host text, and trace tooling
+Status: v0 executable slice plus module task/type/effect namespace, runtime gates, Sley-level Result flow, typed host fallibility, seeded database host reads/writes, seeded network host text, seeded shell host output, and trace tooling
 
 Sley is a human-readable, agent-writable structural language. The canonical
 program model is a typed graph. `.sley` source is the stable review projection,
@@ -296,6 +296,26 @@ produce `RUNTIME_HTTP_RESPONSE_NOT_FOUND`; empty URLs produce
 `RUNTIME_HTTP_URL_INVALID`; missing `Network` remains a runtime capability
 diagnostic.
 
+`Shell` backs `shell.try_run(command)`. The adapter reads exact seeded command
+outputs supplied by the host and returns `Result<Text, Error>`:
+
+```bash
+sley run --cap Shell --shell-output date 2026-05-05 examples/shell_gate.sley
+```
+
+```sley
+task main -> Result<Text, Error> uses Shell {
+  bind output = call shell.try_run("date")?
+
+  return Ok(output)
+}
+```
+
+This is deterministic host I/O, not subprocess execution. Missing output seeds
+produce `RUNTIME_SHELL_OUTPUT_NOT_FOUND`; empty commands produce
+`RUNTIME_SHELL_COMMAND_INVALID`; missing `Shell` remains a runtime capability
+diagnostic.
+
 ## Graft Model
 
 Agents should edit Sley by submitting structural grafts against bounded graph
@@ -460,10 +480,10 @@ archive.
 
 - runtime gates currently back filesystem text reads/writes, deterministic
   seeded database reads, per-run deterministic database inserts, and seeded
-  network text responses; shell, model, secret, deploy, and spending effects
-  still need host adapters
+  network text responses plus seeded shell command outputs; model, secret,
+  deploy, and spending effects still need host adapters
 - Sley-level `Result` values, `?` propagation, and typed filesystem,
-  database, and network host fallibility execute; other host domains still
+  database, network, and shell host fallibility execute; other host domains still
   need `Result<T, Error>` adapters
 - trace receipts can be sealed, but sidecar storage is not yet a compressed ZJX
   archive

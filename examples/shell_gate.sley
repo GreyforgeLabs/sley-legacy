@@ -1,0 +1,5 @@
+task main -> Result<Text, Error> uses Shell {
+  bind output = call shell.try_run("date")?
+
+  return Ok(output)
+}

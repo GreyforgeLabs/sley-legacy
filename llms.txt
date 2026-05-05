@@ -19,6 +19,7 @@ cargo run -- format <file>
 cargo run -- run --json --cap DatabaseRead --db-table users=examples/users.json examples/db_gate.sley
 cargo run -- run --json --cap DatabaseRead --cap DatabaseWrite examples/db_write_gate.sley
 cargo run -- run --json --cap Network --http-text https://example.test/profile Ada examples/network_gate.sley
+cargo run -- run --json --cap Shell --shell-output date 2026-05-05 examples/shell_gate.sley
 ```
 
 Agent rules:
@@ -35,7 +36,8 @@ Agent rules:
 - Do not use old names or old-project framing. This project is Sley.
 - Current typed host fallibility includes filesystem reads/writes, seeded
   database reads, per-run `db.try_insert` writes, and seeded
-  `http.try_get_text` network text reads.
+  `http.try_get_text` network text reads, plus seeded `shell.try_run` command
+  output reads.
 
 Stable v0 JSON roots:
 
@@ -58,11 +60,11 @@ Contract references:
 Current development phase:
 
 - typed host fallibility is in place for filesystem and seeded database
-  adapters plus seeded network text through explicit `try_` calls returning
-  `Result<T, Error>`
+  adapters plus seeded network text and seeded shell output through explicit
+  `try_` calls returning `Result<T, Error>`
 - expand runtime host adapters beyond root-scoped filesystem gates,
-  deterministic seeded database reads/writes, and seeded network text while
-  preserving typed recoverable failure surfaces
+  deterministic seeded database reads/writes, seeded network text, and seeded
+  shell output while preserving typed recoverable failure surfaces
 - project graft writeback hardening beyond existing modules
 - accepted/rejected synthetic gold corpus growth
 - broader graph-slice graft operations around move/delete planning

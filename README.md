@@ -60,6 +60,9 @@ Implemented now:
 - deterministic network host seeding with `sley run --cap Network --http-text
   URL TEXT`; `http.try_get_text` returns seeded text responses as
   `Result<Text, Error>` without live outbound network access
+- deterministic shell host seeding with `sley run --cap Shell --shell-output
+  COMMAND TEXT`; `shell.try_run` returns seeded command output as
+  `Result<Text, Error>` without executing subprocesses
 - project loading for a manifest entry module plus transitively imported
   `.sley` modules under the configured source root
 - checker and runtime task lookup by entry module, local module, full module
@@ -184,6 +187,27 @@ task main -> Result<Text, Error> uses Network {
 }
 ```
 
+Seeded shell runtime:
+
+```bash
+sley run --json --cap Shell --shell-output date 2026-05-05 examples/shell_gate.sley
+```
+
+`shell.try_run(command)` reads an exact seeded command output and returns
+`Result<Text, Error>`. This is a deterministic v0 host adapter, not a
+subprocess runner. Missing output seeds produce `RUNTIME_SHELL_OUTPUT_NOT_FOUND`
+as a typed host error; empty commands produce
+`RUNTIME_SHELL_COMMAND_INVALID`; missing `Shell` remains a runtime capability
+diagnostic.
+
+```sley
+task main -> Result<Text, Error> uses Shell {
+  bind output = call shell.try_run("date")?
+
+  return Ok(output)
+}
+```
+
 Result flow:
 
 ```sley
@@ -208,7 +232,7 @@ task load -> Result<Text, Error> uses FileRead {
 
 The standard runtime `Error` payload is a record with `code: Text` and
 `message: Text`. `fs.try_read_text`, `fs.try_write_text`, `db.try_query_one`,
-`db.try_query`, `db.try_insert`, and `http.try_get_text` return
+`db.try_query`, `db.try_insert`, `http.try_get_text`, and `shell.try_run` return
 `Result<T, Error>`. Missing capabilities and gate scope violations remain
 diagnostics because they are authority failures, not recoverable host values.
 The legacy raw adapters still return their direct values and keep diagnostic
@@ -227,10 +251,11 @@ Known v0 limits:
 - Runtime host support is intentionally narrow: `FileRead`/`FileWrite` have
   root-scoped filesystem handlers, `DatabaseRead` has a deterministic
   seeded-table adapter, and `DatabaseWrite` has a deterministic per-run insert
-  adapter. `Network` has a deterministic seeded text adapter. Shell, model,
-  secret, deploy, and spending effects still need dedicated host adapters.
+  adapter. `Network` has a deterministic seeded text adapter, and `Shell` has
+  a deterministic seeded command-output adapter. Model, secret, deploy, and
+  spending effects still need dedicated host adapters.
 - Sley-level `Result` values and `?` propagation execute, and fallible
-  filesystem, database, and network host variants return typed `Error`
+  filesystem, database, network, and shell host variants return typed `Error`
   records. Additional host domains still need the same bridge.
 - Project graft writeback supports existing module files. Grafts that would
   create unknown module files or import modules outside the loaded project
@@ -244,6 +269,6 @@ Known v0 limits:
   explicitly.
 
 The next logical phase is to expand capability-backed host adapters on top of
-typed fallibility: shell, model, secret, deploy, and spending effects should
+typed fallibility: model, secret, deploy, and spending effects should
 each define authority gates, deterministic tests, and `Result<T, Error>`
 surfaces before broader language features depend on them.

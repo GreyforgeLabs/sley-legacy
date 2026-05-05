@@ -56,6 +56,8 @@ enum Command {
         db_table: Vec<String>,
         #[arg(long = "http-text", value_names = ["URL", "TEXT"], num_args = 2)]
         http_text: Vec<String>,
+        #[arg(long = "shell-output", value_names = ["COMMAND", "TEXT"], num_args = 2)]
+        shell_output: Vec<String>,
         file: PathBuf,
     },
     Ast {
@@ -178,6 +180,7 @@ fn run(cli: Cli) -> Result<()> {
             cap,
             db_table,
             http_text,
+            shell_output,
             file,
         } => {
             let program = match load_target_program(&file) {
@@ -191,6 +194,7 @@ fn run(cli: Cli) -> Result<()> {
             let mut runtime_gates = parse_runtime_gates(&cap)?;
             load_runtime_db_tables(&mut runtime_gates, &db_table)?;
             load_runtime_http_texts(&mut runtime_gates, &http_text)?;
+            load_runtime_shell_outputs(&mut runtime_gates, &shell_output)?;
             let result = if runtime_gates.is_empty() {
                 run_main(&program)
             } else {
@@ -646,6 +650,21 @@ fn load_runtime_http_texts(gates: &mut RuntimeGates, values: &[String]) -> Resul
     }
     if !chunks.remainder().is_empty() {
         anyhow::bail!("HTTP text seed must use URL TEXT pairs");
+    }
+    Ok(())
+}
+
+fn load_runtime_shell_outputs(gates: &mut RuntimeGates, values: &[String]) -> Result<()> {
+    let mut chunks = values.chunks_exact(2);
+    for pair in &mut chunks {
+        let command = pair[0].trim();
+        if command.is_empty() {
+            anyhow::bail!("shell output seed command cannot be empty");
+        }
+        gates.grant_shell_output(command, pair[1].clone());
+    }
+    if !chunks.remainder().is_empty() {
+        anyhow::bail!("shell output seed must use COMMAND TEXT pairs");
     }
     Ok(())
 }

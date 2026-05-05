@@ -91,6 +91,7 @@ pub struct RuntimeGates {
     gates: BTreeMap<String, RuntimeGate>,
     db_tables: BTreeMap<String, DbRows>,
     http_text_responses: BTreeMap<String, String>,
+    shell_outputs: BTreeMap<String, String>,
 }
 
 impl RuntimeGates {
@@ -117,7 +118,10 @@ impl RuntimeGates {
     }
 
     pub fn is_empty(&self) -> bool {
-        self.gates.is_empty() && self.db_tables.is_empty() && self.http_text_responses.is_empty()
+        self.gates.is_empty()
+            && self.db_tables.is_empty()
+            && self.http_text_responses.is_empty()
+            && self.shell_outputs.is_empty()
     }
 
     pub fn allows(&self, effect: &str) -> bool {
@@ -155,6 +159,14 @@ impl RuntimeGates {
 
     pub fn http_text(&self, url: &str) -> Option<&str> {
         self.http_text_responses.get(url).map(String::as_str)
+    }
+
+    pub fn grant_shell_output(&mut self, command: impl Into<String>, output: impl Into<String>) {
+        self.shell_outputs.insert(command.into(), output.into());
+    }
+
+    pub fn shell_output(&self, command: &str) -> Option<&str> {
+        self.shell_outputs.get(command).map(String::as_str)
     }
 }
 
@@ -918,6 +930,7 @@ fn eval_host_call(
         "http.try_get_text" => {
             eval_http_get_text(program, task, expr, callee_name, args, locals, gates)
         }
+        "shell.try_run" => eval_shell_run(program, task, expr, callee_name, args, locals, gates),
         _ => Err(vec![
             Diagnostic::error(
                 "RUNTIME_HOST_CALL_UNSUPPORTED",
@@ -1181,6 +1194,37 @@ fn eval_http_get_text(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
+fn eval_shell_run(
+    program: &Program,
+    task: &TaskDecl,
+    expr: &Expr,
+    callee_name: &str,
+    args: &[Expr],
+    locals: &HashMap<String, Value>,
+    gates: &mut RuntimeGates,
+) -> Result<EvalOutcome, Vec<Diagnostic>> {
+    if args.len() != 1 {
+        return host_arity_error(expr, callee_name, 1, args.len()).map(EvalOutcome::value);
+    }
+
+    let command = arg_or_propagate!(eval_text_arg(program, task, expr, args, 0, locals, gates));
+    if command.trim().is_empty() {
+        return Ok(host_err(
+            "RUNTIME_SHELL_COMMAND_INVALID",
+            "shell command cannot be empty",
+        ));
+    }
+
+    match gates.shell_output(&command) {
+        Some(output) => Ok(host_ok(Value::Text(output.to_string()))),
+        None => Ok(host_err(
+            "RUNTIME_SHELL_OUTPUT_NOT_FOUND",
+            format!("shell output for `{command}` was not seeded"),
+        )),
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 enum DbQueryMode {
     RawOne,
@@ -1312,6 +1356,7 @@ fn host_required_effects(name: &str) -> Option<&'static [&'static str]> {
         }
         "db.try_insert" => Some(&["DatabaseWrite", "DbWrite"]),
         "http.try_get_text" => Some(&["Network"]),
+        "shell.try_run" => Some(&["Shell"]),
         _ => None,
     }
 }
