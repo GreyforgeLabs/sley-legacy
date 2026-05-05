@@ -95,6 +95,35 @@ fn grade(score: Int) -> Text {
 }
 
 #[test]
+fn parser_builds_statement_control_flow_and_list_index_expressions() {
+    let source = r#"
+fn main() -> Int {
+  let values = [1, 2, 3]
+  let index = 0
+  if len(values) > 2 {
+    set index = 1
+  } else {
+    set index = 0
+  }
+  return values[index]
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    assert!(matches!(
+        program.functions[0].body.statements[0].kind,
+        StatementKind::Let { .. }
+    ));
+    assert!(matches!(
+        program.functions[0].body.statements[2].kind,
+        StatementKind::If { .. }
+    ));
+    let StatementKind::Return { expr } = &program.functions[0].body.statements[3].kind else {
+        panic!("expected return statement");
+    };
+    assert!(matches!(expr.kind, ExprKind::Index { .. }));
+}
+
+#[test]
 fn checker_validates_user_function_calls() {
     let source = r#"
 fn takes_text(value: Text) -> Text {
@@ -146,6 +175,45 @@ fn main() -> Int {
 }
 
 #[test]
+fn checker_validates_collections_indexes_and_statement_control_flow() {
+    let source = r#"
+fn main() -> Int {
+  let values = [1, "x"]
+  while values {
+    set missing = 1
+  }
+  return values["bad"]
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.id == "LIST_ELEMENT_TYPE_MISMATCH"),
+        "expected list element diagnostic, got {diagnostics:#?}"
+    );
+    assert!(
+        diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.id == "WHILE_CONDITION_NOT_BOOL"),
+        "expected while-condition diagnostic, got {diagnostics:#?}"
+    );
+    assert!(
+        diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.id == "UNKNOWN_IDENTIFIER"),
+        "expected unknown set diagnostic, got {diagnostics:#?}"
+    );
+    assert!(
+        diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.id == "INDEX_NOT_INT"),
+        "expected index diagnostic, got {diagnostics:#?}"
+    );
+}
+
+#[test]
 fn checker_propagates_called_function_effects() {
     let source = r#"
 effect FileRead
@@ -187,6 +255,33 @@ fn main() -> Int {
         "unexpected diagnostics: {diagnostics:#?}"
     );
     assert_eq!(run_main(&program), Ok(Value::Int(11)));
+}
+
+#[test]
+fn runtime_evaluates_while_set_lists_len_and_indexing() {
+    let source = r#"
+fn sum(values: List<Int>) -> Int {
+  let index = 0
+  let total = 0
+  while index < len(values) {
+    set total = total + values[index]
+    set index = index + 1
+  }
+  return total
+}
+
+fn main() -> Int {
+  let values = [2, 3, 5]
+  return sum(values)
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+    assert_eq!(run_main(&program), Ok(Value::Int(10)));
 }
 
 #[test]

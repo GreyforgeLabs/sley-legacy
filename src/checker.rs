@@ -1,7 +1,8 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::ast::{
-    BinaryOp, Expr, ExprKind, FunctionDecl, Program, RecordField, StatementKind, TypeExpr, UnaryOp,
+    BinaryOp, Block, Expr, ExprKind, FunctionDecl, Program, RecordField, StatementKind, TypeExpr,
+    UnaryOp,
 };
 use crate::diagnostics::{Diagnostic, RepairHint};
 
@@ -200,49 +201,70 @@ fn check_function(
         }
     }
 
-    for statement in &function.body.statements {
+    check_block(
+        function,
+        &function.body,
+        &mut locals,
+        &declared_effects,
+        known_types,
+        known_functions,
+        record_types,
+        diagnostics,
+    );
+}
+
+#[allow(clippy::too_many_arguments)]
+fn check_block(
+    function: &FunctionDecl,
+    block: &Block,
+    locals: &mut HashMap<String, TypeExpr>,
+    declared_effects: &HashSet<String>,
+    known_types: &HashSet<String>,
+    known_functions: &HashMap<String, FunctionSignature>,
+    record_types: &HashMap<String, Vec<RecordField>>,
+    diagnostics: &mut Vec<Diagnostic>,
+) {
+    for statement in &block.statements {
         match &statement.kind {
             StatementKind::Let {
                 name,
                 type_ann,
                 expr,
             } => {
-                if let Some(type_ann) = type_ann {
-                    validate_type_expr(type_ann, known_types, diagnostics, &statement.id);
-                }
-                check_expression_effects(function, &expr.source, &declared_effects, diagnostics);
-                check_fallible_expression(function, expr, diagnostics);
-                check_expr_structure(
+                check_expr_common(
                     function,
                     expr,
-                    &locals,
-                    &declared_effects,
+                    locals,
+                    declared_effects,
                     known_types,
                     known_functions,
                     record_types,
                     diagnostics,
                 );
+                if let Some(type_ann) = type_ann {
+                    validate_type_expr(type_ann, known_types, diagnostics, &statement.id);
+                }
                 let inferred = infer_expr_type(
                     expr,
-                    &locals,
+                    locals,
                     &function.return_type,
                     known_functions,
                     record_types,
                 );
-                if let (Some(expected), Some(actual)) = (type_ann, inferred.as_ref()) {
-                    if !types_compatible(expected, actual) {
-                        diagnostics.push(
-                            Diagnostic::error(
-                                "TYPE_MISMATCH",
-                                format!(
-                                    "let `{name}` expects `{}` but initializer looks like `{}`",
-                                    expected.display(),
-                                    actual.display()
-                                ),
-                            )
-                            .with_node(statement.id.clone()),
-                        );
-                    }
+                if let (Some(expected), Some(actual)) = (type_ann, inferred.as_ref())
+                    && !types_compatible(expected, actual)
+                {
+                    diagnostics.push(
+                        Diagnostic::error(
+                            "TYPE_MISMATCH",
+                            format!(
+                                "let `{name}` expects `{}` but initializer looks like `{}`",
+                                expected.display(),
+                                actual.display()
+                            ),
+                        )
+                        .with_node(statement.id.clone()),
+                    );
                 }
                 let local_type = type_ann
                     .clone()
@@ -259,14 +281,54 @@ fn check_function(
                 }
                 locals.insert(name.clone(), local_type);
             }
-            StatementKind::Return { expr } => {
-                check_expression_effects(function, &expr.source, &declared_effects, diagnostics);
-                check_fallible_expression(function, expr, diagnostics);
-                check_expr_structure(
+            StatementKind::Set { name, expr } => {
+                check_expr_common(
                     function,
                     expr,
-                    &locals,
-                    &declared_effects,
+                    locals,
+                    declared_effects,
+                    known_types,
+                    known_functions,
+                    record_types,
+                    diagnostics,
+                );
+                let Some(expected) = locals.get(name).cloned() else {
+                    diagnostics.push(
+                        Diagnostic::error(
+                            "UNKNOWN_IDENTIFIER",
+                            format!("cannot set unknown local binding `{name}`"),
+                        )
+                        .with_node(statement.id.clone()),
+                    );
+                    continue;
+                };
+                if let Some(actual) = infer_expr_type(
+                    expr,
+                    locals,
+                    &function.return_type,
+                    known_functions,
+                    record_types,
+                ) && !types_compatible(&expected, &actual)
+                {
+                    diagnostics.push(
+                        Diagnostic::error(
+                            "SET_TYPE_MISMATCH",
+                            format!(
+                                "set `{name}` expects `{}` but expression looks like `{}`",
+                                expected.display(),
+                                actual.display()
+                            ),
+                        )
+                        .with_node(statement.id.clone()),
+                    );
+                }
+            }
+            StatementKind::Return { expr } => {
+                check_expr_common(
+                    function,
+                    expr,
+                    locals,
+                    declared_effects,
                     known_types,
                     known_functions,
                     record_types,
@@ -274,35 +336,133 @@ fn check_function(
                 );
                 if let Some(actual) = infer_expr_type(
                     expr,
-                    &locals,
+                    locals,
                     &function.return_type,
                     known_functions,
                     record_types,
-                ) {
-                    if !return_types_compatible(&function.return_type, &actual, &expr.source) {
-                        diagnostics.push(
-                            Diagnostic::error(
-                                "RETURN_TYPE_MISMATCH",
-                                format!(
-                                    "function `{}` returns `{}` but expression looks like `{}`",
-                                    function.name,
-                                    function.return_type.display(),
-                                    actual.display()
-                                ),
-                            )
-                            .with_node(function.id.clone()),
-                        );
-                    }
+                ) && !return_types_compatible(&function.return_type, &actual, &expr.source)
+                {
+                    diagnostics.push(
+                        Diagnostic::error(
+                            "RETURN_TYPE_MISMATCH",
+                            format!(
+                                "function `{}` returns `{}` but expression looks like `{}`",
+                                function.name,
+                                function.return_type.display(),
+                                actual.display()
+                            ),
+                        )
+                        .with_node(function.id.clone()),
+                    );
                 }
             }
             StatementKind::Expr { expr } => {
-                check_expression_effects(function, &expr.source, &declared_effects, diagnostics);
-                check_fallible_expression(function, expr, diagnostics);
-                check_expr_structure(
+                check_expr_common(
                     function,
                     expr,
-                    &locals,
-                    &declared_effects,
+                    locals,
+                    declared_effects,
+                    known_types,
+                    known_functions,
+                    record_types,
+                    diagnostics,
+                );
+            }
+            StatementKind::If {
+                condition,
+                then_block,
+                else_block,
+            } => {
+                check_expr_common(
+                    function,
+                    condition,
+                    locals,
+                    declared_effects,
+                    known_types,
+                    known_functions,
+                    record_types,
+                    diagnostics,
+                );
+                if let Some(condition_type) = infer_expr_type(
+                    condition,
+                    locals,
+                    &function.return_type,
+                    known_functions,
+                    record_types,
+                ) && !is_bool_type(&condition_type)
+                {
+                    diagnostics.push(
+                        Diagnostic::error(
+                            "IF_CONDITION_NOT_BOOL",
+                            format!(
+                                "if condition must be `Bool`, not `{}`",
+                                condition_type.display()
+                            ),
+                        )
+                        .with_node(condition.id.clone()),
+                    );
+                }
+                let mut then_locals = locals.clone();
+                check_block(
+                    function,
+                    then_block,
+                    &mut then_locals,
+                    declared_effects,
+                    known_types,
+                    known_functions,
+                    record_types,
+                    diagnostics,
+                );
+                if let Some(else_block) = else_block {
+                    let mut else_locals = locals.clone();
+                    check_block(
+                        function,
+                        else_block,
+                        &mut else_locals,
+                        declared_effects,
+                        known_types,
+                        known_functions,
+                        record_types,
+                        diagnostics,
+                    );
+                }
+            }
+            StatementKind::While { condition, body } => {
+                check_expr_common(
+                    function,
+                    condition,
+                    locals,
+                    declared_effects,
+                    known_types,
+                    known_functions,
+                    record_types,
+                    diagnostics,
+                );
+                if let Some(condition_type) = infer_expr_type(
+                    condition,
+                    locals,
+                    &function.return_type,
+                    known_functions,
+                    record_types,
+                ) && !is_bool_type(&condition_type)
+                {
+                    diagnostics.push(
+                        Diagnostic::error(
+                            "WHILE_CONDITION_NOT_BOOL",
+                            format!(
+                                "while condition must be `Bool`, not `{}`",
+                                condition_type.display()
+                            ),
+                        )
+                        .with_node(condition.id.clone()),
+                    );
+                }
+                let mut body_locals = locals.clone();
+                check_block(
+                    function,
+                    body,
+                    &mut body_locals,
+                    declared_effects,
                     known_types,
                     known_functions,
                     record_types,
@@ -311,6 +471,31 @@ fn check_function(
             }
         }
     }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn check_expr_common(
+    function: &FunctionDecl,
+    expr: &Expr,
+    locals: &HashMap<String, TypeExpr>,
+    declared_effects: &HashSet<String>,
+    known_types: &HashSet<String>,
+    known_functions: &HashMap<String, FunctionSignature>,
+    record_types: &HashMap<String, Vec<RecordField>>,
+    diagnostics: &mut Vec<Diagnostic>,
+) {
+    check_expression_effects(function, &expr.source, declared_effects, diagnostics);
+    check_fallible_expression(function, expr, diagnostics);
+    check_expr_structure(
+        function,
+        expr,
+        locals,
+        declared_effects,
+        known_types,
+        known_functions,
+        record_types,
+        diagnostics,
+    );
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -429,7 +614,9 @@ fn check_expr_structure(
         }
         ExprKind::Call { callee, args } => {
             if let Some(callee_name) = direct_callee_name(callee) {
-                if !known_functions.contains_key(callee_name) && !is_result_constructor(callee_name)
+                if !known_functions.contains_key(callee_name)
+                    && !is_result_constructor(callee_name)
+                    && !is_builtin_function(callee_name)
                 {
                     diagnostics.push(
                         Diagnostic::error(
@@ -463,10 +650,11 @@ fn check_expr_structure(
                     diagnostics,
                 );
             }
-            if let Some(callee_name) = direct_callee_name(callee) {
-                if let Some(signature) = known_functions.get(callee_name) {
-                    if args.len() != signature.params.len() {
-                        diagnostics.push(
+            if let Some(callee_name) = direct_callee_name(callee)
+                && let Some(signature) = known_functions.get(callee_name)
+            {
+                if args.len() != signature.params.len() {
+                    diagnostics.push(
                             Diagnostic::error(
                                 "CALL_ARITY_MISMATCH",
                                 format!(
@@ -478,19 +666,18 @@ fn check_expr_structure(
                             )
                             .with_node(expr.id.clone()),
                         );
-                    }
-                    for (index, (arg, expected)) in
-                        args.iter().zip(signature.params.iter()).enumerate()
+                }
+                for (index, (arg, expected)) in args.iter().zip(signature.params.iter()).enumerate()
+                {
+                    if let Some(actual) = infer_expr_type(
+                        arg,
+                        locals,
+                        &function.return_type,
+                        known_functions,
+                        record_types,
+                    ) && !types_compatible(expected, &actual)
                     {
-                        if let Some(actual) = infer_expr_type(
-                            arg,
-                            locals,
-                            &function.return_type,
-                            known_functions,
-                            record_types,
-                        ) {
-                            if !types_compatible(expected, &actual) {
-                                diagnostics.push(
+                        diagnostics.push(
                                     Diagnostic::error(
                                         "CALL_ARGUMENT_TYPE_MISMATCH",
                                         format!(
@@ -501,31 +688,95 @@ fn check_expr_structure(
                                     )
                                     .with_node(arg.id.clone()),
                                 );
-                            }
-                        }
                     }
-                    for effect in &signature.effects {
-                        if !declared_effects.contains(effect) {
-                            diagnostics.push(
-                                Diagnostic::error(
-                                    "EFFECT_UNAUTHORIZED",
-                                    format!(
-                                        "function `{}` calls `{callee_name}` which requires `{effect}`",
-                                        function.name
-                                    ),
-                                )
-                                .with_node(expr.id.clone())
-                                .with_repair_hint(RepairHint {
-                                    kind: "add_required_effect".to_string(),
-                                    target: Some(function.id.clone()),
-                                    effect: Some(effect.clone()),
-                                    replacement: None,
-                                }),
-                            );
-                        }
+                }
+                for effect in &signature.effects {
+                    if !declared_effects.contains(effect) {
+                        diagnostics.push(
+                            Diagnostic::error(
+                                "EFFECT_UNAUTHORIZED",
+                                format!(
+                                    "function `{}` calls `{callee_name}` which requires `{effect}`",
+                                    function.name
+                                ),
+                            )
+                            .with_node(expr.id.clone())
+                            .with_repair_hint(RepairHint {
+                                kind: "add_required_effect".to_string(),
+                                target: Some(function.id.clone()),
+                                effect: Some(effect.clone()),
+                                replacement: None,
+                            }),
+                        );
                     }
                 }
             }
+            if let Some(callee_name) = direct_callee_name(callee) {
+                check_builtin_call(
+                    function,
+                    callee_name,
+                    args,
+                    locals,
+                    known_functions,
+                    record_types,
+                    diagnostics,
+                );
+            }
+        }
+        ExprKind::ListLiteral { items } => {
+            for item in items {
+                check_expr_structure(
+                    function,
+                    item,
+                    locals,
+                    declared_effects,
+                    known_types,
+                    known_functions,
+                    record_types,
+                    diagnostics,
+                );
+            }
+            check_list_literal(
+                function,
+                expr,
+                items,
+                locals,
+                known_functions,
+                record_types,
+                diagnostics,
+            );
+        }
+        ExprKind::Index { collection, index } => {
+            check_expr_structure(
+                function,
+                collection,
+                locals,
+                declared_effects,
+                known_types,
+                known_functions,
+                record_types,
+                diagnostics,
+            );
+            check_expr_structure(
+                function,
+                index,
+                locals,
+                declared_effects,
+                known_types,
+                known_functions,
+                record_types,
+                diagnostics,
+            );
+            check_index_expression(
+                function,
+                expr,
+                collection,
+                index,
+                locals,
+                known_functions,
+                record_types,
+                diagnostics,
+            );
         }
         ExprKind::FieldAccess { receiver, field } => {
             check_expr_structure(
@@ -544,21 +795,18 @@ fn check_expr_structure(
                 &function.return_type,
                 known_functions,
                 record_types,
-            ) {
-                if let Some(fields) = record_types.get(&name) {
-                    if !fields
-                        .iter()
-                        .any(|record_field| record_field.name == *field)
-                    {
-                        diagnostics.push(
-                            Diagnostic::error(
-                                "UNKNOWN_RECORD_FIELD",
-                                format!("type `{name}` has no field `{field}`"),
-                            )
-                            .with_node(expr.id.clone()),
-                        );
-                    }
-                }
+            ) && let Some(fields) = record_types.get(&name)
+                && !fields
+                    .iter()
+                    .any(|record_field| record_field.name == *field)
+            {
+                diagnostics.push(
+                    Diagnostic::error(
+                        "UNKNOWN_RECORD_FIELD",
+                        format!("type `{name}` has no field `{field}`"),
+                    )
+                    .with_node(expr.id.clone()),
+                );
             }
         }
         ExprKind::RecordLiteral { type_name, fields } => {
@@ -755,19 +1003,18 @@ fn check_if_expression(
         &function.return_type,
         known_functions,
         record_types,
-    ) {
-        if !is_bool_type(&condition_type) {
-            diagnostics.push(
-                Diagnostic::error(
-                    "IF_CONDITION_NOT_BOOL",
-                    format!(
-                        "if condition must be `Bool`, not `{}`",
-                        condition_type.display()
-                    ),
-                )
-                .with_node(condition.id.clone()),
-            );
-        }
+    ) && !is_bool_type(&condition_type)
+    {
+        diagnostics.push(
+            Diagnostic::error(
+                "IF_CONDITION_NOT_BOOL",
+                format!(
+                    "if condition must be `Bool`, not `{}`",
+                    condition_type.display()
+                ),
+            )
+            .with_node(condition.id.clone()),
+        );
     }
 
     let then_type = infer_expr_type(
@@ -784,15 +1031,111 @@ fn check_if_expression(
         known_functions,
         record_types,
     );
-    if let (Some(then_type), Some(else_type)) = (then_type, else_type) {
-        if !types_compatible(&then_type, &else_type) {
+    if let (Some(then_type), Some(else_type)) = (then_type, else_type)
+        && !types_compatible(&then_type, &else_type)
+    {
+        diagnostics.push(
+            Diagnostic::error(
+                "IF_BRANCH_TYPE_MISMATCH",
+                format!(
+                    "if branches produce `{}` and `{}`",
+                    then_type.display(),
+                    else_type.display()
+                ),
+            )
+            .with_node(expr.id.clone()),
+        );
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn check_builtin_call(
+    function: &FunctionDecl,
+    name: &str,
+    args: &[Expr],
+    locals: &HashMap<String, TypeExpr>,
+    known_functions: &HashMap<String, FunctionSignature>,
+    record_types: &HashMap<String, Vec<RecordField>>,
+    diagnostics: &mut Vec<Diagnostic>,
+) {
+    if name != "len" {
+        return;
+    }
+
+    if args.len() != 1 {
+        diagnostics.push(
+            Diagnostic::error(
+                "BUILTIN_ARITY_MISMATCH",
+                format!(
+                    "builtin `len` expects 1 argument but received {}",
+                    args.len()
+                ),
+            )
+            .with_node(function.id.clone()),
+        );
+        return;
+    }
+
+    if let Some(actual) = infer_expr_type(
+        &args[0],
+        locals,
+        &function.return_type,
+        known_functions,
+        record_types,
+    ) && !is_list_type(&actual)
+        && !is_named_type(&actual, "Text")
+    {
+        diagnostics.push(
+            Diagnostic::error(
+                "BUILTIN_ARGUMENT_TYPE_MISMATCH",
+                format!(
+                    "builtin `len` expects `List<T>` or `Text`, not `{}`",
+                    actual.display()
+                ),
+            )
+            .with_node(args[0].id.clone()),
+        );
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn check_list_literal(
+    function: &FunctionDecl,
+    expr: &Expr,
+    items: &[Expr],
+    locals: &HashMap<String, TypeExpr>,
+    known_functions: &HashMap<String, FunctionSignature>,
+    record_types: &HashMap<String, Vec<RecordField>>,
+    diagnostics: &mut Vec<Diagnostic>,
+) {
+    let Some(first) = items.first() else {
+        return;
+    };
+    let Some(first_type) = infer_expr_type(
+        first,
+        locals,
+        &function.return_type,
+        known_functions,
+        record_types,
+    ) else {
+        return;
+    };
+    for item in items.iter().skip(1) {
+        if let Some(actual) = infer_expr_type(
+            item,
+            locals,
+            &function.return_type,
+            known_functions,
+            record_types,
+        ) && !types_compatible(&first_type, &actual)
+        {
             diagnostics.push(
                 Diagnostic::error(
-                    "IF_BRANCH_TYPE_MISMATCH",
+                    "LIST_ELEMENT_TYPE_MISMATCH",
                     format!(
-                        "if branches produce `{}` and `{}`",
-                        then_type.display(),
-                        else_type.display()
+                        "list literal mixes `{}` and `{}`",
+                        first_type.display(),
+                        actual.display()
                     ),
                 )
                 .with_node(expr.id.clone()),
@@ -801,6 +1144,56 @@ fn check_if_expression(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
+fn check_index_expression(
+    function: &FunctionDecl,
+    expr: &Expr,
+    collection: &Expr,
+    index: &Expr,
+    locals: &HashMap<String, TypeExpr>,
+    known_functions: &HashMap<String, FunctionSignature>,
+    record_types: &HashMap<String, Vec<RecordField>>,
+    diagnostics: &mut Vec<Diagnostic>,
+) {
+    if let Some(collection_type) = infer_expr_type(
+        collection,
+        locals,
+        &function.return_type,
+        known_functions,
+        record_types,
+    ) && !is_list_type(&collection_type)
+    {
+        diagnostics.push(
+            Diagnostic::error(
+                "INDEX_COLLECTION_NOT_INDEXABLE",
+                format!(
+                    "indexing expects `List<T>`, not `{}`",
+                    collection_type.display()
+                ),
+            )
+            .with_node(expr.id.clone()),
+        );
+    }
+
+    if let Some(index_type) = infer_expr_type(
+        index,
+        locals,
+        &function.return_type,
+        known_functions,
+        record_types,
+    ) && !is_named_type(&index_type, "Int")
+    {
+        diagnostics.push(
+            Diagnostic::error(
+                "INDEX_NOT_INT",
+                format!("list index must be `Int`, not `{}`", index_type.display()),
+            )
+            .with_node(index.id.clone()),
+        );
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
 fn check_record_literal_fields(
     function: &FunctionDecl,
     expr: &Expr,
@@ -820,21 +1213,20 @@ fn check_record_literal_fields(
                     &function.return_type,
                     known_functions,
                     record_types,
-                ) {
-                    if !types_compatible(&expected.ty, &actual) {
-                        diagnostics.push(
-                            Diagnostic::error(
-                                "RECORD_FIELD_TYPE_MISMATCH",
-                                format!(
-                                    "field `{}` expects `{}` but expression looks like `{}`",
-                                    expected.name,
-                                    expected.ty.display(),
-                                    actual.display()
-                                ),
-                            )
-                            .with_node(field.expr.id.clone()),
-                        );
-                    }
+                ) && !types_compatible(&expected.ty, &actual)
+                {
+                    diagnostics.push(
+                        Diagnostic::error(
+                            "RECORD_FIELD_TYPE_MISMATCH",
+                            format!(
+                                "field `{}` expects `{}` but expression looks like `{}`",
+                                expected.name,
+                                expected.ty.display(),
+                                actual.display()
+                            ),
+                        )
+                        .with_node(field.expr.id.clone()),
+                    );
                 }
             }
             None => diagnostics.push(
@@ -980,6 +1372,8 @@ fn expr_uses_try(expr: &Expr) -> bool {
             else_branch,
         } => expr_uses_try(condition) || expr_uses_try(then_branch) || expr_uses_try(else_branch),
         ExprKind::Call { callee, args } => expr_uses_try(callee) || args.iter().any(expr_uses_try),
+        ExprKind::ListLiteral { items } => items.iter().any(expr_uses_try),
+        ExprKind::Index { collection, index } => expr_uses_try(collection) || expr_uses_try(index),
         ExprKind::FieldAccess { receiver, .. } => expr_uses_try(receiver),
         ExprKind::RecordLiteral { fields, .. } => {
             fields.iter().any(|field| expr_uses_try(&field.expr))
@@ -1049,11 +1443,56 @@ fn infer_expr_type(
             {
                 Some(return_type.clone())
             } else if let Some(callee_name) = direct_callee_name(callee) {
-                known_functions
-                    .get(callee_name)
-                    .map(|signature| signature.return_type.clone())
+                if callee_name == "len" {
+                    Some(TypeExpr::named("Int"))
+                } else {
+                    known_functions
+                        .get(callee_name)
+                        .map(|signature| signature.return_type.clone())
+                }
             } else {
                 None
+            }
+        }
+        ExprKind::ListLiteral { items } => {
+            let Some(first) = items.first() else {
+                return Some(TypeExpr::Generic {
+                    name: "List".to_string(),
+                    args: vec![TypeExpr::named("Unit")],
+                });
+            };
+            let first_type =
+                infer_expr_type(first, locals, return_type, known_functions, record_types)?;
+            for item in items.iter().skip(1) {
+                let item_type =
+                    infer_expr_type(item, locals, return_type, known_functions, record_types)?;
+                if !types_compatible(&first_type, &item_type) {
+                    return None;
+                }
+            }
+            Some(TypeExpr::Generic {
+                name: "List".to_string(),
+                args: vec![first_type],
+            })
+        }
+        ExprKind::Index { collection, index } => {
+            let collection_type = infer_expr_type(
+                collection,
+                locals,
+                return_type,
+                known_functions,
+                record_types,
+            )?;
+            let index_type =
+                infer_expr_type(index, locals, return_type, known_functions, record_types)?;
+            if !is_named_type(&index_type, "Int") {
+                return None;
+            }
+            match collection_type {
+                TypeExpr::Generic { name, mut args } if name == "List" && args.len() == 1 => {
+                    Some(args.remove(0))
+                }
+                _ => None,
             }
         }
         ExprKind::FieldAccess { receiver, field } => {
@@ -1106,8 +1545,6 @@ fn infer_expr_type(
             let trimmed = expr.source.trim();
             if trimmed.starts_with("Ok(") || trimmed.starts_with("Err(") {
                 Some(return_type.clone())
-            } else if trimmed.ends_with('?') {
-                None
             } else {
                 None
             }
@@ -1124,6 +1561,10 @@ fn direct_callee_name(expr: &Expr) -> Option<&str> {
 
 fn is_result_constructor(name: &str) -> bool {
     name == "Ok" || name == "Err"
+}
+
+fn is_builtin_function(name: &str) -> bool {
+    name == "len"
 }
 
 fn is_host_root(name: &str) -> bool {
@@ -1147,6 +1588,10 @@ fn is_bool_type(ty: &TypeExpr) -> bool {
 
 fn is_numeric_type(ty: &TypeExpr) -> bool {
     is_named_type(ty, "Int") || is_named_type(ty, "Float")
+}
+
+fn is_list_type(ty: &TypeExpr) -> bool {
+    matches!(ty, TypeExpr::Generic { name, args } if name == "List" && args.len() == 1)
 }
 
 fn binary_operands_compatible(op: &BinaryOp, left: &TypeExpr, right: &TypeExpr) -> bool {

@@ -566,12 +566,51 @@ impl Parser {
                 },
                 span: Some(span),
             })
+        } else if self.current().is_ident("set") {
+            self.bump();
+            let name = self.expect_ident("expected local binding name")?;
+            self.expect_symbol('=', "expected `=` in set statement")?;
+            let expr = self.parse_statement_expr(span.clone())?;
+            Ok(Statement {
+                id: String::new(),
+                kind: StatementKind::Set { name, expr },
+                span: Some(span),
+            })
         } else if self.current().is_ident("return") {
             self.bump();
             let expr = self.parse_statement_expr(span.clone())?;
             Ok(Statement {
                 id: String::new(),
                 kind: StatementKind::Return { expr },
+                span: Some(span),
+            })
+        } else if self.current().is_ident("if") {
+            self.bump();
+            let condition = self.parse_expr_before_block(span.clone())?;
+            let then_block = self.parse_block()?;
+            self.skip_newlines();
+            let else_block = if self.current().is_ident("else") {
+                self.bump();
+                Some(self.parse_block()?)
+            } else {
+                None
+            };
+            Ok(Statement {
+                id: String::new(),
+                kind: StatementKind::If {
+                    condition,
+                    then_block,
+                    else_block,
+                },
+                span: Some(span),
+            })
+        } else if self.current().is_ident("while") {
+            self.bump();
+            let condition = self.parse_expr_before_block(span.clone())?;
+            let body = self.parse_block()?;
+            Ok(Statement {
+                id: String::new(),
+                kind: StatementKind::While { condition, body },
                 span: Some(span),
             })
         } else {
@@ -582,6 +621,47 @@ impl Parser {
                 span: Some(span),
             })
         }
+    }
+
+    fn parse_expr_before_block(&mut self, span: SourceSpan) -> Result<Expr, Vec<Diagnostic>> {
+        let mut tokens = Vec::new();
+        let mut paren_depth = 0usize;
+        let mut bracket_depth = 0usize;
+
+        while !self.at_eof() {
+            let current = self.current().clone();
+            match current.kind {
+                TokenKind::Symbol('{') if paren_depth == 0 && bracket_depth == 0 => break,
+                TokenKind::Newline if paren_depth == 0 && bracket_depth == 0 => {
+                    return Err(vec![
+                        Diagnostic::error(
+                            "PARSE_EXPECTED_BLOCK",
+                            "expected `{` after control-flow condition",
+                        )
+                        .with_span(current.span),
+                    ]);
+                }
+                TokenKind::Symbol('(') => paren_depth += 1,
+                TokenKind::Symbol(')') => paren_depth = paren_depth.saturating_sub(1),
+                TokenKind::Symbol('[') => bracket_depth += 1,
+                TokenKind::Symbol(']') => bracket_depth = bracket_depth.saturating_sub(1),
+                _ => {}
+            }
+            if !matches!(current.kind, TokenKind::Newline) {
+                tokens.push(current);
+            }
+            self.bump();
+        }
+
+        if tokens.is_empty() {
+            return Err(vec![
+                Diagnostic::error("PARSE_EXPECTED_EXPRESSION", "expected expression")
+                    .with_span(span),
+            ]);
+        }
+
+        let source = tokens_to_source(&tokens);
+        Ok(parse_expr_tokens(&tokens, source, span))
     }
 
     fn parse_statement_expr(&mut self, span: SourceSpan) -> Result<Expr, Vec<Diagnostic>> {
@@ -874,6 +954,20 @@ impl<'a> ExprParser<'a> {
                     },
                     span: None,
                 };
+            } else if self.current_is_symbol('[') {
+                self.bump();
+                let index = self.parse_expression()?;
+                self.expect_symbol(']')?;
+                let source = format!("{}[{}]", expr.source, index.source);
+                expr = Expr {
+                    id: String::new(),
+                    source,
+                    kind: ExprKind::Index {
+                        collection: Box::new(expr),
+                        index: Box::new(index),
+                    },
+                    span: None,
+                };
             } else if self.allow_record_literals && self.current_is_symbol('{') {
                 let type_name = match &expr.kind {
                     ExprKind::Identifier { .. } | ExprKind::FieldAccess { .. } => {
@@ -968,6 +1062,7 @@ impl<'a> ExprParser<'a> {
                 expr.source = format!("({})", expr.source);
                 Ok(expr)
             }
+            TokenKind::Symbol('[') => self.parse_list_literal(token.span),
             TokenKind::Symbol('{') => {
                 let fields = self.parse_record_fields()?;
                 let fields_source = format_expr_fields(&fields);
@@ -983,6 +1078,39 @@ impl<'a> ExprParser<'a> {
             }
             _ => Err(()),
         }
+    }
+
+    fn parse_list_literal(&mut self, span: SourceSpan) -> Result<Expr, ()> {
+        self.expect_symbol('[')?;
+        let mut items = Vec::new();
+        if !self.current_is_symbol(']') {
+            loop {
+                items.push(self.parse_expression()?);
+                if self.current_is_symbol(',') {
+                    self.bump();
+                    if self.current_is_symbol(']') {
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            }
+        }
+        self.expect_symbol(']')?;
+        let source = format!(
+            "[{}]",
+            items
+                .iter()
+                .map(|item| item.source.as_str())
+                .collect::<Vec<_>>()
+                .join(", ")
+        );
+        Ok(Expr {
+            id: String::new(),
+            source,
+            kind: ExprKind::ListLiteral { items },
+            span: Some(span),
+        })
     }
 
     fn parse_if_expression(&mut self, span: SourceSpan) -> Result<Expr, ()> {
@@ -1168,9 +1296,10 @@ fn tokens_to_source(tokens: &[Token]) -> String {
     let mut previous: Option<&str> = None;
     for token in tokens {
         let current = token.text.as_str();
-        if out.is_empty() {
-            out.push_str(current);
-        } else if needs_no_space_before(current) || previous.is_some_and(needs_no_space_after) {
+        if out.is_empty()
+            || needs_no_space_before(current)
+            || previous.is_some_and(needs_no_space_after)
+        {
             out.push_str(current);
         } else {
             out.push(' ');

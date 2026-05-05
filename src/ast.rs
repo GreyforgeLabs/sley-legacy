@@ -50,11 +50,7 @@ impl Program {
             for (param_index, param) in function.params.iter_mut().enumerate() {
                 param.id = format!("param:{}:{param_index}:{}", function.id, param.name);
             }
-            for (stmt_index, stmt) in function.body.statements.iter_mut().enumerate() {
-                stmt.id = format!("stmt:{}:{stmt_index}", function.id);
-                stmt.expr_mut()
-                    .assign_ids(format!("expr:{}:{stmt_index}", function.id));
-            }
+            function.body.assign_ids(format!("block:{}", function.id));
         }
     }
 
@@ -130,6 +126,15 @@ pub struct Block {
     pub statements: Vec<Statement>,
 }
 
+impl Block {
+    pub fn assign_ids(&mut self, root: impl Into<String>) {
+        let root = root.into();
+        for (stmt_index, stmt) in self.statements.iter_mut().enumerate() {
+            stmt.assign_ids(format!("{root}:stmt:{stmt_index}"));
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Statement {
     pub id: String,
@@ -140,19 +145,31 @@ pub struct Statement {
 }
 
 impl Statement {
-    pub fn expr_mut(&mut self) -> &mut Expr {
+    pub fn assign_ids(&mut self, id: impl Into<String>) {
+        let id = id.into();
+        self.id = id.clone();
         match &mut self.kind {
             StatementKind::Let { expr, .. }
+            | StatementKind::Set { expr, .. }
             | StatementKind::Return { expr }
-            | StatementKind::Expr { expr } => expr,
-        }
-    }
-
-    pub fn expr(&self) -> &Expr {
-        match &self.kind {
-            StatementKind::Let { expr, .. }
-            | StatementKind::Return { expr }
-            | StatementKind::Expr { expr } => expr,
+            | StatementKind::Expr { expr } => {
+                expr.assign_ids(format!("{id}:expr"));
+            }
+            StatementKind::If {
+                condition,
+                then_block,
+                else_block,
+            } => {
+                condition.assign_ids(format!("{id}:condition"));
+                then_block.assign_ids(format!("{id}:then"));
+                if let Some(else_block) = else_block {
+                    else_block.assign_ids(format!("{id}:else"));
+                }
+            }
+            StatementKind::While { condition, body } => {
+                condition.assign_ids(format!("{id}:condition"));
+                body.assign_ids(format!("{id}:body"));
+            }
         }
     }
 }
@@ -166,11 +183,25 @@ pub enum StatementKind {
         type_ann: Option<TypeExpr>,
         expr: Expr,
     },
+    Set {
+        name: String,
+        expr: Expr,
+    },
     Return {
         expr: Expr,
     },
     Expr {
         expr: Expr,
+    },
+    If {
+        condition: Expr,
+        then_block: Block,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        else_block: Option<Block>,
+    },
+    While {
+        condition: Expr,
+        body: Block,
     },
 }
 
@@ -213,6 +244,15 @@ impl Expr {
                 for (index, arg) in args.iter_mut().enumerate() {
                     arg.assign_ids_at(format!("{id}:arg:{index}"));
                 }
+            }
+            ExprKind::ListLiteral { items } => {
+                for (index, item) in items.iter_mut().enumerate() {
+                    item.assign_ids_at(format!("{id}:item:{index}"));
+                }
+            }
+            ExprKind::Index { collection, index } => {
+                collection.assign_ids_at(format!("{id}:collection"));
+                index.assign_ids_at(format!("{id}:index"));
             }
             ExprKind::FieldAccess { receiver, .. } => {
                 receiver.assign_ids_at(format!("{id}:receiver"));
@@ -275,6 +315,13 @@ pub enum ExprKind {
     Call {
         callee: Box<Expr>,
         args: Vec<Expr>,
+    },
+    ListLiteral {
+        items: Vec<Expr>,
+    },
+    Index {
+        collection: Box<Expr>,
+        index: Box<Expr>,
     },
     FieldAccess {
         receiver: Box<Expr>,

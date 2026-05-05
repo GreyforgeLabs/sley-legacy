@@ -1,0 +1,20 @@
+module app.collections
+
+fn sum(values: List<Int>) -> Int {
+  let index = 0
+  let total = 0
+  while index < len(values) {
+    set total = total + values[index]
+    set index = index + 1
+  }
+  return total
+}
+
+fn main() -> Int {
+  let values = [2, 3, 5]
+  if len(values) == 3 {
+    return sum(values)
+  } else {
+    return 0
+  }
+}

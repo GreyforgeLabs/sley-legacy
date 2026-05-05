@@ -1,4 +1,4 @@
-use crate::ast::{Program, StatementKind, TypeExpr};
+use crate::ast::{Block, Program, StatementKind, TypeExpr};
 
 pub fn format_program(program: &Program) -> String {
     let mut out = String::new();
@@ -69,31 +69,7 @@ pub fn format_program(program: &Program) -> String {
             out.push_str(&function.effects.join(", "));
         }
         out.push_str(" {\n");
-        for statement in &function.body.statements {
-            out.push_str("  ");
-            match &statement.kind {
-                StatementKind::Let {
-                    name,
-                    type_ann,
-                    expr,
-                } => {
-                    out.push_str("let ");
-                    out.push_str(name);
-                    if let Some(type_ann) = type_ann {
-                        out.push_str(": ");
-                        out.push_str(&type_ann.display());
-                    }
-                    out.push_str(" = ");
-                    out.push_str(&expr.source);
-                }
-                StatementKind::Return { expr } => {
-                    out.push_str("return ");
-                    out.push_str(&expr.source);
-                }
-                StatementKind::Expr { expr } => out.push_str(&expr.source),
-            }
-            out.push('\n');
-        }
+        format_block_statements(&mut out, &function.body, 1);
         out.push_str("}\n\n");
     }
 
@@ -104,6 +80,82 @@ pub fn format_program(program: &Program) -> String {
         out.push('\n');
     }
     out
+}
+
+fn format_block_statements(out: &mut String, block: &Block, indent_level: usize) {
+    for statement in &block.statements {
+        format_statement(out, &statement.kind, indent_level);
+    }
+}
+
+fn format_statement(out: &mut String, kind: &StatementKind, indent_level: usize) {
+    push_indent(out, indent_level);
+    match kind {
+        StatementKind::Let {
+            name,
+            type_ann,
+            expr,
+        } => {
+            out.push_str("let ");
+            out.push_str(name);
+            if let Some(type_ann) = type_ann {
+                out.push_str(": ");
+                out.push_str(&type_ann.display());
+            }
+            out.push_str(" = ");
+            out.push_str(&expr.source);
+            out.push('\n');
+        }
+        StatementKind::Set { name, expr } => {
+            out.push_str("set ");
+            out.push_str(name);
+            out.push_str(" = ");
+            out.push_str(&expr.source);
+            out.push('\n');
+        }
+        StatementKind::Return { expr } => {
+            out.push_str("return ");
+            out.push_str(&expr.source);
+            out.push('\n');
+        }
+        StatementKind::Expr { expr } => {
+            out.push_str(&expr.source);
+            out.push('\n');
+        }
+        StatementKind::If {
+            condition,
+            then_block,
+            else_block,
+        } => {
+            out.push_str("if ");
+            out.push_str(&condition.source);
+            out.push_str(" {\n");
+            format_block_statements(out, then_block, indent_level + 1);
+            push_indent(out, indent_level);
+            out.push('}');
+            if let Some(else_block) = else_block {
+                out.push_str(" else {\n");
+                format_block_statements(out, else_block, indent_level + 1);
+                push_indent(out, indent_level);
+                out.push('}');
+            }
+            out.push('\n');
+        }
+        StatementKind::While { condition, body } => {
+            out.push_str("while ");
+            out.push_str(&condition.source);
+            out.push_str(" {\n");
+            format_block_statements(out, body, indent_level + 1);
+            push_indent(out, indent_level);
+            out.push_str("}\n");
+        }
+    }
+}
+
+fn push_indent(out: &mut String, indent_level: usize) {
+    for _ in 0..indent_level {
+        out.push_str("  ");
+    }
 }
 
 #[cfg(test)]

@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 use serde::{Deserialize, Serialize};
 
@@ -15,9 +15,12 @@ pub enum Value {
     Int(i64),
     Float(f64),
     Bool(bool),
+    List(Vec<Value>),
     Record(BTreeMap<String, Value>),
     Raw(String),
 }
+
+const MAX_LOOP_ITERATIONS: usize = 1_000_000;
 
 pub fn run_main(program: &Program) -> Result<Value, Vec<Diagnostic>> {
     let Some(main) = program
@@ -96,22 +99,103 @@ fn eval_function(
         locals.insert(param.name.clone(), value);
     }
 
-    for statement in &function.body.statements {
-        match &statement.kind {
-            StatementKind::Let { name, expr, .. } => {
-                let value = eval_expr(program, expr, &locals, &function.return_type)?;
-                locals.insert(name.clone(), value);
-            }
-            StatementKind::Return { expr } => {
-                return eval_expr(program, expr, &locals, &function.return_type);
-            }
-            StatementKind::Expr { expr } => {
-                eval_expr(program, expr, &locals, &function.return_type)?;
-            }
-        }
+    if let Some(value) = eval_block(program, &function.body, &mut locals, &function.return_type)? {
+        return Ok(value);
     }
 
     Ok(Value::Unit)
+}
+
+fn eval_block(
+    program: &Program,
+    block: &crate::ast::Block,
+    locals: &mut HashMap<String, Value>,
+    return_type: &TypeExpr,
+) -> Result<Option<Value>, Vec<Diagnostic>> {
+    for statement in &block.statements {
+        if let Some(value) = eval_statement(program, statement, locals, return_type)? {
+            return Ok(Some(value));
+        }
+    }
+    Ok(None)
+}
+
+fn eval_scoped_block(
+    program: &Program,
+    block: &crate::ast::Block,
+    locals: &mut HashMap<String, Value>,
+    return_type: &TypeExpr,
+) -> Result<Option<Value>, Vec<Diagnostic>> {
+    let existing = locals.keys().cloned().collect::<HashSet<_>>();
+    let result = eval_block(program, block, locals, return_type);
+    locals.retain(|name, _| existing.contains(name));
+    result
+}
+
+fn eval_statement(
+    program: &Program,
+    statement: &crate::ast::Statement,
+    locals: &mut HashMap<String, Value>,
+    return_type: &TypeExpr,
+) -> Result<Option<Value>, Vec<Diagnostic>> {
+    match &statement.kind {
+        StatementKind::Let { name, expr, .. } => {
+            let value = eval_expr(program, expr, locals, return_type)?;
+            locals.insert(name.clone(), value);
+            Ok(None)
+        }
+        StatementKind::Set { name, expr } => {
+            if !locals.contains_key(name) {
+                return Err(vec![
+                    Diagnostic::error(
+                        "RUNTIME_UNKNOWN_LOCAL",
+                        format!("cannot set unknown local binding `{name}`"),
+                    )
+                    .with_node(statement.id.clone()),
+                ]);
+            }
+            let value = eval_expr(program, expr, locals, return_type)?;
+            locals.insert(name.clone(), value);
+            Ok(None)
+        }
+        StatementKind::Return { expr } => Ok(Some(eval_expr(program, expr, locals, return_type)?)),
+        StatementKind::Expr { expr } => {
+            eval_expr(program, expr, locals, return_type)?;
+            Ok(None)
+        }
+        StatementKind::If {
+            condition,
+            then_block,
+            else_block,
+        } => {
+            let condition_value = eval_expr(program, condition, locals, return_type)?;
+            if expect_bool(condition_value, condition)? {
+                eval_scoped_block(program, then_block, locals, return_type)
+            } else if let Some(else_block) = else_block {
+                eval_scoped_block(program, else_block, locals, return_type)
+            } else {
+                Ok(None)
+            }
+        }
+        StatementKind::While { condition, body } => {
+            for _ in 0..MAX_LOOP_ITERATIONS {
+                let condition_value = eval_expr(program, condition, locals, return_type)?;
+                if !expect_bool(condition_value, condition)? {
+                    return Ok(None);
+                }
+                if let Some(value) = eval_scoped_block(program, body, locals, return_type)? {
+                    return Ok(Some(value));
+                }
+            }
+            Err(vec![
+                Diagnostic::error(
+                    "RUNTIME_LOOP_LIMIT_EXCEEDED",
+                    format!("while loop exceeded {MAX_LOOP_ITERATIONS} iterations"),
+                )
+                .with_node(statement.id.clone()),
+            ])
+        }
+    }
 }
 
 fn eval_expr(
@@ -171,20 +255,61 @@ fn eval_expr(
             if direct_callee_name(callee).is_some_and(|name| name == "Ok" || name == "Err") {
                 return Ok(Value::Raw(expr.source.clone()));
             }
-            if let Some(callee_name) = direct_callee_name(callee) {
-                if let Some(function) = program
+            if direct_callee_name(callee).is_some_and(|name| name == "len") {
+                if args.len() != 1 {
+                    return runtime_type_error(expr, "builtin `len` expects one argument");
+                }
+                return match eval_expr(program, &args[0], locals, return_type)? {
+                    Value::List(items) => Ok(Value::Int(items.len() as i64)),
+                    Value::Text(value) => Ok(Value::Int(value.chars().count() as i64)),
+                    _ => runtime_type_error(expr, "builtin `len` expects a list or text value"),
+                };
+            }
+            if let Some(callee_name) = direct_callee_name(callee)
+                && let Some(function) = program
                     .functions
                     .iter()
                     .find(|function| function.name == callee_name)
-                {
-                    let mut values = Vec::new();
-                    for arg in args {
-                        values.push(eval_expr(program, arg, locals, return_type)?);
-                    }
-                    return eval_function(program, function, values);
+            {
+                let mut values = Vec::new();
+                for arg in args {
+                    values.push(eval_expr(program, arg, locals, return_type)?);
                 }
+                return eval_function(program, function, values);
             }
             Ok(Value::Raw(expr.source.clone()))
+        }
+        ExprKind::ListLiteral { items } => {
+            let mut values = Vec::new();
+            for item in items {
+                values.push(eval_expr(program, item, locals, return_type)?);
+            }
+            Ok(Value::List(values))
+        }
+        ExprKind::Index { collection, index } => {
+            let collection = eval_expr(program, collection, locals, return_type)?;
+            let index = eval_expr(program, index, locals, return_type)?;
+            match (collection, index) {
+                (Value::List(items), Value::Int(index)) if index >= 0 => {
+                    items.get(index as usize).cloned().ok_or_else(|| {
+                        vec![
+                            Diagnostic::error(
+                                "RUNTIME_INDEX_OUT_OF_BOUNDS",
+                                format!("list index {index} is out of bounds"),
+                            )
+                            .with_node(expr.id.clone()),
+                        ]
+                    })
+                }
+                (Value::List(_), Value::Int(index)) => Err(vec![
+                    Diagnostic::error(
+                        "RUNTIME_INDEX_OUT_OF_BOUNDS",
+                        format!("list index {index} is out of bounds"),
+                    )
+                    .with_node(expr.id.clone()),
+                ]),
+                _ => runtime_type_error(expr, "indexing expects `List<T>` and `Int`"),
+            }
         }
         ExprKind::FieldAccess { receiver, field } => {
             match eval_expr(program, receiver, locals, return_type)? {
