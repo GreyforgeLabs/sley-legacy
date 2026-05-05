@@ -957,6 +957,10 @@ fn move_node(
         return Ok(moved);
     }
 
+    if let Some(moved) = move_take(program, target, payload)? {
+        return Ok(moved);
+    }
+
     if take_exists(program, target) {
         return Err(vec![
             Diagnostic::error(
@@ -997,6 +1001,89 @@ fn ensure_no_move_destination(
         )
         .with_node(target.to_string()),
     ])
+}
+
+fn move_take(
+    program: &mut Program,
+    target: &str,
+    payload: &MoveNodePayload,
+) -> Result<Option<String>, Vec<Diagnostic>> {
+    if payload.destination.is_some() {
+        return if take_exists(program, target) {
+            Err(vec![
+                Diagnostic::error(
+                    "GRAFT_MOVE_UNSUPPORTED",
+                    "MoveNode payload.destination is not supported for take targets",
+                )
+                .with_node(target.to_string()),
+            ])
+        } else {
+            Ok(None)
+        };
+    }
+    let Some((task_index, take_index)) =
+        program
+            .tasks
+            .iter()
+            .enumerate()
+            .find_map(|(task_index, task)| {
+                task.takes
+                    .iter()
+                    .position(|take| take_matches_target(task, take, target))
+                    .map(|take_index| (task_index, take_index))
+            })
+    else {
+        return Ok(None);
+    };
+
+    let task_id = program.tasks[task_index].id.clone();
+    ensure_parent_in_strings(
+        payload,
+        &[
+            task_id.clone(),
+            format!("{task_id}:takes"),
+            format!("takes:{task_id}"),
+        ],
+        target,
+    )?;
+    let takes = &mut program.tasks[task_index].takes;
+    if payload.position >= takes.len() {
+        return Err(position_out_of_range(
+            target,
+            payload.position,
+            takes.len(),
+            &format!("{task_id}:takes"),
+        ));
+    }
+    if take_index != payload.position {
+        let take = takes.remove(take_index);
+        takes.insert(payload.position, take);
+    }
+    Ok(Some(format!("take:{take_index}->{}", payload.position)))
+}
+
+fn ensure_parent_in_strings(
+    payload: &MoveNodePayload,
+    accepted_parents: &[String],
+    target: &str,
+) -> Result<(), Vec<Diagnostic>> {
+    let Some(parent) = payload.parent.as_deref() else {
+        return Ok(());
+    };
+    if accepted_parents.iter().any(|accepted| accepted == parent) {
+        Ok(())
+    } else {
+        Err(vec![
+            Diagnostic::error(
+                "GRAFT_MOVE_UNSUPPORTED",
+                format!(
+                    "MoveNode for `{target}` cannot move across parents; expected one of {} but got `{parent}`",
+                    accepted_parents.join(", ")
+                ),
+            )
+            .with_node(target.to_string()),
+        ])
+    }
 }
 
 fn declaration_move_parent_module(

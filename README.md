@@ -426,12 +426,12 @@ Known v0 limits:
   files remain narrower v0 root-contract schemas.
 - `MoveNode` currently reorders statements within their existing block,
   moves statements across existing block parents with `payload.destination`,
-  reorders top-level imports, types, effects, or tasks within their declaration
-  lists, and moves top-level types, effects, or tasks into known module parents
-  such as `module:app.extra:tasks`. An all-or-nothing transaction can add the
-  destination import before the move and create the new module file from the
-  moved declaration. Take movement and expression movement still reject
-  explicitly.
+  reorders takes within their owning task, reorders top-level imports, types,
+  effects, or tasks within their declaration lists, and moves top-level types,
+  effects, or tasks into known module parents such as `module:app.extra:tasks`.
+  An all-or-nothing transaction can add the destination import before the move
+  and create the new module file from the moved declaration. Cross-task take
+  movement and expression movement still reject explicitly.
 
 The current release-readiness phase is underway for the executable slice. The
 gold corpus and CLI smoke suite now have manifests with required coverage tags

@@ -774,6 +774,42 @@ task main -> Int {
 }
 
 #[test]
+fn move_node_graft_reorders_takes_within_task() {
+    let source = r#"
+task helper -> Int {
+  take left: Int
+  take right: Int
+
+  return left - right
+}
+
+task main -> Int {
+  return call helper(10, 3)
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let graft_source = r#"
+{
+  "op": "MoveNode",
+  "target": "take:task:main.helper:right",
+  "payload": { "parent": "task:main.helper:takes", "position": 0 }
+}
+"#;
+    let graft: GraftInput = serde_json::from_str(graft_source).expect("parse graft");
+    let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
+
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted_source = outcome.source.as_deref().expect("grafted source");
+    assert!(
+        grafted_source.find("take right: Int").expect("right take")
+            < grafted_source.find("take left: Int").expect("left take"),
+        "{grafted_source}"
+    );
+    let grafted = parse_program(grafted_source).expect("parse grafted source");
+    assert_eq!(run_main(&grafted), Ok(Value::Int(-7)));
+}
+
+#[test]
 fn move_node_rejects_statement_move_into_own_child_block() {
     let source = r#"
 task main -> Int {
@@ -790,6 +826,45 @@ task main -> Int {
   "target": "block:task:main.main:stmt:0",
   "payload": {
     "destination": "block:task:main.main:stmt:0:then",
+    "position": 0
+  }
+}
+"#;
+    let graft: GraftInput = serde_json::from_str(graft_source).expect("parse graft");
+    let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
+
+    assert_eq!(outcome.status, "rejected");
+    assert!(
+        outcome
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.id == "GRAFT_MOVE_UNSUPPORTED"),
+        "expected move unsupported diagnostic, got {:#?}",
+        outcome.diagnostics
+    );
+}
+
+#[test]
+fn move_node_rejects_destination_for_take_moves() {
+    let source = r#"
+task helper -> Int {
+  take value: Int
+
+  return value
+}
+
+task main -> Int {
+  return call helper(1)
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let graft_source = r#"
+{
+  "op": "MoveNode",
+  "target": "take:task:main.helper:value",
+  "payload": {
+    "parent": "task:main.helper:takes",
+    "destination": "task:main.main:takes",
     "position": 0
   }
 }
