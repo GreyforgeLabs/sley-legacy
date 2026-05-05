@@ -8,8 +8,8 @@ use crate::authority::{host_effect_contracts, is_host_callee_path, is_host_root}
 use crate::diagnostics::{Diagnostic, RepairHint};
 use crate::symbols::{
     EffectResolution, TaskResolution, TypeResolution, callee_path, effect_module,
-    is_module_qualified_callee, resolve_effect, resolve_task, resolve_type, task_module,
-    type_fq_name, type_module,
+    is_module_qualified_callee, resolve_effect, resolve_task, resolve_type, task_fq_name,
+    task_module, type_fq_name, type_module,
 };
 
 pub fn check_program(program: &Program) -> Vec<Diagnostic> {
@@ -754,13 +754,13 @@ fn check_expr_structure(
             let caller_module = task_module(task);
             let callee_path = callee_path(callee);
             let mut resolved_signature = None;
-            if let Some(callee_name) = callee_path.as_deref() {
-                if !is_result_constructor(callee_name)
-                    && !is_builtin_task(callee_name)
-                    && !is_host_callee_path(callee_name)
+            if let Some(raw_callee) = callee_path.as_deref() {
+                if !is_result_constructor(raw_callee)
+                    && !is_builtin_task(raw_callee)
+                    && !is_host_callee_path(raw_callee)
                 {
-                    if callee_name.contains('.')
-                        && !is_module_qualified_callee(program, &caller_module, callee_name)
+                    if raw_callee.contains('.')
+                        && !is_module_qualified_callee(program, &caller_module, raw_callee)
                     {
                         check_expr_structure(
                             program,
@@ -773,23 +773,23 @@ fn check_expr_structure(
                             diagnostics,
                         );
                     } else {
-                        match resolve_task(program, &caller_module, callee_name) {
+                        match resolve_task(program, &caller_module, raw_callee) {
                             TaskResolution::Resolved { index, fq_name } => {
                                 resolved_signature = known_tasks
                                     .get(&index)
-                                    .map(|signature| (fq_name, signature));
+                                    .map(|signature| (raw_callee.to_string(), fq_name, signature));
                             }
                             TaskResolution::Unknown => diagnostics.push(
                                 Diagnostic::error(
                                     "UNKNOWN_TASK",
-                                    format!("unknown task `{callee_name}`"),
+                                    format!("unknown task `{raw_callee}`"),
                                 )
                                 .with_node(callee.id.clone())
                                 .with_repair_hint(
                                     RepairHint::new("declare_or_import_task")
                                         .with_target(callee.id.clone())
                                         .with_replacement(format!(
-                                            "import <module-with-{callee_name}>"
+                                            "import <module-with-{raw_callee}>"
                                         )),
                                 ),
                             ),
@@ -797,7 +797,7 @@ fn check_expr_structure(
                                 Diagnostic::error(
                                     "AMBIGUOUS_TASK",
                                     format!(
-                                        "task `{callee_name}` is ambiguous: {}",
+                                        "task `{raw_callee}` is ambiguous: {}",
                                         matches.join(", ")
                                     ),
                                 )
@@ -850,28 +850,36 @@ fn check_expr_structure(
                     diagnostics,
                 );
             }
-            if let Some((callee_name, signature)) = resolved_signature {
+            if let Some((raw_callee, callee_name, signature)) = resolved_signature {
                 if args.len() != signature.takes.len() {
-                    diagnostics.push(
-                        Diagnostic::error(
-                            "CALL_ARITY_MISMATCH",
-                            format!(
-                                "task `{}` calls `{callee_name}` with {} arguments but {} are required",
-                                task.name,
-                                args.len(),
-                                signature.takes.len()
-                            )
-                        )
-                        .with_node(expr.id.clone())
-                        .with_repair_hint(
-                            RepairHint::new("match_task_arity")
-                                .with_target(expr.id.clone())
-                                .with_replacement(format!(
-                                    "{} arguments required",
-                                    signature.takes.len()
-                                )),
+                    let mut diagnostic = Diagnostic::error(
+                        "CALL_ARITY_MISMATCH",
+                        format!(
+                            "task `{}` calls `{callee_name}` with {} arguments but {} are required",
+                            task.name,
+                            args.len(),
+                            signature.takes.len()
                         ),
+                    )
+                    .with_node(expr.id.clone())
+                    .with_repair_hint(
+                        RepairHint::new("match_task_arity")
+                            .with_target(expr.id.clone())
+                            .with_replacement(format!(
+                                "{} arguments required",
+                                signature.takes.len()
+                            )),
                     );
+                    if let Some(hint) = call_arity_graft_hint(
+                        task,
+                        &raw_callee,
+                        &callee_name,
+                        args.len(),
+                        &signature.takes,
+                    ) {
+                        diagnostic = diagnostic.with_repair_hint(hint);
+                    }
+                    diagnostics.push(diagnostic);
                 }
                 for (index, (arg, expected)) in args.iter().zip(signature.takes.iter()).enumerate()
                 {
@@ -1802,6 +1810,51 @@ fn bool_condition_hint(condition: &Expr) -> RepairHint {
     RepairHint::new("replace_condition")
         .with_target(condition.id.clone())
         .with_replacement("Bool")
+}
+
+fn call_arity_graft_hint(
+    task: &TaskDecl,
+    raw_callee: &str,
+    target_fq_name: &str,
+    arg_count: usize,
+    expected_takes: &[TypeExpr],
+) -> Option<RepairHint> {
+    let target = format!("task:{target_fq_name}");
+    let scope = format!("task:{}", task_fq_name(task));
+    if arg_count < expected_takes.len() {
+        let graft = serde_json::json!({
+            "op": "UpdateCallArgs",
+            "target": target,
+            "payload": {
+                "from": raw_callee,
+                "position": arg_count,
+                "scope": scope,
+                "source": default_expr_source_for_type(&expected_takes[arg_count]),
+            }
+        });
+        return Some(
+            RepairHint::new("update_call_args")
+                .with_target(format!("task:{target_fq_name}"))
+                .with_replacement(graft.to_string()),
+        );
+    }
+    if arg_count > expected_takes.len() {
+        let graft = serde_json::json!({
+            "op": "RemoveCallArg",
+            "target": target,
+            "payload": {
+                "from": raw_callee,
+                "position": expected_takes.len(),
+                "scope": scope,
+            }
+        });
+        return Some(
+            RepairHint::new("remove_call_arg")
+                .with_target(format!("task:{target_fq_name}"))
+                .with_replacement(graft.to_string()),
+        );
+    }
+    None
 }
 
 fn replace_call_arg_hint(callee_name: &str, position: usize, expected: &TypeExpr) -> RepairHint {

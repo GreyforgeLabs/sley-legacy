@@ -2148,6 +2148,103 @@ task main -> Int {
 }
 
 #[test]
+fn checker_call_arity_hints_include_structural_grafts() {
+    let missing_arg = r#"
+task scale -> Int {
+  take value: Int
+  take factor: Int
+
+  return value * factor
+}
+
+task main -> Int {
+  return call scale(21)
+}
+"#;
+    let program = parse_program(missing_arg).expect("parse missing arg source");
+    let diagnostics = check_program(&program);
+    assert_has_repair_hint(&diagnostics, "CALL_ARITY_MISMATCH", "match_task_arity");
+    assert_has_repair_hint(&diagnostics, "CALL_ARITY_MISMATCH", "update_call_args");
+    let update_hint = find_repair_hint(&diagnostics, "CALL_ARITY_MISMATCH", "update_call_args");
+    assert_eq!(update_hint.target.as_deref(), Some("task:main.scale"));
+    let replacement: serde_json::Value = serde_json::from_str(
+        update_hint
+            .replacement
+            .as_deref()
+            .expect("update replacement"),
+    )
+    .expect("update replacement json");
+    assert_eq!(
+        replacement.pointer("/op"),
+        Some(&serde_json::json!("UpdateCallArgs"))
+    );
+    assert_eq!(
+        replacement.pointer("/target"),
+        Some(&serde_json::json!("task:main.scale"))
+    );
+    assert_eq!(
+        replacement.pointer("/payload/from"),
+        Some(&serde_json::json!("scale"))
+    );
+    assert_eq!(
+        replacement.pointer("/payload/position"),
+        Some(&serde_json::json!(1))
+    );
+    assert_eq!(
+        replacement.pointer("/payload/scope"),
+        Some(&serde_json::json!("task:main.main"))
+    );
+    assert_eq!(
+        replacement.pointer("/payload/source"),
+        Some(&serde_json::json!("0"))
+    );
+
+    let extra_arg = r#"
+task double -> Int {
+  take value: Int
+
+  return value * 2
+}
+
+task main -> Int {
+  return call double(21, 1)
+}
+"#;
+    let program = parse_program(extra_arg).expect("parse extra arg source");
+    let diagnostics = check_program(&program);
+    assert_has_repair_hint(&diagnostics, "CALL_ARITY_MISMATCH", "remove_call_arg");
+    let remove_hint = find_repair_hint(&diagnostics, "CALL_ARITY_MISMATCH", "remove_call_arg");
+    assert_eq!(remove_hint.target.as_deref(), Some("task:main.double"));
+    let replacement: serde_json::Value = serde_json::from_str(
+        remove_hint
+            .replacement
+            .as_deref()
+            .expect("remove replacement"),
+    )
+    .expect("remove replacement json");
+    assert_eq!(
+        replacement.pointer("/op"),
+        Some(&serde_json::json!("RemoveCallArg"))
+    );
+    assert_eq!(
+        replacement.pointer("/target"),
+        Some(&serde_json::json!("task:main.double"))
+    );
+    assert_eq!(
+        replacement.pointer("/payload/from"),
+        Some(&serde_json::json!("double"))
+    );
+    assert_eq!(
+        replacement.pointer("/payload/position"),
+        Some(&serde_json::json!(1))
+    );
+    assert_eq!(
+        replacement.pointer("/payload/scope"),
+        Some(&serde_json::json!("task:main.main"))
+    );
+}
+
+#[test]
 fn rejected_graft_fixtures_report_stable_diagnostic_ids() {
     let call_source = r#"
 task double -> Int {
@@ -5982,4 +6079,20 @@ fn assert_has_repair_hint(diagnostics: &[sley::diagnostics::Diagnostic], id: &st
         diagnostic.repair_hints.iter().any(|hint| hint.kind == kind),
         "expected repair hint {kind} on {id}; got {diagnostic:#?}"
     );
+}
+
+fn find_repair_hint<'a>(
+    diagnostics: &'a [sley::diagnostics::Diagnostic],
+    id: &str,
+    kind: &str,
+) -> &'a sley::diagnostics::RepairHint {
+    let diagnostic = diagnostics
+        .iter()
+        .find(|diagnostic| diagnostic.id == id)
+        .unwrap_or_else(|| panic!("missing diagnostic {id}; got {diagnostics:#?}"));
+    diagnostic
+        .repair_hints
+        .iter()
+        .find(|hint| hint.kind == kind)
+        .unwrap_or_else(|| panic!("missing repair hint {kind} on {id}; got {diagnostic:#?}"))
 }

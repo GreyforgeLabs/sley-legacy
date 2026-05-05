@@ -36,6 +36,9 @@ Agent rules:
 - Use `graph --json --slice <node-id>` before planning a bounded graft.
 - Use `ast --json --node <node-id>` when exact task shape matters.
 - Treat diagnostic `repair_hints` as suggestions, not authority bypasses.
+- For `CALL_ARITY_MISMATCH`, prefer structural `update_call_args` or
+  `remove_call_arg` hints when present; their replacements are starter
+  `UpdateCallArgs` or `RemoveCallArg` graft JSON.
 - For `CALL_ARGUMENT_TYPE_MISMATCH`, prefer the structural `replace_call_arg`
   hint when present; its replacement is starter `ReplaceCallArg` graft JSON.
 - Do not add effects only to silence diagnostics; the authority must be real.
