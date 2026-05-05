@@ -41,6 +41,30 @@ pub fn parse_block_source(source: &str) -> Result<Block, Vec<Diagnostic>> {
         }))
 }
 
+pub fn parse_expr_source(source: &str) -> Result<Expr, Vec<Diagnostic>> {
+    let synthetic = format!("task __graft_expr -> Unit {{\nreturn {source}\n}}\n");
+    let program = parse_program(&synthetic)?;
+    let Some(task) = program.tasks.into_iter().next() else {
+        return Err(vec![Diagnostic::error(
+            "PARSE_EXPECTED_EXPRESSION",
+            "expected expression",
+        )]);
+    };
+    let Some(statement) = task.body.statements.into_iter().next() else {
+        return Err(vec![Diagnostic::error(
+            "PARSE_EXPECTED_EXPRESSION",
+            "expected expression",
+        )]);
+    };
+    match statement.kind {
+        StatementKind::Return { expr } => Ok(expr),
+        _ => Err(vec![Diagnostic::error(
+            "PARSE_EXPECTED_EXPRESSION",
+            "expected expression",
+        )]),
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 enum TokenKind {
     Ident(String),

@@ -1,0 +1,16 @@
+{
+  "transaction": "graft_rename_double",
+  "mode": "all_or_nothing",
+  "ops": [
+    {
+      "op": "RenameDeclaration",
+      "target": "task:main.double",
+      "payload": { "name": "increment" }
+    },
+    {
+      "op": "UpdateCallSites",
+      "target": "task:main.increment",
+      "payload": { "from": "double", "replacement": "increment" }
+    }
+  ]
+}

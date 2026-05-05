@@ -1,0 +1,8 @@
+{
+  "op": "InsertStatement",
+  "target": "task:main.main",
+  "payload": {
+    "position": 1,
+    "source": "set total = total + 4"
+  }
+}

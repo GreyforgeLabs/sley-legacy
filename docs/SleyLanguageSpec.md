@@ -162,8 +162,24 @@ shards. A graft is accepted only after parse, type, effect, authority, lifetime,
 and provenance checks pass for the implemented v0 surface.
 
 Current graft operations include adding/removing takes, replacing task bodies,
-adding imports/effects/types/tasks, and renaming declarations. Unsupported graph
-operations return explicit diagnostics until implemented.
+adding imports/effects/types/tasks, renaming declarations, updating call-sites,
+inserting checked task-body statements, and replacing expressions by node id.
+Unsupported graph operations return explicit diagnostics until implemented.
+
+Implemented graph-edit payloads:
+
+```json
+{ "op": "UpdateCallSites", "target": "task:app.math.double", "payload": { "replacement": "math.twice" } }
+{ "op": "UpdateCallSites", "target": "task:app.math.twice", "payload": { "from": "math.double", "replacement": "math.twice", "scope": "module:app.main" } }
+{ "op": "InsertStatement", "target": "task:app.main.main", "payload": { "position": 1, "source": "set total = total + 1" } }
+{ "op": "ReplaceExpression", "target": "block:task:app.main.main:stmt:0:expr:right", "payload": { "source": "41" } }
+```
+
+`UpdateCallSites` rewrites call expressions that either resolve to the target
+task or match the optional raw `from` callee. `scope` can limit the rewrite to a
+task or module. `InsertStatement` currently targets a task body. Each accepted
+edit reparses the payload, rewrites the AST, refreshes expression source text,
+and reruns the checker before returning formatted source.
 
 Accepted grafts written with `sley graft --write` append receipt records to a
 local `.sley/trace.jsonl` sidecar unless the caller passes an explicit trace
@@ -183,8 +199,9 @@ A graph slice is a bounded shard around a module, task, type, effect, or import.
 Task slices include the selected task AST, visible module declarations,
 outbound calls, and inbound calls from other tasks that resolve to the selected
 task. This is the first stable agent-facing query surface for graft planning.
-The next slice milestone is making call-site and expression grafts consume this
-bounded shard directly.
+Call-site and expression grafts now consume node ids and task identities from
+this shard. The next slice milestone is freezing the JSON shape as a stable
+agent contract.
 
 ## ZJX Boundary
 
@@ -214,5 +231,7 @@ archive.
 - trace sidecars are not yet content-addressed seals
 - no `match`, agent declarations, spawn/cast/join, or compressed ZJX archive
   writer yet
-- `UpdateCallSites`, `InsertStatement`, and `ReplaceExpression` are still
-  declared graft operations rather than implemented graph-slice mutations
+- `MoveNode` and `DeleteNode` are still declared graft operations rather than
+  implemented graph mutations
+- project-aware graft writeback for multi-file module bundles is not yet
+  implemented

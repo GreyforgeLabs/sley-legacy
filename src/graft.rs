@@ -1,15 +1,18 @@
+use std::collections::BTreeSet;
+
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use time::{OffsetDateTime, format_description::well_known::Rfc3339};
 
 use crate::ast::{
-    BindingKind, Block, EffectDecl, ImportDecl, Program, ProvenanceRecord, TakeDecl, TaskDecl,
-    TypeDecl,
+    BinaryOp, BindingKind, Block, EffectDecl, Expr, ExprField, ExprKind, ExprMapEntry, ImportDecl,
+    Program, ProvenanceRecord, Statement, StatementKind, TakeDecl, TaskDecl, TypeDecl,
 };
 use crate::checker::{check_program, has_errors};
 use crate::diagnostics::Diagnostic;
 use crate::formatter::format_program;
-use crate::parser::{parse_block_source, parse_program, parse_type_expr_source};
+use crate::parser::{parse_block_source, parse_expr_source, parse_program, parse_type_expr_source};
+use crate::symbols::{callee_path, collect_task_calls, task_fq_name};
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(untagged)]
@@ -77,12 +80,21 @@ pub enum GraftOperation {
     },
     UpdateCallSites {
         target: String,
+        #[serde(default)]
+        precondition: Option<JsonValue>,
+        payload: UpdateCallSitesPayload,
     },
     InsertStatement {
         target: String,
+        #[serde(default)]
+        precondition: Option<JsonValue>,
+        payload: InsertStatementPayload,
     },
     ReplaceExpression {
         target: String,
+        #[serde(default)]
+        precondition: Option<JsonValue>,
+        payload: ExpressionPayload,
     },
     MoveNode {
         target: String,
@@ -127,6 +139,27 @@ pub struct RenamePayload {
 #[derive(Debug, Clone, Deserialize)]
 pub struct ImportPayload {
     pub module: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct UpdateCallSitesPayload {
+    pub replacement: String,
+    #[serde(default)]
+    pub from: Option<String>,
+    #[serde(default)]
+    pub scope: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct InsertStatementPayload {
+    pub source: String,
+    #[serde(default)]
+    pub position: Option<usize>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct ExpressionPayload {
+    pub source: String,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -445,16 +478,100 @@ fn apply_one(
                 format!("target `{target}` does not exist"),
             )])
         }
-        GraftOperation::UpdateCallSites { target }
-        | GraftOperation::InsertStatement { target }
-        | GraftOperation::ReplaceExpression { target }
-        | GraftOperation::MoveNode { target }
-        | GraftOperation::DeleteNode { target } => Err(vec![Diagnostic::error(
-            "GRAFT_OPERATION_UNSUPPORTED",
-            format!(
-                "graft operation for `{target}` is declared in the spec but not implemented yet"
-            ),
-        )]),
+        GraftOperation::UpdateCallSites {
+            target,
+            precondition,
+            payload,
+        } => {
+            check_preconditions(program, None, precondition.as_ref())?;
+            let target_index = find_task_or_reject(program, &target)?;
+            let target_fq_name = task_fq_name(&program.tasks[target_index]);
+            let replacement = parse_callee_source(&payload.replacement)?;
+            let call_ids = matching_call_expr_ids(program, &target_fq_name, &payload);
+            if call_ids.is_empty() {
+                return Err(vec![
+                    Diagnostic::error(
+                        "GRAFT_CALLSITE_MISSING",
+                        format!("no call sites matched `{target}`"),
+                    )
+                    .with_node(program.tasks[target_index].id.clone()),
+                ]);
+            }
+            let updated = update_call_callees(program, &call_ids, &replacement);
+            if updated == 0 {
+                return Err(vec![
+                    Diagnostic::error(
+                        "GRAFT_CALLSITE_MISSING",
+                        format!("no call-site expressions could be rewritten for `{target}`"),
+                    )
+                    .with_node(program.tasks[target_index].id.clone()),
+                ]);
+            }
+            program.assign_ids();
+            Ok(record(
+                graft_id,
+                actor,
+                "UpdateCallSites",
+                vec![target, format!("calls:{updated}")],
+            ))
+        }
+        GraftOperation::InsertStatement {
+            target,
+            precondition,
+            payload,
+        } => {
+            let index = find_task_or_reject(program, &target)?;
+            check_preconditions(program, Some(index), precondition.as_ref())?;
+            let mut parsed = parse_block_source(&payload.source)?;
+            if parsed.statements.len() != 1 {
+                return Err(vec![Diagnostic::error(
+                    "GRAFT_EXPECTED_ONE_STATEMENT",
+                    "InsertStatement payload.source must parse to exactly one statement",
+                )]);
+            }
+            let statement = parsed.statements.remove(0);
+            let task = &mut program.tasks[index];
+            let position = payload.position.unwrap_or(task.body.statements.len());
+            if position > task.body.statements.len() {
+                return Err(vec![
+                    Diagnostic::error(
+                        "GRAFT_POSITION_OUT_OF_RANGE",
+                        format!(
+                            "position {position} is past task body length {}",
+                            task.body.statements.len()
+                        ),
+                    )
+                    .with_node(task.id.clone()),
+                ]);
+            }
+            task.body.statements.insert(position, statement);
+            program.assign_ids();
+            Ok(record(graft_id, actor, "InsertStatement", vec![target]))
+        }
+        GraftOperation::ReplaceExpression {
+            target,
+            precondition,
+            payload,
+        } => {
+            check_preconditions(program, None, precondition.as_ref())?;
+            let replacement = parse_expr_source(&payload.source)?;
+            if !replace_expression(program, &target, replacement) {
+                return Err(vec![Diagnostic::error(
+                    "GRAFT_TARGET_MISSING",
+                    format!("expression target `{target}` does not exist"),
+                )]);
+            }
+            program.assign_ids();
+            Ok(record(graft_id, actor, "ReplaceExpression", vec![target]))
+        }
+        GraftOperation::MoveNode { target } | GraftOperation::DeleteNode { target } => {
+            Err(vec![Diagnostic::error(
+                "GRAFT_OPERATION_UNSUPPORTED",
+                format!(
+                    "graft operation for `{target}` is declared in the spec but not implemented yet"
+                ),
+            )])
+        }
     }
 }
 
@@ -519,6 +636,434 @@ fn check_preconditions(
         Ok(())
     } else {
         Err(diagnostics)
+    }
+}
+
+fn parse_callee_source(source: &str) -> Result<Expr, Vec<Diagnostic>> {
+    let expr = parse_expr_source(source)?;
+    if callee_path(&expr).is_some() {
+        return Ok(expr);
+    }
+    Err(vec![Diagnostic::error(
+        "GRAFT_INVALID_CALLEE",
+        "UpdateCallSites payload.replacement must be an identifier or dotted path",
+    )])
+}
+
+fn matching_call_expr_ids(
+    program: &Program,
+    target_fq_name: &str,
+    payload: &UpdateCallSitesPayload,
+) -> BTreeSet<String> {
+    collect_task_calls(program)
+        .into_iter()
+        .filter(|call| call_is_in_scope(call, payload.scope.as_deref()))
+        .filter(|call| {
+            if let Some(from) = payload.from.as_deref() {
+                call.callee == from
+            } else {
+                call.status == "resolved" && call.target.as_deref() == Some(target_fq_name)
+            }
+        })
+        .map(|call| call.expr_id)
+        .collect()
+}
+
+fn call_is_in_scope(call: &crate::symbols::TaskCallSummary, scope: Option<&str>) -> bool {
+    let Some(scope) = scope else {
+        return true;
+    };
+    let task_scope = scope.strip_prefix("task:").unwrap_or(scope);
+    let module_scope = scope.strip_prefix("module:").unwrap_or(scope);
+    call.from == task_scope || call.from_module == module_scope
+}
+
+fn update_call_callees(
+    program: &mut Program,
+    call_ids: &BTreeSet<String>,
+    replacement: &Expr,
+) -> usize {
+    program
+        .tasks
+        .iter_mut()
+        .map(|task| update_call_callees_in_block(&mut task.body, call_ids, replacement))
+        .sum()
+}
+
+fn update_call_callees_in_block(
+    block: &mut Block,
+    call_ids: &BTreeSet<String>,
+    replacement: &Expr,
+) -> usize {
+    block
+        .statements
+        .iter_mut()
+        .map(|statement| update_call_callees_in_statement(statement, call_ids, replacement))
+        .sum()
+}
+
+fn update_call_callees_in_statement(
+    statement: &mut Statement,
+    call_ids: &BTreeSet<String>,
+    replacement: &Expr,
+) -> usize {
+    match &mut statement.kind {
+        StatementKind::Binding { expr, .. }
+        | StatementKind::Set { expr, .. }
+        | StatementKind::Return { expr }
+        | StatementKind::Expr { expr } => update_call_callees_in_expr(expr, call_ids, replacement),
+        StatementKind::If {
+            condition,
+            then_block,
+            else_block,
+        } => {
+            let mut updated = update_call_callees_in_expr(condition, call_ids, replacement);
+            updated += update_call_callees_in_block(then_block, call_ids, replacement);
+            if let Some(else_block) = else_block {
+                updated += update_call_callees_in_block(else_block, call_ids, replacement);
+            }
+            updated
+        }
+        StatementKind::While { condition, body } => {
+            update_call_callees_in_expr(condition, call_ids, replacement)
+                + update_call_callees_in_block(body, call_ids, replacement)
+        }
+        StatementKind::For {
+            collection, body, ..
+        } => {
+            update_call_callees_in_expr(collection, call_ids, replacement)
+                + update_call_callees_in_block(body, call_ids, replacement)
+        }
+        StatementKind::Forge { body } => update_call_callees_in_block(body, call_ids, replacement),
+    }
+}
+
+fn update_call_callees_in_expr(
+    expr: &mut Expr,
+    call_ids: &BTreeSet<String>,
+    replacement: &Expr,
+) -> usize {
+    let current_id = expr.id.clone();
+    let mut updated = 0usize;
+    match &mut expr.kind {
+        ExprKind::Unary { expr: inner, .. } | ExprKind::Try { expr: inner } => {
+            updated += update_call_callees_in_expr(inner, call_ids, replacement);
+        }
+        ExprKind::Binary { left, right, .. } => {
+            updated += update_call_callees_in_expr(left, call_ids, replacement);
+            updated += update_call_callees_in_expr(right, call_ids, replacement);
+        }
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
+            updated += update_call_callees_in_expr(condition, call_ids, replacement);
+            updated += update_call_callees_in_expr(then_branch, call_ids, replacement);
+            updated += update_call_callees_in_expr(else_branch, call_ids, replacement);
+        }
+        ExprKind::Call { callee, args } => {
+            if call_ids.contains(&current_id) {
+                **callee = replacement.clone();
+                updated += 1;
+            } else {
+                updated += update_call_callees_in_expr(callee, call_ids, replacement);
+            }
+            for arg in args {
+                updated += update_call_callees_in_expr(arg, call_ids, replacement);
+            }
+        }
+        ExprKind::ListLiteral { items } => {
+            for item in items {
+                updated += update_call_callees_in_expr(item, call_ids, replacement);
+            }
+        }
+        ExprKind::MapLiteral { entries } => {
+            for entry in entries {
+                updated += update_call_callees_in_expr(&mut entry.key, call_ids, replacement);
+                updated += update_call_callees_in_expr(&mut entry.value, call_ids, replacement);
+            }
+        }
+        ExprKind::Index { collection, index } => {
+            updated += update_call_callees_in_expr(collection, call_ids, replacement);
+            updated += update_call_callees_in_expr(index, call_ids, replacement);
+        }
+        ExprKind::FieldAccess { receiver, .. } => {
+            updated += update_call_callees_in_expr(receiver, call_ids, replacement);
+        }
+        ExprKind::RecordLiteral { fields, .. } => {
+            for field in fields {
+                updated += update_call_callees_in_expr(&mut field.expr, call_ids, replacement);
+            }
+        }
+        ExprKind::Raw { .. }
+        | ExprKind::StringLiteral { .. }
+        | ExprKind::IntLiteral { .. }
+        | ExprKind::FloatLiteral { .. }
+        | ExprKind::BoolLiteral { .. }
+        | ExprKind::Identifier { .. } => {}
+    }
+    if updated > 0 {
+        refresh_expr_source(expr);
+    }
+    updated
+}
+
+fn replace_expression(program: &mut Program, target: &str, replacement: Expr) -> bool {
+    for task in &mut program.tasks {
+        if replace_expression_in_block(&mut task.body, target, &replacement) {
+            return true;
+        }
+    }
+    false
+}
+
+fn replace_expression_in_block(block: &mut Block, target: &str, replacement: &Expr) -> bool {
+    for statement in &mut block.statements {
+        if replace_expression_in_statement(statement, target, replacement) {
+            return true;
+        }
+    }
+    false
+}
+
+fn replace_expression_in_statement(
+    statement: &mut Statement,
+    target: &str,
+    replacement: &Expr,
+) -> bool {
+    match &mut statement.kind {
+        StatementKind::Binding { expr, .. }
+        | StatementKind::Set { expr, .. }
+        | StatementKind::Return { expr }
+        | StatementKind::Expr { expr } => replace_expression_in_expr(expr, target, replacement),
+        StatementKind::If {
+            condition,
+            then_block,
+            else_block,
+        } => {
+            if replace_expression_in_expr(condition, target, replacement)
+                || replace_expression_in_block(then_block, target, replacement)
+            {
+                return true;
+            }
+            else_block
+                .as_mut()
+                .is_some_and(|block| replace_expression_in_block(block, target, replacement))
+        }
+        StatementKind::While { condition, body } => {
+            replace_expression_in_expr(condition, target, replacement)
+                || replace_expression_in_block(body, target, replacement)
+        }
+        StatementKind::For {
+            collection, body, ..
+        } => {
+            replace_expression_in_expr(collection, target, replacement)
+                || replace_expression_in_block(body, target, replacement)
+        }
+        StatementKind::Forge { body } => replace_expression_in_block(body, target, replacement),
+    }
+}
+
+fn replace_expression_in_expr(expr: &mut Expr, target: &str, replacement: &Expr) -> bool {
+    if expr.id == target {
+        *expr = replacement.clone();
+        return true;
+    }
+
+    let replaced = match &mut expr.kind {
+        ExprKind::Unary { expr: inner, .. } | ExprKind::Try { expr: inner } => {
+            replace_expression_in_expr(inner, target, replacement)
+        }
+        ExprKind::Binary { left, right, .. } => {
+            replace_expression_in_expr(left, target, replacement)
+                || replace_expression_in_expr(right, target, replacement)
+        }
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
+            replace_expression_in_expr(condition, target, replacement)
+                || replace_expression_in_expr(then_branch, target, replacement)
+                || replace_expression_in_expr(else_branch, target, replacement)
+        }
+        ExprKind::Call { callee, args } => {
+            if replace_expression_in_expr(callee, target, replacement) {
+                true
+            } else {
+                args.iter_mut()
+                    .any(|arg| replace_expression_in_expr(arg, target, replacement))
+            }
+        }
+        ExprKind::ListLiteral { items } => items
+            .iter_mut()
+            .any(|item| replace_expression_in_expr(item, target, replacement)),
+        ExprKind::MapLiteral { entries } => entries.iter_mut().any(|entry| {
+            replace_expression_in_expr(&mut entry.key, target, replacement)
+                || replace_expression_in_expr(&mut entry.value, target, replacement)
+        }),
+        ExprKind::Index { collection, index } => {
+            replace_expression_in_expr(collection, target, replacement)
+                || replace_expression_in_expr(index, target, replacement)
+        }
+        ExprKind::FieldAccess { receiver, .. } => {
+            replace_expression_in_expr(receiver, target, replacement)
+        }
+        ExprKind::RecordLiteral { fields, .. } => fields
+            .iter_mut()
+            .any(|field| replace_expression_in_expr(&mut field.expr, target, replacement)),
+        ExprKind::Raw { .. }
+        | ExprKind::StringLiteral { .. }
+        | ExprKind::IntLiteral { .. }
+        | ExprKind::FloatLiteral { .. }
+        | ExprKind::BoolLiteral { .. }
+        | ExprKind::Identifier { .. } => false,
+    };
+
+    if replaced {
+        refresh_expr_source(expr);
+    }
+    replaced
+}
+
+fn refresh_expr_source(expr: &mut Expr) {
+    let had_call_keyword = expr.source.trim_start().starts_with("call ");
+    expr.source = match &expr.kind {
+        ExprKind::Raw { .. } => expr.source.clone(),
+        ExprKind::StringLiteral { .. }
+        | ExprKind::IntLiteral { .. }
+        | ExprKind::FloatLiteral { .. } => expr.source.clone(),
+        ExprKind::BoolLiteral { value } => value.to_string(),
+        ExprKind::Identifier { name } => name.clone(),
+        ExprKind::Unary { op, expr: inner } => {
+            format!(
+                "{}{}",
+                op.as_str(),
+                format_child_expr(inner, expr_precedence(expr), false)
+            )
+        }
+        ExprKind::Binary { op, left, right } => {
+            let precedence = binary_precedence(op);
+            format!(
+                "{} {} {}",
+                format_child_expr(left, precedence, false),
+                op.as_str(),
+                format_child_expr(right, precedence, true)
+            )
+        }
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => format!(
+            "if {} {{ {} }} else {{ {} }}",
+            condition.source, then_branch.source, else_branch.source
+        ),
+        ExprKind::Call { callee, args } => {
+            let args_source = args
+                .iter()
+                .map(|arg| arg.source.as_str())
+                .collect::<Vec<_>>()
+                .join(", ");
+            let call_source = format!("{}({args_source})", callee.source);
+            if had_call_keyword {
+                format!("call {call_source}")
+            } else {
+                call_source
+            }
+        }
+        ExprKind::ListLiteral { items } => {
+            let items_source = items
+                .iter()
+                .map(|item| item.source.as_str())
+                .collect::<Vec<_>>()
+                .join(", ");
+            format!("[{items_source}]")
+        }
+        ExprKind::MapLiteral { entries } => format!("map {{ {} }}", format_map_entries(entries)),
+        ExprKind::Index { collection, index } => {
+            format!("{}[{}]", collection.source, index.source)
+        }
+        ExprKind::FieldAccess { receiver, field } => format!("{}.{}", receiver.source, field),
+        ExprKind::RecordLiteral { type_name, fields } => {
+            let fields_source = format_expr_fields(fields);
+            if let Some(type_name) = type_name {
+                format!("{type_name} {{ {fields_source} }}")
+            } else {
+                format!("{{ {fields_source} }}")
+            }
+        }
+        ExprKind::Try { expr: inner } => {
+            format!(
+                "{}?",
+                format_child_expr(inner, expr_precedence(expr), false)
+            )
+        }
+    };
+}
+
+fn format_child_expr(expr: &Expr, parent_precedence: u8, is_right_child: bool) -> String {
+    let child_precedence = expr_precedence(expr);
+    let needs_parentheses = child_precedence < parent_precedence
+        || (is_right_child && child_precedence == parent_precedence);
+    if needs_parentheses && !is_wrapped_in_parentheses(&expr.source) {
+        format!("({})", expr.source)
+    } else {
+        expr.source.clone()
+    }
+}
+
+fn is_wrapped_in_parentheses(source: &str) -> bool {
+    let source = source.trim();
+    source.starts_with('(') && source.ends_with(')')
+}
+
+fn format_expr_fields(fields: &[ExprField]) -> String {
+    fields
+        .iter()
+        .map(|field| format!("{}: {}", field.name, field.expr.source))
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
+fn format_map_entries(entries: &[ExprMapEntry]) -> String {
+    entries
+        .iter()
+        .map(|entry| format!("{}: {}", entry.key.source, entry.value.source))
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
+fn expr_precedence(expr: &Expr) -> u8 {
+    match &expr.kind {
+        ExprKind::If { .. } => 0,
+        ExprKind::Binary { op, .. } => binary_precedence(op),
+        ExprKind::Unary { .. } => 7,
+        ExprKind::Call { .. }
+        | ExprKind::Index { .. }
+        | ExprKind::FieldAccess { .. }
+        | ExprKind::Try { .. } => 8,
+        ExprKind::Raw { .. }
+        | ExprKind::StringLiteral { .. }
+        | ExprKind::IntLiteral { .. }
+        | ExprKind::FloatLiteral { .. }
+        | ExprKind::BoolLiteral { .. }
+        | ExprKind::Identifier { .. }
+        | ExprKind::ListLiteral { .. }
+        | ExprKind::MapLiteral { .. }
+        | ExprKind::RecordLiteral { .. } => 9,
+    }
+}
+
+fn binary_precedence(op: &BinaryOp) -> u8 {
+    match op {
+        BinaryOp::Or => 1,
+        BinaryOp::And => 2,
+        BinaryOp::Equal | BinaryOp::NotEqual => 3,
+        BinaryOp::Less | BinaryOp::LessEqual | BinaryOp::Greater | BinaryOp::GreaterEqual => 4,
+        BinaryOp::Add | BinaryOp::Subtract => 5,
+        BinaryOp::Multiply | BinaryOp::Divide | BinaryOp::Remainder => 6,
     }
 }
 

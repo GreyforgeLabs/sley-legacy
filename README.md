@@ -55,7 +55,9 @@ Implemented now:
 - a first ZJX-ready JSON envelope command for graph snapshots, optional graph
   slices, and trace receipts
 - structural graft operations for adding/removing takes, replacing task bodies,
-  adding imports/effects/types/tasks, and renaming declarations
+  adding imports/effects/types/tasks, renaming declarations, updating
+  call-sites, inserting checked task-body statements, and replacing nested
+  expressions by node id
 
 Project form:
 
@@ -115,11 +117,12 @@ Known v0 limits:
 - `run` only supports pure execution. Host calls and capability-backed runtime
   objects are still represented as raw values unless a future host boundary is
   supplied.
-- `UpdateCallSites`, `InsertStatement`, `ReplaceExpression`, `MoveNode`, and
-  `DeleteNode` are declared but return explicit unsupported-operation
-  diagnostics.
+- `UpdateCallSites`, `InsertStatement`, and `ReplaceExpression` operate on the
+  in-memory checked program. Project-aware source-file writeback for bundled
+  multi-module projects is still a later step.
+- `MoveNode` and `DeleteNode` are declared but still return explicit
+  unsupported-operation diagnostics.
 
-The next logical phase is graph-slice graft execution: implement
-`UpdateCallSites`, `InsertStatement`, and `ReplaceExpression` against bounded
-symbol graph slices, while freezing the JSON contracts those operations depend
-on.
+The next logical phase is graft contract hardening: freeze the graph-slice and
+graft JSON shapes, add explicit `sley graft --dry-run`, expand rejected graft
+fixtures, and then move trace sidecars toward content-addressed seals.

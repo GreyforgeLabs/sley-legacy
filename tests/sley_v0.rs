@@ -63,6 +63,108 @@ fn stale_precondition_rejects_graft() {
 }
 
 #[test]
+fn update_call_sites_graft_rewrites_renamed_task_calls() {
+    let source = r#"
+task double -> Int {
+  take value: Int
+
+  return value + 1
+}
+
+task main -> Int {
+  return call double(41)
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let graft_source = include_str!("../fixtures/grafts/rename_update_call_sites.json");
+    let graft: GraftInput = serde_json::from_str(graft_source).expect("parse graft");
+    let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
+
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted_source = outcome.source.expect("grafted source");
+    assert!(grafted_source.contains("task increment -> Int"));
+    assert!(grafted_source.contains("return call increment(41)"));
+    let grafted = parse_program(&grafted_source).expect("parse grafted source");
+    assert_eq!(run_main(&grafted), Ok(Value::Int(42)));
+}
+
+#[test]
+fn update_call_sites_graft_rewrites_resolved_task_target() {
+    let source = r#"
+task double -> Int {
+  take value: Int
+
+  return value * 2
+}
+
+task increment -> Int {
+  take value: Int
+
+  return value + 1
+}
+
+task main -> Int {
+  return call double(41)
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let graft_source = r#"
+{
+  "op": "UpdateCallSites",
+  "target": "task:main.double",
+  "payload": { "replacement": "increment" }
+}
+"#;
+    let graft: GraftInput = serde_json::from_str(graft_source).expect("parse graft");
+    let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
+
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted_source = outcome.source.expect("grafted source");
+    assert!(grafted_source.contains("return call increment(41)"));
+    let grafted = parse_program(&grafted_source).expect("parse grafted source");
+    assert_eq!(run_main(&grafted), Ok(Value::Int(42)));
+}
+
+#[test]
+fn insert_statement_graft_adds_checked_task_body_statement() {
+    let source = r#"
+task main -> Int {
+  tally total = 1
+  return total
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let graft_source = include_str!("../fixtures/grafts/insert_total_increment_statement.json");
+    let graft: GraftInput = serde_json::from_str(graft_source).expect("parse graft");
+    let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
+
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted_source = outcome.source.expect("grafted source");
+    assert!(grafted_source.contains("set total = total + 4"));
+    let grafted = parse_program(&grafted_source).expect("parse grafted source");
+    assert_eq!(run_main(&grafted), Ok(Value::Int(5)));
+}
+
+#[test]
+fn replace_expression_graft_updates_nested_expression_source() {
+    let source = r#"
+task main -> Int {
+  return 1 + 2
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let graft_source = include_str!("../fixtures/grafts/replace_expression_right.json");
+    let graft: GraftInput = serde_json::from_str(graft_source).expect("parse graft");
+    let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
+
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted_source = outcome.source.expect("grafted source");
+    assert!(grafted_source.contains("return 1 + 41"));
+    let grafted = parse_program(&grafted_source).expect("parse grafted source");
+    assert_eq!(run_main(&grafted), Ok(Value::Int(42)));
+}
+
+#[test]
 fn parser_builds_structured_call_and_record_expressions() {
     let source = include_str!("../examples/profile_service.sley");
     let program = parse_program(source).expect("parse fixture");

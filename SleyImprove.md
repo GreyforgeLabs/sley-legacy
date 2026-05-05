@@ -182,6 +182,11 @@ Minimum useful graft operations:
 - `MoveNode`
 - `DeleteNode`
 
+`UpdateCallSites`, `InsertStatement`, and `ReplaceExpression` are now
+implemented for the v0 in-memory checked program. `MoveNode`, `DeleteNode`,
+project-aware multi-file writeback, and broader graph-contract hardening remain
+open.
+
 The important rule is not that all operations exist immediately. The important
 rule is that unsupported operations reject cleanly with explicit diagnostics.
 
@@ -359,7 +364,7 @@ Near-term:
 
 Medium-term:
 
-1. Implement `UpdateCallSites`, `InsertStatement`, and `ReplaceExpression`.
+1. Extend graph-slice grafts beyond call-site, statement, and expression edits.
 2. Turn local trace sidecars into content-addressed seals.
 3. Add capability-backed gate values.
 4. Build the synthetic gold corpus.
