@@ -54,6 +54,8 @@ enum Command {
         cap: Vec<String>,
         #[arg(long = "db-table", value_name = "TABLE=JSON")]
         db_table: Vec<String>,
+        #[arg(long = "secret", value_names = ["NAME", "TEXT"], num_args = 2)]
+        secret: Vec<String>,
         #[arg(long = "http-text", value_names = ["URL", "TEXT"], num_args = 2)]
         http_text: Vec<String>,
         #[arg(long = "shell-output", value_names = ["COMMAND", "TEXT"], num_args = 2)]
@@ -181,6 +183,7 @@ fn run(cli: Cli) -> Result<()> {
             json,
             cap,
             db_table,
+            secret,
             http_text,
             shell_output,
             model_output,
@@ -196,6 +199,7 @@ fn run(cli: Cli) -> Result<()> {
             }
             let mut runtime_gates = parse_runtime_gates(&cap)?;
             load_runtime_db_tables(&mut runtime_gates, &db_table)?;
+            load_runtime_secrets(&mut runtime_gates, &secret)?;
             load_runtime_http_texts(&mut runtime_gates, &http_text)?;
             load_runtime_shell_outputs(&mut runtime_gates, &shell_output)?;
             load_runtime_model_outputs(&mut runtime_gates, &model_output)?;
@@ -639,6 +643,21 @@ fn load_runtime_db_tables(gates: &mut RuntimeGates, values: &[String]) -> Result
             rows.push(row);
         }
         gates.grant_db_rows(table, rows);
+    }
+    Ok(())
+}
+
+fn load_runtime_secrets(gates: &mut RuntimeGates, values: &[String]) -> Result<()> {
+    let mut chunks = values.chunks_exact(2);
+    for pair in &mut chunks {
+        let name = pair[0].trim();
+        if name.is_empty() {
+            anyhow::bail!("secret seed name cannot be empty");
+        }
+        gates.grant_secret(name, pair[1].clone());
+    }
+    if !chunks.remainder().is_empty() {
+        anyhow::bail!("secret seed must use NAME TEXT pairs");
     }
     Ok(())
 }

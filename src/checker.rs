@@ -2021,7 +2021,7 @@ fn host_effect_patterns() -> Vec<(&'static str, Vec<&'static str>)> {
         ("model.try_complete(", vec!["ModelCall"]),
         ("http.try_get_text(", vec!["Network"]),
         ("shell.try_run(", vec!["Shell"]),
-        ("secrets.", vec!["SecretRead"]),
+        ("secrets.try_get(", vec!["SecretRead"]),
         ("deploy.", vec!["Deploy"]),
     ]
 }
@@ -2340,6 +2340,7 @@ fn host_call_return_type(name: &str) -> Option<TypeExpr> {
         "http.try_get_text" => Some(result_type(TypeExpr::named("Text"))),
         "shell.try_run" => Some(result_type(TypeExpr::named("Text"))),
         "model.try_complete" => Some(result_type(TypeExpr::named("Text"))),
+        "secrets.try_get" => Some(result_type(TypeExpr::named("Text"))),
         _ => None,
     }
 }

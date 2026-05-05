@@ -21,6 +21,7 @@ cargo run -- run --json --cap DatabaseRead --cap DatabaseWrite examples/db_write
 cargo run -- run --json --cap Network --http-text https://example.test/profile Ada examples/network_gate.sley
 cargo run -- run --json --cap Shell --shell-output date 2026-05-05 examples/shell_gate.sley
 cargo run -- run --json --cap ModelCall --model-output name Ada examples/model_gate.sley
+cargo run -- run --json --cap SecretRead --secret api_key redacted examples/secret_gate.sley
 ```
 
 Agent rules:
@@ -38,7 +39,8 @@ Agent rules:
 - Current typed host fallibility includes filesystem reads/writes, seeded
   database reads, per-run `db.try_insert` writes, seeded `http.try_get_text`
   network text reads, seeded `shell.try_run` command output reads, and seeded
-  `model.try_complete` prompt completions.
+  `model.try_complete` prompt completions, plus seeded `secrets.try_get`
+  secret values.
 
 Stable v0 JSON roots:
 
@@ -61,12 +63,12 @@ Contract references:
 Current development phase:
 
 - typed host fallibility is in place for filesystem and seeded database
-  adapters plus seeded network text, seeded shell output, and seeded model
-  completions through explicit fallible calls returning `Result<T, Error>`
-- expand runtime host adapters beyond root-scoped filesystem gates,
-  deterministic seeded database reads/writes, seeded network text, seeded shell
-  output, and seeded model completions while preserving typed recoverable
-  failure surfaces
+  adapters plus seeded network text, seeded shell output, seeded model
+  completions, and seeded secret values through explicit fallible calls
+  returning `Result<T, Error>`
+- next host-adapter work should add deterministic `Deploy` and `Spend`
+  surfaces while preserving typed recoverable failure records and keeping
+  authority failures as diagnostics
 - project graft writeback hardening beyond existing modules
 - accepted/rejected synthetic gold corpus growth
 - broader graph-slice graft operations around move/delete planning

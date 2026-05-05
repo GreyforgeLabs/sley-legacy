@@ -57,6 +57,10 @@ Implemented now:
   rows, and `DbRow` values expose `row.text`, `row.int`, `row.float`,
   `row.bool`, and `row.get`; `DatabaseWrite` backs `db.try_insert` for
   deterministic per-run table mutation
+- deterministic secret host seeding with `sley run --cap SecretRead --secret
+  NAME TEXT`; `secrets.try_get` returns seeded secret values as
+  `Result<Text, Error>` without reading environment variables, keyrings, or
+  real secret stores
 - deterministic network host seeding with `sley run --cap Network --http-text
   URL TEXT`; `http.try_get_text` returns seeded text responses as
   `Result<Text, Error>` without live outbound network access
@@ -170,6 +174,26 @@ task main -> Result<Text, Error> uses DatabaseWrite, DatabaseRead {
 }
 ```
 
+Seeded secret runtime:
+
+```bash
+sley run --json --cap SecretRead --secret api_key redacted examples/secret_gate.sley
+```
+
+`secrets.try_get(name)` reads an exact seeded secret value and returns
+`Result<Text, Error>`. This is a deterministic v0 host adapter, not a real
+secret backend. Missing secret seeds produce `RUNTIME_SECRET_NOT_FOUND` as a
+typed host error; empty names produce `RUNTIME_SECRET_NAME_INVALID`; missing
+`SecretRead` remains a runtime capability diagnostic.
+
+```sley
+task main -> Result<Text, Error> uses SecretRead {
+  bind value = call secrets.try_get("api_key")?
+
+  return Ok(value)
+}
+```
+
 Seeded network runtime:
 
 ```bash
@@ -257,10 +281,10 @@ task load -> Result<Text, Error> uses FileRead {
 The standard runtime `Error` payload is a record with `code: Text` and
 `message: Text`. `fs.try_read_text`, `fs.try_write_text`, `db.try_query_one`,
 `db.try_query`, `db.try_insert`, `http.try_get_text`, `shell.try_run`, and
-`model.try_complete` return `Result<T, Error>`. Missing capabilities and gate
-scope violations remain diagnostics because they are authority failures, not
-recoverable host values. The legacy raw adapters still return their direct
-values and keep diagnostic failure behavior.
+`model.try_complete`, and `secrets.try_get` return `Result<T, Error>`. Missing
+capabilities and gate scope violations remain diagnostics because they are
+authority failures, not recoverable host values. The legacy raw adapters still
+return their direct values and keep diagnostic failure behavior.
 
 Known v0 limits:
 
@@ -277,11 +301,12 @@ Known v0 limits:
   seeded-table adapter, and `DatabaseWrite` has a deterministic per-run insert
   adapter. `Network` has a deterministic seeded text adapter, `Shell` has a
   deterministic seeded command-output adapter, and `ModelCall` has a
-  deterministic seeded prompt-completion adapter. Secret, deploy, and spending
-  effects still need dedicated host adapters.
+  deterministic seeded prompt-completion adapter. `SecretRead` has a
+  deterministic seeded secret-value adapter. `Deploy` and `Spend` effects still
+  need dedicated host adapters.
 - Sley-level `Result` values and `?` propagation execute, and fallible
-  filesystem, database, network, shell, and model host variants return typed
-  `Error` records. Additional host domains still need the same bridge.
+  filesystem, database, network, shell, model, and secret host variants return
+  typed `Error` records. `Deploy` and `Spend` still need the same bridge.
 - Project graft writeback supports existing module files. Grafts that would
   create unknown module files or import modules outside the loaded project
   reject before any source or trace mutation.
@@ -294,6 +319,6 @@ Known v0 limits:
   explicitly.
 
 The next logical phase is to expand the remaining capability-backed host
-adapters on top of typed fallibility: secret, deploy, and spending effects
-should each define authority gates, deterministic tests, and
-`Result<T, Error>` surfaces before broader language features depend on them.
+adapters on top of typed fallibility: `Deploy` and `Spend` should define
+authority gates, deterministic tests, and `Result<T, Error>` surfaces before
+broader language features depend on them.
