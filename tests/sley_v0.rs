@@ -1421,6 +1421,157 @@ task main -> Result<Int, Error> {
 }
 
 #[test]
+fn runtime_try_read_text_unwraps_host_ok() {
+    let root = temp_project_dir("runtime-host-try-read");
+    fs::create_dir_all(&root).expect("create temp dir");
+    let input = root.join("input.txt");
+    fs::write(&input, "sley host ok").expect("write input");
+    let source = format!(
+        r#"
+task main -> Result<Text, Error> uses FileRead {{
+  bind text = fs.try_read_text("{}")?
+  return Ok(text + "!")
+}}
+"#,
+        sley_string(&input)
+    );
+    let program = parse_program(&source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+    let mut gates = RuntimeGates::new();
+    gates.grant_effect_root("FileRead", &root);
+    assert_eq!(
+        run_main_with_gates(&program, &gates),
+        Ok(Value::Ok(Box::new(Value::Text(
+            "sley host ok!".to_string()
+        ))))
+    );
+}
+
+#[test]
+fn runtime_try_read_text_propagates_host_error_value() {
+    let root = temp_project_dir("runtime-host-try-read-missing");
+    fs::create_dir_all(&root).expect("create temp dir");
+    let missing = root.join("missing.txt");
+    let source = format!(
+        r#"
+task main -> Result<Text, Error> uses FileRead {{
+  bind text = fs.try_read_text("{}")?
+  return Ok(text)
+}}
+"#,
+        sley_string(&missing)
+    );
+    let program = parse_program(&source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+    let mut gates = RuntimeGates::new();
+    gates.grant_effect_root("FileRead", &root);
+    let result = run_main_with_gates(&program, &gates).expect("run main");
+    let Value::Err(error) = result else {
+        panic!("expected host error result, got {result:#?}");
+    };
+    assert_error_record(&error, "RUNTIME_HOST_IO_ERROR", "fs.try_read_text");
+}
+
+#[test]
+fn runtime_try_write_text_unwraps_host_ok() {
+    let root = temp_project_dir("runtime-host-try-write");
+    fs::create_dir_all(&root).expect("create temp dir");
+    let output = root.join("output.txt");
+    let source = format!(
+        r#"
+task main -> Result<Int, Error> uses FileWrite {{
+  fs.try_write_text("{}", "sley host write")?
+  return Ok(1)
+}}
+"#,
+        sley_string(&output)
+    );
+    let program = parse_program(&source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+    let mut gates = RuntimeGates::new();
+    gates.grant_effect_root("FileWrite", &root);
+    assert_eq!(
+        run_main_with_gates(&program, &gates),
+        Ok(Value::Ok(Box::new(Value::Int(1))))
+    );
+    assert_eq!(
+        fs::read_to_string(&output).expect("read output"),
+        "sley host write"
+    );
+}
+
+#[test]
+fn runtime_try_database_query_one_unwraps_host_ok() {
+    let source = r#"
+task main -> Result<Text, Error> uses DatabaseRead {
+  bind row = call db.try_query_one("select * from users where id = ?", "u1")?
+  return Ok(row.text("name"))
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+    let mut gates = RuntimeGates::new();
+    gates.grant_effect("DatabaseRead");
+    gates.grant_db_rows(
+        "users",
+        vec![db_row([
+            ("id", Value::Text("u1".to_string())),
+            ("name", Value::Text("Ada".to_string())),
+        ])],
+    );
+    assert_eq!(
+        run_main_with_gates(&program, &gates),
+        Ok(Value::Ok(Box::new(Value::Text("Ada".to_string()))))
+    );
+}
+
+#[test]
+fn runtime_try_database_query_one_propagates_host_error_value() {
+    let source = r#"
+task main -> Result<Text, Error> uses DatabaseRead {
+  bind row = call db.try_query_one("select * from users where id = ?", "missing")?
+  return Ok(row.text("name"))
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+    let mut gates = RuntimeGates::new();
+    gates.grant_effect("DatabaseRead");
+    gates.grant_db_rows(
+        "users",
+        vec![db_row([
+            ("id", Value::Text("u1".to_string())),
+            ("name", Value::Text("Ada".to_string())),
+        ])],
+    );
+    let result = run_main_with_gates(&program, &gates).expect("run main");
+    let Value::Err(error) = result else {
+        panic!("expected host error result, got {result:#?}");
+    };
+    assert_error_record(&error, "RUNTIME_DB_ROW_NOT_FOUND", "returned no rows");
+}
+
+#[test]
 fn cli_run_accepts_database_table_seed() {
     let root = temp_project_dir("runtime-db-cli");
     fs::create_dir_all(&root).expect("create temp dir");
@@ -2436,6 +2587,20 @@ fn db_row<const N: usize>(fields: [(&str, Value); N]) -> BTreeMap<String, Value>
         .into_iter()
         .map(|(name, value)| (name.to_string(), value))
         .collect()
+}
+
+fn assert_error_record(value: &Value, code: &str, message_fragment: &str) {
+    let Value::Record(fields) = value else {
+        panic!("expected error record, got {value:#?}");
+    };
+    assert_eq!(fields.get("code"), Some(&Value::Text(code.to_string())));
+    let Some(Value::Text(message)) = fields.get("message") else {
+        panic!("expected error record message, got {fields:#?}");
+    };
+    assert!(
+        message.contains(message_fragment),
+        "expected error message containing {message_fragment:?}, got {message:?}"
+    );
 }
 
 fn assert_schema_file(schema_json: &str, schema_id: &str) {

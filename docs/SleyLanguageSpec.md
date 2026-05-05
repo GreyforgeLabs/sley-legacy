@@ -1,6 +1,6 @@
 # Sley Language Specification
 
-Status: v0 executable slice plus module task/type/effect namespace, runtime gates, Sley-level Result flow, seeded database host reads, and trace tooling
+Status: v0 executable slice plus module task/type/effect namespace, runtime gates, Sley-level Result flow, typed host fallibility, seeded database host reads, and trace tooling
 
 Sley is a human-readable, agent-writable structural language. The canonical
 program model is a typed graph. `.sley` source is the stable review projection,
@@ -114,10 +114,18 @@ task main -> Result<Int, Error> {
 ```
 
 The checker enforces that `?` appears only inside tasks returning `Result`.
-Runtime propagation is implemented for Sley-level `Ok`/`Err` values. Current
-host adapter failures still surface as runtime diagnostics rather than typed
-`Error` values; converting host failures into first-class `Result<T, Error>`
-values is a later bridge.
+Runtime propagation is implemented for Sley-level `Ok`/`Err` values and for
+fallible host adapters.
+
+The standard runtime `Error` payload is a record:
+
+```sley
+{ code: Text, message: Text }
+```
+
+Recoverable host failures use this shape inside `Err(error)`. Missing runtime
+capabilities and gate-scope denials remain diagnostics because they are
+authority failures, not recoverable program values.
 
 ## Module Semantics
 
@@ -221,9 +229,12 @@ sley run --cap FileRead=/tmp/sley program.sley
 
 Without a matching gate, effectful execution fails with
 `RUNTIME_CAPABILITY_REQUIRED` or `RUNTIME_GATE_REQUIRED`. `FileRead` and
-`FileWrite` currently back `fs.read_text(path)` and `fs.write_text(path, text)`.
-When a gate has a root, filesystem host calls reject paths outside that root
-with `RUNTIME_CAPABILITY_SCOPE_DENIED`.
+`FileWrite` currently back `fs.read_text(path)`, `fs.write_text(path, text)`,
+`fs.try_read_text(path)`, and `fs.try_write_text(path, text)`. Raw filesystem
+calls return direct values and surface host I/O failures as diagnostics.
+`try_` filesystem calls return `Result<T, Error>` and surface recoverable I/O
+failures as `Err({ code, message })`. When a gate has a root, filesystem host
+calls reject paths outside that root with `RUNTIME_CAPABILITY_SCOPE_DENIED`.
 
 `DatabaseRead` currently backs deterministic seeded-table reads. The runtime
 does not open a real database connection in v0; the host supplies JSON rows:
@@ -232,10 +243,12 @@ does not open a real database connection in v0; the host supplies JSON rows:
 sley run --cap DatabaseRead --db-table users=examples/users.json examples/db_gate.sley
 ```
 
-The seed file must be a JSON array of row objects. `db.query_one(sql, value)`
-and `db.query(sql)` support simple `select * from table` queries and optional
-`where field = ?` filters. `db.query_one` returns a `DbRow`; `db.query` returns
-`List<DbRow>`. Row values expose typed accessors:
+The seed file must be a JSON array of row objects. `db.query_one(sql, value)`,
+`db.query(sql)`, `db.try_query_one(sql, value)`, and `db.try_query(sql)`
+support simple `select * from table` queries and optional `where field = ?`
+filters. `db.query_one` returns a `DbRow`; `db.query` returns `List<DbRow>`.
+`db.try_query_one` returns `Result<DbRow, Error>`; `db.try_query` returns
+`Result<List<DbRow>, Error>`. Row values expose typed accessors:
 
 ```sley
 bind row = call db.query_one("select * from users where id = ?", id)
@@ -244,7 +257,8 @@ return row.text("name")
 
 Missing table seeds produce `RUNTIME_DB_TABLE_NOT_FOUND`; empty `query_one`
 results produce `RUNTIME_DB_ROW_NOT_FOUND`; unsupported query forms produce
-`RUNTIME_DB_QUERY_UNSUPPORTED`.
+`RUNTIME_DB_QUERY_UNSUPPORTED`. Raw database calls report those as runtime
+diagnostics. `try_` database calls convert them into typed `Error` records.
 
 ## Graft Model
 
@@ -411,8 +425,9 @@ archive.
 - runtime gates currently back filesystem text reads/writes and deterministic
   seeded database reads only; database writes, network, shell, model, secret,
   deploy, and spending effects still need host adapters
-- Sley-level `Result` values and `?` propagation execute, but host adapter
-  failures still surface as diagnostics instead of first-class `Error` values
+- Sley-level `Result` values, `?` propagation, and typed filesystem/database
+  host fallibility execute; other host domains still need `Result<T, Error>`
+  adapters
 - trace receipts can be sealed, but sidecar storage is not yet a compressed ZJX
   archive
 - the AST JSON Schema covers nested AST and expression variants; the remaining

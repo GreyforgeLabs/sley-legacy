@@ -203,9 +203,9 @@ because Sley's primary editor may be an agent.
 Near-term:
 
 1. Keep expanding parser/checker/runtime coverage in Rust.
-2. Bridge host adapter failures into typed `Result<T, Error>` values so `?`
-   can carry filesystem and database errors as Sley values instead of runtime
-   diagnostics.
+2. Expand capability-backed host adapters on top of typed fallibility:
+   database write, network, shell, model, secret, deploy, and spending
+   adapters need authority gates plus `Result<T, Error>` surfaces.
 3. Grow the accepted/rejected synthetic gold corpus beyond the initial seed,
    including runtime authority cases.
 4. Extend graph-slice graft planning around checked move/delete operations.

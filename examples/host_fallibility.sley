@@ -1,0 +1,10 @@
+task load_profile -> Result<Text, Error> uses FileRead {
+  take path: Text
+
+  bind text = fs.try_read_text(path)?
+  return Ok(text)
+}
+
+task main -> Result<Text, Error> uses FileRead {
+  return call load_profile("examples/hello.sley")
+}

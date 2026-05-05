@@ -796,6 +796,24 @@ fn eval_host_call(
                 ]),
             }
         }
+        "fs.try_read_text" => {
+            if args.len() != 1 {
+                return host_arity_error(expr, callee_name, 1, args.len()).map(EvalOutcome::value);
+            }
+            let path =
+                arg_or_propagate!(eval_text_arg(program, task, expr, args, 0, locals, gates));
+            let path = gate_path(gate, &path, expr)?;
+            match std::fs::read_to_string(&path) {
+                Ok(value) => Ok(host_ok(Value::Text(value))),
+                Err(error) => Ok(host_err(
+                    "RUNTIME_HOST_IO_ERROR",
+                    format!(
+                        "host call `{callee_name}` failed for `{}`: {error}",
+                        path.display()
+                    ),
+                )),
+            }
+        }
         "fs.write_text" => {
             if args.len() != 2 {
                 return host_arity_error(expr, callee_name, 2, args.len()).map(EvalOutcome::value);
@@ -819,10 +837,66 @@ fn eval_host_call(
                 ]),
             }
         }
-        "db.query_one" => {
-            eval_db_query(program, task, expr, callee_name, args, locals, gates, true)
+        "fs.try_write_text" => {
+            if args.len() != 2 {
+                return host_arity_error(expr, callee_name, 2, args.len()).map(EvalOutcome::value);
+            }
+            let path =
+                arg_or_propagate!(eval_text_arg(program, task, expr, args, 0, locals, gates));
+            let contents =
+                arg_or_propagate!(eval_text_arg(program, task, expr, args, 1, locals, gates));
+            let path = gate_path(gate, &path, expr)?;
+            match std::fs::write(&path, contents) {
+                Ok(()) => Ok(host_ok(Value::Unit)),
+                Err(error) => Ok(host_err(
+                    "RUNTIME_HOST_IO_ERROR",
+                    format!(
+                        "host call `{callee_name}` failed for `{}`: {error}",
+                        path.display()
+                    ),
+                )),
+            }
         }
-        "db.query" => eval_db_query(program, task, expr, callee_name, args, locals, gates, false),
+        "db.query_one" => eval_db_query(
+            program,
+            task,
+            expr,
+            callee_name,
+            args,
+            locals,
+            gates,
+            DbQueryMode::RawOne,
+        ),
+        "db.query" => eval_db_query(
+            program,
+            task,
+            expr,
+            callee_name,
+            args,
+            locals,
+            gates,
+            DbQueryMode::RawMany,
+        ),
+        "db.try_query_one" => eval_db_query(
+            program,
+            task,
+            expr,
+            callee_name,
+            args,
+            locals,
+            gates,
+            DbQueryMode::ResultOne,
+        ),
+        "db.try_query" => eval_db_query(
+            program,
+            task,
+            expr,
+            callee_name,
+            args,
+            locals,
+            gates,
+            DbQueryMode::ResultMany,
+        ),
         _ => Err(vec![
             Diagnostic::error(
                 "RUNTIME_HOST_CALL_UNSUPPORTED",
@@ -925,14 +999,20 @@ fn eval_db_query(
     args: &[Expr],
     locals: &HashMap<String, Value>,
     gates: &RuntimeGates,
-    one: bool,
+    mode: DbQueryMode,
 ) -> Result<EvalOutcome, Vec<Diagnostic>> {
     if args.is_empty() {
         return host_arity_error(expr, callee_name, 1, args.len()).map(EvalOutcome::value);
     }
 
     let query = arg_or_propagate!(eval_text_arg(program, task, expr, args, 0, locals, gates));
-    let parsed = parse_db_query(&query, expr)?;
+    let parsed = match parse_db_query(&query, expr) {
+        Ok(parsed) => parsed,
+        Err(diagnostics) if mode.returns_result() => {
+            return Ok(diagnostics_to_host_err(diagnostics));
+        }
+        Err(diagnostics) => return Err(diagnostics),
+    };
     let expected_args = if parsed.filter.is_some() { 2 } else { 1 };
     if args.len() != expected_args {
         return host_arity_error(expr, callee_name, expected_args, args.len())
@@ -946,15 +1026,24 @@ fn eval_db_query(
     } else {
         None
     };
-    let rows = gates.db_rows(&parsed.table).ok_or_else(|| {
-        vec![
-            Diagnostic::error(
+    let rows = match gates.db_rows(&parsed.table) {
+        Some(rows) => rows,
+        None if mode.returns_result() => {
+            return Ok(host_err(
                 "RUNTIME_DB_TABLE_NOT_FOUND",
                 format!("database table `{}` was not seeded", parsed.table),
-            )
-            .with_node(expr.id.clone()),
-        ]
-    })?;
+            ));
+        }
+        None => {
+            return Err(vec![
+                Diagnostic::error(
+                    "RUNTIME_DB_TABLE_NOT_FOUND",
+                    format!("database table `{}` was not seeded", parsed.table),
+                )
+                .with_node(expr.id.clone()),
+            ]);
+        }
+    };
     let filtered = rows
         .iter()
         .filter(|row| {
@@ -970,8 +1059,8 @@ fn eval_db_query(
         .cloned()
         .collect::<Vec<_>>();
 
-    if one {
-        filtered
+    match mode {
+        DbQueryMode::RawOne => filtered
             .into_iter()
             .next()
             .map(Value::Record)
@@ -984,11 +1073,34 @@ fn eval_db_query(
                     )
                     .with_node(expr.id.clone()),
                 ]
-            })
-    } else {
-        Ok(EvalOutcome::value(Value::List(
+            }),
+        DbQueryMode::RawMany => Ok(EvalOutcome::value(Value::List(
             filtered.into_iter().map(Value::Record).collect(),
-        )))
+        ))),
+        DbQueryMode::ResultOne => match filtered.into_iter().next() {
+            Some(row) => Ok(host_ok(Value::Record(row))),
+            None => Ok(host_err(
+                "RUNTIME_DB_ROW_NOT_FOUND",
+                format!("database query `{query}` returned no rows"),
+            )),
+        },
+        DbQueryMode::ResultMany => Ok(host_ok(Value::List(
+            filtered.into_iter().map(Value::Record).collect(),
+        ))),
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+enum DbQueryMode {
+    RawOne,
+    RawMany,
+    ResultOne,
+    ResultMany,
+}
+
+impl DbQueryMode {
+    fn returns_result(self) -> bool {
+        matches!(self, Self::ResultOne | Self::ResultMany)
     }
 }
 
@@ -1075,11 +1187,38 @@ fn value_kind(value: &Value) -> &'static str {
     }
 }
 
+fn host_ok(value: Value) -> EvalOutcome {
+    EvalOutcome::value(Value::Ok(Box::new(value)))
+}
+
+fn host_err(code: &str, message: impl Into<String>) -> EvalOutcome {
+    EvalOutcome::value(Value::Err(Box::new(host_error_value(code, message))))
+}
+
+fn diagnostics_to_host_err(diagnostics: Vec<Diagnostic>) -> EvalOutcome {
+    let Some(diagnostic) = diagnostics.into_iter().next() else {
+        return host_err(
+            "RUNTIME_HOST_ERROR",
+            "host adapter failed without a diagnostic",
+        );
+    };
+    host_err(&diagnostic.id, diagnostic.message)
+}
+
+fn host_error_value(code: &str, message: impl Into<String>) -> Value {
+    let mut fields = BTreeMap::new();
+    fields.insert("code".to_string(), Value::Text(code.to_string()));
+    fields.insert("message".to_string(), Value::Text(message.into()));
+    Value::Record(fields)
+}
+
 fn host_required_effects(name: &str) -> Option<&'static [&'static str]> {
     match name {
-        "fs.read_text" => Some(&["FileRead"]),
-        "fs.write_text" => Some(&["FileWrite"]),
-        "db.query_one" | "db.query" => Some(&["DatabaseRead", "DbRead"]),
+        "fs.read_text" | "fs.try_read_text" => Some(&["FileRead"]),
+        "fs.write_text" | "fs.try_write_text" => Some(&["FileWrite"]),
+        "db.query_one" | "db.query" | "db.try_query_one" | "db.try_query" => {
+            Some(&["DatabaseRead", "DbRead"])
+        }
         _ => None,
     }
 }

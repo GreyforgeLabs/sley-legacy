@@ -2010,7 +2010,9 @@ fn check_expression_effects(
 fn host_effect_patterns() -> Vec<(&'static str, Vec<&'static str>)> {
     vec![
         ("fs.read_text", vec!["FileRead"]),
+        ("fs.try_read_text", vec!["FileRead"]),
         ("fs.write_text", vec!["FileWrite"]),
+        ("fs.try_write_text", vec!["FileWrite"]),
         ("model.", vec!["ModelCall"]),
         ("db.", vec!["DatabaseRead", "DbRead"]),
         ("http.", vec!["Network"]),
@@ -2318,12 +2320,26 @@ fn infer_value_method_type(
 
 fn host_call_return_type(name: &str) -> Option<TypeExpr> {
     match name {
+        "fs.try_read_text" => Some(result_type(TypeExpr::named("Text"))),
+        "fs.try_write_text" => Some(result_type(TypeExpr::named("Unit"))),
         "db.query_one" => Some(TypeExpr::named("DbRow")),
         "db.query" => Some(TypeExpr::Generic {
             name: "List".to_string(),
             args: vec![TypeExpr::named("DbRow")],
         }),
+        "db.try_query_one" => Some(result_type(TypeExpr::named("DbRow"))),
+        "db.try_query" => Some(result_type(TypeExpr::Generic {
+            name: "List".to_string(),
+            args: vec![TypeExpr::named("DbRow")],
+        })),
         _ => None,
+    }
+}
+
+fn result_type(ok_type: TypeExpr) -> TypeExpr {
+    TypeExpr::Generic {
+        name: "Result".to_string(),
+        args: vec![ok_type, TypeExpr::named("Error")],
     }
 }
 

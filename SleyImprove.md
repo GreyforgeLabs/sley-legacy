@@ -127,8 +127,8 @@ Rules:
 - Accepted write-mode grafts emit trace receipts, and `sley seal` produces a
   content-addressed digest over source, graph, and receipt content.
 - Runtime `Ok(value)`/`Err(error)` values and `?` propagation are implemented
-  for Sley-level `Result` flow; host adapter failures still need a typed
-  `Error` bridge.
+  for Sley-level `Result` flow. Filesystem and seeded database host adapters
+  now expose `try_` variants returning typed `Error` records.
 - Source text should remain the human review projection, not the primary agent
   edit surface.
 
@@ -375,7 +375,8 @@ Failure modes to watch:
 Near-term:
 
 1. Expand capability-backed host adapters beyond root-scoped filesystem gates
-   and deterministic seeded database reads.
+   and deterministic seeded database reads, preserving `Result<T, Error>`
+   surfaces for recoverable host failures.
 2. Grow the accepted/rejected synthetic gold corpus with graft, module, and
    runtime authority cases.
 3. Extend graph-slice grafts around move/delete planning.

@@ -146,6 +146,8 @@ sley run --json --cap DatabaseRead --db-table users=examples/users.json examples
 `db.query_one` returns one `DbRow`, `db.query` returns `List<DbRow>`, and row
 accessors such as `row.text("name")` read typed fields from the seeded JSON
 rows. This is a deterministic v0 host adapter, not a real database connection.
+Fallible variants `db.try_query_one` and `db.try_query` return
+`Result<DbRow, Error>` and `Result<List<DbRow>, Error>`.
 
 Result flow:
 
@@ -157,9 +159,24 @@ task main -> Result<Int, Error> {
 ```
 
 `Ok(value)` and `Err(error)` are real runtime values. `expr?` unwraps `Ok` and
-propagates `Err` as the current task's result. Host adapter failures still
-surface as runtime diagnostics in v0; mapping host failures into typed
-`Error` values is the next bridge.
+propagates `Err` as the current task's result. Host adapters now expose typed
+fallible variants for recoverable failures:
+
+```sley
+task load -> Result<Text, Error> uses FileRead {
+  take path: Text
+
+  bind text = fs.try_read_text(path)?
+  return Ok(text)
+}
+```
+
+The standard runtime `Error` payload is a record with `code: Text` and
+`message: Text`. `fs.try_read_text`, `fs.try_write_text`, `db.try_query_one`,
+and `db.try_query` return `Result<T, Error>`. Missing capabilities and gate
+scope violations remain diagnostics because they are authority failures, not
+recoverable host values. The legacy raw adapters still return their direct
+values and keep diagnostic failure behavior.
 
 Known v0 limits:
 
@@ -175,8 +192,9 @@ Known v0 limits:
   root-scoped filesystem handlers, and `DatabaseRead` has a deterministic
   seeded-table adapter. Network, shell, model, secret, deploy, database write,
   and spending effects still need dedicated host adapters.
-- Sley-level `Result` values and `?` propagation execute now, but host adapter
-  failures still return runtime diagnostics instead of typed `Error` values.
+- Sley-level `Result` values and `?` propagation execute, and fallible
+  filesystem/database host variants return typed `Error` records. Additional
+  host domains still need the same bridge.
 - Project graft writeback supports existing module files. Grafts that would
   create unknown module files or import modules outside the loaded project
   reject before any source or trace mutation.
@@ -188,7 +206,7 @@ Known v0 limits:
   Cross-parent movement, take movement, and expression movement still reject
   explicitly.
 
-The next logical phase is the host-fallibility bridge: define the standard
-runtime `Error` payload, let filesystem and database adapters return typed
-`Result<T, Error>` values where appropriate, and then add the next
-capability-backed adapters on top of that error flow.
+The next logical phase is to expand capability-backed host adapters on top of
+typed fallibility: database write, network, shell, model, secret, deploy, and
+spending effects should each define authority gates, deterministic tests, and
+`Result<T, Error>` surfaces before broader language features depend on them.
