@@ -26,6 +26,8 @@ pub struct ProjectConfig {
 pub struct ProjectGraph {
     pub root: PathBuf,
     pub manifest_path: PathBuf,
+    #[serde(skip_serializing)]
+    pub manifest_source: String,
     pub module_root: PathBuf,
     pub entry: String,
     pub modules: Vec<ProjectModule>,
@@ -99,12 +101,14 @@ pub fn load_project(target: impl AsRef<Path>) -> Result<ProjectGraph, Vec<Diagno
         return Err(loader.diagnostics);
     }
 
-    let program = bundle_program(&manifest.project.entry, &loader.modules);
+    let entry = manifest.project.entry.clone();
+    let program = bundle_program(&entry, &loader.modules);
     Ok(ProjectGraph {
         root,
         manifest_path,
+        manifest_source,
         module_root,
-        entry: manifest.project.entry,
+        entry,
         modules: loader.modules,
         program,
     })

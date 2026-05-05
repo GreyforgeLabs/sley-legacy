@@ -4497,7 +4497,7 @@ export task helper -> Int {
 }
 
 #[test]
-fn project_graft_write_rejects_entry_module_rename_without_manifest_update() {
+fn project_graft_write_renames_entry_module_and_manifest() {
     let root = temp_project_dir("project-graft-entry-rename");
     fs::create_dir_all(root.join("src/app")).expect("create project dirs");
     fs::write(
@@ -4515,6 +4515,7 @@ task main -> Int {
 }
 "#;
     let main_path = root.join("src/app/main.sley");
+    let core_path = root.join("src/app/core.sley");
     let graft_path = root.join("rename_entry_module.json");
     fs::write(&main_path, main_source).expect("write main module");
     fs::write(
@@ -4537,25 +4538,47 @@ task main -> Int {
         .expect("run project graft");
     let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
     assert!(
-        !output.status.success(),
-        "entry module rename should reject until manifest writeback exists"
+        output.status.success(),
+        "entry module rename should update manifest; stderr={}",
+        String::from_utf8_lossy(&output.stderr)
     );
     let outcome: GraftOutcome = serde_json::from_str(&stdout).expect("parse outcome");
-    assert_eq!(outcome.status, "rejected");
+    assert_eq!(outcome.status, "accepted");
+    let manifest: toml::Value =
+        toml::from_str(&fs::read_to_string(root.join("sley.toml")).expect("read manifest"))
+            .expect("parse manifest");
+    assert_eq!(
+        manifest
+            .get("project")
+            .and_then(|project| project.get("entry"))
+            .and_then(toml::Value::as_str),
+        Some("app.core")
+    );
     assert!(
-        outcome
-            .diagnostics
-            .iter()
-            .any(|diagnostic| diagnostic.id == "PROJECT_WRITEBACK_ENTRY_RENAME_UNSUPPORTED"),
-        "expected entry rename diagnostic, got {:#?}",
-        outcome.diagnostics
+        !main_path.exists(),
+        "old entry module file should be deleted"
     );
     assert_eq!(
-        fs::read_to_string(&main_path).expect("read main"),
-        main_source
+        fs::read_to_string(&core_path).expect("read renamed entry"),
+        "module app.core\n\ntask main -> Int {\n  return 1\n}\n"
     );
-    assert!(!root.join("src/app/core.sley").exists());
-    assert!(!root.join(".sley/trace.jsonl").exists());
+    let project = load_project(&root).expect("reload renamed project");
+    assert_eq!(project.entry, "app.core");
+    let run = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args(["run", "--json"])
+        .arg(&root)
+        .output()
+        .expect("run renamed project");
+    assert!(
+        run.status.success(),
+        "renamed entry project should run; stdout={} stderr={}",
+        String::from_utf8_lossy(&run.stdout),
+        String::from_utf8_lossy(&run.stderr)
+    );
+    let receipts = read_trace_receipts(&root.join(".sley/trace.jsonl")).expect("read trace");
+    assert_eq!(receipts.len(), 1);
+    assert_eq!(receipts[0].provenance.len(), 1);
+    assert_eq!(receipts[0].provenance[0].operation, "RenameDeclaration");
 
     let _ = fs::remove_dir_all(root);
 }

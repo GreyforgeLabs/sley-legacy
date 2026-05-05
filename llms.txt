@@ -99,7 +99,7 @@ Current development phase:
   execution into one CI/pre-deploy gate
 - next development work should broaden style and migration lints
 - project graft writeback now supports create/update/delete module files and
-  non-entry module rename; entry-module manifest rename and richer multi-module
-  declaration movement remain next hardening work
+  module rename, including manifest entry updates; richer multi-module
+  declaration movement remains next hardening work
 - manifest-backed accepted/rejected synthetic gold corpus growth
 - broader graph-slice graft operations around move/delete planning

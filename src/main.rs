@@ -703,8 +703,8 @@ fn write_project_graft(
     provenance: Vec<sley::ast::ProvenanceRecord>,
     trace: Option<&Path>,
 ) -> Result<(), Vec<Diagnostic>> {
-    let writes = plan_project_writeback(project, candidate)?;
-    for write in writes {
+    let plan = plan_project_writeback(project, candidate)?;
+    for write in plan.module_writes {
         if write.source.is_some()
             && let Some(parent) = write.path.parent()
         {
@@ -792,6 +792,17 @@ fn write_project_graft(
             })?;
         }
     }
+    if let Some(manifest_source) = plan.manifest_source {
+        fs::write(&project.manifest_path, manifest_source).map_err(|error| {
+            vec![Diagnostic::error(
+                "PROJECT_MANIFEST_WRITE_FAILED",
+                format!(
+                    "failed to write project manifest {}: {error}",
+                    project.manifest_path.display()
+                ),
+            )]
+        })?;
+    }
 
     if !provenance.is_empty() {
         let trace_path = trace
@@ -808,6 +819,11 @@ fn write_project_graft(
     Ok(())
 }
 
+struct ProjectWritebackPlan {
+    manifest_source: Option<String>,
+    module_writes: Vec<ProjectWrite>,
+}
+
 struct ProjectWrite {
     module: String,
     path: PathBuf,
@@ -818,7 +834,7 @@ struct ProjectWrite {
 fn plan_project_writeback(
     project: &ProjectGraph,
     candidate: &Program,
-) -> Result<Vec<ProjectWrite>, Vec<Diagnostic>> {
+) -> Result<ProjectWritebackPlan, Vec<Diagnostic>> {
     let known_modules = project
         .modules
         .iter()
@@ -841,20 +857,6 @@ fn plan_project_writeback(
         .cloned()
         .collect::<BTreeSet<_>>();
     let mut diagnostics = Vec::new();
-
-    if candidate.module_name() != project.entry {
-        diagnostics.push(
-            Diagnostic::error(
-                "PROJECT_WRITEBACK_ENTRY_RENAME_UNSUPPORTED",
-                format!(
-                    "project entry module `{}` cannot be renamed to `{}` by module writeback",
-                    project.entry,
-                    candidate.module_name()
-                ),
-            )
-            .with_node(format!("module:{}", project.entry)),
-        );
-    }
 
     for module in &new_modules {
         if let Some(diagnostic) = validate_project_writeback_module(module) {
@@ -895,10 +897,19 @@ fn plan_project_writeback(
         return Err(diagnostics);
     }
 
-    let mut writes = Vec::new();
+    let manifest_source = if candidate.module_name() != project.entry {
+        Some(render_project_manifest_with_entry(
+            project,
+            candidate.module_name(),
+        )?)
+    } else {
+        None
+    };
+
+    let mut module_writes = Vec::new();
     for module in &project.modules {
         if removed_modules.contains(&module.module) {
-            writes.push(ProjectWrite {
+            module_writes.push(ProjectWrite {
                 module: module.module.clone(),
                 path: module.path.clone(),
                 source: None,
@@ -910,7 +921,7 @@ fn plan_project_writeback(
         let current_source = format_program(&module.program);
         let next_source = format_program(&next_program);
         if current_source != next_source {
-            writes.push(ProjectWrite {
+            module_writes.push(ProjectWrite {
                 module: module.module.clone(),
                 path: module.path.clone(),
                 source: Some(next_source),
@@ -921,14 +932,58 @@ fn plan_project_writeback(
     for module in new_modules {
         let next_program = project_module_program(candidate, &module);
         let next_source = format_program(&next_program);
-        writes.push(ProjectWrite {
+        module_writes.push(ProjectWrite {
             module: module.clone(),
             path: module_source_path(&project.module_root, &module),
             source: Some(next_source),
             create: true,
         });
     }
-    Ok(writes)
+    Ok(ProjectWritebackPlan {
+        manifest_source,
+        module_writes,
+    })
+}
+
+fn render_project_manifest_with_entry(
+    project: &ProjectGraph,
+    entry: &str,
+) -> Result<String, Vec<Diagnostic>> {
+    let mut manifest: toml::Value = toml::from_str(&project.manifest_source).map_err(|error| {
+        vec![Diagnostic::error(
+            "PROJECT_MANIFEST_WRITEBACK_FAILED",
+            format!(
+                "failed to parse project manifest {} for writeback: {error}",
+                project.manifest_path.display()
+            ),
+        )]
+    })?;
+    let Some(project_table) = manifest
+        .get_mut("project")
+        .and_then(toml::Value::as_table_mut)
+    else {
+        return Err(vec![Diagnostic::error(
+            "PROJECT_MANIFEST_WRITEBACK_FAILED",
+            format!(
+                "project manifest {} does not contain a `[project]` table",
+                project.manifest_path.display()
+            ),
+        )]);
+    };
+    project_table.insert("entry".to_string(), toml::Value::String(entry.to_string()));
+    let mut source = toml::to_string_pretty(&manifest).map_err(|error| {
+        vec![Diagnostic::error(
+            "PROJECT_MANIFEST_WRITEBACK_FAILED",
+            format!(
+                "failed to render project manifest {} for writeback: {error}",
+                project.manifest_path.display()
+            ),
+        )]
+    })?;
+    if !source.ends_with('\n') {
+        source.push('\n');
+    }
+    Ok(source)
 }
 
 fn module_source_path(root: &Path, module: &str) -> PathBuf {

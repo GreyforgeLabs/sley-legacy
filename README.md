@@ -116,8 +116,8 @@ Implemented now:
 - project-aware `sley graft --write <project>` source-file writeback for
   accepted edits that resolve to existing modules, plus checked creation of new
   module files declared by the graft candidate, deletion of removed module
-  files no longer referenced by the checked candidate, and non-entry module
-  rename writeback
+  files no longer referenced by the checked candidate, and module rename
+  writeback with manifest entry updates when needed
 - a first ZJX-ready JSON envelope command for graph snapshots, optional graph
   slices, and trace receipts
 - structural graft operations for adding/removing takes, replacing task bodies,
@@ -175,8 +175,8 @@ Module `app.main` resolves to `src/app/main.sley`. `sley parse`,
 `.sley` file or a project directory containing `sley.toml`. Project graft
 writeback projects the checked candidate back to existing owning module files
 and leaves unchanged module files alone. It can create checked new module
-files, delete removed loaded module files, and rename non-entry module files;
-entry-module renames reject until manifest writeback can update `sley.toml`.
+files, delete removed loaded module files, rename module files, and update
+`sley.toml` when the manifest entry module is renamed.
 
 Module visibility:
 
@@ -417,11 +417,10 @@ Known v0 limits:
   variants return typed `Error` records.
 - Project graft writeback supports existing module files, checked new module
   file creation under the project source root, deletion of removed module
-  files once they are no longer imported, and non-entry module rename
-  writeback. Entry-module renames still reject before mutation until manifest
-  writeback can update `sley.toml`. Grafts that import modules without adding
-  checked declarations for those modules still reject before any source or
-  trace mutation.
+  files once they are no longer imported, module rename writeback, and
+  `sley.toml` entry updates when the entry module is renamed. Grafts that import
+  modules without adding checked declarations for those modules still reject
+  before any source or trace mutation.
 - The AST JSON Schema now covers declarations, statements, expressions, type
   expressions, spans, and provenance recursively. Other external JSON Schema
   files remain narrower v0 root-contract schemas.
