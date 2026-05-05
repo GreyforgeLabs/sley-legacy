@@ -218,7 +218,8 @@ Near-term:
    output, graft dry runs, checked graph query reports, and private-task lint
    reports.
 4. Consume `sley.query.report.v0` and `sley.lint.report.v0` from helper
-   passes, then broaden authority, style, and migration lints.
+   passes. `sley doctor` is the first deterministic readiness helper on top of
+   those surfaces; next broaden authority, style, and migration lints.
 5. Extend graph-slice graft planning around checked move/delete operations.
 6. Harden project graft writeback beyond existing-module edits.
 

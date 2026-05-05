@@ -7,6 +7,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use sley::ast::{AST_PROGRAM_SCHEMA, ExprKind, ProvenanceRecord, StatementKind};
 use sley::checker::{check_program, has_errors};
 use sley::diagnostics::{DIAGNOSTIC_REPORT_SCHEMA, DiagnosticReport};
+use sley::doctor::{DOCTOR_REPORT_SCHEMA, build_doctor_report};
 use sley::formatter::format_program;
 use sley::graft::{GRAFT_OUTCOME_SCHEMA, GraftInput, GraftOutcome, apply_graft_input};
 use sley::lint::{LINT_REPORT_SCHEMA, LintOptions, LintRule, build_lint_report};
@@ -373,6 +374,97 @@ fn project_scaffold_creates_checked_deploy_project() {
         overwrite_json
             .pointer("/diagnostics/0/id")
             .is_some_and(|id| id == "PROJECT_SCAFFOLD_FILE_EXISTS")
+    );
+
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn doctor_report_summarizes_readiness_and_lint_gates() {
+    let ready = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args(["doctor", "--json", "examples/project"])
+        .output()
+        .expect("run doctor");
+    let ready_stdout = String::from_utf8(ready.stdout).expect("ready stdout utf8");
+    let ready_stderr = String::from_utf8(ready.stderr).expect("ready stderr utf8");
+    assert!(
+        ready.status.success(),
+        "stdout: {ready_stdout}\nstderr: {ready_stderr}"
+    );
+    let ready_json: serde_json::Value =
+        serde_json::from_str(&ready_stdout).expect("parse ready doctor JSON");
+    assert_eq!(
+        ready_json.pointer("/schema"),
+        Some(&serde_json::json!(DOCTOR_REPORT_SCHEMA))
+    );
+    assert_eq!(
+        ready_json.pointer("/status"),
+        Some(&serde_json::json!("ready"))
+    );
+    assert_eq!(
+        ready_json.pointer("/query/source_schema"),
+        Some(&serde_json::json!("sley.query.report.v0"))
+    );
+    assert_eq!(
+        ready_json.pointer("/lint/source_schema"),
+        Some(&serde_json::json!("sley.lint.report.v0"))
+    );
+
+    let root = temp_project_dir("doctor-warnings");
+    fs::create_dir_all(&root).expect("create doctor temp dir");
+    let warning_file = root.join("warning.sley");
+    fs::write(
+        &warning_file,
+        r#"
+module app.warning
+
+task main -> Int {
+  return 1
+}
+
+task orphan -> Int {
+  return 2
+}
+"#,
+    )
+    .expect("write warning source");
+
+    let warnings = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args(["doctor", "--json"])
+        .arg(&warning_file)
+        .output()
+        .expect("run warning doctor");
+    let warnings_stdout = String::from_utf8(warnings.stdout).expect("warnings stdout utf8");
+    assert!(
+        warnings.status.success(),
+        "doctor warnings should be non-blocking by default"
+    );
+    let warnings_json: serde_json::Value =
+        serde_json::from_str(&warnings_stdout).expect("parse warning doctor JSON");
+    assert_eq!(
+        warnings_json.pointer("/status"),
+        Some(&serde_json::json!("warnings"))
+    );
+    assert_eq!(
+        warnings_json.pointer("/summary/lint_finding_count"),
+        Some(&serde_json::json!(1))
+    );
+
+    let denied = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args(["doctor", "--json", "--deny-warnings"])
+        .arg(&warning_file)
+        .output()
+        .expect("run denied warning doctor");
+    let denied_stdout = String::from_utf8(denied.stdout).expect("denied stdout utf8");
+    assert!(
+        !denied.status.success(),
+        "doctor --deny-warnings should block on lint findings"
+    );
+    let denied_json: serde_json::Value =
+        serde_json::from_str(&denied_stdout).expect("parse denied doctor JSON");
+    assert_eq!(
+        denied_json.pointer("/status"),
+        Some(&serde_json::json!("blocked"))
     );
 
     let _ = fs::remove_dir_all(root);
@@ -927,6 +1019,12 @@ task orphan -> Int {
         include_str!("../fixtures/contracts/project_scaffold_deploy.json"),
     );
 
+    let doctor = build_doctor_report("examples/project", Ok(project.program.clone()), false);
+    assert_json_snapshot(
+        &doctor,
+        include_str!("../fixtures/contracts/doctor_project_ready.json"),
+    );
+
     assert_schema_file(
         include_str!("../docs/schemas/sley.ast.program.v0.schema.json"),
         AST_PROGRAM_SCHEMA,
@@ -970,6 +1068,10 @@ task orphan -> Int {
     assert_schema_file(
         include_str!("../docs/schemas/sley.project.scaffold.v0.schema.json"),
         PROJECT_SCAFFOLD_SCHEMA,
+    );
+    assert_schema_file(
+        include_str!("../docs/schemas/sley.doctor.report.v0.schema.json"),
+        DOCTOR_REPORT_SCHEMA,
     );
 }
 
@@ -4172,6 +4274,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
     let required = [
         "cli:parse",
         "cli:new",
+        "cli:doctor",
         "cli:format",
         "cli:check",
         "cli:run",
@@ -4202,6 +4305,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "json:sley.query.report.v0",
         "json:sley.lint.report.v0",
         "json:sley.project.scaffold.v0",
+        "json:sley.doctor.report.v0",
         "json:sley.trace.seal.v0",
         "json:sley.zjx.envelope.v0",
     ];

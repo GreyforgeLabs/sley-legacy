@@ -7,6 +7,7 @@ use clap::{Parser, Subcommand, ValueEnum};
 use sley::Program;
 use sley::checker::{check_program, has_errors};
 use sley::diagnostics::{Diagnostic, DiagnosticReport};
+use sley::doctor::{DoctorReport, build_doctor_report};
 use sley::formatter::format_program;
 use sley::graft::{GRAFT_OUTCOME_SCHEMA, GraftInput, GraftOutcome, apply_graft_program};
 use sley::lint::{LintOptions, LintReport, LintRule, build_lint_report};
@@ -114,6 +115,13 @@ enum Command {
         rule: Vec<CliLintRule>,
         #[arg(long)]
         module: Option<String>,
+        #[arg(long)]
+        deny_warnings: bool,
+        file: PathBuf,
+    },
+    Doctor {
+        #[arg(long)]
+        json: bool,
         #[arg(long)]
         deny_warnings: bool,
         file: PathBuf,
@@ -412,6 +420,23 @@ fn run(cli: Cli) -> Result<()> {
             }
             if deny_warnings && has_findings {
                 anyhow::bail!("lint findings found");
+            }
+            Ok(())
+        }
+        Command::Doctor {
+            json,
+            deny_warnings,
+            file,
+        } => {
+            let target = file.display().to_string();
+            let report = build_doctor_report(target, load_target_program(&file), deny_warnings);
+            if json {
+                print_json(&report)?;
+            } else {
+                print_human_doctor_report(&report);
+            }
+            if report.status == "blocked" {
+                anyhow::bail!("doctor blocked");
             }
             Ok(())
         }
@@ -1096,6 +1121,33 @@ fn print_human_lint_report(report: &LintReport) {
         println!(
             "{} {} {} [{}] hint={}",
             finding.severity, finding.id, finding.message, finding.node, finding.hint
+        );
+    }
+}
+
+fn print_human_doctor_report(report: &DoctorReport) {
+    println!(
+        "doctor schema={} status={} target={} entry={} errors={} warnings={} modules={} tasks={} calls={} lint_findings={}",
+        report.schema,
+        report.status,
+        report.target,
+        report.entry_module.as_deref().unwrap_or("unknown"),
+        report.summary.error_count,
+        report.summary.warning_count,
+        report.summary.module_count,
+        report.summary.task_count,
+        report.summary.call_count,
+        report.summary.lint_finding_count
+    );
+    for diagnostic in &report.diagnostics {
+        println!("diagnostic {} {}", diagnostic.id, diagnostic.message);
+    }
+    for action in &report.next_actions {
+        println!(
+            "next {}: {} -> {}",
+            action.kind,
+            action.reason,
+            action.command.join(" ")
         );
     }
 }

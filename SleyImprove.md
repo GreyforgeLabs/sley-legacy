@@ -95,6 +95,7 @@ sley ast --json --node <node-id> <target>
 sley graph --json <target>
 sley graph --json --slice <node-id> <target>
 sley new --json [--template hello|deploy] [--name <name>] [--module <module>] <path>
+sley doctor --json [--deny-warnings] <target>
 sley query --json [--kind all|modules|tasks|calls] [--module <module>] <target>
 sley lint --json [--rule unused-private-task|unreachable-private-task] [--module <module>] <target>
 sley trace --json <target>
@@ -109,10 +110,10 @@ Rules:
 
 - JSON output must be stable and versioned.
 - AST roots, diagnostic reports, symbol graphs, graph slices, query reports,
-  lint reports, project scaffold reports, trace seals, ZJX envelopes, and
-  graft outcomes carry v0 schema IDs.
+  lint reports, doctor reports, project scaffold reports, trace seals, ZJX
+  envelopes, and graft outcomes carry v0 schema IDs.
 - AST, diagnostic-report, graph-slice, query-report, lint-report,
-  project-scaffold, and trace-seal snapshots are locked under
+  doctor-report, project-scaffold, and trace-seal snapshots are locked under
   `fixtures/contracts/`.
 - JSON Schema files live under `docs/schemas/`; the AST schema covers nested
   declarations, statements, expressions, type expressions, spans, and
@@ -120,6 +121,9 @@ Rules:
   shapes.
 - Diagnostics include stable IDs, node IDs, spans where possible, and repair
   hints for common checker failures.
+- `sley doctor` is the first deterministic helper consuming strict check,
+  `sley.query.report.v0`, and `sley.lint.report.v0` into a single readiness
+  report for pre-edit agent planning.
 - Grafts support dry-run by default and an explicit `--dry-run` flag.
 - Graft input JSON is strict: unknown operation or payload fields reject instead
   of being silently ignored.

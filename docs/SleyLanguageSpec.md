@@ -489,6 +489,7 @@ sley ast --json --node task:app.main.main <target>
 sley graph --json <target>
 sley graph --json --slice task:app.main.main <target>
 sley new --json --template deploy --name agent-app agent-app
+sley doctor --json <target>
 sley query --json --kind tasks --module app.main <target>
 sley lint --json <target>
 sley trace --json <target>
@@ -506,7 +507,8 @@ AST roots carry `schema: "sley.ast.program.v0"`. Diagnostic reports carry
 `schema: "sley.zjx.envelope.v0"`.
 The CLI smoke manifest carries
 `schema: "sley.cli_smoke.manifest.v0"`. Project scaffold reports carry
-`schema: "sley.project.scaffold.v0"`.
+`schema: "sley.project.scaffold.v0"`. Doctor readiness reports carry
+`schema: "sley.doctor.report.v0"`.
 
 Current v0 trace seal JSON has this root shape:
 
@@ -543,8 +545,8 @@ The executable CLI conformance smokes live under `fixtures/cli_smokes/`. Their
 and stdout expectations. The integration suite runs the manifest against the
 built `sley` binary and locks stable command exits, selected stdout substrings,
 JSON root schemas, graph slices, checked query reports, checked lint reports,
-project scaffolds, ZJX preview envelopes, graft dry runs, and seeded
-host-adapter execution for
+doctor readiness reports, project scaffolds, ZJX preview envelopes, graft dry
+runs, and seeded host-adapter execution for
 `FileRead`, `FileWrite`, `DatabaseRead`, `DatabaseWrite`, `Network`, `Shell`,
 `ModelCall`, `SecretRead`, `Deploy`, and `Spend`.
 
@@ -555,6 +557,13 @@ paths when they already exist. `--template hello` creates a pure starter.
 with a seeded `deploy.try_stage` result and does not call providers or mutate
 infrastructure. `--json` emits the scaffold report with relative file paths
 and exact next-command vectors under `sley.project.scaffold.v0`.
+
+`sley doctor` is the first deterministic helper that consumes the strict
+checker plus checked query and lint reports into one agent readiness report.
+It reports `ready`, `warnings`, or `blocked`; includes source schema references
+for the consumed query and lint surfaces; and gives next-command vectors for
+inspection, lint gates, and entrypoint runs. `--deny-warnings` treats lint
+findings as blocked while still printing the versioned report.
 
 A graph slice is a bounded shard around a module, task, type, effect, or import.
 Task slices include the selected task AST, visible module declarations,

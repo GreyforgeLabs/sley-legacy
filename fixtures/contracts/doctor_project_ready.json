@@ -1,0 +1,71 @@
+{
+  "schema": "sley.doctor.report.v0",
+  "status": "ready",
+  "target": "examples/project",
+  "entry_module": "app.main",
+  "summary": {
+    "error_count": 0,
+    "warning_count": 0,
+    "module_count": 2,
+    "task_count": 2,
+    "call_count": 1,
+    "lint_finding_count": 0
+  },
+  "diagnostics": [],
+  "query": {
+    "source_schema": "sley.query.report.v0",
+    "kind": "all",
+    "module_count": 2,
+    "task_count": 2,
+    "call_count": 1,
+    "entrypoints": [
+      "app.main.main",
+      "app.math.double"
+    ],
+    "effectful_tasks": []
+  },
+  "lint": {
+    "source_schema": "sley.lint.report.v0",
+    "status": "ok",
+    "rules": [
+      "unused_private_task",
+      "unreachable_private_task"
+    ],
+    "finding_count": 0
+  },
+  "next_actions": [
+    {
+      "kind": "inspect_tasks",
+      "reason": "query task facts before planning edits",
+      "command": [
+        "sley",
+        "query",
+        "--json",
+        "--kind",
+        "tasks",
+        "examples/project"
+      ]
+    },
+    {
+      "kind": "lint_gate",
+      "reason": "preserve the warning-grade lint gate after edits",
+      "command": [
+        "sley",
+        "lint",
+        "--json",
+        "--deny-warnings",
+        "examples/project"
+      ]
+    },
+    {
+      "kind": "run_entrypoint",
+      "reason": "main is pure and can run without runtime gates",
+      "command": [
+        "sley",
+        "run",
+        "--json",
+        "examples/project"
+      ]
+    }
+  ]
+}

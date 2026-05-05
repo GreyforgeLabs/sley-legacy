@@ -13,6 +13,7 @@ cargo run -- ast --json --node <node-id> <file-or-project>
 cargo run -- graph --json <file-or-project>
 cargo run -- graph --json --slice <node-id> <file-or-project>
 cargo run -- new --json --template deploy --name agent-app agent-app
+cargo run -- doctor --json <file-or-project>
 cargo run -- seal --json <file-or-project>
 cargo run -- graft --json --dry-run <file> <graft.json>
 cargo run -- graft --json --write <file> <graft.json>
@@ -57,6 +58,7 @@ Stable v0 JSON roots:
 - `sley.zjx.envelope.v0`
 - `sley.cli_smoke.manifest.v0`
 - `sley.project.scaffold.v0`
+- `sley.doctor.report.v0`
 
 Contract references:
 
@@ -85,8 +87,9 @@ Current development phase:
 - `sley new --json` emits `sley.project.scaffold.v0` and creates
   non-destructive `hello` or deterministic `deploy` starter projects that can
   immediately run through check, query, lint, and seeded runtime gates
-- next development work should start consuming query/lint JSON from Sley helper
-  passes and broaden authority, style, and migration lints
+- `sley doctor --json` emits `sley.doctor.report.v0` and consumes strict
+  diagnostics plus checked query/lint summaries into one agent readiness report
+- next development work should broaden authority, style, and migration lints
 - project graft writeback hardening beyond existing modules
 - manifest-backed accepted/rejected synthetic gold corpus growth
 - broader graph-slice graft operations around move/delete planning

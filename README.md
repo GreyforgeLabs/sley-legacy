@@ -15,6 +15,7 @@ Implemented now:
 - `sley graph`
 - `sley query`
 - `sley lint`
+- `sley doctor`
 - `sley trace`
 - `sley seal`
 - `sley zjx`
@@ -99,6 +100,9 @@ Implemented now:
 - checked JSON lint reports with `sley lint`, optional `--module` and
   `--rule unused-private-task` / `--rule unreachable-private-task` filters,
   and `schema: "sley.lint.report.v0"` for warning-grade graph lints
+- checked JSON readiness reports with `sley doctor`, consuming strict
+  diagnostics plus query and lint summaries, and
+  `schema: "sley.doctor.report.v0"` for agent pre-edit gates
 - JSON project scaffold reports with `sley new --json`, `hello` and `deploy`
   templates, relative created-file paths, next-command vectors, and
   `schema: "sley.project.scaffold.v0"`
@@ -121,14 +125,15 @@ Implemented now:
   unknown tasks, type mismatches, return mismatches, call argument mismatches,
   condition mismatches, effect authority, and private or ambiguous names
 - locked JSON contract snapshots under `fixtures/contracts/`, including
-  checked query, lint, and project scaffold reports
+  checked query, lint, doctor, and project scaffold reports
 - external v0 JSON Schema files under `docs/schemas/`
 - manifest-backed accepted/rejected synthetic conformance corpus fixtures under
   `fixtures/corpus/`, including declared and missing authority cases for the
   seeded host adapter surface
 - manifest-backed CLI smoke conformance cases under `fixtures/cli_smokes/`,
-  covering stable command output, JSON roots, graph/ZJX surfaces, project
-  scaffolding, graft dry runs, and seeded host-adapter execution
+  covering stable command output, JSON roots, graph/ZJX surfaces, doctor
+  readiness, project scaffolding, graft dry runs, and seeded host-adapter
+  execution
 - compact agent onboarding pack in `llms.txt`
 
 Project form:
@@ -137,6 +142,7 @@ Project form:
 sley new --template deploy --name agent-app agent-app
 cd agent-app
 sley check --json .
+sley doctor --json .
 sley lint --json --deny-warnings .
 sley run --json --cap Deploy --deploy-result staging staged .
 ```

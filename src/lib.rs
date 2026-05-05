@@ -1,6 +1,7 @@
 pub mod ast;
 pub mod checker;
 pub mod diagnostics;
+pub mod doctor;
 pub mod formatter;
 pub mod graft;
 pub mod lint;

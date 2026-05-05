@@ -152,6 +152,28 @@
       }
     },
     {
+      "name": "doctor_project_json",
+      "args": ["doctor", "--json", "examples/project"],
+      "covers": [
+        "cli:doctor",
+        "json:sley.doctor.report.v0",
+        "json:sley.query.report.v0",
+        "json:sley.lint.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.doctor.report.v0" },
+          { "pointer": "/status", "value": "ready" },
+          { "pointer": "/query/source_schema", "value": "sley.query.report.v0" },
+          { "pointer": "/lint/source_schema", "value": "sley.lint.report.v0" },
+          { "pointer": "/summary/module_count", "value": 2 },
+          { "pointer": "/summary/task_count", "value": 2 },
+          { "pointer": "/next_actions/0/kind", "value": "inspect_tasks" }
+        ]
+      }
+    },
+    {
       "name": "lint_project_json",
       "args": ["lint", "--json", "examples/project"],
       "covers": ["cli:lint", "json:sley.lint.report.v0"],
