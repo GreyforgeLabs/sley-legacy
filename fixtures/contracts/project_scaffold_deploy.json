@@ -1,0 +1,59 @@
+{
+  "schema": "sley.project.scaffold.v0",
+  "status": "created",
+  "project": {
+    "name": "agent-app",
+    "root": "agent-app",
+    "source_root": "src",
+    "entry_module": "app.main",
+    "template": "deploy"
+  },
+  "files": [
+    {
+      "path": "sley.toml",
+      "kind": "manifest"
+    },
+    {
+      "path": "README.md",
+      "kind": "guide"
+    },
+    {
+      "path": "src/app/main.sley",
+      "kind": "source"
+    }
+  ],
+  "next_commands": [
+    [
+      "sley",
+      "check",
+      "--json",
+      "."
+    ],
+    [
+      "sley",
+      "query",
+      "--json",
+      "--kind",
+      "tasks",
+      "."
+    ],
+    [
+      "sley",
+      "lint",
+      "--json",
+      "--deny-warnings",
+      "."
+    ],
+    [
+      "sley",
+      "run",
+      "--json",
+      "--cap",
+      "Deploy",
+      "--deploy-result",
+      "staging",
+      "staged",
+      "."
+    ]
+  ]
+}

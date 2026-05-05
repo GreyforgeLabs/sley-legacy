@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.project.scaffold.v0",
+  "title": "Sley Project Scaffold Report v0",
+  "type": "object",
+  "required": ["schema", "status", "project", "files", "next_commands"],
+  "properties": {
+    "schema": { "const": "sley.project.scaffold.v0" },
+    "status": { "const": "created" },
+    "project": {
+      "type": "object",
+      "required": ["name", "root", "source_root", "entry_module", "template"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "root": { "type": "string", "minLength": 1 },
+        "source_root": { "const": "src" },
+        "entry_module": { "type": "string", "minLength": 1 },
+        "template": { "enum": ["hello", "deploy"] }
+      },
+      "additionalProperties": false
+    },
+    "files": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["path", "kind"],
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "kind": { "enum": ["manifest", "guide", "source"] }
+        },
+        "additionalProperties": false
+      }
+    },
+    "next_commands": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "array",
+        "minItems": 1,
+        "items": { "type": "string" }
+      }
+    }
+  },
+  "additionalProperties": false
+}

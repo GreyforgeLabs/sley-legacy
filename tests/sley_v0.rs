@@ -14,6 +14,9 @@ use sley::parser::parse_program;
 use sley::project::load_project;
 use sley::query::{QUERY_REPORT_SCHEMA, QueryKind, QueryOptions, build_query_report};
 use sley::runtime::{RuntimeGates, Value, run_main, run_main_with_gates};
+use sley::scaffold::{
+    PROJECT_SCAFFOLD_SCHEMA, ProjectScaffoldReport, ProjectScaffoldSummary, ScaffoldFile,
+};
 use sley::symbols::{SYMBOL_GRAPH_SCHEMA, SYMBOL_GRAPH_SLICE_SCHEMA, slice_symbol_graph};
 use sley::trace::{
     TRACE_RECEIPT_SCHEMA, TRACE_SEAL_SCHEMA, TraceReceipt, append_trace_receipt,
@@ -267,6 +270,112 @@ fn cli_smoke_manifest_commands_match_stable_release_surface() {
     }
 
     let _ = fs::remove_dir_all(tmp_root);
+}
+
+#[test]
+fn project_scaffold_creates_checked_deploy_project() {
+    let root = temp_project_dir("new-deploy");
+    let output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args([
+            "new",
+            "--json",
+            "--template",
+            "deploy",
+            "--name",
+            "agent-app",
+            "--module",
+            "app.main",
+        ])
+        .arg(&root)
+        .output()
+        .expect("run sley new");
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+    let stderr = String::from_utf8(output.stderr).expect("stderr utf8");
+    assert!(
+        output.status.success(),
+        "stdout: {stdout}\nstderr: {stderr}"
+    );
+    let json: serde_json::Value = serde_json::from_str(&stdout).expect("parse scaffold JSON");
+    assert_eq!(
+        json.pointer("/schema"),
+        Some(&serde_json::json!(PROJECT_SCAFFOLD_SCHEMA))
+    );
+    assert_eq!(json.pointer("/status"), Some(&serde_json::json!("created")));
+    assert_eq!(
+        json.pointer("/project/template"),
+        Some(&serde_json::json!("deploy"))
+    );
+    assert!(root.join("sley.toml").exists());
+    assert!(root.join("README.md").exists());
+    assert!(root.join("src/app/main.sley").exists());
+
+    let project = load_project(&root).expect("load scaffolded project");
+    let diagnostics = check_program(&project.program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected scaffold diagnostics: {diagnostics:#?}"
+    );
+
+    let lint_output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args(["lint", "--json", "--deny-warnings"])
+        .arg(&root)
+        .output()
+        .expect("lint scaffolded project");
+    assert!(
+        lint_output.status.success(),
+        "lint stdout: {}\nlint stderr: {}",
+        String::from_utf8(lint_output.stdout).expect("lint stdout utf8"),
+        String::from_utf8(lint_output.stderr).expect("lint stderr utf8")
+    );
+
+    let run_output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args([
+            "run",
+            "--json",
+            "--cap",
+            "Deploy",
+            "--deploy-result",
+            "staging",
+            "staged",
+        ])
+        .arg(&root)
+        .output()
+        .expect("run scaffolded project");
+    let run_stdout = String::from_utf8(run_output.stdout).expect("run stdout utf8");
+    let run_stderr = String::from_utf8(run_output.stderr).expect("run stderr utf8");
+    assert!(
+        run_output.status.success(),
+        "stdout: {run_stdout}\nstderr: {run_stderr}"
+    );
+    let value: Value = serde_json::from_str(&run_stdout).expect("parse runtime JSON");
+    assert_eq!(
+        value,
+        Value::Ok(Box::new(Value::Text("staged".to_string())))
+    );
+
+    let overwrite = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args(["new", "--json", "--name", "agent-app"])
+        .arg(&root)
+        .output()
+        .expect("rerun sley new");
+    let overwrite_stdout = String::from_utf8(overwrite.stdout).expect("overwrite stdout utf8");
+    assert!(
+        !overwrite.status.success(),
+        "second scaffold should reject existing files"
+    );
+    let overwrite_json: serde_json::Value =
+        serde_json::from_str(&overwrite_stdout).expect("parse overwrite diagnostics");
+    assert_eq!(
+        overwrite_json.pointer("/schema"),
+        Some(&serde_json::json!("sley.diagnostics.report.v0"))
+    );
+    assert!(
+        overwrite_json
+            .pointer("/diagnostics/0/id")
+            .is_some_and(|id| id == "PROJECT_SCAFFOLD_FILE_EXISTS")
+    );
+
+    let _ = fs::remove_dir_all(root);
 }
 
 #[test]
@@ -754,6 +863,70 @@ task orphan -> Int {
         include_str!("../fixtures/contracts/trace_seal_hello.json"),
     );
 
+    let scaffold = ProjectScaffoldReport {
+        schema: PROJECT_SCAFFOLD_SCHEMA.to_string(),
+        status: "created".to_string(),
+        project: ProjectScaffoldSummary {
+            name: "agent-app".to_string(),
+            root: "agent-app".to_string(),
+            source_root: "src".to_string(),
+            entry_module: "app.main".to_string(),
+            template: "deploy".to_string(),
+        },
+        files: vec![
+            ScaffoldFile {
+                path: "sley.toml".to_string(),
+                kind: "manifest".to_string(),
+            },
+            ScaffoldFile {
+                path: "README.md".to_string(),
+                kind: "guide".to_string(),
+            },
+            ScaffoldFile {
+                path: "src/app/main.sley".to_string(),
+                kind: "source".to_string(),
+            },
+        ],
+        next_commands: vec![
+            vec![
+                "sley".to_string(),
+                "check".to_string(),
+                "--json".to_string(),
+                ".".to_string(),
+            ],
+            vec![
+                "sley".to_string(),
+                "query".to_string(),
+                "--json".to_string(),
+                "--kind".to_string(),
+                "tasks".to_string(),
+                ".".to_string(),
+            ],
+            vec![
+                "sley".to_string(),
+                "lint".to_string(),
+                "--json".to_string(),
+                "--deny-warnings".to_string(),
+                ".".to_string(),
+            ],
+            vec![
+                "sley".to_string(),
+                "run".to_string(),
+                "--json".to_string(),
+                "--cap".to_string(),
+                "Deploy".to_string(),
+                "--deploy-result".to_string(),
+                "staging".to_string(),
+                "staged".to_string(),
+                ".".to_string(),
+            ],
+        ],
+    };
+    assert_json_snapshot(
+        &scaffold,
+        include_str!("../fixtures/contracts/project_scaffold_deploy.json"),
+    );
+
     assert_schema_file(
         include_str!("../docs/schemas/sley.ast.program.v0.schema.json"),
         AST_PROGRAM_SCHEMA,
@@ -793,6 +966,10 @@ task orphan -> Int {
     assert_schema_file(
         include_str!("../docs/schemas/sley.cli_smoke.manifest.v0.schema.json"),
         "sley.cli_smoke.manifest.v0",
+    );
+    assert_schema_file(
+        include_str!("../docs/schemas/sley.project.scaffold.v0.schema.json"),
+        PROJECT_SCAFFOLD_SCHEMA,
     );
 }
 
@@ -3994,6 +4171,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         .collect::<BTreeSet<_>>();
     let required = [
         "cli:parse",
+        "cli:new",
         "cli:format",
         "cli:check",
         "cli:run",
@@ -4023,6 +4201,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "json:sley.symbol_graph.slice.v0",
         "json:sley.query.report.v0",
         "json:sley.lint.report.v0",
+        "json:sley.project.scaffold.v0",
         "json:sley.trace.seal.v0",
         "json:sley.zjx.envelope.v0",
     ];

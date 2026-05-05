@@ -94,6 +94,7 @@ sley ast --json <target>
 sley ast --json --node <node-id> <target>
 sley graph --json <target>
 sley graph --json --slice <node-id> <target>
+sley new --json [--template hello|deploy] [--name <name>] [--module <module>] <path>
 sley query --json [--kind all|modules|tasks|calls] [--module <module>] <target>
 sley lint --json [--rule unused-private-task|unreachable-private-task] [--module <module>] <target>
 sley trace --json <target>
@@ -108,10 +109,11 @@ Rules:
 
 - JSON output must be stable and versioned.
 - AST roots, diagnostic reports, symbol graphs, graph slices, query reports,
-  lint reports, trace seals, ZJX envelopes, and graft outcomes carry v0 schema
-  IDs.
-- AST, diagnostic-report, graph-slice, query-report, lint-report, and
-  trace-seal snapshots are locked under `fixtures/contracts/`.
+  lint reports, project scaffold reports, trace seals, ZJX envelopes, and
+  graft outcomes carry v0 schema IDs.
+- AST, diagnostic-report, graph-slice, query-report, lint-report,
+  project-scaffold, and trace-seal snapshots are locked under
+  `fixtures/contracts/`.
 - JSON Schema files live under `docs/schemas/`; the AST schema covers nested
   declarations, statements, expressions, type expressions, spans, and
   provenance, while the remaining schema files are still root-contract v0

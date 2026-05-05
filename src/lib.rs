@@ -8,6 +8,7 @@ pub mod parser;
 pub mod project;
 pub mod query;
 pub mod runtime;
+pub mod scaffold;
 pub mod symbols;
 pub mod trace;
 pub mod zjx;

@@ -19,9 +19,12 @@ Implemented now:
 - `sley seal`
 - `sley zjx`
 - `sley graft`
+- `sley new`
 - explicit non-mutating `sley graft --dry-run`; plain graft preview remains
   non-mutating unless `--write` is supplied
 - `sley.toml` project manifests for multi-file module graphs
+- non-destructive `sley new` project scaffolding with `hello` and
+  deterministic `deploy` starter templates
 - module, import, type, effect, and task declarations
 - import aliases with `import app.math as math`
 - exported declarations with `export task`, `export type`, and `export effect`
@@ -96,6 +99,9 @@ Implemented now:
 - checked JSON lint reports with `sley lint`, optional `--module` and
   `--rule unused-private-task` / `--rule unreachable-private-task` filters,
   and `schema: "sley.lint.report.v0"` for warning-grade graph lints
+- JSON project scaffold reports with `sley new --json`, `hello` and `deploy`
+  templates, relative created-file paths, next-command vectors, and
+  `schema: "sley.project.scaffold.v0"`
 - JSONL trace sidecars for accepted graft receipts when `sley graft --write`
   applies a change, plus content-addressed trace seals with `sley seal`
 - project-aware `sley graft --write <project>` source-file writeback for
@@ -115,17 +121,31 @@ Implemented now:
   unknown tasks, type mismatches, return mismatches, call argument mismatches,
   condition mismatches, effect authority, and private or ambiguous names
 - locked JSON contract snapshots under `fixtures/contracts/`, including
-  checked query and lint reports
+  checked query, lint, and project scaffold reports
 - external v0 JSON Schema files under `docs/schemas/`
 - manifest-backed accepted/rejected synthetic conformance corpus fixtures under
   `fixtures/corpus/`, including declared and missing authority cases for the
   seeded host adapter surface
 - manifest-backed CLI smoke conformance cases under `fixtures/cli_smokes/`,
-  covering stable command output, JSON roots, graph/ZJX surfaces, graft dry
-  runs, and seeded host-adapter execution
+  covering stable command output, JSON roots, graph/ZJX surfaces, project
+  scaffolding, graft dry runs, and seeded host-adapter execution
 - compact agent onboarding pack in `llms.txt`
 
 Project form:
+
+```bash
+sley new --template deploy --name agent-app agent-app
+cd agent-app
+sley check --json .
+sley lint --json --deny-warnings .
+sley run --json --cap Deploy --deploy-result staging staged .
+```
+
+`sley new` refuses to overwrite existing `sley.toml`, `README.md`, or entry
+source files. `--template hello` creates a pure starter project.
+`--template deploy` creates a deterministic deployment-gated starter that
+uses the seeded `deploy.try_stage` adapter; it does not call deployment
+providers or mutate infrastructure.
 
 ```toml
 [project]

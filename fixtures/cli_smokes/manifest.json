@@ -15,6 +15,69 @@
       }
     },
     {
+      "name": "new_deploy_project_json",
+      "cwd": "tmp",
+      "args": [
+        "new",
+        "--json",
+        "--template",
+        "deploy",
+        "--name",
+        "agent-app",
+        "--module",
+        "app.main",
+        "{tmp}/agent-app"
+      ],
+      "covers": ["cli:new", "json:sley.project.scaffold.v0"],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.project.scaffold.v0" },
+          { "pointer": "/status", "value": "created" },
+          { "pointer": "/project/name", "value": "agent-app" },
+          { "pointer": "/project/entry_module", "value": "app.main" },
+          { "pointer": "/project/template", "value": "deploy" },
+          { "pointer": "/files/0/path", "value": "sley.toml" },
+          { "pointer": "/files/2/path", "value": "src/app/main.sley" },
+          { "pointer": "/next_commands/3/4", "value": "Deploy" }
+        ]
+      }
+    },
+    {
+      "name": "check_new_deploy_project_json",
+      "args": ["check", "--json", "{tmp}/agent-app"],
+      "covers": ["cli:check", "json:sley.diagnostics.report.v0"],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.diagnostics.report.v0" },
+          { "pointer": "/status", "value": "ok" }
+        ]
+      }
+    },
+    {
+      "name": "run_new_deploy_project_json",
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "Deploy",
+        "--deploy-result",
+        "staging",
+        "staged",
+        "{tmp}/agent-app"
+      ],
+      "covers": ["cli:run", "host:Deploy"],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/kind", "value": "Ok" },
+          { "pointer": "/value/kind", "value": "Text" },
+          { "pointer": "/value/value", "value": "staged" }
+        ]
+      }
+    },
+    {
       "name": "format_hello_stdout",
       "args": ["format", "examples/hello.sley"],
       "covers": ["cli:format"],

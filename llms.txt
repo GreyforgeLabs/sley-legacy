@@ -12,6 +12,7 @@ cargo run -- ast --json <file-or-project>
 cargo run -- ast --json --node <node-id> <file-or-project>
 cargo run -- graph --json <file-or-project>
 cargo run -- graph --json --slice <node-id> <file-or-project>
+cargo run -- new --json --template deploy --name agent-app agent-app
 cargo run -- seal --json <file-or-project>
 cargo run -- graft --json --dry-run <file> <graft.json>
 cargo run -- graft --json --write <file> <graft.json>
@@ -55,6 +56,7 @@ Stable v0 JSON roots:
 - `sley.graft.outcome.v0`
 - `sley.zjx.envelope.v0`
 - `sley.cli_smoke.manifest.v0`
+- `sley.project.scaffold.v0`
 
 Contract references:
 
@@ -80,6 +82,9 @@ Current development phase:
 - checked lint reports are available through `sley lint --json` with root schema
   `sley.lint.report.v0`; private-task rules include `unused_private_task` and
   `unreachable_private_task`
+- `sley new --json` emits `sley.project.scaffold.v0` and creates
+  non-destructive `hello` or deterministic `deploy` starter projects that can
+  immediately run through check, query, lint, and seeded runtime gates
 - next development work should start consuming query/lint JSON from Sley helper
   passes and broaden authority, style, and migration lints
 - project graft writeback hardening beyond existing modules

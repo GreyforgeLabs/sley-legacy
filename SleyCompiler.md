@@ -162,6 +162,7 @@ Loom. But Sley itself still needs agent-readable affordances:
 
 - compact docs
 - examples
+- non-destructive project scaffolds
 - JSON AST or graph output
 - stable diagnostics
 - repair hints
@@ -213,8 +214,9 @@ Near-term:
    model calls have deterministic seeded `model.try_complete`.
 3. Keep expanding the manifest-backed accepted/rejected gold corpus and CLI
    smoke conformance suite. They now cover runtime authority for the seeded
-   host adapter surface, stable JSON roots, graph/ZJX output, graft dry runs,
-   checked graph query reports, and private-task lint reports.
+   host adapter surface, stable JSON roots, project scaffolding, graph/ZJX
+   output, graft dry runs, checked graph query reports, and private-task lint
+   reports.
 4. Consume `sley.query.report.v0` and `sley.lint.report.v0` from helper
    passes, then broaden authority, style, and migration lints.
 5. Extend graph-slice graft planning around checked move/delete operations.

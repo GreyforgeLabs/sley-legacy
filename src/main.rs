@@ -14,6 +14,7 @@ use sley::parser::parse_program;
 use sley::project::{ProjectGraph, load_project};
 use sley::query::{QueryKind, QueryOptions, QueryReport, build_query_report};
 use sley::runtime::{RuntimeGate, RuntimeGates, run_main, run_main_with_gates};
+use sley::scaffold::{ScaffoldOptions, ScaffoldTemplate, scaffold_project};
 use sley::symbols::{
     SymbolGraphSlice, build_symbol_graph, effect_module, import_owner_module, slice_symbol_graph,
     task_module, type_module,
@@ -34,6 +35,17 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Command {
+    New {
+        #[arg(long)]
+        json: bool,
+        #[arg(long)]
+        name: Option<String>,
+        #[arg(long, default_value = "app.main")]
+        module: String,
+        #[arg(long, value_enum, default_value = "hello")]
+        template: CliScaffoldTemplate,
+        path: PathBuf,
+    },
     Parse {
         #[arg(long)]
         json: bool,
@@ -159,6 +171,40 @@ fn main() -> Result<()> {
 
 fn run(cli: Cli) -> Result<()> {
     match cli.command {
+        Command::New {
+            json,
+            name,
+            module,
+            template,
+            path,
+        } => match scaffold_project(
+            &path,
+            ScaffoldOptions {
+                name,
+                module,
+                template: template.into(),
+            },
+        ) {
+            Ok(report) => {
+                if json {
+                    print_json(&report)?;
+                } else {
+                    println!(
+                        "created project {} at {}",
+                        report.project.name, report.project.root
+                    );
+                    for file in &report.files {
+                        println!("{} {}", file.kind, file.path);
+                    }
+                    println!("next:");
+                    for command in &report.next_commands {
+                        println!("  {}", command.join(" "));
+                    }
+                }
+                Ok(())
+            }
+            Err(diagnostics) => emit_diagnostics_and_fail(diagnostics, json),
+        },
         Command::Parse { json, file } => match load_target_program(&file) {
             Ok(program) => {
                 if json {
@@ -535,6 +581,21 @@ impl From<CliLintRule> for LintRule {
         match rule {
             CliLintRule::UnusedPrivateTask => Self::UnusedPrivateTask,
             CliLintRule::UnreachablePrivateTask => Self::UnreachablePrivateTask,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+enum CliScaffoldTemplate {
+    Hello,
+    Deploy,
+}
+
+impl From<CliScaffoldTemplate> for ScaffoldTemplate {
+    fn from(template: CliScaffoldTemplate) -> Self {
+        match template {
+            CliScaffoldTemplate::Hello => Self::Hello,
+            CliScaffoldTemplate::Deploy => Self::Deploy,
         }
     }
 }
