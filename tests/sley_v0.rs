@@ -825,11 +825,26 @@ fn stale_precondition_rejects_graft() {
     let graft: GraftInput = serde_json::from_str(graft_source).expect("parse graft");
     let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
     assert_eq!(outcome.status, "rejected");
+    let diagnostic = outcome
+        .diagnostics
+        .iter()
+        .find(|diagnostic| diagnostic.id == "GRAFT_PRECONDITION_FAILED")
+        .expect("expected stale graft precondition diagnostic");
+    assert_eq!(
+        diagnostic.node.as_deref(),
+        Some("task:app.profile.get_user")
+    );
+    let hint = diagnostic
+        .repair_hints
+        .iter()
+        .find(|hint| hint.kind == "refresh_graft_precondition")
+        .expect("expected stale graft refresh hint");
+    assert_eq!(hint.target.as_deref(), Some("task:app.profile.get_user"));
     assert!(
-        outcome
-            .diagnostics
-            .iter()
-            .any(|diagnostic| diagnostic.id == "GRAFT_PRECONDITION_FAILED")
+        hint.replacement
+            .as_deref()
+            .is_some_and(|replacement| replacement.contains("rebuild the graft")),
+        "expected refresh hint replacement guidance, got {hint:#?}"
     );
 }
 

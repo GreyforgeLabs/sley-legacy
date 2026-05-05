@@ -205,7 +205,8 @@ Priority diagnostic families:
 - unauthorized host authority: implemented with `add_required_effect`
 - private imported task/type/effect: implemented with export hints
 - ambiguous imported task/type/effect: implemented with qualification hints
-- stale graft preconditions
+- stale graft preconditions: implemented with `refresh_graft_precondition`
+  hints that tell agents to re-read current target state before retrying
 - unsupported graft operation
 - module namespace conflicts
 

@@ -2127,9 +2127,9 @@ fn check_preconditions(
     if precondition.get("task_exists").and_then(JsonValue::as_bool) == Some(true)
         && task_index.is_none()
     {
-        diagnostics.push(Diagnostic::error(
-            "GRAFT_PRECONDITION_FAILED",
+        diagnostics.push(stale_precondition_diagnostic(
             "expected task to exist",
+            None,
         ));
     }
     if let (Some(task_index), Some(absent)) = (
@@ -2138,13 +2138,10 @@ fn check_preconditions(
     ) {
         let task = &program.tasks[task_index];
         if task.takes.iter().any(|take| take.name == absent) {
-            diagnostics.push(
-                Diagnostic::error(
-                    "GRAFT_PRECONDITION_FAILED",
-                    format!("take `{absent}` is present"),
-                )
-                .with_node(task.id.clone()),
-            );
+            diagnostics.push(stale_precondition_diagnostic(
+                format!("take `{absent}` is present"),
+                Some(task.id.clone()),
+            ));
         }
     }
     if let (Some(task_index), Some(present)) = (
@@ -2153,13 +2150,10 @@ fn check_preconditions(
     ) {
         let task = &program.tasks[task_index];
         if !task.takes.iter().any(|take| take.name == present) {
-            diagnostics.push(
-                Diagnostic::error(
-                    "GRAFT_PRECONDITION_FAILED",
-                    format!("take `{present}` is absent"),
-                )
-                .with_node(task.id.clone()),
-            );
+            diagnostics.push(stale_precondition_diagnostic(
+                format!("take `{present}` is absent"),
+                Some(task.id.clone()),
+            ));
         }
     }
 
@@ -2167,6 +2161,26 @@ fn check_preconditions(
         Ok(())
     } else {
         Err(diagnostics)
+    }
+}
+
+fn stale_precondition_diagnostic(message: impl Into<String>, node: Option<String>) -> Diagnostic {
+    let hint = stale_precondition_hint(node.clone());
+    let diagnostic = Diagnostic::error("GRAFT_PRECONDITION_FAILED", message).with_repair_hint(hint);
+    if let Some(node) = node {
+        diagnostic.with_node(node)
+    } else {
+        diagnostic
+    }
+}
+
+fn stale_precondition_hint(target: Option<String>) -> RepairHint {
+    let hint = RepairHint::new("refresh_graft_precondition")
+        .with_replacement("Re-read current target state and rebuild the graft before retrying");
+    if let Some(target) = target {
+        hint.with_target(target)
+    } else {
+        hint
     }
 }
 

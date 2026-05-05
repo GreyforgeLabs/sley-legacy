@@ -656,9 +656,12 @@ Diagnostics include machine-readable repair hints for common checker failures
 and selected graft planning failures. Hints are intentionally small and
 structural: `kind` identifies the action, `target` names the graph node when
 available, `effect` names required authority when relevant, and `replacement`
-carries a compact source or type suggestion. For example, unsupported
-expression `MoveNode` targets carry a `replace_expression` hint so agents can
-switch to `ReplaceExpression` instead of retrying an unsupported move. Call
+carries compact source, type, graft JSON, or retry guidance. For example,
+unsupported expression `MoveNode` targets carry a `replace_expression` hint so
+agents can switch to `ReplaceExpression` instead of retrying an unsupported
+move. Stale graft precondition failures carry a `refresh_graft_precondition`
+hint so agents re-read current target state and rebuild the graft before
+retrying. Call
 argument type mismatches carry both an expression-level `replace_argument` hint
 and a structural `replace_call_arg` hint whose `replacement` is a starter
 `ReplaceCallArg` graft JSON payload scoped to the current caller and raw

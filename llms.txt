@@ -36,6 +36,8 @@ Agent rules:
 - Use `graph --json --slice <node-id>` before planning a bounded graft.
 - Use `ast --json --node <node-id>` when exact task shape matters.
 - Treat diagnostic `repair_hints` as suggestions, not authority bypasses.
+- For `GRAFT_PRECONDITION_FAILED`, inspect `refresh_graft_precondition` hints;
+  stale grafts should be rebuilt from current AST/query state before retrying.
 - For `CALL_ARITY_MISMATCH`, prefer structural `update_call_args` or
   `remove_call_arg` hints when present; their replacements are starter
   `UpdateCallArgs` or `RemoveCallArg` graft JSON.
