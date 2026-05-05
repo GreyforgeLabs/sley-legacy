@@ -183,6 +183,8 @@ pub struct MoveNodePayload {
     pub position: usize,
     #[serde(default)]
     pub parent: Option<String>,
+    #[serde(default)]
+    pub destination: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -850,6 +852,7 @@ fn move_node(
     payload: &MoveNodePayload,
 ) -> Result<String, Vec<Diagnostic>> {
     if let Some(index) = program.find_task_index(target) {
+        ensure_no_move_destination(payload, target)?;
         if let Some(module) =
             declaration_move_parent_module(program, payload, target, "task", "tasks")?
         {
@@ -879,6 +882,7 @@ fn move_node(
         .iter()
         .position(|ty| declaration_matches_target("type", &ty.id, &ty.name, target))
     {
+        ensure_no_move_destination(payload, target)?;
         if let Some(module) =
             declaration_move_parent_module(program, payload, target, "type", "types")?
         {
@@ -908,6 +912,7 @@ fn move_node(
         .iter()
         .position(|effect| declaration_matches_target("effect", &effect.id, &effect.name, target))
     {
+        ensure_no_move_destination(payload, target)?;
         if let Some(module) =
             declaration_move_parent_module(program, payload, target, "effect", "effects")?
         {
@@ -937,6 +942,7 @@ fn move_node(
         .iter()
         .position(|import| import_matches_target(import, target))
     {
+        ensure_no_move_destination(payload, target)?;
         return move_index(
             &mut program.imports,
             index,
@@ -975,6 +981,22 @@ fn move_node(
         "GRAFT_TARGET_MISSING",
         format!("target `{target}` does not exist"),
     )])
+}
+
+fn ensure_no_move_destination(
+    payload: &MoveNodePayload,
+    target: &str,
+) -> Result<(), Vec<Diagnostic>> {
+    if payload.destination.is_none() {
+        return Ok(());
+    }
+    Err(vec![
+        Diagnostic::error(
+            "GRAFT_MOVE_UNSUPPORTED",
+            "MoveNode payload.destination is only supported for statement targets",
+        )
+        .with_node(target.to_string()),
+    ])
 }
 
 fn declaration_move_parent_module(
@@ -1106,6 +1128,9 @@ fn move_statement(
     target: &str,
     payload: &MoveNodePayload,
 ) -> Result<Option<String>, Vec<Diagnostic>> {
+    if payload.destination.is_some() {
+        return move_statement_to_destination(program, target, payload);
+    }
     for task in &mut program.tasks {
         let parent_root = format!("block:{}", task.id);
         if let Some(moved) = move_statement_in_block(&mut task.body, &parent_root, target, payload)?
@@ -1114,6 +1139,355 @@ fn move_statement(
         }
     }
     Ok(None)
+}
+
+fn move_statement_to_destination(
+    program: &mut Program,
+    target: &str,
+    payload: &MoveNodePayload,
+) -> Result<Option<String>, Vec<Diagnostic>> {
+    let Some(destination_parent) = payload.destination.as_deref() else {
+        return Ok(None);
+    };
+    let Some(source_parent) = statement_parent(program, target) else {
+        return Ok(None);
+    };
+    ensure_parent_matches(payload, &source_parent, target)?;
+    if destination_parent == source_parent {
+        return move_statement(program, target, &payload.without_destination());
+    }
+    if destination_parent == target
+        || destination_parent
+            .strip_prefix(target)
+            .is_some_and(|suffix| suffix.starts_with(':'))
+    {
+        return Err(vec![
+            Diagnostic::error(
+                "GRAFT_MOVE_UNSUPPORTED",
+                format!("MoveNode cannot move statement `{target}` into its own child block"),
+            )
+            .with_node(target.to_string()),
+        ]);
+    }
+    let Some(destination_len) = statement_block_len(program, destination_parent) else {
+        return Err(vec![
+            Diagnostic::error(
+                "GRAFT_TARGET_MISSING",
+                format!("MoveNode destination parent `{destination_parent}` does not exist"),
+            )
+            .with_node(destination_parent.to_string()),
+        ]);
+    };
+    if payload.position > destination_len {
+        return Err(position_out_of_range(
+            target,
+            payload.position,
+            destination_len,
+            destination_parent,
+        ));
+    }
+    let Some(statement) = remove_statement_from_parent(program, &source_parent, target) else {
+        return Ok(None);
+    };
+    if insert_statement_into_parent(program, destination_parent, payload.position, statement) {
+        return Ok(Some(format!(
+            "statement:{source_parent}->{destination_parent}:{}",
+            payload.position
+        )));
+    }
+    Err(vec![
+        Diagnostic::error(
+            "GRAFT_TARGET_MISSING",
+            format!("MoveNode destination parent `{destination_parent}` does not exist"),
+        )
+        .with_node(destination_parent.to_string()),
+    ])
+}
+
+impl MoveNodePayload {
+    fn without_destination(&self) -> Self {
+        Self {
+            position: self.position,
+            parent: self.parent.clone(),
+            destination: None,
+        }
+    }
+}
+
+fn statement_parent(program: &Program, target: &str) -> Option<String> {
+    for task in &program.tasks {
+        let parent_root = format!("block:{}", task.id);
+        if let Some(parent) = statement_parent_in_block(&task.body, &parent_root, target) {
+            return Some(parent);
+        }
+    }
+    None
+}
+
+fn statement_parent_in_block(block: &Block, parent_root: &str, target: &str) -> Option<String> {
+    if block
+        .statements
+        .iter()
+        .any(|statement| statement.id == target)
+    {
+        return Some(parent_root.to_string());
+    }
+    for statement in &block.statements {
+        if let Some(parent) = statement_parent_in_statement(statement, target) {
+            return Some(parent);
+        }
+    }
+    None
+}
+
+fn statement_parent_in_statement(statement: &Statement, target: &str) -> Option<String> {
+    match &statement.kind {
+        StatementKind::If {
+            then_block,
+            else_block,
+            ..
+        } => {
+            let then_root = format!("{}:then", statement.id);
+            if let Some(parent) = statement_parent_in_block(then_block, &then_root, target) {
+                return Some(parent);
+            }
+            if let Some(else_block) = else_block {
+                let else_root = format!("{}:else", statement.id);
+                return statement_parent_in_block(else_block, &else_root, target);
+            }
+            None
+        }
+        StatementKind::While { body, .. } | StatementKind::For { body, .. } => {
+            let body_root = format!("{}:body", statement.id);
+            statement_parent_in_block(body, &body_root, target)
+        }
+        StatementKind::Forge { body } => {
+            let forge_root = format!("{}:forge", statement.id);
+            statement_parent_in_block(body, &forge_root, target)
+        }
+        StatementKind::Binding { .. }
+        | StatementKind::Set { .. }
+        | StatementKind::Return { .. }
+        | StatementKind::Expr { .. } => None,
+    }
+}
+
+fn statement_block_len(program: &Program, parent: &str) -> Option<usize> {
+    for task in &program.tasks {
+        let parent_root = format!("block:{}", task.id);
+        if let Some(len) = statement_block_len_in_block(&task.body, &parent_root, parent) {
+            return Some(len);
+        }
+    }
+    None
+}
+
+fn statement_block_len_in_block(block: &Block, parent_root: &str, parent: &str) -> Option<usize> {
+    if parent_root == parent {
+        return Some(block.statements.len());
+    }
+    for statement in &block.statements {
+        if let Some(len) = statement_block_len_in_statement(statement, parent) {
+            return Some(len);
+        }
+    }
+    None
+}
+
+fn statement_block_len_in_statement(statement: &Statement, parent: &str) -> Option<usize> {
+    match &statement.kind {
+        StatementKind::If {
+            then_block,
+            else_block,
+            ..
+        } => {
+            let then_root = format!("{}:then", statement.id);
+            if let Some(len) = statement_block_len_in_block(then_block, &then_root, parent) {
+                return Some(len);
+            }
+            if let Some(else_block) = else_block {
+                let else_root = format!("{}:else", statement.id);
+                return statement_block_len_in_block(else_block, &else_root, parent);
+            }
+            None
+        }
+        StatementKind::While { body, .. } | StatementKind::For { body, .. } => {
+            let body_root = format!("{}:body", statement.id);
+            statement_block_len_in_block(body, &body_root, parent)
+        }
+        StatementKind::Forge { body } => {
+            let forge_root = format!("{}:forge", statement.id);
+            statement_block_len_in_block(body, &forge_root, parent)
+        }
+        StatementKind::Binding { .. }
+        | StatementKind::Set { .. }
+        | StatementKind::Return { .. }
+        | StatementKind::Expr { .. } => None,
+    }
+}
+
+fn remove_statement_from_parent(
+    program: &mut Program,
+    parent: &str,
+    target: &str,
+) -> Option<Statement> {
+    for task in &mut program.tasks {
+        let parent_root = format!("block:{}", task.id);
+        if let Some(statement) =
+            remove_statement_from_parent_in_block(&mut task.body, &parent_root, parent, target)
+        {
+            return Some(statement);
+        }
+    }
+    None
+}
+
+fn remove_statement_from_parent_in_block(
+    block: &mut Block,
+    parent_root: &str,
+    parent: &str,
+    target: &str,
+) -> Option<Statement> {
+    if parent_root == parent
+        && let Some(index) = block
+            .statements
+            .iter()
+            .position(|statement| statement.id == target)
+    {
+        return Some(block.statements.remove(index));
+    }
+    for statement in &mut block.statements {
+        if let Some(removed) = remove_statement_from_parent_in_statement(statement, parent, target)
+        {
+            return Some(removed);
+        }
+    }
+    None
+}
+
+fn remove_statement_from_parent_in_statement(
+    statement: &mut Statement,
+    parent: &str,
+    target: &str,
+) -> Option<Statement> {
+    match &mut statement.kind {
+        StatementKind::If {
+            then_block,
+            else_block,
+            ..
+        } => {
+            let then_root = format!("{}:then", statement.id);
+            if let Some(removed) =
+                remove_statement_from_parent_in_block(then_block, &then_root, parent, target)
+            {
+                return Some(removed);
+            }
+            if let Some(else_block) = else_block {
+                let else_root = format!("{}:else", statement.id);
+                return remove_statement_from_parent_in_block(
+                    else_block, &else_root, parent, target,
+                );
+            }
+            None
+        }
+        StatementKind::While { body, .. } | StatementKind::For { body, .. } => {
+            let body_root = format!("{}:body", statement.id);
+            remove_statement_from_parent_in_block(body, &body_root, parent, target)
+        }
+        StatementKind::Forge { body } => {
+            let forge_root = format!("{}:forge", statement.id);
+            remove_statement_from_parent_in_block(body, &forge_root, parent, target)
+        }
+        StatementKind::Binding { .. }
+        | StatementKind::Set { .. }
+        | StatementKind::Return { .. }
+        | StatementKind::Expr { .. } => None,
+    }
+}
+
+fn insert_statement_into_parent(
+    program: &mut Program,
+    parent: &str,
+    position: usize,
+    statement: Statement,
+) -> bool {
+    let mut statement = Some(statement);
+    for task in &mut program.tasks {
+        let parent_root = format!("block:{}", task.id);
+        if insert_statement_into_parent_in_block(
+            &mut task.body,
+            &parent_root,
+            parent,
+            position,
+            &mut statement,
+        ) {
+            return true;
+        }
+    }
+    false
+}
+
+fn insert_statement_into_parent_in_block(
+    block: &mut Block,
+    parent_root: &str,
+    parent: &str,
+    position: usize,
+    statement: &mut Option<Statement>,
+) -> bool {
+    if parent_root == parent {
+        let Some(statement) = statement.take() else {
+            return false;
+        };
+        block.statements.insert(position, statement);
+        return true;
+    }
+    for child in &mut block.statements {
+        if insert_statement_into_parent_in_statement(child, parent, position, statement) {
+            return true;
+        }
+    }
+    false
+}
+
+fn insert_statement_into_parent_in_statement(
+    statement_node: &mut Statement,
+    parent: &str,
+    position: usize,
+    statement: &mut Option<Statement>,
+) -> bool {
+    match &mut statement_node.kind {
+        StatementKind::If {
+            then_block,
+            else_block,
+            ..
+        } => {
+            let then_root = format!("{}:then", statement_node.id);
+            if insert_statement_into_parent_in_block(
+                then_block, &then_root, parent, position, statement,
+            ) {
+                return true;
+            }
+            if let Some(else_block) = else_block {
+                let else_root = format!("{}:else", statement_node.id);
+                return insert_statement_into_parent_in_block(
+                    else_block, &else_root, parent, position, statement,
+                );
+            }
+            false
+        }
+        StatementKind::While { body, .. } | StatementKind::For { body, .. } => {
+            let body_root = format!("{}:body", statement_node.id);
+            insert_statement_into_parent_in_block(body, &body_root, parent, position, statement)
+        }
+        StatementKind::Forge { body } => {
+            let forge_root = format!("{}:forge", statement_node.id);
+            insert_statement_into_parent_in_block(body, &forge_root, parent, position, statement)
+        }
+        StatementKind::Binding { .. }
+        | StatementKind::Set { .. }
+        | StatementKind::Return { .. }
+        | StatementKind::Expr { .. } => false,
+    }
 }
 
 fn move_statement_in_block(

@@ -735,6 +735,117 @@ task main -> Int {
 }
 
 #[test]
+fn move_node_graft_moves_statement_across_blocks() {
+    let source = r#"
+task main -> Int {
+  tally total = 1
+  if true {
+    set total = total + 1
+  }
+  return total
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let graft_source = r#"
+{
+  "op": "MoveNode",
+  "target": "block:task:main.main:stmt:1:then:stmt:0",
+  "payload": {
+    "parent": "block:task:main.main:stmt:1:then",
+    "destination": "block:task:main.main",
+    "position": 1
+  }
+}
+"#;
+    let graft: GraftInput = serde_json::from_str(graft_source).expect("parse graft");
+    let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
+
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted_source = outcome.source.as_deref().expect("grafted source");
+    assert!(
+        grafted_source
+            .find("set total = total + 1")
+            .expect("moved set")
+            < grafted_source.find("if true").expect("if statement"),
+        "{grafted_source}"
+    );
+    let grafted = parse_program(grafted_source).expect("parse grafted source");
+    assert_eq!(run_main(&grafted), Ok(Value::Int(2)));
+}
+
+#[test]
+fn move_node_rejects_statement_move_into_own_child_block() {
+    let source = r#"
+task main -> Int {
+  if true {
+    return 1
+  }
+  return 2
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let graft_source = r#"
+{
+  "op": "MoveNode",
+  "target": "block:task:main.main:stmt:0",
+  "payload": {
+    "destination": "block:task:main.main:stmt:0:then",
+    "position": 0
+  }
+}
+"#;
+    let graft: GraftInput = serde_json::from_str(graft_source).expect("parse graft");
+    let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
+
+    assert_eq!(outcome.status, "rejected");
+    assert!(
+        outcome
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.id == "GRAFT_MOVE_UNSUPPORTED"),
+        "expected move unsupported diagnostic, got {:#?}",
+        outcome.diagnostics
+    );
+}
+
+#[test]
+fn move_node_rejects_destination_for_declaration_moves() {
+    let source = r#"
+task helper -> Int {
+  return 1
+}
+
+task main -> Int {
+  return call helper()
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let graft_source = r#"
+{
+  "op": "MoveNode",
+  "target": "task:main.helper",
+  "payload": {
+    "parent": "program.tasks",
+    "destination": "block:task:main.main",
+    "position": 0
+  }
+}
+"#;
+    let graft: GraftInput = serde_json::from_str(graft_source).expect("parse graft");
+    let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
+
+    assert_eq!(outcome.status, "rejected");
+    assert!(
+        outcome
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.id == "GRAFT_MOVE_UNSUPPORTED"),
+        "expected move unsupported diagnostic, got {:#?}",
+        outcome.diagnostics
+    );
+}
+
+#[test]
 fn move_node_rejects_expression_targets() {
     let source = "task main -> Int {\n  return 1 + 41\n}\n";
     let program = parse_program(source).expect("parse source");

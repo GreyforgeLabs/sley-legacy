@@ -102,5 +102,8 @@ Current development phase:
   module rename, including manifest entry updates; top-level type/effect/task
   movement into known modules is supported, including AddImport-then-MoveNode
   transactions that create new module files from moved declarations
+- `MoveNode` supports cross-parent statement movement between existing block
+  parents with `payload.destination`; take and expression movement remain
+  explicit rejections
 - manifest-backed accepted/rejected synthetic gold corpus growth
 - broader graph-slice graft operations around move/delete planning
