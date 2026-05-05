@@ -941,6 +941,27 @@ task orphan -> Int {
         include_str!("../fixtures/contracts/lint_unreachable_private_task.json"),
     );
 
+    let effect_lint_source = r#"
+module app.effects
+
+task main -> Text uses Network {
+  return "ready"
+}
+"#;
+    let effect_lint_program =
+        parse_program(effect_lint_source).expect("parse unused effect lint fixture");
+    let effect_lint = build_lint_report(
+        &effect_lint_program,
+        LintOptions {
+            rules: vec![LintRule::UnusedDeclaredEffect],
+            module: None,
+        },
+    );
+    assert_json_snapshot(
+        &effect_lint,
+        include_str!("../fixtures/contracts/lint_unused_declared_effect.json"),
+    );
+
     let hello_source = include_str!("../examples/hello.sley");
     let hello_program = parse_program(hello_source).expect("parse hello fixture");
     let seal = build_trace_seal(
@@ -3599,6 +3620,14 @@ export task read -> Text uses Read {
         !has_errors(&diagnostics),
         "unexpected diagnostics: {diagnostics:#?}"
     );
+    let lint = build_lint_report(
+        &project.program,
+        LintOptions {
+            rules: vec![LintRule::UnusedDeclaredEffect],
+            module: Some("app.main".to_string()),
+        },
+    );
+    assert_eq!(lint.status, "ok", "unexpected lint findings: {lint:#?}");
 
     let _ = fs::remove_dir_all(root);
 }
@@ -3798,6 +3827,51 @@ task orphan -> Int {
     assert_eq!(report.findings[0].id, "UNREACHABLE_PRIVATE_TASK");
     assert_eq!(report.findings[0].node, "task:app.reach.cycle_a");
     assert_eq!(report.findings[1].node, "task:app.reach.cycle_b");
+}
+
+#[test]
+fn lint_report_flags_unused_declared_effects() {
+    let source = r#"
+module app.effects
+
+task main -> Text uses FileRead {
+  return call read_name("/tmp/name.txt")
+}
+
+task read_name -> Text uses FileRead {
+  take path: Text
+
+  return fs.read_text(path)
+}
+
+task stale -> Text uses Network {
+  return "unused"
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+
+    let report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::UnusedDeclaredEffect],
+            module: None,
+        },
+    );
+
+    assert_eq!(report.schema, LINT_REPORT_SCHEMA);
+    assert_eq!(report.status, "findings");
+    assert_eq!(report.entry_module, "app.effects");
+    assert_eq!(report.filters.rules, vec!["unused_declared_effect"]);
+    assert_eq!(report.findings.len(), 1);
+    assert_eq!(report.findings[0].id, "UNUSED_DECLARED_EFFECT");
+    assert_eq!(report.findings[0].node, "task:app.effects.stale");
+    assert_eq!(report.findings[0].module, "app.effects");
+    assert!(report.findings[0].message.contains("Network"));
 }
 
 #[test]
@@ -4287,6 +4361,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "cli:seal",
         "cli:zjx",
         "cli:graft-dry-run",
+        "lint:unused_declared_effect",
         "host:DatabaseRead",
         "host:DatabaseWrite",
         "host:Deploy",

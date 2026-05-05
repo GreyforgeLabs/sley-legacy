@@ -4,7 +4,9 @@ use serde::Serialize;
 
 use crate::ast::Program;
 use crate::query::{QueryKind, QueryOptions, build_query_report};
-use crate::symbols::{collect_task_calls, task_fq_name, task_module};
+use crate::symbols::{
+    EffectResolution, collect_task_calls, resolve_effect, task_fq_name, task_module,
+};
 
 pub const LINT_REPORT_SCHEMA: &str = "sley.lint.report.v0";
 
@@ -12,17 +14,23 @@ pub const LINT_REPORT_SCHEMA: &str = "sley.lint.report.v0";
 pub enum LintRule {
     UnusedPrivateTask,
     UnreachablePrivateTask,
+    UnusedDeclaredEffect,
 }
 
 impl LintRule {
     pub fn all() -> Vec<Self> {
-        vec![Self::UnusedPrivateTask, Self::UnreachablePrivateTask]
+        vec![
+            Self::UnusedPrivateTask,
+            Self::UnreachablePrivateTask,
+            Self::UnusedDeclaredEffect,
+        ]
     }
 
     pub fn as_str(self) -> &'static str {
         match self {
             Self::UnusedPrivateTask => "unused_private_task",
             Self::UnreachablePrivateTask => "unreachable_private_task",
+            Self::UnusedDeclaredEffect => "unused_declared_effect",
         }
     }
 }
@@ -71,6 +79,12 @@ pub fn build_lint_report(program: &Program, options: LintOptions) -> LintReport 
     }
     if rules.contains(&LintRule::UnreachablePrivateTask) {
         findings.extend(lint_unreachable_private_tasks(
+            program,
+            options.module.as_deref(),
+        ));
+    }
+    if rules.contains(&LintRule::UnusedDeclaredEffect) {
+        findings.extend(lint_unused_declared_effects(
             program,
             options.module.as_deref(),
         ));
@@ -218,6 +232,112 @@ fn lint_unreachable_private_tasks(program: &Program, module: Option<&str>) -> Ve
         .collect()
 }
 
+fn lint_unused_declared_effects(program: &Program, module: Option<&str>) -> Vec<LintFinding> {
+    let task_effects = program
+        .tasks
+        .iter()
+        .map(|task| {
+            let task_module = task_module(task);
+            (
+                task_fq_name(task),
+                task.effects
+                    .iter()
+                    .map(|effect| normalize_effect_name(program, &task_module, effect))
+                    .collect::<Vec<_>>(),
+            )
+        })
+        .collect::<BTreeMap<_, _>>();
+    let calls = collect_task_calls(program);
+
+    program
+        .tasks
+        .iter()
+        .filter(|task| module_matches(module, &task_module(task)))
+        .filter(|task| !task.effects.is_empty())
+        .flat_map(|task| {
+            let qualified_name = task_fq_name(task);
+            let module_name = task_module(task);
+            let declared = task
+                .effects
+                .iter()
+                .map(|effect| {
+                    (
+                        effect.clone(),
+                        normalize_effect_name(program, &module_name, effect),
+                    )
+                })
+                .collect::<Vec<_>>();
+            let declared_normalized = declared
+                .iter()
+                .map(|(_raw, normalized)| normalized.clone())
+                .collect::<BTreeSet<_>>();
+            let mut used = BTreeSet::new();
+            for call in calls.iter().filter(|call| call.from == qualified_name) {
+                if let Some(effects) = host_effects_for_callee(&call.callee) {
+                    for effect in effects {
+                        if declared_normalized.contains(*effect) {
+                            used.insert((*effect).to_string());
+                        }
+                    }
+                }
+                if let Some(target) = &call.target
+                    && let Some(effects) = task_effects.get(target)
+                {
+                    for effect in effects {
+                        if declared_normalized.contains(effect) {
+                            used.insert(effect.clone());
+                        }
+                    }
+                }
+            }
+            declared
+                .into_iter()
+                .filter(move |(_effect, normalized)| !used.contains(normalized))
+                .map(move |(effect, _normalized)| LintFinding {
+                    id: "UNUSED_DECLARED_EFFECT".to_string(),
+                    rule: LintRule::UnusedDeclaredEffect.as_str().to_string(),
+                    severity: "warning".to_string(),
+                    message: format!(
+                        "task `{qualified_name}` declares effect `{effect}` but no checked call uses it"
+                    ),
+                    node: task.id.clone(),
+                    module: module_name.clone(),
+                    hint: format!(
+                        "remove `{effect}` from the task uses list, or add a real checked call that requires it"
+                    ),
+                })
+        })
+        .collect()
+}
+
 fn module_matches(filter: Option<&str>, module: &str) -> bool {
     filter.is_none_or(|filter| filter == module)
+}
+
+fn host_effects_for_callee(callee: &str) -> Option<&'static [&'static str]> {
+    match callee {
+        "fs.read_text" | "fs.try_read_text" => Some(&["FileRead"]),
+        "fs.write_text" | "fs.try_write_text" => Some(&["FileWrite"]),
+        "db.query_one" | "db.query" | "db.try_query_one" | "db.try_query" => {
+            Some(&["DatabaseRead", "DbRead"])
+        }
+        "db.try_insert" => Some(&["DatabaseWrite", "DbWrite"]),
+        "model.try_complete" => Some(&["ModelCall"]),
+        "http.try_get_text" => Some(&["Network"]),
+        "shell.try_run" => Some(&["Shell"]),
+        "secrets.try_get" => Some(&["SecretRead"]),
+        "deploy.try_stage" => Some(&["Deploy"]),
+        "spend.try_authorize" => Some(&["Spend"]),
+        _ => None,
+    }
+}
+
+fn normalize_effect_name(program: &Program, module: &str, effect: &str) -> String {
+    match resolve_effect(program, module, effect) {
+        EffectResolution::Builtin(name) => name,
+        EffectResolution::Resolved { fq_name, .. } => fq_name,
+        EffectResolution::Unknown
+        | EffectResolution::Ambiguous(_)
+        | EffectResolution::Private(_) => effect.to_string(),
+    }
 }

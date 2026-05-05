@@ -599,6 +599,7 @@ impl From<CliQueryKind> for QueryKind {
 enum CliLintRule {
     UnusedPrivateTask,
     UnreachablePrivateTask,
+    UnusedDeclaredEffect,
 }
 
 impl From<CliLintRule> for LintRule {
@@ -606,6 +607,7 @@ impl From<CliLintRule> for LintRule {
         match rule {
             CliLintRule::UnusedPrivateTask => Self::UnusedPrivateTask,
             CliLintRule::UnreachablePrivateTask => Self::UnreachablePrivateTask,
+            CliLintRule::UnusedDeclaredEffect => Self::UnusedDeclaredEffect,
         }
     }
 }

@@ -97,7 +97,7 @@ sley graph --json --slice <node-id> <target>
 sley new --json [--template hello|deploy] [--name <name>] [--module <module>] <path>
 sley doctor --json [--deny-warnings] <target>
 sley query --json [--kind all|modules|tasks|calls] [--module <module>] <target>
-sley lint --json [--rule unused-private-task|unreachable-private-task] [--module <module>] <target>
+sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect] [--module <module>] <target>
 sley trace --json <target>
 sley seal --json <target>
 sley zjx --json [--slice <node-id>] <target>
@@ -387,19 +387,22 @@ surface. It runs the checker before linting, emits
 `schema: "sley.lint.report.v0"`, and keeps warning-grade lint output separate
 from hard checker diagnostics.
 
-The v0 private-task rules are:
+The v0 lint rules are:
 
 - `unused_private_task`: a non-exported task with zero inbound checked calls is
   reported unless it is the entry module's `main` task.
 - `unreachable_private_task`: a non-exported task with inbound private calls is
   reported when it is not reachable from `main` or any exported task.
+- `unused_declared_effect`: a task-declared effect is reported when no direct
+  host call or resolved called-task effect justifies it.
 
 The command supports `--module <module>`, `--rule unused-private-task`,
-`--rule unreachable-private-task`, and `--deny-warnings` lets CI turn findings
-into a failing exit after the JSON report is printed.
+`--rule unreachable-private-task`, `--rule unused-declared-effect`, and
+`--deny-warnings` lets CI turn findings into a failing exit after the JSON
+report is printed.
 
 This is not production lint coverage yet. It is the first stable surface for
-agent-facing hygiene, later authority lints, migration hints, and eventually
+agent-facing hygiene, authority lints, migration hints, and eventually
 non-authoritative Sley helper passes that consume `sley.query.report.v0` and
 `sley.lint.report.v0`.
 

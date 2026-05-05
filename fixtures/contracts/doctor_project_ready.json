@@ -29,7 +29,8 @@
     "status": "ok",
     "rules": [
       "unused_private_task",
-      "unreachable_private_task"
+      "unreachable_private_task",
+      "unused_declared_effect"
     ],
     "finding_count": 0
   },

@@ -16,7 +16,11 @@
         "rules": {
           "type": "array",
           "items": {
-            "enum": ["unused_private_task", "unreachable_private_task"]
+            "enum": [
+              "unused_private_task",
+              "unreachable_private_task",
+              "unused_declared_effect"
+            ]
           },
           "uniqueItems": true
         }
@@ -38,10 +42,18 @@
         ],
         "properties": {
           "id": {
-            "enum": ["UNUSED_PRIVATE_TASK", "UNREACHABLE_PRIVATE_TASK"]
+            "enum": [
+              "UNUSED_PRIVATE_TASK",
+              "UNREACHABLE_PRIVATE_TASK",
+              "UNUSED_DECLARED_EFFECT"
+            ]
           },
           "rule": {
-            "enum": ["unused_private_task", "unreachable_private_task"]
+            "enum": [
+              "unused_private_task",
+              "unreachable_private_task",
+              "unused_declared_effect"
+            ]
           },
           "severity": { "enum": ["warning"] },
           "message": { "type": "string" },

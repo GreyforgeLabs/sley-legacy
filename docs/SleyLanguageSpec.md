@@ -584,15 +584,17 @@ declared effects, and inbound/outbound call counts. The v0 JSON root is
 
 `sley lint` is the first checked lint command built on the graph query surface.
 It parses and checks the target before emitting results, so semantic failures
-return the normal diagnostic report instead of a lint report. The v0
-private-task rules are `unused_private_task`, which warns on non-exported tasks
-with zero inbound checked calls excluding the entry module's `main`, and
-`unreachable_private_task`, which warns on private task islands that are only
-reachable from other private tasks rather than from `main` or an exported task.
-`--module <module>` scopes the lint to one module,
-`--rule unused-private-task` or `--rule unreachable-private-task` selects one
-rule explicitly, and `--deny-warnings` turns findings into a nonzero CLI exit
-after printing the report. The v0 JSON root is `sley.lint.report.v0`.
+return the normal diagnostic report instead of a lint report. The v0 rules are
+`unused_private_task`, which warns on non-exported tasks with zero inbound
+checked calls excluding the entry module's `main`; `unreachable_private_task`,
+which warns on private task islands that are only reachable from other private
+tasks rather than from `main` or an exported task; and
+`unused_declared_effect`, which warns when a task declares an effect that no
+direct host call or resolved called-task effect justifies. `--module <module>`
+scopes the lint to one module. `--rule unused-private-task`,
+`--rule unreachable-private-task`, or `--rule unused-declared-effect` selects
+one rule explicitly, and `--deny-warnings` turns findings into a nonzero CLI
+exit after printing the report. The v0 JSON root is `sley.lint.report.v0`.
 
 Diagnostics include machine-readable repair hints for common checker failures.
 Hints are intentionally small and structural: `kind` identifies the action,

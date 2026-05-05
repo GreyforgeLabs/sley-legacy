@@ -98,8 +98,9 @@ Implemented now:
   optional `--module` and `--exported` filters, and
   `schema: "sley.query.report.v0"` for tool-facing graph inspection
 - checked JSON lint reports with `sley lint`, optional `--module` and
-  `--rule unused-private-task` / `--rule unreachable-private-task` filters,
-  and `schema: "sley.lint.report.v0"` for warning-grade graph lints
+  `--rule unused-private-task`, `--rule unreachable-private-task`, or
+  `--rule unused-declared-effect` filters, and
+  `schema: "sley.lint.report.v0"` for warning-grade graph and authority lints
 - checked JSON readiness reports with `sley doctor`, consuming strict
   diagnostics plus query and lint summaries, and
   `schema: "sley.doctor.report.v0"` for agent pre-edit gates

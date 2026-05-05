@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.effects",
+  "filters": {
+    "module": null,
+    "rules": [
+      "unused_declared_effect"
+    ]
+  },
+  "findings": [
+    {
+      "id": "UNUSED_DECLARED_EFFECT",
+      "rule": "unused_declared_effect",
+      "severity": "warning",
+      "message": "task `app.effects.main` declares effect `Network` but no checked call uses it",
+      "node": "task:app.effects.main",
+      "module": "app.effects",
+      "hint": "remove `Network` from the task uses list, or add a real checked call that requires it"
+    }
+  ]
+}
