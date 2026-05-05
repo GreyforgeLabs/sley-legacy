@@ -104,6 +104,8 @@ pub enum GraftOperation {
     },
     DeleteNode {
         target: String,
+        #[serde(default)]
+        precondition: Option<JsonValue>,
     },
 }
 
@@ -579,14 +581,276 @@ fn apply_one(
             program.assign_ids();
             Ok(record(graft_id, actor, "ReplaceExpression", vec![target]))
         }
-        GraftOperation::MoveNode { target } | GraftOperation::DeleteNode { target } => {
-            Err(vec![Diagnostic::error(
-                "GRAFT_OPERATION_UNSUPPORTED",
-                format!(
-                    "graft operation for `{target}` is declared in the spec but not implemented yet"
-                ),
-            )])
+        GraftOperation::DeleteNode {
+            target,
+            precondition,
+        } => {
+            let task_index = owning_task_index_for_node(program, &target);
+            check_preconditions(program, task_index, precondition.as_ref())?;
+            let deleted = delete_node(program, &target)?;
+            program.assign_ids();
+            Ok(record(graft_id, actor, "DeleteNode", vec![target, deleted]))
         }
+        GraftOperation::MoveNode { target } => Err(vec![Diagnostic::error(
+            "GRAFT_OPERATION_UNSUPPORTED",
+            format!(
+                "graft operation for `{target}` is declared in the spec but not implemented yet"
+            ),
+        )]),
+    }
+}
+
+fn owning_task_index_for_node(program: &Program, target: &str) -> Option<usize> {
+    if let Some(index) = program.find_task_index(target) {
+        return Some(index);
+    }
+    program.tasks.iter().position(|task| {
+        task.takes
+            .iter()
+            .any(|take| take_matches_target(task, take, target))
+            || block_contains_statement(&task.body, target)
+            || block_contains_expr(&task.body, target)
+    })
+}
+
+fn delete_node(program: &mut Program, target: &str) -> Result<String, Vec<Diagnostic>> {
+    if let Some(index) = program.find_task_index(target) {
+        let task = program.tasks.remove(index);
+        return Ok(format!("task:{}", task.name));
+    }
+
+    if let Some(index) = program
+        .types
+        .iter()
+        .position(|ty| declaration_matches_target("type", &ty.id, &ty.name, target))
+    {
+        let ty = program.types.remove(index);
+        return Ok(format!("type:{}", ty.name));
+    }
+
+    if let Some(index) = program
+        .effects
+        .iter()
+        .position(|effect| declaration_matches_target("effect", &effect.id, &effect.name, target))
+    {
+        let effect = program.effects.remove(index);
+        return Ok(format!("effect:{}", effect.name));
+    }
+
+    if let Some(index) = program
+        .imports
+        .iter()
+        .position(|import| import_matches_target(import, target))
+    {
+        let import = program.imports.remove(index);
+        return Ok(format!("import:{}", import.module));
+    }
+
+    for task in &mut program.tasks {
+        if let Some(index) = task
+            .takes
+            .iter()
+            .position(|take| take_matches_target(task, take, target))
+        {
+            let take = task.takes.remove(index);
+            return Ok(format!("take:{}", take.name));
+        }
+    }
+
+    for task in &mut program.tasks {
+        if delete_statement_from_block(&mut task.body, target) {
+            return Ok("statement".to_string());
+        }
+    }
+
+    if expression_exists(program, target) {
+        return Err(vec![
+            Diagnostic::error(
+                "GRAFT_DELETE_UNSUPPORTED",
+                format!("expression target `{target}` cannot be deleted without replacement"),
+            )
+            .with_node(target.to_string()),
+        ]);
+    }
+
+    Err(vec![Diagnostic::error(
+        "GRAFT_TARGET_MISSING",
+        format!("target `{target}` does not exist"),
+    )])
+}
+
+fn declaration_matches_target(kind: &str, id: &str, name: &str, target: &str) -> bool {
+    target == id
+        || target == format!("{kind}:{name}")
+        || target
+            .strip_prefix(&format!("{kind}:"))
+            .is_some_and(|bare| bare == name || id.ends_with(&format!(".{bare}")))
+}
+
+fn import_matches_target(import: &ImportDecl, target: &str) -> bool {
+    target == import.id
+        || target == import.module
+        || target == format!("import:{}", import.module)
+        || import
+            .alias
+            .as_deref()
+            .is_some_and(|alias| target == format!("import:{alias}") || target == alias)
+}
+
+fn take_matches_target(task: &TaskDecl, take: &TakeDecl, target: &str) -> bool {
+    target == take.id || target == format!("take:{}:{}", task.id, take.name)
+}
+
+fn block_contains_statement(block: &Block, target: &str) -> bool {
+    block
+        .statements
+        .iter()
+        .any(|statement| statement.id == target || statement_contains_statement(statement, target))
+}
+
+fn statement_contains_statement(statement: &Statement, target: &str) -> bool {
+    match &statement.kind {
+        StatementKind::If {
+            then_block,
+            else_block,
+            ..
+        } => {
+            block_contains_statement(then_block, target)
+                || else_block
+                    .as_ref()
+                    .is_some_and(|block| block_contains_statement(block, target))
+        }
+        StatementKind::While { body, .. }
+        | StatementKind::For { body, .. }
+        | StatementKind::Forge { body } => block_contains_statement(body, target),
+        StatementKind::Binding { .. }
+        | StatementKind::Set { .. }
+        | StatementKind::Return { .. }
+        | StatementKind::Expr { .. } => false,
+    }
+}
+
+fn delete_statement_from_block(block: &mut Block, target: &str) -> bool {
+    if let Some(index) = block
+        .statements
+        .iter()
+        .position(|statement| statement.id == target)
+    {
+        block.statements.remove(index);
+        return true;
+    }
+
+    block
+        .statements
+        .iter_mut()
+        .any(|statement| delete_statement_in_statement(statement, target))
+}
+
+fn delete_statement_in_statement(statement: &mut Statement, target: &str) -> bool {
+    match &mut statement.kind {
+        StatementKind::If {
+            then_block,
+            else_block,
+            ..
+        } => {
+            delete_statement_from_block(then_block, target)
+                || else_block
+                    .as_mut()
+                    .is_some_and(|block| delete_statement_from_block(block, target))
+        }
+        StatementKind::While { body, .. }
+        | StatementKind::For { body, .. }
+        | StatementKind::Forge { body } => delete_statement_from_block(body, target),
+        StatementKind::Binding { .. }
+        | StatementKind::Set { .. }
+        | StatementKind::Return { .. }
+        | StatementKind::Expr { .. } => false,
+    }
+}
+
+fn block_contains_expr(block: &Block, target: &str) -> bool {
+    block
+        .statements
+        .iter()
+        .any(|statement| statement_contains_expr(statement, target))
+}
+
+fn statement_contains_expr(statement: &Statement, target: &str) -> bool {
+    match &statement.kind {
+        StatementKind::Binding { expr, .. }
+        | StatementKind::Set { expr, .. }
+        | StatementKind::Return { expr }
+        | StatementKind::Expr { expr } => expr_contains_target(expr, target),
+        StatementKind::If {
+            condition,
+            then_block,
+            else_block,
+        } => {
+            expr_contains_target(condition, target)
+                || block_contains_expr(then_block, target)
+                || else_block
+                    .as_ref()
+                    .is_some_and(|block| block_contains_expr(block, target))
+        }
+        StatementKind::While { condition, body } => {
+            expr_contains_target(condition, target) || block_contains_expr(body, target)
+        }
+        StatementKind::For {
+            collection, body, ..
+        } => expr_contains_target(collection, target) || block_contains_expr(body, target),
+        StatementKind::Forge { body } => block_contains_expr(body, target),
+    }
+}
+
+fn expression_exists(program: &Program, target: &str) -> bool {
+    program
+        .tasks
+        .iter()
+        .any(|task| block_contains_expr(&task.body, target))
+}
+
+fn expr_contains_target(expr: &Expr, target: &str) -> bool {
+    if expr.id == target {
+        return true;
+    }
+
+    match &expr.kind {
+        ExprKind::Unary { expr, .. } | ExprKind::Try { expr } => expr_contains_target(expr, target),
+        ExprKind::Binary { left, right, .. } => {
+            expr_contains_target(left, target) || expr_contains_target(right, target)
+        }
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
+            expr_contains_target(condition, target)
+                || expr_contains_target(then_branch, target)
+                || expr_contains_target(else_branch, target)
+        }
+        ExprKind::Call { callee, args } => {
+            expr_contains_target(callee, target)
+                || args.iter().any(|arg| expr_contains_target(arg, target))
+        }
+        ExprKind::ListLiteral { items } => {
+            items.iter().any(|item| expr_contains_target(item, target))
+        }
+        ExprKind::MapLiteral { entries } => entries.iter().any(|entry| {
+            expr_contains_target(&entry.key, target) || expr_contains_target(&entry.value, target)
+        }),
+        ExprKind::Index { collection, index } => {
+            expr_contains_target(collection, target) || expr_contains_target(index, target)
+        }
+        ExprKind::FieldAccess { receiver, .. } => expr_contains_target(receiver, target),
+        ExprKind::RecordLiteral { fields, .. } => fields
+            .iter()
+            .any(|field| expr_contains_target(&field.expr, target)),
+        ExprKind::Raw { .. }
+        | ExprKind::StringLiteral { .. }
+        | ExprKind::IntLiteral { .. }
+        | ExprKind::FloatLiteral { .. }
+        | ExprKind::BoolLiteral { .. }
+        | ExprKind::Identifier { .. } => false,
     }
 }
 

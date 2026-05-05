@@ -1,0 +1,11 @@
+{
+  "transaction": "graft_delete_debug_statement",
+  "mode": "all_or_nothing",
+  "ops": [
+    {
+      "op": "DeleteNode",
+      "target": "block:task:main.main:stmt:0",
+      "precondition": { "task_exists": true }
+    }
+  ]
+}

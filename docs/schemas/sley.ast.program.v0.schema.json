@@ -6,12 +6,560 @@
   "required": ["schema", "imports", "types", "effects", "tasks"],
   "properties": {
     "schema": { "const": "sley.ast.program.v0" },
-    "module": { "type": "string" },
-    "imports": { "type": "array", "items": { "type": "object" } },
-    "types": { "type": "array", "items": { "type": "object" } },
-    "effects": { "type": "array", "items": { "type": "object" } },
-    "tasks": { "type": "array", "items": { "type": "object" } },
-    "provenance": { "type": "array", "items": { "type": "object" } }
+    "module": { "type": "string", "minLength": 1 },
+    "imports": { "type": "array", "items": { "$ref": "#/$defs/importDecl" } },
+    "types": { "type": "array", "items": { "$ref": "#/$defs/typeDecl" } },
+    "effects": { "type": "array", "items": { "$ref": "#/$defs/effectDecl" } },
+    "tasks": { "type": "array", "items": { "$ref": "#/$defs/taskDecl" } },
+    "provenance": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/provenanceRecord" }
+    }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "$defs": {
+    "nodeId": { "type": "string", "minLength": 1 },
+    "name": { "type": "string", "minLength": 1 },
+    "moduleName": { "type": "string", "minLength": 1 },
+    "sourceSpan": {
+      "type": "object",
+      "required": ["line", "column"],
+      "properties": {
+        "line": { "type": "integer", "minimum": 1 },
+        "column": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "importDecl": {
+      "type": "object",
+      "required": ["id", "module"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nodeId" },
+        "owner_module": { "$ref": "#/$defs/moduleName" },
+        "module": { "$ref": "#/$defs/moduleName" },
+        "alias": { "$ref": "#/$defs/name" },
+        "span": { "$ref": "#/$defs/sourceSpan" }
+      },
+      "additionalProperties": false
+    },
+    "typeDecl": {
+      "type": "object",
+      "required": ["id", "name", "value"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nodeId" },
+        "module": { "$ref": "#/$defs/moduleName" },
+        "exported": { "type": "boolean" },
+        "name": { "$ref": "#/$defs/name" },
+        "value": { "$ref": "#/$defs/typeExpr" },
+        "span": { "$ref": "#/$defs/sourceSpan" }
+      },
+      "additionalProperties": false
+    },
+    "effectDecl": {
+      "type": "object",
+      "required": ["id", "name"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nodeId" },
+        "module": { "$ref": "#/$defs/moduleName" },
+        "exported": { "type": "boolean" },
+        "name": { "$ref": "#/$defs/name" },
+        "span": { "$ref": "#/$defs/sourceSpan" }
+      },
+      "additionalProperties": false
+    },
+    "taskDecl": {
+      "type": "object",
+      "required": ["id", "name", "takes", "return_type", "effects", "body"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nodeId" },
+        "module": { "$ref": "#/$defs/moduleName" },
+        "exported": { "type": "boolean" },
+        "name": { "$ref": "#/$defs/name" },
+        "takes": { "type": "array", "items": { "$ref": "#/$defs/takeDecl" } },
+        "return_type": { "$ref": "#/$defs/typeExpr" },
+        "effects": { "type": "array", "items": { "$ref": "#/$defs/name" } },
+        "body": { "$ref": "#/$defs/block" },
+        "span": { "$ref": "#/$defs/sourceSpan" }
+      },
+      "additionalProperties": false
+    },
+    "takeDecl": {
+      "type": "object",
+      "required": ["id", "name", "binding_kind", "type"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nodeId" },
+        "name": { "$ref": "#/$defs/name" },
+        "binding_kind": { "$ref": "#/$defs/bindingKind" },
+        "type": { "$ref": "#/$defs/typeExpr" },
+        "span": { "$ref": "#/$defs/sourceSpan" }
+      },
+      "additionalProperties": false
+    },
+    "bindingKind": {
+      "enum": [
+        "Take",
+        "Bind",
+        "State",
+        "Cell",
+        "Knot",
+        "Slot",
+        "Gate",
+        "Lease",
+        "Veil",
+        "Dial",
+        "Flag",
+        "Memo",
+        "Cache",
+        "Derive",
+        "Flow",
+        "Port",
+        "Tally",
+        "Hole",
+        "Draft",
+        "Taint",
+        "Witness",
+        "Seal",
+        "Anchor",
+        "View",
+        "Cursor"
+      ]
+    },
+    "block": {
+      "type": "object",
+      "required": ["statements"],
+      "properties": {
+        "statements": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/statement" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "statement": {
+      "oneOf": [
+        { "$ref": "#/$defs/bindingStatement" },
+        { "$ref": "#/$defs/setStatement" },
+        { "$ref": "#/$defs/returnStatement" },
+        { "$ref": "#/$defs/exprStatement" },
+        { "$ref": "#/$defs/ifStatement" },
+        { "$ref": "#/$defs/whileStatement" },
+        { "$ref": "#/$defs/forStatement" },
+        { "$ref": "#/$defs/forgeStatement" }
+      ]
+    },
+    "bindingStatement": {
+      "type": "object",
+      "required": ["id", "kind", "binding_kind", "name", "expr"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nodeId" },
+        "kind": { "const": "Binding" },
+        "binding_kind": { "$ref": "#/$defs/bindingKind" },
+        "name": { "$ref": "#/$defs/name" },
+        "type_ann": { "$ref": "#/$defs/typeExpr" },
+        "expr": { "$ref": "#/$defs/expr" },
+        "span": { "$ref": "#/$defs/sourceSpan" }
+      },
+      "additionalProperties": false
+    },
+    "setStatement": {
+      "type": "object",
+      "required": ["id", "kind", "name", "expr"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nodeId" },
+        "kind": { "const": "Set" },
+        "name": { "$ref": "#/$defs/name" },
+        "expr": { "$ref": "#/$defs/expr" },
+        "span": { "$ref": "#/$defs/sourceSpan" }
+      },
+      "additionalProperties": false
+    },
+    "returnStatement": {
+      "type": "object",
+      "required": ["id", "kind", "expr"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nodeId" },
+        "kind": { "const": "Return" },
+        "expr": { "$ref": "#/$defs/expr" },
+        "span": { "$ref": "#/$defs/sourceSpan" }
+      },
+      "additionalProperties": false
+    },
+    "exprStatement": {
+      "type": "object",
+      "required": ["id", "kind", "expr"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nodeId" },
+        "kind": { "const": "Expr" },
+        "expr": { "$ref": "#/$defs/expr" },
+        "span": { "$ref": "#/$defs/sourceSpan" }
+      },
+      "additionalProperties": false
+    },
+    "ifStatement": {
+      "type": "object",
+      "required": ["id", "kind", "condition", "then_block"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nodeId" },
+        "kind": { "const": "If" },
+        "condition": { "$ref": "#/$defs/expr" },
+        "then_block": { "$ref": "#/$defs/block" },
+        "else_block": { "$ref": "#/$defs/block" },
+        "span": { "$ref": "#/$defs/sourceSpan" }
+      },
+      "additionalProperties": false
+    },
+    "whileStatement": {
+      "type": "object",
+      "required": ["id", "kind", "condition", "body"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nodeId" },
+        "kind": { "const": "While" },
+        "condition": { "$ref": "#/$defs/expr" },
+        "body": { "$ref": "#/$defs/block" },
+        "span": { "$ref": "#/$defs/sourceSpan" }
+      },
+      "additionalProperties": false
+    },
+    "forStatement": {
+      "type": "object",
+      "required": ["id", "kind", "item", "collection", "body"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nodeId" },
+        "kind": { "const": "For" },
+        "item": { "$ref": "#/$defs/name" },
+        "collection": { "$ref": "#/$defs/expr" },
+        "body": { "$ref": "#/$defs/block" },
+        "span": { "$ref": "#/$defs/sourceSpan" }
+      },
+      "additionalProperties": false
+    },
+    "forgeStatement": {
+      "type": "object",
+      "required": ["id", "kind", "body"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nodeId" },
+        "kind": { "const": "Forge" },
+        "body": { "$ref": "#/$defs/block" },
+        "span": { "$ref": "#/$defs/sourceSpan" }
+      },
+      "additionalProperties": false
+    },
+    "expr": {
+      "oneOf": [
+        { "$ref": "#/$defs/rawExpr" },
+        { "$ref": "#/$defs/stringLiteralExpr" },
+        { "$ref": "#/$defs/intLiteralExpr" },
+        { "$ref": "#/$defs/floatLiteralExpr" },
+        { "$ref": "#/$defs/boolLiteralExpr" },
+        { "$ref": "#/$defs/identifierExpr" },
+        { "$ref": "#/$defs/unaryExpr" },
+        { "$ref": "#/$defs/binaryExpr" },
+        { "$ref": "#/$defs/ifExpr" },
+        { "$ref": "#/$defs/callExpr" },
+        { "$ref": "#/$defs/listLiteralExpr" },
+        { "$ref": "#/$defs/mapLiteralExpr" },
+        { "$ref": "#/$defs/indexExpr" },
+        { "$ref": "#/$defs/fieldAccessExpr" },
+        { "$ref": "#/$defs/recordLiteralExpr" },
+        { "$ref": "#/$defs/tryExpr" }
+      ]
+    },
+    "rawExpr": {
+      "type": "object",
+      "required": ["id", "source", "expr_kind", "fallible"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nodeId" },
+        "source": { "type": "string" },
+        "expr_kind": { "const": "Raw" },
+        "fallible": { "type": "boolean" },
+        "span": { "$ref": "#/$defs/sourceSpan" }
+      },
+      "additionalProperties": false
+    },
+    "stringLiteralExpr": {
+      "type": "object",
+      "required": ["id", "source", "expr_kind", "value"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nodeId" },
+        "source": { "type": "string" },
+        "expr_kind": { "const": "StringLiteral" },
+        "value": { "type": "string" },
+        "span": { "$ref": "#/$defs/sourceSpan" }
+      },
+      "additionalProperties": false
+    },
+    "intLiteralExpr": {
+      "type": "object",
+      "required": ["id", "source", "expr_kind", "value"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nodeId" },
+        "source": { "type": "string" },
+        "expr_kind": { "const": "IntLiteral" },
+        "value": { "type": "integer" },
+        "span": { "$ref": "#/$defs/sourceSpan" }
+      },
+      "additionalProperties": false
+    },
+    "floatLiteralExpr": {
+      "type": "object",
+      "required": ["id", "source", "expr_kind", "value"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nodeId" },
+        "source": { "type": "string" },
+        "expr_kind": { "const": "FloatLiteral" },
+        "value": { "type": "number" },
+        "span": { "$ref": "#/$defs/sourceSpan" }
+      },
+      "additionalProperties": false
+    },
+    "boolLiteralExpr": {
+      "type": "object",
+      "required": ["id", "source", "expr_kind", "value"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nodeId" },
+        "source": { "type": "string" },
+        "expr_kind": { "const": "BoolLiteral" },
+        "value": { "type": "boolean" },
+        "span": { "$ref": "#/$defs/sourceSpan" }
+      },
+      "additionalProperties": false
+    },
+    "identifierExpr": {
+      "type": "object",
+      "required": ["id", "source", "expr_kind", "name"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nodeId" },
+        "source": { "type": "string" },
+        "expr_kind": { "const": "Identifier" },
+        "name": { "$ref": "#/$defs/name" },
+        "span": { "$ref": "#/$defs/sourceSpan" }
+      },
+      "additionalProperties": false
+    },
+    "unaryExpr": {
+      "type": "object",
+      "required": ["id", "source", "expr_kind", "op", "expr"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nodeId" },
+        "source": { "type": "string" },
+        "expr_kind": { "const": "Unary" },
+        "op": { "$ref": "#/$defs/unaryOp" },
+        "expr": { "$ref": "#/$defs/expr" },
+        "span": { "$ref": "#/$defs/sourceSpan" }
+      },
+      "additionalProperties": false
+    },
+    "binaryExpr": {
+      "type": "object",
+      "required": ["id", "source", "expr_kind", "op", "left", "right"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nodeId" },
+        "source": { "type": "string" },
+        "expr_kind": { "const": "Binary" },
+        "op": { "$ref": "#/$defs/binaryOp" },
+        "left": { "$ref": "#/$defs/expr" },
+        "right": { "$ref": "#/$defs/expr" },
+        "span": { "$ref": "#/$defs/sourceSpan" }
+      },
+      "additionalProperties": false
+    },
+    "ifExpr": {
+      "type": "object",
+      "required": ["id", "source", "expr_kind", "condition", "then_branch", "else_branch"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nodeId" },
+        "source": { "type": "string" },
+        "expr_kind": { "const": "If" },
+        "condition": { "$ref": "#/$defs/expr" },
+        "then_branch": { "$ref": "#/$defs/expr" },
+        "else_branch": { "$ref": "#/$defs/expr" },
+        "span": { "$ref": "#/$defs/sourceSpan" }
+      },
+      "additionalProperties": false
+    },
+    "callExpr": {
+      "type": "object",
+      "required": ["id", "source", "expr_kind", "callee", "args"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nodeId" },
+        "source": { "type": "string" },
+        "expr_kind": { "const": "Call" },
+        "callee": { "$ref": "#/$defs/expr" },
+        "args": { "type": "array", "items": { "$ref": "#/$defs/expr" } },
+        "span": { "$ref": "#/$defs/sourceSpan" }
+      },
+      "additionalProperties": false
+    },
+    "listLiteralExpr": {
+      "type": "object",
+      "required": ["id", "source", "expr_kind", "items"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nodeId" },
+        "source": { "type": "string" },
+        "expr_kind": { "const": "ListLiteral" },
+        "items": { "type": "array", "items": { "$ref": "#/$defs/expr" } },
+        "span": { "$ref": "#/$defs/sourceSpan" }
+      },
+      "additionalProperties": false
+    },
+    "mapLiteralExpr": {
+      "type": "object",
+      "required": ["id", "source", "expr_kind", "entries"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nodeId" },
+        "source": { "type": "string" },
+        "expr_kind": { "const": "MapLiteral" },
+        "entries": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/exprMapEntry" }
+        },
+        "span": { "$ref": "#/$defs/sourceSpan" }
+      },
+      "additionalProperties": false
+    },
+    "indexExpr": {
+      "type": "object",
+      "required": ["id", "source", "expr_kind", "collection", "index"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nodeId" },
+        "source": { "type": "string" },
+        "expr_kind": { "const": "Index" },
+        "collection": { "$ref": "#/$defs/expr" },
+        "index": { "$ref": "#/$defs/expr" },
+        "span": { "$ref": "#/$defs/sourceSpan" }
+      },
+      "additionalProperties": false
+    },
+    "fieldAccessExpr": {
+      "type": "object",
+      "required": ["id", "source", "expr_kind", "receiver", "field"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nodeId" },
+        "source": { "type": "string" },
+        "expr_kind": { "const": "FieldAccess" },
+        "receiver": { "$ref": "#/$defs/expr" },
+        "field": { "$ref": "#/$defs/name" },
+        "span": { "$ref": "#/$defs/sourceSpan" }
+      },
+      "additionalProperties": false
+    },
+    "recordLiteralExpr": {
+      "type": "object",
+      "required": ["id", "source", "expr_kind", "fields"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nodeId" },
+        "source": { "type": "string" },
+        "expr_kind": { "const": "RecordLiteral" },
+        "type_name": { "$ref": "#/$defs/name" },
+        "fields": { "type": "array", "items": { "$ref": "#/$defs/exprField" } },
+        "span": { "$ref": "#/$defs/sourceSpan" }
+      },
+      "additionalProperties": false
+    },
+    "tryExpr": {
+      "type": "object",
+      "required": ["id", "source", "expr_kind", "expr"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nodeId" },
+        "source": { "type": "string" },
+        "expr_kind": { "const": "Try" },
+        "expr": { "$ref": "#/$defs/expr" },
+        "span": { "$ref": "#/$defs/sourceSpan" }
+      },
+      "additionalProperties": false
+    },
+    "exprField": {
+      "type": "object",
+      "required": ["name", "expr"],
+      "properties": {
+        "name": { "$ref": "#/$defs/name" },
+        "expr": { "$ref": "#/$defs/expr" }
+      },
+      "additionalProperties": false
+    },
+    "exprMapEntry": {
+      "type": "object",
+      "required": ["key", "value"],
+      "properties": {
+        "key": { "$ref": "#/$defs/expr" },
+        "value": { "$ref": "#/$defs/expr" }
+      },
+      "additionalProperties": false
+    },
+    "unaryOp": { "enum": ["Not", "Negate"] },
+    "binaryOp": {
+      "enum": [
+        "Or",
+        "And",
+        "Equal",
+        "NotEqual",
+        "Less",
+        "LessEqual",
+        "Greater",
+        "GreaterEqual",
+        "Add",
+        "Subtract",
+        "Multiply",
+        "Divide",
+        "Remainder"
+      ]
+    },
+    "typeExpr": {
+      "oneOf": [
+        { "$ref": "#/$defs/namedTypeExpr" },
+        { "$ref": "#/$defs/genericTypeExpr" },
+        { "$ref": "#/$defs/recordTypeExpr" }
+      ]
+    },
+    "namedTypeExpr": {
+      "type": "object",
+      "required": ["kind", "name"],
+      "properties": {
+        "kind": { "const": "Named" },
+        "name": { "$ref": "#/$defs/name" }
+      },
+      "additionalProperties": false
+    },
+    "genericTypeExpr": {
+      "type": "object",
+      "required": ["kind", "name", "args"],
+      "properties": {
+        "kind": { "const": "Generic" },
+        "name": { "$ref": "#/$defs/name" },
+        "args": { "type": "array", "items": { "$ref": "#/$defs/typeExpr" } }
+      },
+      "additionalProperties": false
+    },
+    "recordTypeExpr": {
+      "type": "object",
+      "required": ["kind", "fields"],
+      "properties": {
+        "kind": { "const": "Record" },
+        "fields": { "type": "array", "items": { "$ref": "#/$defs/recordField" } }
+      },
+      "additionalProperties": false
+    },
+    "recordField": {
+      "type": "object",
+      "required": ["name", "type"],
+      "properties": {
+        "name": { "$ref": "#/$defs/name" },
+        "type": { "$ref": "#/$defs/typeExpr" }
+      },
+      "additionalProperties": false
+    },
+    "provenanceRecord": {
+      "type": "object",
+      "required": ["graft_id", "actor", "timestamp", "operation", "targets", "result"],
+      "properties": {
+        "graft_id": { "type": "string", "minLength": 1 },
+        "actor": { "type": "string", "minLength": 1 },
+        "timestamp": { "type": "string", "minLength": 1 },
+        "operation": { "type": "string", "minLength": 1 },
+        "targets": { "type": "array", "items": { "$ref": "#/$defs/nodeId" } },
+        "result": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  }
 }

@@ -163,8 +163,10 @@ and provenance checks pass for the implemented v0 surface.
 
 Current graft operations include adding/removing takes, replacing task bodies,
 adding imports/effects/types/tasks, renaming declarations, updating call-sites,
-inserting checked task-body statements, and replacing expressions by node id.
-Unsupported graph operations return explicit diagnostics until implemented.
+inserting checked task-body statements, replacing expressions by node id, and
+deleting checked graph nodes such as declarations, imports, takes, and
+statements. Unsupported graph operations return explicit diagnostics until
+implemented.
 
 Implemented graph-edit payloads:
 
@@ -173,13 +175,16 @@ Implemented graph-edit payloads:
 { "op": "UpdateCallSites", "target": "task:app.math.twice", "payload": { "from": "math.double", "replacement": "math.twice", "scope": "module:app.main" } }
 { "op": "InsertStatement", "target": "task:app.main.main", "payload": { "position": 1, "source": "set total = total + 1" } }
 { "op": "ReplaceExpression", "target": "block:task:app.main.main:stmt:0:expr:right", "payload": { "source": "41" } }
+{ "op": "DeleteNode", "target": "block:task:app.main.main:stmt:1" }
 ```
 
 `UpdateCallSites` rewrites call expressions that either resolve to the target
 task or match the optional raw `from` callee. `scope` can limit the rewrite to a
-task or module. `InsertStatement` currently targets a task body. Each accepted
-edit reparses the payload, rewrites the AST, refreshes expression source text,
-and reruns the checker before returning formatted source.
+task or module. `InsertStatement` currently targets a task body. `DeleteNode`
+can remove declarations, imports, takes, and statements, but rejects expression
+targets unless the agent uses `ReplaceExpression` instead. Each accepted edit
+reparses the payload when applicable, rewrites the AST, refreshes expression
+source text, and reruns the checker before returning formatted source.
 
 Accepted grafts written with `sley graft --write` append receipt records to a
 local `.sley/trace.jsonl` sidecar unless the caller passes an explicit trace
@@ -248,10 +253,11 @@ Current v0 trace seal JSON has this root shape:
 ```
 
 The v0 JSON contracts are locked by small snapshots under
-`fixtures/contracts/` and root-contract JSON Schema files under
-`docs/schemas/`. The schema files currently pin top-level contract shape and
-stable schema IDs; exhaustive nested expression and statement schemas remain a
-later hardening step.
+`fixtures/contracts/` and JSON Schema files under `docs/schemas/`. The AST
+program schema now recursively describes imports,
+types, effects, tasks, takes, statements, expressions, type expressions, spans,
+and provenance records. The other schema files currently pin their top-level
+contract shape and stable schema IDs.
 
 The compiler conformance corpus starts under `fixtures/corpus/`. Accepted
 fixtures must parse, check, and formatter-round-trip. Rejected fixtures carry a
@@ -296,11 +302,12 @@ archive.
 - host capabilities are checked statically but not backed by runtime gate values
 - trace receipts can be sealed, but sidecar storage is not yet a compressed ZJX
   archive
-- external JSON Schema files pin v0 root contracts but do not yet exhaustively
-  describe every nested AST and expression variant
+- the AST JSON Schema covers nested AST and expression variants; the remaining
+  JSON Schema files are still narrower v0 root contracts
 - no `match`, agent declarations, spawn/cast/join, or compressed ZJX archive
   writer yet
-- `MoveNode` and `DeleteNode` are still declared graft operations rather than
-  implemented graph mutations
+- `DeleteNode` supports checked deletion of declarations, imports, takes, and
+  statements; `MoveNode` remains a declared graft operation rather than an
+  implemented graph mutation
 - project-aware graft writeback for multi-file module bundles is not yet
   implemented

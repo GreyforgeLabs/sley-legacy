@@ -61,8 +61,9 @@ Implemented now:
   slices, and trace receipts
 - structural graft operations for adding/removing takes, replacing task bodies,
   adding imports/effects/types/tasks, renaming declarations, updating
-  call-sites, inserting checked task-body statements, and replacing nested
-  expressions by node id
+  call-sites, inserting checked task-body statements, replacing nested
+  expressions by node id, and deleting checked graph nodes such as declarations,
+  imports, takes, and statements
 - strict graft input JSON for the v0 operation shapes; unknown graft fields are
   rejected instead of silently ignored
 - versioned JSON report roots for diagnostics and graft outcomes
@@ -137,11 +138,12 @@ Known v0 limits:
 - `UpdateCallSites`, `InsertStatement`, and `ReplaceExpression` operate on the
   in-memory checked program. Project-aware source-file writeback for bundled
   multi-module projects is still a later step.
-- The external JSON Schema files are intentionally v0 root-contract schemas;
-  they do not yet describe every nested AST and expression variant exhaustively.
-- `MoveNode` and `DeleteNode` are declared but still return explicit
-  unsupported-operation diagnostics.
+- The AST JSON Schema now covers declarations, statements, expressions, type
+  expressions, spans, and provenance recursively. Other external JSON Schema
+  files remain narrower v0 root-contract schemas.
+- `MoveNode` remains declared but returns an explicit unsupported-operation
+  diagnostic.
 
-The next logical phase is schema and graft hardening: deepen nested
-AST/expression JSON Schema coverage, extend graph-slice grafts beyond the
-current operation set, and start runtime gate values for host capabilities.
+The next logical phase is graph and runtime hardening: implement checked
+`MoveNode` grafts, add project-aware graft writeback for multi-module bundles,
+and start runtime gate values for host capabilities.

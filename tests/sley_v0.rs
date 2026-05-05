@@ -254,6 +254,96 @@ task main -> Int {
 }
 
 #[test]
+fn delete_node_graft_removes_checked_task_body_statement() {
+    let source = r#"
+task main -> Int {
+  bind debug = 1
+  return 42
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let graft_source = include_str!("../fixtures/grafts/delete_debug_statement.json");
+    let graft: GraftInput = serde_json::from_str(graft_source).expect("parse graft");
+    let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
+
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    assert_eq!(outcome.provenance[0].operation, "DeleteNode");
+    let grafted_source = outcome.source.as_deref().expect("grafted source");
+    assert!(!grafted_source.contains("bind debug = 1"));
+    let grafted = parse_program(grafted_source).expect("parse grafted source");
+    assert_eq!(run_main(&grafted), Ok(Value::Int(42)));
+}
+
+#[test]
+fn delete_node_graft_removes_declarations_and_takes() {
+    let source = r#"
+type Scratch = {
+  slot id: Int
+}
+
+effect ScratchEffect
+
+task helper -> Int {
+  return 1
+}
+
+task main -> Int {
+  take unused: Int
+
+  return 42
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let graft_source = r#"
+{
+  "transaction": "graft_delete_decl_nodes",
+  "mode": "all_or_nothing",
+  "ops": [
+    { "op": "DeleteNode", "target": "type:main.Scratch" },
+    { "op": "DeleteNode", "target": "effect:ScratchEffect" },
+    { "op": "DeleteNode", "target": "task:main.helper" },
+    { "op": "DeleteNode", "target": "take:task:main.main:0:unused" }
+  ]
+}
+"#;
+    let graft: GraftInput = serde_json::from_str(graft_source).expect("parse graft");
+    let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
+
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted_source = outcome.source.as_deref().expect("grafted source");
+    assert!(!grafted_source.contains("type Scratch"));
+    assert!(!grafted_source.contains("effect ScratchEffect"));
+    assert!(!grafted_source.contains("task helper"));
+    assert!(!grafted_source.contains("take unused"));
+    let grafted = parse_program(grafted_source).expect("parse grafted source");
+    assert_eq!(run_main(&grafted), Ok(Value::Int(42)));
+}
+
+#[test]
+fn delete_node_rejects_expression_targets_without_replacement() {
+    let source = "task main -> Int {\n  return 1 + 41\n}\n";
+    let program = parse_program(source).expect("parse source");
+    let graft_source = r#"
+{
+  "op": "DeleteNode",
+  "target": "block:task:main.main:stmt:0:expr:left"
+}
+"#;
+    let graft: GraftInput = serde_json::from_str(graft_source).expect("parse graft");
+    let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
+
+    assert_eq!(outcome.status, "rejected");
+    assert!(
+        outcome
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.id == "GRAFT_DELETE_UNSUPPORTED"),
+        "expected delete unsupported diagnostic, got {:#?}",
+        outcome.diagnostics
+    );
+}
+
+#[test]
 fn replace_expression_graft_updates_nested_expression_source() {
     let source = r#"
 task main -> Int {
@@ -375,6 +465,106 @@ fn json_contract_snapshots_are_locked() {
     assert_schema_file(
         include_str!("../docs/schemas/sley.trace.seal.v0.schema.json"),
         TRACE_SEAL_SCHEMA,
+    );
+}
+
+#[test]
+fn ast_schema_covers_nested_contract_variants() {
+    let schema: serde_json::Value = serde_json::from_str(include_str!(
+        "../docs/schemas/sley.ast.program.v0.schema.json"
+    ))
+    .expect("parse AST schema");
+    let defs = schema
+        .get("$defs")
+        .and_then(serde_json::Value::as_object)
+        .expect("schema $defs");
+
+    for key in [
+        "importDecl",
+        "typeDecl",
+        "effectDecl",
+        "taskDecl",
+        "takeDecl",
+        "block",
+        "statement",
+        "expr",
+        "typeExpr",
+        "sourceSpan",
+        "provenanceRecord",
+    ] {
+        assert!(
+            defs.contains_key(key),
+            "missing AST schema definition {key}"
+        );
+    }
+    assert_schema_one_of_refs(
+        defs,
+        "statement",
+        &[
+            "bindingStatement",
+            "setStatement",
+            "returnStatement",
+            "exprStatement",
+            "ifStatement",
+            "whileStatement",
+            "forStatement",
+            "forgeStatement",
+        ],
+    );
+    assert_schema_one_of_refs(
+        defs,
+        "expr",
+        &[
+            "rawExpr",
+            "stringLiteralExpr",
+            "intLiteralExpr",
+            "floatLiteralExpr",
+            "boolLiteralExpr",
+            "identifierExpr",
+            "unaryExpr",
+            "binaryExpr",
+            "ifExpr",
+            "callExpr",
+            "listLiteralExpr",
+            "mapLiteralExpr",
+            "indexExpr",
+            "fieldAccessExpr",
+            "recordLiteralExpr",
+            "tryExpr",
+        ],
+    );
+    assert_schema_one_of_refs(
+        defs,
+        "typeExpr",
+        &["namedTypeExpr", "genericTypeExpr", "recordTypeExpr"],
+    );
+    assert_schema_enum(
+        defs,
+        "binaryOp",
+        &[
+            "Or",
+            "And",
+            "Equal",
+            "NotEqual",
+            "Less",
+            "LessEqual",
+            "Greater",
+            "GreaterEqual",
+            "Add",
+            "Subtract",
+            "Multiply",
+            "Divide",
+            "Remainder",
+        ],
+    );
+    assert_schema_enum(
+        defs,
+        "bindingKind",
+        &[
+            "Take", "Bind", "State", "Cell", "Knot", "Slot", "Gate", "Lease", "Veil", "Dial",
+            "Flag", "Memo", "Cache", "Derive", "Flow", "Port", "Tally", "Hole", "Draft", "Taint",
+            "Witness", "Seal", "Anchor", "View", "Cursor",
+        ],
     );
 }
 
@@ -1557,6 +1747,46 @@ fn assert_schema_file(schema_json: &str, schema_id: &str) {
         schema.get("$id").and_then(serde_json::Value::as_str),
         Some(schema_id)
     );
+}
+
+fn assert_schema_enum(
+    defs: &serde_json::Map<String, serde_json::Value>,
+    key: &str,
+    expected: &[&str],
+) {
+    let values = defs
+        .get(key)
+        .and_then(|schema| schema.get("enum"))
+        .and_then(serde_json::Value::as_array)
+        .unwrap_or_else(|| panic!("schema definition {key} does not expose enum"));
+    let actual = values
+        .iter()
+        .map(|value| value.as_str().expect("string enum value"))
+        .collect::<Vec<_>>();
+    assert_eq!(actual.as_slice(), expected);
+}
+
+fn assert_schema_one_of_refs(
+    defs: &serde_json::Map<String, serde_json::Value>,
+    key: &str,
+    expected: &[&str],
+) {
+    let refs = defs
+        .get(key)
+        .and_then(|schema| schema.get("oneOf"))
+        .and_then(serde_json::Value::as_array)
+        .unwrap_or_else(|| panic!("schema definition {key} does not expose oneOf"));
+    let actual = refs
+        .iter()
+        .map(|entry| {
+            entry
+                .get("$ref")
+                .and_then(serde_json::Value::as_str)
+                .and_then(|reference| reference.strip_prefix("#/$defs/"))
+                .unwrap_or_else(|| panic!("schema definition {key} has non-local ref"))
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(actual.as_slice(), expected);
 }
 
 fn assert_has_repair_hint(diagnostics: &[sley::diagnostics::Diagnostic], id: &str, kind: &str) {

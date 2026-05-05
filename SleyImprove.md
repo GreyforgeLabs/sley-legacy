@@ -115,8 +115,10 @@ Rules:
   envelopes, and graft outcomes carry v0 schema IDs.
 - AST, diagnostic-report, graph-slice, and trace-seal snapshots are locked under
   `fixtures/contracts/`.
-- Root-contract JSON Schema files live under `docs/schemas/`; exhaustive nested
-  AST/expression schemas remain open.
+- JSON Schema files live under `docs/schemas/`; the AST schema covers nested
+  declarations, statements, expressions, type expressions, spans, and
+  provenance, while the remaining schema files are still root-contract v0
+  shapes.
 - Diagnostics include stable IDs, node IDs, spans where possible, and repair
   hints for common checker failures.
 - Grafts support dry-run by default and an explicit `--dry-run` flag.
@@ -190,7 +192,8 @@ Minimum useful graft operations:
 - `DeleteNode`
 
 `UpdateCallSites`, `InsertStatement`, and `ReplaceExpression` are now
-implemented for the v0 in-memory checked program. `MoveNode`, `DeleteNode`,
+implemented for the v0 in-memory checked program. `DeleteNode` now supports
+checked deletion of declarations, imports, takes, and statements. `MoveNode`,
 project-aware multi-file writeback, and broader graph-contract hardening remain
 open.
 
@@ -365,15 +368,16 @@ Failure modes to watch:
 
 Near-term:
 
-1. Fill out nested AST/expression JSON Schema definitions.
-2. Extend graph-slice grafts beyond call-site, statement, and expression edits.
+1. Implement checked `MoveNode` grafts.
+2. Add project-aware graft writeback for multi-module bundles.
 3. Add capability-backed gate values.
 4. Grow the accepted/rejected synthetic gold corpus with graft and module cases.
 5. Start Sley lint/query helpers on top of the graph surface.
 
 Medium-term:
 
-1. Extend graph-slice grafts beyond call-site, statement, and expression edits.
+1. Extend graph-slice grafts beyond call-site, statement, expression, and
+   delete edits.
 2. Move trace seals and ZJX preview payloads into a compressed binary `.zjx`
    handoff.
 3. Expand runtime host capability values.

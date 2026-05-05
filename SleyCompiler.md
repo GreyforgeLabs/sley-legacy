@@ -201,15 +201,15 @@ because Sley's primary editor may be an agent.
 Near-term:
 
 1. Keep expanding parser/checker/runtime coverage in Rust.
-2. Fill out nested AST/expression JSON Schema definitions beyond the current
-   v0 root-contract schemas.
-3. Extend graph-slice grafts beyond call-site, statement, and expression edits.
+2. Implement checked `MoveNode` grafts for statements and declaration ordering.
+3. Add project-aware graft writeback for multi-module bundles.
 4. Add runtime gate values for host capabilities.
 5. Grow the accepted/rejected synthetic gold corpus beyond the initial seed.
 
 Medium-term:
 
-1. Extend graph-slice grafts beyond call-site, statement, and expression edits.
+1. Extend graph-slice grafts beyond call-site, statement, expression, and
+   delete edits.
 2. Move trace seals into a compressed binary `.zjx` handoff.
 3. Add capability-backed runtime host values.
 4. Build Sley lint/helper passes on top of the graph query surface.
