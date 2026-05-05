@@ -271,7 +271,17 @@ fn check_block(
                                 actual.display()
                             ),
                         )
-                        .with_node(statement.id.clone()),
+                        .with_node(statement.id.clone())
+                        .with_repair_hint(
+                            RepairHint::new("change_binding_type")
+                                .with_target(statement.id.clone())
+                                .with_replacement(actual.display()),
+                        )
+                        .with_repair_hint(
+                            RepairHint::new("replace_initializer")
+                                .with_target(expr.id.clone())
+                                .with_replacement(expected.display()),
+                        ),
                     );
                 }
                 let local_type = expected
@@ -306,7 +316,8 @@ fn check_block(
                             "UNKNOWN_IDENTIFIER",
                             format!("cannot set unknown local binding `{name}`"),
                         )
-                        .with_node(statement.id.clone()),
+                        .with_node(statement.id.clone())
+                        .with_repair_hint(declare_binding_hint(task, name, BindingKind::State)),
                     );
                     continue;
                 };
@@ -321,7 +332,12 @@ fn check_block(
                                 "binding `{name}` cannot be changed with `set`; use `state`, `tally`, `cache`, or another mutable Sley binding kind"
                             ),
                         )
-                        .with_node(statement.id.clone()),
+                        .with_node(statement.id.clone())
+                        .with_repair_hint(
+                            RepairHint::new("use_mutable_binding_kind")
+                                .with_target(statement.id.clone())
+                                .with_replacement(format!("state {name} = <value>")),
+                        ),
                     );
                 }
                 if let Some(actual) =
@@ -337,7 +353,12 @@ fn check_block(
                                 actual.display()
                             ),
                         )
-                        .with_node(statement.id.clone()),
+                        .with_node(statement.id.clone())
+                        .with_repair_hint(
+                            RepairHint::new("replace_assignment_expression")
+                                .with_target(expr.id.clone())
+                                .with_replacement(expected.display()),
+                        ),
                     );
                 }
             }
@@ -368,7 +389,17 @@ fn check_block(
                                 actual.display()
                             ),
                         )
-                        .with_node(task.id.clone()),
+                        .with_node(task.id.clone())
+                        .with_repair_hint(
+                            RepairHint::new("change_return_type")
+                                .with_target(task.id.clone())
+                                .with_replacement(actual.display()),
+                        )
+                        .with_repair_hint(
+                            RepairHint::new("replace_return_expression")
+                                .with_target(expr.id.clone())
+                                .with_replacement(expected_return.display()),
+                        ),
                     );
                 }
             }
@@ -411,7 +442,8 @@ fn check_block(
                                 condition_type.display()
                             ),
                         )
-                        .with_node(condition.id.clone()),
+                        .with_node(condition.id.clone())
+                        .with_repair_hint(bool_condition_hint(condition)),
                     );
                 }
                 let mut then_locals = locals.clone();
@@ -466,7 +498,8 @@ fn check_block(
                                 condition_type.display()
                             ),
                         )
-                        .with_node(condition.id.clone()),
+                        .with_node(condition.id.clone())
+                        .with_repair_hint(bool_condition_hint(condition)),
                     );
                 }
                 let mut body_locals = locals.clone();
@@ -738,7 +771,14 @@ fn check_expr_structure(
                                     "UNKNOWN_TASK",
                                     format!("unknown task `{callee_name}`"),
                                 )
-                                .with_node(callee.id.clone()),
+                                .with_node(callee.id.clone())
+                                .with_repair_hint(
+                                    RepairHint::new("declare_or_import_task")
+                                        .with_target(callee.id.clone())
+                                        .with_replacement(format!(
+                                            "import <module-with-{callee_name}>"
+                                        )),
+                                ),
                             ),
                             TaskResolution::Ambiguous(matches) => diagnostics.push(
                                 Diagnostic::error(
@@ -748,14 +788,27 @@ fn check_expr_structure(
                                         matches.join(", ")
                                     ),
                                 )
-                                .with_node(callee.id.clone()),
+                                .with_node(callee.id.clone())
+                                .with_repair_hint(
+                                    RepairHint::new("qualify_task_reference")
+                                        .with_target(callee.id.clone())
+                                        .with_replacement(matches.join(" | ")),
+                                ),
                             ),
                             TaskResolution::Private(target) => diagnostics.push(
                                 Diagnostic::error(
                                     "PRIVATE_TASK",
                                     format!("task `{target}` is not exported for `{}`", task.name),
                                 )
-                                .with_node(callee.id.clone()),
+                                .with_node(callee.id.clone())
+                                .with_repair_hint(
+                                    RepairHint::new("export_task")
+                                        .with_target(format!("task:{target}"))
+                                        .with_replacement(format!(
+                                            "export task {}",
+                                            short_name(&target)
+                                        )),
+                                ),
                             ),
                         }
                     }
@@ -796,7 +849,15 @@ fn check_expr_structure(
                                 signature.takes.len()
                             )
                         )
-                        .with_node(expr.id.clone()),
+                        .with_node(expr.id.clone())
+                        .with_repair_hint(
+                            RepairHint::new("match_task_arity")
+                                .with_target(expr.id.clone())
+                                .with_replacement(format!(
+                                    "{} arguments required",
+                                    signature.takes.len()
+                                )),
+                        ),
                     );
                 }
                 for (index, (arg, expected)) in args.iter().zip(signature.takes.iter()).enumerate()
@@ -814,7 +875,12 @@ fn check_expr_structure(
                                     actual.display()
                                 ),
                             )
-                            .with_node(arg.id.clone()),
+                            .with_node(arg.id.clone())
+                            .with_repair_hint(
+                                RepairHint::new("replace_argument")
+                                    .with_target(arg.id.clone())
+                                    .with_replacement(expected.display()),
+                            ),
                         );
                     }
                 }
@@ -829,12 +895,7 @@ fn check_expr_structure(
                                 ),
                             )
                             .with_node(expr.id.clone())
-                            .with_repair_hint(RepairHint {
-                                kind: "add_required_effect".to_string(),
-                                target: Some(task.id.clone()),
-                                effect: Some(effect.clone()),
-                                replacement: None,
-                            }),
+                            .with_repair_hint(add_required_effect_hint(task, effect)),
                         );
                     }
                 }
@@ -1077,7 +1138,12 @@ fn check_expr_structure(
                         "UNKNOWN_IDENTIFIER",
                         format!("unknown local binding `{name}`"),
                     )
-                    .with_node(expr.id.clone()),
+                    .with_node(expr.id.clone())
+                    .with_repair_hint(declare_binding_hint(
+                        task,
+                        name,
+                        BindingKind::Bind,
+                    )),
                 );
             }
         }
@@ -1116,7 +1182,12 @@ fn check_unary_operator(
                     actual.display()
                 ),
             )
-            .with_node(expr.id.clone()),
+            .with_node(expr.id.clone())
+            .with_repair_hint(
+                RepairHint::new("replace_operand")
+                    .with_target(inner.id.clone())
+                    .with_replacement(unary_expected_type(op)),
+            ),
         );
     }
 }
@@ -1151,7 +1222,12 @@ fn check_binary_operator(
                     right_type.display()
                 ),
             )
-            .with_node(expr.id.clone()),
+            .with_node(expr.id.clone())
+            .with_repair_hint(
+                RepairHint::new("replace_binary_operands")
+                    .with_target(expr.id.clone())
+                    .with_replacement(binary_expected_types(op)),
+            ),
         );
     }
 }
@@ -1181,7 +1257,8 @@ fn check_if_expression(
                     condition_type.display()
                 ),
             )
-            .with_node(condition.id.clone()),
+            .with_node(condition.id.clone())
+            .with_repair_hint(bool_condition_hint(condition)),
         );
     }
 
@@ -1261,7 +1338,12 @@ fn check_builtin_call(
                     actual.display()
                 ),
             )
-            .with_node(args[0].id.clone()),
+            .with_node(args[0].id.clone())
+            .with_repair_hint(
+                RepairHint::new("replace_builtin_argument")
+                    .with_target(args[0].id.clone())
+                    .with_replacement("List<T> | Map<Text, T> | Text"),
+            ),
         );
     }
 }
@@ -1538,6 +1620,59 @@ fn validate_type_expr(
     }
 }
 
+fn declare_binding_hint(task: &TaskDecl, name: &str, binding_kind: BindingKind) -> RepairHint {
+    let kind = if binding_kind.is_mutable_local() {
+        "declare_mutable_binding"
+    } else {
+        "declare_binding"
+    };
+    RepairHint::new(kind)
+        .with_target(task.id.clone())
+        .with_replacement(format!(
+            "{} {name} = <value>",
+            binding_kind.as_source_keyword()
+        ))
+}
+
+fn add_required_effect_hint(task: &TaskDecl, effect: &str) -> RepairHint {
+    RepairHint::new("add_required_effect")
+        .with_target(task.id.clone())
+        .with_effect(effect.to_string())
+}
+
+fn bool_condition_hint(condition: &Expr) -> RepairHint {
+    RepairHint::new("replace_condition")
+        .with_target(condition.id.clone())
+        .with_replacement("Bool")
+}
+
+fn unary_expected_type(op: &UnaryOp) -> &'static str {
+    match op {
+        UnaryOp::Not => "Bool",
+        UnaryOp::Negate => "Int | Float",
+    }
+}
+
+fn binary_expected_types(op: &BinaryOp) -> &'static str {
+    match op {
+        BinaryOp::Or | BinaryOp::And => "Bool and Bool",
+        BinaryOp::Add => "Int and Int | Float and Float | Text and Text",
+        BinaryOp::Subtract | BinaryOp::Multiply | BinaryOp::Divide | BinaryOp::Remainder => {
+            "Int and Int | Float and Float"
+        }
+        BinaryOp::Equal
+        | BinaryOp::NotEqual
+        | BinaryOp::Less
+        | BinaryOp::LessEqual
+        | BinaryOp::Greater
+        | BinaryOp::GreaterEqual => "matching operand types",
+    }
+}
+
+fn short_name(name: &str) -> &str {
+    name.rsplit('.').next().unwrap_or(name)
+}
+
 fn validate_type_name(
     name: &str,
     program: &Program,
@@ -1550,21 +1685,36 @@ fn validate_type_name(
         TypeResolution::Builtin(_) | TypeResolution::Resolved { .. } => {}
         TypeResolution::Unknown => diagnostics.push(
             Diagnostic::error("UNKNOWN_TYPE", format!("unknown {noun} `{name}`"))
-                .with_node(node.to_string()),
+                .with_node(node.to_string())
+                .with_repair_hint(
+                    RepairHint::new("declare_or_import_type")
+                        .with_target(node.to_string())
+                        .with_replacement(format!("type {name} = <definition>")),
+                ),
         ),
         TypeResolution::Ambiguous(matches) => diagnostics.push(
             Diagnostic::error(
                 "AMBIGUOUS_TYPE",
                 format!("type `{name}` is ambiguous: {}", matches.join(", ")),
             )
-            .with_node(node.to_string()),
+            .with_node(node.to_string())
+            .with_repair_hint(
+                RepairHint::new("qualify_type_reference")
+                    .with_target(node.to_string())
+                    .with_replacement(matches.join(" | ")),
+            ),
         ),
         TypeResolution::Private(target) => diagnostics.push(
             Diagnostic::error(
                 "PRIVATE_TYPE",
                 format!("type `{target}` is not exported for module `{module}`"),
             )
-            .with_node(node.to_string()),
+            .with_node(node.to_string())
+            .with_repair_hint(
+                RepairHint::new("export_type")
+                    .with_target(format!("type:{target}"))
+                    .with_replacement(format!("export type {}", short_name(&target))),
+            ),
         ),
     }
 }
@@ -1583,21 +1733,38 @@ fn validate_effect_name(
                 "UNKNOWN_EFFECT",
                 format!("task `{}` uses unknown effect `{name}`", task.name),
             )
-            .with_node(task.id.clone()),
+            .with_node(task.id.clone())
+            .with_repair_hint(
+                RepairHint::new("declare_or_import_effect")
+                    .with_target(task.id.clone())
+                    .with_effect(name.to_string())
+                    .with_replacement(format!("effect {name}")),
+            ),
         ),
         EffectResolution::Ambiguous(matches) => diagnostics.push(
             Diagnostic::error(
                 "AMBIGUOUS_EFFECT",
                 format!("effect `{name}` is ambiguous: {}", matches.join(", ")),
             )
-            .with_node(task.id.clone()),
+            .with_node(task.id.clone())
+            .with_repair_hint(
+                RepairHint::new("qualify_effect_reference")
+                    .with_target(task.id.clone())
+                    .with_replacement(matches.join(" | ")),
+            ),
         ),
         EffectResolution::Private(target) => diagnostics.push(
             Diagnostic::error(
                 "PRIVATE_EFFECT",
                 format!("effect `{target}` is not exported for `{}`", task.name),
             )
-            .with_node(task.id.clone()),
+            .with_node(task.id.clone())
+            .with_repair_hint(
+                RepairHint::new("export_effect")
+                    .with_target(format!("effect:{target}"))
+                    .with_effect(target.clone())
+                    .with_replacement(format!("export effect {}", short_name(&target))),
+            ),
         ),
     }
 }
@@ -1666,12 +1833,7 @@ fn check_expression_effects(
                     ),
                 )
                 .with_node(task.id.clone())
-                .with_repair_hint(RepairHint {
-                    kind: "add_required_effect".to_string(),
-                    target: Some(task.id.clone()),
-                    effect: Some(required.to_string()),
-                    replacement: None,
-                }),
+                .with_repair_hint(add_required_effect_hint(task, required)),
             );
         }
     }

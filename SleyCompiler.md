@@ -202,12 +202,12 @@ because Sley's primary editor may be an agent.
 Near-term:
 
 1. Keep expanding parser/checker/runtime coverage in Rust.
-2. Add more repair hints.
-3. Lock AST and graph-slice JSON fixtures, then publish formal external schema
-   files for the v0 agent contract.
-4. Add formatter round-trip tests for every example.
-5. Add an agent onboarding section to docs and `llms.txt`.
-6. Start content-addressed trace seal design.
+2. Add formatter round-trip tests for every example.
+3. Start content-addressed trace seal design.
+4. Fill out nested AST/expression JSON Schema definitions beyond the current
+   v0 root-contract schemas.
+5. Build the first accepted/rejected synthetic gold corpus.
+6. Extend graph-slice grafts beyond call-site, statement, and expression edits.
 
 Medium-term:
 

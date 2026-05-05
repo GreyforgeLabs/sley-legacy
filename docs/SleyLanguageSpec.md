@@ -213,23 +213,37 @@ Rejected graft outcomes use the same schema and `status: "rejected"`, omit
 The Loom exposes the program graph as inspectable JSON:
 
 ```bash
+sley ast --json <target>
+sley ast --json --node task:app.main.main <target>
 sley graph --json <target>
 sley graph --json --slice task:app.main.main <target>
 sley trace --json <target>
 ```
 
-Diagnostic reports carry `schema: "sley.diagnostics.report.v0"`. Full symbol
-graphs carry `schema: "sley.symbol_graph.v0"`, graph slices carry
-`schema: "sley.symbol_graph.slice.v0"`, and ZJX preview envelopes carry
+AST roots carry `schema: "sley.ast.program.v0"`. Diagnostic reports carry
+`schema: "sley.diagnostics.report.v0"`. Full symbol graphs carry
+`schema: "sley.symbol_graph.v0"`, graph slices carry
+`schema: "sley.symbol_graph.slice.v0"`, graft outcomes carry
+`schema: "sley.graft.outcome.v0"`, and ZJX preview envelopes carry
 `schema: "sley.zjx.envelope.v0"`.
+
+The v0 JSON contracts are locked by small snapshots under
+`fixtures/contracts/` and root-contract JSON Schema files under
+`docs/schemas/`. The schema files currently pin top-level contract shape and
+stable schema IDs; exhaustive nested expression and statement schemas remain a
+later hardening step.
 
 A graph slice is a bounded shard around a module, task, type, effect, or import.
 Task slices include the selected task AST, visible module declarations,
 outbound calls, and inbound calls from other tasks that resolve to the selected
 task. This is the first stable agent-facing query surface for graft planning.
 Call-site and expression grafts now consume node ids and task identities from
-this shard. The next slice milestone is fixture-snapshot locking and external
-JSON Schema files for the agent contract.
+this shard.
+
+Diagnostics include machine-readable repair hints for common checker failures.
+Hints are intentionally small and structural: `kind` identifies the action,
+`target` names the graph node when available, `effect` names required authority
+when relevant, and `replacement` carries a compact source or type suggestion.
 
 ## ZJX Boundary
 
@@ -257,8 +271,8 @@ archive.
 
 - host capabilities are checked statically but not backed by runtime gate values
 - trace sidecars are not yet content-addressed seals
-- AST JSON shape is not yet locked with fixture snapshots or external JSON
-  Schema files
+- external JSON Schema files pin v0 root contracts but do not yet exhaustively
+  describe every nested AST and expression variant
 - no `match`, agent declarations, spawn/cast/join, or compressed ZJX archive
   writer yet
 - `MoveNode` and `DeleteNode` are still declared graft operations rather than

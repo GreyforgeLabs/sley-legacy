@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use std::process::Command as ProcessCommand;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use sley::ast::{ExprKind, ProvenanceRecord, StatementKind};
+use sley::ast::{AST_PROGRAM_SCHEMA, ExprKind, ProvenanceRecord, StatementKind};
 use sley::checker::{check_program, has_errors};
 use sley::diagnostics::{DIAGNOSTIC_REPORT_SCHEMA, DiagnosticReport};
 use sley::formatter::format_program;
@@ -11,7 +11,7 @@ use sley::graft::{GRAFT_OUTCOME_SCHEMA, GraftInput, GraftOutcome, apply_graft_in
 use sley::parser::parse_program;
 use sley::project::load_project;
 use sley::runtime::{Value, run_main};
-use sley::symbols::{SYMBOL_GRAPH_SLICE_SCHEMA, slice_symbol_graph};
+use sley::symbols::{SYMBOL_GRAPH_SCHEMA, SYMBOL_GRAPH_SLICE_SCHEMA, slice_symbol_graph};
 use sley::trace::{append_trace_receipt, build_trace_receipt, read_trace_receipts};
 
 #[test]
@@ -202,6 +202,92 @@ task main -> Int {
 }
 "#;
     assert!(serde_json::from_str::<GraftInput>(unknown_contract_field).is_err());
+}
+
+#[test]
+fn json_contract_snapshots_are_locked() {
+    let source = "task main -> Int {\n  return 1\n}\n";
+    let program = parse_program(source).expect("parse source");
+    assert_eq!(program.schema, AST_PROGRAM_SCHEMA);
+    assert_json_snapshot(
+        &program,
+        include_str!("../fixtures/contracts/ast_minimal_program.json"),
+    );
+
+    let diagnostics_program =
+        parse_program("task main -> Int {\n  return missing\n}\n").expect("parse source");
+    let report = DiagnosticReport::from_diagnostics(check_program(&diagnostics_program));
+    assert_json_snapshot(
+        &report,
+        include_str!("../fixtures/contracts/diagnostic_report_unknown_identifier.json"),
+    );
+
+    let slice = slice_symbol_graph(&program, "task:main.main").expect("slice main");
+    assert_json_snapshot(
+        &slice,
+        include_str!("../fixtures/contracts/graph_slice_minimal_task.json"),
+    );
+
+    assert_schema_file(
+        include_str!("../docs/schemas/sley.ast.program.v0.schema.json"),
+        AST_PROGRAM_SCHEMA,
+    );
+    assert_schema_file(
+        include_str!("../docs/schemas/sley.diagnostics.report.v0.schema.json"),
+        DIAGNOSTIC_REPORT_SCHEMA,
+    );
+    assert_schema_file(
+        include_str!("../docs/schemas/sley.graft.outcome.v0.schema.json"),
+        GRAFT_OUTCOME_SCHEMA,
+    );
+    assert_schema_file(
+        include_str!("../docs/schemas/sley.symbol_graph.v0.schema.json"),
+        SYMBOL_GRAPH_SCHEMA,
+    );
+    assert_schema_file(
+        include_str!("../docs/schemas/sley.symbol_graph.slice.v0.schema.json"),
+        SYMBOL_GRAPH_SLICE_SCHEMA,
+    );
+    assert_schema_file(
+        include_str!("../docs/schemas/sley.zjx.envelope.v0.schema.json"),
+        "sley.zjx.envelope.v0",
+    );
+}
+
+#[test]
+fn checker_diagnostics_include_actionable_repair_hints() {
+    let source = r#"
+task takes_text -> Text {
+  take value: Text
+
+  return value
+}
+
+task main -> Int {
+  bind label: Text = 1
+  if 1 {
+    return call takes_text(42)
+  }
+  return missing
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+
+    assert_has_repair_hint(&diagnostics, "TYPE_MISMATCH", "change_binding_type");
+    assert_has_repair_hint(&diagnostics, "IF_CONDITION_NOT_BOOL", "replace_condition");
+    assert_has_repair_hint(
+        &diagnostics,
+        "CALL_ARGUMENT_TYPE_MISMATCH",
+        "replace_argument",
+    );
+    assert_has_repair_hint(&diagnostics, "RETURN_TYPE_MISMATCH", "change_return_type");
+    assert_has_repair_hint(&diagnostics, "UNKNOWN_IDENTIFIER", "declare_binding");
+
+    let unknown_task =
+        parse_program("task main -> Int {\n  return call missing()\n}\n").expect("parse source");
+    let diagnostics = check_program(&unknown_task);
+    assert_has_repair_hint(&diagnostics, "UNKNOWN_TASK", "declare_or_import_task");
 }
 
 #[test]
@@ -1266,4 +1352,29 @@ fn assert_rejected_graft(source: &str, graft_source: &str, diagnostic_id: &str) 
         outcome.diagnostics
     );
     outcome
+}
+
+fn assert_json_snapshot<T: serde::Serialize>(actual: &T, expected_json: &str) {
+    let actual = serde_json::to_value(actual).expect("serialize actual json");
+    let expected: serde_json::Value = serde_json::from_str(expected_json).expect("parse snapshot");
+    assert_eq!(actual, expected);
+}
+
+fn assert_schema_file(schema_json: &str, schema_id: &str) {
+    let schema: serde_json::Value = serde_json::from_str(schema_json).expect("parse schema");
+    assert_eq!(
+        schema.get("$id").and_then(serde_json::Value::as_str),
+        Some(schema_id)
+    );
+}
+
+fn assert_has_repair_hint(diagnostics: &[sley::diagnostics::Diagnostic], id: &str, kind: &str) {
+    let diagnostic = diagnostics
+        .iter()
+        .find(|diagnostic| diagnostic.id == id)
+        .unwrap_or_else(|| panic!("missing diagnostic {id}; got {diagnostics:#?}"));
+    assert!(
+        diagnostic.repair_hints.iter().any(|hint| hint.kind == kind),
+        "expected repair hint {kind} on {id}; got {diagnostic:#?}"
+    );
 }

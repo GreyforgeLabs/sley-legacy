@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.symbol_graph.slice.v0",
+  "title": "Sley Symbol Graph Slice v0",
+  "type": "object",
+  "required": [
+    "schema",
+    "target",
+    "entry_module",
+    "focus",
+    "imports",
+    "types",
+    "effects",
+    "tasks",
+    "outbound_calls",
+    "inbound_calls"
+  ],
+  "properties": {
+    "schema": { "const": "sley.symbol_graph.slice.v0" },
+    "target": { "type": "string" },
+    "entry_module": { "type": "string" },
+    "focus": { "type": "object" },
+    "imports": { "type": "array", "items": { "type": "object" } },
+    "types": { "type": "array", "items": { "type": "object" } },
+    "effects": { "type": "array", "items": { "type": "object" } },
+    "tasks": { "type": "array", "items": { "type": "object" } },
+    "task": { "type": "object" },
+    "outbound_calls": { "type": "array", "items": { "type": "object" } },
+    "inbound_calls": { "type": "array", "items": { "type": "object" } }
+  },
+  "additionalProperties": false
+}

@@ -110,11 +110,14 @@ sley seal --json <target>
 Rules:
 
 - JSON output must be stable and versioned.
-- Diagnostic reports, symbol graphs, graph slices, ZJX envelopes, and graft
-  outcomes now carry v0 schema IDs. AST JSON still needs fixture snapshots and
-  a formal external schema lock.
-- Diagnostics must include stable IDs, node IDs, spans where possible, and
-  repair hints.
+- AST roots, diagnostic reports, symbol graphs, graph slices, ZJX envelopes,
+  and graft outcomes carry v0 schema IDs.
+- AST, diagnostic-report, and graph-slice snapshots are locked under
+  `fixtures/contracts/`.
+- Root-contract JSON Schema files live under `docs/schemas/`; exhaustive nested
+  AST/expression schemas remain open.
+- Diagnostics include stable IDs, node IDs, spans where possible, and repair
+  hints for common checker failures.
 - Grafts support dry-run by default and an explicit `--dry-run` flag.
 - Graft input JSON is strict: unknown operation or payload fields reject instead
   of being silently ignored.
@@ -148,21 +151,18 @@ Good diagnostic shape:
 Priority diagnostic families:
 
 - parse errors with expected tokens
-- unknown identifiers
-- unknown tasks
-- unknown types
-- call arity mismatch
-- call argument type mismatch
-- return type mismatch
-- immutable binding mutation
-- undeclared effects
-- unauthorized host authority
-- private imported task
-- ambiguous imported task
-- private imported type
-- ambiguous imported type
-- private imported effect
-- ambiguous imported effect
+- unknown identifiers: implemented with `declare_binding`
+- unknown tasks: implemented with `declare_or_import_task`
+- unknown types: implemented with `declare_or_import_type`
+- call arity mismatch: implemented with `match_task_arity`
+- call argument type mismatch: implemented with `replace_argument`
+- return type mismatch: implemented with `change_return_type` and
+  `replace_return_expression`
+- immutable binding mutation: implemented with `use_mutable_binding_kind`
+- undeclared effects: implemented with `declare_or_import_effect`
+- unauthorized host authority: implemented with `add_required_effect`
+- private imported task/type/effect: implemented with export hints
+- ambiguous imported task/type/effect: implemented with qualification hints
 - stale graft preconditions
 - unsupported graft operation
 - module namespace conflicts
@@ -361,12 +361,11 @@ Failure modes to watch:
 
 Near-term:
 
-1. Add more repair hints to common checker errors.
-2. Lock AST and graph-slice JSON fixtures, then publish formal external schema
-   files for the v0 agent contract.
-3. Add an agent onboarding section to docs and `llms.txt`.
-4. Add formatter round-trip tests for every example.
-5. Start content-addressed trace seal design.
+1. Expand formatter round-trip tests to every example and project module.
+2. Start content-addressed trace seal design.
+3. Fill out nested AST/expression JSON Schema definitions.
+4. Build a small accepted/rejected synthetic gold corpus.
+5. Extend graph-slice grafts beyond call-site, statement, and expression edits.
 
 Medium-term:
 

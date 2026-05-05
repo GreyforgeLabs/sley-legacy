@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.graft.outcome.v0",
+  "title": "Sley Graft Outcome v0",
+  "type": "object",
+  "required": ["schema", "status", "diagnostics", "provenance"],
+  "properties": {
+    "schema": { "const": "sley.graft.outcome.v0" },
+    "status": { "enum": ["accepted", "rejected"] },
+    "source": { "type": "string" },
+    "diagnostics": { "type": "array", "items": { "type": "object" } },
+    "provenance": { "type": "array", "items": { "type": "object" } }
+  },
+  "additionalProperties": false
+}

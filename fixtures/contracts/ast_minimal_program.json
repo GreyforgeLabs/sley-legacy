@@ -1,0 +1,45 @@
+{
+  "schema": "sley.ast.program.v0",
+  "imports": [],
+  "types": [],
+  "effects": [],
+  "tasks": [
+    {
+      "id": "task:main.main",
+      "module": "main",
+      "name": "main",
+      "takes": [],
+      "return_type": {
+        "kind": "Named",
+        "name": "Int"
+      },
+      "effects": [],
+      "body": {
+        "statements": [
+          {
+            "id": "block:task:main.main:stmt:0",
+            "kind": "Return",
+            "expr": {
+              "id": "block:task:main.main:stmt:0:expr",
+              "source": "1",
+              "expr_kind": "IntLiteral",
+              "value": 1,
+              "span": {
+                "line": 2,
+                "column": 10
+              }
+            },
+            "span": {
+              "line": 2,
+              "column": 3
+            }
+          }
+        ]
+      },
+      "span": {
+        "line": 1,
+        "column": 1
+      }
+    }
+  ]
+}

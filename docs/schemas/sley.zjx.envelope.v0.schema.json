@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.zjx.envelope.v0",
+  "title": "Sley ZJX Envelope v0",
+  "type": "object",
+  "required": ["schema", "format", "compression", "target", "graph"],
+  "properties": {
+    "schema": { "const": "sley.zjx.envelope.v0" },
+    "format": { "const": "zjx-preview-json" },
+    "compression": { "const": "none" },
+    "target": { "type": "string" },
+    "graph": { "type": "object" },
+    "slice": { "type": "object" },
+    "trace_receipts": { "type": "array", "items": { "type": "object" } }
+  },
+  "additionalProperties": false
+}

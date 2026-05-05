@@ -27,6 +27,32 @@ pub struct RepairHint {
     pub replacement: Option<String>,
 }
 
+impl RepairHint {
+    pub fn new(kind: impl Into<String>) -> Self {
+        Self {
+            kind: kind.into(),
+            target: None,
+            effect: None,
+            replacement: None,
+        }
+    }
+
+    pub fn with_target(mut self, target: impl Into<String>) -> Self {
+        self.target = Some(target.into());
+        self
+    }
+
+    pub fn with_effect(mut self, effect: impl Into<String>) -> Self {
+        self.effect = Some(effect.into());
+        self
+    }
+
+    pub fn with_replacement(mut self, replacement: impl Into<String>) -> Self {
+        self.replacement = Some(replacement.into());
+        self
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Diagnostic {
     pub id: String,

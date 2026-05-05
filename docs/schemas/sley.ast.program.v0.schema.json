@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.ast.program.v0",
+  "title": "Sley AST Program v0",
+  "type": "object",
+  "required": ["schema", "imports", "types", "effects", "tasks"],
+  "properties": {
+    "schema": { "const": "sley.ast.program.v0" },
+    "module": { "type": "string" },
+    "imports": { "type": "array", "items": { "type": "object" } },
+    "types": { "type": "array", "items": { "type": "object" } },
+    "effects": { "type": "array", "items": { "type": "object" } },
+    "tasks": { "type": "array", "items": { "type": "object" } },
+    "provenance": { "type": "array", "items": { "type": "object" } }
+  },
+  "additionalProperties": false
+}

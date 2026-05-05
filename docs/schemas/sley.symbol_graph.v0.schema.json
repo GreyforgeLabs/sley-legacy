@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.symbol_graph.v0",
+  "title": "Sley Symbol Graph v0",
+  "type": "object",
+  "required": ["schema", "entry_module", "modules"],
+  "properties": {
+    "schema": { "const": "sley.symbol_graph.v0" },
+    "entry_module": { "type": "string" },
+    "modules": { "type": "array", "items": { "type": "object" } }
+  },
+  "additionalProperties": false
+}

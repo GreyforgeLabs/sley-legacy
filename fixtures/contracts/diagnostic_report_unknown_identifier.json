@@ -1,0 +1,19 @@
+{
+  "schema": "sley.diagnostics.report.v0",
+  "status": "error",
+  "diagnostics": [
+    {
+      "id": "UNKNOWN_IDENTIFIER",
+      "severity": "error",
+      "message": "unknown local binding `missing`",
+      "node": "block:task:main.main:stmt:0:expr",
+      "repair_hints": [
+        {
+          "kind": "declare_binding",
+          "target": "task:main.main",
+          "replacement": "bind missing = <value>"
+        }
+      ]
+    }
+  ]
+}

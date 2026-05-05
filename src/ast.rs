@@ -2,8 +2,12 @@ use serde::{Deserialize, Serialize};
 
 use crate::diagnostics::SourceSpan;
 
+pub const AST_PROGRAM_SCHEMA: &str = "sley.ast.program.v0";
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Program {
+    #[serde(default = "ast_program_schema")]
+    pub schema: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub module: Option<String>,
     #[serde(default)]
@@ -21,6 +25,7 @@ pub struct Program {
 impl Program {
     pub fn new() -> Self {
         Self {
+            schema: AST_PROGRAM_SCHEMA.to_string(),
             module: None,
             imports: Vec::new(),
             types: Vec::new(),
@@ -67,6 +72,10 @@ impl Program {
                 || task.id.ends_with(&format!(".{needle}"))
         })
     }
+}
+
+fn ast_program_schema() -> String {
+    AST_PROGRAM_SCHEMA.to_string()
 }
 
 impl Default for Program {

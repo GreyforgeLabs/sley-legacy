@@ -1,0 +1,56 @@
+# Sley Agent Onboarding
+
+Sley is an agent-native structural programming language. Source files are the
+human review projection; the canonical working model is the typed graph exposed
+by the Loom compiler.
+
+Core commands:
+
+```bash
+cargo run -- check --json <file-or-project>
+cargo run -- ast --json <file-or-project>
+cargo run -- ast --json --node <node-id> <file-or-project>
+cargo run -- graph --json <file-or-project>
+cargo run -- graph --json --slice <node-id> <file-or-project>
+cargo run -- graft --json --dry-run <file> <graft.json>
+cargo run -- graft --json --write <file> <graft.json>
+cargo run -- format <file>
+```
+
+Agent rules:
+
+- Prefer structural grafts over raw text edits.
+- Run `check --json` after every proposed semantic change.
+- Use `graph --json --slice <node-id>` before planning a bounded graft.
+- Use `ast --json --node <node-id>` when exact task shape matters.
+- Treat diagnostic `repair_hints` as suggestions, not authority bypasses.
+- Do not add effects only to silence diagnostics; the authority must be real.
+- Do not invent binding kinds. The stable vocabulary is in
+  `docs/SleyLanguageSpec.md`.
+- Keep formatting controlled by `sley format`.
+- Do not use old names or old-project framing. This project is Sley.
+
+Stable v0 JSON roots:
+
+- `sley.ast.program.v0`
+- `sley.diagnostics.report.v0`
+- `sley.symbol_graph.v0`
+- `sley.symbol_graph.slice.v0`
+- `sley.graft.outcome.v0`
+- `sley.zjx.envelope.v0`
+
+Contract references:
+
+- `docs/SleyLanguageSpec.md`
+- `docs/schemas/*.schema.json`
+- `fixtures/contracts/*.json`
+- `fixtures/grafts/*.json`
+- `tests/sley_v0.rs`
+
+Current development phase:
+
+- trace sidecars toward content-addressed seals
+- formatter round trips for all examples
+- nested AST/expression schema hardening
+- accepted/rejected synthetic gold corpus
+- broader graph-slice graft operations
