@@ -1,6 +1,6 @@
 # Sley Language Specification
 
-Status: v0 executable slice plus module task/type/effect namespace, runtime gates, Sley-level Result flow, typed host fallibility, seeded database host reads/writes, seeded secret values, seeded deploy stage results, seeded spend authorizations, seeded network host text, seeded shell host output, seeded model completions, trace tooling, and first checked lint tooling
+Status: v0 executable slice plus module task/type/effect namespace, runtime gates, Sley-level Result flow, typed host fallibility, seeded database host reads/writes, seeded secret values, seeded deploy stage results, seeded spend authorizations, seeded network host text, seeded shell host output, seeded model completions, trace tooling, and checked private-task lint tooling
 
 Sley is a human-readable, agent-writable structural language. The canonical
 program model is a typed graph. `.sley` source is the stable review projection,
@@ -564,12 +564,15 @@ declared effects, and inbound/outbound call counts. The v0 JSON root is
 
 `sley lint` is the first checked lint command built on the graph query surface.
 It parses and checks the target before emitting results, so semantic failures
-return the normal diagnostic report instead of a lint report. The initial v0
-rule is `unused_private_task`: a warning for non-exported tasks with zero
-inbound checked calls, excluding the entry module's `main` task. `--module
-<module>` scopes the lint to one module, `--rule unused-private-task` selects
-that rule explicitly, and `--deny-warnings` turns findings into a nonzero CLI
-exit after printing the report. The v0 JSON root is `sley.lint.report.v0`.
+return the normal diagnostic report instead of a lint report. The v0
+private-task rules are `unused_private_task`, which warns on non-exported tasks
+with zero inbound checked calls excluding the entry module's `main`, and
+`unreachable_private_task`, which warns on private task islands that are only
+reachable from other private tasks rather than from `main` or an exported task.
+`--module <module>` scopes the lint to one module,
+`--rule unused-private-task` or `--rule unreachable-private-task` selects one
+rule explicitly, and `--deny-warnings` turns findings into a nonzero CLI exit
+after printing the report. The v0 JSON root is `sley.lint.report.v0`.
 
 Diagnostics include machine-readable repair hints for common checker failures.
 Hints are intentionally small and structural: `kind` identifies the action,
@@ -612,9 +615,8 @@ archive.
   archive
 - the AST JSON Schema covers nested AST and expression variants; the remaining
   JSON Schema files are still narrower v0 root contracts
-- `sley lint` currently ships one warning-grade graph rule for unused private
-  tasks; broader style, migration, authority, and reachability lints remain
-  later work
+- `sley lint` currently ships warning-grade private-task graph rules; broader
+  style, migration, and authority lints remain later work
 - no `match`, agent declarations, spawn/cast/join, or compressed ZJX archive
   writer yet
 - `MoveNode` supports checked in-parent statement reordering and top-level

@@ -78,9 +78,10 @@ Current development phase:
 - checked graph query reports are available through `sley query --json` with
   root schema `sley.query.report.v0`
 - checked lint reports are available through `sley lint --json` with root schema
-  `sley.lint.report.v0`; the first rule is `unused_private_task`
-- next development work should broaden Sley lint coverage and start consuming
-  query/lint JSON from helper passes
+  `sley.lint.report.v0`; private-task rules include `unused_private_task` and
+  `unreachable_private_task`
+- next development work should start consuming query/lint JSON from Sley helper
+  passes and broaden authority, style, and migration lints
 - project graft writeback hardening beyond existing modules
 - manifest-backed accepted/rejected synthetic gold corpus growth
 - broader graph-slice graft operations around move/delete planning

@@ -99,6 +99,7 @@
           { "pointer": "/status", "value": "ok" },
           { "pointer": "/entry_module", "value": "app.main" },
           { "pointer": "/filters/rules/0", "value": "unused_private_task" },
+          { "pointer": "/filters/rules/1", "value": "unreachable_private_task" },
           { "pointer": "/findings", "value": [] }
         ]
       }

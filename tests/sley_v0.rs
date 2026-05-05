@@ -687,10 +687,57 @@ task orphan -> Int {
 }
 "#;
     let lint_program = parse_program(lint_source).expect("parse lint fixture");
-    let lint = build_lint_report(&lint_program, LintOptions::default());
+    let lint = build_lint_report(
+        &lint_program,
+        LintOptions {
+            rules: vec![LintRule::UnusedPrivateTask],
+            module: None,
+        },
+    );
     assert_json_snapshot(
         &lint,
         include_str!("../fixtures/contracts/lint_unused_private_task.json"),
+    );
+
+    let reachability_source = r#"
+module app.reach
+
+task main -> Int {
+  return 0
+}
+
+export task public -> Int {
+  return call public_helper()
+}
+
+task public_helper -> Int {
+  return 1
+}
+
+task cycle_a -> Int {
+  return call cycle_b()
+}
+
+task cycle_b -> Int {
+  return call cycle_a()
+}
+
+task orphan -> Int {
+  return 2
+}
+"#;
+    let reachability_program =
+        parse_program(reachability_source).expect("parse reachability lint fixture");
+    let reachability_lint = build_lint_report(
+        &reachability_program,
+        LintOptions {
+            rules: vec![LintRule::UnreachablePrivateTask],
+            module: None,
+        },
+    );
+    assert_json_snapshot(
+        &reachability_lint,
+        include_str!("../fixtures/contracts/lint_unreachable_private_task.json"),
     );
 
     let hello_source = include_str!("../examples/hello.sley");
@@ -3414,6 +3461,64 @@ task orphan -> Int {
     assert_eq!(report.findings[0].id, "UNUSED_PRIVATE_TASK");
     assert_eq!(report.findings[0].node, "task:app.lint.orphan");
     assert_eq!(report.findings[0].module, "app.lint");
+}
+
+#[test]
+fn lint_report_flags_unreachable_private_task_cycles() {
+    let source = r#"
+module app.reach
+
+task main -> Int {
+  return call main_helper()
+}
+
+task main_helper -> Int {
+  return 0
+}
+
+export task public -> Int {
+  return call public_helper()
+}
+
+task public_helper -> Int {
+  return 1
+}
+
+task cycle_a -> Int {
+  return call cycle_b()
+}
+
+task cycle_b -> Int {
+  return call cycle_a()
+}
+
+task orphan -> Int {
+  return 2
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+
+    let report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::UnreachablePrivateTask],
+            module: None,
+        },
+    );
+
+    assert_eq!(report.schema, LINT_REPORT_SCHEMA);
+    assert_eq!(report.status, "findings");
+    assert_eq!(report.entry_module, "app.reach");
+    assert_eq!(report.filters.rules, vec!["unreachable_private_task"]);
+    assert_eq!(report.findings.len(), 2);
+    assert_eq!(report.findings[0].id, "UNREACHABLE_PRIVATE_TASK");
+    assert_eq!(report.findings[0].node, "task:app.reach.cycle_a");
+    assert_eq!(report.findings[1].node, "task:app.reach.cycle_b");
 }
 
 #[test]

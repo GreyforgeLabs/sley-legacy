@@ -527,12 +527,14 @@ impl From<CliQueryKind> for QueryKind {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
 enum CliLintRule {
     UnusedPrivateTask,
+    UnreachablePrivateTask,
 }
 
 impl From<CliLintRule> for LintRule {
     fn from(rule: CliLintRule) -> Self {
         match rule {
             CliLintRule::UnusedPrivateTask => Self::UnusedPrivateTask,
+            CliLintRule::UnreachablePrivateTask => Self::UnreachablePrivateTask,
         }
     }
 }

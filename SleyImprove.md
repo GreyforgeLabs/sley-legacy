@@ -95,7 +95,7 @@ sley ast --json --node <node-id> <target>
 sley graph --json <target>
 sley graph --json --slice <node-id> <target>
 sley query --json [--kind all|modules|tasks|calls] [--module <module>] <target>
-sley lint --json [--rule unused-private-task] [--module <module>] <target>
+sley lint --json [--rule unused-private-task|unreachable-private-task] [--module <module>] <target>
 sley trace --json <target>
 sley seal --json <target>
 sley zjx --json [--slice <node-id>] <target>
@@ -381,11 +381,16 @@ surface. It runs the checker before linting, emits
 `schema: "sley.lint.report.v0"`, and keeps warning-grade lint output separate
 from hard checker diagnostics.
 
-The initial v0 rule is `unused_private_task`: a non-exported task with zero
-inbound checked calls is reported unless it is the entry module's `main` task.
-The command supports `--module <module>` and `--rule unused-private-task`, and
-`--deny-warnings` lets CI turn findings into a failing exit after the JSON
-report is printed.
+The v0 private-task rules are:
+
+- `unused_private_task`: a non-exported task with zero inbound checked calls is
+  reported unless it is the entry module's `main` task.
+- `unreachable_private_task`: a non-exported task with inbound private calls is
+  reported when it is not reachable from `main` or any exported task.
+
+The command supports `--module <module>`, `--rule unused-private-task`,
+`--rule unreachable-private-task`, and `--deny-warnings` lets CI turn findings
+into a failing exit after the JSON report is printed.
 
 This is not production lint coverage yet. It is the first stable surface for
 agent-facing hygiene, later authority lints, migration hints, and eventually
@@ -444,8 +449,8 @@ Near-term:
    authority failures as diagnostics.
 2. Grow the accepted/rejected synthetic gold corpus and CLI smoke manifest with
    graft, module, and runtime authority cases.
-3. Broaden lints on top of `sley.query.report.v0` and
-   `sley.lint.report.v0`.
+3. Start consuming `sley.query.report.v0` and `sley.lint.report.v0` from Sley
+   helper passes, then broaden authority, style, and migration lints.
 4. Extend graph-slice grafts around move/delete planning.
 5. Harden project graft writeback for new module creation and module rename.
 

@@ -1,25 +1,28 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use serde::Serialize;
 
 use crate::ast::Program;
 use crate::query::{QueryKind, QueryOptions, build_query_report};
+use crate::symbols::{collect_task_calls, task_fq_name, task_module};
 
 pub const LINT_REPORT_SCHEMA: &str = "sley.lint.report.v0";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum LintRule {
     UnusedPrivateTask,
+    UnreachablePrivateTask,
 }
 
 impl LintRule {
     pub fn all() -> Vec<Self> {
-        vec![Self::UnusedPrivateTask]
+        vec![Self::UnusedPrivateTask, Self::UnreachablePrivateTask]
     }
 
     pub fn as_str(self) -> &'static str {
         match self {
             Self::UnusedPrivateTask => "unused_private_task",
+            Self::UnreachablePrivateTask => "unreachable_private_task",
         }
     }
 }
@@ -62,6 +65,12 @@ pub fn build_lint_report(program: &Program, options: LintOptions) -> LintReport 
 
     if rules.contains(&LintRule::UnusedPrivateTask) {
         findings.extend(lint_unused_private_tasks(
+            program,
+            options.module.as_deref(),
+        ));
+    }
+    if rules.contains(&LintRule::UnreachablePrivateTask) {
+        findings.extend(lint_unreachable_private_tasks(
             program,
             options.module.as_deref(),
         ));
@@ -135,4 +144,80 @@ fn lint_unused_private_tasks(program: &Program, module: Option<&str>) -> Vec<Lin
             hint: "call it, export it, or delete it".to_string(),
         })
         .collect()
+}
+
+fn lint_unreachable_private_tasks(program: &Program, module: Option<&str>) -> Vec<LintFinding> {
+    let task_names = program
+        .tasks
+        .iter()
+        .map(task_fq_name)
+        .collect::<BTreeSet<_>>();
+    let entry_task = format!("{}.main", program.module_name());
+    let mut edges = BTreeMap::<String, Vec<String>>::new();
+    let mut inbound_counts = BTreeMap::<String, usize>::new();
+
+    for call in collect_task_calls(program) {
+        let Some(target) = call.target else {
+            continue;
+        };
+        if !task_names.contains(&target) {
+            continue;
+        }
+        edges
+            .entry(call.from.clone())
+            .or_default()
+            .push(target.clone());
+        *inbound_counts.entry(target).or_default() += 1;
+    }
+
+    let mut reachable = BTreeSet::new();
+    let mut pending = program
+        .tasks
+        .iter()
+        .filter(|task| task.exported || task_fq_name(task) == entry_task)
+        .map(task_fq_name)
+        .collect::<Vec<_>>();
+
+    while let Some(task) = pending.pop() {
+        if !reachable.insert(task.clone()) {
+            continue;
+        }
+        if let Some(targets) = edges.get(&task) {
+            pending.extend(targets.iter().cloned());
+        }
+    }
+
+    program
+        .tasks
+        .iter()
+        .filter(|task| !task.exported)
+        .map(|task| (task, task_fq_name(task)))
+        .filter(|(task, _qualified_name)| module_matches(module, &task_module(task)))
+        .filter(|(_task, qualified_name)| qualified_name != &entry_task)
+        .filter(|(_task, qualified_name)| !reachable.contains(qualified_name))
+        .filter(|(_task, qualified_name)| {
+            inbound_counts
+                .get(qualified_name)
+                .copied()
+                .unwrap_or_default()
+                > 0
+        })
+        .map(|(task, qualified_name)| LintFinding {
+            id: "UNREACHABLE_PRIVATE_TASK".to_string(),
+            rule: LintRule::UnreachablePrivateTask.as_str().to_string(),
+            severity: "warning".to_string(),
+            message: format!(
+                "private task `{qualified_name}` is not reachable from main or any exported task"
+            ),
+            node: task.id.clone(),
+            module: task_module(task),
+            hint:
+                "call it from main or an exported task, export a reachable entrypoint, or delete it"
+                    .to_string(),
+        })
+        .collect()
+}
+
+fn module_matches(filter: Option<&str>, module: &str) -> bool {
+    filter.is_none_or(|filter| filter == module)
 }

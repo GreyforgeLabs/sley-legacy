@@ -15,7 +15,9 @@
         "module": { "type": ["string", "null"] },
         "rules": {
           "type": "array",
-          "items": { "enum": ["unused_private_task"] },
+          "items": {
+            "enum": ["unused_private_task", "unreachable_private_task"]
+          },
           "uniqueItems": true
         }
       },
@@ -35,8 +37,12 @@
           "hint"
         ],
         "properties": {
-          "id": { "const": "UNUSED_PRIVATE_TASK" },
-          "rule": { "const": "unused_private_task" },
+          "id": {
+            "enum": ["UNUSED_PRIVATE_TASK", "UNREACHABLE_PRIVATE_TASK"]
+          },
+          "rule": {
+            "enum": ["unused_private_task", "unreachable_private_task"]
+          },
           "severity": { "enum": ["warning"] },
           "message": { "type": "string" },
           "node": { "type": "string" },

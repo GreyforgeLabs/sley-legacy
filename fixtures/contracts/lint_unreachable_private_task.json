@@ -1,0 +1,31 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.reach",
+  "filters": {
+    "module": null,
+    "rules": [
+      "unreachable_private_task"
+    ]
+  },
+  "findings": [
+    {
+      "id": "UNREACHABLE_PRIVATE_TASK",
+      "rule": "unreachable_private_task",
+      "severity": "warning",
+      "message": "private task `app.reach.cycle_a` is not reachable from main or any exported task",
+      "node": "task:app.reach.cycle_a",
+      "module": "app.reach",
+      "hint": "call it from main or an exported task, export a reachable entrypoint, or delete it"
+    },
+    {
+      "id": "UNREACHABLE_PRIVATE_TASK",
+      "rule": "unreachable_private_task",
+      "severity": "warning",
+      "message": "private task `app.reach.cycle_b` is not reachable from main or any exported task",
+      "node": "task:app.reach.cycle_b",
+      "module": "app.reach",
+      "hint": "call it from main or an exported task, export a reachable entrypoint, or delete it"
+    }
+  ]
+}
