@@ -16,6 +16,7 @@ pub enum LintRule {
     UnusedPrivateTask,
     UnreachablePrivateTask,
     UnusedDeclaredEffect,
+    RawHostAdapter,
 }
 
 impl LintRule {
@@ -24,6 +25,7 @@ impl LintRule {
             Self::UnusedPrivateTask,
             Self::UnreachablePrivateTask,
             Self::UnusedDeclaredEffect,
+            Self::RawHostAdapter,
         ]
     }
 
@@ -32,6 +34,7 @@ impl LintRule {
             Self::UnusedPrivateTask => "unused_private_task",
             Self::UnreachablePrivateTask => "unreachable_private_task",
             Self::UnusedDeclaredEffect => "unused_declared_effect",
+            Self::RawHostAdapter => "raw_host_adapter",
         }
     }
 }
@@ -89,6 +92,9 @@ pub fn build_lint_report(program: &Program, options: LintOptions) -> LintReport 
             program,
             options.module.as_deref(),
         ));
+    }
+    if rules.contains(&LintRule::RawHostAdapter) {
+        findings.extend(lint_raw_host_adapters(program, options.module.as_deref()));
     }
 
     findings.sort_by(|left, right| {
@@ -313,6 +319,41 @@ fn lint_unused_declared_effects(program: &Program, module: Option<&str>) -> Vec<
 
 fn module_matches(filter: Option<&str>, module: &str) -> bool {
     filter.is_none_or(|filter| filter == module)
+}
+
+fn lint_raw_host_adapters(program: &Program, module: Option<&str>) -> Vec<LintFinding> {
+    collect_task_calls(program)
+        .into_iter()
+        .filter(|call| module_matches(module, &call.from_module))
+        .filter_map(|call| {
+            let replacement = raw_host_adapter_replacement(&call.callee)?;
+            Some(LintFinding {
+                id: "RAW_HOST_ADAPTER".to_string(),
+                rule: LintRule::RawHostAdapter.as_str().to_string(),
+                severity: "warning".to_string(),
+                message: format!(
+                    "host call `{}` uses a legacy diagnostic-failing adapter; prefer fallible `{replacement}`",
+                    call.callee
+                ),
+                node: call.expr_id,
+                module: call.from_module,
+                hint: format!(
+                    "replace `{}` with `{replacement}` and handle the Result with `?` inside a Result-returning task",
+                    call.callee
+                ),
+            })
+        })
+        .collect()
+}
+
+fn raw_host_adapter_replacement(callee: &str) -> Option<&'static str> {
+    match callee {
+        "fs.read_text" => Some("fs.try_read_text"),
+        "fs.write_text" => Some("fs.try_write_text"),
+        "db.query_one" => Some("db.try_query_one"),
+        "db.query" => Some("db.try_query"),
+        _ => None,
+    }
 }
 
 fn normalize_effect_name(program: &Program, module: &str, effect: &str) -> String {

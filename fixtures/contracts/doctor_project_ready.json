@@ -30,7 +30,8 @@
     "rules": [
       "unused_private_task",
       "unreachable_private_task",
-      "unused_declared_effect"
+      "unused_declared_effect",
+      "raw_host_adapter"
     ],
     "finding_count": 0
   },

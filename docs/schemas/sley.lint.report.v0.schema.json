@@ -19,7 +19,8 @@
             "enum": [
               "unused_private_task",
               "unreachable_private_task",
-              "unused_declared_effect"
+              "unused_declared_effect",
+              "raw_host_adapter"
             ]
           },
           "uniqueItems": true
@@ -45,14 +46,16 @@
             "enum": [
               "UNUSED_PRIVATE_TASK",
               "UNREACHABLE_PRIVATE_TASK",
-              "UNUSED_DECLARED_EFFECT"
+              "UNUSED_DECLARED_EFFECT",
+              "RAW_HOST_ADAPTER"
             ]
           },
           "rule": {
             "enum": [
               "unused_private_task",
               "unreachable_private_task",
-              "unused_declared_effect"
+              "unused_declared_effect",
+              "raw_host_adapter"
             ]
           },
           "severity": { "enum": ["warning"] },

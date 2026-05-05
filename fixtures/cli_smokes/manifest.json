@@ -207,6 +207,7 @@
           { "pointer": "/filters/rules/0", "value": "unused_private_task" },
           { "pointer": "/filters/rules/1", "value": "unreachable_private_task" },
           { "pointer": "/filters/rules/2", "value": "unused_declared_effect" },
+          { "pointer": "/filters/rules/3", "value": "raw_host_adapter" },
           { "pointer": "/findings", "value": [] }
         ]
       }
@@ -222,6 +223,21 @@
           { "pointer": "/status", "value": "ok" },
           { "pointer": "/filters/rules/0", "value": "unused_declared_effect" },
           { "pointer": "/findings", "value": [] }
+        ]
+      }
+    },
+    {
+      "name": "lint_raw_host_adapter_rule_json",
+      "args": ["lint", "--json", "--rule", "raw-host-adapter", "examples/file_gate.sley"],
+      "covers": ["cli:lint", "lint:raw_host_adapter", "json:sley.lint.report.v0"],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.lint.report.v0" },
+          { "pointer": "/status", "value": "findings" },
+          { "pointer": "/filters/rules/0", "value": "raw_host_adapter" },
+          { "pointer": "/findings/0/id", "value": "RAW_HOST_ADAPTER" },
+          { "pointer": "/findings/0/rule", "value": "raw_host_adapter" }
         ]
       }
     },

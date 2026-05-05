@@ -666,6 +666,7 @@ enum CliLintRule {
     UnusedPrivateTask,
     UnreachablePrivateTask,
     UnusedDeclaredEffect,
+    RawHostAdapter,
 }
 
 impl From<CliLintRule> for LintRule {
@@ -674,6 +675,7 @@ impl From<CliLintRule> for LintRule {
             CliLintRule::UnusedPrivateTask => Self::UnusedPrivateTask,
             CliLintRule::UnreachablePrivateTask => Self::UnreachablePrivateTask,
             CliLintRule::UnusedDeclaredEffect => Self::UnusedDeclaredEffect,
+            CliLintRule::RawHostAdapter => Self::RawHostAdapter,
         }
     }
 }

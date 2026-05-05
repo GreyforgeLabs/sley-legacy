@@ -87,8 +87,8 @@ Current development phase:
   root schema `sley.query.report.v0`
 - checked lint reports are available through `sley lint --json` with root schema
   `sley.lint.report.v0`; private-task rules include `unused_private_task` and
-  `unreachable_private_task`, and the authority hygiene rule
-  `unused_declared_effect`
+  `unreachable_private_task`, the authority hygiene rule
+  `unused_declared_effect`, and the migration rule `raw_host_adapter`
 - `sley new --json` emits `sley.project.scaffold.v0` and creates
   non-destructive `hello` or deterministic `deploy` starter projects that can
   immediately run through check, query, lint, and seeded runtime gates
@@ -97,7 +97,7 @@ Current development phase:
 - `sley verify --json` emits `sley.verify.report.v0` and consumes strict
   diagnostics, checked query/lint summaries, and deterministic runtime
   execution into one CI/pre-deploy gate
-- next development work should broaden authority, style, and migration lints
+- next development work should broaden style and migration lints
 - project graft writeback hardening beyond existing modules
 - manifest-backed accepted/rejected synthetic gold corpus growth
 - broader graph-slice graft operations around move/delete planning

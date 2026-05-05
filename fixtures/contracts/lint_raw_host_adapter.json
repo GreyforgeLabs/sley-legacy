@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "main",
+  "filters": {
+    "module": null,
+    "rules": [
+      "raw_host_adapter"
+    ]
+  },
+  "findings": [
+    {
+      "id": "RAW_HOST_ADAPTER",
+      "rule": "raw_host_adapter",
+      "severity": "warning",
+      "message": "host call `fs.read_text` uses a legacy diagnostic-failing adapter; prefer fallible `fs.try_read_text`",
+      "node": "block:task:main.read_example:stmt:0:expr",
+      "module": "main",
+      "hint": "replace `fs.read_text` with `fs.try_read_text` and handle the Result with `?` inside a Result-returning task"
+    }
+  ]
+}

@@ -1013,6 +1013,20 @@ task main -> Text uses Network {
         include_str!("../fixtures/contracts/lint_unused_declared_effect.json"),
     );
 
+    let raw_host_source = include_str!("../examples/file_gate.sley");
+    let raw_host_program = parse_program(raw_host_source).expect("parse raw host lint fixture");
+    let raw_host_lint = build_lint_report(
+        &raw_host_program,
+        LintOptions {
+            rules: vec![LintRule::RawHostAdapter],
+            module: None,
+        },
+    );
+    assert_json_snapshot(
+        &raw_host_lint,
+        include_str!("../fixtures/contracts/lint_raw_host_adapter.json"),
+    );
+
     let hello_source = include_str!("../examples/hello.sley");
     let hello_program = parse_program(hello_source).expect("parse hello fixture");
     let seal = build_trace_seal(
@@ -4003,6 +4017,34 @@ task stale -> Text uses Network {
 }
 
 #[test]
+fn lint_report_flags_raw_host_adapters() {
+    let source = include_str!("../examples/file_gate.sley");
+    let program = parse_program(source).expect("parse file gate fixture");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+
+    let report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::RawHostAdapter],
+            module: None,
+        },
+    );
+
+    assert_eq!(report.schema, LINT_REPORT_SCHEMA);
+    assert_eq!(report.status, "findings");
+    assert_eq!(report.filters.rules, vec!["raw_host_adapter"]);
+    assert_eq!(report.findings.len(), 1);
+    assert_eq!(report.findings[0].id, "RAW_HOST_ADAPTER");
+    assert_eq!(report.findings[0].rule, "raw_host_adapter");
+    assert!(report.findings[0].message.contains("fs.read_text"));
+    assert!(report.findings[0].hint.contains("fs.try_read_text"));
+}
+
+#[test]
 fn trace_receipts_round_trip_as_jsonl() {
     let root = temp_project_dir("trace-round-trip");
     let trace_path = root.join(".sley/trace.jsonl");
@@ -4491,6 +4533,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "cli:zjx",
         "cli:graft-dry-run",
         "lint:unused_declared_effect",
+        "lint:raw_host_adapter",
         "host:DatabaseRead",
         "host:DatabaseWrite",
         "host:Deploy",
