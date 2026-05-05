@@ -91,6 +91,7 @@ pub struct RuntimeGates {
     gates: BTreeMap<String, RuntimeGate>,
     db_tables: BTreeMap<String, DbRows>,
     secret_values: BTreeMap<String, String>,
+    deploy_results: BTreeMap<String, String>,
     http_text_responses: BTreeMap<String, String>,
     shell_outputs: BTreeMap<String, String>,
     model_outputs: BTreeMap<String, String>,
@@ -123,6 +124,7 @@ impl RuntimeGates {
         self.gates.is_empty()
             && self.db_tables.is_empty()
             && self.secret_values.is_empty()
+            && self.deploy_results.is_empty()
             && self.http_text_responses.is_empty()
             && self.shell_outputs.is_empty()
             && self.model_outputs.is_empty()
@@ -163,6 +165,14 @@ impl RuntimeGates {
 
     pub fn secret(&self, name: &str) -> Option<&str> {
         self.secret_values.get(name).map(String::as_str)
+    }
+
+    pub fn grant_deploy_result(&mut self, target: impl Into<String>, result: impl Into<String>) {
+        self.deploy_results.insert(target.into(), result.into());
+    }
+
+    pub fn deploy_result(&self, target: &str) -> Option<&str> {
+        self.deploy_results.get(target).map(String::as_str)
     }
 
     pub fn grant_http_text(&mut self, url: impl Into<String>, body: impl Into<String>) {
@@ -948,6 +958,9 @@ fn eval_host_call(
         ),
         "db.try_insert" => eval_db_insert(program, task, expr, callee_name, args, locals, gates),
         "secrets.try_get" => eval_secret_get(program, task, expr, callee_name, args, locals, gates),
+        "deploy.try_stage" => {
+            eval_deploy_stage(program, task, expr, callee_name, args, locals, gates)
+        }
         "http.try_get_text" => {
             eval_http_get_text(program, task, expr, callee_name, args, locals, gates)
         }
@@ -1250,6 +1263,37 @@ fn eval_secret_get(
 }
 
 #[allow(clippy::too_many_arguments)]
+fn eval_deploy_stage(
+    program: &Program,
+    task: &TaskDecl,
+    expr: &Expr,
+    callee_name: &str,
+    args: &[Expr],
+    locals: &HashMap<String, Value>,
+    gates: &mut RuntimeGates,
+) -> Result<EvalOutcome, Vec<Diagnostic>> {
+    if args.len() != 1 {
+        return host_arity_error(expr, callee_name, 1, args.len()).map(EvalOutcome::value);
+    }
+
+    let target = arg_or_propagate!(eval_text_arg(program, task, expr, args, 0, locals, gates));
+    if target.trim().is_empty() {
+        return Ok(host_err(
+            "RUNTIME_DEPLOY_TARGET_INVALID",
+            "deploy target cannot be empty",
+        ));
+    }
+
+    match gates.deploy_result(&target) {
+        Some(result) => Ok(host_ok(Value::Text(result.to_string()))),
+        None => Ok(host_err(
+            "RUNTIME_DEPLOY_RESULT_NOT_FOUND",
+            format!("deploy result for target `{target}` was not seeded"),
+        )),
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
 fn eval_shell_run(
     program: &Program,
     task: &TaskDecl,
@@ -1445,6 +1489,7 @@ fn host_required_effects(name: &str) -> Option<&'static [&'static str]> {
         "shell.try_run" => Some(&["Shell"]),
         "model.try_complete" => Some(&["ModelCall"]),
         "secrets.try_get" => Some(&["SecretRead"]),
+        "deploy.try_stage" => Some(&["Deploy"]),
         _ => None,
     }
 }

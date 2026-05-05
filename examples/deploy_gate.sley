@@ -1,0 +1,5 @@
+task main -> Result<Text, Error> uses Deploy {
+  bind result = call deploy.try_stage("staging")?
+
+  return Ok(result)
+}

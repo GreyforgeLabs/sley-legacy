@@ -61,6 +61,10 @@ Implemented now:
   NAME TEXT`; `secrets.try_get` returns seeded secret values as
   `Result<Text, Error>` without reading environment variables, keyrings, or
   real secret stores
+- deterministic deploy host seeding with `sley run --cap Deploy
+  --deploy-result TARGET TEXT`; `deploy.try_stage` returns seeded deployment
+  stage results as `Result<Text, Error>` without uploading, starting services,
+  or calling deployment providers
 - deterministic network host seeding with `sley run --cap Network --http-text
   URL TEXT`; `http.try_get_text` returns seeded text responses as
   `Result<Text, Error>` without live outbound network access
@@ -194,6 +198,28 @@ task main -> Result<Text, Error> uses SecretRead {
 }
 ```
 
+Seeded deploy runtime:
+
+```bash
+sley run --json --cap Deploy --deploy-result staging staged examples/deploy_gate.sley
+```
+
+`deploy.try_stage(target)` reads an exact seeded deployment stage result and
+returns `Result<Text, Error>`. This is a deterministic v0 host adapter, not a
+deployment client. It does not upload artifacts, push branches, start services,
+mutate infrastructure, or call providers. Missing target seeds produce
+`RUNTIME_DEPLOY_RESULT_NOT_FOUND` as a typed host error; empty targets produce
+`RUNTIME_DEPLOY_TARGET_INVALID`; missing `Deploy` remains a runtime capability
+diagnostic.
+
+```sley
+task main -> Result<Text, Error> uses Deploy {
+  bind result = call deploy.try_stage("staging")?
+
+  return Ok(result)
+}
+```
+
 Seeded network runtime:
 
 ```bash
@@ -280,8 +306,9 @@ task load -> Result<Text, Error> uses FileRead {
 
 The standard runtime `Error` payload is a record with `code: Text` and
 `message: Text`. `fs.try_read_text`, `fs.try_write_text`, `db.try_query_one`,
-`db.try_query`, `db.try_insert`, `http.try_get_text`, `shell.try_run`, and
-`model.try_complete`, and `secrets.try_get` return `Result<T, Error>`. Missing
+`db.try_query`, `db.try_insert`, `http.try_get_text`, `shell.try_run`,
+`model.try_complete`, `secrets.try_get`, and `deploy.try_stage` return
+`Result<T, Error>`. Missing
 capabilities and gate scope violations remain diagnostics because they are
 authority failures, not recoverable host values. The legacy raw adapters still
 return their direct values and keep diagnostic failure behavior.
@@ -302,11 +329,12 @@ Known v0 limits:
   adapter. `Network` has a deterministic seeded text adapter, `Shell` has a
   deterministic seeded command-output adapter, and `ModelCall` has a
   deterministic seeded prompt-completion adapter. `SecretRead` has a
-  deterministic seeded secret-value adapter. `Deploy` and `Spend` effects still
-  need dedicated host adapters.
+  deterministic seeded secret-value adapter. The `Deploy` adapter returns
+  deterministic seeded stage results. `Spend` still needs a
+  dedicated host adapter.
 - Sley-level `Result` values and `?` propagation execute, and fallible
-  filesystem, database, network, shell, model, and secret host variants return
-  typed `Error` records. `Deploy` and `Spend` still need the same bridge.
+  filesystem, database, network, shell, model, secret, and deploy host variants
+  return typed `Error` records. `Spend` still needs the same bridge.
 - Project graft writeback supports existing module files. Grafts that would
   create unknown module files or import modules outside the loaded project
   reject before any source or trace mutation.
@@ -319,6 +347,6 @@ Known v0 limits:
   explicitly.
 
 The next logical phase is to expand the remaining capability-backed host
-adapters on top of typed fallibility: `Deploy` and `Spend` should define
-authority gates, deterministic tests, and `Result<T, Error>` surfaces before
-broader language features depend on them.
+adapters on top of typed fallibility: `Spend` should define authority gates,
+deterministic tests, and `Result<T, Error>` surfaces before broader language
+features depend on it.

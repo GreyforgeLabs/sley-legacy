@@ -204,10 +204,10 @@ Near-term:
 
 1. Keep expanding parser/checker/runtime coverage in Rust.
 2. Expand capability-backed host adapters on top of typed fallibility:
-   `Deploy` and `Spend` adapters need authority gates plus
-   `Result<T, Error>` surfaces. Database write has the first deterministic
-   `db.try_insert` slice, secrets have deterministic seeded
-   `secrets.try_get`, network has deterministic seeded `http.try_get_text`,
+   `Spend` still needs an authority gate plus a `Result<T, Error>` surface.
+   Database write has the first deterministic `db.try_insert` slice, secrets
+   have deterministic seeded `secrets.try_get`, deploy has deterministic seeded
+   `deploy.try_stage`, network has deterministic seeded `http.try_get_text`,
    shell has deterministic seeded `shell.try_run`, and model calls have
    deterministic seeded `model.try_complete`.
 3. Grow the accepted/rejected synthetic gold corpus beyond the initial seed,
@@ -220,10 +220,10 @@ Medium-term:
 1. Extend graph-slice grafts beyond call-site, statement, expression, move, and
    delete edits.
 2. Move trace seals into a compressed binary `.zjx` handoff.
-3. Expand capability-backed runtime host values across `Deploy` and `Spend`
-   boundaries, then grow secret beyond seeded values, model beyond seeded
-   completions, shell beyond seeded command output, network beyond seeded text,
-   and database write beyond per-run inserts.
+3. Expand capability-backed runtime host values across `Spend` boundaries, then
+   grow deploy beyond seeded stage results, secret beyond seeded values, model
+   beyond seeded completions, shell beyond seeded command output, network
+   beyond seeded text, and database write beyond per-run inserts.
 4. Build Sley lint/helper passes on top of the graph query surface.
 
 Long-term:

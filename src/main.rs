@@ -56,6 +56,8 @@ enum Command {
         db_table: Vec<String>,
         #[arg(long = "secret", value_names = ["NAME", "TEXT"], num_args = 2)]
         secret: Vec<String>,
+        #[arg(long = "deploy-result", value_names = ["TARGET", "TEXT"], num_args = 2)]
+        deploy_result: Vec<String>,
         #[arg(long = "http-text", value_names = ["URL", "TEXT"], num_args = 2)]
         http_text: Vec<String>,
         #[arg(long = "shell-output", value_names = ["COMMAND", "TEXT"], num_args = 2)]
@@ -184,6 +186,7 @@ fn run(cli: Cli) -> Result<()> {
             cap,
             db_table,
             secret,
+            deploy_result,
             http_text,
             shell_output,
             model_output,
@@ -200,6 +203,7 @@ fn run(cli: Cli) -> Result<()> {
             let mut runtime_gates = parse_runtime_gates(&cap)?;
             load_runtime_db_tables(&mut runtime_gates, &db_table)?;
             load_runtime_secrets(&mut runtime_gates, &secret)?;
+            load_runtime_deploy_results(&mut runtime_gates, &deploy_result)?;
             load_runtime_http_texts(&mut runtime_gates, &http_text)?;
             load_runtime_shell_outputs(&mut runtime_gates, &shell_output)?;
             load_runtime_model_outputs(&mut runtime_gates, &model_output)?;
@@ -658,6 +662,21 @@ fn load_runtime_secrets(gates: &mut RuntimeGates, values: &[String]) -> Result<(
     }
     if !chunks.remainder().is_empty() {
         anyhow::bail!("secret seed must use NAME TEXT pairs");
+    }
+    Ok(())
+}
+
+fn load_runtime_deploy_results(gates: &mut RuntimeGates, values: &[String]) -> Result<()> {
+    let mut chunks = values.chunks_exact(2);
+    for pair in &mut chunks {
+        let target = pair[0].trim();
+        if target.is_empty() {
+            anyhow::bail!("deploy result seed target cannot be empty");
+        }
+        gates.grant_deploy_result(target, pair[1].clone());
+    }
+    if !chunks.remainder().is_empty() {
+        anyhow::bail!("deploy result seed must use TARGET TEXT pairs");
     }
     Ok(())
 }
