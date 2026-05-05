@@ -1,0 +1,8 @@
+{
+  "op": "MoveNode",
+  "target": "block:task:main.main:stmt:1",
+  "payload": {
+    "parent": "block:task:main.main",
+    "position": 0
+  }
+}

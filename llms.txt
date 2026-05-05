@@ -51,8 +51,7 @@ Contract references:
 
 Current development phase:
 
-- checked MoveNode grafts
 - project-aware graft writeback
 - capability-backed runtime gates
 - accepted/rejected synthetic gold corpus growth
-- broader graph-slice graft operations
+- broader graph-slice graft operations around move/delete planning

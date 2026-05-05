@@ -201,14 +201,14 @@ because Sley's primary editor may be an agent.
 Near-term:
 
 1. Keep expanding parser/checker/runtime coverage in Rust.
-2. Implement checked `MoveNode` grafts for statements and declaration ordering.
-3. Add project-aware graft writeback for multi-module bundles.
-4. Add runtime gate values for host capabilities.
-5. Grow the accepted/rejected synthetic gold corpus beyond the initial seed.
+2. Add project-aware graft writeback for multi-module bundles.
+3. Add runtime gate values for host capabilities.
+4. Grow the accepted/rejected synthetic gold corpus beyond the initial seed.
+5. Extend graph-slice graft planning around checked move/delete operations.
 
 Medium-term:
 
-1. Extend graph-slice grafts beyond call-site, statement, expression, and
+1. Extend graph-slice grafts beyond call-site, statement, expression, move, and
    delete edits.
 2. Move trace seals into a compressed binary `.zjx` handoff.
 3. Add capability-backed runtime host values.

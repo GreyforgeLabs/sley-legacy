@@ -165,8 +165,9 @@ Current graft operations include adding/removing takes, replacing task bodies,
 adding imports/effects/types/tasks, renaming declarations, updating call-sites,
 inserting checked task-body statements, replacing expressions by node id, and
 deleting checked graph nodes such as declarations, imports, takes, and
-statements. Unsupported graph operations return explicit diagnostics until
-implemented.
+statements. `MoveNode` reorders statements within their existing block and
+top-level imports, types, effects, or tasks within their declaration lists.
+Unsupported graph movement returns explicit diagnostics until implemented.
 
 Implemented graph-edit payloads:
 
@@ -176,15 +177,23 @@ Implemented graph-edit payloads:
 { "op": "InsertStatement", "target": "task:app.main.main", "payload": { "position": 1, "source": "set total = total + 1" } }
 { "op": "ReplaceExpression", "target": "block:task:app.main.main:stmt:0:expr:right", "payload": { "source": "41" } }
 { "op": "DeleteNode", "target": "block:task:app.main.main:stmt:1" }
+{ "op": "MoveNode", "target": "block:task:app.main.main:stmt:1", "payload": { "parent": "block:task:app.main.main", "position": 0 } }
+{ "op": "MoveNode", "target": "task:app.main.helper", "payload": { "parent": "program.tasks", "position": 0 } }
 ```
 
 `UpdateCallSites` rewrites call expressions that either resolve to the target
 task or match the optional raw `from` callee. `scope` can limit the rewrite to a
 task or module. `InsertStatement` currently targets a task body. `DeleteNode`
 can remove declarations, imports, takes, and statements, but rejects expression
-targets unless the agent uses `ReplaceExpression` instead. Each accepted edit
-reparses the payload when applicable, rewrites the AST, refreshes expression
-source text, and reruns the checker before returning formatted source.
+targets unless the agent uses `ReplaceExpression` instead. `MoveNode` currently
+requires `payload.position`; `payload.parent` is optional but, when present,
+must identify the current parent. Statement moves use a block parent such as
+`block:task:app.main.main`; top-level declaration moves accept `program.imports`,
+`program.types`, `program.effects`, or `program.tasks`. Expression moves, take
+moves, and cross-parent moves reject with `GRAFT_MOVE_UNSUPPORTED`. Each
+accepted edit reparses the payload when applicable, rewrites the AST, refreshes
+expression source text, and reruns the checker before returning formatted
+source.
 
 Accepted grafts written with `sley graft --write` append receipt records to a
 local `.sley/trace.jsonl` sidecar unless the caller passes an explicit trace
@@ -306,8 +315,8 @@ archive.
   JSON Schema files are still narrower v0 root contracts
 - no `match`, agent declarations, spawn/cast/join, or compressed ZJX archive
   writer yet
-- `DeleteNode` supports checked deletion of declarations, imports, takes, and
-  statements; `MoveNode` remains a declared graft operation rather than an
-  implemented graph mutation
+- `MoveNode` supports checked in-parent statement reordering and top-level
+  declaration ordering; cross-parent movement, take movement, and expression
+  movement are still explicit rejections
 - project-aware graft writeback for multi-file module bundles is not yet
   implemented

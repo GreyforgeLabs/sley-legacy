@@ -62,8 +62,9 @@ Implemented now:
 - structural graft operations for adding/removing takes, replacing task bodies,
   adding imports/effects/types/tasks, renaming declarations, updating
   call-sites, inserting checked task-body statements, replacing nested
-  expressions by node id, and deleting checked graph nodes such as declarations,
-  imports, takes, and statements
+  expressions by node id, deleting checked graph nodes such as declarations,
+  imports, takes, and statements, and moving checked statements or top-level
+  declaration order within their current parent
 - strict graft input JSON for the v0 operation shapes; unknown graft fields are
   rejected instead of silently ignored
 - versioned JSON report roots for diagnostics and graft outcomes
@@ -135,15 +136,18 @@ Known v0 limits:
 - `run` only supports pure execution. Host calls and capability-backed runtime
   objects are still represented as raw values unless a future host boundary is
   supplied.
-- `UpdateCallSites`, `InsertStatement`, and `ReplaceExpression` operate on the
-  in-memory checked program. Project-aware source-file writeback for bundled
-  multi-module projects is still a later step.
+- `UpdateCallSites`, `InsertStatement`, `ReplaceExpression`, `DeleteNode`, and
+  `MoveNode` operate on the in-memory checked program. Project-aware source-file
+  writeback for bundled multi-module projects is still a later step.
 - The AST JSON Schema now covers declarations, statements, expressions, type
   expressions, spans, and provenance recursively. Other external JSON Schema
   files remain narrower v0 root-contract schemas.
-- `MoveNode` remains declared but returns an explicit unsupported-operation
-  diagnostic.
+- `MoveNode` currently reorders statements within their existing block and
+  top-level imports, types, effects, or tasks within their declaration lists.
+  Cross-parent movement, take movement, and expression movement still reject
+  explicitly.
 
-The next logical phase is graph and runtime hardening: implement checked
-`MoveNode` grafts, add project-aware graft writeback for multi-module bundles,
-and start runtime gate values for host capabilities.
+The next logical phase is project and runtime hardening: add project-aware graft
+writeback for multi-module bundles, start runtime gate values for host
+capabilities, and grow graph-slice graft coverage around the new move/delete
+operations.

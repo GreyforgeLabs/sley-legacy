@@ -101,6 +101,10 @@ pub enum GraftOperation {
     },
     MoveNode {
         target: String,
+        #[serde(default)]
+        precondition: Option<JsonValue>,
+        #[serde(default)]
+        payload: Option<MoveNodePayload>,
     },
     DeleteNode {
         target: String,
@@ -168,6 +172,14 @@ pub struct InsertStatementPayload {
     pub source: String,
     #[serde(default)]
     pub position: Option<usize>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct MoveNodePayload {
+    pub position: usize,
+    #[serde(default)]
+    pub parent: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -591,12 +603,23 @@ fn apply_one(
             program.assign_ids();
             Ok(record(graft_id, actor, "DeleteNode", vec![target, deleted]))
         }
-        GraftOperation::MoveNode { target } => Err(vec![Diagnostic::error(
-            "GRAFT_OPERATION_UNSUPPORTED",
-            format!(
-                "graft operation for `{target}` is declared in the spec but not implemented yet"
-            ),
-        )]),
+        GraftOperation::MoveNode {
+            target,
+            precondition,
+            payload,
+        } => {
+            let task_index = owning_task_index_for_node(program, &target);
+            check_preconditions(program, task_index, precondition.as_ref())?;
+            let payload = payload.ok_or_else(|| {
+                vec![Diagnostic::error(
+                    "GRAFT_MISSING_PAYLOAD",
+                    "MoveNode requires payload.position",
+                )]
+            })?;
+            let moved = move_node(program, &target, &payload)?;
+            program.assign_ids();
+            Ok(record(graft_id, actor, "MoveNode", vec![target, moved]))
+        }
     }
 }
 
@@ -677,6 +700,284 @@ fn delete_node(program: &mut Program, target: &str) -> Result<String, Vec<Diagno
         "GRAFT_TARGET_MISSING",
         format!("target `{target}` does not exist"),
     )])
+}
+
+fn move_node(
+    program: &mut Program,
+    target: &str,
+    payload: &MoveNodePayload,
+) -> Result<String, Vec<Diagnostic>> {
+    if let Some(index) = program.find_task_index(target) {
+        return move_index(
+            &mut program.tasks,
+            index,
+            payload,
+            target,
+            "task",
+            &["program.tasks", "program:tasks", "tasks"],
+        );
+    }
+
+    if let Some(index) = program
+        .types
+        .iter()
+        .position(|ty| declaration_matches_target("type", &ty.id, &ty.name, target))
+    {
+        return move_index(
+            &mut program.types,
+            index,
+            payload,
+            target,
+            "type",
+            &["program.types", "program:types", "types"],
+        );
+    }
+
+    if let Some(index) = program
+        .effects
+        .iter()
+        .position(|effect| declaration_matches_target("effect", &effect.id, &effect.name, target))
+    {
+        return move_index(
+            &mut program.effects,
+            index,
+            payload,
+            target,
+            "effect",
+            &["program.effects", "program:effects", "effects"],
+        );
+    }
+
+    if let Some(index) = program
+        .imports
+        .iter()
+        .position(|import| import_matches_target(import, target))
+    {
+        return move_index(
+            &mut program.imports,
+            index,
+            payload,
+            target,
+            "import",
+            &["program.imports", "program:imports", "imports"],
+        );
+    }
+
+    if let Some(moved) = move_statement(program, target, payload)? {
+        return Ok(moved);
+    }
+
+    if take_exists(program, target) {
+        return Err(vec![
+            Diagnostic::error(
+                "GRAFT_MOVE_UNSUPPORTED",
+                format!("take target `{target}` cannot be moved by v0 MoveNode"),
+            )
+            .with_node(target.to_string()),
+        ]);
+    }
+
+    if expression_exists(program, target) {
+        return Err(vec![
+            Diagnostic::error(
+                "GRAFT_MOVE_UNSUPPORTED",
+                format!("expression target `{target}` cannot be moved by v0 MoveNode"),
+            )
+            .with_node(target.to_string()),
+        ]);
+    }
+
+    Err(vec![Diagnostic::error(
+        "GRAFT_TARGET_MISSING",
+        format!("target `{target}` does not exist"),
+    )])
+}
+
+fn move_index<T>(
+    items: &mut Vec<T>,
+    index: usize,
+    payload: &MoveNodePayload,
+    target: &str,
+    kind: &str,
+    accepted_parents: &[&str],
+) -> Result<String, Vec<Diagnostic>> {
+    ensure_parent_in_set(payload, accepted_parents, target)?;
+    if payload.position >= items.len() {
+        return Err(position_out_of_range(
+            target,
+            payload.position,
+            items.len(),
+            kind,
+        ));
+    }
+    if index != payload.position {
+        let item = items.remove(index);
+        items.insert(payload.position, item);
+    }
+    Ok(format!("{kind}:{index}->{}", payload.position))
+}
+
+fn move_statement(
+    program: &mut Program,
+    target: &str,
+    payload: &MoveNodePayload,
+) -> Result<Option<String>, Vec<Diagnostic>> {
+    for task in &mut program.tasks {
+        let parent_root = format!("block:{}", task.id);
+        if let Some(moved) = move_statement_in_block(&mut task.body, &parent_root, target, payload)?
+        {
+            return Ok(Some(moved));
+        }
+    }
+    Ok(None)
+}
+
+fn move_statement_in_block(
+    block: &mut Block,
+    parent_root: &str,
+    target: &str,
+    payload: &MoveNodePayload,
+) -> Result<Option<String>, Vec<Diagnostic>> {
+    if let Some(index) = block
+        .statements
+        .iter()
+        .position(|statement| statement.id == target)
+    {
+        ensure_parent_matches(payload, parent_root, target)?;
+        if payload.position >= block.statements.len() {
+            return Err(position_out_of_range(
+                target,
+                payload.position,
+                block.statements.len(),
+                parent_root,
+            ));
+        }
+        if index != payload.position {
+            let statement = block.statements.remove(index);
+            block.statements.insert(payload.position, statement);
+        }
+        return Ok(Some(format!(
+            "statement:{parent_root}:{index}->{}",
+            payload.position
+        )));
+    }
+
+    for statement in &mut block.statements {
+        if let Some(moved) = move_statement_in_statement(statement, target, payload)? {
+            return Ok(Some(moved));
+        }
+    }
+    Ok(None)
+}
+
+fn move_statement_in_statement(
+    statement: &mut Statement,
+    target: &str,
+    payload: &MoveNodePayload,
+) -> Result<Option<String>, Vec<Diagnostic>> {
+    match &mut statement.kind {
+        StatementKind::If {
+            then_block,
+            else_block,
+            ..
+        } => {
+            let then_root = format!("{}:then", statement.id);
+            if let Some(moved) = move_statement_in_block(then_block, &then_root, target, payload)? {
+                return Ok(Some(moved));
+            }
+            if let Some(else_block) = else_block {
+                let else_root = format!("{}:else", statement.id);
+                if let Some(moved) =
+                    move_statement_in_block(else_block, &else_root, target, payload)?
+                {
+                    return Ok(Some(moved));
+                }
+            }
+            Ok(None)
+        }
+        StatementKind::While { body, .. } | StatementKind::For { body, .. } => {
+            let body_root = format!("{}:body", statement.id);
+            move_statement_in_block(body, &body_root, target, payload)
+        }
+        StatementKind::Forge { body } => {
+            let forge_root = format!("{}:forge", statement.id);
+            move_statement_in_block(body, &forge_root, target, payload)
+        }
+        StatementKind::Binding { .. }
+        | StatementKind::Set { .. }
+        | StatementKind::Return { .. }
+        | StatementKind::Expr { .. } => Ok(None),
+    }
+}
+
+fn ensure_parent_in_set(
+    payload: &MoveNodePayload,
+    accepted_parents: &[&str],
+    target: &str,
+) -> Result<(), Vec<Diagnostic>> {
+    let Some(parent) = payload.parent.as_deref() else {
+        return Ok(());
+    };
+    if accepted_parents.contains(&parent) {
+        Ok(())
+    } else {
+        Err(vec![
+            Diagnostic::error(
+                "GRAFT_MOVE_UNSUPPORTED",
+                format!(
+                    "MoveNode for `{target}` cannot move across parents; expected one of {} but got `{parent}`",
+                    accepted_parents.join(", ")
+                ),
+            )
+            .with_node(target.to_string()),
+        ])
+    }
+}
+
+fn ensure_parent_matches(
+    payload: &MoveNodePayload,
+    expected_parent: &str,
+    target: &str,
+) -> Result<(), Vec<Diagnostic>> {
+    let Some(parent) = payload.parent.as_deref() else {
+        return Ok(());
+    };
+    if parent == expected_parent {
+        Ok(())
+    } else {
+        Err(vec![
+            Diagnostic::error(
+                "GRAFT_MOVE_UNSUPPORTED",
+                format!(
+                    "MoveNode for `{target}` cannot move across parents; expected `{expected_parent}` but got `{parent}`"
+                ),
+            )
+            .with_node(target.to_string()),
+        ])
+    }
+}
+
+fn position_out_of_range(
+    target: &str,
+    position: usize,
+    length: usize,
+    parent: &str,
+) -> Vec<Diagnostic> {
+    vec![
+        Diagnostic::error(
+            "GRAFT_POSITION_OUT_OF_RANGE",
+            format!("position {position} is outside `{parent}` length {length}"),
+        )
+        .with_node(target.to_string()),
+    ]
+}
+
+fn take_exists(program: &Program, target: &str) -> bool {
+    program.tasks.iter().any(|task| {
+        task.takes
+            .iter()
+            .any(|take| take_matches_target(task, take, target))
+    })
 }
 
 fn declaration_matches_target(kind: &str, id: &str, name: &str, target: &str) -> bool {

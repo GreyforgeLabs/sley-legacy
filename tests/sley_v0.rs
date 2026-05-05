@@ -254,6 +254,109 @@ task main -> Int {
 }
 
 #[test]
+fn move_node_graft_reorders_checked_task_body_statement() {
+    let source = r#"
+task main -> Int {
+  bind left = 1
+  bind right = 41
+  return left + right
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let graft_source = include_str!("../fixtures/grafts/move_bind_before_bind.json");
+    let graft: GraftInput = serde_json::from_str(graft_source).expect("parse graft");
+    let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
+
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    assert_eq!(outcome.provenance[0].operation, "MoveNode");
+    let grafted_source = outcome.source.as_deref().expect("grafted source");
+    assert!(
+        grafted_source.find("bind right = 41").expect("right bind")
+            < grafted_source.find("bind left = 1").expect("left bind"),
+        "{grafted_source}"
+    );
+    let grafted = parse_program(grafted_source).expect("parse grafted source");
+    assert_eq!(run_main(&grafted), Ok(Value::Int(42)));
+}
+
+#[test]
+fn move_node_graft_reorders_top_level_declarations() {
+    let source = r#"
+task first -> Int {
+  return 1
+}
+
+task second -> Int {
+  return 2
+}
+
+task main -> Int {
+  bind left = call first()
+  bind right = call second()
+  return left + right
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let graft_source = r#"
+{
+  "op": "MoveNode",
+  "target": "task:main.second",
+  "payload": { "parent": "program.tasks", "position": 0 }
+}
+"#;
+    let graft: GraftInput = serde_json::from_str(graft_source).expect("parse graft");
+    let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
+
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted_source = outcome.source.as_deref().expect("grafted source");
+    assert!(
+        grafted_source.find("task second").expect("second task")
+            < grafted_source.find("task first").expect("first task"),
+        "{grafted_source}"
+    );
+    let grafted = parse_program(grafted_source).expect("parse grafted source");
+    assert_eq!(run_main(&grafted), Ok(Value::Int(3)));
+}
+
+#[test]
+fn move_node_rejects_expression_targets() {
+    let source = "task main -> Int {\n  return 1 + 41\n}\n";
+    let program = parse_program(source).expect("parse source");
+    let graft_source = include_str!("../fixtures/grafts/move_expression_unsupported.json");
+    let graft: GraftInput = serde_json::from_str(graft_source).expect("parse graft");
+    let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
+
+    assert_eq!(outcome.status, "rejected");
+    assert!(
+        outcome
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.id == "GRAFT_MOVE_UNSUPPORTED"),
+        "expected move unsupported diagnostic, got {:#?}",
+        outcome.diagnostics
+    );
+}
+
+#[test]
+fn move_node_rejects_out_of_range_statement_positions() {
+    let source = "task main -> Int {\n  return 1\n}\n";
+    let program = parse_program(source).expect("parse source");
+    let graft_source = include_str!("../fixtures/grafts/move_statement_out_of_range.json");
+    let graft: GraftInput = serde_json::from_str(graft_source).expect("parse graft");
+    let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
+
+    assert_eq!(outcome.status, "rejected");
+    assert!(
+        outcome
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.id == "GRAFT_POSITION_OUT_OF_RANGE"),
+        "expected position diagnostic, got {:#?}",
+        outcome.diagnostics
+    );
+}
+
+#[test]
 fn delete_node_graft_removes_checked_task_body_statement() {
     let source = r#"
 task main -> Int {
