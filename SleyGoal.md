@@ -1,75 +1,6 @@
-# Sley Codex /goal Prompt
+# Sley Goal - Best Programming Language For Agents
 
-Date: 2026-05-05
-Project root: `/home/greyforge/sley`
-
-## What /goal Should Do Here
-
-Use `/goal` as persistent thread intent for a long Sley session. The feature is
-best suited to keeping Codex aligned around the product thesis while individual
-turns still provide concrete tasks, files, tests, and stop conditions.
-
-Official OpenAI documentation currently exposes thread goals through the
-experimental Codex app-server API:
-
-- `thread/goal/set`
-- `thread/goal/get`
-- `thread/goal/clear`
-
-The public slash-command page does not currently list `/goal`, while local
-`codex-cli 0.128.0` shows the `goals` feature as under development and disabled.
-Enable it if the slash command is absent:
-
-```bash
-codex features list
-codex features enable goals
-```
-
-Restart Codex if prompted, open a fresh session in `/home/greyforge/sley`, and
-paste the goal prompt below into `/goal`.
-
-Sources:
-
-- OpenAI Codex app-server API overview:
-  https://developers.openai.com/codex/app-server#api-overview
-- OpenAI Codex slash commands:
-  https://developers.openai.com/codex/cli/slash-commands
-- OpenAI Codex best practices:
-  https://developers.openai.com/codex/learn/best-practices#strong-first-use-context-and-prompts
-
-## Local Sley Reality Check
-
-Sley is an agent-native structural programming language. The current compiler,
-Loom, is written in Rust and exposes:
-
-- human-reviewable `.sley` source;
-- typed graph-shaped AST data;
-- project manifests;
-- module, import, type, effect, and task declarations;
-- explicit `take`, `bind`, `state`, `tally`, `slot`, and `forge` concepts;
-- static checks for type, effect, namespace, result-flow, and authority errors;
-- deterministic seeded runtime adapters for files, database, secrets, deploy,
-  spend, network, shell, and model calls;
-- JSON AST, diagnostics, symbol graph, graph slices, trace seals, graft
-  outcomes, and ZJX envelopes;
-- strict structural graft operations with dry-run and explicit `--write`;
-- locked contract snapshots, JSON schemas, conformance fixtures, and tests.
-
-The core bet is not "another syntax." The core bet is:
-
-```text
-source projection -> typed graph -> checked grafts -> stable diagnostics ->
-human review -> safe execution
-```
-
-The language becomes strong for agents only if the compiler is a strict
-referee, the graph contract is stable, diagnostics are repairable, and side
-effects require explicit authority.
-
-## Recommended /goal Prompt
-
-```text
-Goal:
+````text
 Make Sley the best programming language in the world for agents. In this
 thread, optimize for agent success rate, structural edit safety, compiler
 strictness, readable source projection, stable machine-readable contracts,
@@ -77,7 +8,6 @@ deterministic execution, explicit authority gates, and a credible self-hosting
 path. Do not optimize for surface syntax novelty unless it improves the
 compiler-mediated agent workflow.
 
-Context:
 Work in `/home/greyforge/sley`.
 
 Read these first:
@@ -265,16 +195,4 @@ Done when:
   - validation run;
   - remaining risks;
   - next best task.
-```
-
-## Best First Thread
-
-For maximum productivity, start with a narrow task under the goal above:
-
-```text
-Use the active /goal. Audit the current Sley agent edit loop from llms.txt,
-docs/SleyLanguageSpec.md, graft behavior, diagnostics, JSON schemas, and
-tests/sley_v0.rs. Identify the single highest-leverage improvement that would
-make agents more successful at editing Sley programs safely. Then implement
-that improvement with tests and docs, keeping the change narrow.
-```
+````
