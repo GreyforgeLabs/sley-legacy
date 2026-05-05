@@ -893,7 +893,12 @@ fn check_expr_structure(
                                 RepairHint::new("replace_argument")
                                     .with_target(arg.id.clone())
                                     .with_replacement(expected.display()),
-                            ),
+                            )
+                            .with_repair_hint(replace_call_arg_hint(
+                                &callee_name,
+                                index,
+                                expected,
+                            )),
                         );
                     }
                 }
@@ -1797,6 +1802,29 @@ fn bool_condition_hint(condition: &Expr) -> RepairHint {
     RepairHint::new("replace_condition")
         .with_target(condition.id.clone())
         .with_replacement("Bool")
+}
+
+fn replace_call_arg_hint(callee_name: &str, position: usize, expected: &TypeExpr) -> RepairHint {
+    let graft = serde_json::json!({
+        "op": "ReplaceCallArg",
+        "target": format!("task:{callee_name}"),
+        "payload": {
+            "position": position,
+            "source": default_expr_source_for_type(expected),
+        }
+    });
+    RepairHint::new("replace_call_arg")
+        .with_target(format!("task:{callee_name}"))
+        .with_replacement(graft.to_string())
+}
+
+fn default_expr_source_for_type(ty: &TypeExpr) -> String {
+    match ty.display().as_str() {
+        "Int" => "0".to_string(),
+        "Text" => "\"\"".to_string(),
+        "Bool" => "false".to_string(),
+        _ => "TODO_VALUE".to_string(),
+    }
 }
 
 fn unary_expected_type(op: &UnaryOp) -> &'static str {

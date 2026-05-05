@@ -2097,6 +2097,47 @@ task main -> Int {
         "CALL_ARGUMENT_TYPE_MISMATCH",
         "replace_argument",
     );
+    assert_has_repair_hint(
+        &diagnostics,
+        "CALL_ARGUMENT_TYPE_MISMATCH",
+        "replace_call_arg",
+    );
+    let call_argument_diagnostic = diagnostics
+        .iter()
+        .find(|diagnostic| diagnostic.id == "CALL_ARGUMENT_TYPE_MISMATCH")
+        .expect("call argument diagnostic");
+    let replace_call_arg_hint = call_argument_diagnostic
+        .repair_hints
+        .iter()
+        .find(|hint| hint.kind == "replace_call_arg")
+        .expect("replace call arg hint");
+    assert_eq!(
+        replace_call_arg_hint.target.as_deref(),
+        Some("task:main.takes_text")
+    );
+    let replacement: serde_json::Value = serde_json::from_str(
+        replace_call_arg_hint
+            .replacement
+            .as_deref()
+            .expect("replace call arg replacement"),
+    )
+    .expect("replace call arg replacement is JSON");
+    assert_eq!(
+        replacement.pointer("/op"),
+        Some(&serde_json::json!("ReplaceCallArg"))
+    );
+    assert_eq!(
+        replacement.pointer("/target"),
+        Some(&serde_json::json!("task:main.takes_text"))
+    );
+    assert_eq!(
+        replacement.pointer("/payload/position"),
+        Some(&serde_json::json!(0))
+    );
+    assert_eq!(
+        replacement.pointer("/payload/source"),
+        Some(&serde_json::json!("\"\""))
+    );
     assert_has_repair_hint(&diagnostics, "RETURN_TYPE_MISMATCH", "change_return_type");
     assert_has_repair_hint(&diagnostics, "UNKNOWN_IDENTIFIER", "declare_binding");
 

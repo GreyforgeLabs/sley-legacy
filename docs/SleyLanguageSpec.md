@@ -658,7 +658,10 @@ structural: `kind` identifies the action, `target` names the graph node when
 available, `effect` names required authority when relevant, and `replacement`
 carries a compact source or type suggestion. For example, unsupported
 expression `MoveNode` targets carry a `replace_expression` hint so agents can
-switch to `ReplaceExpression` instead of retrying an unsupported move.
+switch to `ReplaceExpression` instead of retrying an unsupported move. Call
+argument type mismatches carry both an expression-level `replace_argument` hint
+and a structural `replace_call_arg` hint whose `replacement` is a starter
+`ReplaceCallArg` graft JSON payload.
 
 ## ZJX Boundary
 
