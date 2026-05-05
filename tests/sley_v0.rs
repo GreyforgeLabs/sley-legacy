@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command as ProcessCommand;
@@ -1207,6 +1208,184 @@ task main -> Text uses FileRead {{
 }
 
 #[test]
+fn checker_infers_database_row_accessors() {
+    let source = r#"
+task get_name -> Text uses DatabaseRead {
+  take id: Text
+
+  bind row = call db.query_one("select * from users where id = ?", id)
+  return row.text("name")
+}
+
+task bad_age -> Text uses DatabaseRead {
+  bind row = call db.query_one("select * from users")
+  return row.int("age")
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.id == "RETURN_TYPE_MISMATCH"),
+        "expected return type diagnostic from inferred row.int, got {diagnostics:#?}"
+    );
+}
+
+#[test]
+fn runtime_queries_seeded_database_with_gate() {
+    let source = r#"
+task get_name -> Text uses DatabaseRead {
+  take gate db: Gate<DatabaseRead>
+  take id: Text
+
+  bind row = call db.query_one("select * from users where id = ?", id)
+  return row.text("name")
+}
+
+task main -> Text uses DatabaseRead {
+  return call get_name("u1")
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+    let mut gates = RuntimeGates::new();
+    gates.grant_effect("DatabaseRead");
+    gates.grant_db_rows(
+        "users",
+        vec![
+            db_row([
+                ("id", Value::Text("u1".to_string())),
+                ("name", Value::Text("Ada".to_string())),
+            ]),
+            db_row([
+                ("id", Value::Text("u2".to_string())),
+                ("name", Value::Text("Grace".to_string())),
+            ]),
+        ],
+    );
+
+    assert_eq!(
+        run_main_with_gates(&program, &gates),
+        Ok(Value::Text("Ada".to_string()))
+    );
+}
+
+#[test]
+fn runtime_query_lists_seeded_database_rows() {
+    let source = r#"
+task main -> Int uses DatabaseRead {
+  bind rows = call db.query("select * from users")
+  return len(rows)
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+    let mut gates = RuntimeGates::new();
+    gates.grant_effect("DatabaseRead");
+    gates.grant_db_rows(
+        "users",
+        vec![
+            db_row([("id", Value::Text("u1".to_string()))]),
+            db_row([("id", Value::Text("u2".to_string()))]),
+        ],
+    );
+
+    assert_eq!(run_main_with_gates(&program, &gates), Ok(Value::Int(2)));
+}
+
+#[test]
+fn runtime_database_adapter_requires_gate_and_seeded_rows() {
+    let source = r#"
+task main -> Text uses DatabaseRead {
+  bind row = call db.query_one("select * from users where id = ?", "u1")
+  return row.text("name")
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+    let mut gates = RuntimeGates::new();
+    gates.grant_db_rows(
+        "users",
+        vec![db_row([
+            ("id", Value::Text("u1".to_string())),
+            ("name", Value::Text("Ada".to_string())),
+        ])],
+    );
+    let rejected = run_main_with_gates(&program, &gates).expect_err("missing gate should reject");
+    assert!(
+        rejected
+            .iter()
+            .any(|diagnostic| diagnostic.id == "RUNTIME_CAPABILITY_REQUIRED"),
+        "expected capability diagnostic, got {rejected:#?}"
+    );
+
+    let mut missing_table = RuntimeGates::new();
+    missing_table.grant_effect("DatabaseRead");
+    let rejected =
+        run_main_with_gates(&program, &missing_table).expect_err("missing table should reject");
+    assert!(
+        rejected
+            .iter()
+            .any(|diagnostic| diagnostic.id == "RUNTIME_DB_TABLE_NOT_FOUND"),
+        "expected table diagnostic, got {rejected:#?}"
+    );
+}
+
+#[test]
+fn cli_run_accepts_database_table_seed() {
+    let root = temp_project_dir("runtime-db-cli");
+    fs::create_dir_all(&root).expect("create temp dir");
+    let source_path = root.join("main.sley");
+    let table_path = root.join("users.json");
+    fs::write(
+        &source_path,
+        r#"
+task main -> Text uses DatabaseRead {
+  bind row = call db.query_one("select * from users where id = ?", "u1")
+  return row.text("name")
+}
+"#,
+    )
+    .expect("write source");
+    fs::write(&table_path, r#"[{"id":"u1","name":"Ada"}]"#).expect("write table");
+
+    let table = format!("users={}", table_path.display());
+    let output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args([
+            "run",
+            "--json",
+            "--cap",
+            "DatabaseRead",
+            "--db-table",
+            &table,
+            source_path.to_str().expect("utf-8 path"),
+        ])
+        .output()
+        .expect("run sley");
+    assert!(
+        output.status.success(),
+        "sley run failed: stdout={} stderr={}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let value: Value = serde_json::from_slice(&output.stdout).expect("parse value");
+    assert_eq!(value, Value::Text("Ada".to_string()));
+}
+
+#[test]
 fn runtime_evaluates_locals_operators_and_if_expressions() {
     let source = r#"
 task score -> Int {
@@ -2174,6 +2353,13 @@ fn assert_json_snapshot<T: serde::Serialize>(actual: &T, expected_json: &str) {
     let actual = serde_json::to_value(actual).expect("serialize actual json");
     let expected: serde_json::Value = serde_json::from_str(expected_json).expect("parse snapshot");
     assert_eq!(actual, expected);
+}
+
+fn db_row<const N: usize>(fields: [(&str, Value); N]) -> BTreeMap<String, Value> {
+    fields
+        .into_iter()
+        .map(|(name, value)| (name.to_string(), value))
+        .collect()
 }
 
 fn assert_schema_file(schema_json: &str, schema_id: &str) {

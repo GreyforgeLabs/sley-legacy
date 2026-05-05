@@ -1,0 +1,11 @@
+task get_user_name -> Text uses DatabaseRead {
+  take gate db: Gate<DatabaseRead>
+  take id: Text
+
+  bind row = call db.query_one("select * from users where id = ?", id)
+  return row.text("name")
+}
+
+task main -> Text uses DatabaseRead {
+  return call get_user_name("u1")
+}

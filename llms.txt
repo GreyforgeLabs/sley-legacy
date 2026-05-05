@@ -16,6 +16,7 @@ cargo run -- seal --json <file-or-project>
 cargo run -- graft --json --dry-run <file> <graft.json>
 cargo run -- graft --json --write <file> <graft.json>
 cargo run -- format <file>
+cargo run -- run --json --cap DatabaseRead --db-table users=examples/users.json examples/db_gate.sley
 ```
 
 Agent rules:
@@ -51,7 +52,8 @@ Contract references:
 
 Current development phase:
 
-- runtime host adapters beyond root-scoped filesystem gates
+- runtime host adapters beyond root-scoped filesystem gates and deterministic
+  seeded database reads
 - project graft writeback hardening beyond existing modules
 - accepted/rejected synthetic gold corpus growth
 - broader graph-slice graft operations around move/delete planning

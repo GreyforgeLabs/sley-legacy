@@ -1,6 +1,6 @@
 # Sley Language Specification
 
-Status: v0 executable slice plus module task/type/effect namespace, runtime gates, and trace tooling
+Status: v0 executable slice plus module task/type/effect namespace, runtime gates, seeded database host reads, and trace tooling
 
 Sley is a human-readable, agent-writable structural language. The canonical
 program model is a typed graph. `.sley` source is the stable review projection,
@@ -130,8 +130,8 @@ Task lookup rules:
 
 Type lookup rules:
 
-- builtin types such as `Int`, `Text`, `List`, `Map`, `Result`, `Error`, and
-  `Gate` are always visible by simple name
+- builtin types such as `Int`, `Text`, `List`, `Map`, `Result`, `Error`,
+  `Gate`, and `DbRow` are always visible by simple name
 - same-module declared types are visible by simple name
 - imported types must be `export type`
 - simple imported type references are valid only when one imported module
@@ -195,6 +195,27 @@ Without a matching gate, effectful execution fails with
 `FileWrite` currently back `fs.read_text(path)` and `fs.write_text(path, text)`.
 When a gate has a root, filesystem host calls reject paths outside that root
 with `RUNTIME_CAPABILITY_SCOPE_DENIED`.
+
+`DatabaseRead` currently backs deterministic seeded-table reads. The runtime
+does not open a real database connection in v0; the host supplies JSON rows:
+
+```bash
+sley run --cap DatabaseRead --db-table users=examples/users.json examples/db_gate.sley
+```
+
+The seed file must be a JSON array of row objects. `db.query_one(sql, value)`
+and `db.query(sql)` support simple `select * from table` queries and optional
+`where field = ?` filters. `db.query_one` returns a `DbRow`; `db.query` returns
+`List<DbRow>`. Row values expose typed accessors:
+
+```sley
+bind row = call db.query_one("select * from users where id = ?", id)
+return row.text("name")
+```
+
+Missing table seeds produce `RUNTIME_DB_TABLE_NOT_FOUND`; empty `query_one`
+results produce `RUNTIME_DB_ROW_NOT_FOUND`; unsupported query forms produce
+`RUNTIME_DB_QUERY_UNSUPPORTED`.
 
 ## Graft Model
 
@@ -358,9 +379,9 @@ archive.
 
 ## Current Gaps
 
-- runtime gates currently back filesystem text reads/writes only; database,
-  network, shell, model, secret, deploy, and spending effects still need host
-  adapters
+- runtime gates currently back filesystem text reads/writes and deterministic
+  seeded database reads only; database writes, network, shell, model, secret,
+  deploy, and spending effects still need host adapters
 - trace receipts can be sealed, but sidecar storage is not yet a compressed ZJX
   archive
 - the AST JSON Schema covers nested AST and expression variants; the remaining

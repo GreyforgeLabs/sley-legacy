@@ -371,7 +371,8 @@ Failure modes to watch:
 
 Near-term:
 
-1. Expand capability-backed host adapters beyond root-scoped filesystem gates.
+1. Expand capability-backed host adapters beyond root-scoped filesystem gates
+   and deterministic seeded database reads.
 2. Grow the accepted/rejected synthetic gold corpus with graft, module, and
    runtime authority cases.
 3. Extend graph-slice grafts around move/delete planning.
@@ -384,7 +385,7 @@ Medium-term:
    delete edits.
 2. Move trace seals and ZJX preview payloads into a compressed binary `.zjx`
    handoff.
-3. Expand runtime host capability values across database, network, shell,
+3. Expand runtime host capability values across database write, network, shell,
    model, secret, deploy, and spend boundaries.
 4. Build the synthetic gold corpus into a release gate.
 5. Shadow selected compiler helper passes in Sley.

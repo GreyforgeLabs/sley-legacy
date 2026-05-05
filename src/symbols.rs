@@ -967,6 +967,7 @@ fn is_builtin_type(name: &str) -> bool {
             | "Result"
             | "Error"
             | "Gate"
+            | "DbRow"
     )
 }
 

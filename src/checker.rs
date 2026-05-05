@@ -2124,9 +2124,15 @@ fn infer_expr_type(
                 && return_type.generic_name() == Some("Result")
             {
                 Some(return_type)
+            } else if let Some(ty) =
+                infer_value_method_type(program, task, callee, locals, known_tasks, record_types)
+            {
+                Some(ty)
             } else if let Some(callee_name) = callee_path(callee) {
                 if callee_name == "len" {
                     Some(TypeExpr::named("Int"))
+                } else if let Some(ty) = host_call_return_type(&callee_name) {
+                    Some(ty)
                 } else if is_host_callee_path(&callee_name)
                     || (callee_name.contains('.')
                         && !is_module_qualified_callee(program, &task_module(task), &callee_name))
@@ -2278,6 +2284,46 @@ fn infer_expr_type(
                 None
             }
         }
+    }
+}
+
+fn infer_value_method_type(
+    program: &Program,
+    task: &TaskDecl,
+    callee: &Expr,
+    locals: &HashMap<String, TypeExpr>,
+    known_tasks: &TaskSignatures,
+    record_types: &HashMap<String, Vec<RecordField>>,
+) -> Option<TypeExpr> {
+    let ExprKind::FieldAccess { receiver, field } = &callee.kind else {
+        return None;
+    };
+    if !matches!(field.as_str(), "get" | "text" | "int" | "float" | "bool") {
+        return None;
+    }
+    let receiver_type =
+        infer_expr_type(program, task, receiver, locals, known_tasks, record_types)?;
+    if !is_named_type(&receiver_type, "DbRow") {
+        return None;
+    }
+    match field.as_str() {
+        "text" => Some(TypeExpr::named("Text")),
+        "int" => Some(TypeExpr::named("Int")),
+        "float" => Some(TypeExpr::named("Float")),
+        "bool" => Some(TypeExpr::named("Bool")),
+        "get" => None,
+        _ => None,
+    }
+}
+
+fn host_call_return_type(name: &str) -> Option<TypeExpr> {
+    match name {
+        "db.query_one" => Some(TypeExpr::named("DbRow")),
+        "db.query" => Some(TypeExpr::Generic {
+            name: "List".to_string(),
+            args: vec![TypeExpr::named("DbRow")],
+        }),
+        _ => None,
     }
 }
 

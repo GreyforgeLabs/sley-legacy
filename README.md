@@ -50,6 +50,10 @@ Implemented now:
 - runtime gates with `sley run --cap EFFECT[=ROOT]`; effectful tasks reject
   without matching gates, `Gate<Effect>` takes are injected at runtime, and
   `fs.read_text`/`fs.write_text` are backed by root-scoped file capabilities
+- deterministic database host seeding with `sley run --cap DatabaseRead
+  --db-table TABLE=rows.json`; `db.query_one` and `db.query` read seeded JSON
+  rows, and `DbRow` values expose `row.text`, `row.int`, `row.float`,
+  `row.bool`, and `row.get`
 - project loading for a manifest entry module plus transitively imported
   `.sley` modules under the configured source root
 - checker and runtime task lookup by entry module, local module, full module
@@ -131,6 +135,16 @@ must use `export type` or `export effect`. Imported references may use an
 unambiguous simple name, an import alias such as `math.User` or `math.Read`, or
 the full module path such as `app.math.User`.
 
+Seeded database runtime:
+
+```bash
+sley run --json --cap DatabaseRead --db-table users=examples/users.json examples/db_gate.sley
+```
+
+`db.query_one` returns one `DbRow`, `db.query` returns `List<DbRow>`, and row
+accessors such as `row.text("name")` read typed fields from the seeded JSON
+rows. This is a deterministic v0 host adapter, not a real database connection.
+
 Known v0 limits:
 
 - Expression parsing still falls back to raw nodes for unsupported syntax such
@@ -141,9 +155,10 @@ Known v0 limits:
 - `sley zjx` emits the first Sley ZJX envelope payload as JSON with
   `compression=none`; the binary compressed archive handoff remains a later
   integration step.
-- Runtime host support is intentionally narrow: `FileRead` and `FileWrite` have
-  root-scoped filesystem handlers, while database, network, shell, model,
-  secret, deploy, and spending effects still need dedicated host adapters.
+- Runtime host support is intentionally narrow: `FileRead`/`FileWrite` have
+  root-scoped filesystem handlers, and `DatabaseRead` has a deterministic
+  seeded-table adapter. Network, shell, model, secret, deploy, database write,
+  and spending effects still need dedicated host adapters.
 - Project graft writeback supports existing module files. Grafts that would
   create unknown module files or import modules outside the loaded project
   reject before any source or trace mutation.
@@ -155,7 +170,7 @@ Known v0 limits:
   Cross-parent movement, take movement, and expression movement still reject
   explicitly.
 
-The next logical phase is runtime and graph hardening: expand host adapters
-beyond filesystem gates, grow the accepted/rejected corpus around project
-grafts and runtime authority, and extend graph-slice planning around
-move/delete operations.
+The next logical phase is runtime and graph hardening: add the next
+capability-backed adapters beyond filesystem and seeded database reads, grow
+the accepted/rejected corpus around project grafts and runtime authority, and
+extend graph-slice planning around move/delete operations.

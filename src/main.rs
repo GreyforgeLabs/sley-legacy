@@ -52,6 +52,8 @@ enum Command {
         json: bool,
         #[arg(long = "cap", value_name = "EFFECT[=ROOT]")]
         cap: Vec<String>,
+        #[arg(long = "db-table", value_name = "TABLE=JSON")]
+        db_table: Vec<String>,
         file: PathBuf,
     },
     Ast {
@@ -169,7 +171,12 @@ fn run(cli: Cli) -> Result<()> {
             }
             Ok(())
         }
-        Command::Run { json, cap, file } => {
+        Command::Run {
+            json,
+            cap,
+            db_table,
+            file,
+        } => {
             let program = match load_target_program(&file) {
                 Ok(program) => program,
                 Err(diagnostics) => return emit_diagnostics_and_fail(diagnostics, json),
@@ -178,7 +185,8 @@ fn run(cli: Cli) -> Result<()> {
             if has_errors(&diagnostics) {
                 return emit_diagnostics_and_fail(diagnostics, json);
             }
-            let runtime_gates = parse_runtime_gates(&cap)?;
+            let mut runtime_gates = parse_runtime_gates(&cap)?;
+            load_runtime_db_tables(&mut runtime_gates, &db_table)?;
             let result = if runtime_gates.is_empty() {
                 run_main(&program)
             } else {
@@ -582,6 +590,45 @@ fn parse_runtime_gates(values: &[String]) -> Result<RuntimeGates> {
         }
     }
     Ok(gates)
+}
+
+fn load_runtime_db_tables(gates: &mut RuntimeGates, values: &[String]) -> Result<()> {
+    for value in values {
+        let (table, path) = value
+            .split_once('=')
+            .ok_or_else(|| anyhow::anyhow!("database table seed must use TABLE=JSON"))?;
+        let table = table.trim();
+        if table.is_empty() {
+            anyhow::bail!("database table seed name cannot be empty");
+        }
+        let path = PathBuf::from(path.trim());
+        if path.as_os_str().is_empty() {
+            anyhow::bail!("database table `{table}` seed path cannot be empty");
+        }
+        let source = fs::read_to_string(&path)
+            .with_context(|| format!("failed to read database table seed {}", path.display()))?;
+        let json: serde_json::Value = serde_json::from_str(&source)
+            .with_context(|| format!("failed to parse database table seed {}", path.display()))?;
+        let serde_json::Value::Array(items) = json else {
+            anyhow::bail!("database table `{table}` seed must be a JSON array of row objects");
+        };
+        let mut rows = Vec::new();
+        for (index, item) in items.into_iter().enumerate() {
+            let serde_json::Value::Object(fields) = item else {
+                anyhow::bail!("database table `{table}` row {index} must be a JSON object");
+            };
+            let mut row = std::collections::BTreeMap::new();
+            for (name, value) in fields {
+                row.insert(
+                    name,
+                    sley::runtime::Value::try_from(value).map_err(anyhow::Error::msg)?,
+                );
+            }
+            rows.push(row);
+        }
+        gates.grant_db_rows(table, rows);
+    }
+    Ok(())
 }
 
 fn read_source(file: &PathBuf) -> Result<String> {

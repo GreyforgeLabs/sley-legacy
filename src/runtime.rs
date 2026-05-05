@@ -12,6 +12,9 @@ use crate::symbols::{
     EffectResolution, TaskResolution, callee_path, resolve_effect, resolve_task, task_module,
 };
 
+pub type DbRow = BTreeMap<String, Value>;
+pub type DbRows = Vec<DbRow>;
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "kind", content = "value")]
 pub enum Value {
@@ -25,6 +28,37 @@ pub enum Value {
     Map(BTreeMap<String, Value>),
     Record(BTreeMap<String, Value>),
     Raw(String),
+}
+
+impl TryFrom<serde_json::Value> for Value {
+    type Error = String;
+
+    fn try_from(value: serde_json::Value) -> Result<Self, Self::Error> {
+        match value {
+            serde_json::Value::Null => Ok(Value::Unit),
+            serde_json::Value::Bool(value) => Ok(Value::Bool(value)),
+            serde_json::Value::Number(value) => {
+                if let Some(value) = value.as_i64() {
+                    Ok(Value::Int(value))
+                } else if let Some(value) = value.as_f64() {
+                    Ok(Value::Float(value))
+                } else {
+                    Err("JSON number cannot be represented as a Sley value".to_string())
+                }
+            }
+            serde_json::Value::String(value) => Ok(Value::Text(value)),
+            serde_json::Value::Array(items) => items
+                .into_iter()
+                .map(Value::try_from)
+                .collect::<Result<Vec<_>, _>>()
+                .map(Value::List),
+            serde_json::Value::Object(fields) => fields
+                .into_iter()
+                .map(|(name, value)| Value::try_from(value).map(|value| (name, value)))
+                .collect::<Result<BTreeMap<_, _>, _>>()
+                .map(Value::Record),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -50,9 +84,10 @@ impl RuntimeGate {
     }
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct RuntimeGates {
     gates: BTreeMap<String, RuntimeGate>,
+    db_tables: BTreeMap<String, DbRows>,
 }
 
 impl RuntimeGates {
@@ -79,7 +114,7 @@ impl RuntimeGates {
     }
 
     pub fn is_empty(&self) -> bool {
-        self.gates.is_empty()
+        self.gates.is_empty() && self.db_tables.is_empty()
     }
 
     pub fn allows(&self, effect: &str) -> bool {
@@ -92,6 +127,16 @@ impl RuntimeGates {
 
     fn get_any(&self, effects: &[&str]) -> Option<&RuntimeGate> {
         effects.iter().find_map(|effect| self.get(effect))
+    }
+
+    pub fn grant_db_rows(&mut self, table: impl Into<String>, rows: DbRows) {
+        self.db_tables.insert(normalize_db_table(table), rows);
+    }
+
+    pub fn db_rows(&self, table: &str) -> Option<&[DbRow]> {
+        self.db_tables
+            .get(&normalize_db_table(table))
+            .map(Vec::as_slice)
     }
 }
 
@@ -373,6 +418,11 @@ fn eval_expr(
             }
         }
         ExprKind::Call { callee, args } => {
+            if let Some(value) =
+                eval_value_method_call(program, task, expr, callee, args, locals, gates)
+            {
+                return value;
+            }
             if callee_path(callee).is_some_and(|name| name == "Ok" || name == "Err") {
                 return Ok(Value::Raw(expr.source.clone()));
             }
@@ -637,6 +687,10 @@ fn eval_host_call(
                 ]),
             }
         }
+        "db.query_one" => {
+            eval_db_query(program, task, expr, callee_name, args, locals, gates, true)
+        }
+        "db.query" => eval_db_query(program, task, expr, callee_name, args, locals, gates, false),
         _ => Err(vec![
             Diagnostic::error(
                 "RUNTIME_HOST_CALL_UNSUPPORTED",
@@ -644,6 +698,240 @@ fn eval_host_call(
             )
             .with_node(expr.id.clone()),
         ]),
+    }
+}
+
+fn eval_value_method_call(
+    program: &Program,
+    task: &TaskDecl,
+    expr: &Expr,
+    callee: &Expr,
+    args: &[Expr],
+    locals: &HashMap<String, Value>,
+    gates: &RuntimeGates,
+) -> Option<Result<Value, Vec<Diagnostic>>> {
+    let ExprKind::FieldAccess { receiver, field } = &callee.kind else {
+        return None;
+    };
+    if !matches!(field.as_str(), "get" | "text" | "int" | "float" | "bool") {
+        return None;
+    }
+    Some(eval_row_method(
+        program, task, expr, receiver, field, args, locals, gates,
+    ))
+}
+
+#[allow(clippy::too_many_arguments)]
+fn eval_row_method(
+    program: &Program,
+    task: &TaskDecl,
+    expr: &Expr,
+    receiver: &Expr,
+    field: &str,
+    args: &[Expr],
+    locals: &HashMap<String, Value>,
+    gates: &RuntimeGates,
+) -> Result<Value, Vec<Diagnostic>> {
+    if args.len() != 1 {
+        return Err(vec![
+            Diagnostic::error(
+                "RUNTIME_ROW_ARITY_MISMATCH",
+                format!(
+                    "row method `{field}` expects 1 argument but received {}",
+                    args.len()
+                ),
+            )
+            .with_node(expr.id.clone()),
+        ]);
+    }
+    let key = eval_text_arg(program, task, expr, args, 0, locals, gates)?;
+    let value = match eval_expr(program, task, receiver, locals, gates)? {
+        Value::Record(fields) | Value::Map(fields) => {
+            fields.get(&key).cloned().ok_or_else(|| {
+                vec![
+                    Diagnostic::error(
+                        "RUNTIME_ROW_FIELD_NOT_FOUND",
+                        format!("row field `{key}` was not found"),
+                    )
+                    .with_node(args[0].id.clone()),
+                ]
+            })?
+        }
+        _ => {
+            return runtime_type_error(
+                expr,
+                format!("row method `{field}` expects a record or map receiver"),
+            );
+        }
+    };
+
+    match (field, value) {
+        ("get", value) => Ok(value),
+        ("text", Value::Text(value)) => Ok(Value::Text(value)),
+        ("int", Value::Int(value)) => Ok(Value::Int(value)),
+        ("float", Value::Float(value)) => Ok(Value::Float(value)),
+        ("float", Value::Int(value)) => Ok(Value::Float(value as f64)),
+        ("bool", Value::Bool(value)) => Ok(Value::Bool(value)),
+        (method, value) => runtime_type_error(
+            expr,
+            format!(
+                "row method `{method}` cannot read `{key}` as requested from `{}`",
+                value_kind(&value)
+            ),
+        ),
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn eval_db_query(
+    program: &Program,
+    task: &TaskDecl,
+    expr: &Expr,
+    callee_name: &str,
+    args: &[Expr],
+    locals: &HashMap<String, Value>,
+    gates: &RuntimeGates,
+    one: bool,
+) -> Result<Value, Vec<Diagnostic>> {
+    if args.is_empty() {
+        return host_arity_error(expr, callee_name, 1, args.len());
+    }
+
+    let query = eval_text_arg(program, task, expr, args, 0, locals, gates)?;
+    let parsed = parse_db_query(&query, expr)?;
+    let expected_args = if parsed.filter.is_some() { 2 } else { 1 };
+    if args.len() != expected_args {
+        return host_arity_error(expr, callee_name, expected_args, args.len());
+    }
+
+    let filter_value = if parsed.filter.is_some() {
+        Some(eval_expr(program, task, &args[1], locals, gates)?)
+    } else {
+        None
+    };
+    let rows = gates.db_rows(&parsed.table).ok_or_else(|| {
+        vec![
+            Diagnostic::error(
+                "RUNTIME_DB_TABLE_NOT_FOUND",
+                format!("database table `{}` was not seeded", parsed.table),
+            )
+            .with_node(expr.id.clone()),
+        ]
+    })?;
+    let filtered = rows
+        .iter()
+        .filter(|row| {
+            parsed
+                .filter
+                .as_ref()
+                .zip(filter_value.as_ref())
+                .is_none_or(|(field, value)| {
+                    row.get(field)
+                        .is_some_and(|row_value| values_equal(row_value, value))
+                })
+        })
+        .cloned()
+        .collect::<Vec<_>>();
+
+    if one {
+        filtered
+            .into_iter()
+            .next()
+            .map(Value::Record)
+            .ok_or_else(|| {
+                vec![
+                    Diagnostic::error(
+                        "RUNTIME_DB_ROW_NOT_FOUND",
+                        format!("database query `{query}` returned no rows"),
+                    )
+                    .with_node(expr.id.clone()),
+                ]
+            })
+    } else {
+        Ok(Value::List(
+            filtered.into_iter().map(Value::Record).collect(),
+        ))
+    }
+}
+
+#[derive(Debug)]
+struct ParsedDbQuery {
+    table: String,
+    filter: Option<String>,
+}
+
+fn parse_db_query(query: &str, expr: &Expr) -> Result<ParsedDbQuery, Vec<Diagnostic>> {
+    let query = query.trim().trim_end_matches(';').trim();
+    let lowercase = query.to_ascii_lowercase();
+    let table = if let Some(index) = lowercase.find(" from ") {
+        query[index + " from ".len()..]
+            .split_whitespace()
+            .next()
+            .unwrap_or_default()
+            .trim_matches(|ch: char| ch == '"' || ch == '`' || ch == '\'' || ch == ';')
+            .to_string()
+    } else {
+        query.to_string()
+    };
+    if table.is_empty() {
+        return Err(vec![
+            Diagnostic::error(
+                "RUNTIME_DB_QUERY_UNSUPPORTED",
+                format!("database query `{query}` does not name a table"),
+            )
+            .with_node(expr.id.clone()),
+        ]);
+    }
+
+    let filter = if let Some(index) = lowercase.find(" where ") {
+        let condition = query[index + " where ".len()..].trim();
+        let Some((field, rhs)) = condition.split_once('=') else {
+            return Err(vec![
+                Diagnostic::error(
+                    "RUNTIME_DB_QUERY_UNSUPPORTED",
+                    format!("database query `{query}` only supports `where field = ?` filters"),
+                )
+                .with_node(expr.id.clone()),
+            ]);
+        };
+        if rhs.trim() != "?" {
+            return Err(vec![
+                Diagnostic::error(
+                    "RUNTIME_DB_QUERY_UNSUPPORTED",
+                    format!("database query `{query}` only supports placeholder filters"),
+                )
+                .with_node(expr.id.clone()),
+            ]);
+        }
+        Some(
+            field
+                .trim()
+                .trim_matches(|ch: char| ch == '"' || ch == '`' || ch == '\'')
+                .to_string(),
+        )
+    } else {
+        None
+    };
+
+    Ok(ParsedDbQuery { table, filter })
+}
+
+fn normalize_db_table(table: impl Into<String>) -> String {
+    table.into().trim().to_ascii_lowercase()
+}
+
+fn value_kind(value: &Value) -> &'static str {
+    match value {
+        Value::Unit => "Unit",
+        Value::Text(_) => "Text",
+        Value::Int(_) => "Int",
+        Value::Float(_) => "Float",
+        Value::Bool(_) => "Bool",
+        Value::Gate(_) => "Gate",
+        Value::List(_) => "List",
+        Value::Map(_) => "Map",
+        Value::Record(_) => "Record",
+        Value::Raw(_) => "Raw",
     }
 }
 
