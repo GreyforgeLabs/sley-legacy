@@ -109,6 +109,7 @@ Implemented now:
 - checked JSON edit-plan reports with `sley plan`, consuming strict
   diagnostics plus query and lint findings into ranked task edit surfaces,
   graft target ids, optional `--graft-templates` starter operation payloads,
+  rename-plus-call-site transaction templates for targeted caller surfaces,
   `--template-surface <task>` targeting, and
   `schema: "sley.edit_plan.report.v0"`
 - checked JSON verification reports with `sley verify`, consuming strict

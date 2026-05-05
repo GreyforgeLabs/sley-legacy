@@ -128,8 +128,8 @@ Rules:
   report for pre-edit agent planning.
 - `sley plan` consumes the same checked surfaces into ranked task edit
   surfaces, post-edit gate commands, and optional starter graft operation
-  templates with editable JSON pointers; agents can target a specific task
-  surface by node id or qualified name.
+  templates and rename-plus-call-site transactions with editable JSON pointers;
+  agents can target a specific task surface by node id or qualified name.
 - `sley verify` is the deterministic CI/pre-deploy helper consuming strict
   check, `sley.query.report.v0`, `sley.lint.report.v0`, and seeded runtime
   execution into one pass/warnings/blocked report.

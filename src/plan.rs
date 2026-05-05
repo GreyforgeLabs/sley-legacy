@@ -24,6 +24,8 @@ pub struct EditPlanReport {
     pub task_surfaces: Vec<EditPlanTaskSurface>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub graft_templates: Vec<EditPlanGraftTemplate>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub transaction_templates: Vec<EditPlanTransactionTemplate>,
     pub next_actions: Vec<EditPlanAction>,
 }
 
@@ -114,6 +116,15 @@ pub struct EditPlanGraftTemplate {
     pub editable_json_pointers: Vec<String>,
 }
 
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct EditPlanTransactionTemplate {
+    pub kind: String,
+    pub reason: String,
+    pub surface: String,
+    pub transaction: JsonValue,
+    pub editable_json_pointers: Vec<String>,
+}
+
 pub fn build_edit_plan_report(
     target: impl Into<String>,
     program_result: Result<Program, Vec<Diagnostic>>,
@@ -152,6 +163,7 @@ pub fn build_edit_plan_report_with_options(
                 lint: None,
                 task_surfaces: Vec::new(),
                 graft_templates: Vec::new(),
+                transaction_templates: Vec::new(),
                 next_actions: blocked_actions(&target),
             };
         }
@@ -171,6 +183,7 @@ pub fn build_edit_plan_report_with_options(
             lint: None,
             task_surfaces: Vec::new(),
             graft_templates: Vec::new(),
+            transaction_templates: Vec::new(),
             next_actions: blocked_actions(&target),
         };
     }
@@ -196,6 +209,16 @@ pub fn build_edit_plan_report_with_options(
                 Vec::new()
             }
         }
+    } else {
+        Vec::new()
+    };
+    let transaction_templates = if options.include_graft_templates {
+        build_transaction_templates(
+            &task_surfaces,
+            &query_report,
+            options.template_surface.as_deref(),
+        )
+        .unwrap_or_default()
     } else {
         Vec::new()
     };
@@ -241,6 +264,7 @@ pub fn build_edit_plan_report_with_options(
         lint: Some(lint),
         task_surfaces,
         graft_templates,
+        transaction_templates,
         next_actions,
     }
 }
@@ -516,6 +540,92 @@ fn delete_task_template(surface: &EditPlanTaskSurface) -> EditPlanGraftTemplate 
         }),
         editable_json_pointers: Vec::new(),
     }
+}
+
+fn build_transaction_templates(
+    surfaces: &[EditPlanTaskSurface],
+    query: &QueryReport,
+    requested_surface: Option<&str>,
+) -> Result<Vec<EditPlanTransactionTemplate>, Diagnostic> {
+    let Some(surface) = select_template_surface(surfaces, requested_surface)? else {
+        return Ok(Vec::new());
+    };
+    let mut templates = Vec::new();
+    if surface.inbound_call_count > 0 {
+        let rename = rename_update_call_sites_template(surface, query);
+        if let Some(rename) = rename {
+            templates.push(rename);
+        }
+    }
+    Ok(templates)
+}
+
+fn rename_update_call_sites_template(
+    surface: &EditPlanTaskSurface,
+    query: &QueryReport,
+) -> Option<EditPlanTransactionTemplate> {
+    let new_name = format!("renamed_{}", declaration_name(&surface.qualified_name));
+    let new_target = format!("task:{}.{}", surface.module, new_name);
+    let mut ops = vec![json!({
+        "op": "RenameDeclaration",
+        "target": surface.id,
+        "payload": {
+            "name": new_name.clone()
+        }
+    })];
+    let mut editable_json_pointers = vec!["/ops/0/payload/name".to_string()];
+    let mut seen_call_rewrites = Vec::<(String, String)>::new();
+
+    for call in query
+        .calls
+        .iter()
+        .filter(|call| call.target.as_deref() == Some(surface.qualified_name.as_str()))
+    {
+        let replacement = replace_callee_leaf(&call.callee, &new_name);
+        let key = (call.from_module.clone(), call.callee.clone());
+        if seen_call_rewrites.contains(&key) {
+            continue;
+        }
+        seen_call_rewrites.push(key);
+        let op_index = ops.len();
+        ops.push(json!({
+            "op": "UpdateCallSites",
+            "target": new_target.clone(),
+            "payload": {
+                "from": call.callee.clone(),
+                "replacement": replacement,
+                "scope": format!("module:{}", call.from_module)
+            }
+        }));
+        editable_json_pointers.push(format!("/ops/{op_index}/payload/replacement"));
+        editable_json_pointers.push(format!("/ops/{op_index}/payload/scope"));
+    }
+
+    if ops.len() == 1 {
+        return None;
+    }
+    Some(EditPlanTransactionTemplate {
+        kind: "rename_and_update_call_sites".to_string(),
+        reason: "rename the task and update currently resolved callers in one all-or-nothing graft"
+            .to_string(),
+        surface: surface.id.clone(),
+        transaction: json!({
+            "transaction": format!(
+                "txn_rename_{}",
+                surface.qualified_name.replace('.', "_")
+            ),
+            "mode": "all_or_nothing",
+            "ops": ops
+        }),
+        editable_json_pointers,
+    })
+}
+
+fn replace_callee_leaf(callee: &str, new_leaf: &str) -> String {
+    callee
+        .rsplit_once('.')
+        .map(|(prefix, _leaf)| format!("{prefix}.{new_leaf}"))
+        .unwrap_or_else(|| new_leaf.to_string())
 }
 
 fn default_return_statement(return_type: &str) -> String {

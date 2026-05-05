@@ -670,6 +670,32 @@ task helper -> Int {
         report.graft_templates[0].operation.pointer("/target"),
         Some(&serde_json::json!("task:app.plan.helper"))
     );
+    assert_eq!(report.transaction_templates.len(), 1);
+    assert_eq!(
+        report.transaction_templates[0].kind,
+        "rename_and_update_call_sites"
+    );
+    assert_eq!(
+        report.transaction_templates[0]
+            .transaction
+            .pointer("/ops/1/payload/from"),
+        Some(&serde_json::json!("helper"))
+    );
+    assert_eq!(
+        report.transaction_templates[0]
+            .transaction
+            .pointer("/ops/1/payload/replacement"),
+        Some(&serde_json::json!("renamed_helper"))
+    );
+    let transaction_template: GraftInput =
+        serde_json::from_value(report.transaction_templates[0].transaction.clone())
+            .expect("parse transaction template");
+    let outcome = apply_graft_input(
+        &program,
+        transaction_template,
+        Some("agent:transaction-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted");
 
     let missing = build_edit_plan_report_with_options(
         "app.plan",
@@ -1537,6 +1563,20 @@ task main -> Text uses Network {
     assert_json_snapshot(
         &edit_plan_with_templates,
         include_str!("../fixtures/contracts/edit_plan_project_graft_templates.json"),
+    );
+
+    let edit_plan_with_targeted_templates = build_edit_plan_report_with_options(
+        "examples/project",
+        Ok(project.program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("task:app.math.double".to_string()),
+        },
+    );
+    assert_json_snapshot(
+        &edit_plan_with_targeted_templates,
+        include_str!("../fixtures/contracts/edit_plan_project_targeted_graft_templates.json"),
     );
 
     let verify = build_verify_report(

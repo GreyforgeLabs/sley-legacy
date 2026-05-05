@@ -607,7 +607,9 @@ treats lint findings as blocked while still printing
 graft operation payloads for the highest-ranked task surface, plus JSON
 pointers naming the fields an agent should edit before running
 `sley graft --json --dry-run`. `--template-surface <task>` selects a specific
-task surface by task node id or qualified task name.
+task surface by task node id or qualified task name. For selected tasks with
+currently resolved inbound callers, the report also includes an all-or-nothing
+`RenameDeclaration` plus `UpdateCallSites` transaction template.
 
 A graph slice is a bounded shard around a module, task, type, effect, or import.
 Task slices include the selected task AST, visible module declarations,
@@ -688,8 +690,9 @@ archive.
   hygiene for unused declared effects, and raw-host-adapter migration warnings;
   broader style and migration lints remain later work
 - `sley plan` emits deterministic ranked task edit surfaces, optional starter
-  graft operation templates, and post-edit gate commands; it does not yet
-  choose or execute a final graft for the agent
+  graft operation templates, rename-plus-call-site transaction templates, and
+  post-edit gate commands; it does not yet choose or execute a final graft for
+  the agent
 - `sley verify` emits a deterministic CI/pre-deploy report over strict check,
   query/lint summaries, and runtime execution; live deploy/provider calls
   remain outside v0
