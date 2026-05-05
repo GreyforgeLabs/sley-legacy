@@ -598,6 +598,7 @@ task main -> Result<Text, Error> {
         EditPlanOptions {
             deny_warnings: false,
             include_graft_templates: true,
+            template_surface: None,
         },
     );
     assert_eq!(report.status, "ready");
@@ -636,6 +637,53 @@ task main -> Result<Text, Error> {
         Some("agent:template-test".to_string()),
     );
     assert_eq!(outcome.status, "accepted");
+}
+
+#[test]
+fn edit_plan_graft_templates_can_target_named_surfaces() {
+    let source = r#"
+module app.plan
+
+task main -> Int {
+  return call helper(1)
+}
+
+task helper -> Int {
+  take value: Int
+
+  return value
+}
+"#;
+    let program = parse_program(source).expect("parse named surface plan fixture");
+    let report = build_edit_plan_report_with_options(
+        "app.plan",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("task:app.plan.helper".to_string()),
+        },
+    );
+    assert_eq!(report.status, "ready");
+    assert_eq!(report.graft_templates[0].surface, "task:app.plan.helper");
+    assert_eq!(
+        report.graft_templates[0].operation.pointer("/target"),
+        Some(&serde_json::json!("task:app.plan.helper"))
+    );
+
+    let missing = build_edit_plan_report_with_options(
+        "app.plan",
+        Ok(program),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("task:app.plan.missing".to_string()),
+        },
+    );
+    assert_eq!(missing.status, "blocked");
+    assert!(missing.graft_templates.is_empty());
+    assert_eq!(missing.diagnostics[0].id, "PLAN_SURFACE_NOT_FOUND");
+    assert_eq!(missing.next_actions[0].kind, "inspect_plan_surfaces");
 }
 
 #[test]
@@ -1483,6 +1531,7 @@ task main -> Text uses Network {
         EditPlanOptions {
             deny_warnings: false,
             include_graft_templates: true,
+            template_surface: None,
         },
     );
     assert_json_snapshot(

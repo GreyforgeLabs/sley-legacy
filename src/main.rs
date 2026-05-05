@@ -136,6 +136,8 @@ enum Command {
         deny_warnings: bool,
         #[arg(long)]
         graft_templates: bool,
+        #[arg(long, requires = "graft_templates")]
+        template_surface: Option<String>,
         file: PathBuf,
     },
     Verify {
@@ -481,6 +483,7 @@ fn run(cli: Cli) -> Result<()> {
             json,
             deny_warnings,
             graft_templates,
+            template_surface,
             file,
         } => {
             let target = file.display().to_string();
@@ -490,6 +493,7 @@ fn run(cli: Cli) -> Result<()> {
                 EditPlanOptions {
                     deny_warnings,
                     include_graft_templates: graft_templates,
+                    template_surface,
                 },
             );
             if json {

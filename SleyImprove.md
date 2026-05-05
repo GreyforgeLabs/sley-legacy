@@ -96,7 +96,7 @@ sley graph --json <target>
 sley graph --json --slice <node-id> <target>
 sley new --json [--template hello|deploy] [--name <name>] [--module <module>] <path>
 sley doctor --json [--deny-warnings] <target>
-sley plan --json [--deny-warnings] [--graft-templates] <target>
+sley plan --json [--deny-warnings] [--graft-templates] [--template-surface <task>] <target>
 sley verify --json [--deny-warnings] [runtime gates/seeds] <target>
 sley query --json [--kind all|modules|tasks|calls] [--module <module>] <target>
 sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|raw-host-adapter] [--module <module>] <target>
@@ -128,7 +128,8 @@ Rules:
   report for pre-edit agent planning.
 - `sley plan` consumes the same checked surfaces into ranked task edit
   surfaces, post-edit gate commands, and optional starter graft operation
-  templates with editable JSON pointers.
+  templates with editable JSON pointers; agents can target a specific task
+  surface by node id or qualified name.
 - `sley verify` is the deterministic CI/pre-deploy helper consuming strict
   check, `sley.query.report.v0`, `sley.lint.report.v0`, and seeded runtime
   execution into one pass/warnings/blocked report.

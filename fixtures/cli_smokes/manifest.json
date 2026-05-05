@@ -218,6 +218,31 @@
       }
     },
     {
+      "name": "plan_project_graft_templates_surface_json",
+      "args": [
+        "plan",
+        "--json",
+        "--graft-templates",
+        "--template-surface",
+        "task:app.math.double",
+        "examples/project"
+      ],
+      "covers": [
+        "cli:plan",
+        "graft:templates",
+        "json:sley.edit_plan.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.edit_plan.report.v0" },
+          { "pointer": "/graft_templates/0/surface", "value": "task:app.math.double" },
+          { "pointer": "/graft_templates/0/operation/target", "value": "task:app.math.double" },
+          { "pointer": "/graft_templates/2/operation/payload/position", "value": 1 }
+        ]
+      }
+    },
+    {
       "name": "verify_project_json",
       "args": ["verify", "--json", "examples/project"],
       "covers": [

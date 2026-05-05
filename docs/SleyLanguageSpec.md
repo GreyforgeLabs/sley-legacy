@@ -519,7 +519,7 @@ sley graph --json <target>
 sley graph --json --slice task:app.main.main <target>
 sley new --json --template deploy --name agent-app agent-app
 sley doctor --json <target>
-sley plan --json [--graft-templates] <target>
+sley plan --json [--graft-templates] [--template-surface <task>] <target>
 sley query --json --kind tasks --module app.main <target>
 sley lint --json <target>
 sley trace --json <target>
@@ -606,7 +606,8 @@ treats lint findings as blocked while still printing
 `schema: "sley.edit_plan.report.v0"`. `--graft-templates` adds starter strict
 graft operation payloads for the highest-ranked task surface, plus JSON
 pointers naming the fields an agent should edit before running
-`sley graft --json --dry-run`.
+`sley graft --json --dry-run`. `--template-surface <task>` selects a specific
+task surface by task node id or qualified task name.
 
 A graph slice is a bounded shard around a module, task, type, effect, or import.
 Task slices include the selected task AST, visible module declarations,

@@ -3,7 +3,7 @@ use serde_json::{Value as JsonValue, json};
 
 use crate::Program;
 use crate::checker::{check_program, has_errors};
-use crate::diagnostics::Diagnostic;
+use crate::diagnostics::{Diagnostic, RepairHint};
 use crate::lint::{LintOptions, LintReport, build_lint_report};
 use crate::query::{QueryKind, QueryOptions, QueryReport, QueryTakeSummary, build_query_report};
 
@@ -27,10 +27,11 @@ pub struct EditPlanReport {
     pub next_actions: Vec<EditPlanAction>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct EditPlanOptions {
     pub deny_warnings: bool,
     pub include_graft_templates: bool,
+    pub template_surface: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -124,6 +125,7 @@ pub fn build_edit_plan_report(
         EditPlanOptions {
             deny_warnings,
             include_graft_templates: false,
+            template_surface: None,
         },
     )
 }
@@ -185,12 +187,26 @@ pub fn build_edit_plan_report_with_options(
     let query = summarize_query(&query_report);
     let lint = summarize_lint(&lint_report);
     let task_surfaces = build_task_surfaces(&query_report);
+    let mut diagnostics = diagnostics;
+    let graft_templates = if options.include_graft_templates {
+        match build_graft_templates(&task_surfaces, options.template_surface.as_deref()) {
+            Ok(templates) => templates,
+            Err(diagnostic) => {
+                diagnostics.push(diagnostic);
+                Vec::new()
+            }
+        }
+    } else {
+        Vec::new()
+    };
     let error_count = diagnostics
         .iter()
         .filter(|diagnostic| diagnostic.is_error())
         .count();
     let warning_count = diagnostics.len() - error_count + lint.finding_count;
-    let status = if warning_count == 0 {
+    let status = if error_count > 0 {
+        "blocked"
+    } else if warning_count == 0 {
         "ready"
     } else if deny_warnings {
         "blocked"
@@ -206,15 +222,12 @@ pub fn build_edit_plan_report_with_options(
         lint_finding_count: lint.finding_count,
         task_surface_count: task_surfaces.len(),
     };
-    let next_actions = if warning_count > 0 {
+    let next_actions = if error_count > 0 {
+        template_surface_actions(&target)
+    } else if warning_count > 0 {
         warning_actions(&target, &task_surfaces)
     } else {
         ready_actions(&target, &query_report, &task_surfaces)
-    };
-    let graft_templates = if options.include_graft_templates {
-        build_graft_templates(&task_surfaces)
-    } else {
-        Vec::new()
     };
 
     EditPlanReport {
@@ -362,9 +375,12 @@ fn surface_rank(surface: &EditPlanTaskSurface, entry_task: &str) -> u8 {
     }
 }
 
-fn build_graft_templates(surfaces: &[EditPlanTaskSurface]) -> Vec<EditPlanGraftTemplate> {
-    let Some(surface) = surfaces.first() else {
-        return Vec::new();
+fn build_graft_templates(
+    surfaces: &[EditPlanTaskSurface],
+    requested_surface: Option<&str>,
+) -> Result<Vec<EditPlanGraftTemplate>, Diagnostic> {
+    let Some(surface) = select_template_surface(surfaces, requested_surface)? else {
+        return Ok(Vec::new());
     };
 
     let mut templates = vec![
@@ -381,7 +397,35 @@ fn build_graft_templates(surfaces: &[EditPlanTaskSurface]) -> Vec<EditPlanGraftT
     {
         templates.push(delete_task_template(surface));
     }
-    templates
+    Ok(templates)
+}
+
+fn select_template_surface<'a>(
+    surfaces: &'a [EditPlanTaskSurface],
+    requested_surface: Option<&str>,
+) -> Result<Option<&'a EditPlanTaskSurface>, Diagnostic> {
+    let Some(requested_surface) = requested_surface else {
+        return Ok(surfaces.first());
+    };
+    surfaces
+        .iter()
+        .find(|surface| {
+            surface.id == requested_surface || surface.qualified_name == requested_surface
+        })
+        .map(Some)
+        .ok_or_else(|| {
+            Diagnostic::error(
+                "PLAN_SURFACE_NOT_FOUND",
+                format!(
+                    "plan surface `{requested_surface}` was not found; use a task id or qualified task name from task_surfaces"
+                ),
+            )
+            .with_node(requested_surface)
+            .with_repair_hint(
+                RepairHint::new("inspect_task_surfaces")
+                    .with_replacement("Run `sley plan --json <target>` and choose a task_surfaces id or qualified_name"),
+            )
+        })
 }
 
 fn replace_task_body_template(surface: &EditPlanTaskSurface) -> EditPlanGraftTemplate {
@@ -517,6 +561,14 @@ fn blocked_actions(target: &str) -> Vec<EditPlanAction> {
         kind: "repair_diagnostics".to_string(),
         reason: "strict checking must pass before edit surfaces can be ranked".to_string(),
         command: command(["sley", "check", "--json", target]),
+    }]
+}
+
+fn template_surface_actions(target: &str) -> Vec<EditPlanAction> {
+    vec![EditPlanAction {
+        kind: "inspect_plan_surfaces".to_string(),
+        reason: "choose a valid task surface before requesting graft templates".to_string(),
+        command: command(["sley", "plan", "--json", target]),
     }]
 }
 
