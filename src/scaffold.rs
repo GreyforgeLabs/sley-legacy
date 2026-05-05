@@ -196,12 +196,15 @@ fn manifest_source(name: &str, module: &str) -> String {
 }
 
 fn readme_source(name: &str, template: ScaffoldTemplate) -> String {
-    let run = match template {
-        ScaffoldTemplate::Hello => "sley run --json .",
-        ScaffoldTemplate::Deploy => "sley run --json --cap Deploy --deploy-result staging staged .",
+    let (verify, run) = match template {
+        ScaffoldTemplate::Hello => ("sley verify --json .", "sley run --json ."),
+        ScaffoldTemplate::Deploy => (
+            "sley verify --json --cap Deploy --deploy-result staging staged .",
+            "sley run --json --cap Deploy --deploy-result staging staged .",
+        ),
     };
     format!(
-        "# {name}\n\nGenerated Sley project.\n\n```bash\nsley check --json .\nsley query --json --kind tasks .\nsley lint --json --deny-warnings .\n{run}\n```\n"
+        "# {name}\n\nGenerated Sley project.\n\n```bash\nsley check --json .\nsley query --json --kind tasks .\nsley lint --json --deny-warnings .\n{verify}\n{run}\n```\n"
     )
 }
 
@@ -242,26 +245,47 @@ fn next_commands(template: ScaffoldTemplate) -> Vec<Vec<String>> {
             ".".to_string(),
         ],
     ];
-    let run = match template {
+    let extra_commands = match template {
         ScaffoldTemplate::Hello => vec![
-            "sley".to_string(),
-            "run".to_string(),
-            "--json".to_string(),
-            ".".to_string(),
+            vec![
+                "sley".to_string(),
+                "verify".to_string(),
+                "--json".to_string(),
+                ".".to_string(),
+            ],
+            vec![
+                "sley".to_string(),
+                "run".to_string(),
+                "--json".to_string(),
+                ".".to_string(),
+            ],
         ],
         ScaffoldTemplate::Deploy => vec![
-            "sley".to_string(),
-            "run".to_string(),
-            "--json".to_string(),
-            "--cap".to_string(),
-            "Deploy".to_string(),
-            "--deploy-result".to_string(),
-            "staging".to_string(),
-            "staged".to_string(),
-            ".".to_string(),
+            vec![
+                "sley".to_string(),
+                "verify".to_string(),
+                "--json".to_string(),
+                "--cap".to_string(),
+                "Deploy".to_string(),
+                "--deploy-result".to_string(),
+                "staging".to_string(),
+                "staged".to_string(),
+                ".".to_string(),
+            ],
+            vec![
+                "sley".to_string(),
+                "run".to_string(),
+                "--json".to_string(),
+                "--cap".to_string(),
+                "Deploy".to_string(),
+                "--deploy-result".to_string(),
+                "staging".to_string(),
+                "staged".to_string(),
+                ".".to_string(),
+            ],
         ],
     };
-    commands.push(run);
+    commands.extend(extra_commands);
     commands
 }
 

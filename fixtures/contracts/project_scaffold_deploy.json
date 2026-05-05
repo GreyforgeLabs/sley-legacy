@@ -46,6 +46,17 @@
     ],
     [
       "sley",
+      "verify",
+      "--json",
+      "--cap",
+      "Deploy",
+      "--deploy-result",
+      "staging",
+      "staged",
+      "."
+    ],
+    [
+      "sley",
       "run",
       "--json",
       "--cap",

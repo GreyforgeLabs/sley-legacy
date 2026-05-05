@@ -24,6 +24,7 @@ use sley::trace::{
     TraceSeal, append_trace_receipt, build_trace_receipt, build_trace_seal, default_trace_path,
     read_trace_receipts,
 };
+use sley::verify::{VerifyReport, build_verify_report};
 use sley::zjx::build_zjx_envelope;
 
 #[derive(Debug, Parser)]
@@ -124,6 +125,29 @@ enum Command {
         json: bool,
         #[arg(long)]
         deny_warnings: bool,
+        file: PathBuf,
+    },
+    Verify {
+        #[arg(long)]
+        json: bool,
+        #[arg(long)]
+        deny_warnings: bool,
+        #[arg(long = "cap", value_name = "EFFECT[=ROOT]")]
+        cap: Vec<String>,
+        #[arg(long = "db-table", value_name = "TABLE=JSON")]
+        db_table: Vec<String>,
+        #[arg(long = "secret", value_names = ["NAME", "TEXT"], num_args = 2)]
+        secret: Vec<String>,
+        #[arg(long = "deploy-result", value_names = ["TARGET", "TEXT"], num_args = 2)]
+        deploy_result: Vec<String>,
+        #[arg(long = "spend-result", value_names = ["REQUEST", "TEXT"], num_args = 2)]
+        spend_result: Vec<String>,
+        #[arg(long = "http-text", value_names = ["URL", "TEXT"], num_args = 2)]
+        http_text: Vec<String>,
+        #[arg(long = "shell-output", value_names = ["COMMAND", "TEXT"], num_args = 2)]
+        shell_output: Vec<String>,
+        #[arg(long = "model-output", value_names = ["PROMPT", "TEXT"], num_args = 2)]
+        model_output: Vec<String>,
         file: PathBuf,
     },
     Trace {
@@ -281,14 +305,16 @@ fn run(cli: Cli) -> Result<()> {
             if has_errors(&diagnostics) {
                 return emit_diagnostics_and_fail(diagnostics, json);
             }
-            let mut runtime_gates = parse_runtime_gates(&cap)?;
-            load_runtime_db_tables(&mut runtime_gates, &db_table)?;
-            load_runtime_secrets(&mut runtime_gates, &secret)?;
-            load_runtime_deploy_results(&mut runtime_gates, &deploy_result)?;
-            load_runtime_spend_results(&mut runtime_gates, &spend_result)?;
-            load_runtime_http_texts(&mut runtime_gates, &http_text)?;
-            load_runtime_shell_outputs(&mut runtime_gates, &shell_output)?;
-            load_runtime_model_outputs(&mut runtime_gates, &model_output)?;
+            let runtime_gates = build_runtime_gates(
+                &cap,
+                &db_table,
+                &secret,
+                &deploy_result,
+                &spend_result,
+                &http_text,
+                &shell_output,
+                &model_output,
+            )?;
             let result = if runtime_gates.is_empty() {
                 run_main(&program)
             } else {
@@ -437,6 +463,46 @@ fn run(cli: Cli) -> Result<()> {
             }
             if report.status == "blocked" {
                 anyhow::bail!("doctor blocked");
+            }
+            Ok(())
+        }
+        Command::Verify {
+            json,
+            deny_warnings,
+            cap,
+            db_table,
+            secret,
+            deploy_result,
+            spend_result,
+            http_text,
+            shell_output,
+            model_output,
+            file,
+        } => {
+            let runtime_gates = build_runtime_gates(
+                &cap,
+                &db_table,
+                &secret,
+                &deploy_result,
+                &spend_result,
+                &http_text,
+                &shell_output,
+                &model_output,
+            )?;
+            let target = file.display().to_string();
+            let report = build_verify_report(
+                target,
+                load_target_program(&file),
+                runtime_gates,
+                deny_warnings,
+            );
+            if json {
+                print_json(&report)?;
+            } else {
+                print_human_verify_report(&report);
+            }
+            if report.status == "blocked" {
+                anyhow::bail!("verify blocked");
             }
             Ok(())
         }
@@ -825,6 +891,27 @@ fn parse_runtime_gates(values: &[String]) -> Result<RuntimeGates> {
     Ok(gates)
 }
 
+fn build_runtime_gates(
+    cap: &[String],
+    db_table: &[String],
+    secret: &[String],
+    deploy_result: &[String],
+    spend_result: &[String],
+    http_text: &[String],
+    shell_output: &[String],
+    model_output: &[String],
+) -> Result<RuntimeGates> {
+    let mut gates = parse_runtime_gates(cap)?;
+    load_runtime_db_tables(&mut gates, db_table)?;
+    load_runtime_secrets(&mut gates, secret)?;
+    load_runtime_deploy_results(&mut gates, deploy_result)?;
+    load_runtime_spend_results(&mut gates, spend_result)?;
+    load_runtime_http_texts(&mut gates, http_text)?;
+    load_runtime_shell_outputs(&mut gates, shell_output)?;
+    load_runtime_model_outputs(&mut gates, model_output)?;
+    Ok(gates)
+}
+
 fn load_runtime_db_tables(gates: &mut RuntimeGates, values: &[String]) -> Result<()> {
     for value in values {
         let (table, path) = value
@@ -1141,6 +1228,39 @@ fn print_human_doctor_report(report: &DoctorReport) {
         report.summary.call_count,
         report.summary.lint_finding_count
     );
+    for diagnostic in &report.diagnostics {
+        println!("diagnostic {} {}", diagnostic.id, diagnostic.message);
+    }
+    for action in &report.next_actions {
+        println!(
+            "next {}: {} -> {}",
+            action.kind,
+            action.reason,
+            action.command.join(" ")
+        );
+    }
+}
+
+fn print_human_verify_report(report: &VerifyReport) {
+    println!(
+        "verify schema={} status={} target={} entry={} errors={} warnings={} modules={} tasks={} calls={} lint_findings={} runtime={}",
+        report.schema,
+        report.status,
+        report.target,
+        report.entry_module.as_deref().unwrap_or("unknown"),
+        report.summary.error_count,
+        report.summary.warning_count,
+        report.summary.module_count,
+        report.summary.task_count,
+        report.summary.call_count,
+        report.summary.lint_finding_count,
+        report.summary.runtime_status
+    );
+    if let Some(runtime) = &report.runtime
+        && let Some(value) = &runtime.value
+    {
+        println!("runtime value={value:?}");
+    }
     for diagnostic in &report.diagnostics {
         println!("diagnostic {} {}", diagnostic.id, diagnostic.message);
     }

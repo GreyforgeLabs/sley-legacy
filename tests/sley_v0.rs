@@ -24,6 +24,7 @@ use sley::trace::{
     TRACE_RECEIPT_SCHEMA, TRACE_SEAL_SCHEMA, TraceReceipt, append_trace_receipt,
     build_trace_receipt, build_trace_seal, read_trace_receipts,
 };
+use sley::verify::{VERIFY_REPORT_SCHEMA, build_verify_report};
 
 #[derive(Debug, serde::Deserialize)]
 struct CorpusExpectation {
@@ -1074,6 +1075,17 @@ task main -> Text uses Network {
             ],
             vec![
                 "sley".to_string(),
+                "verify".to_string(),
+                "--json".to_string(),
+                "--cap".to_string(),
+                "Deploy".to_string(),
+                "--deploy-result".to_string(),
+                "staging".to_string(),
+                "staged".to_string(),
+                ".".to_string(),
+            ],
+            vec![
+                "sley".to_string(),
                 "run".to_string(),
                 "--json".to_string(),
                 "--cap".to_string(),
@@ -1094,6 +1106,17 @@ task main -> Text uses Network {
     assert_json_snapshot(
         &doctor,
         include_str!("../fixtures/contracts/doctor_project_ready.json"),
+    );
+
+    let verify = build_verify_report(
+        "examples/project",
+        Ok(project.program.clone()),
+        RuntimeGates::new(),
+        false,
+    );
+    assert_json_snapshot(
+        &verify,
+        include_str!("../fixtures/contracts/verify_project_ready.json"),
     );
 
     assert_schema_file(
@@ -1143,6 +1166,61 @@ task main -> Text uses Network {
     assert_schema_file(
         include_str!("../docs/schemas/sley.doctor.report.v0.schema.json"),
         DOCTOR_REPORT_SCHEMA,
+    );
+    assert_schema_file(
+        include_str!("../docs/schemas/sley.verify.report.v0.schema.json"),
+        VERIFY_REPORT_SCHEMA,
+    );
+}
+
+#[test]
+fn verify_report_blocks_on_missing_runtime_gate() {
+    let source = include_str!("../examples/deploy_gate.sley");
+    let program = parse_program(source).expect("parse deploy gate fixture");
+    let report = build_verify_report(
+        "examples/deploy_gate.sley",
+        Ok(program),
+        RuntimeGates::new(),
+        false,
+    );
+
+    assert_eq!(report.schema, VERIFY_REPORT_SCHEMA);
+    assert_eq!(report.status, "blocked");
+    assert_eq!(report.summary.runtime_status, "failed");
+    assert!(
+        report
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.id == "RUNTIME_CAPABILITY_REQUIRED"),
+        "expected missing capability diagnostic, got {report:#?}"
+    );
+}
+
+#[test]
+fn verify_report_blocks_when_warnings_are_denied() {
+    let source = r#"
+module app.effects
+
+task main -> Text uses Network {
+  return "ready"
+}
+"#;
+    let program = parse_program(source).expect("parse unused effect fixture");
+    let report = build_verify_report("app.effects", Ok(program), RuntimeGates::new(), true);
+
+    assert_eq!(report.schema, VERIFY_REPORT_SCHEMA);
+    assert_eq!(report.status, "blocked");
+    assert_eq!(report.summary.lint_finding_count, 1);
+    assert_eq!(report.summary.runtime_status, "skipped");
+    assert_eq!(
+        report
+            .lint
+            .as_ref()
+            .expect("lint summary")
+            .findings
+            .first()
+            .map(|finding| finding.rule.as_str()),
+        Some("unused_declared_effect")
     );
 }
 
@@ -4399,6 +4477,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "cli:parse",
         "cli:new",
         "cli:doctor",
+        "cli:verify",
         "cli:format",
         "cli:check",
         "cli:run",
@@ -4431,6 +4510,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "json:sley.lint.report.v0",
         "json:sley.project.scaffold.v0",
         "json:sley.doctor.report.v0",
+        "json:sley.verify.report.v0",
         "json:sley.trace.seal.v0",
         "json:sley.zjx.envelope.v0",
     ];

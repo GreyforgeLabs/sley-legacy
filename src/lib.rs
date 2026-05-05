@@ -13,6 +13,7 @@ pub mod runtime;
 pub mod scaffold;
 pub mod symbols;
 pub mod trace;
+pub mod verify;
 pub mod zjx;
 
 pub use ast::Program;

@@ -16,6 +16,7 @@ Implemented now:
 - `sley query`
 - `sley lint`
 - `sley doctor`
+- `sley verify`
 - `sley trace`
 - `sley seal`
 - `sley zjx`
@@ -104,6 +105,9 @@ Implemented now:
 - checked JSON readiness reports with `sley doctor`, consuming strict
   diagnostics plus query and lint summaries, and
   `schema: "sley.doctor.report.v0"` for agent pre-edit gates
+- checked JSON verification reports with `sley verify`, consuming strict
+  diagnostics, query summaries, lint findings, and deterministic runtime
+  execution into `schema: "sley.verify.report.v0"` for CI and pre-deploy gates
 - JSON project scaffold reports with `sley new --json`, `hello` and `deploy`
   templates, relative created-file paths, next-command vectors, and
   `schema: "sley.project.scaffold.v0"`
@@ -126,15 +130,15 @@ Implemented now:
   unknown tasks, type mismatches, return mismatches, call argument mismatches,
   condition mismatches, effect authority, and private or ambiguous names
 - locked JSON contract snapshots under `fixtures/contracts/`, including
-  checked query, lint, doctor, and project scaffold reports
+  checked query, lint, doctor, verify, and project scaffold reports
 - external v0 JSON Schema files under `docs/schemas/`
 - manifest-backed accepted/rejected synthetic conformance corpus fixtures under
   `fixtures/corpus/`, including declared and missing authority cases for the
   seeded host adapter surface
 - manifest-backed CLI smoke conformance cases under `fixtures/cli_smokes/`,
   covering stable command output, JSON roots, graph/ZJX surfaces, doctor
-  readiness, project scaffolding, graft dry runs, and seeded host-adapter
-  execution
+  readiness, verify pre-deploy gates, project scaffolding, graft dry runs, and
+  seeded host-adapter execution
 - compact agent onboarding pack in `llms.txt`
 
 Project form:
@@ -144,6 +148,7 @@ sley new --template deploy --name agent-app agent-app
 cd agent-app
 sley check --json .
 sley doctor --json .
+sley verify --json --cap Deploy --deploy-result staging staged .
 sley lint --json --deny-warnings .
 sley run --json --cap Deploy --deploy-result staging staged .
 ```
@@ -419,6 +424,6 @@ Known v0 limits:
 The current release-readiness phase is underway for the executable slice. The
 gold corpus and CLI smoke suite now have manifests with required coverage tags
 for seeded host adapters, stable JSON roots, graph/ZJX output, graft dry runs,
-checked graph query reports, and private-task lint rules. The next
-logical phase is to start consuming query/lint JSON from Sley helper passes and
-add authority, style, and migration lints before broadening the language again.
+checked graph query reports, doctor readiness, verify pre-deploy gates, and
+private-task lint rules. The next logical phase is to broaden authority, style,
+and migration lints before broadening the language again.

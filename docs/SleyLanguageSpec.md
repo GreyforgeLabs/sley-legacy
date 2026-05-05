@@ -637,8 +637,12 @@ archive.
   archive
 - the AST JSON Schema covers nested AST and expression variants; the remaining
   JSON Schema files are still narrower v0 root contracts
-- `sley lint` currently ships warning-grade private-task graph rules; broader
-  style, migration, and authority lints remain later work
+- `sley lint` currently ships warning-grade private-task graph rules and
+  authority hygiene for unused declared effects; broader style and migration
+  lints remain later work
+- `sley verify` emits a deterministic CI/pre-deploy report over strict check,
+  query/lint summaries, and runtime execution; live deploy/provider calls
+  remain outside v0
 - no `match`, agent declarations, spawn/cast/join, or compressed ZJX archive
   writer yet
 - `MoveNode` supports checked in-parent statement reordering and top-level

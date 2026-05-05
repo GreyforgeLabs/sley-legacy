@@ -96,6 +96,7 @@ sley graph --json <target>
 sley graph --json --slice <node-id> <target>
 sley new --json [--template hello|deploy] [--name <name>] [--module <module>] <path>
 sley doctor --json [--deny-warnings] <target>
+sley verify --json [--deny-warnings] [runtime gates/seeds] <target>
 sley query --json [--kind all|modules|tasks|calls] [--module <module>] <target>
 sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect] [--module <module>] <target>
 sley trace --json <target>
@@ -110,8 +111,8 @@ Rules:
 
 - JSON output must be stable and versioned.
 - AST roots, diagnostic reports, symbol graphs, graph slices, query reports,
-  lint reports, doctor reports, project scaffold reports, trace seals, ZJX
-  envelopes, and graft outcomes carry v0 schema IDs.
+  lint reports, doctor reports, verify reports, project scaffold reports, trace
+  seals, ZJX envelopes, and graft outcomes carry v0 schema IDs.
 - AST, diagnostic-report, graph-slice, query-report, lint-report,
   doctor-report, project-scaffold, and trace-seal snapshots are locked under
   `fixtures/contracts/`.
@@ -124,6 +125,9 @@ Rules:
 - `sley doctor` is the first deterministic helper consuming strict check,
   `sley.query.report.v0`, and `sley.lint.report.v0` into a single readiness
   report for pre-edit agent planning.
+- `sley verify` is the deterministic CI/pre-deploy helper consuming strict
+  check, `sley.query.report.v0`, `sley.lint.report.v0`, and seeded runtime
+  execution into one pass/warnings/blocked report.
 - Grafts support dry-run by default and an explicit `--dry-run` flag.
 - Graft input JSON is strict: unknown operation or payload fields reject instead
   of being silently ignored.

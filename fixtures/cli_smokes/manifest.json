@@ -174,6 +174,27 @@
       }
     },
     {
+      "name": "verify_project_json",
+      "args": ["verify", "--json", "examples/project"],
+      "covers": [
+        "cli:verify",
+        "json:sley.verify.report.v0",
+        "json:sley.query.report.v0",
+        "json:sley.lint.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.verify.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/summary/runtime_status", "value": "passed" },
+          { "pointer": "/runtime/value/kind", "value": "Int" },
+          { "pointer": "/runtime/value/value", "value": 42 },
+          { "pointer": "/next_actions/0/kind", "value": "seal_verified_target" }
+        ]
+      }
+    },
+    {
       "name": "lint_project_json",
       "args": ["lint", "--json", "examples/project"],
       "covers": ["cli:lint", "json:sley.lint.report.v0"],

@@ -1,0 +1,54 @@
+{
+  "schema": "sley.verify.report.v0",
+  "status": "passed",
+  "target": "examples/project",
+  "entry_module": "app.main",
+  "summary": {
+    "error_count": 0,
+    "warning_count": 0,
+    "module_count": 2,
+    "task_count": 2,
+    "call_count": 1,
+    "lint_finding_count": 0,
+    "runtime_status": "passed"
+  },
+  "diagnostics": [],
+  "query": {
+    "source_schema": "sley.query.report.v0",
+    "kind": "all",
+    "module_count": 2,
+    "task_count": 2,
+    "call_count": 1
+  },
+  "lint": {
+    "source_schema": "sley.lint.report.v0",
+    "status": "ok",
+    "rules": [
+      "unused_private_task",
+      "unreachable_private_task",
+      "unused_declared_effect"
+    ],
+    "finding_count": 0,
+    "findings": []
+  },
+  "runtime": {
+    "status": "passed",
+    "value": {
+      "kind": "Int",
+      "value": 42
+    },
+    "diagnostics": []
+  },
+  "next_actions": [
+    {
+      "kind": "seal_verified_target",
+      "reason": "create a content-addressed review artifact after verification",
+      "command": [
+        "sley",
+        "seal",
+        "--json",
+        "examples/project"
+      ]
+    }
+  ]
+}
