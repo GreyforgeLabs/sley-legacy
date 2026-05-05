@@ -127,8 +127,8 @@ Rules:
 - Accepted write-mode grafts emit trace receipts, and `sley seal` produces a
   content-addressed digest over source, graph, and receipt content.
 - Runtime `Ok(value)`/`Err(error)` values and `?` propagation are implemented
-  for Sley-level `Result` flow. Filesystem and seeded database host adapters
-  now expose `try_` variants returning typed `Error` records.
+  for Sley-level `Result` flow. Filesystem, seeded database reads, and per-run
+  database inserts now expose `try_` variants returning typed `Error` records.
 - Source text should remain the human review projection, not the primary agent
   edit surface.
 
@@ -389,8 +389,9 @@ Medium-term:
    delete edits.
 2. Move trace seals and ZJX preview payloads into a compressed binary `.zjx`
    handoff.
-3. Expand runtime host capability values across database write, network, shell,
-   model, secret, deploy, and spend boundaries.
+3. Expand runtime host capability values across network, shell, model, secret,
+   deploy, and spend boundaries, then grow database write beyond per-run
+   inserts.
 4. Build the synthetic gold corpus into a release gate.
 5. Shadow selected compiler helper passes in Sley.
 

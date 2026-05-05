@@ -135,6 +135,13 @@ impl RuntimeGates {
         self.db_tables.insert(normalize_db_table(table), rows);
     }
 
+    pub fn insert_db_row(&mut self, table: impl Into<String>, row: DbRow) {
+        self.db_tables
+            .entry(normalize_db_table(table))
+            .or_default()
+            .push(row);
+    }
+
     pub fn db_rows(&self, table: &str) -> Option<&[DbRow]> {
         self.db_tables
             .get(&normalize_db_table(table))
@@ -190,6 +197,7 @@ pub fn run_main_with_gates(
     program: &Program,
     gates: &RuntimeGates,
 ) -> Result<Value, Vec<Diagnostic>> {
+    let mut gates = gates.clone();
     let main_index = match resolve_task(program, program.module_name(), "main") {
         TaskResolution::Resolved { index, .. } => index,
         _ => {
@@ -208,14 +216,14 @@ pub fn run_main_with_gates(
         ]);
     }
 
-    eval_task(program, main, Vec::new(), gates)
+    eval_task(program, main, Vec::new(), &mut gates)
 }
 
 fn eval_task(
     program: &Program,
     task: &TaskDecl,
     args: Vec<Value>,
-    gates: &RuntimeGates,
+    gates: &mut RuntimeGates,
 ) -> Result<Value, Vec<Diagnostic>> {
     let missing_effects = missing_task_effects(program, task, gates);
     if !missing_effects.is_empty() {
@@ -272,7 +280,7 @@ fn eval_block(
     task: &TaskDecl,
     block: &crate::ast::Block,
     locals: &mut HashMap<String, Value>,
-    gates: &RuntimeGates,
+    gates: &mut RuntimeGates,
 ) -> Result<Option<Value>, Vec<Diagnostic>> {
     for statement in &block.statements {
         if let Some(value) = eval_statement(program, task, statement, locals, gates)? {
@@ -287,7 +295,7 @@ fn eval_scoped_block(
     task: &TaskDecl,
     block: &crate::ast::Block,
     locals: &mut HashMap<String, Value>,
-    gates: &RuntimeGates,
+    gates: &mut RuntimeGates,
 ) -> Result<Option<Value>, Vec<Diagnostic>> {
     let existing = locals.keys().cloned().collect::<HashSet<_>>();
     let result = eval_block(program, task, block, locals, gates);
@@ -302,7 +310,7 @@ fn eval_for_body(
     locals: &mut HashMap<String, Value>,
     item: &str,
     value: Value,
-    gates: &RuntimeGates,
+    gates: &mut RuntimeGates,
 ) -> Result<Option<Value>, Vec<Diagnostic>> {
     let existing = locals.keys().cloned().collect::<HashSet<_>>();
     locals.insert(item.to_string(), value);
@@ -316,7 +324,7 @@ fn eval_statement(
     task: &TaskDecl,
     statement: &crate::ast::Statement,
     locals: &mut HashMap<String, Value>,
-    gates: &RuntimeGates,
+    gates: &mut RuntimeGates,
 ) -> Result<Option<Value>, Vec<Diagnostic>> {
     match &statement.kind {
         StatementKind::Binding { name, expr, .. } => {
@@ -436,7 +444,7 @@ fn eval_expr(
     task: &TaskDecl,
     expr: &Expr,
     locals: &HashMap<String, Value>,
-    gates: &RuntimeGates,
+    gates: &mut RuntimeGates,
 ) -> Result<EvalOutcome, Vec<Diagnostic>> {
     match &expr.kind {
         ExprKind::StringLiteral { value } => Ok(EvalOutcome::value(Value::Text(value.clone()))),
@@ -720,7 +728,7 @@ fn eval_result_constructor(
     callee: &Expr,
     args: &[Expr],
     locals: &HashMap<String, Value>,
-    gates: &RuntimeGates,
+    gates: &mut RuntimeGates,
 ) -> Result<EvalOutcome, Vec<Diagnostic>> {
     if args.len() != 1 {
         return Err(vec![
@@ -750,7 +758,7 @@ fn eval_host_call(
     callee_name: &str,
     args: &[Expr],
     locals: &HashMap<String, Value>,
-    gates: &RuntimeGates,
+    gates: &mut RuntimeGates,
 ) -> Result<EvalOutcome, Vec<Diagnostic>> {
     let Some(required_effects) = host_required_effects(callee_name) else {
         return Err(vec![
@@ -761,7 +769,7 @@ fn eval_host_call(
             .with_node(expr.id.clone()),
         ]);
     };
-    let Some(gate) = gates.get_any(required_effects) else {
+    let Some(gate) = gates.get_any(required_effects).cloned() else {
         return Err(vec![
             Diagnostic::error(
                 "RUNTIME_CAPABILITY_REQUIRED",
@@ -781,7 +789,7 @@ fn eval_host_call(
             }
             let path =
                 arg_or_propagate!(eval_text_arg(program, task, expr, args, 0, locals, gates));
-            let path = gate_path(gate, &path, expr)?;
+            let path = gate_path(&gate, &path, expr)?;
             match std::fs::read_to_string(&path) {
                 Ok(value) => Ok(EvalOutcome::value(Value::Text(value))),
                 Err(error) => Err(vec![
@@ -802,7 +810,7 @@ fn eval_host_call(
             }
             let path =
                 arg_or_propagate!(eval_text_arg(program, task, expr, args, 0, locals, gates));
-            let path = gate_path(gate, &path, expr)?;
+            let path = gate_path(&gate, &path, expr)?;
             match std::fs::read_to_string(&path) {
                 Ok(value) => Ok(host_ok(Value::Text(value))),
                 Err(error) => Ok(host_err(
@@ -822,7 +830,7 @@ fn eval_host_call(
                 arg_or_propagate!(eval_text_arg(program, task, expr, args, 0, locals, gates));
             let contents =
                 arg_or_propagate!(eval_text_arg(program, task, expr, args, 1, locals, gates));
-            let path = gate_path(gate, &path, expr)?;
+            let path = gate_path(&gate, &path, expr)?;
             match std::fs::write(&path, contents) {
                 Ok(()) => Ok(EvalOutcome::value(Value::Unit)),
                 Err(error) => Err(vec![
@@ -845,7 +853,7 @@ fn eval_host_call(
                 arg_or_propagate!(eval_text_arg(program, task, expr, args, 0, locals, gates));
             let contents =
                 arg_or_propagate!(eval_text_arg(program, task, expr, args, 1, locals, gates));
-            let path = gate_path(gate, &path, expr)?;
+            let path = gate_path(&gate, &path, expr)?;
             match std::fs::write(&path, contents) {
                 Ok(()) => Ok(host_ok(Value::Unit)),
                 Err(error) => Ok(host_err(
@@ -897,6 +905,7 @@ fn eval_host_call(
             gates,
             DbQueryMode::ResultMany,
         ),
+        "db.try_insert" => eval_db_insert(program, task, expr, callee_name, args, locals, gates),
         _ => Err(vec![
             Diagnostic::error(
                 "RUNTIME_HOST_CALL_UNSUPPORTED",
@@ -914,7 +923,7 @@ fn eval_value_method_call(
     callee: &Expr,
     args: &[Expr],
     locals: &HashMap<String, Value>,
-    gates: &RuntimeGates,
+    gates: &mut RuntimeGates,
 ) -> Option<Result<EvalOutcome, Vec<Diagnostic>>> {
     let ExprKind::FieldAccess { receiver, field } = &callee.kind else {
         return None;
@@ -936,7 +945,7 @@ fn eval_row_method(
     field: &str,
     args: &[Expr],
     locals: &HashMap<String, Value>,
-    gates: &RuntimeGates,
+    gates: &mut RuntimeGates,
 ) -> Result<EvalOutcome, Vec<Diagnostic>> {
     if args.len() != 1 {
         return Err(vec![
@@ -998,7 +1007,7 @@ fn eval_db_query(
     callee_name: &str,
     args: &[Expr],
     locals: &HashMap<String, Value>,
-    gates: &RuntimeGates,
+    gates: &mut RuntimeGates,
     mode: DbQueryMode,
 ) -> Result<EvalOutcome, Vec<Diagnostic>> {
     if args.is_empty() {
@@ -1088,6 +1097,45 @@ fn eval_db_query(
             filtered.into_iter().map(Value::Record).collect(),
         ))),
     }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn eval_db_insert(
+    program: &Program,
+    task: &TaskDecl,
+    expr: &Expr,
+    callee_name: &str,
+    args: &[Expr],
+    locals: &HashMap<String, Value>,
+    gates: &mut RuntimeGates,
+) -> Result<EvalOutcome, Vec<Diagnostic>> {
+    if args.len() != 2 {
+        return host_arity_error(expr, callee_name, 2, args.len()).map(EvalOutcome::value);
+    }
+
+    let table = arg_or_propagate!(eval_text_arg(program, task, expr, args, 0, locals, gates));
+    let table = normalize_db_table(table.as_str());
+    if table.is_empty() {
+        return Ok(host_err(
+            "RUNTIME_DB_TABLE_INVALID",
+            "database table name cannot be empty",
+        ));
+    }
+
+    let row = value_or_propagate!(eval_expr(program, task, &args[1], locals, gates));
+    let row = match row {
+        Value::Record(fields) | Value::Map(fields) => fields,
+        _ => {
+            return runtime_type_error(
+                &args[1],
+                "database insert row must be a record or map value",
+            )
+            .map(EvalOutcome::value);
+        }
+    };
+
+    gates.insert_db_row(table, row.clone());
+    Ok(host_ok(Value::Record(row)))
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -1219,6 +1267,7 @@ fn host_required_effects(name: &str) -> Option<&'static [&'static str]> {
         "db.query_one" | "db.query" | "db.try_query_one" | "db.try_query" => {
             Some(&["DatabaseRead", "DbRead"])
         }
+        "db.try_insert" => Some(&["DatabaseWrite", "DbWrite"]),
         _ => None,
     }
 }
@@ -1230,7 +1279,7 @@ fn eval_text_arg(
     args: &[Expr],
     index: usize,
     locals: &HashMap<String, Value>,
-    gates: &RuntimeGates,
+    gates: &mut RuntimeGates,
 ) -> Result<Result<String, Value>, Vec<Diagnostic>> {
     match eval_expr(program, task, &args[index], locals, gates)? {
         EvalOutcome::Value(Value::Text(value)) => Ok(Ok(value)),

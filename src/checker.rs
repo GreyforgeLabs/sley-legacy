@@ -2009,12 +2009,16 @@ fn check_expression_effects(
 
 fn host_effect_patterns() -> Vec<(&'static str, Vec<&'static str>)> {
     vec![
-        ("fs.read_text", vec!["FileRead"]),
-        ("fs.try_read_text", vec!["FileRead"]),
-        ("fs.write_text", vec!["FileWrite"]),
-        ("fs.try_write_text", vec!["FileWrite"]),
+        ("fs.read_text(", vec!["FileRead"]),
+        ("fs.try_read_text(", vec!["FileRead"]),
+        ("fs.write_text(", vec!["FileWrite"]),
+        ("fs.try_write_text(", vec!["FileWrite"]),
+        ("db.query_one(", vec!["DatabaseRead", "DbRead"]),
+        ("db.query(", vec!["DatabaseRead", "DbRead"]),
+        ("db.try_query_one(", vec!["DatabaseRead", "DbRead"]),
+        ("db.try_query(", vec!["DatabaseRead", "DbRead"]),
+        ("db.try_insert(", vec!["DatabaseWrite", "DbWrite"]),
         ("model.", vec!["ModelCall"]),
-        ("db.", vec!["DatabaseRead", "DbRead"]),
         ("http.", vec!["Network"]),
         ("shell.", vec!["Shell"]),
         ("secrets.", vec!["SecretRead"]),
@@ -2332,6 +2336,7 @@ fn host_call_return_type(name: &str) -> Option<TypeExpr> {
             name: "List".to_string(),
             args: vec![TypeExpr::named("DbRow")],
         })),
+        "db.try_insert" => Some(result_type(TypeExpr::named("DbRow"))),
         _ => None,
     }
 }

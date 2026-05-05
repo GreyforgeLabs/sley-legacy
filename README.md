@@ -55,7 +55,8 @@ Implemented now:
 - deterministic database host seeding with `sley run --cap DatabaseRead
   --db-table TABLE=rows.json`; `db.query_one` and `db.query` read seeded JSON
   rows, and `DbRow` values expose `row.text`, `row.int`, `row.float`,
-  `row.bool`, and `row.get`
+  `row.bool`, and `row.get`; `DatabaseWrite` backs `db.try_insert` for
+  deterministic per-run table mutation
 - project loading for a manifest entry module plus transitively imported
   `.sley` modules under the configured source root
 - checker and runtime task lookup by entry module, local module, full module
@@ -148,6 +149,17 @@ accessors such as `row.text("name")` read typed fields from the seeded JSON
 rows. This is a deterministic v0 host adapter, not a real database connection.
 Fallible variants `db.try_query_one` and `db.try_query` return
 `Result<DbRow, Error>` and `Result<List<DbRow>, Error>`.
+`DatabaseWrite` backs `db.try_insert(table, row)`, which accepts a record or
+map row, creates the per-run table if needed, inserts the row, and returns
+`Result<DbRow, Error>`:
+
+```sley
+task main -> Result<Text, Error> uses DatabaseWrite, DatabaseRead {
+  bind inserted = call db.try_insert("users", { id: "u3", name: "Lin" })?
+  bind row = call db.query_one("select * from users where id = ?", inserted.text("id"))
+  return Ok(row.text("name"))
+}
+```
 
 Result flow:
 
@@ -173,10 +185,10 @@ task load -> Result<Text, Error> uses FileRead {
 
 The standard runtime `Error` payload is a record with `code: Text` and
 `message: Text`. `fs.try_read_text`, `fs.try_write_text`, `db.try_query_one`,
-and `db.try_query` return `Result<T, Error>`. Missing capabilities and gate
-scope violations remain diagnostics because they are authority failures, not
-recoverable host values. The legacy raw adapters still return their direct
-values and keep diagnostic failure behavior.
+`db.try_query`, and `db.try_insert` return `Result<T, Error>`. Missing
+capabilities and gate scope violations remain diagnostics because they are
+authority failures, not recoverable host values. The legacy raw adapters still
+return their direct values and keep diagnostic failure behavior.
 
 Known v0 limits:
 
@@ -189,9 +201,10 @@ Known v0 limits:
   `compression=none`; the binary compressed archive handoff remains a later
   integration step.
 - Runtime host support is intentionally narrow: `FileRead`/`FileWrite` have
-  root-scoped filesystem handlers, and `DatabaseRead` has a deterministic
-  seeded-table adapter. Network, shell, model, secret, deploy, database write,
-  and spending effects still need dedicated host adapters.
+  root-scoped filesystem handlers, `DatabaseRead` has a deterministic
+  seeded-table adapter, and `DatabaseWrite` has a deterministic per-run insert
+  adapter. Network, shell, model, secret, deploy, and spending effects still
+  need dedicated host adapters.
 - Sley-level `Result` values and `?` propagation execute, and fallible
   filesystem/database host variants return typed `Error` records. Additional
   host domains still need the same bridge.
@@ -207,6 +220,6 @@ Known v0 limits:
   explicitly.
 
 The next logical phase is to expand capability-backed host adapters on top of
-typed fallibility: database write, network, shell, model, secret, deploy, and
-spending effects should each define authority gates, deterministic tests, and
-`Result<T, Error>` surfaces before broader language features depend on them.
+typed fallibility: network, shell, model, secret, deploy, and spending effects
+should each define authority gates, deterministic tests, and `Result<T, Error>`
+surfaces before broader language features depend on them.

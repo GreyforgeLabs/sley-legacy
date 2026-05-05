@@ -1572,6 +1572,76 @@ task main -> Result<Text, Error> uses DatabaseRead {
 }
 
 #[test]
+fn checker_requires_database_write_for_insert_adapter() {
+    let source = r#"
+task main -> Result<DbRow, Error> uses DatabaseRead {
+  return call db.try_insert("users", { id: "u3", name: "Lin" })
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    let effect_diagnostics = diagnostics
+        .iter()
+        .filter(|diagnostic| diagnostic.id == "EFFECT_UNAUTHORIZED")
+        .collect::<Vec<_>>();
+    assert_eq!(
+        effect_diagnostics.len(),
+        1,
+        "expected one effect diagnostic, got {diagnostics:#?}"
+    );
+    assert!(
+        effect_diagnostics[0].message.contains("DatabaseWrite"),
+        "expected DatabaseWrite diagnostic, got {diagnostics:#?}"
+    );
+}
+
+#[test]
+fn runtime_try_database_insert_persists_for_current_run() {
+    let source = r#"
+task main -> Result<Text, Error> uses DatabaseWrite, DatabaseRead {
+  bind inserted = call db.try_insert("users", { id: "u3", name: "Lin" })?
+  bind row = call db.query_one("select * from users where id = ?", inserted.text("id"))
+  return Ok(row.text("name"))
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+    let mut gates = RuntimeGates::new();
+    gates.grant_effect("DatabaseWrite");
+    gates.grant_effect("DatabaseRead");
+    assert_eq!(
+        run_main_with_gates(&program, &gates),
+        Ok(Value::Ok(Box::new(Value::Text("Lin".to_string()))))
+    );
+}
+
+#[test]
+fn runtime_try_database_insert_returns_error_for_empty_table() {
+    let source = r#"
+task main -> Result<DbRow, Error> uses DatabaseWrite {
+  return call db.try_insert("", { id: "u1" })
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+    let mut gates = RuntimeGates::new();
+    gates.grant_effect("DatabaseWrite");
+    let result = run_main_with_gates(&program, &gates).expect("run main");
+    let Value::Err(error) = result else {
+        panic!("expected host error result, got {result:#?}");
+    };
+    assert_error_record(&error, "RUNTIME_DB_TABLE_INVALID", "table name");
+}
+
+#[test]
 fn cli_run_accepts_database_table_seed() {
     let root = temp_project_dir("runtime-db-cli");
     fs::create_dir_all(&root).expect("create temp dir");

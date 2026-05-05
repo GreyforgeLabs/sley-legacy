@@ -1,6 +1,6 @@
 # Sley Language Specification
 
-Status: v0 executable slice plus module task/type/effect namespace, runtime gates, Sley-level Result flow, typed host fallibility, seeded database host reads, and trace tooling
+Status: v0 executable slice plus module task/type/effect namespace, runtime gates, Sley-level Result flow, typed host fallibility, seeded database host reads/writes, and trace tooling
 
 Sley is a human-readable, agent-writable structural language. The canonical
 program model is a typed graph. `.sley` source is the stable review projection,
@@ -260,6 +260,22 @@ results produce `RUNTIME_DB_ROW_NOT_FOUND`; unsupported query forms produce
 `RUNTIME_DB_QUERY_UNSUPPORTED`. Raw database calls report those as runtime
 diagnostics. `try_` database calls convert them into typed `Error` records.
 
+`DatabaseWrite` backs `db.try_insert(table, row)`. The adapter accepts a
+record or map row, creates the per-run table if needed, inserts the row into
+the runtime database state for that execution, and returns
+`Result<DbRow, Error>`:
+
+```sley
+task main -> Result<Text, Error> uses DatabaseWrite, DatabaseRead {
+  bind inserted = call db.try_insert("users", { id: "u3", name: "Lin" })?
+  bind row = call db.query_one("select * from users where id = ?", inserted.text("id"))
+  return Ok(row.text("name"))
+}
+```
+
+Empty table names produce `RUNTIME_DB_TABLE_INVALID` as a typed host error.
+Missing `DatabaseWrite` or `DbWrite` remains a runtime capability diagnostic.
+
 ## Graft Model
 
 Agents should edit Sley by submitting structural grafts against bounded graph
@@ -422,9 +438,9 @@ archive.
 
 ## Current Gaps
 
-- runtime gates currently back filesystem text reads/writes and deterministic
-  seeded database reads only; database writes, network, shell, model, secret,
-  deploy, and spending effects still need host adapters
+- runtime gates currently back filesystem text reads/writes, deterministic
+  seeded database reads, and per-run deterministic database inserts; network,
+  shell, model, secret, deploy, and spending effects still need host adapters
 - Sley-level `Result` values, `?` propagation, and typed filesystem/database
   host fallibility execute; other host domains still need `Result<T, Error>`
   adapters
