@@ -1,6 +1,6 @@
 # Sley Language Specification
 
-Status: v0 executable slice plus module task/type/effect namespace, runtime gates, Sley-level Result flow, typed host fallibility, seeded database host reads/writes, and trace tooling
+Status: v0 executable slice plus module task/type/effect namespace, runtime gates, Sley-level Result flow, typed host fallibility, seeded database host reads/writes, seeded network host text, and trace tooling
 
 Sley is a human-readable, agent-writable structural language. The canonical
 program model is a typed graph. `.sley` source is the stable review projection,
@@ -276,6 +276,26 @@ task main -> Result<Text, Error> uses DatabaseWrite, DatabaseRead {
 Empty table names produce `RUNTIME_DB_TABLE_INVALID` as a typed host error.
 Missing `DatabaseWrite` or `DbWrite` remains a runtime capability diagnostic.
 
+`Network` backs `http.try_get_text(url)`. The adapter reads exact seeded URL
+responses supplied by the host and returns `Result<Text, Error>`:
+
+```bash
+sley run --cap Network --http-text https://example.test/profile Ada examples/network_gate.sley
+```
+
+```sley
+task main -> Result<Text, Error> uses Network {
+  bind body = call http.try_get_text("https://example.test/profile")?
+
+  return Ok(body)
+}
+```
+
+This is deterministic host I/O, not live outbound HTTP. Missing response seeds
+produce `RUNTIME_HTTP_RESPONSE_NOT_FOUND`; empty URLs produce
+`RUNTIME_HTTP_URL_INVALID`; missing `Network` remains a runtime capability
+diagnostic.
+
 ## Graft Model
 
 Agents should edit Sley by submitting structural grafts against bounded graph
@@ -439,11 +459,12 @@ archive.
 ## Current Gaps
 
 - runtime gates currently back filesystem text reads/writes, deterministic
-  seeded database reads, and per-run deterministic database inserts; network,
-  shell, model, secret, deploy, and spending effects still need host adapters
-- Sley-level `Result` values, `?` propagation, and typed filesystem/database
-  host fallibility execute; other host domains still need `Result<T, Error>`
-  adapters
+  seeded database reads, per-run deterministic database inserts, and seeded
+  network text responses; shell, model, secret, deploy, and spending effects
+  still need host adapters
+- Sley-level `Result` values, `?` propagation, and typed filesystem,
+  database, and network host fallibility execute; other host domains still
+  need `Result<T, Error>` adapters
 - trace receipts can be sealed, but sidecar storage is not yet a compressed ZJX
   archive
 - the AST JSON Schema covers nested AST and expression variants; the remaining

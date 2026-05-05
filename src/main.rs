@@ -54,6 +54,8 @@ enum Command {
         cap: Vec<String>,
         #[arg(long = "db-table", value_name = "TABLE=JSON")]
         db_table: Vec<String>,
+        #[arg(long = "http-text", value_names = ["URL", "TEXT"], num_args = 2)]
+        http_text: Vec<String>,
         file: PathBuf,
     },
     Ast {
@@ -175,6 +177,7 @@ fn run(cli: Cli) -> Result<()> {
             json,
             cap,
             db_table,
+            http_text,
             file,
         } => {
             let program = match load_target_program(&file) {
@@ -187,6 +190,7 @@ fn run(cli: Cli) -> Result<()> {
             }
             let mut runtime_gates = parse_runtime_gates(&cap)?;
             load_runtime_db_tables(&mut runtime_gates, &db_table)?;
+            load_runtime_http_texts(&mut runtime_gates, &http_text)?;
             let result = if runtime_gates.is_empty() {
                 run_main(&program)
             } else {
@@ -627,6 +631,21 @@ fn load_runtime_db_tables(gates: &mut RuntimeGates, values: &[String]) -> Result
             rows.push(row);
         }
         gates.grant_db_rows(table, rows);
+    }
+    Ok(())
+}
+
+fn load_runtime_http_texts(gates: &mut RuntimeGates, values: &[String]) -> Result<()> {
+    let mut chunks = values.chunks_exact(2);
+    for pair in &mut chunks {
+        let url = pair[0].trim();
+        if url.is_empty() {
+            anyhow::bail!("HTTP text seed URL cannot be empty");
+        }
+        gates.grant_http_text(url, pair[1].clone());
+    }
+    if !chunks.remainder().is_empty() {
+        anyhow::bail!("HTTP text seed must use URL TEXT pairs");
     }
     Ok(())
 }

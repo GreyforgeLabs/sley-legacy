@@ -57,6 +57,9 @@ Implemented now:
   rows, and `DbRow` values expose `row.text`, `row.int`, `row.float`,
   `row.bool`, and `row.get`; `DatabaseWrite` backs `db.try_insert` for
   deterministic per-run table mutation
+- deterministic network host seeding with `sley run --cap Network --http-text
+  URL TEXT`; `http.try_get_text` returns seeded text responses as
+  `Result<Text, Error>` without live outbound network access
 - project loading for a manifest entry module plus transitively imported
   `.sley` modules under the configured source root
 - checker and runtime task lookup by entry module, local module, full module
@@ -161,6 +164,26 @@ task main -> Result<Text, Error> uses DatabaseWrite, DatabaseRead {
 }
 ```
 
+Seeded network runtime:
+
+```bash
+sley run --json --cap Network --http-text https://example.test/profile Ada examples/network_gate.sley
+```
+
+`http.try_get_text(url)` reads an exact seeded URL response and returns
+`Result<Text, Error>`. This is a deterministic v0 host adapter, not a live HTTP
+client. Missing response seeds produce `RUNTIME_HTTP_RESPONSE_NOT_FOUND` as a
+typed host error; empty URLs produce `RUNTIME_HTTP_URL_INVALID`; missing
+`Network` remains a runtime capability diagnostic.
+
+```sley
+task main -> Result<Text, Error> uses Network {
+  bind body = call http.try_get_text("https://example.test/profile")?
+
+  return Ok(body)
+}
+```
+
 Result flow:
 
 ```sley
@@ -185,10 +208,11 @@ task load -> Result<Text, Error> uses FileRead {
 
 The standard runtime `Error` payload is a record with `code: Text` and
 `message: Text`. `fs.try_read_text`, `fs.try_write_text`, `db.try_query_one`,
-`db.try_query`, and `db.try_insert` return `Result<T, Error>`. Missing
-capabilities and gate scope violations remain diagnostics because they are
-authority failures, not recoverable host values. The legacy raw adapters still
-return their direct values and keep diagnostic failure behavior.
+`db.try_query`, `db.try_insert`, and `http.try_get_text` return
+`Result<T, Error>`. Missing capabilities and gate scope violations remain
+diagnostics because they are authority failures, not recoverable host values.
+The legacy raw adapters still return their direct values and keep diagnostic
+failure behavior.
 
 Known v0 limits:
 
@@ -203,11 +227,11 @@ Known v0 limits:
 - Runtime host support is intentionally narrow: `FileRead`/`FileWrite` have
   root-scoped filesystem handlers, `DatabaseRead` has a deterministic
   seeded-table adapter, and `DatabaseWrite` has a deterministic per-run insert
-  adapter. Network, shell, model, secret, deploy, and spending effects still
-  need dedicated host adapters.
+  adapter. `Network` has a deterministic seeded text adapter. Shell, model,
+  secret, deploy, and spending effects still need dedicated host adapters.
 - Sley-level `Result` values and `?` propagation execute, and fallible
-  filesystem/database host variants return typed `Error` records. Additional
-  host domains still need the same bridge.
+  filesystem, database, and network host variants return typed `Error`
+  records. Additional host domains still need the same bridge.
 - Project graft writeback supports existing module files. Grafts that would
   create unknown module files or import modules outside the loaded project
   reject before any source or trace mutation.
@@ -220,6 +244,6 @@ Known v0 limits:
   explicitly.
 
 The next logical phase is to expand capability-backed host adapters on top of
-typed fallibility: network, shell, model, secret, deploy, and spending effects
-should each define authority gates, deterministic tests, and `Result<T, Error>`
+typed fallibility: shell, model, secret, deploy, and spending effects should
+each define authority gates, deterministic tests, and `Result<T, Error>`
 surfaces before broader language features depend on them.

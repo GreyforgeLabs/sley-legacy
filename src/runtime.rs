@@ -90,6 +90,7 @@ impl RuntimeGate {
 pub struct RuntimeGates {
     gates: BTreeMap<String, RuntimeGate>,
     db_tables: BTreeMap<String, DbRows>,
+    http_text_responses: BTreeMap<String, String>,
 }
 
 impl RuntimeGates {
@@ -116,7 +117,7 @@ impl RuntimeGates {
     }
 
     pub fn is_empty(&self) -> bool {
-        self.gates.is_empty() && self.db_tables.is_empty()
+        self.gates.is_empty() && self.db_tables.is_empty() && self.http_text_responses.is_empty()
     }
 
     pub fn allows(&self, effect: &str) -> bool {
@@ -146,6 +147,14 @@ impl RuntimeGates {
         self.db_tables
             .get(&normalize_db_table(table))
             .map(Vec::as_slice)
+    }
+
+    pub fn grant_http_text(&mut self, url: impl Into<String>, body: impl Into<String>) {
+        self.http_text_responses.insert(url.into(), body.into());
+    }
+
+    pub fn http_text(&self, url: &str) -> Option<&str> {
+        self.http_text_responses.get(url).map(String::as_str)
     }
 }
 
@@ -906,6 +915,9 @@ fn eval_host_call(
             DbQueryMode::ResultMany,
         ),
         "db.try_insert" => eval_db_insert(program, task, expr, callee_name, args, locals, gates),
+        "http.try_get_text" => {
+            eval_http_get_text(program, task, expr, callee_name, args, locals, gates)
+        }
         _ => Err(vec![
             Diagnostic::error(
                 "RUNTIME_HOST_CALL_UNSUPPORTED",
@@ -1138,6 +1150,37 @@ fn eval_db_insert(
     Ok(host_ok(Value::Record(row)))
 }
 
+#[allow(clippy::too_many_arguments)]
+fn eval_http_get_text(
+    program: &Program,
+    task: &TaskDecl,
+    expr: &Expr,
+    callee_name: &str,
+    args: &[Expr],
+    locals: &HashMap<String, Value>,
+    gates: &mut RuntimeGates,
+) -> Result<EvalOutcome, Vec<Diagnostic>> {
+    if args.len() != 1 {
+        return host_arity_error(expr, callee_name, 1, args.len()).map(EvalOutcome::value);
+    }
+
+    let url = arg_or_propagate!(eval_text_arg(program, task, expr, args, 0, locals, gates));
+    if url.trim().is_empty() {
+        return Ok(host_err(
+            "RUNTIME_HTTP_URL_INVALID",
+            "http URL cannot be empty",
+        ));
+    }
+
+    match gates.http_text(&url) {
+        Some(body) => Ok(host_ok(Value::Text(body.to_string()))),
+        None => Ok(host_err(
+            "RUNTIME_HTTP_RESPONSE_NOT_FOUND",
+            format!("HTTP text response for `{url}` was not seeded"),
+        )),
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 enum DbQueryMode {
     RawOne,
@@ -1268,6 +1311,7 @@ fn host_required_effects(name: &str) -> Option<&'static [&'static str]> {
             Some(&["DatabaseRead", "DbRead"])
         }
         "db.try_insert" => Some(&["DatabaseWrite", "DbWrite"]),
+        "http.try_get_text" => Some(&["Network"]),
         _ => None,
     }
 }

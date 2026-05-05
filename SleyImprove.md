@@ -127,8 +127,9 @@ Rules:
 - Accepted write-mode grafts emit trace receipts, and `sley seal` produces a
   content-addressed digest over source, graph, and receipt content.
 - Runtime `Ok(value)`/`Err(error)` values and `?` propagation are implemented
-  for Sley-level `Result` flow. Filesystem, seeded database reads, and per-run
-  database inserts now expose `try_` variants returning typed `Error` records.
+  for Sley-level `Result` flow. Filesystem, seeded database reads, per-run
+  database inserts, and seeded network text responses now expose `try_`
+  variants returning typed `Error` records.
 - Source text should remain the human review projection, not the primary agent
   edit surface.
 
@@ -374,9 +375,9 @@ Failure modes to watch:
 
 Near-term:
 
-1. Expand capability-backed host adapters beyond root-scoped filesystem gates
-   and deterministic seeded database reads, preserving `Result<T, Error>`
-   surfaces for recoverable host failures.
+1. Expand capability-backed host adapters beyond root-scoped filesystem gates,
+   deterministic seeded database surfaces, and seeded network text, preserving
+   `Result<T, Error>` surfaces for recoverable host failures.
 2. Grow the accepted/rejected synthetic gold corpus with graft, module, and
    runtime authority cases.
 3. Extend graph-slice grafts around move/delete planning.
@@ -389,9 +390,9 @@ Medium-term:
    delete edits.
 2. Move trace seals and ZJX preview payloads into a compressed binary `.zjx`
    handoff.
-3. Expand runtime host capability values across network, shell, model, secret,
-   deploy, and spend boundaries, then grow database write beyond per-run
-   inserts.
+3. Expand runtime host capability values across shell, model, secret, deploy,
+   and spend boundaries, then grow network beyond seeded text and database
+   write beyond per-run inserts.
 4. Build the synthetic gold corpus into a release gate.
 5. Shadow selected compiler helper passes in Sley.
 
