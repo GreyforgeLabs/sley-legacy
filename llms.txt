@@ -50,6 +50,8 @@ Agent rules:
 - For unary or binary operator type diagnostics, prefer structural
   `replace_expression` graft JSON when present; the checker omits it for
   ambiguous operator families.
+- For `IF_BRANCH_TYPE_MISMATCH`, inspect both structural `replace_expression`
+  graft JSON hints and choose the branch whose value should conform.
 - For `RETURN_TYPE_MISMATCH`, use `change_return_type` only when the signature
   should change; otherwise prefer structural `replace_expression` graft JSON.
 - Do not add effects only to silence diagnostics; the authority must be real.

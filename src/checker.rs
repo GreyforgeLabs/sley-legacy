@@ -1421,7 +1421,9 @@ fn check_if_expression(
                     else_type.display()
                 ),
             )
-            .with_node(expr.id.clone()),
+            .with_node(expr.id.clone())
+            .with_repair_hint(replace_expression_graft_hint(then_branch, &else_type))
+            .with_repair_hint(replace_expression_graft_hint(else_branch, &then_type)),
         );
     }
 }

@@ -2423,6 +2423,42 @@ task main -> Int {
 }
 
 #[test]
+fn checker_if_branch_hints_include_alternative_replace_expression_grafts() {
+    let source = r#"
+task main -> Int {
+  return if true { 1 } else { "x" }
+}
+"#;
+    let program = parse_program(source).expect("parse branch mismatch source");
+    let diagnostics = check_program(&program);
+    let diagnostic = diagnostics
+        .iter()
+        .find(|diagnostic| diagnostic.id == "IF_BRANCH_TYPE_MISMATCH")
+        .unwrap_or_else(|| panic!("missing branch mismatch diagnostic: {diagnostics:#?}"));
+    let hints = diagnostic
+        .repair_hints
+        .iter()
+        .filter(|hint| hint.kind == "replace_expression")
+        .collect::<Vec<_>>();
+    assert_eq!(
+        hints.len(),
+        2,
+        "expected one replace_expression hint per branch, got {diagnostic:#?}"
+    );
+
+    let then_target = assert_replace_expression_hint_json(hints[0], "\"\"");
+    assert!(
+        then_target.ends_with(":then"),
+        "expected then branch replacement target, got {then_target}"
+    );
+    let else_target = assert_replace_expression_hint_json(hints[1], "0");
+    assert!(
+        else_target.ends_with(":else"),
+        "expected else branch replacement target, got {else_target}"
+    );
+}
+
+#[test]
 fn checker_collection_index_and_record_hints_include_replace_expression_grafts() {
     let source = r#"
 type User = {

@@ -675,7 +675,9 @@ expression mismatches include structural `replace_expression` hints when the
 checker has a clear expected replacement type for the offending expression.
 Unary and binary operator mismatches likewise include structural
 `replace_expression` hints when a specific operand can be replaced without
-guessing between valid type families.
+guessing between valid type families. If-expression branch type mismatches
+include one structural `replace_expression` hint for the then branch and one
+for the else branch so agents can choose which branch should conform.
 
 ## ZJX Boundary
 
