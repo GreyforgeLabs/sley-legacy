@@ -664,7 +664,10 @@ and a structural `replace_call_arg` hint whose `replacement` is a starter
 `ReplaceCallArg` graft JSON payload. Call arity mismatches keep the generic
 `match_task_arity` hint and add structural `update_call_args` or
 `remove_call_arg` hints when a missing or extra argument can be repaired with a
-starter graft.
+starter graft. Return type mismatches carry both the declaration-level
+`change_return_type` hint and expression-level hints; the structural
+`replace_expression` hint includes starter `ReplaceExpression` graft JSON for
+the returned expression.
 
 ## ZJX Boundary
 

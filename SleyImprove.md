@@ -183,8 +183,8 @@ Priority diagnostic families:
   `ReplaceCallArg`
 - call arity contraction after parameter removal: implemented with
   `RemoveCallArg` and safe remove-take transaction templates for unused takes
-- return type mismatch: implemented with `change_return_type` and
-  `replace_return_expression`
+- return type mismatch: implemented with `change_return_type`,
+  `replace_return_expression`, and structural `ReplaceExpression`
 - immutable binding mutation: implemented with `use_mutable_binding_kind`
 - undeclared effects: implemented with `declare_or_import_effect`
 - unauthorized host authority: implemented with `add_required_effect`

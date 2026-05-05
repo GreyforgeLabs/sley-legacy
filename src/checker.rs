@@ -412,7 +412,8 @@ fn check_block(
                             RepairHint::new("replace_return_expression")
                                 .with_target(expr.id.clone())
                                 .with_replacement(expected_return.display()),
-                        ),
+                        )
+                        .with_repair_hint(replace_expression_graft_hint(expr, &expected_return)),
                     );
                 }
             }
@@ -1810,6 +1811,19 @@ fn bool_condition_hint(condition: &Expr) -> RepairHint {
     RepairHint::new("replace_condition")
         .with_target(condition.id.clone())
         .with_replacement("Bool")
+}
+
+fn replace_expression_graft_hint(expr: &Expr, expected: &TypeExpr) -> RepairHint {
+    let graft = serde_json::json!({
+        "op": "ReplaceExpression",
+        "target": expr.id,
+        "payload": {
+            "source": default_expr_source_for_type(expected),
+        }
+    });
+    RepairHint::new("replace_expression")
+        .with_target(expr.id.clone())
+        .with_replacement(graft.to_string())
 }
 
 fn call_arity_graft_hint(

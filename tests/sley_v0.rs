@@ -2139,6 +2139,48 @@ task main -> Int {
         Some(&serde_json::json!("\"\""))
     );
     assert_has_repair_hint(&diagnostics, "RETURN_TYPE_MISMATCH", "change_return_type");
+    assert_has_repair_hint(
+        &diagnostics,
+        "RETURN_TYPE_MISMATCH",
+        "replace_return_expression",
+    );
+    assert_has_repair_hint(&diagnostics, "RETURN_TYPE_MISMATCH", "replace_expression");
+    let return_type_diagnostic = diagnostics
+        .iter()
+        .find(|diagnostic| diagnostic.id == "RETURN_TYPE_MISMATCH")
+        .expect("return type diagnostic");
+    let replace_expression_hint = return_type_diagnostic
+        .repair_hints
+        .iter()
+        .find(|hint| hint.kind == "replace_expression")
+        .expect("replace expression hint");
+    let target = replace_expression_hint
+        .target
+        .as_deref()
+        .expect("replace expression target");
+    assert!(
+        target.starts_with("block:task:main.main"),
+        "expected return expression target, got {target}"
+    );
+    let replacement: serde_json::Value = serde_json::from_str(
+        replace_expression_hint
+            .replacement
+            .as_deref()
+            .expect("replace expression replacement"),
+    )
+    .expect("replace expression replacement is JSON");
+    assert_eq!(
+        replacement.pointer("/op"),
+        Some(&serde_json::json!("ReplaceExpression"))
+    );
+    assert_eq!(
+        replacement.pointer("/target"),
+        Some(&serde_json::json!(target))
+    );
+    assert_eq!(
+        replacement.pointer("/payload/source"),
+        Some(&serde_json::json!("0"))
+    );
     assert_has_repair_hint(&diagnostics, "UNKNOWN_IDENTIFIER", "declare_binding");
 
     let unknown_task =
