@@ -1,12 +1,9 @@
-# Sley Goal - Best Programming Language For Agents
-
-````text
 Make Sley the best programming language in the world for agents. In this
 thread, optimize for agent success rate, structural edit safety, compiler
 strictness, readable source projection, stable machine-readable contracts,
-deterministic execution, explicit authority gates, and a credible self-hosting
-path. Do not optimize for surface syntax novelty unless it improves the
-compiler-mediated agent workflow.
+deterministic execution, explicit authority gates, checked query/lint surfaces,
+manifest-backed conformance, and a credible self-hosting path. Do not optimize
+for syntax novelty unless it improves the compiler-mediated agent workflow.
 
 Work in `/home/greyforge/sley`.
 
@@ -24,37 +21,66 @@ Read these first:
 - `src/runtime.rs`
 - `src/graft.rs`
 - `src/symbols.rs`
+- `src/query.rs`
+- `src/lint.rs`
 - `src/trace.rs`
 - `src/zjx.rs`
+- `src/main.rs`
 - `tests/sley_v0.rs`
 - `docs/schemas/*.schema.json`
+- `fixtures/contracts/*.json`
+- `fixtures/cli_smokes/manifest.json`
+- `fixtures/corpus/**/*.json`
+- `fixtures/grafts/*.json`
 - `examples/*.sley`
+
+Current verified surface:
+
+- `cargo fmt --check` passes.
+- `cargo test` passes.
+- Current integration coverage is 110 tests.
+- `sley query --json` emits `schema: "sley.query.report.v0"` and supports
+  `--kind all|modules|tasks|calls`, `--module <module>`, and `--exported`.
+- `sley lint --json` emits `schema: "sley.lint.report.v0"` and supports
+  `--module <module>`, `--rule unused-private-task`,
+  `--rule unreachable-private-task`, and `--deny-warnings`.
+- The current lint rules are `unused_private_task` and
+  `unreachable_private_task`.
+- CLI smoke coverage is manifest-backed under
+  `fixtures/cli_smokes/manifest.json`.
+- Stable JSON roots now include query reports, lint reports, and the CLI smoke
+  manifest in addition to AST, diagnostics, graph, graph slice, trace seal,
+  graft outcome, and ZJX envelope roots.
 
 Product thesis:
 
 Sley should make agents better programmers by replacing fragile raw text edits
 with a tight compiler-mediated loop:
 
-1. Read compact docs and examples.
-2. Inspect typed AST or graph slices.
-3. Propose a strict structural graft.
-4. Run checker and formatter.
-5. Read stable diagnostics and repair hints.
-6. Iterate until Loom accepts the change.
-7. Leave human-reviewable source, trace receipts, and content-addressed seals.
+1. Read compact docs, examples, schemas, and manifests.
+2. Inspect typed AST, symbol graph, query reports, lint reports, or graph
+   slices.
+3. Propose a strict structural graft or a narrow source change.
+4. Run checker, formatter, query, lint, and relevant runtime smokes.
+5. Read stable diagnostics, repair hints, query summaries, and lint findings.
+6. Iterate until Loom accepts the change and the conformance surface is updated.
+7. Leave human-reviewable source, machine-readable contracts, trace receipts,
+   and content-addressed seals when applicable.
 
 Hard truth:
 
-Codex and other agents do not have broad Sley pretraining. Sley must therefore
-teach itself through tooling: schemas, graph slices, repair hints, examples,
-conformance fixtures, dry-run grafts, and deterministic runtime seeds. If a
-feature cannot be learned through that loop, it is not agent-native yet.
+Codex and other agents do not have broad Sley pretraining. Sley must teach
+itself through tooling: schemas, graph slices, query reports, lint reports,
+repair hints, examples, conformance fixtures, CLI smoke manifests, dry-run
+grafts, deterministic runtime seeds, and stable diagnostics. If a feature
+cannot be learned or verified through that loop, it is not agent-native yet.
 
 Non-negotiable constraints:
 
 - Source text is the human review projection.
 - The typed graph is the canonical agent work surface.
-- Prefer structural grafts over raw text edits.
+- Prefer structural grafts over raw text edits when the operation fits the
+  graft surface.
 - Plain graft preview must stay non-mutating unless `--write` is supplied.
 - Unknown graft fields must continue to reject instead of being silently
   ignored.
@@ -68,8 +94,9 @@ Non-negotiable constraints:
   systems.
 - Do not publish, deploy, spend, call providers, or mutate external systems
   without explicit operator approval.
-- Preserve unrelated local changes.
-- Keep tests and contract snapshots authoritative.
+- Preserve unrelated local changes. This repo may already be dirty.
+- Keep tests, schemas, contract snapshots, and CLI smoke manifests
+  authoritative.
 
 World-best criteria:
 
@@ -80,55 +107,73 @@ Judge work by:
 
 - Can an agent inspect the relevant program slice without loading the whole
   codebase?
+- Can an agent ask `sley query --json` for module, task, and call facts before
+  editing?
+- Can an agent ask `sley lint --json` for warning-grade hygiene before and
+  after edits?
 - Can an agent propose a legal edit as a graft instead of patching raw text?
 - Does Loom reject illegal edits with stable IDs, spans, node IDs, and repair
   hints?
 - Does the formatter preserve a clean human-reviewable projection?
 - Does `check --json` give enough information for the next repair attempt?
+- Do query and lint JSON reports stay stable enough for future helper passes?
 - Are effects explicit and enforced at check/runtime boundaries?
 - Are runtime examples deterministic and reproducible?
 - Are accepted and rejected examples locked into conformance tests?
 - Are JSON schemas stable and versioned?
-- Can future agents resume from `llms.txt`, schemas, examples, and tests
-  without private chat context?
+- Are CLI smoke expectations manifest-backed?
+- Can future agents resume from `llms.txt`, schemas, manifests, examples, and
+  tests without private chat context?
 
 High-leverage work lanes:
 
 1. Agent tool contract:
-   - keep `parse`, `format`, `check`, `run`, `ast`, `graph`, `trace`, `seal`,
-     `zjx`, and `graft` stable;
-   - add or harden `lint --json` only when there is a clear contract;
-   - make every JSON root schema-versioned.
+   - keep `parse`, `format`, `check`, `run`, `ast`, `graph`, `query`, `lint`,
+     `trace`, `seal`, `zjx`, and `graft` stable;
+   - make every JSON root schema-versioned;
+   - keep `query` and `lint` suitable for tool-facing helper passes.
 
-2. Diagnostics and repair:
+2. Query and lint consumption:
+   - start consuming `sley.query.report.v0` and `sley.lint.report.v0` from
+     Sley helper passes or deterministic helper tooling;
+   - broaden authority, style, migration, and reachability lints only when the
+     output contract is clear;
+   - preserve `--deny-warnings` as the CI gate for warning-grade lint output.
+
+3. Diagnostics and repair:
    - improve parse errors, unknown names, type mismatches, return mismatches,
      call arity/type errors, private imports, ambiguous imports, effect
-     authority errors, stale grafts, and unsupported graft operations;
+     authority errors, stale grafts, unsupported graft operations, and lint
+     findings;
    - include repair hints that suggest valid structural edits without bypassing
      authority.
 
-3. Graft-first editing:
+4. Graft-first editing:
    - expand graph-slice grafts where tests prove safety;
    - harden project writeback beyond existing modules;
    - keep dry-run paths explicit and trustworthy;
    - preserve trace receipts and seals for accepted writes.
 
-4. Conformance and contracts:
+5. Conformance and contracts:
    - grow accepted/rejected fixtures;
    - lock contract snapshots under `fixtures/contracts/`;
    - keep JSON schemas under `docs/schemas/`;
-   - turn CLI smoke examples into stable tests.
+   - keep CLI smoke coverage manifest-backed under
+     `fixtures/cli_smokes/manifest.json`;
+   - update schemas, snapshots, manifests, and tests in the same change when a
+     JSON output contract changes.
 
-5. Runtime authority:
+6. Runtime authority:
    - keep seeded v0 adapters deterministic;
    - keep real external calls out of v0 tests;
    - preserve the distinction between authority diagnostics and recoverable
-     `Result` host failures.
+     `Result` host failures;
+   - test both authorized and unauthorized paths for authority changes.
 
-6. Self-hosting ladder:
+7. Self-hosting ladder:
    - keep Rust Loom as the strict oracle;
-   - write Sley helper/lint/query passes only after the graph contract supports
-     them;
+   - write Sley helper/lint/query passes only after the graph/query/lint
+     contracts support them;
    - run self-hosted passes in shadow mode before promotion;
    - preserve a recovery oracle.
 
@@ -137,6 +182,7 @@ Default first moves in any new session:
 1. Run:
 
 ```bash
+cargo fmt --check
 cargo test
 ```
 
@@ -146,6 +192,8 @@ cargo test
 cargo run -- check --json examples/hello.sley
 cargo run -- graph --json examples/hello.sley
 cargo run -- ast --json examples/hello.sley
+cargo run -- query --json --kind tasks examples/project
+cargo run -- lint --json examples/hello.sley
 ```
 
 3. If changing grafts, inspect or create a dry-run graft first:
@@ -154,11 +202,20 @@ cargo run -- ast --json examples/hello.sley
 cargo run -- graft --json --dry-run <target> <graft.json>
 ```
 
-4. If changing runtime authority, test both the authorized and unauthorized
+4. If changing query or lint output:
+
+```bash
+cargo run -- query --json --kind all <target>
+cargo run -- lint --json <target>
+cargo run -- lint --json --rule unused-private-task <target>
+cargo run -- lint --json --rule unreachable-private-task <target>
+```
+
+5. If changing runtime authority, test both the authorized and unauthorized
    path.
 
-5. If changing JSON output, update schemas and locked contract fixtures in the
-   same change.
+6. If changing JSON output, update schemas, locked contract fixtures, CLI smoke
+   manifests, and tests in the same change.
 
 Validation commands to prefer:
 
@@ -168,10 +225,12 @@ cargo test
 cargo run -- check --json examples/hello.sley
 cargo run -- run --json examples/hello.sley
 cargo run -- graph --json examples/hello.sley
+cargo run -- query --json --kind tasks examples/project
+cargo run -- lint --json examples/hello.sley
 cargo run -- seal --json examples/hello.sley
 cargo run -- zjx --json examples/hello.sley
 cargo run -- run --json --cap DatabaseRead --db-table users=examples/users.json examples/db_gate.sley
-cargo run -- run --json --cap DatabaseRead --cap DatabaseWrite examples/db_write_gate.sley
+cargo run -- run --json --cap DatabaseRead --cap DatabaseWrite --db-table users=examples/users.json examples/db_write_gate.sley
 cargo run -- run --json --cap Network --http-text https://example.test/profile Ada examples/network_gate.sley
 cargo run -- run --json --cap Shell --shell-output date 2026-05-05 examples/shell_gate.sley
 cargo run -- run --json --cap ModelCall --model-output name Ada examples/model_gate.sley
@@ -184,15 +243,18 @@ Done when:
 
 - The chosen change improves Sley's agent edit loop, not just its syntax.
 - Tests pass, or failures are documented with exact command output summaries.
-- JSON schema or contract changes are updated deliberately.
-- New diagnostics include stable IDs and useful repair hints where practical.
+- JSON schema, contract, or manifest changes are updated deliberately.
+- New diagnostics or lint findings include stable IDs and useful repair hints
+  where practical.
+- New query/lint behavior is covered by schemas, snapshots, CLI smokes, or
+  direct tests.
 - New graft behavior is covered by accepted and rejected tests.
 - Runtime authority changes include positive and negative coverage.
-- Documentation is updated only where it helps future agents use Sley correctly.
+- Documentation is updated only where it helps future agents use Sley
+  correctly.
 - The final summary states:
   - behavioral delta;
   - files changed;
   - validation run;
   - remaining risks;
   - next best task.
-````
