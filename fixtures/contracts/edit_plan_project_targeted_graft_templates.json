@@ -184,6 +184,44 @@
         "/ops/1/payload/replacement",
         "/ops/1/payload/scope"
       ]
+    },
+    {
+      "kind": "add_take_and_update_call_args",
+      "reason": "add a task take and update currently resolved callers in one all-or-nothing graft",
+      "surface": "task:app.math.double",
+      "transaction": {
+        "mode": "all_or_nothing",
+        "ops": [
+          {
+            "op": "AddTake",
+            "payload": {
+              "name": "new_value",
+              "position": 1,
+              "type": "Text"
+            },
+            "target": "task:app.math.double"
+          },
+          {
+            "op": "UpdateCallArgs",
+            "payload": {
+              "from": "math.double",
+              "position": 1,
+              "scope": "module:app.main",
+              "source": "\"\""
+            },
+            "target": "task:app.math.double"
+          }
+        ],
+        "transaction": "txn_add_take_app_math_double"
+      },
+      "editable_json_pointers": [
+        "/ops/0/payload/name",
+        "/ops/0/payload/type",
+        "/ops/0/payload/position",
+        "/ops/1/payload/source",
+        "/ops/1/payload/position",
+        "/ops/1/payload/scope"
+      ]
     }
   ],
   "next_actions": [

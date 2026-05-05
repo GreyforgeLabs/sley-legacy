@@ -128,8 +128,9 @@ Rules:
   report for pre-edit agent planning.
 - `sley plan` consumes the same checked surfaces into ranked task edit
   surfaces, post-edit gate commands, and optional starter graft operation
-  templates and rename-plus-call-site transactions with editable JSON pointers;
-  agents can target a specific task surface by node id or qualified name.
+  templates, rename-plus-call-site transactions, and add-take-plus-call-arg
+  transactions with editable JSON pointers; agents can target a specific task
+  surface by node id or qualified name.
 - `sley verify` is the deterministic CI/pre-deploy helper consuming strict
   check, `sley.query.report.v0`, `sley.lint.report.v0`, and seeded runtime
   execution into one pass/warnings/blocked report.
@@ -203,13 +204,14 @@ Minimum useful graft operations:
 - `AddEffectDeclaration`
 - `AddTypeDeclaration`
 - `UpdateCallSites`
+- `UpdateCallArgs`
 - `InsertStatement`
 - `ReplaceExpression`
 - `MoveNode`
 - `DeleteNode`
 
-`UpdateCallSites`, `InsertStatement`, `ReplaceExpression`, `DeleteNode`, and
-`MoveNode` are now implemented for the v0 in-memory checked program. `DeleteNode`
+`UpdateCallSites`, `UpdateCallArgs`, `InsertStatement`, `ReplaceExpression`,
+`DeleteNode`, and `MoveNode` are now implemented for the v0 in-memory checked program. `DeleteNode`
 supports checked deletion of declarations, imports, takes, and statements.
 `MoveNode` supports checked in-parent statement reordering and top-level
 declaration ordering. Project-aware multi-file writeback now updates existing

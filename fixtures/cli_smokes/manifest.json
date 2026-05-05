@@ -241,7 +241,10 @@
           { "pointer": "/graft_templates/2/operation/payload/position", "value": 1 },
           { "pointer": "/transaction_templates/0/kind", "value": "rename_and_update_call_sites" },
           { "pointer": "/transaction_templates/0/transaction/ops/1/payload/from", "value": "math.double" },
-          { "pointer": "/transaction_templates/0/transaction/ops/1/payload/replacement", "value": "math.renamed_double" }
+          { "pointer": "/transaction_templates/0/transaction/ops/1/payload/replacement", "value": "math.renamed_double" },
+          { "pointer": "/transaction_templates/1/kind", "value": "add_take_and_update_call_args" },
+          { "pointer": "/transaction_templates/1/transaction/ops/1/op", "value": "UpdateCallArgs" },
+          { "pointer": "/transaction_templates/1/transaction/ops/1/payload/source", "value": "\"\"" }
         ]
       }
     },

@@ -556,6 +556,10 @@ fn build_transaction_templates(
         if let Some(rename) = rename {
             templates.push(rename);
         }
+        let add_take = add_take_update_call_args_template(surface, query);
+        if let Some(add_take) = add_take {
+            templates.push(add_take);
+        }
     }
     Ok(templates)
 }
@@ -612,6 +616,76 @@ fn rename_update_call_sites_template(
         transaction: json!({
             "transaction": format!(
                 "txn_rename_{}",
+                surface.qualified_name.replace('.', "_")
+            ),
+            "mode": "all_or_nothing",
+            "ops": ops
+        }),
+        editable_json_pointers,
+    })
+}
+
+fn add_take_update_call_args_template(
+    surface: &EditPlanTaskSurface,
+    query: &QueryReport,
+) -> Option<EditPlanTransactionTemplate> {
+    let new_take_name = "new_value";
+    let new_take_type = "Text";
+    let new_take_position = surface.takes.len();
+    let new_arg_source = default_expression(new_take_type);
+    let mut ops = vec![json!({
+        "op": "AddTake",
+        "target": surface.id,
+        "payload": {
+            "name": new_take_name,
+            "type": new_take_type,
+            "position": new_take_position
+        }
+    })];
+    let mut editable_json_pointers = vec![
+        "/ops/0/payload/name".to_string(),
+        "/ops/0/payload/type".to_string(),
+        "/ops/0/payload/position".to_string(),
+    ];
+    let mut seen_call_updates = Vec::<(String, String)>::new();
+
+    for call in query
+        .calls
+        .iter()
+        .filter(|call| call.target.as_deref() == Some(surface.qualified_name.as_str()))
+    {
+        let key = (call.from_module.clone(), call.callee.clone());
+        if seen_call_updates.contains(&key) {
+            continue;
+        }
+        seen_call_updates.push(key);
+        let op_index = ops.len();
+        ops.push(json!({
+            "op": "UpdateCallArgs",
+            "target": surface.id,
+            "payload": {
+                "from": call.callee.clone(),
+                "source": new_arg_source,
+                "position": new_take_position,
+                "scope": format!("module:{}", call.from_module)
+            }
+        }));
+        editable_json_pointers.push(format!("/ops/{op_index}/payload/source"));
+        editable_json_pointers.push(format!("/ops/{op_index}/payload/position"));
+        editable_json_pointers.push(format!("/ops/{op_index}/payload/scope"));
+    }
+
+    if ops.len() == 1 {
+        return None;
+    }
+    Some(EditPlanTransactionTemplate {
+        kind: "add_take_and_update_call_args".to_string(),
+        reason: "add a task take and update currently resolved callers in one all-or-nothing graft"
+            .to_string(),
+        surface: surface.id.clone(),
+        transaction: json!({
+            "transaction": format!(
+                "txn_add_take_{}",
                 surface.qualified_name.replace('.', "_")
             ),
             "mode": "all_or_nothing",

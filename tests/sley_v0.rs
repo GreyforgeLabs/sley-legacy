@@ -670,7 +670,7 @@ task helper -> Int {
         report.graft_templates[0].operation.pointer("/target"),
         Some(&serde_json::json!("task:app.plan.helper"))
     );
-    assert_eq!(report.transaction_templates.len(), 1);
+    assert_eq!(report.transaction_templates.len(), 2);
     assert_eq!(
         report.transaction_templates[0].kind,
         "rename_and_update_call_sites"
@@ -696,6 +696,31 @@ task helper -> Int {
         Some("agent:transaction-template-test".to_string()),
     );
     assert_eq!(outcome.status, "accepted");
+    assert_eq!(
+        report.transaction_templates[1].kind,
+        "add_take_and_update_call_args"
+    );
+    assert_eq!(
+        report.transaction_templates[1]
+            .transaction
+            .pointer("/ops/1/op"),
+        Some(&serde_json::json!("UpdateCallArgs"))
+    );
+    assert_eq!(
+        report.transaction_templates[1]
+            .transaction
+            .pointer("/ops/1/payload/source"),
+        Some(&serde_json::json!("\"\""))
+    );
+    let add_take_transaction: GraftInput =
+        serde_json::from_value(report.transaction_templates[1].transaction.clone())
+            .expect("parse add-take transaction template");
+    let outcome = apply_graft_input(
+        &program,
+        add_take_transaction,
+        Some("agent:add-take-transaction-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
 
     let missing = build_edit_plan_report_with_options(
         "app.plan",
@@ -803,6 +828,67 @@ task main -> Int {
     assert!(grafted_source.contains("return call increment(41)"));
     let grafted = parse_program(&grafted_source).expect("parse grafted source");
     assert_eq!(run_main(&grafted), Ok(Value::Int(42)));
+}
+
+#[test]
+fn update_call_args_graft_inserts_checked_call_arguments() {
+    let source = r#"
+task double -> Int {
+  take value: Int
+  take scale: Int
+
+  return value * scale
+}
+
+task main -> Int {
+  return call double(21)
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let graft_source = r#"
+{
+  "op": "UpdateCallArgs",
+  "target": "task:main.double",
+  "payload": { "source": "2", "position": 1 }
+}
+"#;
+    let graft: GraftInput = serde_json::from_str(graft_source).expect("parse graft");
+    let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
+
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted_source = outcome.source.expect("grafted source");
+    assert!(grafted_source.contains("return call double(21, 2)"));
+    let grafted = parse_program(&grafted_source).expect("parse grafted source");
+    assert_eq!(run_main(&grafted), Ok(Value::Int(42)));
+}
+
+#[test]
+fn update_call_args_rejects_out_of_range_positions() {
+    let source = r#"
+task double -> Int {
+  take value: Int
+  take scale: Int
+
+  return value * scale
+}
+
+task main -> Int {
+  return call double(21)
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let graft_source = r#"
+{
+  "op": "UpdateCallArgs",
+  "target": "task:main.double",
+  "payload": { "source": "2", "position": 3 }
+}
+"#;
+    let graft: GraftInput = serde_json::from_str(graft_source).expect("parse graft");
+    let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
+
+    assert_eq!(outcome.status, "rejected");
+    assert_eq!(outcome.diagnostics[0].id, "GRAFT_POSITION_OUT_OF_RANGE");
 }
 
 #[test]
