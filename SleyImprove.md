@@ -208,10 +208,11 @@ Minimum useful graft operations:
 supports checked deletion of declarations, imports, takes, and statements.
 `MoveNode` supports checked in-parent statement reordering and top-level
 declaration ordering. Project-aware multi-file writeback now updates existing
-module files and creates checked new module files declared by the graft
-candidate; bare imports to missing modules still reject before mutation.
-Cross-parent movement, take movement, expression movement, module rename, and
-broader graph-contract hardening remain open.
+module files, creates checked new module files declared by the graft candidate,
+and deletes removed module files once the checked candidate no longer imports
+them; bare imports to missing modules still reject before mutation. Cross-parent
+movement, take movement, expression movement, module rename, and broader
+graph-contract hardening remain open.
 
 The important rule is not that all operations exist immediately. The important
 rule is that unsupported operations reject cleanly with explicit diagnostics.

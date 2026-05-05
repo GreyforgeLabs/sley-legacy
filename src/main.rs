@@ -705,7 +705,9 @@ fn write_project_graft(
 ) -> Result<(), Vec<Diagnostic>> {
     let writes = plan_project_writeback(project, candidate)?;
     for write in writes {
-        if let Some(parent) = write.path.parent() {
+        if write.source.is_some()
+            && let Some(parent) = write.path.parent()
+        {
             fs::create_dir_all(parent).map_err(|error| {
                 vec![
                     Diagnostic::error(
@@ -721,6 +723,15 @@ fn write_project_graft(
             })?;
         }
         if write.create {
+            let Some(source) = write.source.as_deref() else {
+                return Err(vec![
+                    Diagnostic::error(
+                        "PROJECT_WRITEBACK_FAILED",
+                        format!("new module `{}` has no source to write", write.module),
+                    )
+                    .with_node(format!("module:{}", write.module)),
+                ]);
+            };
             let mut file = OpenOptions::new()
                 .write(true)
                 .create_new(true)
@@ -738,7 +749,21 @@ fn write_project_graft(
                         .with_node(format!("module:{}", write.module)),
                     ]
                 })?;
-            file.write_all(write.source.as_bytes()).map_err(|error| {
+            file.write_all(source.as_bytes()).map_err(|error| {
+                vec![
+                    Diagnostic::error(
+                        "PROJECT_WRITEBACK_FAILED",
+                        format!(
+                            "failed to write module `{}` at {}: {error}",
+                            write.module,
+                            write.path.display()
+                        ),
+                    )
+                    .with_node(format!("module:{}", write.module)),
+                ]
+            })?;
+        } else if let Some(source) = write.source.as_deref() {
+            fs::write(&write.path, source).map_err(|error| {
                 vec![
                     Diagnostic::error(
                         "PROJECT_WRITEBACK_FAILED",
@@ -752,12 +777,12 @@ fn write_project_graft(
                 ]
             })?;
         } else {
-            fs::write(&write.path, write.source).map_err(|error| {
+            fs::remove_file(&write.path).map_err(|error| {
                 vec![
                     Diagnostic::error(
                         "PROJECT_WRITEBACK_FAILED",
                         format!(
-                            "failed to write module `{}` at {}: {error}",
+                            "failed to delete module `{}` at {}: {error}",
                             write.module,
                             write.path.display()
                         ),
@@ -786,7 +811,7 @@ fn write_project_graft(
 struct ProjectWrite {
     module: String,
     path: PathBuf,
-    source: String,
+    source: Option<String>,
     create: bool,
 }
 
@@ -803,6 +828,16 @@ fn plan_project_writeback(
     let new_modules = declared_modules
         .iter()
         .filter(|module| !known_modules.contains(*module))
+        .cloned()
+        .collect::<BTreeSet<_>>();
+    let imported_modules = candidate
+        .imports
+        .iter()
+        .map(|import| import.module.clone())
+        .collect::<BTreeSet<_>>();
+    let removed_modules = known_modules
+        .iter()
+        .filter(|module| !declared_modules.contains(*module) && !imported_modules.contains(*module))
         .cloned()
         .collect::<BTreeSet<_>>();
     let mut diagnostics = Vec::new();
@@ -848,6 +883,15 @@ fn plan_project_writeback(
 
     let mut writes = Vec::new();
     for module in &project.modules {
+        if removed_modules.contains(&module.module) {
+            writes.push(ProjectWrite {
+                module: module.module.clone(),
+                path: module.path.clone(),
+                source: None,
+                create: false,
+            });
+            continue;
+        }
         let next_program = project_module_program(candidate, &module.module);
         let current_source = format_program(&module.program);
         let next_source = format_program(&next_program);
@@ -855,7 +899,7 @@ fn plan_project_writeback(
             writes.push(ProjectWrite {
                 module: module.module.clone(),
                 path: module.path.clone(),
-                source: next_source,
+                source: Some(next_source),
                 create: false,
             });
         }
@@ -866,7 +910,7 @@ fn plan_project_writeback(
         writes.push(ProjectWrite {
             module: module.clone(),
             path: module_source_path(&project.module_root, &module),
-            source: next_source,
+            source: Some(next_source),
             create: true,
         });
     }

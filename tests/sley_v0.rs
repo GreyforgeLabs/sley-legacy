@@ -4325,6 +4325,92 @@ task main -> Int {
 }
 
 #[test]
+fn project_graft_write_deletes_removed_module_file() {
+    let root = temp_project_dir("project-graft-delete-module");
+    fs::create_dir_all(root.join("src/app")).expect("create project dirs");
+    fs::write(
+        root.join("sley.toml"),
+        r#"
+[project]
+entry = "app.main"
+"#,
+    )
+    .expect("write manifest");
+    let main_source = r#"module app.main
+
+import app.extra
+
+task main -> Int {
+  return 1
+}
+"#;
+    let extra_source = r#"module app.extra
+
+export task helper -> Int {
+  return 2
+}
+"#;
+    let main_path = root.join("src/app/main.sley");
+    let extra_path = root.join("src/app/extra.sley");
+    let graft_path = root.join("delete_extra_module.json");
+    fs::write(&main_path, main_source).expect("write main module");
+    fs::write(&extra_path, extra_source).expect("write extra module");
+    fs::write(
+        &graft_path,
+        r#"
+{
+  "transaction": "graft_delete_module",
+  "mode": "all_or_nothing",
+  "ops": [
+    { "op": "DeleteNode", "target": "import:app.extra" },
+    { "op": "DeleteNode", "target": "task:app.extra.helper" }
+  ]
+}
+"#,
+    )
+    .expect("write graft");
+
+    let output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args(["graft", "--json", "--write"])
+        .arg(&root)
+        .arg(&graft_path)
+        .output()
+        .expect("run project graft");
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+    assert!(
+        output.status.success(),
+        "project writeback should delete removed module; stderr={}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let outcome: GraftOutcome = serde_json::from_str(&stdout).expect("parse outcome");
+    assert_eq!(outcome.status, "accepted");
+    assert_eq!(
+        fs::read_to_string(&main_path).expect("read main"),
+        "module app.main\n\ntask main -> Int {\n  return 1\n}\n"
+    );
+    assert!(
+        !extra_path.exists(),
+        "removed module file should be deleted"
+    );
+    let check = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args(["check", "--json"])
+        .arg(&root)
+        .output()
+        .expect("check project");
+    assert!(
+        check.status.success(),
+        "project should check after module deletion; stdout={} stderr={}",
+        String::from_utf8_lossy(&check.stdout),
+        String::from_utf8_lossy(&check.stderr)
+    );
+    let receipts = read_trace_receipts(&root.join(".sley/trace.jsonl")).expect("read trace");
+    assert_eq!(receipts.len(), 1);
+    assert_eq!(receipts[0].provenance.len(), 2);
+
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
 fn project_graft_write_rejects_import_without_new_module_declarations() {
     let root = temp_project_dir("project-graft-unknown-import");
     fs::create_dir_all(root.join("src/app")).expect("create project dirs");

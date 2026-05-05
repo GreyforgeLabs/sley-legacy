@@ -452,10 +452,11 @@ manifest entry module and transitively imported modules before checking the
 graft. Accepted project writeback projects the checked candidate AST back to the
 existing module files that own changed imports, types, effects, or tasks, and
 can create checked new module files under the project source root when the graft
-candidate owns declarations in those modules. Unchanged module files are left
-byte-for-byte untouched. Project writeback rejects before mutation when a graft
-imports a missing module without adding checked declarations for it, using
-`PROJECT_WRITEBACK_UNKNOWN_IMPORT`.
+candidate owns declarations in those modules. It deletes loaded module files
+whose imports and declarations are removed from the checked candidate. Unchanged
+module files are left byte-for-byte untouched. Project writeback rejects before
+mutation when a graft imports a missing module without adding checked
+declarations for it, using `PROJECT_WRITEBACK_UNKNOWN_IMPORT`.
 
 `sley graft --dry-run` is an explicit non-mutating preview mode. Plain
 `sley graft` remains non-mutating by default; only `--write` changes source or
@@ -649,6 +650,6 @@ archive.
 - `MoveNode` supports checked in-parent statement reordering and top-level
   declaration ordering; cross-parent movement, take movement, and expression
   movement are still explicit rejections
-- project graft writeback updates existing module files and can create checked
-  new module files; module rename and cross-parent declaration movement remain
-  later steps
+- project graft writeback updates existing module files, creates checked new
+  module files, and deletes removed module files; module rename and
+  cross-parent declaration movement remain later steps
