@@ -13,14 +13,16 @@ Implemented now:
 - module, import, type, effect, and function declarations
 - record type declarations
 - explicit function parameters and return types
-- structured expressions for literals, identifiers, calls, field access,
-  record literals, and `?`
+- structured expressions for literals, identifiers, unary/binary operators,
+  `if` expressions, calls, field access, record literals, and `?`
 - static checks for duplicate declarations, unknown types, unknown effects,
   simple return mismatches, `?` result flow, host-effect authority, user
-  function call arity/types, called-function effect propagation, and typed
-  record literal fields
+  function call arity/types, called-function effect propagation, lexical
+  locals, operator operand types, `if` condition/branch types, and typed record
+  literal fields
 - runtime evaluation for zero-argument pure `main`, literal values, pure
-  function calls, record literals, and record field access
+  function calls, lexical locals, operators, `if` expressions, record literals,
+  and record field access
 - structural patch operations for adding/removing parameters, replacing
   function bodies, adding imports/effects/types/functions, and renaming
   declarations
@@ -28,7 +30,8 @@ Implemented now:
 Known v0 limits:
 
 - Expression parsing still falls back to raw nodes for unsupported syntax such
-  as infix operators and collection literals.
+  as collection literals, lambdas, pattern matching, and multi-statement
+  expression blocks.
 - Comment attachment and durable provenance storage are not complete. Accepted
   patch provenance is returned by the patch command, but not written into a
   sidecar store.
@@ -39,5 +42,6 @@ Known v0 limits:
   `DeleteNode` are declared but return explicit unsupported-operation
   diagnostics.
 
-The useful next step is to use the call graph to implement `UpdateCallSites`
-for parameter-add/remove patches.
+The useful next step is to add real block control flow and data collections:
+`while`/`for`, `match`, list/map literals, indexing, and multi-statement branch
+blocks.

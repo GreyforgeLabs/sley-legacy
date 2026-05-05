@@ -192,6 +192,22 @@ impl Expr {
     fn assign_ids_at(&mut self, id: String) {
         self.id = id.clone();
         match &mut self.kind {
+            ExprKind::Unary { expr, .. } => {
+                expr.assign_ids_at(format!("{id}:operand"));
+            }
+            ExprKind::Binary { left, right, .. } => {
+                left.assign_ids_at(format!("{id}:left"));
+                right.assign_ids_at(format!("{id}:right"));
+            }
+            ExprKind::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => {
+                condition.assign_ids_at(format!("{id}:condition"));
+                then_branch.assign_ids_at(format!("{id}:then"));
+                else_branch.assign_ids_at(format!("{id}:else"));
+            }
             ExprKind::Call { callee, args } => {
                 callee.assign_ids_at(format!("{id}:callee"));
                 for (index, arg) in args.iter_mut().enumerate() {
@@ -242,6 +258,20 @@ pub enum ExprKind {
     Identifier {
         name: String,
     },
+    Unary {
+        op: UnaryOp,
+        expr: Box<Expr>,
+    },
+    Binary {
+        op: BinaryOp,
+        left: Box<Expr>,
+        right: Box<Expr>,
+    },
+    If {
+        condition: Box<Expr>,
+        then_branch: Box<Expr>,
+        else_branch: Box<Expr>,
+    },
     Call {
         callee: Box<Expr>,
         args: Vec<Expr>,
@@ -264,6 +294,58 @@ pub enum ExprKind {
 pub struct ExprField {
     pub name: String,
     pub expr: Expr,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum UnaryOp {
+    Not,
+    Negate,
+}
+
+impl UnaryOp {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            UnaryOp::Not => "!",
+            UnaryOp::Negate => "-",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum BinaryOp {
+    Or,
+    And,
+    Equal,
+    NotEqual,
+    Less,
+    LessEqual,
+    Greater,
+    GreaterEqual,
+    Add,
+    Subtract,
+    Multiply,
+    Divide,
+    Remainder,
+}
+
+impl BinaryOp {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            BinaryOp::Or => "||",
+            BinaryOp::And => "&&",
+            BinaryOp::Equal => "==",
+            BinaryOp::NotEqual => "!=",
+            BinaryOp::Less => "<",
+            BinaryOp::LessEqual => "<=",
+            BinaryOp::Greater => ">",
+            BinaryOp::GreaterEqual => ">=",
+            BinaryOp::Add => "+",
+            BinaryOp::Subtract => "-",
+            BinaryOp::Multiply => "*",
+            BinaryOp::Divide => "/",
+            BinaryOp::Remainder => "%",
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]

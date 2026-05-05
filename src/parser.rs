@@ -1,6 +1,6 @@
 use crate::ast::{
-    Block, EffectDecl, Expr, ExprField, ExprKind, FunctionDecl, ImportDecl, Param, Program,
-    RecordField, Statement, StatementKind, TypeDecl, TypeExpr,
+    BinaryOp, Block, EffectDecl, Expr, ExprField, ExprKind, FunctionDecl, ImportDecl, Param,
+    Program, RecordField, Statement, StatementKind, TypeDecl, TypeExpr, UnaryOp,
 };
 use crate::diagnostics::{Diagnostic, SourceSpan};
 
@@ -46,6 +46,7 @@ enum TokenKind {
     String(String),
     Number(String),
     Symbol(char),
+    Operator(String),
     Arrow,
     Newline,
     Eof,
@@ -242,8 +243,125 @@ fn lex(source: &str) -> Result<Vec<Token>, Vec<Diagnostic>> {
                     });
                 }
             }
-            '{' | '}' | '(' | ')' | ':' | ',' | '=' | '<' | '>' | '?' | '.' | ';' | '+' | '*'
-            | '[' | ']' => {
+            '=' => {
+                chars.next();
+                column += 1;
+                if chars.peek() == Some(&'=') {
+                    chars.next();
+                    column += 1;
+                    tokens.push(Token {
+                        kind: TokenKind::Operator("==".to_string()),
+                        text: "==".to_string(),
+                        span,
+                    });
+                } else {
+                    tokens.push(Token {
+                        kind: TokenKind::Symbol('='),
+                        text: "=".to_string(),
+                        span,
+                    });
+                }
+            }
+            '!' => {
+                chars.next();
+                column += 1;
+                if chars.peek() == Some(&'=') {
+                    chars.next();
+                    column += 1;
+                    tokens.push(Token {
+                        kind: TokenKind::Operator("!=".to_string()),
+                        text: "!=".to_string(),
+                        span,
+                    });
+                } else {
+                    tokens.push(Token {
+                        kind: TokenKind::Symbol('!'),
+                        text: "!".to_string(),
+                        span,
+                    });
+                }
+            }
+            '<' => {
+                chars.next();
+                column += 1;
+                if chars.peek() == Some(&'=') {
+                    chars.next();
+                    column += 1;
+                    tokens.push(Token {
+                        kind: TokenKind::Operator("<=".to_string()),
+                        text: "<=".to_string(),
+                        span,
+                    });
+                } else {
+                    tokens.push(Token {
+                        kind: TokenKind::Symbol('<'),
+                        text: "<".to_string(),
+                        span,
+                    });
+                }
+            }
+            '>' => {
+                chars.next();
+                column += 1;
+                if chars.peek() == Some(&'=') {
+                    chars.next();
+                    column += 1;
+                    tokens.push(Token {
+                        kind: TokenKind::Operator(">=".to_string()),
+                        text: ">=".to_string(),
+                        span,
+                    });
+                } else {
+                    tokens.push(Token {
+                        kind: TokenKind::Symbol('>'),
+                        text: ">".to_string(),
+                        span,
+                    });
+                }
+            }
+            '&' => {
+                chars.next();
+                column += 1;
+                if chars.peek() == Some(&'&') {
+                    chars.next();
+                    column += 1;
+                    tokens.push(Token {
+                        kind: TokenKind::Operator("&&".to_string()),
+                        text: "&&".to_string(),
+                        span,
+                    });
+                } else {
+                    diagnostics.push(
+                        Diagnostic::error(
+                            "LEX_UNKNOWN_CHARACTER",
+                            "`&` is only valid as part of `&&`",
+                        )
+                        .with_span(span),
+                    );
+                }
+            }
+            '|' => {
+                chars.next();
+                column += 1;
+                if chars.peek() == Some(&'|') {
+                    chars.next();
+                    column += 1;
+                    tokens.push(Token {
+                        kind: TokenKind::Operator("||".to_string()),
+                        text: "||".to_string(),
+                        span,
+                    });
+                } else {
+                    diagnostics.push(
+                        Diagnostic::error(
+                            "LEX_UNKNOWN_CHARACTER",
+                            "`|` is only valid as part of `||`",
+                        )
+                        .with_span(span),
+                    );
+                }
+            }
+            '{' | '}' | '(' | ')' | ':' | ',' | '?' | '.' | ';' | '+' | '*' | '%' | '[' | ']' => {
                 chars.next();
                 column += 1;
                 tokens.push(Token {
@@ -471,24 +589,17 @@ impl Parser {
         let mut paren_depth = 0usize;
         let mut brace_depth = 0usize;
         let mut bracket_depth = 0usize;
-        let mut angle_depth = 0usize;
 
         while !self.at_eof() {
             let current = self.current().clone();
             match current.kind {
                 TokenKind::Newline
-                    if paren_depth == 0
-                        && brace_depth == 0
-                        && bracket_depth == 0
-                        && angle_depth == 0 =>
+                    if paren_depth == 0 && brace_depth == 0 && bracket_depth == 0 =>
                 {
                     break;
                 }
                 TokenKind::Symbol('}')
-                    if paren_depth == 0
-                        && brace_depth == 0
-                        && bracket_depth == 0
-                        && angle_depth == 0 =>
+                    if paren_depth == 0 && brace_depth == 0 && bracket_depth == 0 =>
                 {
                     break;
                 }
@@ -498,8 +609,6 @@ impl Parser {
                 TokenKind::Symbol('}') => brace_depth = brace_depth.saturating_sub(1),
                 TokenKind::Symbol('[') => bracket_depth += 1,
                 TokenKind::Symbol(']') => bracket_depth = bracket_depth.saturating_sub(1),
-                TokenKind::Symbol('<') => angle_depth += 1,
-                TokenKind::Symbol('>') => angle_depth = angle_depth.saturating_sub(1),
                 _ => {}
             }
             if !matches!(current.kind, TokenKind::Newline) {
@@ -650,14 +759,70 @@ fn parse_expr_tokens(tokens: &[Token], source: String, span: SourceSpan) -> Expr
 struct ExprParser<'a> {
     tokens: &'a [Token],
     pos: usize,
+    allow_record_literals: bool,
 }
 
 impl<'a> ExprParser<'a> {
     fn new(tokens: &'a [Token]) -> Self {
-        Self { tokens, pos: 0 }
+        Self {
+            tokens,
+            pos: 0,
+            allow_record_literals: true,
+        }
     }
 
     fn parse_expression(&mut self) -> Result<Expr, ()> {
+        self.parse_binary(1)
+    }
+
+    fn parse_expression_before_block(&mut self) -> Result<Expr, ()> {
+        let previous = self.allow_record_literals;
+        self.allow_record_literals = false;
+        let result = self.parse_expression();
+        self.allow_record_literals = previous;
+        result
+    }
+
+    fn parse_binary(&mut self, min_precedence: u8) -> Result<Expr, ()> {
+        let mut left = self.parse_unary()?;
+
+        while let Some((op, precedence)) = self.current_binary_op() {
+            if precedence < min_precedence {
+                break;
+            }
+            self.bump();
+            let right = self.parse_binary(precedence + 1)?;
+            let source = format!("{} {} {}", left.source, op.as_str(), right.source);
+            left = Expr {
+                id: String::new(),
+                source,
+                kind: ExprKind::Binary {
+                    op,
+                    left: Box::new(left),
+                    right: Box::new(right),
+                },
+                span: None,
+            };
+        }
+
+        Ok(left)
+    }
+
+    fn parse_unary(&mut self) -> Result<Expr, ()> {
+        if let Some(op) = self.current_unary_op() {
+            self.bump();
+            let expr = self.parse_unary()?;
+            let source = format!("{}{}", op.as_str(), expr.source);
+            return Ok(Expr {
+                id: String::new(),
+                source,
+                kind: ExprKind::Unary {
+                    op,
+                    expr: Box::new(expr),
+                },
+                span: None,
+            });
+        }
         self.parse_postfix()
     }
 
@@ -709,7 +874,7 @@ impl<'a> ExprParser<'a> {
                     },
                     span: None,
                 };
-            } else if self.current_is_symbol('{') {
+            } else if self.allow_record_literals && self.current_is_symbol('{') {
                 let type_name = match &expr.kind {
                     ExprKind::Identifier { .. } | ExprKind::FieldAccess { .. } => {
                         Some(expr.source.clone())
@@ -775,6 +940,7 @@ impl<'a> ExprParser<'a> {
                     })
                 }
             }
+            TokenKind::Ident(name) if name == "if" => self.parse_if_expression(token.span),
             TokenKind::Ident(name) if name == "true" || name == "false" => {
                 self.bump();
                 Ok(Expr {
@@ -819,6 +985,33 @@ impl<'a> ExprParser<'a> {
         }
     }
 
+    fn parse_if_expression(&mut self, span: SourceSpan) -> Result<Expr, ()> {
+        self.expect_keyword("if")?;
+        let condition = self.parse_expression_before_block()?;
+        self.expect_symbol('{')?;
+        let then_branch = self.parse_expression()?;
+        self.expect_symbol('}')?;
+        self.expect_keyword("else")?;
+        self.expect_symbol('{')?;
+        let else_branch = self.parse_expression()?;
+        self.expect_symbol('}')?;
+
+        let source = format!(
+            "if {} {{ {} }} else {{ {} }}",
+            condition.source, then_branch.source, else_branch.source
+        );
+        Ok(Expr {
+            id: String::new(),
+            source,
+            kind: ExprKind::If {
+                condition: Box::new(condition),
+                then_branch: Box::new(then_branch),
+                else_branch: Box::new(else_branch),
+            },
+            span: Some(span),
+        })
+    }
+
     fn parse_record_fields(&mut self) -> Result<Vec<ExprField>, ()> {
         self.expect_symbol('{')?;
         let mut fields = Vec::new();
@@ -840,6 +1033,16 @@ impl<'a> ExprParser<'a> {
         }
         self.expect_symbol('}')?;
         Ok(fields)
+    }
+
+    fn expect_keyword(&mut self, expected: &str) -> Result<(), ()> {
+        match self.current().map(|token| &token.kind) {
+            Some(TokenKind::Ident(value)) if value == expected => {
+                self.bump();
+                Ok(())
+            }
+            _ => Err(()),
+        }
     }
 
     fn expect_ident(&mut self) -> Result<String, ()> {
@@ -864,6 +1067,33 @@ impl<'a> ExprParser<'a> {
 
     fn current_is_symbol(&self, expected: char) -> bool {
         matches!(self.current().map(|token| &token.kind), Some(TokenKind::Symbol(value)) if *value == expected)
+    }
+
+    fn current_unary_op(&self) -> Option<UnaryOp> {
+        match self.current().map(|token| &token.kind) {
+            Some(TokenKind::Symbol('!')) => Some(UnaryOp::Not),
+            Some(TokenKind::Symbol('-')) => Some(UnaryOp::Negate),
+            _ => None,
+        }
+    }
+
+    fn current_binary_op(&self) -> Option<(BinaryOp, u8)> {
+        match self.current().map(|token| &token.kind) {
+            Some(TokenKind::Operator(value)) if value == "||" => Some((BinaryOp::Or, 1)),
+            Some(TokenKind::Operator(value)) if value == "&&" => Some((BinaryOp::And, 2)),
+            Some(TokenKind::Operator(value)) if value == "==" => Some((BinaryOp::Equal, 3)),
+            Some(TokenKind::Operator(value)) if value == "!=" => Some((BinaryOp::NotEqual, 3)),
+            Some(TokenKind::Symbol('<')) => Some((BinaryOp::Less, 4)),
+            Some(TokenKind::Operator(value)) if value == "<=" => Some((BinaryOp::LessEqual, 4)),
+            Some(TokenKind::Symbol('>')) => Some((BinaryOp::Greater, 4)),
+            Some(TokenKind::Operator(value)) if value == ">=" => Some((BinaryOp::GreaterEqual, 4)),
+            Some(TokenKind::Symbol('+')) => Some((BinaryOp::Add, 5)),
+            Some(TokenKind::Symbol('-')) => Some((BinaryOp::Subtract, 5)),
+            Some(TokenKind::Symbol('*')) => Some((BinaryOp::Multiply, 6)),
+            Some(TokenKind::Symbol('/')) => Some((BinaryOp::Divide, 6)),
+            Some(TokenKind::Symbol('%')) => Some((BinaryOp::Remainder, 6)),
+            _ => None,
+        }
     }
 
     fn at_end(&self) -> bool {

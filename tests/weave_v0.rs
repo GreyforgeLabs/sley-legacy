@@ -78,6 +78,23 @@ fn parser_builds_structured_call_and_record_expressions() {
 }
 
 #[test]
+fn parser_builds_structured_operator_and_if_expressions() {
+    let source = r#"
+fn grade(score: Int) -> Text {
+  return if score >= 90 { "A" } else { "B" }
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let StatementKind::Return { expr } = &program.functions[0].body.statements[0].kind else {
+        panic!("expected return statement");
+    };
+    let ExprKind::If { condition, .. } = &expr.kind else {
+        panic!("expected if expression");
+    };
+    assert!(matches!(condition.kind, ExprKind::Binary { .. }));
+}
+
+#[test]
 fn checker_validates_user_function_calls() {
     let source = r#"
 fn takes_text(value: Text) -> Text {
@@ -95,6 +112,36 @@ fn main() -> Text {
             .iter()
             .any(|diagnostic| diagnostic.id == "CALL_ARGUMENT_TYPE_MISMATCH"),
         "expected call argument diagnostic, got {diagnostics:#?}"
+    );
+}
+
+#[test]
+fn checker_validates_operator_and_if_semantics() {
+    let source = r#"
+fn main() -> Int {
+  let invalid = 1 + "x"
+  return if invalid { 1 } else { missing }
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.id == "BINARY_OPERATOR_TYPE_MISMATCH"),
+        "expected operator diagnostic, got {diagnostics:#?}"
+    );
+    assert!(
+        diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.id == "IF_CONDITION_NOT_BOOL"),
+        "expected if-condition diagnostic, got {diagnostics:#?}"
+    );
+    assert!(
+        diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.id == "UNKNOWN_IDENTIFIER"),
+        "expected unknown identifier diagnostic, got {diagnostics:#?}"
     );
 }
 
@@ -119,6 +166,27 @@ fn main() -> Result<Text, Error> {
             .any(|diagnostic| diagnostic.id == "EFFECT_UNAUTHORIZED"),
         "expected effect diagnostic, got {diagnostics:#?}"
     );
+}
+
+#[test]
+fn runtime_evaluates_locals_operators_and_if_expressions() {
+    let source = r#"
+fn score(base: Int) -> Int {
+  let doubled = base * 2
+  return if doubled >= 10 && true { doubled + 1 } else { 0 }
+}
+
+fn main() -> Int {
+  return score(5)
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+    assert_eq!(run_main(&program), Ok(Value::Int(11)));
 }
 
 #[test]

@@ -1,6 +1,8 @@
 use std::collections::{HashMap, HashSet};
 
-use crate::ast::{Expr, ExprKind, FunctionDecl, Program, RecordField, StatementKind, TypeExpr};
+use crate::ast::{
+    BinaryOp, Expr, ExprKind, FunctionDecl, Program, RecordField, StatementKind, TypeExpr, UnaryOp,
+};
 use crate::diagnostics::{Diagnostic, RepairHint};
 
 pub fn check_program(program: &Program) -> Vec<Diagnostic> {
@@ -246,6 +248,15 @@ fn check_function(
                     .clone()
                     .or(inferred)
                     .unwrap_or_else(|| TypeExpr::named("Unit"));
+                if locals.contains_key(name) {
+                    diagnostics.push(
+                        Diagnostic::error(
+                            "LOCAL_ALREADY_BOUND",
+                            format!("local binding `{name}` is already in scope"),
+                        )
+                        .with_node(statement.id.clone()),
+                    );
+                }
                 locals.insert(name.clone(), local_type);
             }
             StatementKind::Return { expr } => {
@@ -314,10 +325,10 @@ fn check_expr_structure(
     diagnostics: &mut Vec<Diagnostic>,
 ) {
     match &expr.kind {
-        ExprKind::Call { callee, args } => {
+        ExprKind::Unary { op, expr: inner } => {
             check_expr_structure(
                 function,
-                callee,
+                inner,
                 locals,
                 declared_effects,
                 known_types,
@@ -325,6 +336,121 @@ fn check_expr_structure(
                 record_types,
                 diagnostics,
             );
+            check_unary_operator(
+                function,
+                expr,
+                op,
+                inner,
+                locals,
+                known_functions,
+                record_types,
+                diagnostics,
+            );
+        }
+        ExprKind::Binary { op, left, right } => {
+            check_expr_structure(
+                function,
+                left,
+                locals,
+                declared_effects,
+                known_types,
+                known_functions,
+                record_types,
+                diagnostics,
+            );
+            check_expr_structure(
+                function,
+                right,
+                locals,
+                declared_effects,
+                known_types,
+                known_functions,
+                record_types,
+                diagnostics,
+            );
+            check_binary_operator(
+                function,
+                expr,
+                op,
+                left,
+                right,
+                locals,
+                known_functions,
+                record_types,
+                diagnostics,
+            );
+        }
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
+            check_expr_structure(
+                function,
+                condition,
+                locals,
+                declared_effects,
+                known_types,
+                known_functions,
+                record_types,
+                diagnostics,
+            );
+            check_expr_structure(
+                function,
+                then_branch,
+                locals,
+                declared_effects,
+                known_types,
+                known_functions,
+                record_types,
+                diagnostics,
+            );
+            check_expr_structure(
+                function,
+                else_branch,
+                locals,
+                declared_effects,
+                known_types,
+                known_functions,
+                record_types,
+                diagnostics,
+            );
+            check_if_expression(
+                function,
+                expr,
+                condition,
+                then_branch,
+                else_branch,
+                locals,
+                known_functions,
+                record_types,
+                diagnostics,
+            );
+        }
+        ExprKind::Call { callee, args } => {
+            if let Some(callee_name) = direct_callee_name(callee) {
+                if !known_functions.contains_key(callee_name) && !is_result_constructor(callee_name)
+                {
+                    diagnostics.push(
+                        Diagnostic::error(
+                            "UNKNOWN_FUNCTION",
+                            format!("unknown function `{callee_name}`"),
+                        )
+                        .with_node(callee.id.clone()),
+                    );
+                }
+            } else {
+                check_expr_structure(
+                    function,
+                    callee,
+                    locals,
+                    declared_effects,
+                    known_types,
+                    known_functions,
+                    record_types,
+                    diagnostics,
+                );
+            }
             for arg in args {
                 check_expr_structure(
                     function,
@@ -509,8 +635,169 @@ fn check_expr_structure(
         | ExprKind::StringLiteral { .. }
         | ExprKind::IntLiteral { .. }
         | ExprKind::FloatLiteral { .. }
-        | ExprKind::BoolLiteral { .. }
-        | ExprKind::Identifier { .. } => {}
+        | ExprKind::BoolLiteral { .. } => {}
+        ExprKind::Identifier { name } => {
+            if !locals.contains_key(name) && !is_host_root(name) {
+                diagnostics.push(
+                    Diagnostic::error(
+                        "UNKNOWN_IDENTIFIER",
+                        format!("unknown local binding `{name}`"),
+                    )
+                    .with_node(expr.id.clone()),
+                );
+            }
+        }
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn check_unary_operator(
+    function: &FunctionDecl,
+    expr: &Expr,
+    op: &UnaryOp,
+    inner: &Expr,
+    locals: &HashMap<String, TypeExpr>,
+    known_functions: &HashMap<String, FunctionSignature>,
+    record_types: &HashMap<String, Vec<RecordField>>,
+    diagnostics: &mut Vec<Diagnostic>,
+) {
+    let Some(actual) = infer_expr_type(
+        inner,
+        locals,
+        &function.return_type,
+        known_functions,
+        record_types,
+    ) else {
+        return;
+    };
+
+    let valid = match op {
+        UnaryOp::Not => is_bool_type(&actual),
+        UnaryOp::Negate => is_numeric_type(&actual),
+    };
+
+    if !valid {
+        diagnostics.push(
+            Diagnostic::error(
+                "UNARY_OPERATOR_TYPE_MISMATCH",
+                format!(
+                    "operator `{}` cannot be applied to `{}`",
+                    op.as_str(),
+                    actual.display()
+                ),
+            )
+            .with_node(expr.id.clone()),
+        );
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn check_binary_operator(
+    function: &FunctionDecl,
+    expr: &Expr,
+    op: &BinaryOp,
+    left: &Expr,
+    right: &Expr,
+    locals: &HashMap<String, TypeExpr>,
+    known_functions: &HashMap<String, FunctionSignature>,
+    record_types: &HashMap<String, Vec<RecordField>>,
+    diagnostics: &mut Vec<Diagnostic>,
+) {
+    let left_type = infer_expr_type(
+        left,
+        locals,
+        &function.return_type,
+        known_functions,
+        record_types,
+    );
+    let right_type = infer_expr_type(
+        right,
+        locals,
+        &function.return_type,
+        known_functions,
+        record_types,
+    );
+    let (Some(left_type), Some(right_type)) = (left_type, right_type) else {
+        return;
+    };
+
+    if !binary_operands_compatible(op, &left_type, &right_type) {
+        diagnostics.push(
+            Diagnostic::error(
+                "BINARY_OPERATOR_TYPE_MISMATCH",
+                format!(
+                    "operator `{}` cannot be applied to `{}` and `{}`",
+                    op.as_str(),
+                    left_type.display(),
+                    right_type.display()
+                ),
+            )
+            .with_node(expr.id.clone()),
+        );
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn check_if_expression(
+    function: &FunctionDecl,
+    expr: &Expr,
+    condition: &Expr,
+    then_branch: &Expr,
+    else_branch: &Expr,
+    locals: &HashMap<String, TypeExpr>,
+    known_functions: &HashMap<String, FunctionSignature>,
+    record_types: &HashMap<String, Vec<RecordField>>,
+    diagnostics: &mut Vec<Diagnostic>,
+) {
+    if let Some(condition_type) = infer_expr_type(
+        condition,
+        locals,
+        &function.return_type,
+        known_functions,
+        record_types,
+    ) {
+        if !is_bool_type(&condition_type) {
+            diagnostics.push(
+                Diagnostic::error(
+                    "IF_CONDITION_NOT_BOOL",
+                    format!(
+                        "if condition must be `Bool`, not `{}`",
+                        condition_type.display()
+                    ),
+                )
+                .with_node(condition.id.clone()),
+            );
+        }
+    }
+
+    let then_type = infer_expr_type(
+        then_branch,
+        locals,
+        &function.return_type,
+        known_functions,
+        record_types,
+    );
+    let else_type = infer_expr_type(
+        else_branch,
+        locals,
+        &function.return_type,
+        known_functions,
+        record_types,
+    );
+    if let (Some(then_type), Some(else_type)) = (then_type, else_type) {
+        if !types_compatible(&then_type, &else_type) {
+            diagnostics.push(
+                Diagnostic::error(
+                    "IF_BRANCH_TYPE_MISMATCH",
+                    format!(
+                        "if branches produce `{}` and `{}`",
+                        then_type.display(),
+                        else_type.display()
+                    ),
+                )
+                .with_node(expr.id.clone()),
+            );
+        }
     }
 }
 
@@ -685,6 +972,13 @@ fn check_fallible_expression(
 fn expr_uses_try(expr: &Expr) -> bool {
     match &expr.kind {
         ExprKind::Try { .. } => true,
+        ExprKind::Unary { expr, .. } => expr_uses_try(expr),
+        ExprKind::Binary { left, right, .. } => expr_uses_try(left) || expr_uses_try(right),
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => expr_uses_try(condition) || expr_uses_try(then_branch) || expr_uses_try(else_branch),
         ExprKind::Call { callee, args } => expr_uses_try(callee) || args.iter().any(expr_uses_try),
         ExprKind::FieldAccess { receiver, .. } => expr_uses_try(receiver),
         ExprKind::RecordLiteral { fields, .. } => {
@@ -712,6 +1006,43 @@ fn infer_expr_type(
         ExprKind::FloatLiteral { .. } => Some(TypeExpr::named("Float")),
         ExprKind::BoolLiteral { .. } => Some(TypeExpr::named("Bool")),
         ExprKind::Identifier { name } => locals.get(name).cloned(),
+        ExprKind::Unary { op, expr: inner } => {
+            let inner_type =
+                infer_expr_type(inner, locals, return_type, known_functions, record_types)?;
+            match op {
+                UnaryOp::Not if is_bool_type(&inner_type) => Some(TypeExpr::named("Bool")),
+                UnaryOp::Negate if is_numeric_type(&inner_type) => Some(inner_type),
+                _ => None,
+            }
+        }
+        ExprKind::Binary { op, left, right } => {
+            let left_type =
+                infer_expr_type(left, locals, return_type, known_functions, record_types)?;
+            let right_type =
+                infer_expr_type(right, locals, return_type, known_functions, record_types)?;
+            infer_binary_type(op, &left_type, &right_type)
+        }
+        ExprKind::If {
+            condition: _,
+            then_branch,
+            else_branch,
+        } => {
+            let then_type = infer_expr_type(
+                then_branch,
+                locals,
+                return_type,
+                known_functions,
+                record_types,
+            )?;
+            let else_type = infer_expr_type(
+                else_branch,
+                locals,
+                return_type,
+                known_functions,
+                record_types,
+            )?;
+            types_compatible(&then_type, &else_type).then_some(then_type)
+        }
         ExprKind::Call { callee, .. } => {
             if direct_callee_name(callee).is_some_and(|name| name == "Ok" || name == "Err")
                 && return_type.generic_name() == Some("Result")
@@ -791,8 +1122,79 @@ fn direct_callee_name(expr: &Expr) -> Option<&str> {
     }
 }
 
+fn is_result_constructor(name: &str) -> bool {
+    name == "Ok" || name == "Err"
+}
+
+fn is_host_root(name: &str) -> bool {
+    matches!(
+        name,
+        "db" | "fs" | "http" | "shell" | "model" | "secrets" | "deploy"
+    )
+}
+
 fn types_compatible(expected: &TypeExpr, actual: &TypeExpr) -> bool {
     expected == actual
+}
+
+fn is_named_type(ty: &TypeExpr, expected: &str) -> bool {
+    matches!(ty, TypeExpr::Named { name } if name == expected)
+}
+
+fn is_bool_type(ty: &TypeExpr) -> bool {
+    is_named_type(ty, "Bool")
+}
+
+fn is_numeric_type(ty: &TypeExpr) -> bool {
+    is_named_type(ty, "Int") || is_named_type(ty, "Float")
+}
+
+fn binary_operands_compatible(op: &BinaryOp, left: &TypeExpr, right: &TypeExpr) -> bool {
+    match op {
+        BinaryOp::Or | BinaryOp::And => is_bool_type(left) && is_bool_type(right),
+        BinaryOp::Equal | BinaryOp::NotEqual => types_compatible(left, right),
+        BinaryOp::Less | BinaryOp::LessEqual | BinaryOp::Greater | BinaryOp::GreaterEqual => {
+            is_numeric_type(left) && is_numeric_type(right)
+        }
+        BinaryOp::Add => {
+            (is_numeric_type(left) && is_numeric_type(right))
+                || (is_named_type(left, "Text") && is_named_type(right, "Text"))
+        }
+        BinaryOp::Subtract | BinaryOp::Multiply | BinaryOp::Divide | BinaryOp::Remainder => {
+            is_numeric_type(left) && is_numeric_type(right)
+        }
+    }
+}
+
+fn infer_binary_type(op: &BinaryOp, left: &TypeExpr, right: &TypeExpr) -> Option<TypeExpr> {
+    if !binary_operands_compatible(op, left, right) {
+        return None;
+    }
+
+    match op {
+        BinaryOp::Or
+        | BinaryOp::And
+        | BinaryOp::Equal
+        | BinaryOp::NotEqual
+        | BinaryOp::Less
+        | BinaryOp::LessEqual
+        | BinaryOp::Greater
+        | BinaryOp::GreaterEqual => Some(TypeExpr::named("Bool")),
+        BinaryOp::Add if is_named_type(left, "Text") && is_named_type(right, "Text") => {
+            Some(TypeExpr::named("Text"))
+        }
+        BinaryOp::Add
+        | BinaryOp::Subtract
+        | BinaryOp::Multiply
+        | BinaryOp::Divide
+        | BinaryOp::Remainder => {
+            if is_named_type(left, "Float") || is_named_type(right, "Float") {
+                Some(TypeExpr::named("Float"))
+            } else {
+                Some(TypeExpr::named("Int"))
+            }
+        }
+    }
 }
 
 fn return_types_compatible(expected: &TypeExpr, actual: &TypeExpr, source: &str) -> bool {
