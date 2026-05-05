@@ -2544,6 +2544,83 @@ task main -> Int {
 }
 
 #[test]
+fn checker_iterable_and_builtin_argument_hints_apply_as_expression_grafts() {
+    let for_source = r#"
+task main -> Int {
+  each item in 1 {
+    bind skipped = 0
+  }
+  return 0
+}
+"#;
+    let for_program = parse_program(for_source).expect("parse for repair source");
+    let for_diagnostics = check_program(&for_program);
+    let for_hint = find_repair_hint(
+        &for_diagnostics,
+        "FOR_COLLECTION_NOT_ITERABLE",
+        "replace_expression",
+    );
+    assert_replace_expression_hint_json(for_hint, "[]");
+    let for_graft: GraftInput = serde_json::from_str(
+        for_hint
+            .replacement
+            .as_deref()
+            .expect("for repair replacement"),
+    )
+    .expect("for repair hint parses as graft");
+    let for_outcome = apply_graft_input(&for_program, for_graft, Some("agent:test".to_string()));
+    assert_eq!(
+        for_outcome.status, "accepted",
+        "{:#?}",
+        for_outcome.diagnostics
+    );
+    let for_grafted = parse_program(&for_outcome.source.expect("for graft source"))
+        .expect("parse for grafted source");
+    assert!(
+        !has_errors(&check_program(&for_grafted)),
+        "for repair graft should check cleanly"
+    );
+
+    let len_source = r#"
+task main -> Int {
+  return len(1)
+}
+"#;
+    let len_program = parse_program(len_source).expect("parse len repair source");
+    let len_diagnostics = check_program(&len_program);
+    assert_has_repair_hint(
+        &len_diagnostics,
+        "BUILTIN_ARGUMENT_TYPE_MISMATCH",
+        "replace_builtin_argument",
+    );
+    let len_hint = find_repair_hint(
+        &len_diagnostics,
+        "BUILTIN_ARGUMENT_TYPE_MISMATCH",
+        "replace_expression",
+    );
+    assert_replace_expression_hint_json(len_hint, "\"\"");
+    let len_graft: GraftInput = serde_json::from_str(
+        len_hint
+            .replacement
+            .as_deref()
+            .expect("len repair replacement"),
+    )
+    .expect("len repair hint parses as graft");
+    let len_outcome = apply_graft_input(&len_program, len_graft, Some("agent:test".to_string()));
+    assert_eq!(
+        len_outcome.status, "accepted",
+        "{:#?}",
+        len_outcome.diagnostics
+    );
+    let len_grafted = parse_program(&len_outcome.source.expect("len graft source"))
+        .expect("parse len grafted source");
+    assert!(
+        !has_errors(&check_program(&len_grafted)),
+        "len repair graft should check cleanly"
+    );
+}
+
+#[test]
 fn checker_operator_hints_include_replace_expression_grafts() {
     let unary = parse_program("task main -> Bool {\n  return !1\n}\n")
         .expect("parse unary operator source");

@@ -568,7 +568,8 @@ fn check_block(
                             "FOR_COLLECTION_NOT_ITERABLE",
                             format!("for loop expects `List<T>`, not `{collection_type}`"),
                         )
-                        .with_node(collection.id.clone()),
+                        .with_node(collection.id.clone())
+                        .with_repair_hint(replace_expression_source_graft_hint(collection, "[]")),
                     );
                 }
                 let mut body_locals = locals.clone();
@@ -1478,7 +1479,8 @@ fn check_builtin_call(
                 RepairHint::new("replace_builtin_argument")
                     .with_target(args[0].id.clone())
                     .with_replacement("List<T> | Map<Text, T> | Text"),
-            ),
+            )
+            .with_repair_hint(replace_expression_source_graft_hint(&args[0], "\"\"")),
         );
     }
 }
@@ -1937,11 +1939,15 @@ fn bool_condition_hint(condition: &Expr) -> RepairHint {
 }
 
 fn replace_expression_graft_hint(expr: &Expr, expected: &TypeExpr) -> RepairHint {
+    replace_expression_source_graft_hint(expr, &default_expr_source_for_type(expected))
+}
+
+fn replace_expression_source_graft_hint(expr: &Expr, source: &str) -> RepairHint {
     let graft = serde_json::json!({
         "op": "ReplaceExpression",
         "target": expr.id,
         "payload": {
-            "source": default_expr_source_for_type(expected),
+            "source": source,
         }
     });
     RepairHint::new("replace_expression")

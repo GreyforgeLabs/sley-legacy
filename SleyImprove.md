@@ -184,6 +184,8 @@ Priority diagnostic families:
   replacement type is clear
 - if branch type mismatch: implemented with alternative structural
   `ReplaceExpression` hints for the then and else branch expressions
+- non-iterable `each` collections and invalid `len` arguments: implemented with
+  conservative structural `ReplaceExpression` starter hints
 - unary and binary operator mismatches: implemented with structural
   `ReplaceExpression` hints where a specific operand replacement type is clear
 - call arity mismatch: implemented with `match_task_arity`, `UpdateCallArgs`,
