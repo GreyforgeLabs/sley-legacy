@@ -1,0 +1,8 @@
+{
+  "op": "InsertStatement",
+  "target": "task:main.main",
+  "payload": {
+    "source": "bind extra = 1",
+    "position": 99
+  }
+}

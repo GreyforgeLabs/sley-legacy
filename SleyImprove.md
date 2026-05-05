@@ -97,22 +97,27 @@ sley graph --json --slice <node-id> <target>
 sley trace --json <target>
 sley zjx --json [--slice <node-id>] <target>
 sley graft --json <target> <graft.json>
+sley graft --json --dry-run <target> <graft.json>
 sley format <target>
 ```
 
 Next target commands:
 
 ```bash
-sley graft --json --dry-run <target> <graft.zjx>
 sley seal --json <target>
 ```
 
 Rules:
 
 - JSON output must be stable and versioned.
+- Diagnostic reports, symbol graphs, graph slices, ZJX envelopes, and graft
+  outcomes now carry v0 schema IDs. AST JSON still needs fixture snapshots and
+  a formal external schema lock.
 - Diagnostics must include stable IDs, node IDs, spans where possible, and
   repair hints.
-- Grafts should support dry-run by default.
+- Grafts support dry-run by default and an explicit `--dry-run` flag.
+- Graft input JSON is strict: unknown operation or payload fields reject instead
+  of being silently ignored.
 - Accepted write-mode grafts should emit trace receipts.
 - Source text should remain the human review projection, not the primary agent
   edit surface.
@@ -356,11 +361,12 @@ Failure modes to watch:
 
 Near-term:
 
-1. Freeze v0 JSON schemas for diagnostics, AST nodes, and graft outcomes.
-2. Add `--dry-run` as an explicit graft mode.
-3. Add more repair hints to common checker errors.
-4. Stabilize graph-slice JSON as the canonical agent query surface.
-5. Add an agent onboarding section to docs and `llms.txt`.
+1. Add more repair hints to common checker errors.
+2. Lock AST and graph-slice JSON fixtures, then publish formal external schema
+   files for the v0 agent contract.
+3. Add an agent onboarding section to docs and `llms.txt`.
+4. Add formatter round-trip tests for every example.
+5. Start content-addressed trace seal design.
 
 Medium-term:
 

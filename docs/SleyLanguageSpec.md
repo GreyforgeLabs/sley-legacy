@@ -185,6 +185,29 @@ Accepted grafts written with `sley graft --write` append receipt records to a
 local `.sley/trace.jsonl` sidecar unless the caller passes an explicit trace
 path. The trace sidecar is a local provenance store, not a final seal.
 
+`sley graft --dry-run` is an explicit non-mutating preview mode. Plain
+`sley graft` remains non-mutating by default; only `--write` changes source or
+appends trace receipts. `--dry-run` and `--write` are mutually exclusive.
+
+Graft input JSON is strict for the v0 contract. Unknown fields in transaction,
+operation, or payload objects reject during deserialization instead of being
+ignored. This prevents agents from believing unsupported intent metadata was
+honored.
+
+Current v0 graft outcome JSON has this root shape:
+
+```json
+{
+  "schema": "sley.graft.outcome.v0",
+  "status": "accepted",
+  "source": "task main -> Int {\n  return 1\n}\n",
+  "provenance": []
+}
+```
+
+Rejected graft outcomes use the same schema and `status: "rejected"`, omit
+`source`, clear `provenance`, and include diagnostics.
+
 ## Graph And Trace Tooling
 
 The Loom exposes the program graph as inspectable JSON:
@@ -195,13 +218,18 @@ sley graph --json --slice task:app.main.main <target>
 sley trace --json <target>
 ```
 
+Diagnostic reports carry `schema: "sley.diagnostics.report.v0"`. Full symbol
+graphs carry `schema: "sley.symbol_graph.v0"`, graph slices carry
+`schema: "sley.symbol_graph.slice.v0"`, and ZJX preview envelopes carry
+`schema: "sley.zjx.envelope.v0"`.
+
 A graph slice is a bounded shard around a module, task, type, effect, or import.
 Task slices include the selected task AST, visible module declarations,
 outbound calls, and inbound calls from other tasks that resolve to the selected
 task. This is the first stable agent-facing query surface for graft planning.
 Call-site and expression grafts now consume node ids and task identities from
-this shard. The next slice milestone is freezing the JSON shape as a stable
-agent contract.
+this shard. The next slice milestone is fixture-snapshot locking and external
+JSON Schema files for the agent contract.
 
 ## ZJX Boundary
 
@@ -229,6 +257,8 @@ archive.
 
 - host capabilities are checked statically but not backed by runtime gate values
 - trace sidecars are not yet content-addressed seals
+- AST JSON shape is not yet locked with fixture snapshots or external JSON
+  Schema files
 - no `match`, agent declarations, spawn/cast/join, or compressed ZJX archive
   writer yet
 - `MoveNode` and `DeleteNode` are still declared graft operations rather than

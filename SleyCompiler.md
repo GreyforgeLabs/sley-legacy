@@ -202,19 +202,19 @@ because Sley's primary editor may be an agent.
 Near-term:
 
 1. Keep expanding parser/checker/runtime coverage in Rust.
-2. Freeze JSON diagnostic and AST shapes for v0.
-3. Add more repair hints.
-4. Add explicit graft dry-run mode.
-5. Add more rejected graft fixtures.
-6. Add formatter round-trip tests for every example.
+2. Add more repair hints.
+3. Lock AST and graph-slice JSON fixtures, then publish formal external schema
+   files for the v0 agent contract.
+4. Add formatter round-trip tests for every example.
+5. Add an agent onboarding section to docs and `llms.txt`.
+6. Start content-addressed trace seal design.
 
 Medium-term:
 
 1. Extend graph-slice grafts beyond call-site, statement, and expression edits.
-2. Freeze graph-slice and graft JSON as the agent query/edit contract.
-3. Turn trace sidecars into content-addressed seals.
-4. Add runtime gate values for host capabilities.
-5. Move the preview ZJX JSON envelope to a compressed binary `.zjx` handoff.
+2. Turn trace sidecars into content-addressed seals.
+3. Add runtime gate values for host capabilities.
+4. Move the preview ZJX JSON envelope to a compressed binary `.zjx` handoff.
 
 Long-term:
 

@@ -7,6 +7,9 @@ use crate::ast::{
     TypeDecl,
 };
 
+pub const SYMBOL_GRAPH_SCHEMA: &str = "sley.symbol_graph.v0";
+pub const SYMBOL_GRAPH_SLICE_SCHEMA: &str = "sley.symbol_graph.slice.v0";
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TaskResolution {
     Resolved { index: usize, fq_name: String },
@@ -35,6 +38,7 @@ pub enum EffectResolution {
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct SymbolGraph {
+    pub schema: String,
     pub entry_module: String,
     pub modules: Vec<ModuleSymbolSummary>,
 }
@@ -64,6 +68,7 @@ pub struct DeclarationSymbolSummary {
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct SymbolGraphSlice {
+    pub schema: String,
     pub target: String,
     pub entry_module: String,
     pub focus: SliceFocus,
@@ -199,6 +204,7 @@ pub fn build_symbol_graph(program: &Program) -> SymbolGraph {
     }
 
     SymbolGraph {
+        schema: SYMBOL_GRAPH_SCHEMA.to_string(),
         entry_module: program.module_name().to_string(),
         modules: module_summaries,
     }
@@ -580,6 +586,7 @@ fn build_slice(
         .collect::<Vec<_>>();
 
     SymbolGraphSlice {
+        schema: SYMBOL_GRAPH_SLICE_SCHEMA.to_string(),
         target: target.to_string(),
         entry_module: program.module_name().to_string(),
         focus,

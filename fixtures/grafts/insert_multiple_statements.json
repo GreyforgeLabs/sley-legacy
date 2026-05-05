@@ -1,0 +1,7 @@
+{
+  "op": "InsertStatement",
+  "target": "task:main.main",
+  "payload": {
+    "source": "bind first = 1\nbind second = 2"
+  }
+}

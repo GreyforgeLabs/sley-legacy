@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+pub const DIAGNOSTIC_REPORT_SCHEMA: &str = "sley.diagnostics.report.v0";
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct SourceSpan {
     pub line: usize,
@@ -83,6 +85,7 @@ impl Diagnostic {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct DiagnosticReport {
+    pub schema: String,
     pub status: String,
     pub diagnostics: Vec<Diagnostic>,
 }
@@ -95,6 +98,7 @@ impl DiagnosticReport {
             "ok"
         };
         Self {
+            schema: DIAGNOSTIC_REPORT_SCHEMA.to_string(),
             status: status.to_string(),
             diagnostics,
         }

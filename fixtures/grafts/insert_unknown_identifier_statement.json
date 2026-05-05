@@ -1,0 +1,14 @@
+{
+  "transaction": "graft_reject_semantic_failure",
+  "mode": "all_or_nothing",
+  "ops": [
+    {
+      "op": "InsertStatement",
+      "target": "task:main.main",
+      "payload": {
+        "source": "return missing",
+        "position": 0
+      }
+    }
+  ]
+}

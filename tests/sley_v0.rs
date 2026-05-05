@@ -1,15 +1,17 @@
 use std::fs;
 use std::path::PathBuf;
+use std::process::Command as ProcessCommand;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use sley::ast::{ExprKind, ProvenanceRecord, StatementKind};
 use sley::checker::{check_program, has_errors};
+use sley::diagnostics::{DIAGNOSTIC_REPORT_SCHEMA, DiagnosticReport};
 use sley::formatter::format_program;
-use sley::graft::{GraftInput, apply_graft_input};
+use sley::graft::{GRAFT_OUTCOME_SCHEMA, GraftInput, GraftOutcome, apply_graft_input};
 use sley::parser::parse_program;
 use sley::project::load_project;
 use sley::runtime::{Value, run_main};
-use sley::symbols::slice_symbol_graph;
+use sley::symbols::{SYMBOL_GRAPH_SLICE_SCHEMA, slice_symbol_graph};
 use sley::trace::{append_trace_receipt, build_trace_receipt, read_trace_receipts};
 
 #[test]
@@ -162,6 +164,110 @@ task main -> Int {
     assert!(grafted_source.contains("return 1 + 41"));
     let grafted = parse_program(&grafted_source).expect("parse grafted source");
     assert_eq!(run_main(&grafted), Ok(Value::Int(42)));
+}
+
+#[test]
+fn graft_contract_outputs_are_versioned_and_strict() {
+    let source = r#"
+task main -> Int {
+  return 1
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let graft_source = r#"
+{
+  "op": "InsertStatement",
+  "target": "task:main.main",
+  "payload": { "source": "bind extra = 41", "position": 0 }
+}
+"#;
+    let graft: GraftInput = serde_json::from_str(graft_source).expect("parse graft");
+    let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
+
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    assert_eq!(outcome.schema, GRAFT_OUTCOME_SCHEMA);
+
+    let report = DiagnosticReport::from_diagnostics(Vec::new());
+    assert_eq!(report.schema, DIAGNOSTIC_REPORT_SCHEMA);
+
+    let slice = slice_symbol_graph(&program, "task:main.main").expect("slice main");
+    assert_eq!(slice.schema, SYMBOL_GRAPH_SLICE_SCHEMA);
+
+    let unknown_contract_field = r#"
+{
+  "op": "InsertStatement",
+  "target": "task:main.main",
+  "payload": { "source": "bind extra = 1" },
+  "surprise": true
+}
+"#;
+    assert!(serde_json::from_str::<GraftInput>(unknown_contract_field).is_err());
+}
+
+#[test]
+fn rejected_graft_fixtures_report_stable_diagnostic_ids() {
+    let call_source = r#"
+task double -> Int {
+  take value: Int
+
+  return value * 2
+}
+
+task main -> Int {
+  return call double(21)
+}
+"#;
+    assert_rejected_graft(
+        call_source,
+        include_str!("../fixtures/grafts/invalid_update_call_sites_callee.json"),
+        "GRAFT_INVALID_CALLEE",
+    );
+
+    let no_call_source = r#"
+task double -> Int {
+  take value: Int
+
+  return value * 2
+}
+
+task main -> Int {
+  return 1
+}
+"#;
+    assert_rejected_graft(
+        no_call_source,
+        include_str!("../fixtures/grafts/missing_update_call_sites.json"),
+        "GRAFT_CALLSITE_MISSING",
+    );
+
+    let main_source = r#"
+task main -> Int {
+  return 1
+}
+"#;
+    assert_rejected_graft(
+        main_source,
+        include_str!("../fixtures/grafts/insert_multiple_statements.json"),
+        "GRAFT_EXPECTED_ONE_STATEMENT",
+    );
+    assert_rejected_graft(
+        main_source,
+        include_str!("../fixtures/grafts/insert_out_of_range_statement.json"),
+        "GRAFT_POSITION_OUT_OF_RANGE",
+    );
+    assert_rejected_graft(
+        main_source,
+        include_str!("../fixtures/grafts/replace_missing_expression.json"),
+        "GRAFT_TARGET_MISSING",
+    );
+
+    let outcome = assert_rejected_graft(
+        main_source,
+        include_str!("../fixtures/grafts/insert_unknown_identifier_statement.json"),
+        "UNKNOWN_IDENTIFIER",
+    );
+    assert!(outcome.source.is_none());
+    assert!(outcome.provenance.is_empty());
 }
 
 #[test]
@@ -1053,6 +1159,54 @@ fn trace_receipts_round_trip_as_jsonl() {
 }
 
 #[test]
+fn graft_cli_dry_run_is_explicit_and_non_mutating() {
+    let root = temp_project_dir("graft-dry-run");
+    fs::create_dir_all(&root).expect("create temp dir");
+    let file = root.join("main.sley");
+    let graft = root.join("add_take.json");
+    let source = r#"task main -> Int {
+  return 1
+}
+"#;
+    fs::write(&file, source).expect("write source");
+    fs::write(
+        &graft,
+        r#"
+{
+  "op": "AddTake",
+  "target": "task:main.main",
+  "payload": { "name": "amount", "type": "Int" }
+}
+"#,
+    )
+    .expect("write graft");
+
+    let output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .arg("graft")
+        .arg("--dry-run")
+        .arg(&file)
+        .arg(&graft)
+        .output()
+        .expect("run dry-run graft");
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+    let stderr = String::from_utf8(output.stderr).expect("stderr utf8");
+    assert!(output.status.success(), "stderr: {stderr}");
+    assert!(stdout.contains("take amount: Int"));
+    assert_eq!(fs::read_to_string(&file).expect("read source"), source);
+    assert!(!root.join(".sley/trace.jsonl").exists());
+
+    let conflict = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args(["graft", "--dry-run", "--write"])
+        .arg(&file)
+        .arg(&graft)
+        .output()
+        .expect("run conflicting graft flags");
+    assert!(!conflict.status.success());
+
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
 fn project_loader_reports_missing_imports() {
     let root = temp_project_dir("missing-imports");
     fs::create_dir_all(root.join("src/app")).expect("create project dirs");
@@ -1095,4 +1249,21 @@ fn temp_project_dir(name: &str) -> PathBuf {
         .expect("clock is before unix epoch")
         .as_nanos();
     std::env::temp_dir().join(format!("sley-{name}-{}-{timestamp}", std::process::id()))
+}
+
+fn assert_rejected_graft(source: &str, graft_source: &str, diagnostic_id: &str) -> GraftOutcome {
+    let program = parse_program(source).expect("parse source");
+    let graft: GraftInput = serde_json::from_str(graft_source).expect("parse graft");
+    let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
+    assert_eq!(outcome.status, "rejected");
+    assert_eq!(outcome.schema, GRAFT_OUTCOME_SCHEMA);
+    assert!(
+        outcome
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.id == diagnostic_id),
+        "expected {diagnostic_id}, got {:#?}",
+        outcome.diagnostics
+    );
+    outcome
 }

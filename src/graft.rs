@@ -14,6 +14,8 @@ use crate::formatter::format_program;
 use crate::parser::{parse_block_source, parse_expr_source, parse_program, parse_type_expr_source};
 use crate::symbols::{callee_path, collect_task_calls, task_fq_name};
 
+pub const GRAFT_OUTCOME_SCHEMA: &str = "sley.graft.outcome.v0";
+
 #[derive(Debug, Clone, Deserialize)]
 #[serde(untagged)]
 pub enum GraftInput {
@@ -22,6 +24,7 @@ pub enum GraftInput {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct GraftTransaction {
     pub transaction: String,
     #[serde(default)]
@@ -32,7 +35,7 @@ pub struct GraftTransaction {
 }
 
 #[derive(Debug, Clone, Deserialize)]
-#[serde(tag = "op")]
+#[serde(tag = "op", deny_unknown_fields)]
 pub enum GraftOperation {
     AddTask {
         #[serde(default)]
@@ -105,6 +108,7 @@ pub enum GraftOperation {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct AddTakePayload {
     pub name: String,
     #[serde(rename = "type")]
@@ -114,6 +118,7 @@ pub struct AddTakePayload {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct BodyPayload {
     #[serde(default)]
     pub source: Option<String>,
@@ -122,26 +127,31 @@ pub struct BodyPayload {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct SourcePayload {
     pub source: String,
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct NamedPayload {
     pub name: String,
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct RenamePayload {
     pub name: String,
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ImportPayload {
     pub module: String,
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct UpdateCallSitesPayload {
     pub replacement: String,
     #[serde(default)]
@@ -151,6 +161,7 @@ pub struct UpdateCallSitesPayload {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct InsertStatementPayload {
     pub source: String,
     #[serde(default)]
@@ -158,12 +169,14 @@ pub struct InsertStatementPayload {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ExpressionPayload {
     pub source: String,
 }
 
 #[derive(Debug, Clone, Serialize)]
 pub struct GraftOutcome {
+    pub schema: String,
     pub status: String,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub diagnostics: Vec<Diagnostic>,
@@ -226,6 +239,7 @@ pub fn apply_graft_input(
 
     if diagnostics.iter().any(Diagnostic::is_error) {
         GraftOutcome {
+            schema: GRAFT_OUTCOME_SCHEMA.to_string(),
             status: "rejected".to_string(),
             diagnostics,
             source: None,
@@ -234,6 +248,7 @@ pub fn apply_graft_input(
     } else {
         candidate.provenance.extend(provenance.clone());
         GraftOutcome {
+            schema: GRAFT_OUTCOME_SCHEMA.to_string(),
             status: "accepted".to_string(),
             diagnostics,
             source: Some(format_program(&candidate)),

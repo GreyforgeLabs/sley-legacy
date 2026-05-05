@@ -16,6 +16,8 @@ Implemented now:
 - `sley trace`
 - `sley zjx`
 - `sley graft`
+- explicit non-mutating `sley graft --dry-run`; plain graft preview remains
+  non-mutating unless `--write` is supplied
 - `sley.toml` project manifests for multi-file module graphs
 - module, import, type, effect, and task declarations
 - import aliases with `import app.math as math`
@@ -49,7 +51,8 @@ Implemented now:
 - checker type and effect lookup by local module, imported exported name, full
   module path, and import alias
 - JSON module symbol graph output for module imports and exported declarations,
-  plus bounded graph slices with `sley graph --slice <node-id>`
+  plus bounded graph slices with `sley graph --slice <node-id>`; symbol graph
+  and graph-slice JSON now carry v0 schema IDs
 - JSONL trace sidecars for accepted graft receipts when `sley graft --write`
   applies a change
 - a first ZJX-ready JSON envelope command for graph snapshots, optional graph
@@ -58,6 +61,9 @@ Implemented now:
   adding imports/effects/types/tasks, renaming declarations, updating
   call-sites, inserting checked task-body statements, and replacing nested
   expressions by node id
+- strict graft input JSON for the v0 operation shapes; unknown graft fields are
+  rejected instead of silently ignored
+- versioned JSON report roots for diagnostics and graft outcomes
 
 Project form:
 
@@ -120,9 +126,13 @@ Known v0 limits:
 - `UpdateCallSites`, `InsertStatement`, and `ReplaceExpression` operate on the
   in-memory checked program. Project-aware source-file writeback for bundled
   multi-module projects is still a later step.
+- JSON outputs have v0 schema markers for diagnostic reports, symbol graphs,
+  graph slices, ZJX envelopes, and graft outcomes, but the full external JSON
+  Schema files and AST-shape lock still need to land.
 - `MoveNode` and `DeleteNode` are declared but still return explicit
   unsupported-operation diagnostics.
 
-The next logical phase is graft contract hardening: freeze the graph-slice and
-graft JSON shapes, add explicit `sley graft --dry-run`, expand rejected graft
-fixtures, and then move trace sidecars toward content-addressed seals.
+The next logical phase is diagnostic and agent-onboarding hardening: add repair
+hints for common checker errors, lock AST and graph-slice fixture snapshots,
+write the compact `llms.txt` onboarding pack, and then move trace sidecars
+toward content-addressed seals.

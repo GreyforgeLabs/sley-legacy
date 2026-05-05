@@ -1,0 +1,7 @@
+{
+  "op": "UpdateCallSites",
+  "target": "task:main.double",
+  "payload": {
+    "replacement": "1 + 2"
+  }
+}

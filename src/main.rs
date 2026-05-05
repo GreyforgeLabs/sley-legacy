@@ -81,6 +81,8 @@ enum Command {
         json: bool,
         #[arg(long)]
         write: bool,
+        #[arg(long, conflicts_with = "write")]
+        dry_run: bool,
         #[arg(long)]
         actor: Option<String>,
         #[arg(long)]
@@ -280,6 +282,7 @@ fn run(cli: Cli) -> Result<()> {
         Command::Graft {
             json,
             write,
+            dry_run,
             actor,
             trace,
             file,
@@ -302,6 +305,7 @@ fn run(cli: Cli) -> Result<()> {
             if outcome.status != "accepted" {
                 anyhow::bail!("graft rejected");
             }
+            let write = write && !dry_run;
             if write && let Some(source) = outcome.source {
                 fs::write(&file, source)
                     .with_context(|| format!("failed to write {}", file.display()))?;
