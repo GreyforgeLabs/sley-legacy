@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command as ProcessCommand;
@@ -21,6 +21,19 @@ use sley::trace::{
 #[derive(Debug, serde::Deserialize)]
 struct CorpusExpectation {
     diagnostics: Vec<String>,
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct CorpusManifest {
+    schema: String,
+    accepted: Vec<CorpusManifestCase>,
+    rejected: Vec<CorpusManifestCase>,
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct CorpusManifestCase {
+    path: String,
+    covers: Vec<String>,
 }
 
 #[test]
@@ -73,16 +86,25 @@ fn formatter_round_trips_every_example_and_project_module() {
 #[test]
 fn synthetic_gold_corpus_accepts_and_rejects_expected_cases() {
     let corpus_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("fixtures/corpus");
+    let manifest = load_corpus_manifest(&corpus_root);
     let accepted_files =
         collect_sley_files(&corpus_root.join("accepted")).expect("collect accepted corpus");
     assert!(
         !accepted_files.is_empty(),
         "accepted corpus should contain at least one fixture"
     );
+    let rejected_files =
+        collect_sley_files(&corpus_root.join("rejected")).expect("collect rejected corpus");
+    assert!(
+        !rejected_files.is_empty(),
+        "rejected corpus should contain at least one fixture"
+    );
+    assert_corpus_manifest_matches_files(&corpus_root, &manifest, &accepted_files, &rejected_files);
+    assert_corpus_manifest_has_release_coverage(&manifest);
 
-    for file in accepted_files {
+    for file in &accepted_files {
         let source =
-            fs::read_to_string(&file).unwrap_or_else(|error| panic!("read {file:?}: {error}"));
+            fs::read_to_string(file).unwrap_or_else(|error| panic!("read {file:?}: {error}"));
         let program = parse_program(&source).unwrap_or_else(|diagnostics| {
             panic!("parse accepted corpus fixture {file:?}: {diagnostics:#?}");
         });
@@ -103,14 +125,7 @@ fn synthetic_gold_corpus_accepts_and_rejects_expected_cases() {
         );
     }
 
-    let rejected_files =
-        collect_sley_files(&corpus_root.join("rejected")).expect("collect rejected corpus");
-    assert!(
-        !rejected_files.is_empty(),
-        "rejected corpus should contain at least one fixture"
-    );
-
-    for file in rejected_files {
+    for file in &rejected_files {
         let expectation_path = file.with_extension("json");
         let expectation_source = fs::read_to_string(&expectation_path).unwrap_or_else(|error| {
             panic!("read rejected corpus expectation {expectation_path:?}: {error}")
@@ -120,7 +135,7 @@ fn synthetic_gold_corpus_accepts_and_rejects_expected_cases() {
                 panic!("parse rejected corpus expectation {expectation_path:?}: {error}")
             });
         let source =
-            fs::read_to_string(&file).unwrap_or_else(|error| panic!("read {file:?}: {error}"));
+            fs::read_to_string(file).unwrap_or_else(|error| panic!("read {file:?}: {error}"));
         let diagnostics = match parse_program(&source) {
             Ok(program) => check_program(&program),
             Err(diagnostics) => diagnostics,
@@ -3483,6 +3498,110 @@ fn collect_sley_files_into(root: &Path, files: &mut Vec<PathBuf>) -> std::io::Re
         }
     }
     Ok(())
+}
+
+fn load_corpus_manifest(corpus_root: &Path) -> CorpusManifest {
+    let path = corpus_root.join("manifest.json");
+    let source = fs::read_to_string(&path).unwrap_or_else(|error| panic!("read {path:?}: {error}"));
+    serde_json::from_str(&source).unwrap_or_else(|error| panic!("parse {path:?}: {error}"))
+}
+
+fn assert_corpus_manifest_matches_files(
+    corpus_root: &Path,
+    manifest: &CorpusManifest,
+    accepted_files: &[PathBuf],
+    rejected_files: &[PathBuf],
+) {
+    assert_eq!(manifest.schema, "sley.conformance.manifest.v0");
+    assert_eq!(
+        manifest_paths("accepted", &manifest.accepted),
+        relative_corpus_paths(corpus_root, accepted_files),
+        "accepted corpus manifest must list exactly the accepted fixtures on disk"
+    );
+    assert_eq!(
+        manifest_paths("rejected", &manifest.rejected),
+        relative_corpus_paths(corpus_root, rejected_files),
+        "rejected corpus manifest must list exactly the rejected fixtures on disk"
+    );
+
+    for case in manifest.accepted.iter().chain(manifest.rejected.iter()) {
+        assert!(
+            !case.covers.is_empty(),
+            "corpus case {} must declare at least one coverage tag",
+            case.path
+        );
+    }
+}
+
+fn assert_corpus_manifest_has_release_coverage(manifest: &CorpusManifest) {
+    let coverage = manifest
+        .accepted
+        .iter()
+        .chain(manifest.rejected.iter())
+        .flat_map(|case| case.covers.iter().map(String::as_str))
+        .collect::<BTreeSet<_>>();
+    let required = [
+        "accepted:DatabaseRead",
+        "accepted:DatabaseWrite",
+        "accepted:Deploy",
+        "accepted:FileRead",
+        "accepted:FileWrite",
+        "accepted:ModelCall",
+        "accepted:Network",
+        "accepted:SecretRead",
+        "accepted:Shell",
+        "accepted:Spend",
+        "rejected:DatabaseRead",
+        "rejected:DatabaseWrite",
+        "rejected:Deploy",
+        "rejected:FileRead",
+        "rejected:FileWrite",
+        "rejected:ModelCall",
+        "rejected:Network",
+        "rejected:SecretRead",
+        "rejected:Shell",
+        "rejected:Spend",
+        "diagnostic:EFFECT_UNAUTHORIZED",
+        "diagnostic:TYPE_MISMATCH",
+        "diagnostic:UNKNOWN_IDENTIFIER",
+        "formatter:round-trip",
+    ];
+    for tag in required {
+        assert!(
+            coverage.contains(tag),
+            "corpus manifest is missing required release coverage tag {tag}"
+        );
+    }
+}
+
+fn manifest_paths(section: &str, cases: &[CorpusManifestCase]) -> BTreeSet<String> {
+    let mut paths = BTreeSet::new();
+    let prefix = format!("{section}/");
+    for case in cases {
+        assert!(
+            case.path.starts_with(&prefix),
+            "corpus manifest path {} must live under {section}/",
+            case.path
+        );
+        assert!(
+            paths.insert(case.path.clone()),
+            "duplicate corpus manifest path {}",
+            case.path
+        );
+    }
+    paths
+}
+
+fn relative_corpus_paths(corpus_root: &Path, files: &[PathBuf]) -> BTreeSet<String> {
+    files
+        .iter()
+        .map(|file| {
+            file.strip_prefix(corpus_root)
+                .unwrap_or_else(|error| panic!("strip corpus root for {file:?}: {error}"))
+                .to_string_lossy()
+                .replace('\\', "/")
+        })
+        .collect()
 }
 
 fn temp_project_dir(name: &str) -> PathBuf {

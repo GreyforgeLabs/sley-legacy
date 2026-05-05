@@ -523,9 +523,12 @@ types, effects, tasks, takes, statements, expressions, type expressions, spans,
 and provenance records. The other schema files currently pin their top-level
 contract shape and stable schema IDs.
 
-The compiler conformance corpus starts under `fixtures/corpus/`. Accepted
-fixtures must parse, check, and formatter-round-trip. Rejected fixtures carry a
-JSON sidecar listing the diagnostic ids that must remain stable.
+The compiler conformance corpus lives under `fixtures/corpus/`. Its
+`manifest.json` lists every accepted and rejected fixture plus coverage tags.
+Accepted fixtures must parse, check, and formatter-round-trip. Rejected
+fixtures carry a JSON sidecar listing the diagnostic ids that must remain
+stable. The current corpus locks declared and missing authority coverage for
+the deterministic seeded host adapters.
 
 A graph slice is a bounded shard around a module, task, type, effect, or import.
 Task slices include the selected task AST, visible module declarations,

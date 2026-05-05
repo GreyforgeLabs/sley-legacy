@@ -1,0 +1,5 @@
+module corpus.rejected.authority
+
+task main -> Result<Text, Error> {
+  return call model.try_complete("name")
+}

@@ -1,0 +1,5 @@
+module corpus.rejected.authority
+
+task main -> Result<Text, Error> {
+  return call spend.try_authorize("ads-budget")
+}

@@ -108,7 +108,9 @@ Implemented now:
   condition mismatches, effect authority, and private or ambiguous names
 - locked JSON contract snapshots under `fixtures/contracts/`
 - external v0 JSON Schema files under `docs/schemas/`
-- accepted/rejected synthetic corpus fixtures under `fixtures/corpus/`
+- manifest-backed accepted/rejected synthetic conformance corpus fixtures under
+  `fixtures/corpus/`, including declared and missing authority cases for the
+  seeded host adapter surface
 - compact agent onboarding pack in `llms.txt`
 
 Project form:
@@ -374,7 +376,8 @@ Known v0 limits:
   Cross-parent movement, take movement, and expression movement still reject
   explicitly.
 
-The next logical phase is release-readiness work for the executable slice:
-grow the accepted/rejected gold corpus around authority and host behavior,
-turn CLI smokes into stable conformance gates, and start lint/query tooling on
-top of the checked graph surface before broadening the language again.
+The current release-readiness phase is underway for the executable slice. The
+gold corpus now has a manifest and host-authority coverage for the seeded
+adapter surface. The next logical phase is to turn CLI smokes into stable
+conformance gates and start lint/query tooling on top of the checked graph
+surface before broadening the language again.

@@ -1,0 +1,6 @@
+module corpus.accepted.authority
+
+task main -> Result<Text, Error> uses Network {
+  bind body = call http.try_get_text("https://example.test/profile")?
+  return Ok(body)
+}

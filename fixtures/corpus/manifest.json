@@ -1,0 +1,223 @@
+{
+  "schema": "sley.conformance.manifest.v0",
+  "accepted": [
+    {
+      "path": "accepted/authority/database_read.sley",
+      "covers": [
+        "accepted:DatabaseRead",
+        "host:db.query_one",
+        "authority:declared-effect",
+        "formatter:round-trip"
+      ]
+    },
+    {
+      "path": "accepted/authority/database_write.sley",
+      "covers": [
+        "accepted:DatabaseWrite",
+        "host:db.try_insert",
+        "authority:declared-effect",
+        "formatter:round-trip"
+      ]
+    },
+    {
+      "path": "accepted/authority/deploy_stage.sley",
+      "covers": [
+        "accepted:Deploy",
+        "host:deploy.try_stage",
+        "authority:declared-effect",
+        "formatter:round-trip"
+      ]
+    },
+    {
+      "path": "accepted/authority/file_read.sley",
+      "covers": [
+        "accepted:FileRead",
+        "host:fs.try_read_text",
+        "authority:declared-effect",
+        "formatter:round-trip"
+      ]
+    },
+    {
+      "path": "accepted/authority/file_write.sley",
+      "covers": [
+        "accepted:FileWrite",
+        "host:fs.try_write_text",
+        "authority:declared-effect",
+        "formatter:round-trip"
+      ]
+    },
+    {
+      "path": "accepted/authority/model_complete.sley",
+      "covers": [
+        "accepted:ModelCall",
+        "host:model.try_complete",
+        "authority:declared-effect",
+        "formatter:round-trip"
+      ]
+    },
+    {
+      "path": "accepted/authority/network_get_text.sley",
+      "covers": [
+        "accepted:Network",
+        "host:http.try_get_text",
+        "authority:declared-effect",
+        "formatter:round-trip"
+      ]
+    },
+    {
+      "path": "accepted/authority/secret_read.sley",
+      "covers": [
+        "accepted:SecretRead",
+        "host:secrets.try_get",
+        "authority:declared-effect",
+        "formatter:round-trip"
+      ]
+    },
+    {
+      "path": "accepted/authority/shell_run.sley",
+      "covers": [
+        "accepted:Shell",
+        "host:shell.try_run",
+        "authority:declared-effect",
+        "formatter:round-trip"
+      ]
+    },
+    {
+      "path": "accepted/authority/spend_authorize.sley",
+      "covers": [
+        "accepted:Spend",
+        "host:spend.try_authorize",
+        "authority:declared-effect",
+        "formatter:round-trip"
+      ]
+    },
+    {
+      "path": "accepted/mutable_sum.sley",
+      "covers": [
+        "language:mutable-loop",
+        "formatter:round-trip"
+      ]
+    },
+    {
+      "path": "accepted/pure_main.sley",
+      "covers": [
+        "language:pure-task-call",
+        "formatter:round-trip"
+      ]
+    }
+  ],
+  "rejected": [
+    {
+      "path": "rejected/authority/missing_database_read_effect.sley",
+      "covers": [
+        "rejected:DatabaseRead",
+        "host:db.query_one",
+        "authority:missing-effect",
+        "diagnostic:EFFECT_UNAUTHORIZED"
+      ]
+    },
+    {
+      "path": "rejected/authority/missing_database_write_effect.sley",
+      "covers": [
+        "rejected:DatabaseWrite",
+        "host:db.try_insert",
+        "authority:missing-effect",
+        "diagnostic:EFFECT_UNAUTHORIZED"
+      ]
+    },
+    {
+      "path": "rejected/authority/missing_deploy_effect.sley",
+      "covers": [
+        "rejected:Deploy",
+        "host:deploy.try_stage",
+        "authority:missing-effect",
+        "diagnostic:EFFECT_UNAUTHORIZED"
+      ]
+    },
+    {
+      "path": "rejected/authority/missing_file_read_effect.sley",
+      "covers": [
+        "rejected:FileRead",
+        "host:fs.try_read_text",
+        "authority:missing-effect",
+        "diagnostic:EFFECT_UNAUTHORIZED"
+      ]
+    },
+    {
+      "path": "rejected/authority/missing_file_write_effect.sley",
+      "covers": [
+        "rejected:FileWrite",
+        "host:fs.try_write_text",
+        "authority:missing-effect",
+        "diagnostic:EFFECT_UNAUTHORIZED"
+      ]
+    },
+    {
+      "path": "rejected/authority/missing_model_effect.sley",
+      "covers": [
+        "rejected:ModelCall",
+        "host:model.try_complete",
+        "authority:missing-effect",
+        "diagnostic:EFFECT_UNAUTHORIZED"
+      ]
+    },
+    {
+      "path": "rejected/authority/missing_network_effect.sley",
+      "covers": [
+        "rejected:Network",
+        "host:http.try_get_text",
+        "authority:missing-effect",
+        "diagnostic:EFFECT_UNAUTHORIZED"
+      ]
+    },
+    {
+      "path": "rejected/authority/missing_secret_effect.sley",
+      "covers": [
+        "rejected:SecretRead",
+        "host:secrets.try_get",
+        "authority:missing-effect",
+        "diagnostic:EFFECT_UNAUTHORIZED"
+      ]
+    },
+    {
+      "path": "rejected/authority/missing_shell_effect.sley",
+      "covers": [
+        "rejected:Shell",
+        "host:shell.try_run",
+        "authority:missing-effect",
+        "diagnostic:EFFECT_UNAUTHORIZED"
+      ]
+    },
+    {
+      "path": "rejected/authority/missing_spend_effect.sley",
+      "covers": [
+        "rejected:Spend",
+        "host:spend.try_authorize",
+        "authority:missing-effect",
+        "diagnostic:EFFECT_UNAUTHORIZED"
+      ]
+    },
+    {
+      "path": "rejected/type_mismatch.sley",
+      "covers": [
+        "language:type-mismatch",
+        "diagnostic:TYPE_MISMATCH"
+      ]
+    },
+    {
+      "path": "rejected/unauthorized_effect.sley",
+      "covers": [
+        "language:task-effect-propagation",
+        "authority:missing-effect",
+        "diagnostic:EFFECT_UNAUTHORIZED"
+      ]
+    },
+    {
+      "path": "rejected/unknown_identifier.sley",
+      "covers": [
+        "language:unknown-identifier",
+        "diagnostic:UNKNOWN_IDENTIFIER"
+      ]
+    }
+  ]
+}

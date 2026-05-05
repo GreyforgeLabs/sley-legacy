@@ -1,0 +1,6 @@
+module corpus.rejected.authority
+
+task main -> Text {
+  bind row = call db.query_one("select * from users where id = ?", "u1")
+  return row.text("name")
+}

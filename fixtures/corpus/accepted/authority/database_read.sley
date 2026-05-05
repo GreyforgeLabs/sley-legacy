@@ -1,0 +1,6 @@
+module corpus.accepted.authority
+
+task main -> Text uses DatabaseRead {
+  bind row = call db.query_one("select * from users where id = ?", "u1")
+  return row.text("name")
+}

@@ -1,0 +1,6 @@
+module corpus.accepted.authority
+
+task main -> Result<Text, Error> uses FileRead {
+  bind text = fs.try_read_text("examples/hello.sley")?
+  return Ok(text)
+}

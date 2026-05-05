@@ -1,0 +1,5 @@
+module corpus.rejected.authority
+
+task main -> Result<Text, Error> {
+  return call http.try_get_text("https://example.test/profile")
+}

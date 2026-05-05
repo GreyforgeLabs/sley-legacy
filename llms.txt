@@ -70,9 +70,9 @@ Current development phase:
   completions, seeded secret values, seeded deployment stage results, and
   seeded spend authorization results through explicit fallible calls returning
   `Result<T, Error>`
-- next host-adapter work should harden the deterministic seeded surfaces into
-  stable release/conformance gates while preserving typed recoverable failure
-  records and keeping authority failures as diagnostics
+- next release-readiness work should turn CLI smokes into stable conformance
+  gates while preserving typed recoverable failure records and keeping
+  authority failures as diagnostics
 - project graft writeback hardening beyond existing modules
-- accepted/rejected synthetic gold corpus growth
+- manifest-backed accepted/rejected synthetic gold corpus growth
 - broader graph-slice graft operations around move/delete planning

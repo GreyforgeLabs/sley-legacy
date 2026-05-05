@@ -1,0 +1,6 @@
+module corpus.accepted.authority
+
+task main -> Result<Int, Error> uses FileWrite {
+  fs.try_write_text("build/out.txt", "ok")?
+  return Ok(1)
+}

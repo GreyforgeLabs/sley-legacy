@@ -300,9 +300,12 @@ Keep source formatting controlled by `sley format`.
 
 ## Improvement 7: Synthetic Gold Corpus
 
-The first synthetic corpus lives under `fixtures/corpus/`. It should keep
+The synthetic corpus lives under `fixtures/corpus/`. It has a
+`manifest.json` that lists each fixture and its coverage tags. It should keep
 growing deliberately, with accepted fixtures that must parse/check/round-trip
-and rejected fixtures that lock expected diagnostic IDs.
+and rejected fixtures that lock expected diagnostic IDs. The current corpus
+already covers declared and missing authority for all deterministic seeded host
+adapters.
 
 Corpus categories:
 
@@ -318,6 +321,7 @@ Corpus categories:
 - refactor migrations
 - module namespace examples
 - formatter round trips
+- seeded host authority acceptance and rejection
 
 Each corpus item should include:
 
@@ -328,6 +332,9 @@ Each corpus item should include:
 - rejected grafts
 - final formatted output
 - human explanation
+
+The manifest is part of the release gate: new corpus files should not be added
+silently outside it, and required release coverage tags should remain explicit.
 
 This corpus becomes the real bridge from "Codex does not know Sley" to "agents
 can operate Sley reliably."

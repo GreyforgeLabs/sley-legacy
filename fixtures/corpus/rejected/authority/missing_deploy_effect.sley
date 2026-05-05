@@ -1,0 +1,5 @@
+module corpus.rejected.authority
+
+task main -> Result<Text, Error> {
+  return call deploy.try_stage("staging")
+}

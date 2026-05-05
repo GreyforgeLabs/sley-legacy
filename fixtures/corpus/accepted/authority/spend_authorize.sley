@@ -1,0 +1,6 @@
+module corpus.accepted.authority
+
+task main -> Result<Text, Error> uses Spend {
+  bind result = call spend.try_authorize("ads-budget")?
+  return Ok(result)
+}

@@ -1,0 +1,5 @@
+module corpus.rejected.authority
+
+task main -> Result<DbRow, Error> {
+  return call db.try_insert("users", { id: "u3", name: "Lin" })
+}

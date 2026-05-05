@@ -210,8 +210,9 @@ Near-term:
    `spend.try_authorize`, network has deterministic seeded
    `http.try_get_text`, shell has deterministic seeded `shell.try_run`, and
    model calls have deterministic seeded `model.try_complete`.
-3. Grow the accepted/rejected synthetic gold corpus beyond the initial seed,
-   including runtime authority cases.
+3. Keep expanding the manifest-backed accepted/rejected gold corpus. It now
+   includes runtime authority coverage for the seeded host adapter surface; the
+   next release-hardening step is CLI smoke conformance.
 4. Extend graph-slice graft planning around checked move/delete operations.
 5. Harden project graft writeback beyond existing-module edits.
 

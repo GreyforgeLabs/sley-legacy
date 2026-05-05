@@ -1,0 +1,5 @@
+module corpus.rejected.authority
+
+task main -> Result<Unit, Error> {
+  return fs.try_write_text("build/out.txt", "ok")
+}
