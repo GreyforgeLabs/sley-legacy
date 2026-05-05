@@ -1,0 +1,14 @@
+module app.profile
+
+type User = {
+  id: Text
+  name: Text
+  email: Text
+}
+
+effect DatabaseRead
+
+fn get_user(id: Text) -> Result<User, Error> uses DatabaseRead {
+  let row = db.query_one("select * from users where id = ?", id)?
+  return Ok(User { id: row.text("id"), name: row.text("name"), email: row.text("email") })
+}

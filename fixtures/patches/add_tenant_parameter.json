@@ -1,0 +1,20 @@
+{
+  "transaction": "txn_add_tenant_parameter",
+  "actor": "agent:codex",
+  "mode": "all_or_nothing",
+  "ops": [
+    {
+      "op": "AddParameter",
+      "target": "function:app.profile.get_user",
+      "precondition": {
+        "function_exists": true,
+        "parameter_absent": "tenant_id"
+      },
+      "payload": {
+        "name": "tenant_id",
+        "type": "Text",
+        "position": 0
+      }
+    }
+  ]
+}

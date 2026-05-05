@@ -1,0 +1,13 @@
+{
+  "op": "AddParameter",
+  "target": "function:app.profile.get_user",
+  "precondition": {
+    "function_exists": true,
+    "parameter_absent": "id"
+  },
+  "payload": {
+    "name": "tenant_id",
+    "type": "Text",
+    "position": 0
+  }
+}

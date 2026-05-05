@@ -1,0 +1,5 @@
+module app.hello
+
+fn main() -> Text {
+  return "hello weave"
+}
