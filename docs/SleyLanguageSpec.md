@@ -1,6 +1,6 @@
 # Sley Language Specification
 
-Status: v0 executable slice plus module task namespace and trace tooling
+Status: v0 executable slice plus module task/type/effect namespace and trace tooling
 
 Sley is a human-readable, agent-writable structural language. The canonical
 program model is a typed graph. `.sley` source is the stable review projection,
@@ -124,9 +124,36 @@ Task lookup rules:
 - private imported calls produce `PRIVATE_TASK`
 - ambiguous simple imported calls produce `AMBIGUOUS_TASK`
 
-`export type` and `export effect` are parsed, formatted, and represented in the
-graph. Their cross-module semantic identity is intentionally behind task
-identity and remains a near-term compiler milestone.
+Type lookup rules:
+
+- builtin types such as `Int`, `Text`, `List`, `Map`, `Result`, and `Error`
+  are always visible by simple name
+- same-module declared types are visible by simple name
+- imported types must be `export type`
+- simple imported type references are valid only when one imported module
+  exports that type name
+- alias-qualified types use the import alias or default last module segment,
+  such as `math.User`
+- fully qualified types use the module path, such as `app.math.User`
+- private imported types produce `PRIVATE_TYPE`
+- ambiguous simple imported types produce `AMBIGUOUS_TYPE`
+
+Custom effect lookup follows the same boundary:
+
+- builtin effects such as `FileRead`, `Network`, and `Deploy` are always
+  visible by simple name
+- same-module declared effects are visible by simple name
+- imported effects must be `export effect`
+- simple imported custom-effect references must be unambiguous
+- alias-qualified and fully qualified effects are allowed
+- private imported effects produce `PRIVATE_EFFECT`
+- ambiguous simple imported effects produce `AMBIGUOUS_EFFECT`
+
+The checker normalizes resolved type/effect names to fully qualified semantic
+identity before comparing task signatures, local annotations, record literals,
+record fields, and called-task effects. This means `math.User` and
+`app.math.User` resolve to the same type when they name the same exported
+declaration.
 
 ## Graft Model
 
@@ -156,6 +183,8 @@ A graph slice is a bounded shard around a module, task, type, effect, or import.
 Task slices include the selected task AST, visible module declarations,
 outbound calls, and inbound calls from other tasks that resolve to the selected
 task. This is the first stable agent-facing query surface for graft planning.
+The next slice milestone is making call-site and expression grafts consume this
+bounded shard directly.
 
 ## ZJX Boundary
 
@@ -181,9 +210,9 @@ archive.
 
 ## Current Gaps
 
-- type and custom-effect namespace resolution is not yet as strict as task
-  namespace resolution
 - host capabilities are checked statically but not backed by runtime gate values
 - trace sidecars are not yet content-addressed seals
 - no `match`, agent declarations, spawn/cast/join, or compressed ZJX archive
   writer yet
+- `UpdateCallSites`, `InsertStatement`, and `ReplaceExpression` are still
+  declared graft operations rather than implemented graph-slice mutations

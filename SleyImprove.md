@@ -154,6 +154,10 @@ Priority diagnostic families:
 - unauthorized host authority
 - private imported task
 - ambiguous imported task
+- private imported type
+- ambiguous imported type
+- private imported effect
+- ambiguous imported effect
 - stale graft preconditions
 - unsupported graft operation
 - module namespace conflicts
@@ -357,9 +361,9 @@ Medium-term:
 
 1. Implement `UpdateCallSites`, `InsertStatement`, and `ReplaceExpression`.
 2. Turn local trace sidecars into content-addressed seals.
-3. Extend module namespace semantics from tasks to type/effect identity.
-4. Add capability-backed gate values.
-5. Build the synthetic gold corpus.
+3. Add capability-backed gate values.
+4. Build the synthetic gold corpus.
+5. Move the preview ZJX JSON envelope to a compressed binary `.zjx` handoff.
 
 Long-term:
 

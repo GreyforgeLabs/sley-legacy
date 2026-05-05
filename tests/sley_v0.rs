@@ -652,6 +652,264 @@ export task double -> Int {
 }
 
 #[test]
+fn project_checker_resolves_imported_types_and_record_literals() {
+    let root = temp_project_dir("imported-record-types");
+    fs::create_dir_all(root.join("src/app")).expect("create project dirs");
+    fs::write(
+        root.join("sley.toml"),
+        r#"
+[project]
+entry = "app.main"
+"#,
+    )
+    .expect("write manifest");
+    fs::write(
+        root.join("src/app/main.sley"),
+        r#"
+module app.main
+
+import app.types as t
+
+task main -> Text {
+  bind user: t.User = t.User { name: "Ada" }
+  return user.name
+}
+"#,
+    )
+    .expect("write main module");
+    fs::write(
+        root.join("src/app/types.sley"),
+        r#"
+module app.types
+
+export type User = {
+  slot name: Text
+}
+"#,
+    )
+    .expect("write types module");
+
+    let project = load_project(&root).expect("load project");
+    let diagnostics = check_program(&project.program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+    assert_eq!(
+        run_main(&project.program),
+        Ok(Value::Text("Ada".to_string()))
+    );
+
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn project_checker_enforces_exported_imported_types() {
+    let root = temp_project_dir("private-imported-type");
+    fs::create_dir_all(root.join("src/app")).expect("create project dirs");
+    fs::write(
+        root.join("sley.toml"),
+        r#"
+[project]
+entry = "app.main"
+"#,
+    )
+    .expect("write manifest");
+    fs::write(
+        root.join("src/app/main.sley"),
+        r#"
+module app.main
+
+import app.types as t
+
+task main -> t.Secret {
+  return t.Secret { value: "x" }
+}
+"#,
+    )
+    .expect("write main module");
+    fs::write(
+        root.join("src/app/types.sley"),
+        r#"
+module app.types
+
+type Secret = {
+  slot value: Text
+}
+"#,
+    )
+    .expect("write types module");
+
+    let project = load_project(&root).expect("load project");
+    let diagnostics = check_program(&project.program);
+    assert!(
+        diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.id == "PRIVATE_TYPE"),
+        "expected private type diagnostic, got {diagnostics:#?}"
+    );
+
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn project_checker_reports_ambiguous_imported_types() {
+    let root = temp_project_dir("ambiguous-imported-type");
+    fs::create_dir_all(root.join("src/app")).expect("create project dirs");
+    fs::write(
+        root.join("sley.toml"),
+        r#"
+[project]
+entry = "app.main"
+"#,
+    )
+    .expect("write manifest");
+    fs::write(
+        root.join("src/app/main.sley"),
+        r#"
+module app.main
+
+import app.one
+import app.two
+
+task main -> Token {
+  return Token { value: "x" }
+}
+"#,
+    )
+    .expect("write main module");
+    fs::write(
+        root.join("src/app/one.sley"),
+        r#"
+module app.one
+
+export type Token = {
+  slot value: Text
+}
+"#,
+    )
+    .expect("write first module");
+    fs::write(
+        root.join("src/app/two.sley"),
+        r#"
+module app.two
+
+export type Token = {
+  slot value: Text
+}
+"#,
+    )
+    .expect("write second module");
+
+    let project = load_project(&root).expect("load project");
+    let diagnostics = check_program(&project.program);
+    assert!(
+        diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.id == "AMBIGUOUS_TYPE"),
+        "expected ambiguous type diagnostic, got {diagnostics:#?}"
+    );
+
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn project_checker_resolves_imported_effects_for_calls() {
+    let root = temp_project_dir("imported-effects");
+    fs::create_dir_all(root.join("src/app")).expect("create project dirs");
+    fs::write(
+        root.join("sley.toml"),
+        r#"
+[project]
+entry = "app.main"
+"#,
+    )
+    .expect("write manifest");
+    fs::write(
+        root.join("src/app/main.sley"),
+        r#"
+module app.main
+
+import app.io as io
+
+task main -> Text uses io.Read {
+  return call io.read()
+}
+"#,
+    )
+    .expect("write main module");
+    fs::write(
+        root.join("src/app/io.sley"),
+        r#"
+module app.io
+
+export effect Read
+
+export task read -> Text uses Read {
+  return "ok"
+}
+"#,
+    )
+    .expect("write io module");
+
+    let project = load_project(&root).expect("load project");
+    let diagnostics = check_program(&project.program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn project_checker_enforces_exported_imported_effects() {
+    let root = temp_project_dir("private-imported-effect");
+    fs::create_dir_all(root.join("src/app")).expect("create project dirs");
+    fs::write(
+        root.join("sley.toml"),
+        r#"
+[project]
+entry = "app.main"
+"#,
+    )
+    .expect("write manifest");
+    fs::write(
+        root.join("src/app/main.sley"),
+        r#"
+module app.main
+
+import app.io as io
+
+task main -> Text uses io.Read {
+  return "ok"
+}
+"#,
+    )
+    .expect("write main module");
+    fs::write(
+        root.join("src/app/io.sley"),
+        r#"
+module app.io
+
+effect Read
+"#,
+    )
+    .expect("write io module");
+
+    let project = load_project(&root).expect("load project");
+    let diagnostics = check_program(&project.program);
+    assert!(
+        diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.id == "PRIVATE_EFFECT"),
+        "expected private effect diagnostic, got {diagnostics:#?}"
+    );
+
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
 fn graph_slice_reports_resolved_project_task_calls() {
     let project_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("examples/project");
     let project = load_project(&project_root).expect("load project");

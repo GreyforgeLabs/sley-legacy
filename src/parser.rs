@@ -519,7 +519,7 @@ impl Parser {
         if self.current().is_ident("uses") {
             self.bump();
             loop {
-                effects.push(self.expect_ident("expected effect name")?);
+                effects.push(self.parse_module_path()?);
                 if self.current().is_symbol(',') {
                     self.bump();
                 } else {

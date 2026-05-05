@@ -15,6 +15,24 @@ pub enum TaskResolution {
     Private(String),
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TypeResolution {
+    Builtin(String),
+    Resolved { index: usize, fq_name: String },
+    Unknown,
+    Ambiguous(Vec<String>),
+    Private(String),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum EffectResolution {
+    Builtin(String),
+    Resolved { index: usize, fq_name: String },
+    Unknown,
+    Ambiguous(Vec<String>),
+    Private(String),
+}
+
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct SymbolGraph {
     pub entry_module: String,
@@ -326,6 +344,118 @@ pub fn resolve_task(program: &Program, caller_module: &str, path: &str) -> TaskR
     TaskResolution::Unknown
 }
 
+pub fn resolve_type(program: &Program, caller_module: &str, path: &str) -> TypeResolution {
+    let parts = path
+        .split('.')
+        .filter(|part| !part.is_empty())
+        .collect::<Vec<_>>();
+    let Some(last) = parts.last().copied() else {
+        return TypeResolution::Unknown;
+    };
+
+    if parts.len() == 1 {
+        if is_builtin_type(last) {
+            return TypeResolution::Builtin(last.to_string());
+        }
+        if let Some(index) = find_type_in_module(program, caller_module, last) {
+            return resolved_type(program, index);
+        }
+
+        let mut matches = Vec::new();
+        for import in imports_for_module(program, caller_module) {
+            if let Some(index) = find_type_in_module(program, &import.module, last)
+                && program.types[index].exported
+            {
+                matches.push(index);
+            }
+        }
+        matches.sort_unstable();
+        matches.dedup();
+        return match matches.as_slice() {
+            [index] => resolved_type(program, *index),
+            [] => TypeResolution::Unknown,
+            _ => TypeResolution::Ambiguous(
+                matches
+                    .into_iter()
+                    .map(|index| type_fq_name(&program.types[index]))
+                    .collect(),
+            ),
+        };
+    }
+
+    let module_path = parts[..parts.len() - 1].join(".");
+    if module_exists(program, &module_path) {
+        return resolve_type_in_module(program, caller_module, &module_path, last);
+    }
+
+    if parts.len() == 2 {
+        let qualifier = parts[0];
+        for import in imports_for_module(program, caller_module) {
+            if import_matches_qualifier(import, qualifier) {
+                return resolve_type_in_module(program, caller_module, &import.module, last);
+            }
+        }
+    }
+
+    TypeResolution::Unknown
+}
+
+pub fn resolve_effect(program: &Program, caller_module: &str, path: &str) -> EffectResolution {
+    let parts = path
+        .split('.')
+        .filter(|part| !part.is_empty())
+        .collect::<Vec<_>>();
+    let Some(last) = parts.last().copied() else {
+        return EffectResolution::Unknown;
+    };
+
+    if parts.len() == 1 {
+        if is_builtin_effect(last) {
+            return EffectResolution::Builtin(last.to_string());
+        }
+        if let Some(index) = find_effect_in_module(program, caller_module, last) {
+            return resolved_effect(program, index);
+        }
+
+        let mut matches = Vec::new();
+        for import in imports_for_module(program, caller_module) {
+            if let Some(index) = find_effect_in_module(program, &import.module, last)
+                && program.effects[index].exported
+            {
+                matches.push(index);
+            }
+        }
+        matches.sort_unstable();
+        matches.dedup();
+        return match matches.as_slice() {
+            [index] => resolved_effect(program, *index),
+            [] => EffectResolution::Unknown,
+            _ => EffectResolution::Ambiguous(
+                matches
+                    .into_iter()
+                    .map(|index| effect_fq_name(&program.effects[index]))
+                    .collect(),
+            ),
+        };
+    }
+
+    let module_path = parts[..parts.len() - 1].join(".");
+    if module_exists(program, &module_path) {
+        return resolve_effect_in_module(program, caller_module, &module_path, last);
+    }
+
+    if parts.len() == 2 {
+        let qualifier = parts[0];
+        for import in imports_for_module(program, caller_module) {
+            if import_matches_qualifier(import, qualifier) {
+                return resolve_effect_in_module(program, caller_module, &import.module, last);
+            }
+        }
+    }
+
+    EffectResolution::Unknown
+}
+
 pub fn callee_path(expr: &Expr) -> Option<String> {
     match &expr.kind {
         ExprKind::Identifier { name } => Some(name.clone()),
@@ -377,6 +507,14 @@ pub fn import_owner_module(import: &ImportDecl) -> String {
 
 pub fn task_fq_name(task: &TaskDecl) -> String {
     format!("{}.{}", task_module(task), task.name)
+}
+
+pub fn type_fq_name(ty: &TypeDecl) -> String {
+    format!("{}.{}", type_module(ty), ty.name)
+}
+
+pub fn effect_fq_name(effect: &EffectDecl) -> String {
+    format!("{}.{}", effect_module(effect), effect.name)
 }
 
 pub fn is_module_qualified_callee(program: &Program, caller_module: &str, path: &str) -> bool {
@@ -666,10 +804,60 @@ fn resolve_task_in_module(
     TaskResolution::Private(task_fq_name(&program.tasks[index]))
 }
 
+fn resolve_type_in_module(
+    program: &Program,
+    caller_module: &str,
+    module: &str,
+    name: &str,
+) -> TypeResolution {
+    if module != caller_module && !module_imported_by(program, caller_module, module) {
+        return TypeResolution::Unknown;
+    }
+    let Some(index) = find_type_in_module(program, module, name) else {
+        return TypeResolution::Unknown;
+    };
+    if module == caller_module || program.types[index].exported {
+        return resolved_type(program, index);
+    }
+    TypeResolution::Private(type_fq_name(&program.types[index]))
+}
+
+fn resolve_effect_in_module(
+    program: &Program,
+    caller_module: &str,
+    module: &str,
+    name: &str,
+) -> EffectResolution {
+    if module != caller_module && !module_imported_by(program, caller_module, module) {
+        return EffectResolution::Unknown;
+    }
+    let Some(index) = find_effect_in_module(program, module, name) else {
+        return EffectResolution::Unknown;
+    };
+    if module == caller_module || program.effects[index].exported {
+        return resolved_effect(program, index);
+    }
+    EffectResolution::Private(effect_fq_name(&program.effects[index]))
+}
+
 fn resolved_task(program: &Program, index: usize) -> TaskResolution {
     TaskResolution::Resolved {
         index,
         fq_name: task_fq_name(&program.tasks[index]),
+    }
+}
+
+fn resolved_type(program: &Program, index: usize) -> TypeResolution {
+    TypeResolution::Resolved {
+        index,
+        fq_name: type_fq_name(&program.types[index]),
+    }
+}
+
+fn resolved_effect(program: &Program, index: usize) -> EffectResolution {
+    EffectResolution::Resolved {
+        index,
+        fq_name: effect_fq_name(&program.effects[index]),
     }
 }
 
@@ -678,6 +866,20 @@ fn find_task_in_module(program: &Program, module: &str, name: &str) -> Option<us
         .tasks
         .iter()
         .position(|task| task_module(task) == module && task.name == name)
+}
+
+fn find_type_in_module(program: &Program, module: &str, name: &str) -> Option<usize> {
+    program
+        .types
+        .iter()
+        .position(|ty| type_module(ty) == module && ty.name == name)
+}
+
+fn find_effect_in_module(program: &Program, module: &str, name: &str) -> Option<usize> {
+    program
+        .effects
+        .iter()
+        .position(|effect| effect_module(effect) == module && effect.name == name)
 }
 
 fn find_type_index(program: &Program, target: &str) -> Option<usize> {
@@ -742,6 +944,40 @@ fn module_exists(program: &Program, module: &str) -> bool {
             .imports
             .iter()
             .any(|import| import.module == module || import_owner_module(import) == module)
+}
+
+fn is_builtin_type(name: &str) -> bool {
+    matches!(
+        name,
+        "Int"
+            | "Float"
+            | "Bool"
+            | "Text"
+            | "Unit"
+            | "List"
+            | "Map"
+            | "Optional"
+            | "Result"
+            | "Error"
+    )
+}
+
+fn is_builtin_effect(name: &str) -> bool {
+    matches!(
+        name,
+        "FileRead"
+            | "FileWrite"
+            | "Network"
+            | "Shell"
+            | "ModelCall"
+            | "SecretRead"
+            | "Spend"
+            | "Deploy"
+            | "DatabaseRead"
+            | "DatabaseWrite"
+            | "DbRead"
+            | "DbWrite"
+    )
 }
 
 fn declaration_module_from_id(id: &str, prefix: &str) -> Option<String> {

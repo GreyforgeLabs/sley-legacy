@@ -32,11 +32,12 @@ Implemented now:
 - builtin `len` for lists, maps, and text
 - static checks for duplicate declarations, unknown types, unknown effects,
   simple return mismatches, `?` result flow, host-effect authority, module
-  task visibility, ambiguous imported task calls, task call arity/types,
-  called-task effect propagation, lexical locals, immutable binding protection,
-  operator operand types, `if` condition/branch types, and typed record literal
-  fields, list element types, map key/value types, indexing, control-flow
-  conditions, `each` collections, and `set` mutation types
+  task/type/effect visibility, ambiguous imported task/type/effect references,
+  task call arity/types, called-task effect propagation, lexical locals,
+  immutable binding protection, operator operand types, `if`
+  condition/branch types, and typed record literal fields, list element types,
+  map key/value types, indexing, control-flow conditions, `each` collections,
+  and `set` mutation types
 - runtime evaluation for zero-take pure `main`, literal values, pure task calls,
   lexical locals, `set`, operators, `if` expressions, statement-level
   `if`/`else`, `while`, `each`, `forge` blocks, list literals, map literals,
@@ -45,6 +46,8 @@ Implemented now:
   `.sley` modules under the configured source root
 - checker and runtime task lookup by entry module, local module, full module
   path, and import alias
+- checker type and effect lookup by local module, imported exported name, full
+  module path, and import alias
 - JSON module symbol graph output for module imports and exported declarations,
   plus bounded graph slices with `sley graph --slice <node-id>`
 - JSONL trace sidecars for accepted graft receipts when `sley graft --write`
@@ -94,14 +97,16 @@ exported. Calls may use a simple imported name when exactly one import exports
 that task, an import alias such as `math.double`, or a full module path such as
 `app.math.double`.
 
+Types and custom effects follow the same namespace boundary. Same-module
+type/effect names are visible by simple name. Imported type/effect declarations
+must use `export type` or `export effect`. Imported references may use an
+unambiguous simple name, an import alias such as `math.User` or `math.Read`, or
+the full module path such as `app.math.User`.
+
 Known v0 limits:
 
 - Expression parsing still falls back to raw nodes for unsupported syntax such
   as lambdas, pattern matching, and multi-statement expression blocks.
-- Type and effect namespace visibility is still simpler than task visibility.
-  Duplicate type/effect names are scoped by module, but cross-module type and
-  custom-effect identity still need the same fully qualified resolver used by
-  tasks.
 - Trace storage is a local JSONL sidecar, not yet a content-addressed seal or a
   compressed `.zjx` archive.
 - `sley zjx` emits the first Sley ZJX envelope payload as JSON with
@@ -114,6 +119,7 @@ Known v0 limits:
   `DeleteNode` are declared but return explicit unsupported-operation
   diagnostics.
 
-The next logical phase is the semantic-completeness phase: extend module
-namespace resolution from tasks to type/effect identity, then implement the next
-structural graft operations against graph slices.
+The next logical phase is graph-slice graft execution: implement
+`UpdateCallSites`, `InsertStatement`, and `ReplaceExpression` against bounded
+symbol graph slices, while freezing the JSON contracts those operations depend
+on.

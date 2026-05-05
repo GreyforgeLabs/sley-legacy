@@ -68,8 +68,8 @@ Hard compiler requirements:
 - repair hints that agents can use
 - module namespace resolution
 - import aliases and exported names
-- type checking across modules
-- effect and capability propagation
+- type checking across modules with semantic type identity
+- effect and capability propagation across module boundaries
 - runtime gate values for host authority
 - rejection of unauthorized side effects
 - stale graft rejection
@@ -210,8 +210,8 @@ Near-term:
 
 Medium-term:
 
-1. Extend module namespace semantics from tasks to full type/effect identity.
-2. Implement more structural graft operations.
+1. Implement more structural graft operations against graph slices.
+2. Freeze graph-slice JSON as the agent query contract.
 3. Turn trace sidecars into content-addressed seals.
 4. Add runtime gate values for host capabilities.
 5. Move the preview ZJX JSON envelope to a compressed binary `.zjx` handoff.

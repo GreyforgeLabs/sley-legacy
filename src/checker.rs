@@ -6,14 +6,15 @@ use crate::ast::{
 };
 use crate::diagnostics::{Diagnostic, RepairHint};
 use crate::symbols::{
-    TaskResolution, callee_path, effect_module, is_module_qualified_callee, resolve_task,
-    task_module, type_module,
+    EffectResolution, TaskResolution, TypeResolution, callee_path, effect_module,
+    is_module_qualified_callee, resolve_effect, resolve_task, resolve_type, task_module,
+    type_fq_name, type_module,
 };
 
 pub fn check_program(program: &Program) -> Vec<Diagnostic> {
     let mut diagnostics = Vec::new();
-    let known_types = collect_known_types(program, &mut diagnostics);
-    let known_effects = collect_known_effects(program, &mut diagnostics);
+    collect_known_types(program, &mut diagnostics);
+    collect_known_effects(program, &mut diagnostics);
     let known_tasks = collect_known_tasks(program, &mut diagnostics);
     let record_types = collect_record_types(program);
 
@@ -27,19 +28,17 @@ pub fn check_program(program: &Program) -> Vec<Diagnostic> {
     }
 
     for ty in &program.types {
-        validate_type_expr(&ty.value, &known_types, &mut diagnostics, &ty.id);
+        validate_type_expr(
+            &ty.value,
+            program,
+            &type_module(ty),
+            &mut diagnostics,
+            &ty.id,
+        );
     }
 
     for task in &program.tasks {
-        check_task(
-            program,
-            task,
-            &known_types,
-            &known_effects,
-            &known_tasks,
-            &record_types,
-            &mut diagnostics,
-        );
+        check_task(program, task, &known_tasks, &record_types, &mut diagnostics);
     }
 
     diagnostics
@@ -74,9 +73,21 @@ fn collect_known_tasks(program: &Program, diagnostics: &mut Vec<Diagnostic>) -> 
         known.insert(
             index,
             TaskSignature {
-                takes: task.takes.iter().map(|take| take.ty.clone()).collect(),
-                return_type: task.return_type.clone(),
-                effects: task.effects.clone(),
+                takes: task
+                    .takes
+                    .iter()
+                    .map(|take| normalize_type_expr_silent(program, &task_module(task), &take.ty))
+                    .collect(),
+                return_type: normalize_type_expr_silent(
+                    program,
+                    &task_module(task),
+                    &task.return_type,
+                ),
+                effects: task
+                    .effects
+                    .iter()
+                    .map(|effect| normalize_effect_name_silent(program, &task_module(task), effect))
+                    .collect(),
             },
         );
     }
@@ -88,20 +99,22 @@ fn collect_record_types(program: &Program) -> HashMap<String, Vec<RecordField>> 
         .types
         .iter()
         .filter_map(|ty| match &ty.value {
-            TypeExpr::Record { fields } => Some((ty.name.clone(), fields.clone())),
+            TypeExpr::Record { fields } => Some((
+                type_fq_name(ty),
+                fields
+                    .iter()
+                    .map(|field| RecordField {
+                        name: field.name.clone(),
+                        ty: normalize_type_expr_silent(program, &type_module(ty), &field.ty),
+                    })
+                    .collect(),
+            )),
             _ => None,
         })
         .collect()
 }
 
-fn collect_known_types(program: &Program, diagnostics: &mut Vec<Diagnostic>) -> HashSet<String> {
-    let mut known = [
-        "Int", "Float", "Bool", "Text", "Unit", "List", "Map", "Optional", "Result", "Error",
-    ]
-    .into_iter()
-    .map(str::to_string)
-    .collect::<HashSet<_>>();
-
+fn collect_known_types(program: &Program, diagnostics: &mut Vec<Diagnostic>) {
     let mut local_types = HashSet::new();
     for ty in &program.types {
         if !local_types.insert((type_module(ty), ty.name.clone())) {
@@ -117,31 +130,10 @@ fn collect_known_types(program: &Program, diagnostics: &mut Vec<Diagnostic>) -> 
                 .with_node(ty.id.clone()),
             );
         }
-        known.insert(ty.name.clone());
     }
-
-    known
 }
 
-fn collect_known_effects(program: &Program, diagnostics: &mut Vec<Diagnostic>) -> HashSet<String> {
-    let mut known = [
-        "FileRead",
-        "FileWrite",
-        "Network",
-        "Shell",
-        "ModelCall",
-        "SecretRead",
-        "Spend",
-        "Deploy",
-        "DatabaseRead",
-        "DatabaseWrite",
-        "DbRead",
-        "DbWrite",
-    ]
-    .into_iter()
-    .map(str::to_string)
-    .collect::<HashSet<_>>();
-
+fn collect_known_effects(program: &Program, diagnostics: &mut Vec<Diagnostic>) {
     let mut local_effects = HashSet::new();
     for effect in &program.effects {
         if !local_effects.insert((effect_module(effect), effect.name.clone())) {
@@ -157,17 +149,12 @@ fn collect_known_effects(program: &Program, diagnostics: &mut Vec<Diagnostic>) -
                 .with_node(effect.id.clone()),
             );
         }
-        known.insert(effect.name.clone());
     }
-
-    known
 }
 
 fn check_task(
     program: &Program,
     task: &TaskDecl,
-    known_types: &HashSet<String>,
-    known_effects: &HashSet<String>,
     known_tasks: &TaskSignatures,
     record_types: &HashMap<String, Vec<RecordField>>,
     diagnostics: &mut Vec<Diagnostic>,
@@ -189,24 +176,29 @@ fn check_task(
                 .with_node(task.id.clone()),
             );
         }
-        validate_type_expr(&take.ty, known_types, diagnostics, &take.id);
-        locals.insert(take.name.clone(), take.ty.clone());
+        validate_type_expr(&take.ty, program, &task_module(task), diagnostics, &take.id);
+        locals.insert(
+            take.name.clone(),
+            normalize_type_expr_silent(program, &task_module(task), &take.ty),
+        );
         local_bindings.insert(take.name.clone(), take.binding_kind.clone());
     }
 
-    validate_type_expr(&task.return_type, known_types, diagnostics, &task.id);
+    validate_type_expr(
+        &task.return_type,
+        program,
+        &task_module(task),
+        diagnostics,
+        &task.id,
+    );
 
-    let declared_effects = task.effects.iter().cloned().collect::<HashSet<_>>();
+    let declared_effects = task
+        .effects
+        .iter()
+        .map(|effect| normalize_effect_name_silent(program, &task_module(task), effect))
+        .collect::<HashSet<_>>();
     for effect in &task.effects {
-        if !known_effects.contains(effect) {
-            diagnostics.push(
-                Diagnostic::error(
-                    "UNKNOWN_EFFECT",
-                    format!("task `{}` uses unknown effect `{effect}`", task.name),
-                )
-                .with_node(task.id.clone()),
-            );
-        }
+        validate_effect_name(effect, program, &task_module(task), task, diagnostics);
     }
 
     check_block(
@@ -216,7 +208,6 @@ fn check_task(
         &mut locals,
         &mut local_bindings,
         &declared_effects,
-        known_types,
         known_tasks,
         record_types,
         diagnostics,
@@ -231,7 +222,6 @@ fn check_block(
     locals: &mut HashMap<String, TypeExpr>,
     local_bindings: &mut HashMap<String, BindingKind>,
     declared_effects: &HashSet<String>,
-    known_types: &HashSet<String>,
     known_tasks: &TaskSignatures,
     record_types: &HashMap<String, Vec<RecordField>>,
     diagnostics: &mut Vec<Diagnostic>,
@@ -250,17 +240,25 @@ fn check_block(
                     expr,
                     locals,
                     declared_effects,
-                    known_types,
                     known_tasks,
                     record_types,
                     diagnostics,
                 );
                 if let Some(type_ann) = type_ann {
-                    validate_type_expr(type_ann, known_types, diagnostics, &statement.id);
+                    validate_type_expr(
+                        type_ann,
+                        program,
+                        &task_module(task),
+                        diagnostics,
+                        &statement.id,
+                    );
                 }
                 let inferred =
                     infer_expr_type(program, task, expr, locals, known_tasks, record_types);
-                if let (Some(expected), Some(actual)) = (type_ann, inferred.as_ref())
+                let expected = type_ann
+                    .as_ref()
+                    .map(|ty| normalize_type_expr_silent(program, &task_module(task), ty));
+                if let (Some(expected), Some(actual)) = (expected.as_ref(), inferred.as_ref())
                     && !types_compatible(expected, actual)
                 {
                     diagnostics.push(
@@ -276,8 +274,7 @@ fn check_block(
                         .with_node(statement.id.clone()),
                     );
                 }
-                let local_type = type_ann
-                    .clone()
+                let local_type = expected
                     .or(inferred)
                     .unwrap_or_else(|| TypeExpr::named("Unit"));
                 if locals.contains_key(name) {
@@ -299,7 +296,6 @@ fn check_block(
                     expr,
                     locals,
                     declared_effects,
-                    known_types,
                     known_tasks,
                     record_types,
                     diagnostics,
@@ -352,14 +348,15 @@ fn check_block(
                     expr,
                     locals,
                     declared_effects,
-                    known_types,
                     known_tasks,
                     record_types,
                     diagnostics,
                 );
+                let expected_return =
+                    normalize_type_expr_silent(program, &task_module(task), &task.return_type);
                 if let Some(actual) =
                     infer_expr_type(program, task, expr, locals, known_tasks, record_types)
-                    && !return_types_compatible(&task.return_type, &actual, &expr.source)
+                    && !return_types_compatible(&expected_return, &actual, &expr.source)
                 {
                     diagnostics.push(
                         Diagnostic::error(
@@ -367,7 +364,7 @@ fn check_block(
                             format!(
                                 "task `{}` returns `{}` but expression looks like `{}`",
                                 task.name,
-                                task.return_type.display(),
+                                expected_return.display(),
                                 actual.display()
                             ),
                         )
@@ -382,7 +379,6 @@ fn check_block(
                     expr,
                     locals,
                     declared_effects,
-                    known_types,
                     known_tasks,
                     record_types,
                     diagnostics,
@@ -399,7 +395,6 @@ fn check_block(
                     condition,
                     locals,
                     declared_effects,
-                    known_types,
                     known_tasks,
                     record_types,
                     diagnostics,
@@ -428,7 +423,6 @@ fn check_block(
                     &mut then_locals,
                     &mut then_bindings,
                     declared_effects,
-                    known_types,
                     known_tasks,
                     record_types,
                     diagnostics,
@@ -443,7 +437,6 @@ fn check_block(
                         &mut else_locals,
                         &mut else_bindings,
                         declared_effects,
-                        known_types,
                         known_tasks,
                         record_types,
                         diagnostics,
@@ -457,7 +450,6 @@ fn check_block(
                     condition,
                     locals,
                     declared_effects,
-                    known_types,
                     known_tasks,
                     record_types,
                     diagnostics,
@@ -486,7 +478,6 @@ fn check_block(
                     &mut body_locals,
                     &mut body_bindings,
                     declared_effects,
-                    known_types,
                     known_tasks,
                     record_types,
                     diagnostics,
@@ -503,7 +494,6 @@ fn check_block(
                     collection,
                     locals,
                     declared_effects,
-                    known_types,
                     known_tasks,
                     record_types,
                     diagnostics,
@@ -548,7 +538,6 @@ fn check_block(
                     &mut body_locals,
                     &mut body_bindings,
                     declared_effects,
-                    known_types,
                     known_tasks,
                     record_types,
                     diagnostics,
@@ -564,7 +553,6 @@ fn check_block(
                     &mut forge_locals,
                     &mut forge_bindings,
                     declared_effects,
-                    known_types,
                     known_tasks,
                     record_types,
                     diagnostics,
@@ -581,7 +569,6 @@ fn check_expr_common(
     expr: &Expr,
     locals: &HashMap<String, TypeExpr>,
     declared_effects: &HashSet<String>,
-    known_types: &HashSet<String>,
     known_tasks: &TaskSignatures,
     record_types: &HashMap<String, Vec<RecordField>>,
     diagnostics: &mut Vec<Diagnostic>,
@@ -594,7 +581,6 @@ fn check_expr_common(
         expr,
         locals,
         declared_effects,
-        known_types,
         known_tasks,
         record_types,
         diagnostics,
@@ -608,7 +594,6 @@ fn check_expr_structure(
     expr: &Expr,
     locals: &HashMap<String, TypeExpr>,
     declared_effects: &HashSet<String>,
-    known_types: &HashSet<String>,
     known_tasks: &TaskSignatures,
     record_types: &HashMap<String, Vec<RecordField>>,
     diagnostics: &mut Vec<Diagnostic>,
@@ -621,7 +606,6 @@ fn check_expr_structure(
                 inner,
                 locals,
                 declared_effects,
-                known_types,
                 known_tasks,
                 record_types,
                 diagnostics,
@@ -645,7 +629,6 @@ fn check_expr_structure(
                 left,
                 locals,
                 declared_effects,
-                known_types,
                 known_tasks,
                 record_types,
                 diagnostics,
@@ -656,7 +639,6 @@ fn check_expr_structure(
                 right,
                 locals,
                 declared_effects,
-                known_types,
                 known_tasks,
                 record_types,
                 diagnostics,
@@ -685,7 +667,6 @@ fn check_expr_structure(
                 condition,
                 locals,
                 declared_effects,
-                known_types,
                 known_tasks,
                 record_types,
                 diagnostics,
@@ -696,7 +677,6 @@ fn check_expr_structure(
                 then_branch,
                 locals,
                 declared_effects,
-                known_types,
                 known_tasks,
                 record_types,
                 diagnostics,
@@ -707,7 +687,6 @@ fn check_expr_structure(
                 else_branch,
                 locals,
                 declared_effects,
-                known_types,
                 known_tasks,
                 record_types,
                 diagnostics,
@@ -743,7 +722,6 @@ fn check_expr_structure(
                             callee,
                             locals,
                             declared_effects,
-                            known_types,
                             known_tasks,
                             record_types,
                             diagnostics,
@@ -789,7 +767,6 @@ fn check_expr_structure(
                     callee,
                     locals,
                     declared_effects,
-                    known_types,
                     known_tasks,
                     record_types,
                     diagnostics,
@@ -802,7 +779,6 @@ fn check_expr_structure(
                     arg,
                     locals,
                     declared_effects,
-                    known_types,
                     known_tasks,
                     record_types,
                     diagnostics,
@@ -884,7 +860,6 @@ fn check_expr_structure(
                     item,
                     locals,
                     declared_effects,
-                    known_types,
                     known_tasks,
                     record_types,
                     diagnostics,
@@ -909,7 +884,6 @@ fn check_expr_structure(
                     &entry.key,
                     locals,
                     declared_effects,
-                    known_types,
                     known_tasks,
                     record_types,
                     diagnostics,
@@ -920,7 +894,6 @@ fn check_expr_structure(
                     &entry.value,
                     locals,
                     declared_effects,
-                    known_types,
                     known_tasks,
                     record_types,
                     diagnostics,
@@ -944,7 +917,6 @@ fn check_expr_structure(
                 collection,
                 locals,
                 declared_effects,
-                known_types,
                 known_tasks,
                 record_types,
                 diagnostics,
@@ -955,7 +927,6 @@ fn check_expr_structure(
                 index,
                 locals,
                 declared_effects,
-                known_types,
                 known_tasks,
                 record_types,
                 diagnostics,
@@ -979,7 +950,6 @@ fn check_expr_structure(
                 receiver,
                 locals,
                 declared_effects,
-                known_types,
                 known_tasks,
                 record_types,
                 diagnostics,
@@ -1021,7 +991,6 @@ fn check_expr_structure(
                     &field.expr,
                     locals,
                     declared_effects,
-                    known_types,
                     known_tasks,
                     record_types,
                     diagnostics,
@@ -1029,34 +998,58 @@ fn check_expr_structure(
             }
 
             if let Some(type_name) = type_name {
-                if !known_types.contains(type_name) {
-                    diagnostics.push(
+                match resolve_type(program, &task_module(task), type_name) {
+                    TypeResolution::Builtin(name) => diagnostics.push(
+                        Diagnostic::error(
+                            "RECORD_LITERAL_NON_RECORD_TYPE",
+                            format!("type `{name}` is not a record type"),
+                        )
+                        .with_node(expr.id.clone()),
+                    ),
+                    TypeResolution::Resolved { fq_name, .. } => {
+                        if let Some(expected_fields) = record_types.get(&fq_name) {
+                            check_record_literal_fields(
+                                program,
+                                task,
+                                expr,
+                                fields,
+                                expected_fields,
+                                locals,
+                                known_tasks,
+                                record_types,
+                                diagnostics,
+                            );
+                        } else {
+                            diagnostics.push(
+                                Diagnostic::error(
+                                    "RECORD_LITERAL_NON_RECORD_TYPE",
+                                    format!("type `{fq_name}` is not a record type"),
+                                )
+                                .with_node(expr.id.clone()),
+                            );
+                        }
+                    }
+                    TypeResolution::Unknown => diagnostics.push(
                         Diagnostic::error(
                             "UNKNOWN_TYPE",
                             format!("unknown record literal type `{type_name}`"),
                         )
                         .with_node(expr.id.clone()),
-                    );
-                } else if let Some(expected_fields) = record_types.get(type_name) {
-                    check_record_literal_fields(
-                        program,
-                        task,
-                        expr,
-                        fields,
-                        expected_fields,
-                        locals,
-                        known_tasks,
-                        record_types,
-                        diagnostics,
-                    );
-                } else {
-                    diagnostics.push(
+                    ),
+                    TypeResolution::Ambiguous(matches) => diagnostics.push(
                         Diagnostic::error(
-                            "RECORD_LITERAL_NON_RECORD_TYPE",
-                            format!("type `{type_name}` is not a record type"),
+                            "AMBIGUOUS_TYPE",
+                            format!("type `{type_name}` is ambiguous: {}", matches.join(", ")),
                         )
                         .with_node(expr.id.clone()),
-                    );
+                    ),
+                    TypeResolution::Private(target) => diagnostics.push(
+                        Diagnostic::error(
+                            "PRIVATE_TYPE",
+                            format!("type `{target}` is not exported for `{}`", task.name),
+                        )
+                        .with_node(expr.id.clone()),
+                    ),
                 }
             }
         }
@@ -1067,7 +1060,6 @@ fn check_expr_structure(
                 inner,
                 locals,
                 declared_effects,
-                known_types,
                 known_tasks,
                 record_types,
                 diagnostics,
@@ -1513,28 +1505,19 @@ fn check_record_literal_fields(
 
 fn validate_type_expr(
     ty: &TypeExpr,
-    known_types: &HashSet<String>,
+    program: &Program,
+    module: &str,
     diagnostics: &mut Vec<Diagnostic>,
     node: &str,
 ) {
     match ty {
         TypeExpr::Named { name } => {
-            if !known_types.contains(name) {
-                diagnostics.push(
-                    Diagnostic::error("UNKNOWN_TYPE", format!("unknown type `{name}`"))
-                        .with_node(node.to_string()),
-                );
-            }
+            validate_type_name(name, program, module, diagnostics, node, "type");
         }
         TypeExpr::Generic { name, args } => {
-            if !known_types.contains(name) {
-                diagnostics.push(
-                    Diagnostic::error("UNKNOWN_TYPE", format!("unknown generic type `{name}`"))
-                        .with_node(node.to_string()),
-                );
-            }
+            validate_type_name(name, program, module, diagnostics, node, "generic type");
             for arg in args {
-                validate_type_expr(arg, known_types, diagnostics, node);
+                validate_type_expr(arg, program, module, diagnostics, node);
             }
         }
         TypeExpr::Record { fields } => {
@@ -1549,9 +1532,115 @@ fn validate_type_expr(
                         .with_node(node.to_string()),
                     );
                 }
-                validate_type_expr(&field.ty, known_types, diagnostics, node);
+                validate_type_expr(&field.ty, program, module, diagnostics, node);
             }
         }
+    }
+}
+
+fn validate_type_name(
+    name: &str,
+    program: &Program,
+    module: &str,
+    diagnostics: &mut Vec<Diagnostic>,
+    node: &str,
+    noun: &str,
+) {
+    match resolve_type(program, module, name) {
+        TypeResolution::Builtin(_) | TypeResolution::Resolved { .. } => {}
+        TypeResolution::Unknown => diagnostics.push(
+            Diagnostic::error("UNKNOWN_TYPE", format!("unknown {noun} `{name}`"))
+                .with_node(node.to_string()),
+        ),
+        TypeResolution::Ambiguous(matches) => diagnostics.push(
+            Diagnostic::error(
+                "AMBIGUOUS_TYPE",
+                format!("type `{name}` is ambiguous: {}", matches.join(", ")),
+            )
+            .with_node(node.to_string()),
+        ),
+        TypeResolution::Private(target) => diagnostics.push(
+            Diagnostic::error(
+                "PRIVATE_TYPE",
+                format!("type `{target}` is not exported for module `{module}`"),
+            )
+            .with_node(node.to_string()),
+        ),
+    }
+}
+
+fn validate_effect_name(
+    name: &str,
+    program: &Program,
+    module: &str,
+    task: &TaskDecl,
+    diagnostics: &mut Vec<Diagnostic>,
+) {
+    match resolve_effect(program, module, name) {
+        EffectResolution::Builtin(_) | EffectResolution::Resolved { .. } => {}
+        EffectResolution::Unknown => diagnostics.push(
+            Diagnostic::error(
+                "UNKNOWN_EFFECT",
+                format!("task `{}` uses unknown effect `{name}`", task.name),
+            )
+            .with_node(task.id.clone()),
+        ),
+        EffectResolution::Ambiguous(matches) => diagnostics.push(
+            Diagnostic::error(
+                "AMBIGUOUS_EFFECT",
+                format!("effect `{name}` is ambiguous: {}", matches.join(", ")),
+            )
+            .with_node(task.id.clone()),
+        ),
+        EffectResolution::Private(target) => diagnostics.push(
+            Diagnostic::error(
+                "PRIVATE_EFFECT",
+                format!("effect `{target}` is not exported for `{}`", task.name),
+            )
+            .with_node(task.id.clone()),
+        ),
+    }
+}
+
+fn normalize_type_expr_silent(program: &Program, module: &str, ty: &TypeExpr) -> TypeExpr {
+    match ty {
+        TypeExpr::Named { name } => {
+            TypeExpr::named(normalize_type_name_silent(program, module, name))
+        }
+        TypeExpr::Generic { name, args } => TypeExpr::Generic {
+            name: normalize_type_name_silent(program, module, name),
+            args: args
+                .iter()
+                .map(|arg| normalize_type_expr_silent(program, module, arg))
+                .collect(),
+        },
+        TypeExpr::Record { fields } => TypeExpr::Record {
+            fields: fields
+                .iter()
+                .map(|field| RecordField {
+                    name: field.name.clone(),
+                    ty: normalize_type_expr_silent(program, module, &field.ty),
+                })
+                .collect(),
+        },
+    }
+}
+
+fn normalize_type_name_silent(program: &Program, module: &str, name: &str) -> String {
+    match resolve_type(program, module, name) {
+        TypeResolution::Builtin(name) | TypeResolution::Resolved { fq_name: name, .. } => name,
+        TypeResolution::Unknown | TypeResolution::Ambiguous(_) | TypeResolution::Private(_) => {
+            name.to_string()
+        }
+    }
+}
+
+fn normalize_effect_name_silent(program: &Program, module: &str, name: &str) -> String {
+    match resolve_effect(program, module, name) {
+        EffectResolution::Builtin(name) | EffectResolution::Resolved { fq_name: name, .. } => name,
+        EffectResolution::Unknown
+        | EffectResolution::Ambiguous(_)
+        | EffectResolution::Private(_) => name.to_string(),
     }
 }
 
@@ -1654,7 +1743,7 @@ fn infer_expr_type(
     known_tasks: &TaskSignatures,
     record_types: &HashMap<String, Vec<RecordField>>,
 ) -> Option<TypeExpr> {
-    let return_type = &task.return_type;
+    let return_type = normalize_type_expr_silent(program, &task_module(task), &task.return_type);
     match &expr.kind {
         ExprKind::StringLiteral { .. } => Some(TypeExpr::named("Text")),
         ExprKind::IntLiteral { .. } => Some(TypeExpr::named("Int")),
@@ -1704,7 +1793,7 @@ fn infer_expr_type(
             if callee_path(callee).is_some_and(|name| name == "Ok" || name == "Err")
                 && return_type.generic_name() == Some("Result")
             {
-                Some(return_type.clone())
+                Some(return_type)
             } else if let Some(callee_name) = callee_path(callee) {
                 if callee_name == "len" {
                     Some(TypeExpr::named("Int"))
@@ -1814,7 +1903,11 @@ fn infer_expr_type(
         }
         ExprKind::RecordLiteral { type_name, fields } => {
             if let Some(type_name) = type_name {
-                Some(TypeExpr::named(type_name.clone()))
+                Some(TypeExpr::named(normalize_type_name_silent(
+                    program,
+                    &task_module(task),
+                    type_name,
+                )))
             } else {
                 let mut inferred_fields = Vec::new();
                 for field in fields {
@@ -1850,7 +1943,7 @@ fn infer_expr_type(
         ExprKind::Raw { .. } => {
             let trimmed = expr.source.trim();
             if trimmed.starts_with("Ok(") || trimmed.starts_with("Err(") {
-                Some(return_type.clone())
+                Some(return_type)
             } else {
                 None
             }
