@@ -1,6 +1,6 @@
 use crate::ast::{
-    Block, EffectDecl, Expr, ExprKind, FunctionDecl, ImportDecl, Param, Program, RecordField,
-    Statement, StatementKind, TypeDecl, TypeExpr,
+    Block, EffectDecl, Expr, ExprField, ExprKind, FunctionDecl, ImportDecl, Param, Program,
+    RecordField, Statement, StatementKind, TypeDecl, TypeExpr,
 };
 use crate::diagnostics::{Diagnostic, SourceSpan};
 
@@ -516,7 +516,7 @@ impl Parser {
         }
 
         let source = tokens_to_source(&tokens);
-        Ok(classify_expr(source, span))
+        Ok(parse_expr_tokens(&tokens, source, span))
     }
 
     fn parse_type_expr(&mut self) -> Result<TypeExpr, Vec<Diagnostic>> {
@@ -637,6 +637,254 @@ impl Parser {
             self.pos += 1;
         }
     }
+}
+
+fn parse_expr_tokens(tokens: &[Token], source: String, span: SourceSpan) -> Expr {
+    let mut parser = ExprParser::new(tokens);
+    match parser.parse_expression() {
+        Ok(expr) if parser.at_end() => expr,
+        _ => classify_expr(source, span),
+    }
+}
+
+struct ExprParser<'a> {
+    tokens: &'a [Token],
+    pos: usize,
+}
+
+impl<'a> ExprParser<'a> {
+    fn new(tokens: &'a [Token]) -> Self {
+        Self { tokens, pos: 0 }
+    }
+
+    fn parse_expression(&mut self) -> Result<Expr, ()> {
+        self.parse_postfix()
+    }
+
+    fn parse_postfix(&mut self) -> Result<Expr, ()> {
+        let mut expr = self.parse_primary()?;
+        loop {
+            if self.current_is_symbol('.') {
+                self.bump();
+                let field = self.expect_ident()?;
+                let source = format!("{}.{}", expr.source, field);
+                expr = Expr {
+                    id: String::new(),
+                    source,
+                    kind: ExprKind::FieldAccess {
+                        receiver: Box::new(expr),
+                        field,
+                    },
+                    span: None,
+                };
+            } else if self.current_is_symbol('(') {
+                self.bump();
+                let mut args = Vec::new();
+                if !self.current_is_symbol(')') {
+                    loop {
+                        args.push(self.parse_expression()?);
+                        if self.current_is_symbol(',') {
+                            self.bump();
+                            if self.current_is_symbol(')') {
+                                break;
+                            }
+                        } else {
+                            break;
+                        }
+                    }
+                }
+                self.expect_symbol(')')?;
+                let args_source = args
+                    .iter()
+                    .map(|arg| arg.source.as_str())
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                let source = format!("{}({args_source})", expr.source);
+                expr = Expr {
+                    id: String::new(),
+                    source,
+                    kind: ExprKind::Call {
+                        callee: Box::new(expr),
+                        args,
+                    },
+                    span: None,
+                };
+            } else if self.current_is_symbol('{') {
+                let type_name = match &expr.kind {
+                    ExprKind::Identifier { .. } | ExprKind::FieldAccess { .. } => {
+                        Some(expr.source.clone())
+                    }
+                    _ => return Err(()),
+                };
+                let fields = self.parse_record_fields()?;
+                let fields_source = format_expr_fields(&fields);
+                let source = format!("{} {{ {fields_source} }}", expr.source);
+                expr = Expr {
+                    id: String::new(),
+                    source,
+                    kind: ExprKind::RecordLiteral { type_name, fields },
+                    span: None,
+                };
+            } else if self.current_is_symbol('?') {
+                self.bump();
+                let source = format!("{}?", expr.source);
+                expr = Expr {
+                    id: String::new(),
+                    source,
+                    kind: ExprKind::Try {
+                        expr: Box::new(expr),
+                    },
+                    span: None,
+                };
+            } else {
+                break;
+            }
+        }
+        Ok(expr)
+    }
+
+    fn parse_primary(&mut self) -> Result<Expr, ()> {
+        let token = self.current().ok_or(())?.clone();
+        match token.kind {
+            TokenKind::String(value) => {
+                self.bump();
+                Ok(Expr {
+                    id: String::new(),
+                    source: token.text,
+                    kind: ExprKind::StringLiteral { value },
+                    span: Some(token.span),
+                })
+            }
+            TokenKind::Number(text) => {
+                self.bump();
+                if text.contains('.') {
+                    let value = text.parse::<f64>().map_err(|_| ())?;
+                    Ok(Expr {
+                        id: String::new(),
+                        source: text,
+                        kind: ExprKind::FloatLiteral { value },
+                        span: Some(token.span),
+                    })
+                } else {
+                    let value = text.parse::<i64>().map_err(|_| ())?;
+                    Ok(Expr {
+                        id: String::new(),
+                        source: text,
+                        kind: ExprKind::IntLiteral { value },
+                        span: Some(token.span),
+                    })
+                }
+            }
+            TokenKind::Ident(name) if name == "true" || name == "false" => {
+                self.bump();
+                Ok(Expr {
+                    id: String::new(),
+                    source: name.clone(),
+                    kind: ExprKind::BoolLiteral {
+                        value: name == "true",
+                    },
+                    span: Some(token.span),
+                })
+            }
+            TokenKind::Ident(name) => {
+                self.bump();
+                Ok(Expr {
+                    id: String::new(),
+                    source: name.clone(),
+                    kind: ExprKind::Identifier { name },
+                    span: Some(token.span),
+                })
+            }
+            TokenKind::Symbol('(') => {
+                self.bump();
+                let mut expr = self.parse_expression()?;
+                self.expect_symbol(')')?;
+                expr.source = format!("({})", expr.source);
+                Ok(expr)
+            }
+            TokenKind::Symbol('{') => {
+                let fields = self.parse_record_fields()?;
+                let fields_source = format_expr_fields(&fields);
+                Ok(Expr {
+                    id: String::new(),
+                    source: format!("{{ {fields_source} }}"),
+                    kind: ExprKind::RecordLiteral {
+                        type_name: None,
+                        fields,
+                    },
+                    span: Some(token.span),
+                })
+            }
+            _ => Err(()),
+        }
+    }
+
+    fn parse_record_fields(&mut self) -> Result<Vec<ExprField>, ()> {
+        self.expect_symbol('{')?;
+        let mut fields = Vec::new();
+        if !self.current_is_symbol('}') {
+            loop {
+                let name = self.expect_ident()?;
+                self.expect_symbol(':')?;
+                let expr = self.parse_expression()?;
+                fields.push(ExprField { name, expr });
+                if self.current_is_symbol(',') {
+                    self.bump();
+                    if self.current_is_symbol('}') {
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            }
+        }
+        self.expect_symbol('}')?;
+        Ok(fields)
+    }
+
+    fn expect_ident(&mut self) -> Result<String, ()> {
+        match self.current().map(|token| &token.kind) {
+            Some(TokenKind::Ident(value)) => {
+                let value = value.clone();
+                self.bump();
+                Ok(value)
+            }
+            _ => Err(()),
+        }
+    }
+
+    fn expect_symbol(&mut self, expected: char) -> Result<(), ()> {
+        if self.current_is_symbol(expected) {
+            self.bump();
+            Ok(())
+        } else {
+            Err(())
+        }
+    }
+
+    fn current_is_symbol(&self, expected: char) -> bool {
+        matches!(self.current().map(|token| &token.kind), Some(TokenKind::Symbol(value)) if *value == expected)
+    }
+
+    fn at_end(&self) -> bool {
+        self.pos >= self.tokens.len()
+    }
+
+    fn current(&self) -> Option<&'a Token> {
+        self.tokens.get(self.pos)
+    }
+
+    fn bump(&mut self) {
+        self.pos += 1;
+    }
+}
+
+fn format_expr_fields(fields: &[ExprField]) -> String {
+    fields
+        .iter()
+        .map(|field| format!("{}: {}", field.name, field.expr.source))
+        .collect::<Vec<_>>()
+        .join(", ")
 }
 
 fn classify_expr(source: String, span: SourceSpan) -> Expr {

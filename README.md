@@ -13,25 +13,31 @@ Implemented now:
 - module, import, type, effect, and function declarations
 - record type declarations
 - explicit function parameters and return types
-- raw-expression statements with literal classification
+- structured expressions for literals, identifiers, calls, field access,
+  record literals, and `?`
 - static checks for duplicate declarations, unknown types, unknown effects,
-  simple return mismatches, `?` result flow, and host-effect authority
+  simple return mismatches, `?` result flow, host-effect authority, user
+  function call arity/types, called-function effect propagation, and typed
+  record literal fields
+- runtime evaluation for zero-argument pure `main`, literal values, pure
+  function calls, record literals, and record field access
 - structural patch operations for adding/removing parameters, replacing
   function bodies, adding imports/effects/types/functions, and renaming
   declarations
 
 Known v0 limits:
 
-- Expression parsing is intentionally shallow. The compiler preserves expression
-  source and classifies literals and identifiers, but calls and record literals
-  are not fully typed yet.
+- Expression parsing still falls back to raw nodes for unsupported syntax such
+  as infix operators and collection literals.
 - Comment attachment and durable provenance storage are not complete. Accepted
   patch provenance is returned by the patch command, but not written into a
   sidecar store.
-- `run` only supports a zero-argument pure `main` and literal-ish returns.
+- `run` only supports pure execution. Host calls and capability-backed runtime
+  objects are still represented as raw values unless a future host boundary is
+  supplied.
 - `UpdateCallSites`, `InsertStatement`, `ReplaceExpression`, `MoveNode`, and
   `DeleteNode` are declared but return explicit unsupported-operation
   diagnostics.
 
-The useful next step is to replace raw expressions with a real expression AST
-while keeping the current CLI and patch contracts stable.
+The useful next step is to use the call graph to implement `UpdateCallSites`
+for parameter-add/remove patches.

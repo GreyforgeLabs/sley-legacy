@@ -1,12 +1,14 @@
 use std::collections::{HashMap, HashSet};
 
-use crate::ast::{ExprKind, FunctionDecl, Program, StatementKind, TypeExpr};
+use crate::ast::{Expr, ExprKind, FunctionDecl, Program, RecordField, StatementKind, TypeExpr};
 use crate::diagnostics::{Diagnostic, RepairHint};
 
 pub fn check_program(program: &Program) -> Vec<Diagnostic> {
     let mut diagnostics = Vec::new();
     let known_types = collect_known_types(program, &mut diagnostics);
     let known_effects = collect_known_effects(program, &mut diagnostics);
+    let known_functions = collect_known_functions(program, &mut diagnostics);
+    let record_types = collect_record_types(program);
 
     for import in &program.imports {
         if import.module.trim().is_empty() {
@@ -21,9 +23,48 @@ pub fn check_program(program: &Program) -> Vec<Diagnostic> {
         validate_type_expr(&ty.value, &known_types, &mut diagnostics, &ty.id);
     }
 
-    let mut function_names = HashSet::new();
     for function in &program.functions {
-        if !function_names.insert(function.name.clone()) {
+        check_function(
+            function,
+            &known_types,
+            &known_effects,
+            &known_functions,
+            &record_types,
+            &mut diagnostics,
+        );
+    }
+
+    diagnostics
+}
+
+#[derive(Debug, Clone)]
+struct FunctionSignature {
+    params: Vec<TypeExpr>,
+    return_type: TypeExpr,
+    effects: Vec<String>,
+}
+
+fn collect_known_functions(
+    program: &Program,
+    diagnostics: &mut Vec<Diagnostic>,
+) -> HashMap<String, FunctionSignature> {
+    let mut known = HashMap::new();
+    for function in &program.functions {
+        if known
+            .insert(
+                function.name.clone(),
+                FunctionSignature {
+                    params: function
+                        .params
+                        .iter()
+                        .map(|param| param.ty.clone())
+                        .collect(),
+                    return_type: function.return_type.clone(),
+                    effects: function.effects.clone(),
+                },
+            )
+            .is_some()
+        {
             diagnostics.push(
                 Diagnostic::error(
                     "DUPLICATE_FUNCTION",
@@ -32,10 +73,19 @@ pub fn check_program(program: &Program) -> Vec<Diagnostic> {
                 .with_node(function.id.clone()),
             );
         }
-        check_function(function, &known_types, &known_effects, &mut diagnostics);
     }
+    known
+}
 
-    diagnostics
+fn collect_record_types(program: &Program) -> HashMap<String, Vec<RecordField>> {
+    program
+        .types
+        .iter()
+        .filter_map(|ty| match &ty.value {
+            TypeExpr::Record { fields } => Some((ty.name.clone(), fields.clone())),
+            _ => None,
+        })
+        .collect()
 }
 
 fn collect_known_types(program: &Program, diagnostics: &mut Vec<Diagnostic>) -> HashSet<String> {
@@ -101,6 +151,8 @@ fn check_function(
     function: &FunctionDecl,
     known_types: &HashSet<String>,
     known_effects: &HashSet<String>,
+    known_functions: &HashMap<String, FunctionSignature>,
+    record_types: &HashMap<String, Vec<RecordField>>,
     diagnostics: &mut Vec<Diagnostic>,
 ) {
     let mut params = HashSet::new();
@@ -158,7 +210,23 @@ fn check_function(
                 }
                 check_expression_effects(function, &expr.source, &declared_effects, diagnostics);
                 check_fallible_expression(function, expr, diagnostics);
-                let inferred = infer_expr_type(expr, &locals, &function.return_type);
+                check_expr_structure(
+                    function,
+                    expr,
+                    &locals,
+                    &declared_effects,
+                    known_types,
+                    known_functions,
+                    record_types,
+                    diagnostics,
+                );
+                let inferred = infer_expr_type(
+                    expr,
+                    &locals,
+                    &function.return_type,
+                    known_functions,
+                    record_types,
+                );
                 if let (Some(expected), Some(actual)) = (type_ann, inferred.as_ref()) {
                     if !types_compatible(expected, actual) {
                         diagnostics.push(
@@ -183,7 +251,23 @@ fn check_function(
             StatementKind::Return { expr } => {
                 check_expression_effects(function, &expr.source, &declared_effects, diagnostics);
                 check_fallible_expression(function, expr, diagnostics);
-                if let Some(actual) = infer_expr_type(expr, &locals, &function.return_type) {
+                check_expr_structure(
+                    function,
+                    expr,
+                    &locals,
+                    &declared_effects,
+                    known_types,
+                    known_functions,
+                    record_types,
+                    diagnostics,
+                );
+                if let Some(actual) = infer_expr_type(
+                    expr,
+                    &locals,
+                    &function.return_type,
+                    known_functions,
+                    record_types,
+                ) {
                     if !return_types_compatible(&function.return_type, &actual, &expr.source) {
                         diagnostics.push(
                             Diagnostic::error(
@@ -203,7 +287,291 @@ fn check_function(
             StatementKind::Expr { expr } => {
                 check_expression_effects(function, &expr.source, &declared_effects, diagnostics);
                 check_fallible_expression(function, expr, diagnostics);
+                check_expr_structure(
+                    function,
+                    expr,
+                    &locals,
+                    &declared_effects,
+                    known_types,
+                    known_functions,
+                    record_types,
+                    diagnostics,
+                );
             }
+        }
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn check_expr_structure(
+    function: &FunctionDecl,
+    expr: &Expr,
+    locals: &HashMap<String, TypeExpr>,
+    declared_effects: &HashSet<String>,
+    known_types: &HashSet<String>,
+    known_functions: &HashMap<String, FunctionSignature>,
+    record_types: &HashMap<String, Vec<RecordField>>,
+    diagnostics: &mut Vec<Diagnostic>,
+) {
+    match &expr.kind {
+        ExprKind::Call { callee, args } => {
+            check_expr_structure(
+                function,
+                callee,
+                locals,
+                declared_effects,
+                known_types,
+                known_functions,
+                record_types,
+                diagnostics,
+            );
+            for arg in args {
+                check_expr_structure(
+                    function,
+                    arg,
+                    locals,
+                    declared_effects,
+                    known_types,
+                    known_functions,
+                    record_types,
+                    diagnostics,
+                );
+            }
+            if let Some(callee_name) = direct_callee_name(callee) {
+                if let Some(signature) = known_functions.get(callee_name) {
+                    if args.len() != signature.params.len() {
+                        diagnostics.push(
+                            Diagnostic::error(
+                                "CALL_ARITY_MISMATCH",
+                                format!(
+                                    "function `{}` calls `{callee_name}` with {} arguments but {} are required",
+                                    function.name,
+                                    args.len(),
+                                    signature.params.len()
+                                ),
+                            )
+                            .with_node(expr.id.clone()),
+                        );
+                    }
+                    for (index, (arg, expected)) in
+                        args.iter().zip(signature.params.iter()).enumerate()
+                    {
+                        if let Some(actual) = infer_expr_type(
+                            arg,
+                            locals,
+                            &function.return_type,
+                            known_functions,
+                            record_types,
+                        ) {
+                            if !types_compatible(expected, &actual) {
+                                diagnostics.push(
+                                    Diagnostic::error(
+                                        "CALL_ARGUMENT_TYPE_MISMATCH",
+                                        format!(
+                                            "argument {index} to `{callee_name}` expects `{}` but expression looks like `{}`",
+                                            expected.display(),
+                                            actual.display()
+                                        ),
+                                    )
+                                    .with_node(arg.id.clone()),
+                                );
+                            }
+                        }
+                    }
+                    for effect in &signature.effects {
+                        if !declared_effects.contains(effect) {
+                            diagnostics.push(
+                                Diagnostic::error(
+                                    "EFFECT_UNAUTHORIZED",
+                                    format!(
+                                        "function `{}` calls `{callee_name}` which requires `{effect}`",
+                                        function.name
+                                    ),
+                                )
+                                .with_node(expr.id.clone())
+                                .with_repair_hint(RepairHint {
+                                    kind: "add_required_effect".to_string(),
+                                    target: Some(function.id.clone()),
+                                    effect: Some(effect.clone()),
+                                    replacement: None,
+                                }),
+                            );
+                        }
+                    }
+                }
+            }
+        }
+        ExprKind::FieldAccess { receiver, field } => {
+            check_expr_structure(
+                function,
+                receiver,
+                locals,
+                declared_effects,
+                known_types,
+                known_functions,
+                record_types,
+                diagnostics,
+            );
+            if let Some(TypeExpr::Named { name }) = infer_expr_type(
+                receiver,
+                locals,
+                &function.return_type,
+                known_functions,
+                record_types,
+            ) {
+                if let Some(fields) = record_types.get(&name) {
+                    if !fields
+                        .iter()
+                        .any(|record_field| record_field.name == *field)
+                    {
+                        diagnostics.push(
+                            Diagnostic::error(
+                                "UNKNOWN_RECORD_FIELD",
+                                format!("type `{name}` has no field `{field}`"),
+                            )
+                            .with_node(expr.id.clone()),
+                        );
+                    }
+                }
+            }
+        }
+        ExprKind::RecordLiteral { type_name, fields } => {
+            let mut seen = HashSet::new();
+            for field in fields {
+                if !seen.insert(field.name.clone()) {
+                    diagnostics.push(
+                        Diagnostic::error(
+                            "DUPLICATE_RECORD_LITERAL_FIELD",
+                            format!(
+                                "record literal field `{}` appears more than once",
+                                field.name
+                            ),
+                        )
+                        .with_node(field.expr.id.clone()),
+                    );
+                }
+                check_expr_structure(
+                    function,
+                    &field.expr,
+                    locals,
+                    declared_effects,
+                    known_types,
+                    known_functions,
+                    record_types,
+                    diagnostics,
+                );
+            }
+
+            if let Some(type_name) = type_name {
+                if !known_types.contains(type_name) {
+                    diagnostics.push(
+                        Diagnostic::error(
+                            "UNKNOWN_TYPE",
+                            format!("unknown record literal type `{type_name}`"),
+                        )
+                        .with_node(expr.id.clone()),
+                    );
+                } else if let Some(expected_fields) = record_types.get(type_name) {
+                    check_record_literal_fields(
+                        function,
+                        expr,
+                        fields,
+                        expected_fields,
+                        locals,
+                        known_functions,
+                        record_types,
+                        diagnostics,
+                    );
+                } else {
+                    diagnostics.push(
+                        Diagnostic::error(
+                            "RECORD_LITERAL_NON_RECORD_TYPE",
+                            format!("type `{type_name}` is not a record type"),
+                        )
+                        .with_node(expr.id.clone()),
+                    );
+                }
+            }
+        }
+        ExprKind::Try { expr: inner } => {
+            check_expr_structure(
+                function,
+                inner,
+                locals,
+                declared_effects,
+                known_types,
+                known_functions,
+                record_types,
+                diagnostics,
+            );
+        }
+        ExprKind::Raw { .. }
+        | ExprKind::StringLiteral { .. }
+        | ExprKind::IntLiteral { .. }
+        | ExprKind::FloatLiteral { .. }
+        | ExprKind::BoolLiteral { .. }
+        | ExprKind::Identifier { .. } => {}
+    }
+}
+
+fn check_record_literal_fields(
+    function: &FunctionDecl,
+    expr: &Expr,
+    fields: &[crate::ast::ExprField],
+    expected_fields: &[RecordField],
+    locals: &HashMap<String, TypeExpr>,
+    known_functions: &HashMap<String, FunctionSignature>,
+    record_types: &HashMap<String, Vec<RecordField>>,
+    diagnostics: &mut Vec<Diagnostic>,
+) {
+    for expected in expected_fields {
+        match fields.iter().find(|field| field.name == expected.name) {
+            Some(field) => {
+                if let Some(actual) = infer_expr_type(
+                    &field.expr,
+                    locals,
+                    &function.return_type,
+                    known_functions,
+                    record_types,
+                ) {
+                    if !types_compatible(&expected.ty, &actual) {
+                        diagnostics.push(
+                            Diagnostic::error(
+                                "RECORD_FIELD_TYPE_MISMATCH",
+                                format!(
+                                    "field `{}` expects `{}` but expression looks like `{}`",
+                                    expected.name,
+                                    expected.ty.display(),
+                                    actual.display()
+                                ),
+                            )
+                            .with_node(field.expr.id.clone()),
+                        );
+                    }
+                }
+            }
+            None => diagnostics.push(
+                Diagnostic::error(
+                    "RECORD_FIELD_MISSING",
+                    format!("record literal is missing field `{}`", expected.name),
+                )
+                .with_node(expr.id.clone()),
+            ),
+        }
+    }
+
+    for field in fields {
+        if !expected_fields
+            .iter()
+            .any(|expected| expected.name == field.name)
+        {
+            diagnostics.push(
+                Diagnostic::error(
+                    "RECORD_FIELD_UNKNOWN",
+                    format!("record literal has unknown field `{}`", field.name),
+                )
+                .with_node(field.expr.id.clone()),
+            );
         }
     }
 }
@@ -303,8 +671,7 @@ fn check_fallible_expression(
     expr: &crate::ast::Expr,
     diagnostics: &mut Vec<Diagnostic>,
 ) {
-    let uses_question = expr.source.ends_with('?') || expr.source.contains("? ");
-    if uses_question && function.return_type.generic_name() != Some("Result") {
+    if expr_uses_try(expr) && function.return_type.generic_name() != Some("Result") {
         diagnostics.push(
             Diagnostic::error(
                 "QUESTION_REQUIRES_RESULT",
@@ -315,10 +682,29 @@ fn check_fallible_expression(
     }
 }
 
+fn expr_uses_try(expr: &Expr) -> bool {
+    match &expr.kind {
+        ExprKind::Try { .. } => true,
+        ExprKind::Call { callee, args } => expr_uses_try(callee) || args.iter().any(expr_uses_try),
+        ExprKind::FieldAccess { receiver, .. } => expr_uses_try(receiver),
+        ExprKind::RecordLiteral { fields, .. } => {
+            fields.iter().any(|field| expr_uses_try(&field.expr))
+        }
+        ExprKind::Raw { fallible } => *fallible,
+        ExprKind::StringLiteral { .. }
+        | ExprKind::IntLiteral { .. }
+        | ExprKind::FloatLiteral { .. }
+        | ExprKind::BoolLiteral { .. }
+        | ExprKind::Identifier { .. } => false,
+    }
+}
+
 fn infer_expr_type(
     expr: &crate::ast::Expr,
     locals: &HashMap<String, TypeExpr>,
     return_type: &TypeExpr,
+    known_functions: &HashMap<String, FunctionSignature>,
+    record_types: &HashMap<String, Vec<RecordField>>,
 ) -> Option<TypeExpr> {
     match &expr.kind {
         ExprKind::StringLiteral { .. } => Some(TypeExpr::named("Text")),
@@ -326,6 +712,65 @@ fn infer_expr_type(
         ExprKind::FloatLiteral { .. } => Some(TypeExpr::named("Float")),
         ExprKind::BoolLiteral { .. } => Some(TypeExpr::named("Bool")),
         ExprKind::Identifier { name } => locals.get(name).cloned(),
+        ExprKind::Call { callee, .. } => {
+            if direct_callee_name(callee).is_some_and(|name| name == "Ok" || name == "Err")
+                && return_type.generic_name() == Some("Result")
+            {
+                Some(return_type.clone())
+            } else if let Some(callee_name) = direct_callee_name(callee) {
+                known_functions
+                    .get(callee_name)
+                    .map(|signature| signature.return_type.clone())
+            } else {
+                None
+            }
+        }
+        ExprKind::FieldAccess { receiver, field } => {
+            if let Some(TypeExpr::Named { name }) =
+                infer_expr_type(receiver, locals, return_type, known_functions, record_types)
+            {
+                record_types
+                    .get(&name)
+                    .and_then(|fields| fields.iter().find(|item| item.name == *field))
+                    .map(|field| field.ty.clone())
+            } else {
+                None
+            }
+        }
+        ExprKind::RecordLiteral { type_name, fields } => {
+            if let Some(type_name) = type_name {
+                Some(TypeExpr::named(type_name.clone()))
+            } else {
+                let mut inferred_fields = Vec::new();
+                for field in fields {
+                    inferred_fields.push(RecordField {
+                        name: field.name.clone(),
+                        ty: infer_expr_type(
+                            &field.expr,
+                            locals,
+                            return_type,
+                            known_functions,
+                            record_types,
+                        )?,
+                    });
+                }
+                Some(TypeExpr::Record {
+                    fields: inferred_fields,
+                })
+            }
+        }
+        ExprKind::Try { expr } => {
+            match infer_expr_type(expr, locals, return_type, known_functions, record_types) {
+                Some(TypeExpr::Generic { name, mut args }) if name == "Result" => {
+                    if args.is_empty() {
+                        None
+                    } else {
+                        Some(args.remove(0))
+                    }
+                }
+                _ => None,
+            }
+        }
         ExprKind::Raw { .. } => {
             let trimmed = expr.source.trim();
             if trimmed.starts_with("Ok(") || trimmed.starts_with("Err(") {
@@ -336,6 +781,13 @@ fn infer_expr_type(
                 None
             }
         }
+    }
+}
+
+fn direct_callee_name(expr: &Expr) -> Option<&str> {
+    match &expr.kind {
+        ExprKind::Identifier { name } => Some(name.as_str()),
+        _ => None,
     }
 }
 

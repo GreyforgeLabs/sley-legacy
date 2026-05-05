@@ -52,7 +52,8 @@ impl Program {
             }
             for (stmt_index, stmt) in function.body.statements.iter_mut().enumerate() {
                 stmt.id = format!("stmt:{}:{stmt_index}", function.id);
-                stmt.expr_mut().id = format!("expr:{}:{stmt_index}", function.id);
+                stmt.expr_mut()
+                    .assign_ids(format!("expr:{}:{stmt_index}", function.id));
             }
         }
     }
@@ -183,15 +184,86 @@ pub struct Expr {
     pub span: Option<SourceSpan>,
 }
 
+impl Expr {
+    pub fn assign_ids(&mut self, root: impl Into<String>) {
+        self.assign_ids_at(root.into());
+    }
+
+    fn assign_ids_at(&mut self, id: String) {
+        self.id = id.clone();
+        match &mut self.kind {
+            ExprKind::Call { callee, args } => {
+                callee.assign_ids_at(format!("{id}:callee"));
+                for (index, arg) in args.iter_mut().enumerate() {
+                    arg.assign_ids_at(format!("{id}:arg:{index}"));
+                }
+            }
+            ExprKind::FieldAccess { receiver, .. } => {
+                receiver.assign_ids_at(format!("{id}:receiver"));
+            }
+            ExprKind::RecordLiteral { fields, .. } => {
+                for (index, field) in fields.iter_mut().enumerate() {
+                    field
+                        .expr
+                        .assign_ids_at(format!("{id}:field:{index}:{}", field.name));
+                }
+            }
+            ExprKind::Try { expr } => {
+                expr.assign_ids_at(format!("{id}:try"));
+            }
+            ExprKind::Raw { .. }
+            | ExprKind::StringLiteral { .. }
+            | ExprKind::IntLiteral { .. }
+            | ExprKind::FloatLiteral { .. }
+            | ExprKind::BoolLiteral { .. }
+            | ExprKind::Identifier { .. } => {}
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "expr_kind")]
 pub enum ExprKind {
-    Raw { fallible: bool },
-    StringLiteral { value: String },
-    IntLiteral { value: i64 },
-    FloatLiteral { value: f64 },
-    BoolLiteral { value: bool },
-    Identifier { name: String },
+    Raw {
+        fallible: bool,
+    },
+    StringLiteral {
+        value: String,
+    },
+    IntLiteral {
+        value: i64,
+    },
+    FloatLiteral {
+        value: f64,
+    },
+    BoolLiteral {
+        value: bool,
+    },
+    Identifier {
+        name: String,
+    },
+    Call {
+        callee: Box<Expr>,
+        args: Vec<Expr>,
+    },
+    FieldAccess {
+        receiver: Box<Expr>,
+        field: String,
+    },
+    RecordLiteral {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        type_name: Option<String>,
+        fields: Vec<ExprField>,
+    },
+    Try {
+        expr: Box<Expr>,
+    },
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ExprField {
+    pub name: String,
+    pub expr: Expr,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
