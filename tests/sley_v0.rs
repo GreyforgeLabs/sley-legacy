@@ -2365,6 +2365,93 @@ task main -> Int {
 }
 
 #[test]
+fn checker_condition_hints_include_replace_expression_grafts() {
+    let source = r#"
+task main -> Int {
+  if 1 {
+    bind branch = 1
+  }
+  while "again" {
+    bind step = 1
+  }
+  return if 1 { 1 } else { 2 }
+}
+"#;
+    let program = parse_program(source).expect("parse condition source");
+    let diagnostics = check_program(&program);
+
+    let if_condition_diagnostics = diagnostics
+        .iter()
+        .filter(|diagnostic| diagnostic.id == "IF_CONDITION_NOT_BOOL")
+        .collect::<Vec<_>>();
+    assert_eq!(
+        if_condition_diagnostics.len(),
+        2,
+        "expected statement and expression if condition diagnostics, got {diagnostics:#?}"
+    );
+    for diagnostic in if_condition_diagnostics {
+        assert!(
+            diagnostic
+                .repair_hints
+                .iter()
+                .any(|hint| hint.kind == "replace_condition"),
+            "expected replace_condition hint, got {diagnostic:#?}"
+        );
+        let hint = diagnostic
+            .repair_hints
+            .iter()
+            .find(|hint| hint.kind == "replace_expression")
+            .unwrap_or_else(|| panic!("missing replace_expression hint on {diagnostic:#?}"));
+        let target = assert_replace_expression_hint_json(hint, "false");
+        assert!(
+            target.starts_with("block:task:main.main"),
+            "expected condition expression target, got {target}"
+        );
+    }
+
+    assert_has_repair_hint(
+        &diagnostics,
+        "WHILE_CONDITION_NOT_BOOL",
+        "replace_condition",
+    );
+    let target =
+        assert_replace_expression_hint_source(&diagnostics, "WHILE_CONDITION_NOT_BOOL", "false");
+    assert!(
+        target.starts_with("block:task:main.main"),
+        "expected while condition target, got {target}"
+    );
+}
+
+#[test]
+fn checker_collection_index_and_record_hints_include_replace_expression_grafts() {
+    let source = r#"
+type User = {
+  slot name: Text
+  slot age: Int
+}
+
+task main -> Int {
+  bind mixed = [1, "x"]
+  bind scores = map { 1: 2, "two": "bad" }
+  bind valid = map { "one": 1 }
+  bind user = User { name: 1, age: 2 }
+  bind values = [1, 2]
+  bind bad_list_lookup = values["bad"]
+  return valid[1]
+}
+"#;
+    let program = parse_program(source).expect("parse collection repair source");
+    let diagnostics = check_program(&program);
+
+    assert_replace_expression_hint_source(&diagnostics, "LIST_ELEMENT_TYPE_MISMATCH", "0");
+    assert_replace_expression_hint_source(&diagnostics, "MAP_KEY_TYPE_MISMATCH", "\"\"");
+    assert_replace_expression_hint_source(&diagnostics, "MAP_VALUE_TYPE_MISMATCH", "0");
+    assert_replace_expression_hint_source(&diagnostics, "INDEX_NOT_INT", "0");
+    assert_replace_expression_hint_source(&diagnostics, "INDEX_KEY_TYPE_MISMATCH", "\"\"");
+    assert_replace_expression_hint_source(&diagnostics, "RECORD_FIELD_TYPE_MISMATCH", "\"\"");
+}
+
+#[test]
 fn rejected_graft_fixtures_report_stable_diagnostic_ids() {
     let call_source = r#"
 task double -> Int {
@@ -6215,4 +6302,39 @@ fn find_repair_hint<'a>(
         .iter()
         .find(|hint| hint.kind == kind)
         .unwrap_or_else(|| panic!("missing repair hint {kind} on {id}; got {diagnostic:#?}"))
+}
+
+fn assert_replace_expression_hint_source(
+    diagnostics: &[sley::diagnostics::Diagnostic],
+    id: &str,
+    expected_source: &str,
+) -> String {
+    let hint = find_repair_hint(diagnostics, id, "replace_expression");
+    assert_replace_expression_hint_json(hint, expected_source)
+}
+
+fn assert_replace_expression_hint_json(
+    hint: &sley::diagnostics::RepairHint,
+    expected_source: &str,
+) -> String {
+    let target = hint.target.as_deref().expect("replace_expression target");
+    let replacement: serde_json::Value = serde_json::from_str(
+        hint.replacement
+            .as_deref()
+            .expect("replace_expression replacement"),
+    )
+    .expect("replace_expression replacement is JSON");
+    assert_eq!(
+        replacement.pointer("/op"),
+        Some(&serde_json::json!("ReplaceExpression"))
+    );
+    assert_eq!(
+        replacement.pointer("/target"),
+        Some(&serde_json::json!(target))
+    );
+    assert_eq!(
+        replacement.pointer("/payload/source"),
+        Some(&serde_json::json!(expected_source))
+    );
+    target.to_string()
 }

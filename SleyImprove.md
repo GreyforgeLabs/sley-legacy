@@ -179,6 +179,9 @@ Priority diagnostic families:
 - unknown types: implemented with `declare_or_import_type`
 - binding and assignment type mismatch: implemented with type-change hints and
   structural `ReplaceExpression`
+- condition, collection, index, and record-field expression mismatches:
+  implemented with structural `ReplaceExpression` hints where the expected
+  replacement type is clear
 - call arity mismatch: implemented with `match_task_arity`, `UpdateCallArgs`,
   and `RemoveCallArg`
 - call argument type mismatch: implemented with `replace_argument` and

@@ -459,7 +459,11 @@ fn check_block(
                             ),
                         )
                         .with_node(condition.id.clone())
-                        .with_repair_hint(bool_condition_hint(condition)),
+                        .with_repair_hint(bool_condition_hint(condition))
+                        .with_repair_hint(replace_expression_graft_hint(
+                            condition,
+                            &TypeExpr::named("Bool"),
+                        )),
                     );
                 }
                 let mut then_locals = locals.clone();
@@ -515,7 +519,11 @@ fn check_block(
                             ),
                         )
                         .with_node(condition.id.clone())
-                        .with_repair_hint(bool_condition_hint(condition)),
+                        .with_repair_hint(bool_condition_hint(condition))
+                        .with_repair_hint(replace_expression_graft_hint(
+                            condition,
+                            &TypeExpr::named("Bool"),
+                        )),
                     );
                 }
                 let mut body_locals = locals.clone();
@@ -1287,7 +1295,11 @@ fn check_if_expression(
                 ),
             )
             .with_node(condition.id.clone())
-            .with_repair_hint(bool_condition_hint(condition)),
+            .with_repair_hint(bool_condition_hint(condition))
+            .with_repair_hint(replace_expression_graft_hint(
+                condition,
+                &TypeExpr::named("Bool"),
+            )),
         );
     }
 
@@ -1409,7 +1421,8 @@ fn check_list_literal(
                         actual.display()
                     ),
                 )
-                .with_node(expr.id.clone()),
+                .with_node(expr.id.clone())
+                .with_repair_hint(replace_expression_graft_hint(item, &first_type)),
             );
         }
     }
@@ -1437,7 +1450,11 @@ fn check_map_literal(
                     "MAP_KEY_TYPE_MISMATCH",
                     format!("map keys must be `Text`, not `{}`", key_type.display()),
                 )
-                .with_node(entry.key.id.clone()),
+                .with_node(entry.key.id.clone())
+                .with_repair_hint(replace_expression_graft_hint(
+                    &entry.key,
+                    &TypeExpr::named("Text"),
+                )),
             );
         }
         if let ExprKind::StringLiteral { value } = &entry.key.kind
@@ -1485,7 +1502,8 @@ fn check_map_literal(
                         actual.display()
                     ),
                 )
-                .with_node(expr.id.clone()),
+                .with_node(expr.id.clone())
+                .with_repair_hint(replace_expression_graft_hint(&entry.value, &first_type)),
             );
         }
     }
@@ -1516,7 +1534,11 @@ fn check_index_expression(
                         "INDEX_NOT_INT",
                         format!("list index must be `Int`, not `{}`", index_type.display()),
                     )
-                    .with_node(index.id.clone()),
+                    .with_node(index.id.clone())
+                    .with_repair_hint(replace_expression_graft_hint(
+                        index,
+                        &TypeExpr::named("Int"),
+                    )),
                 );
             }
             return;
@@ -1531,7 +1553,11 @@ fn check_index_expression(
                         "INDEX_KEY_TYPE_MISMATCH",
                         format!("map key must be `Text`, not `{}`", index_type.display()),
                     )
-                    .with_node(index.id.clone()),
+                    .with_node(index.id.clone())
+                    .with_repair_hint(replace_expression_graft_hint(
+                        index,
+                        &TypeExpr::named("Text"),
+                    )),
                 );
             }
             return;
@@ -1584,7 +1610,8 @@ fn check_record_literal_fields(
                                 actual.display()
                             ),
                         )
-                        .with_node(field.expr.id.clone()),
+                        .with_node(field.expr.id.clone())
+                        .with_repair_hint(replace_expression_graft_hint(&field.expr, &expected.ty)),
                     );
                 }
             }

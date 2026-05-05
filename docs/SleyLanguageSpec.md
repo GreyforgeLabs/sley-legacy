@@ -670,6 +670,9 @@ starter graft. Return type mismatches carry both the declaration-level
 the returned expression. Binding and assignment type mismatches likewise include
 structural `replace_expression` hints for the initializer or assigned
 expression, alongside the older type-change or source-level replacement hints.
+Condition, collection element, map key/value, index key, and record-field
+expression mismatches include structural `replace_expression` hints when the
+checker has a clear expected replacement type for the offending expression.
 
 ## ZJX Boundary
 
