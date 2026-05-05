@@ -13,6 +13,7 @@ use sley::formatter::format_program;
 use sley::graft::{GRAFT_OUTCOME_SCHEMA, GraftInput, GraftOutcome, apply_graft_input};
 use sley::lint::{LINT_REPORT_SCHEMA, LintOptions, LintRule, build_lint_report};
 use sley::parser::parse_program;
+use sley::plan::{EDIT_PLAN_REPORT_SCHEMA, build_edit_plan_report};
 use sley::project::load_project;
 use sley::query::{QUERY_REPORT_SCHEMA, QueryKind, QueryOptions, build_query_report};
 use sley::runtime::{RuntimeGates, Value, run_main, run_main_with_gates};
@@ -519,6 +520,59 @@ task orphan -> Int {
     );
 
     let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn edit_plan_report_ranks_query_surfaces_and_carries_lint_findings() {
+    let source = r#"
+module app.plan
+
+task main -> Int {
+  return call used()
+}
+
+task used -> Int {
+  return 1
+}
+
+task orphan -> Int {
+  return 2
+}
+"#;
+    let program = parse_program(source).expect("parse plan fixture");
+    let report = build_edit_plan_report("app.plan", Ok(program.clone()), false);
+    assert_eq!(report.schema, EDIT_PLAN_REPORT_SCHEMA);
+    assert_eq!(report.status, "warnings");
+    assert_eq!(
+        report.query.as_ref().expect("query summary").source_schema,
+        QUERY_REPORT_SCHEMA
+    );
+    assert_eq!(
+        report.lint.as_ref().expect("lint summary").source_schema,
+        LINT_REPORT_SCHEMA
+    );
+    assert_eq!(report.lint.as_ref().expect("lint summary").finding_count, 1);
+    assert_eq!(
+        report.task_surfaces[0].planning_notes,
+        vec!["entrypoint_surface", "has_outbound_calls"]
+    );
+    assert_eq!(report.task_surfaces[0].id, "task:app.plan.main");
+    assert_eq!(
+        report.task_surfaces[0].graft_targets,
+        vec!["task:app.plan.main", "module:app.plan:tasks"]
+    );
+    assert_eq!(
+        report.next_actions[0].kind, "repair_lint_findings",
+        "warning plans should lead with the lint repair surface"
+    );
+
+    let denied = build_edit_plan_report("app.plan", Ok(program), true);
+    assert_eq!(denied.status, "blocked");
+    assert_eq!(denied.summary.lint_finding_count, 1);
+    assert_eq!(
+        denied.lint.as_ref().expect("denied lint").findings[0].id,
+        "UNUSED_PRIVATE_TASK"
+    );
 }
 
 #[test]
@@ -1308,6 +1362,12 @@ task main -> Text uses Network {
             ],
             vec![
                 "sley".to_string(),
+                "plan".to_string(),
+                "--json".to_string(),
+                ".".to_string(),
+            ],
+            vec![
+                "sley".to_string(),
                 "lint".to_string(),
                 "--json".to_string(),
                 "--deny-warnings".to_string(),
@@ -1346,6 +1406,12 @@ task main -> Text uses Network {
     assert_json_snapshot(
         &doctor,
         include_str!("../fixtures/contracts/doctor_project_ready.json"),
+    );
+
+    let edit_plan = build_edit_plan_report("examples/project", Ok(project.program.clone()), false);
+    assert_json_snapshot(
+        &edit_plan,
+        include_str!("../fixtures/contracts/edit_plan_project_ready.json"),
     );
 
     let verify = build_verify_report(
@@ -1406,6 +1472,10 @@ task main -> Text uses Network {
     assert_schema_file(
         include_str!("../docs/schemas/sley.doctor.report.v0.schema.json"),
         DOCTOR_REPORT_SCHEMA,
+    );
+    assert_schema_file(
+        include_str!("../docs/schemas/sley.edit_plan.report.v0.schema.json"),
+        EDIT_PLAN_REPORT_SCHEMA,
     );
     assert_schema_file(
         include_str!("../docs/schemas/sley.verify.report.v0.schema.json"),
@@ -5254,6 +5324,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "cli:parse",
         "cli:new",
         "cli:doctor",
+        "cli:plan",
         "cli:verify",
         "cli:format",
         "cli:check",
@@ -5288,6 +5359,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "json:sley.lint.report.v0",
         "json:sley.project.scaffold.v0",
         "json:sley.doctor.report.v0",
+        "json:sley.edit_plan.report.v0",
         "json:sley.verify.report.v0",
         "json:sley.trace.seal.v0",
         "json:sley.zjx.envelope.v0",

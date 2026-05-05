@@ -39,7 +39,8 @@
           { "pointer": "/project/template", "value": "deploy" },
           { "pointer": "/files/0/path", "value": "sley.toml" },
           { "pointer": "/files/2/path", "value": "src/app/main.sley" },
-          { "pointer": "/next_commands/3/4", "value": "Deploy" }
+          { "pointer": "/next_commands/2/1", "value": "plan" },
+          { "pointer": "/next_commands/4/4", "value": "Deploy" }
         ]
       }
     },
@@ -170,6 +171,29 @@
           { "pointer": "/summary/module_count", "value": 2 },
           { "pointer": "/summary/task_count", "value": 2 },
           { "pointer": "/next_actions/0/kind", "value": "inspect_tasks" }
+        ]
+      }
+    },
+    {
+      "name": "plan_project_json",
+      "args": ["plan", "--json", "examples/project"],
+      "covers": [
+        "cli:plan",
+        "json:sley.edit_plan.report.v0",
+        "json:sley.query.report.v0",
+        "json:sley.lint.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.edit_plan.report.v0" },
+          { "pointer": "/status", "value": "ready" },
+          { "pointer": "/query/source_schema", "value": "sley.query.report.v0" },
+          { "pointer": "/lint/source_schema", "value": "sley.lint.report.v0" },
+          { "pointer": "/summary/task_surface_count", "value": 2 },
+          { "pointer": "/task_surfaces/0/id", "value": "task:app.main.main" },
+          { "pointer": "/task_surfaces/0/graft_targets/1", "value": "module:app.main:tasks" },
+          { "pointer": "/next_actions/0/kind", "value": "inspect_primary_surface" }
         ]
       }
     },

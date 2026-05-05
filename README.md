@@ -16,6 +16,7 @@ Implemented now:
 - `sley query`
 - `sley lint`
 - `sley doctor`
+- `sley plan`
 - `sley verify`
 - `sley trace`
 - `sley seal`
@@ -105,6 +106,9 @@ Implemented now:
 - checked JSON readiness reports with `sley doctor`, consuming strict
   diagnostics plus query and lint summaries, and
   `schema: "sley.doctor.report.v0"` for agent pre-edit gates
+- checked JSON edit-plan reports with `sley plan`, consuming strict
+  diagnostics plus query and lint findings into ranked task edit surfaces,
+  graft target ids, and `schema: "sley.edit_plan.report.v0"`
 - checked JSON verification reports with `sley verify`, consuming strict
   diagnostics, query summaries, lint findings, and deterministic runtime
   execution into `schema: "sley.verify.report.v0"` for CI and pre-deploy gates
@@ -133,15 +137,15 @@ Implemented now:
   unknown tasks, type mismatches, return mismatches, call argument mismatches,
   condition mismatches, effect authority, and private or ambiguous names
 - locked JSON contract snapshots under `fixtures/contracts/`, including
-  checked query, lint, doctor, verify, and project scaffold reports
+  checked query, lint, doctor, edit-plan, verify, and project scaffold reports
 - external v0 JSON Schema files under `docs/schemas/`
 - manifest-backed accepted/rejected synthetic conformance corpus fixtures under
   `fixtures/corpus/`, including declared and missing authority cases for the
   seeded host adapter surface
 - manifest-backed CLI smoke conformance cases under `fixtures/cli_smokes/`,
   covering stable command output, JSON roots, graph/ZJX surfaces, doctor
-  readiness, verify pre-deploy gates, project scaffolding, graft dry runs, and
-  seeded host-adapter execution
+  readiness, edit-plan surfaces, verify pre-deploy gates, project scaffolding,
+  graft dry runs, and seeded host-adapter execution
 - compact agent onboarding pack in `llms.txt`
 
 Project form:
@@ -151,6 +155,7 @@ sley new --template deploy --name agent-app agent-app
 cd agent-app
 sley check --json .
 sley doctor --json .
+sley plan --json .
 sley verify --json --cap Deploy --deploy-result staging staged .
 sley lint --json --deny-warnings .
 sley run --json --cap Deploy --deploy-result staging staged .
@@ -171,8 +176,9 @@ entry = "app.main"
 
 Module `app.main` resolves to `src/app/main.sley`. `sley parse`,
 `sley check`, `sley run`, `sley ast`, `sley graph`, `sley query`,
-`sley lint`, `sley seal`, `sley zjx`, and `sley graft` accept either a single
-`.sley` file or a project directory containing `sley.toml`. Project graft
+`sley lint`, `sley doctor`, `sley plan`, `sley verify`, `sley seal`,
+`sley zjx`, and `sley graft` accept either a single `.sley` file or a project
+directory containing `sley.toml`. Project graft
 writeback projects the checked candidate back to existing owning module files
 and leaves unchanged module files alone. It can create checked new module
 files, delete removed loaded module files, rename module files, and update
@@ -438,6 +444,6 @@ The current release-readiness phase is underway for the executable slice. The
 gold corpus and CLI smoke suite now have manifests with required coverage tags
 for seeded host adapters, stable JSON roots, graph/ZJX output, graft dry runs,
 checked graph query reports, doctor readiness, verify pre-deploy gates,
-private-task lint rules, authority hygiene, and raw-host migration warnings.
-The next logical phase is to broaden style and migration lints before
-broadening the language again.
+edit-plan surfaces, private-task lint rules, authority hygiene, and raw-host
+migration warnings. The next logical phase is to broaden style and migration
+lints before broadening the language again.

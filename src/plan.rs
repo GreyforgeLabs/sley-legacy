@@ -1,0 +1,419 @@
+use serde::Serialize;
+
+use crate::Program;
+use crate::checker::{check_program, has_errors};
+use crate::diagnostics::Diagnostic;
+use crate::lint::{LintOptions, LintReport, build_lint_report};
+use crate::query::{QueryKind, QueryOptions, QueryReport, QueryTakeSummary, build_query_report};
+
+pub const EDIT_PLAN_REPORT_SCHEMA: &str = "sley.edit_plan.report.v0";
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct EditPlanReport {
+    pub schema: String,
+    pub status: String,
+    pub target: String,
+    pub entry_module: Option<String>,
+    pub summary: EditPlanSummary,
+    pub diagnostics: Vec<Diagnostic>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub query: Option<EditPlanQuerySummary>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub lint: Option<EditPlanLintSummary>,
+    pub task_surfaces: Vec<EditPlanTaskSurface>,
+    pub next_actions: Vec<EditPlanAction>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct EditPlanSummary {
+    pub error_count: usize,
+    pub warning_count: usize,
+    pub module_count: usize,
+    pub task_count: usize,
+    pub call_count: usize,
+    pub lint_finding_count: usize,
+    pub task_surface_count: usize,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct EditPlanQuerySummary {
+    pub source_schema: String,
+    pub kind: String,
+    pub module_count: usize,
+    pub task_count: usize,
+    pub call_count: usize,
+    pub entrypoints: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct EditPlanLintSummary {
+    pub source_schema: String,
+    pub status: String,
+    pub rules: Vec<String>,
+    pub finding_count: usize,
+    pub findings: Vec<EditPlanLintFinding>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct EditPlanLintFinding {
+    pub id: String,
+    pub rule: String,
+    pub severity: String,
+    pub message: String,
+    pub node: String,
+    pub module: String,
+    pub hint: String,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct EditPlanTaskSurface {
+    pub id: String,
+    pub module: String,
+    pub qualified_name: String,
+    pub exported: bool,
+    pub takes: Vec<EditPlanTake>,
+    pub return_type: String,
+    pub effects: Vec<String>,
+    pub inbound_call_count: usize,
+    pub outbound_call_count: usize,
+    pub graft_targets: Vec<String>,
+    pub planning_notes: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct EditPlanTake {
+    pub name: String,
+    pub binding_kind: String,
+    #[serde(rename = "type")]
+    pub ty: String,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct EditPlanAction {
+    pub kind: String,
+    pub reason: String,
+    pub command: Vec<String>,
+}
+
+pub fn build_edit_plan_report(
+    target: impl Into<String>,
+    program_result: Result<Program, Vec<Diagnostic>>,
+    deny_warnings: bool,
+) -> EditPlanReport {
+    let target = target.into();
+    let program = match program_result {
+        Ok(program) => program,
+        Err(diagnostics) => {
+            let summary = diagnostic_summary(&diagnostics);
+            return EditPlanReport {
+                schema: EDIT_PLAN_REPORT_SCHEMA.to_string(),
+                status: "blocked".to_string(),
+                target: target.clone(),
+                entry_module: None,
+                summary,
+                diagnostics,
+                query: None,
+                lint: None,
+                task_surfaces: Vec::new(),
+                next_actions: blocked_actions(&target),
+            };
+        }
+    };
+
+    let diagnostics = check_program(&program);
+    if has_errors(&diagnostics) {
+        let summary = diagnostic_summary(&diagnostics);
+        return EditPlanReport {
+            schema: EDIT_PLAN_REPORT_SCHEMA.to_string(),
+            status: "blocked".to_string(),
+            target: target.clone(),
+            entry_module: Some(program.module_name().to_string()),
+            summary,
+            diagnostics,
+            query: None,
+            lint: None,
+            task_surfaces: Vec::new(),
+            next_actions: blocked_actions(&target),
+        };
+    }
+
+    let query_report = build_query_report(
+        &program,
+        QueryOptions {
+            kind: QueryKind::All,
+            module: None,
+            exported_only: false,
+        },
+    );
+    let lint_report = build_lint_report(&program, LintOptions::default());
+    let query = summarize_query(&query_report);
+    let lint = summarize_lint(&lint_report);
+    let task_surfaces = build_task_surfaces(&query_report);
+    let error_count = diagnostics
+        .iter()
+        .filter(|diagnostic| diagnostic.is_error())
+        .count();
+    let warning_count = diagnostics.len() - error_count + lint.finding_count;
+    let status = if warning_count == 0 {
+        "ready"
+    } else if deny_warnings {
+        "blocked"
+    } else {
+        "warnings"
+    };
+    let summary = EditPlanSummary {
+        error_count,
+        warning_count,
+        module_count: query.module_count,
+        task_count: query.task_count,
+        call_count: query.call_count,
+        lint_finding_count: lint.finding_count,
+        task_surface_count: task_surfaces.len(),
+    };
+    let next_actions = if warning_count > 0 {
+        warning_actions(&target, &task_surfaces)
+    } else {
+        ready_actions(&target, &query_report, &task_surfaces)
+    };
+
+    EditPlanReport {
+        schema: EDIT_PLAN_REPORT_SCHEMA.to_string(),
+        status: status.to_string(),
+        target,
+        entry_module: Some(program.module_name().to_string()),
+        summary,
+        diagnostics,
+        query: Some(query),
+        lint: Some(lint),
+        task_surfaces,
+        next_actions,
+    }
+}
+
+fn diagnostic_summary(diagnostics: &[Diagnostic]) -> EditPlanSummary {
+    let error_count = diagnostics
+        .iter()
+        .filter(|diagnostic| diagnostic.is_error())
+        .count();
+    EditPlanSummary {
+        error_count,
+        warning_count: diagnostics.len() - error_count,
+        module_count: 0,
+        task_count: 0,
+        call_count: 0,
+        lint_finding_count: 0,
+        task_surface_count: 0,
+    }
+}
+
+fn summarize_query(report: &QueryReport) -> EditPlanQuerySummary {
+    let entry_task = format!("{}.main", report.entry_module);
+    let entrypoints = report
+        .tasks
+        .iter()
+        .filter(|task| task.qualified_name == entry_task || task.exported)
+        .map(|task| task.qualified_name.clone())
+        .collect();
+
+    EditPlanQuerySummary {
+        source_schema: report.schema.clone(),
+        kind: report.kind.clone(),
+        module_count: report.modules.len(),
+        task_count: report.tasks.len(),
+        call_count: report.calls.len(),
+        entrypoints,
+    }
+}
+
+fn summarize_lint(report: &LintReport) -> EditPlanLintSummary {
+    EditPlanLintSummary {
+        source_schema: report.schema.clone(),
+        status: report.status.clone(),
+        rules: report.filters.rules.clone(),
+        finding_count: report.findings.len(),
+        findings: report
+            .findings
+            .iter()
+            .map(|finding| EditPlanLintFinding {
+                id: finding.id.clone(),
+                rule: finding.rule.clone(),
+                severity: finding.severity.clone(),
+                message: finding.message.clone(),
+                node: finding.node.clone(),
+                module: finding.module.clone(),
+                hint: finding.hint.clone(),
+            })
+            .collect(),
+    }
+}
+
+fn build_task_surfaces(report: &QueryReport) -> Vec<EditPlanTaskSurface> {
+    let entry_task = format!("{}.main", report.entry_module);
+    let mut surfaces = report
+        .tasks
+        .iter()
+        .map(|task| EditPlanTaskSurface {
+            id: task.id.clone(),
+            module: task.module.clone(),
+            qualified_name: task.qualified_name.clone(),
+            exported: task.exported,
+            takes: task.takes.iter().map(take_summary).collect(),
+            return_type: task.return_type.clone(),
+            effects: task.effects.clone(),
+            inbound_call_count: task.inbound_call_count,
+            outbound_call_count: task.outbound_call_count,
+            graft_targets: vec![task.id.clone(), format!("module:{}:tasks", task.module)],
+            planning_notes: planning_notes(task, &entry_task),
+        })
+        .collect::<Vec<_>>();
+    surfaces.sort_by(|left, right| {
+        surface_rank(left, &entry_task)
+            .cmp(&surface_rank(right, &entry_task))
+            .then_with(|| left.module.cmp(&right.module))
+            .then_with(|| left.qualified_name.cmp(&right.qualified_name))
+    });
+    surfaces
+}
+
+fn take_summary(take: &QueryTakeSummary) -> EditPlanTake {
+    EditPlanTake {
+        name: take.name.clone(),
+        binding_kind: take.binding_kind.clone(),
+        ty: take.ty.clone(),
+    }
+}
+
+fn planning_notes(task: &crate::query::QueryTaskSummary, entry_task: &str) -> Vec<String> {
+    let mut notes = Vec::new();
+    if task.qualified_name == entry_task {
+        notes.push("entrypoint_surface".to_string());
+    }
+    if task.exported {
+        notes.push("exported_surface".to_string());
+    }
+    if !task.effects.is_empty() {
+        notes.push("requires_runtime_gates".to_string());
+    }
+    if task.outbound_call_count > 0 {
+        notes.push("has_outbound_calls".to_string());
+    }
+    if task.inbound_call_count > 0 {
+        notes.push("has_inbound_callers".to_string());
+    }
+    if notes.is_empty() {
+        notes.push("private_task_surface".to_string());
+    }
+    notes
+}
+
+fn surface_rank(surface: &EditPlanTaskSurface, entry_task: &str) -> u8 {
+    if surface.qualified_name == entry_task {
+        0
+    } else if surface.exported {
+        1
+    } else if !surface.effects.is_empty() {
+        2
+    } else if surface.inbound_call_count > 0 || surface.outbound_call_count > 0 {
+        3
+    } else {
+        4
+    }
+}
+
+fn blocked_actions(target: &str) -> Vec<EditPlanAction> {
+    vec![EditPlanAction {
+        kind: "repair_diagnostics".to_string(),
+        reason: "strict checking must pass before edit surfaces can be ranked".to_string(),
+        command: command(["sley", "check", "--json", target]),
+    }]
+}
+
+fn warning_actions(target: &str, surfaces: &[EditPlanTaskSurface]) -> Vec<EditPlanAction> {
+    let mut actions = vec![
+        EditPlanAction {
+            kind: "repair_lint_findings".to_string(),
+            reason: "lint findings should be resolved or deliberately accepted before grafting"
+                .to_string(),
+            command: command(["sley", "lint", "--json", target]),
+        },
+        EditPlanAction {
+            kind: "inspect_tasks".to_string(),
+            reason: "query task facts identify the narrowest edit surface".to_string(),
+            command: command(["sley", "query", "--json", "--kind", "tasks", target]),
+        },
+    ];
+    if let Some(surface) = surfaces.first() {
+        actions.push(inspect_surface_action(target, &surface.id));
+    }
+    actions
+}
+
+fn ready_actions(
+    target: &str,
+    query: &QueryReport,
+    surfaces: &[EditPlanTaskSurface],
+) -> Vec<EditPlanAction> {
+    let mut actions = Vec::new();
+    if let Some(surface) = surfaces.first() {
+        actions.push(inspect_surface_action(target, &surface.id));
+    } else {
+        actions.push(EditPlanAction {
+            kind: "inspect_modules".to_string(),
+            reason: "query module facts before planning declaration edits".to_string(),
+            command: command(["sley", "query", "--json", "--kind", "modules", target]),
+        });
+    }
+    actions.push(EditPlanAction {
+        kind: "post_edit_doctor".to_string(),
+        reason: "preserve strict diagnostics and lint readiness after structural edits".to_string(),
+        command: command(["sley", "doctor", "--json", "--deny-warnings", target]),
+    });
+    actions.push(EditPlanAction {
+        kind: "post_edit_verify".to_string(),
+        reason: "run deterministic verification after the planned graft is applied".to_string(),
+        command: verify_command(target, query),
+    });
+    actions
+}
+
+fn inspect_surface_action(target: &str, surface_id: &str) -> EditPlanAction {
+    EditPlanAction {
+        kind: "inspect_primary_surface".to_string(),
+        reason:
+            "graph slice gives bounded AST and call context for the highest-ranked edit surface"
+                .to_string(),
+        command: vec![
+            "sley".to_string(),
+            "graph".to_string(),
+            "--json".to_string(),
+            "--slice".to_string(),
+            surface_id.to_string(),
+            target.to_string(),
+        ],
+    }
+}
+
+fn verify_command(target: &str, query: &QueryReport) -> Vec<String> {
+    let entry_task = format!("{}.main", query.entry_module);
+    let mut command = vec![
+        "sley".to_string(),
+        "verify".to_string(),
+        "--json".to_string(),
+    ];
+    if let Some(task) = query
+        .tasks
+        .iter()
+        .find(|task| task.qualified_name == entry_task)
+    {
+        for effect in &task.effects {
+            command.push("--cap".to_string());
+            command.push(effect.clone());
+        }
+    }
+    command.push(target.to_string());
+    command
+}
+
+fn command<const N: usize>(items: [&str; N]) -> Vec<String> {
+    items.into_iter().map(str::to_string).collect()
+}

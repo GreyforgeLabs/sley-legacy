@@ -1,6 +1,6 @@
 # Sley Language Specification
 
-Status: v0 executable slice plus module task/type/effect namespace, runtime gates, Sley-level Result flow, typed host fallibility, seeded database host reads/writes, seeded secret values, seeded deploy stage results, seeded spend authorizations, seeded network host text, seeded shell host output, seeded model completions, trace tooling, and checked private-task lint tooling
+Status: v0 executable slice plus module task/type/effect namespace, runtime gates, Sley-level Result flow, typed host fallibility, seeded database host reads/writes, seeded secret values, seeded deploy stage results, seeded spend authorizations, seeded network host text, seeded shell host output, seeded model completions, trace tooling, checked lint tooling, and checked edit-plan tooling
 
 Sley is a human-readable, agent-writable structural language. The canonical
 program model is a typed graph. `.sley` source is the stable review projection,
@@ -519,6 +519,7 @@ sley graph --json <target>
 sley graph --json --slice task:app.main.main <target>
 sley new --json --template deploy --name agent-app agent-app
 sley doctor --json <target>
+sley plan --json <target>
 sley query --json --kind tasks --module app.main <target>
 sley lint --json <target>
 sley trace --json <target>
@@ -537,7 +538,8 @@ AST roots carry `schema: "sley.ast.program.v0"`. Diagnostic reports carry
 The CLI smoke manifest carries
 `schema: "sley.cli_smoke.manifest.v0"`. Project scaffold reports carry
 `schema: "sley.project.scaffold.v0"`. Doctor readiness reports carry
-`schema: "sley.doctor.report.v0"`.
+`schema: "sley.doctor.report.v0"`. Edit-plan reports carry
+`schema: "sley.edit_plan.report.v0"`.
 
 Current v0 trace seal JSON has this root shape:
 
@@ -574,8 +576,8 @@ The executable CLI conformance smokes live under `fixtures/cli_smokes/`. Their
 and stdout expectations. The integration suite runs the manifest against the
 built `sley` binary and locks stable command exits, selected stdout substrings,
 JSON root schemas, graph slices, checked query reports, checked lint reports,
-doctor readiness reports, project scaffolds, ZJX preview envelopes, graft dry
-runs, and seeded host-adapter execution for
+doctor readiness reports, edit-plan reports, project scaffolds, ZJX preview
+envelopes, graft dry runs, and seeded host-adapter execution for
 `FileRead`, `FileWrite`, `DatabaseRead`, `DatabaseWrite`, `Network`, `Shell`,
 `ModelCall`, `SecretRead`, `Deploy`, and `Spend`.
 
@@ -593,6 +595,15 @@ It reports `ready`, `warnings`, or `blocked`; includes source schema references
 for the consumed query and lint surfaces; and gives next-command vectors for
 inspection, lint gates, and entrypoint runs. `--deny-warnings` treats lint
 findings as blocked while still printing the versioned report.
+
+`sley plan` is the first deterministic pre-edit helper built from the same
+strict checker, checked query, and checked lint surfaces. It reports `ready`,
+`warnings`, or `blocked`; carries full lint findings; ranks task edit surfaces
+with stable task ids, qualified names, takes, call counts, declared effects,
+graft target ids, and planning notes; and gives next-command vectors for graph
+slice inspection plus post-edit doctor and verify gates. `--deny-warnings`
+treats lint findings as blocked while still printing
+`schema: "sley.edit_plan.report.v0"`.
 
 A graph slice is a bounded shard around a module, task, type, effect, or import.
 Task slices include the selected task AST, visible module declarations,
@@ -672,6 +683,8 @@ archive.
 - `sley lint` currently ships warning-grade private-task graph rules, authority
   hygiene for unused declared effects, and raw-host-adapter migration warnings;
   broader style and migration lints remain later work
+- `sley plan` emits deterministic ranked task edit surfaces and post-edit gate
+  commands, but does not synthesize graft payloads yet
 - `sley verify` emits a deterministic CI/pre-deploy report over strict check,
   query/lint summaries, and runtime execution; live deploy/provider calls
   remain outside v0

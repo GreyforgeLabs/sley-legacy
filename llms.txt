@@ -80,9 +80,9 @@ Current development phase:
   seeded spend authorization results through explicit fallible calls returning
   `Result<T, Error>`
 - release-readiness now includes manifest-backed CLI smokes for stable command
-  output, JSON roots, graph/ZJX surfaces, graft dry runs, and seeded
-  host-adapter execution while preserving typed recoverable failure records and
-  keeping authority failures as diagnostics
+  output, JSON roots, graph/ZJX surfaces, edit-plan reports, graft dry runs,
+  and seeded host-adapter execution while preserving typed recoverable failure
+  records and keeping authority failures as diagnostics
 - checked graph query reports are available through `sley query --json` with
   root schema `sley.query.report.v0`
 - checked lint reports are available through `sley lint --json` with root schema
@@ -91,9 +91,12 @@ Current development phase:
   `unused_declared_effect`, and the migration rule `raw_host_adapter`
 - `sley new --json` emits `sley.project.scaffold.v0` and creates
   non-destructive `hello` or deterministic `deploy` starter projects that can
-  immediately run through check, query, lint, and seeded runtime gates
+  immediately run through check, query, plan, lint, and seeded runtime gates
 - `sley doctor --json` emits `sley.doctor.report.v0` and consumes strict
   diagnostics plus checked query/lint summaries into one agent readiness report
+- `sley plan --json` emits `sley.edit_plan.report.v0` and consumes strict
+  diagnostics plus checked query/lint findings into ranked task edit surfaces,
+  graft targets, and post-edit gate commands
 - `sley verify --json` emits `sley.verify.report.v0` and consumes strict
   diagnostics, checked query/lint summaries, and deterministic runtime
   execution into one CI/pre-deploy gate

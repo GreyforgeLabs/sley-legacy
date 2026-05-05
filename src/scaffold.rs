@@ -204,7 +204,7 @@ fn readme_source(name: &str, template: ScaffoldTemplate) -> String {
         ),
     };
     format!(
-        "# {name}\n\nGenerated Sley project.\n\n```bash\nsley check --json .\nsley query --json --kind tasks .\nsley lint --json --deny-warnings .\n{verify}\n{run}\n```\n"
+        "# {name}\n\nGenerated Sley project.\n\n```bash\nsley check --json .\nsley query --json --kind tasks .\nsley plan --json .\nsley lint --json --deny-warnings .\n{verify}\n{run}\n```\n"
     )
 }
 
@@ -235,6 +235,12 @@ fn next_commands(template: ScaffoldTemplate) -> Vec<Vec<String>> {
             "--json".to_string(),
             "--kind".to_string(),
             "tasks".to_string(),
+            ".".to_string(),
+        ],
+        vec![
+            "sley".to_string(),
+            "plan".to_string(),
+            "--json".to_string(),
             ".".to_string(),
         ],
         vec![
