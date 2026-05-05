@@ -294,7 +294,8 @@ fn check_block(
                             RepairHint::new("replace_initializer")
                                 .with_target(expr.id.clone())
                                 .with_replacement(expected.display()),
-                        ),
+                        )
+                        .with_repair_hint(replace_expression_graft_hint(expr, expected)),
                     );
                 }
                 let local_type = expected
@@ -371,7 +372,8 @@ fn check_block(
                             RepairHint::new("replace_assignment_expression")
                                 .with_target(expr.id.clone())
                                 .with_replacement(expected.display()),
-                        ),
+                        )
+                        .with_repair_hint(replace_expression_graft_hint(expr, &expected)),
                     );
                 }
             }

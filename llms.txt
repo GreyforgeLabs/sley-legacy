@@ -41,6 +41,8 @@ Agent rules:
   `UpdateCallArgs` or `RemoveCallArg` graft JSON.
 - For `CALL_ARGUMENT_TYPE_MISMATCH`, prefer the structural `replace_call_arg`
   hint when present; its replacement is starter `ReplaceCallArg` graft JSON.
+- For binding or assignment type mismatches, prefer structural
+  `replace_expression` graft JSON when the declared/local type should remain.
 - For `RETURN_TYPE_MISMATCH`, use `change_return_type` only when the signature
   should change; otherwise prefer structural `replace_expression` graft JSON.
 - Do not add effects only to silence diagnostics; the authority must be real.

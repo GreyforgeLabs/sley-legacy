@@ -667,7 +667,9 @@ and a structural `replace_call_arg` hint whose `replacement` is a starter
 starter graft. Return type mismatches carry both the declaration-level
 `change_return_type` hint and expression-level hints; the structural
 `replace_expression` hint includes starter `ReplaceExpression` graft JSON for
-the returned expression.
+the returned expression. Binding and assignment type mismatches likewise include
+structural `replace_expression` hints for the initializer or assigned
+expression, alongside the older type-change or source-level replacement hints.
 
 ## ZJX Boundary
 

@@ -2091,6 +2091,44 @@ task main -> Int {
     let diagnostics = check_program(&program);
 
     assert_has_repair_hint(&diagnostics, "TYPE_MISMATCH", "change_binding_type");
+    assert_has_repair_hint(&diagnostics, "TYPE_MISMATCH", "replace_initializer");
+    assert_has_repair_hint(&diagnostics, "TYPE_MISMATCH", "replace_expression");
+    let type_mismatch_diagnostic = diagnostics
+        .iter()
+        .find(|diagnostic| diagnostic.id == "TYPE_MISMATCH")
+        .expect("type mismatch diagnostic");
+    let replace_expression_hint = type_mismatch_diagnostic
+        .repair_hints
+        .iter()
+        .find(|hint| hint.kind == "replace_expression")
+        .expect("binding replace expression hint");
+    let target = replace_expression_hint
+        .target
+        .as_deref()
+        .expect("binding replace expression target");
+    assert!(
+        target.starts_with("block:task:main.main"),
+        "expected binding expression target, got {target}"
+    );
+    let replacement: serde_json::Value = serde_json::from_str(
+        replace_expression_hint
+            .replacement
+            .as_deref()
+            .expect("binding replace expression replacement"),
+    )
+    .expect("binding replace expression replacement is JSON");
+    assert_eq!(
+        replacement.pointer("/op"),
+        Some(&serde_json::json!("ReplaceExpression"))
+    );
+    assert_eq!(
+        replacement.pointer("/target"),
+        Some(&serde_json::json!(target))
+    );
+    assert_eq!(
+        replacement.pointer("/payload/source"),
+        Some(&serde_json::json!("\"\""))
+    );
     assert_has_repair_hint(&diagnostics, "IF_CONDITION_NOT_BOOL", "replace_condition");
     assert_has_repair_hint(
         &diagnostics,
@@ -2283,6 +2321,46 @@ task main -> Int {
     assert_eq!(
         replacement.pointer("/payload/scope"),
         Some(&serde_json::json!("task:main.main"))
+    );
+}
+
+#[test]
+fn checker_assignment_type_hints_include_replace_expression_graft() {
+    let source = r#"
+task main -> Int {
+  tally total: Int = 1
+  set total = "oops"
+  return total
+}
+"#;
+    let program = parse_program(source).expect("parse assignment source");
+    let diagnostics = check_program(&program);
+    assert_has_repair_hint(
+        &diagnostics,
+        "SET_TYPE_MISMATCH",
+        "replace_assignment_expression",
+    );
+    assert_has_repair_hint(&diagnostics, "SET_TYPE_MISMATCH", "replace_expression");
+    let hint = find_repair_hint(&diagnostics, "SET_TYPE_MISMATCH", "replace_expression");
+    let target = hint.target.as_deref().expect("set replacement target");
+    assert!(
+        target.starts_with("block:task:main.main"),
+        "expected assignment expression target, got {target}"
+    );
+    let replacement: serde_json::Value =
+        serde_json::from_str(hint.replacement.as_deref().expect("set replacement"))
+            .expect("set replacement json");
+    assert_eq!(
+        replacement.pointer("/op"),
+        Some(&serde_json::json!("ReplaceExpression"))
+    );
+    assert_eq!(
+        replacement.pointer("/target"),
+        Some(&serde_json::json!(target))
+    );
+    assert_eq!(
+        replacement.pointer("/payload/source"),
+        Some(&serde_json::json!("0"))
     );
 }
 

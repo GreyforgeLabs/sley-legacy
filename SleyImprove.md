@@ -177,6 +177,8 @@ Priority diagnostic families:
 - unknown identifiers: implemented with `declare_binding`
 - unknown tasks: implemented with `declare_or_import_task`
 - unknown types: implemented with `declare_or_import_type`
+- binding and assignment type mismatch: implemented with type-change hints and
+  structural `ReplaceExpression`
 - call arity mismatch: implemented with `match_task_arity`, `UpdateCallArgs`,
   and `RemoveCallArg`
 - call argument type mismatch: implemented with `replace_argument` and
