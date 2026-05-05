@@ -2,10 +2,12 @@ use serde::Serialize;
 use serde_json::{Value as JsonValue, json};
 
 use crate::Program;
+use crate::ast::{BindingKind, Block, Expr, ExprKind, Statement, StatementKind, TaskDecl};
 use crate::checker::{check_program, has_errors};
 use crate::diagnostics::{Diagnostic, RepairHint};
 use crate::lint::{LintOptions, LintReport, build_lint_report};
 use crate::query::{QueryKind, QueryOptions, QueryReport, QueryTakeSummary, build_query_report};
+use crate::symbols::task_fq_name;
 
 pub const EDIT_PLAN_REPORT_SCHEMA: &str = "sley.edit_plan.report.v0";
 
@@ -216,6 +218,7 @@ pub fn build_edit_plan_report_with_options(
         build_transaction_templates(
             &task_surfaces,
             &query_report,
+            &program,
             options.template_surface.as_deref(),
         )
         .unwrap_or_default()
@@ -545,6 +548,7 @@ fn delete_task_template(surface: &EditPlanTaskSurface) -> EditPlanGraftTemplate 
 fn build_transaction_templates(
     surfaces: &[EditPlanTaskSurface],
     query: &QueryReport,
+    program: &Program,
     requested_surface: Option<&str>,
 ) -> Result<Vec<EditPlanTransactionTemplate>, Diagnostic> {
     let Some(surface) = select_template_surface(surfaces, requested_surface)? else {
@@ -559,6 +563,10 @@ fn build_transaction_templates(
         let add_take = add_take_update_call_args_template(surface, query);
         if let Some(add_take) = add_take {
             templates.push(add_take);
+        }
+        let remove_take = remove_take_remove_call_arg_template(surface, query, program);
+        if let Some(remove_take) = remove_take {
+            templates.push(remove_take);
         }
     }
     Ok(templates)
@@ -693,6 +701,177 @@ fn add_take_update_call_args_template(
         }),
         editable_json_pointers,
     })
+}
+
+fn remove_take_remove_call_arg_template(
+    surface: &EditPlanTaskSurface,
+    query: &QueryReport,
+    program: &Program,
+) -> Option<EditPlanTransactionTemplate> {
+    let task = find_surface_task(program, surface)?;
+    let (remove_take_position, remove_take_name) = removable_take(task)?;
+    let mut ops = vec![json!({
+        "op": "RemoveTake",
+        "target": surface.id,
+        "payload": {
+            "name": remove_take_name
+        }
+    })];
+    let mut editable_json_pointers = vec!["/ops/0/payload/name".to_string()];
+    let mut seen_call_updates = Vec::<(String, String)>::new();
+
+    for call in query
+        .calls
+        .iter()
+        .filter(|call| call.target.as_deref() == Some(surface.qualified_name.as_str()))
+    {
+        let key = (call.from_module.clone(), call.callee.clone());
+        if seen_call_updates.contains(&key) {
+            continue;
+        }
+        seen_call_updates.push(key);
+        let op_index = ops.len();
+        ops.push(json!({
+            "op": "RemoveCallArg",
+            "target": surface.id,
+            "payload": {
+                "from": call.callee.clone(),
+                "position": remove_take_position,
+                "scope": format!("module:{}", call.from_module)
+            }
+        }));
+        editable_json_pointers.push(format!("/ops/{op_index}/payload/position"));
+        editable_json_pointers.push(format!("/ops/{op_index}/payload/scope"));
+    }
+
+    if ops.len() == 1 {
+        return None;
+    }
+    Some(EditPlanTransactionTemplate {
+        kind: "remove_take_and_remove_call_arg".to_string(),
+        reason: "remove an unused normal task take and remove the matching caller argument in one all-or-nothing graft".to_string(),
+        surface: surface.id.clone(),
+        transaction: json!({
+            "transaction": format!(
+                "txn_remove_take_{}",
+                surface.qualified_name.replace('.', "_")
+            ),
+            "mode": "all_or_nothing",
+            "ops": ops
+        }),
+        editable_json_pointers,
+    })
+}
+
+fn find_surface_task<'a>(
+    program: &'a Program,
+    surface: &EditPlanTaskSurface,
+) -> Option<&'a TaskDecl> {
+    program
+        .tasks
+        .iter()
+        .find(|task| task.id == surface.id || task_fq_name(task) == surface.qualified_name)
+}
+
+fn removable_take(task: &TaskDecl) -> Option<(usize, String)> {
+    task.takes
+        .iter()
+        .enumerate()
+        .filter(|(_index, take)| take.binding_kind == BindingKind::Take)
+        .filter(|(_index, take)| !block_references_identifier(&task.body, &take.name))
+        .map(|(index, take)| {
+            let call_arg_position = task
+                .takes
+                .iter()
+                .take(index)
+                .filter(|take| take.binding_kind != BindingKind::Gate)
+                .count();
+            (call_arg_position, take.name.clone())
+        })
+        .next_back()
+}
+
+fn block_references_identifier(block: &Block, name: &str) -> bool {
+    block
+        .statements
+        .iter()
+        .any(|statement| statement_references_identifier(statement, name))
+}
+
+fn statement_references_identifier(statement: &Statement, name: &str) -> bool {
+    match &statement.kind {
+        StatementKind::Binding { expr, .. }
+        | StatementKind::Set { expr, .. }
+        | StatementKind::Return { expr }
+        | StatementKind::Expr { expr } => expr_references_identifier(expr, name),
+        StatementKind::If {
+            condition,
+            then_block,
+            else_block,
+        } => {
+            expr_references_identifier(condition, name)
+                || block_references_identifier(then_block, name)
+                || else_block
+                    .as_ref()
+                    .is_some_and(|block| block_references_identifier(block, name))
+        }
+        StatementKind::While { condition, body } => {
+            expr_references_identifier(condition, name) || block_references_identifier(body, name)
+        }
+        StatementKind::For {
+            item,
+            collection,
+            body,
+        } => {
+            expr_references_identifier(collection, name)
+                || (item != name && block_references_identifier(body, name))
+        }
+        StatementKind::Forge { body } => block_references_identifier(body, name),
+    }
+}
+
+fn expr_references_identifier(expr: &Expr, name: &str) -> bool {
+    match &expr.kind {
+        ExprKind::Identifier { name: identifier } => identifier == name,
+        ExprKind::Unary { expr, .. } | ExprKind::Try { expr } => {
+            expr_references_identifier(expr, name)
+        }
+        ExprKind::Binary { left, right, .. } => {
+            expr_references_identifier(left, name) || expr_references_identifier(right, name)
+        }
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
+            expr_references_identifier(condition, name)
+                || expr_references_identifier(then_branch, name)
+                || expr_references_identifier(else_branch, name)
+        }
+        ExprKind::Call { callee, args } => {
+            expr_references_identifier(callee, name)
+                || args.iter().any(|arg| expr_references_identifier(arg, name))
+        }
+        ExprKind::ListLiteral { items } => items
+            .iter()
+            .any(|item| expr_references_identifier(item, name)),
+        ExprKind::MapLiteral { entries } => entries.iter().any(|entry| {
+            expr_references_identifier(&entry.key, name)
+                || expr_references_identifier(&entry.value, name)
+        }),
+        ExprKind::Index { collection, index } => {
+            expr_references_identifier(collection, name) || expr_references_identifier(index, name)
+        }
+        ExprKind::FieldAccess { receiver, .. } => expr_references_identifier(receiver, name),
+        ExprKind::RecordLiteral { fields, .. } => fields
+            .iter()
+            .any(|field| expr_references_identifier(&field.expr, name)),
+        ExprKind::Raw { .. }
+        | ExprKind::StringLiteral { .. }
+        | ExprKind::IntLiteral { .. }
+        | ExprKind::FloatLiteral { .. }
+        | ExprKind::BoolLiteral { .. } => false,
+    }
 }
 
 fn replace_callee_leaf(callee: &str, new_leaf: &str) -> String {

@@ -221,7 +221,8 @@ Near-term:
    passes. `sley doctor` is the first deterministic readiness helper on top of
    those surfaces, and `sley plan --graft-templates` now turns them into ranked
    edit surfaces plus starter graft operation payloads, rename-plus-call-site
-   transactions, and add-take-plus-call-arg transactions. Next broaden
+   transactions, add-take-plus-call-arg transactions, and safe
+   remove-take-plus-call-arg transactions for unused takes. Next broaden
    authority, style, and migration lints.
 5. Extend graph-slice graft planning around checked move/delete operations.
 6. Harden project graft writeback beyond existing-module edits.

@@ -96,6 +96,12 @@ pub enum GraftOperation {
         precondition: Option<JsonValue>,
         payload: UpdateCallArgsPayload,
     },
+    RemoveCallArg {
+        target: String,
+        #[serde(default)]
+        precondition: Option<JsonValue>,
+        payload: RemoveCallArgPayload,
+    },
     InsertStatement {
         target: String,
         #[serde(default)]
@@ -181,6 +187,16 @@ pub struct UpdateCallArgsPayload {
     pub source: String,
     #[serde(default)]
     pub position: Option<usize>,
+    #[serde(default)]
+    pub from: Option<String>,
+    #[serde(default)]
+    pub scope: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RemoveCallArgPayload {
+    pub position: usize,
     #[serde(default)]
     pub from: Option<String>,
     #[serde(default)]
@@ -631,7 +647,14 @@ fn apply_one(
                     .with_node(program.tasks[target_index].id.clone()),
                 ]);
             }
-            let updated = update_call_args(program, &call_ids, &argument, payload.position)?;
+            let updated = edit_call_args(
+                program,
+                &call_ids,
+                CallArgMutation::Insert {
+                    argument: &argument,
+                    position: payload.position,
+                },
+            )?;
             if updated == 0 {
                 return Err(vec![
                     Diagnostic::error(
@@ -646,6 +669,53 @@ fn apply_one(
                 graft_id,
                 actor,
                 "UpdateCallArgs",
+                vec![target, format!("calls:{updated}")],
+            ))
+        }
+        GraftOperation::RemoveCallArg {
+            target,
+            precondition,
+            payload,
+        } => {
+            check_preconditions(program, None, precondition.as_ref())?;
+            let target_index = find_task_or_reject(program, &target)?;
+            let target_fq_name = task_fq_name(&program.tasks[target_index]);
+            let call_ids = matching_call_expr_ids(
+                program,
+                &target_fq_name,
+                payload.from.as_deref(),
+                payload.scope.as_deref(),
+            );
+            if call_ids.is_empty() {
+                return Err(vec![
+                    Diagnostic::error(
+                        "GRAFT_CALLSITE_MISSING",
+                        format!("no call sites matched `{target}`"),
+                    )
+                    .with_node(program.tasks[target_index].id.clone()),
+                ]);
+            }
+            let updated = edit_call_args(
+                program,
+                &call_ids,
+                CallArgMutation::Remove {
+                    position: payload.position,
+                },
+            )?;
+            if updated == 0 {
+                return Err(vec![
+                    Diagnostic::error(
+                        "GRAFT_CALLSITE_MISSING",
+                        format!("no call-site arguments could be removed for `{target}`"),
+                    )
+                    .with_node(program.tasks[target_index].id.clone()),
+                ]);
+            }
+            program.assign_ids();
+            Ok(record(
+                graft_id,
+                actor,
+                "RemoveCallArg",
                 vec![target, format!("calls:{updated}")],
             ))
         }
@@ -2205,16 +2275,26 @@ fn update_call_callees_in_expr(
     updated
 }
 
-fn update_call_args(
+#[derive(Clone, Copy)]
+enum CallArgMutation<'a> {
+    Insert {
+        argument: &'a Expr,
+        position: Option<usize>,
+    },
+    Remove {
+        position: usize,
+    },
+}
+
+fn edit_call_args(
     program: &mut Program,
     call_ids: &BTreeSet<String>,
-    argument: &Expr,
-    position: Option<usize>,
+    mutation: CallArgMutation<'_>,
 ) -> Result<usize, Vec<Diagnostic>> {
     let mut updated = 0usize;
     let mut diagnostics = Vec::new();
     for task in &mut program.tasks {
-        match update_call_args_in_block(&mut task.body, call_ids, argument, position) {
+        match edit_call_args_in_block(&mut task.body, call_ids, mutation) {
             Ok(count) => updated += count,
             Err(diagnostic) => diagnostics.push(diagnostic),
         }
@@ -2226,131 +2306,140 @@ fn update_call_args(
     }
 }
 
-fn update_call_args_in_block(
+fn edit_call_args_in_block(
     block: &mut Block,
     call_ids: &BTreeSet<String>,
-    argument: &Expr,
-    position: Option<usize>,
+    mutation: CallArgMutation<'_>,
 ) -> Result<usize, Diagnostic> {
     let mut updated = 0usize;
     for statement in &mut block.statements {
-        updated += update_call_args_in_statement(statement, call_ids, argument, position)?;
+        updated += edit_call_args_in_statement(statement, call_ids, mutation)?;
     }
     Ok(updated)
 }
 
-fn update_call_args_in_statement(
+fn edit_call_args_in_statement(
     statement: &mut Statement,
     call_ids: &BTreeSet<String>,
-    argument: &Expr,
-    position: Option<usize>,
+    mutation: CallArgMutation<'_>,
 ) -> Result<usize, Diagnostic> {
     match &mut statement.kind {
         StatementKind::Binding { expr, .. }
         | StatementKind::Set { expr, .. }
         | StatementKind::Return { expr }
-        | StatementKind::Expr { expr } => {
-            update_call_args_in_expr(expr, call_ids, argument, position)
-        }
+        | StatementKind::Expr { expr } => edit_call_args_in_expr(expr, call_ids, mutation),
         StatementKind::If {
             condition,
             then_block,
             else_block,
         } => {
-            let mut updated = update_call_args_in_expr(condition, call_ids, argument, position)?;
-            updated += update_call_args_in_block(then_block, call_ids, argument, position)?;
+            let mut updated = edit_call_args_in_expr(condition, call_ids, mutation)?;
+            updated += edit_call_args_in_block(then_block, call_ids, mutation)?;
             if let Some(else_block) = else_block {
-                updated += update_call_args_in_block(else_block, call_ids, argument, position)?;
+                updated += edit_call_args_in_block(else_block, call_ids, mutation)?;
             }
             Ok(updated)
         }
         StatementKind::While { condition, body } => {
-            let mut updated = update_call_args_in_expr(condition, call_ids, argument, position)?;
-            updated += update_call_args_in_block(body, call_ids, argument, position)?;
+            let mut updated = edit_call_args_in_expr(condition, call_ids, mutation)?;
+            updated += edit_call_args_in_block(body, call_ids, mutation)?;
             Ok(updated)
         }
         StatementKind::For {
             collection, body, ..
         } => {
-            let mut updated = update_call_args_in_expr(collection, call_ids, argument, position)?;
-            updated += update_call_args_in_block(body, call_ids, argument, position)?;
+            let mut updated = edit_call_args_in_expr(collection, call_ids, mutation)?;
+            updated += edit_call_args_in_block(body, call_ids, mutation)?;
             Ok(updated)
         }
-        StatementKind::Forge { body } => {
-            update_call_args_in_block(body, call_ids, argument, position)
-        }
+        StatementKind::Forge { body } => edit_call_args_in_block(body, call_ids, mutation),
     }
 }
 
-fn update_call_args_in_expr(
+fn edit_call_args_in_expr(
     expr: &mut Expr,
     call_ids: &BTreeSet<String>,
-    argument: &Expr,
-    position: Option<usize>,
+    mutation: CallArgMutation<'_>,
 ) -> Result<usize, Diagnostic> {
     let current_id = expr.id.clone();
     let mut updated = 0usize;
     match &mut expr.kind {
         ExprKind::Unary { expr: inner, .. } | ExprKind::Try { expr: inner } => {
-            updated += update_call_args_in_expr(inner, call_ids, argument, position)?;
+            updated += edit_call_args_in_expr(inner, call_ids, mutation)?;
         }
         ExprKind::Binary { left, right, .. } => {
-            updated += update_call_args_in_expr(left, call_ids, argument, position)?;
-            updated += update_call_args_in_expr(right, call_ids, argument, position)?;
+            updated += edit_call_args_in_expr(left, call_ids, mutation)?;
+            updated += edit_call_args_in_expr(right, call_ids, mutation)?;
         }
         ExprKind::If {
             condition,
             then_branch,
             else_branch,
         } => {
-            updated += update_call_args_in_expr(condition, call_ids, argument, position)?;
-            updated += update_call_args_in_expr(then_branch, call_ids, argument, position)?;
-            updated += update_call_args_in_expr(else_branch, call_ids, argument, position)?;
+            updated += edit_call_args_in_expr(condition, call_ids, mutation)?;
+            updated += edit_call_args_in_expr(then_branch, call_ids, mutation)?;
+            updated += edit_call_args_in_expr(else_branch, call_ids, mutation)?;
         }
         ExprKind::Call { callee, args } => {
             if call_ids.contains(&current_id) {
-                let position = position.unwrap_or(args.len());
-                if position > args.len() {
-                    return Err(Diagnostic::error(
-                        "GRAFT_POSITION_OUT_OF_RANGE",
-                        format!(
-                            "call argument position {position} is past call argument length {}",
-                            args.len()
-                        ),
-                    )
-                    .with_node(current_id));
+                match mutation {
+                    CallArgMutation::Insert { argument, position } => {
+                        let position = position.unwrap_or(args.len());
+                        if position > args.len() {
+                            return Err(Diagnostic::error(
+                                "GRAFT_POSITION_OUT_OF_RANGE",
+                                format!(
+                                    "call argument position {position} is past call argument length {}",
+                                    args.len()
+                                ),
+                            )
+                            .with_node(current_id));
+                        }
+                        args.insert(position, argument.clone());
+                    }
+                    CallArgMutation::Remove { position } => {
+                        if position >= args.len() {
+                            return Err(Diagnostic::error(
+                                "GRAFT_POSITION_OUT_OF_RANGE",
+                                format!(
+                                    "call argument position {position} is outside call argument length {}",
+                                    args.len()
+                                ),
+                            )
+                            .with_node(current_id));
+                        }
+                        args.remove(position);
+                    }
                 }
-                args.insert(position, argument.clone());
                 updated += 1;
             } else {
-                updated += update_call_args_in_expr(callee, call_ids, argument, position)?;
+                updated += edit_call_args_in_expr(callee, call_ids, mutation)?;
             }
             for arg in args {
-                updated += update_call_args_in_expr(arg, call_ids, argument, position)?;
+                updated += edit_call_args_in_expr(arg, call_ids, mutation)?;
             }
         }
         ExprKind::ListLiteral { items } => {
             for item in items {
-                updated += update_call_args_in_expr(item, call_ids, argument, position)?;
+                updated += edit_call_args_in_expr(item, call_ids, mutation)?;
             }
         }
         ExprKind::MapLiteral { entries } => {
             for entry in entries {
-                updated += update_call_args_in_expr(&mut entry.key, call_ids, argument, position)?;
-                updated +=
-                    update_call_args_in_expr(&mut entry.value, call_ids, argument, position)?;
+                updated += edit_call_args_in_expr(&mut entry.key, call_ids, mutation)?;
+                updated += edit_call_args_in_expr(&mut entry.value, call_ids, mutation)?;
             }
         }
         ExprKind::Index { collection, index } => {
-            updated += update_call_args_in_expr(collection, call_ids, argument, position)?;
-            updated += update_call_args_in_expr(index, call_ids, argument, position)?;
+            updated += edit_call_args_in_expr(collection, call_ids, mutation)?;
+            updated += edit_call_args_in_expr(index, call_ids, mutation)?;
         }
         ExprKind::FieldAccess { receiver, .. } => {
-            updated += update_call_args_in_expr(receiver, call_ids, argument, position)?;
+            updated += edit_call_args_in_expr(receiver, call_ids, mutation)?;
         }
         ExprKind::RecordLiteral { fields, .. } => {
             for field in fields {
-                updated += update_call_args_in_expr(&mut field.expr, call_ids, argument, position)?;
+                updated += edit_call_args_in_expr(&mut field.expr, call_ids, mutation)?;
             }
         }
         ExprKind::Raw { .. }

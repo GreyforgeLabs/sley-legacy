@@ -98,8 +98,9 @@ Current development phase:
   diagnostics plus checked query/lint findings into ranked task edit surfaces,
   graft targets, and post-edit gate commands; add `--graft-templates` to emit
   starter graft operation payloads, rename-plus-call-site transactions, and
-  add-take-plus-call-arg transactions for the highest-ranked task surface, or
-  `--template-surface <task>` to target a specific task id or qualified name
+  add-take-plus-call-arg transactions for the highest-ranked task surface, plus
+  safe remove-take-plus-call-arg transactions when an unused take can be proven,
+  or `--template-surface <task>` to target a specific task id or qualified name
 - `sley verify --json` emits `sley.verify.report.v0` and consumes strict
   diagnostics, checked query/lint summaries, and deterministic runtime
   execution into one CI/pre-deploy gate

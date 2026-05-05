@@ -110,7 +110,8 @@ Implemented now:
   diagnostics plus query and lint findings into ranked task edit surfaces,
   graft target ids, optional `--graft-templates` starter operation payloads,
   rename-plus-call-site and add-take-plus-call-arg transaction templates for
-  targeted caller surfaces, `--template-surface <task>` targeting, and
+  targeted caller surfaces, safe remove-take-plus-call-arg transaction
+  templates for unused takes, `--template-surface <task>` targeting, and
   `schema: "sley.edit_plan.report.v0"`
 - checked JSON verification reports with `sley verify`, consuming strict
   diagnostics, query summaries, lint findings, and deterministic runtime
@@ -129,10 +130,10 @@ Implemented now:
   slices, and trace receipts
 - structural graft operations for adding/removing takes, replacing task bodies,
   adding imports/effects/types/tasks, renaming declarations, updating
-  call-sites, inserting checked task-body statements, replacing nested
-  expressions by node id, deleting checked graph nodes such as declarations,
-  imports, takes, and statements, and moving checked statements or top-level
-  declaration order within their current parent
+  call-sites, updating or removing call arguments, inserting checked task-body
+  statements, replacing nested expressions by node id, deleting checked graph
+  nodes such as declarations, imports, takes, and statements, and moving checked
+  statements or top-level declaration order within their current parent
 - strict graft input JSON for the v0 operation shapes; unknown graft fields are
   rejected instead of silently ignored
 - versioned JSON report roots for diagnostics and graft outcomes

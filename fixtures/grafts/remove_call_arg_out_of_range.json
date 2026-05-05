@@ -1,0 +1,5 @@
+{
+  "op": "RemoveCallArg",
+  "target": "task:main.double",
+  "payload": { "position": 1 }
+}

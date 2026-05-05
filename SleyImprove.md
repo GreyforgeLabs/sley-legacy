@@ -129,8 +129,9 @@ Rules:
 - `sley plan` consumes the same checked surfaces into ranked task edit
   surfaces, post-edit gate commands, and optional starter graft operation
   templates, rename-plus-call-site transactions, and add-take-plus-call-arg
-  transactions with editable JSON pointers; agents can target a specific task
-  surface by node id or qualified name.
+  transactions, plus safe remove-take-plus-call-arg transactions for unused
+  takes, with editable JSON pointers; agents can target a specific task surface
+  by node id or qualified name.
 - `sley verify` is the deterministic CI/pre-deploy helper consuming strict
   check, `sley.query.report.v0`, `sley.lint.report.v0`, and seeded runtime
   execution into one pass/warnings/blocked report.
@@ -178,6 +179,8 @@ Priority diagnostic families:
 - unknown types: implemented with `declare_or_import_type`
 - call arity mismatch: implemented with `match_task_arity`
 - call argument type mismatch: implemented with `replace_argument`
+- call arity contraction after parameter removal: implemented with
+  `RemoveCallArg` and safe remove-take transaction templates for unused takes
 - return type mismatch: implemented with `change_return_type` and
   `replace_return_expression`
 - immutable binding mutation: implemented with `use_mutable_binding_kind`
@@ -205,14 +208,16 @@ Minimum useful graft operations:
 - `AddTypeDeclaration`
 - `UpdateCallSites`
 - `UpdateCallArgs`
+- `RemoveCallArg`
 - `InsertStatement`
 - `ReplaceExpression`
 - `MoveNode`
 - `DeleteNode`
 
-`UpdateCallSites`, `UpdateCallArgs`, `InsertStatement`, `ReplaceExpression`,
-`DeleteNode`, and `MoveNode` are now implemented for the v0 in-memory checked program. `DeleteNode`
-supports checked deletion of declarations, imports, takes, and statements.
+`UpdateCallSites`, `UpdateCallArgs`, `RemoveCallArg`, `InsertStatement`,
+`ReplaceExpression`, `DeleteNode`, and `MoveNode` are now implemented for the
+v0 in-memory checked program. `DeleteNode` supports checked deletion of
+declarations, imports, takes, and statements.
 `MoveNode` supports checked in-parent statement reordering and top-level
 declaration ordering. Project-aware multi-file writeback now updates existing
 module files, creates checked new module files declared by the graft candidate,

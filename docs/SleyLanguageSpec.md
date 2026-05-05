@@ -409,14 +409,14 @@ and provenance checks pass for the implemented v0 surface.
 
 Current graft operations include adding/removing takes, replacing task bodies,
 adding imports/effects/types/tasks, renaming declarations, updating call-sites,
-updating call arguments, inserting checked task-body statements, replacing expressions by node id, and
-deleting checked graph nodes such as declarations, imports, takes, and
-statements. `MoveNode` reorders statements within their existing block, moves
-statements across existing block parents with `payload.destination`, reorders
-takes within their owning task, and reorders top-level imports, types, effects,
-or tasks within their declaration lists. It can also move top-level types,
-effects, or tasks into a known loaded or imported module parent such as
-`module:app.extra:tasks`.
+updating or removing call arguments, inserting checked task-body statements,
+replacing expressions by node id, and deleting checked graph nodes such as
+declarations, imports, takes, and statements. `MoveNode` reorders statements
+within their existing block, moves statements across existing block parents with
+`payload.destination`, reorders takes within their owning task, and reorders
+top-level imports, types, effects, or tasks within their declaration lists. It
+can also move top-level types, effects, or tasks into a known loaded or imported
+module parent such as `module:app.extra:tasks`.
 Unsupported graph movement returns explicit diagnostics until implemented.
 
 Implemented graph-edit payloads:
@@ -425,6 +425,7 @@ Implemented graph-edit payloads:
 { "op": "UpdateCallSites", "target": "task:app.math.double", "payload": { "replacement": "math.twice" } }
 { "op": "UpdateCallSites", "target": "task:app.math.twice", "payload": { "from": "math.double", "replacement": "math.twice", "scope": "module:app.main" } }
 { "op": "UpdateCallArgs", "target": "task:app.math.double", "payload": { "from": "math.double", "source": "\"\"", "position": 1, "scope": "module:app.main" } }
+{ "op": "RemoveCallArg", "target": "task:app.math.double", "payload": { "from": "math.double", "position": 1, "scope": "module:app.main" } }
 { "op": "InsertStatement", "target": "task:app.main.main", "payload": { "position": 1, "source": "set total = total + 1" } }
 { "op": "ReplaceExpression", "target": "block:task:app.main.main:stmt:0:expr:right", "payload": { "source": "41" } }
 { "op": "DeleteNode", "target": "block:task:app.main.main:stmt:1" }
@@ -438,7 +439,9 @@ Implemented graph-edit payloads:
 `UpdateCallSites` rewrites call expressions that either resolve to the target
 task or match the optional raw `from` callee. `UpdateCallArgs` inserts one
 checked argument expression into matching calls; `position` defaults to append.
-For both operations, `scope` can limit the rewrite to a task or module.
+`RemoveCallArg` removes one argument at a required `position` from matching
+calls. For all three operations, `scope` can limit the rewrite to a task or
+module.
 `InsertStatement` currently targets a task body. `DeleteNode`
 can remove declarations, imports, takes, and statements, but rejects expression
 targets unless the agent uses `ReplaceExpression` instead. `MoveNode` currently
@@ -613,7 +616,9 @@ pointers naming the fields an agent should edit before running
 task surface by task node id or qualified task name. For selected tasks with
 currently resolved inbound callers, the report also includes an all-or-nothing
 `RenameDeclaration` plus `UpdateCallSites` transaction template and an
-`AddTake` plus `UpdateCallArgs` transaction template.
+`AddTake` plus `UpdateCallArgs` transaction template. When the selected task has
+an unused normal take, `sley plan --graft-templates` can also emit a
+`RemoveTake` plus `RemoveCallArg` transaction template.
 
 A graph slice is a bounded shard around a module, task, type, effect, or import.
 Task slices include the selected task AST, visible module declarations,
@@ -695,7 +700,8 @@ archive.
   broader style and migration lints remain later work
 - `sley plan` emits deterministic ranked task edit surfaces, optional starter
   graft operation templates, rename-plus-call-site and add-take-plus-call-arg
-  transaction templates, and post-edit gate commands; it does not yet choose or
+  transaction templates, safe remove-take-plus-call-arg transaction templates
+  for unused takes, and post-edit gate commands; it does not yet choose or
   execute a final graft for the agent
 - `sley verify` emits a deterministic CI/pre-deploy report over strict check,
   query/lint summaries, and runtime execution; live deploy/provider calls
