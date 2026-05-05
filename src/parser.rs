@@ -426,30 +426,50 @@ impl Parser {
             } else if self.current().is_ident("import") {
                 let span = self.current().span.clone();
                 self.bump();
+                let module = self.parse_module_path()?;
+                let alias = if self.current().is_ident("as") {
+                    self.bump();
+                    Some(self.expect_ident("expected import alias")?)
+                } else {
+                    None
+                };
                 program.imports.push(ImportDecl {
                     id: String::new(),
-                    module: self.parse_module_path()?,
+                    owner_module: None,
+                    module,
+                    alias,
                     span: Some(span),
                 });
             } else if self.current().is_ident("type") {
-                program.types.push(self.parse_type_decl()?);
+                program.types.push(self.parse_type_decl(false)?);
             } else if self.current().is_ident("effect") {
+                program.effects.push(self.parse_effect_decl(false)?);
+            } else if self.current().is_ident("task") {
+                program.tasks.push(self.parse_task_decl(false)?);
+            } else if self.current().is_ident("export") {
                 let span = self.current().span.clone();
                 self.bump();
-                let name = self.expect_ident("expected effect name")?;
-                program.effects.push(EffectDecl {
-                    id: String::new(),
-                    name,
-                    span: Some(span),
-                });
-            } else if self.current().is_ident("task") {
-                program.tasks.push(self.parse_task_decl()?);
+                if self.current().is_ident("type") {
+                    program.types.push(self.parse_type_decl(true)?);
+                } else if self.current().is_ident("effect") {
+                    program.effects.push(self.parse_effect_decl(true)?);
+                } else if self.current().is_ident("task") {
+                    program.tasks.push(self.parse_task_decl(true)?);
+                } else {
+                    return Err(vec![
+                        Diagnostic::error(
+                            "PARSE_EXPECTED_EXPORT_ITEM",
+                            "expected type, effect, or task after export",
+                        )
+                        .with_span(span),
+                    ]);
+                }
             } else if self.current().is_symbol(';') {
                 self.bump();
             } else {
                 return Err(vec![self.error_here(
                     "PARSE_EXPECTED_ITEM",
-                    "expected module, import, type, effect, or task declaration",
+                    "expected module, import, export, type, effect, or task declaration",
                 )]);
             }
             self.skip_statement_gap();
@@ -458,7 +478,7 @@ impl Parser {
         Ok(program)
     }
 
-    fn parse_type_decl(&mut self) -> Result<TypeDecl, Vec<Diagnostic>> {
+    fn parse_type_decl(&mut self, exported: bool) -> Result<TypeDecl, Vec<Diagnostic>> {
         let span = self.current().span.clone();
         self.expect_keyword("type", "expected type declaration")?;
         let name = self.expect_ident("expected type name")?;
@@ -466,13 +486,28 @@ impl Parser {
         let value = self.parse_type_expr()?;
         Ok(TypeDecl {
             id: String::new(),
+            module: None,
+            exported,
             name,
             value,
             span: Some(span),
         })
     }
 
-    fn parse_task_decl(&mut self) -> Result<TaskDecl, Vec<Diagnostic>> {
+    fn parse_effect_decl(&mut self, exported: bool) -> Result<EffectDecl, Vec<Diagnostic>> {
+        let span = self.current().span.clone();
+        self.expect_keyword("effect", "expected effect declaration")?;
+        let name = self.expect_ident("expected effect name")?;
+        Ok(EffectDecl {
+            id: String::new(),
+            module: None,
+            exported,
+            name,
+            span: Some(span),
+        })
+    }
+
+    fn parse_task_decl(&mut self, exported: bool) -> Result<TaskDecl, Vec<Diagnostic>> {
         let span = self.current().span.clone();
         self.expect_keyword("task", "expected task declaration")?;
         let name = self.expect_ident("expected task name")?;
@@ -496,6 +531,8 @@ impl Parser {
         let body = self.parse_task_block(&mut takes)?;
         Ok(TaskDecl {
             id: String::new(),
+            module: None,
+            exported,
             name,
             takes,
             return_type,
@@ -780,7 +817,7 @@ impl Parser {
             return Ok(TypeExpr::Record { fields });
         }
 
-        let name = self.expect_ident("expected type name")?;
+        let name = self.parse_module_path()?;
         if self.current().is_symbol('<') {
             self.bump();
             let mut args = Vec::new();

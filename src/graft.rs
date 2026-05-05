@@ -310,6 +310,8 @@ fn apply_one(
             }
             program.effects.push(EffectDecl {
                 id: String::new(),
+                module: None,
+                exported: false,
                 name: payload.name.clone(),
                 span: None,
             });
@@ -338,7 +340,9 @@ fn apply_one(
             }
             program.imports.push(ImportDecl {
                 id: String::new(),
+                owner_module: None,
                 module: payload.module.clone(),
+                alias: None,
                 span: None,
             });
             program.assign_ids();

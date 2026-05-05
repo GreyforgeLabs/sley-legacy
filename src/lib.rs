@@ -6,6 +6,7 @@ pub mod graft;
 pub mod parser;
 pub mod project;
 pub mod runtime;
+pub mod symbols;
 
 pub use ast::Program;
 pub use checker::check_program;

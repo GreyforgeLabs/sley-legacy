@@ -8,7 +8,7 @@ Scope: compiler difficulty, Rust bootstrap rationale, self-hosting path
 
 Writing our own compiler is possible. It is not mystical.
 
-A toy compiler is fairly reachable. A trustworthy compiler for an AI-native,
+A toy compiler is fairly reachable. A trustworthy compiler for an agent-native,
 agent-writable language is much harder because it must be a strict referee, not
 just a translator.
 
@@ -210,7 +210,7 @@ Near-term:
 
 Medium-term:
 
-1. Implement real module namespace semantics.
+1. Extend module namespace semantics from tasks to full type/effect identity.
 2. Implement more structural graft operations.
 3. Add trace sidecars for accepted grafts.
 4. Add runtime gate values for host capabilities.

@@ -10,6 +10,7 @@ use sley::graft::{GraftInput, apply_graft_input};
 use sley::parser::parse_program;
 use sley::project::load_project;
 use sley::runtime::run_main;
+use sley::symbols::build_symbol_graph;
 
 #[derive(Debug, Parser)]
 #[command(name = "sley")]
@@ -46,6 +47,11 @@ enum Command {
         json: bool,
         #[arg(long)]
         node: Option<String>,
+        file: PathBuf,
+    },
+    Graph {
+        #[arg(long)]
+        json: bool,
         file: PathBuf,
     },
     Graft {
@@ -157,6 +163,33 @@ fn run(cli: Cli) -> Result<()> {
                 anyhow::bail!("node `{node}` was not found");
             }
             print_json(&program)?;
+            Ok(())
+        }
+        Command::Graph { json, file } => {
+            let program = match load_target_program(&file) {
+                Ok(program) => program,
+                Err(diagnostics) => return emit_diagnostics_and_fail(diagnostics, json),
+            };
+            let graph = build_symbol_graph(&program);
+            if json {
+                print_json(&graph)?;
+            } else {
+                println!(
+                    "entry={} modules={}",
+                    graph.entry_module,
+                    graph.modules.len()
+                );
+                for module in graph.modules {
+                    println!(
+                        "module {} imports={} types={} effects={} tasks={}",
+                        module.module,
+                        module.imports.len(),
+                        module.types.len(),
+                        module.effects.len(),
+                        module.tasks.len()
+                    );
+                }
+            }
             Ok(())
         }
         Command::Graft {

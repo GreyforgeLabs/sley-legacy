@@ -12,6 +12,10 @@ pub fn format_program(program: &Program) -> String {
     for import in &program.imports {
         out.push_str("import ");
         out.push_str(&import.module);
+        if let Some(alias) = &import.alias {
+            out.push_str(" as ");
+            out.push_str(alias);
+        }
         out.push('\n');
     }
     if !program.imports.is_empty() {
@@ -19,6 +23,9 @@ pub fn format_program(program: &Program) -> String {
     }
 
     for ty in &program.types {
+        if ty.exported {
+            out.push_str("export ");
+        }
         out.push_str("type ");
         out.push_str(&ty.name);
         out.push_str(" = ");
@@ -42,6 +49,9 @@ pub fn format_program(program: &Program) -> String {
     }
 
     for effect in &program.effects {
+        if effect.exported {
+            out.push_str("export ");
+        }
         out.push_str("effect ");
         out.push_str(&effect.name);
         out.push('\n');
@@ -51,6 +61,9 @@ pub fn format_program(program: &Program) -> String {
     }
 
     for task in &program.tasks {
+        if task.exported {
+            out.push_str("export ");
+        }
         out.push_str("task ");
         out.push_str(&task.name);
         out.push_str(" -> ");

@@ -92,6 +92,7 @@ sley parse --json <target>
 sley check --json <target>
 sley ast --json <target>
 sley ast --json --node <node-id> <target>
+sley graph --json <target>
 sley graft --json <target> <graft.json>
 sley format <target>
 ```
@@ -149,6 +150,8 @@ Priority diagnostic families:
 - immutable binding mutation
 - undeclared effects
 - unauthorized host authority
+- private imported task
+- ambiguous imported task
 - stale graft preconditions
 - unsupported graft operation
 - module namespace conflicts
@@ -376,5 +379,5 @@ Rust bootstrap -> structural agent loop -> gold corpus -> Sley helper passes ->
 shadow compiler passes -> promoted self-hosting -> recovery oracle
 ```
 
-That is the safe version of an AI-native language that can eventually improve
+That is the safe version of an agent-native language that can eventually improve
 itself without turning into unreviewable model-written mush.

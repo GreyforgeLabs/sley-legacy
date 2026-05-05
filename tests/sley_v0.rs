@@ -432,10 +432,10 @@ entry = "app.main"
         r#"
 module app.main
 
-import app.math
+import app.math as math
 
 task main -> Int {
-  return call double(21)
+  return call math.double(21)
 }
 "#,
     )
@@ -445,7 +445,7 @@ task main -> Int {
         r#"
 module app.math
 
-task double -> Int {
+export task double -> Int {
   take value: Int
 
   return value * 2
@@ -469,6 +469,182 @@ task double -> Int {
         "unexpected diagnostics: {diagnostics:#?}"
     );
     assert_eq!(run_main(&project.program), Ok(Value::Int(42)));
+
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn project_checker_enforces_exported_imported_tasks() {
+    let root = temp_project_dir("private-imported-task");
+    fs::create_dir_all(root.join("src/app")).expect("create project dirs");
+    fs::write(
+        root.join("sley.toml"),
+        r#"
+[project]
+entry = "app.main"
+"#,
+    )
+    .expect("write manifest");
+    fs::write(
+        root.join("src/app/main.sley"),
+        r#"
+module app.main
+
+import app.math as math
+
+task main -> Int {
+  return call math.double(21)
+}
+"#,
+    )
+    .expect("write main module");
+    fs::write(
+        root.join("src/app/math.sley"),
+        r#"
+module app.math
+
+task double -> Int {
+  take value: Int
+
+  return value * 2
+}
+"#,
+    )
+    .expect("write math module");
+
+    let project = load_project(&root).expect("load project");
+    let diagnostics = check_program(&project.program);
+    assert!(
+        diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.id == "PRIVATE_TASK"),
+        "expected private task diagnostic, got {diagnostics:#?}"
+    );
+
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn project_checker_reports_ambiguous_imported_tasks() {
+    let root = temp_project_dir("ambiguous-imported-task");
+    fs::create_dir_all(root.join("src/app")).expect("create project dirs");
+    fs::write(
+        root.join("sley.toml"),
+        r#"
+[project]
+entry = "app.main"
+"#,
+    )
+    .expect("write manifest");
+    fs::write(
+        root.join("src/app/main.sley"),
+        r#"
+module app.main
+
+import app.one
+import app.two
+
+task main -> Int {
+  return call value()
+}
+"#,
+    )
+    .expect("write main module");
+    fs::write(
+        root.join("src/app/one.sley"),
+        r#"
+module app.one
+
+export task value -> Int {
+  return 1
+}
+"#,
+    )
+    .expect("write first module");
+    fs::write(
+        root.join("src/app/two.sley"),
+        r#"
+module app.two
+
+export task value -> Int {
+  return 2
+}
+"#,
+    )
+    .expect("write second module");
+
+    let project = load_project(&root).expect("load project");
+    let diagnostics = check_program(&project.program);
+    assert!(
+        diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.id == "AMBIGUOUS_TASK"),
+        "expected ambiguous task diagnostic, got {diagnostics:#?}"
+    );
+
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn project_checker_rejects_unimported_fully_qualified_tasks() {
+    let root = temp_project_dir("unimported-qualified-task");
+    fs::create_dir_all(root.join("src/app")).expect("create project dirs");
+    fs::write(
+        root.join("sley.toml"),
+        r#"
+[project]
+entry = "app.main"
+"#,
+    )
+    .expect("write manifest");
+    fs::write(
+        root.join("src/app/main.sley"),
+        r#"
+module app.main
+
+import app.bridge
+
+task main -> Int {
+  return call app.math.double(21)
+}
+"#,
+    )
+    .expect("write main module");
+    fs::write(
+        root.join("src/app/bridge.sley"),
+        r#"
+module app.bridge
+
+import app.math
+
+export task bridge -> Int {
+  return call math.double(21)
+}
+"#,
+    )
+    .expect("write bridge module");
+    fs::write(
+        root.join("src/app/math.sley"),
+        r#"
+module app.math
+
+export task double -> Int {
+  take value: Int
+
+  return value * 2
+}
+"#,
+    )
+    .expect("write math module");
+
+    let project = load_project(&root).expect("load project");
+    let diagnostics = check_program(&project.program);
+    assert!(
+        diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.id == "UNKNOWN_TASK"),
+        "expected unknown task diagnostic, got {diagnostics:#?}"
+    );
 
     let _ = fs::remove_dir_all(root);
 }

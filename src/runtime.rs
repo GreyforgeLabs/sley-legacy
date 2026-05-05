@@ -2,8 +2,9 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 
 use serde::{Deserialize, Serialize};
 
-use crate::ast::{BinaryOp, Expr, ExprKind, Program, StatementKind, TaskDecl, TypeExpr, UnaryOp};
+use crate::ast::{BinaryOp, Expr, ExprKind, Program, StatementKind, TaskDecl, UnaryOp};
 use crate::diagnostics::Diagnostic;
+use crate::symbols::{TaskResolution, callee_path, resolve_task, task_module};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "kind", content = "value")]
@@ -22,12 +23,16 @@ pub enum Value {
 const MAX_LOOP_ITERATIONS: usize = 1_000_000;
 
 pub fn run_main(program: &Program) -> Result<Value, Vec<Diagnostic>> {
-    let Some(main) = program.tasks.iter().find(|task| task.name == "main") else {
-        return Err(vec![Diagnostic::error(
-            "RUNTIME_NO_MAIN",
-            "no zero-argument `main` task found",
-        )]);
+    let main_index = match resolve_task(program, program.module_name(), "main") {
+        TaskResolution::Resolved { index, .. } => index,
+        _ => {
+            return Err(vec![Diagnostic::error(
+                "RUNTIME_NO_MAIN",
+                "no zero-take entry-module `main` task found",
+            )]);
+        }
     };
+    let main = &program.tasks[main_index];
 
     if !main.takes.is_empty() {
         return Err(vec![
@@ -91,7 +96,7 @@ fn eval_task(
         locals.insert(take.name.clone(), value);
     }
 
-    if let Some(value) = eval_block(program, &task.body, &mut locals, &task.return_type)? {
+    if let Some(value) = eval_block(program, task, &task.body, &mut locals)? {
         return Ok(value);
     }
 
@@ -100,12 +105,12 @@ fn eval_task(
 
 fn eval_block(
     program: &Program,
+    task: &TaskDecl,
     block: &crate::ast::Block,
     locals: &mut HashMap<String, Value>,
-    return_type: &TypeExpr,
 ) -> Result<Option<Value>, Vec<Diagnostic>> {
     for statement in &block.statements {
-        if let Some(value) = eval_statement(program, statement, locals, return_type)? {
+        if let Some(value) = eval_statement(program, task, statement, locals)? {
             return Ok(Some(value));
         }
     }
@@ -114,40 +119,40 @@ fn eval_block(
 
 fn eval_scoped_block(
     program: &Program,
+    task: &TaskDecl,
     block: &crate::ast::Block,
     locals: &mut HashMap<String, Value>,
-    return_type: &TypeExpr,
 ) -> Result<Option<Value>, Vec<Diagnostic>> {
     let existing = locals.keys().cloned().collect::<HashSet<_>>();
-    let result = eval_block(program, block, locals, return_type);
+    let result = eval_block(program, task, block, locals);
     locals.retain(|name, _| existing.contains(name));
     result
 }
 
 fn eval_for_body(
     program: &Program,
+    task: &TaskDecl,
     block: &crate::ast::Block,
     locals: &mut HashMap<String, Value>,
-    return_type: &TypeExpr,
     item: &str,
     value: Value,
 ) -> Result<Option<Value>, Vec<Diagnostic>> {
     let existing = locals.keys().cloned().collect::<HashSet<_>>();
     locals.insert(item.to_string(), value);
-    let result = eval_block(program, block, locals, return_type);
+    let result = eval_block(program, task, block, locals);
     locals.retain(|name, _| existing.contains(name));
     result
 }
 
 fn eval_statement(
     program: &Program,
+    task: &TaskDecl,
     statement: &crate::ast::Statement,
     locals: &mut HashMap<String, Value>,
-    return_type: &TypeExpr,
 ) -> Result<Option<Value>, Vec<Diagnostic>> {
     match &statement.kind {
         StatementKind::Binding { name, expr, .. } => {
-            let value = eval_expr(program, expr, locals, return_type)?;
+            let value = eval_expr(program, task, expr, locals)?;
             locals.insert(name.clone(), value);
             Ok(None)
         }
@@ -161,13 +166,13 @@ fn eval_statement(
                     .with_node(statement.id.clone()),
                 ]);
             }
-            let value = eval_expr(program, expr, locals, return_type)?;
+            let value = eval_expr(program, task, expr, locals)?;
             locals.insert(name.clone(), value);
             Ok(None)
         }
-        StatementKind::Return { expr } => Ok(Some(eval_expr(program, expr, locals, return_type)?)),
+        StatementKind::Return { expr } => Ok(Some(eval_expr(program, task, expr, locals)?)),
         StatementKind::Expr { expr } => {
-            eval_expr(program, expr, locals, return_type)?;
+            eval_expr(program, task, expr, locals)?;
             Ok(None)
         }
         StatementKind::If {
@@ -175,22 +180,22 @@ fn eval_statement(
             then_block,
             else_block,
         } => {
-            let condition_value = eval_expr(program, condition, locals, return_type)?;
+            let condition_value = eval_expr(program, task, condition, locals)?;
             if expect_bool(condition_value, condition)? {
-                eval_scoped_block(program, then_block, locals, return_type)
+                eval_scoped_block(program, task, then_block, locals)
             } else if let Some(else_block) = else_block {
-                eval_scoped_block(program, else_block, locals, return_type)
+                eval_scoped_block(program, task, else_block, locals)
             } else {
                 Ok(None)
             }
         }
         StatementKind::While { condition, body } => {
             for _ in 0..MAX_LOOP_ITERATIONS {
-                let condition_value = eval_expr(program, condition, locals, return_type)?;
+                let condition_value = eval_expr(program, task, condition, locals)?;
                 if !expect_bool(condition_value, condition)? {
                     return Ok(None);
                 }
-                if let Some(value) = eval_scoped_block(program, body, locals, return_type)? {
+                if let Some(value) = eval_scoped_block(program, task, body, locals)? {
                     return Ok(Some(value));
                 }
             }
@@ -207,12 +212,12 @@ fn eval_statement(
             collection,
             body,
         } => {
-            let collection_value = eval_expr(program, collection, locals, return_type)?;
+            let collection_value = eval_expr(program, task, collection, locals)?;
             match collection_value {
                 Value::List(items) => {
                     for value in items {
                         if let Some(return_value) =
-                            eval_for_body(program, body, locals, return_type, item, value)?
+                            eval_for_body(program, task, body, locals, item, value)?
                         {
                             return Ok(Some(return_value));
                         }
@@ -225,15 +230,15 @@ fn eval_statement(
                 ]),
             }
         }
-        StatementKind::Forge { body } => eval_scoped_block(program, body, locals, return_type),
+        StatementKind::Forge { body } => eval_scoped_block(program, task, body, locals),
     }
 }
 
 fn eval_expr(
     program: &Program,
+    task: &TaskDecl,
     expr: &Expr,
     locals: &HashMap<String, Value>,
-    return_type: &TypeExpr,
 ) -> Result<Value, Vec<Diagnostic>> {
     match &expr.kind {
         ExprKind::StringLiteral { value } => Ok(Value::Text(value.clone())),
@@ -242,31 +247,31 @@ fn eval_expr(
         ExprKind::BoolLiteral { value } => Ok(Value::Bool(*value)),
         ExprKind::Identifier { name } => Ok(locals.get(name).cloned().unwrap_or(Value::Unit)),
         ExprKind::Unary { op, expr: inner } => {
-            let value = eval_expr(program, inner, locals, return_type)?;
+            let value = eval_expr(program, task, inner, locals)?;
             eval_unary(op, value, expr)
         }
         ExprKind::Binary { op, left, right } => match op {
             BinaryOp::And => {
-                let left_value = eval_expr(program, left, locals, return_type)?;
+                let left_value = eval_expr(program, task, left, locals)?;
                 let left_value = expect_bool(left_value, left)?;
                 if !left_value {
                     return Ok(Value::Bool(false));
                 }
-                let right_value = eval_expr(program, right, locals, return_type)?;
+                let right_value = eval_expr(program, task, right, locals)?;
                 Ok(Value::Bool(expect_bool(right_value, right)?))
             }
             BinaryOp::Or => {
-                let left_value = eval_expr(program, left, locals, return_type)?;
+                let left_value = eval_expr(program, task, left, locals)?;
                 let left_value = expect_bool(left_value, left)?;
                 if left_value {
                     return Ok(Value::Bool(true));
                 }
-                let right_value = eval_expr(program, right, locals, return_type)?;
+                let right_value = eval_expr(program, task, right, locals)?;
                 Ok(Value::Bool(expect_bool(right_value, right)?))
             }
             _ => {
-                let left = eval_expr(program, left, locals, return_type)?;
-                let right = eval_expr(program, right, locals, return_type)?;
+                let left = eval_expr(program, task, left, locals)?;
+                let right = eval_expr(program, task, right, locals)?;
                 eval_binary(op, left, right, expr)
             }
         },
@@ -275,22 +280,22 @@ fn eval_expr(
             then_branch,
             else_branch,
         } => {
-            let condition_value = eval_expr(program, condition, locals, return_type)?;
+            let condition_value = eval_expr(program, task, condition, locals)?;
             if expect_bool(condition_value, condition)? {
-                eval_expr(program, then_branch, locals, return_type)
+                eval_expr(program, task, then_branch, locals)
             } else {
-                eval_expr(program, else_branch, locals, return_type)
+                eval_expr(program, task, else_branch, locals)
             }
         }
         ExprKind::Call { callee, args } => {
-            if direct_callee_name(callee).is_some_and(|name| name == "Ok" || name == "Err") {
+            if callee_path(callee).is_some_and(|name| name == "Ok" || name == "Err") {
                 return Ok(Value::Raw(expr.source.clone()));
             }
-            if direct_callee_name(callee).is_some_and(|name| name == "len") {
+            if callee_path(callee).is_some_and(|name| name == "len") {
                 if args.len() != 1 {
                     return runtime_type_error(expr, "builtin `len` expects one argument");
                 }
-                return match eval_expr(program, &args[0], locals, return_type)? {
+                return match eval_expr(program, task, &args[0], locals)? {
                     Value::List(items) => Ok(Value::Int(items.len() as i64)),
                     Value::Map(items) => Ok(Value::Int(items.len() as i64)),
                     Value::Text(value) => Ok(Value::Int(value.chars().count() as i64)),
@@ -299,38 +304,40 @@ fn eval_expr(
                     }
                 };
             }
-            if let Some(callee_name) = direct_callee_name(callee)
-                && let Some(task) = program.tasks.iter().find(|task| task.name == callee_name)
+            if let Some(callee_name) = callee_path(callee)
+                && !is_host_callee_path(&callee_name)
+                && let TaskResolution::Resolved { index, .. } =
+                    resolve_task(program, &task_module(task), &callee_name)
             {
                 let mut values = Vec::new();
                 for arg in args {
-                    values.push(eval_expr(program, arg, locals, return_type)?);
+                    values.push(eval_expr(program, task, arg, locals)?);
                 }
-                return eval_task(program, task, values);
+                return eval_task(program, &program.tasks[index], values);
             }
             Ok(Value::Raw(expr.source.clone()))
         }
         ExprKind::ListLiteral { items } => {
             let mut values = Vec::new();
             for item in items {
-                values.push(eval_expr(program, item, locals, return_type)?);
+                values.push(eval_expr(program, task, item, locals)?);
             }
             Ok(Value::List(values))
         }
         ExprKind::MapLiteral { entries } => {
             let mut values = BTreeMap::new();
             for entry in entries {
-                let key = eval_expr(program, &entry.key, locals, return_type)?;
+                let key = eval_expr(program, task, &entry.key, locals)?;
                 let Value::Text(key) = key else {
                     return runtime_type_error(expr, "map literal keys must be text values");
                 };
-                values.insert(key, eval_expr(program, &entry.value, locals, return_type)?);
+                values.insert(key, eval_expr(program, task, &entry.value, locals)?);
             }
             Ok(Value::Map(values))
         }
         ExprKind::Index { collection, index } => {
-            let collection = eval_expr(program, collection, locals, return_type)?;
-            let index = eval_expr(program, index, locals, return_type)?;
+            let collection = eval_expr(program, task, collection, locals)?;
+            let index = eval_expr(program, task, index, locals)?;
             match (collection, index) {
                 (Value::List(items), Value::Int(index)) if index >= 0 => {
                     items.get(index as usize).cloned().ok_or_else(|| {
@@ -368,7 +375,7 @@ fn eval_expr(
             }
         }
         ExprKind::FieldAccess { receiver, field } => {
-            match eval_expr(program, receiver, locals, return_type)? {
+            match eval_expr(program, task, receiver, locals)? {
                 Value::Record(fields) => Ok(fields.get(field).cloned().unwrap_or(Value::Unit)),
                 _ => Ok(Value::Raw(expr.source.clone())),
             }
@@ -378,15 +385,15 @@ fn eval_expr(
             for field in fields {
                 values.insert(
                     field.name.clone(),
-                    eval_expr(program, &field.expr, locals, return_type)?,
+                    eval_expr(program, task, &field.expr, locals)?,
                 );
             }
             Ok(Value::Record(values))
         }
-        ExprKind::Try { expr } => eval_expr(program, expr, locals, return_type),
+        ExprKind::Try { expr } => eval_expr(program, task, expr, locals),
         ExprKind::Raw { .. } => {
             let trimmed = expr.source.trim();
-            if return_type.generic_name() == Some("Result") && trimmed.starts_with("Ok(") {
+            if task.return_type.generic_name() == Some("Result") && trimmed.starts_with("Ok(") {
                 Ok(Value::Raw(trimmed.to_string()))
             } else {
                 Ok(Value::Raw(expr.source.clone()))
@@ -512,9 +519,9 @@ fn runtime_type_error(expr: &Expr, message: impl Into<String>) -> Result<Value, 
     ])
 }
 
-fn direct_callee_name(expr: &Expr) -> Option<&str> {
-    match &expr.kind {
-        ExprKind::Identifier { name } => Some(name.as_str()),
-        _ => None,
-    }
+fn is_host_callee_path(name: &str) -> bool {
+    matches!(
+        name.split('.').next(),
+        Some("db" | "fs" | "http" | "shell" | "model" | "secrets" | "deploy")
+    )
 }

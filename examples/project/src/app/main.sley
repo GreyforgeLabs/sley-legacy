@@ -1,7 +1,7 @@
 module app.main
 
-import app.math
+import app.math as math
 
 task main -> Int {
-  return call double(21)
+  return call math.double(21)
 }

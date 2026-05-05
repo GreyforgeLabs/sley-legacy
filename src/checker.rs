@@ -5,6 +5,10 @@ use crate::ast::{
     StatementKind, TaskDecl, TypeExpr, UnaryOp,
 };
 use crate::diagnostics::{Diagnostic, RepairHint};
+use crate::symbols::{
+    TaskResolution, callee_path, effect_module, is_module_qualified_callee, resolve_task,
+    task_module, type_module,
+};
 
 pub fn check_program(program: &Program) -> Vec<Diagnostic> {
     let mut diagnostics = Vec::new();
@@ -28,6 +32,7 @@ pub fn check_program(program: &Program) -> Vec<Diagnostic> {
 
     for task in &program.tasks {
         check_task(
+            program,
             task,
             &known_types,
             &known_effects,
@@ -47,31 +52,33 @@ struct TaskSignature {
     effects: Vec<String>,
 }
 
-fn collect_known_tasks(
-    program: &Program,
-    diagnostics: &mut Vec<Diagnostic>,
-) -> HashMap<String, TaskSignature> {
+type TaskSignatures = HashMap<usize, TaskSignature>;
+
+fn collect_known_tasks(program: &Program, diagnostics: &mut Vec<Diagnostic>) -> TaskSignatures {
     let mut known = HashMap::new();
-    for task in &program.tasks {
-        if known
-            .insert(
-                task.name.clone(),
-                TaskSignature {
-                    takes: task.takes.iter().map(|take| take.ty.clone()).collect(),
-                    return_type: task.return_type.clone(),
-                    effects: task.effects.clone(),
-                },
-            )
-            .is_some()
-        {
+    let mut seen = HashSet::new();
+    for (index, task) in program.tasks.iter().enumerate() {
+        if !seen.insert((task_module(task), task.name.clone())) {
             diagnostics.push(
                 Diagnostic::error(
                     "DUPLICATE_TASK",
-                    format!("task `{}` is declared more than once", task.name),
+                    format!(
+                        "task `{}` is declared more than once in module `{}`",
+                        task.name,
+                        task_module(task)
+                    ),
                 )
                 .with_node(task.id.clone()),
             );
         }
+        known.insert(
+            index,
+            TaskSignature {
+                takes: task.takes.iter().map(|take| take.ty.clone()).collect(),
+                return_type: task.return_type.clone(),
+                effects: task.effects.clone(),
+            },
+        );
     }
     known
 }
@@ -95,16 +102,22 @@ fn collect_known_types(program: &Program, diagnostics: &mut Vec<Diagnostic>) -> 
     .map(str::to_string)
     .collect::<HashSet<_>>();
 
+    let mut local_types = HashSet::new();
     for ty in &program.types {
-        if !known.insert(ty.name.clone()) {
+        if !local_types.insert((type_module(ty), ty.name.clone())) {
             diagnostics.push(
                 Diagnostic::error(
                     "DUPLICATE_TYPE",
-                    format!("type `{}` is already declared", ty.name),
+                    format!(
+                        "type `{}` is already declared in module `{}`",
+                        ty.name,
+                        type_module(ty)
+                    ),
                 )
                 .with_node(ty.id.clone()),
             );
         }
+        known.insert(ty.name.clone());
     }
 
     known
@@ -131,11 +144,15 @@ fn collect_known_effects(program: &Program, diagnostics: &mut Vec<Diagnostic>) -
 
     let mut local_effects = HashSet::new();
     for effect in &program.effects {
-        if !local_effects.insert(effect.name.clone()) {
+        if !local_effects.insert((effect_module(effect), effect.name.clone())) {
             diagnostics.push(
                 Diagnostic::error(
                     "DUPLICATE_EFFECT",
-                    format!("effect `{}` is already declared", effect.name),
+                    format!(
+                        "effect `{}` is already declared in module `{}`",
+                        effect.name,
+                        effect_module(effect)
+                    ),
                 )
                 .with_node(effect.id.clone()),
             );
@@ -147,10 +164,11 @@ fn collect_known_effects(program: &Program, diagnostics: &mut Vec<Diagnostic>) -
 }
 
 fn check_task(
+    program: &Program,
     task: &TaskDecl,
     known_types: &HashSet<String>,
     known_effects: &HashSet<String>,
-    known_tasks: &HashMap<String, TaskSignature>,
+    known_tasks: &TaskSignatures,
     record_types: &HashMap<String, Vec<RecordField>>,
     diagnostics: &mut Vec<Diagnostic>,
 ) {
@@ -192,6 +210,7 @@ fn check_task(
     }
 
     check_block(
+        program,
         task,
         &task.body,
         &mut locals,
@@ -206,13 +225,14 @@ fn check_task(
 
 #[allow(clippy::too_many_arguments)]
 fn check_block(
+    program: &Program,
     task: &TaskDecl,
     block: &Block,
     locals: &mut HashMap<String, TypeExpr>,
     local_bindings: &mut HashMap<String, BindingKind>,
     declared_effects: &HashSet<String>,
     known_types: &HashSet<String>,
-    known_tasks: &HashMap<String, TaskSignature>,
+    known_tasks: &TaskSignatures,
     record_types: &HashMap<String, Vec<RecordField>>,
     diagnostics: &mut Vec<Diagnostic>,
 ) {
@@ -225,6 +245,7 @@ fn check_block(
                 expr,
             } => {
                 check_expr_common(
+                    program,
                     task,
                     expr,
                     locals,
@@ -238,7 +259,7 @@ fn check_block(
                     validate_type_expr(type_ann, known_types, diagnostics, &statement.id);
                 }
                 let inferred =
-                    infer_expr_type(expr, locals, &task.return_type, known_tasks, record_types);
+                    infer_expr_type(program, task, expr, locals, known_tasks, record_types);
                 if let (Some(expected), Some(actual)) = (type_ann, inferred.as_ref())
                     && !types_compatible(expected, actual)
                 {
@@ -273,6 +294,7 @@ fn check_block(
             }
             StatementKind::Set { name, expr } => {
                 check_expr_common(
+                    program,
                     task,
                     expr,
                     locals,
@@ -307,7 +329,7 @@ fn check_block(
                     );
                 }
                 if let Some(actual) =
-                    infer_expr_type(expr, locals, &task.return_type, known_tasks, record_types)
+                    infer_expr_type(program, task, expr, locals, known_tasks, record_types)
                     && !types_compatible(&expected, &actual)
                 {
                     diagnostics.push(
@@ -325,6 +347,7 @@ fn check_block(
             }
             StatementKind::Return { expr } => {
                 check_expr_common(
+                    program,
                     task,
                     expr,
                     locals,
@@ -335,7 +358,7 @@ fn check_block(
                     diagnostics,
                 );
                 if let Some(actual) =
-                    infer_expr_type(expr, locals, &task.return_type, known_tasks, record_types)
+                    infer_expr_type(program, task, expr, locals, known_tasks, record_types)
                     && !return_types_compatible(&task.return_type, &actual, &expr.source)
                 {
                     diagnostics.push(
@@ -354,6 +377,7 @@ fn check_block(
             }
             StatementKind::Expr { expr } => {
                 check_expr_common(
+                    program,
                     task,
                     expr,
                     locals,
@@ -370,6 +394,7 @@ fn check_block(
                 else_block,
             } => {
                 check_expr_common(
+                    program,
                     task,
                     condition,
                     locals,
@@ -379,13 +404,9 @@ fn check_block(
                     record_types,
                     diagnostics,
                 );
-                if let Some(condition_type) = infer_expr_type(
-                    condition,
-                    locals,
-                    &task.return_type,
-                    known_tasks,
-                    record_types,
-                ) && !is_bool_type(&condition_type)
+                if let Some(condition_type) =
+                    infer_expr_type(program, task, condition, locals, known_tasks, record_types)
+                    && !is_bool_type(&condition_type)
                 {
                     diagnostics.push(
                         Diagnostic::error(
@@ -401,6 +422,7 @@ fn check_block(
                 let mut then_locals = locals.clone();
                 let mut then_bindings = local_bindings.clone();
                 check_block(
+                    program,
                     task,
                     then_block,
                     &mut then_locals,
@@ -415,6 +437,7 @@ fn check_block(
                     let mut else_locals = locals.clone();
                     let mut else_bindings = local_bindings.clone();
                     check_block(
+                        program,
                         task,
                         else_block,
                         &mut else_locals,
@@ -429,6 +452,7 @@ fn check_block(
             }
             StatementKind::While { condition, body } => {
                 check_expr_common(
+                    program,
                     task,
                     condition,
                     locals,
@@ -438,13 +462,9 @@ fn check_block(
                     record_types,
                     diagnostics,
                 );
-                if let Some(condition_type) = infer_expr_type(
-                    condition,
-                    locals,
-                    &task.return_type,
-                    known_tasks,
-                    record_types,
-                ) && !is_bool_type(&condition_type)
+                if let Some(condition_type) =
+                    infer_expr_type(program, task, condition, locals, known_tasks, record_types)
+                    && !is_bool_type(&condition_type)
                 {
                     diagnostics.push(
                         Diagnostic::error(
@@ -460,6 +480,7 @@ fn check_block(
                 let mut body_locals = locals.clone();
                 let mut body_bindings = local_bindings.clone();
                 check_block(
+                    program,
                     task,
                     body,
                     &mut body_locals,
@@ -477,6 +498,7 @@ fn check_block(
                 body,
             } => {
                 check_expr_common(
+                    program,
                     task,
                     collection,
                     locals,
@@ -486,13 +508,8 @@ fn check_block(
                     record_types,
                     diagnostics,
                 );
-                let collection_type = infer_expr_type(
-                    collection,
-                    locals,
-                    &task.return_type,
-                    known_tasks,
-                    record_types,
-                );
+                let collection_type =
+                    infer_expr_type(program, task, collection, locals, known_tasks, record_types);
                 let item_type = collection_type.as_ref().and_then(list_element_type);
                 if item_type.is_none() {
                     let collection_type = collection_type
@@ -525,6 +542,7 @@ fn check_block(
                     body_bindings.insert(item.clone(), BindingKind::Bind);
                 }
                 check_block(
+                    program,
                     task,
                     body,
                     &mut body_locals,
@@ -540,6 +558,7 @@ fn check_block(
                 let mut forge_locals = locals.clone();
                 let mut forge_bindings = local_bindings.clone();
                 check_block(
+                    program,
                     task,
                     body,
                     &mut forge_locals,
@@ -557,18 +576,20 @@ fn check_block(
 
 #[allow(clippy::too_many_arguments)]
 fn check_expr_common(
+    program: &Program,
     task: &TaskDecl,
     expr: &Expr,
     locals: &HashMap<String, TypeExpr>,
     declared_effects: &HashSet<String>,
     known_types: &HashSet<String>,
-    known_tasks: &HashMap<String, TaskSignature>,
+    known_tasks: &TaskSignatures,
     record_types: &HashMap<String, Vec<RecordField>>,
     diagnostics: &mut Vec<Diagnostic>,
 ) {
     check_expression_effects(task, &expr.source, declared_effects, diagnostics);
     check_fallible_expression(task, expr, diagnostics);
     check_expr_structure(
+        program,
         task,
         expr,
         locals,
@@ -582,18 +603,20 @@ fn check_expr_common(
 
 #[allow(clippy::too_many_arguments)]
 fn check_expr_structure(
+    program: &Program,
     task: &TaskDecl,
     expr: &Expr,
     locals: &HashMap<String, TypeExpr>,
     declared_effects: &HashSet<String>,
     known_types: &HashSet<String>,
-    known_tasks: &HashMap<String, TaskSignature>,
+    known_tasks: &TaskSignatures,
     record_types: &HashMap<String, Vec<RecordField>>,
     diagnostics: &mut Vec<Diagnostic>,
 ) {
     match &expr.kind {
         ExprKind::Unary { op, expr: inner } => {
             check_expr_structure(
+                program,
                 task,
                 inner,
                 locals,
@@ -604,6 +627,7 @@ fn check_expr_structure(
                 diagnostics,
             );
             check_unary_operator(
+                program,
                 task,
                 expr,
                 op,
@@ -616,6 +640,7 @@ fn check_expr_structure(
         }
         ExprKind::Binary { op, left, right } => {
             check_expr_structure(
+                program,
                 task,
                 left,
                 locals,
@@ -626,6 +651,7 @@ fn check_expr_structure(
                 diagnostics,
             );
             check_expr_structure(
+                program,
                 task,
                 right,
                 locals,
@@ -636,6 +662,7 @@ fn check_expr_structure(
                 diagnostics,
             );
             check_binary_operator(
+                program,
                 task,
                 expr,
                 op,
@@ -653,6 +680,7 @@ fn check_expr_structure(
             else_branch,
         } => {
             check_expr_structure(
+                program,
                 task,
                 condition,
                 locals,
@@ -663,6 +691,7 @@ fn check_expr_structure(
                 diagnostics,
             );
             check_expr_structure(
+                program,
                 task,
                 then_branch,
                 locals,
@@ -673,6 +702,7 @@ fn check_expr_structure(
                 diagnostics,
             );
             check_expr_structure(
+                program,
                 task,
                 else_branch,
                 locals,
@@ -683,6 +713,7 @@ fn check_expr_structure(
                 diagnostics,
             );
             check_if_expression(
+                program,
                 task,
                 expr,
                 condition,
@@ -695,18 +726,65 @@ fn check_expr_structure(
             );
         }
         ExprKind::Call { callee, args } => {
-            if let Some(callee_name) = direct_callee_name(callee) {
-                if !known_tasks.contains_key(callee_name)
-                    && !is_result_constructor(callee_name)
+            let caller_module = task_module(task);
+            let callee_path = callee_path(callee);
+            let mut resolved_signature = None;
+            if let Some(callee_name) = callee_path.as_deref() {
+                if !is_result_constructor(callee_name)
                     && !is_builtin_task(callee_name)
+                    && !is_host_callee_path(callee_name)
                 {
-                    diagnostics.push(
-                        Diagnostic::error("UNKNOWN_TASK", format!("unknown task `{callee_name}`"))
-                            .with_node(callee.id.clone()),
-                    );
+                    if callee_name.contains('.')
+                        && !is_module_qualified_callee(program, &caller_module, callee_name)
+                    {
+                        check_expr_structure(
+                            program,
+                            task,
+                            callee,
+                            locals,
+                            declared_effects,
+                            known_types,
+                            known_tasks,
+                            record_types,
+                            diagnostics,
+                        );
+                    } else {
+                        match resolve_task(program, &caller_module, callee_name) {
+                            TaskResolution::Resolved { index, fq_name } => {
+                                resolved_signature = known_tasks
+                                    .get(&index)
+                                    .map(|signature| (fq_name, signature));
+                            }
+                            TaskResolution::Unknown => diagnostics.push(
+                                Diagnostic::error(
+                                    "UNKNOWN_TASK",
+                                    format!("unknown task `{callee_name}`"),
+                                )
+                                .with_node(callee.id.clone()),
+                            ),
+                            TaskResolution::Ambiguous(matches) => diagnostics.push(
+                                Diagnostic::error(
+                                    "AMBIGUOUS_TASK",
+                                    format!(
+                                        "task `{callee_name}` is ambiguous: {}",
+                                        matches.join(", ")
+                                    ),
+                                )
+                                .with_node(callee.id.clone()),
+                            ),
+                            TaskResolution::Private(target) => diagnostics.push(
+                                Diagnostic::error(
+                                    "PRIVATE_TASK",
+                                    format!("task `{target}` is not exported for `{}`", task.name),
+                                )
+                                .with_node(callee.id.clone()),
+                            ),
+                        }
+                    }
                 }
             } else {
                 check_expr_structure(
+                    program,
                     task,
                     callee,
                     locals,
@@ -719,6 +797,7 @@ fn check_expr_structure(
             }
             for arg in args {
                 check_expr_structure(
+                    program,
                     task,
                     arg,
                     locals,
@@ -729,40 +808,38 @@ fn check_expr_structure(
                     diagnostics,
                 );
             }
-            if let Some(callee_name) = direct_callee_name(callee)
-                && let Some(signature) = known_tasks.get(callee_name)
-            {
+            if let Some((callee_name, signature)) = resolved_signature {
                 if args.len() != signature.takes.len() {
                     diagnostics.push(
-                            Diagnostic::error(
-                                "CALL_ARITY_MISMATCH",
-                                format!(
-                                    "task `{}` calls `{callee_name}` with {} arguments but {} are required",
-                                    task.name,
-                                    args.len(),
-                                    signature.takes.len()
-                                ),
+                        Diagnostic::error(
+                            "CALL_ARITY_MISMATCH",
+                            format!(
+                                "task `{}` calls `{callee_name}` with {} arguments but {} are required",
+                                task.name,
+                                args.len(),
+                                signature.takes.len()
                             )
-                            .with_node(expr.id.clone()),
-                        );
+                        )
+                        .with_node(expr.id.clone()),
+                    );
                 }
                 for (index, (arg, expected)) in args.iter().zip(signature.takes.iter()).enumerate()
                 {
                     if let Some(actual) =
-                        infer_expr_type(arg, locals, &task.return_type, known_tasks, record_types)
+                        infer_expr_type(program, task, arg, locals, known_tasks, record_types)
                         && !types_compatible(expected, &actual)
                     {
                         diagnostics.push(
-                                    Diagnostic::error(
-                                        "CALL_ARGUMENT_TYPE_MISMATCH",
-                                        format!(
-                                            "argument {index} to `{callee_name}` expects `{}` but expression looks like `{}`",
-                                            expected.display(),
-                                            actual.display()
-                                        ),
-                                    )
-                                    .with_node(arg.id.clone()),
-                                );
+                            Diagnostic::error(
+                                "CALL_ARGUMENT_TYPE_MISMATCH",
+                                format!(
+                                    "argument {index} to `{callee_name}` expects `{}` but expression looks like `{}`",
+                                    expected.display(),
+                                    actual.display()
+                                ),
+                            )
+                            .with_node(arg.id.clone()),
+                        );
                     }
                 }
                 for effect in &signature.effects {
@@ -786,8 +863,9 @@ fn check_expr_structure(
                     }
                 }
             }
-            if let Some(callee_name) = direct_callee_name(callee) {
+            if let Some(callee_name) = callee_path.as_deref() {
                 check_builtin_call(
+                    program,
                     task,
                     callee_name,
                     args,
@@ -801,6 +879,7 @@ fn check_expr_structure(
         ExprKind::ListLiteral { items } => {
             for item in items {
                 check_expr_structure(
+                    program,
                     task,
                     item,
                     locals,
@@ -812,6 +891,7 @@ fn check_expr_structure(
                 );
             }
             check_list_literal(
+                program,
                 task,
                 expr,
                 items,
@@ -824,6 +904,7 @@ fn check_expr_structure(
         ExprKind::MapLiteral { entries } => {
             for entry in entries {
                 check_expr_structure(
+                    program,
                     task,
                     &entry.key,
                     locals,
@@ -834,6 +915,7 @@ fn check_expr_structure(
                     diagnostics,
                 );
                 check_expr_structure(
+                    program,
                     task,
                     &entry.value,
                     locals,
@@ -845,6 +927,7 @@ fn check_expr_structure(
                 );
             }
             check_map_literal(
+                program,
                 task,
                 expr,
                 entries,
@@ -856,6 +939,7 @@ fn check_expr_structure(
         }
         ExprKind::Index { collection, index } => {
             check_expr_structure(
+                program,
                 task,
                 collection,
                 locals,
@@ -866,6 +950,7 @@ fn check_expr_structure(
                 diagnostics,
             );
             check_expr_structure(
+                program,
                 task,
                 index,
                 locals,
@@ -876,6 +961,7 @@ fn check_expr_structure(
                 diagnostics,
             );
             check_index_expression(
+                program,
                 task,
                 expr,
                 collection,
@@ -888,6 +974,7 @@ fn check_expr_structure(
         }
         ExprKind::FieldAccess { receiver, field } => {
             check_expr_structure(
+                program,
                 task,
                 receiver,
                 locals,
@@ -897,13 +984,9 @@ fn check_expr_structure(
                 record_types,
                 diagnostics,
             );
-            if let Some(TypeExpr::Named { name }) = infer_expr_type(
-                receiver,
-                locals,
-                &task.return_type,
-                known_tasks,
-                record_types,
-            ) && let Some(fields) = record_types.get(&name)
+            if let Some(TypeExpr::Named { name }) =
+                infer_expr_type(program, task, receiver, locals, known_tasks, record_types)
+                && let Some(fields) = record_types.get(&name)
                 && !fields
                     .iter()
                     .any(|record_field| record_field.name == *field)
@@ -933,6 +1016,7 @@ fn check_expr_structure(
                     );
                 }
                 check_expr_structure(
+                    program,
                     task,
                     &field.expr,
                     locals,
@@ -955,6 +1039,7 @@ fn check_expr_structure(
                     );
                 } else if let Some(expected_fields) = record_types.get(type_name) {
                     check_record_literal_fields(
+                        program,
                         task,
                         expr,
                         fields,
@@ -977,6 +1062,7 @@ fn check_expr_structure(
         }
         ExprKind::Try { expr: inner } => {
             check_expr_structure(
+                program,
                 task,
                 inner,
                 locals,
@@ -1008,16 +1094,17 @@ fn check_expr_structure(
 
 #[allow(clippy::too_many_arguments)]
 fn check_unary_operator(
+    program: &Program,
     task: &TaskDecl,
     expr: &Expr,
     op: &UnaryOp,
     inner: &Expr,
     locals: &HashMap<String, TypeExpr>,
-    known_tasks: &HashMap<String, TaskSignature>,
+    known_tasks: &TaskSignatures,
     record_types: &HashMap<String, Vec<RecordField>>,
     diagnostics: &mut Vec<Diagnostic>,
 ) {
-    let Some(actual) = infer_expr_type(inner, locals, &task.return_type, known_tasks, record_types)
+    let Some(actual) = infer_expr_type(program, task, inner, locals, known_tasks, record_types)
     else {
         return;
     };
@@ -1044,18 +1131,19 @@ fn check_unary_operator(
 
 #[allow(clippy::too_many_arguments)]
 fn check_binary_operator(
+    program: &Program,
     task: &TaskDecl,
     expr: &Expr,
     op: &BinaryOp,
     left: &Expr,
     right: &Expr,
     locals: &HashMap<String, TypeExpr>,
-    known_tasks: &HashMap<String, TaskSignature>,
+    known_tasks: &TaskSignatures,
     record_types: &HashMap<String, Vec<RecordField>>,
     diagnostics: &mut Vec<Diagnostic>,
 ) {
-    let left_type = infer_expr_type(left, locals, &task.return_type, known_tasks, record_types);
-    let right_type = infer_expr_type(right, locals, &task.return_type, known_tasks, record_types);
+    let left_type = infer_expr_type(program, task, left, locals, known_tasks, record_types);
+    let right_type = infer_expr_type(program, task, right, locals, known_tasks, record_types);
     let (Some(left_type), Some(right_type)) = (left_type, right_type) else {
         return;
     };
@@ -1078,23 +1166,20 @@ fn check_binary_operator(
 
 #[allow(clippy::too_many_arguments)]
 fn check_if_expression(
+    program: &Program,
     task: &TaskDecl,
     expr: &Expr,
     condition: &Expr,
     then_branch: &Expr,
     else_branch: &Expr,
     locals: &HashMap<String, TypeExpr>,
-    known_tasks: &HashMap<String, TaskSignature>,
+    known_tasks: &TaskSignatures,
     record_types: &HashMap<String, Vec<RecordField>>,
     diagnostics: &mut Vec<Diagnostic>,
 ) {
-    if let Some(condition_type) = infer_expr_type(
-        condition,
-        locals,
-        &task.return_type,
-        known_tasks,
-        record_types,
-    ) && !is_bool_type(&condition_type)
+    if let Some(condition_type) =
+        infer_expr_type(program, task, condition, locals, known_tasks, record_types)
+        && !is_bool_type(&condition_type)
     {
         diagnostics.push(
             Diagnostic::error(
@@ -1109,16 +1194,18 @@ fn check_if_expression(
     }
 
     let then_type = infer_expr_type(
+        program,
+        task,
         then_branch,
         locals,
-        &task.return_type,
         known_tasks,
         record_types,
     );
     let else_type = infer_expr_type(
+        program,
+        task,
         else_branch,
         locals,
-        &task.return_type,
         known_tasks,
         record_types,
     );
@@ -1141,11 +1228,12 @@ fn check_if_expression(
 
 #[allow(clippy::too_many_arguments)]
 fn check_builtin_call(
+    program: &Program,
     task: &TaskDecl,
     name: &str,
     args: &[Expr],
     locals: &HashMap<String, TypeExpr>,
-    known_tasks: &HashMap<String, TaskSignature>,
+    known_tasks: &TaskSignatures,
     record_types: &HashMap<String, Vec<RecordField>>,
     diagnostics: &mut Vec<Diagnostic>,
 ) {
@@ -1167,13 +1255,9 @@ fn check_builtin_call(
         return;
     }
 
-    if let Some(actual) = infer_expr_type(
-        &args[0],
-        locals,
-        &task.return_type,
-        known_tasks,
-        record_types,
-    ) && !is_list_type(&actual)
+    if let Some(actual) =
+        infer_expr_type(program, task, &args[0], locals, known_tasks, record_types)
+        && !is_list_type(&actual)
         && !is_map_type(&actual)
         && !is_named_type(&actual, "Text")
     {
@@ -1192,25 +1276,25 @@ fn check_builtin_call(
 
 #[allow(clippy::too_many_arguments)]
 fn check_list_literal(
+    program: &Program,
     task: &TaskDecl,
     expr: &Expr,
     items: &[Expr],
     locals: &HashMap<String, TypeExpr>,
-    known_tasks: &HashMap<String, TaskSignature>,
+    known_tasks: &TaskSignatures,
     record_types: &HashMap<String, Vec<RecordField>>,
     diagnostics: &mut Vec<Diagnostic>,
 ) {
     let Some(first) = items.first() else {
         return;
     };
-    let Some(first_type) =
-        infer_expr_type(first, locals, &task.return_type, known_tasks, record_types)
+    let Some(first_type) = infer_expr_type(program, task, first, locals, known_tasks, record_types)
     else {
         return;
     };
     for item in items.iter().skip(1) {
         if let Some(actual) =
-            infer_expr_type(item, locals, &task.return_type, known_tasks, record_types)
+            infer_expr_type(program, task, item, locals, known_tasks, record_types)
             && !types_compatible(&first_type, &actual)
         {
             diagnostics.push(
@@ -1230,23 +1314,20 @@ fn check_list_literal(
 
 #[allow(clippy::too_many_arguments)]
 fn check_map_literal(
+    program: &Program,
     task: &TaskDecl,
     expr: &Expr,
     entries: &[ExprMapEntry],
     locals: &HashMap<String, TypeExpr>,
-    known_tasks: &HashMap<String, TaskSignature>,
+    known_tasks: &TaskSignatures,
     record_types: &HashMap<String, Vec<RecordField>>,
     diagnostics: &mut Vec<Diagnostic>,
 ) {
     let mut seen_literal_keys = HashSet::new();
     for entry in entries {
-        if let Some(key_type) = infer_expr_type(
-            &entry.key,
-            locals,
-            &task.return_type,
-            known_tasks,
-            record_types,
-        ) && !is_named_type(&key_type, "Text")
+        if let Some(key_type) =
+            infer_expr_type(program, task, &entry.key, locals, known_tasks, record_types)
+            && !is_named_type(&key_type, "Text")
         {
             diagnostics.push(
                 Diagnostic::error(
@@ -1273,9 +1354,10 @@ fn check_map_literal(
         return;
     };
     let Some(first_type) = infer_expr_type(
+        program,
+        task,
         &first.value,
         locals,
-        &task.return_type,
         known_tasks,
         record_types,
     ) else {
@@ -1283,9 +1365,10 @@ fn check_map_literal(
     };
     for entry in entries.iter().skip(1) {
         if let Some(actual) = infer_expr_type(
+            program,
+            task,
             &entry.value,
             locals,
-            &task.return_type,
             known_tasks,
             record_types,
         ) && !types_compatible(&first_type, &actual)
@@ -1307,25 +1390,22 @@ fn check_map_literal(
 
 #[allow(clippy::too_many_arguments)]
 fn check_index_expression(
+    program: &Program,
     task: &TaskDecl,
     expr: &Expr,
     collection: &Expr,
     index: &Expr,
     locals: &HashMap<String, TypeExpr>,
-    known_tasks: &HashMap<String, TaskSignature>,
+    known_tasks: &TaskSignatures,
     record_types: &HashMap<String, Vec<RecordField>>,
     diagnostics: &mut Vec<Diagnostic>,
 ) {
-    if let Some(collection_type) = infer_expr_type(
-        collection,
-        locals,
-        &task.return_type,
-        known_tasks,
-        record_types,
-    ) {
+    if let Some(collection_type) =
+        infer_expr_type(program, task, collection, locals, known_tasks, record_types)
+    {
         if list_element_type(&collection_type).is_some() {
             if let Some(index_type) =
-                infer_expr_type(index, locals, &task.return_type, known_tasks, record_types)
+                infer_expr_type(program, task, index, locals, known_tasks, record_types)
                 && !is_named_type(&index_type, "Int")
             {
                 diagnostics.push(
@@ -1340,7 +1420,7 @@ fn check_index_expression(
         }
         if text_key_map_value_type(&collection_type).is_some() {
             if let Some(index_type) =
-                infer_expr_type(index, locals, &task.return_type, known_tasks, record_types)
+                infer_expr_type(program, task, index, locals, known_tasks, record_types)
                 && !is_named_type(&index_type, "Text")
             {
                 diagnostics.push(
@@ -1369,12 +1449,13 @@ fn check_index_expression(
 
 #[allow(clippy::too_many_arguments)]
 fn check_record_literal_fields(
+    program: &Program,
     task: &TaskDecl,
     expr: &Expr,
     fields: &[crate::ast::ExprField],
     expected_fields: &[RecordField],
     locals: &HashMap<String, TypeExpr>,
-    known_tasks: &HashMap<String, TaskSignature>,
+    known_tasks: &TaskSignatures,
     record_types: &HashMap<String, Vec<RecordField>>,
     diagnostics: &mut Vec<Diagnostic>,
 ) {
@@ -1382,9 +1463,10 @@ fn check_record_literal_fields(
         match fields.iter().find(|field| field.name == expected.name) {
             Some(field) => {
                 if let Some(actual) = infer_expr_type(
+                    program,
+                    task,
                     &field.expr,
                     locals,
-                    &task.return_type,
                     known_tasks,
                     record_types,
                 ) && !types_compatible(&expected.ty, &actual)
@@ -1565,12 +1647,14 @@ fn expr_uses_try(expr: &Expr) -> bool {
 }
 
 fn infer_expr_type(
+    program: &Program,
+    task: &TaskDecl,
     expr: &crate::ast::Expr,
     locals: &HashMap<String, TypeExpr>,
-    return_type: &TypeExpr,
-    known_tasks: &HashMap<String, TaskSignature>,
+    known_tasks: &TaskSignatures,
     record_types: &HashMap<String, Vec<RecordField>>,
 ) -> Option<TypeExpr> {
+    let return_type = &task.return_type;
     match &expr.kind {
         ExprKind::StringLiteral { .. } => Some(TypeExpr::named("Text")),
         ExprKind::IntLiteral { .. } => Some(TypeExpr::named("Int")),
@@ -1579,7 +1663,7 @@ fn infer_expr_type(
         ExprKind::Identifier { name } => locals.get(name).cloned(),
         ExprKind::Unary { op, expr: inner } => {
             let inner_type =
-                infer_expr_type(inner, locals, return_type, known_tasks, record_types)?;
+                infer_expr_type(program, task, inner, locals, known_tasks, record_types)?;
             match op {
                 UnaryOp::Not if is_bool_type(&inner_type) => Some(TypeExpr::named("Bool")),
                 UnaryOp::Negate if is_numeric_type(&inner_type) => Some(inner_type),
@@ -1587,9 +1671,10 @@ fn infer_expr_type(
             }
         }
         ExprKind::Binary { op, left, right } => {
-            let left_type = infer_expr_type(left, locals, return_type, known_tasks, record_types)?;
+            let left_type =
+                infer_expr_type(program, task, left, locals, known_tasks, record_types)?;
             let right_type =
-                infer_expr_type(right, locals, return_type, known_tasks, record_types)?;
+                infer_expr_type(program, task, right, locals, known_tasks, record_types)?;
             infer_binary_type(op, &left_type, &right_type)
         }
         ExprKind::If {
@@ -1597,24 +1682,45 @@ fn infer_expr_type(
             then_branch,
             else_branch,
         } => {
-            let then_type =
-                infer_expr_type(then_branch, locals, return_type, known_tasks, record_types)?;
-            let else_type =
-                infer_expr_type(else_branch, locals, return_type, known_tasks, record_types)?;
+            let then_type = infer_expr_type(
+                program,
+                task,
+                then_branch,
+                locals,
+                known_tasks,
+                record_types,
+            )?;
+            let else_type = infer_expr_type(
+                program,
+                task,
+                else_branch,
+                locals,
+                known_tasks,
+                record_types,
+            )?;
             types_compatible(&then_type, &else_type).then_some(then_type)
         }
         ExprKind::Call { callee, .. } => {
-            if direct_callee_name(callee).is_some_and(|name| name == "Ok" || name == "Err")
+            if callee_path(callee).is_some_and(|name| name == "Ok" || name == "Err")
                 && return_type.generic_name() == Some("Result")
             {
                 Some(return_type.clone())
-            } else if let Some(callee_name) = direct_callee_name(callee) {
+            } else if let Some(callee_name) = callee_path(callee) {
                 if callee_name == "len" {
                     Some(TypeExpr::named("Int"))
-                } else {
+                } else if is_host_callee_path(&callee_name)
+                    || (callee_name.contains('.')
+                        && !is_module_qualified_callee(program, &task_module(task), &callee_name))
+                {
+                    None
+                } else if let TaskResolution::Resolved { index, .. } =
+                    resolve_task(program, &task_module(task), &callee_name)
+                {
                     known_tasks
-                        .get(callee_name)
+                        .get(&index)
                         .map(|signature| signature.return_type.clone())
+                } else {
+                    None
                 }
             } else {
                 None
@@ -1628,10 +1734,10 @@ fn infer_expr_type(
                 });
             };
             let first_type =
-                infer_expr_type(first, locals, return_type, known_tasks, record_types)?;
+                infer_expr_type(program, task, first, locals, known_tasks, record_types)?;
             for item in items.iter().skip(1) {
                 let item_type =
-                    infer_expr_type(item, locals, return_type, known_tasks, record_types)?;
+                    infer_expr_type(program, task, item, locals, known_tasks, record_types)?;
                 if !types_compatible(&first_type, &item_type) {
                     return None;
                 }
@@ -1650,16 +1756,28 @@ fn infer_expr_type(
             };
             for entry in entries {
                 let key_type =
-                    infer_expr_type(&entry.key, locals, return_type, known_tasks, record_types)?;
+                    infer_expr_type(program, task, &entry.key, locals, known_tasks, record_types)?;
                 if !is_named_type(&key_type, "Text") {
                     return None;
                 }
             }
-            let first_value_type =
-                infer_expr_type(&first.value, locals, return_type, known_tasks, record_types)?;
+            let first_value_type = infer_expr_type(
+                program,
+                task,
+                &first.value,
+                locals,
+                known_tasks,
+                record_types,
+            )?;
             for entry in entries.iter().skip(1) {
-                let value_type =
-                    infer_expr_type(&entry.value, locals, return_type, known_tasks, record_types)?;
+                let value_type = infer_expr_type(
+                    program,
+                    task,
+                    &entry.value,
+                    locals,
+                    known_tasks,
+                    record_types,
+                )?;
                 if !types_compatible(&first_value_type, &value_type) {
                     return None;
                 }
@@ -1671,9 +1789,9 @@ fn infer_expr_type(
         }
         ExprKind::Index { collection, index } => {
             let collection_type =
-                infer_expr_type(collection, locals, return_type, known_tasks, record_types)?;
+                infer_expr_type(program, task, collection, locals, known_tasks, record_types)?;
             let index_type =
-                infer_expr_type(index, locals, return_type, known_tasks, record_types)?;
+                infer_expr_type(program, task, index, locals, known_tasks, record_types)?;
             if is_named_type(&index_type, "Int") {
                 return list_element_type(&collection_type);
             }
@@ -1684,7 +1802,7 @@ fn infer_expr_type(
         }
         ExprKind::FieldAccess { receiver, field } => {
             if let Some(TypeExpr::Named { name }) =
-                infer_expr_type(receiver, locals, return_type, known_tasks, record_types)
+                infer_expr_type(program, task, receiver, locals, known_tasks, record_types)
             {
                 record_types
                     .get(&name)
@@ -1703,9 +1821,10 @@ fn infer_expr_type(
                     inferred_fields.push(RecordField {
                         name: field.name.clone(),
                         ty: infer_expr_type(
+                            program,
+                            task,
                             &field.expr,
                             locals,
-                            return_type,
                             known_tasks,
                             record_types,
                         )?,
@@ -1717,7 +1836,7 @@ fn infer_expr_type(
             }
         }
         ExprKind::Try { expr } => {
-            match infer_expr_type(expr, locals, return_type, known_tasks, record_types) {
+            match infer_expr_type(program, task, expr, locals, known_tasks, record_types) {
                 Some(TypeExpr::Generic { name, mut args }) if name == "Result" => {
                     if args.is_empty() {
                         None
@@ -1739,13 +1858,6 @@ fn infer_expr_type(
     }
 }
 
-fn direct_callee_name(expr: &Expr) -> Option<&str> {
-    match &expr.kind {
-        ExprKind::Identifier { name } => Some(name.as_str()),
-        _ => None,
-    }
-}
-
 fn is_result_constructor(name: &str) -> bool {
     name == "Ok" || name == "Err"
 }
@@ -1759,6 +1871,10 @@ fn is_host_root(name: &str) -> bool {
         name,
         "db" | "fs" | "http" | "shell" | "model" | "secrets" | "deploy"
     )
+}
+
+fn is_host_callee_path(name: &str) -> bool {
+    name.split('.').next().is_some_and(is_host_root)
 }
 
 fn types_compatible(expected: &TypeExpr, actual: &TypeExpr) -> bool {

@@ -1,6 +1,6 @@
 # Sley Language Specification
 
-Status: v0 executable slice plus canonical direction
+Status: v0 executable slice plus module task namespace semantics
 
 Sley is a human-readable, agent-writable structural language. The canonical
 program model is a typed graph. `.sley` source is the stable review projection,
@@ -86,6 +86,48 @@ task sum -> Int {
 
 `set` is only valid for mutable binding kinds. `bind` is immutable.
 
+## Module Semantics
+
+Sley modules declare their module path and may import other modules.
+
+```sley
+module app.main
+
+import app.math as math
+
+task main -> Int {
+  return call math.double(21)
+}
+```
+
+Imported module declarations are private unless exported:
+
+```sley
+module app.math
+
+export task double -> Int {
+  take value: Int
+
+  return value * 2
+}
+```
+
+Task lookup rules:
+
+- same-module tasks are visible by simple name
+- imported tasks must be `export task`
+- simple imported task calls are valid only when one imported module exports
+  that task name
+- alias-qualified calls use the import alias or default last module segment,
+  such as `math.double`
+- fully qualified calls use the module path, such as `app.math.double`
+- private imported calls produce `PRIVATE_TASK`
+- ambiguous simple imported calls produce `AMBIGUOUS_TASK`
+
+`export type` and `export effect` are parsed, formatted, and represented in the
+graph. Their cross-module semantic identity is intentionally behind task
+identity and remains a near-term compiler milestone.
+
 ## Graft Model
 
 Agents should edit Sley by submitting structural grafts against bounded graph
@@ -115,8 +157,8 @@ snapshots.
 
 ## Current Gaps
 
-- module namespaces are bundled into one v0 lookup table
-- no explicit export/import alias semantics yet
+- type and custom-effect namespace resolution is not yet as strict as task
+  namespace resolution
 - durable trace sidecars are not written yet
 - host capabilities are checked statically but not backed by runtime gate values
 - no `match`, agent declarations, spawn/cast/join, or ZJX envelope command yet

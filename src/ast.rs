@@ -37,15 +37,19 @@ impl Program {
     pub fn assign_ids(&mut self) {
         let module = self.module.clone().unwrap_or_else(|| "main".to_string());
         for import in &mut self.imports {
+            import.owner_module = Some(module.clone());
             import.id = format!("import:{module}:{}", import.module);
         }
         for ty in &mut self.types {
+            ty.module = Some(module.clone());
             ty.id = format!("type:{module}.{}", ty.name);
         }
         for effect in &mut self.effects {
+            effect.module = Some(module.clone());
             effect.id = format!("effect:{module}.{}", effect.name);
         }
         for task in &mut self.tasks {
+            task.module = Some(module.clone());
             task.id = format!("task:{module}.{}", task.name);
             for (take_index, take) in task.takes.iter_mut().enumerate() {
                 take.id = format!("take:{}:{take_index}:{}", task.id, take.name);
@@ -74,7 +78,11 @@ impl Default for Program {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ImportDecl {
     pub id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub owner_module: Option<String>,
     pub module: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub alias: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub span: Option<SourceSpan>,
 }
@@ -82,6 +90,10 @@ pub struct ImportDecl {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct TypeDecl {
     pub id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub module: Option<String>,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub exported: bool,
     pub name: String,
     pub value: TypeExpr,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -91,6 +103,10 @@ pub struct TypeDecl {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct EffectDecl {
     pub id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub module: Option<String>,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub exported: bool,
     pub name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub span: Option<SourceSpan>,
@@ -99,6 +115,10 @@ pub struct EffectDecl {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct TaskDecl {
     pub id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub module: Option<String>,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub exported: bool,
     pub name: String,
     #[serde(default)]
     pub takes: Vec<TakeDecl>,
@@ -601,4 +621,8 @@ pub struct ProvenanceRecord {
     pub operation: String,
     pub targets: Vec<String>,
     pub result: String,
+}
+
+fn is_false(value: &bool) -> bool {
+    !*value
 }
