@@ -5,6 +5,7 @@ use std::process::Command as ProcessCommand;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use sley::ast::{AST_PROGRAM_SCHEMA, ExprKind, ProvenanceRecord, StatementKind};
+use sley::authority::{host_effect_contracts, host_effects_for_callee};
 use sley::checker::{check_program, has_errors};
 use sley::diagnostics::{DIAGNOSTIC_REPORT_SCHEMA, DiagnosticReport};
 use sley::doctor::{DOCTOR_REPORT_SCHEMA, build_doctor_report};
@@ -81,6 +82,55 @@ struct CliSmokeExpectation {
 struct CliSmokeJsonExpectation {
     pointer: String,
     value: serde_json::Value,
+}
+
+#[test]
+fn host_effect_contract_table_is_canonical() {
+    let mut callees = BTreeSet::new();
+    let mut source_needles = BTreeSet::new();
+
+    for contract in host_effect_contracts() {
+        assert!(
+            callees.insert(contract.callee),
+            "duplicate host callee {}",
+            contract.callee
+        );
+        assert!(
+            source_needles.insert(contract.source_needle),
+            "duplicate host source needle {}",
+            contract.source_needle
+        );
+        assert!(
+            !contract.effects.is_empty(),
+            "host callee {} has no authority effects",
+            contract.callee
+        );
+        assert!(
+            contract.source_needle.starts_with(contract.callee),
+            "source needle {} should identify callee {}",
+            contract.source_needle,
+            contract.callee
+        );
+        assert!(
+            contract.source_needle.ends_with('('),
+            "source needle {} should match call syntax",
+            contract.source_needle
+        );
+        assert_eq!(
+            host_effects_for_callee(contract.callee),
+            Some(contract.effects)
+        );
+    }
+
+    assert_eq!(
+        host_effects_for_callee("db.query_one"),
+        Some(&["DatabaseRead", "DbRead"][..])
+    );
+    assert_eq!(
+        host_effects_for_callee("deploy.try_stage"),
+        Some(&["Deploy"][..])
+    );
+    assert_eq!(host_effects_for_callee("unknown.try_call"), None);
 }
 
 #[test]

@@ -1,4 +1,5 @@
 pub mod ast;
+pub mod authority;
 pub mod checker;
 pub mod diagnostics;
 pub mod doctor;

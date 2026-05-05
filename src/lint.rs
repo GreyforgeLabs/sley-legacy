@@ -3,6 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use serde::Serialize;
 
 use crate::ast::Program;
+use crate::authority::host_effects_for_callee;
 use crate::query::{QueryKind, QueryOptions, build_query_report};
 use crate::symbols::{
     EffectResolution, collect_task_calls, resolve_effect, task_fq_name, task_module,
@@ -312,24 +313,6 @@ fn lint_unused_declared_effects(program: &Program, module: Option<&str>) -> Vec<
 
 fn module_matches(filter: Option<&str>, module: &str) -> bool {
     filter.is_none_or(|filter| filter == module)
-}
-
-fn host_effects_for_callee(callee: &str) -> Option<&'static [&'static str]> {
-    match callee {
-        "fs.read_text" | "fs.try_read_text" => Some(&["FileRead"]),
-        "fs.write_text" | "fs.try_write_text" => Some(&["FileWrite"]),
-        "db.query_one" | "db.query" | "db.try_query_one" | "db.try_query" => {
-            Some(&["DatabaseRead", "DbRead"])
-        }
-        "db.try_insert" => Some(&["DatabaseWrite", "DbWrite"]),
-        "model.try_complete" => Some(&["ModelCall"]),
-        "http.try_get_text" => Some(&["Network"]),
-        "shell.try_run" => Some(&["Shell"]),
-        "secrets.try_get" => Some(&["SecretRead"]),
-        "deploy.try_stage" => Some(&["Deploy"]),
-        "spend.try_authorize" => Some(&["Spend"]),
-        _ => None,
-    }
 }
 
 fn normalize_effect_name(program: &Program, module: &str, effect: &str) -> String {

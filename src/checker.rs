@@ -4,6 +4,7 @@ use crate::ast::{
     BinaryOp, BindingKind, Block, Expr, ExprKind, ExprMapEntry, Program, RecordField,
     StatementKind, TaskDecl, TypeExpr, UnaryOp,
 };
+use crate::authority::{host_effect_contracts, is_host_callee_path, is_host_root};
 use crate::diagnostics::{Diagnostic, RepairHint};
 use crate::symbols::{
     EffectResolution, TaskResolution, TypeResolution, callee_path, effect_module,
@@ -1985,13 +1986,14 @@ fn check_expression_effects(
     declared_effects: &HashSet<String>,
     diagnostics: &mut Vec<Diagnostic>,
 ) {
-    for (needle, acceptable_effects) in host_effect_patterns() {
-        if source.contains(needle)
-            && !acceptable_effects
+    for contract in host_effect_contracts() {
+        if source.contains(contract.source_needle)
+            && !contract
+                .effects
                 .iter()
                 .any(|effect| declared_effects.contains(*effect))
         {
-            let required = acceptable_effects[0];
+            let required = contract.effects[0];
             diagnostics.push(
                 Diagnostic::error(
                     "EFFECT_UNAUTHORIZED",
@@ -2005,26 +2007,6 @@ fn check_expression_effects(
             );
         }
     }
-}
-
-fn host_effect_patterns() -> Vec<(&'static str, Vec<&'static str>)> {
-    vec![
-        ("fs.read_text(", vec!["FileRead"]),
-        ("fs.try_read_text(", vec!["FileRead"]),
-        ("fs.write_text(", vec!["FileWrite"]),
-        ("fs.try_write_text(", vec!["FileWrite"]),
-        ("db.query_one(", vec!["DatabaseRead", "DbRead"]),
-        ("db.query(", vec!["DatabaseRead", "DbRead"]),
-        ("db.try_query_one(", vec!["DatabaseRead", "DbRead"]),
-        ("db.try_query(", vec!["DatabaseRead", "DbRead"]),
-        ("db.try_insert(", vec!["DatabaseWrite", "DbWrite"]),
-        ("model.try_complete(", vec!["ModelCall"]),
-        ("http.try_get_text(", vec!["Network"]),
-        ("shell.try_run(", vec!["Shell"]),
-        ("secrets.try_get(", vec!["SecretRead"]),
-        ("deploy.try_stage(", vec!["Deploy"]),
-        ("spend.try_authorize(", vec!["Spend"]),
-    ]
 }
 
 fn check_fallible_expression(
@@ -2361,17 +2343,6 @@ fn is_result_constructor(name: &str) -> bool {
 
 fn is_builtin_task(name: &str) -> bool {
     name == "len"
-}
-
-fn is_host_root(name: &str) -> bool {
-    matches!(
-        name,
-        "db" | "fs" | "http" | "shell" | "model" | "secrets" | "deploy" | "spend"
-    )
-}
-
-fn is_host_callee_path(name: &str) -> bool {
-    name.split('.').next().is_some_and(is_host_root)
 }
 
 fn types_compatible(expected: &TypeExpr, actual: &TypeExpr) -> bool {

@@ -7,6 +7,7 @@ use crate::ast::{
     BinaryOp, BindingKind, Expr, ExprKind, Program, StatementKind, TakeDecl, TaskDecl, TypeExpr,
     UnaryOp,
 };
+use crate::authority::{host_effects_for_callee, is_host_callee_path};
 use crate::diagnostics::Diagnostic;
 use crate::symbols::{
     EffectResolution, TaskResolution, callee_path, resolve_effect, resolve_task, task_module,
@@ -821,7 +822,7 @@ fn eval_host_call(
     locals: &HashMap<String, Value>,
     gates: &mut RuntimeGates,
 ) -> Result<EvalOutcome, Vec<Diagnostic>> {
-    let Some(required_effects) = host_required_effects(callee_name) else {
+    let Some(required_effects) = host_effects_for_callee(callee_name) else {
         return Err(vec![
             Diagnostic::error(
                 "RUNTIME_HOST_CALL_UNSUPPORTED",
@@ -1521,24 +1522,6 @@ fn host_error_value(code: &str, message: impl Into<String>) -> Value {
     Value::Record(fields)
 }
 
-fn host_required_effects(name: &str) -> Option<&'static [&'static str]> {
-    match name {
-        "fs.read_text" | "fs.try_read_text" => Some(&["FileRead"]),
-        "fs.write_text" | "fs.try_write_text" => Some(&["FileWrite"]),
-        "db.query_one" | "db.query" | "db.try_query_one" | "db.try_query" => {
-            Some(&["DatabaseRead", "DbRead"])
-        }
-        "db.try_insert" => Some(&["DatabaseWrite", "DbWrite"]),
-        "http.try_get_text" => Some(&["Network"]),
-        "shell.try_run" => Some(&["Shell"]),
-        "model.try_complete" => Some(&["ModelCall"]),
-        "secrets.try_get" => Some(&["SecretRead"]),
-        "deploy.try_stage" => Some(&["Deploy"]),
-        "spend.try_authorize" => Some(&["Spend"]),
-        _ => None,
-    }
-}
-
 fn eval_text_arg(
     program: &Program,
     task: &TaskDecl,
@@ -1746,11 +1729,4 @@ fn runtime_type_error(expr: &Expr, message: impl Into<String>) -> Result<Value, 
     Err(vec![
         Diagnostic::error("RUNTIME_TYPE_ERROR", message).with_node(expr.id.clone()),
     ])
-}
-
-fn is_host_callee_path(name: &str) -> bool {
-    matches!(
-        name.split('.').next(),
-        Some("db" | "fs" | "http" | "shell" | "model" | "secrets" | "deploy" | "spend")
-    )
 }
