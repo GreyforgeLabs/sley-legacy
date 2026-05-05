@@ -2018,7 +2018,7 @@ fn host_effect_patterns() -> Vec<(&'static str, Vec<&'static str>)> {
         ("db.try_query_one(", vec!["DatabaseRead", "DbRead"]),
         ("db.try_query(", vec!["DatabaseRead", "DbRead"]),
         ("db.try_insert(", vec!["DatabaseWrite", "DbWrite"]),
-        ("model.", vec!["ModelCall"]),
+        ("model.try_complete(", vec!["ModelCall"]),
         ("http.try_get_text(", vec!["Network"]),
         ("shell.try_run(", vec!["Shell"]),
         ("secrets.", vec!["SecretRead"]),
@@ -2339,6 +2339,7 @@ fn host_call_return_type(name: &str) -> Option<TypeExpr> {
         "db.try_insert" => Some(result_type(TypeExpr::named("DbRow"))),
         "http.try_get_text" => Some(result_type(TypeExpr::named("Text"))),
         "shell.try_run" => Some(result_type(TypeExpr::named("Text"))),
+        "model.try_complete" => Some(result_type(TypeExpr::named("Text"))),
         _ => None,
     }
 }

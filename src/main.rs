@@ -58,6 +58,8 @@ enum Command {
         http_text: Vec<String>,
         #[arg(long = "shell-output", value_names = ["COMMAND", "TEXT"], num_args = 2)]
         shell_output: Vec<String>,
+        #[arg(long = "model-output", value_names = ["PROMPT", "TEXT"], num_args = 2)]
+        model_output: Vec<String>,
         file: PathBuf,
     },
     Ast {
@@ -181,6 +183,7 @@ fn run(cli: Cli) -> Result<()> {
             db_table,
             http_text,
             shell_output,
+            model_output,
             file,
         } => {
             let program = match load_target_program(&file) {
@@ -195,6 +198,7 @@ fn run(cli: Cli) -> Result<()> {
             load_runtime_db_tables(&mut runtime_gates, &db_table)?;
             load_runtime_http_texts(&mut runtime_gates, &http_text)?;
             load_runtime_shell_outputs(&mut runtime_gates, &shell_output)?;
+            load_runtime_model_outputs(&mut runtime_gates, &model_output)?;
             let result = if runtime_gates.is_empty() {
                 run_main(&program)
             } else {
@@ -665,6 +669,21 @@ fn load_runtime_shell_outputs(gates: &mut RuntimeGates, values: &[String]) -> Re
     }
     if !chunks.remainder().is_empty() {
         anyhow::bail!("shell output seed must use COMMAND TEXT pairs");
+    }
+    Ok(())
+}
+
+fn load_runtime_model_outputs(gates: &mut RuntimeGates, values: &[String]) -> Result<()> {
+    let mut chunks = values.chunks_exact(2);
+    for pair in &mut chunks {
+        let prompt = pair[0].trim();
+        if prompt.is_empty() {
+            anyhow::bail!("model output seed prompt cannot be empty");
+        }
+        gates.grant_model_output(prompt, pair[1].clone());
+    }
+    if !chunks.remainder().is_empty() {
+        anyhow::bail!("model output seed must use PROMPT TEXT pairs");
     }
     Ok(())
 }

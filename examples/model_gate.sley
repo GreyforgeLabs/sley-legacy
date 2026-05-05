@@ -1,0 +1,5 @@
+task main -> Result<Text, Error> uses ModelCall {
+  bind answer = call model.try_complete("name")?
+
+  return Ok(answer)
+}

@@ -128,8 +128,9 @@ Rules:
   content-addressed digest over source, graph, and receipt content.
 - Runtime `Ok(value)`/`Err(error)` values and `?` propagation are implemented
   for Sley-level `Result` flow. Filesystem, seeded database reads, per-run
-  database inserts, and seeded network text responses now expose `try_`
-  variants returning typed `Error` records.
+  database inserts, seeded network text responses, seeded shell command output,
+  and seeded model completions now expose fallible variants returning typed
+  `Error` records.
 - Source text should remain the human review projection, not the primary agent
   edit surface.
 
@@ -377,7 +378,8 @@ Near-term:
 
 1. Expand capability-backed host adapters beyond root-scoped filesystem gates,
    deterministic seeded database surfaces, seeded network text, and seeded
-   shell command output, preserving `Result<T, Error>` surfaces for recoverable
+   shell command output. Model now has seeded completions; the remaining near
+   term adapters should preserve `Result<T, Error>` surfaces for recoverable
    host failures.
 2. Grow the accepted/rejected synthetic gold corpus with graft, module, and
    runtime authority cases.
@@ -391,9 +393,10 @@ Medium-term:
    delete edits.
 2. Move trace seals and ZJX preview payloads into a compressed binary `.zjx`
    handoff.
-3. Expand runtime host capability values across model, secret, deploy, and
-   spend boundaries, then grow shell beyond seeded command output, network
-   beyond seeded text, and database write beyond per-run inserts.
+3. Expand runtime host capability values across secret, deploy, and spend
+   boundaries, then grow model beyond seeded completions, shell beyond seeded
+   command output, network beyond seeded text, and database write beyond
+   per-run inserts.
 4. Build the synthetic gold corpus into a release gate.
 5. Shadow selected compiler helper passes in Sley.
 
