@@ -1,8 +1,10 @@
 module app.collections
 
-fn sum(values: List<Int>) -> Int {
-  let index = 0
-  let total = 0
+task sum -> Int {
+  take values: List<Int>
+
+  state index = 0
+  state total = 0
   while index < len(values) {
     set total = total + values[index]
     set index = index + 1
@@ -10,10 +12,10 @@ fn sum(values: List<Int>) -> Int {
   return total
 }
 
-fn main() -> Int {
-  let values = [2, 3, 5]
+task main -> Int {
+  bind values = [2, 3, 5]
   if len(values) == 3 {
-    return sum(values)
+    return call sum(values)
   } else {
     return 0
   }

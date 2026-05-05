@@ -13,7 +13,7 @@ pub struct Program {
     #[serde(default)]
     pub effects: Vec<EffectDecl>,
     #[serde(default)]
-    pub functions: Vec<FunctionDecl>,
+    pub tasks: Vec<TaskDecl>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub provenance: Vec<ProvenanceRecord>,
 }
@@ -25,7 +25,7 @@ impl Program {
             imports: Vec::new(),
             types: Vec::new(),
             effects: Vec::new(),
-            functions: Vec::new(),
+            tasks: Vec::new(),
             provenance: Vec::new(),
         }
     }
@@ -45,22 +45,22 @@ impl Program {
         for effect in &mut self.effects {
             effect.id = format!("effect:{module}.{}", effect.name);
         }
-        for function in &mut self.functions {
-            function.id = format!("function:{module}.{}", function.name);
-            for (param_index, param) in function.params.iter_mut().enumerate() {
-                param.id = format!("param:{}:{param_index}:{}", function.id, param.name);
+        for task in &mut self.tasks {
+            task.id = format!("task:{module}.{}", task.name);
+            for (take_index, take) in task.takes.iter_mut().enumerate() {
+                take.id = format!("take:{}:{take_index}:{}", task.id, take.name);
             }
-            function.body.assign_ids(format!("block:{}", function.id));
+            task.body.assign_ids(format!("block:{}", task.id));
         }
     }
 
-    pub fn find_function_index(&self, target: &str) -> Option<usize> {
-        let needle = target.strip_prefix("function:").unwrap_or(target);
-        self.functions.iter().position(|function| {
-            function.id == target
-                || function.id == format!("function:{needle}")
-                || function.name == needle
-                || function.id.ends_with(&format!(".{needle}"))
+    pub fn find_task_index(&self, target: &str) -> Option<usize> {
+        let needle = target.strip_prefix("task:").unwrap_or(target);
+        self.tasks.iter().position(|task| {
+            task.id == target
+                || task.id == format!("task:{needle}")
+                || task.name == needle
+                || task.id.ends_with(&format!(".{needle}"))
         })
     }
 }
@@ -97,11 +97,11 @@ pub struct EffectDecl {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct FunctionDecl {
+pub struct TaskDecl {
     pub id: String,
     pub name: String,
     #[serde(default)]
-    pub params: Vec<Param>,
+    pub takes: Vec<TakeDecl>,
     pub return_type: TypeExpr,
     #[serde(default)]
     pub effects: Vec<String>,
@@ -111,13 +111,126 @@ pub struct FunctionDecl {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct Param {
+pub struct TakeDecl {
     pub id: String,
     pub name: String,
+    #[serde(default = "BindingKind::take")]
+    pub binding_kind: BindingKind,
     #[serde(rename = "type")]
     pub ty: TypeExpr,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub span: Option<SourceSpan>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub enum BindingKind {
+    Take,
+    Bind,
+    State,
+    Cell,
+    Knot,
+    Slot,
+    Gate,
+    Lease,
+    Veil,
+    Dial,
+    Flag,
+    Memo,
+    Cache,
+    Derive,
+    Flow,
+    Port,
+    Tally,
+    Hole,
+    Draft,
+    Taint,
+    Witness,
+    Seal,
+    Anchor,
+    View,
+    Cursor,
+}
+
+impl BindingKind {
+    pub fn take() -> Self {
+        Self::Take
+    }
+
+    pub fn from_source_keyword(keyword: &str) -> Option<Self> {
+        match keyword {
+            "bind" => Some(Self::Bind),
+            "state" => Some(Self::State),
+            "cell" => Some(Self::Cell),
+            "knot" => Some(Self::Knot),
+            "slot" => Some(Self::Slot),
+            "gate" => Some(Self::Gate),
+            "lease" => Some(Self::Lease),
+            "veil" => Some(Self::Veil),
+            "dial" => Some(Self::Dial),
+            "flag" => Some(Self::Flag),
+            "memo" => Some(Self::Memo),
+            "cache" => Some(Self::Cache),
+            "derive" => Some(Self::Derive),
+            "flow" => Some(Self::Flow),
+            "port" => Some(Self::Port),
+            "tally" => Some(Self::Tally),
+            "hole" => Some(Self::Hole),
+            "draft" => Some(Self::Draft),
+            "taint" => Some(Self::Taint),
+            "witness" => Some(Self::Witness),
+            "seal" => Some(Self::Seal),
+            "anchor" => Some(Self::Anchor),
+            "view" => Some(Self::View),
+            "cursor" => Some(Self::Cursor),
+            _ => None,
+        }
+    }
+
+    pub fn as_source_keyword(&self) -> &'static str {
+        match self {
+            Self::Take => "take",
+            Self::Bind => "bind",
+            Self::State => "state",
+            Self::Cell => "cell",
+            Self::Knot => "knot",
+            Self::Slot => "slot",
+            Self::Gate => "gate",
+            Self::Lease => "lease",
+            Self::Veil => "veil",
+            Self::Dial => "dial",
+            Self::Flag => "flag",
+            Self::Memo => "memo",
+            Self::Cache => "cache",
+            Self::Derive => "derive",
+            Self::Flow => "flow",
+            Self::Port => "port",
+            Self::Tally => "tally",
+            Self::Hole => "hole",
+            Self::Draft => "draft",
+            Self::Taint => "taint",
+            Self::Witness => "witness",
+            Self::Seal => "seal",
+            Self::Anchor => "anchor",
+            Self::View => "view",
+            Self::Cursor => "cursor",
+        }
+    }
+
+    pub fn is_mutable_local(&self) -> bool {
+        matches!(
+            self,
+            Self::State
+                | Self::Cell
+                | Self::Knot
+                | Self::Lease
+                | Self::Cache
+                | Self::Flow
+                | Self::Port
+                | Self::Tally
+                | Self::Draft
+                | Self::Cursor
+        )
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -149,7 +262,7 @@ impl Statement {
         let id = id.into();
         self.id = id.clone();
         match &mut self.kind {
-            StatementKind::Let { expr, .. }
+            StatementKind::Binding { expr, .. }
             | StatementKind::Set { expr, .. }
             | StatementKind::Return { expr }
             | StatementKind::Expr { expr } => {
@@ -176,6 +289,9 @@ impl Statement {
                 collection.assign_ids(format!("{id}:collection"));
                 body.assign_ids(format!("{id}:body"));
             }
+            StatementKind::Forge { body } => {
+                body.assign_ids(format!("{id}:forge"));
+            }
         }
     }
 }
@@ -183,7 +299,8 @@ impl Statement {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "kind")]
 pub enum StatementKind {
-    Let {
+    Binding {
+        binding_kind: BindingKind,
         name: String,
         #[serde(skip_serializing_if = "Option::is_none")]
         type_ann: Option<TypeExpr>,
@@ -212,6 +329,9 @@ pub enum StatementKind {
     For {
         item: String,
         collection: Expr,
+        body: Block,
+    },
+    Forge {
         body: Block,
     },
 }
@@ -475,7 +595,7 @@ pub struct RecordField {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ProvenanceRecord {
-    pub patch_id: String,
+    pub graft_id: String,
     pub actor: String,
     pub timestamp: String,
     pub operation: String,

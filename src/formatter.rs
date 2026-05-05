@@ -26,7 +26,7 @@ pub fn format_program(program: &Program) -> String {
             TypeExpr::Record { fields } => {
                 out.push_str("{\n");
                 for field in fields {
-                    out.push_str("  ");
+                    out.push_str("  slot ");
                     out.push_str(&field.name);
                     out.push_str(": ");
                     out.push_str(&field.ty.display());
@@ -50,26 +50,31 @@ pub fn format_program(program: &Program) -> String {
         out.push('\n');
     }
 
-    for function in &program.functions {
-        out.push_str("fn ");
-        out.push_str(&function.name);
-        out.push('(');
-        out.push_str(
-            &function
-                .params
-                .iter()
-                .map(|param| format!("{}: {}", param.name, param.ty.display()))
-                .collect::<Vec<_>>()
-                .join(", "),
-        );
-        out.push_str(") -> ");
-        out.push_str(&function.return_type.display());
-        if !function.effects.is_empty() {
+    for task in &program.tasks {
+        out.push_str("task ");
+        out.push_str(&task.name);
+        out.push_str(" -> ");
+        out.push_str(&task.return_type.display());
+        if !task.effects.is_empty() {
             out.push_str(" uses ");
-            out.push_str(&function.effects.join(", "));
+            out.push_str(&task.effects.join(", "));
         }
         out.push_str(" {\n");
-        format_block_statements(&mut out, &function.body, 1);
+        for take in &task.takes {
+            out.push_str("  take ");
+            if take.binding_kind != crate::ast::BindingKind::Take {
+                out.push_str(take.binding_kind.as_source_keyword());
+                out.push(' ');
+            }
+            out.push_str(&take.name);
+            out.push_str(": ");
+            out.push_str(&take.ty.display());
+            out.push('\n');
+        }
+        if !task.takes.is_empty() && !task.body.statements.is_empty() {
+            out.push('\n');
+        }
+        format_block_statements(&mut out, &task.body, 1);
         out.push_str("}\n\n");
     }
 
@@ -91,12 +96,14 @@ fn format_block_statements(out: &mut String, block: &Block, indent_level: usize)
 fn format_statement(out: &mut String, kind: &StatementKind, indent_level: usize) {
     push_indent(out, indent_level);
     match kind {
-        StatementKind::Let {
+        StatementKind::Binding {
+            binding_kind,
             name,
             type_ann,
             expr,
         } => {
-            out.push_str("let ");
+            out.push_str(binding_kind.as_source_keyword());
+            out.push(' ');
             out.push_str(name);
             if let Some(type_ann) = type_ann {
                 out.push_str(": ");
@@ -154,11 +161,17 @@ fn format_statement(out: &mut String, kind: &StatementKind, indent_level: usize)
             collection,
             body,
         } => {
-            out.push_str("for ");
+            out.push_str("each ");
             out.push_str(item);
             out.push_str(" in ");
             out.push_str(&collection.source);
             out.push_str(" {\n");
+            format_block_statements(out, body, indent_level + 1);
+            push_indent(out, indent_level);
+            out.push_str("}\n");
+        }
+        StatementKind::Forge { body } => {
+            out.push_str("forge {\n");
             format_block_statements(out, body, indent_level + 1);
             push_indent(out, indent_level);
             out.push_str("}\n");
@@ -180,7 +193,7 @@ mod tests {
 
     #[test]
     fn formats_stably() {
-        let source = "module app\nfn main() -> Text {\nreturn \"ok\"\n}\n";
+        let source = "module app\ntask main -> Text {\nreturn \"ok\"\n}\n";
         let first = parse_program(source).expect("parse");
         let formatted = format_program(&first);
         let second = parse_program(&formatted).expect("parse formatted");

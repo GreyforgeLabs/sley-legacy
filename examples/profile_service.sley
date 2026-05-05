@@ -1,0 +1,16 @@
+module app.profile
+
+type User = {
+  slot id: Text
+  slot name: Text
+  slot email: Text
+}
+
+effect DatabaseRead
+
+task get_user -> Result<User, Error> uses DatabaseRead {
+  take id: Text
+
+  bind row = call db.query_one("select * from users where id = ?", id)?
+  return Ok(User { id: row.text("id"), name: row.text("name"), email: row.text("email") })
+}

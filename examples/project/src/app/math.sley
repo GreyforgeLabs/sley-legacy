@@ -1,0 +1,7 @@
+module app.math
+
+task double -> Int {
+  take value: Int
+
+  return value * 2
+}

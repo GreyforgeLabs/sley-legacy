@@ -2,9 +2,7 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 
 use serde::{Deserialize, Serialize};
 
-use crate::ast::{
-    BinaryOp, Expr, ExprKind, FunctionDecl, Program, StatementKind, TypeExpr, UnaryOp,
-};
+use crate::ast::{BinaryOp, Expr, ExprKind, Program, StatementKind, TaskDecl, TypeExpr, UnaryOp};
 use crate::diagnostics::Diagnostic;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -24,24 +22,17 @@ pub enum Value {
 const MAX_LOOP_ITERATIONS: usize = 1_000_000;
 
 pub fn run_main(program: &Program) -> Result<Value, Vec<Diagnostic>> {
-    let Some(main) = program
-        .functions
-        .iter()
-        .find(|function| function.name == "main")
-    else {
+    let Some(main) = program.tasks.iter().find(|task| task.name == "main") else {
         return Err(vec![Diagnostic::error(
             "RUNTIME_NO_MAIN",
-            "no zero-argument `main` function found",
+            "no zero-argument `main` task found",
         )]);
     };
 
-    if !main.params.is_empty() {
+    if !main.takes.is_empty() {
         return Err(vec![
-            Diagnostic::error(
-                "RUNTIME_MAIN_HAS_PARAMS",
-                "`main` cannot require parameters",
-            )
-            .with_node(main.id.clone()),
+            Diagnostic::error("RUNTIME_MAIN_HAS_TAKES", "`main` cannot require takes")
+                .with_node(main.id.clone()),
         ]);
     }
 
@@ -58,49 +49,49 @@ pub fn run_main(program: &Program) -> Result<Value, Vec<Diagnostic>> {
         ]);
     }
 
-    eval_function(program, main, Vec::new())
+    eval_task(program, main, Vec::new())
 }
 
-fn eval_function(
+fn eval_task(
     program: &Program,
-    function: &FunctionDecl,
+    task: &TaskDecl,
     args: Vec<Value>,
 ) -> Result<Value, Vec<Diagnostic>> {
-    if !function.effects.is_empty() {
+    if !task.effects.is_empty() {
         return Err(vec![
             Diagnostic::error(
                 "RUNTIME_CAPABILITY_REQUIRED",
                 format!(
                     "`{}` requires runtime capabilities: {}",
-                    function.name,
-                    function.effects.join(", ")
+                    task.name,
+                    task.effects.join(", ")
                 ),
             )
-            .with_node(function.id.clone()),
+            .with_node(task.id.clone()),
         ]);
     }
 
-    if args.len() != function.params.len() {
+    if args.len() != task.takes.len() {
         return Err(vec![
             Diagnostic::error(
                 "RUNTIME_ARITY_MISMATCH",
                 format!(
                     "`{}` expected {} arguments but received {}",
-                    function.name,
-                    function.params.len(),
+                    task.name,
+                    task.takes.len(),
                     args.len()
                 ),
             )
-            .with_node(function.id.clone()),
+            .with_node(task.id.clone()),
         ]);
     }
 
     let mut locals = HashMap::new();
-    for (param, value) in function.params.iter().zip(args) {
-        locals.insert(param.name.clone(), value);
+    for (take, value) in task.takes.iter().zip(args) {
+        locals.insert(take.name.clone(), value);
     }
 
-    if let Some(value) = eval_block(program, &function.body, &mut locals, &function.return_type)? {
+    if let Some(value) = eval_block(program, &task.body, &mut locals, &task.return_type)? {
         return Ok(value);
     }
 
@@ -155,7 +146,7 @@ fn eval_statement(
     return_type: &TypeExpr,
 ) -> Result<Option<Value>, Vec<Diagnostic>> {
     match &statement.kind {
-        StatementKind::Let { name, expr, .. } => {
+        StatementKind::Binding { name, expr, .. } => {
             let value = eval_expr(program, expr, locals, return_type)?;
             locals.insert(name.clone(), value);
             Ok(None)
@@ -234,6 +225,7 @@ fn eval_statement(
                 ]),
             }
         }
+        StatementKind::Forge { body } => eval_scoped_block(program, body, locals, return_type),
     }
 }
 
@@ -308,16 +300,13 @@ fn eval_expr(
                 };
             }
             if let Some(callee_name) = direct_callee_name(callee)
-                && let Some(function) = program
-                    .functions
-                    .iter()
-                    .find(|function| function.name == callee_name)
+                && let Some(task) = program.tasks.iter().find(|task| task.name == callee_name)
             {
                 let mut values = Vec::new();
                 for arg in args {
                     values.push(eval_expr(program, arg, locals, return_type)?);
                 }
-                return eval_function(program, function, values);
+                return eval_task(program, task, values);
             }
             Ok(Value::Raw(expr.source.clone()))
         }

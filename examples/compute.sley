@@ -1,0 +1,12 @@
+module app.compute
+
+task classify -> Text {
+  take score: Int
+
+  return if score >= 90 { "excellent" } else { "steady" }
+}
+
+task main -> Text {
+  bind score = 40 + 55
+  return call classify(score)
+}

@@ -1,6 +1,7 @@
 use crate::ast::{
-    BinaryOp, Block, EffectDecl, Expr, ExprField, ExprKind, ExprMapEntry, FunctionDecl, ImportDecl,
-    Param, Program, RecordField, Statement, StatementKind, TypeDecl, TypeExpr, UnaryOp,
+    BinaryOp, BindingKind, Block, EffectDecl, Expr, ExprField, ExprKind, ExprMapEntry, ImportDecl,
+    Program, RecordField, Statement, StatementKind, TakeDecl, TaskDecl, TypeDecl, TypeExpr,
+    UnaryOp,
 };
 use crate::diagnostics::{Diagnostic, SourceSpan};
 
@@ -28,13 +29,13 @@ pub fn parse_type_expr_source(source: &str) -> Result<TypeExpr, Vec<Diagnostic>>
 }
 
 pub fn parse_block_source(source: &str) -> Result<Block, Vec<Diagnostic>> {
-    let synthetic = format!("fn __patch_block() -> Unit {{\n{source}\n}}\n");
+    let synthetic = format!("task __graft_block -> Unit {{\n{source}\n}}\n");
     let program = parse_program(&synthetic)?;
     Ok(program
-        .functions
+        .tasks
         .into_iter()
         .next()
-        .map(|function| function.body)
+        .map(|task| task.body)
         .unwrap_or(Block {
             statements: Vec::new(),
         }))
@@ -441,14 +442,14 @@ impl Parser {
                     name,
                     span: Some(span),
                 });
-            } else if self.current().is_ident("fn") {
-                program.functions.push(self.parse_function_decl()?);
+            } else if self.current().is_ident("task") {
+                program.tasks.push(self.parse_task_decl()?);
             } else if self.current().is_symbol(';') {
                 self.bump();
             } else {
                 return Err(vec![self.error_here(
                     "PARSE_EXPECTED_ITEM",
-                    "expected module, import, type, effect, or fn declaration",
+                    "expected module, import, type, effect, or task declaration",
                 )]);
             }
             self.skip_statement_gap();
@@ -471,39 +472,12 @@ impl Parser {
         })
     }
 
-    fn parse_function_decl(&mut self) -> Result<FunctionDecl, Vec<Diagnostic>> {
+    fn parse_task_decl(&mut self) -> Result<TaskDecl, Vec<Diagnostic>> {
         let span = self.current().span.clone();
-        self.expect_keyword("fn", "expected function declaration")?;
-        let name = self.expect_ident("expected function name")?;
-        self.expect_symbol('(', "expected `(` after function name")?;
-        let mut params = Vec::new();
-        self.skip_newlines();
-        if !self.current().is_symbol(')') {
-            loop {
-                let param_span = self.current().span.clone();
-                let param_name = self.expect_ident("expected parameter name")?;
-                self.expect_symbol(':', "expected `:` after parameter name")?;
-                let ty = self.parse_type_expr()?;
-                params.push(Param {
-                    id: String::new(),
-                    name: param_name,
-                    ty,
-                    span: Some(param_span),
-                });
-                self.skip_newlines();
-                if self.current().is_symbol(',') {
-                    self.bump();
-                    self.skip_newlines();
-                    if self.current().is_symbol(')') {
-                        break;
-                    }
-                } else {
-                    break;
-                }
-            }
-        }
-        self.expect_symbol(')', "expected `)` after parameters")?;
-        self.expect_arrow("expected `->` after parameter list")?;
+        self.expect_keyword("task", "expected task declaration")?;
+        let name = self.expect_ident("expected task name")?;
+        let mut takes = Vec::new();
+        self.expect_arrow("expected `->` after task name")?;
         let return_type = self.parse_type_expr()?;
 
         let mut effects = Vec::new();
@@ -519,16 +493,59 @@ impl Parser {
             }
         }
 
-        let body = self.parse_block()?;
-        Ok(FunctionDecl {
+        let body = self.parse_task_block(&mut takes)?;
+        Ok(TaskDecl {
             id: String::new(),
             name,
-            params,
+            takes,
             return_type,
             effects,
             body,
             span: Some(span),
         })
+    }
+
+    fn parse_take(&mut self, binding_kind: BindingKind) -> Result<TakeDecl, Vec<Diagnostic>> {
+        let take_span = self.current().span.clone();
+        let take_name = self.expect_ident("expected take name")?;
+        self.expect_symbol(':', "expected `:` after take name")?;
+        let ty = self.parse_type_expr()?;
+        Ok(TakeDecl {
+            id: String::new(),
+            name: take_name,
+            binding_kind,
+            ty,
+            span: Some(take_span),
+        })
+    }
+
+    fn parse_task_block(&mut self, takes: &mut Vec<TakeDecl>) -> Result<Block, Vec<Diagnostic>> {
+        self.expect_symbol('{', "expected `{` to start task block")?;
+        let mut statements = Vec::new();
+        self.skip_newlines();
+        while self.current().is_ident("take") {
+            self.bump();
+            let binding_kind = if let TokenKind::Ident(value) = &self.current().kind {
+                if value == "gate" || value == "veil" || value == "taint" || value == "view" {
+                    let binding_kind = BindingKind::from_source_keyword(value)
+                        .expect("take binding qualifier is known");
+                    self.bump();
+                    binding_kind
+                } else {
+                    BindingKind::Take
+                }
+            } else {
+                BindingKind::Take
+            };
+            takes.push(self.parse_take(binding_kind)?);
+            self.skip_statement_gap();
+        }
+        while !self.at_eof() && !self.current().is_symbol('}') {
+            statements.push(self.parse_statement()?);
+            self.skip_statement_gap();
+        }
+        self.expect_symbol('}', "expected `}` to close task block")?;
+        Ok(Block { statements })
     }
 
     fn parse_block(&mut self) -> Result<Block, Vec<Diagnostic>> {
@@ -546,7 +563,7 @@ impl Parser {
     fn parse_statement(&mut self) -> Result<Statement, Vec<Diagnostic>> {
         self.skip_newlines();
         let span = self.current().span.clone();
-        if self.current().is_ident("let") {
+        if let Some(binding_kind) = self.current_binding_kind() {
             self.bump();
             let name = self.expect_ident("expected local binding name")?;
             let type_ann = if self.current().is_symbol(':') {
@@ -559,7 +576,8 @@ impl Parser {
             let expr = self.parse_statement_expr(span.clone())?;
             Ok(Statement {
                 id: String::new(),
-                kind: StatementKind::Let {
+                kind: StatementKind::Binding {
+                    binding_kind,
                     name,
                     type_ann,
                     expr,
@@ -613,7 +631,7 @@ impl Parser {
                 kind: StatementKind::While { condition, body },
                 span: Some(span),
             })
-        } else if self.current().is_ident("for") {
+        } else if self.current().is_ident("for") || self.current().is_ident("each") {
             self.bump();
             let item = self.expect_ident("expected loop binding name")?;
             self.expect_keyword("in", "expected `in` after loop binding")?;
@@ -628,6 +646,14 @@ impl Parser {
                 },
                 span: Some(span),
             })
+        } else if self.current().is_ident("forge") {
+            self.bump();
+            let body = self.parse_block()?;
+            Ok(Statement {
+                id: String::new(),
+                kind: StatementKind::Forge { body },
+                span: Some(span),
+            })
         } else {
             let expr = self.parse_statement_expr(span.clone())?;
             Ok(Statement {
@@ -635,6 +661,13 @@ impl Parser {
                 kind: StatementKind::Expr { expr },
                 span: Some(span),
             })
+        }
+    }
+
+    fn current_binding_kind(&self) -> Option<BindingKind> {
+        match &self.current().kind {
+            TokenKind::Ident(value) => BindingKind::from_source_keyword(value),
+            _ => None,
         }
     }
 
@@ -730,6 +763,9 @@ impl Parser {
             let mut fields = Vec::new();
             self.skip_newlines();
             while !self.at_eof() && !self.current().is_symbol('}') {
+                if self.current().is_ident("slot") {
+                    self.bump();
+                }
                 let name = self.expect_ident("expected record field name")?;
                 self.expect_symbol(':', "expected `:` after record field name")?;
                 let ty = self.parse_type_expr()?;
@@ -1050,6 +1086,7 @@ impl<'a> ExprParser<'a> {
                 }
             }
             TokenKind::Ident(name) if name == "if" => self.parse_if_expression(token.span),
+            TokenKind::Ident(name) if name == "call" => self.parse_call_keyword(token.span),
             TokenKind::Ident(name) if name == "map" && self.next_is_symbol('{') => {
                 self.parse_map_literal(token.span)
             }
@@ -1093,6 +1130,19 @@ impl<'a> ExprParser<'a> {
                     },
                     span: Some(token.span),
                 })
+            }
+            _ => Err(()),
+        }
+    }
+
+    fn parse_call_keyword(&mut self, span: SourceSpan) -> Result<Expr, ()> {
+        self.expect_keyword("call")?;
+        let mut expr = self.parse_postfix()?;
+        match &expr.kind {
+            ExprKind::Call { .. } | ExprKind::Try { .. } => {
+                expr.source = format!("call {}", expr.source);
+                expr.span = Some(span);
+                Ok(expr)
             }
             _ => Err(()),
         }
@@ -1388,14 +1438,16 @@ mod tests {
 module app.profile
 
 type User = {
-  id: Text
-  name: Text
+  slot id: Text
+  slot name: Text
 }
 
 effect DatabaseRead
 
-fn get_user(id: Text) -> Result<User, Error> uses DatabaseRead {
-  let row = db.query_one("select * from users where id = ?", id)?
+task get_user -> Result<User, Error> uses DatabaseRead {
+  take id: Text
+
+  bind row = call db.query_one("select * from users where id = ?", id)?
   return Ok(User { id: row.text("id"), name: row.text("name") })
 }
 "#;
@@ -1403,8 +1455,8 @@ fn get_user(id: Text) -> Result<User, Error> uses DatabaseRead {
         assert_eq!(program.module.as_deref(), Some("app.profile"));
         assert_eq!(program.types.len(), 1);
         assert_eq!(program.effects.len(), 1);
-        assert_eq!(program.functions.len(), 1);
-        assert_eq!(program.functions[0].params[0].name, "id");
-        assert_eq!(program.functions[0].body.statements.len(), 2);
+        assert_eq!(program.tasks.len(), 1);
+        assert_eq!(program.tasks[0].takes[0].name, "id");
+        assert_eq!(program.tasks[0].body.statements.len(), 2);
     }
 }

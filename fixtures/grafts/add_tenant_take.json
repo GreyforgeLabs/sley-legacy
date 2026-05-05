@@ -1,14 +1,14 @@
 {
-  "transaction": "txn_add_tenant_parameter",
+  "transaction": "txn_add_tenant_take",
   "actor": "agent:codex",
   "mode": "all_or_nothing",
   "ops": [
     {
-      "op": "AddParameter",
-      "target": "function:app.profile.get_user",
+      "op": "AddTake",
+      "target": "task:app.profile.get_user",
       "precondition": {
-        "function_exists": true,
-        "parameter_absent": "tenant_id"
+        "task_exists": true,
+        "take_absent": "tenant_id"
       },
       "payload": {
         "name": "tenant_id",

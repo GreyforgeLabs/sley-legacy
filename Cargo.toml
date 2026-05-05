@@ -1,7 +1,11 @@
 [package]
-name = "weavelang"
+name = "sley"
 version = "0.1.0"
 edition = "2024"
+
+[[bin]]
+name = "sley"
+path = "src/main.rs"
 
 [dependencies]
 anyhow = "1"

@@ -115,10 +115,10 @@ fn default_source_root() -> String {
 }
 
 fn manifest_path_for(target: &Path) -> PathBuf {
-    if target.file_name().and_then(|name| name.to_str()) == Some("weave.toml") {
+    if target.file_name().and_then(|name| name.to_str()) == Some("sley.toml") {
         target.to_path_buf()
     } else {
-        target.join("weave.toml")
+        target.join("sley.toml")
     }
 }
 
@@ -150,23 +150,40 @@ impl ModuleLoader {
         }
 
         self.loading.push(module.to_string());
-        let path = module_path(&self.module_root, module);
-        let source = match fs::read_to_string(&path) {
-            Ok(source) => source,
-            Err(error) => {
-                self.diagnostics.push(
-                    Diagnostic::error(
-                        "PROJECT_MODULE_NOT_FOUND",
-                        format!(
-                            "failed to read module `{module}` at {}: {error}",
-                            path.display()
-                        ),
-                    )
-                    .with_node(format!("module:{module}")),
-                );
-                self.loading.pop();
-                return;
+        let candidates = module_paths(&self.module_root, module);
+        let mut loaded_source = None;
+        let mut last_error = None;
+        for path in &candidates {
+            match fs::read_to_string(path) {
+                Ok(source) => {
+                    loaded_source = Some((path.clone(), source));
+                    break;
+                }
+                Err(error) => {
+                    last_error = Some(error);
+                }
             }
+        }
+        let Some((path, source)) = loaded_source else {
+            let tried = candidates
+                .iter()
+                .map(|path| path.display().to_string())
+                .collect::<Vec<_>>()
+                .join(", ");
+            self.diagnostics.push(
+                Diagnostic::error(
+                    "PROJECT_MODULE_NOT_FOUND",
+                    format!(
+                        "failed to read module `{module}`; tried {tried}: {}",
+                        last_error
+                            .map(|error| error.to_string())
+                            .unwrap_or_else(|| "no source candidates".to_string())
+                    ),
+                )
+                .with_node(format!("module:{module}")),
+            );
+            self.loading.pop();
+            return;
         };
         let program = match parse_program(&source) {
             Ok(program) => program,
@@ -220,18 +237,22 @@ fn bundle_program(entry: &str, modules: &[ProjectModule]) -> Program {
         program.imports.extend(module.program.imports.clone());
         program.types.extend(module.program.types.clone());
         program.effects.extend(module.program.effects.clone());
-        program.functions.extend(module.program.functions.clone());
+        program.tasks.extend(module.program.tasks.clone());
         program.provenance.extend(module.program.provenance.clone());
     }
     program
 }
 
-fn module_path(root: &Path, module: &str) -> PathBuf {
+fn module_paths(root: &Path, module: &str) -> Vec<PathBuf> {
+    vec![module_path_with_extension(root, module, "sley")]
+}
+
+fn module_path_with_extension(root: &Path, module: &str, extension: &str) -> PathBuf {
     let mut path = root.to_path_buf();
     for segment in module.split('.') {
         path.push(segment);
     }
-    path.set_extension("weave");
+    path.set_extension(extension);
     path
 }
 

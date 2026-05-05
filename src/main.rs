@@ -3,17 +3,17 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
-use weavelang::checker::{check_program, has_errors};
-use weavelang::diagnostics::{Diagnostic, DiagnosticReport};
-use weavelang::formatter::format_program;
-use weavelang::parser::parse_program;
-use weavelang::patch::{PatchInput, apply_patch_input};
-use weavelang::project::load_project;
-use weavelang::runtime::run_main;
+use sley::checker::{check_program, has_errors};
+use sley::diagnostics::{Diagnostic, DiagnosticReport};
+use sley::formatter::format_program;
+use sley::graft::{GraftInput, apply_graft_input};
+use sley::parser::parse_program;
+use sley::project::load_project;
+use sley::runtime::run_main;
 
 #[derive(Debug, Parser)]
-#[command(name = "weave")]
-#[command(about = "WeaveLang v0 compiler and patch tool")]
+#[command(name = "sley")]
+#[command(about = "Sley Loom v0 compiler, runtime, and graft tool")]
 struct Cli {
     #[command(subcommand)]
     command: Command,
@@ -48,7 +48,7 @@ enum Command {
         node: Option<String>,
         file: PathBuf,
     },
-    Patch {
+    Graft {
         #[arg(long)]
         json: bool,
         #[arg(long)]
@@ -56,7 +56,7 @@ enum Command {
         #[arg(long)]
         actor: Option<String>,
         file: PathBuf,
-        patch: PathBuf,
+        graft: PathBuf,
     },
 }
 
@@ -80,12 +80,12 @@ fn run(cli: Cli) -> Result<()> {
                     print_json(&program)?;
                 } else {
                     println!(
-                        "parsed module={} imports={} types={} effects={} functions={}",
+                        "parsed module={} imports={} types={} effects={} tasks={}",
                         program.module_name(),
                         program.imports.len(),
                         program.types.len(),
                         program.effects.len(),
-                        program.functions.len()
+                        program.tasks.len()
                     );
                 }
                 Ok(())
@@ -150,8 +150,8 @@ fn run(cli: Cli) -> Result<()> {
         } => {
             let program = load_target_program_or_fail(&file)?;
             if let Some(node) = node {
-                if let Some(function_index) = program.find_function_index(&node) {
-                    print_json(&program.functions[function_index])?;
+                if let Some(task_index) = program.find_task_index(&node) {
+                    print_json(&program.tasks[task_index])?;
                     return Ok(());
                 }
                 anyhow::bail!("node `{node}` was not found");
@@ -159,20 +159,20 @@ fn run(cli: Cli) -> Result<()> {
             print_json(&program)?;
             Ok(())
         }
-        Command::Patch {
+        Command::Graft {
             json,
             write,
             actor,
             file,
-            patch,
+            graft,
         } => {
             let source = read_source(&file)?;
             let program = parse_program_or_fail(&source)?;
-            let patch_source = fs::read_to_string(&patch)
-                .with_context(|| format!("failed to read {}", patch.display()))?;
-            let patch_input: PatchInput = serde_json::from_str(&patch_source)
-                .with_context(|| format!("failed to parse {}", patch.display()))?;
-            let outcome = apply_patch_input(&program, patch_input, actor);
+            let graft_source = fs::read_to_string(&graft)
+                .with_context(|| format!("failed to read {}", graft.display()))?;
+            let graft_input: GraftInput = serde_json::from_str(&graft_source)
+                .with_context(|| format!("failed to parse {}", graft.display()))?;
+            let outcome = apply_graft_input(&program, graft_input, actor);
             if json {
                 print_json(&outcome)?;
             } else if let Some(source) = &outcome.source {
@@ -181,7 +181,7 @@ fn run(cli: Cli) -> Result<()> {
                 print_human_diagnostics(&outcome.diagnostics);
             }
             if outcome.status != "accepted" {
-                anyhow::bail!("patch rejected");
+                anyhow::bail!("graft rejected");
             }
             if write && let Some(source) = outcome.source {
                 fs::write(&file, source)
@@ -196,7 +196,7 @@ fn read_source(file: &PathBuf) -> Result<String> {
     fs::read_to_string(file).with_context(|| format!("failed to read {}", file.display()))
 }
 
-fn load_target_program(file: &PathBuf) -> Result<weavelang::Program, Vec<Diagnostic>> {
+fn load_target_program(file: &PathBuf) -> Result<sley::Program, Vec<Diagnostic>> {
     if is_project_target(file) {
         return load_project(file).map(|project| project.program);
     }
@@ -209,16 +209,16 @@ fn load_target_program(file: &PathBuf) -> Result<weavelang::Program, Vec<Diagnos
     parse_program(&source)
 }
 
-fn load_target_program_or_fail(file: &PathBuf) -> Result<weavelang::Program> {
+fn load_target_program_or_fail(file: &PathBuf) -> Result<sley::Program> {
     load_target_program(file)
         .map_err(|diagnostics| anyhow::anyhow!(format_diagnostics(&diagnostics)))
 }
 
 fn is_project_target(file: &Path) -> bool {
-    file.is_dir() || file.file_name().and_then(|name| name.to_str()) == Some("weave.toml")
+    file.is_dir() || file.file_name().and_then(|name| name.to_str()) == Some("sley.toml")
 }
 
-fn parse_program_or_fail(source: &str) -> Result<weavelang::Program> {
+fn parse_program_or_fail(source: &str) -> Result<sley::Program> {
     parse_program(source).map_err(|diagnostics| anyhow::anyhow!(format_diagnostics(&diagnostics)))
 }
 

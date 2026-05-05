@@ -2,8 +2,8 @@ pub mod ast;
 pub mod checker;
 pub mod diagnostics;
 pub mod formatter;
+pub mod graft;
 pub mod parser;
-pub mod patch;
 pub mod project;
 pub mod runtime;
 

@@ -2,17 +2,17 @@ use std::fs;
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use weavelang::ast::{ExprKind, StatementKind};
-use weavelang::checker::{check_program, has_errors};
-use weavelang::formatter::format_program;
-use weavelang::parser::parse_program;
-use weavelang::patch::{PatchInput, apply_patch_input};
-use weavelang::project::load_project;
-use weavelang::runtime::{Value, run_main};
+use sley::ast::{ExprKind, StatementKind};
+use sley::checker::{check_program, has_errors};
+use sley::formatter::format_program;
+use sley::graft::{GraftInput, apply_graft_input};
+use sley::parser::parse_program;
+use sley::project::load_project;
+use sley::runtime::{Value, run_main};
 
 #[test]
 fn profile_fixture_checks_cleanly() {
-    let source = include_str!("../examples/profile_service.weave");
+    let source = include_str!("../examples/profile_service.sley");
     let program = parse_program(source).expect("parse fixture");
     let diagnostics = check_program(&program);
     assert!(
@@ -23,7 +23,7 @@ fn profile_fixture_checks_cleanly() {
 
 #[test]
 fn formatter_round_trips_profile_fixture() {
-    let source = include_str!("../examples/profile_service.weave");
+    let source = include_str!("../examples/profile_service.sley");
     let program = parse_program(source).expect("parse fixture");
     let formatted = format_program(&program);
     let reparsed = parse_program(&formatted).expect("parse formatted fixture");
@@ -31,49 +31,50 @@ fn formatter_round_trips_profile_fixture() {
 }
 
 #[test]
-fn add_parameter_patch_is_structural_and_checked() {
-    let source = include_str!("../examples/profile_service.weave");
-    let patch_source = include_str!("../fixtures/patches/add_tenant_parameter.json");
+fn add_take_graft_is_structural_and_checked() {
+    let source = include_str!("../examples/profile_service.sley");
+    let graft_source = include_str!("../fixtures/grafts/add_tenant_take.json");
     let program = parse_program(source).expect("parse fixture");
-    let patch: PatchInput = serde_json::from_str(patch_source).expect("parse patch");
-    let outcome = apply_patch_input(&program, patch, Some("agent:test".to_string()));
+    let graft: GraftInput = serde_json::from_str(graft_source).expect("parse graft");
+    let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
     assert_eq!(outcome.status, "accepted");
-    let patched_source = outcome.source.expect("patched source");
-    assert!(patched_source.contains("fn get_user(tenant_id: Text, id: Text)"));
+    let grafted_source = outcome.source.expect("grafted source");
+    assert!(grafted_source.contains("take tenant_id: Text"));
+    assert!(grafted_source.contains("take id: Text"));
     assert_eq!(outcome.provenance.len(), 1);
 }
 
 #[test]
-fn stale_precondition_rejects_patch() {
-    let source = include_str!("../examples/profile_service.weave");
-    let patch_source = include_str!("../fixtures/patches/stale_add_tenant_parameter.json");
+fn stale_precondition_rejects_graft() {
+    let source = include_str!("../examples/profile_service.sley");
+    let graft_source = include_str!("../fixtures/grafts/stale_add_tenant_take.json");
     let program = parse_program(source).expect("parse fixture");
-    let patch: PatchInput = serde_json::from_str(patch_source).expect("parse patch");
-    let outcome = apply_patch_input(&program, patch, Some("agent:test".to_string()));
+    let graft: GraftInput = serde_json::from_str(graft_source).expect("parse graft");
+    let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
     assert_eq!(outcome.status, "rejected");
     assert!(
         outcome
             .diagnostics
             .iter()
-            .any(|diagnostic| diagnostic.id == "PATCH_PRECONDITION_FAILED")
+            .any(|diagnostic| diagnostic.id == "GRAFT_PRECONDITION_FAILED")
     );
 }
 
 #[test]
 fn parser_builds_structured_call_and_record_expressions() {
-    let source = include_str!("../examples/profile_service.weave");
+    let source = include_str!("../examples/profile_service.sley");
     let program = parse_program(source).expect("parse fixture");
-    let function = &program.functions[0];
+    let task = &program.tasks[0];
 
-    let StatementKind::Let {
+    let StatementKind::Binding {
         expr: query_expr, ..
-    } = &function.body.statements[0].kind
+    } = &task.body.statements[0].kind
     else {
-        panic!("expected let statement");
+        panic!("expected binding statement");
     };
     assert!(matches!(query_expr.kind, ExprKind::Try { .. }));
 
-    let StatementKind::Return { expr: return_expr } = &function.body.statements[1].kind else {
+    let StatementKind::Return { expr: return_expr } = &task.body.statements[1].kind else {
         panic!("expected return statement");
     };
     let ExprKind::Call { args, .. } = &return_expr.kind else {
@@ -85,12 +86,14 @@ fn parser_builds_structured_call_and_record_expressions() {
 #[test]
 fn parser_builds_structured_operator_and_if_expressions() {
     let source = r#"
-fn grade(score: Int) -> Text {
+task grade -> Text {
+  take score: Int
+
   return if score >= 90 { "A" } else { "B" }
 }
 "#;
     let program = parse_program(source).expect("parse source");
-    let StatementKind::Return { expr } = &program.functions[0].body.statements[0].kind else {
+    let StatementKind::Return { expr } = &program.tasks[0].body.statements[0].kind else {
         panic!("expected return statement");
     };
     let ExprKind::If { condition, .. } = &expr.kind else {
@@ -102,9 +105,9 @@ fn grade(score: Int) -> Text {
 #[test]
 fn parser_builds_statement_control_flow_and_list_index_expressions() {
     let source = r#"
-fn main() -> Int {
-  let values = [1, 2, 3]
-  let index = 0
+task main -> Int {
+  bind values = [1, 2, 3]
+  state index = 0
   if len(values) > 2 {
     set index = 1
   } else {
@@ -115,14 +118,14 @@ fn main() -> Int {
 "#;
     let program = parse_program(source).expect("parse source");
     assert!(matches!(
-        program.functions[0].body.statements[0].kind,
-        StatementKind::Let { .. }
+        program.tasks[0].body.statements[0].kind,
+        StatementKind::Binding { .. }
     ));
     assert!(matches!(
-        program.functions[0].body.statements[2].kind,
+        program.tasks[0].body.statements[2].kind,
         StatementKind::If { .. }
     ));
-    let StatementKind::Return { expr } = &program.functions[0].body.statements[3].kind else {
+    let StatementKind::Return { expr } = &program.tasks[0].body.statements[3].kind else {
         panic!("expected return statement");
     };
     assert!(matches!(expr.kind, ExprKind::Index { .. }));
@@ -131,35 +134,37 @@ fn main() -> Int {
 #[test]
 fn parser_builds_for_loops_and_map_literals() {
     let source = r#"
-fn main() -> Int {
-  let scores: Map<Text, Int> = map { "ada": 3, "grace": 5 }
-  let total = 0
-  for name in ["ada", "grace"] {
+task main -> Int {
+  bind scores: Map<Text, Int> = map { "ada": 3, "grace": 5 }
+  tally total = 0
+  each name in ["ada", "grace"] {
     set total = total + scores[name]
   }
   return total
 }
 "#;
     let program = parse_program(source).expect("parse source");
-    let StatementKind::Let { expr, .. } = &program.functions[0].body.statements[0].kind else {
-        panic!("expected map let statement");
+    let StatementKind::Binding { expr, .. } = &program.tasks[0].body.statements[0].kind else {
+        panic!("expected map binding statement");
     };
     assert!(matches!(expr.kind, ExprKind::MapLiteral { .. }));
     assert!(matches!(
-        program.functions[0].body.statements[2].kind,
+        program.tasks[0].body.statements[2].kind,
         StatementKind::For { .. }
     ));
 }
 
 #[test]
-fn checker_validates_user_function_calls() {
+fn checker_validates_user_task_calls() {
     let source = r#"
-fn takes_text(value: Text) -> Text {
+task takes_text -> Text {
+  take value: Text
+
   return value
 }
 
-fn main() -> Text {
-  return takes_text(42)
+task main -> Text {
+  return call takes_text(42)
 }
 "#;
     let program = parse_program(source).expect("parse source");
@@ -175,8 +180,8 @@ fn main() -> Text {
 #[test]
 fn checker_validates_operator_and_if_semantics() {
     let source = r#"
-fn main() -> Int {
-  let invalid = 1 + "x"
+task main -> Int {
+  bind invalid = 1 + "x"
   return if invalid { 1 } else { missing }
 }
 "#;
@@ -205,9 +210,9 @@ fn main() -> Int {
 #[test]
 fn checker_validates_collections_indexes_and_statement_control_flow() {
     let source = r#"
-fn main() -> Int {
-  let mixed = [1, "x"]
-  let values = [1, 2]
+task main -> Int {
+  bind mixed = [1, "x"]
+  bind values = [1, 2]
   while values {
     set missing = 1
   }
@@ -245,12 +250,12 @@ fn main() -> Int {
 #[test]
 fn checker_validates_maps_and_for_loops() {
     let source = r#"
-fn main() -> Int {
-  let scores = map { 1: 2, "two": "bad" }
-  for score in scores {
+task main -> Int {
+  bind scores = map { 1: 2, "two": "bad" }
+  each score in scores {
     set missing = score
   }
-  let valid = map { "one": 1 }
+  bind valid = map { "one": 1 }
   return valid[1]
 }
 "#;
@@ -283,16 +288,18 @@ fn main() -> Int {
 }
 
 #[test]
-fn checker_propagates_called_function_effects() {
+fn checker_propagates_called_task_effects() {
     let source = r#"
 effect FileRead
 
-fn read(path: Text) -> Result<Text, Error> uses FileRead {
+task read -> Result<Text, Error> uses FileRead {
+  take path: Text
+
   return fs.read_text(path)?
 }
 
-fn main() -> Result<Text, Error> {
-  return read("x")
+task main -> Result<Text, Error> {
+  return call read("x")
 }
 "#;
     let program = parse_program(source).expect("parse source");
@@ -308,13 +315,15 @@ fn main() -> Result<Text, Error> {
 #[test]
 fn runtime_evaluates_locals_operators_and_if_expressions() {
     let source = r#"
-fn score(base: Int) -> Int {
-  let doubled = base * 2
+task score -> Int {
+  take base: Int
+
+  bind doubled = base * 2
   return if doubled >= 10 && true { doubled + 1 } else { 0 }
 }
 
-fn main() -> Int {
-  return score(5)
+task main -> Int {
+  return call score(5)
 }
 "#;
     let program = parse_program(source).expect("parse source");
@@ -329,9 +338,11 @@ fn main() -> Int {
 #[test]
 fn runtime_evaluates_while_set_lists_len_and_indexing() {
     let source = r#"
-fn sum(values: List<Int>) -> Int {
-  let index = 0
-  let total = 0
+task sum -> Int {
+  take values: List<Int>
+
+  state index = 0
+  tally total = 0
   while index < len(values) {
     set total = total + values[index]
     set index = index + 1
@@ -339,9 +350,9 @@ fn sum(values: List<Int>) -> Int {
   return total
 }
 
-fn main() -> Int {
-  let values = [2, 3, 5]
-  return sum(values)
+task main -> Int {
+  bind values = [2, 3, 5]
+  return call sum(values)
 }
 "#;
     let program = parse_program(source).expect("parse source");
@@ -356,11 +367,11 @@ fn main() -> Int {
 #[test]
 fn runtime_evaluates_for_loops_maps_len_and_text_indexing() {
     let source = r#"
-fn main() -> Int {
-  let names = ["ada", "grace"]
-  let scores: Map<Text, Int> = map { "ada": 3, "grace": 5 }
-  let total = 0
-  for name in names {
+task main -> Int {
+  bind names = ["ada", "grace"]
+  bind scores: Map<Text, Int> = map { "ada": 3, "grace": 5 }
+  tally total = 0
+  each name in names {
     set total = total + scores[name]
   }
   return total + len(scores)
@@ -376,18 +387,20 @@ fn main() -> Int {
 }
 
 #[test]
-fn runtime_evaluates_pure_function_calls_and_record_fields() {
+fn runtime_evaluates_pure_task_calls_and_record_fields() {
     let source = r#"
 type User = {
-  name: Text
+  slot name: Text
 }
 
-fn make_user(name: Text) -> User {
+task make_user -> User {
+  take name: Text
+
   return User { name: name }
 }
 
-fn main() -> Text {
-  let user = make_user("Ada")
+task main -> Text {
+  bind user = call make_user("Ada")
   return user.name
 }
 "#;
@@ -405,7 +418,7 @@ fn project_loader_resolves_imports_and_bundles_modules() {
     let root = temp_project_dir("resolves-imports");
     fs::create_dir_all(root.join("src/app")).expect("create project dirs");
     fs::write(
-        root.join("weave.toml"),
+        root.join("sley.toml"),
         r#"
 [project]
 name = "test-project"
@@ -415,24 +428,26 @@ entry = "app.main"
     )
     .expect("write manifest");
     fs::write(
-        root.join("src/app/main.weave"),
+        root.join("src/app/main.sley"),
         r#"
 module app.main
 
 import app.math
 
-fn main() -> Int {
-  return double(21)
+task main -> Int {
+  return call double(21)
 }
 "#,
     )
     .expect("write main module");
     fs::write(
-        root.join("src/app/math.weave"),
+        root.join("src/app/math.sley"),
         r#"
 module app.math
 
-fn double(value: Int) -> Int {
+task double -> Int {
+  take value: Int
+
   return value * 2
 }
 "#,
@@ -445,7 +460,7 @@ fn double(value: Int) -> Int {
     assert!(
         project
             .program
-            .find_function_index("function:app.math.double")
+            .find_task_index("task:app.math.double")
             .is_some()
     );
     let diagnostics = check_program(&project.program);
@@ -463,7 +478,7 @@ fn project_loader_reports_missing_imports() {
     let root = temp_project_dir("missing-imports");
     fs::create_dir_all(root.join("src/app")).expect("create project dirs");
     fs::write(
-        root.join("weave.toml"),
+        root.join("sley.toml"),
         r#"
 [project]
 entry = "app.main"
@@ -471,13 +486,13 @@ entry = "app.main"
     )
     .expect("write manifest");
     fs::write(
-        root.join("src/app/main.weave"),
+        root.join("src/app/main.sley"),
         r#"
 module app.main
 
 import app.missing
 
-fn main() -> Int {
+task main -> Int {
   return 1
 }
 "#,
@@ -500,8 +515,5 @@ fn temp_project_dir(name: &str) -> PathBuf {
         .duration_since(UNIX_EPOCH)
         .expect("clock is before unix epoch")
         .as_nanos();
-    std::env::temp_dir().join(format!(
-        "weavelang-{name}-{}-{timestamp}",
-        std::process::id()
-    ))
+    std::env::temp_dir().join(format!("sley-{name}-{}-{timestamp}", std::process::id()))
 }

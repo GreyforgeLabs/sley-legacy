@@ -1,0 +1,5 @@
+module app.hello
+
+task main -> Text {
+  return "hello sley"
+}
