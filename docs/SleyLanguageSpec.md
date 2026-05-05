@@ -499,6 +499,8 @@ AST roots carry `schema: "sley.ast.program.v0"`. Diagnostic reports carry
 `schema: "sley.graft.outcome.v0"`, trace seals carry
 `schema: "sley.trace.seal.v0"`, and ZJX preview envelopes carry
 `schema: "sley.zjx.envelope.v0"`.
+The CLI smoke manifest carries
+`schema: "sley.cli_smoke.manifest.v0"`.
 
 Current v0 trace seal JSON has this root shape:
 
@@ -529,6 +531,15 @@ Accepted fixtures must parse, check, and formatter-round-trip. Rejected
 fixtures carry a JSON sidecar listing the diagnostic ids that must remain
 stable. The current corpus locks declared and missing authority coverage for
 the deterministic seeded host adapters.
+
+The executable CLI conformance smokes live under `fixtures/cli_smokes/`. Their
+`manifest.json` lists stable commands, working-directory mode, coverage tags,
+and stdout expectations. The integration suite runs the manifest against the
+built `sley` binary and locks stable command exits, selected stdout substrings,
+JSON root schemas, graph slices, ZJX preview envelopes, graft dry runs, and
+seeded host-adapter execution for `FileRead`, `FileWrite`, `DatabaseRead`,
+`DatabaseWrite`, `Network`, `Shell`, `ModelCall`, `SecretRead`, `Deploy`, and
+`Spend`.
 
 A graph slice is a bounded shard around a module, task, type, effect, or import.
 Task slices include the selected task AST, visible module declarations,

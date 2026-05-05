@@ -339,7 +339,26 @@ silently outside it, and required release coverage tags should remain explicit.
 This corpus becomes the real bridge from "Codex does not know Sley" to "agents
 can operate Sley reliably."
 
-## Improvement 8: ZJX Boundary Discipline
+## Improvement 8: CLI Smoke Conformance
+
+The executable CLI smoke suite lives under `fixtures/cli_smokes/`. Its
+`manifest.json` lists stable command lines, optional temp-directory execution,
+coverage tags, stdout substrings, and JSON pointer/value expectations. The
+Rust integration suite runs those cases against the built `sley` binary.
+
+The current smoke manifest covers:
+
+- parse, format, check, run, ast, graph, graph-slice, trace, seal, zjx, and
+  graft dry-run commands
+- stable JSON roots for AST programs, diagnostics, symbol graphs, graph slices,
+  trace seals, graft outcomes, and ZJX preview envelopes
+- deterministic seeded execution for `FileRead`, `FileWrite`, `DatabaseRead`,
+  `DatabaseWrite`, `Network`, `Shell`, `ModelCall`, `SecretRead`, `Deploy`,
+  and `Spend`
+- temp-directory execution for the file-write case so release tests do not
+  mutate the repo checkout
+
+## Improvement 9: ZJX Boundary Discipline
 
 ZJX should be the transport/cache envelope, not the semantic identity, until the
 canonical graph encoding and canonical ZJX encoding are frozen.
@@ -355,7 +374,7 @@ ZJX envelope -> transport/cache/storage
 Do not make the compressed envelope define the language semantics too early.
 That would couple language correctness to compression implementation details.
 
-## Improvement 9: Safety Against Bad Self-Evolution
+## Improvement 10: Safety Against Bad Self-Evolution
 
 The recursive loop needs brakes.
 
@@ -389,11 +408,11 @@ Near-term:
    deployment stage results, and seeded spend authorizations. Preserve
    `Result<T, Error>` surfaces for recoverable host failures and keep
    authority failures as diagnostics.
-2. Grow the accepted/rejected synthetic gold corpus with graft, module, and
-   runtime authority cases.
-3. Extend graph-slice grafts around move/delete planning.
-4. Harden project graft writeback for new module creation and module rename.
-5. Start Sley lint/query helpers on top of the graph surface.
+2. Grow the accepted/rejected synthetic gold corpus and CLI smoke manifest with
+   graft, module, and runtime authority cases.
+3. Start Sley lint/query helpers on top of the graph surface.
+4. Extend graph-slice grafts around move/delete planning.
+5. Harden project graft writeback for new module creation and module rename.
 
 Medium-term:
 
@@ -406,7 +425,8 @@ Medium-term:
    beyond seeded values, model beyond seeded completions, shell beyond seeded
    command output, network beyond seeded text, and database write beyond
    per-run inserts.
-4. Build the synthetic gold corpus into a release gate.
+4. Broaden release gates beyond the synthetic gold corpus and CLI smokes into
+   packaged examples and migration fixtures.
 5. Shadow selected compiler helper passes in Sley.
 
 Long-term:

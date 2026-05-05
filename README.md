@@ -111,6 +111,9 @@ Implemented now:
 - manifest-backed accepted/rejected synthetic conformance corpus fixtures under
   `fixtures/corpus/`, including declared and missing authority cases for the
   seeded host adapter surface
+- manifest-backed CLI smoke conformance cases under `fixtures/cli_smokes/`,
+  covering stable command output, JSON roots, graph/ZJX surfaces, graft dry
+  runs, and seeded host-adapter execution
 - compact agent onboarding pack in `llms.txt`
 
 Project form:
@@ -377,7 +380,7 @@ Known v0 limits:
   explicitly.
 
 The current release-readiness phase is underway for the executable slice. The
-gold corpus now has a manifest and host-authority coverage for the seeded
-adapter surface. The next logical phase is to turn CLI smokes into stable
-conformance gates and start lint/query tooling on top of the checked graph
-surface before broadening the language again.
+gold corpus and CLI smoke suite now have manifests with required coverage tags
+for seeded host adapters, stable JSON roots, graph/ZJX output, and graft dry
+runs. The next logical phase is to start lint/query tooling on top of the
+checked graph surface before broadening the language again.

@@ -17,7 +17,7 @@ cargo run -- graft --json --dry-run <file> <graft.json>
 cargo run -- graft --json --write <file> <graft.json>
 cargo run -- format <file>
 cargo run -- run --json --cap DatabaseRead --db-table users=examples/users.json examples/db_gate.sley
-cargo run -- run --json --cap DatabaseRead --cap DatabaseWrite examples/db_write_gate.sley
+cargo run -- run --json --cap DatabaseRead --cap DatabaseWrite --db-table users=examples/users.json examples/db_write_gate.sley
 cargo run -- run --json --cap Network --http-text https://example.test/profile Ada examples/network_gate.sley
 cargo run -- run --json --cap Shell --shell-output date 2026-05-05 examples/shell_gate.sley
 cargo run -- run --json --cap ModelCall --model-output name Ada examples/model_gate.sley
@@ -54,6 +54,7 @@ Stable v0 JSON roots:
 - `sley.trace.seal.v0`
 - `sley.graft.outcome.v0`
 - `sley.zjx.envelope.v0`
+- `sley.cli_smoke.manifest.v0`
 
 Contract references:
 
@@ -70,9 +71,12 @@ Current development phase:
   completions, seeded secret values, seeded deployment stage results, and
   seeded spend authorization results through explicit fallible calls returning
   `Result<T, Error>`
-- next release-readiness work should turn CLI smokes into stable conformance
-  gates while preserving typed recoverable failure records and keeping
-  authority failures as diagnostics
+- release-readiness now includes manifest-backed CLI smokes for stable command
+  output, JSON roots, graph/ZJX surfaces, graft dry runs, and seeded
+  host-adapter execution while preserving typed recoverable failure records and
+  keeping authority failures as diagnostics
+- next development work should start Sley lint/query helpers on top of the
+  checked graph surface
 - project graft writeback hardening beyond existing modules
 - manifest-backed accepted/rejected synthetic gold corpus growth
 - broader graph-slice graft operations around move/delete planning

@@ -36,6 +36,47 @@ struct CorpusManifestCase {
     covers: Vec<String>,
 }
 
+#[derive(Debug, serde::Deserialize)]
+struct CliSmokeManifest {
+    schema: String,
+    cases: Vec<CliSmokeCase>,
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct CliSmokeCase {
+    name: String,
+    #[serde(default)]
+    cwd: CliSmokeCwd,
+    args: Vec<String>,
+    covers: Vec<String>,
+    expect: CliSmokeExpectation,
+}
+
+#[derive(Debug, Default, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum CliSmokeCwd {
+    #[default]
+    Repo,
+    Tmp,
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct CliSmokeExpectation {
+    success: bool,
+    #[serde(default)]
+    stdout_contains: Vec<String>,
+    #[serde(default)]
+    stderr_contains: Vec<String>,
+    #[serde(default)]
+    stdout_json: Vec<CliSmokeJsonExpectation>,
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct CliSmokeJsonExpectation {
+    pointer: String,
+    value: serde_json::Value,
+}
+
 #[test]
 fn profile_fixture_checks_cleanly() {
     let source = include_str!("../examples/profile_service.sley");
@@ -154,6 +195,76 @@ fn synthetic_gold_corpus_accepts_and_rejects_expected_cases() {
             );
         }
     }
+}
+
+#[test]
+fn cli_smoke_manifest_commands_match_stable_release_surface() {
+    let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let manifest_root = repo_root.join("fixtures/cli_smokes");
+    let manifest = load_cli_smoke_manifest(&manifest_root);
+    assert_cli_smoke_manifest_is_well_formed(&manifest);
+    assert_cli_smoke_manifest_has_release_coverage(&manifest);
+
+    let tmp_root = temp_project_dir("cli-smokes");
+    fs::create_dir_all(&tmp_root).expect("create CLI smoke temp dir");
+
+    for case in &manifest.cases {
+        let args = expand_cli_smoke_args(&case.args, &repo_root, &tmp_root);
+        let cwd = match case.cwd {
+            CliSmokeCwd::Repo => &repo_root,
+            CliSmokeCwd::Tmp => &tmp_root,
+        };
+        let output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+            .current_dir(cwd)
+            .args(&args)
+            .output()
+            .unwrap_or_else(|error| panic!("run CLI smoke {}: {error}", case.name));
+        let stdout = String::from_utf8(output.stdout)
+            .unwrap_or_else(|error| panic!("CLI smoke {} stdout utf8: {error}", case.name));
+        let stderr = String::from_utf8(output.stderr)
+            .unwrap_or_else(|error| panic!("CLI smoke {} stderr utf8: {error}", case.name));
+        assert_eq!(
+            output.status.success(),
+            case.expect.success,
+            "CLI smoke {} exit mismatch\nargs: {args:?}\nstdout:\n{stdout}\nstderr:\n{stderr}",
+            case.name
+        );
+
+        for expected in &case.expect.stdout_contains {
+            assert!(
+                stdout.contains(expected),
+                "CLI smoke {} stdout did not contain {expected:?}\nstdout:\n{stdout}",
+                case.name
+            );
+        }
+        for expected in &case.expect.stderr_contains {
+            assert!(
+                stderr.contains(expected),
+                "CLI smoke {} stderr did not contain {expected:?}\nstderr:\n{stderr}",
+                case.name
+            );
+        }
+        if !case.expect.stdout_json.is_empty() {
+            let json: serde_json::Value = serde_json::from_str(&stdout).unwrap_or_else(|error| {
+                panic!("CLI smoke {} stdout JSON: {error}\n{stdout}", case.name)
+            });
+            for expectation in &case.expect.stdout_json {
+                let actual = json.pointer(&expectation.pointer).unwrap_or_else(|| {
+                    panic!(
+                        "CLI smoke {} missing JSON pointer {}\njson:\n{}",
+                        case.name, expectation.pointer, json
+                    )
+                });
+                assert_eq!(
+                    actual, &expectation.value,
+                    "CLI smoke {} JSON pointer {} mismatch",
+                    case.name, expectation.pointer
+                );
+            }
+        }
+    }
+
+    let _ = fs::remove_dir_all(tmp_root);
 }
 
 #[test]
@@ -584,6 +695,10 @@ fn json_contract_snapshots_are_locked() {
     assert_schema_file(
         include_str!("../docs/schemas/sley.trace.seal.v0.schema.json"),
         TRACE_SEAL_SCHEMA,
+    );
+    assert_schema_file(
+        include_str!("../docs/schemas/sley.cli_smoke.manifest.v0.schema.json"),
+        "sley.cli_smoke.manifest.v0",
     );
 }
 
@@ -3601,6 +3716,98 @@ fn relative_corpus_paths(corpus_root: &Path, files: &[PathBuf]) -> BTreeSet<Stri
                 .to_string_lossy()
                 .replace('\\', "/")
         })
+        .collect()
+}
+
+fn load_cli_smoke_manifest(manifest_root: &Path) -> CliSmokeManifest {
+    let path = manifest_root.join("manifest.json");
+    let source = fs::read_to_string(&path).unwrap_or_else(|error| panic!("read {path:?}: {error}"));
+    serde_json::from_str(&source).unwrap_or_else(|error| panic!("parse {path:?}: {error}"))
+}
+
+fn assert_cli_smoke_manifest_is_well_formed(manifest: &CliSmokeManifest) {
+    assert_eq!(manifest.schema, "sley.cli_smoke.manifest.v0");
+    assert!(
+        !manifest.cases.is_empty(),
+        "CLI smoke manifest must contain at least one case"
+    );
+    let mut names = BTreeSet::new();
+    for case in &manifest.cases {
+        assert!(
+            names.insert(case.name.as_str()),
+            "duplicate CLI smoke name {}",
+            case.name
+        );
+        assert!(
+            !case.args.is_empty(),
+            "CLI smoke {} must declare command arguments",
+            case.name
+        );
+        assert!(
+            !case.covers.is_empty(),
+            "CLI smoke {} must declare coverage tags",
+            case.name
+        );
+        for expectation in &case.expect.stdout_json {
+            assert!(
+                expectation.pointer.is_empty() || expectation.pointer.starts_with('/'),
+                "CLI smoke {} JSON pointer {} must be a valid document or absolute pointer",
+                case.name,
+                expectation.pointer
+            );
+        }
+    }
+}
+
+fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
+    let coverage = manifest
+        .cases
+        .iter()
+        .flat_map(|case| case.covers.iter().map(String::as_str))
+        .collect::<BTreeSet<_>>();
+    let required = [
+        "cli:parse",
+        "cli:format",
+        "cli:check",
+        "cli:run",
+        "cli:ast",
+        "cli:graph",
+        "cli:graph-slice",
+        "cli:trace",
+        "cli:seal",
+        "cli:zjx",
+        "cli:graft-dry-run",
+        "host:DatabaseRead",
+        "host:DatabaseWrite",
+        "host:Deploy",
+        "host:FileRead",
+        "host:FileWrite",
+        "host:ModelCall",
+        "host:Network",
+        "host:SecretRead",
+        "host:Shell",
+        "host:Spend",
+        "json:sley.ast.program.v0",
+        "json:sley.diagnostics.report.v0",
+        "json:sley.graft.outcome.v0",
+        "json:sley.symbol_graph.v0",
+        "json:sley.symbol_graph.slice.v0",
+        "json:sley.trace.seal.v0",
+        "json:sley.zjx.envelope.v0",
+    ];
+    for tag in required {
+        assert!(
+            coverage.contains(tag),
+            "CLI smoke manifest is missing required release coverage tag {tag}"
+        );
+    }
+}
+
+fn expand_cli_smoke_args(args: &[String], repo_root: &Path, tmp_root: &Path) -> Vec<String> {
+    let repo = repo_root.to_string_lossy();
+    let tmp = tmp_root.to_string_lossy();
+    args.iter()
+        .map(|arg| arg.replace("{repo}", &repo).replace("{tmp}", &tmp))
         .collect()
 }
 

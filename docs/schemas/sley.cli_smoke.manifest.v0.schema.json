@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.cli_smoke.manifest.v0",
+  "title": "Sley CLI Smoke Manifest v0",
+  "type": "object",
+  "required": ["schema", "cases"],
+  "properties": {
+    "schema": { "const": "sley.cli_smoke.manifest.v0" },
+    "cases": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/case" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "case": {
+      "type": "object",
+      "required": ["name", "args", "covers", "expect"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "cwd": { "enum": ["repo", "tmp"] },
+        "args": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        },
+        "covers": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "expect": { "$ref": "#/$defs/expectation" }
+      },
+      "additionalProperties": false
+    },
+    "expectation": {
+      "type": "object",
+      "required": ["success"],
+      "properties": {
+        "success": { "type": "boolean" },
+        "stdout_contains": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "stderr_contains": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "stdout_json": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/jsonExpectation" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "jsonExpectation": {
+      "type": "object",
+      "required": ["pointer", "value"],
+      "properties": {
+        "pointer": { "type": "string" },
+        "value": true
+      },
+      "additionalProperties": false
+    }
+  }
+}

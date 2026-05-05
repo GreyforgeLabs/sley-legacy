@@ -1,0 +1,333 @@
+{
+  "schema": "sley.cli_smoke.manifest.v0",
+  "cases": [
+    {
+      "name": "parse_hello_json",
+      "args": ["parse", "--json", "examples/hello.sley"],
+      "covers": ["cli:parse", "json:sley.ast.program.v0"],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.ast.program.v0" },
+          { "pointer": "/module", "value": "app.hello" },
+          { "pointer": "/tasks/0/name", "value": "main" }
+        ]
+      }
+    },
+    {
+      "name": "format_hello_stdout",
+      "args": ["format", "examples/hello.sley"],
+      "covers": ["cli:format"],
+      "expect": {
+        "success": true,
+        "stdout_contains": ["module app.hello", "return \"hello sley\""]
+      }
+    },
+    {
+      "name": "check_hello_json",
+      "args": ["check", "--json", "examples/hello.sley"],
+      "covers": ["cli:check", "json:sley.diagnostics.report.v0"],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.diagnostics.report.v0" },
+          { "pointer": "/status", "value": "ok" }
+        ]
+      }
+    },
+    {
+      "name": "ast_hello_task_json",
+      "args": ["ast", "--json", "--node", "task:app.hello.main", "examples/hello.sley"],
+      "covers": ["cli:ast"],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/id", "value": "task:app.hello.main" },
+          { "pointer": "/name", "value": "main" }
+        ]
+      }
+    },
+    {
+      "name": "graph_project_json",
+      "args": ["graph", "--json", "examples/project"],
+      "covers": ["cli:graph", "json:sley.symbol_graph.v0"],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.symbol_graph.v0" },
+          { "pointer": "/entry_module", "value": "app.main" }
+        ]
+      }
+    },
+    {
+      "name": "graph_project_slice_json",
+      "args": ["graph", "--json", "--slice", "task:app.main.main", "examples/project"],
+      "covers": ["cli:graph-slice", "json:sley.symbol_graph.slice.v0"],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.symbol_graph.slice.v0" },
+          { "pointer": "/target", "value": "task:app.main.main" },
+          { "pointer": "/focus/kind", "value": "task" }
+        ]
+      }
+    },
+    {
+      "name": "trace_hello_json",
+      "args": ["trace", "--json", "examples/hello.sley"],
+      "covers": ["cli:trace"],
+      "expect": {
+        "success": true,
+        "stdout_contains": ["[]"]
+      }
+    },
+    {
+      "name": "seal_hello_json",
+      "args": ["seal", "--json", "examples/hello.sley"],
+      "covers": ["cli:seal", "json:sley.trace.seal.v0"],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.trace.seal.v0" },
+          { "pointer": "/module_count", "value": 1 },
+          { "pointer": "/receipt_count", "value": 0 }
+        ]
+      }
+    },
+    {
+      "name": "zjx_project_slice_json",
+      "args": ["zjx", "--json", "--slice", "task:app.main.main", "examples/project"],
+      "covers": ["cli:zjx", "json:sley.zjx.envelope.v0"],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.zjx.envelope.v0" },
+          { "pointer": "/format", "value": "zjx-preview-json" },
+          { "pointer": "/compression", "value": "none" },
+          { "pointer": "/slice/schema", "value": "sley.symbol_graph.slice.v0" }
+        ]
+      }
+    },
+    {
+      "name": "graft_profile_dry_run_json",
+      "args": [
+        "graft",
+        "--json",
+        "--dry-run",
+        "examples/profile_service.sley",
+        "fixtures/grafts/add_tenant_take.json"
+      ],
+      "covers": ["cli:graft-dry-run", "json:sley.graft.outcome.v0"],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/operation", "value": "AddTake" }
+        ]
+      }
+    },
+    {
+      "name": "run_file_read_json",
+      "args": ["run", "--json", "--cap", "FileRead=.", "examples/host_fallibility.sley"],
+      "covers": ["cli:run", "host:FileRead"],
+      "expect": {
+        "success": true,
+        "stdout_contains": ["hello sley"],
+        "stdout_json": [
+          { "pointer": "/kind", "value": "Ok" },
+          { "pointer": "/value/kind", "value": "Text" }
+        ]
+      }
+    },
+    {
+      "name": "run_file_write_json",
+      "cwd": "tmp",
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "FileWrite={tmp}",
+        "{repo}/examples/file_write_gate.sley"
+      ],
+      "covers": ["cli:run", "host:FileWrite"],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/kind", "value": "Ok" },
+          { "pointer": "/value/kind", "value": "Text" },
+          { "pointer": "/value/value", "value": "written" }
+        ]
+      }
+    },
+    {
+      "name": "run_database_read_json",
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "DatabaseRead",
+        "--db-table",
+        "users=examples/users.json",
+        "examples/db_gate.sley"
+      ],
+      "covers": ["cli:run", "host:DatabaseRead"],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/kind", "value": "Text" },
+          { "pointer": "/value", "value": "Ada" }
+        ]
+      }
+    },
+    {
+      "name": "run_database_write_json",
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "DatabaseRead",
+        "--cap",
+        "DatabaseWrite",
+        "--db-table",
+        "users=examples/users.json",
+        "examples/db_write_gate.sley"
+      ],
+      "covers": ["cli:run", "host:DatabaseRead", "host:DatabaseWrite"],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/kind", "value": "Ok" },
+          { "pointer": "/value/kind", "value": "Text" },
+          { "pointer": "/value/value", "value": "Lin" }
+        ]
+      }
+    },
+    {
+      "name": "run_network_json",
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "Network",
+        "--http-text",
+        "https://example.test/profile",
+        "Ada",
+        "examples/network_gate.sley"
+      ],
+      "covers": ["cli:run", "host:Network"],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/kind", "value": "Ok" },
+          { "pointer": "/value/value", "value": "Ada" }
+        ]
+      }
+    },
+    {
+      "name": "run_shell_json",
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "Shell",
+        "--shell-output",
+        "date",
+        "2026-05-05",
+        "examples/shell_gate.sley"
+      ],
+      "covers": ["cli:run", "host:Shell"],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/kind", "value": "Ok" },
+          { "pointer": "/value/value", "value": "2026-05-05" }
+        ]
+      }
+    },
+    {
+      "name": "run_model_json",
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "ModelCall",
+        "--model-output",
+        "name",
+        "Ada",
+        "examples/model_gate.sley"
+      ],
+      "covers": ["cli:run", "host:ModelCall"],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/kind", "value": "Ok" },
+          { "pointer": "/value/value", "value": "Ada" }
+        ]
+      }
+    },
+    {
+      "name": "run_secret_json",
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "SecretRead",
+        "--secret",
+        "api_key",
+        "redacted",
+        "examples/secret_gate.sley"
+      ],
+      "covers": ["cli:run", "host:SecretRead"],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/kind", "value": "Ok" },
+          { "pointer": "/value/value", "value": "redacted" }
+        ]
+      }
+    },
+    {
+      "name": "run_deploy_json",
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "Deploy",
+        "--deploy-result",
+        "staging",
+        "staged",
+        "examples/deploy_gate.sley"
+      ],
+      "covers": ["cli:run", "host:Deploy"],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/kind", "value": "Ok" },
+          { "pointer": "/value/value", "value": "staged" }
+        ]
+      }
+    },
+    {
+      "name": "run_spend_json",
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "Spend",
+        "--spend-result",
+        "ads-budget",
+        "authorized",
+        "examples/spend_gate.sley"
+      ],
+      "covers": ["cli:run", "host:Spend"],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/kind", "value": "Ok" },
+          { "pointer": "/value/value", "value": "authorized" }
+        ]
+      }
+    }
+  ]
+}
