@@ -447,16 +447,26 @@ path. The trace sidecar is a local provenance store. `sley seal` turns the
 current source, symbol graph, and trace receipt chain into a deterministic
 content-addressed seal.
 
+`RenameDeclaration` can rename tasks, types, effects, and module targets such
+as `module:app.extra`. Module rename updates declaration ownership and import
+references in the checked candidate. If an import has no explicit alias and the
+module leaf changes, writeback preserves existing call qualifiers by adding an
+alias for the old leaf.
+
 When the target is a project directory or `sley.toml`, `sley graft` loads the
 manifest entry module and transitively imported modules before checking the
 graft. Accepted project writeback projects the checked candidate AST back to the
 existing module files that own changed imports, types, effects, or tasks, and
 can create checked new module files under the project source root when the graft
 candidate owns declarations in those modules. It deletes loaded module files
-whose imports and declarations are removed from the checked candidate. Unchanged
-module files are left byte-for-byte untouched. Project writeback rejects before
-mutation when a graft imports a missing module without adding checked
-declarations for it, using `PROJECT_WRITEBACK_UNKNOWN_IMPORT`.
+whose imports and declarations are removed from the checked candidate, and can
+rename non-entry module files by deleting the old loaded module file and
+creating the new checked module file. Unchanged module files are left
+byte-for-byte untouched. Project writeback rejects before mutation when a graft
+imports a missing module without adding checked declarations for it, using
+`PROJECT_WRITEBACK_UNKNOWN_IMPORT`. Entry-module renames reject with
+`PROJECT_WRITEBACK_ENTRY_RENAME_UNSUPPORTED` until manifest writeback can update
+`sley.toml`.
 
 `sley graft --dry-run` is an explicit non-mutating preview mode. Plain
 `sley graft` remains non-mutating by default; only `--write` changes source or
@@ -651,5 +661,6 @@ archive.
   declaration ordering; cross-parent movement, take movement, and expression
   movement are still explicit rejections
 - project graft writeback updates existing module files, creates checked new
-  module files, and deletes removed module files; module rename and
-  cross-parent declaration movement remain later steps
+  module files, deletes removed module files, and renames non-entry module
+  files; entry-module manifest updates and cross-parent declaration movement
+  remain later steps

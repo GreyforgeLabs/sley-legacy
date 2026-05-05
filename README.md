@@ -115,8 +115,9 @@ Implemented now:
   applies a change, plus content-addressed trace seals with `sley seal`
 - project-aware `sley graft --write <project>` source-file writeback for
   accepted edits that resolve to existing modules, plus checked creation of new
-  module files declared by the graft candidate and deletion of removed module
-  files no longer referenced by the checked candidate
+  module files declared by the graft candidate, deletion of removed module
+  files no longer referenced by the checked candidate, and non-entry module
+  rename writeback
 - a first ZJX-ready JSON envelope command for graph snapshots, optional graph
   slices, and trace receipts
 - structural graft operations for adding/removing takes, replacing task bodies,
@@ -173,7 +174,9 @@ Module `app.main` resolves to `src/app/main.sley`. `sley parse`,
 `sley lint`, `sley seal`, `sley zjx`, and `sley graft` accept either a single
 `.sley` file or a project directory containing `sley.toml`. Project graft
 writeback projects the checked candidate back to existing owning module files
-and leaves unchanged module files alone.
+and leaves unchanged module files alone. It can create checked new module
+files, delete removed loaded module files, and rename non-entry module files;
+entry-module renames reject until manifest writeback can update `sley.toml`.
 
 Module visibility:
 
@@ -413,10 +416,12 @@ Known v0 limits:
   filesystem, database, network, shell, model, secret, deploy, and spend host
   variants return typed `Error` records.
 - Project graft writeback supports existing module files, checked new module
-  file creation under the project source root, and deletion of removed module
-  files once they are no longer imported. Grafts that import modules without
-  adding checked declarations for those modules still reject before any source
-  or trace mutation.
+  file creation under the project source root, deletion of removed module
+  files once they are no longer imported, and non-entry module rename
+  writeback. Entry-module renames still reject before mutation until manifest
+  writeback can update `sley.toml`. Grafts that import modules without adding
+  checked declarations for those modules still reject before any source or
+  trace mutation.
 - The AST JSON Schema now covers declarations, statements, expressions, type
   expressions, spans, and provenance recursively. Other external JSON Schema
   files remain narrower v0 root-contract schemas.

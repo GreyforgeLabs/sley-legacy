@@ -842,6 +842,20 @@ fn plan_project_writeback(
         .collect::<BTreeSet<_>>();
     let mut diagnostics = Vec::new();
 
+    if candidate.module_name() != project.entry {
+        diagnostics.push(
+            Diagnostic::error(
+                "PROJECT_WRITEBACK_ENTRY_RENAME_UNSUPPORTED",
+                format!(
+                    "project entry module `{}` cannot be renamed to `{}` by module writeback",
+                    project.entry,
+                    candidate.module_name()
+                ),
+            )
+            .with_node(format!("module:{}", project.entry)),
+        );
+    }
+
     for module in &new_modules {
         if let Some(diagnostic) = validate_project_writeback_module(module) {
             diagnostics.push(diagnostic);

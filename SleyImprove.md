@@ -210,8 +210,11 @@ supports checked deletion of declarations, imports, takes, and statements.
 declaration ordering. Project-aware multi-file writeback now updates existing
 module files, creates checked new module files declared by the graft candidate,
 and deletes removed module files once the checked candidate no longer imports
-them; bare imports to missing modules still reject before mutation. Cross-parent
-movement, take movement, expression movement, module rename, and broader
+them. It also supports non-entry module rename by rewriting module ownership and
+imports, creating the renamed checked module file, and deleting the old loaded
+module file; entry-module rename remains blocked until manifest writeback can
+update `sley.toml`. Bare imports to missing modules still reject before
+mutation. Cross-parent movement, take movement, expression movement, and broader
 graph-contract hardening remain open.
 
 The important rule is not that all operations exist immediately. The important
@@ -467,8 +470,8 @@ Near-term:
 3. Start consuming `sley.query.report.v0` and `sley.lint.report.v0` from Sley
    helper passes, then broaden authority, style, and migration lints.
 4. Extend graph-slice grafts around move/delete planning.
-5. Harden project graft writeback for module rename and richer multi-module
-   declaration movement.
+5. Harden project graft writeback for entry-module manifest rename and richer
+   multi-module declaration movement.
 
 Medium-term:
 

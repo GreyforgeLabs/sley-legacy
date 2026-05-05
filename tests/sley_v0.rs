@@ -4411,6 +4411,156 @@ export task helper -> Int {
 }
 
 #[test]
+fn project_graft_write_renames_non_entry_module_file() {
+    let root = temp_project_dir("project-graft-rename-module");
+    fs::create_dir_all(root.join("src/app")).expect("create project dirs");
+    fs::write(
+        root.join("sley.toml"),
+        r#"
+[project]
+entry = "app.main"
+"#,
+    )
+    .expect("write manifest");
+    let main_source = r#"module app.main
+
+import app.extra
+
+task main -> Int {
+  return call extra.helper()
+}
+"#;
+    let extra_source = r#"module app.extra
+
+export task helper -> Int {
+  return 2
+}
+"#;
+    let main_path = root.join("src/app/main.sley");
+    let extra_path = root.join("src/app/extra.sley");
+    let lib_path = root.join("src/app/lib.sley");
+    let graft_path = root.join("rename_extra_module.json");
+    fs::write(&main_path, main_source).expect("write main module");
+    fs::write(&extra_path, extra_source).expect("write extra module");
+    fs::write(
+        &graft_path,
+        r#"
+{
+  "op": "RenameDeclaration",
+  "target": "module:app.extra",
+  "payload": { "name": "app.lib" }
+}
+"#,
+    )
+    .expect("write graft");
+
+    let output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args(["graft", "--json", "--write"])
+        .arg(&root)
+        .arg(&graft_path)
+        .output()
+        .expect("run project graft");
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+    assert!(
+        output.status.success(),
+        "project writeback should rename non-entry module; stderr={}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let outcome: GraftOutcome = serde_json::from_str(&stdout).expect("parse outcome");
+    assert_eq!(outcome.status, "accepted");
+    assert_eq!(
+        fs::read_to_string(&main_path).expect("read main"),
+        "module app.main\n\nimport app.lib as extra\n\ntask main -> Int {\n  return call extra.helper()\n}\n"
+    );
+    assert!(!extra_path.exists(), "old module file should be deleted");
+    assert_eq!(
+        fs::read_to_string(&lib_path).expect("read renamed module"),
+        "module app.lib\n\nexport task helper -> Int {\n  return 2\n}\n"
+    );
+    let run = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args(["run", "--json"])
+        .arg(&root)
+        .output()
+        .expect("run project");
+    assert!(
+        run.status.success(),
+        "renamed project should run; stdout={} stderr={}",
+        String::from_utf8_lossy(&run.stdout),
+        String::from_utf8_lossy(&run.stderr)
+    );
+    let receipts = read_trace_receipts(&root.join(".sley/trace.jsonl")).expect("read trace");
+    assert_eq!(receipts.len(), 1);
+    assert_eq!(receipts[0].provenance.len(), 1);
+    assert_eq!(receipts[0].provenance[0].operation, "RenameDeclaration");
+
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn project_graft_write_rejects_entry_module_rename_without_manifest_update() {
+    let root = temp_project_dir("project-graft-entry-rename");
+    fs::create_dir_all(root.join("src/app")).expect("create project dirs");
+    fs::write(
+        root.join("sley.toml"),
+        r#"
+[project]
+entry = "app.main"
+"#,
+    )
+    .expect("write manifest");
+    let main_source = r#"module app.main
+
+task main -> Int {
+  return 1
+}
+"#;
+    let main_path = root.join("src/app/main.sley");
+    let graft_path = root.join("rename_entry_module.json");
+    fs::write(&main_path, main_source).expect("write main module");
+    fs::write(
+        &graft_path,
+        r#"
+{
+  "op": "RenameDeclaration",
+  "target": "module:app.main",
+  "payload": { "name": "app.core" }
+}
+"#,
+    )
+    .expect("write graft");
+
+    let output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args(["graft", "--json", "--write"])
+        .arg(&root)
+        .arg(&graft_path)
+        .output()
+        .expect("run project graft");
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+    assert!(
+        !output.status.success(),
+        "entry module rename should reject until manifest writeback exists"
+    );
+    let outcome: GraftOutcome = serde_json::from_str(&stdout).expect("parse outcome");
+    assert_eq!(outcome.status, "rejected");
+    assert!(
+        outcome
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.id == "PROJECT_WRITEBACK_ENTRY_RENAME_UNSUPPORTED"),
+        "expected entry rename diagnostic, got {:#?}",
+        outcome.diagnostics
+    );
+    assert_eq!(
+        fs::read_to_string(&main_path).expect("read main"),
+        main_source
+    );
+    assert!(!root.join("src/app/core.sley").exists());
+    assert!(!root.join(".sley/trace.jsonl").exists());
+
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
 fn project_graft_write_rejects_import_without_new_module_declarations() {
     let root = temp_project_dir("project-graft-unknown-import");
     fs::create_dir_all(root.join("src/app")).expect("create project dirs");

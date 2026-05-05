@@ -12,7 +12,10 @@ use crate::checker::{check_program, has_errors};
 use crate::diagnostics::Diagnostic;
 use crate::formatter::format_program;
 use crate::parser::{parse_block_source, parse_expr_source, parse_program, parse_type_expr_source};
-use crate::symbols::{callee_path, collect_task_calls, task_fq_name, task_module, type_module};
+use crate::symbols::{
+    callee_path, collect_task_calls, effect_module, import_owner_module, task_fq_name, task_module,
+    type_module,
+};
 
 pub const GRAFT_OUTCOME_SCHEMA: &str = "sley.graft.outcome.v0";
 
@@ -507,6 +510,11 @@ fn apply_one(
             payload,
         } => {
             check_preconditions(program, None, precondition.as_ref())?;
+            if let Some(module) = target.strip_prefix("module:") {
+                rename_module(program, module, &payload.name)?;
+                program.assign_ids();
+                return Ok(record(graft_id, actor, "RenameDeclaration", vec![target]));
+            }
             if let Some(index) = program.find_task_index(&target) {
                 program.tasks[index].name = payload.name.clone();
                 program.assign_ids();
@@ -651,6 +659,110 @@ fn apply_one(
             Ok(record(graft_id, actor, "MoveNode", vec![target, moved]))
         }
     }
+}
+
+fn rename_module(program: &mut Program, old: &str, new: &str) -> Result<(), Vec<Diagnostic>> {
+    if let Some(diagnostic) = validate_module_name(new) {
+        return Err(vec![diagnostic]);
+    }
+    let modules = program_modules(program);
+    if !modules.contains(old) {
+        return Err(vec![Diagnostic::error(
+            "GRAFT_TARGET_MISSING",
+            format!("module target `module:{old}` does not exist"),
+        )]);
+    }
+    if old == new {
+        return Ok(());
+    }
+    if modules.contains(new) {
+        return Err(vec![Diagnostic::error(
+            "GRAFT_MODULE_EXISTS",
+            format!("module `{new}` already exists"),
+        )]);
+    }
+
+    let old_leaf = old.rsplit('.').next().unwrap_or(old).to_string();
+    let new_leaf = new.rsplit('.').next().unwrap_or(new);
+    if program.module_name() == old {
+        program.module = Some(new.to_string());
+    }
+    for import in &mut program.imports {
+        if import.owner_module.as_deref() == Some(old) {
+            import.owner_module = Some(new.to_string());
+        }
+        if import.module == old {
+            import.module = new.to_string();
+            if import.alias.is_none() && old_leaf != new_leaf {
+                import.alias = Some(old_leaf.clone());
+            }
+        }
+    }
+    for ty in &mut program.types {
+        if type_module(ty) == old {
+            ty.module = Some(new.to_string());
+        }
+    }
+    for effect in &mut program.effects {
+        if effect_module(effect) == old {
+            effect.module = Some(new.to_string());
+        }
+    }
+    for task in &mut program.tasks {
+        if task_module(task) == old {
+            task.module = Some(new.to_string());
+        }
+    }
+    Ok(())
+}
+
+fn validate_module_name(module: &str) -> Option<Diagnostic> {
+    if module.trim().is_empty() {
+        return Some(Diagnostic::error(
+            "GRAFT_MODULE_INVALID",
+            "module path cannot be empty",
+        ));
+    }
+    for segment in module.split('.') {
+        if !is_module_segment(segment) {
+            return Some(
+                Diagnostic::error(
+                    "GRAFT_MODULE_INVALID",
+                    format!("module path `{module}` contains invalid segment `{segment}`"),
+                )
+                .with_node(format!("module:{module}")),
+            );
+        }
+    }
+    None
+}
+
+fn is_module_segment(segment: &str) -> bool {
+    let mut chars = segment.chars();
+    let Some(first) = chars.next() else {
+        return false;
+    };
+    (first.is_ascii_alphabetic() || first == '_')
+        && chars.all(|ch| ch.is_ascii_alphanumeric() || ch == '_')
+}
+
+fn program_modules(program: &Program) -> BTreeSet<String> {
+    let mut modules = BTreeSet::new();
+    modules.insert(program.module_name().to_string());
+    for import in &program.imports {
+        modules.insert(import.module.clone());
+        modules.insert(import_owner_module(import));
+    }
+    for ty in &program.types {
+        modules.insert(type_module(ty));
+    }
+    for effect in &program.effects {
+        modules.insert(effect_module(effect));
+    }
+    for task in &program.tasks {
+        modules.insert(task_module(task));
+    }
+    modules
 }
 
 fn owning_task_index_for_node(program: &Program, target: &str) -> Option<usize> {
