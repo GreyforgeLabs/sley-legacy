@@ -2621,6 +2621,77 @@ task main -> Int {
 }
 
 #[test]
+fn checker_index_collection_hints_apply_as_expression_grafts() {
+    let list_source = r#"
+task main -> Int {
+  bind item = 1[0]
+  return 0
+}
+"#;
+    let list_program = parse_program(list_source).expect("parse list index repair source");
+    let list_diagnostics = check_program(&list_program);
+    let list_hint = find_repair_hint(
+        &list_diagnostics,
+        "INDEX_COLLECTION_NOT_INDEXABLE",
+        "replace_expression",
+    );
+    assert_replace_expression_hint_json(list_hint, "[]");
+    let list_graft: GraftInput = serde_json::from_str(
+        list_hint
+            .replacement
+            .as_deref()
+            .expect("list index repair replacement"),
+    )
+    .expect("list index repair hint parses as graft");
+    let list_outcome = apply_graft_input(&list_program, list_graft, Some("agent:test".to_string()));
+    assert_eq!(
+        list_outcome.status, "accepted",
+        "{:#?}",
+        list_outcome.diagnostics
+    );
+    let list_grafted = parse_program(&list_outcome.source.expect("list graft source"))
+        .expect("parse list grafted source");
+    assert!(
+        !has_errors(&check_program(&list_grafted)),
+        "list index repair graft should check cleanly"
+    );
+
+    let map_source = r#"
+task main -> Int {
+  bind item = 1["key"]
+  return 0
+}
+"#;
+    let map_program = parse_program(map_source).expect("parse map index repair source");
+    let map_diagnostics = check_program(&map_program);
+    let map_hint = find_repair_hint(
+        &map_diagnostics,
+        "INDEX_COLLECTION_NOT_INDEXABLE",
+        "replace_expression",
+    );
+    assert_replace_expression_hint_json(map_hint, "map { }");
+    let map_graft: GraftInput = serde_json::from_str(
+        map_hint
+            .replacement
+            .as_deref()
+            .expect("map index repair replacement"),
+    )
+    .expect("map index repair hint parses as graft");
+    let map_outcome = apply_graft_input(&map_program, map_graft, Some("agent:test".to_string()));
+    assert_eq!(
+        map_outcome.status, "accepted",
+        "{:#?}",
+        map_outcome.diagnostics
+    );
+    let map_grafted = parse_program(&map_outcome.source.expect("map graft source"))
+        .expect("parse map grafted source");
+    assert!(
+        !has_errors(&check_program(&map_grafted)),
+        "map index repair graft should check cleanly"
+    );
+}
+
+#[test]
 fn checker_operator_hints_include_replace_expression_grafts() {
     let unary = parse_program("task main -> Bool {\n  return !1\n}\n")
         .expect("parse unary operator source");

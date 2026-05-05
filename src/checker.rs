@@ -1659,17 +1659,47 @@ fn check_index_expression(
             return;
         }
 
-        diagnostics.push(
-            Diagnostic::error(
-                "INDEX_COLLECTION_NOT_INDEXABLE",
-                format!(
-                    "indexing expects `List<T>` or `Map<Text, T>`, not `{}`",
-                    collection_type.display()
-                ),
-            )
-            .with_node(expr.id.clone()),
-        );
+        let mut diagnostic = Diagnostic::error(
+            "INDEX_COLLECTION_NOT_INDEXABLE",
+            format!(
+                "indexing expects `List<T>` or `Map<Text, T>`, not `{}`",
+                collection_type.display()
+            ),
+        )
+        .with_node(expr.id.clone());
+        if let Some(hint) = index_collection_graft_hint(
+            program,
+            task,
+            collection,
+            index,
+            locals,
+            known_tasks,
+            record_types,
+        ) {
+            diagnostic = diagnostic.with_repair_hint(hint);
+        }
+        diagnostics.push(diagnostic);
     }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn index_collection_graft_hint(
+    program: &Program,
+    task: &TaskDecl,
+    collection: &Expr,
+    index: &Expr,
+    locals: &HashMap<String, TypeExpr>,
+    known_tasks: &TaskSignatures,
+    record_types: &HashMap<String, Vec<RecordField>>,
+) -> Option<RepairHint> {
+    let index_type = infer_expr_type(program, task, index, locals, known_tasks, record_types)?;
+    if is_named_type(&index_type, "Int") {
+        return Some(replace_expression_source_graft_hint(collection, "[]"));
+    }
+    if is_named_type(&index_type, "Text") {
+        return Some(replace_expression_source_graft_hint(collection, "map { }"));
+    }
+    None
 }
 
 #[allow(clippy::too_many_arguments)]

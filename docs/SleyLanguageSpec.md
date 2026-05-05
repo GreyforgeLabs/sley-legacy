@@ -681,7 +681,9 @@ include one structural `replace_expression` hint for the then branch and one
 for the else branch so agents can choose which branch should conform.
 Non-iterable `each` collections and invalid `len` arguments include
 conservative structural `replace_expression` starter hints that produce a valid
-empty list or empty text argument.
+empty list or empty text argument. Non-indexable collection expressions include
+structural `replace_expression` hints when the index expression is already
+known to be `Int` or `Text`, selecting an empty list or empty map starter.
 
 ## ZJX Boundary
 

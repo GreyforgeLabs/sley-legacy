@@ -186,6 +186,8 @@ Priority diagnostic families:
   `ReplaceExpression` hints for the then and else branch expressions
 - non-iterable `each` collections and invalid `len` arguments: implemented with
   conservative structural `ReplaceExpression` starter hints
+- non-indexable collection expressions: implemented with structural
+  `ReplaceExpression` hints when the index type selects list or map shape
 - unary and binary operator mismatches: implemented with structural
   `ReplaceExpression` hints where a specific operand replacement type is clear
 - call arity mismatch: implemented with `match_task_arity`, `UpdateCallArgs`,
