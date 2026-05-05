@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.lint",
+  "filters": {
+    "module": null,
+    "rules": [
+      "unused_private_task"
+    ]
+  },
+  "findings": [
+    {
+      "id": "UNUSED_PRIVATE_TASK",
+      "rule": "unused_private_task",
+      "severity": "warning",
+      "message": "private task `app.lint.orphan` is not called by any checked task",
+      "node": "task:app.lint.orphan",
+      "module": "app.lint",
+      "hint": "call it, export it, or delete it"
+    }
+  ]
+}

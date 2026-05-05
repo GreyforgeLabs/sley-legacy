@@ -214,8 +214,9 @@ Near-term:
 3. Keep expanding the manifest-backed accepted/rejected gold corpus and CLI
    smoke conformance suite. They now cover runtime authority for the seeded
    host adapter surface, stable JSON roots, graph/ZJX output, and graft dry
-   runs, plus the first checked graph query report.
-4. Build lint helpers on top of `sley.query.report.v0`.
+   runs, plus checked graph query and lint reports.
+4. Broaden lint helpers on top of `sley.query.report.v0` and
+   `sley.lint.report.v0`.
 5. Extend graph-slice graft planning around checked move/delete operations.
 6. Harden project graft writeback beyond existing-module edits.
 
@@ -229,7 +230,8 @@ Medium-term:
    secret beyond seeded values, model beyond seeded completions, shell beyond
    seeded command output, network beyond seeded text, and database write beyond
    per-run inserts.
-4. Move selected Sley lint/helper passes onto the checked graph query surface.
+4. Move selected Sley lint/helper passes onto the checked graph query and lint
+   report surfaces.
 
 Long-term:
 

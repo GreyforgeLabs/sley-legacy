@@ -14,6 +14,7 @@ Implemented now:
 - `sley ast`
 - `sley graph`
 - `sley query`
+- `sley lint`
 - `sley trace`
 - `sley seal`
 - `sley zjx`
@@ -92,6 +93,9 @@ Implemented now:
 - checked JSON query reports with `sley query --kind all|modules|tasks|calls`,
   optional `--module` and `--exported` filters, and
   `schema: "sley.query.report.v0"` for tool-facing graph inspection
+- checked JSON lint reports with `sley lint`, optional `--module` and
+  `--rule unused-private-task` filters, and
+  `schema: "sley.lint.report.v0"` for the first warning-grade graph lint
 - JSONL trace sidecars for accepted graft receipts when `sley graft --write`
   applies a change, plus content-addressed trace seals with `sley seal`
 - project-aware `sley graft --write <project>` source-file writeback for
@@ -111,7 +115,7 @@ Implemented now:
   unknown tasks, type mismatches, return mismatches, call argument mismatches,
   condition mismatches, effect authority, and private or ambiguous names
 - locked JSON contract snapshots under `fixtures/contracts/`, including the
-  first checked query report
+  first checked query and lint reports
 - external v0 JSON Schema files under `docs/schemas/`
 - manifest-backed accepted/rejected synthetic conformance corpus fixtures under
   `fixtures/corpus/`, including declared and missing authority cases for the
@@ -132,10 +136,10 @@ entry = "app.main"
 
 Module `app.main` resolves to `src/app/main.sley`. `sley parse`,
 `sley check`, `sley run`, `sley ast`, `sley graph`, `sley query`,
-`sley seal`, `sley zjx`, and `sley graft` accept either a single `.sley` file
-or a project directory containing `sley.toml`. Project graft writeback projects
-the checked candidate back to existing owning module files and leaves unchanged
-module files alone.
+`sley lint`, `sley seal`, `sley zjx`, and `sley graft` accept either a single
+`.sley` file or a project directory containing `sley.toml`. Project graft
+writeback projects the checked candidate back to existing owning module files
+and leaves unchanged module files alone.
 
 Module visibility:
 
@@ -388,6 +392,6 @@ Known v0 limits:
 The current release-readiness phase is underway for the executable slice. The
 gold corpus and CLI smoke suite now have manifests with required coverage tags
 for seeded host adapters, stable JSON roots, graph/ZJX output, graft dry runs,
-and the first checked graph query report. The next logical phase is to build
-lint helpers on top of `sley.query.report.v0` before broadening the language
-again.
+checked graph query reports, and the first checked lint report. The next
+logical phase is to broaden lint coverage and start consuming query/lint JSON
+from Sley helper passes before broadening the language again.

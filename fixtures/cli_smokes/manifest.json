@@ -89,6 +89,21 @@
       }
     },
     {
+      "name": "lint_project_json",
+      "args": ["lint", "--json", "examples/project"],
+      "covers": ["cli:lint", "json:sley.lint.report.v0"],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.lint.report.v0" },
+          { "pointer": "/status", "value": "ok" },
+          { "pointer": "/entry_module", "value": "app.main" },
+          { "pointer": "/filters/rules/0", "value": "unused_private_task" },
+          { "pointer": "/findings", "value": [] }
+        ]
+      }
+    },
+    {
       "name": "trace_hello_json",
       "args": ["trace", "--json", "examples/hello.sley"],
       "covers": ["cli:trace"],

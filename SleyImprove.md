@@ -95,6 +95,7 @@ sley ast --json --node <node-id> <target>
 sley graph --json <target>
 sley graph --json --slice <node-id> <target>
 sley query --json [--kind all|modules|tasks|calls] [--module <module>] <target>
+sley lint --json [--rule unused-private-task] [--module <module>] <target>
 sley trace --json <target>
 sley seal --json <target>
 sley zjx --json [--slice <node-id>] <target>
@@ -103,19 +104,14 @@ sley graft --json --dry-run <target> <graft.json>
 sley format <target>
 ```
 
-Next target commands:
-
-```bash
-sley lint --json <target>
-```
-
 Rules:
 
 - JSON output must be stable and versioned.
 - AST roots, diagnostic reports, symbol graphs, graph slices, query reports,
-  trace seals, ZJX envelopes, and graft outcomes carry v0 schema IDs.
-- AST, diagnostic-report, graph-slice, query-report, and trace-seal snapshots
-  are locked under `fixtures/contracts/`.
+  lint reports, trace seals, ZJX envelopes, and graft outcomes carry v0 schema
+  IDs.
+- AST, diagnostic-report, graph-slice, query-report, lint-report, and
+  trace-seal snapshots are locked under `fixtures/contracts/`.
 - JSON Schema files live under `docs/schemas/`; the AST schema covers nested
   declarations, statements, expressions, type expressions, spans, and
   provenance, while the remaining schema files are still root-contract v0
@@ -349,10 +345,11 @@ Rust integration suite runs those cases against the built `sley` binary.
 
 The current smoke manifest covers:
 
-- parse, format, check, run, ast, graph, graph-slice, query, trace, seal, zjx,
-  and graft dry-run commands
+- parse, format, check, run, ast, graph, graph-slice, query, lint, trace, seal,
+  zjx, and graft dry-run commands
 - stable JSON roots for AST programs, diagnostics, symbol graphs, graph slices,
-  query reports, trace seals, graft outcomes, and ZJX preview envelopes
+  query reports, lint reports, trace seals, graft outcomes, and ZJX preview
+  envelopes
 - deterministic seeded execution for `FileRead`, `FileWrite`, `DatabaseRead`,
   `DatabaseWrite`, `Network`, `Shell`, `ModelCall`, `SecretRead`, `Deploy`,
   and `Spend`
@@ -377,7 +374,25 @@ The v0 query report carries `schema: "sley.query.report.v0"` and supports:
 This is the immediate substrate for lints, migration hints, project dashboards,
 and eventually non-authoritative Sley helper passes.
 
-## Improvement 10: ZJX Boundary Discipline
+## Improvement 10: Checked Lint Reports
+
+`sley lint` is the first checked helper command built from the graph query
+surface. It runs the checker before linting, emits
+`schema: "sley.lint.report.v0"`, and keeps warning-grade lint output separate
+from hard checker diagnostics.
+
+The initial v0 rule is `unused_private_task`: a non-exported task with zero
+inbound checked calls is reported unless it is the entry module's `main` task.
+The command supports `--module <module>` and `--rule unused-private-task`, and
+`--deny-warnings` lets CI turn findings into a failing exit after the JSON
+report is printed.
+
+This is not production lint coverage yet. It is the first stable surface for
+agent-facing hygiene, later authority lints, migration hints, and eventually
+non-authoritative Sley helper passes that consume `sley.query.report.v0` and
+`sley.lint.report.v0`.
+
+## Improvement 11: ZJX Boundary Discipline
 
 ZJX should be the transport/cache envelope, not the semantic identity, until the
 canonical graph encoding and canonical ZJX encoding are frozen.
@@ -393,7 +408,7 @@ ZJX envelope -> transport/cache/storage
 Do not make the compressed envelope define the language semantics too early.
 That would couple language correctness to compression implementation details.
 
-## Improvement 11: Safety Against Bad Self-Evolution
+## Improvement 12: Safety Against Bad Self-Evolution
 
 The recursive loop needs brakes.
 
@@ -429,7 +444,8 @@ Near-term:
    authority failures as diagnostics.
 2. Grow the accepted/rejected synthetic gold corpus and CLI smoke manifest with
    graft, module, and runtime authority cases.
-3. Build lints on top of `sley.query.report.v0`.
+3. Broaden lints on top of `sley.query.report.v0` and
+   `sley.lint.report.v0`.
 4. Extend graph-slice grafts around move/delete planning.
 5. Harden project graft writeback for new module creation and module rename.
 

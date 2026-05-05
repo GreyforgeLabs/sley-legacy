@@ -9,6 +9,7 @@ use sley::checker::{check_program, has_errors};
 use sley::diagnostics::{DIAGNOSTIC_REPORT_SCHEMA, DiagnosticReport};
 use sley::formatter::format_program;
 use sley::graft::{GRAFT_OUTCOME_SCHEMA, GraftInput, GraftOutcome, apply_graft_input};
+use sley::lint::{LINT_REPORT_SCHEMA, LintOptions, LintRule, build_lint_report};
 use sley::parser::parse_program;
 use sley::project::load_project;
 use sley::query::{QUERY_REPORT_SCHEMA, QueryKind, QueryOptions, build_query_report};
@@ -670,6 +671,28 @@ fn json_contract_snapshots_are_locked() {
         include_str!("../fixtures/contracts/query_project_tasks.json"),
     );
 
+    let lint_source = r#"
+module app.lint
+
+task main -> Int {
+  return call used()
+}
+
+task used -> Int {
+  return 1
+}
+
+task orphan -> Int {
+  return 2
+}
+"#;
+    let lint_program = parse_program(lint_source).expect("parse lint fixture");
+    let lint = build_lint_report(&lint_program, LintOptions::default());
+    assert_json_snapshot(
+        &lint,
+        include_str!("../fixtures/contracts/lint_unused_private_task.json"),
+    );
+
     let hello_source = include_str!("../examples/hello.sley");
     let hello_program = parse_program(hello_source).expect("parse hello fixture");
     let seal = build_trace_seal(
@@ -707,6 +730,10 @@ fn json_contract_snapshots_are_locked() {
     assert_schema_file(
         include_str!("../docs/schemas/sley.query.report.v0.schema.json"),
         QUERY_REPORT_SCHEMA,
+    );
+    assert_schema_file(
+        include_str!("../docs/schemas/sley.lint.report.v0.schema.json"),
+        LINT_REPORT_SCHEMA,
     );
     assert_schema_file(
         include_str!("../docs/schemas/sley.zjx.envelope.v0.schema.json"),
@@ -3348,6 +3375,48 @@ fn query_report_lists_checked_project_tasks() {
 }
 
 #[test]
+fn lint_report_flags_unused_private_tasks() {
+    let source = r#"
+module app.lint
+
+task main -> Int {
+  return call used()
+}
+
+task used -> Int {
+  return 1
+}
+
+task orphan -> Int {
+  return 2
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+
+    let report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::UnusedPrivateTask],
+            module: None,
+        },
+    );
+
+    assert_eq!(report.schema, LINT_REPORT_SCHEMA);
+    assert_eq!(report.status, "findings");
+    assert_eq!(report.entry_module, "app.lint");
+    assert_eq!(report.filters.rules, vec!["unused_private_task"]);
+    assert_eq!(report.findings.len(), 1);
+    assert_eq!(report.findings[0].id, "UNUSED_PRIVATE_TASK");
+    assert_eq!(report.findings[0].node, "task:app.lint.orphan");
+    assert_eq!(report.findings[0].module, "app.lint");
+}
+
+#[test]
 fn trace_receipts_round_trip_as_jsonl() {
     let root = temp_project_dir("trace-round-trip");
     let trace_path = root.join(".sley/trace.jsonl");
@@ -3827,6 +3896,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "cli:graph",
         "cli:graph-slice",
         "cli:query",
+        "cli:lint",
         "cli:trace",
         "cli:seal",
         "cli:zjx",
@@ -3847,6 +3917,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "json:sley.symbol_graph.v0",
         "json:sley.symbol_graph.slice.v0",
         "json:sley.query.report.v0",
+        "json:sley.lint.report.v0",
         "json:sley.trace.seal.v0",
         "json:sley.zjx.envelope.v0",
     ];

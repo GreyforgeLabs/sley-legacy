@@ -77,8 +77,10 @@ Current development phase:
   keeping authority failures as diagnostics
 - checked graph query reports are available through `sley query --json` with
   root schema `sley.query.report.v0`
-- next development work should build Sley lint helpers on top of the checked
-  query report
+- checked lint reports are available through `sley lint --json` with root schema
+  `sley.lint.report.v0`; the first rule is `unused_private_task`
+- next development work should broaden Sley lint coverage and start consuming
+  query/lint JSON from helper passes
 - project graft writeback hardening beyond existing modules
 - manifest-backed accepted/rejected synthetic gold corpus growth
 - broader graph-slice graft operations around move/delete planning

@@ -3,6 +3,7 @@ pub mod checker;
 pub mod diagnostics;
 pub mod formatter;
 pub mod graft;
+pub mod lint;
 pub mod parser;
 pub mod project;
 pub mod query;
