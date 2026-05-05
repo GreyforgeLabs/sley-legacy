@@ -12,6 +12,7 @@ cargo run -- ast --json <file-or-project>
 cargo run -- ast --json --node <node-id> <file-or-project>
 cargo run -- graph --json <file-or-project>
 cargo run -- graph --json --slice <node-id> <file-or-project>
+cargo run -- seal --json <file-or-project>
 cargo run -- graft --json --dry-run <file> <graft.json>
 cargo run -- graft --json --write <file> <graft.json>
 cargo run -- format <file>
@@ -36,6 +37,7 @@ Stable v0 JSON roots:
 - `sley.diagnostics.report.v0`
 - `sley.symbol_graph.v0`
 - `sley.symbol_graph.slice.v0`
+- `sley.trace.seal.v0`
 - `sley.graft.outcome.v0`
 - `sley.zjx.envelope.v0`
 
@@ -49,8 +51,7 @@ Contract references:
 
 Current development phase:
 
-- trace sidecars toward content-addressed seals
-- formatter round trips for all examples
 - nested AST/expression schema hardening
-- accepted/rejected synthetic gold corpus
+- capability-backed runtime gates
+- accepted/rejected synthetic gold corpus growth
 - broader graph-slice graft operations

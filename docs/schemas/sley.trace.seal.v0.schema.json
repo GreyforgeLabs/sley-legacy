@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.trace.seal.v0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "target",
+    "source_digest",
+    "graph_digest",
+    "trace_digest",
+    "seal_digest",
+    "module_count",
+    "task_count",
+    "receipt_count"
+  ],
+  "properties": {
+    "schema": { "const": "sley.trace.seal.v0" },
+    "target": { "type": "string" },
+    "source_digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "graph_digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "trace_digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "seal_digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "module_count": { "type": "integer", "minimum": 0 },
+    "task_count": { "type": "integer", "minimum": 0 },
+    "receipt_count": { "type": "integer", "minimum": 0 }
+  }
+}

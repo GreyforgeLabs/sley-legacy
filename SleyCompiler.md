@@ -74,8 +74,7 @@ Hard compiler requirements:
 - rejection of unauthorized side effects
 - stale graft rejection
 - structural migrations
-- provenance trace receipts and local trace sidecars
-- durable seals
+- provenance trace receipts, local trace sidecars, and content-addressed seals
 - ZJX graph/graft/trace envelopes
 - compatibility across compiler versions
 - conformance tests for both accepted and rejected programs
@@ -202,19 +201,18 @@ because Sley's primary editor may be an agent.
 Near-term:
 
 1. Keep expanding parser/checker/runtime coverage in Rust.
-2. Add formatter round-trip tests for every example.
-3. Start content-addressed trace seal design.
-4. Fill out nested AST/expression JSON Schema definitions beyond the current
+2. Fill out nested AST/expression JSON Schema definitions beyond the current
    v0 root-contract schemas.
-5. Build the first accepted/rejected synthetic gold corpus.
-6. Extend graph-slice grafts beyond call-site, statement, and expression edits.
+3. Extend graph-slice grafts beyond call-site, statement, and expression edits.
+4. Add runtime gate values for host capabilities.
+5. Grow the accepted/rejected synthetic gold corpus beyond the initial seed.
 
 Medium-term:
 
 1. Extend graph-slice grafts beyond call-site, statement, and expression edits.
-2. Turn trace sidecars into content-addressed seals.
-3. Add runtime gate values for host capabilities.
-4. Move the preview ZJX JSON envelope to a compressed binary `.zjx` handoff.
+2. Move trace seals into a compressed binary `.zjx` handoff.
+3. Add capability-backed runtime host values.
+4. Build Sley lint/helper passes on top of the graph query surface.
 
 Long-term:
 

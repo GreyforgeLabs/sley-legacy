@@ -183,7 +183,9 @@ and reruns the checker before returning formatted source.
 
 Accepted grafts written with `sley graft --write` append receipt records to a
 local `.sley/trace.jsonl` sidecar unless the caller passes an explicit trace
-path. The trace sidecar is a local provenance store, not a final seal.
+path. The trace sidecar is a local provenance store. `sley seal` turns the
+current source, symbol graph, and trace receipt chain into a deterministic
+content-addressed seal.
 
 `sley graft --dry-run` is an explicit non-mutating preview mode. Plain
 `sley graft` remains non-mutating by default; only `--write` changes source or
@@ -218,20 +220,42 @@ sley ast --json --node task:app.main.main <target>
 sley graph --json <target>
 sley graph --json --slice task:app.main.main <target>
 sley trace --json <target>
+sley seal --json <target>
 ```
 
 AST roots carry `schema: "sley.ast.program.v0"`. Diagnostic reports carry
 `schema: "sley.diagnostics.report.v0"`. Full symbol graphs carry
 `schema: "sley.symbol_graph.v0"`, graph slices carry
 `schema: "sley.symbol_graph.slice.v0"`, graft outcomes carry
-`schema: "sley.graft.outcome.v0"`, and ZJX preview envelopes carry
+`schema: "sley.graft.outcome.v0"`, trace seals carry
+`schema: "sley.trace.seal.v0"`, and ZJX preview envelopes carry
 `schema: "sley.zjx.envelope.v0"`.
+
+Current v0 trace seal JSON has this root shape:
+
+```json
+{
+  "schema": "sley.trace.seal.v0",
+  "target": "examples/hello.sley",
+  "source_digest": "sha256:...",
+  "graph_digest": "sha256:...",
+  "trace_digest": "sha256:...",
+  "seal_digest": "sha256:...",
+  "module_count": 1,
+  "task_count": 1,
+  "receipt_count": 0
+}
+```
 
 The v0 JSON contracts are locked by small snapshots under
 `fixtures/contracts/` and root-contract JSON Schema files under
 `docs/schemas/`. The schema files currently pin top-level contract shape and
 stable schema IDs; exhaustive nested expression and statement schemas remain a
 later hardening step.
+
+The compiler conformance corpus starts under `fixtures/corpus/`. Accepted
+fixtures must parse, check, and formatter-round-trip. Rejected fixtures carry a
+JSON sidecar listing the diagnostic ids that must remain stable.
 
 A graph slice is a bounded shard around a module, task, type, effect, or import.
 Task slices include the selected task AST, visible module declarations,
@@ -270,7 +294,8 @@ archive.
 ## Current Gaps
 
 - host capabilities are checked statically but not backed by runtime gate values
-- trace sidecars are not yet content-addressed seals
+- trace receipts can be sealed, but sidecar storage is not yet a compressed ZJX
+  archive
 - external JSON Schema files pin v0 root contracts but do not yet exhaustively
   describe every nested AST and expression variant
 - no `match`, agent declarations, spawn/cast/join, or compressed ZJX archive

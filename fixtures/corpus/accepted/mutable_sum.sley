@@ -1,0 +1,10 @@
+module corpus.accepted
+
+task main -> Int {
+  bind values = [2, 3, 5]
+  tally total = 0
+  each value in values {
+    set total = total + value
+  }
+  return total
+}

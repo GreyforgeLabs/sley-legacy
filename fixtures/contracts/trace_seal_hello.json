@@ -1,0 +1,11 @@
+{
+  "schema": "sley.trace.seal.v0",
+  "target": "examples/hello.sley",
+  "source_digest": "sha256:b48f684bb3544e1346918cf78bb0bad96e3295d164d0df281f4d6a52e09ecedd",
+  "graph_digest": "sha256:0f16c5f58f19a8ab64645b60056ea9be0188f9e809531b6190d410f2dbb06040",
+  "trace_digest": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "seal_digest": "sha256:e745af8f70d04261392318572d67de9812473096734dec702d648d00647efbb4",
+  "module_count": 1,
+  "task_count": 1,
+  "receipt_count": 0
+}

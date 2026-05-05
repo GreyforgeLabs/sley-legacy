@@ -14,6 +14,7 @@ Implemented now:
 - `sley ast`
 - `sley graph`
 - `sley trace`
+- `sley seal`
 - `sley zjx`
 - `sley graft`
 - explicit non-mutating `sley graft --dry-run`; plain graft preview remains
@@ -55,7 +56,7 @@ Implemented now:
   plus bounded graph slices with `sley graph --slice <node-id>`; symbol graph
   and graph-slice JSON carry v0 schema IDs
 - JSONL trace sidecars for accepted graft receipts when `sley graft --write`
-  applies a change
+  applies a change, plus content-addressed trace seals with `sley seal`
 - a first ZJX-ready JSON envelope command for graph snapshots, optional graph
   slices, and trace receipts
 - structural graft operations for adding/removing takes, replacing task bodies,
@@ -70,6 +71,7 @@ Implemented now:
   condition mismatches, effect authority, and private or ambiguous names
 - locked JSON contract snapshots under `fixtures/contracts/`
 - external v0 JSON Schema files under `docs/schemas/`
+- accepted/rejected synthetic corpus fixtures under `fixtures/corpus/`
 - compact agent onboarding pack in `llms.txt`
 
 Project form:
@@ -82,8 +84,9 @@ entry = "app.main"
 ```
 
 Module `app.main` resolves to `src/app/main.sley`. `sley parse`,
-`sley check`, `sley run`, `sley ast`, `sley graph`, and `sley zjx` accept either a
-single `.sley` file or a project directory containing `sley.toml`.
+`sley check`, `sley run`, `sley ast`, `sley graph`, `sley seal`, and `sley zjx`
+accept either a single `.sley` file or a project directory containing
+`sley.toml`.
 
 Module visibility:
 
@@ -122,8 +125,9 @@ Known v0 limits:
 
 - Expression parsing still falls back to raw nodes for unsupported syntax such
   as lambdas, pattern matching, and multi-statement expression blocks.
-- Trace storage is a local JSONL sidecar, not yet a content-addressed seal or a
-  compressed `.zjx` archive.
+- Trace storage is still a local JSONL sidecar. `sley seal` now produces a
+  content-addressed seal over the source, graph, and trace receipts, but the
+  compressed `.zjx` archive remains a later integration step.
 - `sley zjx` emits the first Sley ZJX envelope payload as JSON with
   `compression=none`; the binary compressed archive handoff remains a later
   integration step.
@@ -138,6 +142,6 @@ Known v0 limits:
 - `MoveNode` and `DeleteNode` are declared but still return explicit
   unsupported-operation diagnostics.
 
-The next logical phase is trace and corpus hardening: move trace sidecars toward
-content-addressed seals, add formatter round-trip coverage for every example,
-and expand the accepted/rejected synthetic gold corpus.
+The next logical phase is schema and graft hardening: deepen nested
+AST/expression JSON Schema coverage, extend graph-slice grafts beyond the
+current operation set, and start runtime gate values for host capabilities.

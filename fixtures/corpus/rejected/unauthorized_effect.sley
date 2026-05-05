@@ -1,0 +1,13 @@
+module corpus.rejected
+
+effect FileRead
+
+task read -> Result<Text, Error> uses FileRead {
+  take path: Text
+
+  return fs.read_text(path)?
+}
+
+task main -> Result<Text, Error> {
+  return call read("notes.txt")
+}

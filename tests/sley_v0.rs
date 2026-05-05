@@ -1,5 +1,5 @@
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command as ProcessCommand;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -12,7 +12,15 @@ use sley::parser::parse_program;
 use sley::project::load_project;
 use sley::runtime::{Value, run_main};
 use sley::symbols::{SYMBOL_GRAPH_SCHEMA, SYMBOL_GRAPH_SLICE_SCHEMA, slice_symbol_graph};
-use sley::trace::{append_trace_receipt, build_trace_receipt, read_trace_receipts};
+use sley::trace::{
+    TRACE_RECEIPT_SCHEMA, TRACE_SEAL_SCHEMA, TraceReceipt, append_trace_receipt,
+    build_trace_receipt, build_trace_seal, read_trace_receipts,
+};
+
+#[derive(Debug, serde::Deserialize)]
+struct CorpusExpectation {
+    diagnostics: Vec<String>,
+}
 
 #[test]
 fn profile_fixture_checks_cleanly() {
@@ -32,6 +40,104 @@ fn formatter_round_trips_profile_fixture() {
     let formatted = format_program(&program);
     let reparsed = parse_program(&formatted).expect("parse formatted fixture");
     assert_eq!(formatted, format_program(&reparsed));
+}
+
+#[test]
+fn formatter_round_trips_every_example_and_project_module() {
+    let examples_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("examples");
+    let example_files = collect_sley_files(&examples_root).expect("collect examples");
+    assert!(
+        example_files.len() >= 7,
+        "expected all examples plus project modules, got {example_files:#?}"
+    );
+
+    for file in example_files {
+        let source =
+            fs::read_to_string(&file).unwrap_or_else(|error| panic!("read {file:?}: {error}"));
+        let program = parse_program(&source).unwrap_or_else(|diagnostics| {
+            panic!("parse example {file:?}: {diagnostics:#?}");
+        });
+        let formatted = format_program(&program);
+        let reparsed = parse_program(&formatted).unwrap_or_else(|diagnostics| {
+            panic!("parse formatted example {file:?}: {diagnostics:#?}");
+        });
+        assert_eq!(
+            formatted,
+            format_program(&reparsed),
+            "formatter is not stable for {file:?}"
+        );
+    }
+}
+
+#[test]
+fn synthetic_gold_corpus_accepts_and_rejects_expected_cases() {
+    let corpus_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("fixtures/corpus");
+    let accepted_files =
+        collect_sley_files(&corpus_root.join("accepted")).expect("collect accepted corpus");
+    assert!(
+        !accepted_files.is_empty(),
+        "accepted corpus should contain at least one fixture"
+    );
+
+    for file in accepted_files {
+        let source =
+            fs::read_to_string(&file).unwrap_or_else(|error| panic!("read {file:?}: {error}"));
+        let program = parse_program(&source).unwrap_or_else(|diagnostics| {
+            panic!("parse accepted corpus fixture {file:?}: {diagnostics:#?}");
+        });
+        let diagnostics = check_program(&program);
+        assert!(
+            !has_errors(&diagnostics),
+            "accepted corpus fixture {file:?} produced diagnostics: {diagnostics:#?}"
+        );
+
+        let formatted = format_program(&program);
+        let reparsed = parse_program(&formatted).unwrap_or_else(|diagnostics| {
+            panic!("parse formatted accepted corpus fixture {file:?}: {diagnostics:#?}");
+        });
+        assert_eq!(
+            formatted,
+            format_program(&reparsed),
+            "accepted corpus formatter is not stable for {file:?}"
+        );
+    }
+
+    let rejected_files =
+        collect_sley_files(&corpus_root.join("rejected")).expect("collect rejected corpus");
+    assert!(
+        !rejected_files.is_empty(),
+        "rejected corpus should contain at least one fixture"
+    );
+
+    for file in rejected_files {
+        let expectation_path = file.with_extension("json");
+        let expectation_source = fs::read_to_string(&expectation_path).unwrap_or_else(|error| {
+            panic!("read rejected corpus expectation {expectation_path:?}: {error}")
+        });
+        let expectation: CorpusExpectation = serde_json::from_str(&expectation_source)
+            .unwrap_or_else(|error| {
+                panic!("parse rejected corpus expectation {expectation_path:?}: {error}")
+            });
+        let source =
+            fs::read_to_string(&file).unwrap_or_else(|error| panic!("read {file:?}: {error}"));
+        let diagnostics = match parse_program(&source) {
+            Ok(program) => check_program(&program),
+            Err(diagnostics) => diagnostics,
+        };
+
+        assert!(
+            has_errors(&diagnostics),
+            "rejected corpus fixture {file:?} should fail"
+        );
+        for expected in &expectation.diagnostics {
+            assert!(
+                diagnostics
+                    .iter()
+                    .any(|diagnostic| diagnostic.id == *expected),
+                "expected diagnostic {expected} for {file:?}, got {diagnostics:#?}"
+            );
+        }
+    }
 }
 
 #[test]
@@ -228,6 +334,20 @@ fn json_contract_snapshots_are_locked() {
         include_str!("../fixtures/contracts/graph_slice_minimal_task.json"),
     );
 
+    let hello_source = include_str!("../examples/hello.sley");
+    let hello_program = parse_program(hello_source).expect("parse hello fixture");
+    let seal = build_trace_seal(
+        "examples/hello.sley",
+        hello_source.as_bytes(),
+        &hello_program,
+        &[],
+    )
+    .expect("build trace seal");
+    assert_json_snapshot(
+        &seal,
+        include_str!("../fixtures/contracts/trace_seal_hello.json"),
+    );
+
     assert_schema_file(
         include_str!("../docs/schemas/sley.ast.program.v0.schema.json"),
         AST_PROGRAM_SCHEMA,
@@ -251,6 +371,10 @@ fn json_contract_snapshots_are_locked() {
     assert_schema_file(
         include_str!("../docs/schemas/sley.zjx.envelope.v0.schema.json"),
         "sley.zjx.envelope.v0",
+    );
+    assert_schema_file(
+        include_str!("../docs/schemas/sley.trace.seal.v0.schema.json"),
+        TRACE_SEAL_SCHEMA,
     );
 }
 
@@ -1245,6 +1369,53 @@ fn trace_receipts_round_trip_as_jsonl() {
 }
 
 #[test]
+fn trace_seals_are_content_addressed() {
+    let source = include_str!("../examples/hello.sley");
+    let program = parse_program(source).expect("parse fixture");
+    let receipt = TraceReceipt {
+        schema: TRACE_RECEIPT_SCHEMA.to_string(),
+        target: "examples/hello.sley".to_string(),
+        written_at: "2026-05-05T00:00:00Z".to_string(),
+        provenance: vec![ProvenanceRecord {
+            graft_id: "graft_test".to_string(),
+            actor: "agent:test".to_string(),
+            timestamp: "2026-05-05T00:00:00Z".to_string(),
+            operation: "AddTake".to_string(),
+            targets: vec!["task:app.hello.main".to_string()],
+            result: "accepted".to_string(),
+        }],
+    };
+    let seal = build_trace_seal(
+        "examples/hello.sley",
+        source.as_bytes(),
+        &program,
+        std::slice::from_ref(&receipt),
+    )
+    .expect("build seal");
+    let repeat = build_trace_seal(
+        "examples/hello.sley",
+        source.as_bytes(),
+        &program,
+        std::slice::from_ref(&receipt),
+    )
+    .expect("build repeat seal");
+    let changed = build_trace_seal(
+        "examples/hello.sley",
+        b"task main -> Text {\n  return \"changed\"\n}\n",
+        &program,
+        &[receipt],
+    )
+    .expect("build changed seal");
+
+    assert_eq!(seal.schema, TRACE_SEAL_SCHEMA);
+    assert_eq!(seal.receipt_count, 1);
+    assert_eq!(seal, repeat);
+    assert_ne!(seal.source_digest, changed.source_digest);
+    assert_ne!(seal.seal_digest, changed.seal_digest);
+    assert!(seal.seal_digest.starts_with("sha256:"));
+}
+
+#[test]
 fn graft_cli_dry_run_is_explicit_and_non_mutating() {
     let root = temp_project_dir("graft-dry-run");
     fs::create_dir_all(&root).expect("create temp dir");
@@ -1327,6 +1498,26 @@ task main -> Int {
     );
 
     let _ = fs::remove_dir_all(root);
+}
+
+fn collect_sley_files(root: &Path) -> std::io::Result<Vec<PathBuf>> {
+    let mut files = Vec::new();
+    collect_sley_files_into(root, &mut files)?;
+    files.sort();
+    Ok(files)
+}
+
+fn collect_sley_files_into(root: &Path, files: &mut Vec<PathBuf>) -> std::io::Result<()> {
+    for entry in fs::read_dir(root)? {
+        let entry = entry?;
+        let path = entry.path();
+        if path.is_dir() {
+            collect_sley_files_into(&path, files)?;
+        } else if path.extension().and_then(|extension| extension.to_str()) == Some("sley") {
+            files.push(path);
+        }
+    }
+    Ok(())
 }
 
 fn temp_project_dir(name: &str) -> PathBuf {

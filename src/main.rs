@@ -8,11 +8,12 @@ use sley::diagnostics::{Diagnostic, DiagnosticReport};
 use sley::formatter::format_program;
 use sley::graft::{GraftInput, apply_graft_input};
 use sley::parser::parse_program;
-use sley::project::load_project;
+use sley::project::{ProjectGraph, load_project};
 use sley::runtime::run_main;
 use sley::symbols::{SymbolGraphSlice, build_symbol_graph, slice_symbol_graph};
 use sley::trace::{
-    append_trace_receipt, build_trace_receipt, default_trace_path, read_trace_receipts,
+    TraceSeal, append_trace_receipt, build_trace_receipt, build_trace_seal, default_trace_path,
+    read_trace_receipts,
 };
 use sley::zjx::build_zjx_envelope;
 
@@ -61,6 +62,13 @@ enum Command {
         file: PathBuf,
     },
     Trace {
+        #[arg(long)]
+        json: bool,
+        #[arg(long)]
+        trace: Option<PathBuf>,
+        file: PathBuf,
+    },
+    Seal {
         #[arg(long)]
         json: bool,
         #[arg(long)]
@@ -239,6 +247,26 @@ fn run(cli: Cli) -> Result<()> {
             }
             Ok(())
         }
+        Command::Seal { json, trace, file } => {
+            let (program, source_bytes) = match load_target_program_and_source_bytes(&file) {
+                Ok(target) => target,
+                Err(diagnostics) => return emit_diagnostics_and_fail(diagnostics, json),
+            };
+            let trace_path = trace.unwrap_or_else(|| default_trace_path(&file));
+            let receipts = read_trace_receipts(&trace_path)?;
+            let seal = build_trace_seal(
+                file.display().to_string(),
+                &source_bytes,
+                &program,
+                &receipts,
+            )?;
+            if json {
+                print_json(&seal)?;
+            } else {
+                print_human_seal(&seal);
+            }
+            Ok(())
+        }
         Command::Zjx {
             json,
             slice,
@@ -342,6 +370,54 @@ fn load_target_program_or_fail(file: &PathBuf) -> Result<sley::Program> {
         .map_err(|diagnostics| anyhow::anyhow!(format_diagnostics(&diagnostics)))
 }
 
+fn load_target_program_and_source_bytes(
+    file: &PathBuf,
+) -> Result<(sley::Program, Vec<u8>), Vec<Diagnostic>> {
+    if is_project_target(file) {
+        let project = load_project(file)?;
+        let source_bytes = project_source_bytes(&project).map_err(|error| {
+            vec![Diagnostic::error(
+                "PROJECT_SOURCE_READ_FAILED",
+                format!("{error:#}"),
+            )]
+        })?;
+        return Ok((project.program, source_bytes));
+    }
+    let source = fs::read_to_string(file).map_err(|error| {
+        vec![Diagnostic::error(
+            "SOURCE_READ_FAILED",
+            format!("failed to read {}: {error}", file.display()),
+        )]
+    })?;
+    let program = parse_program(&source)?;
+    Ok((program, source.into_bytes()))
+}
+
+fn project_source_bytes(project: &ProjectGraph) -> Result<Vec<u8>> {
+    let mut paths = Vec::with_capacity(project.modules.len() + 1);
+    paths.push(project.manifest_path.clone());
+    paths.extend(project.modules.iter().map(|module| module.path.clone()));
+    paths.sort();
+    paths.dedup();
+
+    let mut bytes = Vec::new();
+    for path in paths {
+        let relative = path.strip_prefix(&project.root).unwrap_or(&path);
+        let source =
+            fs::read(&path).with_context(|| format!("failed to read {}", path.display()))?;
+        bytes.extend_from_slice(format!("--- {}\n", normalized_path(relative)).as_bytes());
+        bytes.extend_from_slice(&source);
+        if !source.ends_with(b"\n") {
+            bytes.push(b'\n');
+        }
+    }
+    Ok(bytes)
+}
+
+fn normalized_path(path: &Path) -> String {
+    path.to_string_lossy().replace('\\', "/")
+}
+
 fn is_project_target(file: &Path) -> bool {
     file.is_dir() || file.file_name().and_then(|name| name.to_str()) == Some("sley.toml")
 }
@@ -400,6 +476,21 @@ fn print_human_trace(path: &Path, receipts: &[sley::trace::TraceReceipt]) {
             );
         }
     }
+}
+
+fn print_human_seal(seal: &TraceSeal) {
+    println!(
+        "seal schema={} target={} source={} graph={} trace={} seal={} modules={} tasks={} receipts={}",
+        seal.schema,
+        seal.target,
+        seal.source_digest,
+        seal.graph_digest,
+        seal.trace_digest,
+        seal.seal_digest,
+        seal.module_count,
+        seal.task_count,
+        seal.receipt_count
+    );
 }
 
 fn format_diagnostics(diagnostics: &[Diagnostic]) -> String {

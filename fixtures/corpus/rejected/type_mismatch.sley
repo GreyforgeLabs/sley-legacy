@@ -1,0 +1,6 @@
+module corpus.rejected
+
+task main -> Int {
+  bind label: Text = 1
+  return label
+}

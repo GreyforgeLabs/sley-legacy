@@ -1,0 +1,12 @@
+module corpus.accepted
+
+task double -> Int {
+  take value: Int
+
+  return value * 2
+}
+
+task main -> Int {
+  bind base = 21
+  return call double(base)
+}

@@ -95,6 +95,7 @@ sley ast --json --node <node-id> <target>
 sley graph --json <target>
 sley graph --json --slice <node-id> <target>
 sley trace --json <target>
+sley seal --json <target>
 sley zjx --json [--slice <node-id>] <target>
 sley graft --json <target> <graft.json>
 sley graft --json --dry-run <target> <graft.json>
@@ -104,15 +105,15 @@ sley format <target>
 Next target commands:
 
 ```bash
-sley seal --json <target>
+sley lint --json <target>
 ```
 
 Rules:
 
 - JSON output must be stable and versioned.
-- AST roots, diagnostic reports, symbol graphs, graph slices, ZJX envelopes,
-  and graft outcomes carry v0 schema IDs.
-- AST, diagnostic-report, and graph-slice snapshots are locked under
+- AST roots, diagnostic reports, symbol graphs, graph slices, trace seals, ZJX
+  envelopes, and graft outcomes carry v0 schema IDs.
+- AST, diagnostic-report, graph-slice, and trace-seal snapshots are locked under
   `fixtures/contracts/`.
 - Root-contract JSON Schema files live under `docs/schemas/`; exhaustive nested
   AST/expression schemas remain open.
@@ -121,7 +122,8 @@ Rules:
 - Grafts support dry-run by default and an explicit `--dry-run` flag.
 - Graft input JSON is strict: unknown operation or payload fields reject instead
   of being silently ignored.
-- Accepted write-mode grafts should emit trace receipts.
+- Accepted write-mode grafts emit trace receipts, and `sley seal` produces a
+  content-addressed digest over source, graph, and receipt content.
 - Source text should remain the human review projection, not the primary agent
   edit surface.
 
@@ -287,7 +289,9 @@ Keep source formatting controlled by `sley format`.
 
 ## Improvement 7: Synthetic Gold Corpus
 
-Once Sley has enough stable examples, build a synthetic corpus deliberately.
+The first synthetic corpus lives under `fixtures/corpus/`. It should keep
+growing deliberately, with accepted fixtures that must parse/check/round-trip
+and rejected fixtures that lock expected diagnostic IDs.
 
 Corpus categories:
 
@@ -361,19 +365,20 @@ Failure modes to watch:
 
 Near-term:
 
-1. Expand formatter round-trip tests to every example and project module.
-2. Start content-addressed trace seal design.
-3. Fill out nested AST/expression JSON Schema definitions.
-4. Build a small accepted/rejected synthetic gold corpus.
-5. Extend graph-slice grafts beyond call-site, statement, and expression edits.
+1. Fill out nested AST/expression JSON Schema definitions.
+2. Extend graph-slice grafts beyond call-site, statement, and expression edits.
+3. Add capability-backed gate values.
+4. Grow the accepted/rejected synthetic gold corpus with graft and module cases.
+5. Start Sley lint/query helpers on top of the graph surface.
 
 Medium-term:
 
 1. Extend graph-slice grafts beyond call-site, statement, and expression edits.
-2. Turn local trace sidecars into content-addressed seals.
-3. Add capability-backed gate values.
-4. Build the synthetic gold corpus.
-5. Move the preview ZJX JSON envelope to a compressed binary `.zjx` handoff.
+2. Move trace seals and ZJX preview payloads into a compressed binary `.zjx`
+   handoff.
+3. Expand runtime host capability values.
+4. Build the synthetic gold corpus into a release gate.
+5. Shadow selected compiler helper passes in Sley.
 
 Long-term:
 
