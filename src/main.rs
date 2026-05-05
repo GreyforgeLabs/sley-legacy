@@ -1,16 +1,21 @@
+use std::collections::BTreeSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
+use sley::Program;
 use sley::checker::{check_program, has_errors};
 use sley::diagnostics::{Diagnostic, DiagnosticReport};
 use sley::formatter::format_program;
-use sley::graft::{GraftInput, apply_graft_input};
+use sley::graft::{GRAFT_OUTCOME_SCHEMA, GraftInput, GraftOutcome, apply_graft_program};
 use sley::parser::parse_program;
 use sley::project::{ProjectGraph, load_project};
 use sley::runtime::run_main;
-use sley::symbols::{SymbolGraphSlice, build_symbol_graph, slice_symbol_graph};
+use sley::symbols::{
+    SymbolGraphSlice, build_symbol_graph, effect_module, import_owner_module, slice_symbol_graph,
+    task_module, type_module,
+};
 use sley::trace::{
     TraceSeal, append_trace_receipt, build_trace_receipt, build_trace_seal, default_trace_path,
     read_trace_receipts,
@@ -316,25 +321,50 @@ fn run(cli: Cli) -> Result<()> {
             file,
             graft,
         } => {
-            let source = read_source(&file)?;
-            let program = parse_program_or_fail(&source)?;
             let graft_source = fs::read_to_string(&graft)
                 .with_context(|| format!("failed to read {}", graft.display()))?;
             let graft_input: GraftInput = serde_json::from_str(&graft_source)
                 .with_context(|| format!("failed to parse {}", graft.display()))?;
-            let outcome = apply_graft_input(&program, graft_input, actor);
-            if json {
-                print_json(&outcome)?;
-            } else if let Some(source) = &outcome.source {
-                print!("{source}");
-            } else {
-                print_human_diagnostics(&outcome.diagnostics);
+
+            if is_project_target(&file) {
+                let project = match load_project(&file) {
+                    Ok(project) => project,
+                    Err(diagnostics) => return emit_diagnostics_and_fail(diagnostics, json),
+                };
+                let applied = apply_graft_program(&project.program, graft_input, actor);
+                let mut outcome = applied.outcome;
+                let write = write && !dry_run;
+                if outcome.status == "accepted" && write {
+                    let candidate = applied
+                        .program
+                        .as_ref()
+                        .expect("accepted graft should carry candidate program");
+                    if let Err(diagnostics) = write_project_graft(
+                        &file,
+                        &project,
+                        candidate,
+                        outcome.provenance.clone(),
+                        trace.as_deref(),
+                    ) {
+                        outcome = rejected_graft_outcome(diagnostics);
+                    }
+                }
+                emit_graft_outcome(&outcome, json)?;
+                if outcome.status != "accepted" {
+                    anyhow::bail!("graft rejected");
+                }
+                return Ok(());
             }
+
+            let source = read_source(&file)?;
+            let program = parse_program_or_fail(&source)?;
+            let outcome = apply_graft_program(&program, graft_input, actor).outcome;
+            emit_graft_outcome(&outcome, json)?;
             if outcome.status != "accepted" {
                 anyhow::bail!("graft rejected");
             }
             let write = write && !dry_run;
-            if write && let Some(source) = outcome.source {
+            if write && let Some(source) = outcome.source.as_deref() {
                 fs::write(&file, source)
                     .with_context(|| format!("failed to write {}", file.display()))?;
                 if !outcome.provenance.is_empty() {
@@ -345,6 +375,181 @@ fn run(cli: Cli) -> Result<()> {
             }
             Ok(())
         }
+    }
+}
+
+fn write_project_graft(
+    target: &Path,
+    project: &ProjectGraph,
+    candidate: &Program,
+    provenance: Vec<sley::ast::ProvenanceRecord>,
+    trace: Option<&Path>,
+) -> Result<(), Vec<Diagnostic>> {
+    let writes = plan_project_writeback(project, candidate)?;
+    for write in writes {
+        fs::write(&write.path, write.source).map_err(|error| {
+            vec![
+                Diagnostic::error(
+                    "PROJECT_WRITEBACK_FAILED",
+                    format!(
+                        "failed to write module `{}` at {}: {error}",
+                        write.module,
+                        write.path.display()
+                    ),
+                )
+                .with_node(format!("module:{}", write.module)),
+            ]
+        })?;
+    }
+
+    if !provenance.is_empty() {
+        let trace_path = trace
+            .map(Path::to_path_buf)
+            .unwrap_or_else(|| default_trace_path(target));
+        let receipt = build_trace_receipt(target, provenance);
+        append_trace_receipt(&trace_path, &receipt).map_err(|error| {
+            vec![Diagnostic::error(
+                "PROJECT_TRACE_WRITE_FAILED",
+                format!("{error:#}"),
+            )]
+        })?;
+    }
+    Ok(())
+}
+
+struct ProjectWrite {
+    module: String,
+    path: PathBuf,
+    source: String,
+}
+
+fn plan_project_writeback(
+    project: &ProjectGraph,
+    candidate: &Program,
+) -> Result<Vec<ProjectWrite>, Vec<Diagnostic>> {
+    let known_modules = project
+        .modules
+        .iter()
+        .map(|module| module.module.clone())
+        .collect::<BTreeSet<_>>();
+    let mut diagnostics = Vec::new();
+
+    for module in candidate_declared_modules(candidate) {
+        if !known_modules.contains(&module) {
+            diagnostics.push(
+                Diagnostic::error(
+                    "PROJECT_WRITEBACK_UNKNOWN_MODULE",
+                    format!(
+                        "graft candidate changed module `{module}`, which is not in this project"
+                    ),
+                )
+                .with_node(format!("module:{module}")),
+            );
+        }
+    }
+
+    for import in &candidate.imports {
+        if !known_modules.contains(&import.module) {
+            diagnostics.push(
+                Diagnostic::error(
+                    "PROJECT_WRITEBACK_UNKNOWN_IMPORT",
+                    format!(
+                        "graft candidate imports `{}`, but project writeback cannot create missing module files",
+                        import.module
+                    ),
+                )
+                .with_node(import.id.clone()),
+            );
+        }
+    }
+
+    if !diagnostics.is_empty() {
+        return Err(diagnostics);
+    }
+
+    let mut writes = Vec::new();
+    for module in &project.modules {
+        let next_program = project_module_program(candidate, &module.module);
+        let current_source = format_program(&module.program);
+        let next_source = format_program(&next_program);
+        if current_source != next_source {
+            writes.push(ProjectWrite {
+                module: module.module.clone(),
+                path: module.path.clone(),
+                source: next_source,
+            });
+        }
+    }
+    Ok(writes)
+}
+
+fn candidate_declared_modules(program: &Program) -> BTreeSet<String> {
+    let mut modules = BTreeSet::new();
+    modules.insert(program.module_name().to_string());
+    for import in &program.imports {
+        modules.insert(import_owner_module(import));
+    }
+    for ty in &program.types {
+        modules.insert(type_module(ty));
+    }
+    for effect in &program.effects {
+        modules.insert(effect_module(effect));
+    }
+    for task in &program.tasks {
+        modules.insert(task_module(task));
+    }
+    modules
+}
+
+fn project_module_program(candidate: &Program, module: &str) -> Program {
+    let mut program = Program::new();
+    program.module = Some(module.to_string());
+    program.imports = candidate
+        .imports
+        .iter()
+        .filter(|import| import_owner_module(import) == module)
+        .cloned()
+        .collect();
+    program.types = candidate
+        .types
+        .iter()
+        .filter(|ty| type_module(ty) == module)
+        .cloned()
+        .collect();
+    program.effects = candidate
+        .effects
+        .iter()
+        .filter(|effect| effect_module(effect) == module)
+        .cloned()
+        .collect();
+    program.tasks = candidate
+        .tasks
+        .iter()
+        .filter(|task| task_module(task) == module)
+        .cloned()
+        .collect();
+    program.assign_ids();
+    program
+}
+
+fn emit_graft_outcome(outcome: &GraftOutcome, json: bool) -> Result<()> {
+    if json {
+        print_json(outcome)?;
+    } else if let Some(source) = &outcome.source {
+        print!("{source}");
+    } else {
+        print_human_diagnostics(&outcome.diagnostics);
+    }
+    Ok(())
+}
+
+fn rejected_graft_outcome(diagnostics: Vec<Diagnostic>) -> GraftOutcome {
+    GraftOutcome {
+        schema: GRAFT_OUTCOME_SCHEMA.to_string(),
+        status: "rejected".to_string(),
+        diagnostics,
+        source: None,
+        provenance: Vec::new(),
     }
 }
 

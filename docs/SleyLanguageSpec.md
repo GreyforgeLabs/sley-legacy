@@ -201,6 +201,15 @@ path. The trace sidecar is a local provenance store. `sley seal` turns the
 current source, symbol graph, and trace receipt chain into a deterministic
 content-addressed seal.
 
+When the target is a project directory or `sley.toml`, `sley graft` loads the
+manifest entry module and transitively imported modules before checking the
+graft. Accepted project writeback projects the checked candidate AST back to the
+existing module files that own changed imports, types, effects, or tasks.
+Unchanged module files are left byte-for-byte untouched. Project writeback
+rejects before mutation when a graft candidate would create a new module file or
+import a module outside the loaded project, using
+`PROJECT_WRITEBACK_UNKNOWN_MODULE` or `PROJECT_WRITEBACK_UNKNOWN_IMPORT`.
+
 `sley graft --dry-run` is an explicit non-mutating preview mode. Plain
 `sley graft` remains non-mutating by default; only `--write` changes source or
 appends trace receipts. `--dry-run` and `--write` are mutually exclusive.
@@ -318,5 +327,6 @@ archive.
 - `MoveNode` supports checked in-parent statement reordering and top-level
   declaration ordering; cross-parent movement, take movement, and expression
   movement are still explicit rejections
-- project-aware graft writeback for multi-file module bundles is not yet
-  implemented
+- project graft writeback updates existing module files only; new module file
+  creation, module rename, and cross-parent declaration movement remain later
+  steps

@@ -51,7 +51,7 @@ Contract references:
 
 Current development phase:
 
-- project-aware graft writeback
 - capability-backed runtime gates
+- project graft writeback hardening beyond existing modules
 - accepted/rejected synthetic gold corpus growth
 - broader graph-slice graft operations around move/delete planning

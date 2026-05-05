@@ -195,9 +195,10 @@ Minimum useful graft operations:
 `MoveNode` are now implemented for the v0 in-memory checked program. `DeleteNode`
 supports checked deletion of declarations, imports, takes, and statements.
 `MoveNode` supports checked in-parent statement reordering and top-level
-declaration ordering. Project-aware multi-file writeback, cross-parent movement,
-take movement, expression movement, and broader graph-contract hardening remain
-open.
+declaration ordering. Project-aware multi-file writeback now updates existing
+module files and rejects unknown module creation before mutation. Cross-parent
+movement, take movement, expression movement, new module file creation, module
+rename, and broader graph-contract hardening remain open.
 
 The important rule is not that all operations exist immediately. The important
 rule is that unsupported operations reject cleanly with explicit diagnostics.
@@ -370,10 +371,10 @@ Failure modes to watch:
 
 Near-term:
 
-1. Add project-aware graft writeback for multi-module bundles.
-2. Add capability-backed gate values.
-3. Grow the accepted/rejected synthetic gold corpus with graft and module cases.
-4. Extend graph-slice grafts around move/delete planning.
+1. Add capability-backed gate values.
+2. Grow the accepted/rejected synthetic gold corpus with graft and module cases.
+3. Extend graph-slice grafts around move/delete planning.
+4. Harden project graft writeback for new module creation and module rename.
 5. Start Sley lint/query helpers on top of the graph surface.
 
 Medium-term:

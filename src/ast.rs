@@ -40,20 +40,33 @@ impl Program {
     }
 
     pub fn assign_ids(&mut self) {
-        let module = self.module.clone().unwrap_or_else(|| "main".to_string());
+        let default_module = self.module.clone().unwrap_or_else(|| "main".to_string());
         for import in &mut self.imports {
-            import.owner_module = Some(module.clone());
-            import.id = format!("import:{module}:{}", import.module);
+            let owner_module = import
+                .owner_module
+                .clone()
+                .unwrap_or_else(|| default_module.clone());
+            import.owner_module = Some(owner_module.clone());
+            import.id = format!("import:{owner_module}:{}", import.module);
         }
         for ty in &mut self.types {
+            let module = ty.module.clone().unwrap_or_else(|| default_module.clone());
             ty.module = Some(module.clone());
             ty.id = format!("type:{module}.{}", ty.name);
         }
         for effect in &mut self.effects {
+            let module = effect
+                .module
+                .clone()
+                .unwrap_or_else(|| default_module.clone());
             effect.module = Some(module.clone());
             effect.id = format!("effect:{module}.{}", effect.name);
         }
         for task in &mut self.tasks {
+            let module = task
+                .module
+                .clone()
+                .unwrap_or_else(|| default_module.clone());
             task.module = Some(module.clone());
             task.id = format!("task:{module}.{}", task.name);
             for (take_index, take) in task.takes.iter_mut().enumerate() {

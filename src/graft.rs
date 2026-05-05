@@ -188,7 +188,7 @@ pub struct ExpressionPayload {
     pub source: String,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GraftOutcome {
     pub schema: String,
     pub status: String,
@@ -200,11 +200,25 @@ pub struct GraftOutcome {
     pub provenance: Vec<ProvenanceRecord>,
 }
 
+#[derive(Debug, Clone)]
+pub struct AppliedGraft {
+    pub outcome: GraftOutcome,
+    pub program: Option<Program>,
+}
+
 pub fn apply_graft_input(
     program: &Program,
     input: GraftInput,
     actor: Option<String>,
 ) -> GraftOutcome {
+    apply_graft_program(program, input, actor).outcome
+}
+
+pub fn apply_graft_program(
+    program: &Program,
+    input: GraftInput,
+    actor: Option<String>,
+) -> AppliedGraft {
     let actor = actor.unwrap_or_else(|| "agent:unknown".to_string());
     let mut candidate = program.clone();
     let mut provenance = Vec::new();
@@ -252,21 +266,27 @@ pub fn apply_graft_input(
     }
 
     if diagnostics.iter().any(Diagnostic::is_error) {
-        GraftOutcome {
-            schema: GRAFT_OUTCOME_SCHEMA.to_string(),
-            status: "rejected".to_string(),
-            diagnostics,
-            source: None,
-            provenance: Vec::new(),
+        AppliedGraft {
+            outcome: GraftOutcome {
+                schema: GRAFT_OUTCOME_SCHEMA.to_string(),
+                status: "rejected".to_string(),
+                diagnostics,
+                source: None,
+                provenance: Vec::new(),
+            },
+            program: None,
         }
     } else {
         candidate.provenance.extend(provenance.clone());
-        GraftOutcome {
-            schema: GRAFT_OUTCOME_SCHEMA.to_string(),
-            status: "accepted".to_string(),
-            diagnostics,
-            source: Some(format_program(&candidate)),
-            provenance,
+        AppliedGraft {
+            outcome: GraftOutcome {
+                schema: GRAFT_OUTCOME_SCHEMA.to_string(),
+                status: "accepted".to_string(),
+                diagnostics,
+                source: Some(format_program(&candidate)),
+                provenance,
+            },
+            program: Some(candidate),
         }
     }
 }

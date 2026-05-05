@@ -57,6 +57,8 @@ Implemented now:
   and graph-slice JSON carry v0 schema IDs
 - JSONL trace sidecars for accepted graft receipts when `sley graft --write`
   applies a change, plus content-addressed trace seals with `sley seal`
+- project-aware `sley graft --write <project>` source-file writeback for
+  accepted edits that resolve to existing modules in a multi-file project
 - a first ZJX-ready JSON envelope command for graph snapshots, optional graph
   slices, and trace receipts
 - structural graft operations for adding/removing takes, replacing task bodies,
@@ -86,9 +88,10 @@ entry = "app.main"
 ```
 
 Module `app.main` resolves to `src/app/main.sley`. `sley parse`,
-`sley check`, `sley run`, `sley ast`, `sley graph`, `sley seal`, and `sley zjx`
-accept either a single `.sley` file or a project directory containing
-`sley.toml`.
+`sley check`, `sley run`, `sley ast`, `sley graph`, `sley seal`, `sley zjx`,
+and `sley graft` accept either a single `.sley` file or a project directory
+containing `sley.toml`. Project graft writeback projects the checked candidate
+back to existing owning module files and leaves unchanged module files alone.
 
 Module visibility:
 
@@ -136,9 +139,9 @@ Known v0 limits:
 - `run` only supports pure execution. Host calls and capability-backed runtime
   objects are still represented as raw values unless a future host boundary is
   supplied.
-- `UpdateCallSites`, `InsertStatement`, `ReplaceExpression`, `DeleteNode`, and
-  `MoveNode` operate on the in-memory checked program. Project-aware source-file
-  writeback for bundled multi-module projects is still a later step.
+- Project graft writeback supports existing module files. Grafts that would
+  create unknown module files or import modules outside the loaded project
+  reject before any source or trace mutation.
 - The AST JSON Schema now covers declarations, statements, expressions, type
   expressions, spans, and provenance recursively. Other external JSON Schema
   files remain narrower v0 root-contract schemas.
@@ -147,7 +150,6 @@ Known v0 limits:
   Cross-parent movement, take movement, and expression movement still reject
   explicitly.
 
-The next logical phase is project and runtime hardening: add project-aware graft
-writeback for multi-module bundles, start runtime gate values for host
-capabilities, and grow graph-slice graft coverage around the new move/delete
-operations.
+The next logical phase is runtime and graph hardening: start capability-backed
+runtime gate values for host calls, grow the accepted/rejected corpus around
+project grafts, and extend graph-slice planning around move/delete operations.

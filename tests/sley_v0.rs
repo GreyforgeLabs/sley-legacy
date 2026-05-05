@@ -1757,6 +1757,151 @@ fn graft_cli_dry_run_is_explicit_and_non_mutating() {
 }
 
 #[test]
+fn project_graft_write_updates_only_the_owning_module() {
+    let root = temp_project_dir("project-graft-write");
+    fs::create_dir_all(root.join("src/app")).expect("create project dirs");
+    fs::write(
+        root.join("sley.toml"),
+        r#"
+[project]
+entry = "app.main"
+"#,
+    )
+    .expect("write manifest");
+    let main_source = r#"module app.main
+
+import app.math as math
+
+task main -> Int {
+  return call math.double(21)
+}
+"#;
+    let math_source = r#"module app.math
+
+export task double -> Int {
+  take value: Int
+
+  return value * 2
+}
+"#;
+    let main_path = root.join("src/app/main.sley");
+    let math_path = root.join("src/app/math.sley");
+    let graft_path = root.join("insert_math_bind.json");
+    fs::write(&main_path, main_source).expect("write main module");
+    fs::write(&math_path, math_source).expect("write math module");
+    fs::write(
+        &graft_path,
+        r#"
+{
+  "op": "InsertStatement",
+  "target": "task:app.math.double",
+  "payload": { "source": "bind extra = 0", "position": 0 }
+}
+"#,
+    )
+    .expect("write graft");
+
+    let output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args(["graft", "--json", "--write"])
+        .arg(&root)
+        .arg(&graft_path)
+        .output()
+        .expect("run project graft");
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+    let stderr = String::from_utf8(output.stderr).expect("stderr utf8");
+    assert!(
+        output.status.success(),
+        "stdout: {stdout}\nstderr: {stderr}"
+    );
+    let outcome: GraftOutcome = serde_json::from_str(&stdout).expect("parse outcome");
+    assert_eq!(outcome.status, "accepted");
+    assert_eq!(
+        fs::read_to_string(&main_path).expect("read main"),
+        main_source
+    );
+    let math_written = fs::read_to_string(&math_path).expect("read math");
+    assert!(math_written.contains("bind extra = 0"), "{math_written}");
+
+    let project = load_project(&root).expect("reload project");
+    let diagnostics = check_program(&project.program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+    assert_eq!(run_main(&project.program), Ok(Value::Int(42)));
+    let receipts = read_trace_receipts(root.join(".sley/trace.jsonl")).expect("read trace");
+    assert_eq!(receipts.len(), 1);
+    assert_eq!(receipts[0].provenance[0].operation, "InsertStatement");
+
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn project_graft_write_rejects_new_module_writeback_without_mutation() {
+    let root = temp_project_dir("project-graft-new-module");
+    fs::create_dir_all(root.join("src/app")).expect("create project dirs");
+    fs::write(
+        root.join("sley.toml"),
+        r#"
+[project]
+entry = "app.main"
+"#,
+    )
+    .expect("write manifest");
+    let main_source = r#"module app.main
+
+task main -> Int {
+  return 1
+}
+"#;
+    let main_path = root.join("src/app/main.sley");
+    let graft_path = root.join("add_extra_module_task.json");
+    fs::write(&main_path, main_source).expect("write main module");
+    fs::write(
+        &graft_path,
+        r#"
+{
+  "op": "AddTask",
+  "payload": {
+    "source": "module app.extra\n\ntask helper -> Int {\n  return 2\n}\n"
+  }
+}
+"#,
+    )
+    .expect("write graft");
+
+    let output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args(["graft", "--json", "--write"])
+        .arg(&root)
+        .arg(&graft_path)
+        .output()
+        .expect("run project graft");
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+    assert!(
+        !output.status.success(),
+        "project writeback should reject new module writes"
+    );
+    let outcome: GraftOutcome = serde_json::from_str(&stdout).expect("parse outcome");
+    assert_eq!(outcome.status, "rejected");
+    assert!(
+        outcome
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.id == "PROJECT_WRITEBACK_UNKNOWN_MODULE"),
+        "expected PROJECT_WRITEBACK_UNKNOWN_MODULE, got {:#?}",
+        outcome.diagnostics
+    );
+    assert_eq!(
+        fs::read_to_string(&main_path).expect("read main"),
+        main_source
+    );
+    assert!(!root.join("src/app/extra.sley").exists());
+    assert!(!root.join(".sley/trace.jsonl").exists());
+
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
 fn project_loader_reports_missing_imports() {
     let root = temp_project_dir("missing-imports");
     fs::create_dir_all(root.join("src/app")).expect("create project dirs");
