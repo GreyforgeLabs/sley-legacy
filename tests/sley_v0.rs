@@ -2452,6 +2452,60 @@ task main -> Int {
 }
 
 #[test]
+fn checker_operator_hints_include_replace_expression_grafts() {
+    let unary = parse_program("task main -> Bool {\n  return !1\n}\n")
+        .expect("parse unary operator source");
+    let unary_diagnostics = check_program(&unary);
+    assert_has_repair_hint(
+        &unary_diagnostics,
+        "UNARY_OPERATOR_TYPE_MISMATCH",
+        "replace_operand",
+    );
+    assert_replace_expression_hint_source(
+        &unary_diagnostics,
+        "UNARY_OPERATOR_TYPE_MISMATCH",
+        "false",
+    );
+
+    let bool_binary = parse_program("task main -> Bool {\n  return 1 && \"x\"\n}\n")
+        .expect("parse bool binary operator source");
+    let bool_diagnostics = check_program(&bool_binary);
+    let bool_operator = bool_diagnostics
+        .iter()
+        .find(|diagnostic| diagnostic.id == "BINARY_OPERATOR_TYPE_MISMATCH")
+        .unwrap_or_else(|| panic!("missing bool operator diagnostic: {bool_diagnostics:#?}"));
+    let bool_sources = replace_expression_hint_sources(bool_operator);
+    assert_eq!(bool_sources, vec!["false".to_string(), "false".to_string()]);
+
+    let int_add =
+        parse_program("task main -> Int {\n  return 1 + false\n}\n").expect("parse int add source");
+    let int_add_diagnostics = check_program(&int_add);
+    assert_replace_expression_hint_source(
+        &int_add_diagnostics,
+        "BINARY_OPERATOR_TYPE_MISMATCH",
+        "0",
+    );
+
+    let text_add = parse_program("task main -> Text {\n  return \"x\" + false\n}\n")
+        .expect("parse text add source");
+    let text_add_diagnostics = check_program(&text_add);
+    assert_replace_expression_hint_source(
+        &text_add_diagnostics,
+        "BINARY_OPERATOR_TYPE_MISMATCH",
+        "\"\"",
+    );
+
+    let float_compare = parse_program("task main -> Bool {\n  return 1.5 < \"x\"\n}\n")
+        .expect("parse float comparison source");
+    let float_compare_diagnostics = check_program(&float_compare);
+    assert_replace_expression_hint_source(
+        &float_compare_diagnostics,
+        "BINARY_OPERATOR_TYPE_MISMATCH",
+        "0.0",
+    );
+}
+
+#[test]
 fn rejected_graft_fixtures_report_stable_diagnostic_ids() {
     let call_source = r#"
 task double -> Int {
@@ -6337,4 +6391,29 @@ fn assert_replace_expression_hint_json(
         Some(&serde_json::json!(expected_source))
     );
     target.to_string()
+}
+
+fn replace_expression_hint_sources(diagnostic: &sley::diagnostics::Diagnostic) -> Vec<String> {
+    diagnostic
+        .repair_hints
+        .iter()
+        .filter(|hint| hint.kind == "replace_expression")
+        .map(|hint| {
+            let replacement: serde_json::Value = serde_json::from_str(
+                hint.replacement
+                    .as_deref()
+                    .expect("replace_expression replacement"),
+            )
+            .expect("replace_expression replacement is JSON");
+            assert_eq!(
+                replacement.pointer("/op"),
+                Some(&serde_json::json!("ReplaceExpression"))
+            );
+            replacement
+                .pointer("/payload/source")
+                .and_then(serde_json::Value::as_str)
+                .expect("replace_expression source")
+                .to_string()
+        })
+        .collect()
 }

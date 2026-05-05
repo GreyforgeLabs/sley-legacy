@@ -673,6 +673,9 @@ expression, alongside the older type-change or source-level replacement hints.
 Condition, collection element, map key/value, index key, and record-field
 expression mismatches include structural `replace_expression` hints when the
 checker has a clear expected replacement type for the offending expression.
+Unary and binary operator mismatches likewise include structural
+`replace_expression` hints when a specific operand can be replaced without
+guessing between valid type families.
 
 ## ZJX Boundary
 

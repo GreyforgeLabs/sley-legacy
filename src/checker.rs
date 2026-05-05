@@ -1210,22 +1210,34 @@ fn check_unary_operator(
     };
 
     if !valid {
-        diagnostics.push(
-            Diagnostic::error(
-                "UNARY_OPERATOR_TYPE_MISMATCH",
-                format!(
-                    "operator `{}` cannot be applied to `{}`",
-                    op.as_str(),
-                    actual.display()
-                ),
-            )
-            .with_node(expr.id.clone())
-            .with_repair_hint(
-                RepairHint::new("replace_operand")
-                    .with_target(inner.id.clone())
-                    .with_replacement(unary_expected_type(op)),
+        let mut diagnostic = Diagnostic::error(
+            "UNARY_OPERATOR_TYPE_MISMATCH",
+            format!(
+                "operator `{}` cannot be applied to `{}`",
+                op.as_str(),
+                actual.display()
             ),
+        )
+        .with_node(expr.id.clone())
+        .with_repair_hint(
+            RepairHint::new("replace_operand")
+                .with_target(inner.id.clone())
+                .with_replacement(unary_expected_type(op)),
         );
+        if let Some(hint) = unary_operator_graft_hint(op, inner) {
+            diagnostic = diagnostic.with_repair_hint(hint);
+        }
+        diagnostics.push(diagnostic);
+    }
+}
+
+fn unary_operator_graft_hint(op: &UnaryOp, inner: &Expr) -> Option<RepairHint> {
+    match op {
+        UnaryOp::Not => Some(replace_expression_graft_hint(
+            inner,
+            &TypeExpr::named("Bool"),
+        )),
+        UnaryOp::Negate => None,
     }
 }
 
@@ -1249,24 +1261,102 @@ fn check_binary_operator(
     };
 
     if !binary_operands_compatible(op, &left_type, &right_type) {
-        diagnostics.push(
-            Diagnostic::error(
-                "BINARY_OPERATOR_TYPE_MISMATCH",
-                format!(
-                    "operator `{}` cannot be applied to `{}` and `{}`",
-                    op.as_str(),
-                    left_type.display(),
-                    right_type.display()
-                ),
-            )
-            .with_node(expr.id.clone())
-            .with_repair_hint(
-                RepairHint::new("replace_binary_operands")
-                    .with_target(expr.id.clone())
-                    .with_replacement(binary_expected_types(op)),
+        let mut diagnostic = Diagnostic::error(
+            "BINARY_OPERATOR_TYPE_MISMATCH",
+            format!(
+                "operator `{}` cannot be applied to `{}` and `{}`",
+                op.as_str(),
+                left_type.display(),
+                right_type.display()
             ),
+        )
+        .with_node(expr.id.clone())
+        .with_repair_hint(
+            RepairHint::new("replace_binary_operands")
+                .with_target(expr.id.clone())
+                .with_replacement(binary_expected_types(op)),
         );
+        for hint in binary_operator_graft_hints(op, left, &left_type, right, &right_type) {
+            diagnostic = diagnostic.with_repair_hint(hint);
+        }
+        diagnostics.push(diagnostic);
     }
+}
+
+fn binary_operator_graft_hints(
+    op: &BinaryOp,
+    left: &Expr,
+    left_type: &TypeExpr,
+    right: &Expr,
+    right_type: &TypeExpr,
+) -> Vec<RepairHint> {
+    match op {
+        BinaryOp::Or | BinaryOp::And => {
+            bool_operand_graft_hints(left, left_type, right, right_type)
+        }
+        BinaryOp::Add => add_operand_graft_hints(left, left_type, right, right_type),
+        BinaryOp::Subtract | BinaryOp::Multiply | BinaryOp::Divide | BinaryOp::Remainder => {
+            numeric_operand_graft_hints(left, left_type, right, right_type)
+        }
+        BinaryOp::Less | BinaryOp::LessEqual | BinaryOp::Greater | BinaryOp::GreaterEqual => {
+            numeric_operand_graft_hints(left, left_type, right, right_type)
+        }
+        BinaryOp::Equal | BinaryOp::NotEqual => Vec::new(),
+    }
+}
+
+fn bool_operand_graft_hints(
+    left: &Expr,
+    left_type: &TypeExpr,
+    right: &Expr,
+    right_type: &TypeExpr,
+) -> Vec<RepairHint> {
+    let expected = TypeExpr::named("Bool");
+    let mut hints = Vec::new();
+    if !is_bool_type(left_type) {
+        hints.push(replace_expression_graft_hint(left, &expected));
+    }
+    if !is_bool_type(right_type) {
+        hints.push(replace_expression_graft_hint(right, &expected));
+    }
+    hints
+}
+
+fn add_operand_graft_hints(
+    left: &Expr,
+    left_type: &TypeExpr,
+    right: &Expr,
+    right_type: &TypeExpr,
+) -> Vec<RepairHint> {
+    if is_named_type(left_type, "Text") && !is_named_type(right_type, "Text") {
+        if is_numeric_type(right_type) {
+            return Vec::new();
+        }
+        return vec![replace_expression_graft_hint(right, left_type)];
+    }
+    if is_named_type(right_type, "Text") && !is_named_type(left_type, "Text") {
+        if is_numeric_type(left_type) {
+            return Vec::new();
+        }
+        return vec![replace_expression_graft_hint(left, right_type)];
+    }
+    numeric_operand_graft_hints(left, left_type, right, right_type)
+}
+
+fn numeric_operand_graft_hints(
+    left: &Expr,
+    left_type: &TypeExpr,
+    right: &Expr,
+    right_type: &TypeExpr,
+) -> Vec<RepairHint> {
+    let mut hints = Vec::new();
+    if is_numeric_type(left_type) && !is_numeric_type(right_type) {
+        hints.push(replace_expression_graft_hint(right, left_type));
+    }
+    if !is_numeric_type(left_type) && is_numeric_type(right_type) {
+        hints.push(replace_expression_graft_hint(left, right_type));
+    }
+    hints
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -1917,6 +2007,7 @@ fn replace_call_arg_hint(callee_name: &str, position: usize, expected: &TypeExpr
 fn default_expr_source_for_type(ty: &TypeExpr) -> String {
     match ty.display().as_str() {
         "Int" => "0".to_string(),
+        "Float" => "0.0".to_string(),
         "Text" => "\"\"".to_string(),
         "Bool" => "false".to_string(),
         _ => "TODO_VALUE".to_string(),

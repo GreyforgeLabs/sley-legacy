@@ -182,6 +182,8 @@ Priority diagnostic families:
 - condition, collection, index, and record-field expression mismatches:
   implemented with structural `ReplaceExpression` hints where the expected
   replacement type is clear
+- unary and binary operator mismatches: implemented with structural
+  `ReplaceExpression` hints where a specific operand replacement type is clear
 - call arity mismatch: implemented with `match_task_arity`, `UpdateCallArgs`,
   and `RemoveCallArg`
 - call argument type mismatch: implemented with `replace_argument` and
