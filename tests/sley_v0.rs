@@ -2,13 +2,15 @@ use std::fs;
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use sley::ast::{ExprKind, StatementKind};
+use sley::ast::{ExprKind, ProvenanceRecord, StatementKind};
 use sley::checker::{check_program, has_errors};
 use sley::formatter::format_program;
 use sley::graft::{GraftInput, apply_graft_input};
 use sley::parser::parse_program;
 use sley::project::load_project;
 use sley::runtime::{Value, run_main};
+use sley::symbols::slice_symbol_graph;
+use sley::trace::{append_trace_receipt, build_trace_receipt, read_trace_receipts};
 
 #[test]
 fn profile_fixture_checks_cleanly() {
@@ -645,6 +647,47 @@ export task double -> Int {
             .any(|diagnostic| diagnostic.id == "UNKNOWN_TASK"),
         "expected unknown task diagnostic, got {diagnostics:#?}"
     );
+
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn graph_slice_reports_resolved_project_task_calls() {
+    let project_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("examples/project");
+    let project = load_project(&project_root).expect("load project");
+    let slice =
+        slice_symbol_graph(&project.program, "task:app.main.main").expect("slice main task");
+
+    assert_eq!(slice.focus.kind, "task");
+    assert_eq!(slice.focus.module, "app.main");
+    assert_eq!(slice.outbound_calls.len(), 1);
+    assert_eq!(slice.outbound_calls[0].callee, "math.double");
+    assert_eq!(
+        slice.outbound_calls[0].target.as_deref(),
+        Some("app.math.double")
+    );
+}
+
+#[test]
+fn trace_receipts_round_trip_as_jsonl() {
+    let root = temp_project_dir("trace-round-trip");
+    let trace_path = root.join(".sley/trace.jsonl");
+    let receipt = build_trace_receipt(
+        root.join("src/app/main.sley"),
+        vec![ProvenanceRecord {
+            graft_id: "graft_test".to_string(),
+            actor: "agent:test".to_string(),
+            timestamp: "2026-05-05T00:00:00Z".to_string(),
+            operation: "AddTake".to_string(),
+            targets: vec!["task:app.main.main".to_string()],
+            result: "accepted".to_string(),
+        }],
+    );
+
+    append_trace_receipt(&trace_path, &receipt).expect("append receipt");
+    let receipts = read_trace_receipts(&trace_path).expect("read receipts");
+
+    assert_eq!(receipts, vec![receipt]);
 
     let _ = fs::remove_dir_all(root);
 }

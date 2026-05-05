@@ -7,6 +7,8 @@ pub mod parser;
 pub mod project;
 pub mod runtime;
 pub mod symbols;
+pub mod trace;
+pub mod zjx;
 
 pub use ast::Program;
 pub use checker::check_program;

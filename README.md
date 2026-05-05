@@ -13,6 +13,8 @@ Implemented now:
 - `sley run`
 - `sley ast`
 - `sley graph`
+- `sley trace`
+- `sley zjx`
 - `sley graft`
 - `sley.toml` project manifests for multi-file module graphs
 - module, import, type, effect, and task declarations
@@ -43,7 +45,12 @@ Implemented now:
   `.sley` modules under the configured source root
 - checker and runtime task lookup by entry module, local module, full module
   path, and import alias
-- JSON module symbol graph output for module imports and exported declarations
+- JSON module symbol graph output for module imports and exported declarations,
+  plus bounded graph slices with `sley graph --slice <node-id>`
+- JSONL trace sidecars for accepted graft receipts when `sley graft --write`
+  applies a change
+- a first ZJX-ready JSON envelope command for graph snapshots, optional graph
+  slices, and trace receipts
 - structural graft operations for adding/removing takes, replacing task bodies,
   adding imports/effects/types/tasks, and renaming declarations
 
@@ -57,8 +64,8 @@ entry = "app.main"
 ```
 
 Module `app.main` resolves to `src/app/main.sley`. `sley parse`,
-`sley check`, `sley run`, `sley ast`, and `sley graph` accept either a single `.sley`
-file or a project directory containing `sley.toml`.
+`sley check`, `sley run`, `sley ast`, `sley graph`, and `sley zjx` accept either a
+single `.sley` file or a project directory containing `sley.toml`.
 
 Module visibility:
 
@@ -95,8 +102,11 @@ Known v0 limits:
   Duplicate type/effect names are scoped by module, but cross-module type and
   custom-effect identity still need the same fully qualified resolver used by
   tasks.
-- Durable trace storage is not complete. Accepted graft provenance is returned
-  by the graft command, but not written into a sidecar store.
+- Trace storage is a local JSONL sidecar, not yet a content-addressed seal or a
+  compressed `.zjx` archive.
+- `sley zjx` emits the first Sley ZJX envelope payload as JSON with
+  `compression=none`; the binary compressed archive handoff remains a later
+  integration step.
 - `run` only supports pure execution. Host calls and capability-backed runtime
   objects are still represented as raw values unless a future host boundary is
   supplied.
@@ -104,6 +114,6 @@ Known v0 limits:
   `DeleteNode` are declared but return explicit unsupported-operation
   diagnostics.
 
-The next logical phase is the trace/ZJX tooling phase: persist accepted graft
-receipts, add stable graph slices through `sley graph`, and introduce the first
-ZJX envelope command for module graph snapshots and graft receipts.
+The next logical phase is the semantic-completeness phase: extend module
+namespace resolution from tasks to type/effect identity, then implement the next
+structural graft operations against graph slices.

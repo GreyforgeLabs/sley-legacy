@@ -2,7 +2,10 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use serde::Serialize;
 
-use crate::ast::{EffectDecl, Expr, ExprKind, ImportDecl, Program, TaskDecl, TypeDecl};
+use crate::ast::{
+    Block, EffectDecl, Expr, ExprKind, ImportDecl, Program, Statement, StatementKind, TaskDecl,
+    TypeDecl,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TaskResolution {
@@ -39,6 +42,43 @@ pub struct DeclarationSymbolSummary {
     pub name: String,
     pub id: String,
     pub exported: bool,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct SymbolGraphSlice {
+    pub target: String,
+    pub entry_module: String,
+    pub focus: SliceFocus,
+    pub imports: Vec<ImportSymbolSummary>,
+    pub types: Vec<DeclarationSymbolSummary>,
+    pub effects: Vec<DeclarationSymbolSummary>,
+    pub tasks: Vec<DeclarationSymbolSummary>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub task: Option<TaskDecl>,
+    pub outbound_calls: Vec<TaskCallSummary>,
+    pub inbound_calls: Vec<TaskCallSummary>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct SliceFocus {
+    pub kind: String,
+    pub id: String,
+    pub module: String,
+    pub name: String,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct TaskCallSummary {
+    pub from: String,
+    pub from_module: String,
+    pub expr_id: String,
+    pub source: String,
+    pub callee: String,
+    pub status: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub target: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub candidates: Vec<String>,
 }
 
 pub fn build_symbol_graph(program: &Program) -> SymbolGraph {
@@ -144,6 +184,93 @@ pub fn build_symbol_graph(program: &Program) -> SymbolGraph {
         entry_module: program.module_name().to_string(),
         modules: module_summaries,
     }
+}
+
+pub fn slice_symbol_graph(program: &Program, target: &str) -> Option<SymbolGraphSlice> {
+    if let Some(index) = program.find_task_index(target) {
+        let task = &program.tasks[index];
+        return Some(build_slice(
+            program,
+            target,
+            SliceFocus {
+                kind: "task".to_string(),
+                id: task.id.clone(),
+                module: task_module(task),
+                name: task.name.clone(),
+            },
+            Some(index),
+        ));
+    }
+
+    let module = target.strip_prefix("module:").unwrap_or(target);
+    if module_exists(program, module) {
+        return Some(build_slice(
+            program,
+            target,
+            SliceFocus {
+                kind: "module".to_string(),
+                id: format!("module:{module}"),
+                module: module.to_string(),
+                name: module.to_string(),
+            },
+            None,
+        ));
+    }
+
+    if let Some(index) = find_type_index(program, target) {
+        let ty = &program.types[index];
+        return Some(build_slice(
+            program,
+            target,
+            SliceFocus {
+                kind: "type".to_string(),
+                id: ty.id.clone(),
+                module: type_module(ty),
+                name: ty.name.clone(),
+            },
+            None,
+        ));
+    }
+
+    if let Some(index) = find_effect_index(program, target) {
+        let effect = &program.effects[index];
+        return Some(build_slice(
+            program,
+            target,
+            SliceFocus {
+                kind: "effect".to_string(),
+                id: effect.id.clone(),
+                module: effect_module(effect),
+                name: effect.name.clone(),
+            },
+            None,
+        ));
+    }
+
+    if let Some(index) = find_import_index(program, target) {
+        let import = &program.imports[index];
+        return Some(build_slice(
+            program,
+            target,
+            SliceFocus {
+                kind: "import".to_string(),
+                id: import.id.clone(),
+                module: import_owner_module(import),
+                name: import.module.clone(),
+            },
+            None,
+        ));
+    }
+
+    None
+}
+
+pub fn collect_task_calls(program: &Program) -> Vec<TaskCallSummary> {
+    let mut calls = Vec::new();
+    for task in &program.tasks {
+        collect_task_calls_from_block(program, task, &task.body, &mut calls);
+    }
+    calls
 }
 
 pub fn resolve_task(program: &Program, caller_module: &str, path: &str) -> TaskResolution {
@@ -267,6 +394,243 @@ pub fn is_module_qualified_callee(program: &Program, caller_module: &str, path: 
             .any(|import| import_matches_qualifier(import, parts[0]))
 }
 
+fn build_slice(
+    program: &Program,
+    target: &str,
+    focus: SliceFocus,
+    focus_task_index: Option<usize>,
+) -> SymbolGraphSlice {
+    let module = module_summary(program, &focus.module);
+    let module_task_indexes = program
+        .tasks
+        .iter()
+        .enumerate()
+        .filter_map(|(index, task)| (task_module(task) == focus.module).then_some(index))
+        .collect::<Vec<_>>();
+    let outbound_task_ids = focus_task_index
+        .map(|index| vec![task_fq_name(&program.tasks[index])])
+        .unwrap_or_else(|| {
+            module_task_indexes
+                .iter()
+                .map(|index| task_fq_name(&program.tasks[*index]))
+                .collect()
+        });
+    let inbound_target_ids = focus_task_index
+        .map(|index| vec![task_fq_name(&program.tasks[index])])
+        .unwrap_or_else(|| {
+            module_task_indexes
+                .iter()
+                .map(|index| task_fq_name(&program.tasks[*index]))
+                .collect()
+        });
+    let calls = collect_task_calls(program);
+    let outbound_calls = calls
+        .iter()
+        .filter(|call| outbound_task_ids.contains(&call.from))
+        .cloned()
+        .collect::<Vec<_>>();
+    let inbound_calls = calls
+        .iter()
+        .filter(|call| {
+            !outbound_task_ids.contains(&call.from)
+                && call
+                    .target
+                    .as_ref()
+                    .is_some_and(|target| inbound_target_ids.contains(target))
+        })
+        .cloned()
+        .collect::<Vec<_>>();
+
+    SymbolGraphSlice {
+        target: target.to_string(),
+        entry_module: program.module_name().to_string(),
+        focus,
+        imports: module.imports,
+        types: module.types,
+        effects: module.effects,
+        tasks: module.tasks,
+        task: focus_task_index.map(|index| program.tasks[index].clone()),
+        outbound_calls,
+        inbound_calls,
+    }
+}
+
+fn module_summary(program: &Program, module: &str) -> ModuleSymbolSummary {
+    build_symbol_graph(program)
+        .modules
+        .into_iter()
+        .find(|summary| summary.module == module)
+        .unwrap_or_else(|| ModuleSymbolSummary {
+            module: module.to_string(),
+            imports: Vec::new(),
+            types: Vec::new(),
+            effects: Vec::new(),
+            tasks: Vec::new(),
+        })
+}
+
+fn collect_task_calls_from_block(
+    program: &Program,
+    task: &TaskDecl,
+    block: &Block,
+    calls: &mut Vec<TaskCallSummary>,
+) {
+    for statement in &block.statements {
+        collect_task_calls_from_statement(program, task, statement, calls);
+    }
+}
+
+fn collect_task_calls_from_statement(
+    program: &Program,
+    task: &TaskDecl,
+    statement: &Statement,
+    calls: &mut Vec<TaskCallSummary>,
+) {
+    match &statement.kind {
+        StatementKind::Binding { expr, .. }
+        | StatementKind::Set { expr, .. }
+        | StatementKind::Return { expr }
+        | StatementKind::Expr { expr } => collect_task_calls_from_expr(program, task, expr, calls),
+        StatementKind::If {
+            condition,
+            then_block,
+            else_block,
+        } => {
+            collect_task_calls_from_expr(program, task, condition, calls);
+            collect_task_calls_from_block(program, task, then_block, calls);
+            if let Some(else_block) = else_block {
+                collect_task_calls_from_block(program, task, else_block, calls);
+            }
+        }
+        StatementKind::While { condition, body } => {
+            collect_task_calls_from_expr(program, task, condition, calls);
+            collect_task_calls_from_block(program, task, body, calls);
+        }
+        StatementKind::For {
+            collection, body, ..
+        } => {
+            collect_task_calls_from_expr(program, task, collection, calls);
+            collect_task_calls_from_block(program, task, body, calls);
+        }
+        StatementKind::Forge { body } => collect_task_calls_from_block(program, task, body, calls),
+    }
+}
+
+fn collect_task_calls_from_expr(
+    program: &Program,
+    task: &TaskDecl,
+    expr: &Expr,
+    calls: &mut Vec<TaskCallSummary>,
+) {
+    match &expr.kind {
+        ExprKind::Unary { expr, .. } | ExprKind::Try { expr } => {
+            collect_task_calls_from_expr(program, task, expr, calls);
+        }
+        ExprKind::Binary { left, right, .. } => {
+            collect_task_calls_from_expr(program, task, left, calls);
+            collect_task_calls_from_expr(program, task, right, calls);
+        }
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
+            collect_task_calls_from_expr(program, task, condition, calls);
+            collect_task_calls_from_expr(program, task, then_branch, calls);
+            collect_task_calls_from_expr(program, task, else_branch, calls);
+        }
+        ExprKind::Call { callee, args } => {
+            if let Some(path) = callee_path(callee) {
+                calls.push(call_summary(program, task, expr, path));
+            }
+            collect_task_calls_from_expr(program, task, callee, calls);
+            for arg in args {
+                collect_task_calls_from_expr(program, task, arg, calls);
+            }
+        }
+        ExprKind::ListLiteral { items } => {
+            for item in items {
+                collect_task_calls_from_expr(program, task, item, calls);
+            }
+        }
+        ExprKind::MapLiteral { entries } => {
+            for entry in entries {
+                collect_task_calls_from_expr(program, task, &entry.key, calls);
+                collect_task_calls_from_expr(program, task, &entry.value, calls);
+            }
+        }
+        ExprKind::Index { collection, index } => {
+            collect_task_calls_from_expr(program, task, collection, calls);
+            collect_task_calls_from_expr(program, task, index, calls);
+        }
+        ExprKind::FieldAccess { receiver, .. } => {
+            collect_task_calls_from_expr(program, task, receiver, calls);
+        }
+        ExprKind::RecordLiteral { fields, .. } => {
+            for field in fields {
+                collect_task_calls_from_expr(program, task, &field.expr, calls);
+            }
+        }
+        ExprKind::Raw { .. }
+        | ExprKind::StringLiteral { .. }
+        | ExprKind::IntLiteral { .. }
+        | ExprKind::FloatLiteral { .. }
+        | ExprKind::BoolLiteral { .. }
+        | ExprKind::Identifier { .. } => {}
+    }
+}
+
+fn call_summary(
+    program: &Program,
+    task: &TaskDecl,
+    expr: &Expr,
+    callee: String,
+) -> TaskCallSummary {
+    let from_module = task_module(task);
+    if let Some(target) = intrinsic_call_target(&callee) {
+        return TaskCallSummary {
+            from: task_fq_name(task),
+            from_module,
+            expr_id: expr.id.clone(),
+            source: expr.source.clone(),
+            callee,
+            status: "intrinsic".to_string(),
+            target: Some(target.to_string()),
+            candidates: Vec::new(),
+        };
+    }
+
+    let resolution = resolve_task(program, &from_module, &callee);
+    let (status, target, candidates) = match resolution {
+        TaskResolution::Resolved { fq_name, .. } => {
+            ("resolved".to_string(), Some(fq_name), Vec::new())
+        }
+        TaskResolution::Unknown => ("unknown".to_string(), None, Vec::new()),
+        TaskResolution::Ambiguous(candidates) => ("ambiguous".to_string(), None, candidates),
+        TaskResolution::Private(target) => ("private".to_string(), Some(target), Vec::new()),
+    };
+
+    TaskCallSummary {
+        from: task_fq_name(task),
+        from_module,
+        expr_id: expr.id.clone(),
+        source: expr.source.clone(),
+        callee,
+        status,
+        target,
+        candidates,
+    }
+}
+
+fn intrinsic_call_target(callee: &str) -> Option<&'static str> {
+    match callee {
+        "len" => Some("builtin:len"),
+        "Ok" => Some("constructor:Ok"),
+        "Err" => Some("constructor:Err"),
+        _ => None,
+    }
+}
+
 fn push_decl(
     modules: &mut [ModuleSymbolSummary],
     indexes: &mut BTreeMap<String, usize>,
@@ -314,6 +678,33 @@ fn find_task_in_module(program: &Program, module: &str, name: &str) -> Option<us
         .tasks
         .iter()
         .position(|task| task_module(task) == module && task.name == name)
+}
+
+fn find_type_index(program: &Program, target: &str) -> Option<usize> {
+    let needle = target.strip_prefix("type:").unwrap_or(target);
+    program.types.iter().position(|ty| {
+        ty.id == target
+            || ty.id == format!("type:{needle}")
+            || ty.name == needle
+            || ty.id.ends_with(&format!(".{needle}"))
+    })
+}
+
+fn find_effect_index(program: &Program, target: &str) -> Option<usize> {
+    let needle = target.strip_prefix("effect:").unwrap_or(target);
+    program.effects.iter().position(|effect| {
+        effect.id == target
+            || effect.id == format!("effect:{needle}")
+            || effect.name == needle
+            || effect.id.ends_with(&format!(".{needle}"))
+    })
+}
+
+fn find_import_index(program: &Program, target: &str) -> Option<usize> {
+    let needle = target.strip_prefix("import:").unwrap_or(target);
+    program.imports.iter().position(|import| {
+        import.id == target || import.id == format!("import:{needle}") || import.module == needle
+    })
 }
 
 fn imports_for_module<'a>(program: &'a Program, module: &str) -> Vec<&'a ImportDecl> {

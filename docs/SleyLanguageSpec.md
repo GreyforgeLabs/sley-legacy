@@ -1,6 +1,6 @@
 # Sley Language Specification
 
-Status: v0 executable slice plus module task namespace semantics
+Status: v0 executable slice plus module task namespace and trace tooling
 
 Sley is a human-readable, agent-writable structural language. The canonical
 program model is a typed graph. `.sley` source is the stable review projection,
@@ -138,6 +138,25 @@ Current graft operations include adding/removing takes, replacing task bodies,
 adding imports/effects/types/tasks, and renaming declarations. Unsupported graph
 operations return explicit diagnostics until implemented.
 
+Accepted grafts written with `sley graft --write` append receipt records to a
+local `.sley/trace.jsonl` sidecar unless the caller passes an explicit trace
+path. The trace sidecar is a local provenance store, not a final seal.
+
+## Graph And Trace Tooling
+
+The Loom exposes the program graph as inspectable JSON:
+
+```bash
+sley graph --json <target>
+sley graph --json --slice task:app.main.main <target>
+sley trace --json <target>
+```
+
+A graph slice is a bounded shard around a module, task, type, effect, or import.
+Task slices include the selected task AST, visible module declarations,
+outbound calls, and inbound calls from other tasks that resolve to the selected
+task. This is the first stable agent-facing query surface for graft planning.
+
 ## ZJX Boundary
 
 Sley semantic identity is the canonical typed graph bytes. ZJX is the default
@@ -155,10 +174,16 @@ Initial ZJX payloads should carry bounded graph shards, binding tables, symbol
 tables, diagnostics, graft bundles, graft receipts, traces, and repeated module
 snapshots.
 
+The current `sley zjx` command emits a preview JSON payload with
+`compression=none`. It is a ZJX-ready semantic envelope for graph snapshots,
+optional graph slices, and trace receipts; it is not yet a compressed `.zjx`
+archive.
+
 ## Current Gaps
 
 - type and custom-effect namespace resolution is not yet as strict as task
   namespace resolution
-- durable trace sidecars are not written yet
 - host capabilities are checked statically but not backed by runtime gate values
-- no `match`, agent declarations, spawn/cast/join, or ZJX envelope command yet
+- trace sidecars are not yet content-addressed seals
+- no `match`, agent declarations, spawn/cast/join, or compressed ZJX archive
+  writer yet

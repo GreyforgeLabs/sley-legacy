@@ -10,7 +10,11 @@ use sley::graft::{GraftInput, apply_graft_input};
 use sley::parser::parse_program;
 use sley::project::load_project;
 use sley::runtime::run_main;
-use sley::symbols::build_symbol_graph;
+use sley::symbols::{SymbolGraphSlice, build_symbol_graph, slice_symbol_graph};
+use sley::trace::{
+    append_trace_receipt, build_trace_receipt, default_trace_path, read_trace_receipts,
+};
+use sley::zjx::build_zjx_envelope;
 
 #[derive(Debug, Parser)]
 #[command(name = "sley")]
@@ -52,6 +56,24 @@ enum Command {
     Graph {
         #[arg(long)]
         json: bool,
+        #[arg(long)]
+        slice: Option<String>,
+        file: PathBuf,
+    },
+    Trace {
+        #[arg(long)]
+        json: bool,
+        #[arg(long)]
+        trace: Option<PathBuf>,
+        file: PathBuf,
+    },
+    Zjx {
+        #[arg(long)]
+        json: bool,
+        #[arg(long)]
+        slice: Option<String>,
+        #[arg(long)]
+        trace: Option<PathBuf>,
         file: PathBuf,
     },
     Graft {
@@ -61,6 +83,8 @@ enum Command {
         write: bool,
         #[arg(long)]
         actor: Option<String>,
+        #[arg(long)]
+        trace: Option<PathBuf>,
         file: PathBuf,
         graft: PathBuf,
     },
@@ -165,11 +189,22 @@ fn run(cli: Cli) -> Result<()> {
             print_json(&program)?;
             Ok(())
         }
-        Command::Graph { json, file } => {
+        Command::Graph { json, slice, file } => {
             let program = match load_target_program(&file) {
                 Ok(program) => program,
                 Err(diagnostics) => return emit_diagnostics_and_fail(diagnostics, json),
             };
+            if let Some(target) = slice {
+                let graph_slice = slice_symbol_graph(&program, &target).ok_or_else(|| {
+                    anyhow::anyhow!("graph slice target `{target}` was not found")
+                })?;
+                if json {
+                    print_json(&graph_slice)?;
+                } else {
+                    print_human_graph_slice(&graph_slice);
+                }
+                return Ok(());
+            }
             let graph = build_symbol_graph(&program);
             if json {
                 print_json(&graph)?;
@@ -192,10 +227,61 @@ fn run(cli: Cli) -> Result<()> {
             }
             Ok(())
         }
+        Command::Trace { json, trace, file } => {
+            let trace_path = trace.unwrap_or_else(|| default_trace_path(&file));
+            let receipts = read_trace_receipts(&trace_path)?;
+            if json {
+                print_json(&receipts)?;
+            } else {
+                print_human_trace(&trace_path, &receipts);
+            }
+            Ok(())
+        }
+        Command::Zjx {
+            json,
+            slice,
+            trace,
+            file,
+        } => {
+            let program = match load_target_program(&file) {
+                Ok(program) => program,
+                Err(diagnostics) => return emit_diagnostics_and_fail(diagnostics, json),
+            };
+            let graph = build_symbol_graph(&program);
+            let graph_slice = if let Some(target) = slice {
+                Some(slice_symbol_graph(&program, &target).ok_or_else(|| {
+                    anyhow::anyhow!("graph slice target `{target}` was not found")
+                })?)
+            } else {
+                None
+            };
+            let trace_path = trace.unwrap_or_else(|| default_trace_path(&file));
+            let trace_receipts = read_trace_receipts(&trace_path)?;
+            let envelope = build_zjx_envelope(
+                file.display().to_string(),
+                graph,
+                graph_slice,
+                trace_receipts,
+            );
+            if json {
+                print_json(&envelope)?;
+            } else {
+                println!(
+                    "zjx envelope schema={} format={} compression={} modules={} trace_receipts={}",
+                    envelope.schema,
+                    envelope.format,
+                    envelope.compression,
+                    envelope.graph.modules.len(),
+                    envelope.trace_receipts.len()
+                );
+            }
+            Ok(())
+        }
         Command::Graft {
             json,
             write,
             actor,
+            trace,
             file,
             graft,
         } => {
@@ -219,6 +305,11 @@ fn run(cli: Cli) -> Result<()> {
             if write && let Some(source) = outcome.source {
                 fs::write(&file, source)
                     .with_context(|| format!("failed to write {}", file.display()))?;
+                if !outcome.provenance.is_empty() {
+                    let trace_path = trace.unwrap_or_else(|| default_trace_path(&file));
+                    let receipt = build_trace_receipt(&file, outcome.provenance);
+                    append_trace_receipt(&trace_path, &receipt)?;
+                }
             }
             Ok(())
         }
@@ -271,6 +362,40 @@ fn print_json<T: serde::Serialize>(value: &T) -> Result<()> {
 
 fn print_human_diagnostics(diagnostics: &[Diagnostic]) {
     eprint!("{}", format_diagnostics(diagnostics));
+}
+
+fn print_human_graph_slice(slice: &SymbolGraphSlice) {
+    println!(
+        "slice target={} kind={} module={} imports={} types={} effects={} tasks={} outbound_calls={} inbound_calls={}",
+        slice.target,
+        slice.focus.kind,
+        slice.focus.module,
+        slice.imports.len(),
+        slice.types.len(),
+        slice.effects.len(),
+        slice.tasks.len(),
+        slice.outbound_calls.len(),
+        slice.inbound_calls.len()
+    );
+    for call in &slice.outbound_calls {
+        let target = call.target.as_deref().unwrap_or(call.status.as_str());
+        println!("call {} -> {}", call.callee, target);
+    }
+}
+
+fn print_human_trace(path: &Path, receipts: &[sley::trace::TraceReceipt]) {
+    println!("trace path={} receipts={}", path.display(), receipts.len());
+    for receipt in receipts {
+        for record in &receipt.provenance {
+            println!(
+                "{} {} {} targets={}",
+                record.timestamp,
+                record.actor,
+                record.operation,
+                record.targets.join(",")
+            );
+        }
+    }
 }
 
 fn format_diagnostics(diagnostics: &[Diagnostic]) -> String {

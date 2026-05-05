@@ -93,6 +93,9 @@ sley check --json <target>
 sley ast --json <target>
 sley ast --json --node <node-id> <target>
 sley graph --json <target>
+sley graph --json --slice <node-id> <target>
+sley trace --json <target>
+sley zjx --json [--slice <node-id>] <target>
 sley graft --json <target> <graft.json>
 sley format <target>
 ```
@@ -100,9 +103,7 @@ sley format <target>
 Next target commands:
 
 ```bash
-sley graph --json --slice <node-id> <target>
 sley graft --json --dry-run <target> <graft.zjx>
-sley trace --json <target>
 sley seal --json <target>
 ```
 
@@ -112,6 +113,7 @@ Rules:
 - Diagnostics must include stable IDs, node IDs, spans where possible, and
   repair hints.
 - Grafts should support dry-run by default.
+- Accepted write-mode grafts should emit trace receipts.
 - Source text should remain the human review projection, not the primary agent
   edit surface.
 
@@ -348,15 +350,14 @@ Near-term:
 1. Freeze v0 JSON schemas for diagnostics, AST nodes, and graft outcomes.
 2. Add `--dry-run` as an explicit graft mode.
 3. Add more repair hints to common checker errors.
-4. Add `graph` as the canonical name or alias for `ast` when graph shards are
-   ready.
+4. Stabilize graph-slice JSON as the canonical agent query surface.
 5. Add an agent onboarding section to docs and `llms.txt`.
 
 Medium-term:
 
 1. Implement `UpdateCallSites`, `InsertStatement`, and `ReplaceExpression`.
-2. Add durable trace sidecars for accepted grafts.
-3. Add proper module namespace semantics.
+2. Turn local trace sidecars into content-addressed seals.
+3. Extend module namespace semantics from tasks to type/effect identity.
 4. Add capability-backed gate values.
 5. Build the synthetic gold corpus.
 

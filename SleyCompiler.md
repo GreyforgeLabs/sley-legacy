@@ -74,7 +74,7 @@ Hard compiler requirements:
 - rejection of unauthorized side effects
 - stale graft rejection
 - structural migrations
-- provenance trace receipts
+- provenance trace receipts and local trace sidecars
 - durable seals
 - ZJX graph/graft/trace envelopes
 - compatibility across compiler versions
@@ -212,9 +212,9 @@ Medium-term:
 
 1. Extend module namespace semantics from tasks to full type/effect identity.
 2. Implement more structural graft operations.
-3. Add trace sidecars for accepted grafts.
+3. Turn trace sidecars into content-addressed seals.
 4. Add runtime gate values for host capabilities.
-5. Add ZJX graph/graft/trace transport.
+5. Move the preview ZJX JSON envelope to a compressed binary `.zjx` handoff.
 
 Long-term:
 
