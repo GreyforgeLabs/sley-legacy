@@ -81,7 +81,9 @@ Current verified surface:
   `schema: "sley.conformance.coverage.v0"` over schema/fixture instances,
   contract validation status, release manifests, corpus tags, smoke tags, and
   packaged example counts, plus a check that the declared integration coverage
-  count matches the test file.
+  count matches the test file. `report --require-public-release-ready` turns
+  unresolved public-release packaging blockers into an explicit nonzero gate
+  for final release cuts.
 - `tree-sitter-sley` is available as an in-tree syntax grammar bootstrap with
   `npm test` coverage for Tree-sitter parser generation, exact syntax corpus
   trees, highlight query validation, and parsing of current `.sley` examples

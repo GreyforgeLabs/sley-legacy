@@ -738,6 +738,10 @@ public-release blockers such as unresolved license and repository metadata, so
 the executable gate can pass while publication decisions remain explicit. The
 plain-text report lists those release blockers directly; the JSON report keeps
 them under `release.blockers`.
+`sley-conformance report --json --require-public-release-ready` turns those
+public-release blockers into a hard report failure by adding a
+`public_release_not_ready` issue and exiting nonzero until license and
+repository metadata are resolved.
 `sley-conformance coverage --json --require-tag <tag>` checks explicit
 coverage tags across the corpus and smoke manifests for focused release gates.
 
