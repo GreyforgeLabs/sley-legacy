@@ -1222,6 +1222,31 @@
       }
     },
     {
+      "name": "seal_graft_write_explicit_trace_json",
+      "args": [
+        "seal",
+        "--json",
+        "--trace",
+        "{tmp}/graft-write/trace.jsonl",
+        "{tmp}/graft-write/main.sley"
+      ],
+      "covers": [
+        "cli:seal",
+        "json:sley.trace.seal.v0",
+        "trace:explicit-path",
+        "trace:seal-with-receipts"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.trace.seal.v0" },
+          { "pointer": "/module_count", "value": 1 },
+          { "pointer": "/task_count", "value": 1 },
+          { "pointer": "/receipt_count", "value": 1 }
+        ]
+      }
+    },
+    {
       "name": "query_graft_write_temp_source_json",
       "args": [
         "query",

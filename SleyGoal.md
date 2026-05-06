@@ -76,7 +76,8 @@ Current verified surface:
   dry runs, plus manifest-staged temp files for write-mode CLI smokes,
   direct `sley graft --write --trace <path>` source mutation and receipt
   redirection, explicit `sley fix --write --trace <path>` receipt
-  redirection, and follow-up `sley trace --trace <path>` receipt inspection while
+  redirection, follow-up `sley trace --trace <path>` receipt inspection, and
+  `sley seal --trace <path>` sealing over non-empty receipt chains while
   `sley fix --dry-run --trace <path>` remains non-mutating.
 - Stable JSON roots now include query reports, lint reports, doctor reports,
   edit-plan reports, verify reports, project scaffold reports, and the CLI

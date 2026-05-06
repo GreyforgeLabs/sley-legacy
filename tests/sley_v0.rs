@@ -9330,6 +9330,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "json:sley.trace.seal.v0",
         "json:sley.zjx.envelope.v0",
         "trace:explicit-path",
+        "trace:seal-with-receipts",
     ];
     for tag in required {
         assert!(

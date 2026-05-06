@@ -187,8 +187,9 @@ Implemented now:
   covering stable command output, JSON roots, graph/ZJX surfaces, doctor
   readiness, edit-plan surfaces, verify pre-deploy gates, project scaffolding,
   graft/fix dry runs, direct graft writes, temp setup files for write-mode
-  smokes, explicit graft/fix trace receipts, missing-module checked repair
-  templates with module-name inference, and seeded host-adapter execution
+  smokes, explicit graft/fix trace receipts, trace seals over non-empty receipt
+  chains, missing-module checked repair templates with module-name inference,
+  and seeded host-adapter execution
 - compact agent onboarding pack in `llms.txt`
 
 Project form:
@@ -490,7 +491,7 @@ dry runs, checked graph query reports, doctor readiness, verify pre-deploy
 gates, edit-plan surfaces, typed scaffold next-actions for the deploy
 quickstart, strict seeded verify readiness for the generated deploy starter,
 temp setup files for write-mode CLI smokes, direct graft write smokes,
-explicit graft/fix write trace receipts,
+explicit graft/fix write trace receipts, non-empty trace seal receipts,
 lint-driven declaration delete templates and cleanup transactions,
 lint-driven unused-private-task delete templates,
 dead private task cleanup transactions,
