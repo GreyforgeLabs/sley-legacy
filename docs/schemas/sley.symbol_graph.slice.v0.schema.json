@@ -58,9 +58,9 @@
       "type": "object",
       "required": ["id", "module"],
       "properties": {
-        "id": { "type": "string" },
-        "module": { "type": "string" },
-        "alias": { "type": "string" }
+        "id": { "type": "string", "minLength": 1 },
+        "module": { "type": "string", "minLength": 1 },
+        "alias": { "type": "string", "minLength": 1 }
       },
       "additionalProperties": false
     },
@@ -68,8 +68,8 @@
       "type": "object",
       "required": ["name", "id", "exported"],
       "properties": {
-        "name": { "type": "string" },
-        "id": { "type": "string" },
+        "name": { "type": "string", "minLength": 1 },
+        "id": { "type": "string", "minLength": 1 },
         "exported": { "type": "boolean" }
       },
       "additionalProperties": false
@@ -84,13 +84,13 @@
         "editable_json_pointers"
       ],
       "properties": {
-        "target": { "type": "string" },
+        "target": { "type": "string", "minLength": 1 },
         "target_kind": { "enum": ["block"] },
         "max_position": { "type": "integer", "minimum": 0 },
         "operation": { "$ref": "sley.edit_plan.report.v0#/$defs/graftOperation" },
         "editable_json_pointers": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": { "type": "string", "minLength": 1 }
         }
       },
       "additionalProperties": false
@@ -108,15 +108,15 @@
         "destinations"
       ],
       "properties": {
-        "target": { "type": "string" },
+        "target": { "type": "string", "minLength": 1 },
         "target_kind": { "enum": ["import", "type", "effect", "task", "statement", "take"] },
-        "parent": { "type": "string" },
+        "parent": { "type": "string", "minLength": 1 },
         "position": { "type": "integer", "minimum": 0 },
         "max_position": { "type": "integer", "minimum": 0 },
         "operation": { "$ref": "sley.edit_plan.report.v0#/$defs/graftOperation" },
         "editable_json_pointers": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": { "type": "string", "minLength": 1 }
         },
         "destinations": {
           "type": "array",
@@ -134,12 +134,12 @@
         "editable_json_pointers"
       ],
       "properties": {
-        "parent": { "type": "string" },
+        "parent": { "type": "string", "minLength": 1 },
         "max_position": { "type": "integer", "minimum": 0 },
         "operation": { "$ref": "sley.edit_plan.report.v0#/$defs/graftOperation" },
         "editable_json_pointers": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": { "type": "string", "minLength": 1 }
         }
       },
       "additionalProperties": false
@@ -155,14 +155,14 @@
         "editable_json_pointers"
       ],
       "properties": {
-        "target": { "type": "string" },
+        "target": { "type": "string", "minLength": 1 },
         "target_kind": { "enum": ["import", "type", "effect", "task", "statement", "take"] },
-        "parent": { "type": "string" },
+        "parent": { "type": "string", "minLength": 1 },
         "position": { "type": "integer", "minimum": 0 },
         "operation": { "$ref": "sley.edit_plan.report.v0#/$defs/graftOperation" },
         "editable_json_pointers": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": { "type": "string", "minLength": 1 }
         }
       },
       "additionalProperties": false
@@ -177,7 +177,7 @@
         "editable_json_pointers"
       ],
       "properties": {
-        "target": { "type": "string" },
+        "target": { "type": "string", "minLength": 1 },
         "target_kind": {
           "enum": [
             "statement",
@@ -199,11 +199,11 @@
             "Try"
           ]
         },
-        "parent": { "type": "string" },
+        "parent": { "type": "string", "minLength": 1 },
         "operation": { "$ref": "sley.edit_plan.report.v0#/$defs/graftOperation" },
         "editable_json_pointers": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": { "type": "string", "minLength": 1 }
         }
       },
       "additionalProperties": false
