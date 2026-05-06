@@ -25,7 +25,8 @@
               "unused_private_type",
               "unused_private_effect",
               "raw_host_adapter",
-              "missing_module_declaration"
+              "missing_module_declaration",
+              "unchecked_result"
             ]
           },
           "uniqueItems": true
@@ -57,7 +58,8 @@
               "UNUSED_PRIVATE_TYPE",
               "UNUSED_PRIVATE_EFFECT",
               "RAW_HOST_ADAPTER",
-              "MISSING_MODULE_DECLARATION"
+              "MISSING_MODULE_DECLARATION",
+              "UNCHECKED_RESULT"
             ]
           },
           "rule": {
@@ -70,7 +72,8 @@
               "unused_private_type",
               "unused_private_effect",
               "raw_host_adapter",
-              "missing_module_declaration"
+              "missing_module_declaration",
+              "unchecked_result"
             ]
           },
           "severity": { "enum": ["warning"] },

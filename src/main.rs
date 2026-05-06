@@ -772,6 +772,7 @@ enum CliLintRule {
     UnusedPrivateEffect,
     RawHostAdapter,
     MissingModuleDeclaration,
+    UncheckedResult,
 }
 
 impl From<CliLintRule> for LintRule {
@@ -786,6 +787,7 @@ impl From<CliLintRule> for LintRule {
             CliLintRule::UnusedPrivateEffect => Self::UnusedPrivateEffect,
             CliLintRule::RawHostAdapter => Self::RawHostAdapter,
             CliLintRule::MissingModuleDeclaration => Self::MissingModuleDeclaration,
+            CliLintRule::UncheckedResult => Self::UncheckedResult,
         }
     }
 }

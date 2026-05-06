@@ -1,0 +1,31 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.unchecked",
+  "filters": {
+    "module": null,
+    "rules": [
+      "unchecked_result"
+    ]
+  },
+  "findings": [
+    {
+      "id": "UNCHECKED_RESULT",
+      "rule": "unchecked_result",
+      "severity": "warning",
+      "message": "task `app.unchecked.main` discards Result from `fs.try_write_text` in an expression statement",
+      "node": "block:task:app.unchecked.main:stmt:0:expr",
+      "module": "app.unchecked",
+      "hint": "use `?` to propagate failure, return the Result, or bind it for explicit handling"
+    },
+    {
+      "id": "UNCHECKED_RESULT",
+      "rule": "unchecked_result",
+      "severity": "warning",
+      "message": "task `app.unchecked.main` discards Result from `helper` in an expression statement",
+      "node": "block:task:app.unchecked.main:stmt:1:expr",
+      "module": "app.unchecked",
+      "hint": "use `?` to propagate failure, return the Result, or bind it for explicit handling"
+    }
+  ]
+}

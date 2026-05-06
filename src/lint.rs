@@ -3,14 +3,15 @@ use std::collections::{BTreeMap, BTreeSet};
 use serde::Serialize;
 
 use crate::ast::{
-    BindingKind, Block, Expr, ExprKind, ImportDecl, Program, Statement, StatementKind, TypeExpr,
+    BindingKind, Block, Expr, ExprKind, ImportDecl, Program, Statement, StatementKind, TaskDecl,
+    TypeExpr,
 };
 use crate::authority::host_effects_for_callee;
 use crate::query::{QueryKind, QueryOptions, build_query_report};
 use crate::symbols::{
-    EffectResolution, TypeResolution, collect_task_calls, effect_fq_name, effect_module,
-    import_owner_module, resolve_effect, resolve_type, task_fq_name, task_module, type_fq_name,
-    type_module,
+    EffectResolution, TaskResolution, TypeResolution, callee_path, collect_task_calls,
+    effect_fq_name, effect_module, import_owner_module, resolve_effect, resolve_task, resolve_type,
+    task_fq_name, task_module, type_fq_name, type_module,
 };
 
 pub const LINT_REPORT_SCHEMA: &str = "sley.lint.report.v0";
@@ -26,6 +27,7 @@ pub enum LintRule {
     UnusedPrivateEffect,
     RawHostAdapter,
     MissingModuleDeclaration,
+    UncheckedResult,
 }
 
 impl LintRule {
@@ -40,6 +42,7 @@ impl LintRule {
             Self::UnusedPrivateEffect,
             Self::RawHostAdapter,
             Self::MissingModuleDeclaration,
+            Self::UncheckedResult,
         ]
     }
 
@@ -54,6 +57,7 @@ impl LintRule {
             Self::UnusedPrivateEffect => "unused_private_effect",
             Self::RawHostAdapter => "raw_host_adapter",
             Self::MissingModuleDeclaration => "missing_module_declaration",
+            Self::UncheckedResult => "unchecked_result",
         }
     }
 }
@@ -138,6 +142,9 @@ pub fn build_lint_report(program: &Program, options: LintOptions) -> LintReport 
             program,
             options.module.as_deref(),
         ));
+    }
+    if rules.contains(&LintRule::UncheckedResult) {
+        findings.extend(lint_unchecked_results(program, options.module.as_deref()));
     }
 
     findings.sort_by(|left, right| {
@@ -1002,6 +1009,104 @@ fn lint_raw_host_adapters(program: &Program, module: Option<&str>) -> Vec<LintFi
             })
         })
         .collect()
+}
+
+fn lint_unchecked_results(program: &Program, module: Option<&str>) -> Vec<LintFinding> {
+    program
+        .tasks
+        .iter()
+        .filter(|task| module_matches(module, &task_module(task)))
+        .flat_map(|task| lint_unchecked_result_block(program, task, &task.body))
+        .collect()
+}
+
+fn lint_unchecked_result_block(
+    program: &Program,
+    task: &TaskDecl,
+    block: &Block,
+) -> Vec<LintFinding> {
+    let mut findings = Vec::new();
+    for statement in &block.statements {
+        match &statement.kind {
+            StatementKind::Expr { expr } => {
+                if let Some(source) = unchecked_result_source(program, task, expr) {
+                    let task_name = task_fq_name(task);
+                    findings.push(LintFinding {
+                        id: "UNCHECKED_RESULT".to_string(),
+                        rule: LintRule::UncheckedResult.as_str().to_string(),
+                        severity: "warning".to_string(),
+                        message: format!(
+                            "task `{task_name}` discards Result from `{source}` in an expression statement"
+                        ),
+                        node: expr.id.clone(),
+                        module: task_module(task),
+                        hint:
+                            "use `?` to propagate failure, return the Result, or bind it for explicit handling"
+                                .to_string(),
+                    });
+                }
+            }
+            StatementKind::If {
+                then_block,
+                else_block,
+                ..
+            } => {
+                findings.extend(lint_unchecked_result_block(program, task, then_block));
+                if let Some(else_block) = else_block {
+                    findings.extend(lint_unchecked_result_block(program, task, else_block));
+                }
+            }
+            StatementKind::While { body, .. }
+            | StatementKind::For { body, .. }
+            | StatementKind::Forge { body } => {
+                findings.extend(lint_unchecked_result_block(program, task, body));
+            }
+            StatementKind::Binding { .. }
+            | StatementKind::Set { .. }
+            | StatementKind::Return { .. } => {}
+        }
+    }
+    findings
+}
+
+fn unchecked_result_source(program: &Program, task: &TaskDecl, expr: &Expr) -> Option<String> {
+    let ExprKind::Call { callee, .. } = &expr.kind else {
+        return None;
+    };
+    let callee_name = callee_path(callee)?;
+    if fallible_host_call(&callee_name) {
+        return Some(callee_name);
+    }
+    if user_task_returns_result(program, task, &callee_name) {
+        return Some(callee_name);
+    }
+    None
+}
+
+fn user_task_returns_result(program: &Program, task: &TaskDecl, callee_name: &str) -> bool {
+    let TaskResolution::Resolved { index, .. } =
+        resolve_task(program, &task_module(task), callee_name)
+    else {
+        return false;
+    };
+    program.tasks[index].return_type.generic_name() == Some("Result")
+}
+
+fn fallible_host_call(callee: &str) -> bool {
+    matches!(
+        callee,
+        "fs.try_read_text"
+            | "fs.try_write_text"
+            | "db.try_query_one"
+            | "db.try_query"
+            | "db.try_insert"
+            | "http.try_get_text"
+            | "shell.try_run"
+            | "model.try_complete"
+            | "secrets.try_get"
+            | "deploy.try_stage"
+            | "spend.try_authorize"
+    )
 }
 
 fn raw_host_adapter_replacement(callee: &str) -> Option<&'static str> {

@@ -32,7 +32,8 @@
       "unused_private_type",
       "unused_private_effect",
       "raw_host_adapter",
-      "missing_module_declaration"
+      "missing_module_declaration",
+      "unchecked_result"
     ],
     "finding_count": 0,
     "findings": []

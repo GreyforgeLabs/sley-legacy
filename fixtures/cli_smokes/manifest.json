@@ -500,6 +500,7 @@
           { "pointer": "/filters/rules/6", "value": "unused_private_effect" },
           { "pointer": "/filters/rules/7", "value": "raw_host_adapter" },
           { "pointer": "/filters/rules/8", "value": "missing_module_declaration" },
+          { "pointer": "/filters/rules/9", "value": "unchecked_result" },
           { "pointer": "/findings", "value": [] }
         ]
       }
@@ -601,6 +602,50 @@
           { "pointer": "/filters/rules/0", "value": "missing_module_declaration" },
           { "pointer": "/findings/0/id", "value": "MISSING_MODULE_DECLARATION" },
           { "pointer": "/findings/0/node", "value": "program" }
+        ]
+      }
+    },
+    {
+      "name": "lint_unchecked_result_rule_json",
+      "args": ["lint", "--json", "--rule", "unchecked-result", "examples/unchecked_result.sley"],
+      "covers": ["cli:lint", "lint:unchecked_result", "json:sley.lint.report.v0"],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.lint.report.v0" },
+          { "pointer": "/status", "value": "findings" },
+          { "pointer": "/filters/rules/0", "value": "unchecked_result" },
+          { "pointer": "/findings/0/id", "value": "UNCHECKED_RESULT" },
+          { "pointer": "/findings/0/node", "value": "block:task:app.unchecked.main:stmt:0:expr" }
+        ]
+      }
+    },
+    {
+      "name": "plan_unchecked_result_template_json",
+      "args": [
+        "plan",
+        "--json",
+        "--graft-templates",
+        "--template-surface",
+        "block:task:app.unchecked.main:stmt:0:expr",
+        "examples/unchecked_result.sley"
+      ],
+      "covers": [
+        "cli:plan",
+        "graft:templates:unchecked-result",
+        "lint:unchecked_result",
+        "json:sley.edit_plan.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.edit_plan.report.v0" },
+          { "pointer": "/status", "value": "warnings" },
+          { "pointer": "/lint/findings/0/id", "value": "UNCHECKED_RESULT" },
+          { "pointer": "/graft_templates/0/kind", "value": "propagate_unchecked_result" },
+          { "pointer": "/graft_templates/0/surface", "value": "block:task:app.unchecked.main:stmt:0:expr" },
+          { "pointer": "/graft_templates/0/operation/op", "value": "ReplaceExpression" },
+          { "pointer": "/graft_templates/0/operation/payload/source", "value": "fs.try_write_text(\"sley_cli_smoke.txt\", \"written\")?" }
         ]
       }
     },

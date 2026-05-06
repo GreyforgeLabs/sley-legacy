@@ -100,7 +100,7 @@ sley plan --json [--deny-warnings] [--graft-templates] [--template-surface <surf
 sley fix --json --kind <kind> [--template-surface <surface>] [--dry-run|--write] <target>
 sley verify --json [--deny-warnings] [runtime gates/seeds] <target>
 sley query --json [--kind all|modules|tasks|calls] [--module <module>] <target>
-sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter|missing-module-declaration] [--module <module>] <target>
+sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter|missing-module-declaration|unchecked-result] [--module <module>] <target>
 sley trace --json <target>
 sley seal --json <target>
 sley zjx --json [--slice <node-id>] <target>
@@ -450,6 +450,8 @@ The current smoke manifest covers:
   declaration surface targeting in edit-plan reports
 - lint-driven missing-module `AddModuleDeclaration` templates, module-name
   inference, and checked `sley fix` dry runs
+- unchecked-result migration templates that add checked `?` propagation when
+  the owning task can return `Result`
 - private declaration hygiene through the checked `unused_private_type` and
   `unused_private_effect` lint rules
 - import hygiene through the checked `unused_import` lint rule
@@ -505,13 +507,17 @@ The v0 lint rules are:
   fallible `try_` adapter should replace it.
 - `missing_module_declaration`: a source file that relies on the implicit
   `main` module is reported so deployable/project code gets stable graph ids.
+- `unchecked_result`: an expression statement that discards a fallible host or
+  user-task `Result` is reported so agents propagate, return, or bind the
+  failure path explicitly.
 
 The command supports `--module <module>`, `--rule unused-private-task`,
 `--rule unreachable-private-task`, `--rule unused-declared-effect`,
 `--rule unused-import`, `--rule unused-take`, `--rule unused-private-type`,
 `--rule unused-private-effect`, `--rule raw-host-adapter`,
-`--rule missing-module-declaration`, and `--deny-warnings` lets CI turn
-findings into a failing exit after the JSON report is printed.
+`--rule missing-module-declaration`, `--rule unchecked-result`, and
+`--deny-warnings` lets CI turn findings into a failing exit after the JSON
+report is printed.
 
 This is not production lint coverage yet. It is the first stable surface for
 agent-facing hygiene, authority lints, migration hints, and eventually

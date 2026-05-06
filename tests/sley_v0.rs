@@ -1278,6 +1278,61 @@ fn edit_plan_graft_templates_include_missing_module_fix() {
 }
 
 #[test]
+fn edit_plan_graft_templates_include_unchecked_result_propagation() {
+    let source = r#"
+module app.plan
+
+task main -> Result<Text, Error> uses FileWrite {
+  fs.try_write_text("out.txt", "ok")
+
+  return Ok("ok")
+}
+"#;
+    let program = parse_program(source).expect("parse unchecked result plan fixture");
+    let report = build_edit_plan_report_with_options(
+        "app.plan",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: None,
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "warnings");
+    assert_eq!(report.summary.lint_finding_count, 1);
+    assert_eq!(
+        report.lint.as_ref().expect("lint summary").findings[0].id,
+        "UNCHECKED_RESULT"
+    );
+    let template = report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "propagate_unchecked_result")
+        .expect("unchecked result propagation template");
+    assert_eq!(template.surface, "block:task:app.plan.main:stmt:0:expr");
+    assert_eq!(
+        template.operation.pointer("/op"),
+        Some(&serde_json::json!("ReplaceExpression"))
+    );
+    assert_eq!(
+        template.operation.pointer("/payload/source"),
+        Some(&serde_json::json!(
+            "fs.try_write_text(\"out.txt\", \"ok\")?"
+        ))
+    );
+    assert_eq!(template.editable_json_pointers, vec!["/payload/source"]);
+    let graft: GraftInput =
+        serde_json::from_value(template.operation.clone()).expect("parse propagation template");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:unchecked-result-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+}
+
+#[test]
 fn edit_plan_remove_take_transaction_requires_unused_take() {
     let source = r#"
 module app.plan
@@ -2514,6 +2569,34 @@ task main -> Text uses Network {
     assert_json_snapshot(
         &raw_host_lint,
         include_str!("../fixtures/contracts/lint_raw_host_adapter.json"),
+    );
+
+    let unchecked_result_source = r#"
+module app.unchecked
+
+task main -> Result<Text, Error> uses FileWrite {
+  fs.try_write_text("out.txt", "ok")
+  call helper()
+
+  return Ok("ok")
+}
+
+task helper -> Result<Text, Error> {
+  return Ok("helper")
+}
+"#;
+    let unchecked_result_program =
+        parse_program(unchecked_result_source).expect("parse unchecked result lint fixture");
+    let unchecked_result_lint = build_lint_report(
+        &unchecked_result_program,
+        LintOptions {
+            rules: vec![LintRule::UncheckedResult],
+            module: None,
+        },
+    );
+    assert_json_snapshot(
+        &unchecked_result_lint,
+        include_str!("../fixtures/contracts/lint_unchecked_result.json"),
     );
 
     let missing_module_source = r#"
@@ -6838,6 +6921,68 @@ fn lint_report_flags_raw_host_adapters() {
 }
 
 #[test]
+fn lint_report_flags_unchecked_results() {
+    let source = r#"
+module app.unchecked
+
+task main -> Result<Text, Error> uses FileWrite {
+  fs.try_write_text("out.txt", "ok")
+  call helper()
+  fs.try_write_text("out.txt", "handled")?
+
+  return call helper()
+}
+
+task helper -> Result<Text, Error> {
+  return Ok("helper")
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+
+    let report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::UncheckedResult],
+            module: None,
+        },
+    );
+
+    assert_eq!(report.schema, LINT_REPORT_SCHEMA);
+    assert_eq!(report.status, "findings");
+    assert_eq!(report.entry_module, "app.unchecked");
+    assert_eq!(report.filters.rules, vec!["unchecked_result"]);
+    assert_eq!(report.findings.len(), 2);
+    assert_eq!(report.findings[0].id, "UNCHECKED_RESULT");
+    assert_eq!(report.findings[0].rule, "unchecked_result");
+    assert_eq!(
+        report.findings[0].node,
+        "block:task:app.unchecked.main:stmt:0:expr"
+    );
+    assert_eq!(
+        report.findings[1].node,
+        "block:task:app.unchecked.main:stmt:1:expr"
+    );
+    assert!(report.findings[0].message.contains("fs.try_write_text"));
+    assert!(report.findings[1].message.contains("helper"));
+    assert!(report.findings[0].hint.contains("`?`"));
+
+    let scoped_report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::UncheckedResult],
+            module: Some("app.other".to_string()),
+        },
+    );
+    assert_eq!(scoped_report.status, "ok");
+    assert!(scoped_report.findings.is_empty());
+}
+
+#[test]
 fn lint_report_flags_missing_module_declarations() {
     let source = r#"
 task main -> Text {
@@ -8449,6 +8594,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:templates:module-name-inference",
         "graft:templates:missing-module",
         "graft:templates:replace-expression",
+        "graft:templates:unchecked-result",
         "graft:transactions:lint-declaration-cleanup",
         "graph-slice:replace-affordances",
         "lint:unused_declared_effect",
@@ -8458,6 +8604,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "lint:unused_private_effect",
         "lint:raw_host_adapter",
         "lint:missing_module_declaration",
+        "lint:unchecked_result",
         "scaffold:deploy-quickstart",
         "scaffold:next-actions",
         "scaffold:verify-ready",

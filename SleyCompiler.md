@@ -74,6 +74,7 @@ Hard compiler requirements:
 - effect and capability propagation across module boundaries
 - runtime gate values for host authority
 - rejection of unauthorized side effects
+- warning-grade detection of discarded recoverable `Result` failures
 - strict seeded verify reports for generated authority-gated projects
 - stale graft rejection
 - structural migrations

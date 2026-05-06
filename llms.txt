@@ -136,7 +136,8 @@ Current development phase:
   `unused_declared_effect`, the import hygiene rule `unused_import`, the API
   hygiene rule `unused_take`, the declaration hygiene rules
   `unused_private_type` and `unused_private_effect`, and the migration rule
-  `raw_host_adapter`, plus the style rule `missing_module_declaration`
+  `raw_host_adapter`, plus the style rule `missing_module_declaration` and the
+  result-safety rule `unchecked_result`
 - `sley new --json` emits `sley.project.scaffold.v0` and creates
   non-destructive `hello` or deterministic `deploy` starter projects that can
   immediately run through check, doctor, query, plan, lint, and seeded runtime
@@ -173,7 +174,7 @@ Current development phase:
   diagnostics, checked query/lint summaries, and deterministic runtime
   execution into one CI/pre-deploy gate; the deploy scaffold has a checked
   `--deny-warnings --cap Deploy --deploy-result staging staged` smoke
-- next development work should broaden style and migration lints
+- next development work should keep broadening style and migration lints
 - project graft writeback now supports create/update/delete module files and
   module rename, including manifest entry updates; top-level type/effect/task
   movement into known modules is supported, including AddImport-then-MoveNode

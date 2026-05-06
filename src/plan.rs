@@ -472,6 +472,7 @@ fn lint_graft_templates(
         lint_report,
         module_name_hint,
     ));
+    templates.extend(lint_unchecked_result_templates(program, lint_report));
     templates
 }
 
@@ -542,6 +543,124 @@ fn lint_missing_module_templates(
             })
         })
         .collect()
+}
+
+fn lint_unchecked_result_templates(
+    program: &Program,
+    lint_report: &LintReport,
+) -> Vec<EditPlanGraftTemplate> {
+    lint_report
+        .findings
+        .iter()
+        .filter(|finding| finding.id == "UNCHECKED_RESULT")
+        .filter_map(|finding| {
+            let source = find_expr_source(program, &finding.node)?;
+            let replacement = format!("{}?", source.trim());
+            let operation = json!({
+                "op": "ReplaceExpression",
+                "target": finding.node,
+                "payload": {
+                    "source": replacement
+                }
+            });
+            if !replace_affordance_checks(program, &operation) {
+                return None;
+            }
+            Some(EditPlanGraftTemplate {
+                kind: "propagate_unchecked_result".to_string(),
+                reason:
+                    "propagate the discarded Result with `?` when the owning task can return Result"
+                        .to_string(),
+                surface: finding.node.clone(),
+                operation,
+                editable_json_pointers: vec!["/payload/source".to_string()],
+            })
+        })
+        .collect()
+}
+
+fn find_expr_source(program: &Program, target: &str) -> Option<String> {
+    program
+        .tasks
+        .iter()
+        .find_map(|task| find_expr_source_in_block(&task.body, target))
+}
+
+fn find_expr_source_in_block(block: &Block, target: &str) -> Option<String> {
+    block
+        .statements
+        .iter()
+        .find_map(|statement| find_expr_source_in_statement(statement, target))
+}
+
+fn find_expr_source_in_statement(statement: &Statement, target: &str) -> Option<String> {
+    match &statement.kind {
+        StatementKind::Binding { expr, .. }
+        | StatementKind::Set { expr, .. }
+        | StatementKind::Return { expr }
+        | StatementKind::Expr { expr } => find_expr_source_in_expr(expr, target),
+        StatementKind::If {
+            condition,
+            then_block,
+            else_block,
+        } => find_expr_source_in_expr(condition, target)
+            .or_else(|| find_expr_source_in_block(then_block, target))
+            .or_else(|| {
+                else_block
+                    .as_ref()
+                    .and_then(|block| find_expr_source_in_block(block, target))
+            }),
+        StatementKind::While { condition, body } => find_expr_source_in_expr(condition, target)
+            .or_else(|| find_expr_source_in_block(body, target)),
+        StatementKind::For {
+            collection, body, ..
+        } => find_expr_source_in_expr(collection, target)
+            .or_else(|| find_expr_source_in_block(body, target)),
+        StatementKind::Forge { body } => find_expr_source_in_block(body, target),
+    }
+}
+
+fn find_expr_source_in_expr(expr: &Expr, target: &str) -> Option<String> {
+    if expr.id == target {
+        return Some(expr.source.clone());
+    }
+    match &expr.kind {
+        ExprKind::Unary { expr, .. } | ExprKind::Try { expr } => {
+            find_expr_source_in_expr(expr, target)
+        }
+        ExprKind::Binary { left, right, .. } => find_expr_source_in_expr(left, target)
+            .or_else(|| find_expr_source_in_expr(right, target)),
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => find_expr_source_in_expr(condition, target)
+            .or_else(|| find_expr_source_in_expr(then_branch, target))
+            .or_else(|| find_expr_source_in_expr(else_branch, target)),
+        ExprKind::Call { callee, args } => find_expr_source_in_expr(callee, target).or_else(|| {
+            args.iter()
+                .find_map(|arg| find_expr_source_in_expr(arg, target))
+        }),
+        ExprKind::ListLiteral { items } => items
+            .iter()
+            .find_map(|item| find_expr_source_in_expr(item, target)),
+        ExprKind::MapLiteral { entries } => entries.iter().find_map(|entry| {
+            find_expr_source_in_expr(&entry.key, target)
+                .or_else(|| find_expr_source_in_expr(&entry.value, target))
+        }),
+        ExprKind::Index { collection, index } => find_expr_source_in_expr(collection, target)
+            .or_else(|| find_expr_source_in_expr(index, target)),
+        ExprKind::FieldAccess { receiver, .. } => find_expr_source_in_expr(receiver, target),
+        ExprKind::RecordLiteral { fields, .. } => fields
+            .iter()
+            .find_map(|field| find_expr_source_in_expr(&field.expr, target)),
+        ExprKind::Raw { .. }
+        | ExprKind::StringLiteral { .. }
+        | ExprKind::IntLiteral { .. }
+        | ExprKind::FloatLiteral { .. }
+        | ExprKind::BoolLiteral { .. }
+        | ExprKind::Identifier { .. } => None,
+    }
 }
 
 pub fn infer_module_name_from_target(target: &str) -> String {

@@ -105,8 +105,9 @@ Implemented now:
   `--rule unused-private-task`, `--rule unreachable-private-task`,
   `--rule unused-declared-effect`, `--rule unused-import`,
   `--rule unused-take`, `--rule unused-private-type`,
-  `--rule unused-private-effect`, `--rule raw-host-adapter`, or
-  `--rule missing-module-declaration` filters, and
+  `--rule unused-private-effect`, `--rule raw-host-adapter`,
+  `--rule missing-module-declaration`, or `--rule unchecked-result` filters,
+  and
   `schema: "sley.lint.report.v0"` for warning-grade graph and authority lints
 - checked JSON readiness reports with `sley doctor`, consuming strict
   diagnostics plus query and lint summaries, and
@@ -120,6 +121,8 @@ Implemented now:
   transactions for unused private types/effects, lint-driven
   `AddModuleDeclaration` templates for explicit module style fixes with module
   names inferred from the target file or project-relative path,
+  `propagate_unchecked_result` templates for discarded `Result` expression
+  statements that can be safely rewritten with `?`,
   `--template-surface <surface>` targeting for task, program, or lint
   declaration surfaces, `--emit-graft <kind>` for direct
   operation/transaction JSON handoff to `sley graft`, and
@@ -473,7 +476,8 @@ dry runs, checked graph query reports, doctor readiness, verify pre-deploy
 gates, edit-plan surfaces, typed scaffold next-actions for the deploy
 quickstart, strict seeded verify readiness for the generated deploy starter,
 lint-driven declaration delete templates and cleanup transactions,
-lint-driven module declaration fixes with inferred module names, private-task
+lint-driven module declaration fixes with inferred module names,
+unchecked-result propagation templates, private-task
 lint rules, declaration/import/API hygiene, authority hygiene, raw-host
 migration warnings, and explicit module style warnings. The next logical phase
 is to broaden style and migration lints before broadening the language again.

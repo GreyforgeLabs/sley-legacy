@@ -1,0 +1,7 @@
+module app.unchecked
+
+task main -> Result<Text, Error> uses FileWrite {
+  fs.try_write_text("sley_cli_smoke.txt", "written")
+
+  return Ok("written")
+}
