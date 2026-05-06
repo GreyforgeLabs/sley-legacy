@@ -1,0 +1,26 @@
+{
+  "schema": "sley.zjx.envelope.v0",
+  "format": "zjx-preview-json",
+  "compression": "none",
+  "target": "examples/hello.sley",
+  "graph_digest": "sha256:0f16c5f58f19a8ab64645b60056ea9be0188f9e809531b6190d410f2dbb06040",
+  "graph": {
+    "schema": "sley.symbol_graph.v0",
+    "entry_module": "app.hello",
+    "modules": [
+      {
+        "module": "app.hello",
+        "imports": [],
+        "types": [],
+        "effects": [],
+        "tasks": [
+          {
+            "name": "main",
+            "id": "task:app.hello.main",
+            "exported": false
+          }
+        ]
+      }
+    ]
+  }
+}

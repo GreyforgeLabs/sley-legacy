@@ -266,8 +266,9 @@ Implemented now:
   argument mismatches, condition mismatches, effect authority, and private or
   ambiguous names
 - locked JSON contract snapshots under `fixtures/contracts/`, including
-  checked run, query, lint, doctor, edit-plan, verify, deploy dry-run, deploy
-  artifact check, CI, and project scaffold reports
+  symbol graphs, ZJX envelopes, checked run, query, lint, doctor, edit-plan,
+  verify, deploy dry-run, deploy artifact check, CI, and project scaffold
+  reports
 - external v0 JSON Schema files under `docs/schemas/`, including strict
   query task/take/type/effect/call row definitions,
   strict runtime value definitions for `sley.run.report.v0`,
@@ -276,7 +277,8 @@ Implemented now:
   edit-plan graft operation and transaction template envelopes reused by graph
   slice affordances, graph-slice focus/task/call summary refs, a shared
   diagnostic record schema, a trace report schema over standalone trace
-  receipts, plus ZJX graph, slice, and trace receipt handoff refs
+  receipts, plus ZJX graph, slice, and trace receipt handoff refs backed by
+  fixtures
 - manifest-backed accepted/rejected synthetic conformance corpus fixtures under
   `fixtures/corpus/`, including declared and missing authority cases for the
   seeded host adapter surface
