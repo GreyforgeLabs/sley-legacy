@@ -7067,6 +7067,106 @@ task main -> Unit {
 }
 
 #[test]
+fn project_fix_dry_run_and_write_apply_planned_cleanup() {
+    let root = temp_project_dir("project-fix-declaration-cleanup");
+    fs::create_dir_all(root.join("src/app")).expect("create project dirs");
+    fs::write(
+        root.join("sley.toml"),
+        r#"
+[project]
+entry = "app.main"
+"#,
+    )
+    .expect("write manifest");
+    let main_source = r#"module app.main
+
+type Orphan = {
+  slot id: Int
+}
+
+effect OrphanEffect
+
+task main -> Unit {
+}
+"#;
+    let main_path = root.join("src/app/main.sley");
+    fs::write(&main_path, main_source).expect("write main module");
+
+    let dry_run = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args([
+            "fix",
+            "--json",
+            "--kind",
+            "delete_unused_private_declarations",
+            "--dry-run",
+        ])
+        .arg(&root)
+        .output()
+        .expect("dry-run declaration cleanup fix");
+    let dry_stdout = String::from_utf8(dry_run.stdout).expect("dry-run stdout utf8");
+    assert!(
+        dry_run.status.success(),
+        "fix dry-run should accept planned cleanup; stdout={dry_stdout} stderr={}",
+        String::from_utf8_lossy(&dry_run.stderr)
+    );
+    let dry_outcome: GraftOutcome = serde_json::from_str(&dry_stdout).expect("parse dry outcome");
+    assert_eq!(dry_outcome.schema, GRAFT_OUTCOME_SCHEMA);
+    assert_eq!(dry_outcome.status, "accepted");
+    assert_eq!(dry_outcome.provenance.len(), 2);
+    assert_eq!(
+        fs::read_to_string(&main_path).expect("read after dry-run"),
+        main_source
+    );
+    assert!(!root.join(".sley/trace.jsonl").exists());
+
+    let write = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args([
+            "fix",
+            "--json",
+            "--kind",
+            "delete_unused_private_declarations",
+            "--write",
+        ])
+        .arg(&root)
+        .output()
+        .expect("write declaration cleanup fix");
+    let write_stdout = String::from_utf8(write.stdout).expect("write stdout utf8");
+    assert!(
+        write.status.success(),
+        "fix write should apply planned cleanup; stdout={write_stdout} stderr={}",
+        String::from_utf8_lossy(&write.stderr)
+    );
+    let write_outcome: GraftOutcome =
+        serde_json::from_str(&write_stdout).expect("parse write outcome");
+    assert_eq!(write_outcome.status, "accepted");
+    assert_eq!(write_outcome.provenance.len(), 2);
+    assert!(
+        write_outcome
+            .provenance
+            .iter()
+            .all(|record| record.operation == "DeleteNode")
+    );
+    assert_eq!(
+        fs::read_to_string(&main_path).expect("read cleaned main"),
+        "module app.main\n\ntask main -> Unit {\n}\n"
+    );
+
+    let cleaned = load_project(&root).expect("reload cleaned project");
+    let diagnostics = check_program(&cleaned.program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+    let lint = build_lint_report(&cleaned.program, LintOptions::default());
+    assert_eq!(lint.status, "ok", "unexpected lint findings: {lint:#?}");
+    let receipts = read_trace_receipts(root.join(".sley/trace.jsonl")).expect("read trace");
+    assert_eq!(receipts.len(), 1);
+    assert_eq!(receipts[0].provenance.len(), 2);
+
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
 fn project_graft_write_creates_checked_new_module() {
     let root = temp_project_dir("project-graft-new-module");
     fs::create_dir_all(root.join("src/app")).expect("create project dirs");
@@ -7956,6 +8056,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "cli:query",
         "cli:lint",
         "cli:plan-emit-graft",
+        "cli:fix",
         "cli:trace",
         "cli:seal",
         "cli:zjx",

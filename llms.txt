@@ -14,6 +14,8 @@ cargo run -- graph --json <file-or-project>
 cargo run -- graph --json --slice <node-id> <file-or-project>
 cargo run -- new --json --template deploy --name agent-app agent-app
 cargo run -- doctor --json <file-or-project>
+cargo run -- fix --json --kind delete_unused_private_declarations --dry-run <file-or-project>
+cargo run -- fix --json --kind delete_unused_private_declarations --write <file-or-project>
 cargo run -- verify --json <file-or-project>
 cargo run -- seal --json <file-or-project>
 cargo run -- graft --json --dry-run <file> <graft.json>
@@ -153,6 +155,10 @@ Current development phase:
   `--template-surface <surface>` can target a specific task id, qualified task
   name, or lint finding declaration node; `--emit-graft <kind>` prints one
   matching operation/transaction JSON object for `sley graft`
+- `sley fix --json --kind <kind>` consumes checked plan templates and applies
+  one named operation or transaction through the same graft checker, emitting
+  `sley.graft.outcome.v0`; default and `--dry-run` mode are non-mutating, and
+  `--write` records the normal graft trace receipt
 - graft call-argument edits are structural: use `UpdateCallArgs` to insert,
   `ReplaceCallArg` to replace, and `RemoveCallArg` to remove checked caller
   arguments by task target plus optional `from`/`scope`

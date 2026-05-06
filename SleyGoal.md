@@ -40,7 +40,7 @@ Current verified surface:
 
 - `cargo fmt --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 166 tests.
+- Current integration coverage is 167 tests.
 - `sley query --json` emits `schema: "sley.query.report.v0"` and supports
   `--kind all|modules|tasks|calls`, `--module <module>`, and `--exported`.
 - `sley lint --json` emits `schema: "sley.lint.report.v0"` and supports
@@ -57,8 +57,8 @@ Current verified surface:
   `fixtures/cli_smokes/manifest.json`, including graph-slice replace
   affordances, checked `replace_expression` graft templates, and lint-driven
   declaration delete templates and cleanup transactions, including direct
-  declaration surface targeting and direct graft JSON emission, from
-  `sley plan --graft-templates`.
+  declaration surface targeting, direct graft JSON emission, and checked
+  `sley fix` dry-run execution from `sley plan --graft-templates`.
 - Stable JSON roots now include query reports, lint reports, doctor reports,
   edit-plan reports, verify reports, project scaffold reports, and the CLI
   smoke manifest in addition to AST, diagnostics, graph, graph slice, trace

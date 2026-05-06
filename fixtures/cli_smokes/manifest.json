@@ -347,6 +347,33 @@
       }
     },
     {
+      "name": "fix_declaration_hygiene_cleanup_dry_run_json",
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "delete_unused_private_declarations",
+        "--dry-run",
+        "examples/declaration_hygiene.sley"
+      ],
+      "covers": [
+        "cli:fix",
+        "json:sley.graft.outcome.v0",
+        "graft:transactions:lint-declaration-cleanup"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/operation", "value": "DeleteNode" },
+          { "pointer": "/provenance/0/targets/0", "value": "effect:app.hygiene.OrphanEffect" },
+          { "pointer": "/provenance/1/operation", "value": "DeleteNode" },
+          { "pointer": "/provenance/1/targets/0", "value": "type:app.hygiene.Orphan" }
+        ]
+      }
+    },
+    {
       "name": "plan_project_graft_templates_surface_json",
       "args": [
         "plan",

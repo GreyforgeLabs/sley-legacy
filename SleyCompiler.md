@@ -133,7 +133,7 @@ Recommended path:
 3. **Sley helper tools**
    Write non-authoritative helpers in Sley: lints, migration suggestions, docs
    examples, and fixture generators. Rust now exposes checked query and lint
-   reports for those helpers to consume.
+   reports plus checked plan/fix surfaces for those helpers to consume.
 
 4. **Shadow compiler passes**
    Write a Sley version of a compiler pass, but run it beside the Rust pass.
@@ -215,14 +215,15 @@ Near-term:
 3. Keep expanding the manifest-backed accepted/rejected gold corpus and CLI
    smoke conformance suite. They now cover runtime authority for the seeded
    host adapter surface, stable JSON roots, project scaffolding, graph/ZJX
-   output, graft dry runs, checked graph query reports, and private-task lint
-   reports.
+   output, graft/fix dry runs, checked graph query reports, and private-task
+   lint reports.
 4. Consume `sley.query.report.v0` and `sley.lint.report.v0` from helper
    passes. `sley doctor` is the first deterministic readiness helper on top of
    those surfaces, and `sley plan --graft-templates` now turns them into ranked
    edit surfaces plus starter graft operation payloads, rename-plus-call-site
    transactions, add-take-plus-call-arg transactions, and safe
-   remove-take-plus-call-arg transactions for unused takes. Next broaden
+   remove-take-plus-call-arg transactions for unused takes. `sley fix` can
+   execute one named checked template through the graft checker. Next broaden
    authority, style, and migration lints.
 5. Extend graph-slice graft planning around checked move/delete operations.
 6. Harden project graft writeback beyond existing-module edits.

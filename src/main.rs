@@ -5,9 +5,10 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand, ValueEnum};
+use serde_json::Value as JsonValue;
 use sley::Program;
 use sley::checker::{check_program, has_errors};
-use sley::diagnostics::{Diagnostic, DiagnosticReport};
+use sley::diagnostics::{Diagnostic, DiagnosticReport, RepairHint};
 use sley::doctor::{DoctorReport, build_doctor_report};
 use sley::formatter::format_program;
 use sley::graft::{GRAFT_OUTCOME_SCHEMA, GraftInput, GraftOutcome, apply_graft_program};
@@ -140,6 +141,23 @@ enum Command {
         template_surface: Option<String>,
         #[arg(long = "emit-graft", requires = "graft_templates", value_name = "KIND")]
         emit_graft: Option<String>,
+        file: PathBuf,
+    },
+    Fix {
+        #[arg(long)]
+        json: bool,
+        #[arg(long, value_name = "KIND")]
+        kind: String,
+        #[arg(long)]
+        template_surface: Option<String>,
+        #[arg(long)]
+        write: bool,
+        #[arg(long, conflicts_with = "write")]
+        dry_run: bool,
+        #[arg(long)]
+        actor: Option<String>,
+        #[arg(long)]
+        trace: Option<PathBuf>,
         file: PathBuf,
     },
     Verify {
@@ -516,6 +534,71 @@ fn run(cli: Cli) -> Result<()> {
             }
             Ok(())
         }
+        Command::Fix {
+            json,
+            kind,
+            template_surface,
+            write,
+            dry_run,
+            actor,
+            trace,
+            file,
+        } => {
+            let target = file.display().to_string();
+            let program = match load_target_program(&file) {
+                Ok(program) => program,
+                Err(diagnostics) => return emit_diagnostics_and_fail(diagnostics, json),
+            };
+            let report = build_edit_plan_report_with_options(
+                target,
+                Ok(program),
+                EditPlanOptions {
+                    deny_warnings: false,
+                    include_graft_templates: true,
+                    template_surface,
+                },
+            );
+            if report.status == "blocked" {
+                let outcome = rejected_graft_outcome(report.diagnostics);
+                emit_graft_outcome(&outcome, json)?;
+                anyhow::bail!("fix plan blocked");
+            }
+            let graft_value = match planned_graft_value(&report, &kind) {
+                Ok(value) => value,
+                Err(diagnostic) => {
+                    let outcome = rejected_graft_outcome(vec![diagnostic]);
+                    emit_graft_outcome(&outcome, json)?;
+                    anyhow::bail!("fix graft not found");
+                }
+            };
+            let graft_input: GraftInput = match serde_json::from_value(graft_value) {
+                Ok(input) => input,
+                Err(error) => {
+                    let outcome = rejected_graft_outcome(vec![Diagnostic::error(
+                        "FIX_GRAFT_TEMPLATE_INVALID",
+                        format!("planned graft kind `{kind}` did not parse as a graft: {error}"),
+                    )]);
+                    emit_graft_outcome(&outcome, json)?;
+                    anyhow::bail!("fix graft invalid");
+                }
+            };
+            let outcome = match apply_graft_to_target(
+                &file,
+                graft_input,
+                actor,
+                trace.as_deref(),
+                write,
+                dry_run,
+            ) {
+                Ok(outcome) => outcome,
+                Err(diagnostics) => rejected_graft_outcome(diagnostics),
+            };
+            emit_graft_outcome(&outcome, json)?;
+            if outcome.status != "accepted" {
+                anyhow::bail!("fix rejected");
+            }
+            Ok(())
+        }
         Command::Verify {
             json,
             deny_warnings,
@@ -639,53 +722,20 @@ fn run(cli: Cli) -> Result<()> {
                 .with_context(|| format!("failed to read {}", graft.display()))?;
             let graft_input: GraftInput = serde_json::from_str(&graft_source)
                 .with_context(|| format!("failed to parse {}", graft.display()))?;
-
-            if is_project_target(&file) {
-                let project = match load_project(&file) {
-                    Ok(project) => project,
-                    Err(diagnostics) => return emit_diagnostics_and_fail(diagnostics, json),
-                };
-                let applied = apply_graft_program(&project.program, graft_input, actor);
-                let mut outcome = applied.outcome;
-                let write = write && !dry_run;
-                if outcome.status == "accepted" && write {
-                    let candidate = applied
-                        .program
-                        .as_ref()
-                        .expect("accepted graft should carry candidate program");
-                    if let Err(diagnostics) = write_project_graft(
-                        &file,
-                        &project,
-                        candidate,
-                        outcome.provenance.clone(),
-                        trace.as_deref(),
-                    ) {
-                        outcome = rejected_graft_outcome(diagnostics);
-                    }
-                }
-                emit_graft_outcome(&outcome, json)?;
-                if outcome.status != "accepted" {
-                    anyhow::bail!("graft rejected");
-                }
-                return Ok(());
-            }
-
-            let source = read_source(&file)?;
-            let program = parse_program_or_fail(&source)?;
-            let outcome = apply_graft_program(&program, graft_input, actor).outcome;
+            let outcome = match apply_graft_to_target(
+                &file,
+                graft_input,
+                actor,
+                trace.as_deref(),
+                write,
+                dry_run,
+            ) {
+                Ok(outcome) => outcome,
+                Err(diagnostics) => return emit_diagnostics_and_fail(diagnostics, json),
+            };
             emit_graft_outcome(&outcome, json)?;
             if outcome.status != "accepted" {
                 anyhow::bail!("graft rejected");
-            }
-            let write = write && !dry_run;
-            if write && let Some(source) = outcome.source.as_deref() {
-                fs::write(&file, source)
-                    .with_context(|| format!("failed to write {}", file.display()))?;
-                if !outcome.provenance.is_empty() {
-                    let trace_path = trace.unwrap_or_else(|| default_trace_path(&file));
-                    let receipt = build_trace_receipt(&file, outcome.provenance);
-                    append_trace_receipt(&trace_path, &receipt)?;
-                }
             }
             Ok(())
         }
@@ -869,6 +919,83 @@ fn write_project_graft(
         append_trace_receipt(&trace_path, &receipt).map_err(|error| {
             vec![Diagnostic::error(
                 "PROJECT_TRACE_WRITE_FAILED",
+                format!("{error:#}"),
+            )]
+        })?;
+    }
+    Ok(())
+}
+
+fn apply_graft_to_target(
+    target: &PathBuf,
+    graft_input: GraftInput,
+    actor: Option<String>,
+    trace: Option<&Path>,
+    write: bool,
+    dry_run: bool,
+) -> Result<GraftOutcome, Vec<Diagnostic>> {
+    if is_project_target(target) {
+        let project = load_project(target)?;
+        let applied = apply_graft_program(&project.program, graft_input, actor);
+        let mut outcome = applied.outcome;
+        if outcome.status == "accepted" && write && !dry_run {
+            let candidate = applied
+                .program
+                .as_ref()
+                .expect("accepted graft should carry candidate program");
+            if let Err(diagnostics) = write_project_graft(
+                target,
+                &project,
+                candidate,
+                outcome.provenance.clone(),
+                trace,
+            ) {
+                outcome = rejected_graft_outcome(diagnostics);
+            }
+        }
+        return Ok(outcome);
+    }
+
+    let source = fs::read_to_string(target).map_err(|error| {
+        vec![Diagnostic::error(
+            "SOURCE_READ_FAILED",
+            format!("failed to read {}: {error}", target.display()),
+        )]
+    })?;
+    let program = parse_program(&source)?;
+    let mut outcome = apply_graft_program(&program, graft_input, actor).outcome;
+    if outcome.status == "accepted"
+        && write
+        && !dry_run
+        && let Some(source) = outcome.source.as_deref()
+        && let Err(diagnostics) =
+            write_file_graft(target, source, outcome.provenance.clone(), trace)
+    {
+        outcome = rejected_graft_outcome(diagnostics);
+    }
+    Ok(outcome)
+}
+
+fn write_file_graft(
+    target: &Path,
+    source: &str,
+    provenance: Vec<sley::ast::ProvenanceRecord>,
+    trace: Option<&Path>,
+) -> Result<(), Vec<Diagnostic>> {
+    fs::write(target, source).map_err(|error| {
+        vec![Diagnostic::error(
+            "SOURCE_WRITE_FAILED",
+            format!("failed to write {}: {error}", target.display()),
+        )]
+    })?;
+    if !provenance.is_empty() {
+        let trace_path = trace
+            .map(Path::to_path_buf)
+            .unwrap_or_else(|| default_trace_path(target));
+        let receipt = build_trace_receipt(target, provenance);
+        append_trace_receipt(&trace_path, &receipt).map_err(|error| {
+            vec![Diagnostic::error(
+                "TRACE_WRITE_FAILED",
                 format!("{error:#}"),
             )]
         })?;
@@ -1330,6 +1457,16 @@ fn read_source(file: &PathBuf) -> Result<String> {
 }
 
 fn emit_planned_graft(report: &EditPlanReport, kind: &str) -> Result<()> {
+    print_json(
+        &planned_graft_value(report, kind)
+            .map_err(|diagnostic| anyhow::anyhow!("{}: {}", diagnostic.id, diagnostic.message))?,
+    )
+}
+
+fn planned_graft_value(
+    report: &EditPlanReport,
+    kind: &str,
+) -> std::result::Result<JsonValue, Diagnostic> {
     let matches = report
         .graft_templates
         .iter()
@@ -1344,11 +1481,23 @@ fn emit_planned_graft(report: &EditPlanReport, kind: &str) -> Result<()> {
         )
         .collect::<Vec<_>>();
     match matches.as_slice() {
-        [] => anyhow::bail!("no graft or transaction template matched kind `{kind}`"),
-        [value] => print_json(value),
-        _ => anyhow::bail!(
-            "multiple graft or transaction templates matched kind `{kind}`; use --template-surface to narrow the plan"
-        ),
+        [] => Err(Diagnostic::error(
+            "PLAN_GRAFT_KIND_NOT_FOUND",
+            format!("no graft or transaction template matched kind `{kind}`"),
+        )
+        .with_repair_hint(RepairHint::new("inspect_graft_templates").with_replacement(
+            "Run `sley plan --json --graft-templates <target>` and choose a template kind",
+        ))),
+        [value] => Ok((*value).clone()),
+        _ => Err(Diagnostic::error(
+            "PLAN_GRAFT_KIND_AMBIGUOUS",
+            format!(
+                "multiple graft or transaction templates matched kind `{kind}`; use --template-surface to narrow the plan"
+            ),
+        )
+        .with_repair_hint(RepairHint::new("narrow_template_surface").with_replacement(
+            "Run `sley plan --json --graft-templates --template-surface <surface> <target>`",
+        ))),
     }
 }
 

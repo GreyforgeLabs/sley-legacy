@@ -17,6 +17,7 @@ Implemented now:
 - `sley lint`
 - `sley doctor`
 - `sley plan`
+- `sley fix`
 - `sley verify`
 - `sley trace`
 - `sley seal`
@@ -119,6 +120,11 @@ Implemented now:
   targeting for task or lint declaration surfaces, `--emit-graft <kind>` for
   direct operation/transaction JSON handoff to `sley graft`, and
   `schema: "sley.edit_plan.report.v0"`
+- checked JSON fix previews with `sley fix --kind <kind>`, consuming the same
+  plan graft templates and applying one named operation or transaction through
+  the graft checker; default and `--dry-run` mode stay non-mutating, while
+  `--write` uses the same checked writeback, trace receipts, and
+  `schema: "sley.graft.outcome.v0"` as `sley graft`
 - checked JSON verification reports with `sley verify`, consuming strict
   diagnostics, query summaries, lint findings, and deterministic runtime
   execution into `schema: "sley.verify.report.v0"` for CI and pre-deploy gates
@@ -188,9 +194,9 @@ entry = "app.main"
 
 Module `app.main` resolves to `src/app/main.sley`. `sley parse`,
 `sley check`, `sley run`, `sley ast`, `sley graph`, `sley query`,
-`sley lint`, `sley doctor`, `sley plan`, `sley verify`, `sley seal`,
-`sley zjx`, and `sley graft` accept either a single `.sley` file or a project
-directory containing `sley.toml`. Project graft
+`sley lint`, `sley doctor`, `sley plan`, `sley fix`, `sley verify`,
+`sley seal`, `sley zjx`, and `sley graft` accept either a single `.sley` file
+or a project directory containing `sley.toml`. Project graft
 writeback projects the checked candidate back to existing owning module files
 and leaves unchanged module files alone. It can create checked new module
 files, delete removed loaded module files, rename module files, and update
@@ -454,9 +460,9 @@ Known v0 limits:
 
 The current release-readiness phase is underway for the executable slice. The
 gold corpus and CLI smoke suite now have manifests with required coverage tags
-for seeded host adapters, stable JSON roots, graph/ZJX output, graft dry runs,
-checked graph query reports, doctor readiness, verify pre-deploy gates,
-edit-plan surfaces, lint-driven declaration delete templates and cleanup
-transactions, private-task lint rules, declaration/import/API hygiene,
+for seeded host adapters, stable JSON roots, graph/ZJX output, graft and fix
+dry runs, checked graph query reports, doctor readiness, verify pre-deploy
+gates, edit-plan surfaces, lint-driven declaration delete templates and
+cleanup transactions, private-task lint rules, declaration/import/API hygiene,
 authority hygiene, and raw-host migration warnings. The next logical phase is
 to broaden style and migration lints before broadening the language again.

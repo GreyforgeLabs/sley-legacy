@@ -543,6 +543,7 @@ sley graph --json --slice task:app.main.main <target>
 sley new --json --template deploy --name agent-app agent-app
 sley doctor --json <target>
 sley plan --json [--graft-templates] [--template-surface <surface>] [--emit-graft <kind>] <target>
+sley fix --json --kind <kind> [--template-surface <surface>] [--dry-run|--write] <target>
 sley query --json --kind tasks --module app.main <target>
 sley lint --json <target>
 sley trace --json <target>
@@ -655,6 +656,13 @@ prints one matching operation or transaction JSON directly, so agents can save
 it as the graft input for `sley graft --json --dry-run` or
 `sley graft --json --write`; ambiguous or missing kinds reject instead of
 guessing.
+
+`sley fix --kind <kind>` is the first deterministic plan-consuming fixer. It
+builds checked plan graft templates internally, selects exactly one named
+operation or transaction, applies it through the same graft checker, and emits
+the normal `sley.graft.outcome.v0` root. Default and `--dry-run` mode are
+non-mutating. `--write` uses the same project or file writeback and trace
+receipt path as `sley graft --write`.
 
 A graph slice is a bounded shard around a module, task, type, effect, or import.
 Task slices include the selected task AST, visible module declarations,
@@ -808,8 +816,9 @@ archive.
   graft operation templates, rename-plus-call-site and add-take-plus-call-arg
   transaction templates, safe remove-take-plus-call-arg transaction templates
   for unused takes, lint-driven delete templates and cleanup transactions for
-  unused private types/effects, and post-edit gate commands; it does not yet
-  choose or execute a final graft for the agent
+  unused private types/effects, and post-edit gate commands; `sley fix` can
+  execute one named checked template by explicit kind, but broad autonomous
+  repair selection remains later work
 - `sley verify` emits a deterministic CI/pre-deploy report over strict check,
   query/lint summaries, and runtime execution; live deploy/provider calls
   remain outside v0
