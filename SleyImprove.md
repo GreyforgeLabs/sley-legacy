@@ -114,6 +114,7 @@ make v1
 make syntax
 sley-lsp
 sley-workbench --json [--html <path>] [--slice <node-id>] <target>
+sley-agent-bench run --json [--case <name>] [--keep-workdir] [--sley-bin <path>]
 sley trace --json <target>
 sley seal --json <target>
 sley zjx --json [--slice <node-id>] <target>
@@ -137,8 +138,8 @@ Rules:
   carry v0 schema IDs.
 - AST program/node, diagnostic-report, symbol-graph, graph-slice, query-report,
   lint-report, run-report, graft-outcome, trace-report, trace-seal,
-  ZJX-envelope, ZJX-tool-report, doctor-report, project-scaffold, and CI/deploy
-  report snapshots, LSP fix-preview payloads, workbench reports, plus
+  ZJX-envelope, ZJX-tool-report, doctor-report, project-scaffold, agent-bench,
+  and CI/deploy report snapshots, LSP fix-preview payloads, workbench reports, plus
   contract inventory/fixture-check/validate report snapshots, are locked under
   `fixtures/contracts/`.
 - JSON Schema files live under `docs/schemas/`; the AST schema covers nested
@@ -151,7 +152,7 @@ Rules:
   the graph-slice schema links
   focus, task, and call-summary payloads to shared contracts, `sley-ci`
   check/lint/doctor/plan/run/verify/deploy/smoke/corpus/examples reports,
-  LSP fix-preview payloads, workbench reports,
+  LSP fix-preview payloads, workbench reports, agent-bench reports,
   `sley-conformance` report/coverage roots, and `sley-contract`
   inventory/fixture-check/validate/deploy-artifact-check reports have versioned
   schemas and representative fixtures, the graft outcome and trace receipt
@@ -174,6 +175,9 @@ Rules:
   `sley.fix.preview` payloads.
 - `sley-workbench` exposes a local read-only inspection report and optional
   static HTML page over doctor/query/lint/plan/graph panels.
+- `sley-agent-bench` exposes a deterministic local benchmark for the
+  agent-facing edit loop, including JSON inspection, checked repair selection,
+  write-mode fix, post-fix gates, trace receipt, seal, and ZJX evidence.
 - `sley-zjx` exposes read-only preview-envelope inspection, graph digest
   verification, graph extraction, and envelope diff reports.
 - Diagnostics include stable IDs, node IDs, spans where possible, and repair

@@ -201,6 +201,11 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
      plan, fix, and graft surfaces.
    - MVP: deterministic tasks where an agent must inspect JSON, propose or
      select a checked repair, run gates, and leave trace evidence.
+   - Current bootstrap: in-tree `src/bin/sley-agent-bench.rs` runs a
+     deterministic unused-private-task repair loop through check, query, lint,
+     plan, checked `sley fix --write`, post-fix lint/verify, seal, and ZJX,
+     emits `schema: "sley.agent_bench.report.v0"`, and is covered by an
+     integration test plus a locked contract fixture.
 
 8. `sley-template-pack`
    - Curated project templates beyond `hello`, `deploy`, and the first in-tree

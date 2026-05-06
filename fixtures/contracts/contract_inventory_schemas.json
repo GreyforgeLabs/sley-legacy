@@ -2,8 +2,15 @@
   "schema": "sley.contract.inventory.v0",
   "status": "passed",
   "schema_dir": "docs/schemas",
-  "schema_count": 31,
+  "schema_count": 32,
   "schemas": [
+    {
+      "id": "sley.agent_bench.report.v0",
+      "path": "docs/schemas/sley.agent_bench.report.v0.schema.json",
+      "title": "Sley Agent Bench Report v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
     {
       "id": "sley.ast.node.v0",
       "path": "docs/schemas/sley.ast.node.v0.schema.json",

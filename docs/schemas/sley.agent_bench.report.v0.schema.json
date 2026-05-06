@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.agent_bench.report.v0",
+  "title": "Sley Agent Bench Report v0",
+  "type": "object",
+  "required": [
+    "schema",
+    "status",
+    "sley_bin",
+    "case_count",
+    "passed_count",
+    "failed_count",
+    "cases",
+    "issues"
+  ],
+  "properties": {
+    "schema": { "const": "sley.agent_bench.report.v0" },
+    "status": { "enum": ["passed", "failed"] },
+    "sley_bin": { "type": "string", "minLength": 1 },
+    "case_count": { "type": "integer", "minimum": 0 },
+    "passed_count": { "type": "integer", "minimum": 0 },
+    "failed_count": { "type": "integer", "minimum": 0 },
+    "cases": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/case" }
+    },
+    "issues": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/issue" }
+    }
+  },
+  "$defs": {
+    "case": {
+      "type": "object",
+      "required": [
+        "name",
+        "status",
+        "workdir",
+        "workdir_retained",
+        "source_path",
+        "trace_path",
+        "trace_receipt_count",
+        "steps",
+        "issues"
+      ],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "status": { "enum": ["passed", "failed"] },
+        "workdir": { "type": "string", "minLength": 1 },
+        "workdir_retained": { "type": "boolean" },
+        "source_path": { "type": "string", "minLength": 1 },
+        "trace_path": { "type": "string", "minLength": 1 },
+        "trace_receipt_count": { "type": "integer", "minimum": 0 },
+        "selected_repair": { "$ref": "#/$defs/selectedRepair" },
+        "evidence": { "$ref": "#/$defs/evidence" },
+        "steps": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/step" }
+        },
+        "issues": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/issue" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "selectedRepair": {
+      "type": "object",
+      "required": ["kind", "surface"],
+      "properties": {
+        "kind": { "type": "string", "minLength": 1 },
+        "surface": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "evidence": {
+      "type": "object",
+      "required": [
+        "trace_digest",
+        "seal_digest",
+        "graph_digest",
+        "trace_receipt_count"
+      ],
+      "properties": {
+        "trace_digest": { "type": "string", "minLength": 1 },
+        "seal_digest": { "type": "string", "minLength": 1 },
+        "graph_digest": { "type": "string", "minLength": 1 },
+        "trace_receipt_count": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "step": {
+      "type": "object",
+      "required": [
+        "name",
+        "command",
+        "expected_success",
+        "actual_success",
+        "status",
+        "issues"
+      ],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "command": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        },
+        "expected_success": { "type": "boolean" },
+        "actual_success": { "type": "boolean" },
+        "status": { "enum": ["passed", "failed"] },
+        "exit_code": { "type": "integer" },
+        "expected_schema": { "type": "string", "minLength": 1 },
+        "stdout_schema": { "type": "string", "minLength": 1 },
+        "expected_status": { "type": "string", "minLength": 1 },
+        "stdout_status": { "type": "string", "minLength": 1 },
+        "stderr_excerpt": { "type": "string", "minLength": 1 },
+        "issues": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/issue" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "issue": {
+      "type": "object",
+      "required": ["code", "message"],
+      "properties": {
+        "code": { "type": "string", "minLength": 1 },
+        "message": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

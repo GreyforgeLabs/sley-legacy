@@ -1,0 +1,93 @@
+{
+  "schema": "sley.agent_bench.report.v0",
+  "status": "passed",
+  "sley_bin": "target/debug/sley",
+  "case_count": 1,
+  "passed_count": 1,
+  "failed_count": 0,
+  "cases": [
+    {
+      "name": "unused-private-task-repair",
+      "status": "passed",
+      "workdir": "bench/unused-private-task-repair",
+      "workdir_retained": true,
+      "source_path": "bench/unused-private-task-repair/main.sley",
+      "trace_path": "bench/unused-private-task-repair/trace.jsonl",
+      "trace_receipt_count": 1,
+      "selected_repair": {
+        "kind": "delete_unused_private_task",
+        "surface": "task:app.bench.orphan"
+      },
+      "evidence": {
+        "trace_digest": "sha256:trace",
+        "seal_digest": "sha256:seal",
+        "graph_digest": "sha256:graph",
+        "trace_receipt_count": 1
+      },
+      "steps": [
+        {
+          "name": "check_initial",
+          "command": [
+            "sley",
+            "check",
+            "--json",
+            "bench/unused-private-task-repair/main.sley"
+          ],
+          "expected_success": true,
+          "actual_success": true,
+          "status": "passed",
+          "exit_code": 0,
+          "expected_schema": "sley.diagnostics.report.v0",
+          "stdout_schema": "sley.diagnostics.report.v0",
+          "expected_status": "ok",
+          "stdout_status": "ok",
+          "issues": []
+        },
+        {
+          "name": "plan_repair",
+          "command": [
+            "sley",
+            "plan",
+            "--json",
+            "--graft-templates",
+            "bench/unused-private-task-repair/main.sley"
+          ],
+          "expected_success": true,
+          "actual_success": true,
+          "status": "passed",
+          "exit_code": 0,
+          "expected_schema": "sley.edit_plan.report.v0",
+          "stdout_schema": "sley.edit_plan.report.v0",
+          "expected_status": "warnings",
+          "stdout_status": "warnings",
+          "issues": []
+        },
+        {
+          "name": "fix_write",
+          "command": [
+            "sley",
+            "fix",
+            "--json",
+            "--kind",
+            "delete_unused_private_task",
+            "--write",
+            "--trace",
+            "bench/unused-private-task-repair/trace.jsonl",
+            "bench/unused-private-task-repair/main.sley"
+          ],
+          "expected_success": true,
+          "actual_success": true,
+          "status": "passed",
+          "exit_code": 0,
+          "expected_schema": "sley.graft.outcome.v0",
+          "stdout_schema": "sley.graft.outcome.v0",
+          "expected_status": "accepted",
+          "stdout_status": "accepted",
+          "issues": []
+        }
+      ],
+      "issues": []
+    }
+  ],
+  "issues": []
+}

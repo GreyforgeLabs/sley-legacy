@@ -598,8 +598,9 @@ graphs carry
 `schema: "sley.trace.report.v0"`, trace receipts carry
 `schema: "sley.trace.receipt.v0"`, trace seals carry
 `schema: "sley.trace.seal.v0"`, ZJX preview envelopes carry
-`schema: "sley.zjx.envelope.v0"`, and ZJX tool inspection reports carry
-`schema: "sley.zjx.tool.report.v0"`.
+`schema: "sley.zjx.envelope.v0"`, ZJX tool inspection reports carry
+`schema: "sley.zjx.tool.report.v0"`, and deterministic agent-loop benchmark
+reports carry `schema: "sley.agent_bench.report.v0"`.
 The CLI smoke manifest carries
 `schema: "sley.cli_smoke.manifest.v0"`. The accepted/rejected compiler corpus
 manifest carries `schema: "sley.conformance.manifest.v0"`. Project scaffold reports carry
@@ -679,9 +680,10 @@ contracts. The graft outcome schema pins strict accepted provenance records.
 The trace receipt schema pins the JSONL receipt record for accepted write
 provenance. The ZJX envelope schema pins the graph digest, graph root, optional
 graph slice root, and trace receipt schema used for handoff. The LSP
-fix-preview schema pins the non-mutating editor command payload, and the
-workbench schema pins the local inspection report root. The remaining schema
-files currently pin their top-level contract shape and stable schema IDs.
+fix-preview schema pins the non-mutating editor command payload, the workbench
+schema pins the local inspection report root, and the agent-bench schema pins
+deterministic repair-loop evidence. The remaining schema files currently pin
+their top-level contract shape and stable schema IDs.
 
 The compiler conformance corpus lives under `fixtures/corpus/`. Its
 `manifest.json` lists every accepted and rejected fixture plus coverage tags.
@@ -744,6 +746,13 @@ The local inspection loop is backed by the in-tree `sley-workbench` bootstrap.
 It emits `schema: "sley.workbench.report.v0"` and can write an explicit static
 HTML report containing doctor, query, lint, edit-plan, and graph panels. The
 workbench is read-only for source code; HTML output requires `--html <path>`.
+
+The local agent-loop benchmark is backed by the in-tree `sley-agent-bench`
+bootstrap. `sley-agent-bench run --json` emits
+`schema: "sley.agent_bench.report.v0"` after running a deterministic repair
+case through check, query, lint, checked repair planning, write-mode fix,
+post-fix lint/verify, trace receipt counting, seal, and ZJX evidence. It shells
+to the selected `sley` binary and never calls external providers.
 
 `sley new` is the v0 project scaffold command. It writes a `sley.toml`,
 `README.md`, and entry module source file, refusing to overwrite any of those

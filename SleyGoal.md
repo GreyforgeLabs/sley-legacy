@@ -46,7 +46,7 @@ Current verified surface:
 - `cargo test` passes.
 - Current integration coverage is 291 tests in the core `tests/sley_v0.rs`
   conformance file, with additional focused integration tests for LSP,
-  workbench, project templates, and ZJX envelope tools.
+  workbench, agent bench, project templates, and ZJX envelope tools.
 - `make v1` wraps fmt, whitespace diff check, full Rust tests, contract
   fixture and release-manifest validation, conformance summary reporting,
   corpus conformance, packaged example conformance, and CLI smoke conformance.
@@ -92,6 +92,11 @@ Current verified surface:
 - `sley-workbench` is available as an in-tree local inspection bootstrap with
   JSON and optional static HTML panels over doctor, query, lint, edit-plan, and
   graph data.
+- `sley-agent-bench` is available as an in-tree deterministic repair-loop
+  benchmark with `schema: "sley.agent_bench.report.v0"` over JSON inspection,
+  lint failure, checked edit-plan repair selection, `sley fix --write`, strict
+  post-fix lint/verify gates, trace receipts, seal digests, and ZJX handoff
+  evidence.
 - `sley-zjx` is available as an in-tree read-only envelope utility with
   `inspect`, `verify-digest`, `extract-graph`, and `diff-envelope` commands
   over preview ZJX JSON envelopes and `schema: "sley.zjx.tool.report.v0"`.
@@ -331,7 +336,7 @@ Current verified surface:
   reports, project scaffold reports, `sley-ci` reports including corpus and
   examples gates, `sley-conformance` report/coverage roots, `sley-contract`
   utility reports with locked inventory/fixture-check/validate fixtures, and
-  the CLI smoke manifest in addition to AST program,
+  agent-bench reports, and the CLI smoke manifest in addition to AST program,
   diagnostics, graph, graph slice, trace report, trace receipt, trace seal,
   graft outcome, and ZJX envelope roots. The edit-plan schema now pins strict
   graft operation and transaction template envelopes,
@@ -345,7 +350,8 @@ Current verified surface:
   the diagnostics schema exposes the shared diagnostic record used by
   graft/doctor/plan/verify report schemas, the trace report schema wraps trace
   receipt records, the graft outcome and trace receipt schemas pin accepted
-  provenance records, and the ZJX envelope plus ZJX tool report roots now carry
+  provenance records, the agent-bench schema pins deterministic repair-loop
+  evidence, and the ZJX envelope plus ZJX tool report roots now carry
   recomputable graph digest and inspection contracts with locked fixtures for
   graph, slice, trace receipt, and envelope handoff contents.
 
