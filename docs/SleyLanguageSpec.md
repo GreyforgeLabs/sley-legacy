@@ -906,8 +906,9 @@ replacing short-circuiting absorbing boolean expressions with `true` or `false`
 preserves a checked program and any removed evaluated side is delete-safe.
 `self_comparison_expression` lint findings become checked
 `simplify_self_comparison_expression` `ReplaceExpression` templates when
-replacing delete-safe `expr == expr`, `expr != expr`, `expr < expr`, or
-`expr > expr` comparisons with `true` or `false` preserves a checked program.
+replacing delete-safe `expr == expr`, `expr != expr`, `expr < expr`,
+`expr <= expr`, `expr > expr`, or `expr >= expr` comparisons with `true` or
+`false` preserves a checked program.
 `double_negation_expression` lint findings become checked
 `simplify_double_negation_expression` `ReplaceExpression` templates when
 replacing `!!expr` with the inner boolean expression preserves a checked
@@ -1106,8 +1107,8 @@ and `absorbing_boolean_expression`, which warns when a checked
 short-circuiting absorbing boolean expression can be replaced with `true` or
 `false` without dropping a side that would still be evaluated;
 and `self_comparison_expression`, which warns when a checked delete-safe
-self-comparison, including strict self-ordering, can be replaced with `true`
-or `false`;
+self-comparison, including strict and non-strict self-ordering, can be replaced
+with `true` or `false`;
 and `double_negation_expression`, which warns when a checked `!!expr` form can
 be replaced with the inner boolean expression; and
 `negated_comparison_expression`, which warns when a checked negated comparison
