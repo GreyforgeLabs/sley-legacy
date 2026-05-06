@@ -3769,7 +3769,7 @@ task main -> Used uses UsedEffect {
 }
 
 #[test]
-fn contract_utility_inventories_schemas_and_checks_fixture_roots() {
+fn contract_utility_inventories_schemas_and_validates_fixtures() {
     let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
     let inventory = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-contract"))
@@ -3828,7 +3828,7 @@ fn contract_utility_inventories_schemas_and_checks_fixture_roots() {
     );
     assert_eq!(
         fixture_json.pointer("/validation_level"),
-        Some(&serde_json::json!("schema_root_match"))
+        Some(&serde_json::json!("json_schema_draft_2020_12"))
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
@@ -3837,6 +3837,18 @@ fn contract_utility_inventories_schemas_and_checks_fixture_roots() {
     assert_eq!(
         fixture_json.pointer("/failed_count"),
         Some(&serde_json::json!(0))
+    );
+    assert!(
+        fixture_json
+            .pointer("/fixtures")
+            .and_then(serde_json::Value::as_array)
+            .expect("fixture records")
+            .iter()
+            .all(|fixture| fixture
+                .pointer("/issues")
+                .and_then(serde_json::Value::as_array)
+                .is_some_and(Vec::is_empty)),
+        "passing fixtures should not carry validation issues"
     );
 
     let validate = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-contract"))
@@ -3867,6 +3879,52 @@ fn contract_utility_inventories_schemas_and_checks_fixture_roots() {
         validate_json.pointer("/status"),
         Some(&serde_json::json!("passed"))
     );
+    assert_eq!(
+        validate_json.pointer("/validation_level"),
+        Some(&serde_json::json!("json_schema_draft_2020_12"))
+    );
+    assert_eq!(
+        validate_json.pointer("/issues"),
+        Some(&serde_json::json!([]))
+    );
+
+    let invalid_report = temp_project_dir("contract-invalid-report");
+    fs::create_dir_all(&invalid_report).expect("create invalid contract dir");
+    let invalid = invalid_report.join("invalid_query.json");
+    fs::write(
+        &invalid,
+        r#"{"schema":"sley.query.report.v0","kind":"tasks"}"#,
+    )
+    .expect("write invalid report");
+    let invalid_validate = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-contract"))
+        .current_dir(&repo_root)
+        .args([
+            "validate",
+            "--schema",
+            "sley.query.report.v0",
+            &sley_string(&invalid),
+            "--schemas",
+            "docs/schemas",
+            "--json",
+        ])
+        .output()
+        .expect("run invalid sley-contract validate");
+    assert!(!invalid_validate.status.success());
+    let invalid_json: serde_json::Value =
+        serde_json::from_slice(&invalid_validate.stdout).expect("parse invalid validate JSON");
+    assert_eq!(
+        invalid_json.pointer("/status"),
+        Some(&serde_json::json!("failed"))
+    );
+    let invalid_issue_codes = invalid_json
+        .pointer("/issues")
+        .and_then(serde_json::Value::as_array)
+        .expect("invalid report issues")
+        .iter()
+        .filter_map(|issue| issue.pointer("/code").and_then(serde_json::Value::as_str))
+        .collect::<BTreeSet<_>>();
+    assert!(invalid_issue_codes.contains("schema_validation_error"));
+    let _ = fs::remove_dir_all(invalid_report);
 
     let malformed_root = temp_project_dir("contract-mismatch");
     fs::create_dir_all(&malformed_root).expect("create contract mismatch dir");

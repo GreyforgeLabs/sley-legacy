@@ -117,7 +117,7 @@ doctor, plan, and verify report schemas.
 The query schema exposes strict task, take, type, effect, and call summary row
 definitions for downstream bindings.
 The `sley-contract` binary exposes `inventory`, `check-fixtures`, and
-`validate` root-matching reports for schema/fixture contract-kit work.
+`validate` JSON Schema validation reports for schema/fixture contract-kit work.
 Graph-slice move/delete/replace affordance operations reuse the strict graft
 operation schema from edit-plan reports.
 Graph-slice focus, optional task, and inbound/outbound call summaries reuse

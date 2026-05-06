@@ -17,7 +17,7 @@
   "properties": {
     "schema": { "const": "sley.contract.fixture_check.v0" },
     "status": { "enum": ["passed", "failed"] },
-    "validation_level": { "enum": ["schema_root_match"] },
+    "validation_level": { "enum": ["json_schema_draft_2020_12"] },
     "schema_dir": { "type": "string", "minLength": 1 },
     "fixtures_dir": { "type": "string", "minLength": 1 },
     "fixture_count": { "type": "integer", "minimum": 0 },
@@ -31,12 +31,15 @@
   "$defs": {
     "fixtureCheck": {
       "type": "object",
-      "required": ["path", "status"],
+      "required": ["path", "status", "issues"],
       "properties": {
         "path": { "type": "string", "minLength": 1 },
         "status": { "enum": ["passed", "failed"] },
         "schema_id": { "type": "string", "minLength": 1 },
-        "issue": { "$ref": "#/$defs/contractIssue" }
+        "issues": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/contractIssue" }
+        }
       },
       "additionalProperties": false
     },

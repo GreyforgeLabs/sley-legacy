@@ -45,8 +45,8 @@ Current verified surface:
   `--kind all|modules|tasks|types|effects|calls`, `--module <module>`, and
   `--exported`, including strict task/take/type/effect/call row definitions.
 - `sley-contract` is available as an in-tree contract utility scaffold with
-  `inventory`, `check-fixtures`, and `validate` root-matching commands over
-  `docs/schemas/` and `fixtures/contracts/`.
+  `inventory`, `check-fixtures`, and `validate` JSON Schema validation commands
+  over `docs/schemas/` and `fixtures/contracts/`.
 - `sley lint --json` emits `schema: "sley.lint.report.v0"` and supports
   `--module <module>`, `--rule unused-private-task`,
   `--rule unreachable-private-task`, `--rule unused-declared-effect`,

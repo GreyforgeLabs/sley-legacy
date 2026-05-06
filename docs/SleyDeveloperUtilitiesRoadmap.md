@@ -72,10 +72,11 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
      - `crates/sley-contract-kit/` if a reusable crate split is needed;
      - separate `sley-contract-kit` repo when published.
    - Current bootstrap: `inventory`, `check-fixtures`, and `validate` emit
-     versioned `schema_root_match` reports; full JSON Schema validation and
-     generated bindings remain future contract-kit work.
-   - Done when it validates every current contract fixture against the matching
-     schema and fails cleanly on a deliberately malformed report.
+     versioned JSON Schema validation reports; generated bindings and contract
+     drift reports remain future contract-kit work.
+   - Validation bootstrap is done when it validates every current contract
+     fixture against the matching schema and fails cleanly on a deliberately
+     malformed report.
 
 2. `sley-ci`
    - Inputs: project path, selected capabilities, optional seeded runtime
@@ -146,7 +147,7 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
    - MVP checks:
      - coverage tag inventory;
      - missing schema-to-fixture mappings;
-     - contract snapshot age and schema root match;
+     - contract snapshot age and JSON Schema validation status;
      - smoke manifest coverage holes;
      - accepted/rejected corpus counts by feature.
    - Scaffold:
