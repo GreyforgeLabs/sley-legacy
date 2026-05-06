@@ -1,0 +1,5 @@
+module app.constant_list_index
+
+task main -> Int {
+  return [10, 20, 30][1]
+}

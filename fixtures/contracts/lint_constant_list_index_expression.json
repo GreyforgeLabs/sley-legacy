@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.constant_list_index",
+  "filters": {
+    "module": null,
+    "rules": [
+      "constant_list_index_expression"
+    ]
+  },
+  "findings": [
+    {
+      "id": "CONSTANT_LIST_INDEX_EXPRESSION",
+      "rule": "constant_list_index_expression",
+      "severity": "warning",
+      "message": "task `app.constant_list_index.main` has a constant list index expression `[10, 20, 30][1]`",
+      "node": "block:task:app.constant_list_index.main:stmt:0:expr",
+      "module": "app.constant_list_index",
+      "hint": "replace the constant list index expression with `20`"
+    }
+  ]
+}
