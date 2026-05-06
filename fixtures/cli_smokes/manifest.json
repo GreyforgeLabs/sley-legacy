@@ -9363,6 +9363,415 @@
       }
     },
     {
+      "name": "run_database_read_scoped_json",
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "DatabaseRead=user",
+        "--db-table",
+        "users=examples/users.json",
+        "examples/db_gate.sley"
+      ],
+      "covers": [
+        "cli:run",
+        "json:sley.run.report.v0",
+        "host:DatabaseRead",
+        "host:scoped-capability"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.run.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/value/kind", "value": "Text" },
+          { "pointer": "/value/value", "value": "Ada" }
+        ]
+      }
+    },
+    {
+      "name": "run_database_read_scope_denied_json",
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "DatabaseRead=tenant_",
+        "--db-table",
+        "users=examples/users.json",
+        "examples/db_gate.sley"
+      ],
+      "covers": [
+        "cli:run",
+        "json:sley.diagnostics.report.v0",
+        "diagnostic:RUNTIME_CAPABILITY_SCOPE_DENIED",
+        "host:DatabaseRead",
+        "host:scoped-capability"
+      ],
+      "expect": {
+        "success": false,
+        "stderr_contains": ["operation failed"],
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.diagnostics.report.v0" },
+          { "pointer": "/status", "value": "error" },
+          { "pointer": "/diagnostics/0/id", "value": "RUNTIME_CAPABILITY_SCOPE_DENIED" },
+          { "pointer": "/diagnostics/0/node", "value": "block:task:main.get_user_name:stmt:0:expr" }
+        ]
+      }
+    },
+    {
+      "name": "run_database_write_scoped_json",
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "DatabaseRead=user",
+        "--cap",
+        "DatabaseWrite=user",
+        "--db-table",
+        "users=examples/users.json",
+        "examples/db_write_gate.sley"
+      ],
+      "covers": [
+        "cli:run",
+        "json:sley.run.report.v0",
+        "host:DatabaseRead",
+        "host:DatabaseWrite",
+        "host:scoped-capability"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.run.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/value/kind", "value": "Ok" },
+          { "pointer": "/value/value/kind", "value": "Text" },
+          { "pointer": "/value/value/value", "value": "Lin" }
+        ]
+      }
+    },
+    {
+      "name": "run_database_write_scope_denied_json",
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "DatabaseRead=user",
+        "--cap",
+        "DatabaseWrite=orders",
+        "--db-table",
+        "users=examples/users.json",
+        "examples/db_write_gate.sley"
+      ],
+      "covers": [
+        "cli:run",
+        "json:sley.diagnostics.report.v0",
+        "diagnostic:RUNTIME_CAPABILITY_SCOPE_DENIED",
+        "host:DatabaseRead",
+        "host:DatabaseWrite",
+        "host:scoped-capability"
+      ],
+      "expect": {
+        "success": false,
+        "stderr_contains": ["operation failed"],
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.diagnostics.report.v0" },
+          { "pointer": "/status", "value": "error" },
+          { "pointer": "/diagnostics/0/id", "value": "RUNTIME_CAPABILITY_SCOPE_DENIED" },
+          { "pointer": "/diagnostics/0/node", "value": "block:task:main.main:stmt:0:expr:try" }
+        ]
+      }
+    },
+    {
+      "name": "run_secret_scoped_json",
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "SecretRead=api_",
+        "--secret",
+        "api_key",
+        "redacted",
+        "examples/secret_gate.sley"
+      ],
+      "covers": [
+        "cli:run",
+        "json:sley.run.report.v0",
+        "host:SecretRead",
+        "host:scoped-capability"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.run.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/value/kind", "value": "Ok" },
+          { "pointer": "/value/value/value", "value": "redacted" }
+        ]
+      }
+    },
+    {
+      "name": "run_secret_scope_denied_json",
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "SecretRead=prod/",
+        "--secret",
+        "api_key",
+        "redacted",
+        "examples/secret_gate.sley"
+      ],
+      "covers": [
+        "cli:run",
+        "json:sley.diagnostics.report.v0",
+        "diagnostic:RUNTIME_CAPABILITY_SCOPE_DENIED",
+        "host:SecretRead",
+        "host:scoped-capability"
+      ],
+      "expect": {
+        "success": false,
+        "stderr_contains": ["operation failed"],
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.diagnostics.report.v0" },
+          { "pointer": "/status", "value": "error" },
+          { "pointer": "/diagnostics/0/id", "value": "RUNTIME_CAPABILITY_SCOPE_DENIED" },
+          { "pointer": "/diagnostics/0/node", "value": "block:task:main.main:stmt:0:expr:try" }
+        ]
+      }
+    },
+    {
+      "name": "run_shell_scoped_json",
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "Shell=da",
+        "--shell-output",
+        "date",
+        "2026-05-05",
+        "examples/shell_gate.sley"
+      ],
+      "covers": [
+        "cli:run",
+        "json:sley.run.report.v0",
+        "host:Shell",
+        "host:scoped-capability"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.run.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/value/kind", "value": "Ok" },
+          { "pointer": "/value/value/value", "value": "2026-05-05" }
+        ]
+      }
+    },
+    {
+      "name": "run_shell_scope_denied_json",
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "Shell=safe:",
+        "--shell-output",
+        "date",
+        "2026-05-05",
+        "examples/shell_gate.sley"
+      ],
+      "covers": [
+        "cli:run",
+        "json:sley.diagnostics.report.v0",
+        "diagnostic:RUNTIME_CAPABILITY_SCOPE_DENIED",
+        "host:Shell",
+        "host:scoped-capability"
+      ],
+      "expect": {
+        "success": false,
+        "stderr_contains": ["operation failed"],
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.diagnostics.report.v0" },
+          { "pointer": "/status", "value": "error" },
+          { "pointer": "/diagnostics/0/id", "value": "RUNTIME_CAPABILITY_SCOPE_DENIED" },
+          { "pointer": "/diagnostics/0/node", "value": "block:task:main.main:stmt:0:expr:try" }
+        ]
+      }
+    },
+    {
+      "name": "run_model_scoped_json",
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "ModelCall=na",
+        "--model-output",
+        "name",
+        "Ada",
+        "examples/model_gate.sley"
+      ],
+      "covers": [
+        "cli:run",
+        "json:sley.run.report.v0",
+        "host:ModelCall",
+        "host:scoped-capability"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.run.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/value/kind", "value": "Ok" },
+          { "pointer": "/value/value/value", "value": "Ada" }
+        ]
+      }
+    },
+    {
+      "name": "run_model_scope_denied_json",
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "ModelCall=classification:",
+        "--model-output",
+        "name",
+        "Ada",
+        "examples/model_gate.sley"
+      ],
+      "covers": [
+        "cli:run",
+        "json:sley.diagnostics.report.v0",
+        "diagnostic:RUNTIME_CAPABILITY_SCOPE_DENIED",
+        "host:ModelCall",
+        "host:scoped-capability"
+      ],
+      "expect": {
+        "success": false,
+        "stderr_contains": ["operation failed"],
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.diagnostics.report.v0" },
+          { "pointer": "/status", "value": "error" },
+          { "pointer": "/diagnostics/0/id", "value": "RUNTIME_CAPABILITY_SCOPE_DENIED" },
+          { "pointer": "/diagnostics/0/node", "value": "block:task:main.main:stmt:0:expr:try" }
+        ]
+      }
+    },
+    {
+      "name": "run_deploy_scoped_json",
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "Deploy=stag",
+        "--deploy-result",
+        "staging",
+        "staged",
+        "examples/deploy_gate.sley"
+      ],
+      "covers": [
+        "cli:run",
+        "json:sley.run.report.v0",
+        "host:Deploy",
+        "host:scoped-capability"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.run.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/value/kind", "value": "Ok" },
+          { "pointer": "/value/value/value", "value": "staged" }
+        ]
+      }
+    },
+    {
+      "name": "run_deploy_scope_denied_json",
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "Deploy=prod",
+        "--deploy-result",
+        "staging",
+        "staged",
+        "examples/deploy_gate.sley"
+      ],
+      "covers": [
+        "cli:run",
+        "json:sley.diagnostics.report.v0",
+        "diagnostic:RUNTIME_CAPABILITY_SCOPE_DENIED",
+        "host:Deploy",
+        "host:scoped-capability"
+      ],
+      "expect": {
+        "success": false,
+        "stderr_contains": ["operation failed"],
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.diagnostics.report.v0" },
+          { "pointer": "/status", "value": "error" },
+          { "pointer": "/diagnostics/0/id", "value": "RUNTIME_CAPABILITY_SCOPE_DENIED" },
+          { "pointer": "/diagnostics/0/node", "value": "block:task:main.main:stmt:0:expr:try" }
+        ]
+      }
+    },
+    {
+      "name": "run_spend_scoped_json",
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "Spend=ads",
+        "--spend-result",
+        "ads-budget",
+        "authorized",
+        "examples/spend_gate.sley"
+      ],
+      "covers": [
+        "cli:run",
+        "json:sley.run.report.v0",
+        "host:Spend",
+        "host:scoped-capability"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.run.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/value/kind", "value": "Ok" },
+          { "pointer": "/value/value/value", "value": "authorized" }
+        ]
+      }
+    },
+    {
+      "name": "run_spend_scope_denied_json",
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "Spend=ops",
+        "--spend-result",
+        "ads-budget",
+        "authorized",
+        "examples/spend_gate.sley"
+      ],
+      "covers": [
+        "cli:run",
+        "json:sley.diagnostics.report.v0",
+        "diagnostic:RUNTIME_CAPABILITY_SCOPE_DENIED",
+        "host:Spend",
+        "host:scoped-capability"
+      ],
+      "expect": {
+        "success": false,
+        "stderr_contains": ["operation failed"],
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.diagnostics.report.v0" },
+          { "pointer": "/status", "value": "error" },
+          { "pointer": "/diagnostics/0/id", "value": "RUNTIME_CAPABILITY_SCOPE_DENIED" },
+          { "pointer": "/diagnostics/0/node", "value": "block:task:main.main:stmt:0:expr:try" }
+        ]
+      }
+    },
+    {
       "name": "run_shell_json",
       "args": [
         "run",
