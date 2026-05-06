@@ -369,6 +369,8 @@ Implemented now:
 - repo-level `Makefile` with `make v1` wrapping fmt, whitespace diff check,
   full Rust tests, contract fixture validation, corpus conformance, and CLI
   smoke conformance
+- GitHub Actions and pre-commit entry points that run the same `make v1` gate
+  through `.github/workflows/v1.yml` and `.pre-commit-config.yaml`
 - compact agent onboarding pack in `llms.txt`
 
 Repository release gate:
@@ -376,6 +378,9 @@ Repository release gate:
 ```bash
 make v1
 ```
+
+The default GitHub workflow and local pre-commit configuration call this same
+gate so CI and local review use the same release surface.
 
 Project form:
 

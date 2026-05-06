@@ -91,13 +91,14 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
    - Scaffold:
      - `action.yml`;
      - `bin/sley-ci`;
-     - `.pre-commit-hooks.yaml`;
-     - sample workflow under `examples/github-actions/`.
+     - `.pre-commit-config.yaml`;
+     - default workflow under `.github/workflows/`.
    - Current bootstrap: in-tree `src/bin/sley-ci.rs` exposes `check`, `lint`,
      `doctor`, `plan`, `run`, `verify`, `deploy`, `smoke`, and `corpus`
      wrappers with
-     `schema: "sley.ci.report.v0"` output; GitHub Action, pre-commit hook, and
-     sample workflow packaging remain future work.
+     `schema: "sley.ci.report.v0"` output. `.github/workflows/v1.yml` and
+     `.pre-commit-config.yaml` now run the repo-level `make v1` gate; a
+     reusable standalone action package remains future work.
    - Bootstrap done when generated `sley new --template deploy` and
      `sley new --template agent` projects can run seeded verify gates, local
      deploy dry-run package reports, a CLI smoke manifest, and the

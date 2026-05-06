@@ -1,0 +1,9 @@
+repos:
+  - repo: local
+    hooks:
+      - id: sley-v1
+        name: Sley v1 gate
+        entry: make v1
+        language: system
+        pass_filenames: false
+        always_run: true
