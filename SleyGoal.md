@@ -49,8 +49,8 @@ Current verified surface:
   JSON Schema validation commands over `docs/schemas/`, `fixtures/contracts/`,
   and local deploy artifact directories.
 - `sley-ci` is available as an in-tree CI wrapper with `check`, `lint`,
-  `verify`, `deploy`, and `smoke` commands that emit `schema: "sley.ci.report.v0"` over
-  existing Sley check/lint/verify/deploy and CLI smoke manifest gates,
+  `doctor`, `verify`, `deploy`, and `smoke` commands that emit `schema: "sley.ci.report.v0"` over
+  existing Sley check/lint/doctor/verify/deploy and CLI smoke manifest gates,
   including deploy artifact directory pass-through.
 - `sley deploy --json --dry-run` emits `schema: "sley.deploy.report.v0"` and
   composes strict verify, trace seal, and ZJX package summaries into a

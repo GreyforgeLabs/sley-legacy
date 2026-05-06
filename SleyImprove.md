@@ -103,6 +103,7 @@ sley deploy --json --dry-run [--artifacts-dir <dir>] [runtime gates/seeds] <targ
 sley query --json [--kind all|modules|tasks|types|effects|calls] [--module <module>] <target>
 sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter|missing-module-declaration|unchecked-result|unqualified-imported-call|unused-pure-binding|unused-pure-expression-statement|mutable-binding-never-set|constant-if-expression|constant-false-while-statement|empty-for-statement|identity-binary-expression|redundant-boolean-comparison|absorbing-boolean-expression|self-comparison-expression|double-negation-expression|redundant-boolean-if-expression|same-branch-if-expression|unreachable-statement] [--module <module>] <target>
 sley-ci lint --json [--deny-warnings] [--rule <rule>] [--module <module>] <target>
+sley-ci doctor --json [--deny-warnings] <target>
 sley trace --json <target>
 sley seal --json <target>
 sley zjx --json [--slice <node-id>] <target>
@@ -129,7 +130,7 @@ Rules:
   edit-plan schema pins strict graft operation and transaction template
   envelopes reused by graph-slice affordances, the graph-slice schema links
   focus, task, and call-summary payloads to shared contracts, `sley-ci`
-  check/lint/verify/deploy/smoke reports and `sley-contract`
+  check/lint/doctor/verify/deploy/smoke reports and `sley-contract`
   inventory/fixture-check/validate/deploy-artifact-check reports have versioned
   schemas, the graft outcome and trace receipt schemas pin accepted provenance
   records, the ZJX envelope schema pins graph, slice, and trace receipt handoff

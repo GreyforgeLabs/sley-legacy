@@ -6190,7 +6190,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(44))
+        Some(&serde_json::json!(45))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -6510,6 +6510,76 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     );
     assert_eq!(
         denied_lint_json.pointer("/steps/0/issues/0/code"),
+        Some(&serde_json::json!("exit_status_mismatch"))
+    );
+
+    let doctor = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
+        .current_dir(&repo_root)
+        .args(["doctor", "--json", "--deny-warnings", "examples/project"])
+        .output()
+        .expect("run sley-ci doctor");
+    assert!(
+        doctor.status.success(),
+        "sley-ci doctor failed: {}",
+        String::from_utf8_lossy(&doctor.stderr)
+    );
+    let doctor_json: serde_json::Value =
+        serde_json::from_slice(&doctor.stdout).expect("parse sley-ci doctor JSON");
+    assert_eq!(
+        doctor_json.pointer("/schema"),
+        Some(&serde_json::json!("sley.ci.report.v0"))
+    );
+    assert_eq!(
+        doctor_json.pointer("/status"),
+        Some(&serde_json::json!("passed"))
+    );
+    assert_eq!(
+        doctor_json.pointer("/command"),
+        Some(&serde_json::json!("doctor"))
+    );
+    assert_eq!(
+        doctor_json.pointer("/steps/0/stdout_schema"),
+        Some(&serde_json::json!("sley.doctor.report.v0"))
+    );
+    assert_json_snapshot(
+        &doctor_json,
+        include_str!("../fixtures/contracts/ci_doctor_project_ready.json"),
+    );
+
+    let denied_doctor = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
+        .current_dir(&repo_root)
+        .args([
+            "doctor",
+            "--json",
+            "--deny-warnings",
+            "examples/empty_for_statement.sley",
+        ])
+        .output()
+        .expect("run denied sley-ci doctor");
+    assert!(
+        !denied_doctor.status.success(),
+        "sley-ci doctor with denied findings should fail"
+    );
+    let denied_doctor_json: serde_json::Value =
+        serde_json::from_slice(&denied_doctor.stdout).expect("parse denied sley-ci doctor JSON");
+    assert_eq!(
+        denied_doctor_json.pointer("/schema"),
+        Some(&serde_json::json!("sley.ci.report.v0"))
+    );
+    assert_eq!(
+        denied_doctor_json.pointer("/status"),
+        Some(&serde_json::json!("failed"))
+    );
+    assert_eq!(
+        denied_doctor_json.pointer("/command"),
+        Some(&serde_json::json!("doctor"))
+    );
+    assert_eq!(
+        denied_doctor_json.pointer("/steps/0/stdout_schema"),
+        Some(&serde_json::json!("sley.doctor.report.v0"))
+    );
+    assert_eq!(
+        denied_doctor_json.pointer("/steps/0/issues/0/code"),
         Some(&serde_json::json!("exit_status_mismatch"))
     );
 
