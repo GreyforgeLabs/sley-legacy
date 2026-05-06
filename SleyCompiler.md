@@ -258,11 +258,11 @@ Near-term:
    emits checked `add_task`, `add_type_declaration`, and
    `add_effect_declaration` starters so agents can add declarations through
    the same plan/fix loop.
-   `sley fix --dry-run` can now override editable template
-   payloads with `--source`, `--source-file`, and `--position` before executing
-   those exact node-surface templates through the graft checker without
-   hand-authored graft files. Next broaden authority, style, and migration
-   lints.
+   `sley fix --dry-run` can now override editable template payloads with
+   `--name`, `--type`, `--source`, `--source-file`, and `--position` before
+   executing those exact node-surface templates through the graft checker
+   without hand-authored graft files. Next broaden authority, style, and
+   migration lints.
 5. Extend graph-slice graft planning around broader checked operations.
 6. Harden project graft writeback beyond existing-module edits.
 

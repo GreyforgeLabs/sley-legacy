@@ -167,9 +167,9 @@ Implemented now:
 - checked JSON fix previews with `sley fix --kind <kind>`, consuming the same
   plan graft templates and applying one named operation or transaction through
   the graft checker, including exact block/statement/take/expression node
-  surfaces selected with `--template-surface`, checked `--source`,
-  `--source-file`, and `--position` payload overrides for single-operation
-  templates that expose those editable fields, and including
+  surfaces selected with `--template-surface`, checked `--name`, `--type`,
+  `--source`, `--source-file`, and `--position` payload overrides for
+  single-operation templates that expose those editable fields, and including
   `add_module_declaration` for `missing_module_declaration` lint findings with contextual module-name
   inference; default and `--dry-run` mode stay non-mutating, while `--write`
   uses the same checked writeback, trace receipts, optional
@@ -251,9 +251,10 @@ Implemented now:
   repair write followed by strict verify, generated deploy and agent scaffold
   quickstarts that re-verify with seeded authority, statement-surface
   `replace_statement` planning and fix dry runs, program-surface declaration
-  planning and `add_task` fix dry runs, missing-module checked
-  repair templates with module-name inference, lint-driven fix writes that
-  clear warnings before verify, and seeded host-adapter execution
+  planning and `add_task`/effect fix dry runs with name/source overrides,
+  missing-module checked repair templates with module-name inference,
+  lint-driven fix writes that clear warnings before verify, and seeded
+  host-adapter execution
 - compact agent onboarding pack in `llms.txt`
 
 Project form:
