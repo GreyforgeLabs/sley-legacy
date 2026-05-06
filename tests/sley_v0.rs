@@ -8522,7 +8522,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(82))
+        Some(&serde_json::json!(84))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
