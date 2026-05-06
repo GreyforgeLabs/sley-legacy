@@ -21,6 +21,12 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Command {
+    /// Validate envelope shape, preview scope, and graph digest.
+    Validate {
+        envelope: PathBuf,
+        #[arg(long)]
+        json: bool,
+    },
     /// Summarize an envelope and recompute its graph digest.
     Inspect {
         envelope: PathBuf,
@@ -125,6 +131,7 @@ struct ParsedEnvelope {
 fn main() -> Result<()> {
     let cli = Cli::parse();
     let (report, json) = match cli.command {
+        Command::Validate { envelope, json } => (validate_report(&envelope), json),
         Command::Inspect { envelope, json } => (inspect_report(&envelope), json),
         Command::VerifyDigest { envelope, json } => (verify_digest_report(&envelope), json),
         Command::ExtractGraph {
@@ -146,7 +153,15 @@ fn main() -> Result<()> {
     Ok(())
 }
 
+fn validate_report(path: &Path) -> ZjxToolReport {
+    envelope_check_report("validate", path)
+}
+
 fn inspect_report(path: &Path) -> ZjxToolReport {
+    envelope_check_report("inspect", path)
+}
+
+fn envelope_check_report(command: &str, path: &Path) -> ZjxToolReport {
     let parsed = read_envelope(path);
     let mut issues = parsed
         .as_ref()
@@ -168,7 +183,7 @@ fn inspect_report(path: &Path) -> ZjxToolReport {
             "declared graph_digest does not match the recomputed graph digest",
         ));
     }
-    tool_report("inspect", envelopes, digest, None, None, None, issues)
+    tool_report(command, envelopes, digest, None, None, None, issues)
 }
 
 fn verify_digest_report(path: &Path) -> ZjxToolReport {

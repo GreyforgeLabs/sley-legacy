@@ -124,6 +124,7 @@ sley-sandbox-runner run --json [--keep-workdir] <manifest.json>
 sley trace --json <target>
 sley seal --json <target>
 sley zjx --json [--slice <node-id>] <target>
+sley-zjx validate --json <zjx-envelope.json>
 sley-zjx inspect --json <zjx-envelope.json>
 sley-zjx verify-digest --json <zjx-envelope.json>
 sley-zjx extract-graph --json [--output <graph.json>] <zjx-envelope.json>
@@ -203,8 +204,8 @@ Rules:
 - `sley-sandbox-runner` exposes deterministic manifest-backed runtime replays
   over seeded capabilities, files, tables, secrets, network text, shell output,
   model output, deploy results, and spend results.
-- `sley-zjx` exposes read-only preview-envelope inspection, graph digest
-  verification, graph extraction, and envelope diff reports.
+- `sley-zjx` exposes read-only preview-envelope validation, inspection, graph
+  digest verification, graph extraction, and envelope diff reports.
 - Focused utility integration tests validate live docgen, migrate,
   agent-bench, sandbox-runner, workbench, and ZJX JSON reports against their
   declared schemas.

@@ -196,7 +196,7 @@ Implemented now:
   `schema: "sley.sandbox.report.v0"` over seeded capability, file, table,
   secret, network, shell, model, deploy, and spend runs without external
   provider calls
-- in-tree `sley-zjx` read-only envelope utility with `inspect`,
+- in-tree `sley-zjx` read-only envelope utility with `validate`, `inspect`,
   `verify-digest`, `extract-graph`, and `diff-envelope` commands over preview
   ZJX JSON envelopes, emitting `schema: "sley.zjx.tool.report.v0"`
 - checked JSON readiness reports with `sley doctor`, consuming strict
@@ -493,6 +493,7 @@ sley-migrate report --json --schemas docs/schemas --fixtures fixtures/contracts 
 sley-sandbox-runner run --json fixtures/contracts/sandbox_manifest_agent_pipeline.json
 sley seal --json .
 sley zjx --json .
+sley-zjx validate --json envelope.json
 sley-zjx inspect --json envelope.json
 sley-zjx verify-digest --json envelope.json
 ```
@@ -781,9 +782,10 @@ Known v0 limits:
   compressed `.zjx` archive remains a later integration step.
 - `sley zjx` emits the first Sley ZJX envelope payload as JSON with
   `compression=none` and a recomputable graph digest; the binary compressed
-  archive handoff remains a later integration step. `sley-zjx` can inspect
-  those preview envelopes, recompute the embedded graph digest, extract the
-  symbol graph, and diff two envelopes without writing source files.
+  archive handoff remains a later integration step. `sley-zjx` can validate
+  those preview envelopes, inspect metadata, recompute the embedded graph
+  digest, extract the symbol graph, and diff two envelopes without writing
+  source files.
 - The future compressed `zjx-sley` runtime must not trust envelope metadata as
   the file lock. It must follow `docs/SleyZjxRuntimeLockSpec.md`: reconstruct
   and validate Sley graph structure, recompute the graph hash, reject unknown
