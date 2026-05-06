@@ -677,9 +677,9 @@ focus, optional task, and inbound/outbound call summaries reuse AST and query re
 contracts. The graft outcome schema pins strict accepted provenance records.
 The trace receipt schema pins the JSONL receipt record for accepted write
 provenance. The ZJX envelope schema pins the graph digest, graph root, optional
-graph slice root, and trace receipt schema used for handoff. The remaining
-schema files currently pin their top-level contract shape and stable schema
-IDs.
+graph slice root, and trace receipt schema used for handoff. The LSP
+fix-preview schema pins the non-mutating editor command payload. The remaining
+schema files currently pin their top-level contract shape and stable schema IDs.
 
 The compiler conformance corpus lives under `fixtures/corpus/`. Its
 `manifest.json` lists every accepted and rejected fixture plus coverage tags.
@@ -730,6 +730,13 @@ declarations, authority takes, bindings, control flow, call/try expressions,
 records, maps, lists, comments, and highlight queries for editor integration.
 The compiler remains the semantic authority; Tree-sitter is for syntax review,
 tokenization, and editor ergonomics.
+
+The editor feedback loop is backed by the in-tree `sley-lsp` bootstrap. It
+speaks stdio LSP framing, publishes parse/check diagnostics plus lint warnings,
+formats documents with the compiler formatter, exposes declaration symbols and
+hover text, and returns checked edit-plan code actions with a non-mutating
+`sley.fix.preview` command. The server reuses compiler modules directly; it is
+not a separate semantic implementation.
 
 `sley new` is the v0 project scaffold command. It writes a `sley.toml`,
 `README.md`, and entry module source file, refusing to overwrite any of those

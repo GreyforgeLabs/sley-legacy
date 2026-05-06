@@ -1,0 +1,27 @@
+{
+  "schema": "sley.lsp.fix_preview.v0",
+  "status": "preview",
+  "preview": {
+    "schema": "sley.lsp.code_action.v0",
+    "uri": "file:///tmp/sley-lsp-main.sley",
+    "target": "/tmp/sley-lsp-main.sley",
+    "kind": "delete_unused_private_task",
+    "surface": "task:app.lsp.orphan",
+    "operation": {
+      "op": "delete_task",
+      "target": "task:app.lsp.orphan"
+    },
+    "editableJsonPointers": [],
+    "dryRun": {
+      "command": "sley",
+      "args": [
+        "fix",
+        "--json",
+        "--dry-run",
+        "--kind",
+        "delete_unused_private_task",
+        "/tmp/sley-lsp-main.sley"
+      ]
+    }
+  }
+}

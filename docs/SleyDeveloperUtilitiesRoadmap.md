@@ -143,6 +143,12 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
    - Scaffold:
      - `sley-lsp-server`;
      - editor extension shim only after the server protocol is stable.
+   - Current bootstrap: in-tree `src/bin/sley-lsp.rs` speaks stdio LSP
+     framing, tracks full-document buffers, publishes compiler diagnostics plus
+     lint warnings, returns formatting edits, document symbols, declaration
+     hover, edit-plan code actions, and exposes `sley.fix.preview` as a
+     non-mutating preview command. `tests/sley_lsp.rs` drives the server over
+     real JSON-RPC frames.
    - Done when an example project receives diagnostics and at least one checked
      lint repair code action without the server writing files directly.
 
@@ -241,8 +247,9 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
    first version boring and transparent.
 3. Start `tree-sitter-sley` once the accepted fixture set is enough to define
    the review projection.
-4. Build `sley-lsp` as a thin CLI-backed server. Avoid duplicating compiler
-   logic in the LSP.
+4. Extend `sley-lsp` from the current in-tree server toward project-wide
+   workspace support, editor extension shims, and richer hover/details while
+   keeping compiler modules as the semantic authority.
 5. Build `sley-workbench` using only the same JSON roots the LSP and agents
    consume.
 6. Add `sley-conformance` once schema and smoke gaps become annoying enough to

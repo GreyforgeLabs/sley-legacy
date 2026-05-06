@@ -1,4 +1,4 @@
-.PHONY: fmt diff-check test contracts conformance corpus examples smoke syntax v1
+.PHONY: fmt diff-check test contracts conformance corpus examples smoke lsp syntax v1
 
 fmt:
 	cargo fmt -- --check
@@ -27,7 +27,10 @@ examples:
 smoke:
 	cargo run --bin sley-ci -- smoke --json --repo-root $(CURDIR) fixtures/cli_smokes/manifest.json
 
+lsp:
+	cargo check --bin sley-lsp
+
 syntax:
 	npm --prefix tree-sitter-sley test
 
-v1: fmt diff-check test contracts conformance corpus examples smoke
+v1: fmt diff-check test contracts conformance corpus examples smoke lsp

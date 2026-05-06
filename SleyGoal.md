@@ -83,6 +83,10 @@ Current verified surface:
   `npm test` coverage for Tree-sitter parser generation, exact syntax corpus
   trees, highlight query validation, and parsing of current `.sley` examples
   plus accepted compiler corpus fixtures.
+- `sley-lsp` is available as an in-tree stdio language-server bootstrap with
+  full-document sync, diagnostics, formatting, document symbols, declaration
+  hover, checked edit-plan code actions, and a non-mutating
+  `sley.fix.preview` command.
 - `sley deploy --json --dry-run` emits `schema: "sley.deploy.report.v0"` and
   composes strict verify, trace seal, and ZJX package summaries into a
   local-only deploy package report that forbids live deployment, provider
