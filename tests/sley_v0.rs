@@ -1311,6 +1311,60 @@ task helper -> Int {
 }
 
 #[test]
+fn edit_plan_graft_templates_can_target_expression_surfaces() {
+    let source = r#"
+module app.plan
+
+task main -> Int {
+  return 1 + 41
+}
+"#;
+    let program = parse_program(source).expect("parse expression surface plan fixture");
+    let target = "block:task:app.plan.main:stmt:0:expr:right";
+    let report = build_edit_plan_report_with_options(
+        "app.plan",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some(target.to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "ready");
+    assert!(report.diagnostics.is_empty());
+    assert_eq!(report.graft_templates.len(), 1);
+    assert!(report.transaction_templates.is_empty());
+    let template = &report.graft_templates[0];
+    assert_eq!(template.kind, "replace_expression");
+    assert_eq!(template.surface, target);
+    assert_eq!(
+        template.operation.pointer("/op"),
+        Some(&serde_json::json!("ReplaceExpression"))
+    );
+    assert_eq!(
+        template.operation.pointer("/target"),
+        Some(&serde_json::json!(target))
+    );
+    assert_eq!(
+        template.operation.pointer("/payload/source"),
+        Some(&serde_json::json!("41"))
+    );
+    assert_eq!(
+        template.editable_json_pointers,
+        vec!["/payload/source".to_string()]
+    );
+    let graft: GraftInput =
+        serde_json::from_value(template.operation.clone()).expect("parse expression template");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:expression-surface-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+}
+
+#[test]
 fn edit_plan_graft_templates_include_move_destinations() {
     let source = r#"
 module app.plan
