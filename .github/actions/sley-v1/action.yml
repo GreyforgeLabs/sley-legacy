@@ -1,5 +1,5 @@
 name: Sley v1 Gate
-description: Install stable Rust and run the Sley v1 local release gate.
+description: Install stable Rust and Node tooling, then run the Sley v1 local release gate.
 
 runs:
   using: composite
@@ -9,6 +9,13 @@ runs:
       run: |
         rustup toolchain install stable --profile minimal
         rustup default stable
+
+    - name: Install stable Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 22
+        cache: npm
+        cache-dependency-path: tree-sitter-sley/package-lock.json
 
     - name: Run v1 gate
       shell: bash

@@ -103,8 +103,10 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
      wrappers with
      `schema: "sley.ci.report.v0"` output. `.github/actions/sley-v1/action.yml`,
      `.github/workflows/v1.yml`, and `.pre-commit-config.yaml` now run the
-     repo-level `make v1` gate; a reusable standalone action package remains
-     future work.
+     repo-level `make v1` gate. The composite action installs stable Rust and
+     Node, and the syntax target bootstraps Tree-sitter npm dependencies with
+     `npm ci` when needed. A reusable standalone action package remains future
+     work.
    - Bootstrap done when generated `sley new --template deploy` and
      `sley new --template agent` projects can run seeded verify gates, local
      deploy dry-run package reports, a CLI smoke manifest, and the

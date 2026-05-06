@@ -48,7 +48,10 @@ sandbox-runner:
 zjx-tools:
 	cargo check --bin sley-zjx
 
-syntax:
+tree-sitter-sley/node_modules/.package-lock.json: tree-sitter-sley/package.json tree-sitter-sley/package-lock.json
+	npm --prefix tree-sitter-sley ci
+
+syntax: tree-sitter-sley/node_modules/.package-lock.json
 	npm --prefix tree-sitter-sley test
 
 v1: fmt diff-check test contracts conformance corpus examples smoke lsp workbench agent-bench migrate docgen sandbox-runner zjx-tools syntax
