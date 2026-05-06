@@ -194,7 +194,9 @@ Implemented now:
   `delete_overwritten_set_statement` templates for dead `set` statements
   immediately overwritten before any read,
   `fold_redundant_initial_set_into_binding` transactions for mutable
-  initializers immediately replaced by a safe first `set`,
+  initializers immediately replaced by a safe first `set`, plus
+  `convert_redundant_initial_set_to_bind` transactions when no later mutation
+  remains,
   `simplify_constant_if_expression` templates for constant `if` expressions
   that can be replaced by the branch that executes,
   `simplify_constant_if_statement` templates for constant `if` statements that

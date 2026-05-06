@@ -827,7 +827,10 @@ checked program.
 `redundant_initial_set_statement` lint findings become checked
 `fold_redundant_initial_set_into_binding` transaction templates when replacing
 the mutable binding initializer and deleting the immediate `set` preserves a
-checked program.
+checked program while later mutation remains. When no later mutation remains,
+they become checked `convert_redundant_initial_set_to_bind` transaction
+templates that replace the mutable binding with `bind` and delete the
+immediate `set`.
 `constant_if_expression` lint findings become checked
 `simplify_constant_if_expression` `ReplaceExpression` templates when replacing
 an expression-level `if true/false` with the branch that executes preserves a
@@ -1127,7 +1130,8 @@ guaranteed `return` in the same block.
 `--rule unqualified-imported-call`, `--rule unused-pure-binding`, or
 `--rule unused-pure-expression-statement`, or
 `--rule mutable-binding-never-set`, `--rule self-assignment-statement`, or
-`--rule overwritten-set-statement`, or `--rule constant-if-expression`, or
+`--rule overwritten-set-statement`, or
+`--rule redundant-initial-set-statement`, or `--rule constant-if-expression`, or
 `--rule constant-if-statement`, or
 `--rule constant-false-if-statement`, or
 `--rule constant-false-while-statement`, or
