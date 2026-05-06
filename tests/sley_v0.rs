@@ -551,8 +551,9 @@ fn project_scaffold_creates_checked_agent_project() {
     assert_eq!(report.next_actions[6].kind, "ci_verify_seeded_agent");
     assert_eq!(report.next_actions[7].kind, "run_seeded_agent");
     assert_eq!(report.next_actions[8].kind, "prepare_deploy_package");
-    assert_eq!(report.next_actions[9].kind, "seal_project");
-    assert_eq!(report.next_actions[10].kind, "package_project");
+    assert_eq!(report.next_actions[9].kind, "ci_deploy_package");
+    assert_eq!(report.next_actions[10].kind, "seal_project");
+    assert_eq!(report.next_actions[11].kind, "package_project");
 
     for (action, command) in report.next_actions.iter().zip(&report.next_commands) {
         assert_eq!(
@@ -591,6 +592,22 @@ fn project_scaffold_creates_checked_agent_project() {
                 Some(&serde_json::json!("sley.ci.report.v0"))
             );
             assert_eq!(value.pointer("/status"), Some(&serde_json::json!("passed")));
+        }
+        if action.kind == "ci_deploy_package" {
+            let value: serde_json::Value =
+                serde_json::from_str(&stdout).expect("parse sley-ci deploy JSON");
+            assert_eq!(
+                value.pointer("/schema"),
+                Some(&serde_json::json!("sley.ci.report.v0"))
+            );
+            assert_eq!(
+                value.pointer("/command"),
+                Some(&serde_json::json!("deploy"))
+            );
+            assert_eq!(
+                value.pointer("/steps/0/stdout_schema"),
+                Some(&serde_json::json!(DEPLOY_REPORT_SCHEMA))
+            );
         }
         if action.kind == "run_seeded_agent" {
             let value: Value = serde_json::from_str(&stdout).expect("parse agent runtime JSON");
@@ -4316,6 +4333,44 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     assert_eq!(
         verify_json.pointer("/steps/0/stdout_schema"),
         Some(&serde_json::json!("sley.verify.report.v0"))
+    );
+    let deploy = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
+        .current_dir(&repo_root)
+        .args([
+            "deploy",
+            "--json",
+            "--dry-run",
+            "--cap",
+            "Deploy",
+            "--deploy-result",
+            "staging",
+            "staged",
+            &sley_string(&deploy_root),
+        ])
+        .output()
+        .expect("run sley-ci deploy");
+    assert!(
+        deploy.status.success(),
+        "sley-ci deploy failed: {}",
+        String::from_utf8_lossy(&deploy.stderr)
+    );
+    let deploy_json: serde_json::Value =
+        serde_json::from_slice(&deploy.stdout).expect("parse sley-ci deploy JSON");
+    assert_eq!(
+        deploy_json.pointer("/schema"),
+        Some(&serde_json::json!("sley.ci.report.v0"))
+    );
+    assert_eq!(
+        deploy_json.pointer("/status"),
+        Some(&serde_json::json!("passed"))
+    );
+    assert_eq!(
+        deploy_json.pointer("/command"),
+        Some(&serde_json::json!("deploy"))
+    );
+    assert_eq!(
+        deploy_json.pointer("/steps/0/stdout_schema"),
+        Some(&serde_json::json!(DEPLOY_REPORT_SCHEMA))
     );
 
     let smoke_root = temp_project_dir("sley-ci-smoke");

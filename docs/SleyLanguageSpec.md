@@ -582,7 +582,8 @@ The CLI smoke manifest carries
 `schema: "sley.project.scaffold.v0"`. Doctor readiness reports carry
 `schema: "sley.doctor.report.v0"`. Edit-plan reports carry
 `schema: "sley.edit_plan.report.v0"`. CI wrapper reports carry
-`schema: "sley.ci.report.v0"`. Deploy dry-run reports carry
+`schema: "sley.ci.report.v0"` for check, verify, deploy, and smoke wrappers.
+Deploy dry-run reports carry
 `schema: "sley.deploy.report.v0"`. Contract utility reports carry
 `schema: "sley.contract.inventory.v0"`,
 `schema: "sley.contract.fixture_check.v0"`, or
@@ -675,8 +676,8 @@ next-action reasons under `sley.project.scaffold.v0`. The deploy and agent
 scaffolds' generated next actions are checked first-run sequences: strict
 check, doctor readiness, task query, edit plan, lint gate, seeded verification
 with denied warnings, seeded run, local deploy dry-run package, seal, and ZJX
-package. The agent scaffold also includes a `sley-ci verify` next action over
-the same deterministic seeds.
+package. The agent scaffold also includes `sley-ci verify` and
+`sley-ci deploy --dry-run` next actions over the same deterministic seeds.
 
 `sley deploy --dry-run` is the v0 local deploy package command. It refuses to
 run unless `--dry-run` is present. It consumes the same deterministic runtime

@@ -51,6 +51,32 @@ enum Command {
         model_output: Vec<String>,
         target: PathBuf,
     },
+    /// Run the Sley local deploy dry-run gate over one target.
+    Deploy {
+        #[arg(long)]
+        json: bool,
+        #[arg(long)]
+        dry_run: bool,
+        #[arg(long, default_value = "staging")]
+        environment: String,
+        #[arg(long = "cap", value_name = "EFFECT[=ROOT]")]
+        cap: Vec<String>,
+        #[arg(long = "db-table", value_name = "TABLE=JSON")]
+        db_table: Vec<String>,
+        #[arg(long = "secret", value_names = ["NAME", "TEXT"], num_args = 2)]
+        secret: Vec<String>,
+        #[arg(long = "deploy-result", value_names = ["TARGET", "TEXT"], num_args = 2)]
+        deploy_result: Vec<String>,
+        #[arg(long = "spend-result", value_names = ["REQUEST", "TEXT"], num_args = 2)]
+        spend_result: Vec<String>,
+        #[arg(long = "http-text", value_names = ["URL", "TEXT"], num_args = 2)]
+        http_text: Vec<String>,
+        #[arg(long = "shell-output", value_names = ["COMMAND", "TEXT"], num_args = 2)]
+        shell_output: Vec<String>,
+        #[arg(long = "model-output", value_names = ["PROMPT", "TEXT"], num_args = 2)]
+        model_output: Vec<String>,
+        target: PathBuf,
+    },
     /// Run a Sley CLI smoke manifest in an isolated temp directory.
     Smoke {
         #[arg(long)]
@@ -209,6 +235,33 @@ fn run(cli: Cli) -> Result<(CiReport, bool)> {
             let report = build_verify_report(&sley_bin, &target, deny_warnings, &runtime)?;
             Ok((report, json))
         }
+        Command::Deploy {
+            json,
+            dry_run: _dry_run,
+            environment,
+            cap,
+            db_table,
+            secret,
+            deploy_result,
+            spend_result,
+            http_text,
+            shell_output,
+            model_output,
+            target,
+        } => {
+            let runtime = RuntimeArgs {
+                cap,
+                db_table,
+                secret,
+                deploy_result,
+                spend_result,
+                http_text,
+                shell_output,
+                model_output,
+            };
+            let report = build_deploy_report(&sley_bin, &target, &environment, &runtime)?;
+            Ok((report, json))
+        }
         Command::Smoke {
             json,
             repo_root,
@@ -289,6 +342,32 @@ fn build_verify_report(
     let steps = vec![run_sley_step(sley_bin, &cwd, "verify", args, true, Vec::new()).step];
     Ok(finalize_report(
         "verify",
+        Some(path_string(target)),
+        None,
+        steps,
+        Vec::new(),
+    ))
+}
+
+fn build_deploy_report(
+    sley_bin: &Path,
+    target: &Path,
+    environment: &str,
+    runtime: &RuntimeArgs,
+) -> Result<CiReport> {
+    let cwd = env::current_dir()?;
+    let mut args = vec![
+        "deploy".into(),
+        "--json".into(),
+        "--dry-run".into(),
+        "--environment".into(),
+        environment.into(),
+    ];
+    append_runtime_args(&mut args, runtime);
+    args.push(path_string(target));
+    let steps = vec![run_sley_step(sley_bin, &cwd, "deploy_dry_run", args, true, Vec::new()).step];
+    Ok(finalize_report(
+        "deploy",
         Some(path_string(target)),
         None,
         steps,

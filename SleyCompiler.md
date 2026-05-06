@@ -219,8 +219,8 @@ Near-term:
    host adapter surface, stable JSON roots, project scaffolding, graph/ZJX
    output with recomputable graph digests, typed deploy and agent scaffold
    next-actions through seal/ZJX handoff, including the seeded agent
-   `sley-ci verify` handoff and local `sley deploy --dry-run` package reports,
-   graft/fix dry runs, strict edit-plan graft
+   `sley-ci verify` and `sley-ci deploy` handoffs plus local
+   `sley deploy --dry-run` package reports, graft/fix dry runs, strict edit-plan graft
    operation/transaction schema envelopes reused by graph-slice affordances,
    graph-slice focus/task/call-summary contracts, shared diagnostic records,
    standalone trace receipt schemas, checked graph query reports with strict
