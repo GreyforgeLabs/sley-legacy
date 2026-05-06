@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.contract.validate.v0",
+  "title": "Sley Contract Validate Report v0",
+  "type": "object",
+  "required": [
+    "schema",
+    "status",
+    "validation_level",
+    "requested_schema",
+    "report_path",
+    "schema_dir",
+    "issues"
+  ],
+  "properties": {
+    "schema": { "const": "sley.contract.validate.v0" },
+    "status": { "enum": ["passed", "failed"] },
+    "validation_level": { "enum": ["schema_root_match"] },
+    "requested_schema": { "type": "string", "minLength": 1 },
+    "report_path": { "type": "string", "minLength": 1 },
+    "schema_dir": { "type": "string", "minLength": 1 },
+    "report_schema": { "type": "string", "minLength": 1 },
+    "issues": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/contractIssue" }
+    }
+  },
+  "$defs": {
+    "contractIssue": {
+      "type": "object",
+      "required": ["code", "message"],
+      "properties": {
+        "code": { "type": "string", "minLength": 1 },
+        "message": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

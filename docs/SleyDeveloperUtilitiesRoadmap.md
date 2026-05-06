@@ -68,8 +68,12 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
      - `sley-contract inventory docs/schemas`
      - `sley-contract check-fixtures fixtures/contracts`
    - Scaffold:
-     - `crates/sley-contract-kit/` if kept in-tree temporarily;
+     - current in-tree bootstrap binary: `src/bin/sley-contract.rs`;
+     - `crates/sley-contract-kit/` if a reusable crate split is needed;
      - separate `sley-contract-kit` repo when published.
+   - Current bootstrap: `inventory`, `check-fixtures`, and `validate` emit
+     versioned `schema_root_match` reports; full JSON Schema validation and
+     generated bindings remain future contract-kit work.
    - Done when it validates every current contract fixture against the matching
      schema and fails cleanly on a deliberately malformed report.
 

@@ -124,10 +124,11 @@ Rules:
   definitions, the diagnostic schema exposes a shared diagnostic record, the
   edit-plan schema pins strict graft operation and transaction template
   envelopes reused by graph-slice affordances, the graph-slice schema links
-  focus, task, and call-summary payloads to shared contracts, the graft outcome
-  and trace receipt schemas pin accepted provenance records, the ZJX envelope
-  schema pins graph, slice, and trace receipt handoff refs, and the remaining
-  schema files are still root-contract v0 shapes.
+  focus, task, and call-summary payloads to shared contracts, `sley-contract`
+  inventory/fixture-check/validate reports have versioned schemas, the graft
+  outcome and trace receipt schemas pin accepted provenance records, the ZJX
+  envelope schema pins graph, slice, and trace receipt handoff refs, and the
+  remaining schema files are still root-contract v0 shapes.
 - Diagnostics include stable IDs, node IDs, spans where possible, and repair
   hints for common checker failures.
 - `sley doctor` is the first deterministic helper consuming strict check,
@@ -475,8 +476,9 @@ The current smoke manifest covers:
   records, symbol graphs, graph slices, query reports, lint reports, trace
   receipts, trace seals, graft outcomes with strict accepted provenance
   records, query task/take/type/effect/call row definitions, graph-slice
-  focus/task/call payloads, graph-slice affordance operations, and ZJX preview
-  envelopes with graph digest and nested handoff refs
+  focus/task/call payloads, graph-slice affordance operations, `sley-contract`
+  root-matching reports, and ZJX preview envelopes with graph digest and nested
+  handoff refs
 - query report direct task/take/type/effect/call row definitions
 - doctor/plan call-bearing reports route agents to strict
   `sley query --kind calls` next-actions
