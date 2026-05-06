@@ -157,5 +157,7 @@ Current development phase:
   and checked cross-task take movement into another task's take list; expression
   movement remains an explicit rejection, and expression move rejection carries
   a `replace_expression` repair hint
+- graph, graph-slice, and query module import summaries expose canonical import
+  node ids for graft targets such as `import:app.main:app.math`
 - manifest-backed accepted/rejected synthetic gold corpus growth
 - broader graph-slice graft operations around move/delete planning

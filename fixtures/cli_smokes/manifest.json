@@ -119,7 +119,8 @@
         "success": true,
         "stdout_json": [
           { "pointer": "/schema", "value": "sley.symbol_graph.v0" },
-          { "pointer": "/entry_module", "value": "app.main" }
+          { "pointer": "/entry_module", "value": "app.main" },
+          { "pointer": "/modules/0/imports/0/id", "value": "import:app.main:app.math" }
         ]
       }
     },
@@ -132,7 +133,8 @@
         "stdout_json": [
           { "pointer": "/schema", "value": "sley.symbol_graph.slice.v0" },
           { "pointer": "/target", "value": "task:app.main.main" },
-          { "pointer": "/focus/kind", "value": "task" }
+          { "pointer": "/focus/kind", "value": "task" },
+          { "pointer": "/imports/0/id", "value": "import:app.main:app.math" }
         ]
       }
     },

@@ -20,13 +20,35 @@
     "target": { "type": "string" },
     "entry_module": { "type": "string" },
     "focus": { "type": "object" },
-    "imports": { "type": "array", "items": { "type": "object" } },
-    "types": { "type": "array", "items": { "type": "object" } },
-    "effects": { "type": "array", "items": { "type": "object" } },
-    "tasks": { "type": "array", "items": { "type": "object" } },
+    "imports": { "type": "array", "items": { "$ref": "#/$defs/importSummary" } },
+    "types": { "type": "array", "items": { "$ref": "#/$defs/declarationSummary" } },
+    "effects": { "type": "array", "items": { "$ref": "#/$defs/declarationSummary" } },
+    "tasks": { "type": "array", "items": { "$ref": "#/$defs/declarationSummary" } },
     "task": { "type": "object" },
     "outbound_calls": { "type": "array", "items": { "type": "object" } },
     "inbound_calls": { "type": "array", "items": { "type": "object" } }
+  },
+  "$defs": {
+    "importSummary": {
+      "type": "object",
+      "required": ["id", "module"],
+      "properties": {
+        "id": { "type": "string" },
+        "module": { "type": "string" },
+        "alias": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "declarationSummary": {
+      "type": "object",
+      "required": ["name", "id", "exported"],
+      "properties": {
+        "name": { "type": "string" },
+        "id": { "type": "string" },
+        "exported": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    }
   },
   "additionalProperties": false
 }

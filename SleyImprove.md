@@ -257,6 +257,9 @@ cross-task take movement into another task's take list are implemented.
 Expression movement and broader graph-contract hardening remain open.
 Unsupported expression movement returns a `replace_expression` repair hint so
 agents can plan the supported structural edit.
+Graph, graph-slice, and query module import summaries now expose canonical
+import node ids so agents can copy import graft targets directly from the
+machine contract instead of reconstructing them.
 
 The important rule is not that all operations exist immediately. The important
 rule is that unsupported operations reject cleanly with explicit diagnostics.

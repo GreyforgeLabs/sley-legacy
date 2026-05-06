@@ -25,7 +25,7 @@
       },
       "additionalProperties": false
     },
-    "modules": { "type": "array", "items": { "type": "object" } },
+    "modules": { "type": "array", "items": { "$ref": "#/$defs/moduleSummary" } },
     "tasks": {
       "type": "array",
       "items": {
@@ -70,6 +70,40 @@
       }
     },
     "calls": { "type": "array", "items": { "type": "object" } }
+  },
+  "$defs": {
+    "moduleSummary": {
+      "type": "object",
+      "required": ["module", "imports", "types", "effects", "tasks"],
+      "properties": {
+        "module": { "type": "string" },
+        "imports": { "type": "array", "items": { "$ref": "#/$defs/importSummary" } },
+        "types": { "type": "array", "items": { "$ref": "#/$defs/declarationSummary" } },
+        "effects": { "type": "array", "items": { "$ref": "#/$defs/declarationSummary" } },
+        "tasks": { "type": "array", "items": { "$ref": "#/$defs/declarationSummary" } }
+      },
+      "additionalProperties": false
+    },
+    "importSummary": {
+      "type": "object",
+      "required": ["id", "module"],
+      "properties": {
+        "id": { "type": "string" },
+        "module": { "type": "string" },
+        "alias": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "declarationSummary": {
+      "type": "object",
+      "required": ["name", "id", "exported"],
+      "properties": {
+        "name": { "type": "string" },
+        "id": { "type": "string" },
+        "exported": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    }
   },
   "additionalProperties": false
 }

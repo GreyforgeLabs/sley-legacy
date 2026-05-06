@@ -1819,6 +1819,13 @@ fn json_contract_snapshots_are_locked() {
 
     let project_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("examples/project");
     let project = load_project(&project_root).expect("load project");
+    let project_slice =
+        slice_symbol_graph(&project.program, "task:app.main.main").expect("slice project main");
+    assert_json_snapshot(
+        &project_slice,
+        include_str!("../fixtures/contracts/graph_slice_project_task.json"),
+    );
+
     let query = build_query_report(
         &project.program,
         QueryOptions {
@@ -5512,6 +5519,8 @@ fn graph_slice_reports_resolved_project_task_calls() {
 
     assert_eq!(slice.focus.kind, "task");
     assert_eq!(slice.focus.module, "app.main");
+    assert_eq!(slice.imports.len(), 1);
+    assert_eq!(slice.imports[0].id, "import:app.main:app.math");
     assert_eq!(slice.outbound_calls.len(), 1);
     assert_eq!(slice.outbound_calls[0].callee, "math.double");
     assert_eq!(
@@ -5551,6 +5560,21 @@ fn query_report_lists_checked_project_tasks() {
     assert_eq!(report.tasks[0].return_type, "Int");
     assert_eq!(report.tasks[0].outbound_call_count, 1);
     assert_eq!(report.tasks[0].inbound_call_count, 0);
+
+    let module_report = build_query_report(
+        &project.program,
+        QueryOptions {
+            kind: QueryKind::Modules,
+            module: Some("app.main".to_string()),
+            exported_only: false,
+        },
+    );
+    assert_eq!(module_report.modules.len(), 1);
+    assert_eq!(module_report.modules[0].imports.len(), 1);
+    assert_eq!(
+        module_report.modules[0].imports[0].id,
+        "import:app.main:app.math"
+    );
 }
 
 #[test]

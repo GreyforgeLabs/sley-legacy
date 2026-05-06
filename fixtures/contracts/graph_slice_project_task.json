@@ -1,0 +1,103 @@
+{
+  "schema": "sley.symbol_graph.slice.v0",
+  "target": "task:app.main.main",
+  "entry_module": "app.main",
+  "focus": {
+    "kind": "task",
+    "id": "task:app.main.main",
+    "module": "app.main",
+    "name": "main"
+  },
+  "imports": [
+    {
+      "id": "import:app.main:app.math",
+      "module": "app.math",
+      "alias": "math"
+    }
+  ],
+  "types": [],
+  "effects": [],
+  "tasks": [
+    {
+      "name": "main",
+      "id": "task:app.main.main",
+      "exported": false
+    }
+  ],
+  "task": {
+    "id": "task:app.main.main",
+    "module": "app.main",
+    "name": "main",
+    "takes": [],
+    "return_type": {
+      "kind": "Named",
+      "name": "Int"
+    },
+    "effects": [],
+    "body": {
+      "statements": [
+        {
+          "id": "block:task:app.main.main:stmt:0",
+          "kind": "Return",
+          "expr": {
+            "id": "block:task:app.main.main:stmt:0:expr",
+            "source": "call math.double(21)",
+            "expr_kind": "Call",
+            "callee": {
+              "id": "block:task:app.main.main:stmt:0:expr:callee",
+              "source": "math.double",
+              "expr_kind": "FieldAccess",
+              "receiver": {
+                "id": "block:task:app.main.main:stmt:0:expr:callee:receiver",
+                "source": "math",
+                "expr_kind": "Identifier",
+                "name": "math",
+                "span": {
+                  "line": 6,
+                  "column": 15
+                }
+              },
+              "field": "double"
+            },
+            "args": [
+              {
+                "id": "block:task:app.main.main:stmt:0:expr:arg:0",
+                "source": "21",
+                "expr_kind": "IntLiteral",
+                "value": 21,
+                "span": {
+                  "line": 6,
+                  "column": 27
+                }
+              }
+            ],
+            "span": {
+              "line": 6,
+              "column": 10
+            }
+          },
+          "span": {
+            "line": 6,
+            "column": 3
+          }
+        }
+      ]
+    },
+    "span": {
+      "line": 5,
+      "column": 1
+    }
+  },
+  "outbound_calls": [
+    {
+      "from": "app.main.main",
+      "from_module": "app.main",
+      "expr_id": "block:task:app.main.main:stmt:0:expr",
+      "source": "call math.double(21)",
+      "callee": "math.double",
+      "status": "resolved",
+      "target": "app.math.double"
+    }
+  ],
+  "inbound_calls": []
+}

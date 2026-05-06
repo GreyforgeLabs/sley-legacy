@@ -581,8 +581,10 @@ The v0 JSON contracts are locked by small snapshots under
 `fixtures/contracts/` and JSON Schema files under `docs/schemas/`. The AST
 program schema now recursively describes imports,
 types, effects, tasks, takes, statements, expressions, type expressions, spans,
-and provenance records. The other schema files currently pin their top-level
-contract shape and stable schema IDs.
+and provenance records. Symbol graph, graph slice, and query schemas also pin
+module import/declaration summary shapes so agents can rely on stable import
+node ids for graft targets. The remaining schema files currently pin their
+top-level contract shape and stable schema IDs.
 
 The compiler conformance corpus lives under `fixtures/corpus/`. Its
 `manifest.json` lists every accepted and rejected fixture plus coverage tags.
@@ -638,8 +640,10 @@ A graph slice is a bounded shard around a module, task, type, effect, or import.
 Task slices include the selected task AST, visible module declarations,
 outbound calls, and inbound calls from other tasks that resolve to the selected
 task. This is the first stable agent-facing query surface for graft planning.
-Call-site and expression grafts now consume node ids and task identities from
-this shard.
+Import summaries expose canonical import node ids such as
+`import:app.main:app.shared`, so import `MoveNode` and `DeleteNode` grafts can
+copy targets directly from graph, graph-slice, or query JSON. Call-site and
+expression grafts now consume node ids and task identities from this shard.
 
 `sley query` is the first checked graph query report. It parses and checks the
 target before emitting results, so semantic failures return the normal

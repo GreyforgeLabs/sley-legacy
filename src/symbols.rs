@@ -54,6 +54,7 @@ pub struct ModuleSymbolSummary {
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct ImportSymbolSummary {
+    pub id: String,
     pub module: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub alias: Option<String>,
@@ -141,6 +142,7 @@ pub fn build_symbol_graph(program: &Program) -> SymbolGraph {
         let owner = import_owner_module(import);
         if let Some(index) = indexes.get(&owner).copied() {
             module_summaries[index].imports.push(ImportSymbolSummary {
+                id: import.id.clone(),
                 module: import.module.clone(),
                 alias: import.alias.clone(),
             });
@@ -191,6 +193,7 @@ pub fn build_symbol_graph(program: &Program) -> SymbolGraph {
             left.module
                 .cmp(&right.module)
                 .then_with(|| left.alias.cmp(&right.alias))
+                .then_with(|| left.id.cmp(&right.id))
         });
         module
             .types
