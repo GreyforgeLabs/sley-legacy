@@ -100,6 +100,26 @@
       }
     },
     {
+      "name": "check_missing_return_json",
+      "args": ["check", "--json", "fixtures/corpus/rejected/missing_return.sley"],
+      "covers": [
+        "cli:check",
+        "json:sley.diagnostics.report.v0",
+        "diagnostic:MISSING_RETURN"
+      ],
+      "expect": {
+        "success": false,
+        "stderr_contains": ["check failed"],
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.diagnostics.report.v0" },
+          { "pointer": "/status", "value": "error" },
+          { "pointer": "/diagnostics/0/id", "value": "MISSING_RETURN" },
+          { "pointer": "/diagnostics/0/repair_hints/0/kind", "value": "insert_return" },
+          { "pointer": "/diagnostics/0/repair_hints/1/kind", "value": "replace_task_body" }
+        ]
+      }
+    },
+    {
       "name": "ast_hello_task_json",
       "args": ["ast", "--json", "--node", "task:app.hello.main", "examples/hello.sley"],
       "covers": ["cli:ast"],

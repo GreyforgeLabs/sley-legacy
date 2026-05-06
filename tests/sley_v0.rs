@@ -7376,6 +7376,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "cli:seal",
         "cli:zjx",
         "cli:graft-dry-run",
+        "diagnostic:MISSING_RETURN",
         "lint:unused_declared_effect",
         "lint:raw_host_adapter",
         "host:DatabaseRead",
