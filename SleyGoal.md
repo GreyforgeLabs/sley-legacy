@@ -281,7 +281,8 @@ Current verified surface:
   project checks, plus scoped seeded `Network` capability acceptance and
   scope-denial diagnostics under the runtime smoke surface, plus a standalone
   dogfood agent deploy pipeline example with strict check/lint/run/verify/deploy
-  dry-run smoke coverage across SecretRead, Network, ModelCall, and Deploy.
+  dry-run and local artifact smoke coverage across SecretRead, Network,
+  ModelCall, and Deploy.
 - Stable JSON roots now include bounded AST node reports, query reports, lint
   reports, run reports, doctor reports, edit-plan reports, verify reports,
   deploy dry-run reports, deploy artifact manifests, deploy artifact check
