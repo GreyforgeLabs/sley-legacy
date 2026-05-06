@@ -5578,6 +5578,7 @@ fn graph_slice_schema_reuses_strict_graft_operation_affordances() {
     .expect("parse graph slice schema");
     let operation_ref = serde_json::json!("sley.edit_plan.report.v0#/$defs/graftOperation");
     for pointer in [
+        "/$defs/insertAffordance/properties/operation/$ref",
         "/$defs/moveAffordance/properties/operation/$ref",
         "/$defs/moveDestination/properties/operation/$ref",
         "/$defs/deleteAffordance/properties/operation/$ref",
@@ -5600,6 +5601,14 @@ fn graph_slice_schema_covers_focus_task_and_call_summaries() {
     assert_eq!(
         schema.pointer("/properties/focus/$ref"),
         Some(&serde_json::json!("#/$defs/sliceFocus"))
+    );
+    assert_eq!(
+        schema.pointer("/properties/insert_affordances/items/$ref"),
+        Some(&serde_json::json!("#/$defs/insertAffordance"))
+    );
+    assert_eq!(
+        schema.pointer("/$defs/insertAffordance/properties/target_kind/enum"),
+        Some(&serde_json::json!(["block"]))
     );
     assert_eq!(
         schema.pointer("/$defs/sliceFocus/additionalProperties"),
@@ -9087,6 +9096,52 @@ task main -> Int {
     let program = parse_program(source).expect("parse source");
     let slice = slice_symbol_graph(&program, "task:main.main").expect("slice main");
 
+    let insert_body = slice
+        .insert_affordances
+        .iter()
+        .find(|affordance| affordance.target == "block:task:main.main")
+        .expect("task-body insert affordance");
+    assert_eq!(insert_body.target_kind, "block");
+    assert_eq!(insert_body.max_position, 3);
+    assert_eq!(
+        insert_body.operation.pointer("/op"),
+        Some(&serde_json::json!("InsertStatement"))
+    );
+    assert_eq!(
+        insert_body.operation.pointer("/payload/source"),
+        Some(&serde_json::json!("forge { }"))
+    );
+    assert_eq!(
+        insert_body.operation.pointer("/payload/position"),
+        Some(&serde_json::json!(3))
+    );
+    assert_eq!(
+        insert_body.editable_json_pointers,
+        vec![
+            "/payload/source".to_string(),
+            "/payload/position".to_string()
+        ]
+    );
+    let insert_graft: GraftInput =
+        serde_json::from_value(insert_body.operation.clone()).expect("parse insert affordance");
+    let insert_outcome = apply_graft_input(&program, insert_graft, Some("agent:test".to_string()));
+    assert_eq!(
+        insert_outcome.status, "accepted",
+        "{:#?}",
+        insert_outcome.diagnostics
+    );
+
+    let insert_nested = slice
+        .insert_affordances
+        .iter()
+        .find(|affordance| affordance.target == "block:task:main.main:stmt:1:then")
+        .expect("nested block insert affordance");
+    assert_eq!(insert_nested.max_position, 1);
+    assert_eq!(
+        insert_nested.operation.pointer("/target"),
+        Some(&serde_json::json!("block:task:main.main:stmt:1:then"))
+    );
+
     let nested_statement = slice
         .move_affordances
         .iter()
@@ -11675,6 +11730,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:operations:add-module-declaration",
         "graft:operations:add-take",
         "graft:operations:remove-task-effect",
+        "graph-slice:insert-affordances",
         "graft:templates:lint-declaration-delete",
         "graft:templates:lint-declaration-target",
         "graft:templates:module-name-inference",

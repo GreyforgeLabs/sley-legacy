@@ -176,7 +176,8 @@ Rules:
   `move_take`, and destination-variant templates when legal graph-slice
   destinations exist. Agents can target a specific task surface by node id or
   qualified name for task-body templates including a checked
-  `insert_statement` starter, a block node id for a checked `insert_statement`
+  `insert_statement` starter, a block node id backed by graph-slice insert
+  affordances for a checked `insert_statement`
   starter, a statement or take node id for direct checked graph-slice
   move/delete templates, an expression node id for a checked no-op
   `replace_expression` starter, the `program` missing-module surface, or a lint
@@ -342,9 +343,10 @@ agents can plan the supported structural edit.
 Graph, graph-slice, and query module import summaries now expose canonical
 import node ids so agents can copy import graft targets directly from the
 machine contract instead of reconstructing them.
-Graph slices also expose bounded `MoveNode` affordances for import, type,
-effect, task, statement, and take movement planning, including exact parent
-ids and destination insertion limits, starter operation JSON, and editable JSON
+Graph slices also expose bounded `InsertStatement` affordances for task-local
+block insertion, plus bounded `MoveNode` affordances for import, type, effect,
+task, statement, and take movement planning, including exact parent ids and
+destination insertion limits, starter operation JSON, and editable JSON
 pointers. They also expose bounded `DeleteNode` affordances for import, type,
 effect, task, statement, and take deletion planning, plus `ReplaceExpression`
 affordances for task-local expression replacement; `sley plan
@@ -511,8 +513,8 @@ The current smoke manifest covers:
   `rename_and_update_call_sites` transaction through `sley fix --write`
 - a write/query/verify smoke for `remove_take_and_remove_call_arg`, proving
   unused-take cleanup can also update resolved callers
-- graph-slice replace affordances and checked `replace_expression` graft
-  templates in edit-plan reports
+- graph-slice insert and replace affordances plus checked `insert_statement`
+  and `replace_expression` graft templates in edit-plan reports
 - checked `sley fix --source`, `--source-file`, and `--position` payload
   overrides for single-operation templates, including unsupported override
   diagnostics
@@ -702,7 +704,7 @@ Near-term:
    graft, module, and runtime authority cases.
 3. Start consuming `sley.query.report.v0` and `sley.lint.report.v0` from Sley
    helper passes, then broaden authority, style, and migration lints.
-4. Extend graph-slice grafts around move, delete, and replace planning.
+4. Extend graph-slice grafts around insert, move, delete, and replace planning.
 5. Harden graph-slice grafts for broader graph-contract checks.
 
 Medium-term:
