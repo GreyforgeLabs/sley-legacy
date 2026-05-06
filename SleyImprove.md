@@ -189,7 +189,8 @@ Rules:
 - `sley-workbench` exposes a local read-only inspection report and optional
   static HTML page over doctor/query/lint/plan/graph panels.
 - `sley-docgen` exposes checked Markdown reference generation over
-  query-derived module, task, type, effect, and host capability docs.
+  query-derived module, task, type, effect, and host capability docs. Its
+  report schema reuses the strict query task/type/effect row definitions.
 - `sley-agent-bench` exposes a deterministic local benchmark for the
   agent-facing edit loop, including JSON inspection, checked repair selection,
   write-mode fix, post-fix gates, trace receipt, seal, and ZJX evidence.

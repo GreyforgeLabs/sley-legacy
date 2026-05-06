@@ -37,15 +37,15 @@
     },
     "tasks": {
       "type": "array",
-      "items": { "type": "object" }
+      "items": { "$ref": "sley.query.report.v0#/$defs/queryTaskSummary" }
     },
     "types": {
       "type": "array",
-      "items": { "type": "object" }
+      "items": { "$ref": "sley.query.report.v0#/$defs/queryTypeSummary" }
     },
     "effects": {
       "type": "array",
-      "items": { "type": "object" }
+      "items": { "$ref": "sley.query.report.v0#/$defs/queryEffectSummary" }
     },
     "capabilities": {
       "type": "array",
@@ -53,7 +53,7 @@
     },
     "diagnostics": {
       "type": "array",
-      "items": { "type": "object" }
+      "items": { "$ref": "sley.diagnostics.report.v0#/$defs/diagnostic" }
     },
     "issues": {
       "type": "array",

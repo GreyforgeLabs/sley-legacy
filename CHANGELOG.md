@@ -53,6 +53,8 @@ here. Dates use UTC-independent calendar dates from the local repo history.
   sandbox-runner, workbench, and ZJX JSON reports against their declared
   schemas. `sley.workbench.report.v0` now accepts the current nested
   `sley.lint.report.v0` `findings` status.
+- `sley.docgen.report.v0` now schema-links generated task, type, effect, and
+  diagnostic rows to the strict query and diagnostic contract definitions.
 - The local syntax gate bootstraps Tree-sitter npm dependencies with `npm ci`
   when needed, and the GitHub composite action installs stable Node before
   running `make v1`.
