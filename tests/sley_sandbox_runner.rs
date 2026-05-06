@@ -8,6 +8,22 @@ use serde_json::{Value as JsonValue, json};
 mod support;
 
 #[test]
+fn sandbox_report_schema_pins_manifest_schema_and_target() {
+    let schema: JsonValue = serde_json::from_str(include_str!(
+        "../docs/schemas/sley.sandbox.report.v0.schema.json"
+    ))
+    .expect("parse sandbox report schema");
+    assert_eq!(
+        schema.pointer("/properties/manifest_schema/const"),
+        Some(&json!("sley.sandbox.manifest.v0"))
+    );
+    assert_eq!(
+        schema.pointer("/properties/target/minLength"),
+        Some(&json!(1))
+    );
+}
+
+#[test]
 fn sandbox_runner_replays_manifest_with_seeded_file_root() {
     let root = temp_project_dir("sandbox-runner");
     fs::create_dir_all(&root).expect("create temp root");
