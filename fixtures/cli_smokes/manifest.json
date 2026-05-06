@@ -9490,6 +9490,66 @@
       }
     },
     {
+      "name": "deploy_agent_deploy_pipeline_artifacts_json",
+      "args": [
+        "deploy",
+        "--json",
+        "--dry-run",
+        "--artifacts-dir",
+        "{tmp}/agent-deploy-pipeline-artifacts",
+        "--cap",
+        "SecretRead",
+        "--secret",
+        "api_key",
+        "redacted",
+        "--cap",
+        "Network",
+        "--http-text",
+        "https://example.test/profile",
+        "profile ready",
+        "--cap",
+        "ModelCall",
+        "--model-output",
+        "deploy-plan",
+        "plan approved",
+        "--cap",
+        "Deploy",
+        "--deploy-result",
+        "staging",
+        "staged",
+        "examples/agent_deploy_pipeline.sley"
+      ],
+      "covers": [
+        "cli:deploy",
+        "dogfood:agent-deploy-pipeline",
+        "json:sley.deploy.report.v0",
+        "readiness:deploy-package-artifacts",
+        "readiness:deploy-package-dry-run",
+        "host:SecretRead",
+        "host:Network",
+        "host:ModelCall",
+        "host:Deploy"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_contains": [
+          "agent-deploy-pipeline-artifacts",
+          "deploy-report.json",
+          "seal.json",
+          "zjx-envelope.json",
+          "manifest.json"
+        ],
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.deploy.report.v0" },
+          { "pointer": "/status", "value": "ready" },
+          { "pointer": "/summary/verify_status", "value": "passed" },
+          { "pointer": "/verify/runtime/value/value/value", "value": "profile ready | plan approved | staged" },
+          { "pointer": "/policy/live_deploy_allowed", "value": false },
+          { "pointer": "/policy/provider_calls", "value": false }
+        ]
+      }
+    },
+    {
       "name": "run_spend_json",
       "args": [
         "run",

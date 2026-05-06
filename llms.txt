@@ -365,7 +365,7 @@ Current development phase:
 - `examples/agent_deploy_pipeline.sley` is the standalone dogfood path for
   SecretRead + Network + ModelCall + Deploy: check it, lint with denied
   warnings, run with deterministic seeds, verify with denied warnings, then
-  build a local deploy dry-run package
+  build a local deploy dry-run package with optional artifact handoff files
 - next development work should keep broadening style and migration lints after
   the empty-if cleanup path
 - project graft writeback now supports create/update/delete module files,
