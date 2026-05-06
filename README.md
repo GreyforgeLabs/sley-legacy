@@ -156,8 +156,8 @@ Implemented now:
   statements that can be safely rewritten with `?`,
   `qualify_imported_call` templates for simple imported task calls that should
   be alias- or module-qualified,
-  `--template-surface <surface>` targeting for task, expression, program, or
-  lint surfaces, `--emit-graft <kind>` for direct
+  `--template-surface <surface>` targeting for task, statement, take,
+  expression, program, or lint surfaces, `--emit-graft <kind>` for direct
   operation/transaction JSON handoff to `sley graft`, and
   `schema: "sley.edit_plan.report.v0"`
 - checked JSON fix previews with `sley fix --kind <kind>`, consuming the same

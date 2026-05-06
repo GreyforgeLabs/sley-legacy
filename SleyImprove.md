@@ -175,7 +175,8 @@ Rules:
   `move_statement`,
   `move_take`, and destination-variant templates when legal graph-slice
   destinations exist. Agents can target a specific task surface by node id or
-  qualified name, an expression node id for a checked no-op
+  qualified name, a statement or take node id for direct checked graph-slice
+  move/delete templates, an expression node id for a checked no-op
   `replace_expression` starter, the `program` missing-module surface, or a lint
   finding node id. Agents can use `--emit-graft <kind>` to print
   one matching operation or transaction JSON directly for dry-run or write-mode
@@ -694,8 +695,7 @@ Near-term:
 3. Start consuming `sley.query.report.v0` and `sley.lint.report.v0` from Sley
    helper passes, then broaden authority, style, and migration lints.
 4. Extend graph-slice grafts around move, delete, and replace planning.
-5. Harden graph-slice grafts for richer take movement planning and broader
-   graph-contract checks.
+5. Harden graph-slice grafts for broader graph-contract checks.
 
 Medium-term:
 
