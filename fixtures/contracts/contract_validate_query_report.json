@@ -1,0 +1,10 @@
+{
+  "schema": "sley.contract.validate.v0",
+  "status": "passed",
+  "validation_level": "json_schema_draft_2020_12",
+  "requested_schema": "sley.query.report.v0",
+  "report_path": "fixtures/contracts/query_project_tasks.json",
+  "schema_dir": "docs/schemas",
+  "report_schema": "sley.query.report.v0",
+  "issues": []
+}

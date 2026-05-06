@@ -125,7 +125,8 @@ Rules:
 - AST program/node, diagnostic-report, symbol-graph, graph-slice, query-report,
   lint-report, run-report, graft-outcome, trace-report, trace-seal,
   ZJX-envelope, doctor-report, project-scaffold, and CI/deploy report
-  snapshots are locked under `fixtures/contracts/`.
+  snapshots, plus contract inventory/validate report snapshots, are locked
+  under `fixtures/contracts/`.
 - JSON Schema files live under `docs/schemas/`; the AST schema covers nested
   declarations, statements, expressions, type expressions, spans, and
   provenance, the query schema exposes strict task/take/type/effect/call row
@@ -137,9 +138,10 @@ Rules:
   focus, task, and call-summary payloads to shared contracts, `sley-ci`
   check/lint/doctor/plan/run/verify/deploy/smoke reports and `sley-contract`
   inventory/fixture-check/validate/deploy-artifact-check reports have versioned
-  schemas, the graft outcome and trace receipt schemas pin accepted provenance
-  records, the ZJX envelope schema pins graph, slice, and trace receipt
-  handoff refs with contract snapshots, the deploy artifact manifest schema
+  schemas and representative fixtures, the graft outcome and trace receipt
+  schemas pin accepted provenance records, the ZJX envelope schema pins graph,
+  slice, and trace receipt handoff refs with contract snapshots, the deploy
+  artifact manifest schema
   pins report/seal/package file digests, and the remaining schema files are
   still root-contract v0 shapes.
 - Diagnostics include stable IDs, node IDs, spans where possible, and repair

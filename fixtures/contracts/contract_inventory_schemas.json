@@ -1,0 +1,182 @@
+{
+  "schema": "sley.contract.inventory.v0",
+  "status": "passed",
+  "schema_dir": "docs/schemas",
+  "schema_count": 25,
+  "schemas": [
+    {
+      "id": "sley.ast.node.v0",
+      "path": "docs/schemas/sley.ast.node.v0.schema.json",
+      "title": "Sley AST Node Report v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.ast.program.v0",
+      "path": "docs/schemas/sley.ast.program.v0.schema.json",
+      "title": "Sley AST Program v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.ci.report.v0",
+      "path": "docs/schemas/sley.ci.report.v0.schema.json",
+      "title": "Sley CI Report v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.cli_smoke.manifest.v0",
+      "path": "docs/schemas/sley.cli_smoke.manifest.v0.schema.json",
+      "title": "Sley CLI Smoke Manifest v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.contract.fixture_check.v0",
+      "path": "docs/schemas/sley.contract.fixture_check.v0.schema.json",
+      "title": "Sley Contract Fixture Check Report v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.contract.inventory.v0",
+      "path": "docs/schemas/sley.contract.inventory.v0.schema.json",
+      "title": "Sley Contract Inventory Report v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.contract.validate.v0",
+      "path": "docs/schemas/sley.contract.validate.v0.schema.json",
+      "title": "Sley Contract Validate Report v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.deploy.artifact_check.v0",
+      "path": "docs/schemas/sley.deploy.artifact_check.v0.schema.json",
+      "title": "Sley Deploy Artifact Check Report v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.deploy.artifacts.v0",
+      "path": "docs/schemas/sley.deploy.artifacts.v0.schema.json",
+      "title": "Sley Deploy Artifact Manifest v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.deploy.report.v0",
+      "path": "docs/schemas/sley.deploy.report.v0.schema.json",
+      "title": "Sley Deploy Dry-Run Report v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.diagnostics.report.v0",
+      "path": "docs/schemas/sley.diagnostics.report.v0.schema.json",
+      "title": "Sley Diagnostic Report v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.doctor.report.v0",
+      "path": "docs/schemas/sley.doctor.report.v0.schema.json",
+      "title": "Sley Doctor Report v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.edit_plan.report.v0",
+      "path": "docs/schemas/sley.edit_plan.report.v0.schema.json",
+      "title": "Sley Edit Plan Report v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.graft.outcome.v0",
+      "path": "docs/schemas/sley.graft.outcome.v0.schema.json",
+      "title": "Sley Graft Outcome v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.lint.report.v0",
+      "path": "docs/schemas/sley.lint.report.v0.schema.json",
+      "title": "Sley Lint Report v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.project.scaffold.v0",
+      "path": "docs/schemas/sley.project.scaffold.v0.schema.json",
+      "title": "Sley Project Scaffold Report v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.query.report.v0",
+      "path": "docs/schemas/sley.query.report.v0.schema.json",
+      "title": "Sley Query Report v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.run.report.v0",
+      "path": "docs/schemas/sley.run.report.v0.schema.json",
+      "title": "Sley Run Report v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.symbol_graph.slice.v0",
+      "path": "docs/schemas/sley.symbol_graph.slice.v0.schema.json",
+      "title": "Sley Symbol Graph Slice v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.symbol_graph.v0",
+      "path": "docs/schemas/sley.symbol_graph.v0.schema.json",
+      "title": "Sley Symbol Graph v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.trace.receipt.v0",
+      "path": "docs/schemas/sley.trace.receipt.v0.schema.json",
+      "title": "Sley Trace Receipt v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.trace.report.v0",
+      "path": "docs/schemas/sley.trace.report.v0.schema.json",
+      "title": "Sley Trace Report v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.trace.seal.v0",
+      "path": "docs/schemas/sley.trace.seal.v0.schema.json",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.verify.report.v0",
+      "path": "docs/schemas/sley.verify.report.v0.schema.json",
+      "title": "Sley Verify Report v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.zjx.envelope.v0",
+      "path": "docs/schemas/sley.zjx.envelope.v0.schema.json",
+      "title": "Sley ZJX Envelope v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    }
+  ]
+}

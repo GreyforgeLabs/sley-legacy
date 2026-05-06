@@ -198,7 +198,8 @@ Current verified surface:
   reports, run reports, doctor reports, edit-plan reports, verify reports,
   deploy dry-run reports, deploy artifact manifests, deploy artifact check
   reports, project scaffold reports, `sley-ci` reports, `sley-contract`
-  utility reports, and the CLI smoke manifest in addition to AST program,
+  utility reports with locked inventory/validate fixtures, and the CLI smoke
+  manifest in addition to AST program,
   diagnostics, graph, graph slice, trace report, trace receipt, trace seal,
   graft outcome, and ZJX envelope roots. The edit-plan schema now pins strict
   graft operation and transaction template envelopes,

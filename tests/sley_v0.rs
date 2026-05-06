@@ -6312,6 +6312,10 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     let inventory_json: serde_json::Value =
         serde_json::from_slice(&inventory.stdout).expect("parse inventory JSON");
+    assert_json_snapshot(
+        &inventory_json,
+        include_str!("../fixtures/contracts/contract_inventory_schemas.json"),
+    );
     assert_eq!(
         inventory_json.pointer("/schema"),
         Some(&serde_json::json!("sley.contract.inventory.v0"))
@@ -6367,7 +6371,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(53))
+        Some(&serde_json::json!(55))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -6406,6 +6410,10 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     let validate_json: serde_json::Value =
         serde_json::from_slice(&validate.stdout).expect("parse validate JSON");
+    assert_json_snapshot(
+        &validate_json,
+        include_str!("../fixtures/contracts/contract_validate_query_report.json"),
+    );
     assert_eq!(
         validate_json.pointer("/schema"),
         Some(&serde_json::json!("sley.contract.validate.v0"))
