@@ -631,8 +631,8 @@ infrastructure. `--json` emits the scaffold report with relative file paths
 exact next-command vectors, and typed next-action reasons under
 `sley.project.scaffold.v0`. The deploy scaffold's generated next actions are
 the checked first-run sequence: strict check, doctor readiness, task query,
-edit plan, lint gate, seeded deploy verification, seeded deploy run, seal, and
-ZJX package.
+edit plan, lint gate, seeded deploy verification with denied warnings, seeded
+deploy run, seal, and ZJX package.
 
 `sley doctor` is the first deterministic helper that consumes the strict
 checker plus checked query and lint reports into one agent readiness report.

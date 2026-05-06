@@ -135,7 +135,8 @@ Rules:
 - `sley new --json` emits typed scaffold `next_actions` plus legacy
   `next_commands`; the deploy starter's generated action sequence is executed
   in integration coverage so first-run check, doctor, query, plan, lint,
-  verify, run, seal, and ZJX package gates cannot silently drift.
+  warning-denying verify, run, seal, and ZJX package gates cannot silently
+  drift.
 - `sley plan` consumes the same checked surfaces into ranked task edit
   surfaces, post-edit gate commands, and optional starter graft operation
   templates, rename-plus-call-site transactions, and add-take-plus-call-arg

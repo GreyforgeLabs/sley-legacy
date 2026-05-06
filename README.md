@@ -214,10 +214,13 @@ sley new --template deploy --name agent-app agent-app
 cd agent-app
 sley check --json .
 sley doctor --json .
+sley query --json --kind tasks .
 sley plan --json .
-sley verify --json --cap Deploy --deploy-result staging staged .
 sley lint --json --deny-warnings .
+sley verify --json --deny-warnings --cap Deploy --deploy-result staging staged .
 sley run --json --cap Deploy --deploy-result staging staged .
+sley seal --json .
+sley zjx --json .
 ```
 
 `sley new` refuses to overwrite existing `sley.toml`, `README.md`, or entry

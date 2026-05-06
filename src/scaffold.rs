@@ -211,9 +211,9 @@ fn manifest_source(name: &str, module: &str) -> String {
 
 fn readme_source(name: &str, template: ScaffoldTemplate) -> String {
     let (verify, run) = match template {
-        ScaffoldTemplate::Hello => ("sley verify --json .", "sley run --json ."),
+        ScaffoldTemplate::Hello => ("sley verify --json --deny-warnings .", "sley run --json ."),
         ScaffoldTemplate::Deploy => (
-            "sley verify --json --cap Deploy --deploy-result staging staged .",
+            "sley verify --json --deny-warnings --cap Deploy --deploy-result staging staged .",
             "sley run --json --cap Deploy --deploy-result staging staged .",
         ),
     };
@@ -267,8 +267,8 @@ fn next_actions(template: ScaffoldTemplate) -> Vec<ScaffoldNextAction> {
         ScaffoldTemplate::Hello => vec![
             next_action(
                 "verify_local",
-                "run the deterministic verification gate",
-                vec!["sley", "verify", "--json", "."],
+                "run the deterministic verification gate with denied warnings",
+                vec!["sley", "verify", "--json", "--deny-warnings", "."],
             ),
             next_action(
                 "run_local",
@@ -279,11 +279,12 @@ fn next_actions(template: ScaffoldTemplate) -> Vec<ScaffoldNextAction> {
         ScaffoldTemplate::Deploy => vec![
             next_action(
                 "verify_seeded_deploy",
-                "verify deploy authority with a seeded provider result",
+                "verify deploy authority with a seeded provider result and denied warnings",
                 vec![
                     "sley",
                     "verify",
                     "--json",
+                    "--deny-warnings",
                     "--cap",
                     "Deploy",
                     "--deploy-result",

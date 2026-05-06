@@ -60,6 +60,7 @@
       "sley",
       "verify",
       "--json",
+      "--deny-warnings",
       "--cap",
       "Deploy",
       "--deploy-result",
@@ -147,11 +148,12 @@
     },
     {
       "kind": "verify_seeded_deploy",
-      "reason": "verify deploy authority with a seeded provider result",
+      "reason": "verify deploy authority with a seeded provider result and denied warnings",
       "command": [
         "sley",
         "verify",
         "--json",
+        "--deny-warnings",
         "--cap",
         "Deploy",
         "--deploy-result",

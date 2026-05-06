@@ -145,8 +145,8 @@ Current development phase:
 - `sley new --json` emits `sley.project.scaffold.v0` and creates
   non-destructive `hello` or deterministic `deploy` starter projects that can
   immediately run through check, doctor, query, plan, lint, seeded runtime
-  gates, seal, and ZJX handoff packaging; scaffold JSON includes typed
-  `next_actions` plus legacy `next_commands`
+  gates with denied warnings, seal, and ZJX handoff packaging; scaffold JSON
+  includes typed `next_actions` plus legacy `next_commands`
 - `sley doctor --json` emits `sley.doctor.report.v0` and consumes strict
   diagnostics plus checked query/lint summaries into one agent readiness report;
   warning reports include `plan_lint_repairs` next-actions that call

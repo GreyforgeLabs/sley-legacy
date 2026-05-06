@@ -3450,6 +3450,7 @@ task main -> Used uses UsedEffect {
                 "sley".to_string(),
                 "verify".to_string(),
                 "--json".to_string(),
+                "--deny-warnings".to_string(),
                 "--cap".to_string(),
                 "Deploy".to_string(),
                 "--deploy-result".to_string(),
@@ -3539,11 +3540,13 @@ task main -> Used uses UsedEffect {
             },
             ScaffoldNextAction {
                 kind: "verify_seeded_deploy".to_string(),
-                reason: "verify deploy authority with a seeded provider result".to_string(),
+                reason: "verify deploy authority with a seeded provider result and denied warnings"
+                    .to_string(),
                 command: vec![
                     "sley".to_string(),
                     "verify".to_string(),
                     "--json".to_string(),
+                    "--deny-warnings".to_string(),
                     "--cap".to_string(),
                     "Deploy".to_string(),
                     "--deploy-result".to_string(),
