@@ -605,7 +605,7 @@ The CLI smoke manifest carries
 `schema: "sley.doctor.report.v0"`. Edit-plan reports carry
 `schema: "sley.edit_plan.report.v0"`. CI wrapper reports carry
 `schema: "sley.ci.report.v0"` for check, lint, doctor, plan, run, verify,
-deploy, smoke, and corpus wrappers.
+deploy, smoke, corpus, and examples wrappers.
 The deploy wrapper passes `--artifacts-dir <dir>` through to `sley deploy`
 when local handoff files are requested. Deploy dry-run reports carry
 `schema: "sley.deploy.report.v0"`; deploy artifact manifests carry
@@ -707,6 +707,11 @@ dry-run reports, typed deploy and agent scaffold next-actions, and
 seeded host-adapter
 execution for `FileRead`, `FileWrite`, `DatabaseRead`, `DatabaseWrite`,
 `Network`, `Shell`, `ModelCall`, `SecretRead`, `Deploy`, and `Spend`.
+
+The packaged example gate is exposed through `sley-ci examples --json
+examples`. It checks each `sley.toml` example as a project root, checks
+standalone `.sley` examples directly, and formatter-round-trips every shipped
+`.sley` source under `examples/`.
 
 `sley new` is the v0 project scaffold command. It writes a `sley.toml`,
 `README.md`, and entry module source file, refusing to overwrite any of those

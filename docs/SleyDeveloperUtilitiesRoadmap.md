@@ -80,7 +80,8 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
 
 2. `sley-ci`
    - Inputs: project path, selected capabilities, optional seeded runtime
-     values, optional smoke manifest, optional corpus manifest.
+     values, optional smoke manifest, optional corpus manifest, optional
+     examples root.
    - Outputs: pass/fail summary plus machine-readable report artifact.
    - MVP commands:
      - `sley-ci check .`
@@ -88,13 +89,14 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
      - `sley-ci deploy --dry-run .`
      - `sley-ci smoke fixtures/cli_smokes/manifest.json`
      - `sley-ci corpus fixtures/corpus/manifest.json`
+     - `sley-ci examples examples`
    - Scaffold:
      - `.github/actions/sley-v1/action.yml`;
      - `bin/sley-ci`;
      - `.pre-commit-config.yaml`;
      - default workflow under `.github/workflows/`.
    - Current bootstrap: in-tree `src/bin/sley-ci.rs` exposes `check`, `lint`,
-     `doctor`, `plan`, `run`, `verify`, `deploy`, `smoke`, and `corpus`
+     `doctor`, `plan`, `run`, `verify`, `deploy`, `smoke`, `corpus`, and `examples`
      wrappers with
      `schema: "sley.ci.report.v0"` output. `.github/actions/sley-v1/action.yml`,
      `.github/workflows/v1.yml`, and `.pre-commit-config.yaml` now run the
@@ -103,9 +105,9 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
    - Bootstrap done when generated `sley new --template deploy` and
      `sley new --template agent` projects can run seeded verify gates, local
      deploy dry-run package reports, a CLI smoke manifest, and the
-     accepted/rejected corpus manifest through `sley-ci`. The repo-level
-     `Makefile` now exposes `make v1` to run the current local gate stack in
-     one command.
+     accepted/rejected corpus manifest and packaged examples through `sley-ci`.
+     The repo-level `Makefile` now exposes `make v1` to run the current local
+     gate stack in one command.
 
 3. `tree-sitter-sley`
    - Inputs: `.sley` source fixtures.
