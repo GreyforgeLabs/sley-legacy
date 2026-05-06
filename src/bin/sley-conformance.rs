@@ -32,6 +32,10 @@ const DEFAULT_SMOKE_TAGS: &[&str] = &[
     "cli:trace",
     "cli:verify",
     "cli:zjx",
+    "graph-slice:delete-affordances",
+    "graph-slice:insert-affordances",
+    "graph-slice:move-affordances",
+    "graph-slice:replace-affordances",
 ];
 
 #[derive(Debug, Parser)]
