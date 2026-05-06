@@ -149,6 +149,8 @@ Rules:
 - The repo-level `Makefile` exposes `make v1` as a local release gate over
   formatting, whitespace diff checks, full Rust tests, contract fixtures,
   corpus conformance, and CLI smokes.
+- `.github/workflows/v1.yml` and `.pre-commit-config.yaml` route hosted CI and
+  local pre-commit checks through the same `make v1` gate.
 - Diagnostics include stable IDs, node IDs, spans where possible, and repair
   hints for common checker failures.
 - `sley doctor` is the first deterministic helper consuming strict check,

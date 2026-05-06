@@ -30,6 +30,8 @@ Read these first:
 - `src/main.rs`
 - `tests/sley_v0.rs`
 - `Makefile`
+- `.github/workflows/v1.yml`
+- `.pre-commit-config.yaml`
 - `docs/schemas/*.schema.json`
 - `fixtures/contracts/*.json`
 - `fixtures/cli_smokes/manifest.json`
@@ -44,6 +46,8 @@ Current verified surface:
 - Current integration coverage is 289 tests.
 - `make v1` wraps fmt, whitespace diff check, full Rust tests, contract
   fixture validation, corpus conformance, and CLI smoke conformance.
+- `.github/workflows/v1.yml` and `.pre-commit-config.yaml` both run the
+  `make v1` gate so local and hosted checks use the same release surface.
 - `sley query --json` emits `schema: "sley.query.report.v0"` and supports
   `--kind all|modules|tasks|types|effects|calls`, `--module <module>`, and
   `--exported`, including strict task/take/type/effect/call row definitions.

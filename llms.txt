@@ -136,6 +136,8 @@ schema/fixture/deploy-handoff contract-kit work; inventory, fixture-check, and
 validate reports have locked fixtures.
 The `sley-ci` binary exposes `check`, `lint`, `doctor`, `plan`, `run`, `verify`, `deploy`, `smoke`, and `corpus` reports
 for local CI and pre-commit gates over existing Sley commands.
+The repo-level `Makefile`, `.github/workflows/v1.yml`, and `.pre-commit-config.yaml`
+all route release checks through `make v1`.
 Graph-slice insert/move/delete/replace affordance operations reuse the strict
 graft operation schema from edit-plan reports.
 Graph-slice focus, optional task, and inbound/outbound call summaries reuse
