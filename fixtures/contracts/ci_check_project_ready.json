@@ -1,0 +1,45 @@
+{
+  "schema": "sley.ci.report.v0",
+  "status": "passed",
+  "command": "check",
+  "target": "examples/project",
+  "summary": {
+    "step_count": 2,
+    "passed_count": 2,
+    "failed_count": 0
+  },
+  "steps": [
+    {
+      "name": "check",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/project"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "issues": []
+    },
+    {
+      "name": "lint_deny_warnings",
+      "status": "passed",
+      "command": [
+        "sley",
+        "lint",
+        "--json",
+        "--deny-warnings",
+        "examples/project"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "stdout_schema": "sley.lint.report.v0",
+      "issues": []
+    }
+  ],
+  "issues": []
+}
