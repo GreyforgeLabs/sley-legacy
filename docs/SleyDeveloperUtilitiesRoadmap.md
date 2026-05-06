@@ -1,6 +1,6 @@
 # Sley Developer Utilities Roadmap
 
-Status: planning scaffold for open source utility work.
+Status: in-tree bootstrap implemented; v1 gate hardening map.
 Date: 2026-05-06
 
 ## Purpose
@@ -24,6 +24,12 @@ Current evidence base:
 - `sley new --json` already exposes typed next actions for first-run projects.
 - `sley plan --json --graft-templates` and `sley fix --dry-run` already expose
   non-mutating repair surfaces that editor and workbench tools can call.
+- `make v1` now runs the focused LSP integration test plus deterministic
+  workbench, agent-bench, migration, docgen, sandbox-runner, and ZJX tool
+  replays in addition to contracts, conformance, corpus, examples, smoke, and
+  syntax gates.
+- `make public-release-check` is the explicit public-cut metadata gate and is
+  expected to fail until license and repository metadata are operator-approved.
 
 ## Ranking Rules
 
@@ -57,7 +63,7 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
 
 ## Priority Backlog
 
-### P0: Build Or Scaffold First
+### P0: Built In-Tree, Split Later Only If Useful
 
 1. `sley-contract-kit`
    - Inputs: `docs/schemas/*.schema.json`, CLI JSON stdout, contract fixtures,
@@ -73,10 +79,11 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
      - current in-tree bootstrap binary: `src/bin/sley-contract.rs`;
      - `crates/sley-contract-kit/` if a reusable crate split is needed;
      - separate `sley-contract-kit` repo when published.
-   - Current bootstrap: `inventory`, `check-fixtures`, and `validate` emit
-     versioned JSON Schema validation reports; `make v1` validates contract
-     fixtures plus corpus and smoke manifests; generated bindings and contract
-     drift reports remain future contract-kit work.
+   - Current bootstrap: `inventory`, `check-fixtures`, `validate`, and
+     `inspect-deploy-artifacts` emit versioned JSON Schema validation reports;
+     `make v1` validates contract fixtures plus corpus and smoke manifests;
+     generated bindings and reusable package splits remain future contract-kit
+     work.
    - Validation bootstrap is done when it validates every current contract
      fixture and release manifest against the matching schema and fails cleanly on a deliberately
      malformed report.
@@ -112,7 +119,8 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
      deploy dry-run package reports, a CLI smoke manifest, and the
      accepted/rejected corpus manifest and packaged examples through `sley-ci`.
      The repo-level `Makefile` now exposes `make v1` to run the current local
-     gate stack, including Tree-sitter syntax parsing, in one command.
+     gate stack, including focused utility replays and Tree-sitter syntax
+     parsing, in one command.
 
 3. `tree-sitter-sley`
    - Inputs: `.sley` source fixtures.
@@ -191,8 +199,10 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
      `sley.conformance.report.v0` and `sley.conformance.coverage.v0`, validates
      contract fixtures and release manifests through `sley-contract`, and
      inventories schema instances, corpus tags, smoke tags, packaged examples,
-     and declared integration-test count drift. The repo-level `make v1` gate
-     runs the JSON report and Tree-sitter syntax parsing.
+     declared integration-test count drift, and public-release metadata
+     blockers. The repo-level `make v1` gate runs the JSON report, while
+     `make public-release-check` turns unresolved public blockers into the
+     explicit nonzero release-cut gate.
    - Done when release-readiness gaps become visible without reading the whole
      test file.
 
@@ -279,20 +289,23 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
 
 ## Recommended Build Order
 
-1. Scaffold `sley-contract-kit` in-tree as a small Rust crate or `xtask` style
-   binary, then split later if it proves useful.
-2. Build `sley-ci` as thin wrappers around existing CLI commands. Keep the
-   first version boring and transparent.
-3. Start `tree-sitter-sley` once the accepted fixture set is enough to define
-   the review projection.
-4. Extend `sley-lsp` from the current in-tree server toward project-wide
+The P0/P1 bootstraps are now in-tree. Do not restart them as separate projects
+unless a public packaging decision or external consumer proves the split is
+worth the maintenance cost.
+
+1. Keep `make v1` as the boring local truth: schemas, fixtures, corpus,
+   examples, smoke manifests, utility replays, LSP, and syntax must keep
+   passing together.
+2. Use `make public-release-check` only for release cuts; it should remain
+   blocked until the operator chooses license and repository metadata.
+3. Extend `sley-lsp` from the current in-tree server toward project-wide
    workspace support, editor extension shims, and richer hover/details while
    keeping compiler modules as the semantic authority.
-5. Extend `sley-workbench` from the current static local report toward a live
+4. Extend `sley-workbench` from the current static local report toward a live
    selector UI that can focus lint findings and graph slices without enabling
    writes by default.
-6. Add `sley-conformance` once schema and smoke gaps become annoying enough to
-   justify a dashboard.
+5. Split `sley-contract-kit`, `sley-ci`, or Tree-sitter packages only after the
+   public release posture is settled.
 
 This order keeps every richer tool dependent on the compiler's existing
 machine contracts, not on an unreviewed duplicate parser or private protocol.
