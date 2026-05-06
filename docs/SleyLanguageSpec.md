@@ -564,7 +564,7 @@ sley graph --json --slice task:app.main.main <target>
 sley new --json --template agent --name agent-app agent-app
 sley doctor --json <target>
 sley plan --json [--graft-templates] [--template-surface <surface>] [--emit-graft <kind>] <target>
-sley fix --json --kind <kind> [--template-surface <surface>] [--name <name>] [--type <type>] [--source <source>|--source-file <path>] [--position <n>] [--dry-run|--write] [--trace <trace.jsonl>] <target>
+sley fix --json --kind <kind> [--template-surface <surface>] [--name <name>] [--type <type>] [--module <module>] [--source <source>|--source-file <path>] [--position <n>] [--dry-run|--write] [--trace <trace.jsonl>] <target>
 sley query --json --kind tasks --module app.main <target>
 sley query --json --kind types --module app.main <target>
 sley query --json --kind effects --module app.main <target>
@@ -671,8 +671,8 @@ writes, write-mode fix trace receipts, non-empty trace receipt seals, ZJX
 envelopes carrying graph digests and schema-backed trace receipts, graph-slice
 insert and replace affordances, checked `insert_statement`,
 `replace_statement`, and `replace_expression` graft templates, lint-driven fix
-writes that clear warnings before verify, program-surface declaration template
-planning and declaration dry-run fixes with name/source overrides, deploy
+writes that clear warnings before verify, program-surface declaration/import
+template planning and dry-run fixes with name/source/module overrides, deploy
 dry-run reports, typed deploy and agent scaffold next-actions, and
 seeded host-adapter
 execution for `FileRead`, `FileWrite`, `DatabaseRead`, `DatabaseWrite`,
@@ -782,14 +782,14 @@ still passes.
 `delete_unused_pure_binding` `DeleteNode` templates when deleting the unread
 binding statement preserves a checked program.
 `--template-surface program` emits checked `add_task`,
-`add_type_declaration`, and `add_effect_declaration` starters for adding new
-declarations to the current program module.
+`add_type_declaration`, `add_effect_declaration`, and `add_import` starters for
+adding new declarations and imports to the current program module.
 `--template-surface <surface>` selects a specific task surface by task node id
 or qualified task name, a block node id backed by graph-slice insert
 affordances, a statement node id for direct checked graph-slice move/delete and
 `replace_statement` templates, a take node id for direct checked graph-slice
 move/delete templates, an expression node id for a checked no-op
-`replace_expression` starter template, the `program` declaration and
+`replace_expression` starter template, the `program` declaration/import and
 missing-module surface, or a lint surface by lint finding node id such as
 `import:app.main:app.stale`,
 `type:app.module.Name`, or `effect:app.module.Name`. For selected tasks with
@@ -807,13 +807,14 @@ guessing.
 builds checked plan graft templates internally, selects exactly one named
 operation or transaction, applies it through the same graft checker, and emits
 the normal `sley.graft.outcome.v0` root. Exact block, statement, take, and
-expression node surfaces, plus the `program` declaration surface, can be
+expression node surfaces, plus the `program` declaration/import surface, can be
 selected with `--template-surface` and executed without hand-authoring graft
 JSON. Single-operation templates can also accept
-`--name <name>`, `--type <type>`, `--source <source>`,
-`--source-file <path>`, and `--position <n>` overrides when their editable
-payload fields expose `/payload/name`, `/payload/type`, `/payload/source`, or
-`/payload/position`; unsupported overrides reject with
+`--name <name>`, `--type <type>`, `--module <module>`,
+`--source <source>`, `--source-file <path>`, and `--position <n>` overrides
+when their editable payload fields expose `/payload/name`, `/payload/type`,
+`/payload/module`, `/payload/source`, or `/payload/position`; unsupported
+overrides reject with
 `FIX_OVERRIDE_UNSUPPORTED` before any write path. Default and `--dry-run` mode
 are non-mutating.
 `--write` uses the same project or file writeback and trace receipt path as

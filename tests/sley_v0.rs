@@ -1240,7 +1240,7 @@ task main -> Int {
     );
 
     assert_eq!(report.status, "ready");
-    assert_eq!(report.graft_templates.len(), 3);
+    assert_eq!(report.graft_templates.len(), 4);
     assert!(report.transaction_templates.is_empty());
 
     let add_task = &report.graft_templates[0];
@@ -1287,6 +1287,21 @@ task main -> Int {
     assert_eq!(
         add_effect.editable_json_pointers,
         vec!["/payload/name".to_string()]
+    );
+
+    let add_import = &report.graft_templates[3];
+    assert_eq!(add_import.kind, "add_import");
+    assert_eq!(
+        add_import.operation.pointer("/op"),
+        Some(&serde_json::json!("AddImport"))
+    );
+    assert_eq!(
+        add_import.operation.pointer("/payload/module"),
+        Some(&serde_json::json!("app.new_module"))
+    );
+    assert_eq!(
+        add_import.editable_json_pointers,
+        vec!["/payload/module".to_string()]
     );
 
     for template in &report.graft_templates {
@@ -11036,6 +11051,51 @@ fn fix_template_name_and_type_overrides_dry_run_without_writing() {
 }
 
 #[test]
+fn fix_template_module_override_dry_run_without_writing() {
+    let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let target = repo_root.join("examples/project");
+    let main_file = target.join("src/app/main.sley");
+    let original_main = fs::read_to_string(&main_file).expect("read main example");
+
+    let output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args([
+            "fix",
+            "--json",
+            "--kind",
+            "add_import",
+            "--template-surface",
+            "program",
+            "--module",
+            "app.extra",
+            "--dry-run",
+        ])
+        .arg(&target)
+        .output()
+        .expect("dry-run add-import module override fix");
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+    assert!(
+        output.status.success(),
+        "fix dry-run should accept module add-import override; stdout={stdout} stderr={}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let outcome: GraftOutcome = serde_json::from_str(&stdout).expect("parse outcome");
+    assert_eq!(outcome.status, "accepted");
+    assert_eq!(outcome.provenance[0].operation, "AddImport");
+    assert!(
+        outcome
+            .source
+            .as_deref()
+            .expect("dry-run source")
+            .contains("import app.extra"),
+        "{outcome:#?}"
+    );
+    assert_eq!(
+        fs::read_to_string(&main_file).expect("read main after add-import dry-run"),
+        original_main
+    );
+}
+
+#[test]
 fn fix_template_source_override_replaces_expression_and_rejects_unsupported_fields() {
     let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let target = repo_root.join("examples/project");
@@ -11440,6 +11500,116 @@ export task helper -> Int {
     let outcome: GraftOutcome = serde_json::from_str(&stdout).expect("parse outcome");
     assert_eq!(outcome.status, "accepted");
     assert_eq!(outcome.provenance[0].operation, "AddImport");
+    assert_eq!(
+        fs::read_to_string(&main_path).expect("read main"),
+        "module app.main\n\nimport app.extra\n\ntask main -> Int {\n  return 1\n}\n"
+    );
+    assert_eq!(
+        fs::read_to_string(&extra_path).expect("read extra"),
+        extra_source
+    );
+    let check = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args(["check", "--json"])
+        .arg(&root)
+        .output()
+        .expect("check project");
+    assert!(
+        check.status.success(),
+        "imported existing module project should check; stdout={} stderr={}",
+        String::from_utf8_lossy(&check.stdout),
+        String::from_utf8_lossy(&check.stderr)
+    );
+    let receipts = read_trace_receipts(&root.join(".sley/trace.jsonl")).expect("read trace");
+    assert_eq!(receipts.len(), 1);
+    assert_eq!(receipts[0].provenance[0].operation, "AddImport");
+
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn project_fix_write_adds_import_to_existing_unloaded_module_file() {
+    let root = temp_project_dir("project-fix-existing-import");
+    fs::create_dir_all(root.join("src/app")).expect("create project dirs");
+    fs::write(
+        root.join("sley.toml"),
+        r#"
+[project]
+entry = "app.main"
+"#,
+    )
+    .expect("write manifest");
+    let main_source = r#"module app.main
+
+task main -> Int {
+  return 1
+}
+"#;
+    let extra_source = r#"module app.extra
+
+export task helper -> Int {
+  return 2
+}
+"#;
+    let main_path = root.join("src/app/main.sley");
+    let extra_path = root.join("src/app/extra.sley");
+    fs::write(&main_path, main_source).expect("write main module");
+    fs::write(&extra_path, extra_source).expect("write existing extra module");
+
+    let dry_run = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args([
+            "fix",
+            "--json",
+            "--kind",
+            "add_import",
+            "--template-surface",
+            "program",
+            "--module",
+            "app.extra",
+            "--dry-run",
+        ])
+        .arg(&root)
+        .output()
+        .expect("dry-run add-import fix");
+    let dry_stdout = String::from_utf8(dry_run.stdout).expect("dry-run stdout utf8");
+    assert!(
+        dry_run.status.success(),
+        "fix dry-run should accept existing-module import; stdout={dry_stdout} stderr={}",
+        String::from_utf8_lossy(&dry_run.stderr)
+    );
+    let dry_outcome: GraftOutcome = serde_json::from_str(&dry_stdout).expect("parse dry outcome");
+    assert_eq!(dry_outcome.status, "accepted");
+    assert_eq!(dry_outcome.provenance[0].operation, "AddImport");
+    assert_eq!(
+        fs::read_to_string(&main_path).expect("read main after dry-run"),
+        main_source
+    );
+    assert!(!root.join(".sley/trace.jsonl").exists());
+
+    let write = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args([
+            "fix",
+            "--json",
+            "--kind",
+            "add_import",
+            "--template-surface",
+            "program",
+            "--module",
+            "app.extra",
+            "--write",
+        ])
+        .arg(&root)
+        .output()
+        .expect("write add-import fix");
+    let write_stdout = String::from_utf8(write.stdout).expect("write stdout utf8");
+    assert!(
+        write.status.success(),
+        "fix write should add existing-module import; stdout={write_stdout} stderr={}",
+        String::from_utf8_lossy(&write.stderr)
+    );
+    let write_outcome: GraftOutcome =
+        serde_json::from_str(&write_stdout).expect("parse write outcome");
+    assert_eq!(write_outcome.status, "accepted");
+    assert_eq!(write_outcome.provenance[0].operation, "AddImport");
     assert_eq!(
         fs::read_to_string(&main_path).expect("read main"),
         "module app.main\n\nimport app.extra\n\ntask main -> Int {\n  return 1\n}\n"
@@ -12298,12 +12468,14 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "fix:lint-cleanup-write",
         "fix:remove-take-transaction-write",
         "fix:payload-override-name",
+        "fix:payload-override-module",
         "fix:write-source",
         "fix:payload-override-type",
         "graft:write-source",
         "graft:operations:add-module-declaration",
         "graft:operations:add-import",
         "graft:templates:add-task",
+        "graft:templates:add-import",
         "graft:operations:add-take",
         "graft:operations:remove-task-effect",
         "graft:project-existing-import-write",

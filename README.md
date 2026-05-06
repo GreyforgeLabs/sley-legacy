@@ -161,14 +161,14 @@ Implemented now:
   expression, program, or lint surfaces, including checked task-body and block
   `insert_statement` starters, checked statement-surface `replace_statement`
   starters, and checked program-surface `add_task`, `add_type_declaration`,
-  and `add_effect_declaration` starters, `--emit-graft <kind>` for direct
-  operation/transaction JSON handoff to `sley graft`, and
+  `add_effect_declaration`, and `add_import` starters, `--emit-graft <kind>`
+  for direct operation/transaction JSON handoff to `sley graft`, and
   `schema: "sley.edit_plan.report.v0"`
 - checked JSON fix previews with `sley fix --kind <kind>`, consuming the same
   plan graft templates and applying one named operation or transaction through
   the graft checker, including exact block/statement/take/expression node
   surfaces selected with `--template-surface`, checked `--name`, `--type`,
-  `--source`, `--source-file`, and `--position` payload overrides for
+  `--module`, `--source`, `--source-file`, and `--position` payload overrides for
   single-operation templates that expose those editable fields, and including
   `add_module_declaration` for `missing_module_declaration` lint findings with contextual module-name
   inference; default and `--dry-run` mode stay non-mutating, while `--write`
@@ -252,8 +252,9 @@ Implemented now:
   strict verify readiness afterward, a project-level previewed unused-import
   repair write followed by strict verify, generated deploy and agent scaffold
   quickstarts that re-verify with seeded authority, statement-surface
-  `replace_statement` planning and fix dry runs, program-surface declaration
-  planning and `add_task`/effect fix dry runs with name/source overrides,
+  `replace_statement` planning and fix dry runs, program-surface
+  declaration/import planning and `add_task`/effect/import fix dry runs with
+  name/source/module overrides,
   missing-module checked repair templates with module-name inference,
   lint-driven fix writes that clear warnings before verify, and seeded
   host-adapter execution
@@ -588,7 +589,7 @@ starters, deploy dry-run package reports with optional local artifact manifests,
 scaffold-level seal/ZJX handoff actions,
 temp setup files for write-mode CLI smokes, direct graft write smokes,
 project `AddImport` writeback into existing unloaded module files plus
-follow-up strict project checks,
+follow-up strict project checks through direct graft JSON and `sley fix --write`,
 explicit graft/fix write trace receipts, non-empty trace seal receipts,
 ZJX envelopes carrying schema-backed trace receipts, passed-verify seal/ZJX
 next-actions, lint-driven declaration delete templates and cleanup transactions,

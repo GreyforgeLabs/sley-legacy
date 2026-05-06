@@ -97,7 +97,7 @@ sley graph --json --slice <node-id> <target>
 sley new --json [--template hello|deploy|agent] [--name <name>] [--module <module>] <path>
 sley doctor --json [--deny-warnings] <target>
 sley plan --json [--deny-warnings] [--graft-templates] [--template-surface <surface>] [--emit-graft <kind>] <target>
-sley fix --json --kind <kind> [--template-surface <surface>] [--name <name>] [--type <type>] [--source <source>|--source-file <path>] [--position <n>] [--dry-run|--write] [--trace <trace.jsonl>] <target>
+sley fix --json --kind <kind> [--template-surface <surface>] [--name <name>] [--type <type>] [--module <module>] [--source <source>|--source-file <path>] [--position <n>] [--dry-run|--write] [--trace <trace.jsonl>] <target>
 sley verify --json [--deny-warnings] [runtime gates/seeds] <target>
 sley deploy --json --dry-run [--artifacts-dir <dir>] [runtime gates/seeds] <target>
 sley query --json [--kind all|modules|tasks|types|effects|calls] [--module <module>] <target>
@@ -181,8 +181,9 @@ Rules:
   starter, a statement node id for direct checked graph-slice move/delete and
   `replace_statement` templates, a take node id for direct checked graph-slice
   move/delete templates, an expression node id for a checked no-op
-  `replace_expression` starter, the `program` surface for checked declaration
-  starters, the `program` missing-module surface, or a lint finding node id.
+  `replace_expression` starter, the `program` surface for checked
+  declaration/import starters, the `program` missing-module surface, or a lint
+  finding node id.
   Agents can use `--emit-graft <kind>` to print
   one matching operation or transaction JSON directly for dry-run or write-mode
   `sley graft`.
@@ -193,8 +194,9 @@ Rules:
   take, and expression node surfaces are covered by non-mutating fix dry-run
   smokes so agents can execute a chosen checked node template without
   hand-authoring graft JSON. Single-operation templates can override editable
-  `/payload/name`, `/payload/type`, `/payload/source`, and `/payload/position`
-  fields with `--name`, `--type`, `--source`/`--source-file`, and `--position`.
+  `/payload/name`, `/payload/type`, `/payload/module`, `/payload/source`, and
+  `/payload/position` fields with `--name`, `--type`, `--module`,
+  `--source`/`--source-file`, and `--position`.
   Accepted write-mode fixes use the default trace sidecar or an explicit
   `--trace <trace.jsonl>` receipt path; dry-run fixes never append receipts.
 - `sley verify` is the deterministic CI/pre-deploy helper consuming strict
@@ -362,10 +364,11 @@ affordances for task-local expression replacement; `sley plan
 --graft-templates` filters selected task-internal delete, statement replace,
 and expression replace templates through the checker before surfacing them.
 `sley plan --graft-templates --template-surface program` now emits checked
-`add_task`, `add_type_declaration`, and `add_effect_declaration` starters so
-agents can add new declarations without hand-authoring graft JSON; `sley fix`
-can execute the source-backed declaration starters with `--source` or
-`--source-file` and name-backed starters with `--name`.
+`add_task`, `add_type_declaration`, `add_effect_declaration`, and `add_import`
+starters so agents can add new declarations and imports without hand-authoring
+graft JSON; `sley fix` can execute the source-backed declaration starters with
+`--source` or `--source-file`, name-backed starters with `--name`, and
+import-backed starters with `--module`.
 
 The important rule is not that all operations exist immediately. The important
 rule is that unsupported operations reject cleanly with explicit diagnostics.
@@ -530,12 +533,13 @@ The current smoke manifest covers:
 - graph-slice insert and replace affordances plus checked `insert_statement`,
   `replace_statement`, and `replace_expression` graft templates in edit-plan
   reports
-- program-surface declaration templates for checked `add_task`,
-  `add_type_declaration`, and `add_effect_declaration` starters, plus
-  `add_task` emission and dry-run fix execution with a source override
-- checked `sley fix --name`, `--type`, `--source`, `--source-file`, and
-  `--position` payload overrides for single-operation templates, including
-  unsupported override diagnostics
+- program-surface declaration/import templates for checked `add_task`,
+  `add_type_declaration`, `add_effect_declaration`, and `add_import` starters,
+  plus `add_task` emission and dry-run fix execution with source, name, and
+  module overrides
+- checked `sley fix --name`, `--type`, `--module`, `--source`,
+  `--source-file`, and `--position` payload overrides for single-operation
+  templates, including unsupported override diagnostics
 - deploy and agent scaffold typed next-actions, first-run sequence execution,
   strict seeded `verify --json --deny-warnings` readiness, and local
   `sley deploy --dry-run` package reports, including optional deploy artifact
@@ -571,8 +575,9 @@ The current smoke manifest covers:
   `sley zjx --trace <trace.jsonl>` envelope transport over a non-empty receipt
   chain with a recomputable graph digest
 - project `AddImport` writeback into an existing on-disk module file that was
-  not yet loaded through the entry import graph, followed by a strict project
-  check
+  not yet loaded through the entry import graph, through both direct graft JSON
+  and the `sley fix --write --kind add_import --module <module>` path, followed
+  by strict project checks
 - raw-host adapter migration templates that rewrite eligible raw host calls to
   fallible `try_` adapters with checked `?` propagation
 - unchecked-result migration templates that add checked `?` propagation when

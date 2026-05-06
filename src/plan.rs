@@ -1300,6 +1300,7 @@ fn program_surface_declaration_templates(program: &Program) -> Vec<EditPlanGraft
         add_task_declaration_template(program),
         add_type_declaration_template(program),
         add_effect_declaration_template(program),
+        add_import_template(program),
     ]
     .into_iter()
     .flatten()
@@ -1388,6 +1389,29 @@ fn add_effect_declaration_template(program: &Program) -> Option<EditPlanGraftTem
         surface: "program".to_string(),
         operation,
         editable_json_pointers: vec!["/payload/name".to_string()],
+    })
+}
+
+fn add_import_template(program: &Program) -> Option<EditPlanGraftTemplate> {
+    let module = unique_name(
+        "app.new_module",
+        program.imports.iter().map(|import| import.module.as_str()),
+    );
+    let operation = json!({
+        "op": "AddImport",
+        "payload": {
+            "module": module
+        }
+    });
+    if !graft_operation_checks(program, &operation, Some("agent:plan-add-import")) {
+        return None;
+    }
+    Some(EditPlanGraftTemplate {
+        kind: "add_import".to_string(),
+        reason: "add a checked import to the current program module".to_string(),
+        surface: "program".to_string(),
+        operation,
+        editable_json_pointers: vec!["/payload/module".to_string()],
     })
 }
 
