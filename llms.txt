@@ -244,10 +244,11 @@ Current development phase:
   cleanup rule `unreachable_statement`, and the result-safety rule
   `unchecked_result`
 - `sley new --json` emits `sley.project.scaffold.v0` and creates
-  non-destructive `hello`, deterministic `deploy`, or deterministic `agent`
-  starter projects that can immediately run through check, doctor, query,
-  plan, lint, seeded runtime gates with denied warnings, deploy dry-run
-  packaging, seal, and ZJX handoff packaging; scaffold JSON includes typed
+  non-destructive `hello`, `library`, `cli`, `service-gate`,
+  `data-pipeline`, `deploy`, `agent`, or `agent-task-pack` starter projects
+  that can immediately run through check, doctor, query, plan, lint, local or
+  seeded runtime gates with denied warnings, deploy dry-run packaging where
+  applicable, seal, and ZJX handoff packaging; scaffold JSON includes typed
   `next_actions` plus legacy `next_commands`
 - `sley doctor --json` emits `sley.doctor.report.v0` and consumes strict
   diagnostics plus checked query/lint summaries into one agent readiness report;
@@ -366,12 +367,13 @@ Current development phase:
   arguments by task target plus optional `from`/`scope`
 - `sley verify --json` emits `sley.verify.report.v0` and consumes strict
   diagnostics, checked query/lint summaries, and deterministic runtime
-  execution into one CI/pre-deploy gate; the deploy scaffold has a checked
-  `--deny-warnings --cap Deploy --deploy-result staging staged` smoke, and
-  the agent scaffold has a checked seeded SecretRead/Network/ModelCall/Deploy
-  verify smoke through both `sley verify` and `sley-ci verify`, direct runtime
-  smoke through `sley run` and `sley-ci run`, plus deploy package smoke through
-  `sley deploy` and `sley-ci deploy`; denied warning
+  execution into one CI/pre-deploy gate; scaffold templates include checked
+  local pure starters, a seeded Network service smoke, a checked
+  `--deny-warnings --cap Deploy --deploy-result staging staged` deploy smoke,
+  and seeded SecretRead/Network/ModelCall/Deploy agent smokes through both
+  `sley verify` and `sley-ci verify`, direct runtime smoke through `sley run`
+  and `sley-ci run`, plus deploy package smoke through `sley deploy` and
+  `sley-ci deploy`; denied warning
   reports route agents to checked lint repair plans plus
   dry-run fix previews when the repair is unambiguous before deployment review;
   passed reports point agents to `sley seal --json <target>` and

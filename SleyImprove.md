@@ -94,7 +94,7 @@ sley ast --json <target>
 sley ast --json --node <node-id> <target>
 sley graph --json <target>
 sley graph --json --slice <node-id> <target>
-sley new --json [--template hello|deploy|agent] [--name <name>] [--module <module>] <path>
+sley new --json [--template hello|library|cli|service-gate|data-pipeline|deploy|agent|agent-task-pack] [--name <name>] [--module <module>] <path>
 sley doctor --json [--deny-warnings] <target>
 sley plan --json [--deny-warnings] [--graft-templates] [--template-surface <surface>] [--emit-graft <kind>] <target>
 sley fix --json --kind <kind> [--template-surface <surface>] [--name <name>] [--type <type>] [--module <module>] [--source <source>|--source-file <path>] [--position <n>] [--dry-run|--write] [--trace <trace.jsonl>] <target>
@@ -186,7 +186,9 @@ Rules:
   are executed in integration coverage so first-run check, doctor, query, plan,
   lint, warning-denying verify, run, deploy dry-run package, seal, ZJX package
   gates, and the agent starter's `sley-ci run`/`sley-ci verify`/`sley-ci deploy`
-  handoffs cannot silently drift.
+  handoffs cannot silently drift. The template pack now also covers pure
+  `library`, `cli`, and `data-pipeline` starts plus seeded `service-gate` and
+  split-task `agent-task-pack` starts.
 - `sley plan` consumes the same checked surfaces into ranked task edit
   surfaces, call-row inspection next-actions, post-edit gate commands, and
   optional starter graft operation templates, rename-plus-call-site
@@ -583,12 +585,12 @@ The current smoke manifest covers:
 - checked `sley fix --name`, `--type`, `--module`, `--source`,
   `--source-file`, and `--position` payload overrides for single-operation
   templates, including unsupported override diagnostics
-- deploy and agent scaffold typed next-actions, first-run sequence execution,
-  strict seeded `verify --json --deny-warnings` readiness, and local
-  `sley deploy --dry-run` package reports, including optional deploy artifact
-  manifests plus scaffold-level and passed-verify seal/ZJX handoff next-actions
-  plus the agent scaffold's `sley-ci run`/`sley-ci verify`/`sley-ci deploy`
-  handoffs
+- starter, service, deploy, and agent scaffold typed next-actions, first-run
+  sequence execution, strict seeded `verify --json --deny-warnings` readiness,
+  and local `sley deploy --dry-run` package reports, including optional deploy
+  artifact manifests plus scaffold-level and passed-verify seal/ZJX handoff
+  next-actions plus the agent scaffolds' `sley-ci run`/`sley-ci verify`/
+  `sley-ci deploy` handoffs
 - a standalone dogfood agent deploy pipeline example with strict
   check/lint/run/verify/deploy dry-run coverage across SecretRead, Network,
   ModelCall, and Deploy
@@ -597,8 +599,8 @@ The current smoke manifest covers:
   `sley fix --dry-run` previews with explicit `write_command` vectors, plus a
   staged write-and-verify smoke for the previewed unused-private-task repair
   path and a project-level previewed unused-import repair path, including
-  generated deploy and agent scaffold quickstarts re-verified with seeded
-  authority
+  generated starter, service, deploy, and agent scaffold quickstarts
+  re-verified with local or seeded authority
 - lint-driven declaration delete templates, cleanup transactions, and direct
   declaration surface targeting in edit-plan reports
 - lint-driven missing-module `AddModuleDeclaration` templates, module-name

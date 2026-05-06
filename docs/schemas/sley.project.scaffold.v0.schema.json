@@ -15,7 +15,18 @@
         "root": { "type": "string", "minLength": 1 },
         "source_root": { "const": "src" },
         "entry_module": { "type": "string", "minLength": 1 },
-        "template": { "enum": ["hello", "deploy", "agent"] }
+        "template": {
+          "enum": [
+            "hello",
+            "library",
+            "cli",
+            "service-gate",
+            "data-pipeline",
+            "deploy",
+            "agent",
+            "agent-task-pack"
+          ]
+        }
       },
       "additionalProperties": false
     },
