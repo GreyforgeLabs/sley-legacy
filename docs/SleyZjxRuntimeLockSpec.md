@@ -328,7 +328,7 @@ Minimum required checks:
 - binding kinds are known;
 - immutable bindings are not mutated;
 - mutable bindings use allowed mutable forms;
-- trace receipts, when present, match known receipt schema;
+- trace receipts, when present, match `sley.trace.receipt.v0`;
 - graph slice, when present, references nodes in the full graph;
 - no unknown top-level fields;
 - no unknown graph-node fields unless explicitly versioned.

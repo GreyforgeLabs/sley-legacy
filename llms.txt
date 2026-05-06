@@ -101,6 +101,7 @@ Stable v0 JSON roots:
 - `sley.symbol_graph.slice.v0`
 - `sley.query.report.v0`
 - `sley.lint.report.v0`
+- `sley.trace.receipt.v0`
 - `sley.trace.seal.v0`
 - `sley.graft.outcome.v0`
 - `sley.zjx.envelope.v0`
@@ -111,9 +112,10 @@ Stable v0 JSON roots:
 
 The graft outcome schema pins accepted provenance records with non-empty
 targets and `result: "accepted"`.
+The trace receipt schema is a standalone JSONL record contract that references
+those accepted provenance records.
 The ZJX envelope schema pins a recomputable `graph_digest`, references the
-symbol graph and graph slice schemas, and constrains trace receipts to accepted
-provenance records.
+symbol graph, graph slice, and trace receipt schemas.
 
 Contract references:
 
@@ -135,10 +137,10 @@ Current development phase:
   runs, strict edit-plan graft operation and transaction template schema
   envelopes, direct graft writes, temp setup files for write-mode smokes,
   explicit graft/fix trace receipts, non-empty trace receipt seals, ZJX
-  envelopes carrying trace receipts, lint-driven fix writes that clear
-  warnings before verify, and seeded host-adapter execution while preserving
-  typed recoverable failure records and keeping authority failures as
-  diagnostics
+  envelopes carrying schema-backed trace receipts, lint-driven fix writes that
+  clear warnings before verify, and seeded host-adapter execution while
+  preserving typed recoverable failure records and keeping authority failures
+  as diagnostics
 - checked graph query reports are available through `sley query --json` with
   root schema `sley.query.report.v0`; `--kind types` and `--kind effects`
   give direct declaration rows for record and authority surfaces, while

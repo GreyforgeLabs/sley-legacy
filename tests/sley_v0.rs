@@ -3731,6 +3731,10 @@ task main -> Used uses UsedEffect {
         TRACE_SEAL_SCHEMA,
     );
     assert_schema_file(
+        include_str!("../docs/schemas/sley.trace.receipt.v0.schema.json"),
+        TRACE_RECEIPT_SCHEMA,
+    );
+    assert_schema_file(
         include_str!("../docs/schemas/sley.cli_smoke.manifest.v0.schema.json"),
         "sley.cli_smoke.manifest.v0",
     );
@@ -3749,6 +3753,45 @@ task main -> Used uses UsedEffect {
     assert_schema_file(
         include_str!("../docs/schemas/sley.verify.report.v0.schema.json"),
         VERIFY_REPORT_SCHEMA,
+    );
+}
+
+#[test]
+fn trace_receipt_schema_covers_strict_provenance_records() {
+    let schema: serde_json::Value = serde_json::from_str(include_str!(
+        "../docs/schemas/sley.trace.receipt.v0.schema.json"
+    ))
+    .expect("parse trace receipt schema");
+    assert_eq!(
+        schema.pointer("/required"),
+        Some(&serde_json::json!([
+            "schema",
+            "target",
+            "written_at",
+            "provenance"
+        ]))
+    );
+    assert_eq!(
+        schema.pointer("/additionalProperties"),
+        Some(&serde_json::json!(false))
+    );
+    assert_eq!(
+        schema.pointer("/properties/schema/const"),
+        Some(&serde_json::json!(TRACE_RECEIPT_SCHEMA))
+    );
+    assert_eq!(
+        schema.pointer("/properties/target/minLength"),
+        Some(&serde_json::json!(1))
+    );
+    assert_eq!(
+        schema.pointer("/properties/written_at/minLength"),
+        Some(&serde_json::json!(1))
+    );
+    assert_eq!(
+        schema.pointer("/properties/provenance/items/$ref"),
+        Some(&serde_json::json!(
+            "sley.graft.outcome.v0#/$defs/provenanceRecord"
+        ))
     );
 }
 
@@ -4105,21 +4148,7 @@ fn zjx_envelope_schema_covers_handoff_contract_roots() {
     );
     assert_eq!(
         schema.pointer("/properties/trace_receipts/items/$ref"),
-        Some(&serde_json::json!("#/$defs/traceReceipt"))
-    );
-    assert_eq!(
-        schema.pointer("/$defs/traceReceipt/additionalProperties"),
-        Some(&serde_json::json!(false))
-    );
-    assert_eq!(
-        schema.pointer("/$defs/traceReceipt/properties/schema/const"),
-        Some(&serde_json::json!(TRACE_RECEIPT_SCHEMA))
-    );
-    assert_eq!(
-        schema.pointer("/$defs/traceReceipt/properties/provenance/items/$ref"),
-        Some(&serde_json::json!(
-            "sley.graft.outcome.v0#/$defs/provenanceRecord"
-        ))
+        Some(&serde_json::json!("sley.trace.receipt.v0"))
     );
 }
 

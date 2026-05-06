@@ -14,24 +14,8 @@
     "slice": { "$ref": "sley.symbol_graph.slice.v0" },
     "trace_receipts": {
       "type": "array",
-      "items": { "$ref": "#/$defs/traceReceipt" }
+      "items": { "$ref": "sley.trace.receipt.v0" }
     }
   },
-  "additionalProperties": false,
-  "$defs": {
-    "traceReceipt": {
-      "type": "object",
-      "required": ["schema", "target", "written_at", "provenance"],
-      "properties": {
-        "schema": { "const": "sley.trace.receipt.v0" },
-        "target": { "type": "string", "minLength": 1 },
-        "written_at": { "type": "string", "minLength": 1 },
-        "provenance": {
-          "type": "array",
-          "items": { "$ref": "sley.graft.outcome.v0#/$defs/provenanceRecord" }
-        }
-      },
-      "additionalProperties": false
-    }
-  }
+  "additionalProperties": false
 }
