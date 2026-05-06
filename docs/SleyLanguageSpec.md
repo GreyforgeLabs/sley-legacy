@@ -813,7 +813,10 @@ those paths when they already exist. `--template hello`, `--template library`,
 runs with seeded `http.try_get_text` data. `--template deploy` creates a
 deterministic `Deploy`-gated starter that runs with a seeded
 `deploy.try_stage` result and does not call providers or mutate
-infrastructure. `--template agent` and `--template agent-task-pack` create
+infrastructure. `--template spend-gate` creates a deterministic `Spend`-gated
+starter that runs with seeded `spend.try_authorize` data and does not create
+transactions, payments, market orders, wallet calls, credits, or provider
+spend. `--template agent` and `--template agent-task-pack` create
 deterministic single-module agentic starters. `--template agent-project`
 creates a deterministic multi-module agentic starter with an entry module and
 imported pipeline module. These agentic starters use seeded `secrets.try_get`,
@@ -1432,7 +1435,7 @@ refuse generic data disguised as Sley artifacts before compression begins.
   unreachable statement cleanup, and mutable binding conversion,
   plus generated scaffold quickstarts re-verified with local or seeded
   authority, including strict seeded verify reports for `service-gate`,
-  `deploy`, `agent`, `agent-task-pack`, and `agent-project`,
+  `deploy`, `spend-gate`, `agent`, `agent-task-pack`, and `agent-project`,
   passed-verify next-actions for `sley seal --json` and `sley zjx --json`
   handoff artifacts, and
   `sley deploy --dry-run` local deploy package reports over verify, seal, and

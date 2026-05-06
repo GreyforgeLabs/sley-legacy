@@ -16,6 +16,7 @@ pub enum ScaffoldTemplate {
     ServiceGate,
     DataPipeline,
     Deploy,
+    SpendGate,
     Agent,
     AgentTaskPack,
     AgentProject,
@@ -30,6 +31,7 @@ impl ScaffoldTemplate {
             Self::ServiceGate => "service-gate",
             Self::DataPipeline => "data-pipeline",
             Self::Deploy => "deploy",
+            Self::SpendGate => "spend-gate",
             Self::Agent => "agent",
             Self::AgentTaskPack => "agent-task-pack",
             Self::AgentProject => "agent-project",
@@ -244,6 +246,11 @@ fn readme_source(name: &str, template: ScaffoldTemplate) -> String {
             "sley run --json --cap Deploy --deploy-result staging staged .",
             "sley deploy --json --dry-run --artifacts-dir .sley/deploy --cap Deploy --deploy-result staging staged .",
         ),
+        ScaffoldTemplate::SpendGate => (
+            "sley verify --json --deny-warnings --cap Spend --spend-result ads-budget authorized .",
+            "sley run --json --cap Spend --spend-result ads-budget authorized .",
+            "",
+        ),
         ScaffoldTemplate::Agent
         | ScaffoldTemplate::AgentTaskPack
         | ScaffoldTemplate::AgentProject => (
@@ -290,6 +297,10 @@ task main -> Int {{\n  tally total = 0\n  each item in [\"alpha\", \"beta\", \"g
         ScaffoldTemplate::Deploy => format!(
             "module {module}\n\n\
 task main -> Result<Text, Error> uses Deploy {{\n  bind result = call deploy.try_stage(\"staging\")?\n\n  return Ok(result)\n}}\n"
+        ),
+        ScaffoldTemplate::SpendGate => format!(
+            "module {module}\n\n\
+task main -> Result<Text, Error> uses Spend {{\n  bind authorization = call spend.try_authorize(\"ads-budget\")?\n\n  return Ok(\"budget gate: \" + authorization)\n}}\n"
         ),
         ScaffoldTemplate::Agent => format!(
             "module {module}\n\n\
@@ -478,6 +489,18 @@ fn next_actions(template: ScaffoldTemplate) -> Vec<ScaffoldNextAction> {
                 ],
             ),
         ],
+        ScaffoldTemplate::SpendGate => vec![
+            next_action(
+                "verify_seeded_spend",
+                "verify spend authority with a deterministic seeded authorization and denied warnings",
+                seeded_spend_command("verify"),
+            ),
+            next_action(
+                "run_seeded_spend",
+                "execute the spend-gated starter with deterministic seeded authority",
+                seeded_spend_command("run"),
+            ),
+        ],
         ScaffoldTemplate::Agent | ScaffoldTemplate::AgentProject => vec![
             next_action(
                 "verify_seeded_agent",
@@ -620,6 +643,24 @@ fn seeded_service_command(verb: &'static str) -> Vec<&'static str> {
         "--http-text",
         "https://example.test/health",
         "service ready",
+        ".",
+    ];
+    if verb == "verify" {
+        command.insert(3, "--deny-warnings");
+    }
+    command
+}
+
+fn seeded_spend_command(verb: &'static str) -> Vec<&'static str> {
+    let mut command = vec![
+        "sley",
+        verb,
+        "--json",
+        "--cap",
+        "Spend",
+        "--spend-result",
+        "ads-budget",
+        "authorized",
         ".",
     ];
     if verb == "verify" {

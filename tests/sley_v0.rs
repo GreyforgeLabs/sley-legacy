@@ -8989,7 +8989,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/smoke_case_count"),
-        Some(&serde_json::json!(367))
+        Some(&serde_json::json!(371))
     );
     assert_eq!(
         report_json.pointer("/summary/example_source_count"),
@@ -19813,6 +19813,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:verify-package-next-action",
         "scaffold:agent-quickstart",
         "scaffold:deploy-quickstart",
+        "scaffold:spend-quickstart",
         "scaffold:handoff-actions",
         "scaffold:next-actions",
         "scaffold:verify-ready",

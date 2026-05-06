@@ -275,7 +275,7 @@ Current development phase:
   `unchecked_result`
 - `sley new --json` emits `sley.project.scaffold.v0` and creates
   non-destructive `hello`, `library`, `cli`, `service-gate`,
-  `data-pipeline`, `deploy`, `agent`, `agent-task-pack`, or `agent-project`
+  `data-pipeline`, `deploy`, `spend-gate`, `agent`, `agent-task-pack`, or `agent-project`
   starter projects
   that can immediately run through check, doctor, query, plan, lint, local or
   seeded runtime gates with denied warnings, deploy dry-run packaging where
@@ -401,6 +401,8 @@ Current development phase:
   execution into one CI/pre-deploy gate; scaffold templates include checked
   local pure starters, a seeded Network service smoke, a checked
   `--deny-warnings --cap Deploy --deploy-result staging staged` deploy smoke,
+  a checked `--deny-warnings --cap Spend --spend-result ads-budget authorized`
+  spend smoke,
   and seeded SecretRead/Network/ModelCall/Deploy agent smokes through both
   `sley verify` and `sley-ci verify`, direct runtime smoke through `sley run`
   and `sley-ci run`, plus deploy package smoke through `sley deploy` and
