@@ -797,6 +797,10 @@ its negation preserves a checked program.
 `simplify_absorbing_boolean_expression` `ReplaceExpression` templates when
 replacing short-circuiting absorbing boolean expressions with `true` or `false`
 preserves a checked program and any removed evaluated side is delete-safe.
+`self_comparison_expression` lint findings become checked
+`simplify_self_comparison_expression` `ReplaceExpression` templates when
+replacing delete-safe `expr == expr` or `expr != expr` comparisons with `true`
+or `false` preserves a checked program.
 `double_negation_expression` lint findings become checked
 `simplify_double_negation_expression` `ReplaceExpression` templates when
 replacing `!!expr` with the inner boolean expression preserves a checked
@@ -933,6 +937,8 @@ can be replaced with the non-identity side; and
 and `absorbing_boolean_expression`, which warns when a checked
 short-circuiting absorbing boolean expression can be replaced with `true` or
 `false` without dropping a side that would still be evaluated;
+and `self_comparison_expression`, which warns when a checked delete-safe
+self-comparison can be replaced with `true` or `false`;
 and `double_negation_expression`, which warns when a checked `!!expr` form can
 be replaced with the inner boolean expression; and
 `redundant_boolean_if_expression`, which warns when a checked expression-level
@@ -948,7 +954,8 @@ has identical branches and a delete-safe condition.
 `--rule mutable-binding-never-set`, `--rule constant-if-expression`, or
 `--rule identity-binary-expression`, or
 `--rule redundant-boolean-comparison`, or
-`--rule absorbing-boolean-expression`, or `--rule double-negation-expression`, or
+`--rule absorbing-boolean-expression`, or `--rule self-comparison-expression`, or
+`--rule double-negation-expression`, or
 `--rule redundant-boolean-if-expression`, or
 `--rule same-branch-if-expression` selects one rule explicitly, and
 `--deny-warnings` turns findings into a nonzero CLI exit after printing the

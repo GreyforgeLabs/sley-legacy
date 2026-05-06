@@ -3168,6 +3168,85 @@ fn edit_plan_graft_templates_include_absorbing_boolean_expression_simplify() {
 }
 
 #[test]
+fn edit_plan_graft_templates_include_self_comparison_expression_simplify() {
+    let source = include_str!("../examples/self_comparison_expression.sley");
+    let program = parse_program(source).expect("parse self-comparison fixture");
+    let report = build_edit_plan_report_with_options(
+        "examples/self_comparison_expression.sley",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: None,
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "warnings");
+    assert_eq!(report.summary.lint_finding_count, 1);
+    assert_eq!(
+        report.lint.as_ref().expect("lint summary").findings[0].id,
+        "SELF_COMPARISON_EXPRESSION"
+    );
+    let template = report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "simplify_self_comparison_expression")
+        .expect("self-comparison simplify template");
+    assert_eq!(
+        template.surface,
+        "block:task:app.self_compare.main:stmt:1:expr"
+    );
+    assert_eq!(
+        template.operation.pointer("/op"),
+        Some(&serde_json::json!("ReplaceExpression"))
+    );
+    assert_eq!(
+        template.operation.pointer("/payload/source"),
+        Some(&serde_json::json!("true"))
+    );
+    assert_eq!(template.editable_json_pointers, vec!["/payload/source"]);
+    let graft: GraftInput =
+        serde_json::from_value(template.operation.clone()).expect("parse self-comparison template");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:self-comparison-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted_source = outcome.source.expect("grafted source");
+    assert!(grafted_source.contains("return true"));
+    assert!(!grafted_source.contains("ready == ready"));
+    let grafted_program = parse_program(&grafted_source).expect("parse grafted source");
+    let lint_report = build_lint_report(
+        &grafted_program,
+        LintOptions {
+            rules: vec![LintRule::SelfComparisonExpression],
+            module: None,
+        },
+    );
+    assert_eq!(lint_report.status, "ok");
+
+    let targeted_report = build_edit_plan_report_with_options(
+        "examples/self_comparison_expression.sley",
+        Ok(program),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("block:task:app.self_compare.main:stmt:1:expr".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(targeted_report.status, "warnings");
+    assert!(targeted_report.diagnostics.is_empty());
+    assert_eq!(targeted_report.graft_templates.len(), 1);
+    assert_eq!(
+        targeted_report.graft_templates[0].kind,
+        "simplify_self_comparison_expression"
+    );
+    assert!(targeted_report.transaction_templates.is_empty());
+}
+
+#[test]
 fn edit_plan_graft_templates_include_double_negation_expression_simplify() {
     let source = include_str!("../examples/double_negation_expression.sley");
     let program = parse_program(source).expect("parse double negation fixture");
@@ -5056,6 +5135,21 @@ task helper -> Result<Text, Error> {
         include_str!("../fixtures/contracts/lint_absorbing_boolean_expression.json"),
     );
 
+    let self_comparison_source = include_str!("../examples/self_comparison_expression.sley");
+    let self_comparison_program =
+        parse_program(self_comparison_source).expect("parse self-comparison fixture");
+    let self_comparison_lint = build_lint_report(
+        &self_comparison_program,
+        LintOptions {
+            rules: vec![LintRule::SelfComparisonExpression],
+            module: None,
+        },
+    );
+    assert_json_snapshot(
+        &self_comparison_lint,
+        include_str!("../fixtures/contracts/lint_self_comparison_expression.json"),
+    );
+
     let double_negation_source = include_str!("../examples/double_negation_expression.sley");
     let double_negation_program =
         parse_program(double_negation_source).expect("parse double negation fixture");
@@ -5756,7 +5850,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(38))
+        Some(&serde_json::json!(39))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -11185,6 +11279,90 @@ task main -> Bool {
 }
 
 #[test]
+fn lint_report_flags_self_comparison_expressions() {
+    let source = r#"
+module app.self_compare
+
+task main -> Bool {
+  bind ready = true
+  bind total = 1
+  bind guarded = (total / 1 == 1) == (total / 1 == 1)
+  bind inverted = ready != ready
+
+  return ready == ready
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+
+    let report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::SelfComparisonExpression],
+            module: None,
+        },
+    );
+
+    assert_eq!(report.schema, LINT_REPORT_SCHEMA);
+    assert_eq!(report.status, "findings");
+    assert_eq!(report.entry_module, "app.self_compare");
+    assert_eq!(report.filters.rules, vec!["self_comparison_expression"]);
+    assert_eq!(
+        report.findings.len(),
+        2,
+        "self-comparison should not drop division-bearing duplicated operands"
+    );
+    assert_eq!(report.findings[0].id, "SELF_COMPARISON_EXPRESSION");
+    assert_eq!(report.findings[0].rule, "self_comparison_expression");
+    let nodes: Vec<&str> = report
+        .findings
+        .iter()
+        .map(|finding| finding.node.as_str())
+        .collect();
+    assert!(nodes.contains(&"block:task:app.self_compare.main:stmt:3:expr"));
+    assert!(nodes.contains(&"block:task:app.self_compare.main:stmt:4:expr"));
+    assert_eq!(report.findings[0].module, "app.self_compare");
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|finding| finding.message.contains("ready != ready"))
+    );
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|finding| finding.message.contains("ready == ready"))
+    );
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|finding| finding.hint.contains("false"))
+    );
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|finding| finding.hint.contains("true"))
+    );
+
+    let scoped_report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::SelfComparisonExpression],
+            module: Some("app.other".to_string()),
+        },
+    );
+    assert_eq!(scoped_report.status, "ok");
+    assert!(scoped_report.findings.is_empty());
+}
+
+#[test]
 fn lint_report_flags_double_negation_expressions() {
     let source = r#"
 module app.double_negation
@@ -13570,6 +13748,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:templates:identity-binary-expression",
         "graft:templates:redundant-boolean-comparison",
         "graft:templates:absorbing-boolean-expression",
+        "graft:templates:self-comparison-expression",
         "graft:templates:double-negation-expression",
         "graft:templates:redundant-boolean-if-expression",
         "graft:templates:same-branch-if-expression",
@@ -13617,6 +13796,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "lint:identity_binary_expression",
         "lint:redundant_boolean_comparison",
         "lint:absorbing_boolean_expression",
+        "lint:self_comparison_expression",
         "lint:double_negation_expression",
         "lint:redundant_boolean_if_expression",
         "lint:same_branch_if_expression",
@@ -13633,6 +13813,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:identity-binary-repair-write-verify",
         "readiness:redundant-boolean-repair-write-verify",
         "readiness:absorbing-boolean-repair-write-verify",
+        "readiness:self-comparison-repair-write-verify",
         "readiness:double-negation-repair-write-verify",
         "readiness:redundant-boolean-if-repair-write-verify",
         "readiness:same-branch-if-repair-write-verify",

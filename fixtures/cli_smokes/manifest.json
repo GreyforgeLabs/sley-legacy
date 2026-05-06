@@ -2550,9 +2550,10 @@
           { "pointer": "/filters/rules/14", "value": "identity_binary_expression" },
           { "pointer": "/filters/rules/15", "value": "redundant_boolean_comparison" },
           { "pointer": "/filters/rules/16", "value": "absorbing_boolean_expression" },
-          { "pointer": "/filters/rules/17", "value": "double_negation_expression" },
-          { "pointer": "/filters/rules/18", "value": "redundant_boolean_if_expression" },
-          { "pointer": "/filters/rules/19", "value": "same_branch_if_expression" },
+          { "pointer": "/filters/rules/17", "value": "self_comparison_expression" },
+          { "pointer": "/filters/rules/18", "value": "double_negation_expression" },
+          { "pointer": "/filters/rules/19", "value": "redundant_boolean_if_expression" },
+          { "pointer": "/filters/rules/20", "value": "same_branch_if_expression" },
           { "pointer": "/findings", "value": [] }
         ]
       }
@@ -3670,6 +3671,155 @@
           { "pointer": "/summary/lint_finding_count", "value": 0 },
           { "pointer": "/runtime/value/kind", "value": "Bool" },
           { "pointer": "/runtime/value/value", "value": false },
+          { "pointer": "/lint/status", "value": "ok" }
+        ]
+      }
+    },
+    {
+      "name": "lint_self_comparison_expression_rule_json",
+      "args": [
+        "lint",
+        "--json",
+        "--rule",
+        "self-comparison-expression",
+        "examples/self_comparison_expression.sley"
+      ],
+      "covers": [
+        "cli:lint",
+        "lint:self_comparison_expression",
+        "json:sley.lint.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.lint.report.v0" },
+          { "pointer": "/status", "value": "findings" },
+          { "pointer": "/filters/rules/0", "value": "self_comparison_expression" },
+          { "pointer": "/findings/0/id", "value": "SELF_COMPARISON_EXPRESSION" },
+          { "pointer": "/findings/0/node", "value": "block:task:app.self_compare.main:stmt:1:expr" }
+        ]
+      }
+    },
+    {
+      "name": "plan_self_comparison_expression_template_json",
+      "args": [
+        "plan",
+        "--json",
+        "--graft-templates",
+        "--template-surface",
+        "block:task:app.self_compare.main:stmt:1:expr",
+        "examples/self_comparison_expression.sley"
+      ],
+      "covers": [
+        "cli:plan",
+        "graft:templates:self-comparison-expression",
+        "lint:self_comparison_expression",
+        "json:sley.edit_plan.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.edit_plan.report.v0" },
+          { "pointer": "/status", "value": "warnings" },
+          { "pointer": "/lint/findings/0/id", "value": "SELF_COMPARISON_EXPRESSION" },
+          { "pointer": "/graft_templates/0/kind", "value": "simplify_self_comparison_expression" },
+          { "pointer": "/graft_templates/0/surface", "value": "block:task:app.self_compare.main:stmt:1:expr" },
+          { "pointer": "/graft_templates/0/operation/op", "value": "ReplaceExpression" },
+          { "pointer": "/graft_templates/0/operation/payload/source", "value": "true" }
+        ]
+      }
+    },
+    {
+      "name": "fix_self_comparison_expression_write_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/fix-self-comparison/main.sley",
+          "content": "module app.self_compare_fix\n\ntask main -> Bool {\n  return true == true\n}\n"
+        }
+      ],
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "simplify_self_comparison_expression",
+        "--template-surface",
+        "block:task:app.self_compare_fix.main:stmt:0:expr",
+        "--write",
+        "--actor",
+        "agent:cli-smoke",
+        "{tmp}/fix-self-comparison/main.sley"
+      ],
+      "covers": [
+        "cli:fix",
+        "cli:fix-write",
+        "cli:smoke-setup-files",
+        "fix:lint-cleanup-write",
+        "fix:write-source",
+        "graft:templates:self-comparison-expression",
+        "json:sley.graft.outcome.v0",
+        "lint:self_comparison_expression",
+        "readiness:self-comparison-repair-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/actor", "value": "agent:cli-smoke" },
+          { "pointer": "/provenance/0/operation", "value": "ReplaceExpression" },
+          { "pointer": "/provenance/0/targets/0", "value": "block:task:app.self_compare_fix.main:stmt:0:expr" }
+        ]
+      }
+    },
+    {
+      "name": "lint_fix_self_comparison_expression_write_json",
+      "args": [
+        "lint",
+        "--json",
+        "--rule",
+        "self-comparison-expression",
+        "{tmp}/fix-self-comparison/main.sley"
+      ],
+      "covers": [
+        "cli:lint",
+        "fix:lint-cleanup-write",
+        "lint:self_comparison_expression",
+        "json:sley.lint.report.v0",
+        "readiness:self-comparison-repair-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.lint.report.v0" },
+          { "pointer": "/status", "value": "ok" }
+        ]
+      }
+    },
+    {
+      "name": "verify_fix_self_comparison_expression_write_json",
+      "args": [
+        "verify",
+        "--json",
+        "--deny-warnings",
+        "{tmp}/fix-self-comparison/main.sley"
+      ],
+      "covers": [
+        "cli:verify",
+        "fix:lint-cleanup-write",
+        "json:sley.verify.report.v0",
+        "json:sley.lint.report.v0",
+        "lint:self_comparison_expression",
+        "readiness:self-comparison-repair-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.verify.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/summary/warning_count", "value": 0 },
+          { "pointer": "/summary/lint_finding_count", "value": 0 },
+          { "pointer": "/runtime/value/kind", "value": "Bool" },
+          { "pointer": "/runtime/value/value", "value": true },
           { "pointer": "/lint/status", "value": "ok" }
         ]
       }

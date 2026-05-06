@@ -101,7 +101,7 @@ sley fix --json --kind <kind> [--template-surface <surface>] [--name <name>] [--
 sley verify --json [--deny-warnings] [runtime gates/seeds] <target>
 sley deploy --json --dry-run [--artifacts-dir <dir>] [runtime gates/seeds] <target>
 sley query --json [--kind all|modules|tasks|types|effects|calls] [--module <module>] <target>
-sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter|missing-module-declaration|unchecked-result|unqualified-imported-call|unused-pure-binding|mutable-binding-never-set|constant-if-expression|identity-binary-expression|redundant-boolean-comparison|absorbing-boolean-expression|double-negation-expression|redundant-boolean-if-expression|same-branch-if-expression] [--module <module>] <target>
+sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter|missing-module-declaration|unchecked-result|unqualified-imported-call|unused-pure-binding|mutable-binding-never-set|constant-if-expression|identity-binary-expression|redundant-boolean-comparison|absorbing-boolean-expression|self-comparison-expression|double-negation-expression|redundant-boolean-if-expression|same-branch-if-expression] [--module <module>] <target>
 sley trace --json <target>
 sley seal --json <target>
 sley zjx --json [--slice <node-id>] <target>
@@ -610,6 +610,10 @@ The current smoke manifest covers:
   `simplify_absorbing_boolean_expression` templates that replace
   `false && expr` and `true || expr`, or delete-safe left-side forms such as
   `expr && false` and `expr || true`, with the absorbing literal
+- self-comparison expression style warnings through
+  `self_comparison_expression`, plus checked
+  `simplify_self_comparison_expression` templates that replace delete-safe
+  `expr == expr` and `expr != expr` forms with `true` or `false`
 - double negation expression style warnings through
   `double_negation_expression`, plus checked
   `simplify_double_negation_expression` templates that replace `!!expr` with
@@ -711,6 +715,9 @@ The v0 lint rules are:
   delete-safe `expr && false`, or delete-safe `expr || true` form is reported
   so agents can replace it with the absorbing literal without dropping
   authority work or recoverable failures.
+- `self_comparison_expression`: a checked delete-safe `expr == expr` or
+  `expr != expr` form is reported so agents can replace it with the constant
+  boolean result without dropping authority work or recoverable failures.
 - `double_negation_expression`: a checked `!!expr` form is reported so agents
   can replace it with the inner boolean expression.
 - `redundant_boolean_if_expression`: a checked expression-level
@@ -729,8 +736,9 @@ The command supports `--module <module>`, `--rule unused-private-task`,
 `--rule unqualified-imported-call`, `--rule unused-pure-binding`,
 `--rule mutable-binding-never-set`, `--rule constant-if-expression`,
 `--rule identity-binary-expression`, `--rule redundant-boolean-comparison`,
-`--rule absorbing-boolean-expression`, `--rule double-negation-expression`,
-`--rule redundant-boolean-if-expression`, `--rule same-branch-if-expression`,
+`--rule absorbing-boolean-expression`, `--rule self-comparison-expression`,
+`--rule double-negation-expression`, `--rule redundant-boolean-if-expression`,
+`--rule same-branch-if-expression`,
 and
 `--deny-warnings` lets CI turn findings into a failing exit after the JSON
 report is printed.
