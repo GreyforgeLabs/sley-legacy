@@ -446,9 +446,12 @@ Implemented graph-edit payloads:
 
 `AddModuleDeclaration` adds an explicit module header to a module-less source
 and rewrites default `main` ownership to the selected module; it rejects when a
-module is already declared or the module name collides. `UpdateCallSites`
-rewrites call expressions that either resolve to the target task or match the
-optional raw `from` callee. `UpdateCallArgs` inserts one
+module is already declared or the module name collides. `sley plan` and
+`sley fix` choose the starter module name from the project-relative source path
+when the file sits under a `sley.toml` source root, otherwise from the `.sley`
+file stem. `UpdateCallSites` rewrites call expressions that either resolve to
+the target task or match the optional raw `from` callee. `UpdateCallArgs`
+inserts one
 checked argument expression into matching calls; `position` defaults to append.
 `ReplaceCallArg` replaces one argument at a required `position`. `RemoveCallArg`
 removes one argument at a required `position` from matching calls. For all four
@@ -650,7 +653,8 @@ checked candidate. When more than one unused private type/effect declaration
 can be deleted, the report also includes an all-or-nothing
 `delete_unused_private_declarations` transaction template.
 `missing_module_declaration` lint findings become checked
-`add_module_declaration` graft templates on the `program` surface.
+`add_module_declaration` graft templates on the `program` surface, with the
+starter module name inferred from project-relative path context when available.
 `--template-surface <surface>` selects a specific task surface by task node id
 or qualified task name, the `program` missing-module surface, or a declaration
 lint surface by lint finding node id such as `type:app.module.Name` or
@@ -827,10 +831,10 @@ archive.
   graft operation templates, rename-plus-call-site and add-take-plus-call-arg
   transaction templates, safe remove-take-plus-call-arg transaction templates
   for unused takes, lint-driven delete templates and cleanup transactions for
-  unused private types/effects, lint-driven module declaration templates, and
-  post-edit gate commands; `sley fix` can execute one named checked template by
-  explicit kind, including missing-module declaration repair, but broad
-  autonomous repair selection remains later work
+  unused private types/effects, lint-driven module declaration templates with
+  inferred module names, and post-edit gate commands; `sley fix` can execute
+  one named checked template by explicit kind, including missing-module
+  declaration repair, but broad autonomous repair selection remains later work
 - `sley verify` emits a deterministic CI/pre-deploy report over strict check,
   query/lint summaries, and runtime execution; live deploy/provider calls
   remain outside v0

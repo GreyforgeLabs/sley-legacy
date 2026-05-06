@@ -14,8 +14,11 @@ use sley::formatter::format_program;
 use sley::graft::{GRAFT_OUTCOME_SCHEMA, GraftInput, GraftOutcome, apply_graft_program};
 use sley::lint::{LintOptions, LintReport, LintRule, build_lint_report};
 use sley::parser::parse_program;
-use sley::plan::{EditPlanOptions, EditPlanReport, build_edit_plan_report_with_options};
-use sley::project::{ProjectGraph, load_project};
+use sley::plan::{
+    EditPlanOptions, EditPlanReport, build_edit_plan_report_with_options,
+    module_name_from_project_relative_sley_path, module_name_from_sley_path,
+};
+use sley::project::{ProjectGraph, ProjectManifest, load_project};
 use sley::query::{QueryKind, QueryOptions, QueryReport, build_query_report};
 use sley::runtime::{RuntimeGate, RuntimeGates, run_main, run_main_with_gates};
 use sley::scaffold::{ScaffoldOptions, ScaffoldTemplate, scaffold_project};
@@ -511,11 +514,12 @@ fn run(cli: Cli) -> Result<()> {
             let report = build_edit_plan_report_with_options(
                 target,
                 load_target_program(&file),
-                EditPlanOptions {
+                edit_plan_options_for_target(
+                    &file,
                     deny_warnings,
-                    include_graft_templates: graft_templates,
+                    graft_templates,
                     template_surface,
-                },
+                ),
             );
             if let Some(kind) = emit_graft {
                 if report.status == "blocked" {
@@ -552,11 +556,7 @@ fn run(cli: Cli) -> Result<()> {
             let report = build_edit_plan_report_with_options(
                 target,
                 Ok(program),
-                EditPlanOptions {
-                    deny_warnings: false,
-                    include_graft_templates: true,
-                    template_surface,
-                },
+                edit_plan_options_for_target(&file, false, true, template_surface),
             );
             if report.status == "blocked" {
                 let outcome = rejected_graft_outcome(report.diagnostics);
@@ -1501,6 +1501,44 @@ fn planned_graft_value(
             "Run `sley plan --json --graft-templates --template-surface <surface> <target>`",
         ))),
     }
+}
+
+fn edit_plan_options_for_target(
+    file: &Path,
+    deny_warnings: bool,
+    include_graft_templates: bool,
+    template_surface: Option<String>,
+) -> EditPlanOptions {
+    EditPlanOptions {
+        deny_warnings,
+        include_graft_templates,
+        template_surface,
+        module_name_hint: infer_module_name_hint(file),
+    }
+}
+
+fn infer_module_name_hint(file: &Path) -> Option<String> {
+    if file.extension().and_then(|extension| extension.to_str()) != Some("sley") {
+        return None;
+    }
+    infer_project_module_name_for_file(file).or_else(|| module_name_from_sley_path(file))
+}
+
+fn infer_project_module_name_for_file(file: &Path) -> Option<String> {
+    let file = file.canonicalize().ok()?;
+    let mut directory = file.parent();
+    while let Some(current) = directory {
+        let manifest_path = current.join("sley.toml");
+        if manifest_path.exists() {
+            let manifest_source = fs::read_to_string(&manifest_path).ok()?;
+            let manifest: ProjectManifest = toml::from_str(&manifest_source).ok()?;
+            let module_root = current.join(manifest.project.root).canonicalize().ok()?;
+            let relative = file.strip_prefix(module_root).ok()?;
+            return module_name_from_project_relative_sley_path(relative);
+        }
+        directory = current.parent();
+    }
+    None
 }
 
 fn load_target_program(file: &PathBuf) -> Result<sley::Program, Vec<Diagnostic>> {

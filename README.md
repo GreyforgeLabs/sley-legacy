@@ -118,7 +118,8 @@ Implemented now:
   targeted caller surfaces, safe remove-take-plus-call-arg transaction
   templates for unused takes, lint-driven delete templates and cleanup
   transactions for unused private types/effects, lint-driven
-  `AddModuleDeclaration` templates for explicit module style fixes,
+  `AddModuleDeclaration` templates for explicit module style fixes with module
+  names inferred from the target file or project-relative path,
   `--template-surface <surface>` targeting for task, program, or lint
   declaration surfaces, `--emit-graft <kind>` for direct
   operation/transaction JSON handoff to `sley graft`, and
@@ -126,9 +127,9 @@ Implemented now:
 - checked JSON fix previews with `sley fix --kind <kind>`, consuming the same
   plan graft templates and applying one named operation or transaction through
   the graft checker, including `add_module_declaration` for
-  `missing_module_declaration` lint findings; default and `--dry-run` mode stay
-  non-mutating, while `--write` uses the same checked writeback, trace
-  receipts, and
+  `missing_module_declaration` lint findings with contextual module-name
+  inference; default and `--dry-run` mode stay non-mutating, while `--write`
+  uses the same checked writeback, trace receipts, and
   `schema: "sley.graft.outcome.v0"` as `sley graft`
 - checked JSON verification reports with `sley verify`, consuming strict
   diagnostics, query summaries, lint findings, and deterministic runtime
@@ -168,8 +169,8 @@ Implemented now:
 - manifest-backed CLI smoke conformance cases under `fixtures/cli_smokes/`,
   covering stable command output, JSON roots, graph/ZJX surfaces, doctor
   readiness, edit-plan surfaces, verify pre-deploy gates, project scaffolding,
-  graft dry runs, missing-module checked repair templates, and seeded
-  host-adapter execution
+  graft dry runs, missing-module checked repair templates with module-name
+  inference, and seeded host-adapter execution
 - compact agent onboarding pack in `llms.txt`
 
 Project form:
@@ -469,7 +470,8 @@ gold corpus and CLI smoke suite now have manifests with required coverage tags
 for seeded host adapters, stable JSON roots, graph/ZJX output, graft and fix
 dry runs, checked graph query reports, doctor readiness, verify pre-deploy
 gates, edit-plan surfaces, lint-driven declaration delete templates and
-cleanup transactions, lint-driven module declaration fixes, private-task lint
-rules, declaration/import/API hygiene, authority hygiene, raw-host migration
-warnings, and explicit module style warnings. The next logical phase is to
-broaden style and migration lints before broadening the language again.
+cleanup transactions, lint-driven module declaration fixes with inferred module
+names, private-task lint rules, declaration/import/API hygiene, authority
+hygiene, raw-host migration warnings, and explicit module style warnings. The
+next logical phase is to broaden style and migration lints before broadening
+the language again.

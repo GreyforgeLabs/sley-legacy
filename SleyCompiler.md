@@ -226,7 +226,8 @@ Near-term:
    execute one named checked template through the graft checker. The lint
    surface now includes explicit module-declaration style warnings, and those
    warnings are structurally repairable through `AddModuleDeclaration` plan/fix
-   templates. Next broaden authority, style, and migration lints.
+   templates with target/project-aware module-name inference. Next broaden
+   authority, style, and migration lints.
 5. Extend graph-slice graft planning around checked move/delete operations.
 6. Harden project graft writeback beyond existing-module edits.
 

@@ -1,3 +1,5 @@
+use std::path::{Component, Path};
+
 use serde::Serialize;
 use serde_json::{Value as JsonValue, json};
 
@@ -37,6 +39,7 @@ pub struct EditPlanOptions {
     pub deny_warnings: bool,
     pub include_graft_templates: bool,
     pub template_surface: Option<String>,
+    pub module_name_hint: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -140,6 +143,7 @@ pub fn build_edit_plan_report(
             deny_warnings,
             include_graft_templates: false,
             template_surface: None,
+            module_name_hint: None,
         },
     )
 }
@@ -203,6 +207,10 @@ pub fn build_edit_plan_report_with_options(
     let query = summarize_query(&query_report);
     let lint = summarize_lint(&lint_report);
     let task_surfaces = build_task_surfaces(&query_report);
+    let module_name_hint = options
+        .module_name_hint
+        .clone()
+        .unwrap_or_else(|| infer_module_name_from_target(&target));
     let mut diagnostics = diagnostics;
     let graft_templates = if options.include_graft_templates {
         match build_graft_templates(
@@ -210,6 +218,7 @@ pub fn build_edit_plan_report_with_options(
             &task_surfaces,
             &lint_report,
             options.template_surface.as_deref(),
+            &module_name_hint,
         ) {
             Ok(templates) => templates,
             Err(diagnostic) => {
@@ -414,8 +423,9 @@ fn build_graft_templates(
     surfaces: &[EditPlanTaskSurface],
     lint_report: &LintReport,
     requested_surface: Option<&str>,
+    module_name_hint: &str,
 ) -> Result<Vec<EditPlanGraftTemplate>, Diagnostic> {
-    let lint_templates = lint_graft_templates(program, lint_report);
+    let lint_templates = lint_graft_templates(program, lint_report, module_name_hint);
     if let Some(requested_surface) = requested_surface {
         let requested_lint_templates = lint_templates
             .iter()
@@ -451,9 +461,17 @@ fn build_graft_templates(
     Ok(templates)
 }
 
-fn lint_graft_templates(program: &Program, lint_report: &LintReport) -> Vec<EditPlanGraftTemplate> {
+fn lint_graft_templates(
+    program: &Program,
+    lint_report: &LintReport,
+    module_name_hint: &str,
+) -> Vec<EditPlanGraftTemplate> {
     let mut templates = lint_declaration_delete_templates(program, lint_report);
-    templates.extend(lint_missing_module_templates(program, lint_report));
+    templates.extend(lint_missing_module_templates(
+        program,
+        lint_report,
+        module_name_hint,
+    ));
     templates
 }
 
@@ -493,6 +511,7 @@ fn lint_declaration_delete_templates(
 fn lint_missing_module_templates(
     program: &Program,
     lint_report: &LintReport,
+    module_name_hint: &str,
 ) -> Vec<EditPlanGraftTemplate> {
     lint_report
         .findings
@@ -502,7 +521,7 @@ fn lint_missing_module_templates(
             let operation = json!({
                 "op": "AddModuleDeclaration",
                 "payload": {
-                    "name": "app.main"
+                    "name": module_name_hint
                 }
             });
             if !graft_operation_checks(
@@ -523,6 +542,96 @@ fn lint_missing_module_templates(
             })
         })
         .collect()
+}
+
+pub fn infer_module_name_from_target(target: &str) -> String {
+    module_name_from_sley_path(Path::new(target)).unwrap_or_else(|| "app.main".to_string())
+}
+
+pub fn module_name_from_sley_path(path: &Path) -> Option<String> {
+    if path.extension().and_then(|extension| extension.to_str()) != Some("sley") {
+        return None;
+    }
+    let mut components = path_module_components(path)?;
+    if let Some(src_index) = components.iter().rposition(|component| component == "src") {
+        components = components.split_off(src_index + 1);
+    } else {
+        components = components
+            .last()
+            .cloned()
+            .map(|component| vec![component])
+            .unwrap_or_default();
+    }
+    if components.is_empty() {
+        return None;
+    }
+    Some(components.join("."))
+}
+
+pub fn module_name_from_project_relative_sley_path(path: &Path) -> Option<String> {
+    if path.extension().and_then(|extension| extension.to_str()) != Some("sley") {
+        return None;
+    }
+    let components = path_module_components(path)?;
+    if components.is_empty() {
+        return None;
+    }
+    Some(components.join("."))
+}
+
+fn path_module_components(path: &Path) -> Option<Vec<String>> {
+    let mut components = Vec::new();
+    for component in path.components() {
+        let Component::Normal(value) = component else {
+            continue;
+        };
+        components.push(value.to_str()?.to_string());
+    }
+    if components.is_empty() {
+        return None;
+    }
+    if let Some(last) = components.last_mut() {
+        let stem = Path::new(last).file_stem()?.to_str()?;
+        *last = stem.to_string();
+    }
+    components
+        .into_iter()
+        .map(|component| module_segment_from_path(&component))
+        .collect()
+}
+
+fn module_segment_from_path(segment: &str) -> Option<String> {
+    let mut normalized = String::new();
+    let mut previous_was_underscore = false;
+    for ch in segment.chars().flat_map(char::to_lowercase) {
+        let next = if ch.is_ascii_alphanumeric() || ch == '_' {
+            ch
+        } else {
+            '_'
+        };
+        if next == '_' {
+            if !previous_was_underscore {
+                normalized.push(next);
+            }
+            previous_was_underscore = true;
+        } else {
+            normalized.push(next);
+            previous_was_underscore = false;
+        }
+    }
+    let normalized = normalized.trim_matches('_');
+    if normalized.is_empty() {
+        return None;
+    }
+    if normalized
+        .chars()
+        .next()
+        .is_some_and(|ch| ch.is_ascii_digit())
+    {
+        Some(format!("mod_{normalized}"))
+    } else {
+        Some(normalized.to_string())
+    }
 }
 
 fn select_template_surface<'a>(

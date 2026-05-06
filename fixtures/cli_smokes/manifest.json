@@ -564,6 +564,7 @@
       ],
       "covers": [
         "cli:plan",
+        "graft:templates:module-name-inference",
         "graft:templates:missing-module",
         "lint:missing_module_declaration",
         "json:sley.edit_plan.report.v0"
@@ -576,7 +577,7 @@
           { "pointer": "/graft_templates/0/kind", "value": "add_module_declaration" },
           { "pointer": "/graft_templates/0/surface", "value": "program" },
           { "pointer": "/graft_templates/0/operation/op", "value": "AddModuleDeclaration" },
-          { "pointer": "/graft_templates/0/operation/payload/name", "value": "app.main" },
+          { "pointer": "/graft_templates/0/operation/payload/name", "value": "deploy_gate" },
           { "pointer": "/graft_templates/0/editable_json_pointers/0", "value": "/payload/name" }
         ]
       }
@@ -603,7 +604,7 @@
           { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
           { "pointer": "/status", "value": "accepted" },
           { "pointer": "/provenance/0/operation", "value": "AddModuleDeclaration" },
-          { "pointer": "/provenance/0/targets/0", "value": "module:app.main" }
+          { "pointer": "/provenance/0/targets/0", "value": "module:deploy_gate" }
         ]
       }
     },

@@ -641,6 +641,7 @@ task main -> Result<Text, Error> {
             deny_warnings: false,
             include_graft_templates: true,
             template_surface: None,
+            module_name_hint: None,
         },
     );
     assert_eq!(report.status, "ready");
@@ -730,6 +731,7 @@ task helper -> Int {
             deny_warnings: false,
             include_graft_templates: true,
             template_surface: Some("task:app.plan.helper".to_string()),
+            module_name_hint: None,
         },
     );
     assert_eq!(report.status, "ready");
@@ -807,6 +809,7 @@ task helper -> Int {
             deny_warnings: false,
             include_graft_templates: true,
             template_surface: Some("task:app.plan.missing".to_string()),
+            module_name_hint: None,
         },
     );
     assert_eq!(missing.status, "blocked");
@@ -842,6 +845,7 @@ task main -> Int {
             deny_warnings: false,
             include_graft_templates: true,
             template_surface: Some("task:app.plan.main".to_string()),
+            module_name_hint: None,
         },
     );
     assert_eq!(main_report.status, "warnings");
@@ -891,6 +895,7 @@ task main -> Int {
             deny_warnings: false,
             include_graft_templates: true,
             template_surface: Some("task:app.plan.helper".to_string()),
+            module_name_hint: None,
         },
     );
     assert_eq!(helper_report.status, "warnings");
@@ -951,6 +956,7 @@ task main -> Int {
             deny_warnings: false,
             include_graft_templates: true,
             template_surface: Some("task:app.plan.main".to_string()),
+            module_name_hint: None,
         },
     );
     assert_eq!(main_report.status, "warnings");
@@ -996,6 +1002,7 @@ task main -> Int {
             deny_warnings: false,
             include_graft_templates: true,
             template_surface: Some("task:app.plan.helper".to_string()),
+            module_name_hint: None,
         },
     );
     assert_eq!(helper_report.status, "warnings");
@@ -1049,6 +1056,7 @@ task main -> Used {
             deny_warnings: false,
             include_graft_templates: true,
             template_surface: None,
+            module_name_hint: None,
         },
     );
     assert_eq!(report.status, "warnings");
@@ -1164,6 +1172,7 @@ task main -> Used {
             deny_warnings: false,
             include_graft_templates: true,
             template_surface: Some("type:app.plan.Orphan".to_string()),
+            module_name_hint: None,
         },
     );
     assert_eq!(targeted_type_report.status, "warnings");
@@ -1188,6 +1197,7 @@ task main -> Used {
             deny_warnings: false,
             include_graft_templates: true,
             template_surface: Some("effect:app.plan.OrphanEffect".to_string()),
+            module_name_hint: None,
         },
     );
     assert_eq!(targeted_effect_report.status, "warnings");
@@ -1219,6 +1229,7 @@ fn edit_plan_graft_templates_include_missing_module_fix() {
             deny_warnings: false,
             include_graft_templates: true,
             template_surface: None,
+            module_name_hint: None,
         },
     );
     assert_eq!(report.status, "warnings");
@@ -1239,7 +1250,7 @@ fn edit_plan_graft_templates_include_missing_module_fix() {
     );
     assert_eq!(
         template.operation.pointer("/payload/name"),
-        Some(&serde_json::json!("app.main"))
+        Some(&serde_json::json!("missing_module"))
     );
     assert_eq!(template.editable_json_pointers, vec!["/payload/name"]);
     let graft: GraftInput =
@@ -1258,6 +1269,7 @@ fn edit_plan_graft_templates_include_missing_module_fix() {
             deny_warnings: false,
             include_graft_templates: true,
             template_surface: Some("program".to_string()),
+            module_name_hint: None,
         },
     );
     assert_eq!(targeted_report.status, "warnings");
@@ -1292,6 +1304,7 @@ task helper -> Int {
             deny_warnings: false,
             include_graft_templates: true,
             template_surface: Some("task:app.plan.helper".to_string()),
+            module_name_hint: None,
         },
     );
     assert_eq!(report.status, "warnings");
@@ -2732,6 +2745,7 @@ task main -> Used uses UsedEffect {
             deny_warnings: false,
             include_graft_templates: true,
             template_surface: None,
+            module_name_hint: None,
         },
     );
     assert_json_snapshot(
@@ -2746,6 +2760,7 @@ task main -> Used uses UsedEffect {
             deny_warnings: false,
             include_graft_templates: true,
             template_surface: Some("task:app.math.double".to_string()),
+            module_name_hint: None,
         },
     );
     assert_json_snapshot(
@@ -7371,7 +7386,7 @@ fn file_fix_write_adds_module_declaration() {
     assert_eq!(outcome.provenance[0].operation, "AddModuleDeclaration");
     assert_eq!(
         fs::read_to_string(&file).expect("read fixed source"),
-        "module app.main\n\ntask main -> Text {\n  return \"hello\"\n}\n"
+        "module main\n\ntask main -> Text {\n  return \"hello\"\n}\n"
     );
     let fixed_source = fs::read_to_string(&file).expect("read fixed source");
     let fixed = parse_program(&fixed_source).expect("parse fixed source");
@@ -7380,6 +7395,63 @@ fn file_fix_write_adds_module_declaration() {
     let receipts = read_trace_receipts(root.join(".sley/trace.jsonl")).expect("read trace");
     assert_eq!(receipts.len(), 1);
     assert_eq!(receipts[0].provenance[0].operation, "AddModuleDeclaration");
+
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn file_fix_write_infers_project_relative_module_declaration() {
+    let root = temp_project_dir("file-fix-project-relative-module");
+    fs::create_dir_all(root.join("src/app/jobs")).expect("create project dirs");
+    fs::write(
+        root.join("sley.toml"),
+        r#"
+[project]
+entry = "app.main"
+"#,
+    )
+    .expect("write manifest");
+    let file = root.join("src/app/jobs/worker.sley");
+    fs::write(
+        &file,
+        r#"task main -> Text {
+  return "hello"
+}
+"#,
+    )
+    .expect("write module-less source");
+
+    let output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args([
+            "fix",
+            "--json",
+            "--kind",
+            "add_module_declaration",
+            "--write",
+        ])
+        .arg(&file)
+        .output()
+        .expect("write project-relative module declaration fix");
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+    assert!(
+        output.status.success(),
+        "module fix should infer project-relative name; stdout={stdout} stderr={}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let outcome: GraftOutcome = serde_json::from_str(&stdout).expect("parse fix outcome");
+    assert_eq!(outcome.status, "accepted");
+    assert_eq!(
+        outcome.provenance[0].targets,
+        vec!["module:app.jobs.worker".to_string()]
+    );
+    assert_eq!(
+        fs::read_to_string(&file).expect("read fixed source"),
+        "module app.jobs.worker\n\ntask main -> Text {\n  return \"hello\"\n}\n"
+    );
+    let fixed_source = fs::read_to_string(&file).expect("read fixed source");
+    let fixed = parse_program(&fixed_source).expect("parse fixed source");
+    let lint = build_lint_report(&fixed, LintOptions::default());
+    assert_eq!(lint.status, "ok", "unexpected lint findings: {lint:#?}");
 
     let _ = fs::remove_dir_all(root);
 }
@@ -8283,6 +8355,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:operations:add-module-declaration",
         "graft:templates:lint-declaration-delete",
         "graft:templates:lint-declaration-target",
+        "graft:templates:module-name-inference",
         "graft:templates:missing-module",
         "graft:templates:replace-expression",
         "graft:transactions:lint-declaration-cleanup",
