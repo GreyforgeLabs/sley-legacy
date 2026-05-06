@@ -1,0 +1,12 @@
+module corpus.accepted.agent_data_authority
+
+task upsert_profile -> Result<Text, Error> uses DatabaseWrite, DatabaseRead {
+  bind inserted = call db.try_insert("users", { id: "u7", name: "Kai" })?
+  bind row = call db.try_query_one("select * from users where id = ?", inserted.text("id"))?
+  return Ok(row.text("name"))
+}
+
+task main -> Result<Text, Error> uses DatabaseWrite, DatabaseRead {
+  bind name = call upsert_profile()?
+  return Ok("profile: " + name)
+}
