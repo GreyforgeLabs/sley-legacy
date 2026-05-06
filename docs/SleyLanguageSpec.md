@@ -870,6 +870,10 @@ or the inverted form with `return !flag`, preserves a checked program.
 `simplify_same_branch_if_expression` `ReplaceExpression` templates when
 replacing `if condition { value } else { value }` with `value` preserves a
 checked program and the removed condition is delete-safe.
+`same_branch_if_statement` lint findings become checked
+`simplify_same_branch_if_statement` `ReplaceStatement` templates when replacing
+an `if` statement whose branches contain the same single statement preserves a
+checked program and the removed condition is delete-safe.
 `unreachable_statement` lint findings become checked
 `delete_unreachable_statement` `DeleteNode` templates when deleting a
 statement after a guaranteed return preserves a checked program.
@@ -1019,6 +1023,8 @@ boolean `if` can be replaced with the condition or its negation; and
 boolean `if` can return the condition or its negation directly; and
 `same_branch_if_expression`, which warns when a checked expression-level `if`
 has identical branches and a delete-safe condition.
+`same_branch_if_statement`, which warns when a checked statement-level `if`
+has identical single-statement branches and a delete-safe condition.
 `unreachable_statement`, which warns when a statement appears after a
 guaranteed `return` in the same block.
 `--module <module>` scopes the lint to one module. `--rule unused-private-task`,
@@ -1041,6 +1047,7 @@ guaranteed `return` in the same block.
 `--rule redundant-boolean-if-expression`, or
 `--rule redundant-boolean-if-statement`, or
 `--rule same-branch-if-expression`, or
+`--rule same-branch-if-statement`, or
 `--rule unreachable-statement` selects one rule explicitly, and
 `--deny-warnings` turns findings into a nonzero CLI exit after printing the
 report. The v0 JSON root is `sley.lint.report.v0`.

@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.same_branch_if_statement",
+  "filters": {
+    "module": null,
+    "rules": [
+      "same_branch_if_statement"
+    ]
+  },
+  "findings": [
+    {
+      "id": "SAME_BRANCH_IF_STATEMENT",
+      "rule": "same_branch_if_statement",
+      "severity": "warning",
+      "message": "task `app.same_branch_if_statement.main` has an if statement with identical branches",
+      "node": "block:task:app.same_branch_if_statement.main:stmt:1",
+      "module": "app.same_branch_if_statement",
+      "hint": "replace the if statement with `return total`"
+    }
+  ]
+}

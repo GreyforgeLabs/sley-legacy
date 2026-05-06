@@ -980,6 +980,7 @@ enum CliLintRule {
     RedundantBooleanIfExpression,
     RedundantBooleanIfStatement,
     SameBranchIfExpression,
+    SameBranchIfStatement,
     UnreachableStatement,
 }
 
@@ -1014,6 +1015,7 @@ impl From<CliLintRule> for LintRule {
             CliLintRule::RedundantBooleanIfExpression => Self::RedundantBooleanIfExpression,
             CliLintRule::RedundantBooleanIfStatement => Self::RedundantBooleanIfStatement,
             CliLintRule::SameBranchIfExpression => Self::SameBranchIfExpression,
+            CliLintRule::SameBranchIfStatement => Self::SameBranchIfStatement,
             CliLintRule::UnreachableStatement => Self::UnreachableStatement,
         }
     }

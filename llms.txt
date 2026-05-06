@@ -198,9 +198,10 @@ Current development phase:
   `self_comparison_expression`, the double negation simplification rule
   `double_negation_expression`, the redundant boolean-if simplification rule
   `redundant_boolean_if_expression`, the redundant boolean-if statement rule
-  `redundant_boolean_if_statement`, the same-branch if simplification rule
-  `same_branch_if_expression`, the dead-code cleanup rule
-  `unreachable_statement`, and the result-safety rule `unchecked_result`
+  `redundant_boolean_if_statement`, the same-branch if simplification rules
+  `same_branch_if_expression` and `same_branch_if_statement`, the dead-code
+  cleanup rule `unreachable_statement`, and the result-safety rule
+  `unchecked_result`
 - `sley new --json` emits `sley.project.scaffold.v0` and creates
   non-destructive `hello`, deterministic `deploy`, or deterministic `agent`
   starter projects that can immediately run through check, doctor, query,
@@ -250,6 +251,8 @@ Current development phase:
   one executing branch statement, plus
   `simplify_redundant_boolean_if_statement` templates for boolean `if`
   statements that can return the condition or its negation directly, plus
+  `simplify_same_branch_if_statement` templates for same-branch statement-level
+  `if` cleanup, plus
   `delete_empty_if_statement` templates for no-op `if` statements with
   delete-safe conditions and empty branches, plus
   `delete_empty_for_statement` templates for `for` statements over literal

@@ -16,7 +16,8 @@ use crate::lint::{
     redundant_boolean_comparison_replacement_source,
     redundant_boolean_if_expression_replacement_source,
     redundant_boolean_if_statement_replacement_source,
-    same_branch_if_expression_replacement_source, self_comparison_expression_replacement_source,
+    same_branch_if_expression_replacement_source, same_branch_if_statement_replacement_source,
+    self_comparison_expression_replacement_source,
 };
 use crate::query::{QueryKind, QueryOptions, QueryReport, QueryTakeSummary, build_query_report};
 use crate::symbols::{slice_symbol_graph, task_fq_name, task_module, type_module};
@@ -602,6 +603,10 @@ fn lint_graft_templates(
         program,
         lint_report,
     ));
+    templates.extend(lint_same_branch_if_statement_templates(
+        program,
+        lint_report,
+    ));
     templates.extend(lint_unreachable_statement_templates(program, lint_report));
     templates.extend(lint_absorbing_boolean_expression_templates(
         program,
@@ -641,6 +646,7 @@ fn is_lint_repair_kind(kind: &str) -> bool {
             | "simplify_redundant_boolean_if_expression"
             | "simplify_redundant_boolean_if_statement"
             | "simplify_same_branch_if_expression"
+            | "simplify_same_branch_if_statement"
             | "delete_unreachable_statement"
             | "simplify_absorbing_boolean_expression"
             | "simplify_self_comparison_expression"
@@ -1304,6 +1310,37 @@ fn lint_same_branch_if_expression_templates(
             Some(EditPlanGraftTemplate {
                 kind: "simplify_same_branch_if_expression".to_string(),
                 reason: "replace this same-branch if expression with either branch".to_string(),
+                surface: finding.node.clone(),
+                operation,
+                editable_json_pointers: vec!["/payload/source".to_string()],
+            })
+        })
+        .collect()
+}
+
+fn lint_same_branch_if_statement_templates(
+    program: &Program,
+    lint_report: &LintReport,
+) -> Vec<EditPlanGraftTemplate> {
+    lint_report
+        .findings
+        .iter()
+        .filter(|finding| finding.id == "SAME_BRANCH_IF_STATEMENT")
+        .filter_map(|finding| {
+            let replacement = same_branch_if_statement_replacement_source(program, &finding.node)?;
+            let operation = json!({
+                "op": "ReplaceStatement",
+                "target": finding.node,
+                "payload": {
+                    "source": replacement
+                }
+            });
+            if !replace_affordance_checks(program, &operation) {
+                return None;
+            }
+            Some(EditPlanGraftTemplate {
+                kind: "simplify_same_branch_if_statement".to_string(),
+                reason: "replace this same-branch if statement with either branch".to_string(),
                 surface: finding.node.clone(),
                 operation,
                 editable_json_pointers: vec!["/payload/source".to_string()],

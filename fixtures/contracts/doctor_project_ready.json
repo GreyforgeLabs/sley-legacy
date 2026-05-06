@@ -56,6 +56,7 @@
       "redundant_boolean_if_expression",
       "redundant_boolean_if_statement",
       "same_branch_if_expression",
+      "same_branch_if_statement",
       "unreachable_statement"
     ],
     "finding_count": 0
