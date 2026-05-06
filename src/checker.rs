@@ -2199,11 +2199,16 @@ fn replace_call_arg_hint(
 }
 
 fn default_expr_source_for_type(ty: &TypeExpr) -> String {
-    match ty.display().as_str() {
-        "Int" => "0".to_string(),
-        "Float" => "0.0".to_string(),
-        "Text" => "\"\"".to_string(),
-        "Bool" => "false".to_string(),
+    match ty {
+        TypeExpr::Named { name } if name == "Int" => "0".to_string(),
+        TypeExpr::Named { name } if name == "Float" => "0.0".to_string(),
+        TypeExpr::Named { name } if name == "Text" => "\"\"".to_string(),
+        TypeExpr::Named { name } if name == "Bool" => "false".to_string(),
+        TypeExpr::Generic { name, args } if name == "Result" && !args.is_empty() => {
+            format!("Ok({})", default_expr_source_for_type(&args[0]))
+        }
+        TypeExpr::Generic { name, .. } if name == "List" => "[]".to_string(),
+        TypeExpr::Generic { name, .. } if name == "Map" => "map {}".to_string(),
         _ => "TODO_VALUE".to_string(),
     }
 }
