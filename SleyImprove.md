@@ -187,7 +187,9 @@ Rules:
   declaration hover, edit-plan code actions, and non-mutating
   `sley.fix.preview` payloads.
 - `sley-workbench` exposes a local read-only inspection report and optional
-  static HTML page over doctor/query/lint/plan/graph panels.
+  static HTML page over doctor/query/lint/plan/graph panels. Its report schema
+  links embedded panel rows back to the source doctor, query, lint, edit-plan,
+  graph, and graph-slice contracts.
 - `sley-docgen` exposes checked Markdown reference generation over
   query-derived module, task, type, effect, and host capability docs. Its
   report schema reuses the strict query task/type/effect row definitions.

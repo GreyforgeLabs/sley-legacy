@@ -20,14 +20,14 @@
     "summary": { "$ref": "#/$defs/summary" },
     "diagnostics": {
       "type": "array",
-      "items": { "type": "object" }
+      "items": { "$ref": "sley.diagnostics.report.v0#/$defs/diagnostic" }
     },
     "doctor": { "$ref": "#/$defs/doctor" },
     "query": { "$ref": "#/$defs/query" },
     "lint": { "$ref": "#/$defs/lint" },
     "plan": { "$ref": "#/$defs/plan" },
     "graph": { "$ref": "#/$defs/graph" },
-    "graph_slice": { "type": "object" },
+    "graph_slice": { "$ref": "sley.symbol_graph.slice.v0" },
     "issues": {
       "type": "array",
       "items": { "$ref": "#/$defs/issue" }
@@ -71,7 +71,7 @@
         "warning_count": { "type": "integer", "minimum": 0 },
         "next_actions": {
           "type": "array",
-          "items": { "type": "object" }
+          "items": { "$ref": "sley.doctor.report.v0#/$defs/action" }
         }
       },
       "additionalProperties": false
@@ -88,15 +88,15 @@
         },
         "tasks": {
           "type": "array",
-          "items": { "type": "object" }
+          "items": { "$ref": "sley.query.report.v0#/$defs/queryTaskSummary" }
         },
         "types": {
           "type": "array",
-          "items": { "type": "object" }
+          "items": { "$ref": "sley.query.report.v0#/$defs/queryTypeSummary" }
         },
         "calls": {
           "type": "array",
-          "items": { "type": "object" }
+          "items": { "$ref": "sley.query.report.v0#/$defs/callSummary" }
         }
       },
       "additionalProperties": false
@@ -109,7 +109,7 @@
         "status": { "enum": ["ok", "findings"] },
         "findings": {
           "type": "array",
-          "items": { "type": "object" }
+          "items": { "$ref": "sley.lint.report.v0#/properties/findings/items" }
         }
       },
       "additionalProperties": false
@@ -129,7 +129,7 @@
         "status": { "enum": ["ready", "warnings", "blocked"] },
         "task_surfaces": {
           "type": "array",
-          "items": { "type": "object" }
+          "items": { "$ref": "sley.edit_plan.report.v0#/$defs/taskSurface" }
         },
         "graft_templates": {
           "type": "array",
@@ -141,7 +141,7 @@
         },
         "next_actions": {
           "type": "array",
-          "items": { "type": "object" }
+          "items": { "$ref": "sley.edit_plan.report.v0#/$defs/action" }
         }
       },
       "additionalProperties": false
@@ -157,7 +157,12 @@
           "type": "array",
           "items": { "type": "string" }
         },
-        "payload": { "type": "object" }
+        "payload": {
+          "anyOf": [
+            { "$ref": "sley.edit_plan.report.v0#/$defs/graftOperation" },
+            { "$ref": "sley.edit_plan.report.v0#/$defs/graftTransaction" }
+          ]
+        }
       },
       "additionalProperties": false
     },
@@ -170,7 +175,7 @@
         "module_count": { "type": "integer", "minimum": 0 },
         "modules": {
           "type": "array",
-          "items": { "type": "object" }
+          "items": { "$ref": "sley.symbol_graph.v0#/$defs/moduleSummary" }
         }
       },
       "additionalProperties": false
