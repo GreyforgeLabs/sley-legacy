@@ -970,6 +970,7 @@ enum CliLintRule {
     DoubleNegationExpression,
     RedundantBooleanIfExpression,
     SameBranchIfExpression,
+    UnreachableStatement,
 }
 
 impl From<CliLintRule> for LintRule {
@@ -997,6 +998,7 @@ impl From<CliLintRule> for LintRule {
             CliLintRule::DoubleNegationExpression => Self::DoubleNegationExpression,
             CliLintRule::RedundantBooleanIfExpression => Self::RedundantBooleanIfExpression,
             CliLintRule::SameBranchIfExpression => Self::SameBranchIfExpression,
+            CliLintRule::UnreachableStatement => Self::UnreachableStatement,
         }
     }
 }

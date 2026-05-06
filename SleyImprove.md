@@ -101,7 +101,7 @@ sley fix --json --kind <kind> [--template-surface <surface>] [--name <name>] [--
 sley verify --json [--deny-warnings] [runtime gates/seeds] <target>
 sley deploy --json --dry-run [--artifacts-dir <dir>] [runtime gates/seeds] <target>
 sley query --json [--kind all|modules|tasks|types|effects|calls] [--module <module>] <target>
-sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter|missing-module-declaration|unchecked-result|unqualified-imported-call|unused-pure-binding|unused-pure-expression-statement|mutable-binding-never-set|constant-if-expression|identity-binary-expression|redundant-boolean-comparison|absorbing-boolean-expression|self-comparison-expression|double-negation-expression|redundant-boolean-if-expression|same-branch-if-expression] [--module <module>] <target>
+sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter|missing-module-declaration|unchecked-result|unqualified-imported-call|unused-pure-binding|unused-pure-expression-statement|mutable-binding-never-set|constant-if-expression|identity-binary-expression|redundant-boolean-comparison|absorbing-boolean-expression|self-comparison-expression|double-negation-expression|redundant-boolean-if-expression|same-branch-if-expression|unreachable-statement] [--module <module>] <target>
 sley trace --json <target>
 sley seal --json <target>
 sley zjx --json [--slice <node-id>] <target>
@@ -631,6 +631,9 @@ The current smoke manifest covers:
   `simplify_same_branch_if_expression` templates that replace
   `if condition { value } else { value }` with `value` when the condition is
   delete-safe
+- unreachable statement warnings through `unreachable_statement`, plus checked
+  `delete_unreachable_statement` templates that delete dead statements after a
+  guaranteed return
 - private declaration hygiene through the checked `unused_private_type` and
   `unused_private_effect` lint rules
 - import hygiene through the checked `unused_import` lint rule
@@ -733,6 +736,8 @@ The v0 lint rules are:
   branch source is reported when the condition is delete-safe, so agents can
   replace it with either branch without dropping authority work or recoverable
   failures.
+- `unreachable_statement`: a statement after a guaranteed `return` in the same
+  block is reported so agents can remove dead task-body code.
 
 The command supports `--module <module>`, `--rule unused-private-task`,
 `--rule unreachable-private-task`, `--rule unused-declared-effect`,
@@ -745,7 +750,7 @@ The command supports `--module <module>`, `--rule unused-private-task`,
 `--rule identity-binary-expression`, `--rule redundant-boolean-comparison`,
 `--rule absorbing-boolean-expression`, `--rule self-comparison-expression`,
 `--rule double-negation-expression`, `--rule redundant-boolean-if-expression`,
-`--rule same-branch-if-expression`,
+`--rule same-branch-if-expression`, `--rule unreachable-statement`,
 and
 `--deny-warnings` lets CI turn findings into a failing exit after the JSON
 report is printed.

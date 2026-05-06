@@ -182,7 +182,8 @@ Current development phase:
   `self_comparison_expression`, the double negation simplification rule
   `double_negation_expression`, the redundant boolean-if simplification rule
   `redundant_boolean_if_expression`, the same-branch if simplification rule
-  `same_branch_if_expression`, and the result-safety rule `unchecked_result`
+  `same_branch_if_expression`, the dead-code cleanup rule
+  `unreachable_statement`, and the result-safety rule `unchecked_result`
 - `sley new --json` emits `sley.project.scaffold.v0` and creates
   non-destructive `hello`, deterministic `deploy`, or deterministic `agent`
   starter projects that can immediately run through check, doctor, query,
@@ -226,6 +227,8 @@ Current development phase:
   calls that should be alias- or module-qualified, plus
   `delete_unused_pure_expression_statement` templates for no-op pure
   expression statements, plus
+  `delete_unreachable_statement` templates for dead statements after a
+  guaranteed return, plus
   `convert_mutable_binding_to_bind` transactions for never-set mutable locals;
   selected task graph-slice
   affordances are surfaced as checked

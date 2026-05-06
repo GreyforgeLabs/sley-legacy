@@ -246,14 +246,16 @@ Near-term:
    surface now includes explicit module-declaration style warnings,
    unqualified imported-call style warnings, mutable-local style warnings,
    unused pure binding cleanup, and no-op pure expression statement cleanup,
-   plus constant-if, identity binary expression, redundant boolean comparison,
-   absorbing boolean expression, self-comparison expression, double negation,
-   redundant boolean-if, and same-branch if simplification;
+   unreachable statement cleanup, plus constant-if, identity binary expression,
+   redundant boolean comparison, absorbing boolean expression,
+   self-comparison expression, double negation, redundant boolean-if, and
+   same-branch if simplification;
    those are structurally repairable through checked plan/fix templates, with
    write/query/verify smoke coverage for imported-call qualification and
    write/verify smoke coverage for pure binding deletion, pure expression
-   statement deletion, mutable binding conversion, constant-if simplification,
-   identity binary simplification, and redundant boolean comparison
+   statement deletion, unreachable statement deletion, mutable binding
+   conversion, constant-if simplification, identity binary simplification, and
+   redundant boolean comparison
    simplification, absorbing boolean expression simplification,
    self-comparison expression simplification, double negation
    simplification, redundant boolean-if simplification, and same-branch if

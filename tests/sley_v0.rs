@@ -2922,6 +2922,81 @@ fn edit_plan_graft_templates_include_unused_pure_expression_statement_delete() {
 }
 
 #[test]
+fn edit_plan_graft_templates_include_unreachable_statement_delete() {
+    let source = include_str!("../examples/unreachable_statement.sley");
+    let program = parse_program(source).expect("parse unreachable statement fixture");
+    let report = build_edit_plan_report_with_options(
+        "examples/unreachable_statement.sley",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: None,
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "warnings");
+    assert_eq!(report.summary.lint_finding_count, 1);
+    assert!(
+        report
+            .lint
+            .as_ref()
+            .expect("lint summary")
+            .findings
+            .iter()
+            .any(|finding| finding.id == "UNREACHABLE_STATEMENT")
+    );
+    let template = report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "delete_unreachable_statement")
+        .expect("unreachable statement delete template");
+    assert_eq!(
+        template.surface,
+        "block:task:app.unreachable_statement.main:stmt:2"
+    );
+    assert_eq!(
+        template.operation.pointer("/op"),
+        Some(&serde_json::json!("DeleteNode"))
+    );
+    assert_eq!(
+        template.operation.pointer("/target"),
+        Some(&serde_json::json!(
+            "block:task:app.unreachable_statement.main:stmt:2"
+        ))
+    );
+    assert!(template.editable_json_pointers.is_empty());
+    let graft: GraftInput = serde_json::from_value(template.operation.clone())
+        .expect("parse unreachable statement delete template");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:unreachable-statement-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    assert!(!outcome.source.expect("grafted source").contains("return 0"));
+
+    let targeted_report = build_edit_plan_report_with_options(
+        "examples/unreachable_statement.sley",
+        Ok(program),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("block:task:app.unreachable_statement.main:stmt:2".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(targeted_report.status, "warnings");
+    assert!(targeted_report.diagnostics.is_empty());
+    assert_eq!(targeted_report.graft_templates.len(), 1);
+    assert_eq!(
+        targeted_report.graft_templates[0].kind,
+        "delete_unreachable_statement"
+    );
+    assert!(targeted_report.transaction_templates.is_empty());
+}
+
+#[test]
 fn edit_plan_graft_templates_include_constant_if_expression_simplify() {
     let source = include_str!("../examples/constant_if_expression.sley");
     let program = parse_program(source).expect("parse constant if fixture");
@@ -5147,6 +5222,21 @@ task helper -> Result<Text, Error> {
         include_str!("../fixtures/contracts/lint_unused_pure_expression_statement.json"),
     );
 
+    let unreachable_statement_source = include_str!("../examples/unreachable_statement.sley");
+    let unreachable_statement_program =
+        parse_program(unreachable_statement_source).expect("parse unreachable statement fixture");
+    let unreachable_statement_lint = build_lint_report(
+        &unreachable_statement_program,
+        LintOptions {
+            rules: vec![LintRule::UnreachableStatement],
+            module: None,
+        },
+    );
+    assert_json_snapshot(
+        &unreachable_statement_lint,
+        include_str!("../fixtures/contracts/lint_unreachable_statement.json"),
+    );
+
     let mutable_binding_source = include_str!("../examples/mutable_binding_style.sley");
     let mutable_binding_program =
         parse_program(mutable_binding_source).expect("parse mutable binding fixture");
@@ -5936,7 +6026,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(40))
+        Some(&serde_json::json!(41))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -11117,6 +11207,79 @@ task main -> Result<Int, Error> uses FileRead {
 }
 
 #[test]
+fn lint_report_flags_unreachable_statements() {
+    let source = r#"
+module app.unreachable_statement
+
+task main -> Int {
+  bind flag = true
+
+  if flag {
+    return 1
+  } else {
+    return 2
+  }
+
+  bind stale = 0
+}
+
+task nested -> Int {
+  if true {
+    return 3
+    bind nested_stale = 9
+  } else {
+    return 4
+  }
+
+  return 5
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+
+    let report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::UnreachableStatement],
+            module: None,
+        },
+    );
+
+    assert_eq!(report.schema, LINT_REPORT_SCHEMA);
+    assert_eq!(report.status, "findings");
+    assert_eq!(report.entry_module, "app.unreachable_statement");
+    assert_eq!(report.filters.rules, vec!["unreachable_statement"]);
+    assert_eq!(report.findings.len(), 3);
+    assert_eq!(report.findings[0].id, "UNREACHABLE_STATEMENT");
+    assert_eq!(report.findings[0].rule, "unreachable_statement");
+    let nodes: Vec<&str> = report
+        .findings
+        .iter()
+        .map(|finding| finding.node.as_str())
+        .collect();
+    assert!(nodes.contains(&"block:task:app.unreachable_statement.main:stmt:2"));
+    assert!(nodes.contains(&"block:task:app.unreachable_statement.nested:stmt:0:then:stmt:1"));
+    assert!(nodes.contains(&"block:task:app.unreachable_statement.nested:stmt:1"));
+    assert_eq!(report.findings[0].module, "app.unreachable_statement");
+    assert!(report.findings[0].message.contains("unreachable statement"));
+    assert!(report.findings[0].hint.contains("delete"));
+
+    let scoped_report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::UnreachableStatement],
+            module: Some("app.other".to_string()),
+        },
+    );
+    assert_eq!(scoped_report.status, "ok");
+    assert!(scoped_report.findings.is_empty());
+}
+
+#[test]
 fn lint_report_flags_mutable_bindings_never_set() {
     let source = r#"
 module app.mutable_style
@@ -13917,6 +14080,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:templates:unchecked-result",
         "graft:templates:unused-pure-binding-delete",
         "graft:templates:unused-pure-expression-statement-delete",
+        "graft:templates:unreachable-statement-delete",
         "graft:templates:unused-declared-effect-remove",
         "graft:templates:unused-import-delete",
         "graft:templates:unused-private-task-delete",
@@ -13949,6 +14113,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "lint:double_negation_expression",
         "lint:redundant_boolean_if_expression",
         "lint:same_branch_if_expression",
+        "lint:unreachable_statement",
         "query:tasks",
         "query:types",
         "query:effects",
@@ -13966,6 +14131,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:double-negation-repair-write-verify",
         "readiness:redundant-boolean-if-repair-write-verify",
         "readiness:same-branch-if-repair-write-verify",
+        "readiness:unreachable-statement-repair-write-verify",
         "readiness:lint-repair-plan",
         "readiness:lint-repair-preview",
         "readiness:lint-repair-write-command",

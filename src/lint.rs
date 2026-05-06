@@ -40,6 +40,7 @@ pub enum LintRule {
     DoubleNegationExpression,
     RedundantBooleanIfExpression,
     SameBranchIfExpression,
+    UnreachableStatement,
 }
 
 impl LintRule {
@@ -67,6 +68,7 @@ impl LintRule {
             Self::DoubleNegationExpression,
             Self::RedundantBooleanIfExpression,
             Self::SameBranchIfExpression,
+            Self::UnreachableStatement,
         ]
     }
 
@@ -94,6 +96,7 @@ impl LintRule {
             Self::DoubleNegationExpression => "double_negation_expression",
             Self::RedundantBooleanIfExpression => "redundant_boolean_if_expression",
             Self::SameBranchIfExpression => "same_branch_if_expression",
+            Self::UnreachableStatement => "unreachable_statement",
         }
     }
 }
@@ -250,6 +253,12 @@ pub fn build_lint_report(program: &Program, options: LintOptions) -> LintReport 
     }
     if rules.contains(&LintRule::SelfComparisonExpression) {
         findings.extend(lint_self_comparison_expressions(
+            program,
+            options.module.as_deref(),
+        ));
+    }
+    if rules.contains(&LintRule::UnreachableStatement) {
+        findings.extend(lint_unreachable_statements(
             program,
             options.module.as_deref(),
         ));
@@ -814,6 +823,18 @@ fn lint_unused_pure_expression_statements(
         .filter(|task| module_matches(module, &task_module(task)))
     {
         collect_unused_pure_expression_statements_in_block(task, &task.body, &mut findings);
+    }
+    findings
+}
+
+fn lint_unreachable_statements(program: &Program, module: Option<&str>) -> Vec<LintFinding> {
+    let mut findings = Vec::new();
+    for task in program
+        .tasks
+        .iter()
+        .filter(|task| module_matches(module, &task_module(task)))
+    {
+        collect_unreachable_statements_in_block(task, &task.body, &mut findings);
     }
     findings
 }
@@ -2217,6 +2238,84 @@ fn collect_unused_pure_expression_statements_in_block(
             | StatementKind::Return { .. }
             | StatementKind::Expr { .. } => {}
         }
+    }
+}
+
+fn collect_unreachable_statements_in_block(
+    task: &TaskDecl,
+    block: &Block,
+    findings: &mut Vec<LintFinding>,
+) {
+    let mut unreachable = false;
+    for statement in &block.statements {
+        if unreachable {
+            let task_name = task_fq_name(task);
+            findings.push(LintFinding {
+                id: "UNREACHABLE_STATEMENT".to_string(),
+                rule: LintRule::UnreachableStatement.as_str().to_string(),
+                severity: "warning".to_string(),
+                message: format!(
+                    "task `{task_name}` has an unreachable statement after a guaranteed return"
+                ),
+                node: statement.id.clone(),
+                module: task_module(task),
+                hint: "delete this unreachable statement".to_string(),
+            });
+            continue;
+        }
+
+        match &statement.kind {
+            StatementKind::If {
+                then_block,
+                else_block,
+                ..
+            } => {
+                collect_unreachable_statements_in_block(task, then_block, findings);
+                if let Some(else_block) = else_block {
+                    collect_unreachable_statements_in_block(task, else_block, findings);
+                }
+            }
+            StatementKind::While { body, .. }
+            | StatementKind::For { body, .. }
+            | StatementKind::Forge { body } => {
+                collect_unreachable_statements_in_block(task, body, findings);
+            }
+            StatementKind::Binding { .. }
+            | StatementKind::Set { .. }
+            | StatementKind::Return { .. }
+            | StatementKind::Expr { .. } => {}
+        }
+
+        if statement_guarantees_return_for_lint(statement) {
+            unreachable = true;
+        }
+    }
+}
+
+fn block_guarantees_return_for_lint(block: &Block) -> bool {
+    block
+        .statements
+        .iter()
+        .any(statement_guarantees_return_for_lint)
+}
+
+fn statement_guarantees_return_for_lint(statement: &Statement) -> bool {
+    match &statement.kind {
+        StatementKind::Return { .. } => true,
+        StatementKind::If {
+            then_block,
+            else_block,
+            ..
+        } => else_block.as_ref().is_some_and(|else_block| {
+            block_guarantees_return_for_lint(then_block)
+                && block_guarantees_return_for_lint(else_block)
+        }),
+        StatementKind::Binding { .. }
+        | StatementKind::Set { .. }
+        | StatementKind::Expr { .. }
+        | StatementKind::While { .. }
+        | StatementKind::For { .. }
+        | StatementKind::Forge { .. } => false,
     }
 }
 

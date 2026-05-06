@@ -588,6 +588,7 @@ fn lint_graft_templates(
         program,
         lint_report,
     ));
+    templates.extend(lint_unreachable_statement_templates(program, lint_report));
     templates.extend(lint_absorbing_boolean_expression_templates(
         program,
         lint_report,
@@ -620,6 +621,7 @@ fn is_lint_repair_kind(kind: &str) -> bool {
             | "simplify_double_negation_expression"
             | "simplify_redundant_boolean_if_expression"
             | "simplify_same_branch_if_expression"
+            | "delete_unreachable_statement"
             | "simplify_absorbing_boolean_expression"
             | "simplify_self_comparison_expression"
             | "convert_mutable_binding_to_bind"
@@ -1111,6 +1113,33 @@ fn lint_same_branch_if_expression_templates(
                 surface: finding.node.clone(),
                 operation,
                 editable_json_pointers: vec!["/payload/source".to_string()],
+            })
+        })
+        .collect()
+}
+
+fn lint_unreachable_statement_templates(
+    program: &Program,
+    lint_report: &LintReport,
+) -> Vec<EditPlanGraftTemplate> {
+    lint_report
+        .findings
+        .iter()
+        .filter(|finding| finding.id == "UNREACHABLE_STATEMENT")
+        .filter_map(|finding| {
+            let operation = json!({
+                "op": "DeleteNode",
+                "target": finding.node
+            });
+            if !delete_affordance_checks(program, &operation) {
+                return None;
+            }
+            Some(EditPlanGraftTemplate {
+                kind: "delete_unreachable_statement".to_string(),
+                reason: "delete this unreachable statement".to_string(),
+                surface: finding.node.clone(),
+                operation,
+                editable_json_pointers: Vec::new(),
             })
         })
         .collect()
