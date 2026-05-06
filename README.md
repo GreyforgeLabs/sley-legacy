@@ -168,6 +168,10 @@ Implemented now:
 - in-tree `tree-sitter-sley` syntax grammar bootstrap with checked
   Tree-sitter corpus tests, highlight queries, generated parser artifacts, and
   fixture parsing over current examples plus accepted compiler corpus
+- in-tree `sley-lsp` stdio language-server bootstrap with full-document sync,
+  compiler diagnostics plus lint warnings, formatting edits, document symbols,
+  declaration hover, checked edit-plan code actions, and a non-mutating
+  `sley.fix.preview` command for editor repair previews
 - checked JSON readiness reports with `sley doctor`, consuming strict
   diagnostics plus query and lint summaries, with call-bearing reports routing
   agents to strict `sley query --kind calls` inspection, warning next-actions
@@ -340,12 +344,13 @@ Implemented now:
 - locked JSON contract snapshots under `fixtures/contracts/`, including
   symbol graphs, graft outcomes, ZJX envelopes, checked run, query, lint,
   doctor, edit-plan, verify, deploy dry-run, deploy artifact check, CI, and
-  project scaffold reports, plus contract inventory, fixture-check, and
-  validate reports
+  project scaffold reports, LSP fix-preview payloads, plus contract inventory,
+  fixture-check, and validate reports
 - external v0 JSON Schema files under `docs/schemas/`, including strict
   query task/take/type/effect/call row definitions,
   strict runtime value definitions for `sley.run.report.v0`,
   `sley-ci` check/lint/doctor/plan/run/verify/deploy/smoke/corpus/examples reports,
+  `sley.lsp.fix_preview.v0` preview-command payloads,
   `sley-contract` inventory/fixture-check/validate/deploy-artifact-check reports,
   edit-plan graft operation and transaction template envelopes reused by graph
   slice affordances, graph-slice focus/task/call summary refs, a shared
@@ -424,6 +429,7 @@ sley-conformance report --json
 sley-conformance coverage --json --require-tag cli:check --require-tag json:sley.trace.receipt.v0
 sley-contract inspect-deploy-artifacts .sley/deploy --schemas docs/schemas --json
 make syntax
+sley-lsp
 sley seal --json .
 sley zjx --json .
 ```

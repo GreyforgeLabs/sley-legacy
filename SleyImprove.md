@@ -112,6 +112,7 @@ sley-conformance report --json
 sley-conformance coverage --json --require-tag <tag>
 make v1
 make syntax
+sley-lsp
 sley trace --json <target>
 sley seal --json <target>
 sley zjx --json [--slice <node-id>] <target>
@@ -131,8 +132,9 @@ Rules:
 - AST program/node, diagnostic-report, symbol-graph, graph-slice, query-report,
   lint-report, run-report, graft-outcome, trace-report, trace-seal,
   ZJX-envelope, doctor-report, project-scaffold, and CI/deploy report
-  snapshots, plus contract inventory/fixture-check/validate report snapshots,
-  are locked under `fixtures/contracts/`.
+  snapshots, LSP fix-preview payloads, plus
+  contract inventory/fixture-check/validate report snapshots, are locked under
+  `fixtures/contracts/`.
 - JSON Schema files live under `docs/schemas/`; the AST schema covers nested
   declarations, statements, expressions, type expressions, spans, and
   provenance, the query schema exposes strict task/take/type/effect/call row
@@ -143,6 +145,7 @@ Rules:
   the graph-slice schema links
   focus, task, and call-summary payloads to shared contracts, `sley-ci`
   check/lint/doctor/plan/run/verify/deploy/smoke/corpus/examples reports,
+  LSP fix-preview payloads,
   `sley-conformance` report/coverage roots, and `sley-contract`
   inventory/fixture-check/validate/deploy-artifact-check reports have versioned
   schemas and representative fixtures, the graft outcome and trace receipt
@@ -159,6 +162,10 @@ Rules:
 - `.github/actions/sley-v1/action.yml`, `.github/workflows/v1.yml`, and
   `.pre-commit-config.yaml` route hosted CI and local pre-commit checks through
   the same `make v1` gate.
+- `sley-lsp` exposes a stdio language-server loop over current compiler
+  surfaces: parse/check/lint diagnostics, formatting, document symbols,
+  declaration hover, edit-plan code actions, and non-mutating
+  `sley.fix.preview` payloads.
 - Diagnostics include stable IDs, node IDs, spans where possible, and repair
   hints for common checker failures.
 - `sley doctor` is the first deterministic helper consuming strict check,

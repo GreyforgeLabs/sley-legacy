@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.lsp.fix_preview.v0",
+  "title": "Sley LSP Fix Preview v0",
+  "type": "object",
+  "required": ["schema", "status", "preview"],
+  "properties": {
+    "schema": { "const": "sley.lsp.fix_preview.v0" },
+    "status": { "const": "preview" },
+    "preview": { "$ref": "#/$defs/code_action_preview" }
+  },
+  "$defs": {
+    "code_action_preview": {
+      "type": "object",
+      "required": [
+        "schema",
+        "uri",
+        "target",
+        "kind",
+        "surface",
+        "editableJsonPointers",
+        "dryRun"
+      ],
+      "properties": {
+        "schema": { "const": "sley.lsp.code_action.v0" },
+        "uri": { "type": "string", "minLength": 1 },
+        "target": { "type": "string", "minLength": 1 },
+        "kind": { "type": "string", "minLength": 1 },
+        "surface": { "type": "string", "minLength": 1 },
+        "operation": { "type": "object" },
+        "transaction": { "type": "object" },
+        "editableJsonPointers": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "dryRun": { "$ref": "#/$defs/dry_run_command" }
+      },
+      "oneOf": [
+        { "required": ["operation"] },
+        { "required": ["transaction"] }
+      ],
+      "additionalProperties": false
+    },
+    "dry_run_command": {
+      "type": "object",
+      "required": ["command", "args"],
+      "properties": {
+        "command": { "const": "sley" },
+        "args": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

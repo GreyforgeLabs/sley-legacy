@@ -31,6 +31,7 @@ cargo run --bin sley-conformance -- coverage --json --require-tag <tag>
 cargo run --bin sley-contract -- inspect-deploy-artifacts .sley/deploy --schemas docs/schemas --json
 make v1
 make syntax
+cargo run --bin sley-lsp
 cargo run -- seal --json <file-or-project>
 cargo run -- graft --json --dry-run <file> <graft.json>
 cargo run -- graft --json --write <file> <graft.json>
@@ -146,6 +147,10 @@ smoke tags, packaged example counts, and declared integration-test count drift.
 The in-tree `tree-sitter-sley` package exposes the current syntax grammar,
 highlight queries, generated parser artifacts, exact corpus tests, and fixture
 parsing smoke through `npm test` or `make syntax`.
+The `sley-lsp` binary exposes stdio LSP diagnostics, formatting, document
+symbols, declaration hover, edit-plan code actions, and non-mutating
+`sley.fix.preview` payloads backed by compiler modules; the preview payload
+uses `schema: "sley.lsp.fix_preview.v0"` and has a locked contract fixture.
 The repo-level `Makefile`, `.github/actions/sley-v1/action.yml`,
 `.github/workflows/v1.yml`, and `.pre-commit-config.yaml` all route release
 checks through `make v1`.
