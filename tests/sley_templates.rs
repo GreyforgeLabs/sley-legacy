@@ -50,6 +50,23 @@ fn scaffold_template_pack_creates_lint_clean_runnable_projects() {
             deploy_ready: false,
         },
         TemplateCase {
+            template: "spend-gate",
+            expected_action: "verify_seeded_spend",
+            extra_source_path: None,
+            gate_args: &[
+                "--cap",
+                "Spend",
+                "--spend-result",
+                "ads-budget",
+                "authorized",
+            ],
+            expected_value: json!({
+                "kind": "Ok",
+                "value": {"kind": "Text", "value": "budget gate: authorized"}
+            }),
+            deploy_ready: false,
+        },
+        TemplateCase {
             template: "agent-task-pack",
             expected_action: "verify_seeded_agent",
             extra_source_path: None,

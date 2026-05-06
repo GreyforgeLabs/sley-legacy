@@ -270,6 +270,127 @@
       }
     },
     {
+      "name": "new_spend_gate_project_json",
+      "cwd": "tmp",
+      "args": [
+        "new",
+        "--json",
+        "--template",
+        "spend-gate",
+        "--name",
+        "spend-app",
+        "--module",
+        "app.main",
+        "{tmp}/spend-app"
+      ],
+      "covers": [
+        "cli:new",
+        "json:sley.project.scaffold.v0",
+        "scaffold:spend-quickstart",
+        "scaffold:next-actions"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.project.scaffold.v0" },
+          { "pointer": "/status", "value": "created" },
+          { "pointer": "/project/name", "value": "spend-app" },
+          { "pointer": "/project/entry_module", "value": "app.main" },
+          { "pointer": "/project/template", "value": "spend-gate" },
+          { "pointer": "/files/2/path", "value": "src/app/main.sley" },
+          { "pointer": "/next_actions/5/kind", "value": "verify_seeded_spend" },
+          { "pointer": "/next_actions/5/command/5", "value": "Spend" },
+          { "pointer": "/next_actions/6/kind", "value": "run_seeded_spend" },
+          { "pointer": "/next_actions/6/command/1", "value": "run" },
+          { "pointer": "/next_actions/7/kind", "value": "seal_project" },
+          { "pointer": "/next_actions/8/kind", "value": "package_project" }
+        ]
+      }
+    },
+    {
+      "name": "check_new_spend_gate_project_json",
+      "args": ["check", "--json", "{tmp}/spend-app"],
+      "covers": [
+        "cli:check",
+        "json:sley.diagnostics.report.v0",
+        "scaffold:spend-quickstart"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.diagnostics.report.v0" },
+          { "pointer": "/status", "value": "ok" }
+        ]
+      }
+    },
+    {
+      "name": "verify_new_spend_gate_project_json",
+      "args": [
+        "verify",
+        "--json",
+        "--deny-warnings",
+        "--cap",
+        "Spend",
+        "--spend-result",
+        "ads-budget",
+        "authorized",
+        "{tmp}/spend-app"
+      ],
+      "covers": [
+        "cli:verify",
+        "json:sley.verify.report.v0",
+        "json:sley.query.report.v0",
+        "json:sley.lint.report.v0",
+        "readiness:verify-package-next-action",
+        "scaffold:spend-quickstart",
+        "scaffold:verify-ready",
+        "host:Spend"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.verify.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/entry_module", "value": "app.main" },
+          { "pointer": "/summary/runtime_status", "value": "passed" },
+          { "pointer": "/runtime/value/kind", "value": "Ok" },
+          { "pointer": "/runtime/value/value/kind", "value": "Text" },
+          { "pointer": "/runtime/value/value/value", "value": "budget gate: authorized" },
+          { "pointer": "/next_actions/0/kind", "value": "seal_verified_target" },
+          { "pointer": "/next_actions/1/kind", "value": "package_verified_target" }
+        ]
+      }
+    },
+    {
+      "name": "run_new_spend_gate_project_json",
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "Spend",
+        "--spend-result",
+        "ads-budget",
+        "authorized",
+        "{tmp}/spend-app"
+      ],
+      "covers": [
+        "cli:run",
+        "json:sley.run.report.v0",
+        "scaffold:spend-quickstart",
+        "host:Spend"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.run.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/value/kind", "value": "Ok" },
+          { "pointer": "/value/value/kind", "value": "Text" },
+          { "pointer": "/value/value/value", "value": "budget gate: authorized" }
+        ]
+      }
+    },
+    {
       "name": "new_agent_project_json",
       "cwd": "tmp",
       "args": [

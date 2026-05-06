@@ -223,7 +223,7 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
    - Curated project templates beyond `hello`, `deploy`, and the first in-tree
      `agent` starter.
    - MVP: `library`, `cli`, `service-gate`, `data-pipeline`,
-     `agent-task-pack`, and `agent-project` templates, all deterministic and
+     `spend-gate`, `agent-task-pack`, and `agent-project` templates, all deterministic and
      verify-ready.
    - Current bootstrap: these templates are available through `sley new`, are
      listed in `sley.project.scaffold.v0`, and are covered by a CLI integration

@@ -144,11 +144,11 @@ Current verified surface:
   package file roles to their expected schemas, and the ready report points
   agents to `sley-contract inspect-deploy-artifacts` to revalidate that handoff
   directory after it moves between agent sessions.
-- `sley new --json --template hello|library|cli|service-gate|data-pipeline|deploy|agent|agent-task-pack|agent-project`
+- `sley new --json --template hello|library|cli|service-gate|data-pipeline|deploy|spend-gate|agent|agent-task-pack|agent-project`
   emits `schema: "sley.project.scaffold.v0"` and creates deterministic
   first-run starter projects, including pure library/CLI/data-pipeline
-  quickstarts, a seeded network service quickstart, and seeded single-module
-  and multi-module agent quickstarts that compose SecretRead, Network,
+  quickstarts, seeded network service, deploy, and spend quickstarts, and
+  seeded single-module and multi-module agent quickstarts that compose SecretRead, Network,
   ModelCall, and Deploy authority without
   real providers.
 - `sley lint --json` emits `schema: "sley.lint.report.v0"` and supports

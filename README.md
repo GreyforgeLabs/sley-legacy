@@ -30,8 +30,9 @@ Implemented now:
 - `sley.toml` project manifests for multi-file module graphs
 - non-destructive `sley new` project scaffolding with `hello`, `library`,
   `cli`, deterministic `service-gate`, `data-pipeline`, deterministic
-  `deploy`, deterministic `agent`, deterministic `agent-task-pack`, and
-  multi-module deterministic `agent-project` starter templates
+  `deploy`, deterministic `spend-gate`, deterministic `agent`,
+  deterministic `agent-task-pack`, and multi-module deterministic
+  `agent-project` starter templates
 - module, import, type, effect, and task declarations
 - import aliases with `import app.math as math`
 - exported declarations with `export task`, `export type`, and `export effect`
@@ -333,8 +334,8 @@ Implemented now:
   handoff file only after the dry-run package is ready, and the ready report
   points agents to `sley-contract inspect-deploy-artifacts`
 - JSON project scaffold reports with `sley new --json`, `hello`, `library`,
-  `cli`, `service-gate`, `data-pipeline`, `deploy`, `agent`, and
-  `agent-task-pack` and `agent-project` templates, relative created-file paths,
+  `cli`, `service-gate`, `data-pipeline`, `deploy`, `spend-gate`, `agent`,
+  `agent-task-pack`, and `agent-project` templates, relative created-file paths,
   next-command vectors, typed next-action reasons through check, doctor, query,
   plan, lint, verify, run, seal, and ZJX package steps, and
   `schema: "sley.project.scaffold.v0"`
@@ -526,7 +527,10 @@ source files. `--template hello`, `--template library`, `--template cli`, and
 creates a deterministic network-gated starter that runs with seeded
 `http.try_get_text` data. `--template deploy` creates a deterministic
 deployment-gated starter that uses the seeded `deploy.try_stage` adapter; it
-does not call deployment providers or mutate infrastructure. `--template agent`
+does not call deployment providers or mutate infrastructure. `--template
+spend-gate` creates a deterministic spend-gated starter that uses seeded
+`spend.try_authorize` authorization data; it does not create transactions,
+payments, market orders, wallet calls, credits, or provider spend. `--template agent`
 and `--template agent-task-pack` create deterministic single-module agentic
 starters. `--template agent-project` creates a deterministic multi-module
 agentic starter with an entry module and imported pipeline module. These

@@ -23,6 +23,7 @@
             "service-gate",
             "data-pipeline",
             "deploy",
+            "spend-gate",
             "agent",
             "agent-task-pack",
             "agent-project"

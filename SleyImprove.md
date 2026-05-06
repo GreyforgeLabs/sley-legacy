@@ -94,7 +94,7 @@ sley ast --json <target>
 sley ast --json --node <node-id> <target>
 sley graph --json <target>
 sley graph --json --slice <node-id> <target>
-sley new --json [--template hello|library|cli|service-gate|data-pipeline|deploy|agent|agent-task-pack|agent-project] [--name <name>] [--module <module>] <path>
+sley new --json [--template hello|library|cli|service-gate|data-pipeline|deploy|spend-gate|agent|agent-task-pack|agent-project] [--name <name>] [--module <module>] <path>
 sley doctor --json [--deny-warnings] <target>
 sley plan --json [--deny-warnings] [--graft-templates] [--template-surface <surface>] [--emit-graft <kind>] <target>
 sley fix --json --kind <kind> [--template-surface <surface>] [--name <name>] [--type <type>] [--module <module>] [--source <source>|--source-file <path>] [--position <n>] [--dry-run|--write] [--trace <trace.jsonl>] <target>
@@ -227,7 +227,8 @@ Rules:
   gates, and the agent starter's `sley-ci run`/`sley-ci verify`/`sley-ci deploy`
   handoffs cannot silently drift. The template pack now also covers pure
   `library`, `cli`, and `data-pipeline` starts plus seeded `service-gate`,
-  split-task `agent-task-pack`, and multi-module `agent-project` starts.
+  `deploy`, and `spend-gate` authority starts, split-task
+  `agent-task-pack`, and multi-module `agent-project` starts.
 - `sley new --template agent-project` and `examples/agent_project` provide a
   packaged multi-module agent deployment starter that keeps secret, network,
   model, and deploy authority explicit across imported task boundaries and
