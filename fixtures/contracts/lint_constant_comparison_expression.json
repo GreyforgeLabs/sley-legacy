@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.constant_compare",
+  "filters": {
+    "module": null,
+    "rules": [
+      "constant_comparison_expression"
+    ]
+  },
+  "findings": [
+    {
+      "id": "CONSTANT_COMPARISON_EXPRESSION",
+      "rule": "constant_comparison_expression",
+      "severity": "warning",
+      "message": "task `app.constant_compare.main` has a constant comparison expression `1 < 2`",
+      "node": "block:task:app.constant_compare.main:stmt:0:expr",
+      "module": "app.constant_compare",
+      "hint": "replace the constant comparison expression with `true`"
+    }
+  ]
+}

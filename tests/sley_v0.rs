@@ -1638,11 +1638,15 @@ fn edit_plan_graft_templates_can_target_block_surfaces() {
 module app.plan
 
 task main -> Int {
-  if 1 < 2 {
+  if call threshold() > 1 {
     return 1
   } else {
     return 0
   }
+}
+
+task threshold -> Int {
+  return 2
 }
 "#;
     let program = parse_program(source).expect("parse block surface plan fixture");
@@ -3241,6 +3245,85 @@ fn edit_plan_graft_templates_include_constant_false_while_statement_delete() {
     assert_eq!(
         targeted_report.graft_templates[0].kind,
         "delete_constant_false_while_statement"
+    );
+    assert!(targeted_report.transaction_templates.is_empty());
+}
+
+#[test]
+fn edit_plan_graft_templates_include_constant_comparison_expression_simplify() {
+    let source = include_str!("../examples/constant_comparison_expression.sley");
+    let program = parse_program(source).expect("parse constant comparison fixture");
+    let report = build_edit_plan_report_with_options(
+        "examples/constant_comparison_expression.sley",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: None,
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "warnings");
+    assert_eq!(report.summary.lint_finding_count, 1);
+    assert_eq!(
+        report.lint.as_ref().expect("lint summary").findings[0].id,
+        "CONSTANT_COMPARISON_EXPRESSION"
+    );
+    let template = report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "simplify_constant_comparison_expression")
+        .expect("constant comparison simplify template");
+    assert_eq!(
+        template.surface,
+        "block:task:app.constant_compare.main:stmt:0:expr"
+    );
+    assert_eq!(
+        template.operation.pointer("/op"),
+        Some(&serde_json::json!("ReplaceExpression"))
+    );
+    assert_eq!(
+        template.operation.pointer("/payload/source"),
+        Some(&serde_json::json!("true"))
+    );
+    assert_eq!(template.editable_json_pointers, vec!["/payload/source"]);
+    let graft: GraftInput = serde_json::from_value(template.operation.clone())
+        .expect("parse constant comparison template");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:constant-comparison-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted_source = outcome.source.expect("grafted source");
+    assert!(grafted_source.contains("return true"));
+    assert!(!grafted_source.contains("1 < 2"));
+    let grafted_program = parse_program(&grafted_source).expect("parse grafted source");
+    let lint_report = build_lint_report(
+        &grafted_program,
+        LintOptions {
+            rules: vec![LintRule::ConstantComparisonExpression],
+            module: None,
+        },
+    );
+    assert_eq!(lint_report.status, "ok");
+
+    let targeted_report = build_edit_plan_report_with_options(
+        "examples/constant_comparison_expression.sley",
+        Ok(program),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("block:task:app.constant_compare.main:stmt:0:expr".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(targeted_report.status, "warnings");
+    assert!(targeted_report.diagnostics.is_empty());
+    assert_eq!(targeted_report.graft_templates.len(), 1);
+    assert_eq!(
+        targeted_report.graft_templates[0].kind,
+        "simplify_constant_comparison_expression"
     );
     assert!(targeted_report.transaction_templates.is_empty());
 }
@@ -5858,6 +5941,22 @@ task helper -> Result<Text, Error> {
         include_str!("../fixtures/contracts/lint_constant_false_while_statement.json"),
     );
 
+    let constant_comparison_source =
+        include_str!("../examples/constant_comparison_expression.sley");
+    let constant_comparison_program =
+        parse_program(constant_comparison_source).expect("parse constant comparison fixture");
+    let constant_comparison_lint = build_lint_report(
+        &constant_comparison_program,
+        LintOptions {
+            rules: vec![LintRule::ConstantComparisonExpression],
+            module: None,
+        },
+    );
+    assert_json_snapshot(
+        &constant_comparison_lint,
+        include_str!("../fixtures/contracts/lint_constant_comparison_expression.json"),
+    );
+
     let empty_if_source = include_str!("../examples/empty_if_statement.sley");
     let empty_if_program = parse_program(empty_if_source).expect("parse empty if fixture");
     let empty_if_lint = build_lint_report(
@@ -6738,7 +6837,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(67))
+        Some(&serde_json::json!(68))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -12791,6 +12890,91 @@ task main -> Int {
 }
 
 #[test]
+fn lint_report_flags_constant_comparison_expressions() {
+    let source = r#"
+module app.constant_compare
+
+task main -> Bool {
+  bind guarded = true == false
+  bind same = 1 == 1
+  bind text = "a" == "b"
+  bind floaty = 1.5 >= 2.0
+
+  return 1 < 2
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+
+    let report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::ConstantComparisonExpression],
+            module: None,
+        },
+    );
+
+    assert_eq!(report.schema, LINT_REPORT_SCHEMA);
+    assert_eq!(report.status, "findings");
+    assert_eq!(report.entry_module, "app.constant_compare");
+    assert_eq!(report.filters.rules, vec!["constant_comparison_expression"]);
+    assert_eq!(
+        report.findings.len(),
+        3,
+        "constant comparison should not overlap boolean-literal or self-comparison simplifications"
+    );
+    assert_eq!(report.findings[0].id, "CONSTANT_COMPARISON_EXPRESSION");
+    assert_eq!(report.findings[0].rule, "constant_comparison_expression");
+    let nodes: Vec<&str> = report
+        .findings
+        .iter()
+        .map(|finding| finding.node.as_str())
+        .collect();
+    assert!(nodes.contains(&"block:task:app.constant_compare.main:stmt:2:expr"));
+    assert!(nodes.contains(&"block:task:app.constant_compare.main:stmt:3:expr"));
+    assert!(nodes.contains(&"block:task:app.constant_compare.main:stmt:4:expr"));
+    assert_eq!(report.findings[0].module, "app.constant_compare");
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|finding| finding.message.contains("\"a\" == \"b\""))
+    );
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|finding| finding.message.contains("1.5 >= 2.0"))
+    );
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|finding| finding.hint.contains("true"))
+    );
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|finding| finding.hint.contains("false"))
+    );
+
+    let scoped_report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::ConstantComparisonExpression],
+            module: Some("app.other".to_string()),
+        },
+    );
+    assert_eq!(scoped_report.status, "ok");
+    assert!(scoped_report.findings.is_empty());
+}
+
+#[test]
 fn lint_report_flags_empty_if_statements() {
     let source = r#"
 module app.empty_if
@@ -15839,6 +16023,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:templates:unused-pure-expression-statement-delete",
         "graft:templates:constant-if-statement",
         "graft:templates:constant-false-while-statement-delete",
+        "graft:templates:constant-comparison-expression",
         "graft:templates:empty-if-statement-delete",
         "graft:templates:empty-for-statement-delete",
         "graft:templates:empty-forge-statement-delete",
@@ -15872,6 +16057,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "lint:constant_if_expression",
         "lint:constant_if_statement",
         "lint:constant_false_while_statement",
+        "lint:constant_comparison_expression",
         "lint:empty_if_statement",
         "lint:empty_for_statement",
         "lint:empty_forge_statement",
@@ -15893,6 +16079,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:constant-if-repair-write-verify",
         "readiness:constant-if-statement-repair-write-verify",
         "readiness:constant-false-while-repair-write-verify",
+        "readiness:constant-comparison-repair-write-verify",
         "readiness:empty-if-repair-write-verify",
         "readiness:empty-for-repair-write-verify",
         "readiness:empty-forge-repair-write-verify",

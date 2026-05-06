@@ -828,6 +828,10 @@ preserves a checked program.
 `constant_false_while_statement` lint findings become checked
 `delete_constant_false_while_statement` `DeleteNode` templates when deleting a
 never-executed `while false` statement preserves a checked program.
+`constant_comparison_expression` lint findings become checked
+`simplify_constant_comparison_expression` `ReplaceExpression` templates when
+replacing a literal comparison with its boolean result preserves a checked
+program.
 `empty_if_statement` lint findings become checked
 `delete_empty_if_statement` `DeleteNode` templates when deleting a no-op `if`
 statement with a delete-safe condition and empty branches preserves a checked
@@ -999,6 +1003,8 @@ executes; and `constant_if_statement`, which warns when a statement-level
 `if true/false { ... } else { ... }` can be replaced by its single executing
 branch statement; and `constant_false_while_statement`, which warns when a
 `while false { ... }` statement can be removed as never-executed code; and
+`constant_comparison_expression`, which warns when a checked literal comparison
+can be replaced by its boolean result; and
 `empty_if_statement`, which warns when an `if` statement with a delete-safe
 condition and empty branches can be removed as no-op control flow; and
 `empty_for_statement`, which warns when a `for item in [] { ... }` statement
@@ -1038,6 +1044,7 @@ guaranteed `return` in the same block.
 `--rule mutable-binding-never-set`, `--rule constant-if-expression`, or
 `--rule constant-if-statement`, or
 `--rule constant-false-while-statement`, or
+`--rule constant-comparison-expression`, or
 `--rule empty-if-statement`, or
 `--rule empty-for-statement`, or
 `--rule empty-forge-statement`, or

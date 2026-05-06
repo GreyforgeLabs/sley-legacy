@@ -188,7 +188,8 @@ Current development phase:
   `mutable_binding_never_set`, the expression simplification rule
   `constant_if_expression`, the constant-if statement simplification rule
   `constant_if_statement`, the constant-false while cleanup rule
-  `constant_false_while_statement`, the empty-if cleanup rule
+  `constant_false_while_statement`, the constant comparison simplification rule
+  `constant_comparison_expression`, the empty-if cleanup rule
   `empty_if_statement`, the empty-for cleanup rule
   `empty_for_statement`, the empty-forge cleanup rule
   `empty_forge_statement`, the identity simplification rule
@@ -247,6 +248,8 @@ Current development phase:
   expression statements, plus
   `delete_constant_false_while_statement` templates for never-executed
   `while false` statements, plus
+  `simplify_constant_comparison_expression` templates for literal comparisons
+  with constant boolean results, plus
   `simplify_constant_if_statement` templates for constant `if` statements with
   one executing branch statement, plus
   `simplify_redundant_boolean_if_statement` templates for boolean `if`

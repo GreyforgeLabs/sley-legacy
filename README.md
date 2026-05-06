@@ -119,6 +119,7 @@ Implemented now:
   `--rule mutable-binding-never-set`, `--rule constant-if-expression`,
   `--rule constant-if-statement`,
   `--rule constant-false-while-statement`,
+  `--rule constant-comparison-expression`,
   `--rule empty-if-statement`,
   `--rule empty-for-statement`,
   `--rule empty-forge-statement`,
@@ -182,6 +183,8 @@ Implemented now:
   can be replaced by their single executing branch statement,
   `delete_constant_false_while_statement` templates for never-executed
   `while false` statements,
+  `simplify_constant_comparison_expression` templates for literal comparisons
+  that can be replaced by their boolean result,
   `delete_empty_if_statement` templates for no-op `if` statements with
   delete-safe conditions and empty branches,
   `delete_empty_for_statement` templates for `for` statements over literal
@@ -675,6 +678,8 @@ mutable-binding conversion transactions with write/verify coverage,
 constant-if expression simplification templates with write/verify coverage,
 constant-if statement simplification templates with write/verify coverage,
 constant-false while statement delete templates with write/verify coverage,
+constant comparison expression simplification templates with write/verify
+coverage,
 empty-if statement delete templates with write/verify coverage,
 empty-for statement delete templates with write/verify coverage,
 empty-forge statement delete templates with write/verify coverage,
