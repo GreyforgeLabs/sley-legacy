@@ -6371,7 +6371,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(57))
+        Some(&serde_json::json!(58))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -7102,6 +7102,29 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     assert_eq!(
         smoke_json.pointer("/steps/0/stdout_schema"),
         Some(&serde_json::json!("sley.ast.program.v0"))
+    );
+
+    let stable_smoke = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
+        .current_dir(&repo_root)
+        .args([
+            "smoke",
+            "--json",
+            "--repo-root",
+            ".",
+            "fixtures/ci_smoke_probe/manifest.json",
+        ])
+        .output()
+        .expect("run stable sley-ci smoke");
+    assert!(
+        stable_smoke.status.success(),
+        "stable sley-ci smoke failed: {}",
+        String::from_utf8_lossy(&stable_smoke.stderr)
+    );
+    let stable_smoke_json: serde_json::Value =
+        serde_json::from_slice(&stable_smoke.stdout).expect("parse stable sley-ci smoke JSON");
+    assert_json_snapshot(
+        &stable_smoke_json,
+        include_str!("../fixtures/contracts/ci_smoke_probe_ready.json"),
     );
 
     let _ = fs::remove_dir_all(deploy_root);

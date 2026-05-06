@@ -1,0 +1,17 @@
+{
+  "schema": "sley.cli_smoke.manifest.v0",
+  "cases": [
+    {
+      "name": "parse_hello_json",
+      "args": ["parse", "--json", "examples/hello.sley"],
+      "covers": ["cli:parse", "json:sley.ast.program.v0"],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.ast.program.v0" },
+          { "pointer": "/tasks/0/name", "value": "main" }
+        ]
+      }
+    }
+  ]
+}
