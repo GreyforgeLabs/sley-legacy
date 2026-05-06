@@ -1,0 +1,17 @@
+{
+  "schema": "sley.trace.receipt.v0",
+  "target": "examples/hello.sley",
+  "written_at": "2026-05-06T00:00:00Z",
+  "provenance": [
+    {
+      "graft_id": "fixture-trace-receipt-hello",
+      "actor": "sley-contract-fixture",
+      "timestamp": "2026-05-06T00:00:00Z",
+      "operation": "AddTask",
+      "targets": [
+        "program"
+      ],
+      "result": "accepted"
+    }
+  ]
+}

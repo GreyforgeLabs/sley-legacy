@@ -169,8 +169,13 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
      - smoke manifest coverage holes;
      - accepted/rejected corpus counts by feature.
    - Scaffold:
-     - `sley-conformance report --json --html`;
-     - `sley-conformance coverage --require-tag <tag>`.
+     - `sley-conformance report --json --html <path>`;
+     - `sley-conformance coverage --json --require-tag <tag>`.
+   - Current bootstrap: in-tree `src/bin/sley-conformance.rs` emits
+     `sley.conformance.report.v0` and `sley.conformance.coverage.v0`, validates
+     contract fixtures and release manifests through `sley-contract`, and
+     inventories schema instances, corpus tags, smoke tags, and packaged
+     examples. The repo-level `make v1` gate runs the JSON report.
    - Done when release-readiness gaps become visible without reading the whole
      test file.
 

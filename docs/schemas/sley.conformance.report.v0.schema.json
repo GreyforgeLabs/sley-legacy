@@ -1,0 +1,241 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.conformance.report.v0",
+  "title": "Sley Conformance Report v0",
+  "type": "object",
+  "required": [
+    "schema",
+    "status",
+    "summary",
+    "validation",
+    "schemas",
+    "corpus",
+    "smoke",
+    "examples",
+    "issues"
+  ],
+  "properties": {
+    "schema": { "const": "sley.conformance.report.v0" },
+    "status": { "enum": ["passed", "failed"] },
+    "summary": { "$ref": "#/$defs/summary" },
+    "validation": { "$ref": "#/$defs/validation" },
+    "schemas": { "$ref": "#/$defs/schemaSection" },
+    "corpus": { "$ref": "#/$defs/corpus" },
+    "smoke": { "$ref": "#/$defs/smoke" },
+    "examples": { "$ref": "#/$defs/examples" },
+    "issues": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/issue" }
+    }
+  },
+  "$defs": {
+    "summary": {
+      "type": "object",
+      "required": [
+        "schema_count",
+        "schema_instance_count",
+        "schema_without_instance_count",
+        "contract_fixture_count",
+        "contract_fixture_failed_count",
+        "corpus_accepted_count",
+        "corpus_rejected_count",
+        "smoke_case_count",
+        "example_project_count",
+        "example_source_count",
+        "issue_count"
+      ],
+      "properties": {
+        "schema_count": { "type": "integer", "minimum": 0 },
+        "schema_instance_count": { "type": "integer", "minimum": 0 },
+        "schema_without_instance_count": { "type": "integer", "minimum": 0 },
+        "contract_fixture_count": { "type": "integer", "minimum": 0 },
+        "contract_fixture_failed_count": { "type": "integer", "minimum": 0 },
+        "corpus_accepted_count": { "type": "integer", "minimum": 0 },
+        "corpus_rejected_count": { "type": "integer", "minimum": 0 },
+        "smoke_case_count": { "type": "integer", "minimum": 0 },
+        "example_project_count": { "type": "integer", "minimum": 0 },
+        "example_source_count": { "type": "integer", "minimum": 0 },
+        "issue_count": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "validation": {
+      "type": "object",
+      "required": ["contract_fixtures", "manifests"],
+      "properties": {
+        "contract_fixtures": { "$ref": "#/$defs/validationRun" },
+        "manifests": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/validationRun" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "validationRun": {
+      "type": "object",
+      "required": ["name", "status", "command", "issue_count", "issues"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "status": { "enum": ["passed", "failed"] },
+        "command": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        },
+        "report_schema": { "type": "string", "minLength": 1 },
+        "fixture_count": { "type": "integer", "minimum": 0 },
+        "passed_count": { "type": "integer", "minimum": 0 },
+        "failed_count": { "type": "integer", "minimum": 0 },
+        "issue_count": { "type": "integer", "minimum": 0 },
+        "issues": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/issue" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "schemaSection": {
+      "type": "object",
+      "required": [
+        "schema_dir",
+        "fixture_dir",
+        "schemas",
+        "instances",
+        "schemas_without_instances",
+        "unknown_instance_schemas"
+      ],
+      "properties": {
+        "schema_dir": { "type": "string", "minLength": 1 },
+        "fixture_dir": { "type": "string", "minLength": 1 },
+        "schemas": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/schemaInfo" }
+        },
+        "instances": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/schemaInstance" }
+        },
+        "schemas_without_instances": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "unknown_instance_schemas": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "schemaInfo": {
+      "type": "object",
+      "required": ["id", "path"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "title": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "schemaInstance": {
+      "type": "object",
+      "required": ["schema_id", "count"],
+      "properties": {
+        "schema_id": { "type": "string", "minLength": 1 },
+        "count": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "corpus": {
+      "type": "object",
+      "required": [
+        "manifest",
+        "accepted_count",
+        "rejected_count",
+        "tag_inventory",
+        "feature_counts"
+      ],
+      "properties": {
+        "manifest": { "type": "string", "minLength": 1 },
+        "accepted_count": { "type": "integer", "minimum": 0 },
+        "rejected_count": { "type": "integer", "minimum": 0 },
+        "tag_inventory": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/tagCount" }
+        },
+        "feature_counts": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/tagCount" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "smoke": {
+      "type": "object",
+      "required": [
+        "manifests",
+        "case_count",
+        "tag_inventory",
+        "required_tags",
+        "missing_required_tags"
+      ],
+      "properties": {
+        "manifests": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/smokeManifest" }
+        },
+        "case_count": { "type": "integer", "minimum": 0 },
+        "tag_inventory": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/tagCount" }
+        },
+        "required_tags": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "missing_required_tags": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "smokeManifest": {
+      "type": "object",
+      "required": ["path", "case_count"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "case_count": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "examples": {
+      "type": "object",
+      "required": ["root", "project_count", "source_count"],
+      "properties": {
+        "root": { "type": "string", "minLength": 1 },
+        "project_count": { "type": "integer", "minimum": 0 },
+        "source_count": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "tagCount": {
+      "type": "object",
+      "required": ["tag", "count"],
+      "properties": {
+        "tag": { "type": "string", "minLength": 1 },
+        "count": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "issue": {
+      "type": "object",
+      "required": ["code", "message"],
+      "properties": {
+        "code": { "type": "string", "minLength": 1 },
+        "message": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

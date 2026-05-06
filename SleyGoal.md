@@ -44,10 +44,10 @@ Current verified surface:
 
 - `cargo fmt -- --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 290 tests.
+- Current integration coverage is 291 tests.
 - `make v1` wraps fmt, whitespace diff check, full Rust tests, contract
-  fixture and release-manifest validation, corpus conformance, packaged example
-  conformance, and CLI smoke conformance.
+  fixture and release-manifest validation, conformance summary reporting,
+  corpus conformance, packaged example conformance, and CLI smoke conformance.
 - `.github/actions/sley-v1/action.yml`, `.github/workflows/v1.yml`, and
   `.pre-commit-config.yaml` run the `make v1` gate so local and hosted checks
   use the same release surface.
@@ -72,6 +72,12 @@ Current verified surface:
   existing Sley check/lint/doctor/plan/run/verify/deploy, CLI smoke manifest,
   accepted/rejected corpus, and packaged example gates, including deploy
   artifact directory pass-through.
+- `sley-conformance` is available as an in-tree conformance visibility helper
+  with `report` and `coverage` commands that emit
+  `schema: "sley.conformance.report.v0"` and
+  `schema: "sley.conformance.coverage.v0"` over schema/fixture instances,
+  contract validation status, release manifests, corpus tags, smoke tags, and
+  packaged example counts.
 - `sley deploy --json --dry-run` emits `schema: "sley.deploy.report.v0"` and
   composes strict verify, trace seal, and ZJX package summaries into a
   local-only deploy package report that forbids live deployment, provider
@@ -306,7 +312,7 @@ Current verified surface:
   reports, run reports, doctor reports, edit-plan reports, verify reports,
   deploy dry-run reports, deploy artifact manifests, deploy artifact check
   reports, project scaffold reports, `sley-ci` reports including corpus and
-  examples gates, `sley-contract`
+  examples gates, `sley-conformance` report/coverage roots, `sley-contract`
   utility reports with locked inventory/fixture-check/validate fixtures, and
   the CLI smoke manifest in addition to AST program,
   diagnostics, graph, graph slice, trace report, trace receipt, trace seal,

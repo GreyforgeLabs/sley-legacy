@@ -108,6 +108,8 @@ sley-ci plan --json [--deny-warnings] [--graft-templates] [--template-surface <s
 sley-ci run --json [runtime gates/seeds] <target>
 sley-ci corpus --json <fixtures/corpus/manifest.json>
 sley-ci examples --json examples
+sley-conformance report --json
+sley-conformance coverage --json --require-tag <tag>
 make v1
 sley trace --json <target>
 sley seal --json <target>
@@ -139,7 +141,8 @@ Rules:
   and transaction template envelopes reused by graph-slice affordances,
   the graph-slice schema links
   focus, task, and call-summary payloads to shared contracts, `sley-ci`
-  check/lint/doctor/plan/run/verify/deploy/smoke/corpus/examples reports and `sley-contract`
+  check/lint/doctor/plan/run/verify/deploy/smoke/corpus/examples reports,
+  `sley-conformance` report/coverage roots, and `sley-contract`
   inventory/fixture-check/validate/deploy-artifact-check reports have versioned
   schemas and representative fixtures, the graft outcome and trace receipt
   schemas pin accepted provenance records, the ZJX envelope schema pins graph,
@@ -149,8 +152,8 @@ Rules:
   still root-contract v0 shapes.
 - The repo-level `Makefile` exposes `make v1` as a local release gate over
   formatting, whitespace diff checks, full Rust tests, contract fixtures,
-  release-manifest validation, corpus conformance, packaged examples, and CLI
-  smokes.
+  release-manifest validation, conformance summary reporting, corpus
+  conformance, packaged examples, and CLI smokes.
 - `.github/actions/sley-v1/action.yml`, `.github/workflows/v1.yml`, and
   `.pre-commit-config.yaml` route hosted CI and local pre-commit checks through
   the same `make v1` gate.

@@ -159,6 +159,11 @@ Implemented now:
   the accepted/rejected compiler conformance corpus, and packaged examples,
   emitting
   `schema: "sley.ci.report.v0"` for CI and pre-commit integration
+- in-tree `sley-conformance` utility with `report` and `coverage` commands for
+  schema/fixture instance coverage, contract validation status, corpus coverage
+  tags, smoke coverage tags, and packaged example counts, emitting
+  `schema: "sley.conformance.report.v0"` and
+  `schema: "sley.conformance.coverage.v0"`
 - checked JSON readiness reports with `sley doctor`, consuming strict
   diagnostics plus query and lint summaries, with call-bearing reports routing
   agents to strict `sley query --kind calls` inspection, warning next-actions
@@ -371,8 +376,9 @@ Implemented now:
   covering project-root checks for `sley.toml` examples, standalone file checks,
   and formatter round trips for every shipped `.sley` source under `examples/`
 - repo-level `Makefile` with `make v1` wrapping fmt, whitespace diff check,
-  full Rust tests, contract fixture and release-manifest validation, corpus
-  conformance, packaged example conformance, and CLI smoke conformance
+  full Rust tests, contract fixture and release-manifest validation,
+  conformance summary reporting, corpus conformance, packaged example
+  conformance, and CLI smoke conformance
 - GitHub Actions and pre-commit entry points that run the same `make v1` gate
   through `.github/actions/sley-v1/action.yml`, `.github/workflows/v1.yml`,
   and `.pre-commit-config.yaml`
@@ -410,6 +416,8 @@ sley deploy --json --dry-run --artifacts-dir .sley/deploy --cap SecretRead --sec
 sley-ci deploy --json --dry-run --artifacts-dir .sley/ci-deploy --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged .
 sley-ci corpus --json fixtures/corpus/manifest.json
 sley-ci examples --json examples
+sley-conformance report --json
+sley-conformance coverage --json --require-tag cli:check --require-tag json:sley.trace.receipt.v0
 sley-contract inspect-deploy-artifacts .sley/deploy --schemas docs/schemas --json
 sley seal --json .
 sley zjx --json .

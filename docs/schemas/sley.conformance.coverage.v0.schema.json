@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.conformance.coverage.v0",
+  "title": "Sley Conformance Coverage Report v0",
+  "type": "object",
+  "required": [
+    "schema",
+    "status",
+    "required_tags",
+    "missing_tags",
+    "tag_inventory",
+    "issues"
+  ],
+  "properties": {
+    "schema": { "const": "sley.conformance.coverage.v0" },
+    "status": { "enum": ["passed", "failed"] },
+    "required_tags": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "missing_tags": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "tag_inventory": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/tagCount" }
+    },
+    "issues": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/issue" }
+    }
+  },
+  "$defs": {
+    "tagCount": {
+      "type": "object",
+      "required": ["tag", "count"],
+      "properties": {
+        "tag": { "type": "string", "minLength": 1 },
+        "count": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "issue": {
+      "type": "object",
+      "required": ["code", "message"],
+      "properties": {
+        "code": { "type": "string", "minLength": 1 },
+        "message": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

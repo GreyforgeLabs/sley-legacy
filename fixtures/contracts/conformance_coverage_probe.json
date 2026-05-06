@@ -1,0 +1,15 @@
+{
+  "schema": "sley.conformance.coverage.v0",
+  "status": "passed",
+  "required_tags": [
+    "cli:check"
+  ],
+  "missing_tags": [],
+  "tag_inventory": [
+    {
+      "tag": "cli:check",
+      "count": 1
+    }
+  ],
+  "issues": []
+}
