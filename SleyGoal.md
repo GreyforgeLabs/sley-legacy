@@ -133,8 +133,9 @@ Current verified surface:
   files, tables, secrets, network text, shell output, model output, deploy
   results, and spend results without external provider calls.
 - `sley-zjx` is available as an in-tree read-only envelope utility with
-  `inspect`, `verify-digest`, `extract-graph`, and `diff-envelope` commands
-  over preview ZJX JSON envelopes and `schema: "sley.zjx.tool.report.v0"`.
+  `validate`, `inspect`, `verify-digest`, `extract-graph`, and
+  `diff-envelope` commands over preview ZJX JSON envelopes and
+  `schema: "sley.zjx.tool.report.v0"`.
 - `sley deploy --json --dry-run` emits `schema: "sley.deploy.report.v0"` and
   composes strict verify, trace seal, and ZJX package summaries into a
   local-only deploy package report that forbids live deployment, provider
