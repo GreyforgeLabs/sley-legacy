@@ -7,6 +7,7 @@ use crate::ast::{
     Block, EffectDecl, Expr, ExprKind, ImportDecl, Program, Statement, StatementKind, TaskDecl,
     TypeDecl,
 };
+use crate::formatter::format_statement_source;
 
 pub const SYMBOL_GRAPH_SCHEMA: &str = "sley.symbol_graph.v0";
 pub const SYMBOL_GRAPH_SLICE_SCHEMA: &str = "sley.symbol_graph.slice.v0";
@@ -83,7 +84,7 @@ pub struct SymbolGraphSlice {
     pub insert_affordances: Vec<InsertStatementAffordance>,
     pub move_affordances: Vec<MoveNodeAffordance>,
     pub delete_affordances: Vec<DeleteNodeAffordance>,
-    pub replace_affordances: Vec<ReplaceExpressionAffordance>,
+    pub replace_affordances: Vec<ReplaceAffordance>,
     pub outbound_calls: Vec<TaskCallSummary>,
     pub inbound_calls: Vec<TaskCallSummary>,
 }
@@ -150,7 +151,7 @@ pub struct DeleteNodeAffordance {
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
-pub struct ReplaceExpressionAffordance {
+pub struct ReplaceAffordance {
     pub target: String,
     pub target_kind: String,
     pub parent: String,
@@ -1411,30 +1412,36 @@ fn build_replace_affordances(
     focus_task_index: Option<usize>,
     module_task_indexes: &[usize],
     program: &Program,
-) -> Vec<ReplaceExpressionAffordance> {
+) -> Vec<ReplaceAffordance> {
     let task_indexes = focus_task_index
         .map(|index| vec![index])
         .unwrap_or_else(|| module_task_indexes.to_vec());
     let mut affordances = Vec::new();
     for task_index in task_indexes {
         let task = &program.tasks[task_index];
-        collect_replace_affordances_in_block(&task.body, &mut affordances);
+        collect_replace_affordances_in_block(
+            &task.body,
+            &format!("block:{}", task.id),
+            &mut affordances,
+        );
     }
     affordances
 }
 
 fn collect_replace_affordances_in_block(
     block: &Block,
-    affordances: &mut Vec<ReplaceExpressionAffordance>,
+    parent: &str,
+    affordances: &mut Vec<ReplaceAffordance>,
 ) {
     for statement in &block.statements {
-        collect_replace_affordances_in_statement(statement, affordances);
+        collect_replace_affordances_in_statement(statement, parent, affordances);
     }
 }
 
 fn collect_replace_affordances_in_statement(
     statement: &Statement,
-    affordances: &mut Vec<ReplaceExpressionAffordance>,
+    parent: &str,
+    affordances: &mut Vec<ReplaceAffordance>,
 ) {
     match &statement.kind {
         StatementKind::Binding { expr, .. }
@@ -1449,31 +1456,52 @@ fn collect_replace_affordances_in_statement(
             else_block,
         } => {
             collect_replace_affordances_in_expr(condition, &statement.id, affordances);
-            collect_replace_affordances_in_block(then_block, affordances);
+            collect_replace_affordances_in_block(
+                then_block,
+                &format!("{}:then", statement.id),
+                affordances,
+            );
             if let Some(else_block) = else_block {
-                collect_replace_affordances_in_block(else_block, affordances);
+                collect_replace_affordances_in_block(
+                    else_block,
+                    &format!("{}:else", statement.id),
+                    affordances,
+                );
             }
         }
         StatementKind::While { condition, body } => {
             collect_replace_affordances_in_expr(condition, &statement.id, affordances);
-            collect_replace_affordances_in_block(body, affordances);
+            collect_replace_affordances_in_block(
+                body,
+                &format!("{}:body", statement.id),
+                affordances,
+            );
         }
         StatementKind::For {
             collection, body, ..
         } => {
             collect_replace_affordances_in_expr(collection, &statement.id, affordances);
-            collect_replace_affordances_in_block(body, affordances);
+            collect_replace_affordances_in_block(
+                body,
+                &format!("{}:body", statement.id),
+                affordances,
+            );
         }
         StatementKind::Forge { body } => {
-            collect_replace_affordances_in_block(body, affordances);
+            collect_replace_affordances_in_block(
+                body,
+                &format!("{}:forge", statement.id),
+                affordances,
+            );
         }
     }
+    push_statement_replace_affordance(affordances, statement, parent);
 }
 
 fn collect_replace_affordances_in_expr(
     expr: &Expr,
     parent: &str,
-    affordances: &mut Vec<ReplaceExpressionAffordance>,
+    affordances: &mut Vec<ReplaceAffordance>,
 ) {
     push_replace_affordance(affordances, expr, parent);
     match &expr.kind {
@@ -1531,17 +1559,27 @@ fn collect_replace_affordances_in_expr(
     }
 }
 
-fn push_replace_affordance(
-    affordances: &mut Vec<ReplaceExpressionAffordance>,
-    expr: &Expr,
-    parent: &str,
-) {
-    affordances.push(ReplaceExpressionAffordance {
+fn push_replace_affordance(affordances: &mut Vec<ReplaceAffordance>, expr: &Expr, parent: &str) {
+    affordances.push(ReplaceAffordance {
         target: expr.id.clone(),
         target_kind: expr_kind_name(&expr.kind).to_string(),
         parent: parent.to_string(),
         operation: replace_expression_operation(&expr.id, &expr.source),
-        editable_json_pointers: replace_expression_editable_json_pointers(),
+        editable_json_pointers: replace_source_editable_json_pointers(),
+    });
+}
+
+fn push_statement_replace_affordance(
+    affordances: &mut Vec<ReplaceAffordance>,
+    statement: &Statement,
+    parent: &str,
+) {
+    affordances.push(ReplaceAffordance {
+        target: statement.id.clone(),
+        target_kind: "statement".to_string(),
+        parent: parent.to_string(),
+        operation: replace_statement_operation(&statement.id, &format_statement_source(statement)),
+        editable_json_pointers: replace_source_editable_json_pointers(),
     });
 }
 
@@ -1555,7 +1593,17 @@ fn replace_expression_operation(target: &str, source: &str) -> JsonValue {
     })
 }
 
-fn replace_expression_editable_json_pointers() -> Vec<String> {
+fn replace_statement_operation(target: &str, source: &str) -> JsonValue {
+    json!({
+        "op": "ReplaceStatement",
+        "target": target,
+        "payload": {
+            "source": source
+        }
+    })
+}
+
+fn replace_source_editable_json_pointers() -> Vec<String> {
     vec!["/payload/source".to_string()]
 }
 

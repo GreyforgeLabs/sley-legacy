@@ -1407,7 +1407,7 @@ task main -> Int {
     );
     assert_eq!(report.status, "ready");
     assert!(report.diagnostics.is_empty());
-    assert_eq!(report.graft_templates.len(), 2);
+    assert_eq!(report.graft_templates.len(), 3);
     assert!(report.transaction_templates.is_empty());
     assert!(report.graft_templates.iter().all(|template| {
         template.surface == target
@@ -1431,6 +1431,32 @@ task main -> Int {
         &program,
         graft,
         Some("agent:statement-surface-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+
+    let replace_template = report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "replace_statement")
+        .expect("replace statement template");
+    assert_eq!(
+        replace_template.operation.pointer("/op"),
+        Some(&serde_json::json!("ReplaceStatement"))
+    );
+    assert_eq!(
+        replace_template.operation.pointer("/payload/source"),
+        Some(&serde_json::json!("set total = total + 1"))
+    );
+    assert_eq!(
+        replace_template.editable_json_pointers,
+        vec!["/payload/source".to_string()]
+    );
+    let graft: GraftInput = serde_json::from_value(replace_template.operation.clone())
+        .expect("parse replace statement template");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:statement-surface-replace-test".to_string()),
     );
     assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
 }
@@ -3924,6 +3950,93 @@ task main -> Int {
 }
 
 #[test]
+fn replace_statement_graft_updates_checked_statement_source() {
+    let source = r#"
+task main -> Int {
+  bind value = 1
+  return value
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let graft: GraftInput = serde_json::from_str(
+        r#"
+{
+  "op": "ReplaceStatement",
+  "target": "block:task:main.main:stmt:0",
+  "payload": { "source": "bind value = 42" }
+}
+"#,
+    )
+    .expect("parse graft");
+    let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
+
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    assert_eq!(outcome.provenance[0].operation, "ReplaceStatement");
+    let grafted_source = outcome.source.expect("grafted source");
+    assert!(grafted_source.contains("bind value = 42"));
+    assert!(!grafted_source.contains("bind value = 1"));
+    let grafted = parse_program(&grafted_source).expect("parse grafted source");
+    assert_eq!(run_main(&grafted), Ok(Value::Int(42)));
+}
+
+#[test]
+fn replace_statement_graft_updates_nested_statement_source() {
+    let source = r#"
+task main -> Int {
+  tally value = 1
+  if true {
+    set value = 2
+  }
+  return value
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let graft: GraftInput = serde_json::from_str(
+        r#"
+{
+  "op": "ReplaceStatement",
+  "target": "block:task:main.main:stmt:1:then:stmt:0",
+  "payload": { "source": "set value = 5" }
+}
+"#,
+    )
+    .expect("parse graft");
+    let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
+
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted_source = outcome.source.expect("grafted source");
+    assert!(grafted_source.contains("set value = 5"));
+    assert!(!grafted_source.contains("set value = 2"));
+    let grafted = parse_program(&grafted_source).expect("parse grafted source");
+    assert_eq!(run_main(&grafted), Ok(Value::Int(5)));
+}
+
+#[test]
+fn replace_statement_graft_rejects_multiple_statement_source() {
+    let source = r#"
+task main -> Int {
+  bind value = 1
+  return value
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let graft: GraftInput = serde_json::from_str(
+        r#"
+{
+  "op": "ReplaceStatement",
+  "target": "block:task:main.main:stmt:0",
+  "payload": { "source": "bind value = 42\nreturn value" }
+}
+"#,
+    )
+    .expect("parse graft");
+    let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
+
+    assert_eq!(outcome.status, "rejected");
+    assert_eq!(outcome.diagnostics[0].id, "GRAFT_EXPECTED_ONE_STATEMENT");
+}
+
+#[test]
 fn graft_contract_outputs_are_versioned_and_strict() {
     let source = r#"
 task main -> Int {
@@ -5722,6 +5835,10 @@ fn graph_slice_schema_covers_focus_task_and_call_summaries() {
         Some(&serde_json::json!(["block"]))
     );
     assert_eq!(
+        schema.pointer("/$defs/replaceAffordance/properties/target_kind/enum/0"),
+        Some(&serde_json::json!("statement"))
+    );
+    assert_eq!(
         schema.pointer("/$defs/sliceFocus/additionalProperties"),
         Some(&serde_json::json!(false))
     );
@@ -5797,6 +5914,7 @@ fn edit_plan_schema_covers_strict_graft_template_payloads() {
             "ReplaceCallArg",
             "RemoveCallArg",
             "InsertStatement",
+            "ReplaceStatement",
             "ReplaceExpression",
             "MoveNode",
             "DeleteNode"
@@ -5855,6 +5973,7 @@ fn graft_outcome_schema_covers_strict_provenance_records() {
             "ReplaceCallArg",
             "RemoveCallArg",
             "InsertStatement",
+            "ReplaceStatement",
             "ReplaceExpression",
             "MoveNode",
             "DeleteNode"
@@ -9367,6 +9486,39 @@ task main -> Int {
         ))
     );
 
+    let replace_statement = slice
+        .replace_affordances
+        .iter()
+        .find(|affordance| affordance.target == "block:task:main.main:stmt:0")
+        .expect("statement replace affordance");
+    assert_eq!(replace_statement.target_kind, "statement");
+    assert_eq!(replace_statement.parent, "block:task:main.main");
+    assert_eq!(
+        replace_statement.operation.pointer("/op"),
+        Some(&serde_json::json!("ReplaceStatement"))
+    );
+    assert_eq!(
+        replace_statement.operation.pointer("/payload/source"),
+        Some(&serde_json::json!("tally total = value"))
+    );
+    assert_eq!(
+        replace_statement.editable_json_pointers,
+        vec!["/payload/source".to_string()]
+    );
+    let replace_statement_graft: GraftInput =
+        serde_json::from_value(replace_statement.operation.clone())
+            .expect("parse replace statement affordance");
+    let replace_statement_outcome = apply_graft_input(
+        &program,
+        replace_statement_graft,
+        Some("agent:test".to_string()),
+    );
+    assert_eq!(
+        replace_statement_outcome.status, "accepted",
+        "{:#?}",
+        replace_statement_outcome.diagnostics
+    );
+
     let replace_return = slice
         .replace_affordances
         .iter()
@@ -11903,6 +12055,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:templates:raw-host-migration",
         "graft:templates:qualified-import-call",
         "graft:templates:replace-expression",
+        "graft:templates:statement-surface-replace",
         "graft:templates:unchecked-result",
         "graft:templates:unused-pure-binding-delete",
         "graft:templates:unused-declared-effect-remove",

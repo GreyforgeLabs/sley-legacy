@@ -180,6 +180,7 @@
         "target": { "type": "string" },
         "target_kind": {
           "enum": [
+            "statement",
             "Raw",
             "StringLiteral",
             "IntLiteral",

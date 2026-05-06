@@ -1,4 +1,4 @@
-use crate::ast::{Block, Program, StatementKind, TypeExpr};
+use crate::ast::{Block, Program, Statement, StatementKind, TypeExpr};
 
 pub fn format_program(program: &Program) -> String {
     let mut out = String::new();
@@ -104,6 +104,12 @@ fn format_block_statements(out: &mut String, block: &Block, indent_level: usize)
     for statement in &block.statements {
         format_statement(out, &statement.kind, indent_level);
     }
+}
+
+pub fn format_statement_source(statement: &Statement) -> String {
+    let mut out = String::new();
+    format_statement(&mut out, &statement.kind, 0);
+    out.trim_end().to_string()
 }
 
 fn format_statement(out: &mut String, kind: &StatementKind, indent_level: usize) {

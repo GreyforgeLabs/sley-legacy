@@ -238,6 +238,21 @@
       ]
     },
     {
+      "kind": "replace_statement",
+      "reason": "replace this statement using checked graph-slice ReplaceStatement affordance data",
+      "surface": "task:app.math.double",
+      "operation": {
+        "op": "ReplaceStatement",
+        "payload": {
+          "source": "return value * 2"
+        },
+        "target": "block:task:app.math.double:stmt:0"
+      },
+      "editable_json_pointers": [
+        "/payload/source"
+      ]
+    },
+    {
       "kind": "insert_statement",
       "reason": "insert one checked statement into the selected task body; edit /payload/source before applying",
       "surface": "task:app.math.double",
