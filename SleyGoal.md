@@ -40,7 +40,7 @@ Current verified surface:
 
 - `cargo fmt --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 207 tests.
+- Current integration coverage is 209 tests.
 - `sley query --json` emits `schema: "sley.query.report.v0"` and supports
   `--kind all|modules|tasks|types|effects|calls`, `--module <module>`, and
   `--exported`, including strict task/take/type/effect/call row definitions.
@@ -123,7 +123,9 @@ Current verified surface:
   `delete_unused_import` cleanup that clears lint before
   `sley verify --deny-warnings`, plus checked `unused_pure_binding`
   `DeleteNode` templates with lint/plan/fix-write/verify smoke coverage, plus
-  checked `mutable_binding_never_set` style findings, plus
+  checked `mutable_binding_never_set` style findings and a
+  `convert_mutable_binding_to_bind` transaction with plan/fix-write/verify
+  smoke coverage, plus
   checked dead private task cleanup
   transactions for grouped unused/unreachable private task deletion, plus
   checked `unused_take` and `unused_declared_effect` remove templates and fix

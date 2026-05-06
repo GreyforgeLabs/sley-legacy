@@ -573,6 +573,7 @@ fn is_lint_repair_kind(kind: &str) -> bool {
             | "propagate_unchecked_result"
             | "qualify_imported_call"
             | "delete_unused_pure_binding"
+            | "convert_mutable_binding_to_bind"
             | "delete_unused_private_declarations"
             | "delete_dead_private_tasks"
     )
@@ -1544,6 +1545,14 @@ fn build_transaction_templates(
         lint_report,
         requested_surface,
     ));
+    templates.extend(lint_mutable_binding_to_bind_transaction_templates(
+        program,
+        lint_report,
+        requested_surface,
+    ));
+    if requested_surface.is_some() && !templates.is_empty() {
+        return Ok(templates);
+    }
     let Some(surface) = select_template_surface(surfaces, requested_surface)? else {
         return Ok(templates);
     };
@@ -1562,6 +1571,156 @@ fn build_transaction_templates(
         }
     }
     Ok(templates)
+}
+
+fn lint_mutable_binding_to_bind_transaction_templates(
+    program: &Program,
+    lint_report: &LintReport,
+    requested_surface: Option<&str>,
+) -> Vec<EditPlanTransactionTemplate> {
+    lint_report
+        .findings
+        .iter()
+        .filter(|finding| finding.id == "MUTABLE_BINDING_NEVER_SET")
+        .filter(|finding| requested_surface.is_none_or(|surface| surface == finding.node))
+        .filter_map(|finding| {
+            let location = find_statement_location(program, &finding.node)?;
+            let replacement_source = binding_statement_as_bind_source(location.statement)?;
+            let transaction = json!({
+                "transaction": format!(
+                    "txn_convert_mutable_binding_{}",
+                    finding.node.replace([':', '.'], "_")
+                ),
+                "mode": "all_or_nothing",
+                "ops": [
+                    {
+                        "op": "DeleteNode",
+                        "target": finding.node
+                    },
+                    {
+                        "op": "InsertStatement",
+                        "target": location.parent,
+                        "payload": {
+                            "source": replacement_source,
+                            "position": location.position
+                        }
+                    }
+                ]
+            });
+            let Ok(input) = serde_json::from_value::<GraftInput>(transaction.clone()) else {
+                return None;
+            };
+            if apply_graft_input(
+                program,
+                input,
+                Some("agent:plan-convert-mutable-binding".to_string()),
+            )
+            .status
+                != "accepted"
+            {
+                return None;
+            }
+            Some(EditPlanTransactionTemplate {
+                kind: "convert_mutable_binding_to_bind".to_string(),
+                reason:
+                    "convert this never-set mutable local into an immutable bind in one checked graft"
+                        .to_string(),
+                surface: finding.node.clone(),
+                transaction,
+                editable_json_pointers: vec!["/ops/1/payload/source".to_string()],
+            })
+        })
+        .collect()
+}
+
+struct StatementLocation<'a> {
+    parent: String,
+    position: usize,
+    statement: &'a Statement,
+}
+
+fn find_statement_location<'a>(
+    program: &'a Program,
+    target: &str,
+) -> Option<StatementLocation<'a>> {
+    program.tasks.iter().find_map(|task| {
+        find_statement_location_in_block(&task.body, format!("block:{}", task.id), target)
+    })
+}
+
+fn find_statement_location_in_block<'a>(
+    block: &'a Block,
+    parent: String,
+    target: &str,
+) -> Option<StatementLocation<'a>> {
+    for (position, statement) in block.statements.iter().enumerate() {
+        if statement.id == target {
+            return Some(StatementLocation {
+                parent,
+                position,
+                statement,
+            });
+        }
+        if let Some(location) = find_statement_location_in_statement(statement, target) {
+            return Some(location);
+        }
+    }
+    None
+}
+
+fn find_statement_location_in_statement<'a>(
+    statement: &'a Statement,
+    target: &str,
+) -> Option<StatementLocation<'a>> {
+    match &statement.kind {
+        StatementKind::If {
+            then_block,
+            else_block,
+            ..
+        } => find_statement_location_in_block(then_block, format!("{}:then", statement.id), target)
+            .or_else(|| {
+                else_block.as_ref().and_then(|else_block| {
+                    find_statement_location_in_block(
+                        else_block,
+                        format!("{}:else", statement.id),
+                        target,
+                    )
+                })
+            }),
+        StatementKind::While { body, .. } | StatementKind::For { body, .. } => {
+            find_statement_location_in_block(body, format!("{}:body", statement.id), target)
+        }
+        StatementKind::Forge { body } => {
+            find_statement_location_in_block(body, format!("{}:forge", statement.id), target)
+        }
+        StatementKind::Binding { .. }
+        | StatementKind::Set { .. }
+        | StatementKind::Return { .. }
+        | StatementKind::Expr { .. } => None,
+    }
+}
+
+fn binding_statement_as_bind_source(statement: &Statement) -> Option<String> {
+    let StatementKind::Binding {
+        binding_kind,
+        name,
+        type_ann,
+        expr,
+    } = &statement.kind
+    else {
+        return None;
+    };
+    if !binding_kind.is_mutable_local() {
+        return None;
+    }
+    let mut source = format!("bind {name}");
+    if let Some(type_ann) = type_ann {
+        source.push_str(": ");
+        source.push_str(&type_ann.display());
+    }
+    source.push_str(" = ");
+    source.push_str(expr.source.trim());
+    Some(source)
 }
 
 fn lint_declaration_delete_transaction_templates(

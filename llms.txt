@@ -214,7 +214,9 @@ Current development phase:
   to fallible `try_` adapters with `?`, plus
   `propagate_unchecked_result` templates for discarded `Result` expression
   statements, plus `qualify_imported_call` templates for simple imported task
-  calls that should be alias- or module-qualified; selected task graph-slice
+  calls that should be alias- or module-qualified, plus
+  `convert_mutable_binding_to_bind` transactions for never-set mutable locals;
+  selected task graph-slice
   affordances are surfaced as checked
   `move_statement`/`move_take`, destination-variant, `delete_statement`,
   `delete_take`, and `replace_expression` templates where legal, or

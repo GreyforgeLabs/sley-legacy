@@ -246,7 +246,8 @@ Near-term:
    unused pure binding cleanup;
    those are structurally repairable through checked plan/fix templates, with
    write/query/verify smoke coverage for imported-call qualification and
-   write/verify smoke coverage for pure binding deletion. `sley plan
+   write/verify smoke coverage for pure binding deletion and mutable binding
+   conversion. `sley plan
    --graft-templates --template-surface <node-id>` now accepts exact block,
    statement, take, and expression node surfaces: selected task and block
    surfaces emit checked `insert_statement` starters, graph slices expose
