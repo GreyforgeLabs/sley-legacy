@@ -177,6 +177,9 @@ Implemented now:
 - in-tree `sley-workbench` local inspection bootstrap that emits
   `schema: "sley.workbench.report.v0"` and optional static HTML over
   doctor/query/lint/plan/graph panels without writing source files
+- in-tree `sley-agent-bench` deterministic repair-loop benchmark that emits
+  `schema: "sley.agent_bench.report.v0"` after proving a JSON inspect, lint,
+  plan, checked fix, verify, seal, and ZJX handoff path
 - in-tree `sley-zjx` read-only envelope utility with `inspect`,
   `verify-digest`, `extract-graph`, and `diff-envelope` commands over preview
   ZJX JSON envelopes, emitting `schema: "sley.zjx.tool.report.v0"`
@@ -354,13 +357,15 @@ Implemented now:
   symbol graphs, graft outcomes, ZJX envelopes, ZJX tool reports, checked run,
   query, lint, doctor, edit-plan, verify, deploy dry-run, deploy artifact
   check, CI, and project scaffold reports, LSP fix-preview payloads, workbench
-  reports, plus contract inventory, fixture-check, and validate reports
+  reports, agent-bench reports, plus contract inventory, fixture-check, and
+  validate reports
 - external v0 JSON Schema files under `docs/schemas/`, including strict
   query task/take/type/effect/call row definitions,
   strict runtime value definitions for `sley.run.report.v0`,
   `sley-ci` check/lint/doctor/plan/run/verify/deploy/smoke/corpus/examples reports,
   `sley.lsp.fix_preview.v0` preview-command payloads,
   `sley.workbench.report.v0` local inspection reports,
+  `sley.agent_bench.report.v0` deterministic agent-loop benchmark reports,
   `sley.zjx.tool.report.v0` envelope inspection reports,
   `sley-contract` inventory/fixture-check/validate/deploy-artifact-check reports,
   edit-plan graft operation and transaction template envelopes reused by graph
@@ -443,6 +448,7 @@ sley-contract inspect-deploy-artifacts .sley/deploy --schemas docs/schemas --jso
 make syntax
 sley-lsp
 sley-workbench --json --html .sley/workbench.html .
+sley-agent-bench run --json
 sley seal --json .
 sley zjx --json .
 sley-zjx inspect --json envelope.json
