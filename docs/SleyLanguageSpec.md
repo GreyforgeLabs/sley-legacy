@@ -699,7 +699,8 @@ The compiler conformance corpus lives under `fixtures/corpus/`. Its
 Accepted fixtures must parse, check, and formatter-round-trip. Rejected
 fixtures carry a JSON sidecar listing the diagnostic ids that must remain
 stable. The current corpus locks declared and missing authority coverage for
-the deterministic seeded host adapters. `sley-ci corpus --json
+the deterministic seeded host adapters and transitive authority propagation
+through split-task agent helpers. `sley-ci corpus --json
 fixtures/corpus/manifest.json` exposes the same accepted/rejected gate as a
 machine-readable CI report: accepted cases run strict check plus formatter
 round-trip checks, while rejected cases must fail with the expected diagnostic

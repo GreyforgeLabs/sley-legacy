@@ -1,0 +1,35 @@
+module corpus.accepted.agent_split_authority
+
+task collect_profile -> Result<Text, Error> uses SecretRead, Network {
+  bind token = call secrets.try_get("api_key")?
+  bind profile = call http.try_get_text("https://example.test/profile")?
+
+  if len(token) > 0 {
+    return Ok(profile)
+  }
+
+  return Err("api_key seed was empty")
+}
+
+task draft_plan -> Result<Text, Error> uses ModelCall {
+  take profile: Text
+
+  bind plan = call model.try_complete("deploy-plan")?
+
+  return Ok(profile + " | " + plan)
+}
+
+task stage_release -> Result<Text, Error> uses Deploy {
+  take plan: Text
+
+  bind staged = call deploy.try_stage("staging")?
+
+  return Ok(plan + " | " + staged)
+}
+
+task main -> Result<Text, Error> uses SecretRead, Network, ModelCall, Deploy {
+  bind profile = call collect_profile()?
+  bind plan = call draft_plan(profile)?
+
+  return call stage_release(plan)
+}

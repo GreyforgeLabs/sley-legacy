@@ -398,7 +398,8 @@ Implemented now:
 - manifest-backed accepted/rejected synthetic conformance corpus fixtures under
   `fixtures/corpus/`, including declared and missing authority cases for the
   seeded host adapter surface and an accepted agent deploy pipeline that
-  composes SecretRead, Network, ModelCall, and Deploy
+  composes SecretRead, Network, ModelCall, and Deploy, plus accepted/rejected
+  split-task fixtures for transitive authority propagation
 - manifest-backed CLI smoke conformance cases under `fixtures/cli_smokes/`,
   covering stable command output, JSON roots, graph/ZJX surfaces, doctor
   readiness, edit-plan surfaces, verify pre-deploy gates, project scaffolding,
