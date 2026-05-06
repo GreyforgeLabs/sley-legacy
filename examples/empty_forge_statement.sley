@@ -1,0 +1,10 @@
+module app.empty_forge
+
+task main -> Int {
+  bind value = 41
+
+  forge {
+  }
+
+  return value
+}

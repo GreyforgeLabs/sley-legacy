@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.empty_forge",
+  "filters": {
+    "module": null,
+    "rules": [
+      "empty_forge_statement"
+    ]
+  },
+  "findings": [
+    {
+      "id": "EMPTY_FORGE_STATEMENT",
+      "rule": "empty_forge_statement",
+      "severity": "warning",
+      "message": "task `app.empty_forge.main` has an empty forge statement",
+      "node": "block:task:app.empty_forge.main:stmt:1",
+      "module": "app.empty_forge",
+      "hint": "delete this no-op forge statement"
+    }
+  ]
+}
