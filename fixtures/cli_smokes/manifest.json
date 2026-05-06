@@ -32,6 +32,7 @@
         "cli:new",
         "json:sley.project.scaffold.v0",
         "scaffold:deploy-quickstart",
+        "scaffold:handoff-actions",
         "scaffold:next-actions"
       ],
       "expect": {
@@ -49,7 +50,10 @@
           { "pointer": "/next_commands/5/4", "value": "Deploy" },
           { "pointer": "/next_actions/1/kind", "value": "doctor_project" },
           { "pointer": "/next_actions/5/kind", "value": "verify_seeded_deploy" },
-          { "pointer": "/next_actions/6/command/1", "value": "run" }
+          { "pointer": "/next_actions/6/command/1", "value": "run" },
+          { "pointer": "/next_actions/7/kind", "value": "seal_project" },
+          { "pointer": "/next_actions/8/kind", "value": "package_project" },
+          { "pointer": "/next_actions/8/command/1", "value": "zjx" }
         ]
       }
     },

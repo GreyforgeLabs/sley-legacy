@@ -135,7 +135,7 @@ Rules:
 - `sley new --json` emits typed scaffold `next_actions` plus legacy
   `next_commands`; the deploy starter's generated action sequence is executed
   in integration coverage so first-run check, doctor, query, plan, lint,
-  verify, and run gates cannot silently drift.
+  verify, run, seal, and ZJX package gates cannot silently drift.
 - `sley plan` consumes the same checked surfaces into ranked task edit
   surfaces, post-edit gate commands, and optional starter graft operation
   templates, rename-plus-call-site transactions, and add-take-plus-call-arg
@@ -467,8 +467,8 @@ The current smoke manifest covers:
 - graph-slice replace affordances and checked `replace_expression` graft
   templates in edit-plan reports
 - deploy scaffold typed next-actions, first-run sequence execution, and strict
-  seeded `verify --json --deny-warnings` readiness, including passed-verify
-  seal/ZJX handoff next-actions
+  seeded `verify --json --deny-warnings` readiness, including scaffold-level
+  and passed-verify seal/ZJX handoff next-actions
 - doctor/verify warning next-actions that route agents to checked
   `sley plan --json --graft-templates` lint repair plans and unambiguous
   `sley fix --dry-run` previews with explicit `write_command` vectors, plus a

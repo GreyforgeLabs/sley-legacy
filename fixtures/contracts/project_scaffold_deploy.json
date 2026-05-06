@@ -77,6 +77,18 @@
       "staging",
       "staged",
       "."
+    ],
+    [
+      "sley",
+      "seal",
+      "--json",
+      "."
+    ],
+    [
+      "sley",
+      "zjx",
+      "--json",
+      "."
     ]
   ],
   "next_actions": [
@@ -160,6 +172,26 @@
         "--deploy-result",
         "staging",
         "staged",
+        "."
+      ]
+    },
+    {
+      "kind": "seal_project",
+      "reason": "create a content-addressed review artifact for the scaffold",
+      "command": [
+        "sley",
+        "seal",
+        "--json",
+        "."
+      ]
+    },
+    {
+      "kind": "package_project",
+      "reason": "create a ZJX preview envelope for agent handoff",
+      "command": [
+        "sley",
+        "zjx",
+        "--json",
         "."
       ]
     }

@@ -157,7 +157,8 @@ Implemented now:
   and `sley zjx --json` handoff artifacts
 - JSON project scaffold reports with `sley new --json`, `hello` and `deploy`
   templates, relative created-file paths, next-command vectors, typed
-  next-action reasons, and
+  next-action reasons through check, doctor, query, plan, lint, verify, run,
+  seal, and ZJX package steps, and
   `schema: "sley.project.scaffold.v0"`
 - JSONL trace sidecars for accepted graft/fix receipts when
   `sley graft --write` or `sley fix --write` applies a change, with
@@ -504,6 +505,7 @@ for seeded host adapters, stable JSON roots, graph/ZJX output, graft and fix
 dry runs, checked graph query reports, doctor readiness, verify pre-deploy
 gates, edit-plan surfaces, typed scaffold next-actions for the deploy
 quickstart, strict seeded verify readiness for the generated deploy starter,
+scaffold-level seal/ZJX handoff actions,
 temp setup files for write-mode CLI smokes, direct graft write smokes,
 explicit graft/fix write trace receipts, non-empty trace seal receipts,
 ZJX envelopes carrying trace receipts, passed-verify seal/ZJX next-actions,

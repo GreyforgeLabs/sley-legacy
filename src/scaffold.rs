@@ -218,7 +218,7 @@ fn readme_source(name: &str, template: ScaffoldTemplate) -> String {
         ),
     };
     format!(
-        "# {name}\n\nGenerated Sley project.\n\n```bash\nsley check --json .\nsley doctor --json .\nsley query --json --kind tasks .\nsley plan --json .\nsley lint --json --deny-warnings .\n{verify}\n{run}\n```\n"
+        "# {name}\n\nGenerated Sley project.\n\n```bash\nsley check --json .\nsley doctor --json .\nsley query --json --kind tasks .\nsley plan --json .\nsley lint --json --deny-warnings .\n{verify}\n{run}\nsley seal --json .\nsley zjx --json .\n```\n"
     )
 }
 
@@ -310,6 +310,16 @@ fn next_actions(template: ScaffoldTemplate) -> Vec<ScaffoldNextAction> {
         ],
     };
     actions.extend(extra_actions);
+    actions.push(next_action(
+        "seal_project",
+        "create a content-addressed review artifact for the scaffold",
+        vec!["sley", "seal", "--json", "."],
+    ));
+    actions.push(next_action(
+        "package_project",
+        "create a ZJX preview envelope for agent handoff",
+        vec!["sley", "zjx", "--json", "."],
+    ));
     actions
 }
 

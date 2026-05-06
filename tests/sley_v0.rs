@@ -428,6 +428,8 @@ fn project_scaffold_creates_checked_deploy_project() {
     assert_eq!(report.next_actions.len(), report.next_commands.len());
     assert_eq!(report.next_actions[5].kind, "verify_seeded_deploy");
     assert_eq!(report.next_actions[6].kind, "run_seeded_deploy");
+    assert_eq!(report.next_actions[7].kind, "seal_project");
+    assert_eq!(report.next_actions[8].kind, "package_project");
     for (action, command) in report.next_actions.iter().zip(&report.next_commands) {
         assert_eq!(
             &action.command, command,
@@ -3466,6 +3468,18 @@ task main -> Used uses UsedEffect {
                 "staged".to_string(),
                 ".".to_string(),
             ],
+            vec![
+                "sley".to_string(),
+                "seal".to_string(),
+                "--json".to_string(),
+                ".".to_string(),
+            ],
+            vec![
+                "sley".to_string(),
+                "zjx".to_string(),
+                "--json".to_string(),
+                ".".to_string(),
+            ],
         ],
         next_actions: vec![
             ScaffoldNextAction {
@@ -3551,6 +3565,26 @@ task main -> Used uses UsedEffect {
                     "--deploy-result".to_string(),
                     "staging".to_string(),
                     "staged".to_string(),
+                    ".".to_string(),
+                ],
+            },
+            ScaffoldNextAction {
+                kind: "seal_project".to_string(),
+                reason: "create a content-addressed review artifact for the scaffold".to_string(),
+                command: vec![
+                    "sley".to_string(),
+                    "seal".to_string(),
+                    "--json".to_string(),
+                    ".".to_string(),
+                ],
+            },
+            ScaffoldNextAction {
+                kind: "package_project".to_string(),
+                reason: "create a ZJX preview envelope for agent handoff".to_string(),
+                command: vec![
+                    "sley".to_string(),
+                    "zjx".to_string(),
+                    "--json".to_string(),
                     ".".to_string(),
                 ],
             },
@@ -9462,6 +9496,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:project-lint-repair-write-verify",
         "readiness:verify-package-next-action",
         "scaffold:deploy-quickstart",
+        "scaffold:handoff-actions",
         "scaffold:next-actions",
         "scaffold:verify-ready",
         "host:DatabaseRead",
