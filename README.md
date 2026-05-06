@@ -118,6 +118,7 @@ Implemented now:
   `--rule unused-pure-expression-statement`, or
   `--rule mutable-binding-never-set`, `--rule constant-if-expression`,
   `--rule constant-false-while-statement`,
+  `--rule empty-if-statement`,
   `--rule empty-for-statement`,
   `--rule empty-forge-statement`,
   `--rule identity-binary-expression`, or
@@ -176,6 +177,8 @@ Implemented now:
   that can be replaced by the branch that executes,
   `delete_constant_false_while_statement` templates for never-executed
   `while false` statements,
+  `delete_empty_if_statement` templates for no-op `if` statements with
+  delete-safe conditions and empty branches,
   `delete_empty_for_statement` templates for `for` statements over literal
   empty lists,
   `delete_empty_forge_statement` templates for no-op `forge { }` starter
@@ -301,7 +304,8 @@ Implemented now:
   declaration/import planning and `add_task`/effect/import fix dry runs with
   name/source/module overrides,
   missing-module checked repair templates with module-name inference,
-  lint-driven fix writes that clear warnings before verify, and seeded
+  lint-driven fix writes that clear warnings before verify, including empty-if
+  cleanup, and seeded
   host-adapter execution
 - compact agent onboarding pack in `llms.txt`
 
@@ -661,6 +665,7 @@ unused pure expression statement delete templates with write/verify coverage,
 mutable-binding conversion transactions with write/verify coverage,
 constant-if expression simplification templates with write/verify coverage,
 constant-false while statement delete templates with write/verify coverage,
+empty-if statement delete templates with write/verify coverage,
 empty-for statement delete templates with write/verify coverage,
 empty-forge statement delete templates with write/verify coverage,
 identity binary expression simplification templates with write/verify coverage,

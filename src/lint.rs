@@ -34,6 +34,7 @@ pub enum LintRule {
     MutableBindingNeverSet,
     ConstantIfExpression,
     ConstantFalseWhileStatement,
+    EmptyIfStatement,
     EmptyForStatement,
     EmptyForgeStatement,
     IdentityBinaryExpression,
@@ -65,6 +66,7 @@ impl LintRule {
             Self::MutableBindingNeverSet,
             Self::ConstantIfExpression,
             Self::ConstantFalseWhileStatement,
+            Self::EmptyIfStatement,
             Self::EmptyForStatement,
             Self::EmptyForgeStatement,
             Self::IdentityBinaryExpression,
@@ -96,6 +98,7 @@ impl LintRule {
             Self::MutableBindingNeverSet => "mutable_binding_never_set",
             Self::ConstantIfExpression => "constant_if_expression",
             Self::ConstantFalseWhileStatement => "constant_false_while_statement",
+            Self::EmptyIfStatement => "empty_if_statement",
             Self::EmptyForStatement => "empty_for_statement",
             Self::EmptyForgeStatement => "empty_forge_statement",
             Self::IdentityBinaryExpression => "identity_binary_expression",
@@ -229,6 +232,9 @@ pub fn build_lint_report(program: &Program, options: LintOptions) -> LintReport 
             program,
             options.module.as_deref(),
         ));
+    }
+    if rules.contains(&LintRule::EmptyIfStatement) {
+        findings.extend(lint_empty_if_statements(program, options.module.as_deref()));
     }
     if rules.contains(&LintRule::EmptyForStatement) {
         findings.extend(lint_empty_for_statements(
@@ -901,6 +907,18 @@ fn lint_constant_false_while_statements(
         .filter(|task| module_matches(module, &task_module(task)))
     {
         collect_constant_false_while_statements_in_block(task, &task.body, &mut findings);
+    }
+    findings
+}
+
+fn lint_empty_if_statements(program: &Program, module: Option<&str>) -> Vec<LintFinding> {
+    let mut findings = Vec::new();
+    for task in program
+        .tasks
+        .iter()
+        .filter(|task| module_matches(module, &task_module(task)))
+    {
+        collect_empty_if_statements_in_block(task, &task.body, &mut findings);
     }
     findings
 }
@@ -2115,6 +2133,55 @@ fn collect_constant_false_while_statements_in_block(
             }
             StatementKind::For { body, .. } | StatementKind::Forge { body } => {
                 collect_constant_false_while_statements_in_block(task, body, findings);
+            }
+            StatementKind::Binding { .. }
+            | StatementKind::Set { .. }
+            | StatementKind::Return { .. }
+            | StatementKind::Expr { .. } => {}
+        }
+    }
+}
+
+fn collect_empty_if_statements_in_block(
+    task: &TaskDecl,
+    block: &Block,
+    findings: &mut Vec<LintFinding>,
+) {
+    for statement in &block.statements {
+        match &statement.kind {
+            StatementKind::If {
+                condition,
+                then_block,
+                else_block,
+            } => {
+                let else_empty = else_block
+                    .as_ref()
+                    .map_or(true, |else_block| else_block.statements.is_empty());
+                if expr_is_delete_safe_pure(condition)
+                    && then_block.statements.is_empty()
+                    && else_empty
+                {
+                    let task_name = task_fq_name(task);
+                    findings.push(LintFinding {
+                        id: "EMPTY_IF_STATEMENT".to_string(),
+                        rule: LintRule::EmptyIfStatement.as_str().to_string(),
+                        severity: "warning".to_string(),
+                        message: format!("task `{task_name}` has an empty if statement"),
+                        node: statement.id.clone(),
+                        module: task_module(task),
+                        hint: "delete this no-op if statement".to_string(),
+                    });
+                } else {
+                    collect_empty_if_statements_in_block(task, then_block, findings);
+                    if let Some(else_block) = else_block {
+                        collect_empty_if_statements_in_block(task, else_block, findings);
+                    }
+                }
+            }
+            StatementKind::While { body, .. }
+            | StatementKind::For { body, .. }
+            | StatementKind::Forge { body } => {
+                collect_empty_if_statements_in_block(task, body, findings);
             }
             StatementKind::Binding { .. }
             | StatementKind::Set { .. }

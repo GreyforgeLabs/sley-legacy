@@ -572,6 +572,7 @@ fn lint_graft_templates(
         program,
         lint_report,
     ));
+    templates.extend(lint_empty_if_statement_templates(program, lint_report));
     templates.extend(lint_empty_for_statement_templates(program, lint_report));
     templates.extend(lint_empty_forge_statement_templates(program, lint_report));
     templates.extend(lint_identity_binary_expression_templates(
@@ -623,6 +624,7 @@ fn is_lint_repair_kind(kind: &str) -> bool {
             | "delete_unused_pure_expression_statement"
             | "simplify_constant_if_expression"
             | "delete_constant_false_while_statement"
+            | "delete_empty_if_statement"
             | "delete_empty_for_statement"
             | "delete_empty_forge_statement"
             | "simplify_identity_binary_expression"
@@ -917,6 +919,33 @@ fn lint_constant_false_while_statement_templates(
             Some(EditPlanGraftTemplate {
                 kind: "delete_constant_false_while_statement".to_string(),
                 reason: "delete this never-executed while statement".to_string(),
+                surface: finding.node.clone(),
+                operation,
+                editable_json_pointers: Vec::new(),
+            })
+        })
+        .collect()
+}
+
+fn lint_empty_if_statement_templates(
+    program: &Program,
+    lint_report: &LintReport,
+) -> Vec<EditPlanGraftTemplate> {
+    lint_report
+        .findings
+        .iter()
+        .filter(|finding| finding.id == "EMPTY_IF_STATEMENT")
+        .filter_map(|finding| {
+            let operation = json!({
+                "op": "DeleteNode",
+                "target": finding.node
+            });
+            if !delete_affordance_checks(program, &operation) {
+                return None;
+            }
+            Some(EditPlanGraftTemplate {
+                kind: "delete_empty_if_statement".to_string(),
+                reason: "delete this no-op if statement".to_string(),
                 surface: finding.node.clone(),
                 operation,
                 editable_json_pointers: Vec::new(),

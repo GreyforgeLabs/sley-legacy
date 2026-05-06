@@ -62,6 +62,7 @@
         "mutable_binding_never_set",
         "constant_if_expression",
         "constant_false_while_statement",
+        "empty_if_statement",
         "empty_for_statement",
         "empty_forge_statement",
         "identity_binary_expression",
