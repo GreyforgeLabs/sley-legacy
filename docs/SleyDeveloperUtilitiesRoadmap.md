@@ -124,6 +124,10 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
      - `grammar.js`;
      - `queries/highlights.scm`;
      - `test/corpus/*.txt` generated from current examples.
+   - Current bootstrap: in-tree `tree-sitter-sley/` provides `grammar.js`,
+     highlight queries, generated parser artifacts, exact corpus tests, and a
+     fixture parser smoke over current examples plus accepted compiler corpus
+     sources through `npm test` or `make syntax`.
    - Done when all accepted source fixtures parse and rejected examples fail
      predictably enough for editor recovery.
 

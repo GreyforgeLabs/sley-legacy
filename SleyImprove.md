@@ -111,6 +111,7 @@ sley-ci examples --json examples
 sley-conformance report --json
 sley-conformance coverage --json --require-tag <tag>
 make v1
+make syntax
 sley trace --json <target>
 sley seal --json <target>
 sley zjx --json [--slice <node-id>] <target>

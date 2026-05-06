@@ -724,6 +724,13 @@ drift under one stable conformance root. `sley-conformance coverage --json
 --require-tag <tag>` checks explicit coverage tags across the corpus and smoke
 manifests for focused release gates.
 
+The source review projection is also backed by the in-tree `tree-sitter-sley`
+bootstrap. Its grammar tracks module/import declarations, type/effect/task
+declarations, authority takes, bindings, control flow, call/try expressions,
+records, maps, lists, comments, and highlight queries for editor integration.
+The compiler remains the semantic authority; Tree-sitter is for syntax review,
+tokenization, and editor ergonomics.
+
 `sley new` is the v0 project scaffold command. It writes a `sley.toml`,
 `README.md`, and entry module source file, refusing to overwrite any of those
 paths when they already exist. `--template hello` creates a pure starter.

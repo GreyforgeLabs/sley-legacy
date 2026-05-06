@@ -30,6 +30,7 @@ cargo run --bin sley-conformance -- report --json
 cargo run --bin sley-conformance -- coverage --json --require-tag <tag>
 cargo run --bin sley-contract -- inspect-deploy-artifacts .sley/deploy --schemas docs/schemas --json
 make v1
+make syntax
 cargo run -- seal --json <file-or-project>
 cargo run -- graft --json --dry-run <file> <graft.json>
 cargo run -- graft --json --write <file> <graft.json>
@@ -142,6 +143,9 @@ for local CI and pre-commit gates over existing Sley commands.
 The `sley-conformance` binary exposes `report` and `coverage` JSON roots for
 schema/fixture instance coverage, contract validation status, corpus tags,
 smoke tags, packaged example counts, and declared integration-test count drift.
+The in-tree `tree-sitter-sley` package exposes the current syntax grammar,
+highlight queries, generated parser artifacts, exact corpus tests, and fixture
+parsing smoke through `npm test` or `make syntax`.
 The repo-level `Makefile`, `.github/actions/sley-v1/action.yml`,
 `.github/workflows/v1.yml`, and `.pre-commit-config.yaml` all route release
 checks through `make v1`.
