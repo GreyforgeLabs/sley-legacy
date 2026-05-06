@@ -1,0 +1,15 @@
+name: Sley v1 Gate
+description: Install stable Rust and run the Sley v1 local release gate.
+
+runs:
+  using: composite
+  steps:
+    - name: Install stable Rust
+      shell: bash
+      run: |
+        rustup toolchain install stable --profile minimal
+        rustup default stable
+
+    - name: Run v1 gate
+      shell: bash
+      run: make v1
