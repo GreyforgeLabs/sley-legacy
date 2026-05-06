@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.deploy.artifacts.v0",
+  "title": "Sley Deploy Artifact Manifest v0",
+  "type": "object",
+  "required": [
+    "schema",
+    "target",
+    "environment",
+    "mode",
+    "policy",
+    "summary",
+    "files"
+  ],
+  "properties": {
+    "schema": { "const": "sley.deploy.artifacts.v0" },
+    "target": { "type": "string", "minLength": 1 },
+    "environment": { "type": "string", "minLength": 1 },
+    "mode": { "const": "dry_run" },
+    "policy": { "$ref": "sley.deploy.report.v0#/$defs/policy" },
+    "summary": {
+      "type": "object",
+      "required": ["verify_status"],
+      "properties": {
+        "verify_status": { "enum": ["passed", "warnings", "blocked"] },
+        "seal_digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+        "graph_digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+      },
+      "additionalProperties": false
+    },
+    "files": {
+      "type": "object",
+      "required": ["report", "seal", "package"],
+      "properties": {
+        "report": { "$ref": "#/$defs/file" },
+        "seal": { "$ref": "#/$defs/file" },
+        "package": { "$ref": "#/$defs/file" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "file": {
+      "type": "object",
+      "required": ["path", "schema", "digest"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "schema": { "type": "string", "minLength": 1 },
+        "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

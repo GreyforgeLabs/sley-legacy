@@ -1,0 +1,34 @@
+{
+  "schema": "sley.deploy.artifacts.v0",
+  "target": "examples/hello.sley",
+  "environment": "staging",
+  "mode": "dry_run",
+  "policy": {
+    "live_deploy_allowed": false,
+    "external_mutations": false,
+    "provider_calls": false,
+    "requires_operator_approval": true
+  },
+  "summary": {
+    "verify_status": "passed",
+    "seal_digest": "sha256:e745af8f70d04261392318572d67de9812473096734dec702d648d00647efbb4",
+    "graph_digest": "sha256:0f16c5f58f19a8ab64645b60056ea9be0188f9e809531b6190d410f2dbb06040"
+  },
+  "files": {
+    "report": {
+      "path": "artifacts/deploy-report.json",
+      "schema": "sley.deploy.report.v0",
+      "digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    "seal": {
+      "path": "artifacts/seal.json",
+      "schema": "sley.trace.seal.v0",
+      "digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+    },
+    "package": {
+      "path": "artifacts/zjx-envelope.json",
+      "schema": "sley.zjx.envelope.v0",
+      "digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
+    }
+  }
+}

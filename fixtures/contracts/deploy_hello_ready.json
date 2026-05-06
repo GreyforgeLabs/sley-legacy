@@ -115,7 +115,8 @@
     "directory": "artifacts",
     "report": "artifacts/deploy-report.json",
     "seal": "artifacts/seal.json",
-    "package": "artifacts/zjx-envelope.json"
+    "package": "artifacts/zjx-envelope.json",
+    "manifest": "artifacts/manifest.json"
   },
   "next_actions": [
     {

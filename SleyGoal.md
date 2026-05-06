@@ -55,8 +55,9 @@ Current verified surface:
   composes strict verify, trace seal, and ZJX package summaries into a
   local-only deploy package report that forbids live deployment, provider
   calls, external mutation, and spend without explicit operator approval.
-  `--artifacts-dir <dir>` writes local `deploy-report.json`, `seal.json`, and
-  `zjx-envelope.json` handoff files after the dry-run package is ready.
+  `--artifacts-dir <dir>` writes local `deploy-report.json`, `seal.json`,
+  `zjx-envelope.json`, and digest-bearing `manifest.json` handoff files after
+  the dry-run package is ready.
 - `sley new --json --template hello|deploy|agent` emits
   `schema: "sley.project.scaffold.v0"` and creates deterministic first-run
   starter projects, including a seeded agent quickstart that composes
@@ -99,10 +100,10 @@ Current verified surface:
   call-bearing reports that route agents to strict call-row inspection, a
   write/query/verify smoke for the call-row-driven rename-and-update-call-sites
   transaction, a write/query/verify smoke for the unused-take-plus-call-arg
-  removal transaction, explicit deploy artifact handoff writes for dry-run
-  packages, and checked `unchecked_result` migration templates that turn
-  discarded `Result` expression statements into explicit `?` propagation when
-  valid, plus checked `unused_import` and
+  removal transaction, explicit deploy artifact manifest handoff writes for
+  dry-run packages, and checked `unchecked_result` migration templates that
+  turn discarded `Result` expression statements into explicit `?` propagation
+  when valid, plus checked `unused_import` and
   `unused_private_task` delete templates, fix dry runs, and a write-mode
   `delete_unused_import` cleanup that clears lint before
   `sley verify --deny-warnings`, plus checked dead private task cleanup
@@ -116,11 +117,11 @@ Current verified surface:
   receipt chains with recomputable graph digests while
   `sley fix --dry-run --trace <path>` remains non-mutating.
 - Stable JSON roots now include query reports, lint reports, doctor reports,
-  edit-plan reports, verify reports, deploy dry-run reports, project scaffold
-  reports, `sley-ci` reports, `sley-contract` utility reports, and the CLI
-  smoke manifest in addition to AST, diagnostics, graph, graph slice, trace
-  receipt, trace seal, graft outcome, and ZJX envelope roots. The edit-plan
-  schema now pins strict
+  edit-plan reports, verify reports, deploy dry-run reports, deploy artifact
+  manifests, project scaffold reports, `sley-ci` reports, `sley-contract`
+  utility reports, and the CLI smoke manifest in addition to AST, diagnostics,
+  graph, graph slice, trace receipt, trace seal, graft outcome, and ZJX
+  envelope roots. The edit-plan schema now pins strict
   graft operation and transaction template envelopes,
   the query schema now exposes strict task/take/type/effect/call row
   definitions,

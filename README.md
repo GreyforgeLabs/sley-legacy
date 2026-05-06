@@ -174,8 +174,8 @@ Implemented now:
   `schema: "sley.deploy.report.v0"` while recording that live deployment,
   external mutation, and provider calls are not allowed without explicit
   operator approval; `--artifacts-dir <dir>` writes local `deploy-report.json`,
-  `seal.json`, and `zjx-envelope.json` handoff files only after the dry-run
-  package is ready
+  `seal.json`, `zjx-envelope.json`, and a digest-bearing `manifest.json`
+  handoff file only after the dry-run package is ready
 - JSON project scaffold reports with `sley new --json`, `hello`, `deploy`,
   and `agent` templates, relative created-file paths, next-command vectors, typed
   next-action reasons through check, doctor, query, plan, lint, verify, run,
@@ -560,7 +560,7 @@ verify and deploy dry-run pre-deploy gates,
 edit-plan surfaces, call-site rename and remove-take/call-arg transaction
 write/query/verify, typed scaffold next-actions for deploy and agent
 quickstarts, strict seeded verify readiness for the generated deploy and agent
-starters, deploy dry-run package reports with optional local artifact handoff,
+starters, deploy dry-run package reports with optional local artifact manifests,
 scaffold-level seal/ZJX handoff actions,
 temp setup files for write-mode CLI smokes, direct graft write smokes,
 explicit graft/fix write trace receipts, non-empty trace seal receipts,

@@ -255,7 +255,8 @@
         "stdout_contains": [
           "deploy-report.json",
           "seal.json",
-          "zjx-envelope.json"
+          "zjx-envelope.json",
+          "manifest.json"
         ],
         "stdout_json": [
           { "pointer": "/schema", "value": "sley.deploy.report.v0" },

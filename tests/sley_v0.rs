@@ -7,7 +7,10 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use sley::ast::{AST_PROGRAM_SCHEMA, ExprKind, ProvenanceRecord, StatementKind};
 use sley::authority::{host_effect_contracts, host_effects_for_callee};
 use sley::checker::{check_program, has_errors};
-use sley::deploy::{DEPLOY_REPORT_SCHEMA, DeployArtifacts, build_deploy_report};
+use sley::deploy::{
+    DEPLOY_ARTIFACTS_SCHEMA, DEPLOY_REPORT_SCHEMA, DeployArtifacts, build_deploy_artifact_manifest,
+    build_deploy_report,
+};
 use sley::diagnostics::{DIAGNOSTIC_REPORT_SCHEMA, DiagnosticReport};
 use sley::doctor::{DOCTOR_REPORT_SCHEMA, build_doctor_report};
 use sley::formatter::format_program;
@@ -481,6 +484,7 @@ fn project_scaffold_creates_checked_deploy_project() {
             assert!(root.join(".sley/deploy/deploy-report.json").exists());
             assert!(root.join(".sley/deploy/seal.json").exists());
             assert!(root.join(".sley/deploy/zjx-envelope.json").exists());
+            assert!(root.join(".sley/deploy/manifest.json").exists());
         }
     }
 
@@ -618,6 +622,7 @@ fn project_scaffold_creates_checked_agent_project() {
             assert!(root.join(".sley/ci-deploy/deploy-report.json").exists());
             assert!(root.join(".sley/ci-deploy/seal.json").exists());
             assert!(root.join(".sley/ci-deploy/zjx-envelope.json").exists());
+            assert!(root.join(".sley/ci-deploy/manifest.json").exists());
         }
         if action.kind == "run_seeded_agent" {
             let value: Value = serde_json::from_str(&stdout).expect("parse agent runtime JSON");
@@ -647,6 +652,7 @@ fn project_scaffold_creates_checked_agent_project() {
             assert!(root.join(".sley/deploy/deploy-report.json").exists());
             assert!(root.join(".sley/deploy/seal.json").exists());
             assert!(root.join(".sley/deploy/zjx-envelope.json").exists());
+            assert!(root.join(".sley/deploy/manifest.json").exists());
         }
     }
 
@@ -735,9 +741,17 @@ fn deploy_dry_run_reports_verified_package_without_live_mutation() {
             artifacts_dir_arg
         )))
     );
+    assert_eq!(
+        json.pointer("/artifacts/manifest"),
+        Some(&serde_json::json!(format!(
+            "{}/manifest.json",
+            artifacts_dir_arg
+        )))
+    );
     assert!(artifacts_dir.join("deploy-report.json").exists());
     assert!(artifacts_dir.join("seal.json").exists());
     assert!(artifacts_dir.join("zjx-envelope.json").exists());
+    assert!(artifacts_dir.join("manifest.json").exists());
     let package_json: serde_json::Value =
         serde_json::from_str(&fs::read_to_string(artifacts_dir.join("zjx-envelope.json")).unwrap())
             .expect("parse deploy package artifact");
@@ -752,6 +766,38 @@ fn deploy_dry_run_reports_verified_package_without_live_mutation() {
     assert_eq!(
         report_json.pointer("/schema"),
         Some(&serde_json::json!(DEPLOY_REPORT_SCHEMA))
+    );
+    let manifest_source =
+        fs::read_to_string(artifacts_dir.join("manifest.json")).expect("read deploy manifest");
+    let manifest_json: serde_json::Value =
+        serde_json::from_str(&manifest_source).expect("parse deploy manifest artifact");
+    assert_eq!(
+        manifest_json.pointer("/schema"),
+        Some(&serde_json::json!(DEPLOY_ARTIFACTS_SCHEMA))
+    );
+    assert_eq!(
+        manifest_json.pointer("/files/report/digest"),
+        Some(&serde_json::json!(content_digest(
+            fs::read(artifacts_dir.join("deploy-report.json"))
+                .expect("read deploy report artifact")
+                .as_slice()
+        )))
+    );
+    assert_eq!(
+        manifest_json.pointer("/files/seal/digest"),
+        Some(&serde_json::json!(content_digest(
+            fs::read(artifacts_dir.join("seal.json"))
+                .expect("read seal artifact")
+                .as_slice()
+        )))
+    );
+    assert_eq!(
+        manifest_json.pointer("/files/package/digest"),
+        Some(&serde_json::json!(content_digest(
+            fs::read(artifacts_dir.join("zjx-envelope.json"))
+                .expect("read package artifact")
+                .as_slice()
+        )))
     );
     let _ = fs::remove_dir_all(artifacts_root);
 }
@@ -3711,11 +3757,24 @@ task main -> Used uses UsedEffect {
             report: "artifacts/deploy-report.json".to_string(),
             seal: "artifacts/seal.json".to_string(),
             package: "artifacts/zjx-envelope.json".to_string(),
+            manifest: "artifacts/manifest.json".to_string(),
         }),
     );
     assert_json_snapshot(
         &deploy,
         include_str!("../fixtures/contracts/deploy_hello_ready.json"),
+    );
+    let deploy_artifacts = deploy.artifacts.clone().expect("deploy artifacts");
+    let artifact_manifest = build_deploy_artifact_manifest(
+        &deploy,
+        &deploy_artifacts,
+        "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+        "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+    );
+    assert_json_snapshot(
+        &artifact_manifest,
+        include_str!("../fixtures/contracts/deploy_artifacts_hello.json"),
     );
 
     let scaffold = ProjectScaffoldReport {
@@ -4121,6 +4180,10 @@ task main -> Used uses UsedEffect {
         include_str!("../docs/schemas/sley.deploy.report.v0.schema.json"),
         DEPLOY_REPORT_SCHEMA,
     );
+    assert_schema_file(
+        include_str!("../docs/schemas/sley.deploy.artifacts.v0.schema.json"),
+        DEPLOY_ARTIFACTS_SCHEMA,
+    );
 }
 
 #[test]
@@ -4145,7 +4208,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         inventory_json.pointer("/schema_count"),
-        Some(&serde_json::json!(20))
+        Some(&serde_json::json!(21))
     );
     let schema_ids = inventory_json
         .pointer("/schemas")
@@ -4156,6 +4219,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
         .collect::<BTreeSet<_>>();
     assert!(schema_ids.contains("sley.query.report.v0"));
     assert!(schema_ids.contains("sley.ci.report.v0"));
+    assert!(schema_ids.contains("sley.deploy.artifacts.v0"));
     assert!(schema_ids.contains("sley.deploy.report.v0"));
     assert!(schema_ids.contains("sley.contract.inventory.v0"));
     assert!(schema_ids.contains("sley.contract.fixture_check.v0"));
@@ -4189,7 +4253,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(25))
+        Some(&serde_json::json!(26))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
