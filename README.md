@@ -189,7 +189,8 @@ Implemented now:
   graft/fix dry runs, direct graft writes, temp setup files for write-mode
   smokes, explicit graft/fix trace receipts, trace seals over non-empty receipt
   chains, ZJX envelopes carrying trace receipts, missing-module checked repair
-  templates with module-name inference, and seeded host-adapter execution
+  templates with module-name inference, lint-driven fix writes that clear
+  warnings before verify, and seeded host-adapter execution
 - compact agent onboarding pack in `llms.txt`
 
 Project form:
@@ -500,6 +501,8 @@ lint-driven unused-take remove templates,
 lint-driven unused-declared-effect remove templates,
 lint-driven unused-import delete templates,
 lint-driven module declaration fixes with inferred module names,
+write-mode unused-import cleanup through `sley fix --write` plus post-fix
+verify,
 raw-host adapter migration templates, unchecked-result propagation templates,
 private-task lint rules, declaration/import/API hygiene, authority hygiene, and
 explicit module style warnings. The next logical phase is to broaden style and

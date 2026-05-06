@@ -616,7 +616,8 @@ reports, checked lint reports, doctor readiness reports, edit-plan reports,
 project scaffolds, ZJX preview envelopes, graft dry runs and direct graft
 writes, write-mode fix trace receipts, non-empty trace receipt seals, ZJX
 envelopes carrying trace receipts, graph-slice replace affordances, checked
-`replace_expression` graft templates, typed deploy scaffold next-actions, and
+`replace_expression` graft templates, lint-driven fix writes that clear
+warnings before verify, typed deploy scaffold next-actions, and
 seeded host-adapter
 execution for `FileRead`, `FileWrite`, `DatabaseRead`, `DatabaseWrite`,
 `Network`, `Shell`, `ModelCall`, `SecretRead`, `Deploy`, and `Spend`.

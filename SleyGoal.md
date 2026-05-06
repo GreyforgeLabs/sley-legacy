@@ -70,7 +70,8 @@ Current verified surface:
   deploy project, and checked `unchecked_result` migration templates that turn
   discarded `Result` expression statements into explicit `?` propagation when
   valid, plus checked `unused_import` and `unused_private_task` delete
-  templates and fix dry runs, plus checked dead private task cleanup
+  templates, fix dry runs, and a write-mode `delete_unused_import` cleanup
+  that clears lint before `sley verify --deny-warnings`, plus checked dead private task cleanup
   transactions for grouped unused/unreachable private task deletion, plus
   checked `unused_take` and `unused_declared_effect` remove templates and fix
   dry runs, plus manifest-staged temp files for write-mode CLI smokes,

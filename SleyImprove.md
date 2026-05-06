@@ -473,7 +473,8 @@ The current smoke manifest covers:
 - lint-driven unused-declared-effect `RemoveTaskEffect` templates and checked
   `sley fix` dry runs
 - lint-driven unused-import `DeleteNode` templates and checked `sley fix` dry
-  runs
+  runs, plus a write-mode project cleanup smoke that proves
+  `delete_unused_import` clears lint before `sley verify --deny-warnings`
 - manifest-staged temp files for write-mode smokes, including
   direct `sley graft --write --trace <trace.jsonl>` source mutation,
   `sley fix --write --trace <trace.jsonl>` receipt redirection, and follow-up

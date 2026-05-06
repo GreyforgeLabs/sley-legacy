@@ -9273,6 +9273,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "cli:graft-write",
         "cli:smoke-setup-files",
         "diagnostic:MISSING_RETURN",
+        "fix:lint-cleanup-write",
         "fix:write-source",
         "graft:write-source",
         "graft:operations:add-module-declaration",
