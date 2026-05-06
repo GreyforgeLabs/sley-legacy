@@ -172,8 +172,9 @@ Rules:
 - The repo-level `Makefile` exposes `make v1` as a local release gate over
   formatting, whitespace diff checks, full Rust tests, contract fixtures,
   release-manifest validation, conformance summary reporting, declared
-  integration-test count drift, corpus conformance, packaged examples, and CLI
-  smokes.
+  integration-test count drift, corpus conformance, packaged examples, CLI
+  smokes, deterministic agent-bench, migration, docgen, sandbox-runner, and
+  ZJX tool replays.
 - `sley-conformance report --require-public-release-ready` is the explicit
   public-cut gate for license and repository metadata; ordinary executable v1
   conformance remains advisory on those operator decisions.
