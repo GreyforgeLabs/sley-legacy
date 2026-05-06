@@ -91,8 +91,11 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
      - `bin/sley-ci`;
      - `.pre-commit-hooks.yaml`;
      - sample workflow under `examples/github-actions/`.
-   - Done when a generated `sley new --template deploy` project can run the
-     same first-run sequence that the compiler tests already lock.
+   - Current bootstrap: in-tree `src/bin/sley-ci.rs` exposes `check`, `verify`,
+     and `smoke` wrappers with `schema: "sley.ci.report.v0"` output; GitHub
+     Action, pre-commit hook, and sample workflow packaging remain future work.
+   - Bootstrap done when a generated `sley new --template deploy` project can
+     run the seeded verify gate and a CLI smoke manifest through `sley-ci`.
 
 3. `tree-sitter-sley`
    - Inputs: `.sley` source fixtures.
