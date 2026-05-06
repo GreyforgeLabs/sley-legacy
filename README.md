@@ -110,7 +110,8 @@ Implemented now:
   and
   `schema: "sley.lint.report.v0"` for warning-grade graph and authority lints
 - checked JSON readiness reports with `sley doctor`, consuming strict
-  diagnostics plus query and lint summaries, and
+  diagnostics plus query and lint summaries, with warning next-actions that
+  route agents to `sley plan --json --graft-templates`, and
   `schema: "sley.doctor.report.v0"` for agent pre-edit gates
 - checked JSON edit-plan reports with `sley plan`, consuming strict
   diagnostics plus query and lint findings into ranked task edit surfaces,
@@ -147,7 +148,9 @@ Implemented now:
   `schema: "sley.graft.outcome.v0"` as `sley graft`
 - checked JSON verification reports with `sley verify`, consuming strict
   diagnostics, query summaries, lint findings, and deterministic runtime
-  execution into `schema: "sley.verify.report.v0"` for CI and pre-deploy gates
+  execution into `schema: "sley.verify.report.v0"` for CI and pre-deploy gates;
+  warning or denied-warning reports point to checked graft-template repair
+  planning before deployment review
 - JSON project scaffold reports with `sley new --json`, `hello` and `deploy`
   templates, relative created-file paths, next-command vectors, typed
   next-action reasons, and
@@ -188,7 +191,8 @@ Implemented now:
   readiness, edit-plan surfaces, verify pre-deploy gates, project scaffolding,
   graft/fix dry runs, direct graft writes, temp setup files for write-mode
   smokes, explicit graft/fix trace receipts, trace seals over non-empty receipt
-  chains, ZJX envelopes carrying trace receipts, missing-module checked repair
+  chains, ZJX envelopes carrying trace receipts, doctor/verify warning
+  next-actions that route to lint repair plans, missing-module checked repair
   templates with module-name inference, lint-driven fix writes that clear
   warnings before verify, and seeded host-adapter execution
 - compact agent onboarding pack in `llms.txt`

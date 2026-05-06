@@ -303,6 +303,12 @@ fn lint_actions(target: &str) -> Vec<VerifyAction> {
             command: command(["sley", "lint", "--json", target]),
         },
         VerifyAction {
+            kind: "plan_lint_repairs".to_string(),
+            reason: "checked graft templates show which lint findings can be repaired structurally"
+                .to_string(),
+            command: command(["sley", "plan", "--json", "--graft-templates", target]),
+        },
+        VerifyAction {
             kind: "inspect_tasks".to_string(),
             reason: "query task and call facts before planning a repair".to_string(),
             command: command(["sley", "query", "--json", "--kind", "tasks", target]),

@@ -109,6 +109,43 @@
       }
     },
     {
+      "name": "verify_warning_plan_lint_repairs_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/readiness-warning/warning.sley",
+          "content": "module app.warning\n\ntask main -> Int {\n  return 1\n}\n\ntask orphan -> Int {\n  return 2\n}\n"
+        }
+      ],
+      "args": [
+        "verify",
+        "--json",
+        "--deny-warnings",
+        "{tmp}/readiness-warning/warning.sley"
+      ],
+      "covers": [
+        "cli:verify",
+        "cli:smoke-setup-files",
+        "json:sley.verify.report.v0",
+        "json:sley.query.report.v0",
+        "json:sley.lint.report.v0",
+        "lint:unused_private_task",
+        "readiness:lint-repair-plan"
+      ],
+      "expect": {
+        "success": false,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.verify.report.v0" },
+          { "pointer": "/status", "value": "blocked" },
+          { "pointer": "/summary/lint_finding_count", "value": 1 },
+          { "pointer": "/summary/runtime_status", "value": "skipped" },
+          { "pointer": "/next_actions/0/kind", "value": "repair_lint_findings" },
+          { "pointer": "/next_actions/1/kind", "value": "plan_lint_repairs" },
+          { "pointer": "/next_actions/1/command/1", "value": "plan" },
+          { "pointer": "/next_actions/1/command/3", "value": "--graft-templates" }
+        ]
+      }
+    },
+    {
       "name": "run_new_deploy_project_json",
       "args": [
         "run",
@@ -256,6 +293,37 @@
           { "pointer": "/summary/module_count", "value": 2 },
           { "pointer": "/summary/task_count", "value": 2 },
           { "pointer": "/next_actions/0/kind", "value": "inspect_tasks" }
+        ]
+      }
+    },
+    {
+      "name": "doctor_warning_plan_lint_repairs_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/readiness-warning/warning.sley",
+          "content": "module app.warning\n\ntask main -> Int {\n  return 1\n}\n\ntask orphan -> Int {\n  return 2\n}\n"
+        }
+      ],
+      "args": ["doctor", "--json", "{tmp}/readiness-warning/warning.sley"],
+      "covers": [
+        "cli:doctor",
+        "cli:smoke-setup-files",
+        "json:sley.doctor.report.v0",
+        "json:sley.query.report.v0",
+        "json:sley.lint.report.v0",
+        "lint:unused_private_task",
+        "readiness:lint-repair-plan"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.doctor.report.v0" },
+          { "pointer": "/status", "value": "warnings" },
+          { "pointer": "/summary/lint_finding_count", "value": 1 },
+          { "pointer": "/next_actions/0/kind", "value": "repair_lint_findings" },
+          { "pointer": "/next_actions/1/kind", "value": "plan_lint_repairs" },
+          { "pointer": "/next_actions/1/command/1", "value": "plan" },
+          { "pointer": "/next_actions/1/command/3", "value": "--graft-templates" }
         ]
       }
     },

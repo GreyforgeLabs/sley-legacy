@@ -552,6 +552,20 @@ task orphan -> Int {
         warnings_json.pointer("/summary/lint_finding_count"),
         Some(&serde_json::json!(1))
     );
+    assert_eq!(
+        warnings_json.pointer("/next_actions/1/kind"),
+        Some(&serde_json::json!("plan_lint_repairs"))
+    );
+    assert_eq!(
+        warnings_json.pointer("/next_actions/1/command"),
+        Some(&serde_json::json!([
+            "sley",
+            "plan",
+            "--json",
+            "--graft-templates",
+            warning_file.display().to_string()
+        ]))
+    );
 
     let denied = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
         .args(["doctor", "--json", "--deny-warnings"])
@@ -568,6 +582,10 @@ task orphan -> Int {
     assert_eq!(
         denied_json.pointer("/status"),
         Some(&serde_json::json!("blocked"))
+    );
+    assert_eq!(
+        denied_json.pointer("/next_actions/1/kind"),
+        Some(&serde_json::json!("plan_lint_repairs"))
     );
 
     let _ = fs::remove_dir_all(root);
@@ -3638,6 +3656,11 @@ task main -> Text uses Network {
             .first()
             .map(|finding| finding.rule.as_str()),
         Some("unused_declared_effect")
+    );
+    assert_eq!(report.next_actions[1].kind, "plan_lint_repairs");
+    assert_eq!(
+        report.next_actions[1].command,
+        vec!["sley", "plan", "--json", "--graft-templates", "app.effects"]
     );
 }
 
@@ -9303,6 +9326,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "lint:raw_host_adapter",
         "lint:missing_module_declaration",
         "lint:unchecked_result",
+        "readiness:lint-repair-plan",
         "scaffold:deploy-quickstart",
         "scaffold:next-actions",
         "scaffold:verify-ready",

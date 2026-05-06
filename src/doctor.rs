@@ -230,6 +230,12 @@ fn lint_actions(target: &str) -> Vec<DoctorAction> {
             command: command(["sley", "lint", "--json", target]),
         },
         DoctorAction {
+            kind: "plan_lint_repairs".to_string(),
+            reason: "checked graft templates show which lint findings can be repaired structurally"
+                .to_string(),
+            command: command(["sley", "plan", "--json", "--graft-templates", target]),
+        },
+        DoctorAction {
             kind: "inspect_tasks".to_string(),
             reason: "task and call facts usually identify the narrowest edit surface".to_string(),
             command: command(["sley", "query", "--json", "--kind", "tasks", target]),
