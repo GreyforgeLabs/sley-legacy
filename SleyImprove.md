@@ -96,7 +96,7 @@ sley graph --json <target>
 sley graph --json --slice <node-id> <target>
 sley new --json [--template hello|deploy] [--name <name>] [--module <module>] <path>
 sley doctor --json [--deny-warnings] <target>
-sley plan --json [--deny-warnings] [--graft-templates] [--template-surface <surface>] <target>
+sley plan --json [--deny-warnings] [--graft-templates] [--template-surface <surface>] [--emit-graft <kind>] <target>
 sley verify --json [--deny-warnings] [runtime gates/seeds] <target>
 sley query --json [--kind all|modules|tasks|calls] [--module <module>] <target>
 sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter] [--module <module>] <target>
@@ -135,7 +135,9 @@ Rules:
   consumes selected graph-slice movement affordances as `move_statement`,
   `move_take`, and destination-variant templates when legal graph-slice
   destinations exist. Agents can target a specific task surface by node id or
-  qualified name, or a lint finding declaration surface by node id.
+  qualified name, or a lint finding declaration surface by node id. Agents can
+  use `--emit-graft <kind>` to print one matching operation or transaction JSON
+  directly for `sley graft --dry-run` or `sley graft --write`.
 - `sley verify` is the deterministic CI/pre-deploy helper consuming strict
   check, `sley.query.report.v0`, `sley.lint.report.v0`, and seeded runtime
   execution into one pass/warnings/blocked report.

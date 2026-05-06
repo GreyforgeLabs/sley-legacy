@@ -116,7 +116,8 @@ Implemented now:
   targeted caller surfaces, safe remove-take-plus-call-arg transaction
   templates for unused takes, lint-driven delete templates and cleanup
   transactions for unused private types/effects, `--template-surface <surface>`
-  targeting for task or lint declaration surfaces, and
+  targeting for task or lint declaration surfaces, `--emit-graft <kind>` for
+  direct operation/transaction JSON handoff to `sley graft`, and
   `schema: "sley.edit_plan.report.v0"`
 - checked JSON verification reports with `sley verify`, consuming strict
   diagnostics, query summaries, lint findings, and deterministic runtime

@@ -138,6 +138,8 @@ enum Command {
         graft_templates: bool,
         #[arg(long, requires = "graft_templates")]
         template_surface: Option<String>,
+        #[arg(long = "emit-graft", requires = "graft_templates", value_name = "KIND")]
+        emit_graft: Option<String>,
         file: PathBuf,
     },
     Verify {
@@ -484,6 +486,7 @@ fn run(cli: Cli) -> Result<()> {
             deny_warnings,
             graft_templates,
             template_surface,
+            emit_graft,
             file,
         } => {
             let target = file.display().to_string();
@@ -496,6 +499,13 @@ fn run(cli: Cli) -> Result<()> {
                     template_surface,
                 },
             );
+            if let Some(kind) = emit_graft {
+                if report.status == "blocked" {
+                    anyhow::bail!("plan blocked");
+                }
+                emit_planned_graft(&report, &kind)?;
+                return Ok(());
+            }
             if json {
                 print_json(&report)?;
             } else {
@@ -1317,6 +1327,29 @@ fn load_runtime_model_outputs(gates: &mut RuntimeGates, values: &[String]) -> Re
 
 fn read_source(file: &PathBuf) -> Result<String> {
     fs::read_to_string(file).with_context(|| format!("failed to read {}", file.display()))
+}
+
+fn emit_planned_graft(report: &EditPlanReport, kind: &str) -> Result<()> {
+    let matches = report
+        .graft_templates
+        .iter()
+        .filter(|template| template.kind == kind)
+        .map(|template| &template.operation)
+        .chain(
+            report
+                .transaction_templates
+                .iter()
+                .filter(|template| template.kind == kind)
+                .map(|template| &template.transaction),
+        )
+        .collect::<Vec<_>>();
+    match matches.as_slice() {
+        [] => anyhow::bail!("no graft or transaction template matched kind `{kind}`"),
+        [value] => print_json(value),
+        _ => anyhow::bail!(
+            "multiple graft or transaction templates matched kind `{kind}`; use --template-surface to narrow the plan"
+        ),
+    }
 }
 
 fn load_target_program(file: &PathBuf) -> Result<sley::Program, Vec<Diagnostic>> {

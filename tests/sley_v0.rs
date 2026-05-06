@@ -6991,26 +6991,33 @@ task main -> Unit {
     let graft_path = root.join("cleanup_declarations.json");
     fs::write(&main_path, main_source).expect("write main module");
 
-    let project = load_project(&root).expect("load cleanup project");
-    let plan = build_edit_plan_report_with_options(
-        root.to_string_lossy(),
-        Ok(project.program.clone()),
-        EditPlanOptions {
-            deny_warnings: false,
-            include_graft_templates: true,
-            template_surface: None,
-        },
+    let planned = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args([
+            "plan",
+            "--json",
+            "--graft-templates",
+            "--emit-graft",
+            "delete_unused_private_declarations",
+        ])
+        .arg(&root)
+        .output()
+        .expect("emit declaration cleanup graft");
+    let planned_stdout = String::from_utf8(planned.stdout).expect("planned stdout utf8");
+    assert!(
+        planned.status.success(),
+        "plan should emit declaration cleanup graft; stdout={planned_stdout} stderr={}",
+        String::from_utf8_lossy(&planned.stderr)
     );
-    let cleanup = plan
-        .transaction_templates
-        .iter()
-        .find(|template| template.kind == "delete_unused_private_declarations")
-        .expect("declaration cleanup transaction");
-    fs::write(
-        &graft_path,
-        serde_json::to_string_pretty(&cleanup.transaction).expect("serialize cleanup transaction"),
-    )
-    .expect("write cleanup graft");
+    let planned_graft: GraftInput =
+        serde_json::from_str(&planned_stdout).expect("parse emitted cleanup graft");
+    match &planned_graft {
+        GraftInput::Transaction(transaction) => {
+            assert_eq!(transaction.mode.as_deref(), Some("all_or_nothing"));
+            assert_eq!(transaction.ops.len(), 2);
+        }
+        GraftInput::Operation(_) => panic!("expected cleanup transaction graft"),
+    }
+    fs::write(&graft_path, planned_stdout).expect("write cleanup graft");
 
     let output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
         .args(["graft", "--json", "--write"])
@@ -7948,6 +7955,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "cli:graph-slice",
         "cli:query",
         "cli:lint",
+        "cli:plan-emit-graft",
         "cli:trace",
         "cli:seal",
         "cli:zjx",

@@ -57,7 +57,8 @@ Current verified surface:
   `fixtures/cli_smokes/manifest.json`, including graph-slice replace
   affordances, checked `replace_expression` graft templates, and lint-driven
   declaration delete templates and cleanup transactions, including direct
-  declaration surface targeting, from `sley plan --graft-templates`.
+  declaration surface targeting and direct graft JSON emission, from
+  `sley plan --graft-templates`.
 - Stable JSON roots now include query reports, lint reports, doctor reports,
   edit-plan reports, verify reports, project scaffold reports, and the CLI
   smoke manifest in addition to AST, diagnostics, graph, graph slice, trace

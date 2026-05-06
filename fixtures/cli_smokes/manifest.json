@@ -321,6 +321,32 @@
       }
     },
     {
+      "name": "plan_declaration_hygiene_emit_cleanup_graft_json",
+      "args": [
+        "plan",
+        "--json",
+        "--graft-templates",
+        "--emit-graft",
+        "delete_unused_private_declarations",
+        "examples/declaration_hygiene.sley"
+      ],
+      "covers": [
+        "cli:plan",
+        "cli:plan-emit-graft",
+        "graft:transactions:lint-declaration-cleanup"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/mode", "value": "all_or_nothing" },
+          { "pointer": "/ops/0/op", "value": "DeleteNode" },
+          { "pointer": "/ops/0/target", "value": "effect:app.hygiene.OrphanEffect" },
+          { "pointer": "/ops/1/op", "value": "DeleteNode" },
+          { "pointer": "/ops/1/target", "value": "type:app.hygiene.Orphan" }
+        ]
+      }
+    },
+    {
       "name": "plan_project_graft_templates_surface_json",
       "args": [
         "plan",
