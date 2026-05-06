@@ -46,8 +46,8 @@ Current verified surface:
 - `cargo test` passes.
 - Current integration coverage is 289 tests.
 - `make v1` wraps fmt, whitespace diff check, full Rust tests, contract
-  fixture validation, corpus conformance, packaged example conformance, and
-  CLI smoke conformance.
+  fixture and release-manifest validation, corpus conformance, packaged example
+  conformance, and CLI smoke conformance.
 - `.github/actions/sley-v1/action.yml`, `.github/workflows/v1.yml`, and
   `.pre-commit-config.yaml` run the `make v1` gate so local and hosted checks
   use the same release surface.
@@ -64,7 +64,7 @@ Current verified surface:
 - `sley-contract` is available as an in-tree contract utility scaffold with
   `inventory`, `check-fixtures`, `validate`, and `inspect-deploy-artifacts`
   JSON Schema validation commands over `docs/schemas/`, `fixtures/contracts/`,
-  and local deploy artifact directories.
+  release manifests, and local deploy artifact directories.
 - `sley-ci` is available as an in-tree CI wrapper with `check`, `lint`,
   `doctor`, `plan`, `run`, `verify`, `deploy`, `smoke`, `corpus`, and
   `examples` commands that emit

@@ -8402,6 +8402,10 @@ task main -> Used uses UsedEffect {
         "sley.cli_smoke.manifest.v0",
     );
     assert_schema_file(
+        include_str!("../docs/schemas/sley.conformance.manifest.v0.schema.json"),
+        "sley.conformance.manifest.v0",
+    );
+    assert_schema_file(
         include_str!("../docs/schemas/sley.ci.report.v0.schema.json"),
         "sley.ci.report.v0",
     );
@@ -8473,7 +8477,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         inventory_json.pointer("/schema_count"),
-        Some(&serde_json::json!(25))
+        Some(&serde_json::json!(26))
     );
     let schema_ids = inventory_json
         .pointer("/schemas")
@@ -8487,6 +8491,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     assert!(schema_ids.contains("sley.run.report.v0"));
     assert!(schema_ids.contains("sley.trace.report.v0"));
     assert!(schema_ids.contains("sley.ci.report.v0"));
+    assert!(schema_ids.contains("sley.conformance.manifest.v0"));
     assert!(schema_ids.contains("sley.deploy.artifact_check.v0"));
     assert!(schema_ids.contains("sley.deploy.artifacts.v0"));
     assert!(schema_ids.contains("sley.deploy.report.v0"));
@@ -8522,7 +8527,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(84))
+        Some(&serde_json::json!(85))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),

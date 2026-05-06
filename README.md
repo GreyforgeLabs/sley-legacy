@@ -150,7 +150,7 @@ Implemented now:
   `schema: "sley.lint.report.v0"` for warning-grade graph and authority lints
 - in-tree `sley-contract` utility scaffold with `inventory`, `check-fixtures`,
   `validate`, and `inspect-deploy-artifacts` JSON validation commands over
-  `docs/schemas/`, `fixtures/contracts/`, and local deploy artifact
+  `docs/schemas/`, `fixtures/contracts/`, release manifests, and local deploy artifact
   directories, using versioned JSON report roots for downstream contract-kit
   work
 - in-tree `sley-ci` utility with `check`, `lint`, `doctor`, `plan`, `run`,
@@ -371,8 +371,8 @@ Implemented now:
   covering project-root checks for `sley.toml` examples, standalone file checks,
   and formatter round trips for every shipped `.sley` source under `examples/`
 - repo-level `Makefile` with `make v1` wrapping fmt, whitespace diff check,
-  full Rust tests, contract fixture validation, corpus conformance, packaged
-  example conformance, and CLI smoke conformance
+  full Rust tests, contract fixture and release-manifest validation, corpus
+  conformance, packaged example conformance, and CLI smoke conformance
 - GitHub Actions and pre-commit entry points that run the same `make v1` gate
   through `.github/actions/sley-v1/action.yml`, `.github/workflows/v1.yml`,
   and `.pre-commit-config.yaml`

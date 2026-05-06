@@ -149,7 +149,8 @@ Rules:
   still root-contract v0 shapes.
 - The repo-level `Makefile` exposes `make v1` as a local release gate over
   formatting, whitespace diff checks, full Rust tests, contract fixtures,
-  corpus conformance, packaged examples, and CLI smokes.
+  release-manifest validation, corpus conformance, packaged examples, and CLI
+  smokes.
 - `.github/actions/sley-v1/action.yml`, `.github/workflows/v1.yml`, and
   `.pre-commit-config.yaml` route hosted CI and local pre-commit checks through
   the same `make v1` gate.

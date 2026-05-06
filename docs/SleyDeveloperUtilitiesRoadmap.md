@@ -60,22 +60,25 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
 ### P0: Build Or Scaffold First
 
 1. `sley-contract-kit`
-   - Inputs: `docs/schemas/*.schema.json`, CLI JSON stdout, contract fixtures.
+   - Inputs: `docs/schemas/*.schema.json`, CLI JSON stdout, contract fixtures,
+     release manifests.
    - Outputs: validation result, schema version inventory, generated type
      bindings, contract drift report.
    - MVP commands:
      - `sley-contract validate --schema sley.verify.report.v0 report.json`
      - `sley-contract inventory docs/schemas`
      - `sley-contract check-fixtures fixtures/contracts`
+     - `sley-contract validate --schema sley.conformance.manifest.v0 fixtures/corpus/manifest.json`
    - Scaffold:
      - current in-tree bootstrap binary: `src/bin/sley-contract.rs`;
      - `crates/sley-contract-kit/` if a reusable crate split is needed;
      - separate `sley-contract-kit` repo when published.
    - Current bootstrap: `inventory`, `check-fixtures`, and `validate` emit
-     versioned JSON Schema validation reports; generated bindings and contract
+     versioned JSON Schema validation reports; `make v1` validates contract
+     fixtures plus corpus and smoke manifests; generated bindings and contract
      drift reports remain future contract-kit work.
    - Validation bootstrap is done when it validates every current contract
-     fixture against the matching schema and fails cleanly on a deliberately
+     fixture and release manifest against the matching schema and fails cleanly on a deliberately
      malformed report.
 
 2. `sley-ci`
