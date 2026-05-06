@@ -226,8 +226,9 @@ Rules:
   authority fixtures for transitive effect propagation, so helper-task authority
   drift is covered outside the large CLI smoke manifest too.
 - `sley-ci smoke --repo-root .` now resolves the repo root before `{repo}`
-  expansion, keeping temp-cwd smoke cases portable across direct agent
-  invocation and the `make v1` absolute-root path.
+  expansion and accepts either a smoke directory or `manifest.json`, keeping
+  temp-cwd smoke cases portable across direct agent invocation and the `make v1`
+  absolute-root path.
 - `sley plan` consumes the same checked surfaces into ranked task edit
   surfaces, call-row inspection next-actions, post-edit gate commands, and
   optional starter graft operation templates, rename-plus-call-site
@@ -593,8 +594,9 @@ can operate Sley reliably."
 The executable CLI smoke suite lives under `fixtures/cli_smokes/`. Its
 `manifest.json` lists stable command lines, optional temp-directory execution,
 optional temp setup files, coverage tags, stdout substrings, and JSON
-pointer/value expectations. The Rust integration suite runs those cases against
-the built `sley` binary.
+pointer/value expectations. `sley-ci smoke --json --repo-root .
+fixtures/cli_smokes` accepts the suite directory, and the Rust integration
+suite runs those cases against the built `sley` binary.
 
 The current smoke manifest covers:
 

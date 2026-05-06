@@ -51,7 +51,8 @@ here. Dates use UTC-independent calendar dates from the local repo history.
   ordinary v1 executable gate remains advisory on metadata decisions.
 - `sley-ci smoke --repo-root <path>` now resolves the repo root before
   expanding `{repo}`, so smoke cases that run from the temp cwd work with
-  relative repo-root arguments.
+  relative repo-root arguments, and `sley-ci smoke` now accepts a smoke
+  directory containing `manifest.json`.
 - `sley-ci corpus` now accepts either `fixtures/corpus` or the explicit
   `fixtures/corpus/manifest.json` path.
 - Ready deploy dry-run reports with artifact directories now include an

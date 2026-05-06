@@ -709,10 +709,12 @@ with the expected diagnostic ids from their sidecars.
 The executable CLI conformance smokes live under `fixtures/cli_smokes/`. Their
 `manifest.json` lists stable commands, working-directory mode, optional temp
 setup files, coverage tags, and stdout expectations. The integration suite runs
-the manifest against the built `sley` binary and locks stable command exits,
-selected stdout substrings, JSON root schemas, graph slices, checked query
-reports, checked lint reports, run reports, doctor readiness reports,
-edit-plan reports, project scaffolds, ZJX preview envelopes, graft dry runs
+the manifest against the built `sley` binary, while `sley-ci smoke --json
+--repo-root . fixtures/cli_smokes` accepts the suite directory directly. The
+smoke gate locks stable command exits, selected stdout substrings, JSON root
+schemas, graph slices, checked query reports, checked lint reports, run
+reports, doctor readiness reports, edit-plan reports, project scaffolds, ZJX
+preview envelopes, graft dry runs
 and direct graft writes, write-mode fix trace receipts, non-empty trace
 receipt seals, ZJX envelopes carrying graph digests and schema-backed trace
 receipts, ZJX tool reports, graph-slice insert and replace affordances, checked
