@@ -3525,6 +3525,87 @@ fn edit_plan_graft_templates_include_constant_arithmetic_expression_simplify() {
 }
 
 #[test]
+fn edit_plan_graft_templates_include_absorbing_arithmetic_expression_simplify() {
+    let source = include_str!("../examples/absorbing_arithmetic_expression.sley");
+    let program = parse_program(source).expect("parse absorbing arithmetic fixture");
+    let report = build_edit_plan_report_with_options(
+        "examples/absorbing_arithmetic_expression.sley",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: None,
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "warnings");
+    assert_eq!(report.summary.lint_finding_count, 2);
+    assert_eq!(
+        report.lint.as_ref().expect("lint summary").findings[0].id,
+        "ABSORBING_ARITHMETIC_EXPRESSION"
+    );
+    let template = report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "simplify_absorbing_arithmetic_expression")
+        .expect("absorbing arithmetic simplify template");
+    assert_eq!(
+        template.surface,
+        "block:task:app.absorbing_arithmetic.main:stmt:0:expr"
+    );
+    assert_eq!(
+        template.operation.pointer("/op"),
+        Some(&serde_json::json!("ReplaceExpression"))
+    );
+    assert_eq!(
+        template.operation.pointer("/payload/source"),
+        Some(&serde_json::json!("0"))
+    );
+    assert_eq!(template.editable_json_pointers, vec!["/payload/source"]);
+    let graft: GraftInput = serde_json::from_value(template.operation.clone())
+        .expect("parse absorbing arithmetic template");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:absorbing-arithmetic-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted_source = outcome.source.expect("grafted source");
+    assert!(grafted_source.contains("return 0"));
+    assert!(!grafted_source.contains("1 + 2"));
+    let grafted_program = parse_program(&grafted_source).expect("parse grafted source");
+    let lint_report = build_lint_report(
+        &grafted_program,
+        LintOptions {
+            rules: vec![LintRule::AbsorbingArithmeticExpression],
+            module: None,
+        },
+    );
+    assert_eq!(lint_report.status, "ok");
+
+    let targeted_report = build_edit_plan_report_with_options(
+        "examples/absorbing_arithmetic_expression.sley",
+        Ok(program),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some(
+                "block:task:app.absorbing_arithmetic.main:stmt:0:expr".to_string(),
+            ),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(targeted_report.status, "warnings");
+    assert!(targeted_report.diagnostics.is_empty());
+    assert_eq!(targeted_report.graft_templates.len(), 1);
+    assert_eq!(
+        targeted_report.graft_templates[0].kind,
+        "simplify_absorbing_arithmetic_expression"
+    );
+    assert!(targeted_report.transaction_templates.is_empty());
+}
+
+#[test]
 fn edit_plan_graft_templates_include_constant_text_concatenation_expression_simplify() {
     let source = include_str!("../examples/constant_text_concatenation_expression.sley");
     let program = parse_program(source).expect("parse constant text concatenation fixture");
@@ -6745,6 +6826,22 @@ task helper -> Result<Text, Error> {
         include_str!("../fixtures/contracts/lint_constant_arithmetic_expression.json"),
     );
 
+    let absorbing_arithmetic_source =
+        include_str!("../examples/absorbing_arithmetic_expression.sley");
+    let absorbing_arithmetic_program =
+        parse_program(absorbing_arithmetic_source).expect("parse absorbing arithmetic fixture");
+    let absorbing_arithmetic_lint = build_lint_report(
+        &absorbing_arithmetic_program,
+        LintOptions {
+            rules: vec![LintRule::AbsorbingArithmeticExpression],
+            module: None,
+        },
+    );
+    assert_json_snapshot(
+        &absorbing_arithmetic_lint,
+        include_str!("../fixtures/contracts/lint_absorbing_arithmetic_expression.json"),
+    );
+
     let constant_text_concatenation_source =
         include_str!("../examples/constant_text_concatenation_expression.sley");
     let constant_text_concatenation_program = parse_program(constant_text_concatenation_source)
@@ -7733,7 +7830,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(77))
+        Some(&serde_json::json!(78))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -14069,6 +14166,90 @@ task main -> Float {
 }
 
 #[test]
+fn lint_report_flags_absorbing_arithmetic_expressions() {
+    let source = r#"
+module app.absorbing_arithmetic
+
+task make_runtime -> Int {
+  return 9
+}
+
+task main -> Int {
+  bind left_zero = 0 * (1 + 2)
+  bind right_zero = (3 + 4) * 0
+  bind float_zero = 0.0 * (1.5 + 2.5)
+  bind constant_product = 2 * 0
+  bind runtime_product = call make_runtime() * 0
+
+  return (5 + 6) * 0
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+
+    let report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::AbsorbingArithmeticExpression],
+            module: None,
+        },
+    );
+
+    assert_eq!(report.schema, LINT_REPORT_SCHEMA);
+    assert_eq!(report.status, "findings");
+    assert_eq!(report.entry_module, "app.absorbing_arithmetic");
+    assert_eq!(
+        report.filters.rules,
+        vec!["absorbing_arithmetic_expression"]
+    );
+    assert_eq!(
+        report.findings.len(),
+        4,
+        "absorbing arithmetic should skip constant products and runtime calls"
+    );
+    assert_eq!(report.findings[0].id, "ABSORBING_ARITHMETIC_EXPRESSION");
+    assert_eq!(report.findings[0].rule, "absorbing_arithmetic_expression");
+    let nodes: Vec<&str> = report
+        .findings
+        .iter()
+        .map(|finding| finding.node.as_str())
+        .collect();
+    assert!(nodes.contains(&"block:task:app.absorbing_arithmetic.main:stmt:0:expr"));
+    assert!(nodes.contains(&"block:task:app.absorbing_arithmetic.main:stmt:1:expr"));
+    assert!(nodes.contains(&"block:task:app.absorbing_arithmetic.main:stmt:2:expr"));
+    assert!(nodes.contains(&"block:task:app.absorbing_arithmetic.main:stmt:5:expr"));
+    assert_eq!(report.findings[0].module, "app.absorbing_arithmetic");
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|finding| finding.hint.contains("0.0"))
+    );
+    assert!(
+        report
+            .findings
+            .iter()
+            .filter(|finding| finding.hint.contains("`0`"))
+            .count()
+            >= 3
+    );
+
+    let scoped_report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::AbsorbingArithmeticExpression],
+            module: Some("app.other".to_string()),
+        },
+    );
+    assert_eq!(scoped_report.status, "ok");
+    assert!(scoped_report.findings.is_empty());
+}
+
+#[test]
 fn lint_report_flags_constant_text_concatenation_expressions() {
     let source = r#"
 module app.constant_text_concat
@@ -17753,6 +17934,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:templates:constant-false-while-statement-delete",
         "graft:templates:constant-comparison-expression",
         "graft:templates:constant-arithmetic-expression",
+        "graft:templates:absorbing-arithmetic-expression",
         "graft:templates:constant-text-concatenation-expression",
         "graft:templates:constant-list-index-expression",
         "graft:templates:constant-map-index-expression",
@@ -17795,6 +17977,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "lint:constant_false_while_statement",
         "lint:constant_comparison_expression",
         "lint:constant_arithmetic_expression",
+        "lint:absorbing_arithmetic_expression",
         "lint:constant_text_concatenation_expression",
         "lint:constant_list_index_expression",
         "lint:constant_map_index_expression",
@@ -17826,6 +18009,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:constant-false-while-repair-write-verify",
         "readiness:constant-comparison-repair-write-verify",
         "readiness:constant-arithmetic-repair-write-verify",
+        "readiness:absorbing-arithmetic-repair-write-verify",
         "readiness:constant-text-concatenation-repair-write-verify",
         "readiness:constant-list-index-repair-write-verify",
         "readiness:constant-map-index-repair-write-verify",

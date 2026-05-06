@@ -840,6 +840,10 @@ program.
 `simplify_constant_arithmetic_expression` `ReplaceExpression` templates when
 replacing safe numeric literal arithmetic with its result preserves a checked
 program.
+`absorbing_arithmetic_expression` lint findings become checked
+`simplify_absorbing_arithmetic_expression` `ReplaceExpression` templates when
+replacing delete-safe multiplication by zero with the zero literal preserves a
+checked program.
 `constant_text_concatenation_expression` lint findings become checked
 `simplify_constant_text_concatenation_expression` `ReplaceExpression`
 templates when replacing text literal concatenation with one escaped text
@@ -1046,6 +1050,9 @@ can be replaced by its boolean result; and
 `constant_arithmetic_expression`, which warns when checked numeric literal
 arithmetic can be replaced by its result without overlapping identity cleanup
 or folding divide-by-zero; and
+`absorbing_arithmetic_expression`, which warns when checked multiplication by
+zero can be replaced by the zero literal without dropping authority work or
+recoverable failures; and
 `constant_text_concatenation_expression`, which warns when checked text literal
 concatenation can be replaced by one escaped text literal; and
 `constant_list_index_expression`, which warns when an in-range literal list
@@ -1106,6 +1113,7 @@ guaranteed `return` in the same block.
 `--rule constant-false-while-statement`, or
 `--rule constant-comparison-expression`, or
 `--rule constant-arithmetic-expression`, or
+`--rule absorbing-arithmetic-expression`, or
 `--rule constant-text-concatenation-expression`, or
 `--rule constant-list-index-expression`, or
 `--rule constant-map-index-expression`, or
@@ -1124,7 +1132,8 @@ guaranteed `return` in the same block.
 `--rule redundant-boolean-if-statement`, or
 `--rule same-branch-if-expression`, or
 `--rule same-branch-if-statement`, or
-`--rule unreachable-statement` selects one rule explicitly, and
+`--rule unreachable-statement`, or
+`--rule absorbing-arithmetic-expression` selects one rule explicitly, and
 `--deny-warnings` turns findings into a nonzero CLI exit after printing the
 report. The v0 JSON root is `sley.lint.report.v0`.
 
@@ -1233,7 +1242,8 @@ refuse generic data disguised as Sley artifacts before compression begins.
   templates, redundant boolean-if statement cleanup templates,
   unreachable statement cleanup templates, and mutable
   binding conversion transactions, constant-if expression and statement
-  simplification, identity binary expression, redundant boolean
+  simplification, constant arithmetic and absorbing arithmetic simplification,
+  identity binary expression, redundant boolean
   comparison, double negation simplification, negated comparison
   simplification, and redundant boolean-if expression/statement simplification
   templates, plus explicit module style warnings;
@@ -1255,8 +1265,9 @@ refuse generic data disguised as Sley artifacts before compression begins.
   verify for file and project targets, including unused pure binding cleanup,
   unused pure expression statement cleanup, constant-false while statement
   cleanup, constant-if statement simplification, constant-false if statement
-  cleanup, constant arithmetic expression cleanup, constant text concatenation
-  cleanup, constant list index cleanup,
+  cleanup, constant arithmetic expression cleanup, absorbing arithmetic
+  expression cleanup, constant text concatenation cleanup, constant list index
+  cleanup,
   constant map index cleanup, constant record field access cleanup,
   constant len cleanup,
   constant not cleanup,

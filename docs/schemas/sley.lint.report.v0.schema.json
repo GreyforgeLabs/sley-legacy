@@ -56,7 +56,8 @@
               "redundant_boolean_if_statement",
               "same_branch_if_expression",
               "same_branch_if_statement",
-              "unreachable_statement"
+              "unreachable_statement",
+              "absorbing_arithmetic_expression"
             ]
           },
           "uniqueItems": true
@@ -119,7 +120,8 @@
               "REDUNDANT_BOOLEAN_IF_STATEMENT",
               "SAME_BRANCH_IF_EXPRESSION",
               "SAME_BRANCH_IF_STATEMENT",
-              "UNREACHABLE_STATEMENT"
+              "UNREACHABLE_STATEMENT",
+              "ABSORBING_ARITHMETIC_EXPRESSION"
             ]
           },
           "rule": {
@@ -163,7 +165,8 @@
               "redundant_boolean_if_statement",
               "same_branch_if_expression",
               "same_branch_if_statement",
-              "unreachable_statement"
+              "unreachable_statement",
+              "absorbing_arithmetic_expression"
             ]
           },
           "severity": { "enum": ["warning"] },

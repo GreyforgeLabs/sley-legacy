@@ -67,7 +67,8 @@
       "redundant_boolean_if_statement",
       "same_branch_if_expression",
       "same_branch_if_statement",
-      "unreachable_statement"
+      "unreachable_statement",
+      "absorbing_arithmetic_expression"
     ],
     "finding_count": 0,
     "findings": []

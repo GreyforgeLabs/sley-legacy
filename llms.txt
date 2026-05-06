@@ -191,7 +191,8 @@ Current development phase:
   `constant_false_if_statement`, the constant-false while cleanup rule
   `constant_false_while_statement`, the constant comparison simplification rule
   `constant_comparison_expression`, the constant arithmetic simplification rule
-  `constant_arithmetic_expression`, the constant text concatenation rule
+  `constant_arithmetic_expression`, the absorbing arithmetic simplification rule
+  `absorbing_arithmetic_expression`, the constant text concatenation rule
   `constant_text_concatenation_expression`, the constant list index rule
   `constant_list_index_expression`, the constant map index rule
   `constant_map_index_expression`, the constant record field access rule
@@ -263,6 +264,8 @@ Current development phase:
   with constant boolean results, plus
   `simplify_constant_arithmetic_expression` templates for numeric literal
   arithmetic, plus
+  `simplify_absorbing_arithmetic_expression` templates for delete-safe
+  multiplication by zero, plus
   `simplify_constant_text_concatenation_expression` templates for text literal
   concatenation, plus
   `simplify_constant_list_index_expression` templates for literal list indexes,

@@ -40,7 +40,7 @@ Current verified surface:
 
 - `cargo fmt --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 276 tests.
+- Current integration coverage is 278 tests.
 - `sley query --json` emits `schema: "sley.query.report.v0"` and supports
   `--kind all|modules|tasks|types|effects|calls`, `--module <module>`, and
   `--exported`, including strict task/take/type/effect/call row definitions.
@@ -104,7 +104,8 @@ Current verified surface:
   `--rule redundant-boolean-if-expression`,
   `--rule redundant-boolean-if-statement`,
   `--rule same-branch-if-expression`,
-  `--rule same-branch-if-statement`, `--rule unreachable-statement`, and
+  `--rule same-branch-if-statement`, `--rule unreachable-statement`,
+  `--rule absorbing-arithmetic-expression`, and
   `--deny-warnings`.
 - The current lint rules are `unused_private_task` and
   `unreachable_private_task`, `unused_declared_effect`, and
@@ -133,7 +134,8 @@ Current verified surface:
   `double_negation_expression`, `negated_comparison_expression`,
   `redundant_boolean_if_expression`,
   `redundant_boolean_if_statement`, `same_branch_if_expression`, and
-  `same_branch_if_statement`, and `unreachable_statement`.
+  `same_branch_if_statement`, and `unreachable_statement`, and
+  `absorbing_arithmetic_expression`.
 - CLI smoke coverage is manifest-backed under
   `fixtures/cli_smokes/manifest.json`, including graph-slice insert and
   replace affordances, checked `insert_statement`, `replace_statement`, and
@@ -200,6 +202,9 @@ Current verified surface:
   lint/plan/fix-write/verify
   smoke coverage, plus checked `constant_arithmetic_expression` style findings
   and `simplify_constant_arithmetic_expression` templates with
+  lint/plan/fix-write/verify
+  smoke coverage, plus checked `absorbing_arithmetic_expression` style findings
+  and `simplify_absorbing_arithmetic_expression` templates with
   lint/plan/fix-write/verify
   smoke coverage, plus checked `constant_text_concatenation_expression` style
   findings and `simplify_constant_text_concatenation_expression` templates with
@@ -459,6 +464,7 @@ cargo run -- lint --json --rule constant-false-if-statement <target>
 cargo run -- lint --json --rule constant-false-while-statement <target>
 cargo run -- lint --json --rule constant-comparison-expression <target>
 cargo run -- lint --json --rule constant-arithmetic-expression <target>
+cargo run -- lint --json --rule absorbing-arithmetic-expression <target>
 cargo run -- lint --json --rule constant-text-concatenation-expression <target>
 cargo run -- lint --json --rule constant-list-index-expression <target>
 cargo run -- lint --json --rule constant-map-index-expression <target>

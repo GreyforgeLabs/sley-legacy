@@ -141,7 +141,8 @@ Implemented now:
   `--rule redundant-boolean-if-statement`, or
   `--rule same-branch-if-expression`, or
   `--rule same-branch-if-statement`, or
-  `--rule unreachable-statement`
+  `--rule unreachable-statement`, or
+  `--rule absorbing-arithmetic-expression`
   filters, and
   `schema: "sley.lint.report.v0"` for warning-grade graph and authority lints
 - in-tree `sley-contract` utility scaffold with `inventory`, `check-fixtures`,
@@ -198,6 +199,8 @@ Implemented now:
   that can be replaced by their boolean result,
   `simplify_constant_arithmetic_expression` templates for numeric literal
   arithmetic that can be replaced by its result,
+  `simplify_absorbing_arithmetic_expression` templates for delete-safe
+  multiplication by zero that can be replaced by the zero literal,
   `simplify_constant_text_concatenation_expression` templates for text literal
   concatenation that can be replaced by one text literal,
   `simplify_constant_list_index_expression` templates for literal list indexes
@@ -709,6 +712,8 @@ constant-false while statement delete templates with write/verify coverage,
 constant comparison expression simplification templates with write/verify
 coverage,
 constant arithmetic expression simplification templates with write/verify
+coverage,
+absorbing arithmetic expression simplification templates with write/verify
 coverage,
 constant text concatenation expression simplification templates with
 write/verify coverage,
