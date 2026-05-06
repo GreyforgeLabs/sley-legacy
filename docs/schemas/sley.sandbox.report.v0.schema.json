@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.sandbox.report.v0",
+  "title": "Sley Sandbox Runner Report v0",
+  "type": "object",
+  "required": [
+    "schema",
+    "status",
+    "manifest",
+    "manifest_schema",
+    "target",
+    "sandbox_retained",
+    "summary",
+    "issues"
+  ],
+  "properties": {
+    "schema": { "const": "sley.sandbox.report.v0" },
+    "status": { "enum": ["passed", "warnings", "blocked"] },
+    "manifest": { "type": "string", "minLength": 1 },
+    "manifest_schema": { "type": "string" },
+    "target": { "type": "string" },
+    "sandbox_dir": { "type": "string", "minLength": 1 },
+    "sandbox_retained": { "type": "boolean" },
+    "summary": { "$ref": "#/$defs/summary" },
+    "verify": { "$ref": "sley.verify.report.v0" },
+    "issues": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/issue" }
+    }
+  },
+  "$defs": {
+    "summary": {
+      "type": "object",
+      "required": [
+        "capability_count",
+        "seed_count",
+        "file_seed_count",
+        "db_table_count",
+        "secret_count",
+        "http_text_count",
+        "shell_output_count",
+        "model_output_count",
+        "deploy_result_count",
+        "spend_result_count",
+        "diagnostic_count",
+        "issue_count"
+      ],
+      "properties": {
+        "capability_count": { "type": "integer", "minimum": 0 },
+        "seed_count": { "type": "integer", "minimum": 0 },
+        "file_seed_count": { "type": "integer", "minimum": 0 },
+        "db_table_count": { "type": "integer", "minimum": 0 },
+        "secret_count": { "type": "integer", "minimum": 0 },
+        "http_text_count": { "type": "integer", "minimum": 0 },
+        "shell_output_count": { "type": "integer", "minimum": 0 },
+        "model_output_count": { "type": "integer", "minimum": 0 },
+        "deploy_result_count": { "type": "integer", "minimum": 0 },
+        "spend_result_count": { "type": "integer", "minimum": 0 },
+        "diagnostic_count": { "type": "integer", "minimum": 0 },
+        "issue_count": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "issue": {
+      "type": "object",
+      "required": ["code", "message"],
+      "properties": {
+        "code": { "type": "string", "minLength": 1 },
+        "message": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

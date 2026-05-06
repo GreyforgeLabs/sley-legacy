@@ -2,7 +2,7 @@
   "schema": "sley.contract.inventory.v0",
   "status": "passed",
   "schema_dir": "docs/schemas",
-  "schema_count": 33,
+  "schema_count": 35,
   "schemas": [
     {
       "id": "sley.agent_bench.report.v0",
@@ -169,6 +169,20 @@
       "id": "sley.run.report.v0",
       "path": "docs/schemas/sley.run.report.v0.schema.json",
       "title": "Sley Run Report v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.sandbox.manifest.v0",
+      "path": "docs/schemas/sley.sandbox.manifest.v0.schema.json",
+      "title": "Sley Sandbox Manifest v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.sandbox.report.v0",
+      "path": "docs/schemas/sley.sandbox.report.v0.schema.json",
+      "title": "Sley Sandbox Runner Report v0",
       "draft": "https://json-schema.org/draft/2020-12/schema",
       "root_type": "object"
     },
