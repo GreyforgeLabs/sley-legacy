@@ -43,10 +43,10 @@ here. Dates use UTC-independent calendar dates from the local repo history.
 
 ### Changed
 
-- `make v1` now runs deterministic agent-bench, migration, docgen,
-  sandbox-runner, and ZJX tool replays in addition to LSP/workbench checks,
-  contract fixtures, conformance, corpus, examples, CLI smokes, and
-  Tree-sitter syntax parsing.
+- `make v1` now runs deterministic workbench, agent-bench, migration, docgen,
+  sandbox-runner, and ZJX tool replays in addition to the LSP check, contract
+  fixtures, conformance, corpus, examples, CLI smokes, and Tree-sitter syntax
+  parsing.
 - The local syntax gate bootstraps Tree-sitter npm dependencies with `npm ci`
   when needed, and the GitHub composite action installs stable Node before
   running `make v1`.

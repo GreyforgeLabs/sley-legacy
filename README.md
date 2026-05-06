@@ -429,8 +429,8 @@ Implemented now:
   full Rust tests, contract fixture and release-manifest validation,
   conformance summary reporting, corpus conformance, packaged example
   conformance, CLI smoke conformance, deterministic utility replays for
-  agent-bench, migration, docgen, sandbox-runner, and ZJX tools, plus
-  Tree-sitter syntax parsing
+  workbench, agent-bench, migration, docgen, sandbox-runner, and ZJX tools,
+  plus Tree-sitter syntax parsing
 - GitHub Actions and pre-commit entry points that run the same `make v1` gate
   through `.github/actions/sley-v1/action.yml`, `.github/workflows/v1.yml`,
   and `.pre-commit-config.yaml`; the action installs Rust and Node tooling

@@ -35,7 +35,7 @@ lsp:
 	cargo check --bin sley-lsp
 
 workbench:
-	cargo check --bin sley-workbench
+	cargo run --bin sley-workbench -- --json examples/dead_private_tasks.sley
 
 agent-bench: build-cli
 	cargo run --bin sley-agent-bench -- run --json
