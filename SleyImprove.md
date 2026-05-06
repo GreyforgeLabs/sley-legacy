@@ -99,7 +99,7 @@ sley doctor --json [--deny-warnings] <target>
 sley plan --json [--deny-warnings] [--graft-templates] [--template-surface <surface>] [--emit-graft <kind>] <target>
 sley fix --json --kind <kind> [--template-surface <surface>] [--dry-run|--write] [--trace <trace.jsonl>] <target>
 sley verify --json [--deny-warnings] [runtime gates/seeds] <target>
-sley query --json [--kind all|modules|tasks|calls] [--module <module>] <target>
+sley query --json [--kind all|modules|tasks|types|effects|calls] [--module <module>] <target>
 sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter|missing-module-declaration|unchecked-result] [--module <module>] <target>
 sley trace --json <target>
 sley seal --json <target>
@@ -465,6 +465,7 @@ The current smoke manifest covers:
 - stable JSON roots for AST programs, diagnostics, symbol graphs, graph slices,
   query reports, lint reports, trace seals, graft outcomes, and ZJX preview
   envelopes
+- query report direct task/type/effect declaration rows
 - graph-slice replace affordances and checked `replace_expression` graft
   templates in edit-plan reports
 - deploy scaffold typed next-actions, first-run sequence execution, and strict
@@ -521,11 +522,14 @@ tool consumers do not treat an invalid program as a reliable semantic surface.
 
 The v0 query report carries `schema: "sley.query.report.v0"` and supports:
 
-- `--kind all|modules|tasks|calls`
+- `--kind all|modules|tasks|types|effects|calls`
 - `--module <module>` filtering
 - `--exported` filtering for declaration and task summaries
 - task rows with stable ids, qualified names, takes, return types, declared
   effects, and inbound/outbound call counts
+- type rows with stable ids, qualified names, rendered type values, and record
+  fields
+- effect rows with stable ids and qualified names
 - call rows reused from the symbol graph call summary
 
 This is the immediate substrate for lints, migration hints, project dashboards,

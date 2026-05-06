@@ -408,7 +408,7 @@
     {
       "name": "query_project_tasks_json",
       "args": ["query", "--json", "--kind", "tasks", "--module", "app.main", "examples/project"],
-      "covers": ["cli:query", "json:sley.query.report.v0"],
+      "covers": ["cli:query", "json:sley.query.report.v0", "query:tasks"],
       "expect": {
         "success": true,
         "stdout_json": [
@@ -418,6 +418,41 @@
           { "pointer": "/filters/module", "value": "app.main" },
           { "pointer": "/tasks/0/qualified_name", "value": "app.main.main" },
           { "pointer": "/tasks/0/outbound_call_count", "value": 1 }
+        ]
+      }
+    },
+    {
+      "name": "query_profile_types_json",
+      "args": ["query", "--json", "--kind", "types", "--module", "app.profile", "examples/profile_service.sley"],
+      "covers": ["cli:query", "json:sley.query.report.v0", "query:types"],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.query.report.v0" },
+          { "pointer": "/kind", "value": "types" },
+          { "pointer": "/filters/module", "value": "app.profile" },
+          { "pointer": "/types/0/qualified_name", "value": "app.profile.User" },
+          { "pointer": "/types/0/fields/0/name", "value": "id" },
+          { "pointer": "/types/0/fields/0/type", "value": "Text" },
+          { "pointer": "/effects", "value": [] },
+          { "pointer": "/tasks", "value": [] }
+        ]
+      }
+    },
+    {
+      "name": "query_profile_effects_json",
+      "args": ["query", "--json", "--kind", "effects", "--module", "app.profile", "examples/profile_service.sley"],
+      "covers": ["cli:query", "json:sley.query.report.v0", "query:effects"],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.query.report.v0" },
+          { "pointer": "/kind", "value": "effects" },
+          { "pointer": "/filters/module", "value": "app.profile" },
+          { "pointer": "/effects/0/qualified_name", "value": "app.profile.DatabaseRead" },
+          { "pointer": "/effects/0/exported", "value": false },
+          { "pointer": "/types", "value": [] },
+          { "pointer": "/tasks", "value": [] }
         ]
       }
     },

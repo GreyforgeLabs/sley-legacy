@@ -555,6 +555,8 @@ sley doctor --json <target>
 sley plan --json [--graft-templates] [--template-surface <surface>] [--emit-graft <kind>] <target>
 sley fix --json --kind <kind> [--template-surface <surface>] [--dry-run|--write] [--trace <trace.jsonl>] <target>
 sley query --json --kind tasks --module app.main <target>
+sley query --json --kind types --module app.main <target>
+sley query --json --kind effects --module app.main <target>
 sley lint --json <target>
 sley trace --json <target>
 sley seal --json <target>
@@ -739,12 +741,15 @@ this shard.
 
 `sley query` is the first checked graph query report. It parses and checks the
 target before emitting results, so semantic failures return the normal
-diagnostic report instead of a partial query. `--kind all|modules|tasks|calls`
-selects the report body. `--module <module>` filters module summaries, task
-summaries, and calls that originate from or resolve into that module.
+diagnostic report instead of a partial query.
+`--kind all|modules|tasks|types|effects|calls` selects the report body.
+`--module <module>` filters module summaries, task/type/effect summaries, and
+calls that originate from or resolve into that module.
 `--exported` restricts declaration and task summaries to exported declarations.
 Task query rows include stable ids, qualified names, takes, return type text,
-declared effects, and inbound/outbound call counts. The v0 JSON root is
+declared effects, and inbound/outbound call counts. Type query rows include
+stable ids, qualified names, rendered type values, and record fields; effect
+query rows include stable ids and qualified names. The v0 JSON root is
 `sley.query.report.v0`.
 
 `sley lint` is the first checked lint command built on the graph query surface.

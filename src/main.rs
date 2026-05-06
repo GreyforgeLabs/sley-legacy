@@ -747,6 +747,8 @@ enum CliQueryKind {
     All,
     Modules,
     Tasks,
+    Types,
+    Effects,
     Calls,
 }
 
@@ -756,6 +758,8 @@ impl From<CliQueryKind> for QueryKind {
             CliQueryKind::All => Self::All,
             CliQueryKind::Modules => Self::Modules,
             CliQueryKind::Tasks => Self::Tasks,
+            CliQueryKind::Types => Self::Types,
+            CliQueryKind::Effects => Self::Effects,
             CliQueryKind::Calls => Self::Calls,
         }
     }
@@ -1656,12 +1660,14 @@ fn print_human_graph_slice(slice: &SymbolGraphSlice) {
 
 fn print_human_query_report(report: &QueryReport) {
     println!(
-        "query schema={} kind={} entry={} modules={} tasks={} calls={}",
+        "query schema={} kind={} entry={} modules={} tasks={} types={} effects={} calls={}",
         report.schema,
         report.kind,
         report.entry_module,
         report.modules.len(),
         report.tasks.len(),
+        report.types.len(),
+        report.effects.len(),
         report.calls.len()
     );
     for module in &report.modules {
@@ -1688,6 +1694,21 @@ fn print_human_query_report(report: &QueryReport) {
             effects,
             task.outbound_call_count,
             task.inbound_call_count
+        );
+    }
+    for ty in &report.types {
+        println!(
+            "type {} = {} exported={} fields={}",
+            ty.qualified_name,
+            ty.value,
+            ty.exported,
+            ty.fields.len()
+        );
+    }
+    for effect in &report.effects {
+        println!(
+            "effect {} exported={}",
+            effect.qualified_name, effect.exported
         );
     }
     for call in &report.calls {

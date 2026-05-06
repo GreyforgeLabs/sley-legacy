@@ -10,11 +10,13 @@
     "filters",
     "modules",
     "tasks",
+    "types",
+    "effects",
     "calls"
   ],
   "properties": {
     "schema": { "const": "sley.query.report.v0" },
-    "kind": { "enum": ["all", "modules", "tasks", "calls"] },
+    "kind": { "enum": ["all", "modules", "tasks", "types", "effects", "calls"] },
     "entry_module": { "type": "string" },
     "filters": {
       "type": "object",
@@ -65,6 +67,57 @@
           "effects": { "type": "array", "items": { "type": "string" } },
           "outbound_call_count": { "type": "integer", "minimum": 0 },
           "inbound_call_count": { "type": "integer", "minimum": 0 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "types": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "module",
+          "qualified_name",
+          "exported",
+          "value",
+          "fields"
+        ],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "module": { "type": "string" },
+          "qualified_name": { "type": "string" },
+          "exported": { "type": "boolean" },
+          "value": { "type": "string" },
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["name", "type"],
+              "properties": {
+                "name": { "type": "string" },
+                "type": { "type": "string" }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "effects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "module", "qualified_name", "exported"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "module": { "type": "string" },
+          "qualified_name": { "type": "string" },
+          "exported": { "type": "boolean" }
         },
         "additionalProperties": false
       }

@@ -133,7 +133,8 @@ Current development phase:
   failure records and keeping authority failures as
   diagnostics
 - checked graph query reports are available through `sley query --json` with
-  root schema `sley.query.report.v0`
+  root schema `sley.query.report.v0`; `--kind types` and `--kind effects`
+  give direct declaration rows for record and authority surfaces
 - checked lint reports are available through `sley lint --json` with root schema
   `sley.lint.report.v0`; private-task rules include `unused_private_task` and
   `unreachable_private_task`, the authority hygiene rule

@@ -7491,6 +7491,8 @@ fn query_report_lists_checked_project_tasks() {
     assert_eq!(report.filters.module.as_deref(), Some("app.main"));
     assert_eq!(report.modules.len(), 0);
     assert_eq!(report.calls.len(), 0);
+    assert_eq!(report.types.len(), 0);
+    assert_eq!(report.effects.len(), 0);
     assert_eq!(report.tasks.len(), 1);
     assert_eq!(report.tasks[0].id, "task:app.main.main");
     assert_eq!(report.tasks[0].qualified_name, "app.main.main");
@@ -7512,6 +7514,70 @@ fn query_report_lists_checked_project_tasks() {
         module_report.modules[0].imports[0].id,
         "import:app.main:app.math"
     );
+
+    let declarations = parse_program(
+        r#"
+module app.profile
+
+export type User = {
+  slot id: Text
+  slot name: Text
+}
+
+type Draft = {
+  slot name: Text
+}
+
+export effect PublicEffect
+effect LocalEffect
+
+task main -> User {
+  return User { id: "1", name: "Ada" }
+}
+"#,
+    )
+    .expect("parse query declarations");
+    let diagnostics = check_program(&declarations);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+
+    let types = build_query_report(
+        &declarations,
+        QueryOptions {
+            kind: QueryKind::Types,
+            module: Some("app.profile".to_string()),
+            exported_only: false,
+        },
+    );
+    assert_eq!(types.kind, "types");
+    assert_eq!(types.modules.len(), 0);
+    assert_eq!(types.tasks.len(), 0);
+    assert_eq!(types.calls.len(), 0);
+    assert_eq!(types.effects.len(), 0);
+    assert_eq!(types.types.len(), 2);
+    assert_eq!(types.types[1].qualified_name, "app.profile.User");
+    assert_eq!(types.types[1].value, "{ id: Text, name: Text }");
+    assert_eq!(types.types[1].fields[0].name, "id");
+    assert_eq!(types.types[1].fields[0].ty, "Text");
+
+    let effects = build_query_report(
+        &declarations,
+        QueryOptions {
+            kind: QueryKind::Effects,
+            module: Some("app.profile".to_string()),
+            exported_only: true,
+        },
+    );
+    assert_eq!(effects.kind, "effects");
+    assert_eq!(effects.types.len(), 0);
+    assert_eq!(effects.effects.len(), 1);
+    assert_eq!(
+        effects.effects[0].qualified_name,
+        "app.profile.PublicEffect"
+    );
+    assert!(effects.effects[0].exported);
 }
 
 #[test]
@@ -9491,6 +9557,9 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "lint:raw_host_adapter",
         "lint:missing_module_declaration",
         "lint:unchecked_result",
+        "query:tasks",
+        "query:types",
+        "query:effects",
         "readiness:deploy-lint-repair-write-verify",
         "readiness:lint-repair-plan",
         "readiness:lint-repair-preview",

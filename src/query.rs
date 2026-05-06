@@ -2,10 +2,10 @@ use std::collections::BTreeMap;
 
 use serde::Serialize;
 
-use crate::ast::{Program, TaskDecl, TypeExpr};
+use crate::ast::{EffectDecl, Program, TaskDecl, TypeDecl, TypeExpr};
 use crate::symbols::{
-    ModuleSymbolSummary, TaskCallSummary, build_symbol_graph, collect_task_calls, task_fq_name,
-    task_module,
+    ModuleSymbolSummary, TaskCallSummary, build_symbol_graph, collect_task_calls, effect_fq_name,
+    effect_module, task_fq_name, task_module, type_fq_name, type_module,
 };
 
 pub const QUERY_REPORT_SCHEMA: &str = "sley.query.report.v0";
@@ -15,6 +15,8 @@ pub enum QueryKind {
     All,
     Modules,
     Tasks,
+    Types,
+    Effects,
     Calls,
 }
 
@@ -24,6 +26,8 @@ impl QueryKind {
             Self::All => "all",
             Self::Modules => "modules",
             Self::Tasks => "tasks",
+            Self::Types => "types",
+            Self::Effects => "effects",
             Self::Calls => "calls",
         }
     }
@@ -54,6 +58,8 @@ pub struct QueryReport {
     pub filters: QueryFilters,
     pub modules: Vec<ModuleSymbolSummary>,
     pub tasks: Vec<QueryTaskSummary>,
+    pub types: Vec<QueryTypeSummary>,
+    pub effects: Vec<QueryEffectSummary>,
     pub calls: Vec<TaskCallSummary>,
 }
 
@@ -83,6 +89,33 @@ pub struct QueryTakeSummary {
     pub binding_kind: String,
     #[serde(rename = "type")]
     pub ty: String,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct QueryTypeSummary {
+    pub id: String,
+    pub name: String,
+    pub module: String,
+    pub qualified_name: String,
+    pub exported: bool,
+    pub value: String,
+    pub fields: Vec<QueryTypeFieldSummary>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct QueryTypeFieldSummary {
+    pub name: String,
+    #[serde(rename = "type")]
+    pub ty: String,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct QueryEffectSummary {
+    pub id: String,
+    pub name: String,
+    pub module: String,
+    pub qualified_name: String,
+    pub exported: bool,
 }
 
 pub fn build_query_report(program: &Program, options: QueryOptions) -> QueryReport {
@@ -121,6 +154,42 @@ pub fn build_query_report(program: &Program, options: QueryOptions) -> QueryRepo
         Vec::new()
     };
 
+    let types = if matches!(options.kind, QueryKind::All | QueryKind::Types) {
+        let mut types = program
+            .types
+            .iter()
+            .filter(|ty| module_matches(module_filter, &type_module(ty)))
+            .filter(|ty| !options.exported_only || ty.exported)
+            .map(summarize_type)
+            .collect::<Vec<_>>();
+        types.sort_by(|left, right| {
+            left.module
+                .cmp(&right.module)
+                .then_with(|| left.name.cmp(&right.name))
+        });
+        types
+    } else {
+        Vec::new()
+    };
+
+    let effects = if matches!(options.kind, QueryKind::All | QueryKind::Effects) {
+        let mut effects = program
+            .effects
+            .iter()
+            .filter(|effect| module_matches(module_filter, &effect_module(effect)))
+            .filter(|effect| !options.exported_only || effect.exported)
+            .map(summarize_effect)
+            .collect::<Vec<_>>();
+        effects.sort_by(|left, right| {
+            left.module
+                .cmp(&right.module)
+                .then_with(|| left.name.cmp(&right.name))
+        });
+        effects
+    } else {
+        Vec::new()
+    };
+
     let calls = if matches!(options.kind, QueryKind::All | QueryKind::Calls) {
         let mut calls = calls
             .into_iter()
@@ -147,6 +216,8 @@ pub fn build_query_report(program: &Program, options: QueryOptions) -> QueryRepo
         },
         modules,
         tasks,
+        types,
+        effects,
         calls,
     }
 }
@@ -187,6 +258,37 @@ fn summarize_task(
 
 fn display_type(ty: &TypeExpr) -> String {
     ty.display()
+}
+
+fn summarize_type(ty: &TypeDecl) -> QueryTypeSummary {
+    QueryTypeSummary {
+        id: ty.id.clone(),
+        name: ty.name.clone(),
+        module: type_module(ty),
+        qualified_name: type_fq_name(ty),
+        exported: ty.exported,
+        value: display_type(&ty.value),
+        fields: match &ty.value {
+            TypeExpr::Record { fields } => fields
+                .iter()
+                .map(|field| QueryTypeFieldSummary {
+                    name: field.name.clone(),
+                    ty: display_type(&field.ty),
+                })
+                .collect(),
+            _ => Vec::new(),
+        },
+    }
+}
+
+fn summarize_effect(effect: &EffectDecl) -> QueryEffectSummary {
+    QueryEffectSummary {
+        id: effect.id.clone(),
+        name: effect.name.clone(),
+        module: effect_module(effect),
+        qualified_name: effect_fq_name(effect),
+        exported: effect.exported,
+    }
 }
 
 fn filter_module_summary(

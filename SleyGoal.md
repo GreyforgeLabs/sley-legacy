@@ -42,7 +42,8 @@ Current verified surface:
 - `cargo test` passes.
 - Current integration coverage is 182 tests.
 - `sley query --json` emits `schema: "sley.query.report.v0"` and supports
-  `--kind all|modules|tasks|calls`, `--module <module>`, and `--exported`.
+  `--kind all|modules|tasks|types|effects|calls`, `--module <module>`, and
+  `--exported`, including top-level type and effect declaration rows.
 - `sley lint --json` emits `schema: "sley.lint.report.v0"` and supports
   `--module <module>`, `--rule unused-private-task`,
   `--rule unreachable-private-task`, `--rule unused-declared-effect`,
@@ -149,8 +150,8 @@ Judge work by:
 
 - Can an agent inspect the relevant program slice without loading the whole
   codebase?
-- Can an agent ask `sley query --json` for module, task, and call facts before
-  editing?
+- Can an agent ask `sley query --json` for module, task, type, effect, and call
+  facts before editing?
 - Can an agent ask `sley lint --json` for warning-grade hygiene before and
   after edits?
 - Can an agent propose a legal edit as a graft instead of patching raw text?
@@ -256,6 +257,8 @@ cargo run -- lint --json --rule unused-private-effect <target>
 cargo run -- lint --json --rule raw-host-adapter <target>
 cargo run -- lint --json --rule missing-module-declaration <target>
 cargo run -- lint --json --rule unchecked-result <target>
+cargo run -- query --json --kind types <target>
+cargo run -- query --json --kind effects <target>
 ```
 
 5. If changing runtime authority, test both the authorized and unauthorized
