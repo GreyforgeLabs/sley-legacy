@@ -184,11 +184,11 @@ Rules:
 - `sley fix` consumes the same plan templates, selects one named operation or
   transaction kind, applies it through the graft checker, and emits
   `sley.graft.outcome.v0`; it is non-mutating by default and mutates only with
-  explicit `--write`. Exact statement, take, and expression node surfaces are
-  covered by non-mutating fix dry-run smokes so agents can execute a chosen
-  checked node template without hand-authoring graft JSON. Accepted write-mode
-  fixes use the default trace sidecar or an explicit `--trace <trace.jsonl>`
-  receipt path; dry-run fixes never append receipts.
+  explicit `--write`. Exact statement, nested statement, take, and expression
+  node surfaces are covered by non-mutating fix dry-run smokes so agents can
+  execute a chosen checked node template without hand-authoring graft JSON.
+  Accepted write-mode fixes use the default trace sidecar or an explicit
+  `--trace <trace.jsonl>` receipt path; dry-run fixes never append receipts.
 - `sley verify` is the deterministic CI/pre-deploy helper consuming strict
   check, `sley.query.report.v0`, `sley.lint.report.v0`, and seeded runtime
   execution into one pass/warnings/blocked report; warning and denied-warning
