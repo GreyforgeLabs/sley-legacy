@@ -8859,12 +8859,40 @@ fn conformance_report_summarizes_release_surface() {
         Some(&serde_json::json!(true))
     );
     assert_eq!(
+        report_json.pointer("/summary/public_release_blocker_count"),
+        Some(&serde_json::json!(5))
+    );
+    assert_eq!(
         report_json.pointer("/tests/integration_test_count"),
         Some(&serde_json::json!(291))
     );
     assert_eq!(
         report_json.pointer("/tests/declared_matches_actual"),
         Some(&serde_json::json!(true))
+    );
+    assert_eq!(
+        report_json.pointer("/release/public_release_ready"),
+        Some(&serde_json::json!(false))
+    );
+    assert_eq!(
+        report_json.pointer("/release/blocker_count"),
+        Some(&serde_json::json!(5))
+    );
+    assert_eq!(
+        report_json.pointer("/release/cargo_package/rust_version"),
+        Some(&serde_json::json!("1.85.0"))
+    );
+    assert_eq!(
+        report_json.pointer("/release/cargo_package/publish"),
+        Some(&serde_json::json!("false"))
+    );
+    assert_eq!(
+        report_json.pointer("/release/license/operator_decision_required"),
+        Some(&serde_json::json!(true))
+    );
+    assert_eq!(
+        report_json.pointer("/release/blockers/0/code"),
+        Some(&serde_json::json!("missing_license_file"))
     );
     assert_eq!(report_json.pointer("/issues"), Some(&serde_json::json!([])));
 

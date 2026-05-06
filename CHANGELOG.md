@@ -21,6 +21,9 @@ here. Dates use UTC-independent calendar dates from the local repo history.
 - `sley-workbench`, `sley-lsp`, `sley-conformance`, `sley-contract`, and
   `sley-ci` bootstraps for the local v1 release gate.
 - `docs/contracts.md`, a contract map for the current schema-backed JSON roots.
+- Non-gating public-release packaging blockers in
+  `sley-conformance report --json`, covering license and repository metadata
+  decisions separately from executable conformance.
 
 ### Changed
 
@@ -29,6 +32,9 @@ here. Dates use UTC-independent calendar dates from the local repo history.
   examples, and CLI smokes.
 - Contract inventory now tracks 36 schemas, 96 contract fixtures, and 99 schema
   instances through the conformance report.
+- The Rust package metadata now declares its supported Rust floor, description,
+  README, keywords, categories, and `publish = false` until publication
+  decisions are explicit.
 
 ### Notes
 

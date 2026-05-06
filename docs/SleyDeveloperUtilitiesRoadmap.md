@@ -349,8 +349,9 @@ contracts, gates, syntax review, editor diagnostics, and graph/graft
 inspection.
 
 Current release packaging docs now include `CHANGELOG.md` and
-`docs/contracts.md`. Repository license selection remains an explicit operator
-decision before public release.
+`docs/contracts.md`. `sley-conformance report --json` now surfaces non-gating
+public-release blockers for license and repository metadata. Repository license
+selection remains an explicit operator decision before public release.
 
 ## Completion Gates
 

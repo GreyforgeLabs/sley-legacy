@@ -613,8 +613,9 @@ manifest carries `schema: "sley.conformance.manifest.v0"`. Project scaffold repo
 `schema: "sley.edit_plan.report.v0"`. CI wrapper reports carry
 `schema: "sley.ci.report.v0"` for check, lint, doctor, plan, run, verify,
 deploy, smoke, corpus, and examples wrappers.
-Conformance visibility reports carry `schema: "sley.conformance.report.v0"`;
-coverage-tag checks carry `schema: "sley.conformance.coverage.v0"`.
+Conformance visibility reports carry `schema: "sley.conformance.report.v0"`
+and include non-gating public-release packaging blockers; coverage-tag checks
+carry `schema: "sley.conformance.coverage.v0"`.
 The deploy wrapper passes `--artifacts-dir <dir>` through to `sley deploy`
 when local handoff files are requested. Deploy dry-run reports carry
 `schema: "sley.deploy.report.v0"`; deploy artifact manifests carry
@@ -732,9 +733,11 @@ The release-readiness view is exposed through `sley-conformance report
 --json`. It inventories schema IDs, fixture and manifest schema instances,
 contract fixture validation status, release manifest validation status, corpus
 tags, smoke tags, packaged example counts, and declared integration-test count
-drift under one stable conformance root. `sley-conformance coverage --json
---require-tag <tag>` checks explicit coverage tags across the corpus and smoke
-manifests for focused release gates.
+drift under one stable conformance root. It also reports non-gating
+public-release blockers such as unresolved license and repository metadata, so
+the executable gate can pass while publication decisions remain explicit.
+`sley-conformance coverage --json --require-tag <tag>` checks explicit
+coverage tags across the corpus and smoke manifests for focused release gates.
 
 The source review projection is also backed by the in-tree `tree-sitter-sley`
 bootstrap. Its grammar tracks module/import declarations, type/effect/task

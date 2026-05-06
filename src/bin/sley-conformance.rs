@@ -62,6 +62,14 @@ enum Command {
         integration_tests: PathBuf,
         #[arg(long, default_value = "SleyGoal.md")]
         goal_doc: PathBuf,
+        #[arg(long, default_value = "Cargo.toml")]
+        cargo_manifest: PathBuf,
+        #[arg(long, default_value = "LICENSE")]
+        license_file: PathBuf,
+        #[arg(long, default_value = "tree-sitter-sley/package.json")]
+        tree_sitter_package: PathBuf,
+        #[arg(long, default_value = "tree-sitter-sley/tree-sitter.json")]
+        tree_sitter_config: PathBuf,
         #[arg(long)]
         sley_contract_bin: Option<PathBuf>,
         #[arg(long)]
@@ -93,6 +101,7 @@ struct ConformanceReport {
     smoke: SmokeSection,
     examples: ExamplesSection,
     tests: TestSection,
+    release: ReleaseSection,
     issues: Vec<ConformanceIssue>,
 }
 
@@ -111,6 +120,7 @@ struct ConformanceSummary {
     integration_test_count: usize,
     declared_integration_test_count: Option<usize>,
     test_count_matches_declared: bool,
+    public_release_blocker_count: usize,
     issue_count: usize,
 }
 
@@ -201,6 +211,52 @@ struct TestSection {
     declared_matches_actual: bool,
 }
 
+#[derive(Debug, Serialize)]
+struct ReleaseSection {
+    public_release_ready: bool,
+    blocker_count: usize,
+    blockers: Vec<ConformanceIssue>,
+    cargo_package: CargoPackageSection,
+    tree_sitter_package: TreeSitterPackageSection,
+    license: LicenseSection,
+}
+
+#[derive(Debug, Serialize)]
+struct CargoPackageSection {
+    manifest: String,
+    name: Option<String>,
+    version: Option<String>,
+    edition: Option<String>,
+    rust_version: Option<String>,
+    description_present: bool,
+    readme_present: bool,
+    repository_present: bool,
+    license: Option<String>,
+    license_file: Option<String>,
+    publish: Option<String>,
+    publish_restricted: bool,
+}
+
+#[derive(Debug, Serialize)]
+struct TreeSitterPackageSection {
+    package_json: String,
+    config: String,
+    name: Option<String>,
+    version: Option<String>,
+    private: Option<bool>,
+    package_license: Option<String>,
+    package_description_present: bool,
+    config_license: Option<String>,
+    config_description_present: bool,
+}
+
+#[derive(Debug, Serialize)]
+struct LicenseSection {
+    file: String,
+    present: bool,
+    operator_decision_required: bool,
+}
+
 #[derive(Debug, Clone, Serialize)]
 struct TagCount {
     tag: String,
@@ -263,6 +319,10 @@ fn main() -> Result<()> {
             examples_root,
             integration_tests,
             goal_doc,
+            cargo_manifest,
+            license_file,
+            tree_sitter_package,
+            tree_sitter_config,
             sley_contract_bin,
             markdown,
             html,
@@ -276,6 +336,10 @@ fn main() -> Result<()> {
                 &examples_root,
                 &integration_tests,
                 &goal_doc,
+                &cargo_manifest,
+                &license_file,
+                &tree_sitter_package,
+                &tree_sitter_config,
                 sley_contract_bin.as_deref(),
             );
             if let Some(path) = markdown {
@@ -316,6 +380,10 @@ fn build_report(
     examples_root: &Path,
     integration_tests: &Path,
     goal_doc: &Path,
+    cargo_manifest: &Path,
+    license_file: &Path,
+    tree_sitter_package: &Path,
+    tree_sitter_config: &Path,
     sley_contract_bin: Option<&Path>,
 ) -> ConformanceReport {
     let mut issues = Vec::new();
@@ -388,6 +456,12 @@ fn build_report(
     }
     let examples = build_examples_section(examples_root, &mut issues);
     let tests = build_test_section(integration_tests, goal_doc, &mut issues);
+    let release = build_release_section(
+        cargo_manifest,
+        license_file,
+        tree_sitter_package,
+        tree_sitter_config,
+    );
     let validation = build_validation_section(
         sley_contract_bin,
         schema_dir,
@@ -415,6 +489,7 @@ fn build_report(
         integration_test_count: tests.integration_test_count,
         declared_integration_test_count: tests.declared_integration_test_count,
         test_count_matches_declared: tests.declared_matches_actual,
+        public_release_blocker_count: release.blocker_count,
         issue_count,
     };
     let status = if issues.is_empty() {
@@ -443,6 +518,7 @@ fn build_report(
         smoke,
         examples,
         tests,
+        release,
         issues,
     }
 }
@@ -870,6 +946,204 @@ fn parse_declared_integration_test_count(source: &str) -> Option<usize> {
     })
 }
 
+fn build_release_section(
+    cargo_manifest: &Path,
+    license_file: &Path,
+    tree_sitter_package: &Path,
+    tree_sitter_config: &Path,
+) -> ReleaseSection {
+    let mut blockers = Vec::new();
+    let cargo_package = build_cargo_package_section(cargo_manifest, &mut blockers);
+    let tree_sitter_package =
+        build_tree_sitter_package_section(tree_sitter_package, tree_sitter_config, &mut blockers);
+    let license_present = license_file.is_file();
+    if !license_present {
+        blockers.push(issue(
+            "missing_license_file",
+            format!(
+                "{} is not present; choose the repository license before public release",
+                license_file.display()
+            ),
+        ));
+    }
+    if cargo_package.license.is_none() && cargo_package.license_file.is_none() {
+        blockers.push(issue(
+            "cargo_license_unresolved",
+            format!(
+                "{} does not declare `package.license` or `package.license-file`",
+                cargo_manifest.display()
+            ),
+        ));
+    }
+    if !cargo_package.repository_present {
+        blockers.push(issue(
+            "cargo_repository_unset",
+            format!(
+                "{} does not declare `package.repository` for public release consumers",
+                cargo_manifest.display()
+            ),
+        ));
+    }
+    if unresolved_license(tree_sitter_package.package_license.as_deref()) {
+        blockers.push(issue(
+            "tree_sitter_package_license_unresolved",
+            format!(
+                "{} has no public release license",
+                tree_sitter_package.package_json
+            ),
+        ));
+    }
+    if unresolved_license(tree_sitter_package.config_license.as_deref()) {
+        blockers.push(issue(
+            "tree_sitter_config_license_unresolved",
+            format!(
+                "{} has no public release license",
+                tree_sitter_package.config
+            ),
+        ));
+    }
+    let operator_decision_required = blockers
+        .iter()
+        .any(|blocker| blocker.code.contains("license"));
+    let blocker_count = blockers.len();
+    ReleaseSection {
+        public_release_ready: blocker_count == 0,
+        blocker_count,
+        blockers,
+        cargo_package,
+        tree_sitter_package,
+        license: LicenseSection {
+            file: path_string(license_file),
+            present: license_present,
+            operator_decision_required,
+        },
+    }
+}
+
+fn build_cargo_package_section(
+    manifest: &Path,
+    blockers: &mut Vec<ConformanceIssue>,
+) -> CargoPackageSection {
+    let mut section = CargoPackageSection {
+        manifest: path_string(manifest),
+        name: None,
+        version: None,
+        edition: None,
+        rust_version: None,
+        description_present: false,
+        readme_present: false,
+        repository_present: false,
+        license: None,
+        license_file: None,
+        publish: None,
+        publish_restricted: false,
+    };
+    let source = match fs::read_to_string(manifest) {
+        Ok(source) => source,
+        Err(error) => {
+            blockers.push(issue(
+                "cargo_manifest_read_failed",
+                format!("failed to read {}: {error}", manifest.display()),
+            ));
+            return section;
+        }
+    };
+    let value = match toml::from_str::<toml::Value>(&source) {
+        Ok(value) => value,
+        Err(error) => {
+            blockers.push(issue(
+                "cargo_manifest_parse_failed",
+                format!("failed to parse {}: {error}", manifest.display()),
+            ));
+            return section;
+        }
+    };
+    let package = value.get("package");
+    section.name = toml_string_field(package, "name");
+    section.version = toml_string_field(package, "version");
+    section.edition = toml_string_field(package, "edition");
+    section.rust_version = toml_string_field(package, "rust-version");
+    section.description_present = toml_string_field(package, "description").is_some();
+    section.readme_present = toml_string_field(package, "readme").is_some();
+    section.repository_present = toml_string_field(package, "repository").is_some();
+    section.license = toml_string_field(package, "license");
+    section.license_file = toml_string_field(package, "license-file");
+    let (publish, restricted) = cargo_publish_state(package.and_then(|value| value.get("publish")));
+    section.publish = publish;
+    section.publish_restricted = restricted;
+    section
+}
+
+fn build_tree_sitter_package_section(
+    package_json: &Path,
+    config: &Path,
+    blockers: &mut Vec<ConformanceIssue>,
+) -> TreeSitterPackageSection {
+    let mut section = TreeSitterPackageSection {
+        package_json: path_string(package_json),
+        config: path_string(config),
+        name: None,
+        version: None,
+        private: None,
+        package_license: None,
+        package_description_present: false,
+        config_license: None,
+        config_description_present: false,
+    };
+    match read_json_value(package_json) {
+        Ok(value) => {
+            section.name = string_field(&value, "name");
+            section.version = string_field(&value, "version");
+            section.private = value.get("private").and_then(JsonValue::as_bool);
+            section.package_license = string_field(&value, "license");
+            section.package_description_present = string_field(&value, "description").is_some();
+        }
+        Err(error) => blockers.push(issue(
+            "tree_sitter_package_read_failed",
+            format!("failed to read {}: {error}", package_json.display()),
+        )),
+    }
+    match read_json_value(config) {
+        Ok(value) => {
+            let metadata = value.get("metadata");
+            section.config_license = metadata.and_then(|value| string_field(value, "license"));
+            section.config_description_present =
+                metadata.is_some_and(|value| string_field(value, "description").is_some());
+        }
+        Err(error) => blockers.push(issue(
+            "tree_sitter_config_read_failed",
+            format!("failed to read {}: {error}", config.display()),
+        )),
+    }
+    section
+}
+
+fn toml_string_field(value: Option<&toml::Value>, field: &str) -> Option<String> {
+    value
+        .and_then(|value| value.get(field))
+        .and_then(toml::Value::as_str)
+        .filter(|value| !value.is_empty())
+        .map(str::to_string)
+}
+
+fn cargo_publish_state(value: Option<&toml::Value>) -> (Option<String>, bool) {
+    match value {
+        Some(toml::Value::Boolean(false)) => (Some("false".to_string()), true),
+        Some(toml::Value::Boolean(true)) => (Some("true".to_string()), false),
+        Some(toml::Value::Array(registries)) => {
+            (Some(format!("registries:{}", registries.len())), true)
+        }
+        Some(_) => (Some("custom".to_string()), true),
+        None => (None, false),
+    }
+}
+
+fn unresolved_license(value: Option<&str>) -> bool {
+    value
+        .map(|license| license.eq_ignore_ascii_case("UNLICENSED"))
+        .unwrap_or(true)
+}
+
 fn collect_examples(
     path: &Path,
     project_count: &mut usize,
@@ -1096,7 +1370,7 @@ fn emit_report(report: &ConformanceReport, json: bool) -> Result<()> {
         return Ok(());
     }
     println!(
-        "sley-conformance report status={} schemas={} fixtures={} corpus={}/{} smoke={} examples={} tests={}",
+        "sley-conformance report status={} schemas={} fixtures={} corpus={}/{} smoke={} examples={} tests={} public_release_blockers={}",
         report.status,
         report.summary.schema_count,
         report.summary.contract_fixture_count,
@@ -1104,7 +1378,8 @@ fn emit_report(report: &ConformanceReport, json: bool) -> Result<()> {
         report.summary.corpus_rejected_count,
         report.summary.smoke_case_count,
         report.summary.example_source_count,
-        report.summary.integration_test_count
+        report.summary.integration_test_count,
+        report.summary.public_release_blocker_count
     );
     for issue in &report.issues {
         println!("{} {}", issue.code, issue.message);
@@ -1164,6 +1439,16 @@ fn render_markdown(report: &ConformanceReport) -> String {
             .unwrap_or_else(|| "none".to_string()),
         report.tests.integration_test_count
     ));
+    output.push_str(&format!(
+        "- Public release ready: `{}` with `{}` blockers\n",
+        report.release.public_release_ready, report.release.blocker_count
+    ));
+    if !report.release.blockers.is_empty() {
+        output.push_str("\n## Public Release Blockers\n\n");
+        for blocker in &report.release.blockers {
+            output.push_str(&format!("- `{}`: {}\n", blocker.code, blocker.message));
+        }
+    }
     if !report.issues.is_empty() {
         output.push_str("\n## Issues\n\n");
         for issue in &report.issues {
