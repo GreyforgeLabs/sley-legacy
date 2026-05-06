@@ -46,6 +46,7 @@ pub enum LintRule {
     ConstantLenExpression,
     ConstantNotExpression,
     EmptyIfStatement,
+    EmptyElseStatement,
     EmptyForStatement,
     EmptyForgeStatement,
     IdentityBinaryExpression,
@@ -96,6 +97,7 @@ impl LintRule {
             Self::ConstantLenExpression,
             Self::ConstantNotExpression,
             Self::EmptyIfStatement,
+            Self::EmptyElseStatement,
             Self::EmptyForStatement,
             Self::EmptyForgeStatement,
             Self::IdentityBinaryExpression,
@@ -146,6 +148,7 @@ impl LintRule {
             Self::ConstantLenExpression => "constant_len_expression",
             Self::ConstantNotExpression => "constant_not_expression",
             Self::EmptyIfStatement => "empty_if_statement",
+            Self::EmptyElseStatement => "empty_else_statement",
             Self::EmptyForStatement => "empty_for_statement",
             Self::EmptyForgeStatement => "empty_forge_statement",
             Self::IdentityBinaryExpression => "identity_binary_expression",
@@ -368,6 +371,12 @@ pub fn build_lint_report(program: &Program, options: LintOptions) -> LintReport 
     }
     if rules.contains(&LintRule::EmptyIfStatement) {
         findings.extend(lint_empty_if_statements(program, options.module.as_deref()));
+    }
+    if rules.contains(&LintRule::EmptyElseStatement) {
+        findings.extend(lint_empty_else_statements(
+            program,
+            options.module.as_deref(),
+        ));
     }
     if rules.contains(&LintRule::EmptyForStatement) {
         findings.extend(lint_empty_for_statements(
@@ -1150,6 +1159,18 @@ fn lint_empty_if_statements(program: &Program, module: Option<&str>) -> Vec<Lint
         .filter(|task| module_matches(module, &task_module(task)))
     {
         collect_empty_if_statements_in_block(task, &task.body, &mut findings);
+    }
+    findings
+}
+
+fn lint_empty_else_statements(program: &Program, module: Option<&str>) -> Vec<LintFinding> {
+    let mut findings = Vec::new();
+    for task in program
+        .tasks
+        .iter()
+        .filter(|task| module_matches(module, &task_module(task)))
+    {
+        collect_empty_else_statements_in_block(task, &task.body, &mut findings);
     }
     findings
 }
@@ -4505,6 +4526,53 @@ fn collect_empty_if_statements_in_block(
     }
 }
 
+fn collect_empty_else_statements_in_block(
+    task: &TaskDecl,
+    block: &Block,
+    findings: &mut Vec<LintFinding>,
+) {
+    for statement in &block.statements {
+        match &statement.kind {
+            StatementKind::If {
+                then_block,
+                else_block,
+                ..
+            } => {
+                if let Some(else_block) = else_block
+                    && !then_block.statements.is_empty()
+                    && else_block.statements.is_empty()
+                {
+                    let task_name = task_fq_name(task);
+                    findings.push(LintFinding {
+                        id: "EMPTY_ELSE_STATEMENT".to_string(),
+                        rule: LintRule::EmptyElseStatement.as_str().to_string(),
+                        severity: "warning".to_string(),
+                        message: format!("task `{task_name}` has an empty else branch"),
+                        node: statement.id.clone(),
+                        module: task_module(task),
+                        hint: "remove this no-op else branch".to_string(),
+                    });
+                    collect_empty_else_statements_in_block(task, then_block, findings);
+                } else {
+                    collect_empty_else_statements_in_block(task, then_block, findings);
+                    if let Some(else_block) = else_block {
+                        collect_empty_else_statements_in_block(task, else_block, findings);
+                    }
+                }
+            }
+            StatementKind::While { body, .. }
+            | StatementKind::For { body, .. }
+            | StatementKind::Forge { body } => {
+                collect_empty_else_statements_in_block(task, body, findings);
+            }
+            StatementKind::Binding { .. }
+            | StatementKind::Set { .. }
+            | StatementKind::Return { .. }
+            | StatementKind::Expr { .. } => {}
+        }
+    }
+}
+
 fn collect_empty_for_statements_in_block(
     task: &TaskDecl,
     block: &Block,
@@ -5951,6 +6019,13 @@ pub fn constant_if_statement_replacement_source(program: &Program, target: &str)
         .find_map(|task| constant_if_statement_replacement_in_block(&task.body, target))
 }
 
+pub fn empty_else_statement_replacement_source(program: &Program, target: &str) -> Option<String> {
+    program
+        .tasks
+        .iter()
+        .find_map(|task| empty_else_statement_replacement_in_block(&task.body, target))
+}
+
 fn constant_if_statement_replacement_in_block(block: &Block, target: &str) -> Option<String> {
     block
         .statements
@@ -5982,6 +6057,37 @@ fn constant_if_statement_replacement_in_block(block: &Block, target: &str) -> Op
         })
 }
 
+fn empty_else_statement_replacement_in_block(block: &Block, target: &str) -> Option<String> {
+    block
+        .statements
+        .iter()
+        .find_map(|statement| match &statement.kind {
+            StatementKind::If {
+                then_block,
+                else_block,
+                ..
+            } => {
+                if statement.id == target {
+                    return empty_else_statement_replacement(statement);
+                }
+                empty_else_statement_replacement_in_block(then_block, target).or_else(|| {
+                    else_block
+                        .as_ref()
+                        .and_then(|block| empty_else_statement_replacement_in_block(block, target))
+                })
+            }
+            StatementKind::While { body, .. }
+            | StatementKind::For { body, .. }
+            | StatementKind::Forge { body } => {
+                empty_else_statement_replacement_in_block(body, target)
+            }
+            StatementKind::Binding { .. }
+            | StatementKind::Set { .. }
+            | StatementKind::Return { .. }
+            | StatementKind::Expr { .. } => None,
+        })
+}
+
 fn constant_if_statement_replacement(statement: &Statement) -> Option<String> {
     let StatementKind::If {
         condition,
@@ -6000,6 +6106,25 @@ fn constant_if_statement_replacement(statement: &Statement) -> Option<String> {
         return None;
     };
     Some(format_statement_source(selected_statement))
+}
+
+fn empty_else_statement_replacement(statement: &Statement) -> Option<String> {
+    let StatementKind::If {
+        then_block,
+        else_block,
+        ..
+    } = &statement.kind
+    else {
+        return None;
+    };
+    if then_block.statements.is_empty() || !else_block.as_ref()?.statements.is_empty() {
+        return None;
+    }
+    let mut replacement = statement.clone();
+    if let StatementKind::If { else_block, .. } = &mut replacement.kind {
+        *else_block = None;
+    }
+    Some(format_statement_source(&replacement))
 }
 
 pub fn constant_comparison_expression_replacement_source(

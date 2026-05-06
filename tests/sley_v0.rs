@@ -4665,6 +4665,73 @@ fn edit_plan_graft_templates_include_empty_if_statement_delete() {
 }
 
 #[test]
+fn edit_plan_graft_templates_include_empty_else_statement_remove() {
+    let source = include_str!("../examples/empty_else_statement.sley");
+    let program = parse_program(source).expect("parse empty else fixture");
+    let report = build_edit_plan_report_with_options(
+        "examples/empty_else_statement.sley",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: None,
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "warnings");
+    assert_eq!(report.summary.lint_finding_count, 1);
+    assert_eq!(
+        report.lint.as_ref().expect("lint summary").findings[0].id,
+        "EMPTY_ELSE_STATEMENT"
+    );
+    let template = report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "remove_empty_else_statement")
+        .expect("empty else remove template");
+    assert_eq!(template.surface, "block:task:app.empty_else.main:stmt:1");
+    assert_eq!(
+        template.operation.pointer("/op"),
+        Some(&serde_json::json!("ReplaceStatement"))
+    );
+    assert_eq!(
+        template.operation.pointer("/payload/source"),
+        Some(&serde_json::json!("if value > 0 {\n  return value\n}"))
+    );
+    assert_eq!(template.editable_json_pointers, vec!["/payload/source"]);
+    let graft: GraftInput =
+        serde_json::from_value(template.operation.clone()).expect("parse empty else template");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:empty-else-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted_source = outcome.source.expect("grafted source");
+    assert!(!grafted_source.contains("else {"));
+    assert!(grafted_source.contains("return value"));
+
+    let targeted_report = build_edit_plan_report_with_options(
+        "examples/empty_else_statement.sley",
+        Ok(program),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("block:task:app.empty_else.main:stmt:1".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(targeted_report.status, "warnings");
+    assert!(targeted_report.diagnostics.is_empty());
+    assert_eq!(targeted_report.graft_templates.len(), 1);
+    assert_eq!(
+        targeted_report.graft_templates[0].kind,
+        "remove_empty_else_statement"
+    );
+    assert!(targeted_report.transaction_templates.is_empty());
+}
+
+#[test]
 fn edit_plan_graft_templates_include_empty_for_statement_delete() {
     let source = include_str!("../examples/empty_for_statement.sley");
     let program = parse_program(source).expect("parse empty for fixture");
@@ -7649,6 +7716,20 @@ task helper -> Result<Text, Error> {
         include_str!("../fixtures/contracts/lint_empty_if_statement.json"),
     );
 
+    let empty_else_source = include_str!("../examples/empty_else_statement.sley");
+    let empty_else_program = parse_program(empty_else_source).expect("parse empty else fixture");
+    let empty_else_lint = build_lint_report(
+        &empty_else_program,
+        LintOptions {
+            rules: vec![LintRule::EmptyElseStatement],
+            module: None,
+        },
+    );
+    assert_json_snapshot(
+        &empty_else_lint,
+        include_str!("../fixtures/contracts/lint_empty_else_statement.json"),
+    );
+
     let empty_for_source = include_str!("../examples/empty_for_statement.sley");
     let empty_for_program = parse_program(empty_for_source).expect("parse empty for fixture");
     let empty_for_lint = build_lint_report(
@@ -8583,7 +8664,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(96))
+        Some(&serde_json::json!(97))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -8859,23 +8940,23 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/contract_fixture_count"),
-        Some(&serde_json::json!(96))
+        Some(&serde_json::json!(97))
     );
     assert_eq!(
         report_json.pointer("/summary/smoke_case_count"),
-        Some(&serde_json::json!(346))
+        Some(&serde_json::json!(351))
     );
     assert_eq!(
         report_json.pointer("/summary/example_source_count"),
-        Some(&serde_json::json!(67))
+        Some(&serde_json::json!(68))
     );
     assert_eq!(
         report_json.pointer("/summary/integration_test_count"),
-        Some(&serde_json::json!(291))
+        Some(&serde_json::json!(293))
     );
     assert_eq!(
         report_json.pointer("/summary/declared_integration_test_count"),
-        Some(&serde_json::json!(291))
+        Some(&serde_json::json!(293))
     );
     assert_eq!(
         report_json.pointer("/summary/test_count_matches_declared"),
@@ -8887,7 +8968,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/tests/integration_test_count"),
-        Some(&serde_json::json!(291))
+        Some(&serde_json::json!(293))
     );
     assert_eq!(
         report_json.pointer("/tests/declared_matches_actual"),
@@ -9636,7 +9717,7 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     );
     assert_eq!(
         examples_json.pointer("/summary/step_count"),
-        Some(&serde_json::json!(130))
+        Some(&serde_json::json!(132))
     );
     assert_eq!(
         examples_json.pointer("/steps/0/name"),
@@ -9653,7 +9734,7 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
         ))
     );
     assert_eq!(
-        examples_json.pointer("/steps/63/name"),
+        examples_json.pointer("/steps/64/name"),
         Some(&serde_json::json!(
             "format_round_trip:examples/absorbing_arithmetic_expression.sley"
         ))
@@ -16094,6 +16175,73 @@ task main -> Int {
 }
 
 #[test]
+fn lint_report_flags_empty_else_statements() {
+    let source = r#"
+module app.empty_else
+
+task main -> Int {
+  bind value = 1
+
+  if value > 0 {
+    return value
+  } else {
+  }
+
+  if value == 0 {
+  } else {
+  }
+
+  if value < 0 {
+    return 0
+  } else {
+    return value
+  }
+
+  return value
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+
+    let report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::EmptyElseStatement],
+            module: None,
+        },
+    );
+
+    assert_eq!(report.schema, LINT_REPORT_SCHEMA);
+    assert_eq!(report.status, "findings");
+    assert_eq!(report.entry_module, "app.empty_else");
+    assert_eq!(report.filters.rules, vec!["empty_else_statement"]);
+    assert_eq!(report.findings.len(), 1);
+    assert_eq!(report.findings[0].id, "EMPTY_ELSE_STATEMENT");
+    assert_eq!(report.findings[0].rule, "empty_else_statement");
+    assert_eq!(
+        report.findings[0].node,
+        "block:task:app.empty_else.main:stmt:1"
+    );
+    assert_eq!(report.findings[0].module, "app.empty_else");
+    assert!(report.findings[0].message.contains("empty else"));
+    assert!(report.findings[0].hint.contains("remove"));
+
+    let scoped_report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::EmptyElseStatement],
+            module: Some("app.other".to_string()),
+        },
+    );
+    assert_eq!(scoped_report.status, "ok");
+    assert!(scoped_report.findings.is_empty());
+}
+
+#[test]
 fn lint_report_flags_empty_for_statements() {
     let source = r#"
 module app.empty_for
@@ -19282,6 +19430,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:templates:constant-len-expression",
         "graft:templates:constant-not-expression",
         "graft:templates:empty-if-statement-delete",
+        "graft:templates:empty-else-statement-remove",
         "graft:templates:empty-for-statement-delete",
         "graft:templates:empty-forge-statement-delete",
         "graft:templates:unreachable-statement-delete",
@@ -19329,6 +19478,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "lint:constant_len_expression",
         "lint:constant_not_expression",
         "lint:empty_if_statement",
+        "lint:empty_else_statement",
         "lint:empty_for_statement",
         "lint:empty_forge_statement",
         "lint:identity_binary_expression",

@@ -44,7 +44,7 @@ Current verified surface:
 
 - `cargo fmt -- --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 291 tests in the core `tests/sley_v0.rs`
+- Current integration coverage is 293 tests in the core `tests/sley_v0.rs`
   conformance file, with additional focused integration tests for LSP,
   workbench, agent bench, migration reports, project templates, and ZJX
   envelope tools.
@@ -152,6 +152,7 @@ Current verified surface:
   `--rule constant-len-expression`,
   `--rule constant-not-expression`,
   `--rule empty-if-statement`,
+  `--rule empty-else-statement`,
   `--rule empty-for-statement`,
   `--rule empty-forge-statement`,
   `--rule identity-binary-expression`,
@@ -187,6 +188,7 @@ Current verified surface:
   `constant_len_expression`,
   `constant_not_expression`,
   `empty_if_statement`,
+  `empty_else_statement`,
   `empty_for_statement`,
   `empty_forge_statement`,
   `identity_binary_expression`, `redundant_boolean_comparison`, and
@@ -292,6 +294,9 @@ Current verified surface:
   smoke coverage, plus checked `empty_if_statement` no-op control-flow
   findings and `delete_empty_if_statement` templates with
   lint/plan/fix-write/verify smoke coverage, plus checked
+  `empty_else_statement` no-op else-branch findings and
+  `remove_empty_else_statement` templates with lint/plan/fix-write/verify
+  smoke coverage, plus checked
   `empty_for_statement` dead-loop findings and
   `delete_empty_for_statement` templates with lint/plan/fix-write/verify
   smoke coverage, plus checked `empty_forge_statement` no-op block findings and
@@ -556,6 +561,7 @@ cargo run -- lint --json --rule constant-record-field-access-expression <target>
 cargo run -- lint --json --rule constant-len-expression <target>
 cargo run -- lint --json --rule constant-not-expression <target>
 cargo run -- lint --json --rule empty-if-statement <target>
+cargo run -- lint --json --rule empty-else-statement <target>
 cargo run -- lint --json --rule empty-for-statement <target>
 cargo run -- lint --json --rule empty-forge-statement <target>
 cargo run -- lint --json --rule identity-binary-expression <target>

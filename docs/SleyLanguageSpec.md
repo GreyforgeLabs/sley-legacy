@@ -979,6 +979,9 @@ a checked program.
 `delete_empty_if_statement` `DeleteNode` templates when deleting a no-op `if`
 statement with a delete-safe condition and empty branches preserves a checked
 program.
+`empty_else_statement` lint findings become checked
+`remove_empty_else_statement` `ReplaceStatement` templates when removing an
+empty `else` branch preserves the condition and checked then-branch.
 `empty_for_statement` lint findings become checked
 `delete_empty_for_statement` `DeleteNode` templates when deleting a `for`
 statement over a literal empty list preserves a checked program.
@@ -1187,6 +1190,8 @@ dropping runtime work; and
 replaced by the resulting boolean literal without dropping runtime work; and
 `empty_if_statement`, which warns when an `if` statement with a delete-safe
 condition and empty branches can be removed as no-op control flow; and
+`empty_else_statement`, which warns when an empty `else` branch can be removed
+without changing the checked then-branch; and
 `empty_for_statement`, which warns when a `for item in [] { ... }` statement
 can be removed as never-executed code; and
 `empty_forge_statement`, which warns when a no-op `forge { }` statement can be
@@ -1239,6 +1244,7 @@ guaranteed `return` in the same block.
 `--rule constant-len-expression`, or
 `--rule constant-not-expression`, or
 `--rule empty-if-statement`, or
+`--rule empty-else-statement`, or
 `--rule empty-for-statement`, or
 `--rule empty-forge-statement`, or
 `--rule identity-binary-expression`, or
@@ -1364,6 +1370,7 @@ refuse generic data disguised as Sley artifacts before compression begins.
   set statement cleanup templates,
   constant-false if and while statement cleanup templates,
   empty-if statement cleanup templates,
+  empty-else statement cleanup templates,
   empty-for statement cleanup templates, empty-forge statement cleanup
   templates, redundant boolean-if statement cleanup templates,
   unreachable statement cleanup templates, and mutable
@@ -1399,6 +1406,7 @@ refuse generic data disguised as Sley artifacts before compression begins.
   constant len cleanup,
   constant not cleanup,
   empty-if statement cleanup,
+  empty-else statement cleanup,
   empty-for statement cleanup,
   empty-forge statement cleanup,
   unreachable statement cleanup, and mutable binding conversion,

@@ -18,7 +18,7 @@ use crate::lint::{
     constant_map_index_expression_replacement_source, constant_not_expression_replacement_source,
     constant_record_field_access_expression_replacement_source,
     constant_text_concatenation_expression_replacement_source,
-    double_negation_expression_replacement_source,
+    double_negation_expression_replacement_source, empty_else_statement_replacement_source,
     idempotent_boolean_expression_replacement_source,
     identity_binary_expression_replacement_source,
     negated_comparison_expression_replacement_source, qualified_imported_call_replacement_source,
@@ -628,6 +628,7 @@ fn lint_graft_templates(
     templates.extend(lint_constant_len_expression_templates(program, lint_report));
     templates.extend(lint_constant_not_expression_templates(program, lint_report));
     templates.extend(lint_empty_if_statement_templates(program, lint_report));
+    templates.extend(lint_empty_else_statement_templates(program, lint_report));
     templates.extend(lint_empty_for_statement_templates(program, lint_report));
     templates.extend(lint_empty_forge_statement_templates(program, lint_report));
     templates.extend(lint_identity_binary_expression_templates(
@@ -711,6 +712,7 @@ fn is_lint_repair_kind(kind: &str) -> bool {
             | "simplify_constant_len_expression"
             | "simplify_constant_not_expression"
             | "delete_empty_if_statement"
+            | "remove_empty_else_statement"
             | "delete_empty_for_statement"
             | "delete_empty_forge_statement"
             | "simplify_identity_binary_expression"
@@ -1447,6 +1449,37 @@ fn lint_empty_if_statement_templates(
                 surface: finding.node.clone(),
                 operation,
                 editable_json_pointers: Vec::new(),
+            })
+        })
+        .collect()
+}
+
+fn lint_empty_else_statement_templates(
+    program: &Program,
+    lint_report: &LintReport,
+) -> Vec<EditPlanGraftTemplate> {
+    lint_report
+        .findings
+        .iter()
+        .filter(|finding| finding.id == "EMPTY_ELSE_STATEMENT")
+        .filter_map(|finding| {
+            let replacement = empty_else_statement_replacement_source(program, &finding.node)?;
+            let operation = json!({
+                "op": "ReplaceStatement",
+                "target": finding.node,
+                "payload": {
+                    "source": replacement
+                }
+            });
+            if !replace_affordance_checks(program, &operation) {
+                return None;
+            }
+            Some(EditPlanGraftTemplate {
+                kind: "remove_empty_else_statement".to_string(),
+                reason: "remove this no-op else branch".to_string(),
+                surface: finding.node.clone(),
+                operation,
+                editable_json_pointers: vec!["/payload/source".to_string()],
             })
         })
         .collect()
