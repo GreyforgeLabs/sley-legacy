@@ -1,0 +1,10 @@
+module app.constant_record_field_access
+
+type User = {
+  slot name: Text
+  slot age: Int
+}
+
+task main -> Text {
+  return User { name: "Ada", age: 37 }.name
+}

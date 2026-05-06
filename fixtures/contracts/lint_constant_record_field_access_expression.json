@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.constant_record_field_access",
+  "filters": {
+    "module": null,
+    "rules": [
+      "constant_record_field_access_expression"
+    ]
+  },
+  "findings": [
+    {
+      "id": "CONSTANT_RECORD_FIELD_ACCESS_EXPRESSION",
+      "rule": "constant_record_field_access_expression",
+      "severity": "warning",
+      "message": "task `app.constant_record_field_access.main` has a constant record field access expression `User { name: \"Ada\", age: 37 }.name`",
+      "node": "block:task:app.constant_record_field_access.main:stmt:0:expr",
+      "module": "app.constant_record_field_access",
+      "hint": "replace the constant record field access expression with `\"Ada\"`"
+    }
+  ]
+}

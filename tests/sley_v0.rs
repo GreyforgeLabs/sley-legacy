@@ -3696,6 +3696,87 @@ fn edit_plan_graft_templates_include_constant_map_index_expression_simplify() {
 }
 
 #[test]
+fn edit_plan_graft_templates_include_constant_record_field_access_expression_simplify() {
+    let source = include_str!("../examples/constant_record_field_access_expression.sley");
+    let program = parse_program(source).expect("parse constant record field access fixture");
+    let report = build_edit_plan_report_with_options(
+        "examples/constant_record_field_access_expression.sley",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: None,
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "warnings");
+    assert_eq!(report.summary.lint_finding_count, 1);
+    assert_eq!(
+        report.lint.as_ref().expect("lint summary").findings[0].id,
+        "CONSTANT_RECORD_FIELD_ACCESS_EXPRESSION"
+    );
+    let template = report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "simplify_constant_record_field_access_expression")
+        .expect("constant record field access simplify template");
+    assert_eq!(
+        template.surface,
+        "block:task:app.constant_record_field_access.main:stmt:0:expr"
+    );
+    assert_eq!(
+        template.operation.pointer("/op"),
+        Some(&serde_json::json!("ReplaceExpression"))
+    );
+    assert_eq!(
+        template.operation.pointer("/payload/source"),
+        Some(&serde_json::json!("\"Ada\""))
+    );
+    assert_eq!(template.editable_json_pointers, vec!["/payload/source"]);
+    let graft: GraftInput = serde_json::from_value(template.operation.clone())
+        .expect("parse constant record field access template");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:constant-record-field-access-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted_source = outcome.source.expect("grafted source");
+    assert!(grafted_source.contains("return \"Ada\""));
+    assert!(!grafted_source.contains("User { name: \"Ada\", age: 37 }.name"));
+    let grafted_program = parse_program(&grafted_source).expect("parse grafted source");
+    let lint_report = build_lint_report(
+        &grafted_program,
+        LintOptions {
+            rules: vec![LintRule::ConstantRecordFieldAccessExpression],
+            module: None,
+        },
+    );
+    assert_eq!(lint_report.status, "ok");
+
+    let targeted_report = build_edit_plan_report_with_options(
+        "examples/constant_record_field_access_expression.sley",
+        Ok(program),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some(
+                "block:task:app.constant_record_field_access.main:stmt:0:expr".to_string(),
+            ),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(targeted_report.status, "warnings");
+    assert!(targeted_report.diagnostics.is_empty());
+    assert_eq!(targeted_report.graft_templates.len(), 1);
+    assert_eq!(
+        targeted_report.graft_templates[0].kind,
+        "simplify_constant_record_field_access_expression"
+    );
+    assert!(targeted_report.transaction_templates.is_empty());
+}
+
+#[test]
 fn edit_plan_graft_templates_include_empty_if_statement_delete() {
     let source = include_str!("../examples/empty_if_statement.sley");
     let program = parse_program(source).expect("parse empty if fixture");
@@ -6466,6 +6547,22 @@ task helper -> Result<Text, Error> {
         include_str!("../fixtures/contracts/lint_constant_map_index_expression.json"),
     );
 
+    let constant_record_field_access_source =
+        include_str!("../examples/constant_record_field_access_expression.sley");
+    let constant_record_field_access_program = parse_program(constant_record_field_access_source)
+        .expect("parse constant record field access fixture");
+    let constant_record_field_access_lint = build_lint_report(
+        &constant_record_field_access_program,
+        LintOptions {
+            rules: vec![LintRule::ConstantRecordFieldAccessExpression],
+            module: None,
+        },
+    );
+    assert_json_snapshot(
+        &constant_record_field_access_lint,
+        include_str!("../fixtures/contracts/lint_constant_record_field_access_expression.json"),
+    );
+
     let empty_if_source = include_str!("../examples/empty_if_statement.sley");
     let empty_if_program = parse_program(empty_if_source).expect("parse empty if fixture");
     let empty_if_lint = build_lint_report(
@@ -7361,7 +7458,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(73))
+        Some(&serde_json::json!(74))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -13893,6 +13990,115 @@ task main -> Text {
 }
 
 #[test]
+fn lint_report_flags_constant_record_field_access_expressions() {
+    let source = r#"
+module app.constant_record_field_access
+
+type User = {
+  slot name: Text
+  slot age: Int
+  slot active: Bool
+  slot label: Text
+}
+
+task make_runtime -> Text {
+  return "runtime"
+}
+
+task main -> Text {
+  bind text = User { name: "Ada", age: 37, active: true, label: "ready" }.name
+  bind number = User { name: "Ada", age: 37, active: true, label: "ready" }.age
+  bind bool_value = User { name: "Ada", age: 37, active: true, label: "ready" }.active
+  bind runtime = User { name: call make_runtime(), age: 37, active: true, label: "ready" }.age
+
+  return User { name: "Ada", age: 37, active: true, label: "done" }.label
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+
+    let report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::ConstantRecordFieldAccessExpression],
+            module: None,
+        },
+    );
+
+    assert_eq!(report.schema, LINT_REPORT_SCHEMA);
+    assert_eq!(report.status, "findings");
+    assert_eq!(report.entry_module, "app.constant_record_field_access");
+    assert_eq!(
+        report.filters.rules,
+        vec!["constant_record_field_access_expression"]
+    );
+    assert_eq!(
+        report.findings.len(),
+        4,
+        "constant record field access should skip runtime record fields"
+    );
+    assert_eq!(
+        report.findings[0].id,
+        "CONSTANT_RECORD_FIELD_ACCESS_EXPRESSION"
+    );
+    assert_eq!(
+        report.findings[0].rule,
+        "constant_record_field_access_expression"
+    );
+    let nodes: Vec<&str> = report
+        .findings
+        .iter()
+        .map(|finding| finding.node.as_str())
+        .collect();
+    assert!(nodes.contains(&"block:task:app.constant_record_field_access.main:stmt:0:expr"));
+    assert!(nodes.contains(&"block:task:app.constant_record_field_access.main:stmt:1:expr"));
+    assert!(nodes.contains(&"block:task:app.constant_record_field_access.main:stmt:2:expr"));
+    assert!(nodes.contains(&"block:task:app.constant_record_field_access.main:stmt:4:expr"));
+    assert_eq!(
+        report.findings[0].module,
+        "app.constant_record_field_access"
+    );
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|finding| finding.hint.contains("\"Ada\""))
+    );
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|finding| finding.hint.contains("37"))
+    );
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|finding| finding.hint.contains("true"))
+    );
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|finding| finding.hint.contains("\"done\""))
+    );
+
+    let scoped_report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::ConstantRecordFieldAccessExpression],
+            module: Some("app.other".to_string()),
+        },
+    );
+    assert_eq!(scoped_report.status, "ok");
+    assert!(scoped_report.findings.is_empty());
+}
+
+#[test]
 fn lint_report_flags_empty_if_statements() {
     let source = r#"
 module app.empty_if
@@ -17029,6 +17235,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:templates:constant-text-concatenation-expression",
         "graft:templates:constant-list-index-expression",
         "graft:templates:constant-map-index-expression",
+        "graft:templates:constant-record-field-access-expression",
         "graft:templates:empty-if-statement-delete",
         "graft:templates:empty-for-statement-delete",
         "graft:templates:empty-forge-statement-delete",
@@ -17067,6 +17274,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "lint:constant_text_concatenation_expression",
         "lint:constant_list_index_expression",
         "lint:constant_map_index_expression",
+        "lint:constant_record_field_access_expression",
         "lint:empty_if_statement",
         "lint:empty_for_statement",
         "lint:empty_forge_statement",
@@ -17094,6 +17302,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:constant-text-concatenation-repair-write-verify",
         "readiness:constant-list-index-repair-write-verify",
         "readiness:constant-map-index-repair-write-verify",
+        "readiness:constant-record-field-access-repair-write-verify",
         "readiness:empty-if-repair-write-verify",
         "readiness:empty-for-repair-write-verify",
         "readiness:empty-forge-repair-write-verify",

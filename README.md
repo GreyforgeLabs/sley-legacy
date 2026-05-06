@@ -124,6 +124,7 @@ Implemented now:
   `--rule constant-text-concatenation-expression`,
   `--rule constant-list-index-expression`,
   `--rule constant-map-index-expression`,
+  `--rule constant-record-field-access-expression`,
   `--rule empty-if-statement`,
   `--rule empty-for-statement`,
   `--rule empty-forge-statement`,
@@ -198,6 +199,8 @@ Implemented now:
   that can be replaced by the indexed scalar literal,
   `simplify_constant_map_index_expression` templates for literal map indexes
   that can be replaced by the indexed scalar literal,
+  `simplify_constant_record_field_access_expression` templates for literal
+  record field access that can be replaced by the selected scalar literal,
   `delete_empty_if_statement` templates for no-op `if` statements with
   delete-safe conditions and empty branches,
   `delete_empty_for_statement` templates for `for` statements over literal
@@ -703,6 +706,8 @@ constant list index expression simplification templates with write/verify
 coverage,
 constant map index expression simplification templates with write/verify
 coverage,
+constant record field access expression simplification templates with
+write/verify coverage,
 empty-if statement delete templates with write/verify coverage,
 empty-for statement delete templates with write/verify coverage,
 empty-forge statement delete templates with write/verify coverage,

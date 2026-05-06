@@ -41,6 +41,7 @@ pub enum LintRule {
     ConstantTextConcatenationExpression,
     ConstantListIndexExpression,
     ConstantMapIndexExpression,
+    ConstantRecordFieldAccessExpression,
     EmptyIfStatement,
     EmptyForStatement,
     EmptyForgeStatement,
@@ -82,6 +83,7 @@ impl LintRule {
             Self::ConstantTextConcatenationExpression,
             Self::ConstantListIndexExpression,
             Self::ConstantMapIndexExpression,
+            Self::ConstantRecordFieldAccessExpression,
             Self::EmptyIfStatement,
             Self::EmptyForStatement,
             Self::EmptyForgeStatement,
@@ -123,6 +125,7 @@ impl LintRule {
             Self::ConstantTextConcatenationExpression => "constant_text_concatenation_expression",
             Self::ConstantListIndexExpression => "constant_list_index_expression",
             Self::ConstantMapIndexExpression => "constant_map_index_expression",
+            Self::ConstantRecordFieldAccessExpression => "constant_record_field_access_expression",
             Self::EmptyIfStatement => "empty_if_statement",
             Self::EmptyForStatement => "empty_for_statement",
             Self::EmptyForgeStatement => "empty_forge_statement",
@@ -293,6 +296,12 @@ pub fn build_lint_report(program: &Program, options: LintOptions) -> LintReport 
     }
     if rules.contains(&LintRule::ConstantMapIndexExpression) {
         findings.extend(lint_constant_map_index_expressions(
+            program,
+            options.module.as_deref(),
+        ));
+    }
+    if rules.contains(&LintRule::ConstantRecordFieldAccessExpression) {
+        findings.extend(lint_constant_record_field_access_expressions(
             program,
             options.module.as_deref(),
         ));
@@ -1160,6 +1169,21 @@ fn lint_constant_map_index_expressions(
         .filter(|task| module_matches(module, &task_module(task)))
     {
         collect_constant_map_index_expressions_in_block(task, &task.body, &mut findings);
+    }
+    findings
+}
+
+fn lint_constant_record_field_access_expressions(
+    program: &Program,
+    module: Option<&str>,
+) -> Vec<LintFinding> {
+    let mut findings = Vec::new();
+    for task in program
+        .tasks
+        .iter()
+        .filter(|task| module_matches(module, &task_module(task)))
+    {
+        collect_constant_record_field_access_expressions_in_block(task, &task.body, &mut findings);
     }
     findings
 }
@@ -2873,6 +2897,162 @@ fn constant_map_index_expression_replacement(expr: &Expr) -> Option<String> {
         ExprKind::StringLiteral { value } if value == key => Some(entry.value.source.clone()),
         _ => None,
     })
+}
+
+fn collect_constant_record_field_access_expressions_in_block(
+    task: &TaskDecl,
+    block: &Block,
+    findings: &mut Vec<LintFinding>,
+) {
+    for statement in &block.statements {
+        match &statement.kind {
+            StatementKind::Binding { expr, .. }
+            | StatementKind::Set { expr, .. }
+            | StatementKind::Return { expr }
+            | StatementKind::Expr { expr } => {
+                collect_constant_record_field_access_expressions_in_expr(task, expr, findings);
+            }
+            StatementKind::If {
+                condition,
+                then_block,
+                else_block,
+            } => {
+                collect_constant_record_field_access_expressions_in_expr(task, condition, findings);
+                collect_constant_record_field_access_expressions_in_block(
+                    task, then_block, findings,
+                );
+                if let Some(else_block) = else_block {
+                    collect_constant_record_field_access_expressions_in_block(
+                        task, else_block, findings,
+                    );
+                }
+            }
+            StatementKind::While { condition, body } => {
+                collect_constant_record_field_access_expressions_in_expr(task, condition, findings);
+                collect_constant_record_field_access_expressions_in_block(task, body, findings);
+            }
+            StatementKind::For {
+                collection, body, ..
+            } => {
+                collect_constant_record_field_access_expressions_in_expr(
+                    task, collection, findings,
+                );
+                collect_constant_record_field_access_expressions_in_block(task, body, findings);
+            }
+            StatementKind::Forge { body } => {
+                collect_constant_record_field_access_expressions_in_block(task, body, findings);
+            }
+        }
+    }
+}
+
+fn collect_constant_record_field_access_expressions_in_expr(
+    task: &TaskDecl,
+    expr: &Expr,
+    findings: &mut Vec<LintFinding>,
+) {
+    if let Some(replacement) = constant_record_field_access_expression_replacement(expr) {
+        let task_name = task_fq_name(task);
+        findings.push(LintFinding {
+            id: "CONSTANT_RECORD_FIELD_ACCESS_EXPRESSION".to_string(),
+            rule: LintRule::ConstantRecordFieldAccessExpression
+                .as_str()
+                .to_string(),
+            severity: "warning".to_string(),
+            message: format!(
+                "task `{task_name}` has a constant record field access expression `{}`",
+                expr.source
+            ),
+            node: expr.id.clone(),
+            module: task_module(task),
+            hint: format!(
+                "replace the constant record field access expression with `{replacement}`"
+            ),
+        });
+    }
+
+    match &expr.kind {
+        ExprKind::Unary { expr, .. } | ExprKind::Try { expr } => {
+            collect_constant_record_field_access_expressions_in_expr(task, expr, findings);
+        }
+        ExprKind::Binary { left, right, .. } => {
+            collect_constant_record_field_access_expressions_in_expr(task, left, findings);
+            collect_constant_record_field_access_expressions_in_expr(task, right, findings);
+        }
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
+            collect_constant_record_field_access_expressions_in_expr(task, condition, findings);
+            collect_constant_record_field_access_expressions_in_expr(task, then_branch, findings);
+            collect_constant_record_field_access_expressions_in_expr(task, else_branch, findings);
+        }
+        ExprKind::Call { callee, args } => {
+            collect_constant_record_field_access_expressions_in_expr(task, callee, findings);
+            for arg in args {
+                collect_constant_record_field_access_expressions_in_expr(task, arg, findings);
+            }
+        }
+        ExprKind::ListLiteral { items } => {
+            for item in items {
+                collect_constant_record_field_access_expressions_in_expr(task, item, findings);
+            }
+        }
+        ExprKind::MapLiteral { entries } => {
+            for entry in entries {
+                collect_constant_record_field_access_expressions_in_expr(
+                    task, &entry.key, findings,
+                );
+                collect_constant_record_field_access_expressions_in_expr(
+                    task,
+                    &entry.value,
+                    findings,
+                );
+            }
+        }
+        ExprKind::Index { collection, index } => {
+            collect_constant_record_field_access_expressions_in_expr(task, collection, findings);
+            collect_constant_record_field_access_expressions_in_expr(task, index, findings);
+        }
+        ExprKind::FieldAccess { receiver, .. } => {
+            collect_constant_record_field_access_expressions_in_expr(task, receiver, findings);
+        }
+        ExprKind::RecordLiteral { fields, .. } => {
+            for field in fields {
+                collect_constant_record_field_access_expressions_in_expr(
+                    task,
+                    &field.expr,
+                    findings,
+                );
+            }
+        }
+        ExprKind::Raw { .. }
+        | ExprKind::StringLiteral { .. }
+        | ExprKind::IntLiteral { .. }
+        | ExprKind::FloatLiteral { .. }
+        | ExprKind::BoolLiteral { .. }
+        | ExprKind::Identifier { .. } => {}
+    }
+}
+
+fn constant_record_field_access_expression_replacement(expr: &Expr) -> Option<String> {
+    let ExprKind::FieldAccess { receiver, field } = &expr.kind else {
+        return None;
+    };
+    let ExprKind::RecordLiteral { fields, .. } = &receiver.kind else {
+        return None;
+    };
+    if !fields
+        .iter()
+        .all(|field| is_scalar_literal_expr(&field.expr))
+    {
+        return None;
+    }
+    fields
+        .iter()
+        .find(|candidate| candidate.name == *field)
+        .map(|candidate| candidate.expr.source.clone())
 }
 
 fn is_scalar_literal_expr(expr: &Expr) -> bool {
@@ -5280,6 +5460,130 @@ fn constant_map_index_expression_replacement_in_expr(expr: &Expr, target: &str) 
         }
         ExprKind::RecordLiteral { fields, .. } => fields.iter().find_map(|field| {
             constant_map_index_expression_replacement_in_expr(&field.expr, target)
+        }),
+        ExprKind::Raw { .. }
+        | ExprKind::StringLiteral { .. }
+        | ExprKind::IntLiteral { .. }
+        | ExprKind::FloatLiteral { .. }
+        | ExprKind::BoolLiteral { .. }
+        | ExprKind::Identifier { .. } => None,
+    }
+}
+
+pub fn constant_record_field_access_expression_replacement_source(
+    program: &Program,
+    target: &str,
+) -> Option<String> {
+    program.tasks.iter().find_map(|task| {
+        constant_record_field_access_expression_replacement_in_block(&task.body, target)
+    })
+}
+
+fn constant_record_field_access_expression_replacement_in_block(
+    block: &Block,
+    target: &str,
+) -> Option<String> {
+    block
+        .statements
+        .iter()
+        .find_map(|statement| match &statement.kind {
+            StatementKind::Binding { expr, .. }
+            | StatementKind::Set { expr, .. }
+            | StatementKind::Return { expr }
+            | StatementKind::Expr { expr } => {
+                constant_record_field_access_expression_replacement_in_expr(expr, target)
+            }
+            StatementKind::If {
+                condition,
+                then_block,
+                else_block,
+            } => constant_record_field_access_expression_replacement_in_expr(condition, target)
+                .or_else(|| {
+                    constant_record_field_access_expression_replacement_in_block(then_block, target)
+                })
+                .or_else(|| {
+                    else_block.as_ref().and_then(|block| {
+                        constant_record_field_access_expression_replacement_in_block(block, target)
+                    })
+                }),
+            StatementKind::While { condition, body } => {
+                constant_record_field_access_expression_replacement_in_expr(condition, target)
+                    .or_else(|| {
+                        constant_record_field_access_expression_replacement_in_block(body, target)
+                    })
+            }
+            StatementKind::For {
+                collection, body, ..
+            } => constant_record_field_access_expression_replacement_in_expr(collection, target)
+                .or_else(|| {
+                    constant_record_field_access_expression_replacement_in_block(body, target)
+                }),
+            StatementKind::Forge { body } => {
+                constant_record_field_access_expression_replacement_in_block(body, target)
+            }
+        })
+}
+
+fn constant_record_field_access_expression_replacement_in_expr(
+    expr: &Expr,
+    target: &str,
+) -> Option<String> {
+    if expr.id == target {
+        return constant_record_field_access_expression_replacement(expr);
+    }
+
+    match &expr.kind {
+        ExprKind::Unary { expr, .. } | ExprKind::Try { expr } => {
+            constant_record_field_access_expression_replacement_in_expr(expr, target)
+        }
+        ExprKind::Binary { left, right, .. } => {
+            constant_record_field_access_expression_replacement_in_expr(left, target).or_else(
+                || constant_record_field_access_expression_replacement_in_expr(right, target),
+            )
+        }
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => constant_record_field_access_expression_replacement_in_expr(condition, target)
+            .or_else(|| {
+                constant_record_field_access_expression_replacement_in_expr(then_branch, target)
+            })
+            .or_else(|| {
+                constant_record_field_access_expression_replacement_in_expr(else_branch, target)
+            }),
+        ExprKind::Call { callee, args } => {
+            constant_record_field_access_expression_replacement_in_expr(callee, target).or_else(
+                || {
+                    args.iter().find_map(|arg| {
+                        constant_record_field_access_expression_replacement_in_expr(arg, target)
+                    })
+                },
+            )
+        }
+        ExprKind::ListLiteral { items } => items.iter().find_map(|item| {
+            constant_record_field_access_expression_replacement_in_expr(item, target)
+        }),
+        ExprKind::MapLiteral { entries } => entries.iter().find_map(|entry| {
+            constant_record_field_access_expression_replacement_in_expr(&entry.key, target).or_else(
+                || {
+                    constant_record_field_access_expression_replacement_in_expr(
+                        &entry.value,
+                        target,
+                    )
+                },
+            )
+        }),
+        ExprKind::Index { collection, index } => {
+            constant_record_field_access_expression_replacement_in_expr(collection, target).or_else(
+                || constant_record_field_access_expression_replacement_in_expr(index, target),
+            )
+        }
+        ExprKind::FieldAccess { receiver, .. } => {
+            constant_record_field_access_expression_replacement_in_expr(receiver, target)
+        }
+        ExprKind::RecordLiteral { fields, .. } => fields.iter().find_map(|field| {
+            constant_record_field_access_expression_replacement_in_expr(&field.expr, target)
         }),
         ExprKind::Raw { .. }
         | ExprKind::StringLiteral { .. }

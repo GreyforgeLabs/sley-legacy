@@ -40,7 +40,7 @@ Current verified surface:
 
 - `cargo fmt --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 268 tests.
+- Current integration coverage is 270 tests.
 - `sley query --json` emits `schema: "sley.query.report.v0"` and supports
   `--kind all|modules|tasks|types|effects|calls`, `--module <module>`, and
   `--exported`, including strict task/take/type/effect/call row definitions.
@@ -88,6 +88,7 @@ Current verified surface:
   `--rule constant-text-concatenation-expression`,
   `--rule constant-list-index-expression`,
   `--rule constant-map-index-expression`,
+  `--rule constant-record-field-access-expression`,
   `--rule empty-if-statement`,
   `--rule empty-for-statement`,
   `--rule empty-forge-statement`,
@@ -117,6 +118,7 @@ Current verified surface:
   `constant_text_concatenation_expression`,
   `constant_list_index_expression`,
   `constant_map_index_expression`,
+  `constant_record_field_access_expression`,
   `empty_if_statement`,
   `empty_for_statement`,
   `empty_forge_statement`,
@@ -199,6 +201,9 @@ Current verified surface:
   smoke coverage, plus checked `constant_map_index_expression` style findings
   and `simplify_constant_map_index_expression` templates with
   lint/plan/fix-write/verify
+  smoke coverage, plus checked `constant_record_field_access_expression` style
+  findings and `simplify_constant_record_field_access_expression` templates
+  with lint/plan/fix-write/verify
   smoke coverage, plus checked `empty_if_statement` no-op control-flow
   findings and `delete_empty_if_statement` templates with
   lint/plan/fix-write/verify smoke coverage, plus checked
@@ -443,6 +448,7 @@ cargo run -- lint --json --rule constant-arithmetic-expression <target>
 cargo run -- lint --json --rule constant-text-concatenation-expression <target>
 cargo run -- lint --json --rule constant-list-index-expression <target>
 cargo run -- lint --json --rule constant-map-index-expression <target>
+cargo run -- lint --json --rule constant-record-field-access-expression <target>
 cargo run -- lint --json --rule empty-if-statement <target>
 cargo run -- lint --json --rule empty-for-statement <target>
 cargo run -- lint --json --rule empty-forge-statement <target>
