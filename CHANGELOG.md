@@ -47,6 +47,8 @@ here. Dates use UTC-independent calendar dates from the local repo history.
   sandbox-runner, and ZJX tool replays plus the focused LSP integration test,
   contract fixtures, conformance, corpus, examples, CLI smokes, and
   Tree-sitter syntax parsing.
+- Added `make public-release-check` as the explicit failing gate for public
+  release cuts until license and repository metadata blockers are resolved.
 - The local syntax gate bootstraps Tree-sitter npm dependencies with `npm ci`
   when needed, and the GitHub composite action installs stable Node before
   running `make v1`.

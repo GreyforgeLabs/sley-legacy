@@ -607,6 +607,7 @@ Validation commands to prefer:
 
 ```bash
 make v1
+make public-release-check
 cargo fmt -- --check
 cargo test
 cargo run -- check --json examples/hello.sley
