@@ -1,0 +1,18 @@
+{
+  "schema": "sley.ast.node.v0",
+  "target": "block:task:main.main:stmt:0:expr",
+  "id": "block:task:main.main:stmt:0:expr",
+  "node_kind": "expression",
+  "module": "main",
+  "parent": "block:task:main.main:stmt:0",
+  "value": {
+    "id": "block:task:main.main:stmt:0:expr",
+    "source": "1",
+    "expr_kind": "IntLiteral",
+    "value": 1,
+    "span": {
+      "line": 2,
+      "column": 10
+    }
+  }
+}

@@ -1,8 +1,10 @@
 use serde::{Deserialize, Serialize};
+use serde_json::Value as JsonValue;
 
 use crate::diagnostics::SourceSpan;
 
 pub const AST_PROGRAM_SCHEMA: &str = "sley.ast.program.v0";
+pub const AST_NODE_SCHEMA: &str = "sley.ast.node.v0";
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Program {
@@ -85,6 +87,10 @@ impl Program {
                 || task.id.ends_with(&format!(".{needle}"))
         })
     }
+
+    pub fn ast_node_report(&self, target: &str) -> Option<AstNodeReport> {
+        find_ast_node_report(self, target)
+    }
 }
 
 fn ast_program_schema() -> String {
@@ -94,6 +100,350 @@ fn ast_program_schema() -> String {
 impl Default for Program {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct AstNodeReport {
+    pub schema: String,
+    pub target: String,
+    pub id: String,
+    pub node_kind: String,
+    pub module: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub parent: Option<String>,
+    pub value: JsonValue,
+}
+
+impl AstNodeReport {
+    fn new(
+        target: &str,
+        id: impl Into<String>,
+        node_kind: impl Into<String>,
+        module: impl Into<String>,
+        parent: Option<String>,
+        value: JsonValue,
+    ) -> Self {
+        Self {
+            schema: AST_NODE_SCHEMA.to_string(),
+            target: target.to_string(),
+            id: id.into(),
+            node_kind: node_kind.into(),
+            module: module.into(),
+            parent,
+            value,
+        }
+    }
+}
+
+fn find_ast_node_report(program: &Program, target: &str) -> Option<AstNodeReport> {
+    if target == "program" {
+        return Some(AstNodeReport::new(
+            target,
+            "program",
+            "program",
+            program.module_name(),
+            None,
+            serde_json::to_value(program).ok()?,
+        ));
+    }
+    if let Some(import) = program.imports.iter().find(|import| import.id == target) {
+        return Some(AstNodeReport::new(
+            target,
+            import.id.clone(),
+            "import",
+            import
+                .owner_module
+                .as_deref()
+                .unwrap_or(program.module_name()),
+            Some(format!(
+                "module:{}",
+                import
+                    .owner_module
+                    .as_deref()
+                    .unwrap_or(program.module_name())
+            )),
+            serde_json::to_value(import).ok()?,
+        ));
+    }
+    if let Some(ty) = program.types.iter().find(|ty| ty.id == target) {
+        return Some(AstNodeReport::new(
+            target,
+            ty.id.clone(),
+            "type",
+            ty.module.as_deref().unwrap_or(program.module_name()),
+            Some(format!(
+                "module:{}",
+                ty.module.as_deref().unwrap_or(program.module_name())
+            )),
+            serde_json::to_value(ty).ok()?,
+        ));
+    }
+    if let Some(effect) = program.effects.iter().find(|effect| effect.id == target) {
+        return Some(AstNodeReport::new(
+            target,
+            effect.id.clone(),
+            "effect",
+            effect.module.as_deref().unwrap_or(program.module_name()),
+            Some(format!(
+                "module:{}",
+                effect.module.as_deref().unwrap_or(program.module_name())
+            )),
+            serde_json::to_value(effect).ok()?,
+        ));
+    }
+    for task in &program.tasks {
+        if task.id == target {
+            return Some(AstNodeReport::new(
+                target,
+                task.id.clone(),
+                "task",
+                task.module.as_deref().unwrap_or(program.module_name()),
+                Some(format!(
+                    "module:{}",
+                    task.module.as_deref().unwrap_or(program.module_name())
+                )),
+                serde_json::to_value(task).ok()?,
+            ));
+        }
+        if let Some(take) = task.takes.iter().find(|take| take.id == target) {
+            return Some(AstNodeReport::new(
+                target,
+                take.id.clone(),
+                "take",
+                task.module.as_deref().unwrap_or(program.module_name()),
+                Some(task.id.clone()),
+                serde_json::to_value(take).ok()?,
+            ));
+        }
+        let block_id = format!("block:{}", task.id);
+        if let Some(report) = find_ast_node_report_in_block(
+            program,
+            target,
+            task.module.as_deref().unwrap_or(program.module_name()),
+            &task.body,
+            &block_id,
+            Some(&task.id),
+        ) {
+            return Some(report);
+        }
+    }
+    program.find_task_index(target).and_then(|index| {
+        let task = &program.tasks[index];
+        Some(AstNodeReport::new(
+            target,
+            task.id.clone(),
+            "task",
+            task.module.as_deref().unwrap_or(program.module_name()),
+            Some(format!(
+                "module:{}",
+                task.module.as_deref().unwrap_or(program.module_name())
+            )),
+            serde_json::to_value(task).ok()?,
+        ))
+    })
+}
+
+fn find_ast_node_report_in_block(
+    program: &Program,
+    target: &str,
+    module: &str,
+    block: &Block,
+    block_id: &str,
+    parent: Option<&str>,
+) -> Option<AstNodeReport> {
+    if target == block_id {
+        return Some(AstNodeReport::new(
+            target,
+            block_id.to_string(),
+            "block",
+            module,
+            parent.map(str::to_string),
+            serde_json::to_value(block).ok()?,
+        ));
+    }
+    for statement in &block.statements {
+        if statement.id == target {
+            return Some(AstNodeReport::new(
+                target,
+                statement.id.clone(),
+                "statement",
+                module,
+                Some(block_id.to_string()),
+                serde_json::to_value(statement).ok()?,
+            ));
+        }
+        if let Some(report) = find_ast_node_report_in_statement(program, target, module, statement)
+        {
+            return Some(report);
+        }
+    }
+    None
+}
+
+fn find_ast_node_report_in_statement(
+    program: &Program,
+    target: &str,
+    module: &str,
+    statement: &Statement,
+) -> Option<AstNodeReport> {
+    match &statement.kind {
+        StatementKind::Binding { expr, .. }
+        | StatementKind::Set { expr, .. }
+        | StatementKind::Return { expr }
+        | StatementKind::Expr { expr } => {
+            find_ast_node_report_in_expr(program, target, module, expr, Some(&statement.id))
+        }
+        StatementKind::If {
+            condition,
+            then_block,
+            else_block,
+        } => find_ast_node_report_in_expr(program, target, module, condition, Some(&statement.id))
+            .or_else(|| {
+                let then_id = format!("{}:then", statement.id);
+                find_ast_node_report_in_block(
+                    program,
+                    target,
+                    module,
+                    then_block,
+                    &then_id,
+                    Some(&statement.id),
+                )
+            })
+            .or_else(|| {
+                let else_block = else_block.as_ref()?;
+                let else_id = format!("{}:else", statement.id);
+                find_ast_node_report_in_block(
+                    program,
+                    target,
+                    module,
+                    else_block,
+                    &else_id,
+                    Some(&statement.id),
+                )
+            }),
+        StatementKind::While { condition, body } => {
+            find_ast_node_report_in_expr(program, target, module, condition, Some(&statement.id))
+                .or_else(|| {
+                    let body_id = format!("{}:body", statement.id);
+                    find_ast_node_report_in_block(
+                        program,
+                        target,
+                        module,
+                        body,
+                        &body_id,
+                        Some(&statement.id),
+                    )
+                })
+        }
+        StatementKind::For {
+            collection, body, ..
+        } => find_ast_node_report_in_expr(program, target, module, collection, Some(&statement.id))
+            .or_else(|| {
+                let body_id = format!("{}:body", statement.id);
+                find_ast_node_report_in_block(
+                    program,
+                    target,
+                    module,
+                    body,
+                    &body_id,
+                    Some(&statement.id),
+                )
+            }),
+        StatementKind::Forge { body } => {
+            let forge_id = format!("{}:forge", statement.id);
+            find_ast_node_report_in_block(
+                program,
+                target,
+                module,
+                body,
+                &forge_id,
+                Some(&statement.id),
+            )
+        }
+    }
+}
+
+fn find_ast_node_report_in_expr(
+    program: &Program,
+    target: &str,
+    module: &str,
+    expr: &Expr,
+    parent: Option<&str>,
+) -> Option<AstNodeReport> {
+    if expr.id == target {
+        return Some(AstNodeReport::new(
+            target,
+            expr.id.clone(),
+            "expression",
+            module,
+            parent.map(str::to_string),
+            serde_json::to_value(expr).ok()?,
+        ));
+    }
+    let expr_id = expr.id.as_str();
+    match &expr.kind {
+        ExprKind::Unary { expr: inner, .. } | ExprKind::Try { expr: inner } => {
+            find_ast_node_report_in_expr(program, target, module, inner, Some(expr_id))
+        }
+        ExprKind::Binary { left, right, .. } => {
+            find_ast_node_report_in_expr(program, target, module, left, Some(expr_id)).or_else(
+                || find_ast_node_report_in_expr(program, target, module, right, Some(expr_id)),
+            )
+        }
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => find_ast_node_report_in_expr(program, target, module, condition, Some(expr_id))
+            .or_else(|| {
+                find_ast_node_report_in_expr(program, target, module, then_branch, Some(expr_id))
+            })
+            .or_else(|| {
+                find_ast_node_report_in_expr(program, target, module, else_branch, Some(expr_id))
+            }),
+        ExprKind::Call { callee, args } => {
+            find_ast_node_report_in_expr(program, target, module, callee, Some(expr_id)).or_else(
+                || {
+                    args.iter().find_map(|arg| {
+                        find_ast_node_report_in_expr(program, target, module, arg, Some(expr_id))
+                    })
+                },
+            )
+        }
+        ExprKind::ListLiteral { items } => items.iter().find_map(|item| {
+            find_ast_node_report_in_expr(program, target, module, item, Some(expr_id))
+        }),
+        ExprKind::MapLiteral { entries } => entries.iter().find_map(|entry| {
+            find_ast_node_report_in_expr(program, target, module, &entry.key, Some(expr_id))
+                .or_else(|| {
+                    find_ast_node_report_in_expr(
+                        program,
+                        target,
+                        module,
+                        &entry.value,
+                        Some(expr_id),
+                    )
+                })
+        }),
+        ExprKind::Index { collection, index } => {
+            find_ast_node_report_in_expr(program, target, module, collection, Some(expr_id))
+                .or_else(|| {
+                    find_ast_node_report_in_expr(program, target, module, index, Some(expr_id))
+                })
+        }
+        ExprKind::FieldAccess { receiver, .. } => {
+            find_ast_node_report_in_expr(program, target, module, receiver, Some(expr_id))
+        }
+        ExprKind::RecordLiteral { fields, .. } => fields.iter().find_map(|field| {
+            find_ast_node_report_in_expr(program, target, module, &field.expr, Some(expr_id))
+        }),
+        ExprKind::Raw { .. }
+        | ExprKind::StringLiteral { .. }
+        | ExprKind::IntLiteral { .. }
+        | ExprKind::FloatLiteral { .. }
+        | ExprKind::BoolLiteral { .. }
+        | ExprKind::Identifier { .. } => None,
     }
 }
 

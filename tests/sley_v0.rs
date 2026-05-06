@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command as ProcessCommand;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use sley::ast::{AST_PROGRAM_SCHEMA, ExprKind, ProvenanceRecord, StatementKind};
+use sley::ast::{AST_NODE_SCHEMA, AST_PROGRAM_SCHEMA, ExprKind, ProvenanceRecord, StatementKind};
 use sley::authority::{host_effect_contracts, host_effects_for_callee};
 use sley::checker::{check_program, has_errors};
 use sley::deploy::{
@@ -241,6 +241,61 @@ fn formatter_round_trips_every_example_and_project_module() {
             "formatter is not stable for {file:?}"
         );
     }
+}
+
+#[test]
+fn ast_node_report_targets_nested_nodes() {
+    let source = r#"
+module app.ast
+
+task main -> Int {
+  bind value = 40
+
+  return value + 2
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+
+    let task = program
+        .ast_node_report("task:app.ast.main")
+        .expect("task AST node report");
+    assert_eq!(task.schema, AST_NODE_SCHEMA);
+    assert_eq!(task.node_kind, "task");
+    assert_eq!(task.id, "task:app.ast.main");
+    assert_eq!(task.module, "app.ast");
+    assert_eq!(task.parent.as_deref(), Some("module:app.ast"));
+    assert_eq!(
+        task.value.pointer("/body/statements/1/id"),
+        Some(&serde_json::json!("block:task:app.ast.main:stmt:1"))
+    );
+
+    let statement = program
+        .ast_node_report("block:task:app.ast.main:stmt:0")
+        .expect("statement AST node report");
+    assert_eq!(statement.node_kind, "statement");
+    assert_eq!(statement.parent.as_deref(), Some("block:task:app.ast.main"));
+    assert_eq!(
+        statement.value.pointer("/name"),
+        Some(&serde_json::json!("value"))
+    );
+
+    let expression = program
+        .ast_node_report("block:task:app.ast.main:stmt:1:expr:right")
+        .expect("nested expression AST node report");
+    assert_eq!(expression.node_kind, "expression");
+    assert_eq!(
+        expression.parent.as_deref(),
+        Some("block:task:app.ast.main:stmt:1:expr")
+    );
+    assert_eq!(
+        expression.value.pointer("/expr_kind"),
+        Some(&serde_json::json!("IntLiteral"))
+    );
+    assert!(
+        program
+            .ast_node_report("block:task:app.ast.main:stmt:9")
+            .is_none()
+    );
 }
 
 #[test]
@@ -3573,6 +3628,13 @@ fn json_contract_snapshots_are_locked() {
         &program,
         include_str!("../fixtures/contracts/ast_minimal_program.json"),
     );
+    let ast_node = program
+        .ast_node_report("block:task:main.main:stmt:0:expr")
+        .expect("minimal return expression AST node");
+    assert_json_snapshot(
+        &ast_node,
+        include_str!("../fixtures/contracts/ast_node_return_expression.json"),
+    );
 
     let diagnostics_program =
         parse_program("task main -> Int {\n  return missing\n}\n").expect("parse source");
@@ -4267,6 +4329,10 @@ task main -> Used uses UsedEffect {
         AST_PROGRAM_SCHEMA,
     );
     assert_schema_file(
+        include_str!("../docs/schemas/sley.ast.node.v0.schema.json"),
+        AST_NODE_SCHEMA,
+    );
+    assert_schema_file(
         include_str!("../docs/schemas/sley.diagnostics.report.v0.schema.json"),
         DIAGNOSTIC_REPORT_SCHEMA,
     );
@@ -4374,7 +4440,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         inventory_json.pointer("/schema_count"),
-        Some(&serde_json::json!(22))
+        Some(&serde_json::json!(23))
     );
     let schema_ids = inventory_json
         .pointer("/schemas")
@@ -4384,6 +4450,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
         .filter_map(|schema| schema.pointer("/id").and_then(serde_json::Value::as_str))
         .collect::<BTreeSet<_>>();
     assert!(schema_ids.contains("sley.query.report.v0"));
+    assert!(schema_ids.contains("sley.ast.node.v0"));
     assert!(schema_ids.contains("sley.ci.report.v0"));
     assert!(schema_ids.contains("sley.deploy.artifact_check.v0"));
     assert!(schema_ids.contains("sley.deploy.artifacts.v0"));
@@ -4420,7 +4487,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(29))
+        Some(&serde_json::json!(30))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -11154,6 +11221,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "cli:graft-dry-run",
         "cli:graft-write",
         "cli:smoke-setup-files",
+        "diagnostic:AST_NODE_NOT_FOUND",
         "diagnostic:MISSING_RETURN",
         "fix:call-transaction-write",
         "fix:lint-cleanup-write",
@@ -11224,6 +11292,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "host:SecretRead",
         "host:Shell",
         "host:Spend",
+        "json:sley.ast.node.v0",
         "json:sley.ast.program.v0",
         "json:sley.diagnostics.report.v0",
         "json:sley.graft.outcome.v0",

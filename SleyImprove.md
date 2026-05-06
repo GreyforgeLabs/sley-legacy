@@ -113,12 +113,12 @@ sley format <target>
 Rules:
 
 - JSON output must be stable and versioned.
-- AST roots, diagnostic reports, symbol graphs, graph slices, query reports,
-  lint reports, doctor reports, verify reports, deploy dry-run reports, deploy
-  artifact manifests, deploy artifact check reports, CI reports, project
-  scaffold reports, trace seals, ZJX envelopes, and graft outcomes carry v0
-  schema IDs.
-- AST, diagnostic-report, graph-slice, query-report, lint-report,
+- AST program roots, bounded AST node reports, diagnostic reports, symbol
+  graphs, graph slices, query reports, lint reports, doctor reports, verify
+  reports, deploy dry-run reports, deploy artifact manifests, deploy artifact
+  check reports, CI reports, project scaffold reports, trace seals, ZJX
+  envelopes, and graft outcomes carry v0 schema IDs.
+- AST program/node, diagnostic-report, graph-slice, query-report, lint-report,
   doctor-report, project-scaffold, and trace-seal snapshots are locked under
   `fixtures/contracts/`.
 - JSON Schema files live under `docs/schemas/`; the AST schema covers nested

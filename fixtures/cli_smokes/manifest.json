@@ -624,12 +624,52 @@
     {
       "name": "ast_hello_task_json",
       "args": ["ast", "--json", "--node", "task:app.hello.main", "examples/hello.sley"],
-      "covers": ["cli:ast"],
+      "covers": ["cli:ast", "json:sley.ast.node.v0"],
       "expect": {
         "success": true,
         "stdout_json": [
+          { "pointer": "/schema", "value": "sley.ast.node.v0" },
           { "pointer": "/id", "value": "task:app.hello.main" },
-          { "pointer": "/name", "value": "main" }
+          { "pointer": "/node_kind", "value": "task" },
+          { "pointer": "/module", "value": "app.hello" },
+          { "pointer": "/value/name", "value": "main" }
+        ]
+      }
+    },
+    {
+      "name": "ast_hello_expression_json",
+      "args": [
+        "ast",
+        "--json",
+        "--node",
+        "block:task:app.hello.main:stmt:0:expr",
+        "examples/hello.sley"
+      ],
+      "covers": ["cli:ast", "json:sley.ast.node.v0"],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.ast.node.v0" },
+          { "pointer": "/id", "value": "block:task:app.hello.main:stmt:0:expr" },
+          { "pointer": "/node_kind", "value": "expression" },
+          { "pointer": "/parent", "value": "block:task:app.hello.main:stmt:0" },
+          { "pointer": "/value/expr_kind", "value": "StringLiteral" },
+          { "pointer": "/value/value", "value": "hello sley" }
+        ]
+      }
+    },
+    {
+      "name": "ast_missing_node_json",
+      "args": ["ast", "--json", "--node", "missing:node", "examples/hello.sley"],
+      "covers": ["cli:ast", "json:sley.diagnostics.report.v0", "diagnostic:AST_NODE_NOT_FOUND"],
+      "expect": {
+        "success": false,
+        "stderr_contains": ["operation failed"],
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.diagnostics.report.v0" },
+          { "pointer": "/status", "value": "error" },
+          { "pointer": "/diagnostics/0/id", "value": "AST_NODE_NOT_FOUND" },
+          { "pointer": "/diagnostics/0/node", "value": "missing:node" }
         ]
       }
     },

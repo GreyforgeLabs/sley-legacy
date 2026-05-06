@@ -40,7 +40,8 @@ Agent rules:
 - Prefer structural grafts over raw text edits.
 - Run `check --json` after every proposed semantic change.
 - Use `graph --json --slice <node-id>` before planning a bounded graft.
-- Use `ast --json --node <node-id>` when exact task shape matters.
+- Use `ast --json --node <node-id>` when exact task, statement, or expression
+  shape matters; node reports use `schema: "sley.ast.node.v0"`.
 - Treat diagnostic `repair_hints` as suggestions, not authority bypasses.
 - For `PARSE_EXPECTED_*`, inspect `insert_expected_token`,
   `provide_identifier`, `provide_expression`, or `choose_expected_item` hints

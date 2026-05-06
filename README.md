@@ -94,7 +94,9 @@ Implemented now:
   path, and import alias
 - checker type and effect lookup by local module, imported exported name, full
   module path, and import alias
-- JSON AST output with `schema: "sley.ast.program.v0"`
+- JSON AST output with `schema: "sley.ast.program.v0"` plus bounded
+  `sley ast --node <node-id>` reports with `schema: "sley.ast.node.v0"` for
+  task, take, block, statement, and expression inspection before grafting
 - JSON module symbol graph output for module imports and exported declarations,
   plus bounded graph slices with `sley graph --slice <node-id>`; symbol graph
   and graph-slice JSON carry v0 schema IDs, including schema-linked focus,

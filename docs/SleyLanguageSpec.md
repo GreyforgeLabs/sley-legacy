@@ -565,7 +565,11 @@ sley trace --json <target>
 sley seal --json <target>
 ```
 
-AST roots carry `schema: "sley.ast.program.v0"`. Diagnostic reports carry
+AST roots carry `schema: "sley.ast.program.v0"`. Bounded AST node reports from
+`sley ast --json --node <node-id>` carry `schema: "sley.ast.node.v0"` and wrap
+the selected program, import, type, effect, task, take, block, statement, or
+expression node with its id, node kind, module, parent, and raw AST value.
+Diagnostic reports carry
 `schema: "sley.diagnostics.report.v0"` and expose the shared diagnostic record
 used by graft, doctor, plan, verify, and runtime diagnostic arrays. Full symbol
 graphs carry
