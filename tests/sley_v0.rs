@@ -5530,6 +5530,73 @@ fn graph_slice_reports_resolved_project_task_calls() {
 }
 
 #[test]
+fn graph_slice_reports_move_node_affordances() {
+    let source = r#"
+task helper -> Int {
+  take other: Int
+
+  return other
+}
+
+task main -> Int {
+  take value: Int
+
+  tally total = value
+  if true {
+    set total = total + 1
+  }
+  return total
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let slice = slice_symbol_graph(&program, "task:main.main").expect("slice main");
+
+    let nested_statement = slice
+        .move_affordances
+        .iter()
+        .find(|affordance| affordance.target == "block:task:main.main:stmt:1:then:stmt:0")
+        .expect("nested statement move affordance");
+    assert_eq!(nested_statement.target_kind, "statement");
+    assert_eq!(nested_statement.parent, "block:task:main.main:stmt:1:then");
+    assert_eq!(nested_statement.position, 0);
+    assert_eq!(nested_statement.max_position, 0);
+    assert!(
+        nested_statement
+            .destinations
+            .iter()
+            .any(|destination| destination.parent == "block:task:main.main"
+                && destination.max_position == 3),
+        "expected top-level destination block, got {nested_statement:#?}"
+    );
+    assert!(
+        !nested_statement
+            .destinations
+            .iter()
+            .any(|destination| destination
+                .parent
+                .starts_with("block:task:main.main:stmt:1:then:stmt:0")),
+        "statement move affordance should not allow moving into its own child"
+    );
+
+    let take = slice
+        .move_affordances
+        .iter()
+        .find(|affordance| affordance.target == "take:task:main.main:0:value")
+        .expect("take move affordance");
+    assert_eq!(take.target_kind, "take");
+    assert_eq!(take.parent, "task:main.main:takes");
+    assert_eq!(take.position, 0);
+    assert_eq!(take.max_position, 0);
+    assert!(
+        take.destinations
+            .iter()
+            .any(|destination| destination.parent == "task:main.helper:takes"
+                && destination.max_position == 1),
+        "expected helper take destination, got {take:#?}"
+    );
+}
+
+#[test]
 fn query_report_lists_checked_project_tasks() {
     let project_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("examples/project");
     let project = load_project(&project_root).expect("load project");

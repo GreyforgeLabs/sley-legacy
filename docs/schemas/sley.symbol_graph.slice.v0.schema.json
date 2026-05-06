@@ -12,6 +12,7 @@
     "types",
     "effects",
     "tasks",
+    "move_affordances",
     "outbound_calls",
     "inbound_calls"
   ],
@@ -25,6 +26,7 @@
     "effects": { "type": "array", "items": { "$ref": "#/$defs/declarationSummary" } },
     "tasks": { "type": "array", "items": { "$ref": "#/$defs/declarationSummary" } },
     "task": { "type": "object" },
+    "move_affordances": { "type": "array", "items": { "$ref": "#/$defs/moveAffordance" } },
     "outbound_calls": { "type": "array", "items": { "type": "object" } },
     "inbound_calls": { "type": "array", "items": { "type": "object" } }
   },
@@ -46,6 +48,38 @@
         "name": { "type": "string" },
         "id": { "type": "string" },
         "exported": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "moveAffordance": {
+      "type": "object",
+      "required": [
+        "target",
+        "target_kind",
+        "parent",
+        "position",
+        "max_position",
+        "destinations"
+      ],
+      "properties": {
+        "target": { "type": "string" },
+        "target_kind": { "enum": ["statement", "take"] },
+        "parent": { "type": "string" },
+        "position": { "type": "integer", "minimum": 0 },
+        "max_position": { "type": "integer", "minimum": 0 },
+        "destinations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/moveDestination" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "moveDestination": {
+      "type": "object",
+      "required": ["parent", "max_position"],
+      "properties": {
+        "parent": { "type": "string" },
+        "max_position": { "type": "integer", "minimum": 0 }
       },
       "additionalProperties": false
     }

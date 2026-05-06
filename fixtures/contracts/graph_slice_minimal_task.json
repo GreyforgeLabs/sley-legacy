@@ -55,6 +55,16 @@
       "column": 1
     }
   },
+  "move_affordances": [
+    {
+      "target": "block:task:main.main:stmt:0",
+      "target_kind": "statement",
+      "parent": "block:task:main.main",
+      "position": 0,
+      "max_position": 0,
+      "destinations": []
+    }
+  ],
   "outbound_calls": [],
   "inbound_calls": []
 }

@@ -79,6 +79,7 @@ pub struct SymbolGraphSlice {
     pub tasks: Vec<DeclarationSymbolSummary>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub task: Option<TaskDecl>,
+    pub move_affordances: Vec<MoveNodeAffordance>,
     pub outbound_calls: Vec<TaskCallSummary>,
     pub inbound_calls: Vec<TaskCallSummary>,
 }
@@ -103,6 +104,22 @@ pub struct TaskCallSummary {
     pub target: Option<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub candidates: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct MoveNodeAffordance {
+    pub target: String,
+    pub target_kind: String,
+    pub parent: String,
+    pub position: usize,
+    pub max_position: usize,
+    pub destinations: Vec<MoveNodeDestination>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct MoveNodeDestination {
+    pub parent: String,
+    pub max_position: usize,
 }
 
 pub fn build_symbol_graph(program: &Program) -> SymbolGraph {
@@ -598,8 +615,214 @@ fn build_slice(
         effects: module.effects,
         tasks: module.tasks,
         task: focus_task_index.map(|index| program.tasks[index].clone()),
+        move_affordances: build_move_affordances(program, focus_task_index, &module_task_indexes),
         outbound_calls,
         inbound_calls,
+    }
+}
+
+fn build_move_affordances(
+    program: &Program,
+    focus_task_index: Option<usize>,
+    module_task_indexes: &[usize],
+) -> Vec<MoveNodeAffordance> {
+    let task_indexes = focus_task_index
+        .map(|index| vec![index])
+        .unwrap_or_else(|| module_task_indexes.to_vec());
+    let mut affordances = Vec::new();
+    for task_index in task_indexes {
+        let task = &program.tasks[task_index];
+        collect_take_move_affordances(task, module_task_indexes, program, &mut affordances);
+        collect_statement_move_affordances(task, &mut affordances);
+    }
+    affordances
+}
+
+fn collect_take_move_affordances(
+    task: &TaskDecl,
+    destination_task_indexes: &[usize],
+    program: &Program,
+    affordances: &mut Vec<MoveNodeAffordance>,
+) {
+    let parent = format!("{}:takes", task.id);
+    let max_position = task.takes.len().saturating_sub(1);
+    for (position, take) in task.takes.iter().enumerate() {
+        let destinations = destination_task_indexes
+            .iter()
+            .filter_map(|index| {
+                let destination = &program.tasks[*index];
+                (destination.id != task.id).then(|| MoveNodeDestination {
+                    parent: format!("{}:takes", destination.id),
+                    max_position: destination.takes.len(),
+                })
+            })
+            .collect();
+        affordances.push(MoveNodeAffordance {
+            target: take.id.clone(),
+            target_kind: "take".to_string(),
+            parent: parent.clone(),
+            position,
+            max_position,
+            destinations,
+        });
+    }
+}
+
+#[derive(Debug, Clone)]
+struct BlockMoveDestination {
+    parent: String,
+    max_position: usize,
+}
+
+fn collect_statement_move_affordances(task: &TaskDecl, affordances: &mut Vec<MoveNodeAffordance>) {
+    let mut destinations = Vec::new();
+    collect_block_move_destinations(&task.body, format!("block:{}", task.id), &mut destinations);
+    collect_statement_move_affordances_in_block(
+        &task.body,
+        &format!("block:{}", task.id),
+        &destinations,
+        affordances,
+    );
+}
+
+fn collect_block_move_destinations(
+    block: &Block,
+    parent: String,
+    destinations: &mut Vec<BlockMoveDestination>,
+) {
+    destinations.push(BlockMoveDestination {
+        parent: parent.clone(),
+        max_position: block.statements.len(),
+    });
+    for statement in &block.statements {
+        match &statement.kind {
+            StatementKind::If {
+                then_block,
+                else_block,
+                ..
+            } => {
+                collect_block_move_destinations(
+                    then_block,
+                    format!("{}:then", statement.id),
+                    destinations,
+                );
+                if let Some(else_block) = else_block {
+                    collect_block_move_destinations(
+                        else_block,
+                        format!("{}:else", statement.id),
+                        destinations,
+                    );
+                }
+            }
+            StatementKind::While { body, .. } => {
+                collect_block_move_destinations(
+                    body,
+                    format!("{}:body", statement.id),
+                    destinations,
+                );
+            }
+            StatementKind::For { body, .. } => {
+                collect_block_move_destinations(
+                    body,
+                    format!("{}:body", statement.id),
+                    destinations,
+                );
+            }
+            StatementKind::Forge { body } => {
+                collect_block_move_destinations(
+                    body,
+                    format!("{}:forge", statement.id),
+                    destinations,
+                );
+            }
+            StatementKind::Binding { .. }
+            | StatementKind::Set { .. }
+            | StatementKind::Return { .. }
+            | StatementKind::Expr { .. } => {}
+        }
+    }
+}
+
+fn collect_statement_move_affordances_in_block(
+    block: &Block,
+    parent: &str,
+    destinations: &[BlockMoveDestination],
+    affordances: &mut Vec<MoveNodeAffordance>,
+) {
+    let max_position = block.statements.len().saturating_sub(1);
+    for (position, statement) in block.statements.iter().enumerate() {
+        let destination_parents = destinations
+            .iter()
+            .filter(|destination| {
+                destination.parent != parent
+                    && !destination
+                        .parent
+                        .strip_prefix(&statement.id)
+                        .is_some_and(|suffix| suffix.starts_with(':'))
+            })
+            .map(|destination| MoveNodeDestination {
+                parent: destination.parent.clone(),
+                max_position: destination.max_position,
+            })
+            .collect();
+        affordances.push(MoveNodeAffordance {
+            target: statement.id.clone(),
+            target_kind: "statement".to_string(),
+            parent: parent.to_string(),
+            position,
+            max_position,
+            destinations: destination_parents,
+        });
+        match &statement.kind {
+            StatementKind::If {
+                then_block,
+                else_block,
+                ..
+            } => {
+                collect_statement_move_affordances_in_block(
+                    then_block,
+                    &format!("{}:then", statement.id),
+                    destinations,
+                    affordances,
+                );
+                if let Some(else_block) = else_block {
+                    collect_statement_move_affordances_in_block(
+                        else_block,
+                        &format!("{}:else", statement.id),
+                        destinations,
+                        affordances,
+                    );
+                }
+            }
+            StatementKind::While { body, .. } => {
+                collect_statement_move_affordances_in_block(
+                    body,
+                    &format!("{}:body", statement.id),
+                    destinations,
+                    affordances,
+                );
+            }
+            StatementKind::For { body, .. } => {
+                collect_statement_move_affordances_in_block(
+                    body,
+                    &format!("{}:body", statement.id),
+                    destinations,
+                    affordances,
+                );
+            }
+            StatementKind::Forge { body } => {
+                collect_statement_move_affordances_in_block(
+                    body,
+                    &format!("{}:forge", statement.id),
+                    destinations,
+                    affordances,
+                );
+            }
+            StatementKind::Binding { .. }
+            | StatementKind::Set { .. }
+            | StatementKind::Return { .. }
+            | StatementKind::Expr { .. } => {}
+        }
     }
 }
 
