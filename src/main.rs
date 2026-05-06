@@ -965,6 +965,7 @@ enum CliLintRule {
     IdentityBinaryExpression,
     RedundantBooleanComparison,
     DoubleNegationExpression,
+    RedundantBooleanIfExpression,
 }
 
 impl From<CliLintRule> for LintRule {
@@ -987,6 +988,7 @@ impl From<CliLintRule> for LintRule {
             CliLintRule::IdentityBinaryExpression => Self::IdentityBinaryExpression,
             CliLintRule::RedundantBooleanComparison => Self::RedundantBooleanComparison,
             CliLintRule::DoubleNegationExpression => Self::DoubleNegationExpression,
+            CliLintRule::RedundantBooleanIfExpression => Self::RedundantBooleanIfExpression,
         }
     }
 }

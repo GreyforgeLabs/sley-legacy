@@ -3168,6 +3168,85 @@ fn edit_plan_graft_templates_include_double_negation_expression_simplify() {
 }
 
 #[test]
+fn edit_plan_graft_templates_include_redundant_boolean_if_expression_simplify() {
+    let source = include_str!("../examples/redundant_boolean_if_expression.sley");
+    let program = parse_program(source).expect("parse redundant boolean if fixture");
+    let report = build_edit_plan_report_with_options(
+        "examples/redundant_boolean_if_expression.sley",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: None,
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "warnings");
+    assert_eq!(report.summary.lint_finding_count, 1);
+    assert_eq!(
+        report.lint.as_ref().expect("lint summary").findings[0].id,
+        "REDUNDANT_BOOLEAN_IF_EXPRESSION"
+    );
+    let template = report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "simplify_redundant_boolean_if_expression")
+        .expect("redundant boolean if expression simplify template");
+    assert_eq!(
+        template.surface,
+        "block:task:app.boolean_if.main:stmt:1:expr"
+    );
+    assert_eq!(
+        template.operation.pointer("/op"),
+        Some(&serde_json::json!("ReplaceExpression"))
+    );
+    assert_eq!(
+        template.operation.pointer("/payload/source"),
+        Some(&serde_json::json!("ready"))
+    );
+    assert_eq!(template.editable_json_pointers, vec!["/payload/source"]);
+    let graft: GraftInput = serde_json::from_value(template.operation.clone())
+        .expect("parse redundant boolean if template");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:boolean-if-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted_source = outcome.source.expect("grafted source");
+    assert!(grafted_source.contains("return ready"));
+    assert!(!grafted_source.contains("if ready"));
+    let grafted_program = parse_program(&grafted_source).expect("parse grafted source");
+    let lint_report = build_lint_report(
+        &grafted_program,
+        LintOptions {
+            rules: vec![LintRule::RedundantBooleanIfExpression],
+            module: None,
+        },
+    );
+    assert_eq!(lint_report.status, "ok");
+
+    let targeted_report = build_edit_plan_report_with_options(
+        "examples/redundant_boolean_if_expression.sley",
+        Ok(program),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("block:task:app.boolean_if.main:stmt:1:expr".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(targeted_report.status, "warnings");
+    assert!(targeted_report.diagnostics.is_empty());
+    assert_eq!(targeted_report.graft_templates.len(), 1);
+    assert_eq!(
+        targeted_report.graft_templates[0].kind,
+        "simplify_redundant_boolean_if_expression"
+    );
+    assert!(targeted_report.transaction_templates.is_empty());
+}
+
+#[test]
 fn edit_plan_transaction_templates_include_mutable_binding_conversion() {
     let source = include_str!("../examples/mutable_binding_style.sley");
     let program = parse_program(source).expect("parse mutable binding fixture");
@@ -4819,6 +4898,22 @@ task helper -> Result<Text, Error> {
         include_str!("../fixtures/contracts/lint_double_negation_expression.json"),
     );
 
+    let redundant_boolean_if_source =
+        include_str!("../examples/redundant_boolean_if_expression.sley");
+    let redundant_boolean_if_program =
+        parse_program(redundant_boolean_if_source).expect("parse redundant boolean if fixture");
+    let redundant_boolean_if_lint = build_lint_report(
+        &redundant_boolean_if_program,
+        LintOptions {
+            rules: vec![LintRule::RedundantBooleanIfExpression],
+            module: None,
+        },
+    );
+    assert_json_snapshot(
+        &redundant_boolean_if_lint,
+        include_str!("../fixtures/contracts/lint_redundant_boolean_if_expression.json"),
+    );
+
     let missing_module_source = r#"
 task main -> Text {
   return "hello"
@@ -5473,7 +5568,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(35))
+        Some(&serde_json::json!(36))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -10868,6 +10963,68 @@ task main -> Bool {
 }
 
 #[test]
+fn lint_report_flags_redundant_boolean_if_expressions() {
+    let source = r#"
+module app.boolean_if
+
+task main -> Bool {
+  bind ready = true
+  bind nested = ready && true
+
+  return if ready { true } else { false } && if nested { false } else { true }
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+
+    let report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::RedundantBooleanIfExpression],
+            module: None,
+        },
+    );
+
+    assert_eq!(report.schema, LINT_REPORT_SCHEMA);
+    assert_eq!(report.status, "findings");
+    assert_eq!(report.entry_module, "app.boolean_if");
+    assert_eq!(
+        report.filters.rules,
+        vec!["redundant_boolean_if_expression"]
+    );
+    assert_eq!(report.findings.len(), 2);
+    assert_eq!(report.findings[0].id, "REDUNDANT_BOOLEAN_IF_EXPRESSION");
+    assert_eq!(report.findings[0].rule, "redundant_boolean_if_expression");
+    assert_eq!(
+        report.findings[0].node,
+        "block:task:app.boolean_if.main:stmt:2:expr:left"
+    );
+    assert_eq!(report.findings[0].module, "app.boolean_if");
+    assert!(report.findings[0].message.contains("if ready"));
+    assert!(report.findings[0].hint.contains("ready"));
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|finding| finding.hint.contains("!nested"))
+    );
+
+    let scoped_report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::RedundantBooleanIfExpression],
+            module: Some("app.other".to_string()),
+        },
+    );
+    assert_eq!(scoped_report.status, "ok");
+    assert!(scoped_report.findings.is_empty());
+}
+
+#[test]
 fn lint_report_flags_missing_module_declarations() {
     let source = r#"
 task main -> Text {
@@ -13074,6 +13231,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:templates:identity-binary-expression",
         "graft:templates:redundant-boolean-comparison",
         "graft:templates:double-negation-expression",
+        "graft:templates:redundant-boolean-if-expression",
         "graft:templates:add-task",
         "graft:templates:add-import",
         "graft:operations:add-take",
@@ -13118,6 +13276,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "lint:identity_binary_expression",
         "lint:redundant_boolean_comparison",
         "lint:double_negation_expression",
+        "lint:redundant_boolean_if_expression",
         "query:tasks",
         "query:types",
         "query:effects",
@@ -13131,6 +13290,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:identity-binary-repair-write-verify",
         "readiness:redundant-boolean-repair-write-verify",
         "readiness:double-negation-repair-write-verify",
+        "readiness:redundant-boolean-if-repair-write-verify",
         "readiness:lint-repair-plan",
         "readiness:lint-repair-preview",
         "readiness:lint-repair-write-command",

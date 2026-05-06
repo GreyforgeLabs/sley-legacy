@@ -177,7 +177,9 @@ Current development phase:
   `constant_if_expression`, the identity simplification rule
   `identity_binary_expression`, the redundant boolean comparison rule
   `redundant_boolean_comparison`, the double negation simplification rule
-  `double_negation_expression`, and the result-safety rule `unchecked_result`
+  `double_negation_expression`, the redundant boolean-if simplification rule
+  `redundant_boolean_if_expression`, and the result-safety rule
+  `unchecked_result`
 - `sley new --json` emits `sley.project.scaffold.v0` and creates
   non-destructive `hello`, deterministic `deploy`, or deterministic `agent`
   starter projects that can immediately run through check, doctor, query,
