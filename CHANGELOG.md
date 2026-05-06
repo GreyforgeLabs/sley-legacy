@@ -65,6 +65,8 @@ here. Dates use UTC-independent calendar dates from the local repo history.
   validation in the integration test.
 - `sley.verify.report.v0` now schema-links embedded runtime values to the
   strict `sley.run.report.v0` value contract.
+- Deploy artifact manifests and artifact-check reports now pin report, seal,
+  and package file roles to their expected schema ids.
 - The local syntax gate bootstraps Tree-sitter npm dependencies with `npm ci`
   when needed, and the GitHub composite action installs stable Node before
   running `make v1`.

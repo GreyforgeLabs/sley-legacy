@@ -304,7 +304,8 @@ Rules:
   remains behind operator approval. `--artifacts-dir <dir>` writes local
   `deploy-report.json`, `seal.json`, `zjx-envelope.json`, and digest-bearing
   `manifest.json` handoff files only after the dry-run package is ready;
-  `sley-ci run` wraps deterministic runtime execution under
+  artifact manifests pin report, seal, and package roles to their expected
+  schemas. `sley-ci run` wraps deterministic runtime execution under
   `sley.ci.report.v0`, `sley-ci deploy` passes the same flag through to the
   wrapped deploy command, and `sley-contract inspect-deploy-artifacts`
   revalidates the handoff
