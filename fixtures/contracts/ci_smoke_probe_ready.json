@@ -1,0 +1,33 @@
+{
+  "schema": "sley.ci.report.v0",
+  "status": "passed",
+  "command": "smoke",
+  "manifest": "fixtures/ci_smoke_probe/manifest.json",
+  "summary": {
+    "step_count": 1,
+    "passed_count": 1,
+    "failed_count": 0
+  },
+  "steps": [
+    {
+      "name": "parse_hello_json",
+      "status": "passed",
+      "command": [
+        "sley",
+        "parse",
+        "--json",
+        "examples/hello.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "stdout_schema": "sley.ast.program.v0",
+      "covers": [
+        "cli:parse",
+        "json:sley.ast.program.v0"
+      ],
+      "issues": []
+    }
+  ],
+  "issues": []
+}
