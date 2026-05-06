@@ -68,7 +68,8 @@
       "same_branch_if_expression",
       "same_branch_if_statement",
       "unreachable_statement",
-      "absorbing_arithmetic_expression"
+      "absorbing_arithmetic_expression",
+      "self_assignment_statement"
     ],
     "finding_count": 0,
     "findings": []

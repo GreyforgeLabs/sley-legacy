@@ -60,6 +60,7 @@ pub enum LintRule {
     SameBranchIfStatement,
     UnreachableStatement,
     AbsorbingArithmeticExpression,
+    SelfAssignmentStatement,
 }
 
 impl LintRule {
@@ -106,6 +107,7 @@ impl LintRule {
             Self::SameBranchIfStatement,
             Self::UnreachableStatement,
             Self::AbsorbingArithmeticExpression,
+            Self::SelfAssignmentStatement,
         ]
     }
 
@@ -152,6 +154,7 @@ impl LintRule {
             Self::SameBranchIfStatement => "same_branch_if_statement",
             Self::UnreachableStatement => "unreachable_statement",
             Self::AbsorbingArithmeticExpression => "absorbing_arithmetic_expression",
+            Self::SelfAssignmentStatement => "self_assignment_statement",
         }
     }
 }
@@ -260,6 +263,12 @@ pub fn build_lint_report(program: &Program, options: LintOptions) -> LintReport 
     }
     if rules.contains(&LintRule::MutableBindingNeverSet) {
         findings.extend(lint_mutable_bindings_never_set(
+            program,
+            options.module.as_deref(),
+        ));
+    }
+    if rules.contains(&LintRule::SelfAssignmentStatement) {
+        findings.extend(lint_self_assignment_statements(
             program,
             options.module.as_deref(),
         ));
@@ -1007,6 +1016,18 @@ fn lint_mutable_bindings_never_set(program: &Program, module: Option<&str>) -> V
         .filter(|task| module_matches(module, &task_module(task)))
     {
         collect_mutable_bindings_never_set_in_block(task, &task.body, &task.body, &mut findings);
+    }
+    findings
+}
+
+fn lint_self_assignment_statements(program: &Program, module: Option<&str>) -> Vec<LintFinding> {
+    let mut findings = Vec::new();
+    for task in program
+        .tasks
+        .iter()
+        .filter(|task| module_matches(module, &task_module(task)))
+    {
+        collect_self_assignment_statements_in_block(task, &task.body, &mut findings);
     }
     findings
 }
@@ -4501,6 +4522,57 @@ fn collect_mutable_bindings_never_set_in_block(
             | StatementKind::Return { .. }
             | StatementKind::Expr { .. } => {}
         }
+    }
+}
+
+fn collect_self_assignment_statements_in_block(
+    task: &TaskDecl,
+    block: &Block,
+    findings: &mut Vec<LintFinding>,
+) {
+    for statement in &block.statements {
+        match &statement.kind {
+            StatementKind::Set { name, expr } if identifier_name(expr) == Some(name.as_str()) => {
+                let task_name = task_fq_name(task);
+                findings.push(LintFinding {
+                    id: "SELF_ASSIGNMENT_STATEMENT".to_string(),
+                    rule: LintRule::SelfAssignmentStatement.as_str().to_string(),
+                    severity: "warning".to_string(),
+                    message: format!(
+                        "task `{task_name}` has a no-op self-assignment `set {name} = {name}`"
+                    ),
+                    node: statement.id.clone(),
+                    module: task_module(task),
+                    hint: format!("delete this no-op assignment to `{name}`"),
+                });
+            }
+            StatementKind::If {
+                then_block,
+                else_block,
+                ..
+            } => {
+                collect_self_assignment_statements_in_block(task, then_block, findings);
+                if let Some(else_block) = else_block {
+                    collect_self_assignment_statements_in_block(task, else_block, findings);
+                }
+            }
+            StatementKind::While { body, .. }
+            | StatementKind::For { body, .. }
+            | StatementKind::Forge { body } => {
+                collect_self_assignment_statements_in_block(task, body, findings);
+            }
+            StatementKind::Binding { .. }
+            | StatementKind::Set { .. }
+            | StatementKind::Return { .. }
+            | StatementKind::Expr { .. } => {}
+        }
+    }
+}
+
+fn identifier_name(expr: &Expr) -> Option<&str> {
+    match &expr.kind {
+        ExprKind::Identifier { name } => Some(name),
+        _ => None,
     }
 }
 

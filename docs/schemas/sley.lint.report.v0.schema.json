@@ -57,7 +57,8 @@
               "same_branch_if_expression",
               "same_branch_if_statement",
               "unreachable_statement",
-              "absorbing_arithmetic_expression"
+              "absorbing_arithmetic_expression",
+              "self_assignment_statement"
             ]
           },
           "uniqueItems": true
@@ -121,7 +122,8 @@
               "SAME_BRANCH_IF_EXPRESSION",
               "SAME_BRANCH_IF_STATEMENT",
               "UNREACHABLE_STATEMENT",
-              "ABSORBING_ARITHMETIC_EXPRESSION"
+              "ABSORBING_ARITHMETIC_EXPRESSION",
+              "SELF_ASSIGNMENT_STATEMENT"
             ]
           },
           "rule": {
@@ -166,7 +168,8 @@
               "same_branch_if_expression",
               "same_branch_if_statement",
               "unreachable_statement",
-              "absorbing_arithmetic_expression"
+              "absorbing_arithmetic_expression",
+              "self_assignment_statement"
             ]
           },
           "severity": { "enum": ["warning"] },

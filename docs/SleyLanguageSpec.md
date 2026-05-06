@@ -817,6 +817,9 @@ binding statement preserves a checked program.
 `unused_pure_expression_statement` lint findings become checked
 `delete_unused_pure_expression_statement` `DeleteNode` templates when deleting
 the no-op pure expression statement preserves a checked program.
+`self_assignment_statement` lint findings become checked
+`delete_self_assignment_statement` `DeleteNode` templates when deleting a
+no-op `set name = name` mutation preserves a checked program.
 `constant_if_expression` lint findings become checked
 `simplify_constant_if_expression` `ReplaceExpression` templates when replacing
 an expression-level `if true/false` with the branch that executes preserves a
@@ -1037,11 +1040,13 @@ indexing, division, or remainder operation; and
 `unused_pure_expression_statement`, which warns when a statement evaluates a
 delete-safe pure expression and discards it; and `mutable_binding_never_set`,
 which warns when a mutable local such as `state` or `tally` is never assigned
-with `set`; and `constant_if_expression`, which warns when an expression-level
-`if true/false { ... } else { ... }` can be replaced with the branch that
-executes; and `constant_if_statement`, which warns when a statement-level
-`if true/false { ... } else { ... }` can be replaced by its single executing
-branch statement; and `constant_false_if_statement`, which warns when a
+with `set`; and `self_assignment_statement`, which warns when a no-op
+`set name = name` mutation can be deleted; and `constant_if_expression`, which
+warns when an expression-level `if true/false { ... } else { ... }` can be
+replaced with the branch that executes; and `constant_if_statement`, which
+warns when a statement-level `if true/false { ... } else { ... }` can be
+replaced by its single executing branch statement; and
+`constant_false_if_statement`, which warns when a
 never-executed `if false { ... }` statement without an `else` branch can be
 deleted; and `constant_false_while_statement`, which warns when a
 `while false { ... }` statement can be removed as never-executed code; and
@@ -1107,7 +1112,8 @@ guaranteed `return` in the same block.
 `--rule missing-module-declaration`, `--rule unchecked-result`, or
 `--rule unqualified-imported-call`, `--rule unused-pure-binding`, or
 `--rule unused-pure-expression-statement`, or
-`--rule mutable-binding-never-set`, `--rule constant-if-expression`, or
+`--rule mutable-binding-never-set`, `--rule self-assignment-statement`, or
+`--rule constant-if-expression`, or
 `--rule constant-if-statement`, or
 `--rule constant-false-if-statement`, or
 `--rule constant-false-while-statement`, or
@@ -1236,7 +1242,8 @@ refuse generic data disguised as Sley artifacts before compression begins.
   raw-host-adapter and unchecked-result migration warnings with checked
   propagation templates, unqualified imported-call qualification templates,
   unused pure binding cleanup templates, unused pure expression statement
-  cleanup templates, constant-false if and while statement cleanup templates,
+  cleanup templates, self-assignment statement cleanup templates,
+  constant-false if and while statement cleanup templates,
   empty-if statement cleanup templates,
   empty-for statement cleanup templates, empty-forge statement cleanup
   templates, redundant boolean-if statement cleanup templates,

@@ -117,6 +117,7 @@ Implemented now:
   `--rule unqualified-imported-call`, `--rule unused-pure-binding`,
   `--rule unused-pure-expression-statement`, or
   `--rule mutable-binding-never-set`, `--rule constant-if-expression`,
+  `--rule self-assignment-statement`,
   `--rule constant-if-statement`,
   `--rule constant-false-if-statement`,
   `--rule constant-false-while-statement`,
@@ -187,6 +188,8 @@ Implemented now:
   be alias- or module-qualified,
   `delete_unused_pure_expression_statement` templates for no-op pure
   expression statements,
+  `delete_self_assignment_statement` templates for no-op `set name = name`
+  mutations,
   `simplify_constant_if_expression` templates for constant `if` expressions
   that can be replaced by the branch that executes,
   `simplify_constant_if_statement` templates for constant `if` statements that
@@ -729,6 +732,7 @@ constant not expression simplification templates with write/verify coverage,
 empty-if statement delete templates with write/verify coverage,
 empty-for statement delete templates with write/verify coverage,
 empty-forge statement delete templates with write/verify coverage,
+no-op self-assignment statement delete templates with write/verify coverage,
 identity binary expression simplification templates, including empty-text
 concatenation cleanup, with write/verify coverage,
 redundant boolean comparison simplification templates with write/verify
