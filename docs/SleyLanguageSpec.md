@@ -595,7 +595,7 @@ The CLI smoke manifest carries
 `schema: "sley.project.scaffold.v0"`. Doctor readiness reports carry
 `schema: "sley.doctor.report.v0"`. Edit-plan reports carry
 `schema: "sley.edit_plan.report.v0"`. CI wrapper reports carry
-`schema: "sley.ci.report.v0"` for check, lint, verify, deploy, and smoke wrappers.
+`schema: "sley.ci.report.v0"` for check, lint, doctor, verify, deploy, and smoke wrappers.
 The deploy wrapper passes `--artifacts-dir <dir>` through to `sley deploy`
 when local handoff files are requested. Deploy dry-run reports carry
 `schema: "sley.deploy.report.v0"`; deploy artifact manifests carry

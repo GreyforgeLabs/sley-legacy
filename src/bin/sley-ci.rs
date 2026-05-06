@@ -39,6 +39,14 @@ enum Command {
         deny_warnings: bool,
         target: PathBuf,
     },
+    /// Run the Sley doctor readiness gate over one target.
+    Doctor {
+        #[arg(long)]
+        json: bool,
+        #[arg(long)]
+        deny_warnings: bool,
+        target: PathBuf,
+    },
     /// Run the Sley verify gate over one target.
     Verify {
         #[arg(long)]
@@ -234,6 +242,14 @@ fn run(cli: Cli) -> Result<(CiReport, bool)> {
                 build_lint_report(&sley_bin, &target, &rule, module.as_deref(), deny_warnings)?;
             Ok((report, json))
         }
+        Command::Doctor {
+            json,
+            deny_warnings,
+            target,
+        } => {
+            let report = build_doctor_report(&sley_bin, &target, deny_warnings)?;
+            Ok((report, json))
+        }
         Command::Verify {
             json,
             deny_warnings,
@@ -382,6 +398,23 @@ fn build_lint_report(
     let steps = vec![run_sley_step(sley_bin, &cwd, "lint", args, true, Vec::new()).step];
     Ok(finalize_report(
         "lint",
+        Some(path_string(target)),
+        None,
+        steps,
+        Vec::new(),
+    ))
+}
+
+fn build_doctor_report(sley_bin: &Path, target: &Path, deny_warnings: bool) -> Result<CiReport> {
+    let cwd = env::current_dir()?;
+    let mut args = vec!["doctor".into(), "--json".into()];
+    if deny_warnings {
+        args.push("--deny-warnings".into());
+    }
+    args.push(path_string(target));
+    let steps = vec![run_sley_step(sley_bin, &cwd, "doctor", args, true, Vec::new()).step];
+    Ok(finalize_report(
+        "doctor",
         Some(path_string(target)),
         None,
         steps,
