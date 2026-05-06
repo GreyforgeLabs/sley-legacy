@@ -155,8 +155,9 @@ Current development phase:
   private type/effect declarations, plus `AddModuleDeclaration` templates for
   `missing_module_declaration` with module names inferred from the target file
   or project-relative path, plus `delete_unused_private_task` templates for
-  dead private tasks and `delete_unused_import` templates for unused imports
-  that validate through checked `DeleteNode`, plus
+  dead private tasks, `delete_dead_private_tasks` cleanup transactions for
+  dead private task groups and unreachable cycles, and `delete_unused_import`
+  templates for unused imports that validate through checked `DeleteNode`, plus
   `migrate_raw_host_adapter` templates for raw host calls that can safely move
   to fallible `try_` adapters with `?`, plus
   `propagate_unchecked_result` templates for discarded `Result` expression

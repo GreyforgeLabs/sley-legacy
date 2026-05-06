@@ -120,6 +120,8 @@ Implemented now:
   templates for unused takes, lint-driven delete templates and cleanup
   transactions for unused private types/effects, checked
   `delete_unused_private_task` templates for dead private tasks, checked
+  `delete_dead_private_tasks` cleanup transactions for dead private task
+  groups and unreachable cycles, checked
   `delete_unused_import` templates for unused imports, lint-driven
   `AddModuleDeclaration` templates for explicit module style fixes with module
   names inferred from the target file or project-relative path,
@@ -481,6 +483,7 @@ gates, edit-plan surfaces, typed scaffold next-actions for the deploy
 quickstart, strict seeded verify readiness for the generated deploy starter,
 lint-driven declaration delete templates and cleanup transactions,
 lint-driven unused-private-task delete templates,
+dead private task cleanup transactions,
 lint-driven unused-import delete templates,
 lint-driven module declaration fixes with inferred module names,
 raw-host adapter migration templates, unchecked-result propagation templates,

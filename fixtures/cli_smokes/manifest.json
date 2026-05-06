@@ -548,6 +548,69 @@
       }
     },
     {
+      "name": "plan_dead_private_task_cleanup_transaction_json",
+      "args": [
+        "plan",
+        "--json",
+        "--graft-templates",
+        "examples/dead_private_tasks.sley"
+      ],
+      "covers": [
+        "cli:plan",
+        "graft:transactions:dead-private-task-cleanup",
+        "lint:unused_private_task",
+        "lint:unreachable_private_task",
+        "json:sley.edit_plan.report.v0",
+        "json:sley.lint.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.edit_plan.report.v0" },
+          { "pointer": "/status", "value": "warnings" },
+          { "pointer": "/summary/lint_finding_count", "value": 3 },
+          { "pointer": "/lint/findings/0/id", "value": "UNREACHABLE_PRIVATE_TASK" },
+          { "pointer": "/lint/findings/1/id", "value": "UNREACHABLE_PRIVATE_TASK" },
+          { "pointer": "/lint/findings/2/id", "value": "UNUSED_PRIVATE_TASK" },
+          { "pointer": "/transaction_templates/0/kind", "value": "delete_dead_private_tasks" },
+          { "pointer": "/transaction_templates/0/surface", "value": "lint:dead_private_tasks" },
+          { "pointer": "/transaction_templates/0/transaction/mode", "value": "all_or_nothing" },
+          { "pointer": "/transaction_templates/0/transaction/ops/0/target", "value": "task:app.dead.cycle_a" },
+          { "pointer": "/transaction_templates/0/transaction/ops/1/target", "value": "task:app.dead.cycle_b" },
+          { "pointer": "/transaction_templates/0/transaction/ops/2/target", "value": "task:app.dead.orphan" }
+        ]
+      }
+    },
+    {
+      "name": "fix_dead_private_task_cleanup_dry_run_json",
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "delete_dead_private_tasks",
+        "--dry-run",
+        "examples/dead_private_tasks.sley"
+      ],
+      "covers": [
+        "cli:fix",
+        "graft:transactions:dead-private-task-cleanup",
+        "lint:unused_private_task",
+        "lint:unreachable_private_task",
+        "json:sley.graft.outcome.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/operation", "value": "DeleteNode" },
+          { "pointer": "/provenance/0/targets/0", "value": "task:app.dead.cycle_a" },
+          { "pointer": "/provenance/1/targets/0", "value": "task:app.dead.cycle_b" },
+          { "pointer": "/provenance/2/targets/0", "value": "task:app.dead.orphan" }
+        ]
+      }
+    },
+    {
       "name": "plan_project_graft_templates_surface_json",
       "args": [
         "plan",

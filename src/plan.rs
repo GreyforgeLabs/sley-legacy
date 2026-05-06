@@ -1109,6 +1109,11 @@ fn build_transaction_templates(
 ) -> Result<Vec<EditPlanTransactionTemplate>, Diagnostic> {
     let mut templates =
         lint_declaration_delete_transaction_templates(program, lint_report, requested_surface);
+    templates.extend(lint_dead_private_task_transaction_templates(
+        program,
+        lint_report,
+        requested_surface,
+    ));
     let Some(surface) = select_template_surface(surfaces, requested_surface)? else {
         return Ok(templates);
     };
@@ -1168,6 +1173,66 @@ fn lint_declaration_delete_transaction_templates(
         reason: "delete all unused private type/effect declarations in one all-or-nothing graft"
             .to_string(),
         surface: "lint:unused_private_declarations".to_string(),
+        transaction,
+        editable_json_pointers: Vec::new(),
+    }]
+}
+
+fn lint_dead_private_task_transaction_templates(
+    program: &Program,
+    lint_report: &LintReport,
+    requested_surface: Option<&str>,
+) -> Vec<EditPlanTransactionTemplate> {
+    if requested_surface.is_some() {
+        return Vec::new();
+    }
+    let mut targets = Vec::<String>::new();
+    for finding in lint_report.findings.iter().filter(|finding| {
+        matches!(
+            finding.id.as_str(),
+            "UNUSED_PRIVATE_TASK" | "UNREACHABLE_PRIVATE_TASK"
+        )
+    }) {
+        if !targets.contains(&finding.node) {
+            targets.push(finding.node.clone());
+        }
+    }
+    if targets.len() < 2 {
+        return Vec::new();
+    }
+    let ops = targets
+        .iter()
+        .map(|target| {
+            json!({
+                "op": "DeleteNode",
+                "target": target
+            })
+        })
+        .collect::<Vec<_>>();
+    let transaction = json!({
+        "transaction": "txn_delete_dead_private_tasks",
+        "mode": "all_or_nothing",
+        "ops": ops
+    });
+    let Ok(input) = serde_json::from_value::<GraftInput>(transaction.clone()) else {
+        return Vec::new();
+    };
+    if apply_graft_input(
+        program,
+        input,
+        Some("agent:plan-delete-dead-private-task-transaction".to_string()),
+    )
+    .status
+        != "accepted"
+    {
+        return Vec::new();
+    }
+    vec![EditPlanTransactionTemplate {
+        kind: "delete_dead_private_tasks".to_string(),
+        reason:
+            "delete all lint-proven dead private tasks in one all-or-nothing graft so unreachable cycles clean up together"
+                .to_string(),
+        surface: "lint:dead_private_tasks".to_string(),
         transaction,
         editable_json_pointers: Vec::new(),
     }]

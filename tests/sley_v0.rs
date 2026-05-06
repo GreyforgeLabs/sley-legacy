@@ -1308,6 +1308,98 @@ task orphan -> Int {
 }
 
 #[test]
+fn edit_plan_transaction_templates_include_dead_private_task_cleanup() {
+    let source = r#"
+module app.dead
+
+task main -> Int {
+  return call used()
+}
+
+task used -> Int {
+  return 1
+}
+
+task cycle_a -> Int {
+  return call cycle_b()
+}
+
+task cycle_b -> Int {
+  return call cycle_a()
+}
+
+task orphan -> Int {
+  return 2
+}
+"#;
+    let program = parse_program(source).expect("parse dead private task cleanup fixture");
+    let report = build_edit_plan_report_with_options(
+        "app.dead",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: None,
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "warnings");
+    let lint = report.lint.as_ref().expect("lint summary");
+    assert_eq!(lint.finding_count, 3);
+    assert_eq!(lint.findings[0].id, "UNREACHABLE_PRIVATE_TASK");
+    assert_eq!(lint.findings[0].node, "task:app.dead.cycle_a");
+    assert_eq!(lint.findings[1].id, "UNREACHABLE_PRIVATE_TASK");
+    assert_eq!(lint.findings[1].node, "task:app.dead.cycle_b");
+    assert_eq!(lint.findings[2].id, "UNUSED_PRIVATE_TASK");
+    assert_eq!(lint.findings[2].node, "task:app.dead.orphan");
+
+    let cleanup = report
+        .transaction_templates
+        .iter()
+        .find(|template| template.kind == "delete_dead_private_tasks")
+        .expect("dead private task cleanup transaction template");
+    assert_eq!(cleanup.surface, "lint:dead_private_tasks");
+    assert_eq!(
+        cleanup.transaction.pointer("/mode"),
+        Some(&serde_json::json!("all_or_nothing"))
+    );
+    assert_eq!(
+        cleanup.transaction.pointer("/ops/0/target"),
+        Some(&serde_json::json!("task:app.dead.cycle_a"))
+    );
+    assert_eq!(
+        cleanup.transaction.pointer("/ops/1/target"),
+        Some(&serde_json::json!("task:app.dead.cycle_b"))
+    );
+    assert_eq!(
+        cleanup.transaction.pointer("/ops/2/target"),
+        Some(&serde_json::json!("task:app.dead.orphan"))
+    );
+    assert!(cleanup.editable_json_pointers.is_empty());
+    let graft: GraftInput = serde_json::from_value(cleanup.transaction.clone())
+        .expect("parse dead private task cleanup transaction");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:dead-private-task-cleanup-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+
+    let targeted_report = build_edit_plan_report_with_options(
+        "app.dead",
+        Ok(program),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("task:app.dead.orphan".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(targeted_report.status, "warnings");
+    assert!(targeted_report.transaction_templates.is_empty());
+}
+
+#[test]
 fn edit_plan_graft_templates_include_unused_import_delete() {
     let root = temp_project_dir("unused-import-plan-template");
     write_unused_import_project(&root);
@@ -8841,9 +8933,11 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:templates:unchecked-result",
         "graft:templates:unused-import-delete",
         "graft:templates:unused-private-task-delete",
+        "graft:transactions:dead-private-task-cleanup",
         "graft:transactions:lint-declaration-cleanup",
         "graph-slice:replace-affordances",
         "lint:unused_private_task",
+        "lint:unreachable_private_task",
         "lint:unused_declared_effect",
         "lint:unused_import",
         "lint:unused_take",

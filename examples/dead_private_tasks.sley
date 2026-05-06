@@ -1,0 +1,21 @@
+module app.dead
+
+task main -> Int {
+  return call used()
+}
+
+task used -> Int {
+  return 1
+}
+
+task cycle_a -> Int {
+  return call cycle_b()
+}
+
+task cycle_b -> Int {
+  return call cycle_a()
+}
+
+task orphan -> Int {
+  return 2
+}

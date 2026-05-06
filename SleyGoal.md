@@ -40,7 +40,7 @@ Current verified surface:
 
 - `cargo fmt --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 177 tests.
+- Current integration coverage is 178 tests.
 - `sley query --json` emits `schema: "sley.query.report.v0"` and supports
   `--kind all|modules|tasks|calls`, `--module <module>`, and `--exported`.
 - `sley lint --json` emits `schema: "sley.lint.report.v0"` and supports
@@ -70,7 +70,8 @@ Current verified surface:
   deploy project, and checked `unchecked_result` migration templates that turn
   discarded `Result` expression statements into explicit `?` propagation when
   valid, plus checked `unused_import` and `unused_private_task` delete
-  templates and fix dry runs.
+  templates and fix dry runs, plus checked dead private task cleanup
+  transactions for grouped unused/unreachable private task deletion.
 - Stable JSON roots now include query reports, lint reports, doctor reports,
   edit-plan reports, verify reports, project scaffold reports, and the CLI
   smoke manifest in addition to AST, diagnostics, graph, graph slice, trace
