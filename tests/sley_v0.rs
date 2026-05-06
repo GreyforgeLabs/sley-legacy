@@ -882,6 +882,129 @@ fn deploy_dry_run_reports_verified_package_without_live_mutation() {
 }
 
 #[test]
+fn agent_deploy_pipeline_artifacts_pass_contract_inspection() {
+    let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let artifact_root = temp_project_dir("agent-deploy-contract-artifacts");
+    let artifact_root_arg = sley_string(&artifact_root);
+
+    let deploy = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .current_dir(&repo_root)
+        .args([
+            "deploy",
+            "--json",
+            "--dry-run",
+            "--artifacts-dir",
+            &artifact_root_arg,
+            "--cap",
+            "SecretRead",
+            "--secret",
+            "api_key",
+            "redacted",
+            "--cap",
+            "Network",
+            "--http-text",
+            "https://example.test/profile",
+            "profile ready",
+            "--cap",
+            "ModelCall",
+            "--model-output",
+            "deploy-plan",
+            "plan approved",
+            "--cap",
+            "Deploy",
+            "--deploy-result",
+            "staging",
+            "staged",
+            "examples/agent_deploy_pipeline.sley",
+        ])
+        .output()
+        .expect("build agent deploy pipeline artifacts");
+    let deploy_stdout = String::from_utf8(deploy.stdout).expect("agent deploy stdout utf8");
+    let deploy_stderr = String::from_utf8(deploy.stderr).expect("agent deploy stderr utf8");
+    assert!(
+        deploy.status.success(),
+        "stdout: {deploy_stdout}\nstderr: {deploy_stderr}"
+    );
+    let deploy_json: serde_json::Value =
+        serde_json::from_str(&deploy_stdout).expect("parse agent deploy JSON");
+    assert_eq!(
+        deploy_json.pointer("/schema"),
+        Some(&serde_json::json!(DEPLOY_REPORT_SCHEMA))
+    );
+    assert_eq!(
+        deploy_json.pointer("/status"),
+        Some(&serde_json::json!("ready"))
+    );
+    assert_eq!(
+        deploy_json.pointer("/verify/summary/call_count"),
+        Some(&serde_json::json!(7))
+    );
+    assert_eq!(
+        deploy_json.pointer("/verify/runtime/value/value/value"),
+        Some(&serde_json::json!("profile ready | plan approved | staged"))
+    );
+    assert_eq!(
+        deploy_json.pointer("/artifacts/manifest"),
+        Some(&serde_json::json!(format!(
+            "{}/manifest.json",
+            artifact_root_arg
+        )))
+    );
+
+    let artifact_check = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-contract"))
+        .current_dir(&repo_root)
+        .args([
+            "inspect-deploy-artifacts",
+            &artifact_root_arg,
+            "--schemas",
+            "docs/schemas",
+            "--json",
+        ])
+        .output()
+        .expect("inspect agent deploy pipeline artifacts");
+    let artifact_stdout =
+        String::from_utf8(artifact_check.stdout).expect("artifact check stdout utf8");
+    let artifact_stderr =
+        String::from_utf8(artifact_check.stderr).expect("artifact check stderr utf8");
+    assert!(
+        artifact_check.status.success(),
+        "stdout: {artifact_stdout}\nstderr: {artifact_stderr}"
+    );
+    let artifact_json: serde_json::Value =
+        serde_json::from_str(&artifact_stdout).expect("parse artifact check JSON");
+    assert_eq!(
+        artifact_json.pointer("/schema"),
+        Some(&serde_json::json!("sley.deploy.artifact_check.v0"))
+    );
+    assert_eq!(
+        artifact_json.pointer("/status"),
+        Some(&serde_json::json!("passed"))
+    );
+    assert_eq!(
+        artifact_json.pointer("/summary/file_count"),
+        Some(&serde_json::json!(3))
+    );
+    assert_eq!(
+        artifact_json.pointer("/summary/issue_count"),
+        Some(&serde_json::json!(0))
+    );
+    assert_eq!(
+        artifact_json.pointer("/files/0/actual_schema"),
+        Some(&serde_json::json!(DEPLOY_REPORT_SCHEMA))
+    );
+    assert_eq!(
+        artifact_json.pointer("/files/1/actual_schema"),
+        Some(&serde_json::json!(TRACE_SEAL_SCHEMA))
+    );
+    assert_eq!(
+        artifact_json.pointer("/files/2/actual_schema"),
+        Some(&serde_json::json!("sley.zjx.envelope.v0"))
+    );
+
+    let _ = fs::remove_dir_all(artifact_root);
+}
+
+#[test]
 fn doctor_report_summarizes_readiness_and_lint_gates() {
     let ready = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
         .args(["doctor", "--json", "examples/project"])
