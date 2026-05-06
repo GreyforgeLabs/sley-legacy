@@ -99,6 +99,7 @@ sley doctor --json [--deny-warnings] <target>
 sley plan --json [--deny-warnings] [--graft-templates] [--template-surface <surface>] [--emit-graft <kind>] <target>
 sley fix --json --kind <kind> [--template-surface <surface>] [--dry-run|--write] [--trace <trace.jsonl>] <target>
 sley verify --json [--deny-warnings] [runtime gates/seeds] <target>
+sley deploy --json --dry-run [runtime gates/seeds] <target>
 sley query --json [--kind all|modules|tasks|types|effects|calls] [--module <module>] <target>
 sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter|missing-module-declaration|unchecked-result] [--module <module>] <target>
 sley trace --json <target>
@@ -113,8 +114,9 @@ Rules:
 
 - JSON output must be stable and versioned.
 - AST roots, diagnostic reports, symbol graphs, graph slices, query reports,
-  lint reports, doctor reports, verify reports, CI reports, project scaffold
-  reports, trace seals, ZJX envelopes, and graft outcomes carry v0 schema IDs.
+  lint reports, doctor reports, verify reports, deploy dry-run reports, CI
+  reports, project scaffold reports, trace seals, ZJX envelopes, and graft
+  outcomes carry v0 schema IDs.
 - AST, diagnostic-report, graph-slice, query-report, lint-report,
   doctor-report, project-scaffold, and trace-seal snapshots are locked under
   `fixtures/contracts/`.
@@ -145,8 +147,9 @@ Rules:
 - `sley new --json` emits typed scaffold `next_actions` plus legacy
   `next_commands`; the deploy and agent starters' generated action sequences
   are executed in integration coverage so first-run check, doctor, query, plan,
-  lint, warning-denying verify, run, seal, ZJX package gates, and the agent
-  starter's `sley-ci verify` handoff cannot silently drift.
+  lint, warning-denying verify, run, deploy dry-run package, seal, ZJX package
+  gates, and the agent starter's `sley-ci verify` handoff cannot silently
+  drift.
 - `sley plan` consumes the same checked surfaces into ranked task edit
   surfaces, call-row inspection next-actions, post-edit gate commands, and
   optional starter graft operation templates, rename-plus-call-site
@@ -184,6 +187,11 @@ Rules:
   reports include `plan_lint_repairs` next-actions and unambiguous dry-run fix
   previews before deployment review, while passed reports include seal and ZJX
   handoff next-actions.
+- `sley deploy --dry-run` is the local deploy package helper consuming strict
+  verify plus trace seal and ZJX package summaries into
+  `sley.deploy.report.v0`. It is explicitly non-live: no provider calls,
+  external mutations, infrastructure changes, or spend, and live deployment
+  remains behind operator approval.
 - Grafts support dry-run by default and an explicit `--dry-run` flag.
 - Graft input JSON is strict: unknown operation or payload fields reject instead
   of being silently ignored.
@@ -490,9 +498,10 @@ The current smoke manifest covers:
 - graph-slice replace affordances and checked `replace_expression` graft
   templates in edit-plan reports
 - deploy and agent scaffold typed next-actions, first-run sequence execution,
-  and strict seeded `verify --json --deny-warnings` readiness, including
-  scaffold-level and passed-verify seal/ZJX handoff next-actions plus the
-  agent scaffold's `sley-ci verify` handoff
+  strict seeded `verify --json --deny-warnings` readiness, and local
+  `sley deploy --dry-run` package reports, including scaffold-level and
+  passed-verify seal/ZJX handoff next-actions plus the agent scaffold's
+  `sley-ci verify` handoff
 - doctor/verify warning next-actions that route agents to checked
   `sley plan --json --graft-templates` lint repair plans and unambiguous
   `sley fix --dry-run` previews with explicit `write_command` vectors, plus a
@@ -533,6 +542,8 @@ The current smoke manifest covers:
 - deterministic seeded execution for `FileRead`, `FileWrite`, `DatabaseRead`,
   `DatabaseWrite`, `Network`, `Shell`, `ModelCall`, `SecretRead`, `Deploy`,
   and `Spend`
+- local deploy package dry-runs that prove verify, seal, and ZJX package
+  summaries without live deployment authority
 - temp-directory execution and temp setup files for write-mode cases so release
   tests do not mutate the repo checkout
 

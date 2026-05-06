@@ -53,9 +53,11 @@
           { "pointer": "/next_actions/5/kind", "value": "verify_seeded_deploy" },
           { "pointer": "/next_actions/5/command/3", "value": "--deny-warnings" },
           { "pointer": "/next_actions/6/command/1", "value": "run" },
-          { "pointer": "/next_actions/7/kind", "value": "seal_project" },
-          { "pointer": "/next_actions/8/kind", "value": "package_project" },
-          { "pointer": "/next_actions/8/command/1", "value": "zjx" }
+          { "pointer": "/next_actions/7/kind", "value": "prepare_deploy_package" },
+          { "pointer": "/next_actions/7/command/1", "value": "deploy" },
+          { "pointer": "/next_actions/8/kind", "value": "seal_project" },
+          { "pointer": "/next_actions/9/kind", "value": "package_project" },
+          { "pointer": "/next_actions/9/command/1", "value": "zjx" }
         ]
       }
     },
@@ -188,6 +190,42 @@
       }
     },
     {
+      "name": "deploy_new_deploy_project_dry_run_json",
+      "args": [
+        "deploy",
+        "--json",
+        "--dry-run",
+        "--cap",
+        "Deploy",
+        "--deploy-result",
+        "staging",
+        "staged",
+        "{tmp}/agent-app"
+      ],
+      "covers": [
+        "cli:deploy",
+        "json:sley.deploy.report.v0",
+        "readiness:deploy-package-dry-run",
+        "scaffold:deploy-quickstart",
+        "host:Deploy"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.deploy.report.v0" },
+          { "pointer": "/status", "value": "ready" },
+          { "pointer": "/mode", "value": "dry_run" },
+          { "pointer": "/verify/schema", "value": "sley.verify.report.v0" },
+          { "pointer": "/seal/schema", "value": "sley.trace.seal.v0" },
+          { "pointer": "/package/source_schema", "value": "sley.zjx.envelope.v0" },
+          { "pointer": "/policy/live_deploy_allowed", "value": false },
+          { "pointer": "/policy/external_mutations", "value": false },
+          { "pointer": "/policy/provider_calls", "value": false },
+          { "pointer": "/policy/requires_operator_approval", "value": true }
+        ]
+      }
+    },
+    {
       "name": "new_agent_project_json",
       "cwd": "tmp",
       "args": [
@@ -219,7 +257,9 @@
           { "pointer": "/next_actions/6/kind", "value": "ci_verify_seeded_agent" },
           { "pointer": "/next_actions/6/command/0", "value": "sley-ci" },
           { "pointer": "/next_actions/7/kind", "value": "run_seeded_agent" },
-          { "pointer": "/next_actions/9/kind", "value": "package_project" }
+          { "pointer": "/next_actions/8/kind", "value": "prepare_deploy_package" },
+          { "pointer": "/next_actions/8/command/1", "value": "deploy" },
+          { "pointer": "/next_actions/10/kind", "value": "package_project" }
         ]
       }
     },
@@ -314,6 +354,57 @@
           { "pointer": "/kind", "value": "Ok" },
           { "pointer": "/value/kind", "value": "Text" },
           { "pointer": "/value/value", "value": "profile ready | plan approved | staged" }
+        ]
+      }
+    },
+    {
+      "name": "deploy_new_agent_project_dry_run_json",
+      "args": [
+        "deploy",
+        "--json",
+        "--dry-run",
+        "--cap",
+        "SecretRead",
+        "--secret",
+        "api_key",
+        "redacted",
+        "--cap",
+        "Network",
+        "--http-text",
+        "https://example.test/profile",
+        "profile ready",
+        "--cap",
+        "ModelCall",
+        "--model-output",
+        "deploy-plan",
+        "plan approved",
+        "--cap",
+        "Deploy",
+        "--deploy-result",
+        "staging",
+        "staged",
+        "{tmp}/agent-bot"
+      ],
+      "covers": [
+        "cli:deploy",
+        "json:sley.deploy.report.v0",
+        "readiness:deploy-package-dry-run",
+        "scaffold:agent-quickstart",
+        "host:SecretRead",
+        "host:Network",
+        "host:ModelCall",
+        "host:Deploy"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.deploy.report.v0" },
+          { "pointer": "/status", "value": "ready" },
+          { "pointer": "/summary/verify_status", "value": "passed" },
+          { "pointer": "/verify/runtime/value/value/value", "value": "profile ready | plan approved | staged" },
+          { "pointer": "/package/source_schema", "value": "sley.zjx.envelope.v0" },
+          { "pointer": "/policy/provider_calls", "value": false },
+          { "pointer": "/policy/requires_operator_approval", "value": true }
         ]
       }
     },

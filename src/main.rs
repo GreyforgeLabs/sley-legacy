@@ -8,6 +8,7 @@ use clap::{Parser, Subcommand, ValueEnum};
 use serde_json::Value as JsonValue;
 use sley::Program;
 use sley::checker::{check_program, has_errors};
+use sley::deploy::{DeployReport, build_deploy_report};
 use sley::diagnostics::{Diagnostic, DiagnosticReport, RepairHint};
 use sley::doctor::{DoctorReport, build_doctor_report};
 use sley::formatter::format_program;
@@ -168,6 +169,31 @@ enum Command {
         json: bool,
         #[arg(long)]
         deny_warnings: bool,
+        #[arg(long = "cap", value_name = "EFFECT[=ROOT]")]
+        cap: Vec<String>,
+        #[arg(long = "db-table", value_name = "TABLE=JSON")]
+        db_table: Vec<String>,
+        #[arg(long = "secret", value_names = ["NAME", "TEXT"], num_args = 2)]
+        secret: Vec<String>,
+        #[arg(long = "deploy-result", value_names = ["TARGET", "TEXT"], num_args = 2)]
+        deploy_result: Vec<String>,
+        #[arg(long = "spend-result", value_names = ["REQUEST", "TEXT"], num_args = 2)]
+        spend_result: Vec<String>,
+        #[arg(long = "http-text", value_names = ["URL", "TEXT"], num_args = 2)]
+        http_text: Vec<String>,
+        #[arg(long = "shell-output", value_names = ["COMMAND", "TEXT"], num_args = 2)]
+        shell_output: Vec<String>,
+        #[arg(long = "model-output", value_names = ["PROMPT", "TEXT"], num_args = 2)]
+        model_output: Vec<String>,
+        file: PathBuf,
+    },
+    Deploy {
+        #[arg(long)]
+        json: bool,
+        #[arg(long)]
+        dry_run: bool,
+        #[arg(long, default_value = "staging")]
+        environment: String,
         #[arg(long = "cap", value_name = "EFFECT[=ROOT]")]
         cap: Vec<String>,
         #[arg(long = "db-table", value_name = "TABLE=JSON")]
@@ -636,6 +662,79 @@ fn run(cli: Cli) -> Result<()> {
             }
             if report.status == "blocked" {
                 anyhow::bail!("verify blocked");
+            }
+            Ok(())
+        }
+        Command::Deploy {
+            json,
+            dry_run,
+            environment,
+            cap,
+            db_table,
+            secret,
+            deploy_result,
+            spend_result,
+            http_text,
+            shell_output,
+            model_output,
+            file,
+        } => {
+            if !dry_run {
+                anyhow::bail!("sley deploy is report-only in v0; rerun with --dry-run");
+            }
+            let runtime_gates = build_runtime_gates(
+                &cap,
+                &db_table,
+                &secret,
+                &deploy_result,
+                &spend_result,
+                &http_text,
+                &shell_output,
+                &model_output,
+            )?;
+            let target = file.display().to_string();
+            let (verify, seal, package) = match load_target_program_and_source_bytes(&file) {
+                Ok((program, source_bytes)) => {
+                    let verify = build_verify_report(
+                        target.clone(),
+                        Ok(program.clone()),
+                        runtime_gates,
+                        true,
+                    );
+                    if verify.status == "passed" {
+                        let trace_path = default_trace_path(&file);
+                        let trace_receipts = read_trace_receipts(&trace_path)?;
+                        let seal = build_trace_seal(
+                            target.clone(),
+                            &source_bytes,
+                            &program,
+                            &trace_receipts,
+                        )?;
+                        let package = build_zjx_envelope(
+                            target.clone(),
+                            build_symbol_graph(&program),
+                            None,
+                            trace_receipts,
+                        );
+                        (verify, Some(seal), Some(package))
+                    } else {
+                        (verify, None, None)
+                    }
+                }
+                Err(diagnostics) => {
+                    let verify =
+                        build_verify_report(target.clone(), Err(diagnostics), runtime_gates, true);
+                    (verify, None, None)
+                }
+            };
+            let report = build_deploy_report(target, environment, verify, seal, package);
+            if json {
+                print_json(&report)?;
+            } else {
+                print_human_deploy_report(&report);
+            }
+            if report.status == "blocked" {
+                anyhow::bail!("deploy dry-run blocked");
             }
             Ok(())
         }
@@ -1825,6 +1924,38 @@ fn print_human_verify_report(report: &VerifyReport) {
     }
     for diagnostic in &report.diagnostics {
         println!("diagnostic {} {}", diagnostic.id, diagnostic.message);
+    }
+    for action in &report.next_actions {
+        println!(
+            "next {}: {} -> {}",
+            action.kind,
+            action.reason,
+            action.command.join(" ")
+        );
+    }
+}
+
+fn print_human_deploy_report(report: &DeployReport) {
+    println!(
+        "deploy schema={} status={} mode={} target={} environment={} verify={} seal={} package={} modules={} tasks={} receipts={} live_deploy_allowed={}",
+        report.schema,
+        report.status,
+        report.mode,
+        report.target,
+        report.environment,
+        report.summary.verify_status,
+        report.summary.seal_status,
+        report.summary.package_status,
+        report.summary.module_count,
+        report.summary.task_count,
+        report.summary.receipt_count,
+        report.policy.live_deploy_allowed
+    );
+    if let Some(digest) = &report.summary.seal_digest {
+        println!("seal_digest={digest}");
+    }
+    if let Some(digest) = &report.summary.graph_digest {
+        println!("graph_digest={digest}");
     }
     for action in &report.next_actions {
         println!(

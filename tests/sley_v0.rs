@@ -7,6 +7,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use sley::ast::{AST_PROGRAM_SCHEMA, ExprKind, ProvenanceRecord, StatementKind};
 use sley::authority::{host_effect_contracts, host_effects_for_callee};
 use sley::checker::{check_program, has_errors};
+use sley::deploy::{DEPLOY_REPORT_SCHEMA, build_deploy_report};
 use sley::diagnostics::{DIAGNOSTIC_REPORT_SCHEMA, DiagnosticReport};
 use sley::doctor::{DOCTOR_REPORT_SCHEMA, build_doctor_report};
 use sley::formatter::format_program;
@@ -431,8 +432,9 @@ fn project_scaffold_creates_checked_deploy_project() {
     assert_eq!(report.next_actions.len(), report.next_commands.len());
     assert_eq!(report.next_actions[5].kind, "verify_seeded_deploy");
     assert_eq!(report.next_actions[6].kind, "run_seeded_deploy");
-    assert_eq!(report.next_actions[7].kind, "seal_project");
-    assert_eq!(report.next_actions[8].kind, "package_project");
+    assert_eq!(report.next_actions[7].kind, "prepare_deploy_package");
+    assert_eq!(report.next_actions[8].kind, "seal_project");
+    assert_eq!(report.next_actions[9].kind, "package_project");
     for (action, command) in report.next_actions.iter().zip(&report.next_commands) {
         assert_eq!(
             &action.command, command,
@@ -458,6 +460,19 @@ fn project_scaffold_creates_checked_deploy_project() {
             assert_eq!(
                 value,
                 Value::Ok(Box::new(Value::Text("staged".to_string())))
+            );
+        }
+        if action.kind == "prepare_deploy_package" {
+            let value: serde_json::Value =
+                serde_json::from_str(&stdout).expect("parse deploy dry-run JSON");
+            assert_eq!(
+                value.pointer("/schema"),
+                Some(&serde_json::json!(DEPLOY_REPORT_SCHEMA))
+            );
+            assert_eq!(value.pointer("/status"), Some(&serde_json::json!("ready")));
+            assert_eq!(
+                value.pointer("/policy/live_deploy_allowed"),
+                Some(&serde_json::json!(false))
             );
         }
     }
@@ -535,8 +550,9 @@ fn project_scaffold_creates_checked_agent_project() {
     assert_eq!(report.next_actions[5].kind, "verify_seeded_agent");
     assert_eq!(report.next_actions[6].kind, "ci_verify_seeded_agent");
     assert_eq!(report.next_actions[7].kind, "run_seeded_agent");
-    assert_eq!(report.next_actions[8].kind, "seal_project");
-    assert_eq!(report.next_actions[9].kind, "package_project");
+    assert_eq!(report.next_actions[8].kind, "prepare_deploy_package");
+    assert_eq!(report.next_actions[9].kind, "seal_project");
+    assert_eq!(report.next_actions[10].kind, "package_project");
 
     for (action, command) in report.next_actions.iter().zip(&report.next_commands) {
         assert_eq!(
@@ -585,9 +601,76 @@ fn project_scaffold_creates_checked_agent_project() {
                 )))
             );
         }
+        if action.kind == "prepare_deploy_package" {
+            let value: serde_json::Value =
+                serde_json::from_str(&stdout).expect("parse agent deploy dry-run JSON");
+            assert_eq!(
+                value.pointer("/schema"),
+                Some(&serde_json::json!(DEPLOY_REPORT_SCHEMA))
+            );
+            assert_eq!(value.pointer("/status"), Some(&serde_json::json!("ready")));
+            assert_eq!(
+                value.pointer("/policy/provider_calls"),
+                Some(&serde_json::json!(false))
+            );
+        }
     }
 
     let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn deploy_dry_run_reports_verified_package_without_live_mutation() {
+    let missing_dry_run = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args(["deploy", "--json", "examples/hello.sley"])
+        .output()
+        .expect("run deploy without dry-run");
+    assert!(
+        !missing_dry_run.status.success(),
+        "deploy should require --dry-run in v0"
+    );
+    assert!(
+        String::from_utf8_lossy(&missing_dry_run.stderr).contains("--dry-run"),
+        "missing dry-run stderr should explain the required flag"
+    );
+
+    let output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args(["deploy", "--json", "--dry-run", "examples/hello.sley"])
+        .output()
+        .expect("run deploy dry-run");
+    let stdout = String::from_utf8(output.stdout).expect("deploy stdout utf8");
+    let stderr = String::from_utf8(output.stderr).expect("deploy stderr utf8");
+    assert!(
+        output.status.success(),
+        "stdout: {stdout}\nstderr: {stderr}"
+    );
+    let json: serde_json::Value = serde_json::from_str(&stdout).expect("parse deploy JSON");
+    assert_eq!(
+        json.pointer("/schema"),
+        Some(&serde_json::json!(DEPLOY_REPORT_SCHEMA))
+    );
+    assert_eq!(json.pointer("/status"), Some(&serde_json::json!("ready")));
+    assert_eq!(json.pointer("/mode"), Some(&serde_json::json!("dry_run")));
+    assert_eq!(
+        json.pointer("/verify/schema"),
+        Some(&serde_json::json!(VERIFY_REPORT_SCHEMA))
+    );
+    assert_eq!(
+        json.pointer("/seal/schema"),
+        Some(&serde_json::json!(TRACE_SEAL_SCHEMA))
+    );
+    assert_eq!(
+        json.pointer("/package/source_schema"),
+        Some(&serde_json::json!("sley.zjx.envelope.v0"))
+    );
+    assert_eq!(
+        json.pointer("/policy/external_mutations"),
+        Some(&serde_json::json!(false))
+    );
+    assert_eq!(
+        json.pointer("/policy/requires_operator_approval"),
+        Some(&serde_json::json!(true))
+    );
 }
 
 #[test]
@@ -3522,6 +3605,29 @@ task main -> Used uses UsedEffect {
         &seal,
         include_str!("../fixtures/contracts/trace_seal_hello.json"),
     );
+    let hello_verify = build_verify_report(
+        "examples/hello.sley",
+        Ok(hello_program.clone()),
+        RuntimeGates::new(),
+        true,
+    );
+    let hello_package = build_zjx_envelope(
+        "examples/hello.sley",
+        build_symbol_graph(&hello_program),
+        None,
+        Vec::new(),
+    );
+    let deploy = build_deploy_report(
+        "examples/hello.sley",
+        "staging",
+        hello_verify,
+        Some(seal.clone()),
+        Some(hello_package),
+    );
+    assert_json_snapshot(
+        &deploy,
+        include_str!("../fixtures/contracts/deploy_hello_ready.json"),
+    );
 
     let scaffold = ProjectScaffoldReport {
         schema: PROJECT_SCAFFOLD_SCHEMA.to_string(),
@@ -3597,6 +3703,18 @@ task main -> Used uses UsedEffect {
                 "sley".to_string(),
                 "run".to_string(),
                 "--json".to_string(),
+                "--cap".to_string(),
+                "Deploy".to_string(),
+                "--deploy-result".to_string(),
+                "staging".to_string(),
+                "staged".to_string(),
+                ".".to_string(),
+            ],
+            vec![
+                "sley".to_string(),
+                "deploy".to_string(),
+                "--json".to_string(),
+                "--dry-run".to_string(),
                 "--cap".to_string(),
                 "Deploy".to_string(),
                 "--deploy-result".to_string(),
@@ -3698,6 +3816,23 @@ task main -> Used uses UsedEffect {
                     "sley".to_string(),
                     "run".to_string(),
                     "--json".to_string(),
+                    "--cap".to_string(),
+                    "Deploy".to_string(),
+                    "--deploy-result".to_string(),
+                    "staging".to_string(),
+                    "staged".to_string(),
+                    ".".to_string(),
+                ],
+            },
+            ScaffoldNextAction {
+                kind: "prepare_deploy_package".to_string(),
+                reason: "build the local dry-run deploy report after seeded verification"
+                    .to_string(),
+                command: vec![
+                    "sley".to_string(),
+                    "deploy".to_string(),
+                    "--json".to_string(),
+                    "--dry-run".to_string(),
                     "--cap".to_string(),
                     "Deploy".to_string(),
                     "--deploy-result".to_string(),
@@ -3889,6 +4024,10 @@ task main -> Used uses UsedEffect {
         include_str!("../docs/schemas/sley.verify.report.v0.schema.json"),
         VERIFY_REPORT_SCHEMA,
     );
+    assert_schema_file(
+        include_str!("../docs/schemas/sley.deploy.report.v0.schema.json"),
+        DEPLOY_REPORT_SCHEMA,
+    );
 }
 
 #[test]
@@ -3913,7 +4052,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         inventory_json.pointer("/schema_count"),
-        Some(&serde_json::json!(19))
+        Some(&serde_json::json!(20))
     );
     let schema_ids = inventory_json
         .pointer("/schemas")
@@ -3924,6 +4063,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
         .collect::<BTreeSet<_>>();
     assert!(schema_ids.contains("sley.query.report.v0"));
     assert!(schema_ids.contains("sley.ci.report.v0"));
+    assert!(schema_ids.contains("sley.deploy.report.v0"));
     assert!(schema_ids.contains("sley.contract.inventory.v0"));
     assert!(schema_ids.contains("sley.contract.fixture_check.v0"));
     assert!(schema_ids.contains("sley.contract.validate.v0"));
@@ -3956,7 +4096,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(24))
+        Some(&serde_json::json!(25))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -10445,6 +10585,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "cli:format",
         "cli:check",
         "cli:run",
+        "cli:deploy",
         "cli:ast",
         "cli:graph",
         "cli:graph-slice",
@@ -10499,6 +10640,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "query:effects",
         "query:calls",
         "readiness:call-transaction-write-verify",
+        "readiness:deploy-package-dry-run",
         "readiness:inspect-calls",
         "readiness:deploy-lint-repair-write-verify",
         "readiness:lint-repair-plan",
@@ -10534,6 +10676,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "json:sley.doctor.report.v0",
         "json:sley.edit_plan.report.v0",
         "json:sley.verify.report.v0",
+        "json:sley.deploy.report.v0",
         "json:sley.trace.receipt.v0",
         "json:sley.trace.seal.v0",
         "json:sley.zjx.envelope.v0",

@@ -18,6 +18,7 @@ cargo run -- fix --json --kind add_module_declaration --dry-run <file-or-project
 cargo run -- fix --json --kind delete_unused_private_declarations --dry-run <file-or-project>
 cargo run -- fix --json --kind delete_unused_private_declarations --write <file-or-project>
 cargo run -- verify --json <file-or-project>
+cargo run -- deploy --json --dry-run <file-or-project>
 cargo run -- seal --json <file-or-project>
 cargo run -- graft --json --dry-run <file> <graft.json>
 cargo run -- graft --json --write <file> <graft.json>
@@ -110,6 +111,7 @@ Stable v0 JSON roots:
 - `sley.project.scaffold.v0`
 - `sley.doctor.report.v0`
 - `sley.verify.report.v0`
+- `sley.deploy.report.v0`
 
 The graft outcome schema pins accepted provenance records with non-empty
 targets and `result: "accepted"`.
@@ -146,14 +148,14 @@ Current development phase:
   seeded spend authorization results through explicit fallible calls returning
   `Result<T, Error>`
 - release-readiness now includes manifest-backed CLI smokes for stable command
-  output, JSON roots, graph/ZJX surfaces, edit-plan reports, graft/fix dry
-  runs, strict edit-plan graft operation and transaction template schema
-  envelopes, direct graft writes, temp setup files for write-mode smokes,
-  explicit graft/fix trace receipts, non-empty trace receipt seals, ZJX
-  envelopes carrying schema-backed trace receipts, lint-driven fix writes that
-  clear warnings before verify, and seeded host-adapter execution while
-  preserving typed recoverable failure records and keeping authority failures
-  as diagnostics
+  output, JSON roots, graph/ZJX surfaces, edit-plan reports, deploy dry-run
+  reports, graft/fix dry runs, strict edit-plan graft operation and transaction
+  template schema envelopes, direct graft writes, temp setup files for
+  write-mode smokes, explicit graft/fix trace receipts, non-empty trace receipt
+  seals, ZJX envelopes carrying schema-backed trace receipts, lint-driven fix
+  writes that clear warnings before verify, and seeded host-adapter execution
+  while preserving typed recoverable failure records and keeping authority
+  failures as diagnostics
 - checked graph query reports are available through `sley query --json` with
   root schema `sley.query.report.v0`; `--kind types` and `--kind effects`
   give direct declaration rows for record and authority surfaces, while
@@ -169,9 +171,9 @@ Current development phase:
 - `sley new --json` emits `sley.project.scaffold.v0` and creates
   non-destructive `hello`, deterministic `deploy`, or deterministic `agent`
   starter projects that can immediately run through check, doctor, query,
-  plan, lint, seeded runtime gates with denied warnings, seal, and ZJX handoff
-  packaging; scaffold JSON includes typed `next_actions` plus legacy
-  `next_commands`
+  plan, lint, seeded runtime gates with denied warnings, deploy dry-run
+  packaging, seal, and ZJX handoff packaging; scaffold JSON includes typed
+  `next_actions` plus legacy `next_commands`
 - `sley doctor --json` emits `sley.doctor.report.v0` and consumes strict
   diagnostics plus checked query/lint summaries into one agent readiness report;
   call-bearing reports include `inspect_calls` next-actions for strict
@@ -234,6 +236,11 @@ Current development phase:
   dry-run fix previews when the repair is unambiguous before deployment review;
   passed reports point agents to `sley seal --json <target>` and
   `sley zjx --json <target>` for review and handoff artifacts
+- `sley deploy --json --dry-run` emits `sley.deploy.report.v0` and composes
+  strict verify, trace seal, and ZJX package summaries into one local deploy
+  package report; it records `live_deploy_allowed=false`, makes no external
+  mutations or provider calls, and keeps live deployment behind explicit
+  operator approval
 - next development work should keep broadening style and migration lints
 - project graft writeback now supports create/update/delete module files and
   module rename, including manifest entry updates; top-level type/effect/task
