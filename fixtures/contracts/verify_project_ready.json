@@ -41,6 +41,7 @@
       "constant_if_expression",
       "constant_false_while_statement",
       "empty_for_statement",
+      "empty_forge_statement",
       "identity_binary_expression",
       "redundant_boolean_comparison",
       "absorbing_boolean_expression",

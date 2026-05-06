@@ -794,6 +794,9 @@ never-executed `while false` statement preserves a checked program.
 `empty_for_statement` lint findings become checked
 `delete_empty_for_statement` `DeleteNode` templates when deleting a `for`
 statement over a literal empty list preserves a checked program.
+`empty_forge_statement` lint findings become checked
+`delete_empty_forge_statement` `DeleteNode` templates when deleting a no-op
+`forge { }` starter block preserves a checked program.
 `identity_binary_expression` lint findings become checked
 `simplify_identity_binary_expression` `ReplaceExpression` templates when
 replacing `x + 0`, `x * 1`, `flag && true`, or `flag || false` with the
@@ -947,6 +950,8 @@ executes; and `constant_false_while_statement`, which warns when a
 `while false { ... }` statement can be removed as never-executed code; and
 `empty_for_statement`, which warns when a `for item in [] { ... }` statement
 can be removed as never-executed code; and
+`empty_forge_statement`, which warns when a no-op `forge { }` statement can be
+removed before readiness or deploy gates; and
 `identity_binary_expression`, which warns when a checked identity
 binary expression such as `x + 0`, `x * 1`, `flag && true`, or `flag || false`
 can be replaced with the non-identity side; and
@@ -975,6 +980,7 @@ guaranteed `return` in the same block.
 `--rule mutable-binding-never-set`, `--rule constant-if-expression`, or
 `--rule constant-false-while-statement`, or
 `--rule empty-for-statement`, or
+`--rule empty-forge-statement`, or
 `--rule identity-binary-expression`, or
 `--rule redundant-boolean-comparison`, or
 `--rule absorbing-boolean-expression`, or `--rule self-comparison-expression`, or
@@ -1084,7 +1090,8 @@ refuse generic data disguised as Sley artifacts before compression begins.
   propagation templates, unqualified imported-call qualification templates,
   unused pure binding cleanup templates, unused pure expression statement
   cleanup templates, constant-false while statement cleanup templates,
-  empty-for statement cleanup templates, unreachable statement cleanup
+  empty-for statement cleanup templates, empty-forge statement cleanup
+  templates, unreachable statement cleanup
   templates, and mutable
   binding conversion transactions, constant-if, identity binary expression, redundant boolean
   comparison, and double negation simplification templates, plus explicit
@@ -1106,8 +1113,8 @@ refuse generic data disguised as Sley artifacts before compression begins.
   The CLI smoke suite locks previewed lint-repair writes followed by strict
   verify for file and project targets, including unused pure binding cleanup,
   unused pure expression statement cleanup, constant-false while statement
-  cleanup, empty-for statement cleanup, unreachable statement cleanup, and
-  mutable binding conversion,
+  cleanup, empty-for statement cleanup, empty-forge statement cleanup,
+  unreachable statement cleanup, and mutable binding conversion,
   plus a repaired generated deploy
   scaffold re-verified with seeded `Deploy` authority and a strict seeded
   deploy verify report for the generated `sley new --template deploy` starter,

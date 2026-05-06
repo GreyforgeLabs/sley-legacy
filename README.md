@@ -118,6 +118,7 @@ Implemented now:
   `--rule mutable-binding-never-set`, `--rule constant-if-expression`,
   `--rule constant-false-while-statement`,
   `--rule empty-for-statement`,
+  `--rule empty-forge-statement`,
   `--rule identity-binary-expression`, or
   `--rule redundant-boolean-comparison`, or
   `--rule absorbing-boolean-expression`, or
@@ -176,6 +177,8 @@ Implemented now:
   `while false` statements,
   `delete_empty_for_statement` templates for `for` statements over literal
   empty lists,
+  `delete_empty_forge_statement` templates for no-op `forge { }` starter
+  blocks,
   `simplify_identity_binary_expression` templates for identity binary
   expressions that can be replaced by the non-identity side,
   `simplify_redundant_boolean_comparison` templates for boolean comparisons
@@ -645,6 +648,7 @@ mutable-binding conversion transactions with write/verify coverage,
 constant-if expression simplification templates with write/verify coverage,
 constant-false while statement delete templates with write/verify coverage,
 empty-for statement delete templates with write/verify coverage,
+empty-forge statement delete templates with write/verify coverage,
 identity binary expression simplification templates with write/verify coverage,
 redundant boolean comparison simplification templates with write/verify
 coverage,
