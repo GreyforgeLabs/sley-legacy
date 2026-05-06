@@ -189,7 +189,8 @@ Current development phase:
   `constant_if_expression`, the constant-if statement simplification rule
   `constant_if_statement`, the constant-false while cleanup rule
   `constant_false_while_statement`, the constant comparison simplification rule
-  `constant_comparison_expression`, the empty-if cleanup rule
+  `constant_comparison_expression`, the constant arithmetic simplification rule
+  `constant_arithmetic_expression`, the empty-if cleanup rule
   `empty_if_statement`, the empty-for cleanup rule
   `empty_for_statement`, the empty-forge cleanup rule
   `empty_forge_statement`, the identity simplification rule
@@ -251,6 +252,8 @@ Current development phase:
   `while false` statements, plus
   `simplify_constant_comparison_expression` templates for literal comparisons
   with constant boolean results, plus
+  `simplify_constant_arithmetic_expression` templates for numeric literal
+  arithmetic, plus
   `simplify_negated_comparison_expression` templates for inverted
   comparisons, plus
   `simplify_constant_if_statement` templates for constant `if` statements with

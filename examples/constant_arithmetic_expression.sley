@@ -1,0 +1,5 @@
+module app.constant_arithmetic
+
+task main -> Int {
+  return 2 + 3
+}
