@@ -115,7 +115,8 @@ Implemented now:
   rename-plus-call-site and add-take-plus-call-arg transaction templates for
   targeted caller surfaces, safe remove-take-plus-call-arg transaction
   templates for unused takes, lint-driven delete templates for unused private
-  types/effects, `--template-surface <task>` targeting, and
+  types/effects, `--template-surface <surface>` targeting for task or lint
+  declaration surfaces, and
   `schema: "sley.edit_plan.report.v0"`
 - checked JSON verification reports with `sley verify`, consuming strict
   diagnostics, query summaries, lint findings, and deterministic runtime

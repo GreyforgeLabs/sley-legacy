@@ -286,6 +286,36 @@
       }
     },
     {
+      "name": "plan_declaration_hygiene_targeted_template_json",
+      "args": [
+        "plan",
+        "--json",
+        "--graft-templates",
+        "--template-surface",
+        "type:app.hygiene.Orphan",
+        "examples/declaration_hygiene.sley"
+      ],
+      "covers": [
+        "cli:plan",
+        "graft:templates",
+        "graft:templates:lint-declaration-target",
+        "lint:unused_private_type",
+        "json:sley.edit_plan.report.v0",
+        "json:sley.lint.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.edit_plan.report.v0" },
+          { "pointer": "/status", "value": "warnings" },
+          { "pointer": "/graft_templates/0/kind", "value": "delete_unused_private_type" },
+          { "pointer": "/graft_templates/0/surface", "value": "type:app.hygiene.Orphan" },
+          { "pointer": "/graft_templates/0/operation/op", "value": "DeleteNode" },
+          { "pointer": "/graft_templates/0/operation/target", "value": "type:app.hygiene.Orphan" }
+        ]
+      }
+    },
+    {
       "name": "plan_project_graft_templates_surface_json",
       "args": [
         "plan",

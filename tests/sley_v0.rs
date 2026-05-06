@@ -1113,6 +1113,53 @@ task main -> Used {
         }),
         "used private type should not receive a lint-driven delete template"
     );
+
+    let targeted_type_report = build_edit_plan_report_with_options(
+        "app.plan",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("type:app.plan.Orphan".to_string()),
+        },
+    );
+    assert_eq!(targeted_type_report.status, "warnings");
+    assert!(targeted_type_report.diagnostics.is_empty());
+    assert_eq!(targeted_type_report.graft_templates.len(), 1);
+    assert_eq!(
+        targeted_type_report.graft_templates[0].kind,
+        "delete_unused_private_type"
+    );
+    assert_eq!(
+        targeted_type_report.graft_templates[0]
+            .operation
+            .pointer("/target"),
+        Some(&serde_json::json!("type:app.plan.Orphan"))
+    );
+    assert!(targeted_type_report.transaction_templates.is_empty());
+
+    let targeted_effect_report = build_edit_plan_report_with_options(
+        "app.plan",
+        Ok(program),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("effect:app.plan.OrphanEffect".to_string()),
+        },
+    );
+    assert_eq!(targeted_effect_report.status, "warnings");
+    assert!(targeted_effect_report.diagnostics.is_empty());
+    assert_eq!(targeted_effect_report.graft_templates.len(), 1);
+    assert_eq!(
+        targeted_effect_report.graft_templates[0].kind,
+        "delete_unused_private_effect"
+    );
+    assert_eq!(
+        targeted_effect_report.graft_templates[0]
+            .operation
+            .pointer("/target"),
+        Some(&serde_json::json!("effect:app.plan.OrphanEffect"))
+    );
 }
 
 #[test]
@@ -7769,6 +7816,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "cli:graft-dry-run",
         "diagnostic:MISSING_RETURN",
         "graft:templates:lint-declaration-delete",
+        "graft:templates:lint-declaration-target",
         "graft:templates:replace-expression",
         "graph-slice:replace-affordances",
         "lint:unused_declared_effect",

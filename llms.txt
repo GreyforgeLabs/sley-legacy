@@ -149,7 +149,8 @@ Current development phase:
   declarations; selected task graph-slice affordances are surfaced as checked
   `move_statement`/`move_take`, destination-variant, `delete_statement`,
   `delete_take`, and `replace_expression` templates where legal, or
-  `--template-surface <task>` can target a specific task id or qualified name
+  `--template-surface <surface>` can target a specific task id, qualified task
+  name, or lint finding declaration node
 - graft call-argument edits are structural: use `UpdateCallArgs` to insert,
   `ReplaceCallArg` to replace, and `RemoveCallArg` to remove checked caller
   arguments by task target plus optional `from`/`scope`

@@ -415,6 +415,16 @@ fn build_graft_templates(
     requested_surface: Option<&str>,
 ) -> Result<Vec<EditPlanGraftTemplate>, Diagnostic> {
     let lint_templates = lint_declaration_delete_templates(program, lint_report);
+    if let Some(requested_surface) = requested_surface {
+        let requested_lint_templates = lint_templates
+            .iter()
+            .filter(|template| template.surface == requested_surface)
+            .cloned()
+            .collect::<Vec<_>>();
+        if !requested_lint_templates.is_empty() {
+            return Ok(requested_lint_templates);
+        }
+    }
     let Some(surface) = select_template_surface(surfaces, requested_surface)? else {
         return Ok(lint_templates);
     };
@@ -490,13 +500,13 @@ fn select_template_surface<'a>(
             Diagnostic::error(
                 "PLAN_SURFACE_NOT_FOUND",
                 format!(
-                    "plan surface `{requested_surface}` was not found; use a task id or qualified task name from task_surfaces"
+                    "plan surface `{requested_surface}` was not found; use a task id, qualified task name, or lint finding declaration node"
                 ),
             )
             .with_node(requested_surface)
             .with_repair_hint(
                 RepairHint::new("inspect_task_surfaces")
-                    .with_replacement("Run `sley plan --json <target>` and choose a task_surfaces id or qualified_name"),
+                    .with_replacement("Run `sley plan --json <target>` and choose a task_surfaces id, task qualified_name, or lint.findings node"),
             )
         })
 }

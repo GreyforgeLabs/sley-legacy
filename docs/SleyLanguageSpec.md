@@ -542,7 +542,7 @@ sley graph --json <target>
 sley graph --json --slice task:app.main.main <target>
 sley new --json --template deploy --name agent-app agent-app
 sley doctor --json <target>
-sley plan --json [--graft-templates] [--template-surface <task>] <target>
+sley plan --json [--graft-templates] [--template-surface <surface>] <target>
 sley query --json --kind tasks --module app.main <target>
 sley lint --json <target>
 sley trace --json <target>
@@ -641,13 +641,14 @@ starter expression graft validates. It also turns checked
 `unused_private_type` and `unused_private_effect` lint findings into
 `DeleteNode` templates when the declaration delete validates against the
 checked candidate.
-`--template-surface <task>` selects a specific task surface by task node id or
-qualified task name. For selected tasks with currently resolved inbound callers,
-the report also includes an all-or-nothing `RenameDeclaration` plus
-`UpdateCallSites` transaction template and an `AddTake` plus `UpdateCallArgs`
-transaction template. When the selected task has an unused normal take,
-`sley plan --graft-templates` can also emit a `RemoveTake` plus `RemoveCallArg`
-transaction template.
+`--template-surface <surface>` selects a specific task surface by task node id
+or qualified task name, or a declaration lint surface by lint finding node id
+such as `type:app.module.Name` or `effect:app.module.Name`. For selected tasks
+with currently resolved inbound callers, the report also includes an
+all-or-nothing `RenameDeclaration` plus `UpdateCallSites` transaction template
+and an `AddTake` plus `UpdateCallArgs` transaction template. When the selected
+task has an unused normal take, `sley plan --graft-templates` can also emit a
+`RemoveTake` plus `RemoveCallArg` transaction template.
 
 A graph slice is a bounded shard around a module, task, type, effect, or import.
 Task slices include the selected task AST, visible module declarations,
