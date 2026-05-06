@@ -225,8 +225,9 @@ Current development phase:
   `--trace <trace.jsonl>` path; CLI smokes cover a call-row-driven
   `rename_and_update_call_sites` write and an unused-take
   `remove_take_and_remove_call_arg` write followed by call query and verify;
-  `add_module_declaration` is the checked fixer
-  for explicit module-declaration style warnings and uses the same module-name
+  `qualify_imported_call` write, call query, and strict verify for imported
+  call style cleanup; `add_module_declaration` is the checked fixer for
+  explicit module-declaration style warnings and uses the same module-name
   inference
 - graft call-argument edits are structural: use `UpdateCallArgs` to insert,
   `ReplaceCallArg` to replace, and `RemoveCallArg` to remove checked caller

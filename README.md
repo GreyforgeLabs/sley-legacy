@@ -579,7 +579,7 @@ lint-driven module declaration fixes with inferred module names,
 write-mode unused-import cleanup through `sley fix --write` plus post-fix
 verify,
 raw-host adapter migration templates, unchecked-result propagation templates,
-unqualified imported-call qualification templates, private-task lint rules,
-declaration/import/API hygiene, authority hygiene, and explicit module style
-warnings. The next logical phase is to keep broadening style and migration
-lints before broadening the language again.
+unqualified imported-call qualification templates with write/query/verify
+coverage, private-task lint rules, declaration/import/API hygiene, authority
+hygiene, and explicit module style warnings. The next logical phase is to keep
+broadening style and migration lints before broadening the language again.

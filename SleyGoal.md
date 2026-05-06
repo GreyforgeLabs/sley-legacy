@@ -108,8 +108,9 @@ Current verified surface:
   `unchecked_result` migration templates that turn discarded `Result`
   expression statements into explicit `?` propagation when valid, plus checked
   `unqualified_imported_call` style templates that qualify imported task calls
-  through their import alias or module segment, plus checked
-  `unused_import` and
+  through their import alias or module segment, including a write/query/verify
+  smoke that proves the repair clears strict lint, plus checked `unused_import`
+  and
   `unused_private_task` delete templates, fix dry runs, and a write-mode
   `delete_unused_import` cleanup that clears lint before
   `sley verify --deny-warnings`, plus checked dead private task cleanup

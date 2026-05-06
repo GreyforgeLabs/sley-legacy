@@ -242,7 +242,8 @@ Near-term:
    execute one named checked template through the graft checker. The lint
    surface now includes explicit module-declaration style warnings and
    unqualified imported-call style warnings; both are structurally repairable
-   through checked plan/fix templates. Next broaden authority, style, and
+   through checked plan/fix templates, with write/query/verify smoke coverage
+   for imported-call qualification. Next broaden authority, style, and
    migration lints.
 5. Extend graph-slice graft planning around checked move/delete operations.
 6. Harden project graft writeback beyond existing-module edits.
