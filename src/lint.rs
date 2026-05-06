@@ -32,6 +32,7 @@ pub enum LintRule {
     UnusedPureBinding,
     MutableBindingNeverSet,
     ConstantIfExpression,
+    IdentityBinaryExpression,
 }
 
 impl LintRule {
@@ -51,6 +52,7 @@ impl LintRule {
             Self::UnusedPureBinding,
             Self::MutableBindingNeverSet,
             Self::ConstantIfExpression,
+            Self::IdentityBinaryExpression,
         ]
     }
 
@@ -70,6 +72,7 @@ impl LintRule {
             Self::UnusedPureBinding => "unused_pure_binding",
             Self::MutableBindingNeverSet => "mutable_binding_never_set",
             Self::ConstantIfExpression => "constant_if_expression",
+            Self::IdentityBinaryExpression => "identity_binary_expression",
         }
     }
 }
@@ -178,6 +181,12 @@ pub fn build_lint_report(program: &Program, options: LintOptions) -> LintReport 
     }
     if rules.contains(&LintRule::ConstantIfExpression) {
         findings.extend(lint_constant_if_expressions(
+            program,
+            options.module.as_deref(),
+        ));
+    }
+    if rules.contains(&LintRule::IdentityBinaryExpression) {
+        findings.extend(lint_identity_binary_expressions(
             program,
             options.module.as_deref(),
         ));
@@ -753,6 +762,181 @@ fn lint_constant_if_expressions(program: &Program, module: Option<&str>) -> Vec<
         collect_constant_if_expressions_in_block(task, &task.body, &mut findings);
     }
     findings
+}
+
+fn lint_identity_binary_expressions(program: &Program, module: Option<&str>) -> Vec<LintFinding> {
+    let mut findings = Vec::new();
+    for task in program
+        .tasks
+        .iter()
+        .filter(|task| module_matches(module, &task_module(task)))
+    {
+        collect_identity_binary_expressions_in_block(task, &task.body, &mut findings);
+    }
+    findings
+}
+
+fn collect_identity_binary_expressions_in_block(
+    task: &TaskDecl,
+    block: &Block,
+    findings: &mut Vec<LintFinding>,
+) {
+    for statement in &block.statements {
+        match &statement.kind {
+            StatementKind::Binding { expr, .. }
+            | StatementKind::Set { expr, .. }
+            | StatementKind::Return { expr }
+            | StatementKind::Expr { expr } => {
+                collect_identity_binary_expressions_in_expr(task, expr, findings);
+            }
+            StatementKind::If {
+                condition,
+                then_block,
+                else_block,
+            } => {
+                collect_identity_binary_expressions_in_expr(task, condition, findings);
+                collect_identity_binary_expressions_in_block(task, then_block, findings);
+                if let Some(else_block) = else_block {
+                    collect_identity_binary_expressions_in_block(task, else_block, findings);
+                }
+            }
+            StatementKind::While { condition, body } => {
+                collect_identity_binary_expressions_in_expr(task, condition, findings);
+                collect_identity_binary_expressions_in_block(task, body, findings);
+            }
+            StatementKind::For {
+                collection, body, ..
+            } => {
+                collect_identity_binary_expressions_in_expr(task, collection, findings);
+                collect_identity_binary_expressions_in_block(task, body, findings);
+            }
+            StatementKind::Forge { body } => {
+                collect_identity_binary_expressions_in_block(task, body, findings);
+            }
+        }
+    }
+}
+
+fn collect_identity_binary_expressions_in_expr(
+    task: &TaskDecl,
+    expr: &Expr,
+    findings: &mut Vec<LintFinding>,
+) {
+    if let Some(replacement) = identity_binary_expression_replacement(expr) {
+        let task_name = task_fq_name(task);
+        findings.push(LintFinding {
+            id: "IDENTITY_BINARY_EXPRESSION".to_string(),
+            rule: LintRule::IdentityBinaryExpression.as_str().to_string(),
+            severity: "warning".to_string(),
+            message: format!(
+                "task `{task_name}` has an identity binary expression `{}`",
+                expr.source
+            ),
+            node: expr.id.clone(),
+            module: task_module(task),
+            hint: format!(
+                "replace the identity binary expression with `{}`",
+                replacement.source
+            ),
+        });
+    }
+
+    match &expr.kind {
+        ExprKind::Unary { expr, .. } | ExprKind::Try { expr } => {
+            collect_identity_binary_expressions_in_expr(task, expr, findings);
+        }
+        ExprKind::Binary { left, right, .. } => {
+            collect_identity_binary_expressions_in_expr(task, left, findings);
+            collect_identity_binary_expressions_in_expr(task, right, findings);
+        }
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
+            collect_identity_binary_expressions_in_expr(task, condition, findings);
+            collect_identity_binary_expressions_in_expr(task, then_branch, findings);
+            collect_identity_binary_expressions_in_expr(task, else_branch, findings);
+        }
+        ExprKind::Call { callee, args } => {
+            collect_identity_binary_expressions_in_expr(task, callee, findings);
+            for arg in args {
+                collect_identity_binary_expressions_in_expr(task, arg, findings);
+            }
+        }
+        ExprKind::ListLiteral { items } => {
+            for item in items {
+                collect_identity_binary_expressions_in_expr(task, item, findings);
+            }
+        }
+        ExprKind::MapLiteral { entries } => {
+            for entry in entries {
+                collect_identity_binary_expressions_in_expr(task, &entry.key, findings);
+                collect_identity_binary_expressions_in_expr(task, &entry.value, findings);
+            }
+        }
+        ExprKind::Index { collection, index } => {
+            collect_identity_binary_expressions_in_expr(task, collection, findings);
+            collect_identity_binary_expressions_in_expr(task, index, findings);
+        }
+        ExprKind::FieldAccess { receiver, .. } => {
+            collect_identity_binary_expressions_in_expr(task, receiver, findings);
+        }
+        ExprKind::RecordLiteral { fields, .. } => {
+            for field in fields {
+                collect_identity_binary_expressions_in_expr(task, &field.expr, findings);
+            }
+        }
+        ExprKind::Raw { .. }
+        | ExprKind::StringLiteral { .. }
+        | ExprKind::IntLiteral { .. }
+        | ExprKind::FloatLiteral { .. }
+        | ExprKind::BoolLiteral { .. }
+        | ExprKind::Identifier { .. } => {}
+    }
+}
+
+fn identity_binary_expression_replacement(expr: &Expr) -> Option<&Expr> {
+    let ExprKind::Binary { op, left, right } = &expr.kind else {
+        return None;
+    };
+    match op {
+        BinaryOp::Add if is_zero_literal(left) => Some(right),
+        BinaryOp::Add if is_zero_literal(right) => Some(left),
+        BinaryOp::Subtract if is_zero_literal(right) => Some(left),
+        BinaryOp::Multiply if is_one_literal(left) => Some(right),
+        BinaryOp::Multiply if is_one_literal(right) => Some(left),
+        BinaryOp::Divide if is_one_literal(right) => Some(left),
+        BinaryOp::And if is_true_literal(left) => Some(right),
+        BinaryOp::And if is_true_literal(right) => Some(left),
+        BinaryOp::Or if is_false_literal(left) => Some(right),
+        BinaryOp::Or if is_false_literal(right) => Some(left),
+        _ => None,
+    }
+}
+
+fn is_zero_literal(expr: &Expr) -> bool {
+    match &expr.kind {
+        ExprKind::IntLiteral { value } => *value == 0,
+        ExprKind::FloatLiteral { value } => *value == 0.0,
+        _ => false,
+    }
+}
+
+fn is_one_literal(expr: &Expr) -> bool {
+    match &expr.kind {
+        ExprKind::IntLiteral { value } => *value == 1,
+        ExprKind::FloatLiteral { value } => *value == 1.0,
+        _ => false,
+    }
+}
+
+fn is_true_literal(expr: &Expr) -> bool {
+    matches!(&expr.kind, ExprKind::BoolLiteral { value: true })
+}
+
+fn is_false_literal(expr: &Expr) -> bool {
+    matches!(&expr.kind, ExprKind::BoolLiteral { value: false })
 }
 
 fn collect_constant_if_expressions_in_block(
@@ -1732,6 +1916,105 @@ fn constant_if_expression_replacement_in_expr(expr: &Expr, target: &str) -> Opti
         ExprKind::RecordLiteral { fields, .. } => fields
             .iter()
             .find_map(|field| constant_if_expression_replacement_in_expr(&field.expr, target)),
+        ExprKind::Raw { .. }
+        | ExprKind::StringLiteral { .. }
+        | ExprKind::IntLiteral { .. }
+        | ExprKind::FloatLiteral { .. }
+        | ExprKind::BoolLiteral { .. }
+        | ExprKind::Identifier { .. } => None,
+    }
+}
+
+pub fn identity_binary_expression_replacement_source(
+    program: &Program,
+    target: &str,
+) -> Option<String> {
+    program
+        .tasks
+        .iter()
+        .find_map(|task| identity_binary_expression_replacement_in_block(&task.body, target))
+}
+
+fn identity_binary_expression_replacement_in_block(block: &Block, target: &str) -> Option<String> {
+    block
+        .statements
+        .iter()
+        .find_map(|statement| match &statement.kind {
+            StatementKind::Binding { expr, .. }
+            | StatementKind::Set { expr, .. }
+            | StatementKind::Return { expr }
+            | StatementKind::Expr { expr } => {
+                identity_binary_expression_replacement_in_expr(expr, target)
+            }
+            StatementKind::If {
+                condition,
+                then_block,
+                else_block,
+            } => identity_binary_expression_replacement_in_expr(condition, target)
+                .or_else(|| identity_binary_expression_replacement_in_block(then_block, target))
+                .or_else(|| {
+                    else_block.as_ref().and_then(|block| {
+                        identity_binary_expression_replacement_in_block(block, target)
+                    })
+                }),
+            StatementKind::While { condition, body } => {
+                identity_binary_expression_replacement_in_expr(condition, target)
+                    .or_else(|| identity_binary_expression_replacement_in_block(body, target))
+            }
+            StatementKind::For {
+                collection, body, ..
+            } => identity_binary_expression_replacement_in_expr(collection, target)
+                .or_else(|| identity_binary_expression_replacement_in_block(body, target)),
+            StatementKind::Forge { body } => {
+                identity_binary_expression_replacement_in_block(body, target)
+            }
+        })
+}
+
+fn identity_binary_expression_replacement_in_expr(expr: &Expr, target: &str) -> Option<String> {
+    if expr.id == target {
+        return identity_binary_expression_replacement(expr)
+            .map(|replacement| replacement.source.clone());
+    }
+
+    match &expr.kind {
+        ExprKind::Unary { expr, .. } | ExprKind::Try { expr } => {
+            identity_binary_expression_replacement_in_expr(expr, target)
+        }
+        ExprKind::Binary { left, right, .. } => {
+            identity_binary_expression_replacement_in_expr(left, target)
+                .or_else(|| identity_binary_expression_replacement_in_expr(right, target))
+        }
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => identity_binary_expression_replacement_in_expr(condition, target)
+            .or_else(|| identity_binary_expression_replacement_in_expr(then_branch, target))
+            .or_else(|| identity_binary_expression_replacement_in_expr(else_branch, target)),
+        ExprKind::Call { callee, args } => {
+            identity_binary_expression_replacement_in_expr(callee, target).or_else(|| {
+                args.iter()
+                    .find_map(|arg| identity_binary_expression_replacement_in_expr(arg, target))
+            })
+        }
+        ExprKind::ListLiteral { items } => items
+            .iter()
+            .find_map(|item| identity_binary_expression_replacement_in_expr(item, target)),
+        ExprKind::MapLiteral { entries } => entries.iter().find_map(|entry| {
+            identity_binary_expression_replacement_in_expr(&entry.key, target)
+                .or_else(|| identity_binary_expression_replacement_in_expr(&entry.value, target))
+        }),
+        ExprKind::Index { collection, index } => {
+            identity_binary_expression_replacement_in_expr(collection, target)
+                .or_else(|| identity_binary_expression_replacement_in_expr(index, target))
+        }
+        ExprKind::FieldAccess { receiver, .. } => {
+            identity_binary_expression_replacement_in_expr(receiver, target)
+        }
+        ExprKind::RecordLiteral { fields, .. } => fields
+            .iter()
+            .find_map(|field| identity_binary_expression_replacement_in_expr(&field.expr, target)),
         ExprKind::Raw { .. }
         | ExprKind::StringLiteral { .. }
         | ExprKind::IntLiteral { .. }

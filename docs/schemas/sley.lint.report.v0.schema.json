@@ -30,7 +30,8 @@
               "unqualified_imported_call",
               "unused_pure_binding",
               "mutable_binding_never_set",
-              "constant_if_expression"
+              "constant_if_expression",
+              "identity_binary_expression"
             ]
           },
           "uniqueItems": true
@@ -67,7 +68,8 @@
               "UNQUALIFIED_IMPORTED_CALL",
               "UNUSED_PURE_BINDING",
               "MUTABLE_BINDING_NEVER_SET",
-              "CONSTANT_IF_EXPRESSION"
+              "CONSTANT_IF_EXPRESSION",
+              "IDENTITY_BINARY_EXPRESSION"
             ]
           },
           "rule": {
@@ -85,7 +87,8 @@
               "unqualified_imported_call",
               "unused_pure_binding",
               "mutable_binding_never_set",
-              "constant_if_expression"
+              "constant_if_expression",
+              "identity_binary_expression"
             ]
           },
           "severity": { "enum": ["warning"] },

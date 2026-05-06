@@ -101,7 +101,7 @@ sley fix --json --kind <kind> [--template-surface <surface>] [--name <name>] [--
 sley verify --json [--deny-warnings] [runtime gates/seeds] <target>
 sley deploy --json --dry-run [--artifacts-dir <dir>] [runtime gates/seeds] <target>
 sley query --json [--kind all|modules|tasks|types|effects|calls] [--module <module>] <target>
-sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter|missing-module-declaration|unchecked-result|unqualified-imported-call|unused-pure-binding|mutable-binding-never-set|constant-if-expression] [--module <module>] <target>
+sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter|missing-module-declaration|unchecked-result|unqualified-imported-call|unused-pure-binding|mutable-binding-never-set|constant-if-expression|identity-binary-expression] [--module <module>] <target>
 sley trace --json <target>
 sley seal --json <target>
 sley zjx --json [--slice <node-id>] <target>
@@ -596,6 +596,10 @@ The current smoke manifest covers:
 - constant-if expression style warnings through `constant_if_expression`, plus
   checked `simplify_constant_if_expression` templates that replace
   expression-level `if true/false` with the branch that executes
+- identity binary expression style warnings through `identity_binary_expression`,
+  plus checked `simplify_identity_binary_expression` templates that replace
+  `x + 0`, `x * 1`, `flag && true`, or `flag || false` forms with the
+  non-identity side
 - private declaration hygiene through the checked `unused_private_type` and
   `unused_private_effect` lint rules
 - import hygiene through the checked `unused_import` lint rule
@@ -673,6 +677,9 @@ The v0 lint rules are:
   mutation is needed.
 - `constant_if_expression`: an expression-level `if true/false { ... } else { ... }`
   is reported so agents can replace it with the branch that actually executes.
+- `identity_binary_expression`: a checked identity binary expression such as
+  `x + 0`, `x * 1`, `flag && true`, or `flag || false` is reported so agents
+  can replace it with the non-identity side.
 
 The command supports `--module <module>`, `--rule unused-private-task`,
 `--rule unreachable-private-task`, `--rule unused-declared-effect`,
@@ -680,7 +687,8 @@ The command supports `--module <module>`, `--rule unused-private-task`,
 `--rule unused-private-effect`, `--rule raw-host-adapter`,
 `--rule missing-module-declaration`, `--rule unchecked-result`,
 `--rule unqualified-imported-call`, `--rule unused-pure-binding`,
-`--rule mutable-binding-never-set`, `--rule constant-if-expression`, and
+`--rule mutable-binding-never-set`, `--rule constant-if-expression`,
+`--rule identity-binary-expression`, and
 `--deny-warnings` lets CI turn findings into a failing exit after the JSON
 report is printed.
 
