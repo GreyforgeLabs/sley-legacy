@@ -1087,6 +1087,32 @@
       }
     },
     {
+      "name": "plan_project_emit_insert_statement_graft_json",
+      "args": [
+        "plan",
+        "--json",
+        "--graft-templates",
+        "--emit-graft",
+        "insert_statement",
+        "examples/project"
+      ],
+      "covers": [
+        "cli:plan",
+        "cli:plan-emit-graft",
+        "graft:templates:block-surface-insert",
+        "graft:templates:task-body-insert"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/op", "value": "InsertStatement" },
+          { "pointer": "/target", "value": "block:task:app.main.main" },
+          { "pointer": "/payload/source", "value": "forge { }" },
+          { "pointer": "/payload/position", "value": 0 }
+        ]
+      }
+    },
+    {
       "name": "plan_declaration_hygiene_graft_templates_json",
       "args": ["plan", "--json", "--graft-templates", "examples/declaration_hygiene.sley"],
       "covers": [

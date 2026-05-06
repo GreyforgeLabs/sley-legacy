@@ -175,11 +175,12 @@ Rules:
   `move_statement`,
   `move_take`, and destination-variant templates when legal graph-slice
   destinations exist. Agents can target a specific task surface by node id or
-  qualified name, a block node id for a checked `insert_statement` starter, a
-  statement or take node id for direct checked graph-slice move/delete
-  templates, an expression node id for a checked no-op `replace_expression`
-  starter, the `program` missing-module surface, or a lint finding node id.
-  Agents can use `--emit-graft <kind>` to print
+  qualified name for task-body templates including a checked
+  `insert_statement` starter, a block node id for a checked `insert_statement`
+  starter, a statement or take node id for direct checked graph-slice
+  move/delete templates, an expression node id for a checked no-op
+  `replace_expression` starter, the `program` missing-module surface, or a lint
+  finding node id. Agents can use `--emit-graft <kind>` to print
   one matching operation or transaction JSON directly for dry-run or write-mode
   `sley graft`.
 - `sley fix` consumes the same plan templates, selects one named operation or

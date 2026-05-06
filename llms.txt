@@ -219,8 +219,8 @@ Current development phase:
   `delete_take`, and `replace_expression` templates where legal, or
   `--template-surface <surface>` can target a specific task id, qualified task
   name, block node id, statement node id, take node id, expression node id, or
-  lint finding node; block surfaces emit checked `insert_statement` starters;
-  `--emit-graft <kind>` prints one
+  lint finding node; selected task and block surfaces emit checked
+  `insert_statement` starters; `--emit-graft <kind>` prints one
   matching operation/transaction JSON object for `sley graft`
 - `sley fix --json --kind <kind>` consumes checked plan templates and applies
   one named operation or transaction through the same graft checker, emitting
