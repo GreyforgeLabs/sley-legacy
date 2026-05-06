@@ -98,10 +98,12 @@ Current verified surface:
   `zjx-envelope.json`, and digest-bearing `manifest.json` handoff files after
   the dry-run package is ready. `sley-contract inspect-deploy-artifacts`
   revalidates that handoff directory after it moves between agent sessions.
-- `sley new --json --template hello|deploy|agent` emits
-  `schema: "sley.project.scaffold.v0"` and creates deterministic first-run
-  starter projects, including a seeded agent quickstart that composes
-  SecretRead, Network, ModelCall, and Deploy authority without real providers.
+- `sley new --json --template hello|library|cli|service-gate|data-pipeline|deploy|agent|agent-task-pack`
+  emits `schema: "sley.project.scaffold.v0"` and creates deterministic
+  first-run starter projects, including pure library/CLI/data-pipeline
+  quickstarts, a seeded network service quickstart, and seeded agent quickstarts
+  that compose SecretRead, Network, ModelCall, and Deploy authority without
+  real providers.
 - `sley lint --json` emits `schema: "sley.lint.report.v0"` and supports
   `--module <module>`, `--rule unused-private-task`,
   `--rule unreachable-private-task`, `--rule unused-declared-effect`,
@@ -189,19 +191,17 @@ Current verified surface:
   lint-driven missing-module declaration templates with target/project-aware
   module-name inference and checked fix dry runs, checked raw-host adapter
   migration templates that rewrite eligible raw calls to fallible `try_`
-  calls with `?`, and typed deploy and agent scaffold next-actions whose
-  generated first-run sequences are executed by tests, including strict seeded
-  `sley verify --json --deny-warnings` readiness smokes and local
-  `sley deploy --json --dry-run` package reports for the generated deploy and
-  agent projects and `sley-ci run`/`sley-ci verify`/`sley-ci deploy` handoffs
-  for the seeded agent project, plus warning-state doctor/verify next-actions that route to
+  calls with `?`, and typed starter, service, deploy, and agent scaffold
+  next-actions whose generated first-run sequences are executed by tests,
+  including strict seeded `sley verify --json --deny-warnings` readiness smokes
+  and local `sley deploy --json --dry-run` package reports for generated gated
+  projects and `sley-ci run`/`sley-ci verify`/`sley-ci deploy` handoffs for the
+  seeded agent projects, plus warning-state doctor/verify next-actions that route to
   `sley plan --json --graft-templates` plus unambiguous
   `sley fix --dry-run` previews carrying explicit `write_command` vectors with
   a staged write-and-verify smoke for a previewed repair plus a project-level
-  previewed unused-import write-and-verify smoke and a generated deploy
-  scaffold repair loop re-verified with seeded deploy authority and a seeded
-  agent quickstart re-verified with SecretRead, Network, ModelCall, and Deploy
-  authority, plus
+  previewed unused-import write-and-verify smoke and generated scaffold
+  quickstarts re-verified with local or seeded authority, plus
   scaffold-level and passed-verify seal/ZJX handoff next-actions, doctor/plan
   call-bearing reports that route agents to strict call-row inspection, a
   write/query/verify smoke for the call-row-driven rename-and-update-call-sites

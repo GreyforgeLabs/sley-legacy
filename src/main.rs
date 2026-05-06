@@ -1058,16 +1058,26 @@ impl From<CliLintRule> for LintRule {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
 enum CliScaffoldTemplate {
     Hello,
+    Library,
+    Cli,
+    ServiceGate,
+    DataPipeline,
     Deploy,
     Agent,
+    AgentTaskPack,
 }
 
 impl From<CliScaffoldTemplate> for ScaffoldTemplate {
     fn from(template: CliScaffoldTemplate) -> Self {
         match template {
             CliScaffoldTemplate::Hello => Self::Hello,
+            CliScaffoldTemplate::Library => Self::Library,
+            CliScaffoldTemplate::Cli => Self::Cli,
+            CliScaffoldTemplate::ServiceGate => Self::ServiceGate,
+            CliScaffoldTemplate::DataPipeline => Self::DataPipeline,
             CliScaffoldTemplate::Deploy => Self::Deploy,
             CliScaffoldTemplate::Agent => Self::Agent,
+            CliScaffoldTemplate::AgentTaskPack => Self::AgentTaskPack,
         }
     }
 }

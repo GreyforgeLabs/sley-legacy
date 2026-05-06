@@ -28,8 +28,10 @@ Implemented now:
 - explicit non-mutating `sley graft --dry-run`; plain graft preview remains
   non-mutating unless `--write` is supplied
 - `sley.toml` project manifests for multi-file module graphs
-- non-destructive `sley new` project scaffolding with `hello`,
-  deterministic `deploy`, and deterministic `agent` starter templates
+- non-destructive `sley new` project scaffolding with `hello`, `library`,
+  `cli`, deterministic `service-gate`, `data-pipeline`, deterministic
+  `deploy`, deterministic `agent`, and deterministic `agent-task-pack` starter
+  templates
 - module, import, type, effect, and task declarations
 - import aliases with `import app.math as math`
 - exported declarations with `export task`, `export type`, and `export effect`
@@ -307,10 +309,11 @@ Implemented now:
   operator approval; `--artifacts-dir <dir>` writes local `deploy-report.json`,
   `seal.json`, `zjx-envelope.json`, and a digest-bearing `manifest.json`
   handoff file only after the dry-run package is ready
-- JSON project scaffold reports with `sley new --json`, `hello`, `deploy`,
-  and `agent` templates, relative created-file paths, next-command vectors, typed
-  next-action reasons through check, doctor, query, plan, lint, verify, run,
-  seal, and ZJX package steps, and
+- JSON project scaffold reports with `sley new --json`, `hello`, `library`,
+  `cli`, `service-gate`, `data-pipeline`, `deploy`, `agent`, and
+  `agent-task-pack` templates, relative created-file paths, next-command
+  vectors, typed next-action reasons through check, doctor, query, plan, lint,
+  verify, run, seal, and ZJX package steps, and
   `schema: "sley.project.scaffold.v0"`
 - JSONL trace sidecars for accepted graft/fix receipts when
   `sley graft --write` or `sley fix --write` applies a change, with
@@ -376,8 +379,8 @@ Implemented now:
   unambiguous dry-run fix previews with explicit
   `write_command` vectors, a staged previewed-repair write smoke that proves
   strict verify readiness afterward, a project-level previewed unused-import
-  repair write followed by strict verify, generated deploy and agent scaffold
-  quickstarts that re-verify with seeded authority, statement-surface
+  repair write followed by strict verify, generated scaffold quickstarts that
+  re-verify with local or seeded authority, statement-surface
   `replace_statement` planning and fix dry runs, program-surface
   declaration/import planning and `add_task`/effect/import fix dry runs with
   name/source/module overrides,
@@ -453,13 +456,16 @@ sley-contract inspect-deploy-artifacts .sley/dogfood-deploy --schemas docs/schem
 ```
 
 `sley new` refuses to overwrite existing `sley.toml`, `README.md`, or entry
-source files. `--template hello` creates a pure starter project.
-`--template deploy` creates a deterministic deployment-gated starter that
-uses the seeded `deploy.try_stage` adapter; it does not call deployment
-providers or mutate infrastructure. `--template agent` creates a deterministic
-agentic starter that composes seeded secret, network, model, and deploy
-authority through explicit gates; it does not read real secret stores, call live
-networks or model providers, or mutate deployment infrastructure.
+source files. `--template hello`, `--template library`, `--template cli`, and
+`--template data-pipeline` create pure starters. `--template service-gate`
+creates a deterministic network-gated starter that runs with seeded
+`http.try_get_text` data. `--template deploy` creates a deterministic
+deployment-gated starter that uses the seeded `deploy.try_stage` adapter; it
+does not call deployment providers or mutate infrastructure. `--template agent`
+and `--template agent-task-pack` create deterministic agentic starters that
+compose seeded secret, network, model, and deploy authority through explicit
+gates; they do not read real secret stores, call live networks or model
+providers, or mutate deployment infrastructure.
 
 ```toml
 [project]
@@ -758,10 +764,10 @@ payloads plus affordances with strict graft operations, doctor readiness,
 call-inspection next-actions,
 verify and deploy dry-run pre-deploy gates,
 edit-plan surfaces, call-site rename and remove-take/call-arg transaction
-write/query/verify, typed scaffold next-actions for deploy and agent
-quickstarts, strict seeded verify readiness for the generated deploy and agent
-starters, deploy dry-run package reports with optional local artifact manifests,
-scaffold-level seal/ZJX handoff actions,
+write/query/verify, typed scaffold next-actions for starter, deploy, service,
+and agent quickstarts, strict seeded verify readiness for the generated gated
+starters, deploy dry-run package reports with optional local artifact
+manifests, scaffold-level seal/ZJX handoff actions,
 temp setup files for write-mode CLI smokes, direct graft write smokes,
 project `AddImport` writeback into existing unloaded module files plus
 follow-up strict project checks through direct graft JSON and `sley fix --write`,

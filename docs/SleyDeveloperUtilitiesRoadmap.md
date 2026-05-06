@@ -207,6 +207,10 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
      `agent` starter.
    - MVP: `library`, `cli`, `service-gate`, `data-pipeline`, and
      `agent-task-pack` templates, all deterministic and verify-ready.
+   - Current bootstrap: these templates are available through `sley new`, are
+     listed in `sley.project.scaffold.v0`, and are covered by a CLI integration
+     test that scaffolds, checks, lints, verifies, and runs each template with
+     deterministic seeds where needed.
 
 9. `sley-zjx-tools`
    - Inspection and verification utilities for `.zjx` envelopes, graph

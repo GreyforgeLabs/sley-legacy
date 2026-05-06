@@ -707,7 +707,7 @@ receipts, graph-slice insert and replace affordances, checked
 templates, lint-driven fix
 writes that clear warnings before verify, program-surface declaration/import
 template planning and dry-run fixes with name/source/module overrides, deploy
-dry-run reports, typed deploy and agent scaffold next-actions, and
+dry-run reports, typed starter/deploy/agent scaffold next-actions, and
 seeded host-adapter
 execution for `FileRead`, `FileWrite`, `DatabaseRead`, `DatabaseWrite`,
 `Network`, `Shell`, `ModelCall`, `SecretRead`, `Deploy`, and `Spend`.
@@ -746,21 +746,26 @@ workbench is read-only for source code; HTML output requires `--html <path>`.
 
 `sley new` is the v0 project scaffold command. It writes a `sley.toml`,
 `README.md`, and entry module source file, refusing to overwrite any of those
-paths when they already exist. `--template hello` creates a pure starter.
-`--template deploy` creates a deterministic `Deploy`-gated starter that runs
-with a seeded `deploy.try_stage` result and does not call providers or mutate
-infrastructure. `--template agent` creates a deterministic agentic starter that
-uses seeded `secrets.try_get`, `http.try_get_text`, `model.try_complete`, and
-`deploy.try_stage` calls under explicit `SecretRead`, `Network`, `ModelCall`,
-and `Deploy` gates without reading real secret stores, calling live networks or
-model providers, or mutating deployment infrastructure. `--json` emits the
-scaffold report with relative file paths, exact next-command vectors, and typed
-next-action reasons under `sley.project.scaffold.v0`. The deploy and agent
+paths when they already exist. `--template hello`, `--template library`,
+`--template cli`, and `--template data-pipeline` create pure starters.
+`--template service-gate` creates a deterministic `Network`-gated starter that
+runs with seeded `http.try_get_text` data. `--template deploy` creates a
+deterministic `Deploy`-gated starter that runs with a seeded
+`deploy.try_stage` result and does not call providers or mutate
+infrastructure. `--template agent` and `--template agent-task-pack` create
+deterministic agentic starters that use seeded `secrets.try_get`,
+`http.try_get_text`, `model.try_complete`, and `deploy.try_stage` calls under
+explicit `SecretRead`, `Network`, `ModelCall`, and `Deploy` gates without
+reading real secret stores, calling live networks or model providers, or
+mutating deployment infrastructure. `--json` emits the scaffold report with
+relative file paths, exact next-command vectors, and typed next-action reasons
+under `sley.project.scaffold.v0`. The gated deploy, service, and agent
 scaffolds' generated next actions are checked first-run sequences: strict
 check, doctor readiness, task query, edit plan, lint gate, seeded verification
-with denied warnings, seeded run, local deploy dry-run package, seal, and ZJX
-package. The agent scaffold also includes `sley-ci run`, `sley-ci verify`, and
-`sley-ci deploy --dry-run` next actions over the same deterministic seeds.
+with denied warnings, seeded run, local deploy dry-run package where
+applicable, seal, and ZJX package. The agent scaffolds also include
+`sley-ci run`, `sley-ci verify`, and `sley-ci deploy --dry-run` next actions
+over the same deterministic seeds.
 
 `sley run --json` emits `sley.run.report.v0` on successful execution. The
 report carries `status: "passed"`, the target path, a recursive runtime value
@@ -1343,14 +1348,12 @@ refuse generic data disguised as Sley artifacts before compression begins.
   empty-for statement cleanup,
   empty-forge statement cleanup,
   unreachable statement cleanup, and mutable binding conversion,
-  plus a repaired generated deploy
-  scaffold re-verified with seeded `Deploy` authority and a strict seeded
-  deploy verify report for the generated `sley new --template deploy` starter,
-  plus a seeded SecretRead/Network/ModelCall/Deploy verify report for the
-  generated `sley new --template agent` starter, including passed-verify
-  next-actions for `sley seal --json` and `sley zjx --json` handoff artifacts,
-  while `sley deploy --dry-run` adds a local deploy package report over verify,
-  seal, and ZJX summaries; live deploy/provider calls remain outside v0
+  plus generated scaffold quickstarts re-verified with local or seeded
+  authority, including strict seeded verify reports for `service-gate`,
+  `deploy`, `agent`, and `agent-task-pack`, passed-verify next-actions for
+  `sley seal --json` and `sley zjx --json` handoff artifacts, and
+  `sley deploy --dry-run` local deploy package reports over verify, seal, and
+  ZJX summaries where applicable; live deploy/provider calls remain outside v0
 - no `match`, agent declarations, spawn/cast/join, or compressed ZJX archive
   writer yet
 - `MoveNode` supports checked in-parent and cross-parent statement movement

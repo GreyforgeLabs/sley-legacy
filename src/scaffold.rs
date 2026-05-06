@@ -11,16 +11,26 @@ pub const PROJECT_SCAFFOLD_SCHEMA: &str = "sley.project.scaffold.v0";
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ScaffoldTemplate {
     Hello,
+    Library,
+    Cli,
+    ServiceGate,
+    DataPipeline,
     Deploy,
     Agent,
+    AgentTaskPack,
 }
 
 impl ScaffoldTemplate {
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Hello => "hello",
+            Self::Library => "library",
+            Self::Cli => "cli",
+            Self::ServiceGate => "service-gate",
+            Self::DataPipeline => "data-pipeline",
             Self::Deploy => "deploy",
             Self::Agent => "agent",
+            Self::AgentTaskPack => "agent-task-pack",
         }
     }
 }
@@ -213,9 +223,17 @@ fn manifest_source(name: &str, module: &str) -> String {
 
 fn readme_source(name: &str, template: ScaffoldTemplate) -> String {
     let (verify, run, deploy) = match template {
-        ScaffoldTemplate::Hello => (
+        ScaffoldTemplate::Hello
+        | ScaffoldTemplate::Library
+        | ScaffoldTemplate::Cli
+        | ScaffoldTemplate::DataPipeline => (
             "sley verify --json --deny-warnings .",
             "sley run --json .",
+            "",
+        ),
+        ScaffoldTemplate::ServiceGate => (
+            "sley verify --json --deny-warnings --cap Network --http-text https://example.test/health \"service ready\" .",
+            "sley run --json --cap Network --http-text https://example.test/health \"service ready\" .",
             "",
         ),
         ScaffoldTemplate::Deploy => (
@@ -223,7 +241,7 @@ fn readme_source(name: &str, template: ScaffoldTemplate) -> String {
             "sley run --json --cap Deploy --deploy-result staging staged .",
             "sley deploy --json --dry-run --artifacts-dir .sley/deploy --cap Deploy --deploy-result staging staged .",
         ),
-        ScaffoldTemplate::Agent => (
+        ScaffoldTemplate::Agent | ScaffoldTemplate::AgentTaskPack => (
             "sley verify --json --deny-warnings --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile \"profile ready\" --cap ModelCall --model-output deploy-plan \"plan approved\" --cap Deploy --deploy-result staging staged .",
             "sley run --json --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile \"profile ready\" --cap ModelCall --model-output deploy-plan \"plan approved\" --cap Deploy --deploy-result staging staged .",
             "sley deploy --json --dry-run --artifacts-dir .sley/deploy --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile \"profile ready\" --cap ModelCall --model-output deploy-plan \"plan approved\" --cap Deploy --deploy-result staging staged .",
@@ -245,6 +263,25 @@ fn template_source(module: &str, template: ScaffoldTemplate) -> String {
             "module {module}\n\n\
 task main -> Text {{\n  return \"hello sley\"\n}}\n"
         ),
+        ScaffoldTemplate::Library => format!(
+            "module {module}\n\n\
+export task describe -> Text {{\n  return \"sley library ready\"\n}}\n\n\
+task main -> Text {{\n  return call describe()\n}}\n"
+        ),
+        ScaffoldTemplate::Cli => format!(
+            "module {module}\n\n\
+task render_help -> Text {{\n  return \"usage: sley-app\"\n}}\n\n\
+task main -> Text {{\n  return call render_help()\n}}\n"
+        ),
+        ScaffoldTemplate::ServiceGate => format!(
+            "module {module}\n\n\
+task main -> Result<Text, Error> uses Network {{\n  bind health = call http.try_get_text(\"https://example.test/health\")?\n\n  return Ok(\"service \" + health)\n}}\n"
+        ),
+        ScaffoldTemplate::DataPipeline => format!(
+            "module {module}\n\n\
+task score -> Int {{\n  take value: Text\n\n  return len(value)\n}}\n\n\
+task main -> Int {{\n  tally total = 0\n  each item in [\"alpha\", \"beta\", \"gamma\"] {{\n    set total = total + call score(item)\n  }}\n\n  return total\n}}\n"
+        ),
         ScaffoldTemplate::Deploy => format!(
             "module {module}\n\n\
 task main -> Result<Text, Error> uses Deploy {{\n  bind result = call deploy.try_stage(\"staging\")?\n\n  return Ok(result)\n}}\n"
@@ -252,6 +289,12 @@ task main -> Result<Text, Error> uses Deploy {{\n  bind result = call deploy.try
         ScaffoldTemplate::Agent => format!(
             "module {module}\n\n\
 task main -> Result<Text, Error> uses SecretRead, Network, ModelCall, Deploy {{\n  bind token = call secrets.try_get(\"api_key\")?\n  bind profile = call http.try_get_text(\"https://example.test/profile\")?\n  bind plan = call model.try_complete(\"deploy-plan\")?\n  bind staged = call deploy.try_stage(\"staging\")?\n\n  if len(token) > 0 {{\n    return Ok(profile + \" | \" + plan + \" | \" + staged)\n  }}\n\n  return Err(\"api_key seed was empty\")\n}}\n"
+        ),
+        ScaffoldTemplate::AgentTaskPack => format!(
+            "module {module}\n\n\
+task collect_profile -> Result<Text, Error> uses SecretRead, Network {{\n  bind token = call secrets.try_get(\"api_key\")?\n  bind profile = call http.try_get_text(\"https://example.test/profile\")?\n\n  if len(token) > 0 {{\n    return Ok(profile)\n  }}\n\n  return Err(\"api_key seed was empty\")\n}}\n\n\
+task plan_deploy -> Result<Text, Error> uses ModelCall {{\n  take profile: Text\n\n  bind plan = call model.try_complete(\"deploy-plan\")?\n\n  return Ok(profile + \" | \" + plan)\n}}\n\n\
+task main -> Result<Text, Error> uses SecretRead, Network, ModelCall, Deploy {{\n  bind profile = call collect_profile()?\n  bind plan = call plan_deploy(profile)?\n  bind staged = call deploy.try_stage(\"staging\")?\n\n  return Ok(plan + \" | \" + staged)\n}}\n"
         ),
     }
 }
@@ -285,7 +328,10 @@ fn next_actions(template: ScaffoldTemplate) -> Vec<ScaffoldNextAction> {
         ),
     ];
     let extra_actions = match template {
-        ScaffoldTemplate::Hello => vec![
+        ScaffoldTemplate::Hello
+        | ScaffoldTemplate::Library
+        | ScaffoldTemplate::Cli
+        | ScaffoldTemplate::DataPipeline => vec![
             next_action(
                 "verify_local",
                 "run the deterministic verification gate with denied warnings",
@@ -295,6 +341,18 @@ fn next_actions(template: ScaffoldTemplate) -> Vec<ScaffoldNextAction> {
                 "run_local",
                 "execute the pure starter task",
                 vec!["sley", "run", "--json", "."],
+            ),
+        ],
+        ScaffoldTemplate::ServiceGate => vec![
+            next_action(
+                "verify_seeded_service",
+                "verify network authority with a deterministic seeded health response and denied warnings",
+                seeded_service_command("verify"),
+            ),
+            next_action(
+                "run_seeded_service",
+                "execute the service-gated starter with deterministic seeded authority",
+                seeded_service_command("run"),
             ),
         ],
         ScaffoldTemplate::Deploy => vec![
@@ -380,6 +438,38 @@ fn next_actions(template: ScaffoldTemplate) -> Vec<ScaffoldNextAction> {
                 seeded_agent_command("sley-ci", "deploy"),
             ),
         ],
+        ScaffoldTemplate::AgentTaskPack => vec![
+            next_action(
+                "verify_seeded_agent",
+                "verify agent authority with deterministic secret, network, model, and deploy seeds",
+                seeded_agent_command("sley", "verify"),
+            ),
+            next_action(
+                "ci_verify_seeded_agent",
+                "run the same seeded agent gate through the local CI wrapper",
+                seeded_agent_command("sley-ci", "verify"),
+            ),
+            next_action(
+                "run_seeded_agent",
+                "execute the agent task pack with deterministic seeded authority",
+                seeded_agent_command("sley", "run"),
+            ),
+            next_action(
+                "ci_run_seeded_agent",
+                "run the same deterministic execution through the local CI wrapper",
+                seeded_agent_command("sley-ci", "run"),
+            ),
+            next_action(
+                "prepare_deploy_package",
+                "build the local dry-run deploy report after seeded agent verification",
+                seeded_agent_command("sley", "deploy"),
+            ),
+            next_action(
+                "ci_deploy_package",
+                "run the same local deploy dry-run package gate through the CI wrapper",
+                seeded_agent_command("sley-ci", "deploy"),
+            ),
+        ],
     };
     actions.extend(extra_actions);
     actions.push(next_action(
@@ -444,6 +534,24 @@ fn seeded_agent_command(binary: &'static str, verb: &'static str) -> Vec<&'stati
                 ".sley/deploy"
             },
         );
+    }
+    command
+}
+
+fn seeded_service_command(verb: &'static str) -> Vec<&'static str> {
+    let mut command = vec![
+        "sley",
+        verb,
+        "--json",
+        "--cap",
+        "Network",
+        "--http-text",
+        "https://example.test/health",
+        "service ready",
+        ".",
+    ];
+    if verb == "verify" {
+        command.insert(3, "--deny-warnings");
     }
     command
 }
