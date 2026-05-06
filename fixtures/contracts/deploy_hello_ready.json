@@ -61,6 +61,7 @@
         "unused_pure_expression_statement",
         "mutable_binding_never_set",
         "constant_if_expression",
+        "constant_if_statement",
         "constant_false_while_statement",
         "empty_if_statement",
         "empty_for_statement",

@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.constant_if_statement",
+  "filters": {
+    "module": null,
+    "rules": [
+      "constant_if_statement"
+    ]
+  },
+  "findings": [
+    {
+      "id": "CONSTANT_IF_STATEMENT",
+      "rule": "constant_if_statement",
+      "severity": "warning",
+      "message": "task `app.constant_if_statement.main` has an if statement with constant `true` condition",
+      "node": "block:task:app.constant_if_statement.main:stmt:1",
+      "module": "app.constant_if_statement",
+      "hint": "replace this if statement with its single executing branch statement"
+    }
+  ]
+}

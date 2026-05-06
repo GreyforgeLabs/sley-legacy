@@ -7,6 +7,7 @@ use crate::ast::{
     TaskDecl, TypeExpr, UnaryOp,
 };
 use crate::authority::host_effects_for_callee;
+use crate::formatter::format_statement_source;
 use crate::query::{QueryKind, QueryOptions, build_query_report};
 use crate::symbols::{
     EffectResolution, TaskCallSummary, TaskResolution, TypeResolution, callee_path,
@@ -33,6 +34,7 @@ pub enum LintRule {
     UnusedPureExpressionStatement,
     MutableBindingNeverSet,
     ConstantIfExpression,
+    ConstantIfStatement,
     ConstantFalseWhileStatement,
     EmptyIfStatement,
     EmptyForStatement,
@@ -65,6 +67,7 @@ impl LintRule {
             Self::UnusedPureExpressionStatement,
             Self::MutableBindingNeverSet,
             Self::ConstantIfExpression,
+            Self::ConstantIfStatement,
             Self::ConstantFalseWhileStatement,
             Self::EmptyIfStatement,
             Self::EmptyForStatement,
@@ -97,6 +100,7 @@ impl LintRule {
             Self::UnusedPureExpressionStatement => "unused_pure_expression_statement",
             Self::MutableBindingNeverSet => "mutable_binding_never_set",
             Self::ConstantIfExpression => "constant_if_expression",
+            Self::ConstantIfStatement => "constant_if_statement",
             Self::ConstantFalseWhileStatement => "constant_false_while_statement",
             Self::EmptyIfStatement => "empty_if_statement",
             Self::EmptyForStatement => "empty_for_statement",
@@ -223,6 +227,12 @@ pub fn build_lint_report(program: &Program, options: LintOptions) -> LintReport 
     }
     if rules.contains(&LintRule::ConstantIfExpression) {
         findings.extend(lint_constant_if_expressions(
+            program,
+            options.module.as_deref(),
+        ));
+    }
+    if rules.contains(&LintRule::ConstantIfStatement) {
+        findings.extend(lint_constant_if_statements(
             program,
             options.module.as_deref(),
         ));
@@ -892,6 +902,18 @@ fn lint_constant_if_expressions(program: &Program, module: Option<&str>) -> Vec<
         .filter(|task| module_matches(module, &task_module(task)))
     {
         collect_constant_if_expressions_in_block(task, &task.body, &mut findings);
+    }
+    findings
+}
+
+fn lint_constant_if_statements(program: &Program, module: Option<&str>) -> Vec<LintFinding> {
+    let mut findings = Vec::new();
+    for task in program
+        .tasks
+        .iter()
+        .filter(|task| module_matches(module, &task_module(task)))
+    {
+        collect_constant_if_statements_in_block(task, &task.body, &mut findings);
     }
     findings
 }
@@ -2092,6 +2114,54 @@ fn collect_constant_if_expressions_in_block(
             StatementKind::Forge { body } => {
                 collect_constant_if_expressions_in_block(task, body, findings);
             }
+        }
+    }
+}
+
+fn collect_constant_if_statements_in_block(
+    task: &TaskDecl,
+    block: &Block,
+    findings: &mut Vec<LintFinding>,
+) {
+    for statement in &block.statements {
+        match &statement.kind {
+            StatementKind::If {
+                condition,
+                then_block,
+                else_block,
+            } => {
+                if let Some(value) = bool_literal_value(condition)
+                    && constant_if_statement_replacement(statement).is_some()
+                {
+                    let task_name = task_fq_name(task);
+                    findings.push(LintFinding {
+                        id: "CONSTANT_IF_STATEMENT".to_string(),
+                        rule: LintRule::ConstantIfStatement.as_str().to_string(),
+                        severity: "warning".to_string(),
+                        message: format!(
+                            "task `{task_name}` has an if statement with constant `{value}` condition"
+                        ),
+                        node: statement.id.clone(),
+                        module: task_module(task),
+                        hint: "replace this if statement with its single executing branch statement"
+                            .to_string(),
+                    });
+                } else {
+                    collect_constant_if_statements_in_block(task, then_block, findings);
+                    if let Some(else_block) = else_block {
+                        collect_constant_if_statements_in_block(task, else_block, findings);
+                    }
+                }
+            }
+            StatementKind::While { body, .. }
+            | StatementKind::For { body, .. }
+            | StatementKind::Forge { body } => {
+                collect_constant_if_statements_in_block(task, body, findings);
+            }
+            StatementKind::Binding { .. }
+            | StatementKind::Set { .. }
+            | StatementKind::Return { .. }
+            | StatementKind::Expr { .. } => {}
         }
     }
 }
@@ -3349,6 +3419,64 @@ fn constant_if_expression_replacement_in_expr(expr: &Expr, target: &str) -> Opti
         | ExprKind::BoolLiteral { .. }
         | ExprKind::Identifier { .. } => None,
     }
+}
+
+pub fn constant_if_statement_replacement_source(program: &Program, target: &str) -> Option<String> {
+    program
+        .tasks
+        .iter()
+        .find_map(|task| constant_if_statement_replacement_in_block(&task.body, target))
+}
+
+fn constant_if_statement_replacement_in_block(block: &Block, target: &str) -> Option<String> {
+    block
+        .statements
+        .iter()
+        .find_map(|statement| match &statement.kind {
+            StatementKind::If {
+                then_block,
+                else_block,
+                ..
+            } => {
+                if statement.id == target {
+                    return constant_if_statement_replacement(statement);
+                }
+                constant_if_statement_replacement_in_block(then_block, target).or_else(|| {
+                    else_block
+                        .as_ref()
+                        .and_then(|block| constant_if_statement_replacement_in_block(block, target))
+                })
+            }
+            StatementKind::While { body, .. }
+            | StatementKind::For { body, .. }
+            | StatementKind::Forge { body } => {
+                constant_if_statement_replacement_in_block(body, target)
+            }
+            StatementKind::Binding { .. }
+            | StatementKind::Set { .. }
+            | StatementKind::Return { .. }
+            | StatementKind::Expr { .. } => None,
+        })
+}
+
+fn constant_if_statement_replacement(statement: &Statement) -> Option<String> {
+    let StatementKind::If {
+        condition,
+        then_block,
+        else_block,
+    } = &statement.kind
+    else {
+        return None;
+    };
+    let selected_block = if bool_literal_value(condition)? {
+        then_block
+    } else {
+        else_block.as_ref()?
+    };
+    let [selected_statement] = selected_block.statements.as_slice() else {
+        return None;
+    };
+    Some(format_statement_source(selected_statement))
 }
 
 pub fn identity_binary_expression_replacement_source(

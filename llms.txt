@@ -186,7 +186,8 @@ Current development phase:
   `unused_pure_binding`, the no-op expression cleanup rule
   `unused_pure_expression_statement`, the mutable-local style rule
   `mutable_binding_never_set`, the expression simplification rule
-  `constant_if_expression`, the constant-false while cleanup rule
+  `constant_if_expression`, the constant-if statement simplification rule
+  `constant_if_statement`, the constant-false while cleanup rule
   `constant_false_while_statement`, the empty-if cleanup rule
   `empty_if_statement`, the empty-for cleanup rule
   `empty_for_statement`, the empty-forge cleanup rule
@@ -244,6 +245,8 @@ Current development phase:
   expression statements, plus
   `delete_constant_false_while_statement` templates for never-executed
   `while false` statements, plus
+  `simplify_constant_if_statement` templates for constant `if` statements with
+  one executing branch statement, plus
   `delete_empty_if_statement` templates for no-op `if` statements with
   delete-safe conditions and empty branches, plus
   `delete_empty_for_statement` templates for `for` statements over literal

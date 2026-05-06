@@ -117,6 +117,7 @@ Implemented now:
   `--rule unqualified-imported-call`, `--rule unused-pure-binding`,
   `--rule unused-pure-expression-statement`, or
   `--rule mutable-binding-never-set`, `--rule constant-if-expression`,
+  `--rule constant-if-statement`,
   `--rule constant-false-while-statement`,
   `--rule empty-if-statement`,
   `--rule empty-for-statement`,
@@ -175,6 +176,8 @@ Implemented now:
   expression statements,
   `simplify_constant_if_expression` templates for constant `if` expressions
   that can be replaced by the branch that executes,
+  `simplify_constant_if_statement` templates for constant `if` statements that
+  can be replaced by their single executing branch statement,
   `delete_constant_false_while_statement` templates for never-executed
   `while false` statements,
   `delete_empty_if_statement` templates for no-op `if` statements with
@@ -664,6 +667,7 @@ coverage, unused pure binding delete templates with write/verify coverage,
 unused pure expression statement delete templates with write/verify coverage,
 mutable-binding conversion transactions with write/verify coverage,
 constant-if expression simplification templates with write/verify coverage,
+constant-if statement simplification templates with write/verify coverage,
 constant-false while statement delete templates with write/verify coverage,
 empty-if statement delete templates with write/verify coverage,
 empty-for statement delete templates with write/verify coverage,

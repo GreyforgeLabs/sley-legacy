@@ -248,17 +248,17 @@ Near-term:
    unused pure binding cleanup, no-op pure expression statement cleanup,
    constant-false while statement cleanup, empty-if statement cleanup,
    empty-for statement cleanup, and unreachable statement cleanup, plus
-   constant-if, identity binary expression,
+   constant-if expression and statement simplification, identity binary expression,
    redundant boolean comparison, absorbing boolean expression,
    self-comparison expression, double negation, redundant boolean-if, and
    same-branch if simplification;
    those are structurally repairable through checked plan/fix templates, with
    write/query/verify smoke coverage for imported-call qualification and
    write/verify smoke coverage for pure binding deletion, pure expression
-   statement deletion, constant-false while statement deletion, empty-if
-   statement deletion, empty-for statement deletion, unreachable statement
-   deletion, mutable binding conversion,
-   constant-if simplification,
+   statement deletion, constant-if statement simplification, constant-false
+   while statement deletion, empty-if statement deletion, empty-for statement
+   deletion, unreachable statement deletion, mutable binding conversion,
+   constant-if expression simplification,
    identity binary simplification, and
    redundant boolean comparison
    simplification, absorbing boolean expression simplification,
