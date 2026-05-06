@@ -66,6 +66,49 @@
       }
     },
     {
+      "name": "verify_new_deploy_project_json",
+      "args": [
+        "verify",
+        "--json",
+        "--deny-warnings",
+        "--cap",
+        "Deploy",
+        "--deploy-result",
+        "staging",
+        "staged",
+        "{tmp}/agent-app"
+      ],
+      "covers": [
+        "cli:verify",
+        "json:sley.verify.report.v0",
+        "json:sley.query.report.v0",
+        "json:sley.lint.report.v0",
+        "scaffold:deploy-quickstart",
+        "scaffold:verify-ready",
+        "host:Deploy"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.verify.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/entry_module", "value": "app.main" },
+          { "pointer": "/summary/error_count", "value": 0 },
+          { "pointer": "/summary/warning_count", "value": 0 },
+          { "pointer": "/summary/lint_finding_count", "value": 0 },
+          { "pointer": "/summary/runtime_status", "value": "passed" },
+          { "pointer": "/query/source_schema", "value": "sley.query.report.v0" },
+          { "pointer": "/lint/source_schema", "value": "sley.lint.report.v0" },
+          { "pointer": "/lint/status", "value": "ok" },
+          { "pointer": "/runtime/status", "value": "passed" },
+          { "pointer": "/runtime/value/kind", "value": "Ok" },
+          { "pointer": "/runtime/value/value/kind", "value": "Text" },
+          { "pointer": "/runtime/value/value/value", "value": "staged" },
+          { "pointer": "/next_actions/0/kind", "value": "seal_verified_target" }
+        ]
+      }
+    },
+    {
       "name": "run_new_deploy_project_json",
       "args": [
         "run",

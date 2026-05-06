@@ -171,7 +171,8 @@ Current development phase:
   arguments by task target plus optional `from`/`scope`
 - `sley verify --json` emits `sley.verify.report.v0` and consumes strict
   diagnostics, checked query/lint summaries, and deterministic runtime
-  execution into one CI/pre-deploy gate
+  execution into one CI/pre-deploy gate; the deploy scaffold has a checked
+  `--deny-warnings --cap Deploy --deploy-result staging staged` smoke
 - next development work should broaden style and migration lints
 - project graft writeback now supports create/update/delete module files and
   module rename, including manifest entry updates; top-level type/effect/task

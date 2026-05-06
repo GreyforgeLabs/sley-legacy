@@ -8460,6 +8460,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "lint:missing_module_declaration",
         "scaffold:deploy-quickstart",
         "scaffold:next-actions",
+        "scaffold:verify-ready",
         "host:DatabaseRead",
         "host:DatabaseWrite",
         "host:Deploy",

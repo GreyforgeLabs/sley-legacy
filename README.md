@@ -471,7 +471,8 @@ gold corpus and CLI smoke suite now have manifests with required coverage tags
 for seeded host adapters, stable JSON roots, graph/ZJX output, graft and fix
 dry runs, checked graph query reports, doctor readiness, verify pre-deploy
 gates, edit-plan surfaces, typed scaffold next-actions for the deploy
-quickstart, lint-driven declaration delete templates and cleanup transactions,
+quickstart, strict seeded verify readiness for the generated deploy starter,
+lint-driven declaration delete templates and cleanup transactions,
 lint-driven module declaration fixes with inferred module names, private-task
 lint rules, declaration/import/API hygiene, authority hygiene, raw-host
 migration warnings, and explicit module style warnings. The next logical phase

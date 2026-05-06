@@ -840,8 +840,9 @@ archive.
   one named checked template by explicit kind, including missing-module
   declaration repair, but broad autonomous repair selection remains later work
 - `sley verify` emits a deterministic CI/pre-deploy report over strict check,
-  query/lint summaries, and runtime execution; live deploy/provider calls
-  remain outside v0
+  query/lint summaries, and runtime execution; the CLI smoke suite locks a
+  strict seeded deploy verify report for the generated `sley new --template
+  deploy` starter, while live deploy/provider calls remain outside v0
 - no `match`, agent declarations, spawn/cast/join, or compressed ZJX archive
   writer yet
 - `MoveNode` supports checked in-parent and cross-parent statement movement

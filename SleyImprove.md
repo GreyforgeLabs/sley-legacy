@@ -444,7 +444,8 @@ The current smoke manifest covers:
   envelopes
 - graph-slice replace affordances and checked `replace_expression` graft
   templates in edit-plan reports
-- deploy scaffold typed next-actions and first-run sequence execution
+- deploy scaffold typed next-actions, first-run sequence execution, and strict
+  seeded `verify --json --deny-warnings` readiness
 - lint-driven declaration delete templates, cleanup transactions, and direct
   declaration surface targeting in edit-plan reports
 - lint-driven missing-module `AddModuleDeclaration` templates, module-name
