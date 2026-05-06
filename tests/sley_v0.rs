@@ -6371,7 +6371,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(59))
+        Some(&serde_json::json!(63))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -6725,6 +6725,10 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
         denied_lint_json.pointer("/steps/0/issues/0/code"),
         Some(&serde_json::json!("exit_status_mismatch"))
     );
+    assert_json_snapshot(
+        &denied_lint_json,
+        include_str!("../fixtures/contracts/ci_lint_denied_empty_for_statement.json"),
+    );
 
     let doctor = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
         .current_dir(&repo_root)
@@ -6794,6 +6798,10 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     assert_eq!(
         denied_doctor_json.pointer("/steps/0/issues/0/code"),
         Some(&serde_json::json!("exit_status_mismatch"))
+    );
+    assert_json_snapshot(
+        &denied_doctor_json,
+        include_str!("../fixtures/contracts/ci_doctor_denied_empty_for_statement.json"),
     );
 
     let plan = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
@@ -6879,6 +6887,27 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
         include_str!("../fixtures/contracts/ci_verify_project_ready.json"),
     );
 
+    let denied_verify = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
+        .current_dir(&repo_root)
+        .args([
+            "verify",
+            "--json",
+            "--deny-warnings",
+            "examples/empty_for_statement.sley",
+        ])
+        .output()
+        .expect("run denied sley-ci verify");
+    assert!(
+        !denied_verify.status.success(),
+        "sley-ci verify with denied findings should fail"
+    );
+    let denied_verify_json: serde_json::Value =
+        serde_json::from_slice(&denied_verify.stdout).expect("parse denied sley-ci verify JSON");
+    assert_json_snapshot(
+        &denied_verify_json,
+        include_str!("../fixtures/contracts/ci_verify_denied_empty_for_statement.json"),
+    );
+
     let stable_deploy = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
         .current_dir(&repo_root)
         .args(["deploy", "--json", "--dry-run", "examples/project"])
@@ -6932,6 +6961,10 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     assert_eq!(
         denied_plan_json.pointer("/steps/0/issues/0/code"),
         Some(&serde_json::json!("exit_status_mismatch"))
+    );
+    assert_json_snapshot(
+        &denied_plan_json,
+        include_str!("../fixtures/contracts/ci_plan_denied_empty_for_statement.json"),
     );
 
     let deploy_root = temp_project_dir("sley-ci-deploy");
