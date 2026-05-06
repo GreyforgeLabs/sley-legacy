@@ -50,7 +50,9 @@ Current verified surface:
   envelope tools.
 - `make v1` wraps fmt, whitespace diff check, full Rust tests, contract
   fixture and release-manifest validation, conformance summary reporting,
-  corpus conformance, packaged example conformance, and CLI smoke conformance.
+  corpus conformance, packaged example conformance, broad CLI smoke
+  conformance, the lightweight `sley-ci smoke` wrapper probe, and Tree-sitter
+  syntax parsing.
 - The synthetic gold corpus currently has 14 accepted fixtures and 15 rejected
   fixtures, including accepted/rejected split-task agent authority cases that
   lock transitive effect propagation.
@@ -77,7 +79,8 @@ Current verified surface:
   `schema: "sley.ci.report.v0"` over
   existing Sley check/lint/doctor/plan/run/verify/deploy, CLI smoke manifest,
   accepted/rejected corpus, and packaged example gates, including deploy
-  artifact directory pass-through.
+  artifact directory pass-through. `sley-ci smoke` and `sley-ci corpus` accept
+  either explicit `manifest.json` files or manifest directories.
 - `sley-conformance` is available as an in-tree conformance visibility helper
   with `report` and `coverage` commands that emit
   `schema: "sley.conformance.report.v0"` and
@@ -86,7 +89,9 @@ Current verified surface:
   packaged example counts, plus a check that the declared integration coverage
   count matches the test file. `report --require-public-release-ready` turns
   unresolved public-release packaging blockers into an explicit nonzero gate
-  for final release cuts.
+  for final release cuts. `--corpus-manifest` and repeated `--smoke-manifest`
+  arguments accept either explicit manifest files or directories containing
+  `manifest.json`.
 - `tree-sitter-sley` is available as an in-tree syntax grammar bootstrap with
   `npm test` coverage for Tree-sitter parser generation, exact syntax corpus
   trees, highlight query validation, and parsing of current `.sley` examples
@@ -207,7 +212,10 @@ Current verified surface:
   `absorbing_arithmetic_expression`, `self_assignment_statement`, and
   `overwritten_set_statement`, and `redundant_initial_set_statement`.
 - CLI smoke coverage is manifest-backed under
-  `fixtures/cli_smokes/manifest.json`, including graph-slice insert and
+  `fixtures/cli_smokes/manifest.json`, with a separate
+  `fixtures/ci_smoke_probe/manifest.json` contract for the `sley-ci smoke`
+  wrapper over parse, query, graft dry-run, and seeded multi-capability agent
+  runtime authority. The broad suite includes graph-slice insert and
   replace affordances, checked `insert_statement`, `replace_statement`, and
   `replace_expression` graft templates, task-body insert graft emission, direct
   block, statement, take, and expression node surface targeting with expression
