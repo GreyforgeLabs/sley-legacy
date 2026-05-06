@@ -49,6 +49,9 @@ here. Dates use UTC-independent calendar dates from the local repo history.
   Tree-sitter syntax parsing.
 - Added `make public-release-check` as the explicit failing gate for public
   release cuts until license and repository metadata blockers are resolved.
+- `sley.workbench.report.v0` now accepts the current nested
+  `sley.lint.report.v0` `findings` status, and the workbench integration test
+  validates live workbench JSON against the schema.
 - The local syntax gate bootstraps Tree-sitter npm dependencies with `npm ci`
   when needed, and the GitHub composite action installs stable Node before
   running `make v1`.

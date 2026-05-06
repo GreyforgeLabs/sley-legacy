@@ -106,7 +106,7 @@
       "required": ["source_schema", "status", "findings"],
       "properties": {
         "source_schema": { "const": "sley.lint.report.v0" },
-        "status": { "enum": ["ok", "warnings"] },
+        "status": { "enum": ["ok", "findings"] },
         "findings": {
           "type": "array",
           "items": { "type": "object" }

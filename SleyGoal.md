@@ -105,7 +105,8 @@ Current verified surface:
   `sley.fix.preview` command.
 - `sley-workbench` is available as an in-tree local inspection bootstrap with
   JSON and optional static HTML panels over doctor, query, lint, edit-plan, and
-  graph data.
+  graph data. Focused integration coverage validates live workbench JSON
+  against `sley.workbench.report.v0`.
 - `sley-docgen` is available as an in-tree checked reference generator with
   `schema: "sley.docgen.report.v0"` and optional Markdown over module, task,
   type, effect, and host capability docs from `sley.query.report.v0`.
