@@ -159,6 +159,46 @@ fn formatter_round_trips_profile_fixture() {
 }
 
 #[test]
+fn parser_expected_token_errors_include_repair_hints() {
+    let parse_err = |source: &str| match parse_program(source) {
+        Ok(program) => panic!("expected parse error, got {program:#?}"),
+        Err(diagnostics) => diagnostics,
+    };
+
+    let arrow_diagnostics = parse_err("task main Int {\n  return 1\n}\n");
+    let hint = find_repair_hint(
+        &arrow_diagnostics,
+        "PARSE_EXPECTED_ARROW",
+        "insert_expected_token",
+    );
+    assert_eq!(hint.replacement.as_deref(), Some("->"));
+
+    let identifier_diagnostics = parse_err("task -> Int {\n  return 1\n}\n");
+    let hint = find_repair_hint(
+        &identifier_diagnostics,
+        "PARSE_EXPECTED_IDENTIFIER",
+        "provide_identifier",
+    );
+    assert_eq!(hint.replacement.as_deref(), Some("identifier"));
+
+    let symbol_diagnostics = parse_err("task main -> Int {\n  bind value 1\n}\n");
+    let hint = find_repair_hint(
+        &symbol_diagnostics,
+        "PARSE_EXPECTED_SYMBOL",
+        "insert_expected_token",
+    );
+    assert_eq!(hint.replacement.as_deref(), Some("="));
+
+    let expression_diagnostics = parse_err("task main -> Int {\n  return\n}\n");
+    let hint = find_repair_hint(
+        &expression_diagnostics,
+        "PARSE_EXPECTED_EXPRESSION",
+        "provide_expression",
+    );
+    assert_eq!(hint.replacement.as_deref(), Some("TODO_VALUE"));
+}
+
+#[test]
 fn formatter_round_trips_every_example_and_project_module() {
     let examples_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("examples");
     let example_files = collect_sley_files(&examples_root).expect("collect examples");

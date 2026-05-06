@@ -3,7 +3,7 @@ use crate::ast::{
     Program, RecordField, Statement, StatementKind, TakeDecl, TaskDecl, TypeDecl, TypeExpr,
     UnaryOp,
 };
-use crate::diagnostics::{Diagnostic, SourceSpan};
+use crate::diagnostics::{Diagnostic, RepairHint, SourceSpan};
 
 pub fn parse_program(source: &str) -> Result<Program, Vec<Diagnostic>> {
     let tokens = lex(source)?;
@@ -45,23 +45,23 @@ pub fn parse_expr_source(source: &str) -> Result<Expr, Vec<Diagnostic>> {
     let synthetic = format!("task __graft_expr -> Unit {{\nreturn {source}\n}}\n");
     let program = parse_program(&synthetic)?;
     let Some(task) = program.tasks.into_iter().next() else {
-        return Err(vec![Diagnostic::error(
-            "PARSE_EXPECTED_EXPRESSION",
-            "expected expression",
-        )]);
+        return Err(vec![
+            Diagnostic::error("PARSE_EXPECTED_EXPRESSION", "expected expression")
+                .with_repair_hint(expected_expression_hint()),
+        ]);
     };
     let Some(statement) = task.body.statements.into_iter().next() else {
-        return Err(vec![Diagnostic::error(
-            "PARSE_EXPECTED_EXPRESSION",
-            "expected expression",
-        )]);
+        return Err(vec![
+            Diagnostic::error("PARSE_EXPECTED_EXPRESSION", "expected expression")
+                .with_repair_hint(expected_expression_hint()),
+        ]);
     };
     match statement.kind {
         StatementKind::Return { expr } => Ok(expr),
-        _ => Err(vec![Diagnostic::error(
-            "PARSE_EXPECTED_EXPRESSION",
-            "expected expression",
-        )]),
+        _ => Err(vec![
+            Diagnostic::error("PARSE_EXPECTED_EXPRESSION", "expected expression")
+                .with_repair_hint(expected_expression_hint()),
+        ]),
     }
 }
 
@@ -485,16 +485,26 @@ impl Parser {
                             "PARSE_EXPECTED_EXPORT_ITEM",
                             "expected type, effect, or task after export",
                         )
-                        .with_span(span),
+                        .with_span(span)
+                        .with_repair_hint(
+                            RepairHint::new("choose_expected_item")
+                                .with_replacement("type | effect | task"),
+                        ),
                     ]);
                 }
             } else if self.current().is_symbol(';') {
                 self.bump();
             } else {
-                return Err(vec![self.error_here(
-                    "PARSE_EXPECTED_ITEM",
-                    "expected module, import, export, type, effect, or task declaration",
-                )]);
+                return Err(vec![
+                    self.error_here(
+                        "PARSE_EXPECTED_ITEM",
+                        "expected module, import, export, type, effect, or task declaration",
+                    )
+                    .with_repair_hint(
+                        RepairHint::new("choose_expected_item")
+                            .with_replacement("module | import | export | type | effect | task"),
+                    ),
+                ]);
             }
             self.skip_statement_gap();
         }
@@ -747,7 +757,8 @@ impl Parser {
                             "PARSE_EXPECTED_BLOCK",
                             "expected `{` after control-flow condition",
                         )
-                        .with_span(current.span),
+                        .with_span(current.span)
+                        .with_repair_hint(expected_token_hint("{")),
                     ]);
                 }
                 TokenKind::Symbol('(') => paren_depth += 1,
@@ -765,7 +776,8 @@ impl Parser {
         if tokens.is_empty() {
             return Err(vec![
                 Diagnostic::error("PARSE_EXPECTED_EXPRESSION", "expected expression")
-                    .with_span(span),
+                    .with_span(span)
+                    .with_repair_hint(expected_expression_hint()),
             ]);
         }
 
@@ -809,7 +821,8 @@ impl Parser {
         if tokens.is_empty() {
             return Err(vec![
                 Diagnostic::error("PARSE_EXPECTED_EXPRESSION", "expected expression")
-                    .with_span(span),
+                    .with_span(span)
+                    .with_repair_hint(expected_expression_hint()),
             ]);
         }
 
@@ -888,7 +901,11 @@ impl Parser {
             self.bump();
             Ok(())
         } else {
-            Err(vec![self.error_here("PARSE_EXPECTED_KEYWORD", message)])
+            Err(vec![self.expected_token_error(
+                "PARSE_EXPECTED_KEYWORD",
+                message,
+                expected,
+            )])
         }
     }
 
@@ -899,7 +916,12 @@ impl Parser {
                 self.bump();
                 Ok(value)
             }
-            _ => Err(vec![self.error_here("PARSE_EXPECTED_IDENTIFIER", message)]),
+            _ => Err(vec![
+                self.error_here("PARSE_EXPECTED_IDENTIFIER", message)
+                    .with_repair_hint(
+                        RepairHint::new("provide_identifier").with_replacement("identifier"),
+                    ),
+            ]),
         }
     }
 
@@ -908,7 +930,11 @@ impl Parser {
             self.bump();
             Ok(())
         } else {
-            Err(vec![self.error_here("PARSE_EXPECTED_SYMBOL", message)])
+            Err(vec![self.expected_token_error(
+                "PARSE_EXPECTED_SYMBOL",
+                message,
+                expected.to_string(),
+            )])
         }
     }
 
@@ -917,12 +943,26 @@ impl Parser {
             self.bump();
             Ok(())
         } else {
-            Err(vec![self.error_here("PARSE_EXPECTED_ARROW", message)])
+            Err(vec![self.expected_token_error(
+                "PARSE_EXPECTED_ARROW",
+                message,
+                "->",
+            )])
         }
     }
 
     fn error_here(&self, id: &str, message: impl Into<String>) -> Diagnostic {
         Diagnostic::error(id, message).with_span(self.current().span.clone())
+    }
+
+    fn expected_token_error(
+        &self,
+        id: &str,
+        message: impl Into<String>,
+        expected: impl Into<String>,
+    ) -> Diagnostic {
+        self.error_here(id, message)
+            .with_repair_hint(expected_token_hint(expected))
     }
 
     fn at_eof(&self) -> bool {
@@ -1479,6 +1519,14 @@ fn tokens_to_source(tokens: &[Token]) -> String {
         previous = Some(current);
     }
     out
+}
+
+fn expected_token_hint(expected: impl Into<String>) -> RepairHint {
+    RepairHint::new("insert_expected_token").with_replacement(expected.into())
+}
+
+fn expected_expression_hint() -> RepairHint {
+    RepairHint::new("provide_expression").with_replacement("TODO_VALUE")
 }
 
 fn needs_no_space_before(text: &str) -> bool {

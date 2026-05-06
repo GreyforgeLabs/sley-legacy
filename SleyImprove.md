@@ -173,7 +173,8 @@ Good diagnostic shape:
 
 Priority diagnostic families:
 
-- parse errors with expected tokens
+- parse errors with expected tokens: implemented with `insert_expected_token`,
+  `provide_identifier`, `provide_expression`, and expected-item hints
 - unknown identifiers: implemented with `declare_binding`
 - unknown tasks: implemented with `declare_or_import_task`
 - unknown types: implemented with `declare_or_import_type`

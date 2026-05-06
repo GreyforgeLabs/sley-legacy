@@ -657,6 +657,10 @@ and selected graft planning failures. Hints are intentionally small and
 structural: `kind` identifies the action, `target` names the graph node when
 available, `effect` names required authority when relevant, and `replacement`
 carries compact source, type, graft JSON, or retry guidance. For example,
+parse expected-token failures carry `insert_expected_token` hints; missing
+names carry `provide_identifier`; empty expression sites carry
+`provide_expression`; and top-level/export item mismatches carry
+`choose_expected_item`.
 unsupported expression `MoveNode` targets carry a `replace_expression` hint so
 agents can switch to `ReplaceExpression` instead of retrying an unsupported
 move. Unsupported graft shapes also carry `use_supported_graft_operation`
