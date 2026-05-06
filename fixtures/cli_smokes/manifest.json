@@ -10002,6 +10002,37 @@
       }
     },
     {
+      "name": "run_agent_spend_scope_denied_json",
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "Spend=ops",
+        "--spend-result",
+        "ads-budget",
+        "authorized",
+        "fixtures/corpus/accepted/agent_spend_authority.sley"
+      ],
+      "covers": [
+        "cli:run",
+        "json:sley.diagnostics.report.v0",
+        "diagnostic:RUNTIME_CAPABILITY_SCOPE_DENIED",
+        "host:Spend",
+        "host:scoped-capability",
+        "authority:transitive-effects"
+      ],
+      "expect": {
+        "success": false,
+        "stderr_contains": ["operation failed"],
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.diagnostics.report.v0" },
+          { "pointer": "/status", "value": "error" },
+          { "pointer": "/diagnostics/0/id", "value": "RUNTIME_CAPABILITY_SCOPE_DENIED" },
+          { "pointer": "/diagnostics/0/node", "value": "block:task:corpus.accepted.agent_spend_authority.authorize_budget:stmt:0:expr" }
+        ]
+      }
+    },
+    {
       "name": "run_spend_scope_denied_json",
       "args": [
         "run",
