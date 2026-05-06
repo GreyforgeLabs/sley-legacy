@@ -94,7 +94,7 @@ sley ast --json <target>
 sley ast --json --node <node-id> <target>
 sley graph --json <target>
 sley graph --json --slice <node-id> <target>
-sley new --json [--template hello|library|cli|service-gate|data-pipeline|deploy|agent|agent-task-pack] [--name <name>] [--module <module>] <path>
+sley new --json [--template hello|library|cli|service-gate|data-pipeline|deploy|agent|agent-task-pack|agent-project] [--name <name>] [--module <module>] <path>
 sley doctor --json [--deny-warnings] <target>
 sley plan --json [--deny-warnings] [--graft-templates] [--template-surface <surface>] [--emit-graft <kind>] <target>
 sley fix --json --kind <kind> [--template-surface <surface>] [--name <name>] [--type <type>] [--module <module>] [--source <source>|--source-file <path>] [--position <n>] [--dry-run|--write] [--trace <trace.jsonl>] <target>
@@ -215,12 +215,13 @@ Rules:
   lint, warning-denying verify, run, deploy dry-run package, seal, ZJX package
   gates, and the agent starter's `sley-ci run`/`sley-ci verify`/`sley-ci deploy`
   handoffs cannot silently drift. The template pack now also covers pure
-  `library`, `cli`, and `data-pipeline` starts plus seeded `service-gate` and
-  split-task `agent-task-pack` starts.
-- `examples/agent_project` is a packaged multi-module agent deployment starter
-  that keeps secret, network, model, and deploy authority explicit across
-  imported task boundaries and passes seeded check, lint, run, verify, deploy,
-  examples conformance, and CLI smoke gates.
+  `library`, `cli`, and `data-pipeline` starts plus seeded `service-gate`,
+  split-task `agent-task-pack`, and multi-module `agent-project` starts.
+- `sley new --template agent-project` and `examples/agent_project` provide a
+  packaged multi-module agent deployment starter that keeps secret, network,
+  model, and deploy authority explicit across imported task boundaries and
+  passes seeded check, lint, run, verify, deploy, examples conformance, and CLI
+  smoke gates.
 - `sley-ci smoke --repo-root .` now resolves the repo root before `{repo}`
   expansion, keeping temp-cwd smoke cases portable across direct agent
   invocation and the `make v1` absolute-root path.
@@ -620,10 +621,11 @@ The current smoke manifest covers:
 - checked `sley fix --name`, `--type`, `--module`, `--source`,
   `--source-file`, and `--position` payload overrides for single-operation
   templates, including unsupported override diagnostics
-- starter, service, deploy, and agent scaffold typed next-actions, first-run
-  sequence execution, strict seeded `verify --json --deny-warnings` readiness,
-  and local `sley deploy --dry-run` package reports, including optional deploy
-  artifact manifests plus scaffold-level and passed-verify seal/ZJX handoff
+- starter, service, deploy, and single/multi-module agent scaffold typed
+  next-actions, first-run sequence execution, strict seeded
+  `verify --json --deny-warnings` readiness, and local
+  `sley deploy --dry-run` package reports, including optional deploy artifact
+  manifests plus scaffold-level and passed-verify seal/ZJX handoff
   next-actions plus the agent scaffolds' `sley-ci run`/`sley-ci verify`/
   `sley-ci deploy` handoffs
 - a standalone dogfood agent deploy pipeline example with strict

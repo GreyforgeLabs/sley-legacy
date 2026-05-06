@@ -24,7 +24,8 @@
             "data-pipeline",
             "deploy",
             "agent",
-            "agent-task-pack"
+            "agent-task-pack",
+            "agent-project"
           ]
         }
       },

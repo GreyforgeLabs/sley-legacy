@@ -12,7 +12,7 @@ cargo run -- ast --json <file-or-project>
 cargo run -- ast --json --node <node-id> <file-or-project>
 cargo run -- graph --json <file-or-project>
 cargo run -- graph --json --slice <node-id> <file-or-project>
-cargo run -- new --json --template agent --name agent-app agent-app
+cargo run -- new --json --template agent-project --name agent-app --module agent.main agent-app
 cargo run -- doctor --json <file-or-project>
 cargo run -- fix --json --kind add_module_declaration --dry-run <file-or-project>
 cargo run -- fix --json --kind delete_unused_private_declarations --dry-run <file-or-project>
@@ -275,7 +275,8 @@ Current development phase:
   `unchecked_result`
 - `sley new --json` emits `sley.project.scaffold.v0` and creates
   non-destructive `hello`, `library`, `cli`, `service-gate`,
-  `data-pipeline`, `deploy`, `agent`, or `agent-task-pack` starter projects
+  `data-pipeline`, `deploy`, `agent`, `agent-task-pack`, or `agent-project`
+  starter projects
   that can immediately run through check, doctor, query, plan, lint, local or
   seeded runtime gates with denied warnings, deploy dry-run packaging where
   applicable, seal, and ZJX handoff packaging; scaffold JSON includes typed

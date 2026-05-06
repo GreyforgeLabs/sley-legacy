@@ -795,15 +795,17 @@ filesystem roots, and emits `schema: "sley.sandbox.report.v0"` without calling
 external providers.
 
 `sley new` is the v0 project scaffold command. It writes a `sley.toml`,
-`README.md`, and entry module source file, refusing to overwrite any of those
-paths when they already exist. `--template hello`, `--template library`,
+`README.md`, and one or more module source files, refusing to overwrite any of
+those paths when they already exist. `--template hello`, `--template library`,
 `--template cli`, and `--template data-pipeline` create pure starters.
 `--template service-gate` creates a deterministic `Network`-gated starter that
 runs with seeded `http.try_get_text` data. `--template deploy` creates a
 deterministic `Deploy`-gated starter that runs with a seeded
 `deploy.try_stage` result and does not call providers or mutate
 infrastructure. `--template agent` and `--template agent-task-pack` create
-deterministic agentic starters that use seeded `secrets.try_get`,
+deterministic single-module agentic starters. `--template agent-project`
+creates a deterministic multi-module agentic starter with an entry module and
+imported pipeline module. These agentic starters use seeded `secrets.try_get`,
 `http.try_get_text`, `model.try_complete`, and `deploy.try_stage` calls under
 explicit `SecretRead`, `Network`, `ModelCall`, and `Deploy` gates without
 reading real secret stores, calling live networks or model providers, or
@@ -1419,8 +1421,9 @@ refuse generic data disguised as Sley artifacts before compression begins.
   unreachable statement cleanup, and mutable binding conversion,
   plus generated scaffold quickstarts re-verified with local or seeded
   authority, including strict seeded verify reports for `service-gate`,
-  `deploy`, `agent`, and `agent-task-pack`, passed-verify next-actions for
-  `sley seal --json` and `sley zjx --json` handoff artifacts, and
+  `deploy`, `agent`, `agent-task-pack`, and `agent-project`,
+  passed-verify next-actions for `sley seal --json` and `sley zjx --json`
+  handoff artifacts, and
   `sley deploy --dry-run` local deploy package reports over verify, seal, and
   ZJX summaries where applicable; live deploy/provider calls remain outside v0
 - no `match`, agent declarations, spawn/cast/join, or compressed ZJX archive

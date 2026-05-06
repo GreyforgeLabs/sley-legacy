@@ -19,8 +19,8 @@ make v1
 Current counts:
 
 - Schemas: `36`
-- Contract fixtures: `98`
-- Schema instances: `101`
+- Contract fixtures: `99`
+- Schema instances: `102`
 
 ## Core Compiler Roots
 

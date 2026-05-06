@@ -18,6 +18,7 @@ pub enum ScaffoldTemplate {
     Deploy,
     Agent,
     AgentTaskPack,
+    AgentProject,
 }
 
 impl ScaffoldTemplate {
@@ -31,6 +32,7 @@ impl ScaffoldTemplate {
             Self::Deploy => "deploy",
             Self::Agent => "agent",
             Self::AgentTaskPack => "agent-task-pack",
+            Self::AgentProject => "agent-project",
         }
     }
 }
@@ -87,8 +89,8 @@ pub fn scaffold_project(
     let source_root = "src";
     let manifest_path = PathBuf::from("sley.toml");
     let readme_path = PathBuf::from("README.md");
-    let source_path = module_source_path(source_root, &module);
-    let files = vec![
+    let source_files = template_sources(source_root, &module, options.template);
+    let mut files = vec![
         ScaffoldFile {
             path: normalized_path(&manifest_path),
             kind: "manifest".to_string(),
@@ -97,11 +99,11 @@ pub fn scaffold_project(
             path: normalized_path(&readme_path),
             kind: "guide".to_string(),
         },
-        ScaffoldFile {
-            path: normalized_path(&source_path),
-            kind: "source".to_string(),
-        },
     ];
+    files.extend(source_files.iter().map(|source| ScaffoldFile {
+        path: normalized_path(&source.path),
+        kind: "source".to_string(),
+    }));
 
     let mut diagnostics = Vec::new();
     if !is_project_name(&name) {
@@ -141,13 +143,15 @@ pub fn scaffold_project(
             format!("failed to create {}: {error}", target.display()),
         )]
     })?;
-    if let Some(parent) = target.join(&source_path).parent() {
-        fs::create_dir_all(parent).map_err(|error| {
-            vec![Diagnostic::error(
-                "PROJECT_SCAFFOLD_CREATE_DIR_FAILED",
-                format!("failed to create {}: {error}", parent.display()),
-            )]
-        })?;
+    for source in &source_files {
+        if let Some(parent) = target.join(&source.path).parent() {
+            fs::create_dir_all(parent).map_err(|error| {
+                vec![Diagnostic::error(
+                    "PROJECT_SCAFFOLD_CREATE_DIR_FAILED",
+                    format!("failed to create {}: {error}", parent.display()),
+                )]
+            })?;
+        }
     }
 
     write_new_file(
@@ -158,10 +162,9 @@ pub fn scaffold_project(
         target.join(&readme_path),
         &readme_source(&name, options.template),
     )?;
-    write_new_file(
-        target.join(&source_path),
-        &template_source(&module, options.template),
-    )?;
+    for source in &source_files {
+        write_new_file(target.join(&source.path), &source.source)?;
+    }
 
     let next_actions = next_actions(options.template);
     let next_commands = next_actions
@@ -241,7 +244,9 @@ fn readme_source(name: &str, template: ScaffoldTemplate) -> String {
             "sley run --json --cap Deploy --deploy-result staging staged .",
             "sley deploy --json --dry-run --artifacts-dir .sley/deploy --cap Deploy --deploy-result staging staged .",
         ),
-        ScaffoldTemplate::Agent | ScaffoldTemplate::AgentTaskPack => (
+        ScaffoldTemplate::Agent
+        | ScaffoldTemplate::AgentTaskPack
+        | ScaffoldTemplate::AgentProject => (
             "sley verify --json --deny-warnings --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile \"profile ready\" --cap ModelCall --model-output deploy-plan \"plan approved\" --cap Deploy --deploy-result staging staged .",
             "sley run --json --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile \"profile ready\" --cap ModelCall --model-output deploy-plan \"plan approved\" --cap Deploy --deploy-result staging staged .",
             "sley deploy --json --dry-run --artifacts-dir .sley/deploy --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile \"profile ready\" --cap ModelCall --model-output deploy-plan \"plan approved\" --cap Deploy --deploy-result staging staged .",
@@ -296,7 +301,74 @@ task collect_profile -> Result<Text, Error> uses SecretRead, Network {{\n  bind 
 task plan_deploy -> Result<Text, Error> uses ModelCall {{\n  take profile: Text\n\n  bind plan = call model.try_complete(\"deploy-plan\")?\n\n  return Ok(profile + \" | \" + plan)\n}}\n\n\
 task main -> Result<Text, Error> uses SecretRead, Network, ModelCall, Deploy {{\n  bind profile = call collect_profile()?\n  bind plan = call plan_deploy(profile)?\n  bind staged = call deploy.try_stage(\"staging\")?\n\n  return Ok(plan + \" | \" + staged)\n}}\n"
         ),
+        ScaffoldTemplate::AgentProject => {
+            let pipeline_module = agent_pipeline_module(module);
+            agent_project_main_source(module, &pipeline_module)
+        }
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct ScaffoldSource {
+    path: PathBuf,
+    source: String,
+}
+
+fn template_sources(
+    source_root: &str,
+    module: &str,
+    template: ScaffoldTemplate,
+) -> Vec<ScaffoldSource> {
+    if template == ScaffoldTemplate::AgentProject {
+        let pipeline_module = agent_pipeline_module(module);
+        return vec![
+            ScaffoldSource {
+                path: module_source_path(source_root, module),
+                source: agent_project_main_source(module, &pipeline_module),
+            },
+            ScaffoldSource {
+                path: module_source_path(source_root, &pipeline_module),
+                source: agent_project_pipeline_source(&pipeline_module),
+            },
+        ];
+    }
+    vec![ScaffoldSource {
+        path: module_source_path(source_root, module),
+        source: template_source(module, template),
+    }]
+}
+
+fn agent_pipeline_module(module: &str) -> String {
+    let candidate = sibling_module(module, "pipeline");
+    if candidate == module {
+        sibling_module(module, "agent_pipeline")
+    } else {
+        candidate
+    }
+}
+
+fn sibling_module(module: &str, leaf: &str) -> String {
+    match module.rsplit_once('.') {
+        Some((prefix, _)) if !prefix.is_empty() => format!("{prefix}.{leaf}"),
+        _ => leaf.to_string(),
+    }
+}
+
+fn agent_project_main_source(module: &str, pipeline_module: &str) -> String {
+    format!(
+        "module {module}\n\n\
+import {pipeline_module} as pipe\n\n\
+task main -> Result<Text, Error> uses SecretRead, Network, ModelCall, Deploy {{\n  bind profile = call pipe.collect_profile(\"api_key\", \"https://example.test/profile\")?\n  bind plan = call pipe.draft_plan(\"deploy-plan\")?\n  bind staged = call pipe.stage_release(\"staging\")?\n\n  return Ok(profile + \" | \" + plan + \" | \" + staged)\n}}\n"
+    )
+}
+
+fn agent_project_pipeline_source(module: &str) -> String {
+    format!(
+        "module {module}\n\n\
+export task collect_profile -> Result<Text, Error> uses SecretRead, Network {{\n  take secret_name: Text\n  take profile_url: Text\n\n  bind token = call secrets.try_get(secret_name)?\n  bind profile = call http.try_get_text(profile_url)?\n\n  if len(token) > 0 {{\n    return Ok(profile)\n  }}\n\n  return Err(\"secret seed was empty\")\n}}\n\n\
+export task draft_plan -> Result<Text, Error> uses ModelCall {{\n  take prompt: Text\n\n  return call model.try_complete(prompt)\n}}\n\n\
+export task stage_release -> Result<Text, Error> uses Deploy {{\n  take target: Text\n\n  return call deploy.try_stage(target)\n}}\n"
+    )
 }
 
 fn next_actions(template: ScaffoldTemplate) -> Vec<ScaffoldNextAction> {
@@ -406,7 +478,7 @@ fn next_actions(template: ScaffoldTemplate) -> Vec<ScaffoldNextAction> {
                 ],
             ),
         ],
-        ScaffoldTemplate::Agent => vec![
+        ScaffoldTemplate::Agent | ScaffoldTemplate::AgentProject => vec![
             next_action(
                 "verify_seeded_agent",
                 "verify agent authority with deterministic secret, network, model, and deploy seeds",

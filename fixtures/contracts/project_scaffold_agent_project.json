@@ -1,0 +1,49 @@
+{
+  "schema": "sley.project.scaffold.v0",
+  "status": "created",
+  "project": {
+    "name": "agent-workspace",
+    "root": "agent-workspace",
+    "source_root": "src",
+    "entry_module": "agent.main",
+    "template": "agent-project"
+  },
+  "files": [
+    {
+      "path": "sley.toml",
+      "kind": "manifest"
+    },
+    {
+      "path": "README.md",
+      "kind": "guide"
+    },
+    {
+      "path": "src/agent/main.sley",
+      "kind": "source"
+    },
+    {
+      "path": "src/agent/pipeline.sley",
+      "kind": "source"
+    }
+  ],
+  "next_commands": [
+    [
+      "sley",
+      "check",
+      "--json",
+      "."
+    ]
+  ],
+  "next_actions": [
+    {
+      "kind": "check_project",
+      "reason": "confirm the scaffold parses and passes strict checks",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "."
+      ]
+    }
+  ]
+}

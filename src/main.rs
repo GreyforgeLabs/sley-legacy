@@ -1067,6 +1067,7 @@ enum CliScaffoldTemplate {
     Deploy,
     Agent,
     AgentTaskPack,
+    AgentProject,
 }
 
 impl From<CliScaffoldTemplate> for ScaffoldTemplate {
@@ -1080,6 +1081,7 @@ impl From<CliScaffoldTemplate> for ScaffoldTemplate {
             CliScaffoldTemplate::Deploy => Self::Deploy,
             CliScaffoldTemplate::Agent => Self::Agent,
             CliScaffoldTemplate::AgentTaskPack => Self::AgentTaskPack,
+            CliScaffoldTemplate::AgentProject => Self::AgentProject,
         }
     }
 }

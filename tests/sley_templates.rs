@@ -11,6 +11,7 @@ fn scaffold_template_pack_creates_lint_clean_runnable_projects() {
         TemplateCase {
             template: "library",
             expected_action: "verify_local",
+            extra_source_path: None,
             gate_args: &[],
             expected_value: json!({"kind": "Text", "value": "sley library ready"}),
             deploy_ready: false,
@@ -18,6 +19,7 @@ fn scaffold_template_pack_creates_lint_clean_runnable_projects() {
         TemplateCase {
             template: "cli",
             expected_action: "verify_local",
+            extra_source_path: None,
             gate_args: &[],
             expected_value: json!({"kind": "Text", "value": "usage: sley-app"}),
             deploy_ready: false,
@@ -25,6 +27,7 @@ fn scaffold_template_pack_creates_lint_clean_runnable_projects() {
         TemplateCase {
             template: "service-gate",
             expected_action: "verify_seeded_service",
+            extra_source_path: None,
             gate_args: &[
                 "--cap",
                 "Network",
@@ -41,6 +44,7 @@ fn scaffold_template_pack_creates_lint_clean_runnable_projects() {
         TemplateCase {
             template: "data-pipeline",
             expected_action: "verify_local",
+            extra_source_path: None,
             gate_args: &[],
             expected_value: json!({"kind": "Int", "value": 14}),
             deploy_ready: false,
@@ -48,6 +52,39 @@ fn scaffold_template_pack_creates_lint_clean_runnable_projects() {
         TemplateCase {
             template: "agent-task-pack",
             expected_action: "verify_seeded_agent",
+            extra_source_path: None,
+            gate_args: &[
+                "--cap",
+                "SecretRead",
+                "--secret",
+                "api_key",
+                "redacted",
+                "--cap",
+                "Network",
+                "--http-text",
+                "https://example.test/profile",
+                "profile ready",
+                "--cap",
+                "ModelCall",
+                "--model-output",
+                "deploy-plan",
+                "plan approved",
+                "--cap",
+                "Deploy",
+                "--deploy-result",
+                "staging",
+                "staged",
+            ],
+            expected_value: json!({
+                "kind": "Ok",
+                "value": {"kind": "Text", "value": "profile ready | plan approved | staged"}
+            }),
+            deploy_ready: true,
+        },
+        TemplateCase {
+            template: "agent-project",
+            expected_action: "verify_seeded_agent",
+            extra_source_path: Some("src/app/pipeline.sley"),
             gate_args: &[
                 "--cap",
                 "SecretRead",
@@ -128,6 +165,13 @@ fn scaffold_template_pack_creates_lint_clean_runnable_projects() {
         assert!(root.join("sley.toml").exists());
         assert!(root.join("README.md").exists());
         assert!(root.join("src/app/main.sley").exists());
+        if let Some(extra_source_path) = case.extra_source_path {
+            assert!(root.join(extra_source_path).exists());
+            assert_eq!(
+                scaffold_json.pointer("/files/3/path"),
+                Some(&json!(extra_source_path))
+            );
+        }
 
         run_success(&root, &["check", "--json", "."]);
         run_success(&root, &["lint", "--json", "--deny-warnings", "."]);
@@ -170,6 +214,7 @@ fn scaffold_template_pack_creates_lint_clean_runnable_projects() {
 struct TemplateCase {
     template: &'static str,
     expected_action: &'static str,
+    extra_source_path: Option<&'static str>,
     gate_args: &'static [&'static str],
     expected_value: JsonValue,
     deploy_ready: bool,
