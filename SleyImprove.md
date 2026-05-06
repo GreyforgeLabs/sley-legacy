@@ -101,7 +101,7 @@ sley fix --json --kind <kind> [--template-surface <surface>] [--name <name>] [--
 sley verify --json [--deny-warnings] [runtime gates/seeds] <target>
 sley deploy --json --dry-run [--artifacts-dir <dir>] [runtime gates/seeds] <target>
 sley query --json [--kind all|modules|tasks|types|effects|calls] [--module <module>] <target>
-sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter|missing-module-declaration|unchecked-result|unqualified-imported-call|unused-pure-binding|unused-pure-expression-statement|mutable-binding-never-set|self-assignment-statement|overwritten-set-statement|redundant-initial-set-statement|constant-if-expression|constant-if-statement|constant-false-if-statement|constant-false-while-statement|constant-comparison-expression|constant-arithmetic-expression|constant-text-concatenation-expression|constant-list-index-expression|constant-map-index-expression|constant-record-field-access-expression|constant-len-expression|constant-not-expression|empty-if-statement|empty-for-statement|empty-forge-statement|identity-binary-expression|redundant-boolean-comparison|absorbing-boolean-expression|idempotent-boolean-expression|self-comparison-expression|double-negation-expression|negated-comparison-expression|redundant-boolean-if-expression|redundant-boolean-if-statement|same-branch-if-expression|same-branch-if-statement|unreachable-statement|absorbing-arithmetic-expression] [--module <module>] <target>
+sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter|missing-module-declaration|unchecked-result|unqualified-imported-call|unused-pure-binding|unused-pure-expression-statement|mutable-binding-never-set|self-assignment-statement|overwritten-set-statement|redundant-initial-set-statement|constant-if-expression|constant-if-statement|constant-false-if-statement|constant-false-while-statement|constant-comparison-expression|constant-arithmetic-expression|constant-text-concatenation-expression|constant-list-index-expression|constant-map-index-expression|constant-record-field-access-expression|constant-len-expression|constant-not-expression|empty-if-statement|empty-else-statement|empty-for-statement|empty-forge-statement|identity-binary-expression|redundant-boolean-comparison|absorbing-boolean-expression|idempotent-boolean-expression|self-comparison-expression|double-negation-expression|negated-comparison-expression|redundant-boolean-if-expression|redundant-boolean-if-statement|same-branch-if-expression|same-branch-if-statement|unreachable-statement|absorbing-arithmetic-expression] [--module <module>] <target>
 sley-ci lint --json [--deny-warnings] [--rule <rule>] [--module <module>] <target>
 sley-ci doctor --json [--deny-warnings] <target>
 sley-ci plan --json [--deny-warnings] [--graft-templates] [--template-surface <surface>] <target>
@@ -109,6 +109,7 @@ sley-ci run --json [runtime gates/seeds] <target>
 sley-ci corpus --json <fixtures/corpus/manifest.json>
 sley-ci examples --json examples
 sley-conformance report --json
+sley-conformance report --json --require-public-release-ready
 sley-conformance coverage --json --require-tag <tag>
 make v1
 make syntax
@@ -172,6 +173,9 @@ Rules:
   release-manifest validation, conformance summary reporting, declared
   integration-test count drift, corpus conformance, packaged examples, and CLI
   smokes.
+- `sley-conformance report --require-public-release-ready` is the explicit
+  public-cut gate for license and repository metadata; ordinary executable v1
+  conformance remains advisory on those operator decisions.
 - `.github/actions/sley-v1/action.yml`, `.github/workflows/v1.yml`, and
   `.pre-commit-config.yaml` route hosted CI and local pre-commit checks through
   the same `make v1` gate.
@@ -744,6 +748,10 @@ The current smoke manifest covers:
   `delete_empty_if_statement` templates that remove no-op `if` statements with
   delete-safe conditions and empty branches through lint/plan/fix-write/verify
   CLI smoke coverage
+- empty-else statement warnings through `empty_else_statement`, plus checked
+  `remove_empty_else_statement` templates that remove no-op empty `else`
+  branches while preserving the checked `if` condition and non-empty then
+  branch through lint/plan/fix-write/verify CLI smoke coverage
 - empty-for statement warnings through `empty_for_statement`, plus checked
   `delete_empty_for_statement` templates that remove `for` loops over literal
   empty lists through lint/plan/fix-write/verify CLI smoke coverage
@@ -941,6 +949,9 @@ The v0 lint rules are:
 - `empty_if_statement`: an `if` statement with a delete-safe condition and
   empty branches is reported so agents can delete no-op control flow without
   dropping calls, indexing, `?`, division, or remainder work.
+- `empty_else_statement`: an `if` statement with a non-empty then branch and
+  empty `else` branch is reported so agents can remove no-op fallback syntax
+  without changing the checked branch that can execute.
 - `empty_for_statement`: a `for item in [] { ... }` statement is reported so
   agents can remove never-executed loop bodies without evaluating or dropping
   any non-empty collection expression.
@@ -1010,6 +1021,7 @@ The command supports `--module <module>`, `--rule unused-private-task`,
 `--rule constant-len-expression`,
 `--rule constant-not-expression`,
 `--rule empty-if-statement`,
+`--rule empty-else-statement`,
 `--rule empty-for-statement`,
 `--rule empty-forge-statement`,
 `--rule identity-binary-expression`, `--rule redundant-boolean-comparison`,
@@ -1100,8 +1112,8 @@ Medium-term:
    beyond seeded values, model beyond seeded completions, shell beyond seeded
    command output, network beyond seeded text, and database write beyond
    per-run inserts.
-4. Broaden release gates beyond the synthetic gold corpus and CLI smokes into
-   packaged examples and migration fixtures.
+4. Broaden release gates beyond the current corpus, packaged examples, and CLI
+   smokes into migration fixtures and the final public-release metadata cut.
 5. Shadow selected compiler helper passes in Sley.
 
 Long-term:
