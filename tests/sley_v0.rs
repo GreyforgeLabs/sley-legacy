@@ -3076,6 +3076,73 @@ fn edit_plan_graft_templates_include_constant_if_expression_simplify() {
 }
 
 #[test]
+fn edit_plan_graft_templates_include_constant_false_while_statement_delete() {
+    let source = include_str!("../examples/constant_false_while_statement.sley");
+    let program = parse_program(source).expect("parse constant false while fixture");
+    let report = build_edit_plan_report_with_options(
+        "examples/constant_false_while_statement.sley",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: None,
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "warnings");
+    assert_eq!(report.summary.lint_finding_count, 1);
+    assert_eq!(
+        report.lint.as_ref().expect("lint summary").findings[0].id,
+        "CONSTANT_FALSE_WHILE_STATEMENT"
+    );
+    let template = report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "delete_constant_false_while_statement")
+        .expect("constant false while delete template");
+    assert_eq!(template.surface, "block:task:app.false_while.main:stmt:1");
+    assert_eq!(
+        template.operation.pointer("/op"),
+        Some(&serde_json::json!("DeleteNode"))
+    );
+    assert_eq!(
+        template.operation.pointer("/target"),
+        Some(&serde_json::json!("block:task:app.false_while.main:stmt:1"))
+    );
+    assert!(template.editable_json_pointers.is_empty());
+    let graft: GraftInput = serde_json::from_value(template.operation.clone())
+        .expect("parse constant false while delete template");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:constant-false-while-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted_source = outcome.source.expect("grafted source");
+    assert!(!grafted_source.contains("while false"));
+    assert!(grafted_source.contains("return value"));
+
+    let targeted_report = build_edit_plan_report_with_options(
+        "examples/constant_false_while_statement.sley",
+        Ok(program),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("block:task:app.false_while.main:stmt:1".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(targeted_report.status, "warnings");
+    assert!(targeted_report.diagnostics.is_empty());
+    assert_eq!(targeted_report.graft_templates.len(), 1);
+    assert_eq!(
+        targeted_report.graft_templates[0].kind,
+        "delete_constant_false_while_statement"
+    );
+    assert!(targeted_report.transaction_templates.is_empty());
+}
+
+#[test]
 fn edit_plan_graft_templates_include_identity_binary_expression_simplify() {
     let source = include_str!("../examples/identity_binary_expression.sley");
     let program = parse_program(source).expect("parse identity binary fixture");
@@ -5266,6 +5333,22 @@ task helper -> Result<Text, Error> {
         include_str!("../fixtures/contracts/lint_constant_if_expression.json"),
     );
 
+    let constant_false_while_source =
+        include_str!("../examples/constant_false_while_statement.sley");
+    let constant_false_while_program =
+        parse_program(constant_false_while_source).expect("parse constant false while fixture");
+    let constant_false_while_lint = build_lint_report(
+        &constant_false_while_program,
+        LintOptions {
+            rules: vec![LintRule::ConstantFalseWhileStatement],
+            module: None,
+        },
+    );
+    assert_json_snapshot(
+        &constant_false_while_lint,
+        include_str!("../fixtures/contracts/lint_constant_false_while_statement.json"),
+    );
+
     let identity_binary_source = include_str!("../examples/identity_binary_expression.sley");
     let identity_binary_program =
         parse_program(identity_binary_source).expect("parse identity binary fixture");
@@ -6026,7 +6109,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(41))
+        Some(&serde_json::json!(42))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -11384,6 +11467,75 @@ task main -> Int {
 }
 
 #[test]
+fn lint_report_flags_constant_false_while_statements() {
+    let source = r#"
+module app.false_while
+
+task main -> Int {
+  state value = 41
+
+  while false {
+    set value = 0
+  }
+
+  while value < 0 {
+    set value = value + 1
+  }
+
+  if value > 40 {
+    while false {
+      set value = 7
+    }
+  }
+
+  return value
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+
+    let report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::ConstantFalseWhileStatement],
+            module: None,
+        },
+    );
+
+    assert_eq!(report.schema, LINT_REPORT_SCHEMA);
+    assert_eq!(report.status, "findings");
+    assert_eq!(report.entry_module, "app.false_while");
+    assert_eq!(report.filters.rules, vec!["constant_false_while_statement"]);
+    assert_eq!(report.findings.len(), 2);
+    assert_eq!(report.findings[0].id, "CONSTANT_FALSE_WHILE_STATEMENT");
+    assert_eq!(report.findings[0].rule, "constant_false_while_statement");
+    let nodes: Vec<&str> = report
+        .findings
+        .iter()
+        .map(|finding| finding.node.as_str())
+        .collect();
+    assert!(nodes.contains(&"block:task:app.false_while.main:stmt:1"));
+    assert!(nodes.contains(&"block:task:app.false_while.main:stmt:3:then:stmt:0"));
+    assert_eq!(report.findings[0].module, "app.false_while");
+    assert!(report.findings[0].message.contains("constant `false`"));
+    assert!(report.findings[0].hint.contains("delete"));
+
+    let scoped_report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::ConstantFalseWhileStatement],
+            module: Some("app.other".to_string()),
+        },
+    );
+    assert_eq!(scoped_report.status, "ok");
+    assert!(scoped_report.findings.is_empty());
+}
+
+#[test]
 fn lint_report_flags_identity_binary_expressions() {
     let source = r#"
 module app.identity_binary
@@ -14080,6 +14232,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:templates:unchecked-result",
         "graft:templates:unused-pure-binding-delete",
         "graft:templates:unused-pure-expression-statement-delete",
+        "graft:templates:constant-false-while-statement-delete",
         "graft:templates:unreachable-statement-delete",
         "graft:templates:unused-declared-effect-remove",
         "graft:templates:unused-import-delete",
@@ -14106,6 +14259,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "lint:unused_pure_expression_statement",
         "lint:mutable_binding_never_set",
         "lint:constant_if_expression",
+        "lint:constant_false_while_statement",
         "lint:identity_binary_expression",
         "lint:redundant_boolean_comparison",
         "lint:absorbing_boolean_expression",
@@ -14120,6 +14274,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "query:calls",
         "readiness:call-transaction-write-verify",
         "readiness:constant-if-repair-write-verify",
+        "readiness:constant-false-while-repair-write-verify",
         "readiness:deploy-package-artifacts",
         "readiness:deploy-package-dry-run",
         "readiness:inspect-calls",

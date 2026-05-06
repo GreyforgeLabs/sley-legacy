@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.false_while",
+  "filters": {
+    "module": null,
+    "rules": [
+      "constant_false_while_statement"
+    ]
+  },
+  "findings": [
+    {
+      "id": "CONSTANT_FALSE_WHILE_STATEMENT",
+      "rule": "constant_false_while_statement",
+      "severity": "warning",
+      "message": "task `app.false_while.main` has a while statement with constant `false` condition",
+      "node": "block:task:app.false_while.main:stmt:1",
+      "module": "app.false_while",
+      "hint": "delete this never-executed while statement"
+    }
+  ]
+}

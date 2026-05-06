@@ -1,0 +1,11 @@
+module app.false_while
+
+task main -> Int {
+  bind value = 41
+
+  while false {
+    return 0
+  }
+
+  return value
+}
