@@ -44,7 +44,7 @@ Current verified surface:
 
 - `cargo fmt -- --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 294 tests in the core `tests/sley_v0.rs`
+- Current integration coverage is 295 tests in the core `tests/sley_v0.rs`
   conformance file, with additional focused integration tests for LSP,
   workbench, agent bench, docgen, migration reports, sandbox replay, project
   templates, and ZJX envelope tools. The focused utility tests validate live
@@ -68,8 +68,9 @@ Current verified surface:
   `--exported`, including strict task/take/type/effect/call row definitions.
 - `sley run --json` emits `schema: "sley.run.report.v0"` with a strict
   recursive runtime value payload and empty diagnostics on successful
-  deterministic execution. Runtime gates use `--cap EFFECT[=SCOPE]`; file
-  effects treat the scope as a filesystem root, while non-file seeded host
+  deterministic execution. Verify reports reuse the same strict value contract
+  when embedding runtime results. Runtime gates use `--cap EFFECT[=SCOPE]`;
+  file effects treat the scope as a filesystem root, while non-file seeded host
   adapters enforce deterministic text-prefix scopes over database tables, URLs,
   secret names, shell commands, model prompts, deploy targets, and spend
   requests. Scope mismatches remain authority diagnostics.

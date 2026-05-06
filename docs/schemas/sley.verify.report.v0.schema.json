@@ -124,7 +124,7 @@
       "required": ["status", "diagnostics"],
       "properties": {
         "status": { "enum": ["passed", "failed", "skipped"] },
-        "value": { "type": "object" },
+        "value": { "$ref": "sley.run.report.v0#/$defs/value" },
         "diagnostics": {
           "type": "array",
           "items": { "$ref": "sley.diagnostics.report.v0#/$defs/diagnostic" }
