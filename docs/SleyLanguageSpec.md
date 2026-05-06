@@ -771,8 +771,9 @@ still passes.
 `delete_unused_pure_binding` `DeleteNode` templates when deleting the unread
 binding statement preserves a checked program.
 `--template-surface <surface>` selects a specific task surface by task node id
-or qualified task name, the `program` missing-module surface, or a lint surface
-by lint finding node id such as `import:app.main:app.stale`,
+or qualified task name, an expression node id for a checked no-op
+`replace_expression` starter template, the `program` missing-module surface,
+or a lint surface by lint finding node id such as `import:app.main:app.stale`,
 `type:app.module.Name`, or `effect:app.module.Name`. For selected tasks with
 currently resolved inbound callers, the report also includes an
 all-or-nothing `RenameDeclaration` plus `UpdateCallSites` transaction template

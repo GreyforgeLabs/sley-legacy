@@ -494,6 +494,9 @@ fn build_graft_templates(
         if !requested_lint_templates.is_empty() {
             return Ok(requested_lint_templates);
         }
+        if let Some(template) = expression_surface_replace_template(program, requested_surface) {
+            return Ok(vec![template]);
+        }
     }
     let Some(surface) = select_template_surface(surfaces, requested_surface)? else {
         return Ok(lint_templates);
@@ -928,87 +931,153 @@ fn lint_unqualified_imported_call_templates(
         .collect()
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct ExpressionSurface {
+    source: String,
+    kind: &'static str,
+}
+
+fn expression_surface_replace_template(
+    program: &Program,
+    requested_surface: &str,
+) -> Option<EditPlanGraftTemplate> {
+    let expression = find_expr_surface(program, requested_surface)?;
+    let operation = json!({
+        "op": "ReplaceExpression",
+        "target": requested_surface,
+        "payload": {
+            "source": expression.source
+        }
+    });
+    if !replace_affordance_checks(program, &operation) {
+        return None;
+    }
+    Some(EditPlanGraftTemplate {
+        kind: "replace_expression".to_string(),
+        reason: format!(
+            "replace this {} expression using a checked no-op starter graft; edit /payload/source before applying",
+            expression.kind
+        ),
+        surface: requested_surface.to_string(),
+        operation,
+        editable_json_pointers: vec!["/payload/source".to_string()],
+    })
+}
+
 fn find_expr_source(program: &Program, target: &str) -> Option<String> {
+    find_expr_surface(program, target).map(|surface| surface.source)
+}
+
+fn find_expr_surface(program: &Program, target: &str) -> Option<ExpressionSurface> {
     program
         .tasks
         .iter()
-        .find_map(|task| find_expr_source_in_block(&task.body, target))
+        .find_map(|task| find_expr_surface_in_block(&task.body, target))
 }
 
-fn find_expr_source_in_block(block: &Block, target: &str) -> Option<String> {
+fn find_expr_surface_in_block(block: &Block, target: &str) -> Option<ExpressionSurface> {
     block
         .statements
         .iter()
-        .find_map(|statement| find_expr_source_in_statement(statement, target))
+        .find_map(|statement| find_expr_surface_in_statement(statement, target))
 }
 
-fn find_expr_source_in_statement(statement: &Statement, target: &str) -> Option<String> {
+fn find_expr_surface_in_statement(
+    statement: &Statement,
+    target: &str,
+) -> Option<ExpressionSurface> {
     match &statement.kind {
         StatementKind::Binding { expr, .. }
         | StatementKind::Set { expr, .. }
         | StatementKind::Return { expr }
-        | StatementKind::Expr { expr } => find_expr_source_in_expr(expr, target),
+        | StatementKind::Expr { expr } => find_expr_surface_in_expr(expr, target),
         StatementKind::If {
             condition,
             then_block,
             else_block,
-        } => find_expr_source_in_expr(condition, target)
-            .or_else(|| find_expr_source_in_block(then_block, target))
+        } => find_expr_surface_in_expr(condition, target)
+            .or_else(|| find_expr_surface_in_block(then_block, target))
             .or_else(|| {
                 else_block
                     .as_ref()
-                    .and_then(|block| find_expr_source_in_block(block, target))
+                    .and_then(|block| find_expr_surface_in_block(block, target))
             }),
-        StatementKind::While { condition, body } => find_expr_source_in_expr(condition, target)
-            .or_else(|| find_expr_source_in_block(body, target)),
+        StatementKind::While { condition, body } => find_expr_surface_in_expr(condition, target)
+            .or_else(|| find_expr_surface_in_block(body, target)),
         StatementKind::For {
             collection, body, ..
-        } => find_expr_source_in_expr(collection, target)
-            .or_else(|| find_expr_source_in_block(body, target)),
-        StatementKind::Forge { body } => find_expr_source_in_block(body, target),
+        } => find_expr_surface_in_expr(collection, target)
+            .or_else(|| find_expr_surface_in_block(body, target)),
+        StatementKind::Forge { body } => find_expr_surface_in_block(body, target),
     }
 }
 
-fn find_expr_source_in_expr(expr: &Expr, target: &str) -> Option<String> {
+fn find_expr_surface_in_expr(expr: &Expr, target: &str) -> Option<ExpressionSurface> {
     if expr.id == target {
-        return Some(expr.source.clone());
+        return Some(ExpressionSurface {
+            source: expr.source.clone(),
+            kind: expr_kind_label(&expr.kind),
+        });
     }
     match &expr.kind {
         ExprKind::Unary { expr, .. } | ExprKind::Try { expr } => {
-            find_expr_source_in_expr(expr, target)
+            find_expr_surface_in_expr(expr, target)
         }
-        ExprKind::Binary { left, right, .. } => find_expr_source_in_expr(left, target)
-            .or_else(|| find_expr_source_in_expr(right, target)),
+        ExprKind::Binary { left, right, .. } => find_expr_surface_in_expr(left, target)
+            .or_else(|| find_expr_surface_in_expr(right, target)),
         ExprKind::If {
             condition,
             then_branch,
             else_branch,
-        } => find_expr_source_in_expr(condition, target)
-            .or_else(|| find_expr_source_in_expr(then_branch, target))
-            .or_else(|| find_expr_source_in_expr(else_branch, target)),
-        ExprKind::Call { callee, args } => find_expr_source_in_expr(callee, target).or_else(|| {
-            args.iter()
-                .find_map(|arg| find_expr_source_in_expr(arg, target))
-        }),
+        } => find_expr_surface_in_expr(condition, target)
+            .or_else(|| find_expr_surface_in_expr(then_branch, target))
+            .or_else(|| find_expr_surface_in_expr(else_branch, target)),
+        ExprKind::Call { callee, args } => {
+            find_expr_surface_in_expr(callee, target).or_else(|| {
+                args.iter()
+                    .find_map(|arg| find_expr_surface_in_expr(arg, target))
+            })
+        }
         ExprKind::ListLiteral { items } => items
             .iter()
-            .find_map(|item| find_expr_source_in_expr(item, target)),
+            .find_map(|item| find_expr_surface_in_expr(item, target)),
         ExprKind::MapLiteral { entries } => entries.iter().find_map(|entry| {
-            find_expr_source_in_expr(&entry.key, target)
-                .or_else(|| find_expr_source_in_expr(&entry.value, target))
+            find_expr_surface_in_expr(&entry.key, target)
+                .or_else(|| find_expr_surface_in_expr(&entry.value, target))
         }),
-        ExprKind::Index { collection, index } => find_expr_source_in_expr(collection, target)
-            .or_else(|| find_expr_source_in_expr(index, target)),
-        ExprKind::FieldAccess { receiver, .. } => find_expr_source_in_expr(receiver, target),
+        ExprKind::Index { collection, index } => find_expr_surface_in_expr(collection, target)
+            .or_else(|| find_expr_surface_in_expr(index, target)),
+        ExprKind::FieldAccess { receiver, .. } => find_expr_surface_in_expr(receiver, target),
         ExprKind::RecordLiteral { fields, .. } => fields
             .iter()
-            .find_map(|field| find_expr_source_in_expr(&field.expr, target)),
+            .find_map(|field| find_expr_surface_in_expr(&field.expr, target)),
         ExprKind::Raw { .. }
         | ExprKind::StringLiteral { .. }
         | ExprKind::IntLiteral { .. }
         | ExprKind::FloatLiteral { .. }
         | ExprKind::BoolLiteral { .. }
         | ExprKind::Identifier { .. } => None,
+    }
+}
+
+fn expr_kind_label(kind: &ExprKind) -> &'static str {
+    match kind {
+        ExprKind::Raw { .. } => "Raw",
+        ExprKind::StringLiteral { .. } => "StringLiteral",
+        ExprKind::IntLiteral { .. } => "IntLiteral",
+        ExprKind::FloatLiteral { .. } => "FloatLiteral",
+        ExprKind::BoolLiteral { .. } => "BoolLiteral",
+        ExprKind::Identifier { .. } => "Identifier",
+        ExprKind::Unary { .. } => "Unary",
+        ExprKind::Binary { .. } => "Binary",
+        ExprKind::If { .. } => "If",
+        ExprKind::Call { .. } => "Call",
+        ExprKind::ListLiteral { .. } => "ListLiteral",
+        ExprKind::MapLiteral { .. } => "MapLiteral",
+        ExprKind::Index { .. } => "Index",
+        ExprKind::FieldAccess { .. } => "FieldAccess",
+        ExprKind::RecordLiteral { .. } => "RecordLiteral",
+        ExprKind::Try { .. } => "Try",
     }
 }
 
@@ -1119,13 +1188,13 @@ fn select_template_surface<'a>(
             Diagnostic::error(
                 "PLAN_SURFACE_NOT_FOUND",
                 format!(
-                    "plan surface `{requested_surface}` was not found; use a task id, qualified task name, or lint finding node"
+                    "plan surface `{requested_surface}` was not found; use a task id, qualified task name, expression node id, or lint finding node"
                 ),
             )
             .with_node(requested_surface)
             .with_repair_hint(
                 RepairHint::new("inspect_task_surfaces")
-                    .with_replacement("Run `sley plan --json <target>` and choose a task_surfaces id, task qualified_name, or lint.findings node"),
+                    .with_replacement("Run `sley ast --json <target>` or `sley plan --json <target>` and choose an expression node id, task_surfaces id, task qualified_name, or lint.findings node"),
             )
         })
 }
@@ -1835,7 +1904,9 @@ fn blocked_actions(target: &str) -> Vec<EditPlanAction> {
 fn template_surface_actions(target: &str) -> Vec<EditPlanAction> {
     vec![EditPlanAction {
         kind: "inspect_plan_surfaces".to_string(),
-        reason: "choose a valid task surface before requesting graft templates".to_string(),
+        reason:
+            "choose a valid task, expression, or lint surface before requesting graft templates"
+                .to_string(),
         command: command(["sley", "plan", "--json", target]),
     }]
 }
