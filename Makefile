@@ -29,6 +29,7 @@ examples: build-cli
 
 smoke: build-cli
 	cargo run --bin sley-ci -- smoke --json --repo-root $(CURDIR) fixtures/cli_smokes/manifest.json
+	cargo run --bin sley-ci -- smoke --json --repo-root $(CURDIR) fixtures/ci_smoke_probe/manifest.json
 
 lsp:
 	cargo check --bin sley-lsp

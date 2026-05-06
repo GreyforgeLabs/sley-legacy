@@ -111,6 +111,7 @@ sley-ci examples --json examples
 sley-conformance report --json
 sley-conformance report --json --require-public-release-ready
 sley-conformance coverage --json --require-tag <tag>
+make smoke
 make v1
 make syntax
 sley-lsp

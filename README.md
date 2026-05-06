@@ -478,6 +478,7 @@ sley-ci examples --json examples
 sley-conformance report --json
 sley-conformance coverage --json --require-tag cli:check --require-tag json:sley.trace.receipt.v0
 sley-contract inspect-deploy-artifacts .sley/deploy --schemas docs/schemas --json
+make smoke
 make syntax
 sley-lsp
 sley-workbench --json --html .sley/workbench.html .
