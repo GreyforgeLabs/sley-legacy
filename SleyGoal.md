@@ -70,14 +70,15 @@ Current verified surface:
   `--rule unused-import`, `--rule unused-take`, `--rule unused-private-type`,
   `--rule unused-private-effect`, `--rule raw-host-adapter`,
   `--rule missing-module-declaration`, `--rule unchecked-result`,
-  `--rule unqualified-imported-call`, `--rule unused-pure-binding`, and
-  `--deny-warnings`.
+  `--rule unqualified-imported-call`, `--rule unused-pure-binding`,
+  `--rule mutable-binding-never-set`, and `--deny-warnings`.
 - The current lint rules are `unused_private_task` and
   `unreachable_private_task`, `unused_declared_effect`, and
   `unused_import`, `unused_take`, `unused_private_type`,
   `unused_private_effect`, `raw_host_adapter`,
   `missing_module_declaration`, `unchecked_result`, and
-  `unqualified_imported_call`, and `unused_pure_binding`.
+  `unqualified_imported_call`, `unused_pure_binding`, and
+  `mutable_binding_never_set`.
 - CLI smoke coverage is manifest-backed under
   `fixtures/cli_smokes/manifest.json`, including graph-slice insert and
   replace affordances, checked `insert_statement` and `replace_expression` graft
@@ -122,6 +123,7 @@ Current verified surface:
   `delete_unused_import` cleanup that clears lint before
   `sley verify --deny-warnings`, plus checked `unused_pure_binding`
   `DeleteNode` templates with lint/plan/fix-write/verify smoke coverage, plus
+  checked `mutable_binding_never_set` style findings, plus
   checked dead private task cleanup
   transactions for grouped unused/unreachable private task deletion, plus
   checked `unused_take` and `unused_declared_effect` remove templates and fix
@@ -315,6 +317,7 @@ cargo run -- lint --json --rule missing-module-declaration <target>
 cargo run -- lint --json --rule unchecked-result <target>
 cargo run -- lint --json --rule unqualified-imported-call <target>
 cargo run -- lint --json --rule unused-pure-binding <target>
+cargo run -- lint --json --rule mutable-binding-never-set <target>
 cargo run -- query --json --kind types <target>
 cargo run -- query --json --kind effects <target>
 ```

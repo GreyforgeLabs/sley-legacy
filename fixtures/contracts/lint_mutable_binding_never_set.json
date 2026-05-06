@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.mutable_style",
+  "filters": {
+    "module": null,
+    "rules": [
+      "mutable_binding_never_set"
+    ]
+  },
+  "findings": [
+    {
+      "id": "MUTABLE_BINDING_NEVER_SET",
+      "rule": "mutable_binding_never_set",
+      "severity": "warning",
+      "message": "task `app.mutable_style.main` declares mutable `state` binding `base` but never sets it",
+      "node": "block:task:app.mutable_style.main:stmt:0",
+      "module": "app.mutable_style",
+      "hint": "use `bind base = ...` for immutable data, or add a real `set base = ...` mutation"
+    }
+  ]
+}

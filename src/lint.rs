@@ -30,6 +30,7 @@ pub enum LintRule {
     UncheckedResult,
     UnqualifiedImportedCall,
     UnusedPureBinding,
+    MutableBindingNeverSet,
 }
 
 impl LintRule {
@@ -47,6 +48,7 @@ impl LintRule {
             Self::UncheckedResult,
             Self::UnqualifiedImportedCall,
             Self::UnusedPureBinding,
+            Self::MutableBindingNeverSet,
         ]
     }
 
@@ -64,6 +66,7 @@ impl LintRule {
             Self::UncheckedResult => "unchecked_result",
             Self::UnqualifiedImportedCall => "unqualified_imported_call",
             Self::UnusedPureBinding => "unused_pure_binding",
+            Self::MutableBindingNeverSet => "mutable_binding_never_set",
         }
     }
 }
@@ -160,6 +163,12 @@ pub fn build_lint_report(program: &Program, options: LintOptions) -> LintReport 
     }
     if rules.contains(&LintRule::UnusedPureBinding) {
         findings.extend(lint_unused_pure_bindings(
+            program,
+            options.module.as_deref(),
+        ));
+    }
+    if rules.contains(&LintRule::MutableBindingNeverSet) {
+        findings.extend(lint_mutable_bindings_never_set(
             program,
             options.module.as_deref(),
         ));
@@ -713,6 +722,71 @@ fn lint_unused_pure_bindings(program: &Program, module: Option<&str>) -> Vec<Lin
     findings
 }
 
+fn lint_mutable_bindings_never_set(program: &Program, module: Option<&str>) -> Vec<LintFinding> {
+    let mut findings = Vec::new();
+    for task in program
+        .tasks
+        .iter()
+        .filter(|task| module_matches(module, &task_module(task)))
+    {
+        collect_mutable_bindings_never_set_in_block(task, &task.body, &task.body, &mut findings);
+    }
+    findings
+}
+
+fn collect_mutable_bindings_never_set_in_block(
+    task: &TaskDecl,
+    task_body: &Block,
+    block: &Block,
+    findings: &mut Vec<LintFinding>,
+) {
+    for statement in &block.statements {
+        match &statement.kind {
+            StatementKind::Binding {
+                binding_kind, name, ..
+            } if binding_kind.is_mutable_local() && !block_sets_identifier(task_body, name) => {
+                let task_name = task_fq_name(task);
+                let module_name = task_module(task);
+                findings.push(LintFinding {
+                    id: "MUTABLE_BINDING_NEVER_SET".to_string(),
+                    rule: LintRule::MutableBindingNeverSet.as_str().to_string(),
+                    severity: "warning".to_string(),
+                    message: format!(
+                        "task `{task_name}` declares mutable `{}` binding `{name}` but never sets it",
+                        binding_kind.as_source_keyword()
+                    ),
+                    node: statement.id.clone(),
+                    module: module_name,
+                    hint: format!(
+                        "use `bind {name} = ...` for immutable data, or add a real `set {name} = ...` mutation"
+                    ),
+                });
+            }
+            StatementKind::If {
+                then_block,
+                else_block,
+                ..
+            } => {
+                collect_mutable_bindings_never_set_in_block(task, task_body, then_block, findings);
+                if let Some(else_block) = else_block {
+                    collect_mutable_bindings_never_set_in_block(
+                        task, task_body, else_block, findings,
+                    );
+                }
+            }
+            StatementKind::While { body, .. }
+            | StatementKind::For { body, .. }
+            | StatementKind::Forge { body } => {
+                collect_mutable_bindings_never_set_in_block(task, task_body, body, findings);
+            }
+            StatementKind::Binding { .. }
+            | StatementKind::Set { .. }
+            | StatementKind::Return { .. }
+            | StatementKind::Expr { .. } => {}
+        }
+    }
+}
+
 fn collect_unused_pure_bindings_in_block(
     task: &TaskDecl,
     task_body: &Block,
@@ -862,6 +936,37 @@ fn block_uses_identifier(block: &Block, name: &str) -> bool {
         .statements
         .iter()
         .any(|statement| statement_uses_identifier(statement, name))
+}
+
+fn block_sets_identifier(block: &Block, name: &str) -> bool {
+    block
+        .statements
+        .iter()
+        .any(|statement| statement_sets_identifier(statement, name))
+}
+
+fn statement_sets_identifier(statement: &Statement, name: &str) -> bool {
+    match &statement.kind {
+        StatementKind::Set {
+            name: candidate, ..
+        } => candidate == name,
+        StatementKind::If {
+            then_block,
+            else_block,
+            ..
+        } => {
+            block_sets_identifier(then_block, name)
+                || else_block
+                    .as_ref()
+                    .is_some_and(|block| block_sets_identifier(block, name))
+        }
+        StatementKind::While { body, .. }
+        | StatementKind::For { body, .. }
+        | StatementKind::Forge { body } => block_sets_identifier(body, name),
+        StatementKind::Binding { .. }
+        | StatementKind::Return { .. }
+        | StatementKind::Expr { .. } => false,
+    }
 }
 
 fn statement_uses_identifier(statement: &Statement, name: &str) -> bool {

@@ -101,7 +101,7 @@ sley fix --json --kind <kind> [--template-surface <surface>] [--source <source>|
 sley verify --json [--deny-warnings] [runtime gates/seeds] <target>
 sley deploy --json --dry-run [--artifacts-dir <dir>] [runtime gates/seeds] <target>
 sley query --json [--kind all|modules|tasks|types|effects|calls] [--module <module>] <target>
-sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter|missing-module-declaration|unchecked-result|unqualified-imported-call|unused-pure-binding] [--module <module>] <target>
+sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter|missing-module-declaration|unchecked-result|unqualified-imported-call|unused-pure-binding|mutable-binding-never-set] [--module <module>] <target>
 sley trace --json <target>
 sley seal --json <target>
 sley zjx --json [--slice <node-id>] <target>
@@ -563,6 +563,8 @@ The current smoke manifest covers:
 - unused pure binding templates that delete unread side-effect-free `bind`
   statements through checked `DeleteNode`, with lint/plan/fix-write/verify
   CLI smoke coverage
+- mutable binding style warnings through `mutable_binding_never_set`, which
+  catches mutable locals that are never assigned with `set`
 - private declaration hygiene through the checked `unused_private_type` and
   `unused_private_effect` lint rules
 - import hygiene through the checked `unused_import` lint rule
@@ -635,13 +637,17 @@ The v0 lint rules are:
 - `unused_pure_binding`: an unread local `bind` with a delete-safe initializer
   is reported so agents can remove dead local scaffolding without changing
   authority work or fallible execution.
+- `mutable_binding_never_set`: a mutable local such as `state` or `tally` is
+  reported when it is never assigned with `set`; prefer `bind` unless real
+  mutation is needed.
 
 The command supports `--module <module>`, `--rule unused-private-task`,
 `--rule unreachable-private-task`, `--rule unused-declared-effect`,
 `--rule unused-import`, `--rule unused-take`, `--rule unused-private-type`,
 `--rule unused-private-effect`, `--rule raw-host-adapter`,
 `--rule missing-module-declaration`, `--rule unchecked-result`,
-`--rule unqualified-imported-call`, `--rule unused-pure-binding`, and
+`--rule unqualified-imported-call`, `--rule unused-pure-binding`,
+`--rule mutable-binding-never-set`, and
 `--deny-warnings` lets CI turn findings into a failing exit after the JSON
 report is printed.
 

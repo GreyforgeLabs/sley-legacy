@@ -113,7 +113,8 @@ Implemented now:
   `--rule unused-take`, `--rule unused-private-type`,
   `--rule unused-private-effect`, `--rule raw-host-adapter`,
   `--rule missing-module-declaration`, `--rule unchecked-result`, or
-  `--rule unqualified-imported-call`, or `--rule unused-pure-binding`
+  `--rule unqualified-imported-call`, `--rule unused-pure-binding`, or
+  `--rule mutable-binding-never-set`
   filters, and
   `schema: "sley.lint.report.v0"` for warning-grade graph and authority lints
 - in-tree `sley-contract` utility scaffold with `inventory`, `check-fixtures`,
@@ -588,6 +589,7 @@ verify,
 raw-host adapter migration templates, unchecked-result propagation templates,
 unqualified imported-call qualification templates with write/query/verify
 coverage, unused pure binding delete templates with write/verify coverage,
-private-task lint rules, declaration/import/API hygiene, authority hygiene, and
-explicit module style warnings. The next logical phase is to keep broadening
-style and migration lints before broadening the language again.
+mutable-binding style warnings, private-task lint rules,
+declaration/import/API hygiene, authority hygiene, and explicit module style
+warnings. The next logical phase is to keep broadening style and migration
+lints before broadening the language again.

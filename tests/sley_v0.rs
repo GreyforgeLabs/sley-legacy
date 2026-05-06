@@ -4122,6 +4122,21 @@ task helper -> Result<Text, Error> {
         include_str!("../fixtures/contracts/lint_unused_pure_binding.json"),
     );
 
+    let mutable_binding_source = include_str!("../examples/mutable_binding_style.sley");
+    let mutable_binding_program =
+        parse_program(mutable_binding_source).expect("parse mutable binding fixture");
+    let mutable_binding_lint = build_lint_report(
+        &mutable_binding_program,
+        LintOptions {
+            rules: vec![LintRule::MutableBindingNeverSet],
+            module: None,
+        },
+    );
+    assert_json_snapshot(
+        &mutable_binding_lint,
+        include_str!("../fixtures/contracts/lint_mutable_binding_never_set.json"),
+    );
+
     let missing_module_source = r#"
 task main -> Text {
   return "hello"
@@ -4776,7 +4791,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(30))
+        Some(&serde_json::json!(31))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -9857,6 +9872,60 @@ task main -> Result<Int, Error> uses FileRead {
 }
 
 #[test]
+fn lint_report_flags_mutable_bindings_never_set() {
+    let source = r#"
+module app.mutable_style
+
+task main -> Int {
+  state base = 21
+  tally total = 0
+  set total = total + base
+
+  return total
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+
+    let report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::MutableBindingNeverSet],
+            module: None,
+        },
+    );
+
+    assert_eq!(report.schema, LINT_REPORT_SCHEMA);
+    assert_eq!(report.status, "findings");
+    assert_eq!(report.entry_module, "app.mutable_style");
+    assert_eq!(report.filters.rules, vec!["mutable_binding_never_set"]);
+    assert_eq!(report.findings.len(), 1);
+    assert_eq!(report.findings[0].id, "MUTABLE_BINDING_NEVER_SET");
+    assert_eq!(report.findings[0].rule, "mutable_binding_never_set");
+    assert_eq!(
+        report.findings[0].node,
+        "block:task:app.mutable_style.main:stmt:0"
+    );
+    assert_eq!(report.findings[0].module, "app.mutable_style");
+    assert!(report.findings[0].message.contains("state"));
+    assert!(report.findings[0].hint.contains("bind base"));
+
+    let scoped_report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::MutableBindingNeverSet],
+            module: Some("app.other".to_string()),
+        },
+    );
+    assert_eq!(scoped_report.status, "ok");
+    assert!(scoped_report.findings.is_empty());
+}
+
+#[test]
 fn lint_report_flags_missing_module_declarations() {
     let source = r#"
 task main -> Text {
@@ -11761,6 +11830,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "lint:unchecked_result",
         "lint:unqualified_imported_call",
         "lint:unused_pure_binding",
+        "lint:mutable_binding_never_set",
         "query:tasks",
         "query:types",
         "query:effects",
