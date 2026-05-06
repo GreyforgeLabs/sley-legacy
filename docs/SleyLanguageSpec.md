@@ -844,6 +844,10 @@ literal preserves a checked program.
 `simplify_constant_list_index_expression` `ReplaceExpression` templates when
 replacing an in-range literal list index over scalar literals with the selected
 literal preserves a checked program.
+`constant_map_index_expression` lint findings become checked
+`simplify_constant_map_index_expression` `ReplaceExpression` templates when
+replacing a present literal map key over scalar literal values with the selected
+literal preserves a checked program.
 `empty_if_statement` lint findings become checked
 `delete_empty_if_statement` `DeleteNode` templates when deleting a no-op `if`
 statement with a delete-safe condition and empty branches preserves a checked
@@ -1029,6 +1033,9 @@ concatenation can be replaced by one escaped text literal; and
 `constant_list_index_expression`, which warns when an in-range literal list
 index over scalar literals can be replaced by the selected literal without
 dropping runtime work; and
+`constant_map_index_expression`, which warns when a present literal map key
+over scalar literal values can be replaced by the selected literal without
+dropping runtime work; and
 `empty_if_statement`, which warns when an `if` statement with a delete-safe
 condition and empty branches can be removed as no-op control flow; and
 `empty_for_statement`, which warns when a `for item in [] { ... }` statement
@@ -1074,6 +1081,7 @@ guaranteed `return` in the same block.
 `--rule constant-arithmetic-expression`, or
 `--rule constant-text-concatenation-expression`, or
 `--rule constant-list-index-expression`, or
+`--rule constant-map-index-expression`, or
 `--rule empty-if-statement`, or
 `--rule empty-for-statement`, or
 `--rule empty-forge-statement`, or
@@ -1218,7 +1226,7 @@ refuse generic data disguised as Sley artifacts before compression begins.
   unused pure expression statement cleanup, constant-false while statement
   cleanup, constant-if statement simplification, constant arithmetic expression
   cleanup, constant text concatenation cleanup, constant list index cleanup,
-  empty-if statement cleanup,
+  constant map index cleanup, empty-if statement cleanup,
   empty-for statement cleanup,
   empty-forge statement cleanup,
   unreachable statement cleanup, and mutable binding conversion,

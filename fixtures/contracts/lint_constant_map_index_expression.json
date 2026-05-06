@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.constant_map_index",
+  "filters": {
+    "module": null,
+    "rules": [
+      "constant_map_index_expression"
+    ]
+  },
+  "findings": [
+    {
+      "id": "CONSTANT_MAP_INDEX_EXPRESSION",
+      "rule": "constant_map_index_expression",
+      "severity": "warning",
+      "message": "task `app.constant_map_index.main` has a constant map index expression `map { \"alpha\": \"ready\", \"beta\": \"done\" }[\"beta\"]`",
+      "node": "block:task:app.constant_map_index.main:stmt:0:expr",
+      "module": "app.constant_map_index",
+      "hint": "replace the constant map index expression with `\"done\"`"
+    }
+  ]
+}
