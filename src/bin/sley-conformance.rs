@@ -73,6 +73,8 @@ enum Command {
         #[arg(long)]
         sley_contract_bin: Option<PathBuf>,
         #[arg(long)]
+        require_public_release_ready: bool,
+        #[arg(long)]
         markdown: Option<PathBuf>,
         #[arg(long)]
         html: Option<PathBuf>,
@@ -324,11 +326,12 @@ fn main() -> Result<()> {
             tree_sitter_package,
             tree_sitter_config,
             sley_contract_bin,
+            require_public_release_ready,
             markdown,
             html,
         } => {
             let smoke_manifests = normalize_smoke_manifests(smoke_manifest);
-            let report = build_report(
+            let mut report = build_report(
                 &schema_dir,
                 &fixtures_dir,
                 &corpus_manifest,
@@ -342,6 +345,9 @@ fn main() -> Result<()> {
                 &tree_sitter_config,
                 sley_contract_bin.as_deref(),
             );
+            if require_public_release_ready {
+                apply_public_release_gate(&mut report);
+            }
             if let Some(path) = markdown {
                 fs::write(&path, render_markdown(&report))
                     .with_context(|| format!("failed to write {}", path.display()))?;
@@ -370,6 +376,21 @@ fn main() -> Result<()> {
         }
     }
     Ok(())
+}
+
+fn apply_public_release_gate(report: &mut ConformanceReport) {
+    if report.release.public_release_ready {
+        return;
+    }
+    report.issues.push(issue(
+        "public_release_not_ready",
+        format!(
+            "`--require-public-release-ready` was set but public release has {} blockers",
+            report.release.blocker_count
+        ),
+    ));
+    report.summary.issue_count = report.issues.len();
+    report.status = "failed".to_string();
 }
 
 fn build_report(

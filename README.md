@@ -166,6 +166,8 @@ Implemented now:
   schema/fixture instance coverage, contract validation status, corpus coverage
   tags, smoke coverage tags, packaged example counts, and the declared
   integration-test count, plus non-gating public-release packaging blockers,
+  with `--require-public-release-ready` available as the explicit public-cut
+  gate once license and repository metadata are settled,
   emitting
   `schema: "sley.conformance.report.v0"` and
   `schema: "sley.conformance.coverage.v0"`
@@ -443,6 +445,12 @@ make v1
 The default GitHub workflow calls the local composite Sley v1 action, and the
 local pre-commit configuration calls the same gate, so CI and local review use
 the same release surface.
+For a public release cut, run the stricter metadata gate after the operator has
+chosen license and repository values:
+
+```bash
+sley-conformance report --json --require-public-release-ready
+```
 
 Project form:
 

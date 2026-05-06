@@ -9018,6 +9018,40 @@ fn conformance_report_summarizes_release_surface() {
     assert!(text_stdout.contains("public_release_blockers=5"));
     assert!(text_stdout.contains("release:missing_license_file"));
 
+    let gated_report = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-conformance"))
+        .current_dir(&repo_root)
+        .args([
+            "report",
+            "--json",
+            "--require-public-release-ready",
+            "--sley-contract-bin",
+            env!("CARGO_BIN_EXE_sley-contract"),
+        ])
+        .output()
+        .expect("run gated sley-conformance report");
+    assert!(
+        !gated_report.status.success(),
+        "gated sley-conformance report should fail while public release blockers remain"
+    );
+    let gated_json: serde_json::Value =
+        serde_json::from_slice(&gated_report.stdout).expect("parse gated conformance report JSON");
+    assert_eq!(
+        gated_json.pointer("/status"),
+        Some(&serde_json::json!("failed"))
+    );
+    assert_eq!(
+        gated_json.pointer("/issues/0/code"),
+        Some(&serde_json::json!("public_release_not_ready"))
+    );
+    assert_eq!(
+        gated_json.pointer("/summary/issue_count"),
+        Some(&serde_json::json!(1))
+    );
+    assert_eq!(
+        gated_json.pointer("/summary/public_release_blocker_count"),
+        Some(&serde_json::json!(5))
+    );
+
     let coverage = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-conformance"))
         .current_dir(&repo_root)
         .args([

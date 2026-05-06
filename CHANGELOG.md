@@ -35,6 +35,9 @@ here. Dates use UTC-independent calendar dates from the local repo history.
   running `make v1`.
 - Plain-text `sley-conformance report` output now lists public-release blockers
   directly instead of only reporting the blocker count.
+- `sley-conformance report --require-public-release-ready` now turns
+  unresolved public-release blockers into a nonzero release-cut gate while the
+  ordinary v1 executable gate remains advisory on metadata decisions.
 - Ready deploy dry-run reports with artifact directories now include an
   `inspect_deploy_artifacts` next action for validating handoff bundles before
   operator approval.
