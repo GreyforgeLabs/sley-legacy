@@ -1,0 +1,189 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.workbench.report.v0",
+  "title": "Sley Workbench Report v0",
+  "type": "object",
+  "required": [
+    "schema",
+    "status",
+    "target",
+    "summary",
+    "diagnostics",
+    "doctor",
+    "issues"
+  ],
+  "properties": {
+    "schema": { "const": "sley.workbench.report.v0" },
+    "status": { "enum": ["ready", "warnings", "blocked"] },
+    "target": { "type": "string", "minLength": 1 },
+    "html_path": { "type": "string", "minLength": 1 },
+    "summary": { "$ref": "#/$defs/summary" },
+    "diagnostics": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "doctor": { "$ref": "#/$defs/doctor" },
+    "query": { "$ref": "#/$defs/query" },
+    "lint": { "$ref": "#/$defs/lint" },
+    "plan": { "$ref": "#/$defs/plan" },
+    "graph": { "$ref": "#/$defs/graph" },
+    "graph_slice": { "type": "object" },
+    "issues": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/issue" }
+    }
+  },
+  "$defs": {
+    "summary": {
+      "type": "object",
+      "required": [
+        "module_count",
+        "task_count",
+        "type_count",
+        "effect_count",
+        "call_count",
+        "lint_finding_count",
+        "graft_template_count",
+        "transaction_template_count",
+        "diagnostic_count",
+        "issue_count"
+      ],
+      "properties": {
+        "module_count": { "type": "integer", "minimum": 0 },
+        "task_count": { "type": "integer", "minimum": 0 },
+        "type_count": { "type": "integer", "minimum": 0 },
+        "effect_count": { "type": "integer", "minimum": 0 },
+        "call_count": { "type": "integer", "minimum": 0 },
+        "lint_finding_count": { "type": "integer", "minimum": 0 },
+        "graft_template_count": { "type": "integer", "minimum": 0 },
+        "transaction_template_count": { "type": "integer", "minimum": 0 },
+        "diagnostic_count": { "type": "integer", "minimum": 0 },
+        "issue_count": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "doctor": {
+      "type": "object",
+      "required": ["status", "error_count", "warning_count", "next_actions"],
+      "properties": {
+        "status": { "enum": ["ready", "warnings", "blocked"] },
+        "error_count": { "type": "integer", "minimum": 0 },
+        "warning_count": { "type": "integer", "minimum": 0 },
+        "next_actions": {
+          "type": "array",
+          "items": { "type": "object" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "query": {
+      "type": "object",
+      "required": ["source_schema", "entry_module", "modules", "tasks", "types", "calls"],
+      "properties": {
+        "source_schema": { "const": "sley.query.report.v0" },
+        "entry_module": { "type": "string", "minLength": 1 },
+        "modules": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "tasks": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "types": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "calls": {
+          "type": "array",
+          "items": { "type": "object" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "lint": {
+      "type": "object",
+      "required": ["source_schema", "status", "findings"],
+      "properties": {
+        "source_schema": { "const": "sley.lint.report.v0" },
+        "status": { "enum": ["ok", "warnings"] },
+        "findings": {
+          "type": "array",
+          "items": { "type": "object" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "plan": {
+      "type": "object",
+      "required": [
+        "source_schema",
+        "status",
+        "task_surfaces",
+        "graft_templates",
+        "transaction_templates",
+        "next_actions"
+      ],
+      "properties": {
+        "source_schema": { "const": "sley.edit_plan.report.v0" },
+        "status": { "enum": ["ready", "warnings", "blocked"] },
+        "task_surfaces": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "graft_templates": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/template" }
+        },
+        "transaction_templates": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/template" }
+        },
+        "next_actions": {
+          "type": "array",
+          "items": { "type": "object" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "template": {
+      "type": "object",
+      "required": ["kind", "surface", "reason", "editable_json_pointers", "payload"],
+      "properties": {
+        "kind": { "type": "string", "minLength": 1 },
+        "surface": { "type": "string", "minLength": 1 },
+        "reason": { "type": "string", "minLength": 1 },
+        "editable_json_pointers": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "payload": { "type": "object" }
+      },
+      "additionalProperties": false
+    },
+    "graph": {
+      "type": "object",
+      "required": ["source_schema", "entry_module", "module_count", "modules"],
+      "properties": {
+        "source_schema": { "const": "sley.symbol_graph.v0" },
+        "entry_module": { "type": "string", "minLength": 1 },
+        "module_count": { "type": "integer", "minimum": 0 },
+        "modules": {
+          "type": "array",
+          "items": { "type": "object" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "issue": {
+      "type": "object",
+      "required": ["code", "message"],
+      "properties": {
+        "code": { "type": "string", "minLength": 1 },
+        "message": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

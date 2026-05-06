@@ -113,6 +113,7 @@ sley-conformance coverage --json --require-tag <tag>
 make v1
 make syntax
 sley-lsp
+sley-workbench --json [--html <path>] [--slice <node-id>] <target>
 sley trace --json <target>
 sley seal --json <target>
 sley zjx --json [--slice <node-id>] <target>
@@ -132,7 +133,7 @@ Rules:
 - AST program/node, diagnostic-report, symbol-graph, graph-slice, query-report,
   lint-report, run-report, graft-outcome, trace-report, trace-seal,
   ZJX-envelope, doctor-report, project-scaffold, and CI/deploy report
-  snapshots, LSP fix-preview payloads, plus
+  snapshots, LSP fix-preview payloads, workbench reports, plus
   contract inventory/fixture-check/validate report snapshots, are locked under
   `fixtures/contracts/`.
 - JSON Schema files live under `docs/schemas/`; the AST schema covers nested
@@ -145,7 +146,7 @@ Rules:
   the graph-slice schema links
   focus, task, and call-summary payloads to shared contracts, `sley-ci`
   check/lint/doctor/plan/run/verify/deploy/smoke/corpus/examples reports,
-  LSP fix-preview payloads,
+  LSP fix-preview payloads, workbench reports,
   `sley-conformance` report/coverage roots, and `sley-contract`
   inventory/fixture-check/validate/deploy-artifact-check reports have versioned
   schemas and representative fixtures, the graft outcome and trace receipt
@@ -166,6 +167,8 @@ Rules:
   surfaces: parse/check/lint diagnostics, formatting, document symbols,
   declaration hover, edit-plan code actions, and non-mutating
   `sley.fix.preview` payloads.
+- `sley-workbench` exposes a local read-only inspection report and optional
+  static HTML page over doctor/query/lint/plan/graph panels.
 - Diagnostics include stable IDs, node IDs, spans where possible, and repair
   hints for common checker failures.
 - `sley doctor` is the first deterministic helper consuming strict check,

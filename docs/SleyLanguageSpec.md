@@ -678,8 +678,9 @@ contracts. The graft outcome schema pins strict accepted provenance records.
 The trace receipt schema pins the JSONL receipt record for accepted write
 provenance. The ZJX envelope schema pins the graph digest, graph root, optional
 graph slice root, and trace receipt schema used for handoff. The LSP
-fix-preview schema pins the non-mutating editor command payload. The remaining
-schema files currently pin their top-level contract shape and stable schema IDs.
+fix-preview schema pins the non-mutating editor command payload, and the
+workbench schema pins the local inspection report root. The remaining schema
+files currently pin their top-level contract shape and stable schema IDs.
 
 The compiler conformance corpus lives under `fixtures/corpus/`. Its
 `manifest.json` lists every accepted and rejected fixture plus coverage tags.
@@ -737,6 +738,11 @@ formats documents with the compiler formatter, exposes declaration symbols and
 hover text, and returns checked edit-plan code actions with a non-mutating
 `sley.fix.preview` command. The server reuses compiler modules directly; it is
 not a separate semantic implementation.
+
+The local inspection loop is backed by the in-tree `sley-workbench` bootstrap.
+It emits `schema: "sley.workbench.report.v0"` and can write an explicit static
+HTML report containing doctor, query, lint, edit-plan, and graph panels. The
+workbench is read-only for source code; HTML output requires `--html <path>`.
 
 `sley new` is the v0 project scaffold command. It writes a `sley.toml`,
 `README.md`, and entry module source file, refusing to overwrite any of those

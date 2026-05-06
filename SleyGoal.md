@@ -87,6 +87,9 @@ Current verified surface:
   full-document sync, diagnostics, formatting, document symbols, declaration
   hover, checked edit-plan code actions, and a non-mutating
   `sley.fix.preview` command.
+- `sley-workbench` is available as an in-tree local inspection bootstrap with
+  JSON and optional static HTML panels over doctor, query, lint, edit-plan, and
+  graph data.
 - `sley deploy --json --dry-run` emits `schema: "sley.deploy.report.v0"` and
   composes strict verify, trace seal, and ZJX package summaries into a
   local-only deploy package report that forbids live deployment, provider

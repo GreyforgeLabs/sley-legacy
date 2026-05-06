@@ -1,4 +1,4 @@
-.PHONY: fmt diff-check test contracts conformance corpus examples smoke lsp syntax v1
+.PHONY: fmt diff-check test contracts conformance corpus examples smoke lsp workbench syntax v1
 
 fmt:
 	cargo fmt -- --check
@@ -30,7 +30,10 @@ smoke:
 lsp:
 	cargo check --bin sley-lsp
 
+workbench:
+	cargo check --bin sley-workbench
+
 syntax:
 	npm --prefix tree-sitter-sley test
 
-v1: fmt diff-check test contracts conformance corpus examples smoke lsp
+v1: fmt diff-check test contracts conformance corpus examples smoke lsp workbench
