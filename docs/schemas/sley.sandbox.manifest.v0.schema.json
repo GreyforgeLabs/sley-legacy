@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.sandbox.manifest.v0",
+  "title": "Sley Sandbox Manifest v0",
+  "type": "object",
+  "required": ["schema", "target"],
+  "properties": {
+    "schema": { "const": "sley.sandbox.manifest.v0" },
+    "target": { "type": "string", "minLength": 1 },
+    "deny_warnings": { "type": "boolean" },
+    "capabilities": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/capability" }
+    },
+    "files": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/fileSeed" }
+    },
+    "db_tables": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/dbTable" }
+    },
+    "secrets": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/nameText" }
+    },
+    "http_text": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/urlText" }
+    },
+    "shell_outputs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/commandText" }
+    },
+    "model_outputs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/promptText" }
+    },
+    "deploy_results": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/targetText" }
+    },
+    "spend_results": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/requestText" }
+    }
+  },
+  "$defs": {
+    "capability": {
+      "type": "object",
+      "required": ["effect"],
+      "properties": {
+        "effect": { "type": "string", "minLength": 1 },
+        "root": { "type": "string", "minLength": 1 },
+        "scope": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "fileSeed": {
+      "type": "object",
+      "required": ["path", "text"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "text": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "dbTable": {
+      "type": "object",
+      "required": ["table", "rows"],
+      "properties": {
+        "table": { "type": "string", "minLength": 1 },
+        "rows": {
+          "type": "array",
+          "items": { "type": "object" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "nameText": {
+      "type": "object",
+      "required": ["name", "text"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "text": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "urlText": {
+      "type": "object",
+      "required": ["url", "text"],
+      "properties": {
+        "url": { "type": "string", "minLength": 1 },
+        "text": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "commandText": {
+      "type": "object",
+      "required": ["command", "text"],
+      "properties": {
+        "command": { "type": "string", "minLength": 1 },
+        "text": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "promptText": {
+      "type": "object",
+      "required": ["prompt", "text"],
+      "properties": {
+        "prompt": { "type": "string", "minLength": 1 },
+        "text": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "targetText": {
+      "type": "object",
+      "required": ["target", "text"],
+      "properties": {
+        "target": { "type": "string", "minLength": 1 },
+        "text": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "requestText": {
+      "type": "object",
+      "required": ["request", "text"],
+      "properties": {
+        "request": { "type": "string", "minLength": 1 },
+        "text": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

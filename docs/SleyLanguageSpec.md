@@ -601,7 +601,9 @@ graphs carry
 `schema: "sley.zjx.envelope.v0"`, ZJX tool inspection reports carry
 `schema: "sley.zjx.tool.report.v0"`, and deterministic agent-loop benchmark
 reports carry `schema: "sley.agent_bench.report.v0"`. Checked migration
-reports carry `schema: "sley.migrate.report.v0"`.
+reports carry `schema: "sley.migrate.report.v0"`. Deterministic sandbox
+manifests carry `schema: "sley.sandbox.manifest.v0"`; sandbox replay reports
+carry `schema: "sley.sandbox.report.v0"`.
 The CLI smoke manifest carries
 `schema: "sley.cli_smoke.manifest.v0"`. The accepted/rejected compiler corpus
 manifest carries `schema: "sley.conformance.manifest.v0"`. Project scaffold reports carry
@@ -684,8 +686,9 @@ graph slice root, and trace receipt schema used for handoff. The LSP
 fix-preview schema pins the non-mutating editor command payload, the workbench
 schema pins the local inspection report root, the agent-bench schema pins
 deterministic repair-loop evidence, and the migrate schema pins checked
-migration commands plus schema-drift rows. The remaining schema files
-currently pin their top-level contract shape and stable schema IDs.
+migration commands plus schema-drift rows. The sandbox manifest and report
+schemas pin deterministic replay inputs and replay evidence. The remaining
+schema files currently pin their top-level contract shape and stable schema IDs.
 
 The compiler conformance corpus lives under `fixtures/corpus/`. Its
 `manifest.json` lists every accepted and rejected fixture plus coverage tags.
@@ -763,6 +766,13 @@ raw host adapter, imported-call naming, and unchecked-result propagation
 migration candidates. With `--schemas <dir> --fixtures <dir>`, it also reports
 schema IDs without fixture instances and fixture instances without matching
 schema files. The report is advisory and does not write source files.
+
+The local sandbox replay loop is backed by the in-tree `sley-sandbox-runner`
+bootstrap. `sley-sandbox-runner run --json <manifest.json>` consumes
+`schema: "sley.sandbox.manifest.v0"` manifests, seeds deterministic runtime
+capabilities and host adapter data, enters a temp sandbox for `$sandbox`
+filesystem roots, and emits `schema: "sley.sandbox.report.v0"` without calling
+external providers.
 
 `sley new` is the v0 project scaffold command. It writes a `sley.toml`,
 `README.md`, and entry module source file, refusing to overwrite any of those

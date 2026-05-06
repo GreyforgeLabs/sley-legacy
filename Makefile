@@ -1,4 +1,4 @@
-.PHONY: fmt diff-check test contracts conformance corpus examples smoke lsp workbench agent-bench migrate zjx-tools syntax v1
+.PHONY: fmt diff-check test contracts conformance corpus examples smoke lsp workbench agent-bench migrate sandbox-runner zjx-tools syntax v1
 
 fmt:
 	cargo fmt -- --check
@@ -39,10 +39,13 @@ agent-bench:
 migrate:
 	cargo check --bin sley-migrate
 
+sandbox-runner:
+	cargo check --bin sley-sandbox-runner
+
 zjx-tools:
 	cargo check --bin sley-zjx
 
 syntax:
 	npm --prefix tree-sitter-sley test
 
-v1: fmt diff-check test contracts conformance corpus examples smoke lsp workbench agent-bench migrate zjx-tools
+v1: fmt diff-check test contracts conformance corpus examples smoke lsp workbench agent-bench migrate sandbox-runner zjx-tools

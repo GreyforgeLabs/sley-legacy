@@ -1,0 +1,23 @@
+{
+  "schema": "sley.sandbox.manifest.v0",
+  "target": "../../examples/agent_deploy_pipeline.sley",
+  "deny_warnings": true,
+  "capabilities": [
+    { "effect": "SecretRead" },
+    { "effect": "Network" },
+    { "effect": "ModelCall" },
+    { "effect": "Deploy" }
+  ],
+  "secrets": [
+    { "name": "api_key", "text": "redacted" }
+  ],
+  "http_text": [
+    { "url": "https://example.test/profile", "text": "profile ready" }
+  ],
+  "model_outputs": [
+    { "prompt": "deploy-plan", "text": "plan approved" }
+  ],
+  "deploy_results": [
+    { "target": "staging", "text": "staged" }
+  ]
+}

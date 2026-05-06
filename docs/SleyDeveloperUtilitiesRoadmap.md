@@ -246,6 +246,12 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
     - A deterministic replay wrapper around seeded host adapters.
     - MVP: one manifest describing seeded files, tables, secrets, network text,
       shell output, model output, deploy results, and spend results.
+    - Current bootstrap: in-tree `src/bin/sley-sandbox-runner.rs` runs
+      manifest-backed deterministic verify replays over capability grants and
+      inline file, table, secret, HTTP, shell, model, deploy, and spend seeds,
+      emits `schema: "sley.sandbox.report.v0"` from
+      `schema: "sley.sandbox.manifest.v0"`, and is covered by an integration
+      test plus contract fixtures.
 
 ### P2: Useful Later, Not First
 

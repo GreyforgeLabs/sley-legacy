@@ -103,6 +103,11 @@ Current verified surface:
   raw host adapter migration, imported-call naming cleanup,
   unchecked-result propagation candidates, and optional schema/fixture drift
   reports.
+- `sley-sandbox-runner` is available as an in-tree deterministic replay
+  utility with `schema: "sley.sandbox.report.v0"` over
+  `schema: "sley.sandbox.manifest.v0"` manifests that seed capabilities,
+  files, tables, secrets, network text, shell output, model output, deploy
+  results, and spend results without external provider calls.
 - `sley-zjx` is available as an in-tree read-only envelope utility with
   `inspect`, `verify-digest`, `extract-graph`, and `diff-envelope` commands
   over preview ZJX JSON envelopes and `schema: "sley.zjx.tool.report.v0"`.
@@ -342,9 +347,10 @@ Current verified surface:
   reports, project scaffold reports, `sley-ci` reports including corpus and
   examples gates, `sley-conformance` report/coverage roots, `sley-contract`
   utility reports with locked inventory/fixture-check/validate fixtures, and
-  agent-bench and migrate reports, and the CLI smoke manifest in addition to AST program,
-  diagnostics, graph, graph slice, trace report, trace receipt, trace seal,
-  graft outcome, and ZJX envelope roots. The edit-plan schema now pins strict
+  agent-bench reports, migrate reports, sandbox manifests, sandbox-runner
+  reports, and the CLI smoke manifest in addition to AST program, diagnostics,
+  graph, graph slice, trace report, trace receipt, trace seal, graft outcome,
+  and ZJX envelope roots. The edit-plan schema now pins strict
   graft operation and transaction template envelopes,
   the query schema now exposes strict task/take/type/effect/call row
   definitions,

@@ -1,0 +1,72 @@
+{
+  "schema": "sley.sandbox.report.v0",
+  "status": "passed",
+  "manifest": "fixtures/contracts/sandbox_manifest_agent_pipeline.json",
+  "manifest_schema": "sley.sandbox.manifest.v0",
+  "target": "examples/agent_deploy_pipeline.sley",
+  "sandbox_dir": "sandbox/agent-pipeline",
+  "sandbox_retained": false,
+  "summary": {
+    "capability_count": 4,
+    "seed_count": 4,
+    "file_seed_count": 0,
+    "db_table_count": 0,
+    "secret_count": 1,
+    "http_text_count": 1,
+    "shell_output_count": 0,
+    "model_output_count": 1,
+    "deploy_result_count": 1,
+    "spend_result_count": 0,
+    "diagnostic_count": 0,
+    "issue_count": 0
+  },
+  "verify": {
+    "schema": "sley.verify.report.v0",
+    "status": "passed",
+    "target": "examples/agent_deploy_pipeline.sley",
+    "entry_module": "app.agent_deploy_pipeline",
+    "summary": {
+      "error_count": 0,
+      "warning_count": 0,
+      "module_count": 1,
+      "task_count": 1,
+      "call_count": 7,
+      "lint_finding_count": 0,
+      "runtime_status": "passed"
+    },
+    "diagnostics": [],
+    "query": {
+      "source_schema": "sley.query.report.v0",
+      "kind": "all",
+      "module_count": 1,
+      "task_count": 1,
+      "call_count": 7
+    },
+    "lint": {
+      "source_schema": "sley.lint.report.v0",
+      "status": "ok",
+      "rules": ["unused_private_task"],
+      "finding_count": 0,
+      "findings": []
+    },
+    "runtime": {
+      "status": "passed",
+      "value": {
+        "kind": "Ok",
+        "value": {
+          "kind": "Text",
+          "value": "profile ready | plan approved | staged"
+        }
+      },
+      "diagnostics": []
+    },
+    "next_actions": [
+      {
+        "kind": "seal_verified_target",
+        "reason": "create a content-addressed review artifact after verification",
+        "command": ["sley", "seal", "--json", "examples/agent_deploy_pipeline.sley"]
+      }
+    ]
+  },
+  "issues": []
+}

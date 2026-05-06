@@ -183,6 +183,11 @@ Implemented now:
 - in-tree `sley-migrate` checked migration report utility that emits
   `schema: "sley.migrate.report.v0"` over source migration templates and
   optional schema/fixture drift checks without writing source files
+- in-tree `sley-sandbox-runner` deterministic replay utility that consumes
+  `schema: "sley.sandbox.manifest.v0"` manifests and emits
+  `schema: "sley.sandbox.report.v0"` over seeded capability, file, table,
+  secret, network, shell, model, deploy, and spend runs without external
+  provider calls
 - in-tree `sley-zjx` read-only envelope utility with `inspect`,
   `verify-digest`, `extract-graph`, and `diff-envelope` commands over preview
   ZJX JSON envelopes, emitting `schema: "sley.zjx.tool.report.v0"`
@@ -360,8 +365,9 @@ Implemented now:
   symbol graphs, graft outcomes, ZJX envelopes, ZJX tool reports, checked run,
   query, lint, doctor, edit-plan, verify, deploy dry-run, deploy artifact
   check, CI, and project scaffold reports, LSP fix-preview payloads, workbench
-  reports, agent-bench reports, migrate reports, plus contract inventory,
-  fixture-check, and validate reports
+  reports, agent-bench reports, migrate reports, sandbox manifests and
+  sandbox-runner reports, plus contract inventory, fixture-check, and validate
+  reports
 - external v0 JSON Schema files under `docs/schemas/`, including strict
   query task/take/type/effect/call row definitions,
   strict runtime value definitions for `sley.run.report.v0`,
@@ -370,6 +376,8 @@ Implemented now:
   `sley.workbench.report.v0` local inspection reports,
   `sley.agent_bench.report.v0` deterministic agent-loop benchmark reports,
   `sley.migrate.report.v0` checked migration reports,
+  `sley.sandbox.manifest.v0` deterministic replay manifests,
+  `sley.sandbox.report.v0` sandbox-runner replay reports,
   `sley.zjx.tool.report.v0` envelope inspection reports,
   `sley-contract` inventory/fixture-check/validate/deploy-artifact-check reports,
   edit-plan graft operation and transaction template envelopes reused by graph
@@ -454,6 +462,7 @@ sley-lsp
 sley-workbench --json --html .sley/workbench.html .
 sley-agent-bench run --json
 sley-migrate report --json --schemas docs/schemas --fixtures fixtures/contracts .
+sley-sandbox-runner run --json fixtures/contracts/sandbox_manifest_agent_pipeline.json
 sley seal --json .
 sley zjx --json .
 sley-zjx inspect --json envelope.json
