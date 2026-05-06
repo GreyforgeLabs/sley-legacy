@@ -109,7 +109,9 @@ Current verified surface:
   graph data.
 - `sley-docgen` is available as an in-tree checked reference generator with
   `schema: "sley.docgen.report.v0"` and optional Markdown over module, task,
-  type, effect, and host capability docs from `sley.query.report.v0`.
+  type, effect, and host capability docs from `sley.query.report.v0`; its
+  schema links generated task/type/effect rows back to the strict query row
+  definitions.
 - `sley-agent-bench` is available as an in-tree deterministic repair-loop
   benchmark with `schema: "sley.agent_bench.report.v0"` over JSON inspection,
   lint failure, checked edit-plan repair selection, `sley fix --write`, strict
