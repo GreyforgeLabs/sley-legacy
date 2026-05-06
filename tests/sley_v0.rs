@@ -6291,7 +6291,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(48))
+        Some(&serde_json::json!(49))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -6717,6 +6717,39 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
         include_str!("../fixtures/contracts/ci_plan_project_ready.json"),
     );
 
+    let run = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
+        .current_dir(&repo_root)
+        .args(["run", "--json", "examples/project"])
+        .output()
+        .expect("run sley-ci run");
+    assert!(
+        run.status.success(),
+        "sley-ci run failed: {}",
+        String::from_utf8_lossy(&run.stderr)
+    );
+    let run_json: serde_json::Value =
+        serde_json::from_slice(&run.stdout).expect("parse sley-ci run JSON");
+    assert_eq!(
+        run_json.pointer("/schema"),
+        Some(&serde_json::json!("sley.ci.report.v0"))
+    );
+    assert_eq!(
+        run_json.pointer("/status"),
+        Some(&serde_json::json!("passed"))
+    );
+    assert_eq!(
+        run_json.pointer("/command"),
+        Some(&serde_json::json!("run"))
+    );
+    assert_eq!(
+        run_json.pointer("/steps/0/stdout_schema"),
+        Some(&serde_json::json!(RUN_REPORT_SCHEMA))
+    );
+    assert_json_snapshot(
+        &run_json,
+        include_str!("../fixtures/contracts/ci_run_project_ready.json"),
+    );
+
     let denied_plan = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
         .current_dir(&repo_root)
         .args([
@@ -6810,6 +6843,45 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
         verify_json.pointer("/steps/0/stdout_schema"),
         Some(&serde_json::json!("sley.verify.report.v0"))
     );
+
+    let seeded_run = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
+        .current_dir(&repo_root)
+        .args([
+            "run",
+            "--json",
+            "--cap",
+            "Deploy",
+            "--deploy-result",
+            "staging",
+            "staged",
+            &sley_string(&deploy_root),
+        ])
+        .output()
+        .expect("run seeded sley-ci run");
+    assert!(
+        seeded_run.status.success(),
+        "seeded sley-ci run failed: {}",
+        String::from_utf8_lossy(&seeded_run.stderr)
+    );
+    let seeded_run_json: serde_json::Value =
+        serde_json::from_slice(&seeded_run.stdout).expect("parse seeded sley-ci run JSON");
+    assert_eq!(
+        seeded_run_json.pointer("/schema"),
+        Some(&serde_json::json!("sley.ci.report.v0"))
+    );
+    assert_eq!(
+        seeded_run_json.pointer("/status"),
+        Some(&serde_json::json!("passed"))
+    );
+    assert_eq!(
+        seeded_run_json.pointer("/command"),
+        Some(&serde_json::json!("run"))
+    );
+    assert_eq!(
+        seeded_run_json.pointer("/steps/0/stdout_schema"),
+        Some(&serde_json::json!(RUN_REPORT_SCHEMA))
+    );
+
     let ci_deploy_artifacts = deploy_root.join(".sley/ci-deploy");
     let ci_deploy_artifacts_arg = sley_string(&ci_deploy_artifacts);
     let deploy = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))

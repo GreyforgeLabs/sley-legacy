@@ -134,9 +134,9 @@ Implemented now:
   `docs/schemas/`, `fixtures/contracts/`, and local deploy artifact
   directories, using versioned JSON report roots for downstream contract-kit
   work
-- in-tree `sley-ci` utility with `check`, `lint`, `doctor`, `plan`, `verify`,
-  `deploy`, and `smoke` wrappers over existing Sley
-  check/lint/doctor/plan/verify/deploy gates and CLI smoke manifests, emitting
+- in-tree `sley-ci` utility with `check`, `lint`, `doctor`, `plan`, `run`,
+  `verify`, `deploy`, and `smoke` wrappers over existing Sley
+  check/lint/doctor/plan/run/verify/deploy gates and CLI smoke manifests, emitting
   `schema: "sley.ci.report.v0"` for CI and pre-commit integration
 - checked JSON readiness reports with `sley doctor`, consuming strict
   diagnostics plus query and lint summaries, with call-bearing reports routing
@@ -271,7 +271,7 @@ Implemented now:
 - external v0 JSON Schema files under `docs/schemas/`, including strict
   query task/take/type/effect/call row definitions,
   strict runtime value definitions for `sley.run.report.v0`,
-  `sley-ci` check/lint/doctor/plan/verify/deploy/smoke reports,
+  `sley-ci` check/lint/doctor/plan/run/verify/deploy/smoke reports,
   `sley-contract` inventory/fixture-check/validate/deploy-artifact-check reports,
   edit-plan graft operation and transaction template envelopes reused by graph
   slice affordances, graph-slice focus/task/call summary refs, a shared
@@ -317,6 +317,7 @@ sley-ci lint --json --deny-warnings .
 sley-ci doctor --json --deny-warnings .
 sley-ci plan --json --graft-templates .
 sley-ci verify --json --deny-warnings --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged .
+sley-ci run --json --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged .
 sley run --json --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged .
 sley deploy --json --dry-run --artifacts-dir .sley/deploy --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged .
 sley-ci deploy --json --dry-run --artifacts-dir .sley/ci-deploy --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged .

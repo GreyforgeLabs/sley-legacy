@@ -1,0 +1,29 @@
+{
+  "schema": "sley.ci.report.v0",
+  "status": "passed",
+  "command": "run",
+  "target": "examples/project",
+  "summary": {
+    "step_count": 1,
+    "passed_count": 1,
+    "failed_count": 0
+  },
+  "steps": [
+    {
+      "name": "run",
+      "status": "passed",
+      "command": [
+        "sley",
+        "run",
+        "--json",
+        "examples/project"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "stdout_schema": "sley.run.report.v0",
+      "issues": []
+    }
+  ],
+  "issues": []
+}

@@ -52,9 +52,9 @@ Current verified surface:
   JSON Schema validation commands over `docs/schemas/`, `fixtures/contracts/`,
   and local deploy artifact directories.
 - `sley-ci` is available as an in-tree CI wrapper with `check`, `lint`,
-  `doctor`, `plan`, `verify`, `deploy`, and `smoke` commands that emit
+  `doctor`, `plan`, `run`, `verify`, `deploy`, and `smoke` commands that emit
   `schema: "sley.ci.report.v0"` over
-  existing Sley check/lint/doctor/plan/verify/deploy and CLI smoke manifest gates,
+  existing Sley check/lint/doctor/plan/run/verify/deploy and CLI smoke manifest gates,
   including deploy artifact directory pass-through.
 - `sley deploy --json --dry-run` emits `schema: "sley.deploy.report.v0"` and
   composes strict verify, trace seal, and ZJX package summaries into a
@@ -125,8 +125,9 @@ Current verified surface:
   generated first-run sequences are executed by tests, including strict seeded
   `sley verify --json --deny-warnings` readiness smokes and local
   `sley deploy --json --dry-run` package reports for the generated deploy and
-  agent projects and `sley-ci verify`/`sley-ci deploy` handoffs for the seeded
-  agent project, plus warning-state doctor/verify next-actions that route to
+  agent projects, direct `sley-ci run` seeded execution coverage, and
+  `sley-ci verify`/`sley-ci deploy` handoffs for the seeded agent project,
+  plus warning-state doctor/verify next-actions that route to
   `sley plan --json --graft-templates` plus unambiguous
   `sley fix --dry-run` previews carrying explicit `write_command` vectors with
   a staged write-and-verify smoke for a previewed repair plus a project-level
