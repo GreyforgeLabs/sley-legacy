@@ -6371,7 +6371,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(55))
+        Some(&serde_json::json!(56))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -6388,6 +6388,30 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
                 .and_then(serde_json::Value::as_array)
                 .is_some_and(Vec::is_empty)),
         "passing fixtures should not carry validation issues"
+    );
+
+    let fixture_check_probe = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-contract"))
+        .current_dir(&repo_root)
+        .args([
+            "check-fixtures",
+            "fixtures/contract_probe",
+            "--schemas",
+            "docs/schemas",
+            "--json",
+        ])
+        .output()
+        .expect("run sley-contract check-fixtures probe");
+    assert!(
+        fixture_check_probe.status.success(),
+        "fixture check probe failed: {}",
+        String::from_utf8_lossy(&fixture_check_probe.stderr)
+    );
+    let fixture_check_probe_json: serde_json::Value =
+        serde_json::from_slice(&fixture_check_probe.stdout)
+            .expect("parse fixture check probe JSON");
+    assert_json_snapshot(
+        &fixture_check_probe_json,
+        include_str!("../fixtures/contracts/contract_fixture_check_probe.json"),
     );
 
     let validate = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-contract"))
