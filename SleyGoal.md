@@ -279,7 +279,9 @@ Current verified surface:
   loaded through the entry import graph through both direct graft JSON and
   `sley fix --write --kind add_import --module <module>` followed by strict
   project checks, plus scoped seeded `Network` capability acceptance and
-  scope-denial diagnostics under the runtime smoke surface.
+  scope-denial diagnostics under the runtime smoke surface, plus a standalone
+  dogfood agent deploy pipeline example with strict check/lint/run/verify/deploy
+  dry-run smoke coverage across SecretRead, Network, ModelCall, and Deploy.
 - Stable JSON roots now include bounded AST node reports, query reports, lint
   reports, run reports, doctor reports, edit-plan reports, verify reports,
   deploy dry-run reports, deploy artifact manifests, deploy artifact check
@@ -528,6 +530,7 @@ cargo run -- run --json --cap Shell --shell-output date 2026-05-05 examples/shel
 cargo run -- run --json --cap ModelCall --model-output name Ada examples/model_gate.sley
 cargo run -- run --json --cap SecretRead --secret api_key redacted examples/secret_gate.sley
 cargo run -- run --json --cap Deploy --deploy-result staging staged examples/deploy_gate.sley
+cargo run -- run --json --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged examples/agent_deploy_pipeline.sley
 cargo run -- run --json --cap Spend --spend-result ads-budget authorized examples/spend_gate.sley
 ```
 

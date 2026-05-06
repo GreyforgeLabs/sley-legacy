@@ -92,6 +92,18 @@
       ]
     },
     {
+      "path": "accepted/agent_deploy_pipeline.sley",
+      "covers": [
+        "accepted:agent-deploy-pipeline",
+        "host:secrets.try_get",
+        "host:http.try_get_text",
+        "host:model.try_complete",
+        "host:deploy.try_stage",
+        "authority:declared-effects",
+        "formatter:round-trip"
+      ]
+    },
+    {
       "path": "accepted/mutable_sum.sley",
       "covers": [
         "language:mutable-loop",

@@ -362,6 +362,10 @@ Current development phase:
   Use `sley-contract inspect-deploy-artifacts <dir> --schemas docs/schemas
   --json` to validate the handoff manifest, schemas, and file digests after the
   directory moves between agent sessions
+- `examples/agent_deploy_pipeline.sley` is the standalone dogfood path for
+  SecretRead + Network + ModelCall + Deploy: check it, lint with denied
+  warnings, run with deterministic seeds, verify with denied warnings, then
+  build a local deploy dry-run package
 - next development work should keep broadening style and migration lints after
   the empty-if cleanup path
 - project graft writeback now supports create/update/delete module files,

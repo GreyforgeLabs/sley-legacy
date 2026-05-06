@@ -9305,6 +9305,191 @@
       }
     },
     {
+      "name": "check_agent_deploy_pipeline_json",
+      "args": ["check", "--json", "examples/agent_deploy_pipeline.sley"],
+      "covers": [
+        "cli:check",
+        "dogfood:agent-deploy-pipeline",
+        "json:sley.diagnostics.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.diagnostics.report.v0" },
+          { "pointer": "/status", "value": "ok" }
+        ]
+      }
+    },
+    {
+      "name": "lint_agent_deploy_pipeline_json",
+      "args": [
+        "lint",
+        "--json",
+        "--deny-warnings",
+        "examples/agent_deploy_pipeline.sley"
+      ],
+      "covers": [
+        "cli:lint",
+        "dogfood:agent-deploy-pipeline",
+        "json:sley.lint.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.lint.report.v0" },
+          { "pointer": "/status", "value": "ok" }
+        ]
+      }
+    },
+    {
+      "name": "run_agent_deploy_pipeline_json",
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "SecretRead",
+        "--secret",
+        "api_key",
+        "redacted",
+        "--cap",
+        "Network",
+        "--http-text",
+        "https://example.test/profile",
+        "profile ready",
+        "--cap",
+        "ModelCall",
+        "--model-output",
+        "deploy-plan",
+        "plan approved",
+        "--cap",
+        "Deploy",
+        "--deploy-result",
+        "staging",
+        "staged",
+        "examples/agent_deploy_pipeline.sley"
+      ],
+      "covers": [
+        "cli:run",
+        "dogfood:agent-deploy-pipeline",
+        "json:sley.run.report.v0",
+        "host:SecretRead",
+        "host:Network",
+        "host:ModelCall",
+        "host:Deploy"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.run.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/value/kind", "value": "Ok" },
+          { "pointer": "/value/value/kind", "value": "Text" },
+          { "pointer": "/value/value/value", "value": "profile ready | plan approved | staged" }
+        ]
+      }
+    },
+    {
+      "name": "verify_agent_deploy_pipeline_json",
+      "args": [
+        "verify",
+        "--json",
+        "--deny-warnings",
+        "--cap",
+        "SecretRead",
+        "--secret",
+        "api_key",
+        "redacted",
+        "--cap",
+        "Network",
+        "--http-text",
+        "https://example.test/profile",
+        "profile ready",
+        "--cap",
+        "ModelCall",
+        "--model-output",
+        "deploy-plan",
+        "plan approved",
+        "--cap",
+        "Deploy",
+        "--deploy-result",
+        "staging",
+        "staged",
+        "examples/agent_deploy_pipeline.sley"
+      ],
+      "covers": [
+        "cli:verify",
+        "dogfood:agent-deploy-pipeline",
+        "json:sley.verify.report.v0",
+        "host:SecretRead",
+        "host:Network",
+        "host:ModelCall",
+        "host:Deploy"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.verify.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/summary/warning_count", "value": 0 },
+          { "pointer": "/summary/lint_finding_count", "value": 0 },
+          { "pointer": "/runtime/value/kind", "value": "Ok" },
+          { "pointer": "/runtime/value/value/value", "value": "profile ready | plan approved | staged" }
+        ]
+      }
+    },
+    {
+      "name": "deploy_agent_deploy_pipeline_dry_run_json",
+      "args": [
+        "deploy",
+        "--json",
+        "--dry-run",
+        "--cap",
+        "SecretRead",
+        "--secret",
+        "api_key",
+        "redacted",
+        "--cap",
+        "Network",
+        "--http-text",
+        "https://example.test/profile",
+        "profile ready",
+        "--cap",
+        "ModelCall",
+        "--model-output",
+        "deploy-plan",
+        "plan approved",
+        "--cap",
+        "Deploy",
+        "--deploy-result",
+        "staging",
+        "staged",
+        "examples/agent_deploy_pipeline.sley"
+      ],
+      "covers": [
+        "cli:deploy",
+        "dogfood:agent-deploy-pipeline",
+        "json:sley.deploy.report.v0",
+        "readiness:deploy-package-dry-run",
+        "host:SecretRead",
+        "host:Network",
+        "host:ModelCall",
+        "host:Deploy"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.deploy.report.v0" },
+          { "pointer": "/status", "value": "ready" },
+          { "pointer": "/summary/verify_status", "value": "passed" },
+          { "pointer": "/verify/runtime/value/value/value", "value": "profile ready | plan approved | staged" },
+          { "pointer": "/package/source_schema", "value": "sley.zjx.envelope.v0" },
+          { "pointer": "/policy/live_deploy_allowed", "value": false },
+          { "pointer": "/policy/provider_calls", "value": false },
+          { "pointer": "/policy/requires_operator_approval", "value": true }
+        ]
+      }
+    },
+    {
       "name": "run_spend_json",
       "args": [
         "run",
