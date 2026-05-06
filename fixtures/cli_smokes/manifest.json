@@ -9448,6 +9448,87 @@
       }
     },
     {
+      "name": "graft_project_move_task_between_modules_write_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/module-move/sley.toml",
+          "content": "[project]\nroot = \"src\"\nentry = \"app.main\"\n"
+        },
+        {
+          "path": "{tmp}/module-move/src/app/main.sley",
+          "content": "module app.main\n\nimport app.extra\n\nexport task helper -> Int {\n  return 2\n}\n\ntask main -> Int {\n  return 1\n}\n"
+        },
+        {
+          "path": "{tmp}/module-move/src/app/extra.sley",
+          "content": "module app.extra\n"
+        },
+        {
+          "path": "{tmp}/module-move/move_helper_module.json",
+          "content": "{\n  \"op\": \"MoveNode\",\n  \"target\": \"task:app.main.helper\",\n  \"payload\": { \"parent\": \"module:app.extra:tasks\", \"position\": 0 }\n}\n"
+        }
+      ],
+      "args": [
+        "graft",
+        "--json",
+        "--write",
+        "{tmp}/module-move",
+        "{tmp}/module-move/move_helper_module.json"
+      ],
+      "covers": [
+        "cli:graft-write",
+        "cli:smoke-setup-files",
+        "graft:module-move-write",
+        "graft:operations:move-node",
+        "graft:write-source",
+        "json:sley.graft.outcome.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/operation", "value": "MoveNode" },
+          { "pointer": "/provenance/0/targets/0", "value": "task:app.main.helper" }
+        ]
+      }
+    },
+    {
+      "name": "query_project_move_task_between_modules_write_json",
+      "args": ["query", "--json", "--kind", "tasks", "{tmp}/module-move"],
+      "covers": [
+        "cli:query",
+        "graft:module-move-write",
+        "graft:write-source",
+        "json:sley.query.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.query.report.v0" },
+          { "pointer": "/tasks/0/qualified_name", "value": "app.extra.helper" },
+          { "pointer": "/tasks/1/qualified_name", "value": "app.main.main" }
+        ]
+      }
+    },
+    {
+      "name": "check_project_move_task_between_modules_write_json",
+      "args": ["check", "--json", "{tmp}/module-move"],
+      "covers": [
+        "cli:check",
+        "graft:module-move-write",
+        "graft:write-source",
+        "json:sley.diagnostics.report.v0",
+        "readiness:project-import-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.diagnostics.report.v0" },
+          { "pointer": "/status", "value": "ok" }
+        ]
+      }
+    },
+    {
       "name": "trace_hello_json",
       "args": ["trace", "--json", "examples/hello.sley"],
       "covers": ["cli:trace", "json:sley.trace.report.v0"],
