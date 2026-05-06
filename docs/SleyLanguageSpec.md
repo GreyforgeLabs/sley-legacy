@@ -565,7 +565,9 @@ sley seal --json <target>
 ```
 
 AST roots carry `schema: "sley.ast.program.v0"`. Diagnostic reports carry
-`schema: "sley.diagnostics.report.v0"`. Full symbol graphs carry
+`schema: "sley.diagnostics.report.v0"` and expose the shared diagnostic record
+used by graft, doctor, plan, verify, and runtime diagnostic arrays. Full symbol
+graphs carry
 `schema: "sley.symbol_graph.v0"`, graph slices carry
 `schema: "sley.symbol_graph.slice.v0"`, graft outcomes carry
 `schema: "sley.graft.outcome.v0"`, checked query reports carry
@@ -611,15 +613,16 @@ The v0 JSON contracts are locked by small snapshots under
 `fixtures/contracts/` and JSON Schema files under `docs/schemas/`. The AST
 program schema now recursively describes imports,
 types, effects, tasks, takes, statements, expressions, type expressions, spans,
-and provenance records. Symbol graph, graph slice, and query schemas also pin
-module import/declaration summary shapes so agents can rely on stable import
-node ids for graft targets. The edit-plan schema pins strict graft operation
-and transaction template envelopes. The graft outcome schema pins strict
-accepted provenance records. The trace receipt schema pins the JSONL receipt
-record for accepted write provenance. The ZJX envelope schema pins the graph
-digest, graph root, optional graph slice root, and trace receipt schema used
-for handoff. The remaining schema files currently pin their top-level contract
-shape and stable schema IDs.
+and provenance records. The diagnostic schema pins the shared diagnostic and
+repair-hint shape. Symbol graph, graph slice, and query schemas also pin module
+import/declaration summary shapes so agents can rely on stable import node ids
+for graft targets. The edit-plan schema pins strict graft operation and
+transaction template envelopes. The graft outcome schema pins strict accepted
+provenance records. The trace receipt schema pins the JSONL receipt record for
+accepted write provenance. The ZJX envelope schema pins the graph digest, graph
+root, optional graph slice root, and trace receipt schema used for handoff. The
+remaining schema files currently pin their top-level contract shape and stable
+schema IDs.
 
 The compiler conformance corpus lives under `fixtures/corpus/`. Its
 `manifest.json` lists every accepted and rejected fixture plus coverage tags.
