@@ -611,6 +611,70 @@
       }
     },
     {
+      "name": "plan_unused_declared_effect_template_json",
+      "args": [
+        "plan",
+        "--json",
+        "--graft-templates",
+        "--template-surface",
+        "effect-use:task:app.effects.main:0:Network",
+        "examples/unused_declared_effect.sley"
+      ],
+      "covers": [
+        "cli:plan",
+        "graft:templates",
+        "graft:templates:unused-declared-effect-remove",
+        "lint:unused_declared_effect",
+        "json:sley.edit_plan.report.v0",
+        "json:sley.lint.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.edit_plan.report.v0" },
+          { "pointer": "/status", "value": "warnings" },
+          { "pointer": "/summary/lint_finding_count", "value": 1 },
+          { "pointer": "/lint/findings/0/id", "value": "UNUSED_DECLARED_EFFECT" },
+          { "pointer": "/lint/findings/0/node", "value": "effect-use:task:app.effects.main:0:Network" },
+          { "pointer": "/graft_templates/0/kind", "value": "remove_unused_declared_effect" },
+          { "pointer": "/graft_templates/0/surface", "value": "effect-use:task:app.effects.main:0:Network" },
+          { "pointer": "/graft_templates/0/operation/op", "value": "RemoveTaskEffect" },
+          { "pointer": "/graft_templates/0/operation/target", "value": "task:app.effects.main" },
+          { "pointer": "/graft_templates/0/operation/payload/name", "value": "Network" }
+        ]
+      }
+    },
+    {
+      "name": "fix_unused_declared_effect_dry_run_json",
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "remove_unused_declared_effect",
+        "--template-surface",
+        "effect-use:task:app.effects.main:0:Network",
+        "--dry-run",
+        "examples/unused_declared_effect.sley"
+      ],
+      "covers": [
+        "cli:fix",
+        "graft:operations:remove-task-effect",
+        "graft:templates:unused-declared-effect-remove",
+        "lint:unused_declared_effect",
+        "json:sley.graft.outcome.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/operation", "value": "RemoveTaskEffect" },
+          { "pointer": "/provenance/0/targets/0", "value": "task:app.effects.main" },
+          { "pointer": "/provenance/0/targets/1", "value": "effect:Network" }
+        ]
+      }
+    },
+    {
       "name": "plan_unused_take_template_json",
       "args": [
         "plan",

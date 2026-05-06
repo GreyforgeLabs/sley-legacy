@@ -470,6 +470,7 @@ fn lint_graft_templates(
     templates.extend(lint_private_task_delete_templates(program, lint_report));
     templates.extend(lint_unused_import_templates(program, lint_report));
     templates.extend(lint_unused_take_templates(program, lint_report));
+    templates.extend(lint_unused_declared_effect_templates(program, lint_report));
     templates.extend(lint_missing_module_templates(
         program,
         lint_report,
@@ -611,6 +612,55 @@ fn find_take_target<'a>(program: &'a Program, target: &str) -> Option<(&'a TaskD
             .iter()
             .find(|take| take.id == target)
             .map(|take| (task, take.name.clone()))
+    })
+}
+
+fn lint_unused_declared_effect_templates(
+    program: &Program,
+    lint_report: &LintReport,
+) -> Vec<EditPlanGraftTemplate> {
+    lint_report
+        .findings
+        .iter()
+        .filter(|finding| finding.id == "UNUSED_DECLARED_EFFECT")
+        .filter_map(|finding| {
+            let (task, effect_name) = find_task_effect_target(program, &finding.node)?;
+            let operation = json!({
+                "op": "RemoveTaskEffect",
+                "target": task.id,
+                "payload": {
+                    "name": effect_name
+                }
+            });
+            if !graft_operation_checks(
+                program,
+                &operation,
+                Some("agent:plan-remove-unused-declared-effect"),
+            ) {
+                return None;
+            }
+            Some(EditPlanGraftTemplate {
+                kind: "remove_unused_declared_effect".to_string(),
+                reason:
+                    "remove this unused declared effect after checked lint proves no checked call needs it"
+                        .to_string(),
+                surface: finding.node.clone(),
+                operation,
+                editable_json_pointers: Vec::new(),
+            })
+        })
+        .collect()
+}
+
+fn find_task_effect_target<'a>(
+    program: &'a Program,
+    target: &str,
+) -> Option<(&'a TaskDecl, String)> {
+    program.tasks.iter().find_map(|task| {
+        task.effects.iter().enumerate().find_map(|(index, effect)| {
+            let id = format!("effect-use:{}:{index}:{effect}", task.id);
+            (id == target).then(|| (task, effect.clone()))
+        })
     })
 }
 

@@ -158,8 +158,9 @@ Current development phase:
   dead private tasks, `delete_dead_private_tasks` cleanup transactions for
   dead private task groups and unreachable cycles, `remove_unused_take`
   templates for unused takes that validate through checked `RemoveTake`, and
-  `delete_unused_import` templates for unused imports that validate through
-  checked `DeleteNode`, plus
+  `remove_unused_declared_effect` templates for unused task-declared effects
+  that validate through checked `RemoveTaskEffect`, and `delete_unused_import`
+  templates for unused imports that validate through checked `DeleteNode`, plus
   `migrate_raw_host_adapter` templates for raw host calls that can safely move
   to fallible `try_` adapters with `?`, plus
   `propagate_unchecked_result` templates for discarded `Result` expression

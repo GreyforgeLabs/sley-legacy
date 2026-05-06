@@ -1,0 +1,5 @@
+module app.effects
+
+task main -> Text uses Network {
+  return "ready"
+}

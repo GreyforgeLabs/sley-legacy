@@ -14,7 +14,7 @@
       "rule": "unused_declared_effect",
       "severity": "warning",
       "message": "task `app.effects.main` declares effect `Network` but no checked call uses it",
-      "node": "task:app.effects.main",
+      "node": "effect-use:task:app.effects.main:0:Network",
       "module": "app.effects",
       "hint": "remove `Network` from the task uses list, or add a real checked call that requires it"
     }

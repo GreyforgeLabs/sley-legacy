@@ -1484,6 +1484,94 @@ task main -> Int {
 }
 
 #[test]
+fn edit_plan_graft_templates_include_unused_declared_effect_remove() {
+    let source = r#"
+module app.effects
+
+task main -> Text uses Network {
+  return "ready"
+}
+"#;
+    let program = parse_program(source).expect("parse unused declared effect plan fixture");
+    let report = build_edit_plan_report_with_options(
+        "app.effects",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: None,
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "warnings");
+    assert_eq!(report.summary.lint_finding_count, 1);
+    assert_eq!(
+        report.lint.as_ref().expect("lint summary").findings[0].id,
+        "UNUSED_DECLARED_EFFECT"
+    );
+    assert_eq!(
+        report.lint.as_ref().expect("lint summary").findings[0].node,
+        "effect-use:task:app.effects.main:0:Network"
+    );
+
+    let template = report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "remove_unused_declared_effect")
+        .expect("unused declared effect remove template");
+    assert_eq!(
+        template.surface,
+        "effect-use:task:app.effects.main:0:Network"
+    );
+    assert_eq!(
+        template.operation.pointer("/op"),
+        Some(&serde_json::json!("RemoveTaskEffect"))
+    );
+    assert_eq!(
+        template.operation.pointer("/target"),
+        Some(&serde_json::json!("task:app.effects.main"))
+    );
+    assert_eq!(
+        template.operation.pointer("/payload/name"),
+        Some(&serde_json::json!("Network"))
+    );
+    assert!(template.editable_json_pointers.is_empty());
+    let graft: GraftInput = serde_json::from_value(template.operation.clone())
+        .expect("parse unused declared effect template");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:unused-effect-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    assert!(
+        !outcome
+            .source
+            .expect("grafted source")
+            .contains("uses Network")
+    );
+
+    let targeted_report = build_edit_plan_report_with_options(
+        "app.effects",
+        Ok(program),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("effect-use:task:app.effects.main:0:Network".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(targeted_report.status, "warnings");
+    assert!(targeted_report.diagnostics.is_empty());
+    assert_eq!(targeted_report.graft_templates.len(), 1);
+    assert_eq!(
+        targeted_report.graft_templates[0].kind,
+        "remove_unused_declared_effect"
+    );
+    assert!(targeted_report.transaction_templates.is_empty());
+}
+
+#[test]
 fn edit_plan_graft_templates_include_unused_import_delete() {
     let root = temp_project_dir("unused-import-plan-template");
     write_unused_import_project(&root);
@@ -1830,6 +1918,69 @@ fn add_take_graft_is_structural_and_checked() {
     assert!(grafted_source.contains("take tenant_id: Text"));
     assert!(grafted_source.contains("take id: Text"));
     assert_eq!(outcome.provenance.len(), 1);
+}
+
+#[test]
+fn remove_task_effect_graft_is_structural_and_checked() {
+    let source = r#"
+module app.effects
+
+task main -> Text uses FileRead, Network {
+  return fs.read_text("examples/hello.sley")
+}
+"#;
+    let program = parse_program(source).expect("parse effect graft fixture");
+    let remove_unused_source = r#"
+{
+  "op": "RemoveTaskEffect",
+  "target": "task:app.effects.main",
+  "payload": {
+    "name": "Network"
+  }
+}
+"#;
+    let remove_unused: GraftInput =
+        serde_json::from_str(remove_unused_source).expect("parse remove unused effect graft");
+    let outcome = apply_graft_input(
+        &program,
+        remove_unused,
+        Some("agent:remove-effect-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted_source = outcome.source.expect("grafted source");
+    assert!(grafted_source.contains("uses FileRead"));
+    assert!(!grafted_source.contains("Network"));
+    assert_eq!(outcome.provenance[0].operation, "RemoveTaskEffect");
+    assert_eq!(
+        outcome.provenance[0].targets,
+        vec!["task:app.effects.main", "effect:Network"]
+    );
+
+    let remove_required_source = r#"
+{
+  "op": "RemoveTaskEffect",
+  "target": "task:app.effects.main",
+  "payload": {
+    "name": "FileRead"
+  }
+}
+"#;
+    let remove_required: GraftInput =
+        serde_json::from_str(remove_required_source).expect("parse remove required effect graft");
+    let rejected = apply_graft_input(
+        &program,
+        remove_required,
+        Some("agent:remove-effect-test".to_string()),
+    );
+    assert_eq!(rejected.status, "rejected");
+    assert!(
+        rejected
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.id == "EFFECT_UNAUTHORIZED"),
+        "expected authority diagnostic, got {:#?}",
+        rejected.diagnostics
+    );
 }
 
 #[test]
@@ -7306,7 +7457,10 @@ task stale -> Text uses Network {
     assert_eq!(report.filters.rules, vec!["unused_declared_effect"]);
     assert_eq!(report.findings.len(), 1);
     assert_eq!(report.findings[0].id, "UNUSED_DECLARED_EFFECT");
-    assert_eq!(report.findings[0].node, "task:app.effects.stale");
+    assert_eq!(
+        report.findings[0].node,
+        "effect-use:task:app.effects.stale:0:Network"
+    );
     assert_eq!(report.findings[0].module, "app.effects");
     assert!(report.findings[0].message.contains("Network"));
 }
@@ -9008,6 +9162,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "cli:graft-dry-run",
         "diagnostic:MISSING_RETURN",
         "graft:operations:add-module-declaration",
+        "graft:operations:remove-task-effect",
         "graft:templates:lint-declaration-delete",
         "graft:templates:lint-declaration-target",
         "graft:templates:module-name-inference",
@@ -9015,6 +9170,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:templates:raw-host-migration",
         "graft:templates:replace-expression",
         "graft:templates:unchecked-result",
+        "graft:templates:unused-declared-effect-remove",
         "graft:templates:unused-import-delete",
         "graft:templates:unused-private-task-delete",
         "graft:templates:unused-take-remove",

@@ -84,6 +84,12 @@ pub enum GraftOperation {
         precondition: Option<JsonValue>,
         payload: NamedPayload,
     },
+    RemoveTaskEffect {
+        target: String,
+        #[serde(default)]
+        precondition: Option<JsonValue>,
+        payload: NamedPayload,
+    },
     AddImport {
         #[serde(default)]
         precondition: Option<JsonValue>,
@@ -487,6 +493,37 @@ fn apply_one(
                 actor,
                 "AddEffectDeclaration",
                 vec![format!("effect:{}", payload.name)],
+            ))
+        }
+        GraftOperation::RemoveTaskEffect {
+            target,
+            precondition,
+            payload,
+        } => {
+            let index = find_task_or_reject(program, &target)?;
+            check_preconditions(program, Some(index), precondition.as_ref())?;
+            let task = &mut program.tasks[index];
+            let before = task.effects.len();
+            task.effects.retain(|effect| effect != &payload.name);
+            if before == task.effects.len() {
+                return Err(vec![
+                    Diagnostic::error(
+                        "GRAFT_TASK_EFFECT_MISSING",
+                        format!(
+                            "task `{}` does not declare effect `{}`",
+                            task_fq_name(task),
+                            payload.name
+                        ),
+                    )
+                    .with_node(task.id.clone()),
+                ]);
+            }
+            program.assign_ids();
+            Ok(record(
+                graft_id,
+                actor,
+                "RemoveTaskEffect",
+                vec![target, format!("effect:{}", payload.name)],
             ))
         }
         GraftOperation::AddImport {

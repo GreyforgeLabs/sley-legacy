@@ -332,8 +332,10 @@ fn lint_unused_declared_effects(program: &Program, module: Option<&str>) -> Vec<
             let declared = task
                 .effects
                 .iter()
-                .map(|effect| {
+                .enumerate()
+                .map(|(index, effect)| {
                     (
+                        index,
                         effect.clone(),
                         normalize_effect_name(program, &module_name, effect),
                     )
@@ -341,7 +343,7 @@ fn lint_unused_declared_effects(program: &Program, module: Option<&str>) -> Vec<
                 .collect::<Vec<_>>();
             let declared_normalized = declared
                 .iter()
-                .map(|(_raw, normalized)| normalized.clone())
+                .map(|(_index, _raw, normalized)| normalized.clone())
                 .collect::<BTreeSet<_>>();
             let mut used = BTreeSet::new();
             for call in calls.iter().filter(|call| call.from == qualified_name) {
@@ -364,15 +366,15 @@ fn lint_unused_declared_effects(program: &Program, module: Option<&str>) -> Vec<
             }
             declared
                 .into_iter()
-                .filter(move |(_effect, normalized)| !used.contains(normalized))
-                .map(move |(effect, _normalized)| LintFinding {
+                .filter(move |(_index, _effect, normalized)| !used.contains(normalized))
+                .map(move |(index, effect, _normalized)| LintFinding {
                     id: "UNUSED_DECLARED_EFFECT".to_string(),
                     rule: LintRule::UnusedDeclaredEffect.as_str().to_string(),
                     severity: "warning".to_string(),
                     message: format!(
                         "task `{qualified_name}` declares effect `{effect}` but no checked call uses it"
                     ),
-                    node: task.id.clone(),
+                    node: format!("effect-use:{}:{index}:{effect}", task.id),
                     module: module_name.clone(),
                     hint: format!(
                         "remove `{effect}` from the task uses list, or add a real checked call that requires it"

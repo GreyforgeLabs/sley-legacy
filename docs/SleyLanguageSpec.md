@@ -411,7 +411,7 @@ shards. A graft is accepted only after parse, type, effect, authority, lifetime,
 and provenance checks pass for the implemented v0 surface.
 
 Current graft operations include adding explicit module declarations,
-adding/removing takes, replacing task bodies, adding
+adding/removing takes, removing task-declared effects, replacing task bodies, adding
 imports/effects/types/tasks, renaming declarations, updating call-sites,
 updating, replacing, or removing call arguments, inserting checked task-body
 statements, replacing expressions by node id, and deleting checked graph nodes
@@ -664,6 +664,10 @@ When lint proves multiple dead private tasks through `unused_private_task` or
 deleted together instead of one invalid intermediate task at a time.
 `unused_take` lint findings become checked `remove_unused_take` `RemoveTake`
 templates when the take can be removed without leaving invalid call sites.
+`unused_declared_effect` lint findings carry exact `effect-use:<task>:<index>`
+node ids and become checked `remove_unused_declared_effect`
+`RemoveTaskEffect` templates when removing the declared effect preserves
+authority correctness.
 `unused_import` lint findings become checked `delete_unused_import`
 `DeleteNode` templates when the import delete validates against the checked
 candidate.
@@ -740,7 +744,8 @@ checked calls excluding the entry module's `main`; `unreachable_private_task`,
 which warns on private task islands that are only reachable from other private
 tasks rather than from `main` or an exported task; and
 `unused_declared_effect`, which warns when a task declares an effect that no
-direct host call or resolved called-task effect justifies; `unused_import`,
+direct host call or resolved called-task effect justifies and points at an
+exact `effect-use:<task>:<index>:<effect>` node; `unused_import`,
 which warns when an import is not needed by any checked task, type, or effect;
 `unused_take`, which warns when a normal task take is never read by the task
 body; `unused_private_type`, which warns when a non-exported type is not

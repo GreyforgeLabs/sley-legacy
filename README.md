@@ -124,6 +124,8 @@ Implemented now:
   groups and unreachable cycles, checked
   `remove_unused_take` templates for unused takes with no invalid caller
   fallout, checked
+  `remove_unused_declared_effect` templates for unused task-declared effects,
+  checked
   `delete_unused_import` templates for unused imports, lint-driven
   `AddModuleDeclaration` templates for explicit module style fixes with module
   names inferred from the target file or project-relative path,
@@ -159,7 +161,7 @@ Implemented now:
 - a first ZJX-ready JSON envelope command for graph snapshots, optional graph
   slices, and trace receipts
 - structural graft operations for adding explicit module declarations,
-  adding/removing takes, replacing task bodies, adding
+  adding/removing takes, removing task-declared effects, replacing task bodies, adding
   imports/effects/types/tasks, renaming declarations, updating call-sites,
   updating/replacing/removing call arguments, inserting checked task-body
   statements, replacing nested expressions by node id, deleting checked graph
@@ -487,6 +489,7 @@ lint-driven declaration delete templates and cleanup transactions,
 lint-driven unused-private-task delete templates,
 dead private task cleanup transactions,
 lint-driven unused-take remove templates,
+lint-driven unused-declared-effect remove templates,
 lint-driven unused-import delete templates,
 lint-driven module declaration fixes with inferred module names,
 raw-host adapter migration templates, unchecked-result propagation templates,
