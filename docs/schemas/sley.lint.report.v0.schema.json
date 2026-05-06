@@ -34,7 +34,8 @@
               "identity_binary_expression",
               "redundant_boolean_comparison",
               "double_negation_expression",
-              "redundant_boolean_if_expression"
+              "redundant_boolean_if_expression",
+              "same_branch_if_expression"
             ]
           },
           "uniqueItems": true
@@ -75,7 +76,8 @@
               "IDENTITY_BINARY_EXPRESSION",
               "REDUNDANT_BOOLEAN_COMPARISON",
               "DOUBLE_NEGATION_EXPRESSION",
-              "REDUNDANT_BOOLEAN_IF_EXPRESSION"
+              "REDUNDANT_BOOLEAN_IF_EXPRESSION",
+              "SAME_BRANCH_IF_EXPRESSION"
             ]
           },
           "rule": {
@@ -97,7 +99,8 @@
               "identity_binary_expression",
               "redundant_boolean_comparison",
               "double_negation_expression",
-              "redundant_boolean_if_expression"
+              "redundant_boolean_if_expression",
+              "same_branch_if_expression"
             ]
           },
           "severity": { "enum": ["warning"] },

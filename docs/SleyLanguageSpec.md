@@ -801,6 +801,10 @@ program.
 `simplify_redundant_boolean_if_expression` `ReplaceExpression` templates when
 replacing `if flag { true } else { false }` with `flag`, or the inverted form
 with `!flag`, preserves a checked program.
+`same_branch_if_expression` lint findings become checked
+`simplify_same_branch_if_expression` `ReplaceExpression` templates when
+replacing `if condition { value } else { value }` with `value` preserves a
+checked program and the removed condition is delete-safe.
 `--template-surface program` emits checked `add_task`,
 `add_type_declaration`, `add_effect_declaration`, and `add_import` starters for
 adding new declarations and imports to the current program module.
@@ -925,7 +929,9 @@ can be replaced with the non-identity side; and
 and `double_negation_expression`, which warns when a checked `!!expr` form can
 be replaced with the inner boolean expression; and
 `redundant_boolean_if_expression`, which warns when a checked expression-level
-boolean `if` can be replaced with the condition or its negation.
+boolean `if` can be replaced with the condition or its negation; and
+`same_branch_if_expression`, which warns when a checked expression-level `if`
+has identical branches and a delete-safe condition.
 `--module <module>` scopes the lint to one module. `--rule unused-private-task`,
 `--rule unreachable-private-task`, `--rule unused-declared-effect`,
 `--rule unused-import`, `--rule unused-take`, `--rule unused-private-type`,
@@ -936,7 +942,8 @@ boolean `if` can be replaced with the condition or its negation.
 `--rule identity-binary-expression`, or
 `--rule redundant-boolean-comparison`, or
 `--rule double-negation-expression`, or
-`--rule redundant-boolean-if-expression` selects one rule explicitly, and
+`--rule redundant-boolean-if-expression`, or
+`--rule same-branch-if-expression` selects one rule explicitly, and
 `--deny-warnings` turns findings into a nonzero CLI exit after printing the
 report. The v0 JSON root is `sley.lint.report.v0`.
 

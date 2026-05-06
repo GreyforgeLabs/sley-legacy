@@ -1,0 +1,7 @@
+module app.same_branch_if
+
+task main -> Int {
+  bind use_backup = false
+
+  return if use_backup { 42 } else { 42 }
+}
