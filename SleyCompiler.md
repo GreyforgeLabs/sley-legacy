@@ -248,7 +248,8 @@ Near-term:
    unused pure binding cleanup, no-op pure expression statement cleanup,
    constant-false while statement cleanup, empty-if statement cleanup,
    empty-for statement cleanup, and unreachable statement cleanup, plus
-   constant-if expression and statement simplification, identity binary expression,
+   constant-if expression and statement simplification, constant comparison
+   simplification, identity binary expression,
    redundant boolean comparison, absorbing boolean expression,
    self-comparison expression, double negation, redundant boolean-if expression
    and statement cleanup, and same-branch if expression/statement simplification;
@@ -258,7 +259,7 @@ Near-term:
    statement deletion, constant-if statement simplification, constant-false
    while statement deletion, empty-if statement deletion, empty-for statement
    deletion, unreachable statement deletion, mutable binding conversion,
-   constant-if expression simplification,
+   constant-if expression simplification, constant comparison simplification,
    identity binary simplification, and
    redundant boolean comparison
    simplification, absorbing boolean expression simplification,

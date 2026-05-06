@@ -1,0 +1,5 @@
+module app.constant_compare
+
+task main -> Bool {
+  return 1 < 2
+}
