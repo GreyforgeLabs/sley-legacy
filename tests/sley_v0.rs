@@ -9699,6 +9699,37 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
         include_str!("../fixtures/contracts/ci_smoke_probe_ready.json"),
     );
 
+    let stable_smoke_dir = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
+        .current_dir(&repo_root)
+        .args([
+            "smoke",
+            "--json",
+            "--repo-root",
+            ".",
+            "fixtures/ci_smoke_probe",
+        ])
+        .output()
+        .expect("run stable sley-ci smoke directory form");
+    assert!(
+        stable_smoke_dir.status.success(),
+        "stable sley-ci smoke directory form failed: {}",
+        String::from_utf8_lossy(&stable_smoke_dir.stderr)
+    );
+    let stable_smoke_dir_json: serde_json::Value = serde_json::from_slice(&stable_smoke_dir.stdout)
+        .expect("parse stable sley-ci smoke dir JSON");
+    assert_eq!(
+        stable_smoke_dir_json.pointer("/status"),
+        Some(&serde_json::json!("passed"))
+    );
+    assert_eq!(
+        stable_smoke_dir_json.pointer("/manifest"),
+        Some(&serde_json::json!("fixtures/ci_smoke_probe/manifest.json"))
+    );
+    assert_eq!(
+        stable_smoke_dir_json.pointer("/summary/step_count"),
+        Some(&serde_json::json!(1))
+    );
+
     let corpus = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
         .current_dir(&repo_root)
         .args(["corpus", "--json", "fixtures/corpus/manifest.json"])

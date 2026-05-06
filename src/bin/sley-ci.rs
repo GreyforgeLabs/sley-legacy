@@ -139,6 +139,7 @@ enum Command {
         json: bool,
         #[arg(long)]
         repo_root: Option<PathBuf>,
+        /// Smoke manifest path, or a smoke directory containing manifest.json.
         manifest: PathBuf,
     },
     /// Run the accepted/rejected compiler conformance corpus.
@@ -642,8 +643,9 @@ fn build_deploy_report(
 }
 
 fn build_smoke_report(sley_bin: &Path, repo_root: &Path, manifest_path: &Path) -> CiReport {
+    let manifest_path = resolve_manifest_path(manifest_path);
     let mut issues = Vec::new();
-    let manifest = match read_smoke_manifest(manifest_path) {
+    let manifest = match read_smoke_manifest(&manifest_path) {
         Ok(manifest) => manifest,
         Err(error) => {
             issues.push(issue(
@@ -656,7 +658,7 @@ fn build_smoke_report(sley_bin: &Path, repo_root: &Path, manifest_path: &Path) -
             return finalize_report(
                 "smoke",
                 None,
-                Some(path_string(manifest_path)),
+                Some(path_string(&manifest_path)),
                 Vec::new(),
                 issues,
             );
@@ -689,14 +691,14 @@ fn build_smoke_report(sley_bin: &Path, repo_root: &Path, manifest_path: &Path) -
     finalize_report(
         "smoke",
         None,
-        Some(path_string(manifest_path)),
+        Some(path_string(&manifest_path)),
         steps,
         issues,
     )
 }
 
 fn build_corpus_report(sley_bin: &Path, manifest_path: &Path) -> CiReport {
-    let manifest_path = resolve_corpus_manifest_path(manifest_path);
+    let manifest_path = resolve_manifest_path(manifest_path);
     let mut issues = Vec::new();
     let manifest = match read_corpus_manifest(&manifest_path) {
         Ok(manifest) => manifest,
@@ -1264,7 +1266,7 @@ fn read_corpus_manifest(path: &Path) -> Result<CorpusManifest> {
     Ok(serde_json::from_str(&source)?)
 }
 
-fn resolve_corpus_manifest_path(path: &Path) -> PathBuf {
+fn resolve_manifest_path(path: &Path) -> PathBuf {
     if path.is_dir() {
         path.join("manifest.json")
     } else {
