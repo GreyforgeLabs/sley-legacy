@@ -232,7 +232,9 @@ Near-term:
    reports,
    call-site rename and remove-take/call-arg transaction write/verify,
    passed-verify seal/ZJX handoff next-actions, private-task lint reports, and
-   unqualified imported-call style migration reports.
+   unqualified imported-call style migration reports, plus project
+   `AddImport` writeback into existing unloaded module files followed by strict
+   project checks.
 4. Consume `sley.query.report.v0` and `sley.lint.report.v0` from helper
    passes. `sley doctor` is the first deterministic readiness helper on top of
    those surfaces, call-bearing doctor/plan reports now route agents to strict
@@ -264,7 +266,8 @@ Near-term:
    without hand-authored graft files. Next broaden authority, style, and
    migration lints.
 5. Extend graph-slice graft planning around broader checked operations.
-6. Harden project graft writeback beyond existing-module edits.
+6. Keep hardening project graft writeback beyond the current create, update,
+   delete, rename, and existing-unloaded-module import write paths.
 
 Medium-term:
 

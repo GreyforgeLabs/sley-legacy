@@ -11386,6 +11386,87 @@ task main -> Int {
 }
 
 #[test]
+fn project_graft_write_adds_import_to_existing_unloaded_module_file() {
+    let root = temp_project_dir("project-graft-existing-import");
+    fs::create_dir_all(root.join("src/app")).expect("create project dirs");
+    fs::write(
+        root.join("sley.toml"),
+        r#"
+[project]
+entry = "app.main"
+"#,
+    )
+    .expect("write manifest");
+    let main_source = r#"module app.main
+
+task main -> Int {
+  return 1
+}
+"#;
+    let extra_source = r#"module app.extra
+
+export task helper -> Int {
+  return 2
+}
+"#;
+    let main_path = root.join("src/app/main.sley");
+    let extra_path = root.join("src/app/extra.sley");
+    let graft_path = root.join("add_existing_import.json");
+    fs::write(&main_path, main_source).expect("write main module");
+    fs::write(&extra_path, extra_source).expect("write existing extra module");
+    fs::write(
+        &graft_path,
+        r#"
+{
+  "op": "AddImport",
+  "payload": { "module": "app.extra" }
+}
+"#,
+    )
+    .expect("write graft");
+
+    let output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args(["graft", "--json", "--write"])
+        .arg(&root)
+        .arg(&graft_path)
+        .output()
+        .expect("run project graft");
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+    assert!(
+        output.status.success(),
+        "project writeback should add imports to existing unloaded modules; stdout={stdout} stderr={}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let outcome: GraftOutcome = serde_json::from_str(&stdout).expect("parse outcome");
+    assert_eq!(outcome.status, "accepted");
+    assert_eq!(outcome.provenance[0].operation, "AddImport");
+    assert_eq!(
+        fs::read_to_string(&main_path).expect("read main"),
+        "module app.main\n\nimport app.extra\n\ntask main -> Int {\n  return 1\n}\n"
+    );
+    assert_eq!(
+        fs::read_to_string(&extra_path).expect("read extra"),
+        extra_source
+    );
+    let check = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args(["check", "--json"])
+        .arg(&root)
+        .output()
+        .expect("check project");
+    assert!(
+        check.status.success(),
+        "imported existing module project should check; stdout={} stderr={}",
+        String::from_utf8_lossy(&check.stdout),
+        String::from_utf8_lossy(&check.stderr)
+    );
+    let receipts = read_trace_receipts(&root.join(".sley/trace.jsonl")).expect("read trace");
+    assert_eq!(receipts.len(), 1);
+    assert_eq!(receipts[0].provenance[0].operation, "AddImport");
+
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
 fn project_graft_write_deletes_removed_module_file() {
     let root = temp_project_dir("project-graft-delete-module");
     fs::create_dir_all(root.join("src/app")).expect("create project dirs");
@@ -12221,9 +12302,11 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "fix:payload-override-type",
         "graft:write-source",
         "graft:operations:add-module-declaration",
+        "graft:operations:add-import",
         "graft:templates:add-task",
         "graft:operations:add-take",
         "graft:operations:remove-task-effect",
+        "graft:project-existing-import-write",
         "graph-slice:insert-affordances",
         "graft:templates:lint-declaration-delete",
         "graft:templates:lint-declaration-target",
@@ -12274,6 +12357,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:lint-repair-write-verify",
         "readiness:mutable-binding-repair-write-verify",
         "readiness:project-lint-repair-write-verify",
+        "readiness:project-import-write-verify",
         "readiness:remove-take-transaction-write-verify",
         "readiness:verify-package-next-action",
         "scaffold:agent-quickstart",

@@ -1257,8 +1257,16 @@ fn plan_project_writeback(
     }
 
     for import in &candidate.imports {
-        if !known_modules.contains(&import.module) && !new_modules.contains(&import.module) {
-            diagnostics.push(
+        if known_modules.contains(&import.module) || new_modules.contains(&import.module) {
+            continue;
+        }
+        if let Some(diagnostic) = validate_project_writeback_module(&import.module) {
+            diagnostics.push(diagnostic.with_node(import.id.clone()));
+            continue;
+        }
+        match validate_existing_project_import(project, &import.module, &import.id) {
+            Ok(true) => {}
+            Ok(false) => diagnostics.push(
                 Diagnostic::error(
                     "PROJECT_WRITEBACK_UNKNOWN_IMPORT",
                     format!(
@@ -1267,7 +1275,10 @@ fn plan_project_writeback(
                     ),
                 )
                 .with_node(import.id.clone()),
-            );
+            ),
+            Err(mut import_diagnostics) => {
+                diagnostics.append(&mut import_diagnostics);
+            }
         }
     }
 
@@ -1321,6 +1332,56 @@ fn plan_project_writeback(
         manifest_source,
         module_writes,
     })
+}
+
+fn validate_existing_project_import(
+    project: &ProjectGraph,
+    module: &str,
+    import_node: &str,
+) -> Result<bool, Vec<Diagnostic>> {
+    let path = module_source_path(&project.module_root, module);
+    if !path.exists() {
+        return Ok(false);
+    }
+    let source = fs::read_to_string(&path).map_err(|error| {
+        vec![
+            Diagnostic::error(
+                "PROJECT_WRITEBACK_IMPORT_READ_FAILED",
+                format!(
+                    "failed to read existing imported module `{module}` at {}: {error}",
+                    path.display()
+                ),
+            )
+            .with_node(import_node.to_string()),
+        ]
+    })?;
+    let parsed = parse_program(&source).map_err(|mut diagnostics| {
+        for diagnostic in &mut diagnostics {
+            diagnostic.message = format!(
+                "{} in existing imported module `{module}` at {}",
+                diagnostic.message,
+                path.display()
+            );
+            if diagnostic.node.is_none() {
+                diagnostic.node = Some(import_node.to_string());
+            }
+        }
+        diagnostics
+    })?;
+    if parsed.module.as_deref() != Some(module) {
+        return Err(vec![
+            Diagnostic::error(
+                "PROJECT_WRITEBACK_IMPORT_MISMATCH",
+                format!(
+                    "existing imported module file {} declares `{}` but graft imports `{module}`",
+                    path.display(),
+                    parsed.module_name()
+                ),
+            )
+            .with_node(import_node.to_string()),
+        ]);
+    }
+    Ok(true)
 }
 
 fn render_project_manifest_with_entry(

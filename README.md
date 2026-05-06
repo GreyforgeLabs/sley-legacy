@@ -199,10 +199,12 @@ Implemented now:
   `--trace <trace.jsonl>` for explicit receipt paths, plus content-addressed
   trace seals with `sley seal`
 - project-aware `sley graft --write <project>` source-file writeback for
-  accepted edits that resolve to existing modules, plus checked creation of new
-  module files declared by the graft candidate, deletion of removed module
-  files no longer referenced by the checked candidate, and module rename
-  writeback with manifest entry updates when needed
+  accepted edits that resolve to existing modules, `AddImport` writes to
+  existing on-disk module files that were not yet loaded through the entry
+  import graph, plus checked creation of new module files declared by the graft
+  candidate, deletion of removed module files no longer referenced by the
+  checked candidate, and module rename writeback with manifest entry updates
+  when needed
 - a first ZJX-ready JSON envelope command for graph snapshots, recomputable
   graph digests, optional graph slices, and trace receipts
 - a future-runtime lock spec at `docs/SleyZjxRuntimeLockSpec.md`, requiring
@@ -300,9 +302,10 @@ Module `app.main` resolves to `src/app/main.sley`. `sley parse`,
 `sley deploy`, `sley seal`, `sley zjx`, and `sley graft` accept either a
 single `.sley` file or a project directory containing `sley.toml`. Project graft
 writeback projects the checked candidate back to existing owning module files
-and leaves unchanged module files alone. It can create checked new module
-files, delete removed loaded module files, rename module files, and update
-`sley.toml` when the manifest entry module is renamed.
+and leaves unchanged module files alone. It can add imports to existing
+on-disk module files that were not yet loaded through the entry import graph,
+create checked new module files, delete removed loaded module files, rename
+module files, and update `sley.toml` when the manifest entry module is renamed.
 
 Module visibility:
 
@@ -546,12 +549,14 @@ Known v0 limits:
 - Sley-level `Result` values and `?` propagation execute, and fallible
   filesystem, database, network, shell, model, secret, deploy, and spend host
   variants return typed `Error` records.
-- Project graft writeback supports existing module files, checked new module
-  file creation under the project source root, deletion of removed module
-  files once they are no longer imported, module rename writeback, and
-  `sley.toml` entry updates when the entry module is renamed. Grafts that import
-  modules without adding checked declarations for those modules still reject
-  before any source or trace mutation.
+- Project graft writeback supports existing module files, `AddImport` writes to
+  existing on-disk module files that were not yet loaded through the entry
+  import graph, checked new module file creation under the project source root,
+  deletion of removed module files once they are no longer imported, module
+  rename writeback, and `sley.toml` entry updates when the entry module is
+  renamed. Grafts that import truly missing modules without adding checked
+  declarations for those modules still reject before any source or trace
+  mutation.
 - The AST JSON Schema now covers declarations, statements, expressions, type
   expressions, spans, and provenance recursively. The edit-plan schema also
   pins strict graft operation and transaction template envelopes, including
@@ -582,6 +587,8 @@ quickstarts, strict seeded verify readiness for the generated deploy and agent
 starters, deploy dry-run package reports with optional local artifact manifests,
 scaffold-level seal/ZJX handoff actions,
 temp setup files for write-mode CLI smokes, direct graft write smokes,
+project `AddImport` writeback into existing unloaded module files plus
+follow-up strict project checks,
 explicit graft/fix write trace receipts, non-empty trace seal receipts,
 ZJX envelopes carrying schema-backed trace receipts, passed-verify seal/ZJX
 next-actions, lint-driven declaration delete templates and cleanup transactions,

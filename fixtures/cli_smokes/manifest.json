@@ -3624,6 +3624,68 @@
       }
     },
     {
+      "name": "graft_project_existing_module_import_write_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/existing-import/sley.toml",
+          "content": "[project]\nroot = \"src\"\nentry = \"app.main\"\n"
+        },
+        {
+          "path": "{tmp}/existing-import/src/app/main.sley",
+          "content": "module app.main\n\ntask main -> Int {\n  return 1\n}\n"
+        },
+        {
+          "path": "{tmp}/existing-import/src/app/extra.sley",
+          "content": "module app.extra\n\nexport task helper -> Int {\n  return 2\n}\n"
+        },
+        {
+          "path": "{tmp}/existing-import/add_import.json",
+          "content": "{\n  \"op\": \"AddImport\",\n  \"payload\": { \"module\": \"app.extra\" }\n}\n"
+        }
+      ],
+      "args": [
+        "graft",
+        "--json",
+        "--write",
+        "{tmp}/existing-import",
+        "{tmp}/existing-import/add_import.json"
+      ],
+      "covers": [
+        "cli:graft-write",
+        "cli:smoke-setup-files",
+        "graft:operations:add-import",
+        "graft:project-existing-import-write",
+        "json:sley.graft.outcome.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_contains": ["import app.extra"],
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/operation", "value": "AddImport" },
+          { "pointer": "/provenance/0/targets/0", "value": "import:app.extra" }
+        ]
+      }
+    },
+    {
+      "name": "check_project_existing_module_import_write_json",
+      "args": ["check", "--json", "{tmp}/existing-import"],
+      "covers": [
+        "cli:check",
+        "graft:project-existing-import-write",
+        "json:sley.diagnostics.report.v0",
+        "readiness:project-import-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.diagnostics.report.v0" },
+          { "pointer": "/status", "value": "ok" }
+        ]
+      }
+    },
+    {
       "name": "trace_hello_json",
       "args": ["trace", "--json", "examples/hello.sley"],
       "covers": ["cli:trace"],
