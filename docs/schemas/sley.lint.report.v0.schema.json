@@ -20,6 +20,7 @@
               "unused_private_task",
               "unreachable_private_task",
               "unused_declared_effect",
+              "unused_import",
               "raw_host_adapter"
             ]
           },
@@ -47,6 +48,7 @@
               "UNUSED_PRIVATE_TASK",
               "UNREACHABLE_PRIVATE_TASK",
               "UNUSED_DECLARED_EFFECT",
+              "UNUSED_IMPORT",
               "RAW_HOST_ADAPTER"
             ]
           },
@@ -55,6 +57,7 @@
               "unused_private_task",
               "unreachable_private_task",
               "unused_declared_effect",
+              "unused_import",
               "raw_host_adapter"
             ]
           },

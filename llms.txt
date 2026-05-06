@@ -130,7 +130,8 @@ Current development phase:
 - checked lint reports are available through `sley lint --json` with root schema
   `sley.lint.report.v0`; private-task rules include `unused_private_task` and
   `unreachable_private_task`, the authority hygiene rule
-  `unused_declared_effect`, and the migration rule `raw_host_adapter`
+  `unused_declared_effect`, the import hygiene rule `unused_import`, and the
+  migration rule `raw_host_adapter`
 - `sley new --json` emits `sley.project.scaffold.v0` and creates
   non-destructive `hello` or deterministic `deploy` starter projects that can
   immediately run through check, query, plan, lint, and seeded runtime gates

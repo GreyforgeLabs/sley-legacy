@@ -2217,6 +2217,23 @@ task main -> Text uses Network {
         include_str!("../fixtures/contracts/lint_raw_host_adapter.json"),
     );
 
+    let unused_import_root = temp_project_dir("unused-import-contract");
+    write_unused_import_project(&unused_import_root);
+    let unused_import_project =
+        load_project(&unused_import_root).expect("load unused import project");
+    let unused_import_lint = build_lint_report(
+        &unused_import_project.program,
+        LintOptions {
+            rules: vec![LintRule::UnusedImport],
+            module: None,
+        },
+    );
+    assert_json_snapshot(
+        &unused_import_lint,
+        include_str!("../fixtures/contracts/lint_unused_import.json"),
+    );
+    let _ = fs::remove_dir_all(unused_import_root);
+
     let hello_source = include_str!("../examples/hello.sley");
     let hello_program = parse_program(hello_source).expect("parse hello fixture");
     let seal = build_trace_seal(
@@ -6331,6 +6348,49 @@ fn lint_report_flags_raw_host_adapters() {
 }
 
 #[test]
+fn lint_report_flags_unused_imports() {
+    let root = temp_project_dir("unused-import");
+    write_unused_import_project(&root);
+    let project = load_project(&root).expect("load project");
+    let diagnostics = check_program(&project.program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+
+    let report = build_lint_report(
+        &project.program,
+        LintOptions {
+            rules: vec![LintRule::UnusedImport],
+            module: None,
+        },
+    );
+
+    assert_eq!(report.schema, LINT_REPORT_SCHEMA);
+    assert_eq!(report.status, "findings");
+    assert_eq!(report.entry_module, "app.main");
+    assert_eq!(report.filters.rules, vec!["unused_import"]);
+    assert_eq!(report.findings.len(), 1);
+    assert_eq!(report.findings[0].id, "UNUSED_IMPORT");
+    assert_eq!(report.findings[0].rule, "unused_import");
+    assert_eq!(report.findings[0].node, "import:app.main:app.stale");
+    assert_eq!(report.findings[0].module, "app.main");
+    assert!(report.findings[0].message.contains("imports `app.stale`"));
+
+    let used_import_report = build_lint_report(
+        &project.program,
+        LintOptions {
+            rules: vec![LintRule::UnusedImport],
+            module: Some("app.used".to_string()),
+        },
+    );
+    assert_eq!(used_import_report.status, "ok");
+    assert!(used_import_report.findings.is_empty());
+
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
 fn trace_receipts_round_trip_as_jsonl() {
     let root = temp_project_dir("trace-round-trip");
     let trace_path = root.join(".sley/trace.jsonl");
@@ -7426,6 +7486,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:templates:replace-expression",
         "graph-slice:replace-affordances",
         "lint:unused_declared_effect",
+        "lint:unused_import",
         "lint:raw_host_adapter",
         "host:DatabaseRead",
         "host:DatabaseWrite",
@@ -7473,6 +7534,87 @@ fn temp_project_dir(name: &str) -> PathBuf {
         .expect("clock is before unix epoch")
         .as_nanos();
     std::env::temp_dir().join(format!("sley-{name}-{}-{timestamp}", std::process::id()))
+}
+
+fn write_unused_import_project(root: &Path) {
+    fs::create_dir_all(root.join("src/app")).expect("create project dirs");
+    fs::write(
+        root.join("sley.toml"),
+        r#"
+[project]
+name = "unused-import"
+root = "src"
+entry = "app.main"
+"#,
+    )
+    .expect("write manifest");
+    fs::write(
+        root.join("src/app/main.sley"),
+        r#"
+module app.main
+
+import app.used
+import app.types as t
+import app.io as io
+import app.stale
+
+task main -> t.User uses io.Read {
+  bind doubled = call used.double(21)
+  bind name = call io.name()
+
+  return t.User { name: name }
+}
+"#,
+    )
+    .expect("write main module");
+    fs::write(
+        root.join("src/app/used.sley"),
+        r#"
+module app.used
+
+export task double -> Int {
+  take value: Int
+
+  return value * 2
+}
+"#,
+    )
+    .expect("write used module");
+    fs::write(
+        root.join("src/app/types.sley"),
+        r#"
+module app.types
+
+export type User = {
+  slot name: Text
+}
+"#,
+    )
+    .expect("write types module");
+    fs::write(
+        root.join("src/app/io.sley"),
+        r#"
+module app.io
+
+export effect Read
+
+export task name -> Text uses Read {
+  return "Ada"
+}
+"#,
+    )
+    .expect("write io module");
+    fs::write(
+        root.join("src/app/stale.sley"),
+        r#"
+module app.stale
+
+export task noop -> Int {
+  return 0
+}
+"#,
+    )
+    .expect("write stale module");
 }
 
 fn sley_string(path: &Path) -> String {

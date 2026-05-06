@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.main",
+  "filters": {
+    "module": null,
+    "rules": [
+      "unused_import"
+    ]
+  },
+  "findings": [
+    {
+      "id": "UNUSED_IMPORT",
+      "rule": "unused_import",
+      "severity": "warning",
+      "message": "module `app.main` imports `app.stale` but no checked task, type, or effect uses it",
+      "node": "import:app.main:app.stale",
+      "module": "app.main",
+      "hint": "remove import `app.stale` or use an exported item from it"
+    }
+  ]
+}

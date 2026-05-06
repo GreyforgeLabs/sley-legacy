@@ -40,16 +40,16 @@ Current verified surface:
 
 - `cargo fmt --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 161 tests.
+- Current integration coverage is 162 tests.
 - `sley query --json` emits `schema: "sley.query.report.v0"` and supports
   `--kind all|modules|tasks|calls`, `--module <module>`, and `--exported`.
 - `sley lint --json` emits `schema: "sley.lint.report.v0"` and supports
   `--module <module>`, `--rule unused-private-task`,
   `--rule unreachable-private-task`, `--rule unused-declared-effect`,
-  `--rule raw-host-adapter`, and `--deny-warnings`.
+  `--rule unused-import`, `--rule raw-host-adapter`, and `--deny-warnings`.
 - The current lint rules are `unused_private_task` and
   `unreachable_private_task`, `unused_declared_effect`, and
-  `raw_host_adapter`.
+  `unused_import`, and `raw_host_adapter`.
 - CLI smoke coverage is manifest-backed under
   `fixtures/cli_smokes/manifest.json`, including graph-slice replace
   affordances and checked `replace_expression` graft templates from

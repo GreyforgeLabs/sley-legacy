@@ -2,11 +2,12 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use serde::Serialize;
 
-use crate::ast::Program;
+use crate::ast::{Block, Expr, ExprKind, ImportDecl, Program, Statement, StatementKind, TypeExpr};
 use crate::authority::host_effects_for_callee;
 use crate::query::{QueryKind, QueryOptions, build_query_report};
 use crate::symbols::{
-    EffectResolution, collect_task_calls, resolve_effect, task_fq_name, task_module,
+    EffectResolution, TypeResolution, collect_task_calls, import_owner_module, resolve_effect,
+    resolve_type, task_fq_name, task_module, type_module,
 };
 
 pub const LINT_REPORT_SCHEMA: &str = "sley.lint.report.v0";
@@ -16,6 +17,7 @@ pub enum LintRule {
     UnusedPrivateTask,
     UnreachablePrivateTask,
     UnusedDeclaredEffect,
+    UnusedImport,
     RawHostAdapter,
 }
 
@@ -25,6 +27,7 @@ impl LintRule {
             Self::UnusedPrivateTask,
             Self::UnreachablePrivateTask,
             Self::UnusedDeclaredEffect,
+            Self::UnusedImport,
             Self::RawHostAdapter,
         ]
     }
@@ -34,6 +37,7 @@ impl LintRule {
             Self::UnusedPrivateTask => "unused_private_task",
             Self::UnreachablePrivateTask => "unreachable_private_task",
             Self::UnusedDeclaredEffect => "unused_declared_effect",
+            Self::UnusedImport => "unused_import",
             Self::RawHostAdapter => "raw_host_adapter",
         }
     }
@@ -92,6 +96,9 @@ pub fn build_lint_report(program: &Program, options: LintOptions) -> LintReport 
             program,
             options.module.as_deref(),
         ));
+    }
+    if rules.contains(&LintRule::UnusedImport) {
+        findings.extend(lint_unused_imports(program, options.module.as_deref()));
     }
     if rules.contains(&LintRule::RawHostAdapter) {
         findings.extend(lint_raw_host_adapters(program, options.module.as_deref()));
@@ -319,6 +326,261 @@ fn lint_unused_declared_effects(program: &Program, module: Option<&str>) -> Vec<
 
 fn module_matches(filter: Option<&str>, module: &str) -> bool {
     filter.is_none_or(|filter| filter == module)
+}
+
+fn lint_unused_imports(program: &Program, module: Option<&str>) -> Vec<LintFinding> {
+    program
+        .imports
+        .iter()
+        .filter(|import| module_matches(module, &import_owner_module(import)))
+        .filter(|import| !import_is_used(program, import))
+        .map(|import| {
+            let owner_module = import_owner_module(import);
+            LintFinding {
+                id: "UNUSED_IMPORT".to_string(),
+                rule: LintRule::UnusedImport.as_str().to_string(),
+                severity: "warning".to_string(),
+                message: format!(
+                    "module `{owner_module}` imports `{}` but no checked task, type, or effect uses it",
+                    import.module
+                ),
+                node: import.id.clone(),
+                module: owner_module,
+                hint: format!("remove import `{}` or use an exported item from it", import.module),
+            }
+        })
+        .collect()
+}
+
+fn import_is_used(program: &Program, import: &ImportDecl) -> bool {
+    let owner_module = import_owner_module(import);
+
+    collect_task_calls(program).into_iter().any(|call| {
+        call.from_module == owner_module
+            && call
+                .target
+                .as_deref()
+                .is_some_and(|target| resolved_path_uses_import(import, &call.callee, target))
+    }) || program
+        .tasks
+        .iter()
+        .filter(|task| task_module(task) == owner_module)
+        .any(|task| {
+            task.takes
+                .iter()
+                .any(|take| type_expr_uses_import(program, &owner_module, import, &take.ty))
+                || type_expr_uses_import(program, &owner_module, import, &task.return_type)
+                || task
+                    .effects
+                    .iter()
+                    .any(|effect| effect_path_uses_import(program, &owner_module, import, effect))
+                || block_uses_import(program, &owner_module, import, &task.body)
+        })
+        || program
+            .types
+            .iter()
+            .filter(|ty| type_module(ty) == owner_module)
+            .any(|ty| type_expr_uses_import(program, &owner_module, import, &ty.value))
+}
+
+fn block_uses_import(
+    program: &Program,
+    owner_module: &str,
+    import: &ImportDecl,
+    block: &Block,
+) -> bool {
+    block
+        .statements
+        .iter()
+        .any(|statement| statement_uses_import(program, owner_module, import, statement))
+}
+
+fn statement_uses_import(
+    program: &Program,
+    owner_module: &str,
+    import: &ImportDecl,
+    statement: &Statement,
+) -> bool {
+    match &statement.kind {
+        StatementKind::Binding { type_ann, expr, .. } => {
+            type_ann
+                .as_ref()
+                .is_some_and(|ty| type_expr_uses_import(program, owner_module, import, ty))
+                || expr_uses_import(program, owner_module, import, expr)
+        }
+        StatementKind::Set { expr, .. }
+        | StatementKind::Return { expr }
+        | StatementKind::Expr { expr } => expr_uses_import(program, owner_module, import, expr),
+        StatementKind::If {
+            condition,
+            then_block,
+            else_block,
+        } => {
+            expr_uses_import(program, owner_module, import, condition)
+                || block_uses_import(program, owner_module, import, then_block)
+                || else_block
+                    .as_ref()
+                    .is_some_and(|block| block_uses_import(program, owner_module, import, block))
+        }
+        StatementKind::While { condition, body } => {
+            expr_uses_import(program, owner_module, import, condition)
+                || block_uses_import(program, owner_module, import, body)
+        }
+        StatementKind::For {
+            collection, body, ..
+        } => {
+            expr_uses_import(program, owner_module, import, collection)
+                || block_uses_import(program, owner_module, import, body)
+        }
+        StatementKind::Forge { body } => block_uses_import(program, owner_module, import, body),
+    }
+}
+
+fn expr_uses_import(
+    program: &Program,
+    owner_module: &str,
+    import: &ImportDecl,
+    expr: &Expr,
+) -> bool {
+    match &expr.kind {
+        ExprKind::Unary { expr, .. } | ExprKind::Try { expr } => {
+            expr_uses_import(program, owner_module, import, expr)
+        }
+        ExprKind::Binary { left, right, .. } => {
+            expr_uses_import(program, owner_module, import, left)
+                || expr_uses_import(program, owner_module, import, right)
+        }
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
+            expr_uses_import(program, owner_module, import, condition)
+                || expr_uses_import(program, owner_module, import, then_branch)
+                || expr_uses_import(program, owner_module, import, else_branch)
+        }
+        ExprKind::Call { callee, args } => {
+            expr_uses_import(program, owner_module, import, callee)
+                || args
+                    .iter()
+                    .any(|arg| expr_uses_import(program, owner_module, import, arg))
+        }
+        ExprKind::ListLiteral { items } => items
+            .iter()
+            .any(|item| expr_uses_import(program, owner_module, import, item)),
+        ExprKind::MapLiteral { entries } => entries.iter().any(|entry| {
+            expr_uses_import(program, owner_module, import, &entry.key)
+                || expr_uses_import(program, owner_module, import, &entry.value)
+        }),
+        ExprKind::Index { collection, index } => {
+            expr_uses_import(program, owner_module, import, collection)
+                || expr_uses_import(program, owner_module, import, index)
+        }
+        ExprKind::FieldAccess { receiver, .. } => {
+            expr_uses_import(program, owner_module, import, receiver)
+        }
+        ExprKind::RecordLiteral { type_name, fields } => {
+            type_name
+                .as_ref()
+                .is_some_and(|name| type_path_uses_import(program, owner_module, import, name))
+                || fields
+                    .iter()
+                    .any(|field| expr_uses_import(program, owner_module, import, &field.expr))
+        }
+        ExprKind::Raw { .. }
+        | ExprKind::StringLiteral { .. }
+        | ExprKind::IntLiteral { .. }
+        | ExprKind::FloatLiteral { .. }
+        | ExprKind::BoolLiteral { .. }
+        | ExprKind::Identifier { .. } => false,
+    }
+}
+
+fn type_expr_uses_import(
+    program: &Program,
+    owner_module: &str,
+    import: &ImportDecl,
+    ty: &TypeExpr,
+) -> bool {
+    match ty {
+        TypeExpr::Named { name } => type_path_uses_import(program, owner_module, import, name),
+        TypeExpr::Generic { name, args } => {
+            type_path_uses_import(program, owner_module, import, name)
+                || args
+                    .iter()
+                    .any(|arg| type_expr_uses_import(program, owner_module, import, arg))
+        }
+        TypeExpr::Record { fields } => fields
+            .iter()
+            .any(|field| type_expr_uses_import(program, owner_module, import, &field.ty)),
+    }
+}
+
+fn type_path_uses_import(
+    program: &Program,
+    owner_module: &str,
+    import: &ImportDecl,
+    path: &str,
+) -> bool {
+    match resolve_type(program, owner_module, path) {
+        TypeResolution::Resolved { fq_name, .. } => {
+            resolved_path_uses_import(import, path, &fq_name)
+        }
+        TypeResolution::Builtin(_)
+        | TypeResolution::Unknown
+        | TypeResolution::Ambiguous(_)
+        | TypeResolution::Private(_) => false,
+    }
+}
+
+fn effect_path_uses_import(
+    program: &Program,
+    owner_module: &str,
+    import: &ImportDecl,
+    path: &str,
+) -> bool {
+    match resolve_effect(program, owner_module, path) {
+        EffectResolution::Resolved { fq_name, .. } => {
+            resolved_path_uses_import(import, path, &fq_name)
+        }
+        EffectResolution::Builtin(_)
+        | EffectResolution::Unknown
+        | EffectResolution::Ambiguous(_)
+        | EffectResolution::Private(_) => false,
+    }
+}
+
+fn resolved_path_uses_import(
+    import: &ImportDecl,
+    source_path: &str,
+    resolved_fq_name: &str,
+) -> bool {
+    resolved_fq_name
+        .rsplit_once('.')
+        .is_some_and(|(module, _name)| {
+            module == import.module && source_path_uses_import(import, source_path)
+        })
+}
+
+fn source_path_uses_import(import: &ImportDecl, source_path: &str) -> bool {
+    let parts = source_path
+        .split('.')
+        .filter(|part| !part.is_empty())
+        .collect::<Vec<_>>();
+    match parts.as_slice() {
+        [_name] => true,
+        [qualifier, _name] => import_matches_qualifier(import, qualifier),
+        _ => false,
+    }
+}
+
+fn import_matches_qualifier(import: &ImportDecl, qualifier: &str) -> bool {
+    import.alias.as_deref() == Some(qualifier)
+        || import
+            .module
+            .rsplit('.')
+            .next()
+            .is_some_and(|segment| segment == qualifier)
 }
 
 fn lint_raw_host_adapters(program: &Program, module: Option<&str>) -> Vec<LintFinding> {

@@ -325,7 +325,8 @@
           { "pointer": "/filters/rules/0", "value": "unused_private_task" },
           { "pointer": "/filters/rules/1", "value": "unreachable_private_task" },
           { "pointer": "/filters/rules/2", "value": "unused_declared_effect" },
-          { "pointer": "/filters/rules/3", "value": "raw_host_adapter" },
+          { "pointer": "/filters/rules/3", "value": "unused_import" },
+          { "pointer": "/filters/rules/4", "value": "raw_host_adapter" },
           { "pointer": "/findings", "value": [] }
         ]
       }
@@ -340,6 +341,20 @@
           { "pointer": "/schema", "value": "sley.lint.report.v0" },
           { "pointer": "/status", "value": "ok" },
           { "pointer": "/filters/rules/0", "value": "unused_declared_effect" },
+          { "pointer": "/findings", "value": [] }
+        ]
+      }
+    },
+    {
+      "name": "lint_unused_import_rule_json",
+      "args": ["lint", "--json", "--rule", "unused-import", "examples/project"],
+      "covers": ["cli:lint", "lint:unused_import", "json:sley.lint.report.v0"],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.lint.report.v0" },
+          { "pointer": "/status", "value": "ok" },
+          { "pointer": "/filters/rules/0", "value": "unused_import" },
           { "pointer": "/findings", "value": [] }
         ]
       }

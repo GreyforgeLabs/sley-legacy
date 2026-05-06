@@ -102,7 +102,8 @@ Implemented now:
   `schema: "sley.query.report.v0"` for tool-facing graph inspection
 - checked JSON lint reports with `sley lint`, optional `--module` and
   `--rule unused-private-task`, `--rule unreachable-private-task`, or
-  `--rule unused-declared-effect`, or `--rule raw-host-adapter` filters, and
+  `--rule unused-declared-effect`, `--rule unused-import`, or
+  `--rule raw-host-adapter` filters, and
   `schema: "sley.lint.report.v0"` for warning-grade graph and authority lints
 - checked JSON readiness reports with `sley doctor`, consuming strict
   diagnostics plus query and lint summaries, and
@@ -451,6 +452,6 @@ The current release-readiness phase is underway for the executable slice. The
 gold corpus and CLI smoke suite now have manifests with required coverage tags
 for seeded host adapters, stable JSON roots, graph/ZJX output, graft dry runs,
 checked graph query reports, doctor readiness, verify pre-deploy gates,
-edit-plan surfaces, private-task lint rules, authority hygiene, and raw-host
-migration warnings. The next logical phase is to broaden style and migration
-lints before broadening the language again.
+edit-plan surfaces, private-task lint rules, authority/import hygiene, and
+raw-host migration warnings. The next logical phase is to broaden style and
+migration lints before broadening the language again.
