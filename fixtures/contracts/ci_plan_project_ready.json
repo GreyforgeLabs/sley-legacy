@@ -1,0 +1,30 @@
+{
+  "schema": "sley.ci.report.v0",
+  "status": "passed",
+  "command": "plan",
+  "target": "examples/project",
+  "summary": {
+    "step_count": 1,
+    "passed_count": 1,
+    "failed_count": 0
+  },
+  "steps": [
+    {
+      "name": "plan",
+      "status": "passed",
+      "command": [
+        "sley",
+        "plan",
+        "--json",
+        "--graft-templates",
+        "examples/project"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "stdout_schema": "sley.edit_plan.report.v0",
+      "issues": []
+    }
+  ],
+  "issues": []
+}

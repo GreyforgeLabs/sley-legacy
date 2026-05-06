@@ -40,7 +40,7 @@ Current verified surface:
 
 - `cargo fmt --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 241 tests.
+- Current integration coverage is 243 tests.
 - `sley query --json` emits `schema: "sley.query.report.v0"` and supports
   `--kind all|modules|tasks|types|effects|calls`, `--module <module>`, and
   `--exported`, including strict task/take/type/effect/call row definitions.
@@ -49,8 +49,9 @@ Current verified surface:
   JSON Schema validation commands over `docs/schemas/`, `fixtures/contracts/`,
   and local deploy artifact directories.
 - `sley-ci` is available as an in-tree CI wrapper with `check`, `lint`,
-  `doctor`, `verify`, `deploy`, and `smoke` commands that emit `schema: "sley.ci.report.v0"` over
-  existing Sley check/lint/doctor/verify/deploy and CLI smoke manifest gates,
+  `doctor`, `plan`, `verify`, `deploy`, and `smoke` commands that emit
+  `schema: "sley.ci.report.v0"` over
+  existing Sley check/lint/doctor/plan/verify/deploy and CLI smoke manifest gates,
   including deploy artifact directory pass-through.
 - `sley deploy --json --dry-run` emits `schema: "sley.deploy.report.v0"` and
   composes strict verify, trace seal, and ZJX package summaries into a

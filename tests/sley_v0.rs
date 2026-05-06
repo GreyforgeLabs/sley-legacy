@@ -6271,7 +6271,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(46))
+        Some(&serde_json::json!(47))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -6661,6 +6661,77 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     );
     assert_eq!(
         denied_doctor_json.pointer("/steps/0/issues/0/code"),
+        Some(&serde_json::json!("exit_status_mismatch"))
+    );
+
+    let plan = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
+        .current_dir(&repo_root)
+        .args(["plan", "--json", "--graft-templates", "examples/project"])
+        .output()
+        .expect("run sley-ci plan");
+    assert!(
+        plan.status.success(),
+        "sley-ci plan failed: {}",
+        String::from_utf8_lossy(&plan.stderr)
+    );
+    let plan_json: serde_json::Value =
+        serde_json::from_slice(&plan.stdout).expect("parse sley-ci plan JSON");
+    assert_eq!(
+        plan_json.pointer("/schema"),
+        Some(&serde_json::json!("sley.ci.report.v0"))
+    );
+    assert_eq!(
+        plan_json.pointer("/status"),
+        Some(&serde_json::json!("passed"))
+    );
+    assert_eq!(
+        plan_json.pointer("/command"),
+        Some(&serde_json::json!("plan"))
+    );
+    assert_eq!(
+        plan_json.pointer("/steps/0/stdout_schema"),
+        Some(&serde_json::json!("sley.edit_plan.report.v0"))
+    );
+    assert_json_snapshot(
+        &plan_json,
+        include_str!("../fixtures/contracts/ci_plan_project_ready.json"),
+    );
+
+    let denied_plan = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
+        .current_dir(&repo_root)
+        .args([
+            "plan",
+            "--json",
+            "--deny-warnings",
+            "--graft-templates",
+            "examples/empty_for_statement.sley",
+        ])
+        .output()
+        .expect("run denied sley-ci plan");
+    assert!(
+        !denied_plan.status.success(),
+        "sley-ci plan with denied findings should fail"
+    );
+    let denied_plan_json: serde_json::Value =
+        serde_json::from_slice(&denied_plan.stdout).expect("parse denied sley-ci plan JSON");
+    assert_eq!(
+        denied_plan_json.pointer("/schema"),
+        Some(&serde_json::json!("sley.ci.report.v0"))
+    );
+    assert_eq!(
+        denied_plan_json.pointer("/status"),
+        Some(&serde_json::json!("failed"))
+    );
+    assert_eq!(
+        denied_plan_json.pointer("/command"),
+        Some(&serde_json::json!("plan"))
+    );
+    assert_eq!(
+        denied_plan_json.pointer("/steps/0/stdout_schema"),
+        Some(&serde_json::json!("sley.edit_plan.report.v0"))
+    );
+    assert_eq!(
+        denied_plan_json.pointer("/steps/0/issues/0/code"),
         Some(&serde_json::json!("exit_status_mismatch"))
     );
 
