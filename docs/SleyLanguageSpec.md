@@ -831,9 +831,11 @@ upload artifacts, start services, push branches, call providers, spend money,
 or mutate infrastructure. When `--artifacts-dir <dir>` is supplied and the
 dry-run package is ready, the command writes local `deploy-report.json`,
 `seal.json`, `zjx-envelope.json`, and `manifest.json` handoff files and records
-their paths in the deploy report. The manifest records each artifact path,
-schema, and content digest so another agent can verify the directory as one
-local handoff bundle before any operator-approved deployment step.
+their paths in the deploy report. Ready reports with artifact directories also
+include an `inspect_deploy_artifacts` next action. The manifest records each
+artifact path, schema, and content digest so another agent can verify the
+directory as one local handoff bundle before any operator-approved deployment
+step.
 `sley-contract inspect-deploy-artifacts <dir> --schemas docs/schemas --json`
 revalidates that bundle later by checking the manifest schema, each artifact
 schema, and each recorded file digest.

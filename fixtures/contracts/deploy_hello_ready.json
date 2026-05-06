@@ -173,6 +173,18 @@
         "--json",
         "examples/hello.sley"
       ]
+    },
+    {
+      "kind": "inspect_deploy_artifacts",
+      "reason": "validate the deploy handoff directory before operator deployment approval",
+      "command": [
+        "sley-contract",
+        "inspect-deploy-artifacts",
+        "artifacts",
+        "--schemas",
+        "docs/schemas",
+        "--json"
+      ]
     }
   ]
 }

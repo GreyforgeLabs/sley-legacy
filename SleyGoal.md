@@ -120,8 +120,9 @@ Current verified surface:
   calls, external mutation, and spend without explicit operator approval.
   `--artifacts-dir <dir>` writes local `deploy-report.json`, `seal.json`,
   `zjx-envelope.json`, and digest-bearing `manifest.json` handoff files after
-  the dry-run package is ready. `sley-contract inspect-deploy-artifacts`
-  revalidates that handoff directory after it moves between agent sessions.
+  the dry-run package is ready, and the ready report points agents to
+  `sley-contract inspect-deploy-artifacts` to revalidate that handoff directory
+  after it moves between agent sessions.
 - `sley new --json --template hello|library|cli|service-gate|data-pipeline|deploy|agent|agent-task-pack`
   emits `schema: "sley.project.scaffold.v0"` and creates deterministic
   first-run starter projects, including pure library/CLI/data-pipeline

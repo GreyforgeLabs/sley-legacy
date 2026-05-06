@@ -262,7 +262,10 @@
         ],
         "stdout_json": [
           { "pointer": "/schema", "value": "sley.deploy.report.v0" },
-          { "pointer": "/status", "value": "ready" }
+          { "pointer": "/status", "value": "ready" },
+          { "pointer": "/next_actions/2/kind", "value": "inspect_deploy_artifacts" },
+          { "pointer": "/next_actions/2/command/1", "value": "inspect-deploy-artifacts" },
+          { "pointer": "/next_actions/2/command/3", "value": "--schemas" }
         ]
       }
     },
@@ -10155,7 +10158,10 @@
           { "pointer": "/summary/verify_status", "value": "passed" },
           { "pointer": "/verify/runtime/value/value/value", "value": "profile ready | plan approved | staged" },
           { "pointer": "/policy/live_deploy_allowed", "value": false },
-          { "pointer": "/policy/provider_calls", "value": false }
+          { "pointer": "/policy/provider_calls", "value": false },
+          { "pointer": "/next_actions/2/kind", "value": "inspect_deploy_artifacts" },
+          { "pointer": "/next_actions/2/command/1", "value": "inspect-deploy-artifacts" },
+          { "pointer": "/next_actions/2/command/3", "value": "--schemas" }
         ]
       }
     },

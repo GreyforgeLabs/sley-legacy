@@ -827,6 +827,21 @@ fn deploy_dry_run_reports_verified_package_without_live_mutation() {
             artifacts_dir_arg
         )))
     );
+    assert_eq!(
+        json.pointer("/next_actions/2/kind"),
+        Some(&serde_json::json!("inspect_deploy_artifacts"))
+    );
+    assert_eq!(
+        json.pointer("/next_actions/2/command"),
+        Some(&serde_json::json!([
+            "sley-contract",
+            "inspect-deploy-artifacts",
+            artifacts_dir_arg.clone(),
+            "--schemas",
+            "docs/schemas",
+            "--json"
+        ]))
+    );
     assert!(artifacts_dir.join("deploy-report.json").exists());
     assert!(artifacts_dir.join("seal.json").exists());
     assert!(artifacts_dir.join("zjx-envelope.json").exists());
@@ -949,6 +964,14 @@ fn agent_deploy_pipeline_artifacts_pass_contract_inspection() {
             "{}/manifest.json",
             artifact_root_arg
         )))
+    );
+    assert_eq!(
+        deploy_json.pointer("/next_actions/2/kind"),
+        Some(&serde_json::json!("inspect_deploy_artifacts"))
+    );
+    assert_eq!(
+        deploy_json.pointer("/next_actions/2/command/2"),
+        Some(&serde_json::json!(artifact_root_arg.clone()))
     );
 
     let artifact_check = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-contract"))

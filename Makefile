@@ -1,10 +1,13 @@
-.PHONY: fmt diff-check test contracts conformance corpus examples smoke lsp workbench agent-bench migrate docgen sandbox-runner zjx-tools syntax v1
+.PHONY: fmt diff-check build-cli test contracts conformance corpus examples smoke lsp workbench agent-bench migrate docgen sandbox-runner zjx-tools syntax v1
 
 fmt:
 	cargo fmt -- --check
 
 diff-check:
 	git diff --check
+
+build-cli:
+	cargo build --bin sley
 
 test:
 	cargo test
@@ -18,13 +21,13 @@ contracts:
 conformance:
 	cargo run --bin sley-conformance -- report --json
 
-corpus:
+corpus: build-cli
 	cargo run --bin sley-ci -- corpus --json fixtures/corpus/manifest.json
 
-examples:
+examples: build-cli
 	cargo run --bin sley-ci -- examples --json examples
 
-smoke:
+smoke: build-cli
 	cargo run --bin sley-ci -- smoke --json --repo-root $(CURDIR) fixtures/cli_smokes/manifest.json
 
 lsp:
