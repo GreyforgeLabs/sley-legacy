@@ -174,8 +174,9 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
    - Current bootstrap: in-tree `src/bin/sley-conformance.rs` emits
      `sley.conformance.report.v0` and `sley.conformance.coverage.v0`, validates
      contract fixtures and release manifests through `sley-contract`, and
-     inventories schema instances, corpus tags, smoke tags, and packaged
-     examples. The repo-level `make v1` gate runs the JSON report.
+     inventories schema instances, corpus tags, smoke tags, packaged examples,
+     and declared integration-test count drift. The repo-level `make v1` gate
+     runs the JSON report.
    - Done when release-readiness gaps become visible without reading the whole
      test file.
 

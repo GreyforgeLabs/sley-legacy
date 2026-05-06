@@ -77,7 +77,8 @@ Current verified surface:
   `schema: "sley.conformance.report.v0"` and
   `schema: "sley.conformance.coverage.v0"` over schema/fixture instances,
   contract validation status, release manifests, corpus tags, smoke tags, and
-  packaged example counts.
+  packaged example counts, plus a check that the declared integration coverage
+  count matches the test file.
 - `sley deploy --json --dry-run` emits `schema: "sley.deploy.report.v0"` and
   composes strict verify, trace seal, and ZJX package summaries into a
   local-only deploy package report that forbids live deployment, provider

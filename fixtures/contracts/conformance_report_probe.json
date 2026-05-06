@@ -12,6 +12,9 @@
     "smoke_case_count": 1,
     "example_project_count": 1,
     "example_source_count": 1,
+    "integration_test_count": 1,
+    "declared_integration_test_count": 1,
+    "test_count_matches_declared": true,
     "issue_count": 0
   },
   "validation": {
@@ -94,6 +97,13 @@
     "root": "examples",
     "project_count": 1,
     "source_count": 1
+  },
+  "tests": {
+    "integration_test_file": "tests/sley_v0.rs",
+    "integration_test_count": 1,
+    "goal_doc": "SleyGoal.md",
+    "declared_integration_test_count": 1,
+    "declared_matches_actual": true
   },
   "issues": []
 }
