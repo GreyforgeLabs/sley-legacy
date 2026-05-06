@@ -1456,11 +1456,12 @@ fn edit_plan_graft_templates_can_target_expression_surfaces() {
 module app.plan
 
 task main -> Int {
-  return 1 + 41
+  bind base = 1
+  return base + 41
 }
 "#;
     let program = parse_program(source).expect("parse expression surface plan fixture");
-    let target = "block:task:app.plan.main:stmt:0:expr:right";
+    let target = "block:task:app.plan.main:stmt:1:expr:right";
     let report = build_edit_plan_report_with_options(
         "app.plan",
         Ok(program.clone()),
@@ -3324,6 +3325,87 @@ fn edit_plan_graft_templates_include_constant_comparison_expression_simplify() {
     assert_eq!(
         targeted_report.graft_templates[0].kind,
         "simplify_constant_comparison_expression"
+    );
+    assert!(targeted_report.transaction_templates.is_empty());
+}
+
+#[test]
+fn edit_plan_graft_templates_include_constant_arithmetic_expression_simplify() {
+    let source = include_str!("../examples/constant_arithmetic_expression.sley");
+    let program = parse_program(source).expect("parse constant arithmetic fixture");
+    let report = build_edit_plan_report_with_options(
+        "examples/constant_arithmetic_expression.sley",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: None,
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "warnings");
+    assert_eq!(report.summary.lint_finding_count, 1);
+    assert_eq!(
+        report.lint.as_ref().expect("lint summary").findings[0].id,
+        "CONSTANT_ARITHMETIC_EXPRESSION"
+    );
+    let template = report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "simplify_constant_arithmetic_expression")
+        .expect("constant arithmetic simplify template");
+    assert_eq!(
+        template.surface,
+        "block:task:app.constant_arithmetic.main:stmt:0:expr"
+    );
+    assert_eq!(
+        template.operation.pointer("/op"),
+        Some(&serde_json::json!("ReplaceExpression"))
+    );
+    assert_eq!(
+        template.operation.pointer("/payload/source"),
+        Some(&serde_json::json!("5"))
+    );
+    assert_eq!(template.editable_json_pointers, vec!["/payload/source"]);
+    let graft: GraftInput = serde_json::from_value(template.operation.clone())
+        .expect("parse constant arithmetic template");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:constant-arithmetic-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted_source = outcome.source.expect("grafted source");
+    assert!(grafted_source.contains("return 5"));
+    assert!(!grafted_source.contains("2 + 3"));
+    let grafted_program = parse_program(&grafted_source).expect("parse grafted source");
+    let lint_report = build_lint_report(
+        &grafted_program,
+        LintOptions {
+            rules: vec![LintRule::ConstantArithmeticExpression],
+            module: None,
+        },
+    );
+    assert_eq!(lint_report.status, "ok");
+
+    let targeted_report = build_edit_plan_report_with_options(
+        "examples/constant_arithmetic_expression.sley",
+        Ok(program),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some(
+                "block:task:app.constant_arithmetic.main:stmt:0:expr".to_string(),
+            ),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(targeted_report.status, "warnings");
+    assert!(targeted_report.diagnostics.is_empty());
+    assert_eq!(targeted_report.graft_templates.len(), 1);
+    assert_eq!(
+        targeted_report.graft_templates[0].kind,
+        "simplify_constant_arithmetic_expression"
     );
     assert!(targeted_report.transaction_templates.is_empty());
 }
@@ -6036,6 +6118,22 @@ task helper -> Result<Text, Error> {
         include_str!("../fixtures/contracts/lint_constant_comparison_expression.json"),
     );
 
+    let constant_arithmetic_source =
+        include_str!("../examples/constant_arithmetic_expression.sley");
+    let constant_arithmetic_program =
+        parse_program(constant_arithmetic_source).expect("parse constant arithmetic fixture");
+    let constant_arithmetic_lint = build_lint_report(
+        &constant_arithmetic_program,
+        LintOptions {
+            rules: vec![LintRule::ConstantArithmeticExpression],
+            module: None,
+        },
+    );
+    assert_json_snapshot(
+        &constant_arithmetic_lint,
+        include_str!("../fixtures/contracts/lint_constant_arithmetic_expression.json"),
+    );
+
     let empty_if_source = include_str!("../examples/empty_if_statement.sley");
     let empty_if_program = parse_program(empty_if_source).expect("parse empty if fixture");
     let empty_if_lint = build_lint_report(
@@ -6931,7 +7029,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(69))
+        Some(&serde_json::json!(70))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -12552,7 +12650,7 @@ fn lint_report_flags_unused_pure_bindings() {
 module app.bindings
 
 task main -> Result<Int, Error> uses FileRead {
-  bind stale = 1 + 2
+  bind stale = true
   bind used = 40
   bind host_unused = fs.read_text("examples/hello.sley")
   bind fallible_unused = fs.try_read_text("examples/hello.sley")?
@@ -13061,6 +13159,93 @@ task main -> Bool {
         &program,
         LintOptions {
             rules: vec![LintRule::ConstantComparisonExpression],
+            module: Some("app.other".to_string()),
+        },
+    );
+    assert_eq!(scoped_report.status, "ok");
+    assert!(scoped_report.findings.is_empty());
+}
+
+#[test]
+fn lint_report_flags_constant_arithmetic_expressions() {
+    let source = r#"
+module app.constant_arithmetic
+
+task main -> Float {
+  bind total = 2 + 3
+  bind scaled = 4 * 5
+  bind mixed = 1.5 + 2.0
+  bind identity = 1 + 0
+  bind unsafe = 1 / 0
+
+  return 6 / 2.0
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+
+    let report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::ConstantArithmeticExpression],
+            module: None,
+        },
+    );
+
+    assert_eq!(report.schema, LINT_REPORT_SCHEMA);
+    assert_eq!(report.status, "findings");
+    assert_eq!(report.entry_module, "app.constant_arithmetic");
+    assert_eq!(report.filters.rules, vec!["constant_arithmetic_expression"]);
+    assert_eq!(
+        report.findings.len(),
+        4,
+        "constant arithmetic should skip identity expressions and divide-by-zero"
+    );
+    assert_eq!(report.findings[0].id, "CONSTANT_ARITHMETIC_EXPRESSION");
+    assert_eq!(report.findings[0].rule, "constant_arithmetic_expression");
+    let nodes: Vec<&str> = report
+        .findings
+        .iter()
+        .map(|finding| finding.node.as_str())
+        .collect();
+    assert!(nodes.contains(&"block:task:app.constant_arithmetic.main:stmt:0:expr"));
+    assert!(nodes.contains(&"block:task:app.constant_arithmetic.main:stmt:1:expr"));
+    assert!(nodes.contains(&"block:task:app.constant_arithmetic.main:stmt:2:expr"));
+    assert!(nodes.contains(&"block:task:app.constant_arithmetic.main:stmt:5:expr"));
+    assert_eq!(report.findings[0].module, "app.constant_arithmetic");
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|finding| finding.hint.contains("5"))
+    );
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|finding| finding.hint.contains("20"))
+    );
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|finding| finding.hint.contains("3.5"))
+    );
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|finding| finding.hint.contains("3.0"))
+    );
+
+    let scoped_report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::ConstantArithmeticExpression],
             module: Some("app.other".to_string()),
         },
     );
@@ -16201,6 +16386,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:templates:constant-if-statement",
         "graft:templates:constant-false-while-statement-delete",
         "graft:templates:constant-comparison-expression",
+        "graft:templates:constant-arithmetic-expression",
         "graft:templates:empty-if-statement-delete",
         "graft:templates:empty-for-statement-delete",
         "graft:templates:empty-forge-statement-delete",
@@ -16235,6 +16421,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "lint:constant_if_statement",
         "lint:constant_false_while_statement",
         "lint:constant_comparison_expression",
+        "lint:constant_arithmetic_expression",
         "lint:empty_if_statement",
         "lint:empty_for_statement",
         "lint:empty_forge_statement",
@@ -16258,6 +16445,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:constant-if-statement-repair-write-verify",
         "readiness:constant-false-while-repair-write-verify",
         "readiness:constant-comparison-repair-write-verify",
+        "readiness:constant-arithmetic-repair-write-verify",
         "readiness:empty-if-repair-write-verify",
         "readiness:empty-for-repair-write-verify",
         "readiness:empty-forge-repair-write-verify",

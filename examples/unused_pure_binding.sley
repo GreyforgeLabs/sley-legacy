@@ -1,7 +1,7 @@
 module app.bindings
 
 task main -> Int {
-  bind stale = 1 + 2
+  bind stale = true
   bind used = 40
 
   return used + 2

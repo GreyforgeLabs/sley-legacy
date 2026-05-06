@@ -64,6 +64,7 @@
         "constant_if_statement",
         "constant_false_while_statement",
         "constant_comparison_expression",
+        "constant_arithmetic_expression",
         "empty_if_statement",
         "empty_for_statement",
         "empty_forge_statement",

@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.constant_arithmetic",
+  "filters": {
+    "module": null,
+    "rules": [
+      "constant_arithmetic_expression"
+    ]
+  },
+  "findings": [
+    {
+      "id": "CONSTANT_ARITHMETIC_EXPRESSION",
+      "rule": "constant_arithmetic_expression",
+      "severity": "warning",
+      "message": "task `app.constant_arithmetic.main` has a constant arithmetic expression `2 + 3`",
+      "node": "block:task:app.constant_arithmetic.main:stmt:0:expr",
+      "module": "app.constant_arithmetic",
+      "hint": "replace the constant arithmetic expression with `5`"
+    }
+  ]
+}
