@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.zjx.tool.report.v0",
+  "title": "Sley ZJX Tool Report v0",
+  "type": "object",
+  "required": ["schema", "status", "command", "envelopes", "issues"],
+  "properties": {
+    "schema": { "const": "sley.zjx.tool.report.v0" },
+    "status": { "enum": ["passed", "failed"] },
+    "command": {
+      "enum": ["inspect", "verify-digest", "extract-graph", "diff-envelope"]
+    },
+    "envelopes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/envelopeSummary" }
+    },
+    "digest": { "$ref": "#/$defs/digestCheck" },
+    "diff": { "$ref": "#/$defs/envelopeDiff" },
+    "output_path": { "type": "string", "minLength": 1 },
+    "graph": { "$ref": "sley.symbol_graph.v0" },
+    "issues": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/issue" }
+    }
+  },
+  "$defs": {
+    "envelopeSummary": {
+      "type": "object",
+      "required": [
+        "path",
+        "target",
+        "format",
+        "compression",
+        "graph_digest",
+        "computed_graph_digest",
+        "graph_digest_match",
+        "module_count",
+        "import_count",
+        "type_count",
+        "effect_count",
+        "task_count",
+        "trace_receipt_count",
+        "slice_present"
+      ],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "target": { "type": "string" },
+        "format": { "type": "string" },
+        "compression": { "type": "string" },
+        "graph_digest": { "type": "string" },
+        "computed_graph_digest": { "type": "string" },
+        "graph_digest_match": { "type": "boolean" },
+        "module_count": { "type": "integer", "minimum": 0 },
+        "import_count": { "type": "integer", "minimum": 0 },
+        "type_count": { "type": "integer", "minimum": 0 },
+        "effect_count": { "type": "integer", "minimum": 0 },
+        "task_count": { "type": "integer", "minimum": 0 },
+        "trace_receipt_count": { "type": "integer", "minimum": 0 },
+        "slice_present": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "digestCheck": {
+      "type": "object",
+      "required": ["declared", "computed", "matches"],
+      "properties": {
+        "declared": { "type": "string" },
+        "computed": { "type": "string" },
+        "matches": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "envelopeDiff": {
+      "type": "object",
+      "required": [
+        "left_path",
+        "right_path",
+        "changed",
+        "target_changed",
+        "graph_digest_changed",
+        "module_count_delta",
+        "task_count_delta",
+        "trace_receipt_count_delta",
+        "modules_added",
+        "modules_removed",
+        "tasks_added",
+        "tasks_removed"
+      ],
+      "properties": {
+        "left_path": { "type": "string", "minLength": 1 },
+        "right_path": { "type": "string", "minLength": 1 },
+        "changed": { "type": "boolean" },
+        "target_changed": { "type": "boolean" },
+        "graph_digest_changed": { "type": "boolean" },
+        "module_count_delta": { "type": "integer" },
+        "task_count_delta": { "type": "integer" },
+        "trace_receipt_count_delta": { "type": "integer" },
+        "modules_added": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "modules_removed": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "tasks_added": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "tasks_removed": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "issue": {
+      "type": "object",
+      "required": ["code", "message"],
+      "properties": {
+        "code": { "type": "string", "minLength": 1 },
+        "message": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

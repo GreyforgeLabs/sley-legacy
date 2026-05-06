@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{Value as JsonValue, json};
 
 use crate::ast::{
@@ -38,14 +38,14 @@ pub enum EffectResolution {
     Private(String),
 }
 
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct SymbolGraph {
     pub schema: String,
     pub entry_module: String,
     pub modules: Vec<ModuleSymbolSummary>,
 }
 
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ModuleSymbolSummary {
     pub module: String,
     pub imports: Vec<ImportSymbolSummary>,
@@ -54,7 +54,7 @@ pub struct ModuleSymbolSummary {
     pub tasks: Vec<DeclarationSymbolSummary>,
 }
 
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ImportSymbolSummary {
     pub id: String,
     pub module: String,
@@ -62,7 +62,7 @@ pub struct ImportSymbolSummary {
     pub alias: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct DeclarationSymbolSummary {
     pub name: String,
     pub id: String,

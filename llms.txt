@@ -33,6 +33,8 @@ make v1
 make syntax
 cargo run --bin sley-lsp
 cargo run --bin sley-workbench -- --json --html .sley/workbench.html <file-or-project>
+cargo run --bin sley-zjx -- inspect --json <zjx-envelope.json>
+cargo run --bin sley-zjx -- verify-digest --json <zjx-envelope.json>
 cargo run -- seal --json <file-or-project>
 cargo run -- graft --json --dry-run <file> <graft.json>
 cargo run -- graft --json --write <file> <graft.json>
@@ -123,6 +125,7 @@ Stable v0 JSON roots:
 - `sley.trace.seal.v0`
 - `sley.graft.outcome.v0`
 - `sley.zjx.envelope.v0`
+- `sley.zjx.tool.report.v0`
 - `sley.cli_smoke.manifest.v0`
 - `sley.ci.report.v0`
 - `sley.project.scaffold.v0`
@@ -155,6 +158,9 @@ uses `schema: "sley.lsp.fix_preview.v0"` and has a locked contract fixture.
 The `sley-workbench` binary exposes `schema: "sley.workbench.report.v0"` and
 optional static HTML over doctor/query/lint/plan/graph panels without source
 file writes.
+The `sley-zjx` binary exposes `schema: "sley.zjx.tool.report.v0"` for
+read-only `inspect`, `verify-digest`, `extract-graph`, and `diff-envelope`
+commands over `sley.zjx.envelope.v0` preview envelopes.
 The repo-level `Makefile`, `.github/actions/sley-v1/action.yml`,
 `.github/workflows/v1.yml`, and `.pre-commit-config.yaml` all route release
 checks through `make v1`.
@@ -167,7 +173,8 @@ the trace receipt schema pins each standalone JSONL record and references
 accepted provenance records.
 The ZJX envelope schema pins a recomputable `graph_digest`, references the
 symbol graph, graph slice, and trace receipt schemas, and has a locked fixture
-beside the full symbol graph fixture.
+beside the full symbol graph fixture. The ZJX tool report schema pins local
+inspection, digest verification, graph extraction, and envelope diff outputs.
 
 Contract references:
 
@@ -192,9 +199,9 @@ Current development phase:
   and transaction template schema envelopes, direct graft writes, temp setup
   files for write-mode smokes, explicit graft/fix trace receipts, non-empty
   trace receipt seals, ZJX envelopes carrying schema-backed trace receipts,
-  lint-driven fix writes that clear warnings before verify, and seeded host-adapter execution
-  while preserving typed recoverable failure records and keeping authority
-  failures as diagnostics
+  ZJX tool reports, lint-driven fix writes that clear warnings before verify,
+  and seeded host-adapter execution while preserving typed recoverable failure
+  records and keeping authority failures as diagnostics
 - checked graph query reports are available through `sley query --json` with
   root schema `sley.query.report.v0`; `--kind types` and `--kind effects`
   give direct declaration rows for record and authority surfaces, while

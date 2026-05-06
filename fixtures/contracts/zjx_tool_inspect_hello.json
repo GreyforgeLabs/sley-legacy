@@ -1,0 +1,29 @@
+{
+  "schema": "sley.zjx.tool.report.v0",
+  "status": "passed",
+  "command": "inspect",
+  "envelopes": [
+    {
+      "path": "fixtures/contracts/zjx_hello_ready.json",
+      "target": "examples/hello.sley",
+      "format": "zjx-preview-json",
+      "compression": "none",
+      "graph_digest": "sha256:0f16c5f58f19a8ab64645b60056ea9be0188f9e809531b6190d410f2dbb06040",
+      "computed_graph_digest": "sha256:0f16c5f58f19a8ab64645b60056ea9be0188f9e809531b6190d410f2dbb06040",
+      "graph_digest_match": true,
+      "module_count": 1,
+      "import_count": 0,
+      "type_count": 0,
+      "effect_count": 0,
+      "task_count": 1,
+      "trace_receipt_count": 0,
+      "slice_present": false
+    }
+  ],
+  "digest": {
+    "declared": "sha256:0f16c5f58f19a8ab64645b60056ea9be0188f9e809531b6190d410f2dbb06040",
+    "computed": "sha256:0f16c5f58f19a8ab64645b60056ea9be0188f9e809531b6190d410f2dbb06040",
+    "matches": true
+  },
+  "issues": []
+}

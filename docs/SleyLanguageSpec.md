@@ -597,8 +597,9 @@ graphs carry
 `schema: "sley.run.report.v0"`, trace reports carry
 `schema: "sley.trace.report.v0"`, trace receipts carry
 `schema: "sley.trace.receipt.v0"`, trace seals carry
-`schema: "sley.trace.seal.v0"`, and ZJX preview envelopes carry
-`schema: "sley.zjx.envelope.v0"`.
+`schema: "sley.trace.seal.v0"`, ZJX preview envelopes carry
+`schema: "sley.zjx.envelope.v0"`, and ZJX tool inspection reports carry
+`schema: "sley.zjx.tool.report.v0"`.
 The CLI smoke manifest carries
 `schema: "sley.cli_smoke.manifest.v0"`. The accepted/rejected compiler corpus
 manifest carries `schema: "sley.conformance.manifest.v0"`. Project scaffold reports carry
@@ -702,7 +703,7 @@ reports, checked lint reports, run reports, doctor readiness reports,
 edit-plan reports, project scaffolds, ZJX preview envelopes, graft dry runs
 and direct graft writes, write-mode fix trace receipts, non-empty trace
 receipt seals, ZJX envelopes carrying graph digests and schema-backed trace
-receipts, graph-slice insert and replace affordances, checked
+receipts, ZJX tool reports, graph-slice insert and replace affordances, checked
 `insert_statement`, `replace_statement`, and `replace_expression` graft
 templates, lint-driven fix
 writes that clear warnings before verify, program-surface declaration/import
@@ -1279,6 +1280,12 @@ The current `sley zjx` command emits a preview JSON payload with
 `compression=none`. It is a ZJX-ready semantic envelope for graph snapshots,
 recomputable graph digests, optional graph slices, and trace receipts; it is
 not yet a compressed `.zjx` archive.
+
+The current `sley-zjx` utility is read-only for source files and preview
+envelopes. It can inspect envelope metadata, recompute and verify the embedded
+symbol-graph digest, extract the graph JSON to stdout or an explicit output
+path, and diff two envelopes by target, digest, module IDs, task IDs, and trace
+receipt count. Its report root is `sley.zjx.tool.report.v0`.
 
 The future compressed Sley runtime must validate Sley structure before packing.
 It must not treat envelope metadata as proof of Sley scope. The lock boundary

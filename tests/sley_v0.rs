@@ -8500,7 +8500,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         inventory_json.pointer("/schema_count"),
-        Some(&serde_json::json!(30))
+        Some(&serde_json::json!(31))
     );
     let schema_ids = inventory_json
         .pointer("/schemas")
@@ -8525,6 +8525,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     assert!(schema_ids.contains("sley.contract.validate.v0"));
     assert!(schema_ids.contains("sley.lsp.fix_preview.v0"));
     assert!(schema_ids.contains("sley.workbench.report.v0"));
+    assert!(schema_ids.contains("sley.zjx.tool.report.v0"));
 
     let fixture_check = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-contract"))
         .current_dir(&repo_root)
@@ -8554,7 +8555,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(90))
+        Some(&serde_json::json!(91))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -8822,7 +8823,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/schema_count"),
-        Some(&serde_json::json!(30))
+        Some(&serde_json::json!(31))
     );
     assert_eq!(
         report_json.pointer("/summary/schema_without_instance_count"),
@@ -8830,7 +8831,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/contract_fixture_count"),
-        Some(&serde_json::json!(90))
+        Some(&serde_json::json!(91))
     );
     assert_eq!(
         report_json.pointer("/summary/smoke_case_count"),

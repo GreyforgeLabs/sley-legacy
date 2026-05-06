@@ -2,7 +2,7 @@
   "schema": "sley.contract.inventory.v0",
   "status": "passed",
   "schema_dir": "docs/schemas",
-  "schema_count": 30,
+  "schema_count": 31,
   "schemas": [
     {
       "id": "sley.ast.node.v0",
@@ -210,6 +210,13 @@
       "id": "sley.zjx.envelope.v0",
       "path": "docs/schemas/sley.zjx.envelope.v0.schema.json",
       "title": "Sley ZJX Envelope v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.zjx.tool.report.v0",
+      "path": "docs/schemas/sley.zjx.tool.report.v0.schema.json",
+      "title": "Sley ZJX Tool Report v0",
       "draft": "https://json-schema.org/draft/2020-12/schema",
       "root_type": "object"
     }
