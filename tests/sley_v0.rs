@@ -4005,6 +4005,78 @@ fn ast_schema_covers_nested_contract_variants() {
 }
 
 #[test]
+fn diagnostic_schema_is_shared_by_agent_reports() {
+    let diagnostics_schema: serde_json::Value = serde_json::from_str(include_str!(
+        "../docs/schemas/sley.diagnostics.report.v0.schema.json"
+    ))
+    .expect("parse diagnostics schema");
+    assert_eq!(
+        diagnostics_schema.pointer("/properties/diagnostics/items/$ref"),
+        Some(&serde_json::json!("#/$defs/diagnostic"))
+    );
+    assert_eq!(
+        diagnostics_schema.pointer("/$defs/diagnostic/additionalProperties"),
+        Some(&serde_json::json!(false))
+    );
+    assert_eq!(
+        diagnostics_schema.pointer("/$defs/diagnostic/properties/id/minLength"),
+        Some(&serde_json::json!(1))
+    );
+    assert_eq!(
+        diagnostics_schema.pointer("/$defs/diagnostic/properties/severity/enum"),
+        Some(&serde_json::json!(["error", "warning", "info"]))
+    );
+    assert_eq!(
+        diagnostics_schema.pointer("/$defs/diagnostic/properties/repair_hints/items/$ref"),
+        Some(&serde_json::json!("#/$defs/repair_hint"))
+    );
+    assert_eq!(
+        diagnostics_schema.pointer("/$defs/repair_hint/properties/kind/minLength"),
+        Some(&serde_json::json!(1))
+    );
+
+    for (schema_name, schema_source, pointer) in [
+        (
+            "graft outcome",
+            include_str!("../docs/schemas/sley.graft.outcome.v0.schema.json"),
+            "/properties/diagnostics/items/$ref",
+        ),
+        (
+            "doctor report",
+            include_str!("../docs/schemas/sley.doctor.report.v0.schema.json"),
+            "/properties/diagnostics/items/$ref",
+        ),
+        (
+            "edit-plan report",
+            include_str!("../docs/schemas/sley.edit_plan.report.v0.schema.json"),
+            "/properties/diagnostics/items/$ref",
+        ),
+        (
+            "verify report",
+            include_str!("../docs/schemas/sley.verify.report.v0.schema.json"),
+            "/properties/diagnostics/items/$ref",
+        ),
+        (
+            "verify runtime summary",
+            include_str!("../docs/schemas/sley.verify.report.v0.schema.json"),
+            "/$defs/runtimeSummary/properties/diagnostics/items/$ref",
+        ),
+    ] {
+        let schema: serde_json::Value =
+            serde_json::from_str(schema_source).unwrap_or_else(|error| {
+                panic!("parse {schema_name} schema for diagnostic ref: {error}")
+            });
+        assert_eq!(
+            schema.pointer(pointer),
+            Some(&serde_json::json!(
+                "sley.diagnostics.report.v0#/$defs/diagnostic"
+            )),
+            "{schema_name} should reference the shared diagnostic schema"
+        );
+    }
+}
+
+#[test]
 fn edit_plan_schema_covers_strict_graft_template_payloads() {
     let schema: serde_json::Value = serde_json::from_str(include_str!(
         "../docs/schemas/sley.edit_plan.report.v0.schema.json"

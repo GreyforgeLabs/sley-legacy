@@ -9,26 +9,27 @@
     "status": { "enum": ["ok", "error"] },
     "diagnostics": {
       "type": "array",
-      "items": {
-        "type": "object",
-        "required": ["id", "severity", "message"],
-        "properties": {
-          "id": { "type": "string" },
-          "severity": { "enum": ["error", "warning", "info"] },
-          "message": { "type": "string" },
-          "node": { "type": "string" },
-          "span": { "$ref": "#/$defs/span" },
-          "repair_hints": {
-            "type": "array",
-            "items": { "$ref": "#/$defs/repair_hint" }
-          }
-        },
-        "additionalProperties": false
-      }
+      "items": { "$ref": "#/$defs/diagnostic" }
     }
   },
   "additionalProperties": false,
   "$defs": {
+    "diagnostic": {
+      "type": "object",
+      "required": ["id", "severity", "message"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "severity": { "enum": ["error", "warning", "info"] },
+        "message": { "type": "string", "minLength": 1 },
+        "node": { "type": "string", "minLength": 1 },
+        "span": { "$ref": "#/$defs/span" },
+        "repair_hints": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/repair_hint" }
+        }
+      },
+      "additionalProperties": false
+    },
     "span": {
       "type": "object",
       "required": ["line", "column"],
@@ -42,10 +43,10 @@
       "type": "object",
       "required": ["kind"],
       "properties": {
-        "kind": { "type": "string" },
-        "target": { "type": "string" },
-        "effect": { "type": "string" },
-        "replacement": { "type": "string" }
+        "kind": { "type": "string", "minLength": 1 },
+        "target": { "type": "string", "minLength": 1 },
+        "effect": { "type": "string", "minLength": 1 },
+        "replacement": { "type": "string", "minLength": 1 }
       },
       "additionalProperties": false
     }

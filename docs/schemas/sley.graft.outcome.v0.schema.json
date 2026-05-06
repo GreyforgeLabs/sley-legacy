@@ -8,7 +8,10 @@
     "schema": { "const": "sley.graft.outcome.v0" },
     "status": { "enum": ["accepted", "rejected"] },
     "source": { "type": "string" },
-    "diagnostics": { "type": "array", "items": { "type": "object" } },
+    "diagnostics": {
+      "type": "array",
+      "items": { "$ref": "sley.diagnostics.report.v0#/$defs/diagnostic" }
+    },
     "provenance": { "type": "array", "items": { "$ref": "#/$defs/provenanceRecord" } }
   },
   "additionalProperties": false,

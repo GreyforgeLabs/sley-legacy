@@ -184,8 +184,8 @@ Implemented now:
   checked statements or top-level declaration order within their current parent
 - strict graft input JSON for the v0 operation shapes; unknown graft fields are
   rejected instead of silently ignored
-- versioned JSON report roots for diagnostics and graft outcomes with strict
-  accepted provenance records
+- versioned JSON report roots for diagnostics with a shared diagnostic record
+  schema and graft outcomes with strict accepted provenance records
 - repair hints on common checker diagnostics, including unknown identifiers,
   unknown tasks, type mismatches, return mismatches, missing return paths, call
   argument mismatches, condition mismatches, effect authority, and private or
@@ -193,8 +193,9 @@ Implemented now:
 - locked JSON contract snapshots under `fixtures/contracts/`, including
   checked query, lint, doctor, edit-plan, verify, and project scaffold reports
 - external v0 JSON Schema files under `docs/schemas/`, including strict
-  edit-plan graft operation and transaction template envelopes, a standalone
-  trace receipt schema, plus ZJX graph, slice, and trace receipt handoff refs
+  edit-plan graft operation and transaction template envelopes, a shared
+  diagnostic record schema, a standalone trace receipt schema, plus ZJX graph,
+  slice, and trace receipt handoff refs
 - manifest-backed accepted/rejected synthetic conformance corpus fixtures under
   `fixtures/corpus/`, including declared and missing authority cases for the
   seeded host adapter surface

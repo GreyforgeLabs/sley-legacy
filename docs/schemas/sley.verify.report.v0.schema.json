@@ -21,7 +21,7 @@
     "summary": { "$ref": "#/$defs/summary" },
     "diagnostics": {
       "type": "array",
-      "items": { "type": "object" }
+      "items": { "$ref": "sley.diagnostics.report.v0#/$defs/diagnostic" }
     },
     "query": { "$ref": "#/$defs/querySummary" },
     "lint": { "$ref": "#/$defs/lintSummary" },
@@ -127,7 +127,7 @@
         "value": { "type": "object" },
         "diagnostics": {
           "type": "array",
-          "items": { "type": "object" }
+          "items": { "$ref": "sley.diagnostics.report.v0#/$defs/diagnostic" }
         }
       },
       "additionalProperties": false
