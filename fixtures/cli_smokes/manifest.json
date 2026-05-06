@@ -1636,6 +1636,38 @@
       }
     },
     {
+      "name": "plan_block_surface_insert_template_json",
+      "args": [
+        "plan",
+        "--json",
+        "--graft-templates",
+        "--template-surface",
+        "block:task:app.collections.sum",
+        "examples/collections.sley"
+      ],
+      "covers": [
+        "cli:plan",
+        "graft:templates",
+        "graft:templates:block-surface-insert",
+        "json:sley.edit_plan.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.edit_plan.report.v0" },
+          { "pointer": "/status", "value": "ready" },
+          { "pointer": "/graft_templates/0/kind", "value": "insert_statement" },
+          { "pointer": "/graft_templates/0/surface", "value": "block:task:app.collections.sum" },
+          { "pointer": "/graft_templates/0/operation/op", "value": "InsertStatement" },
+          { "pointer": "/graft_templates/0/operation/target", "value": "block:task:app.collections.sum" },
+          { "pointer": "/graft_templates/0/operation/payload/source", "value": "forge { }" },
+          { "pointer": "/graft_templates/0/operation/payload/position", "value": 0 },
+          { "pointer": "/graft_templates/0/editable_json_pointers/0", "value": "/payload/source" },
+          { "pointer": "/graft_templates/0/editable_json_pointers/1", "value": "/payload/position" }
+        ]
+      }
+    },
+    {
       "name": "plan_take_surface_template_json",
       "args": [
         "plan",
@@ -1662,6 +1694,34 @@
           { "pointer": "/graft_templates/0/operation/target", "value": "take:task:app.math.double:0:value" },
           { "pointer": "/graft_templates/0/operation/payload/position", "value": 0 },
           { "pointer": "/graft_templates/0/editable_json_pointers/0", "value": "/payload/position" }
+        ]
+      }
+    },
+    {
+      "name": "fix_nested_block_surface_insert_dry_run_json",
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "insert_statement",
+        "--template-surface",
+        "block:task:app.collections.sum:stmt:2:body",
+        "--dry-run",
+        "examples/collections.sley"
+      ],
+      "covers": [
+        "cli:fix",
+        "graft:templates:block-surface-insert",
+        "graft:templates:nested-block-surface",
+        "json:sley.graft.outcome.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/operation", "value": "InsertStatement" },
+          { "pointer": "/provenance/0/targets/0", "value": "block:task:app.collections.sum:stmt:2:body" }
         ]
       }
     },

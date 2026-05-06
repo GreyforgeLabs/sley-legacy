@@ -884,8 +884,12 @@ fn apply_one(
             precondition,
             payload,
         } => {
-            let index = find_task_or_reject(program, &target)?;
-            check_preconditions(program, Some(index), precondition.as_ref())?;
+            let insert_target = find_insert_statement_target(program, &target)?;
+            check_preconditions(
+                program,
+                Some(insert_target.task_index),
+                precondition.as_ref(),
+            )?;
             let mut parsed = parse_block_source(&payload.source)?;
             if parsed.statements.len() != 1 {
                 return Err(vec![Diagnostic::error(
@@ -894,21 +898,29 @@ fn apply_one(
                 )]);
             }
             let statement = parsed.statements.remove(0);
-            let task = &mut program.tasks[index];
-            let position = payload.position.unwrap_or(task.body.statements.len());
-            if position > task.body.statements.len() {
+            let position = payload.position.unwrap_or(insert_target.block_len);
+            if position > insert_target.block_len {
                 return Err(vec![
                     Diagnostic::error(
                         "GRAFT_POSITION_OUT_OF_RANGE",
                         format!(
-                            "position {position} is past task body length {}",
-                            task.body.statements.len()
+                            "position {position} is past block length {}",
+                            insert_target.block_len
                         ),
                     )
-                    .with_node(task.id.clone()),
+                    .with_node(insert_target.block_id.clone()),
                 ]);
             }
-            task.body.statements.insert(position, statement);
+            if !insert_statement_into_parent(program, &insert_target.block_id, position, statement)
+            {
+                return Err(vec![
+                    Diagnostic::error(
+                        "GRAFT_TARGET_MISSING",
+                        format!("InsertStatement target `{target}` does not exist"),
+                    )
+                    .with_node(target.clone()),
+                ]);
+            }
             program.assign_ids();
             Ok(record(graft_id, actor, "InsertStatement", vec![target]))
         }
@@ -2381,6 +2393,65 @@ fn find_task_or_reject(program: &Program, target: &str) -> Result<usize, Vec<Dia
             "GRAFT_TARGET_MISSING",
             format!("task target `{target}` does not exist"),
         )]
+    })
+}
+
+struct InsertStatementTarget {
+    task_index: usize,
+    block_id: String,
+    block_len: usize,
+}
+
+fn find_insert_statement_target(
+    program: &Program,
+    target: &str,
+) -> Result<InsertStatementTarget, Vec<Diagnostic>> {
+    if let Some(task_index) = program.find_task_index(target) {
+        let task = &program.tasks[task_index];
+        return Ok(InsertStatementTarget {
+            task_index,
+            block_id: format!("block:{}", task.id),
+            block_len: task.body.statements.len(),
+        });
+    }
+    if target.starts_with("block:") {
+        let Some(block_len) = statement_block_len(program, target) else {
+            return Err(vec![
+                Diagnostic::error(
+                    "GRAFT_TARGET_MISSING",
+                    format!("block target `{target}` does not exist"),
+                )
+                .with_node(target.to_string()),
+            ]);
+        };
+        let Some(task_index) = owning_task_index_for_block(program, target) else {
+            return Err(vec![
+                Diagnostic::error(
+                    "GRAFT_TARGET_MISSING",
+                    format!("block target `{target}` has no owning task"),
+                )
+                .with_node(target.to_string()),
+            ]);
+        };
+        return Ok(InsertStatementTarget {
+            task_index,
+            block_id: target.to_string(),
+            block_len,
+        });
+    }
+    Err(vec![
+        Diagnostic::error(
+            "GRAFT_TARGET_MISSING",
+            format!("InsertStatement target `{target}` is not a task or block"),
+        )
+        .with_node(target.to_string()),
+    ])
+}
+
+fn owning_task_index_for_block(program: &Program, target: &str) -> Option<usize> {
+    program.tasks.iter().position(|task| {
+        let root = format!("block:{}", task.id);
+        target == root || target.starts_with(&format!("{root}:"))
     })
 }
 

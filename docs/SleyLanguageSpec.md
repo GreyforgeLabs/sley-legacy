@@ -434,6 +434,7 @@ Implemented graph-edit payloads:
 { "op": "ReplaceCallArg", "target": "task:app.math.double", "payload": { "from": "math.double", "source": "42", "position": 0, "scope": "module:app.main" } }
 { "op": "RemoveCallArg", "target": "task:app.math.double", "payload": { "from": "math.double", "position": 1, "scope": "module:app.main" } }
 { "op": "InsertStatement", "target": "task:app.main.main", "payload": { "position": 1, "source": "set total = total + 1" } }
+{ "op": "InsertStatement", "target": "block:task:app.main.main:stmt:1:then", "payload": { "position": 0, "source": "forge { }" } }
 { "op": "ReplaceExpression", "target": "block:task:app.main.main:stmt:0:expr:right", "payload": { "source": "41" } }
 { "op": "DeleteNode", "target": "block:task:app.main.main:stmt:1" }
 { "op": "MoveNode", "target": "block:task:app.main.main:stmt:1", "payload": { "parent": "block:task:app.main.main", "position": 0 } }
@@ -456,9 +457,11 @@ checked argument expression into matching calls; `position` defaults to append.
 `ReplaceCallArg` replaces one argument at a required `position`. `RemoveCallArg`
 removes one argument at a required `position` from matching calls. For all four
 operations, `scope` can limit the rewrite to a task or module.
-`InsertStatement` currently targets a task body. `DeleteNode`
-can remove declarations, imports, takes, and statements, but rejects expression
-targets unless the agent uses `ReplaceExpression` instead. `MoveNode` currently
+`InsertStatement` targets a task body or an exact block node id such as
+`block:task:app.main.main:stmt:1:then`; `sley plan --template-surface
+<block-id>` emits a checked starter template. `DeleteNode` can remove
+declarations, imports, takes, and statements, but rejects expression targets
+unless the agent uses `ReplaceExpression` instead. `MoveNode` currently
 requires `payload.position`; `payload.parent` is optional but, when present,
 must identify the current parent. Statement moves use a block parent such as
 `block:task:app.main.main`; `payload.destination` can identify another existing

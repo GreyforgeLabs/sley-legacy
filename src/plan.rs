@@ -497,6 +497,9 @@ fn build_graft_templates(
         if let Some(template) = expression_surface_replace_template(program, requested_surface) {
             return Ok(vec![template]);
         }
+        if let Some(template) = block_surface_insert_template(program, requested_surface) {
+            return Ok(vec![template]);
+        }
         if let Some(templates) =
             direct_graph_slice_graft_templates(program, surfaces, requested_surface)
         {
@@ -969,6 +972,42 @@ fn expression_surface_replace_template(
     })
 }
 
+fn block_surface_insert_template(
+    program: &Program,
+    requested_surface: &str,
+) -> Option<EditPlanGraftTemplate> {
+    if !requested_surface.starts_with("block:") {
+        return None;
+    }
+    let operation = json!({
+        "op": "InsertStatement",
+        "target": requested_surface,
+        "payload": {
+            "source": "forge { }",
+            "position": 0
+        }
+    });
+    if !insert_statement_checks(program, &operation) {
+        return None;
+    }
+    Some(EditPlanGraftTemplate {
+        kind: "insert_statement".to_string(),
+        reason:
+            "insert one checked statement into this block; edit /payload/source before applying"
+                .to_string(),
+        surface: requested_surface.to_string(),
+        operation,
+        editable_json_pointers: vec![
+            "/payload/source".to_string(),
+            "/payload/position".to_string(),
+        ],
+    })
+}
+
+fn insert_statement_checks(program: &Program, operation: &JsonValue) -> bool {
+    graft_operation_checks(program, operation, Some("agent:plan-insert-affordance"))
+}
+
 fn direct_graph_slice_graft_templates(
     program: &Program,
     surfaces: &[EditPlanTaskSurface],
@@ -1238,13 +1277,13 @@ fn select_template_surface<'a>(
             Diagnostic::error(
                 "PLAN_SURFACE_NOT_FOUND",
                 format!(
-                    "plan surface `{requested_surface}` was not found; use a task id, qualified task name, statement node id, take node id, expression node id, or lint finding node"
+                    "plan surface `{requested_surface}` was not found; use a task id, qualified task name, block node id, statement node id, take node id, expression node id, or lint finding node"
                 ),
             )
             .with_node(requested_surface)
             .with_repair_hint(
                 RepairHint::new("inspect_task_surfaces")
-                    .with_replacement("Run `sley ast --json <target>` or `sley plan --json <target>` and choose a statement, take, or expression node id, task_surfaces id, task qualified_name, or lint.findings node"),
+                    .with_replacement("Run `sley ast --json <target>` or `sley plan --json <target>` and choose a block, statement, take, or expression node id, task_surfaces id, task qualified_name, or lint.findings node"),
             )
         })
 }
@@ -1955,7 +1994,7 @@ fn template_surface_actions(target: &str) -> Vec<EditPlanAction> {
     vec![EditPlanAction {
         kind: "inspect_plan_surfaces".to_string(),
         reason:
-            "choose a valid task, statement, take, expression, or lint surface before requesting graft templates"
+            "choose a valid task, block, statement, take, expression, or lint surface before requesting graft templates"
                 .to_string(),
         command: command(["sley", "plan", "--json", target]),
     }]
