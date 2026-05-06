@@ -862,6 +862,10 @@ replacing delete-safe `expr == expr`, `expr != expr`, `expr < expr`, or
 `simplify_double_negation_expression` `ReplaceExpression` templates when
 replacing `!!expr` with the inner boolean expression preserves a checked
 program.
+`negated_comparison_expression` lint findings become checked
+`simplify_negated_comparison_expression` `ReplaceExpression` templates when
+replacing `!(left op right)` with the inverse comparison preserves a checked
+program.
 `redundant_boolean_if_expression` lint findings become checked
 `simplify_redundant_boolean_if_expression` `ReplaceExpression` templates when
 replacing `if flag { true } else { false }` with `flag`, or the inverted form
@@ -1024,6 +1028,8 @@ self-comparison, including strict self-ordering, can be replaced with `true`
 or `false`;
 and `double_negation_expression`, which warns when a checked `!!expr` form can
 be replaced with the inner boolean expression; and
+`negated_comparison_expression`, which warns when a checked negated comparison
+can be replaced with its inverse comparison; and
 `redundant_boolean_if_expression`, which warns when a checked expression-level
 boolean `if` can be replaced with the condition or its negation; and
 `redundant_boolean_if_statement`, which warns when a checked statement-level
@@ -1052,6 +1058,7 @@ guaranteed `return` in the same block.
 `--rule redundant-boolean-comparison`, or
 `--rule absorbing-boolean-expression`, or `--rule self-comparison-expression`, or
 `--rule double-negation-expression`, or
+`--rule negated-comparison-expression`, or
 `--rule redundant-boolean-if-expression`, or
 `--rule redundant-boolean-if-statement`, or
 `--rule same-branch-if-expression`, or
@@ -1166,8 +1173,9 @@ refuse generic data disguised as Sley artifacts before compression begins.
   unreachable statement cleanup templates, and mutable
   binding conversion transactions, constant-if expression and statement
   simplification, identity binary expression, redundant boolean
-  comparison, double negation simplification, and redundant boolean-if
-  expression/statement simplification templates, plus explicit module style warnings;
+  comparison, double negation simplification, negated comparison
+  simplification, and redundant boolean-if expression/statement simplification
+  templates, plus explicit module style warnings;
   broader style and migration lints remain later work
 - `sley plan` emits deterministic ranked task edit surfaces, optional starter
   graft operation templates, rename-plus-call-site and add-take-plus-call-arg

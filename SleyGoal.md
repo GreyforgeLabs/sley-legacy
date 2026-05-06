@@ -40,7 +40,7 @@ Current verified surface:
 
 - `cargo fmt --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 256 tests.
+- Current integration coverage is 258 tests.
 - `sley query --json` emits `schema: "sley.query.report.v0"` and supports
   `--kind all|modules|tasks|types|effects|calls`, `--module <module>`, and
   `--exported`, including strict task/take/type/effect/call row definitions.
@@ -92,6 +92,7 @@ Current verified surface:
   `--rule absorbing-boolean-expression`,
   `--rule self-comparison-expression`,
   `--rule double-negation-expression`,
+  `--rule negated-comparison-expression`,
   `--rule redundant-boolean-if-expression`,
   `--rule redundant-boolean-if-statement`,
   `--rule same-branch-if-expression`,
@@ -113,7 +114,8 @@ Current verified surface:
   `empty_forge_statement`,
   `identity_binary_expression`, `redundant_boolean_comparison`, and
   `absorbing_boolean_expression`, `self_comparison_expression`,
-  `double_negation_expression`, `redundant_boolean_if_expression`,
+  `double_negation_expression`, `negated_comparison_expression`,
+  `redundant_boolean_if_expression`,
   `redundant_boolean_if_statement`, `same_branch_if_expression`, and
   `same_branch_if_statement`, and `unreachable_statement`.
 - CLI smoke coverage is manifest-backed under
@@ -195,6 +197,9 @@ Current verified surface:
   self-ordering cleanup, with lint/plan/fix-write/verify
   smoke coverage, plus checked `double_negation_expression` style findings and
   `simplify_double_negation_expression` templates with lint/plan/fix-write/verify
+  smoke coverage, plus checked `negated_comparison_expression` style findings
+  and `simplify_negated_comparison_expression` templates with
+  lint/plan/fix-write/verify
   smoke coverage, plus checked `redundant_boolean_if_expression` style findings
   and `simplify_redundant_boolean_if_expression` templates with lint/plan/fix-write/verify
   smoke coverage, plus checked `redundant_boolean_if_statement` style findings
@@ -422,6 +427,7 @@ cargo run -- lint --json --rule redundant-boolean-comparison <target>
 cargo run -- lint --json --rule absorbing-boolean-expression <target>
 cargo run -- lint --json --rule self-comparison-expression <target>
 cargo run -- lint --json --rule double-negation-expression <target>
+cargo run -- lint --json --rule negated-comparison-expression <target>
 cargo run -- lint --json --rule redundant-boolean-if-expression <target>
 cargo run -- lint --json --rule redundant-boolean-if-statement <target>
 cargo run -- lint --json --rule same-branch-if-expression <target>

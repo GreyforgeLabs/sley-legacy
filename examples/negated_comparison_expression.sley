@@ -1,0 +1,6 @@
+module app.negated_compare
+
+task main -> Bool {
+  bind limit = 7
+  return !(limit >= 3)
+}

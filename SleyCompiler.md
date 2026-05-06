@@ -251,8 +251,9 @@ Near-term:
    constant-if expression and statement simplification, constant comparison
    simplification, identity binary expression,
    redundant boolean comparison, absorbing boolean expression,
-   self-comparison expression, double negation, redundant boolean-if expression
-   and statement cleanup, and same-branch if expression/statement simplification;
+   self-comparison expression, double negation, negated comparison,
+   redundant boolean-if expression and statement cleanup, and same-branch if
+   expression/statement simplification;
    those are structurally repairable through checked plan/fix templates, with
    write/query/verify smoke coverage for imported-call qualification and
    write/verify smoke coverage for pure binding deletion, pure expression
@@ -264,8 +265,9 @@ Near-term:
    redundant boolean comparison
    simplification, absorbing boolean expression simplification,
    self-comparison expression simplification, double negation
-   simplification, redundant boolean-if expression/statement simplification,
-   and same-branch if expression/statement simplification.
+   simplification, negated comparison simplification, redundant boolean-if
+   expression/statement simplification, and same-branch if
+   expression/statement simplification.
    `sley plan
    --graft-templates --template-surface <node-id>` now accepts exact block,
    statement, take, and expression node surfaces: selected task and block

@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.negated_compare",
+  "filters": {
+    "module": null,
+    "rules": [
+      "negated_comparison_expression"
+    ]
+  },
+  "findings": [
+    {
+      "id": "NEGATED_COMPARISON_EXPRESSION",
+      "rule": "negated_comparison_expression",
+      "severity": "warning",
+      "message": "task `app.negated_compare.main` has a negated comparison expression `!(limit >= 3)`",
+      "node": "block:task:app.negated_compare.main:stmt:1:expr",
+      "module": "app.negated_compare",
+      "hint": "replace the negated comparison expression with `limit < 3`"
+    }
+  ]
+}

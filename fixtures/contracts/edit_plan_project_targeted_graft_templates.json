@@ -54,6 +54,7 @@
       "absorbing_boolean_expression",
       "self_comparison_expression",
       "double_negation_expression",
+      "negated_comparison_expression",
       "redundant_boolean_if_expression",
       "redundant_boolean_if_statement",
       "same_branch_if_expression",
