@@ -88,6 +88,25 @@
       "column": 1
     }
   },
+  "insert_affordances": [
+    {
+      "target": "block:task:app.main.main",
+      "target_kind": "block",
+      "max_position": 1,
+      "operation": {
+        "op": "InsertStatement",
+        "payload": {
+          "position": 1,
+          "source": "forge { }"
+        },
+        "target": "block:task:app.main.main"
+      },
+      "editable_json_pointers": [
+        "/payload/source",
+        "/payload/position"
+      ]
+    }
+  ],
   "move_affordances": [
     {
       "target": "block:task:app.main.main:stmt:0",

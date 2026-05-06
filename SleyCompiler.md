@@ -223,7 +223,8 @@ Near-term:
    `sley deploy --dry-run` package reports and digest-bearing artifact
    manifests with deterministic reinspection, graft/fix dry runs, strict
    edit-plan graft
-   operation/transaction schema envelopes reused by graph-slice affordances,
+   operation/transaction schema envelopes reused by graph-slice insert,
+   move, delete, and replace affordances,
    graph-slice focus/task/call-summary contracts, shared diagnostic records,
    standalone trace receipt schemas, checked graph query reports with strict
    task/take/type/effect/call row definitions, `sley-ci` wrapper reports, and
@@ -247,15 +248,16 @@ Near-term:
    write/verify smoke coverage for pure binding deletion. `sley plan
    --graft-templates --template-surface <node-id>` now accepts exact block,
    statement, take, and expression node surfaces: selected task and block
-   surfaces emit checked `insert_statement` starters, statements/takes emit
-   direct graph-slice move/delete templates, and expressions emit a checked no-op
-   `replace_expression` starter that `--emit-graft` can hand directly to
-   `sley graft`. `sley fix --dry-run` can now override editable template
+   surfaces emit checked `insert_statement` starters, graph slices expose
+   insert affordances, statements/takes emit direct graph-slice move/delete
+   templates, and expressions emit a checked no-op `replace_expression` starter
+   that `--emit-graft` can hand directly to `sley graft`.
+   `sley fix --dry-run` can now override editable template
    payloads with `--source`, `--source-file`, and `--position` before executing
    those exact node-surface templates through the graft checker without
    hand-authored graft files. Next broaden authority, style, and migration
    lints.
-5. Extend graph-slice graft planning around checked move/delete operations.
+5. Extend graph-slice graft planning around broader checked operations.
 6. Harden project graft writeback beyond existing-module edits.
 
 Medium-term:

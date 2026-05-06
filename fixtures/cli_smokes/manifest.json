@@ -691,6 +691,7 @@
       "args": ["graph", "--json", "--slice", "task:app.main.main", "examples/project"],
       "covers": [
         "cli:graph-slice",
+        "graph-slice:insert-affordances",
         "graph-slice:replace-affordances",
         "json:sley.symbol_graph.slice.v0"
       ],
@@ -701,6 +702,9 @@
           { "pointer": "/target", "value": "task:app.main.main" },
           { "pointer": "/focus/kind", "value": "task" },
           { "pointer": "/imports/0/id", "value": "import:app.main:app.math" },
+          { "pointer": "/insert_affordances/0/target", "value": "block:task:app.main.main" },
+          { "pointer": "/insert_affordances/0/operation/op", "value": "InsertStatement" },
+          { "pointer": "/insert_affordances/0/editable_json_pointers/0", "value": "/payload/source" },
           { "pointer": "/move_affordances/0/target", "value": "block:task:app.main.main:stmt:0" },
           { "pointer": "/move_affordances/0/operation/op", "value": "MoveNode" },
           { "pointer": "/move_affordances/1/target_kind", "value": "import" },

@@ -127,8 +127,8 @@ and `inspect-deploy-artifacts` JSON Schema validation reports for
 schema/fixture/deploy-handoff contract-kit work.
 The `sley-ci` binary exposes `check`, `verify`, `deploy`, and `smoke` reports
 for local CI and pre-commit gates over existing Sley commands.
-Graph-slice move/delete/replace affordance operations reuse the strict graft
-operation schema from edit-plan reports.
+Graph-slice insert/move/delete/replace affordance operations reuse the strict
+graft operation schema from edit-plan reports.
 Graph-slice focus, optional task, and inbound/outbound call summaries reuse
 AST and query report contracts.
 The trace receipt schema is a standalone JSONL record contract that references
@@ -275,6 +275,9 @@ Current development phase:
   a `replace_expression` repair hint
 - graph, graph-slice, and query module import summaries expose canonical import
   node ids for graft targets such as `import:app.main:app.math`
+- graph slices expose `insert_affordances` for task-local block
+  `InsertStatement` planning, including exact block target ids, insertion
+  limits, starter operation JSON, and editable JSON pointers
 - graph slices expose `move_affordances` for bounded import/type/effect/task,
   statement, and take `MoveNode` planning, including exact parent ids,
   destination insertion limits, starter operation JSON, and editable JSON
@@ -287,4 +290,4 @@ Current development phase:
   `ReplaceExpression` planning; `sley plan --graft-templates` surfaces checked
   `replace_expression` templates when the starter replace graft validates
 - manifest-backed accepted/rejected synthetic gold corpus growth
-- broader graph-slice graft operations around move/delete/replace planning
+- broader graph-slice graft operations around insert/move/delete/replace planning

@@ -80,6 +80,7 @@ pub struct SymbolGraphSlice {
     pub tasks: Vec<DeclarationSymbolSummary>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub task: Option<TaskDecl>,
+    pub insert_affordances: Vec<InsertStatementAffordance>,
     pub move_affordances: Vec<MoveNodeAffordance>,
     pub delete_affordances: Vec<DeleteNodeAffordance>,
     pub replace_affordances: Vec<ReplaceExpressionAffordance>,
@@ -107,6 +108,15 @@ pub struct TaskCallSummary {
     pub target: Option<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub candidates: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct InsertStatementAffordance {
+    pub target: String,
+    pub target_kind: String,
+    pub max_position: usize,
+    pub operation: JsonValue,
+    pub editable_json_pointers: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
@@ -642,6 +652,11 @@ fn build_slice(
         effects: module.effects,
         tasks: module.tasks,
         task: focus_task_index.map(|index| program.tasks[index].clone()),
+        insert_affordances: build_insert_affordances(
+            focus_task_index,
+            &module_task_indexes,
+            program,
+        ),
         move_affordances: build_move_affordances(
             program,
             &focus_module,
@@ -662,6 +677,113 @@ fn build_slice(
         outbound_calls,
         inbound_calls,
     }
+}
+
+fn build_insert_affordances(
+    focus_task_index: Option<usize>,
+    module_task_indexes: &[usize],
+    program: &Program,
+) -> Vec<InsertStatementAffordance> {
+    let task_indexes = focus_task_index
+        .map(|index| vec![index])
+        .unwrap_or_else(|| module_task_indexes.to_vec());
+    let mut affordances = Vec::new();
+    for task_index in task_indexes {
+        let task = &program.tasks[task_index];
+        collect_insert_affordances_in_block(
+            &task.body,
+            &format!("block:{}", task.id),
+            &mut affordances,
+        );
+    }
+    affordances
+}
+
+fn collect_insert_affordances_in_block(
+    block: &Block,
+    target: &str,
+    affordances: &mut Vec<InsertStatementAffordance>,
+) {
+    push_insert_affordance(affordances, target, block.statements.len());
+    for statement in &block.statements {
+        match &statement.kind {
+            StatementKind::If {
+                then_block,
+                else_block,
+                ..
+            } => {
+                collect_insert_affordances_in_block(
+                    then_block,
+                    &format!("{}:then", statement.id),
+                    affordances,
+                );
+                if let Some(else_block) = else_block {
+                    collect_insert_affordances_in_block(
+                        else_block,
+                        &format!("{}:else", statement.id),
+                        affordances,
+                    );
+                }
+            }
+            StatementKind::While { body, .. } => {
+                collect_insert_affordances_in_block(
+                    body,
+                    &format!("{}:body", statement.id),
+                    affordances,
+                );
+            }
+            StatementKind::For { body, .. } => {
+                collect_insert_affordances_in_block(
+                    body,
+                    &format!("{}:body", statement.id),
+                    affordances,
+                );
+            }
+            StatementKind::Forge { body } => {
+                collect_insert_affordances_in_block(
+                    body,
+                    &format!("{}:forge", statement.id),
+                    affordances,
+                );
+            }
+            StatementKind::Binding { .. }
+            | StatementKind::Set { .. }
+            | StatementKind::Return { .. }
+            | StatementKind::Expr { .. } => {}
+        }
+    }
+}
+
+fn push_insert_affordance(
+    affordances: &mut Vec<InsertStatementAffordance>,
+    target: &str,
+    max_position: usize,
+) {
+    affordances.push(InsertStatementAffordance {
+        target: target.to_string(),
+        target_kind: "block".to_string(),
+        max_position,
+        operation: insert_statement_operation(target, max_position),
+        editable_json_pointers: insert_statement_editable_json_pointers(),
+    });
+}
+
+fn insert_statement_operation(target: &str, position: usize) -> JsonValue {
+    json!({
+        "op": "InsertStatement",
+        "target": target,
+        "payload": {
+            "source": "forge { }",
+            "position": position
+        }
+    })
+}
+
+fn insert_statement_editable_json_pointers() -> Vec<String> {
+    vec![
+        "/payload/source".to_string(),
+        "/payload/position".to_string(),
+    ]
 }
 
 fn build_move_affordances(

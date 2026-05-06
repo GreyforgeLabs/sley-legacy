@@ -79,8 +79,8 @@ Current verified surface:
   `missing_module_declaration`, `unchecked_result`, and
   `unqualified_imported_call`, and `unused_pure_binding`.
 - CLI smoke coverage is manifest-backed under
-  `fixtures/cli_smokes/manifest.json`, including graph-slice replace
-  affordances, checked `insert_statement` and `replace_expression` graft
+  `fixtures/cli_smokes/manifest.json`, including graph-slice insert and
+  replace affordances, checked `insert_statement` and `replace_expression` graft
   templates, task-body insert graft emission, direct block, statement, take,
   and expression node surface targeting with expression `--emit-graft`, direct
   statement-surface delete graft emission, exact node-surface
@@ -142,7 +142,8 @@ Current verified surface:
   graft operation and transaction template envelopes,
   the query schema now exposes strict task/take/type/effect/call row
   definitions,
-  graph-slice affordance operations reuse that strict graft operation schema,
+  graph-slice insert/move/delete/replace affordance operations reuse that
+  strict graft operation schema,
   graph-slice focus, task, and call summary payloads are schema-linked,
   the diagnostics schema exposes the shared diagnostic record used by
   graft/doctor/plan/verify report schemas, the graft outcome and trace receipt

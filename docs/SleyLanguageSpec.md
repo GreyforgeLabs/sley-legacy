@@ -637,9 +637,9 @@ schemas pin inventory, fixture root-check, and single-report root-match
 results. Symbol graph, graph slice, and query schemas also pin module
 import/declaration summary shapes so agents can rely on stable import node ids
 for graft targets. The edit-plan schema pins strict graft operation and
-transaction template envelopes, and graph-slice move/delete/replace affordance
-operations reuse that strict graft operation schema. Graph-slice focus,
-optional task, and inbound/outbound call summaries reuse AST and query report
+transaction template envelopes, and graph-slice insert/move/delete/replace
+affordance operations reuse that strict graft operation schema. Graph-slice
+focus, optional task, and inbound/outbound call summaries reuse AST and query report
 contracts. The graft outcome schema pins strict accepted provenance records.
 The trace receipt schema pins the JSONL receipt record for accepted write
 provenance. The ZJX envelope schema pins the graph digest, graph root, optional
@@ -663,7 +663,7 @@ reports, checked lint reports, doctor readiness reports, edit-plan reports,
 project scaffolds, ZJX preview envelopes, graft dry runs and direct graft
 writes, write-mode fix trace receipts, non-empty trace receipt seals, ZJX
 envelopes carrying graph digests and schema-backed trace receipts, graph-slice
-replace affordances, checked
+insert and replace affordances, checked `insert_statement` and
 `replace_expression` graft templates, lint-driven fix writes that clear
 warnings before verify, deploy dry-run reports, typed deploy and agent
 scaffold next-actions, and
@@ -774,8 +774,9 @@ still passes.
 `delete_unused_pure_binding` `DeleteNode` templates when deleting the unread
 binding statement preserves a checked program.
 `--template-surface <surface>` selects a specific task surface by task node id
-or qualified task name, a statement or take node id for direct checked
-graph-slice move/delete templates, an expression node id for a checked no-op
+or qualified task name, a block node id backed by graph-slice insert
+affordances, a statement or take node id for direct checked graph-slice
+move/delete templates, an expression node id for a checked no-op
 `replace_expression` starter template, the `program` missing-module surface,
 or a lint surface by lint finding node id such as `import:app.main:app.stale`,
 `type:app.module.Name`, or `effect:app.module.Name`. For selected tasks with
@@ -816,8 +817,12 @@ task. This is the first stable agent-facing query surface for graft planning.
 Import summaries expose canonical import node ids such as
 `import:app.main:app.shared`, so import `MoveNode` and `DeleteNode` grafts can
 copy targets directly from graph, graph-slice, or query JSON. Graph slices also
-include `move_affordances` for bounded import, type, effect, task, statement,
-and take movement planning: each affordance exposes the exact `MoveNode`
+include `insert_affordances` for task-local block insertion planning: each
+affordance exposes the exact block target, maximum insertion position, starter
+`InsertStatement` operation JSON, and editable `/payload/source` plus
+`/payload/position` pointers. Graph slices also include `move_affordances` for
+bounded import, type, effect, task, statement, and take movement planning: each
+affordance exposes the exact `MoveNode`
 target, current parent, current position, in-parent maximum position, and
 available destination parents with their insertion limits. Affordances and
 destination entries also carry strict starter `MoveNode` operation JSON plus
