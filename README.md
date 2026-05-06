@@ -457,6 +457,9 @@ chosen license and repository values:
 make public-release-check
 ```
 
+The exact public metadata decisions and cut checklist live in
+`docs/PublicReleaseChecklist.md`.
+
 Project form:
 
 ```bash
