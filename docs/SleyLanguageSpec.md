@@ -600,7 +600,8 @@ graphs carry
 `schema: "sley.trace.seal.v0"`, and ZJX preview envelopes carry
 `schema: "sley.zjx.envelope.v0"`.
 The CLI smoke manifest carries
-`schema: "sley.cli_smoke.manifest.v0"`. Project scaffold reports carry
+`schema: "sley.cli_smoke.manifest.v0"`. The accepted/rejected compiler corpus
+manifest carries `schema: "sley.conformance.manifest.v0"`. Project scaffold reports carry
 `schema: "sley.project.scaffold.v0"`. Doctor readiness reports carry
 `schema: "sley.doctor.report.v0"`. Edit-plan reports carry
 `schema: "sley.edit_plan.report.v0"`. CI wrapper reports carry

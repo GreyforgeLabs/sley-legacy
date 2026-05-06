@@ -11,6 +11,9 @@ test:
 
 contracts:
 	cargo run --bin sley-contract -- check-fixtures fixtures/contracts --schemas docs/schemas --json
+	cargo run --bin sley-contract -- validate --schema sley.conformance.manifest.v0 fixtures/corpus/manifest.json --schemas docs/schemas --json
+	cargo run --bin sley-contract -- validate --schema sley.cli_smoke.manifest.v0 fixtures/cli_smokes/manifest.json --schemas docs/schemas --json
+	cargo run --bin sley-contract -- validate --schema sley.cli_smoke.manifest.v0 fixtures/ci_smoke_probe/manifest.json --schemas docs/schemas --json
 
 corpus:
 	cargo run --bin sley-ci -- corpus --json fixtures/corpus/manifest.json

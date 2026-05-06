@@ -1,0 +1,21 @@
+{
+  "schema": "sley.conformance.manifest.v0",
+  "accepted": [
+    {
+      "path": "accepted/pure_main.sley",
+      "covers": [
+        "language:pure-task-call",
+        "formatter:round-trip"
+      ]
+    }
+  ],
+  "rejected": [
+    {
+      "path": "rejected/unknown_identifier.sley",
+      "covers": [
+        "language:unknown-identifier",
+        "diagnostic:UNKNOWN_IDENTIFIER"
+      ]
+    }
+  ]
+}
