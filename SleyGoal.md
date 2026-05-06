@@ -197,7 +197,8 @@ Current verified surface:
   `AddImport` writeback into an existing on-disk module file that was not yet
   loaded through the entry import graph through both direct graft JSON and
   `sley fix --write --kind add_import --module <module>` followed by strict
-  project checks.
+  project checks, plus scoped seeded `Network` capability acceptance and
+  scope-denial diagnostics under the runtime smoke surface.
 - Stable JSON roots now include bounded AST node reports, query reports, lint
   reports, run reports, doctor reports, edit-plan reports, verify reports,
   deploy dry-run reports, deploy artifact manifests, deploy artifact check

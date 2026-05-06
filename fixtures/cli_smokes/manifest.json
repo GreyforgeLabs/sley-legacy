@@ -6083,6 +6083,36 @@
       }
     },
     {
+      "name": "run_network_scope_denied_json",
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "Network=https://other.test/",
+        "--http-text",
+        "https://example.test/profile",
+        "Ada",
+        "examples/network_gate.sley"
+      ],
+      "covers": [
+        "cli:run",
+        "json:sley.diagnostics.report.v0",
+        "diagnostic:RUNTIME_CAPABILITY_SCOPE_DENIED",
+        "host:Network",
+        "host:scoped-capability"
+      ],
+      "expect": {
+        "success": false,
+        "stderr_contains": ["operation failed"],
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.diagnostics.report.v0" },
+          { "pointer": "/status", "value": "error" },
+          { "pointer": "/diagnostics/0/id", "value": "RUNTIME_CAPABILITY_SCOPE_DENIED" },
+          { "pointer": "/diagnostics/0/node", "value": "block:task:main.main:stmt:0:expr:try" }
+        ]
+      }
+    },
+    {
       "name": "run_shell_json",
       "args": [
         "run",

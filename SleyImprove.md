@@ -665,7 +665,8 @@ The current smoke manifest covers:
 - API hygiene through the checked `unused_take` lint rule
 - deterministic seeded execution for `FileRead`, `FileWrite`, `DatabaseRead`,
   `DatabaseWrite`, `Network`, `Shell`, `ModelCall`, `SecretRead`, `Deploy`,
-  and `Spend`
+  and `Spend`, including manifest-backed scoped `Network` acceptance and
+  scope-denial diagnostics
 - local deploy package dry-runs that prove verify, seal, and ZJX package
   summaries without live deployment authority and can write explicit local
   report/seal/package handoff artifacts with a digest manifest plus a
