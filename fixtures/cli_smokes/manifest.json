@@ -2567,11 +2567,12 @@
           { "pointer": "/filters/rules/23", "value": "absorbing_boolean_expression" },
           { "pointer": "/filters/rules/24", "value": "self_comparison_expression" },
           { "pointer": "/filters/rules/25", "value": "double_negation_expression" },
-          { "pointer": "/filters/rules/26", "value": "redundant_boolean_if_expression" },
-          { "pointer": "/filters/rules/27", "value": "redundant_boolean_if_statement" },
-          { "pointer": "/filters/rules/28", "value": "same_branch_if_expression" },
-          { "pointer": "/filters/rules/29", "value": "same_branch_if_statement" },
-          { "pointer": "/filters/rules/30", "value": "unreachable_statement" },
+          { "pointer": "/filters/rules/26", "value": "negated_comparison_expression" },
+          { "pointer": "/filters/rules/27", "value": "redundant_boolean_if_expression" },
+          { "pointer": "/filters/rules/28", "value": "redundant_boolean_if_statement" },
+          { "pointer": "/filters/rules/29", "value": "same_branch_if_expression" },
+          { "pointer": "/filters/rules/30", "value": "same_branch_if_statement" },
+          { "pointer": "/filters/rules/31", "value": "unreachable_statement" },
           { "pointer": "/findings", "value": [] }
         ]
       }
@@ -5037,6 +5038,155 @@
           { "pointer": "/summary/lint_finding_count", "value": 0 },
           { "pointer": "/runtime/value/kind", "value": "Bool" },
           { "pointer": "/runtime/value/value", "value": true },
+          { "pointer": "/lint/status", "value": "ok" }
+        ]
+      }
+    },
+    {
+      "name": "lint_negated_comparison_expression_rule_json",
+      "args": [
+        "lint",
+        "--json",
+        "--rule",
+        "negated-comparison-expression",
+        "examples/negated_comparison_expression.sley"
+      ],
+      "covers": [
+        "cli:lint",
+        "lint:negated_comparison_expression",
+        "json:sley.lint.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.lint.report.v0" },
+          { "pointer": "/status", "value": "findings" },
+          { "pointer": "/filters/rules/0", "value": "negated_comparison_expression" },
+          { "pointer": "/findings/0/id", "value": "NEGATED_COMPARISON_EXPRESSION" },
+          { "pointer": "/findings/0/node", "value": "block:task:app.negated_compare.main:stmt:1:expr" }
+        ]
+      }
+    },
+    {
+      "name": "plan_negated_comparison_expression_template_json",
+      "args": [
+        "plan",
+        "--json",
+        "--graft-templates",
+        "--template-surface",
+        "block:task:app.negated_compare.main:stmt:1:expr",
+        "examples/negated_comparison_expression.sley"
+      ],
+      "covers": [
+        "cli:plan",
+        "graft:templates:negated-comparison-expression",
+        "lint:negated_comparison_expression",
+        "json:sley.edit_plan.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.edit_plan.report.v0" },
+          { "pointer": "/status", "value": "warnings" },
+          { "pointer": "/lint/findings/0/id", "value": "NEGATED_COMPARISON_EXPRESSION" },
+          { "pointer": "/graft_templates/0/kind", "value": "simplify_negated_comparison_expression" },
+          { "pointer": "/graft_templates/0/surface", "value": "block:task:app.negated_compare.main:stmt:1:expr" },
+          { "pointer": "/graft_templates/0/operation/op", "value": "ReplaceExpression" },
+          { "pointer": "/graft_templates/0/operation/payload/source", "value": "limit < 3" }
+        ]
+      }
+    },
+    {
+      "name": "fix_negated_comparison_expression_write_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/fix-negated-comparison/main.sley",
+          "content": "module app.negated_compare_fix\n\ntask main -> Bool {\n  bind limit = 7\n\n  return !(limit >= 3)\n}\n"
+        }
+      ],
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "simplify_negated_comparison_expression",
+        "--template-surface",
+        "block:task:app.negated_compare_fix.main:stmt:1:expr",
+        "--write",
+        "--actor",
+        "agent:cli-smoke",
+        "{tmp}/fix-negated-comparison/main.sley"
+      ],
+      "covers": [
+        "cli:fix",
+        "cli:fix-write",
+        "cli:smoke-setup-files",
+        "fix:lint-cleanup-write",
+        "fix:write-source",
+        "graft:templates:negated-comparison-expression",
+        "json:sley.graft.outcome.v0",
+        "lint:negated_comparison_expression",
+        "readiness:negated-comparison-repair-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/actor", "value": "agent:cli-smoke" },
+          { "pointer": "/provenance/0/operation", "value": "ReplaceExpression" },
+          { "pointer": "/provenance/0/targets/0", "value": "block:task:app.negated_compare_fix.main:stmt:1:expr" }
+        ]
+      }
+    },
+    {
+      "name": "lint_fix_negated_comparison_expression_write_json",
+      "args": [
+        "lint",
+        "--json",
+        "--rule",
+        "negated-comparison-expression",
+        "{tmp}/fix-negated-comparison/main.sley"
+      ],
+      "covers": [
+        "cli:lint",
+        "fix:lint-cleanup-write",
+        "lint:negated_comparison_expression",
+        "json:sley.lint.report.v0",
+        "readiness:negated-comparison-repair-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.lint.report.v0" },
+          { "pointer": "/status", "value": "ok" }
+        ]
+      }
+    },
+    {
+      "name": "verify_fix_negated_comparison_expression_write_json",
+      "args": [
+        "verify",
+        "--json",
+        "--deny-warnings",
+        "{tmp}/fix-negated-comparison/main.sley"
+      ],
+      "covers": [
+        "cli:verify",
+        "fix:lint-cleanup-write",
+        "json:sley.verify.report.v0",
+        "json:sley.lint.report.v0",
+        "lint:negated_comparison_expression",
+        "readiness:negated-comparison-repair-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.verify.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/summary/warning_count", "value": 0 },
+          { "pointer": "/summary/lint_finding_count", "value": 0 },
+          { "pointer": "/runtime/value/kind", "value": "Bool" },
+          { "pointer": "/runtime/value/value", "value": false },
           { "pointer": "/lint/status", "value": "ok" }
         ]
       }

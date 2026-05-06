@@ -3925,6 +3925,85 @@ fn edit_plan_graft_templates_include_double_negation_expression_simplify() {
 }
 
 #[test]
+fn edit_plan_graft_templates_include_negated_comparison_expression_simplify() {
+    let source = include_str!("../examples/negated_comparison_expression.sley");
+    let program = parse_program(source).expect("parse negated comparison fixture");
+    let report = build_edit_plan_report_with_options(
+        "examples/negated_comparison_expression.sley",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: None,
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "warnings");
+    assert_eq!(report.summary.lint_finding_count, 1);
+    assert_eq!(
+        report.lint.as_ref().expect("lint summary").findings[0].id,
+        "NEGATED_COMPARISON_EXPRESSION"
+    );
+    let template = report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "simplify_negated_comparison_expression")
+        .expect("negated comparison expression simplify template");
+    assert_eq!(
+        template.surface,
+        "block:task:app.negated_compare.main:stmt:1:expr"
+    );
+    assert_eq!(
+        template.operation.pointer("/op"),
+        Some(&serde_json::json!("ReplaceExpression"))
+    );
+    assert_eq!(
+        template.operation.pointer("/payload/source"),
+        Some(&serde_json::json!("limit < 3"))
+    );
+    assert_eq!(template.editable_json_pointers, vec!["/payload/source"]);
+    let graft: GraftInput = serde_json::from_value(template.operation.clone())
+        .expect("parse negated comparison template");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:negated-comparison-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted_source = outcome.source.expect("grafted source");
+    assert!(grafted_source.contains("return limit < 3"));
+    assert!(!grafted_source.contains("!(limit >= 3)"));
+    let grafted_program = parse_program(&grafted_source).expect("parse grafted source");
+    let lint_report = build_lint_report(
+        &grafted_program,
+        LintOptions {
+            rules: vec![LintRule::NegatedComparisonExpression],
+            module: None,
+        },
+    );
+    assert_eq!(lint_report.status, "ok");
+
+    let targeted_report = build_edit_plan_report_with_options(
+        "examples/negated_comparison_expression.sley",
+        Ok(program),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("block:task:app.negated_compare.main:stmt:1:expr".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(targeted_report.status, "warnings");
+    assert!(targeted_report.diagnostics.is_empty());
+    assert_eq!(targeted_report.graft_templates.len(), 1);
+    assert_eq!(
+        targeted_report.graft_templates[0].kind,
+        "simplify_negated_comparison_expression"
+    );
+    assert!(targeted_report.transaction_templates.is_empty());
+}
+
+#[test]
 fn edit_plan_graft_templates_include_redundant_boolean_if_expression_simplify() {
     let source = include_str!("../examples/redundant_boolean_if_expression.sley");
     let program = parse_program(source).expect("parse redundant boolean if fixture");
@@ -6074,6 +6153,21 @@ task helper -> Result<Text, Error> {
         include_str!("../fixtures/contracts/lint_double_negation_expression.json"),
     );
 
+    let negated_comparison_source = include_str!("../examples/negated_comparison_expression.sley");
+    let negated_comparison_program =
+        parse_program(negated_comparison_source).expect("parse negated comparison fixture");
+    let negated_comparison_lint = build_lint_report(
+        &negated_comparison_program,
+        LintOptions {
+            rules: vec![LintRule::NegatedComparisonExpression],
+            module: None,
+        },
+    );
+    assert_json_snapshot(
+        &negated_comparison_lint,
+        include_str!("../fixtures/contracts/lint_negated_comparison_expression.json"),
+    );
+
     let redundant_boolean_if_source =
         include_str!("../examples/redundant_boolean_if_expression.sley");
     let redundant_boolean_if_program =
@@ -6837,7 +6931,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(68))
+        Some(&serde_json::json!(69))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -13537,6 +13631,88 @@ task main -> Bool {
 }
 
 #[test]
+fn lint_report_flags_negated_comparison_expressions() {
+    let source = r#"
+module app.negated_compare
+
+task main -> Bool {
+  bind limit = 7
+  bind exact = !(limit == 7)
+  bind text = !("a" != "b")
+  bind low = !(limit < 3)
+
+  return !(limit >= 3)
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+
+    let report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::NegatedComparisonExpression],
+            module: None,
+        },
+    );
+
+    assert_eq!(report.schema, LINT_REPORT_SCHEMA);
+    assert_eq!(report.status, "findings");
+    assert_eq!(report.entry_module, "app.negated_compare");
+    assert_eq!(report.filters.rules, vec!["negated_comparison_expression"]);
+    assert_eq!(report.findings.len(), 4);
+    assert_eq!(report.findings[0].id, "NEGATED_COMPARISON_EXPRESSION");
+    assert_eq!(report.findings[0].rule, "negated_comparison_expression");
+    let nodes: Vec<&str> = report
+        .findings
+        .iter()
+        .map(|finding| finding.node.as_str())
+        .collect();
+    assert!(nodes.contains(&"block:task:app.negated_compare.main:stmt:1:expr"));
+    assert!(nodes.contains(&"block:task:app.negated_compare.main:stmt:2:expr"));
+    assert!(nodes.contains(&"block:task:app.negated_compare.main:stmt:3:expr"));
+    assert!(nodes.contains(&"block:task:app.negated_compare.main:stmt:4:expr"));
+    assert_eq!(report.findings[0].module, "app.negated_compare");
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|finding| finding.hint.contains("limit != 7"))
+    );
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|finding| finding.hint.contains("\"a\" == \"b\""))
+    );
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|finding| finding.hint.contains("limit >= 3"))
+    );
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|finding| finding.hint.contains("limit < 3"))
+    );
+
+    let scoped_report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::NegatedComparisonExpression],
+            module: Some("app.other".to_string()),
+        },
+    );
+    assert_eq!(scoped_report.status, "ok");
+    assert!(scoped_report.findings.is_empty());
+}
+
+#[test]
 fn lint_report_flags_redundant_boolean_if_expressions() {
     let source = r#"
 module app.boolean_if
@@ -16001,6 +16177,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:templates:absorbing-boolean-expression",
         "graft:templates:self-comparison-expression",
         "graft:templates:double-negation-expression",
+        "graft:templates:negated-comparison-expression",
         "graft:templates:redundant-boolean-if-expression",
         "graft:templates:same-branch-if-expression",
         "graft:templates:add-task",
@@ -16066,6 +16243,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "lint:absorbing_boolean_expression",
         "lint:self_comparison_expression",
         "lint:double_negation_expression",
+        "lint:negated_comparison_expression",
         "lint:redundant_boolean_if_expression",
         "lint:redundant_boolean_if_statement",
         "lint:same_branch_if_expression",
@@ -16092,6 +16270,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:absorbing-boolean-repair-write-verify",
         "readiness:self-comparison-repair-write-verify",
         "readiness:double-negation-repair-write-verify",
+        "readiness:negated-comparison-repair-write-verify",
         "readiness:redundant-boolean-if-repair-write-verify",
         "readiness:redundant-boolean-if-statement-repair-write-verify",
         "readiness:same-branch-if-repair-write-verify",
