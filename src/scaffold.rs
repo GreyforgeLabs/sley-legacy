@@ -12,6 +12,7 @@ pub const PROJECT_SCAFFOLD_SCHEMA: &str = "sley.project.scaffold.v0";
 pub enum ScaffoldTemplate {
     Hello,
     Deploy,
+    Agent,
 }
 
 impl ScaffoldTemplate {
@@ -19,6 +20,7 @@ impl ScaffoldTemplate {
         match self {
             Self::Hello => "hello",
             Self::Deploy => "deploy",
+            Self::Agent => "agent",
         }
     }
 }
@@ -216,6 +218,10 @@ fn readme_source(name: &str, template: ScaffoldTemplate) -> String {
             "sley verify --json --deny-warnings --cap Deploy --deploy-result staging staged .",
             "sley run --json --cap Deploy --deploy-result staging staged .",
         ),
+        ScaffoldTemplate::Agent => (
+            "sley verify --json --deny-warnings --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile \"profile ready\" --cap ModelCall --model-output deploy-plan \"plan approved\" --cap Deploy --deploy-result staging staged .",
+            "sley run --json --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile \"profile ready\" --cap ModelCall --model-output deploy-plan \"plan approved\" --cap Deploy --deploy-result staging staged .",
+        ),
     };
     format!(
         "# {name}\n\nGenerated Sley project.\n\n```bash\nsley check --json .\nsley doctor --json .\nsley query --json --kind tasks .\nsley plan --json .\nsley lint --json --deny-warnings .\n{verify}\n{run}\nsley seal --json .\nsley zjx --json .\n```\n"
@@ -231,6 +237,10 @@ task main -> Text {{\n  return \"hello sley\"\n}}\n"
         ScaffoldTemplate::Deploy => format!(
             "module {module}\n\n\
 task main -> Result<Text, Error> uses Deploy {{\n  bind result = call deploy.try_stage(\"staging\")?\n\n  return Ok(result)\n}}\n"
+        ),
+        ScaffoldTemplate::Agent => format!(
+            "module {module}\n\n\
+task main -> Result<Text, Error> uses SecretRead, Network, ModelCall, Deploy {{\n  bind token = call secrets.try_get(\"api_key\")?\n  bind profile = call http.try_get_text(\"https://example.test/profile\")?\n  bind plan = call model.try_complete(\"deploy-plan\")?\n  bind staged = call deploy.try_stage(\"staging\")?\n\n  if len(token) > 0 {{\n    return Ok(profile + \" | \" + plan + \" | \" + staged)\n  }}\n\n  return Err(\"api_key seed was empty\")\n}}\n"
         ),
     }
 }
@@ -309,6 +319,23 @@ fn next_actions(template: ScaffoldTemplate) -> Vec<ScaffoldNextAction> {
                 ],
             ),
         ],
+        ScaffoldTemplate::Agent => vec![
+            next_action(
+                "verify_seeded_agent",
+                "verify agent authority with deterministic secret, network, model, and deploy seeds",
+                seeded_agent_command("sley", "verify"),
+            ),
+            next_action(
+                "ci_verify_seeded_agent",
+                "run the same seeded agent gate through the local CI wrapper",
+                seeded_agent_command("sley-ci", "verify"),
+            ),
+            next_action(
+                "run_seeded_agent",
+                "execute the agent starter with deterministic seeded authority",
+                seeded_agent_command("sley", "run"),
+            ),
+        ],
     };
     actions.extend(extra_actions);
     actions.push(next_action(
@@ -330,6 +357,39 @@ fn next_action(kind: &str, reason: &str, command: Vec<&str>) -> ScaffoldNextActi
         reason: reason.to_string(),
         command: command.into_iter().map(str::to_string).collect(),
     }
+}
+
+fn seeded_agent_command(binary: &'static str, verb: &'static str) -> Vec<&'static str> {
+    let mut command = vec![
+        binary,
+        verb,
+        "--json",
+        "--cap",
+        "SecretRead",
+        "--secret",
+        "api_key",
+        "redacted",
+        "--cap",
+        "Network",
+        "--http-text",
+        "https://example.test/profile",
+        "profile ready",
+        "--cap",
+        "ModelCall",
+        "--model-output",
+        "deploy-plan",
+        "plan approved",
+        "--cap",
+        "Deploy",
+        "--deploy-result",
+        "staging",
+        "staged",
+        ".",
+    ];
+    if verb == "verify" {
+        command.insert(3, "--deny-warnings");
+    }
+    command
 }
 
 fn module_source_path(source_root: &str, module: &str) -> PathBuf {

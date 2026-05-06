@@ -217,8 +217,9 @@ Near-term:
 3. Keep expanding the manifest-backed accepted/rejected gold corpus and CLI
    smoke conformance suite. They now cover runtime authority for the seeded
    host adapter surface, stable JSON roots, project scaffolding, graph/ZJX
-   output with recomputable graph digests, typed deploy scaffold next-actions
-   through seal/ZJX handoff, graft/fix dry runs, strict edit-plan graft
+   output with recomputable graph digests, typed deploy and agent scaffold
+   next-actions through seal/ZJX handoff, including the seeded agent
+   `sley-ci verify` handoff, graft/fix dry runs, strict edit-plan graft
    operation/transaction schema envelopes reused by graph-slice affordances,
    graph-slice focus/task/call-summary contracts, shared diagnostic records,
    standalone trace receipt schemas, checked graph query reports with strict

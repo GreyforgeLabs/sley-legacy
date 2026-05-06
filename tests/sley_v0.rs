@@ -24,7 +24,7 @@ use sley::query::{QUERY_REPORT_SCHEMA, QueryKind, QueryOptions, build_query_repo
 use sley::runtime::{RuntimeGates, Value, run_main, run_main_with_gates};
 use sley::scaffold::{
     PROJECT_SCAFFOLD_SCHEMA, ProjectScaffoldReport, ProjectScaffoldSummary, ScaffoldFile,
-    ScaffoldNextAction,
+    ScaffoldNextAction, ScaffoldOptions, ScaffoldTemplate, scaffold_project,
 };
 use sley::symbols::{
     SYMBOL_GRAPH_SCHEMA, SYMBOL_GRAPH_SLICE_SCHEMA, build_symbol_graph, slice_symbol_graph,
@@ -483,6 +483,109 @@ fn project_scaffold_creates_checked_deploy_project() {
             .pointer("/diagnostics/0/id")
             .is_some_and(|id| id == "PROJECT_SCAFFOLD_FILE_EXISTS")
     );
+
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn project_scaffold_creates_checked_agent_project() {
+    let root = temp_project_dir("new-agent");
+    let output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args([
+            "new",
+            "--json",
+            "--template",
+            "agent",
+            "--name",
+            "agent-app",
+            "--module",
+            "app.main",
+        ])
+        .arg(&root)
+        .output()
+        .expect("run sley new agent");
+    let stdout = String::from_utf8(output.stdout).expect("agent stdout utf8");
+    let stderr = String::from_utf8(output.stderr).expect("agent stderr utf8");
+    assert!(
+        output.status.success(),
+        "stdout: {stdout}\nstderr: {stderr}"
+    );
+    let json: serde_json::Value = serde_json::from_str(&stdout).expect("parse agent JSON");
+    assert_eq!(
+        json.pointer("/schema"),
+        Some(&serde_json::json!(PROJECT_SCAFFOLD_SCHEMA))
+    );
+    assert_eq!(
+        json.pointer("/project/template"),
+        Some(&serde_json::json!("agent"))
+    );
+    assert!(root.join("sley.toml").exists());
+    assert!(root.join("README.md").exists());
+    assert!(root.join("src/app/main.sley").exists());
+
+    let project = load_project(&root).expect("load scaffolded agent project");
+    let diagnostics = check_program(&project.program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected scaffold diagnostics: {diagnostics:#?}"
+    );
+    let report: ProjectScaffoldReport =
+        serde_json::from_str(&stdout).expect("parse agent scaffold report");
+    assert_eq!(report.next_actions.len(), report.next_commands.len());
+    assert_eq!(report.next_actions[5].kind, "verify_seeded_agent");
+    assert_eq!(report.next_actions[6].kind, "ci_verify_seeded_agent");
+    assert_eq!(report.next_actions[7].kind, "run_seeded_agent");
+    assert_eq!(report.next_actions[8].kind, "seal_project");
+    assert_eq!(report.next_actions[9].kind, "package_project");
+
+    for (action, command) in report.next_actions.iter().zip(&report.next_commands) {
+        assert_eq!(
+            &action.command, command,
+            "next action command should mirror legacy next_commands"
+        );
+        let Some(binary) = command.first().map(String::as_str) else {
+            panic!("next action {} command was empty", action.kind);
+        };
+        let executable = match binary {
+            "sley" => env!("CARGO_BIN_EXE_sley"),
+            "sley-ci" => env!("CARGO_BIN_EXE_sley-ci"),
+            other => panic!("unexpected scaffold command binary {other:?}"),
+        };
+        let output = ProcessCommand::new(executable)
+            .current_dir(&root)
+            .args(&command[1..])
+            .output()
+            .unwrap_or_else(|error| panic!("run agent next action {}: {error}", action.kind));
+        let stdout = String::from_utf8(output.stdout).unwrap_or_else(|error| {
+            panic!("agent next action {} stdout utf8: {error}", action.kind)
+        });
+        let stderr = String::from_utf8(output.stderr).unwrap_or_else(|error| {
+            panic!("agent next action {} stderr utf8: {error}", action.kind)
+        });
+        assert!(
+            output.status.success(),
+            "agent next action {} should succeed\nstdout: {stdout}\nstderr: {stderr}",
+            action.kind
+        );
+        if action.kind == "ci_verify_seeded_agent" {
+            let value: serde_json::Value =
+                serde_json::from_str(&stdout).expect("parse sley-ci scaffold JSON");
+            assert_eq!(
+                value.pointer("/schema"),
+                Some(&serde_json::json!("sley.ci.report.v0"))
+            );
+            assert_eq!(value.pointer("/status"), Some(&serde_json::json!("passed")));
+        }
+        if action.kind == "run_seeded_agent" {
+            let value: Value = serde_json::from_str(&stdout).expect("parse agent runtime JSON");
+            assert_eq!(
+                value,
+                Value::Ok(Box::new(Value::Text(
+                    "profile ready | plan approved | staged".to_string()
+                )))
+            );
+        }
+    }
 
     let _ = fs::remove_dir_all(root);
 }
@@ -3629,6 +3732,22 @@ task main -> Used uses UsedEffect {
         &scaffold,
         include_str!("../fixtures/contracts/project_scaffold_deploy.json"),
     );
+    let agent_scaffold_root = temp_project_dir("contract-agent-scaffold");
+    let mut agent_scaffold = scaffold_project(
+        &agent_scaffold_root,
+        ScaffoldOptions {
+            name: Some("agent-app".to_string()),
+            module: "app.main".to_string(),
+            template: ScaffoldTemplate::Agent,
+        },
+    )
+    .unwrap_or_else(|diagnostics| panic!("agent scaffold diagnostics: {diagnostics:#?}"));
+    agent_scaffold.project.root = "agent-app".to_string();
+    assert_json_snapshot(
+        &agent_scaffold,
+        include_str!("../fixtures/contracts/project_scaffold_agent.json"),
+    );
+    let _ = fs::remove_dir_all(agent_scaffold_root);
 
     let doctor = build_doctor_report("examples/project", Ok(project.program.clone()), false);
     assert_json_snapshot(
@@ -3837,7 +3956,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(23))
+        Some(&serde_json::json!(24))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -10389,6 +10508,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:project-lint-repair-write-verify",
         "readiness:remove-take-transaction-write-verify",
         "readiness:verify-package-next-action",
+        "scaffold:agent-quickstart",
         "scaffold:deploy-quickstart",
         "scaffold:handoff-actions",
         "scaffold:next-actions",

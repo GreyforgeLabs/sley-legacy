@@ -94,8 +94,9 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
    - Current bootstrap: in-tree `src/bin/sley-ci.rs` exposes `check`, `verify`,
      and `smoke` wrappers with `schema: "sley.ci.report.v0"` output; GitHub
      Action, pre-commit hook, and sample workflow packaging remain future work.
-   - Bootstrap done when a generated `sley new --template deploy` project can
-     run the seeded verify gate and a CLI smoke manifest through `sley-ci`.
+   - Bootstrap done when generated `sley new --template deploy` and
+     `sley new --template agent` projects can run seeded verify gates and a CLI
+     smoke manifest through `sley-ci`.
 
 3. `tree-sitter-sley`
    - Inputs: `.sley` source fixtures.
@@ -168,7 +169,8 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
      select a checked repair, run gates, and leave trace evidence.
 
 8. `sley-template-pack`
-   - Curated project templates beyond `hello` and `deploy`.
+   - Curated project templates beyond `hello`, `deploy`, and the first in-tree
+     `agent` starter.
    - MVP: `library`, `cli`, `service-gate`, `data-pipeline`, and
      `agent-task-pack` templates, all deterministic and verify-ready.
 

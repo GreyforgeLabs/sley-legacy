@@ -1,0 +1,319 @@
+{
+  "schema": "sley.project.scaffold.v0",
+  "status": "created",
+  "project": {
+    "name": "agent-app",
+    "root": "agent-app",
+    "source_root": "src",
+    "entry_module": "app.main",
+    "template": "agent"
+  },
+  "files": [
+    {
+      "path": "sley.toml",
+      "kind": "manifest"
+    },
+    {
+      "path": "README.md",
+      "kind": "guide"
+    },
+    {
+      "path": "src/app/main.sley",
+      "kind": "source"
+    }
+  ],
+  "next_commands": [
+    [
+      "sley",
+      "check",
+      "--json",
+      "."
+    ],
+    [
+      "sley",
+      "doctor",
+      "--json",
+      "."
+    ],
+    [
+      "sley",
+      "query",
+      "--json",
+      "--kind",
+      "tasks",
+      "."
+    ],
+    [
+      "sley",
+      "plan",
+      "--json",
+      "."
+    ],
+    [
+      "sley",
+      "lint",
+      "--json",
+      "--deny-warnings",
+      "."
+    ],
+    [
+      "sley",
+      "verify",
+      "--json",
+      "--deny-warnings",
+      "--cap",
+      "SecretRead",
+      "--secret",
+      "api_key",
+      "redacted",
+      "--cap",
+      "Network",
+      "--http-text",
+      "https://example.test/profile",
+      "profile ready",
+      "--cap",
+      "ModelCall",
+      "--model-output",
+      "deploy-plan",
+      "plan approved",
+      "--cap",
+      "Deploy",
+      "--deploy-result",
+      "staging",
+      "staged",
+      "."
+    ],
+    [
+      "sley-ci",
+      "verify",
+      "--json",
+      "--deny-warnings",
+      "--cap",
+      "SecretRead",
+      "--secret",
+      "api_key",
+      "redacted",
+      "--cap",
+      "Network",
+      "--http-text",
+      "https://example.test/profile",
+      "profile ready",
+      "--cap",
+      "ModelCall",
+      "--model-output",
+      "deploy-plan",
+      "plan approved",
+      "--cap",
+      "Deploy",
+      "--deploy-result",
+      "staging",
+      "staged",
+      "."
+    ],
+    [
+      "sley",
+      "run",
+      "--json",
+      "--cap",
+      "SecretRead",
+      "--secret",
+      "api_key",
+      "redacted",
+      "--cap",
+      "Network",
+      "--http-text",
+      "https://example.test/profile",
+      "profile ready",
+      "--cap",
+      "ModelCall",
+      "--model-output",
+      "deploy-plan",
+      "plan approved",
+      "--cap",
+      "Deploy",
+      "--deploy-result",
+      "staging",
+      "staged",
+      "."
+    ],
+    [
+      "sley",
+      "seal",
+      "--json",
+      "."
+    ],
+    [
+      "sley",
+      "zjx",
+      "--json",
+      "."
+    ]
+  ],
+  "next_actions": [
+    {
+      "kind": "check_project",
+      "reason": "confirm the scaffold parses and passes strict checks",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "."
+      ]
+    },
+    {
+      "kind": "doctor_project",
+      "reason": "summarize strict checks, query facts, and lint gates in one readiness report",
+      "command": [
+        "sley",
+        "doctor",
+        "--json",
+        "."
+      ]
+    },
+    {
+      "kind": "inspect_tasks",
+      "reason": "read the entry task surface before editing",
+      "command": [
+        "sley",
+        "query",
+        "--json",
+        "--kind",
+        "tasks",
+        "."
+      ]
+    },
+    {
+      "kind": "plan_first_edit",
+      "reason": "ask Loom for ranked edit surfaces and post-edit gates",
+      "command": [
+        "sley",
+        "plan",
+        "--json",
+        "."
+      ]
+    },
+    {
+      "kind": "lint_gate",
+      "reason": "keep warning-grade hygiene strict before runtime work",
+      "command": [
+        "sley",
+        "lint",
+        "--json",
+        "--deny-warnings",
+        "."
+      ]
+    },
+    {
+      "kind": "verify_seeded_agent",
+      "reason": "verify agent authority with deterministic secret, network, model, and deploy seeds",
+      "command": [
+        "sley",
+        "verify",
+        "--json",
+        "--deny-warnings",
+        "--cap",
+        "SecretRead",
+        "--secret",
+        "api_key",
+        "redacted",
+        "--cap",
+        "Network",
+        "--http-text",
+        "https://example.test/profile",
+        "profile ready",
+        "--cap",
+        "ModelCall",
+        "--model-output",
+        "deploy-plan",
+        "plan approved",
+        "--cap",
+        "Deploy",
+        "--deploy-result",
+        "staging",
+        "staged",
+        "."
+      ]
+    },
+    {
+      "kind": "ci_verify_seeded_agent",
+      "reason": "run the same seeded agent gate through the local CI wrapper",
+      "command": [
+        "sley-ci",
+        "verify",
+        "--json",
+        "--deny-warnings",
+        "--cap",
+        "SecretRead",
+        "--secret",
+        "api_key",
+        "redacted",
+        "--cap",
+        "Network",
+        "--http-text",
+        "https://example.test/profile",
+        "profile ready",
+        "--cap",
+        "ModelCall",
+        "--model-output",
+        "deploy-plan",
+        "plan approved",
+        "--cap",
+        "Deploy",
+        "--deploy-result",
+        "staging",
+        "staged",
+        "."
+      ]
+    },
+    {
+      "kind": "run_seeded_agent",
+      "reason": "execute the agent starter with deterministic seeded authority",
+      "command": [
+        "sley",
+        "run",
+        "--json",
+        "--cap",
+        "SecretRead",
+        "--secret",
+        "api_key",
+        "redacted",
+        "--cap",
+        "Network",
+        "--http-text",
+        "https://example.test/profile",
+        "profile ready",
+        "--cap",
+        "ModelCall",
+        "--model-output",
+        "deploy-plan",
+        "plan approved",
+        "--cap",
+        "Deploy",
+        "--deploy-result",
+        "staging",
+        "staged",
+        "."
+      ]
+    },
+    {
+      "kind": "seal_project",
+      "reason": "create a content-addressed review artifact for the scaffold",
+      "command": [
+        "sley",
+        "seal",
+        "--json",
+        "."
+      ]
+    },
+    {
+      "kind": "package_project",
+      "reason": "create a ZJX preview envelope for agent handoff",
+      "command": [
+        "sley",
+        "zjx",
+        "--json",
+        "."
+      ]
+    }
+  ]
+}
