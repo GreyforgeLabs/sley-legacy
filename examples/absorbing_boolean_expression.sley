@@ -1,0 +1,7 @@
+module app.absorbing_boolean
+
+task main -> Bool {
+  bind ready = true
+
+  return ready && false
+}

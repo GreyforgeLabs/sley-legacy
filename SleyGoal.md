@@ -40,7 +40,7 @@ Current verified surface:
 
 - `cargo fmt --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 229 tests.
+- Current integration coverage is 231 tests.
 - `sley query --json` emits `schema: "sley.query.report.v0"` and supports
   `--kind all|modules|tasks|types|effects|calls`, `--module <module>`, and
   `--exported`, including strict task/take/type/effect/call row definitions.
@@ -74,6 +74,7 @@ Current verified surface:
   `--rule mutable-binding-never-set`, `--rule constant-if-expression`,
   `--rule identity-binary-expression`,
   `--rule redundant-boolean-comparison`,
+  `--rule absorbing-boolean-expression`,
   `--rule double-negation-expression`,
   `--rule redundant-boolean-if-expression`,
   `--rule same-branch-if-expression`, and `--deny-warnings`.
@@ -85,8 +86,8 @@ Current verified surface:
   `unqualified_imported_call`, `unused_pure_binding`, and
   `mutable_binding_never_set`, `constant_if_expression`,
   `identity_binary_expression`, `redundant_boolean_comparison`, and
-  `double_negation_expression`, `redundant_boolean_if_expression`, and
-  `same_branch_if_expression`.
+  `absorbing_boolean_expression`, `double_negation_expression`,
+  `redundant_boolean_if_expression`, and `same_branch_if_expression`.
 - CLI smoke coverage is manifest-backed under
   `fixtures/cli_smokes/manifest.json`, including graph-slice insert and
   replace affordances, checked `insert_statement`, `replace_statement`, and
@@ -142,6 +143,8 @@ Current verified surface:
   `simplify_identity_binary_expression` templates with lint/plan/fix-write/verify
   smoke coverage, plus checked `redundant_boolean_comparison` style findings and
   `simplify_redundant_boolean_comparison` templates with lint/plan/fix-write/verify
+  smoke coverage, plus checked `absorbing_boolean_expression` style findings
+  and `simplify_absorbing_boolean_expression` templates with lint/plan/fix-write/verify
   smoke coverage, plus checked `double_negation_expression` style findings and
   `simplify_double_negation_expression` templates with lint/plan/fix-write/verify
   smoke coverage, plus checked `redundant_boolean_if_expression` style findings
@@ -350,6 +353,7 @@ cargo run -- lint --json --rule mutable-binding-never-set <target>
 cargo run -- lint --json --rule constant-if-expression <target>
 cargo run -- lint --json --rule identity-binary-expression <target>
 cargo run -- lint --json --rule redundant-boolean-comparison <target>
+cargo run -- lint --json --rule absorbing-boolean-expression <target>
 cargo run -- lint --json --rule double-negation-expression <target>
 cargo run -- lint --json --rule redundant-boolean-if-expression <target>
 cargo run -- lint --json --rule same-branch-if-expression <target>
