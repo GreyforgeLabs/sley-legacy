@@ -150,7 +150,8 @@ Current development phase:
 - project graft writeback now supports create/update/delete module files and
   module rename, including manifest entry updates; top-level type/effect/task
   movement into known modules is supported, including AddImport-then-MoveNode
-  transactions that create new module files from moved declarations
+  transactions that create new module files from moved declarations; top-level
+  import moves into known modules are supported for project writeback
 - `MoveNode` supports cross-parent statement movement between existing block
   parents with `payload.destination`, take reordering within the owning task,
   and checked cross-task take movement into another task's take list; expression

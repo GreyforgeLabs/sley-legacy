@@ -247,17 +247,16 @@ and deletes removed module files once the checked candidate no longer imports
 them. It also supports module rename by rewriting module ownership and imports,
 creating the renamed checked module file, and deleting the old loaded module
 file. Entry-module rename updates `sley.toml` during checked project writeback.
-Bare imports to missing modules still reject before mutation. Top-level type,
-effect, and task movement into known modules is implemented for checked project
-writeback, including AddImport-then-MoveNode transactions that create the
-destination module file from the moved declaration. Cross-parent statement
+Bare imports to missing modules still reject before mutation. Top-level import,
+type, effect, and task movement into known modules is implemented for checked
+project writeback, including AddImport-then-MoveNode transactions that create
+the destination module file from the moved item. Cross-parent statement
 movement between existing block parents is implemented with
 `payload.destination`. Take reordering within the owning task and checked
 cross-task take movement into another task's take list are implemented.
-Expression movement, import cross-module movement, and broader graph-contract
-hardening remain open. Unsupported expression movement returns a
-`replace_expression` repair hint so agents can plan the supported structural
-edit.
+Expression movement and broader graph-contract hardening remain open.
+Unsupported expression movement returns a `replace_expression` repair hint so
+agents can plan the supported structural edit.
 
 The important rule is not that all operations exist immediately. The important
 rule is that unsupported operations reject cleanly with explicit diagnostics.

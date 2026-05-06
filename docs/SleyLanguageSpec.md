@@ -457,18 +457,27 @@ moved into one of its own child blocks. Take moves accept a parent such as
 `payload.destination`, they can move into another task take parent such as
 `task:app.main.main:takes`. Top-level declaration moves accept
 `program.imports`, `program.types`, `program.effects`, or `program.tasks`.
-Top-level type, effect, and task moves can use
-`module:<path>:types`, `module:<path>:effects`, or `module:<path>:tasks` to
-change declaration ownership and place the declaration at a module-local
-position. The destination module must already be loaded or imported in the
-checked candidate; an all-or-nothing transaction can therefore `AddImport` for
-the destination module before `MoveNode`, and project writeback will create the
-new checked module file when the moved declaration is its first declaration.
+Top-level import, type, effect, and task moves can use
+`module:<path>:imports`, `module:<path>:types`, `module:<path>:effects`, or
+`module:<path>:tasks` to change ownership and place the declaration at a
+module-local position. For example:
+
+```json
+{
+  "op": "MoveNode",
+  "target": "import:app.main:app.shared",
+  "payload": { "parent": "module:app.extra:imports", "position": 0 }
+}
+```
+
+The destination module must already be loaded or imported in the checked
+candidate; an all-or-nothing transaction can therefore `AddImport` for the
+destination module before `MoveNode`, and project writeback will create the new
+checked module file when the moved item is the module's first content.
 Otherwise `GRAFT_MODULE_MISSING` rejects the move before mutation. Expression
-moves and import cross-module moves reject with `GRAFT_MOVE_UNSUPPORTED`. Each
-accepted edit reparses the payload when
-applicable, rewrites the AST, refreshes expression source text, and reruns the
-checker before returning formatted source.
+moves reject with `GRAFT_MOVE_UNSUPPORTED`. Each accepted edit reparses the
+payload when applicable, rewrites the AST, refreshes expression source text, and
+reruns the checker before returning formatted source.
 
 Accepted grafts written with `sley graft --write` append receipt records to a
 local `.sley/trace.jsonl` sidecar unless the caller passes an explicit trace
@@ -756,9 +765,9 @@ archive.
   writer yet
 - `MoveNode` supports checked in-parent and cross-parent statement movement
   between existing block parents, take reordering within the owning task,
-  top-level declaration ordering, and top-level type/effect/task movement into
-  known modules; cross-task take movement and expression movement are still
-  explicit rejections
+  checked cross-task take movement, top-level declaration ordering, and
+  top-level import/type/effect/task movement into known modules; expression
+  movement is still an explicit rejection
 - project graft writeback updates existing module files, creates checked new
   module files, deletes removed module files, renames module files, and updates
   the project manifest for entry-module renames

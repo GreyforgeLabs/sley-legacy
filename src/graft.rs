@@ -1199,6 +1199,20 @@ fn move_node(
         .position(|import| import_matches_target(import, target))
     {
         ensure_no_move_destination(payload, target)?;
+        if let Some(module) =
+            declaration_move_parent_module(program, payload, target, "import", "imports")?
+        {
+            return move_declaration_to_module(
+                &mut program.imports,
+                index,
+                &module,
+                payload,
+                target,
+                "import",
+                import_owner_module,
+                |import, module| import.owner_module = Some(module),
+            );
+        }
         return move_index(
             &mut program.imports,
             index,
