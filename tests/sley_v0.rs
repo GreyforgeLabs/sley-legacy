@@ -2280,6 +2280,69 @@ task main -> Result<Text, Error> uses FileWrite {
 }
 
 #[test]
+fn edit_plan_graft_templates_include_unqualified_import_call_qualification() {
+    let project = load_project("examples/unqualified_import_call_project")
+        .expect("load import style project");
+    let program = project.program;
+    let report = build_edit_plan_report_with_options(
+        "examples/unqualified_import_call_project",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: None,
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "warnings");
+    assert_eq!(report.summary.lint_finding_count, 1);
+    assert_eq!(
+        report.lint.as_ref().expect("lint summary").findings[0].id,
+        "UNQUALIFIED_IMPORTED_CALL"
+    );
+    let template = report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "qualify_imported_call")
+        .expect("qualified imported call template");
+    assert_eq!(template.surface, "block:task:app.main.main:stmt:0:expr");
+    assert_eq!(
+        template.operation.pointer("/op"),
+        Some(&serde_json::json!("ReplaceExpression"))
+    );
+    assert_eq!(
+        template.operation.pointer("/payload/source"),
+        Some(&serde_json::json!("call math.double(21)"))
+    );
+    assert_eq!(template.editable_json_pointers, vec!["/payload/source"]);
+    let graft: GraftInput =
+        serde_json::from_value(template.operation.clone()).expect("parse import call template");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:qualified-import-call-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+
+    let targeted_report = build_edit_plan_report_with_options(
+        "examples/unqualified_import_call_project",
+        Ok(program),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("block:task:app.main.main:stmt:0:expr".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(targeted_report.status, "warnings");
+    assert_eq!(targeted_report.graft_templates.len(), 1);
+    assert_eq!(
+        targeted_report.graft_templates[0].kind,
+        "qualify_imported_call"
+    );
+}
+
+#[test]
 fn edit_plan_remove_take_transaction_requires_unused_take() {
     let source = r#"
 module app.plan
@@ -3609,6 +3672,20 @@ task helper -> Result<Text, Error> {
         include_str!("../fixtures/contracts/lint_unchecked_result.json"),
     );
 
+    let unqualified_import_project = load_project("examples/unqualified_import_call_project")
+        .expect("load import style project");
+    let unqualified_import_lint = build_lint_report(
+        &unqualified_import_project.program,
+        LintOptions {
+            rules: vec![LintRule::UnqualifiedImportedCall],
+            module: None,
+        },
+    );
+    assert_json_snapshot(
+        &unqualified_import_lint,
+        include_str!("../fixtures/contracts/lint_unqualified_imported_call.json"),
+    );
+
     let missing_module_source = r#"
 task main -> Text {
   return "hello"
@@ -4258,7 +4335,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(27))
+        Some(&serde_json::json!(28))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -9184,6 +9261,49 @@ task helper -> Result<Text, Error> {
 }
 
 #[test]
+fn lint_report_flags_unqualified_imported_calls() {
+    let project = load_project("examples/unqualified_import_call_project")
+        .expect("load import style project");
+    let diagnostics = check_program(&project.program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+
+    let report = build_lint_report(
+        &project.program,
+        LintOptions {
+            rules: vec![LintRule::UnqualifiedImportedCall],
+            module: None,
+        },
+    );
+
+    assert_eq!(report.schema, LINT_REPORT_SCHEMA);
+    assert_eq!(report.status, "findings");
+    assert_eq!(report.entry_module, "app.main");
+    assert_eq!(report.filters.rules, vec!["unqualified_imported_call"]);
+    assert_eq!(report.findings.len(), 1);
+    assert_eq!(report.findings[0].id, "UNQUALIFIED_IMPORTED_CALL");
+    assert_eq!(report.findings[0].rule, "unqualified_imported_call");
+    assert_eq!(
+        report.findings[0].node,
+        "block:task:app.main.main:stmt:0:expr"
+    );
+    assert_eq!(report.findings[0].module, "app.main");
+    assert!(report.findings[0].hint.contains("math.double"));
+
+    let scoped_report = build_lint_report(
+        &project.program,
+        LintOptions {
+            rules: vec![LintRule::UnqualifiedImportedCall],
+            module: Some("app.math".to_string()),
+        },
+    );
+    assert_eq!(scoped_report.status, "ok");
+    assert!(scoped_report.findings.is_empty());
+}
+
+#[test]
 fn lint_report_flags_missing_module_declarations() {
     let source = r#"
 task main -> Text {
@@ -10906,6 +11026,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:templates:module-name-inference",
         "graft:templates:missing-module",
         "graft:templates:raw-host-migration",
+        "graft:templates:qualified-import-call",
         "graft:templates:replace-expression",
         "graft:templates:unchecked-result",
         "graft:templates:unused-declared-effect-remove",
@@ -10927,6 +11048,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "lint:raw_host_adapter",
         "lint:missing_module_declaration",
         "lint:unchecked_result",
+        "lint:unqualified_imported_call",
         "query:tasks",
         "query:types",
         "query:effects",

@@ -26,7 +26,8 @@
               "unused_private_effect",
               "raw_host_adapter",
               "missing_module_declaration",
-              "unchecked_result"
+              "unchecked_result",
+              "unqualified_imported_call"
             ]
           },
           "uniqueItems": true
@@ -59,7 +60,8 @@
               "UNUSED_PRIVATE_EFFECT",
               "RAW_HOST_ADAPTER",
               "MISSING_MODULE_DECLARATION",
-              "UNCHECKED_RESULT"
+              "UNCHECKED_RESULT",
+              "UNQUALIFIED_IMPORTED_CALL"
             ]
           },
           "rule": {
@@ -73,7 +75,8 @@
               "unused_private_effect",
               "raw_host_adapter",
               "missing_module_declaration",
-              "unchecked_result"
+              "unchecked_result",
+              "unqualified_imported_call"
             ]
           },
           "severity": { "enum": ["warning"] },

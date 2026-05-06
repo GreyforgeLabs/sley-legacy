@@ -1,0 +1,20 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.main",
+  "filters": {
+    "module": null,
+    "rules": ["unqualified_imported_call"]
+  },
+  "findings": [
+    {
+      "id": "UNQUALIFIED_IMPORTED_CALL",
+      "rule": "unqualified_imported_call",
+      "severity": "warning",
+      "message": "task `app.main.main` calls imported task `double` without a module qualifier",
+      "node": "block:task:app.main.main:stmt:0:expr",
+      "module": "app.main",
+      "hint": "replace `double` with `math.double` so future imports cannot change resolution"
+    }
+  ]
+}

@@ -759,6 +759,10 @@ still passes.
 `unchecked_result` lint findings become checked
 `propagate_unchecked_result` graft templates when the discarded `Result`
 expression can be rewritten with `?` and the checked candidate still passes.
+`unqualified_imported_call` lint findings become checked
+`qualify_imported_call` graft templates when a simple imported task call can be
+rewritten through its import alias or module segment and the checked candidate
+still passes.
 `--template-surface <surface>` selects a specific task surface by task node id
 or qualified task name, the `program` missing-module surface, or a lint surface
 by lint finding node id such as `import:app.main:app.stale`,
@@ -840,16 +844,18 @@ referenced by any checked task, type, or record literal;
 by any checked task; `raw_host_adapter`, which warns on legacy
 diagnostic-failing host calls that should move to fallible `try_` adapters;
 `missing_module_declaration`, which warns when a source file relies on the
-implicit `main` module instead of declaring a stable module name; and
+implicit `main` module instead of declaring a stable module name;
 `unchecked_result`, which warns when an expression statement discards a
 fallible host or user-task `Result` instead of propagating, returning, or
-binding it.
+binding it; and `unqualified_imported_call`, which warns when a resolved call
+uses a simple imported task name instead of an alias- or module-qualified
+callee.
 `--module <module>` scopes the lint to one module. `--rule unused-private-task`,
 `--rule unreachable-private-task`, `--rule unused-declared-effect`,
 `--rule unused-import`, `--rule unused-take`, `--rule unused-private-type`,
 `--rule unused-private-effect`, `--rule raw-host-adapter`,
-`--rule missing-module-declaration`, or `--rule unchecked-result` selects one
-rule explicitly, and
+`--rule missing-module-declaration`, `--rule unchecked-result`, or
+`--rule unqualified-imported-call` selects one rule explicitly, and
 `--deny-warnings` turns findings into a nonzero CLI exit after printing the
 report. The v0 JSON root is `sley.lint.report.v0`.
 
@@ -949,8 +955,9 @@ refuse generic data disguised as Sley artifacts before compression begins.
 - `sley lint` currently ships warning-grade private-task graph rules, authority
   hygiene for unused declared effects, private declaration/import/API hygiene,
   raw-host-adapter and unchecked-result migration warnings with checked
-  propagation templates, and explicit module style warnings; broader style and
-  migration lints remain later work
+  propagation templates, unqualified imported-call qualification templates, and
+  explicit module style warnings; broader style and migration lints remain
+  later work
 - `sley plan` emits deterministic ranked task edit surfaces, optional starter
   graft operation templates, rename-plus-call-site and add-take-plus-call-arg
   transaction templates, safe remove-take-plus-call-arg transaction templates

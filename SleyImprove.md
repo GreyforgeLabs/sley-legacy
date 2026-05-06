@@ -101,7 +101,7 @@ sley fix --json --kind <kind> [--template-surface <surface>] [--dry-run|--write]
 sley verify --json [--deny-warnings] [runtime gates/seeds] <target>
 sley deploy --json --dry-run [--artifacts-dir <dir>] [runtime gates/seeds] <target>
 sley query --json [--kind all|modules|tasks|types|effects|calls] [--module <module>] <target>
-sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter|missing-module-declaration|unchecked-result] [--module <module>] <target>
+sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter|missing-module-declaration|unchecked-result|unqualified-imported-call] [--module <module>] <target>
 sley trace --json <target>
 sley seal --json <target>
 sley zjx --json [--slice <node-id>] <target>
@@ -168,8 +168,10 @@ Rules:
   that validate through checked `RemoveTaskEffect`, and `delete_unused_import`
   templates for unused imports that validate through checked `DeleteNode`, plus
   `migrate_raw_host_adapter` templates for eligible raw host calls that can
-  move to fallible `try_` adapters with `?`, with editable
-  JSON pointers; it also consumes selected graph-slice movement affordances as
+  move to fallible `try_` adapters with `?`, plus
+  `qualify_imported_call` templates for simple imported task calls that should
+  be alias- or module-qualified, with editable JSON pointers; it also consumes
+  selected graph-slice movement affordances as
   `move_statement`,
   `move_take`, and destination-variant templates when legal graph-slice
   destinations exist. Agents can target a specific task surface by node id or
@@ -542,6 +544,9 @@ The current smoke manifest covers:
   fallible `try_` adapters with checked `?` propagation
 - unchecked-result migration templates that add checked `?` propagation when
   the owning task can return `Result`
+- unqualified imported-call style templates that rewrite simple imported calls
+  to alias- or module-qualified calls before future imports can make them
+  ambiguous
 - private declaration hygiene through the checked `unused_private_type` and
   `unused_private_effect` lint rules
 - import hygiene through the checked `unused_import` lint rule
@@ -608,14 +613,17 @@ The v0 lint rules are:
 - `unchecked_result`: an expression statement that discards a fallible host or
   user-task `Result` is reported so agents propagate, return, or bind the
   failure path explicitly.
+- `unqualified_imported_call`: a resolved call to an imported task through a
+  simple name is reported so agents qualify it through the import alias or
+  module segment before future imports can change name resolution.
 
 The command supports `--module <module>`, `--rule unused-private-task`,
 `--rule unreachable-private-task`, `--rule unused-declared-effect`,
 `--rule unused-import`, `--rule unused-take`, `--rule unused-private-type`,
 `--rule unused-private-effect`, `--rule raw-host-adapter`,
-`--rule missing-module-declaration`, `--rule unchecked-result`, and
-`--deny-warnings` lets CI turn findings into a failing exit after the JSON
-report is printed.
+`--rule missing-module-declaration`, `--rule unchecked-result`,
+`--rule unqualified-imported-call`, and `--deny-warnings` lets CI turn
+findings into a failing exit after the JSON report is printed.
 
 This is not production lint coverage yet. It is the first stable surface for
 agent-facing hygiene, authority lints, migration hints, and eventually

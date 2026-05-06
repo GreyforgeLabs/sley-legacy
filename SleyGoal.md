@@ -40,7 +40,7 @@ Current verified surface:
 
 - `cargo fmt --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 195 tests.
+- Current integration coverage is 197 tests.
 - `sley query --json` emits `schema: "sley.query.report.v0"` and supports
   `--kind all|modules|tasks|types|effects|calls`, `--module <module>`, and
   `--exported`, including strict task/take/type/effect/call row definitions.
@@ -69,13 +69,14 @@ Current verified surface:
   `--rule unreachable-private-task`, `--rule unused-declared-effect`,
   `--rule unused-import`, `--rule unused-take`, `--rule unused-private-type`,
   `--rule unused-private-effect`, `--rule raw-host-adapter`,
-  `--rule missing-module-declaration`, `--rule unchecked-result`, and
-  `--deny-warnings`.
+  `--rule missing-module-declaration`, `--rule unchecked-result`,
+  `--rule unqualified-imported-call`, and `--deny-warnings`.
 - The current lint rules are `unused_private_task` and
   `unreachable_private_task`, `unused_declared_effect`, and
   `unused_import`, `unused_take`, `unused_private_type`,
   `unused_private_effect`, `raw_host_adapter`,
-  `missing_module_declaration`, and `unchecked_result`.
+  `missing_module_declaration`, `unchecked_result`, and
+  `unqualified_imported_call`.
 - CLI smoke coverage is manifest-backed under
   `fixtures/cli_smokes/manifest.json`, including graph-slice replace
   affordances, checked `replace_expression` graft templates, and lint-driven
@@ -106,6 +107,8 @@ Current verified surface:
   digest/schema reinspection for dry-run packages, and checked
   `unchecked_result` migration templates that turn discarded `Result`
   expression statements into explicit `?` propagation when valid, plus checked
+  `unqualified_imported_call` style templates that qualify imported task calls
+  through their import alias or module segment, plus checked
   `unused_import` and
   `unused_private_task` delete templates, fix dry runs, and a write-mode
   `delete_unused_import` cleanup that clears lint before
@@ -298,6 +301,7 @@ cargo run -- lint --json --rule unused-private-effect <target>
 cargo run -- lint --json --rule raw-host-adapter <target>
 cargo run -- lint --json --rule missing-module-declaration <target>
 cargo run -- lint --json --rule unchecked-result <target>
+cargo run -- lint --json --rule unqualified-imported-call <target>
 cargo run -- query --json --kind types <target>
 cargo run -- query --json --kind effects <target>
 ```

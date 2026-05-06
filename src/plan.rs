@@ -8,7 +8,10 @@ use crate::ast::{BindingKind, Block, Expr, ExprKind, Statement, StatementKind, T
 use crate::checker::{check_program, has_errors};
 use crate::diagnostics::{Diagnostic, RepairHint};
 use crate::graft::{GraftInput, apply_graft_input};
-use crate::lint::{LintOptions, LintReport, build_lint_report, raw_host_adapter_replacement};
+use crate::lint::{
+    LintOptions, LintReport, build_lint_report, qualified_imported_call_replacement_source,
+    raw_host_adapter_replacement,
+};
 use crate::query::{QueryKind, QueryOptions, QueryReport, QueryTakeSummary, build_query_report};
 use crate::symbols::{slice_symbol_graph, task_fq_name};
 
@@ -534,6 +537,10 @@ fn lint_graft_templates(
     ));
     templates.extend(lint_raw_host_adapter_templates(program, lint_report));
     templates.extend(lint_unchecked_result_templates(program, lint_report));
+    templates.extend(lint_unqualified_imported_call_templates(
+        program,
+        lint_report,
+    ));
     templates
 }
 
@@ -549,6 +556,7 @@ fn is_lint_repair_kind(kind: &str) -> bool {
             | "add_module_declaration"
             | "migrate_raw_host_adapter"
             | "propagate_unchecked_result"
+            | "qualify_imported_call"
             | "delete_unused_private_declarations"
             | "delete_dead_private_tasks"
     )
@@ -847,6 +855,39 @@ fn lint_unchecked_result_templates(
                 kind: "propagate_unchecked_result".to_string(),
                 reason:
                     "propagate the discarded Result with `?` when the owning task can return Result"
+                        .to_string(),
+                surface: finding.node.clone(),
+                operation,
+                editable_json_pointers: vec!["/payload/source".to_string()],
+            })
+        })
+        .collect()
+}
+
+fn lint_unqualified_imported_call_templates(
+    program: &Program,
+    lint_report: &LintReport,
+) -> Vec<EditPlanGraftTemplate> {
+    lint_report
+        .findings
+        .iter()
+        .filter(|finding| finding.id == "UNQUALIFIED_IMPORTED_CALL")
+        .filter_map(|finding| {
+            let replacement = qualified_imported_call_replacement_source(program, &finding.node)?;
+            let operation = json!({
+                "op": "ReplaceExpression",
+                "target": finding.node,
+                "payload": {
+                    "source": replacement
+                }
+            });
+            if !replace_affordance_checks(program, &operation) {
+                return None;
+            }
+            Some(EditPlanGraftTemplate {
+                kind: "qualify_imported_call".to_string(),
+                reason:
+                    "qualify this imported task call so future imports cannot change simple-name resolution"
                         .to_string(),
                 surface: finding.node.clone(),
                 operation,

@@ -1,0 +1,7 @@
+module app.main
+
+import app.math as math
+
+task main -> Int {
+  return call double(21)
+}
