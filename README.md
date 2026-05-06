@@ -421,7 +421,7 @@ Implemented now:
 - repo-level `Makefile` with `make v1` wrapping fmt, whitespace diff check,
   full Rust tests, contract fixture and release-manifest validation,
   conformance summary reporting, corpus conformance, packaged example
-  conformance, and CLI smoke conformance
+  conformance, CLI smoke conformance, and Tree-sitter syntax parsing
 - GitHub Actions and pre-commit entry points that run the same `make v1` gate
   through `.github/actions/sley-v1/action.yml`, `.github/workflows/v1.yml`,
   and `.pre-commit-config.yaml`

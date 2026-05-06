@@ -29,7 +29,7 @@ here. Dates use UTC-independent calendar dates from the local repo history.
 
 - `make v1` now includes checks for LSP, workbench, agent bench, migrate,
   docgen, sandbox runner, ZJX tools, contract fixtures, conformance, corpus,
-  examples, and CLI smokes.
+  examples, CLI smokes, and Tree-sitter syntax parsing.
 - Contract inventory now tracks 36 schemas, 96 contract fixtures, and 99 schema
   instances through the conformance report.
 - The Rust package metadata now declares its supported Rust floor, description,
