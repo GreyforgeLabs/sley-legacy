@@ -104,6 +104,19 @@
       ]
     },
     {
+      "path": "accepted/agent_split_authority.sley",
+      "covers": [
+        "accepted:agent-split-authority",
+        "host:secrets.try_get",
+        "host:http.try_get_text",
+        "host:model.try_complete",
+        "host:deploy.try_stage",
+        "authority:declared-effects",
+        "authority:transitive-effects",
+        "formatter:round-trip"
+      ]
+    },
+    {
       "path": "accepted/mutable_sum.sley",
       "covers": [
         "language:mutable-loop",
@@ -206,6 +219,17 @@
         "rejected:Spend",
         "host:spend.try_authorize",
         "authority:missing-effect",
+        "diagnostic:EFFECT_UNAUTHORIZED"
+      ]
+    },
+    {
+      "path": "rejected/authority/missing_transitive_agent_effect.sley",
+      "covers": [
+        "rejected:agent-transitive-effect",
+        "host:secrets.try_get",
+        "host:http.try_get_text",
+        "authority:missing-effect",
+        "authority:transitive-effects",
         "diagnostic:EFFECT_UNAUTHORIZED"
       ]
     },

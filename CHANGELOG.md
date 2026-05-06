@@ -33,6 +33,8 @@ here. Dates use UTC-independent calendar dates from the local repo history.
   task boundaries, including a deterministic imported-module scope-denial case.
 - Integration coverage for the `agent-project` scaffold when the requested
   entry module is already named `pipeline`.
+- Accepted and rejected synthetic corpus fixtures for split-task agent
+  authority, locking transitive effect propagation.
 
 ### Changed
 
