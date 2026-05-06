@@ -206,7 +206,8 @@ Current verified surface:
   definitions,
   graph-slice insert/move/delete/replace affordance operations reuse that
   strict graft operation schema,
-  symbol graph and graph-slice handoff roots have locked contract fixtures,
+  symbol graph, graph-slice, and graft outcome handoff roots have locked
+  contract fixtures,
   graph-slice focus, task, and call summary payloads are schema-linked,
   the diagnostics schema exposes the shared diagnostic record used by
   graft/doctor/plan/verify report schemas, the trace report schema wraps trace

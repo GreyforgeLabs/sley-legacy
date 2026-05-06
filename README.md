@@ -266,9 +266,9 @@ Implemented now:
   argument mismatches, condition mismatches, effect authority, and private or
   ambiguous names
 - locked JSON contract snapshots under `fixtures/contracts/`, including
-  symbol graphs, ZJX envelopes, checked run, query, lint, doctor, edit-plan,
-  verify, deploy dry-run, deploy artifact check, CI, and project scaffold
-  reports
+  symbol graphs, graft outcomes, ZJX envelopes, checked run, query, lint,
+  doctor, edit-plan, verify, deploy dry-run, deploy artifact check, CI, and
+  project scaffold reports
 - external v0 JSON Schema files under `docs/schemas/`, including strict
   query task/take/type/effect/call row definitions,
   strict runtime value definitions for `sley.run.report.v0`,
