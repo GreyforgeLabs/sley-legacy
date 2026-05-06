@@ -26,6 +26,7 @@ cargo run --bin sley-ci -- run --json <file-or-project>
 cargo run --bin sley-ci -- deploy --json --dry-run --artifacts-dir .sley/ci-deploy <file-or-project>
 cargo run --bin sley-ci -- corpus --json fixtures/corpus/manifest.json
 cargo run --bin sley-contract -- inspect-deploy-artifacts .sley/deploy --schemas docs/schemas --json
+make v1
 cargo run -- seal --json <file-or-project>
 cargo run -- graft --json --dry-run <file> <graft.json>
 cargo run -- graft --json --write <file> <graft.json>

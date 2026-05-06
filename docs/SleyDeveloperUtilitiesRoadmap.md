@@ -101,7 +101,9 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
    - Bootstrap done when generated `sley new --template deploy` and
      `sley new --template agent` projects can run seeded verify gates, local
      deploy dry-run package reports, a CLI smoke manifest, and the
-     accepted/rejected corpus manifest through `sley-ci`.
+     accepted/rejected corpus manifest through `sley-ci`. The repo-level
+     `Makefile` now exposes `make v1` to run the current local gate stack in
+     one command.
 
 3. `tree-sitter-sley`
    - Inputs: `.sley` source fixtures.

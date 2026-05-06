@@ -335,7 +335,7 @@ Implemented now:
 - external v0 JSON Schema files under `docs/schemas/`, including strict
   query task/take/type/effect/call row definitions,
   strict runtime value definitions for `sley.run.report.v0`,
-  `sley-ci` check/lint/doctor/plan/run/verify/deploy/smoke reports,
+  `sley-ci` check/lint/doctor/plan/run/verify/deploy/smoke/corpus reports,
   `sley-contract` inventory/fixture-check/validate/deploy-artifact-check reports,
   edit-plan graft operation and transaction template envelopes reused by graph
   slice affordances, graph-slice focus/task/call summary refs, a shared
@@ -366,7 +366,16 @@ Implemented now:
   lint-driven fix writes that clear warnings before verify, including empty-if
   cleanup, a standalone agent deploy pipeline example with check/lint/run/verify/deploy
   dry-run coverage, and seeded host-adapter execution
+- repo-level `Makefile` with `make v1` wrapping fmt, whitespace diff check,
+  full Rust tests, contract fixture validation, corpus conformance, and CLI
+  smoke conformance
 - compact agent onboarding pack in `llms.txt`
+
+Repository release gate:
+
+```bash
+make v1
+```
 
 Project form:
 
