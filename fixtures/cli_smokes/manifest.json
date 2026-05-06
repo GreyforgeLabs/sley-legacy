@@ -6055,6 +6055,34 @@
       }
     },
     {
+      "name": "run_network_scoped_json",
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "Network=https://example.test/",
+        "--http-text",
+        "https://example.test/profile",
+        "Ada",
+        "examples/network_gate.sley"
+      ],
+      "covers": [
+        "cli:run",
+        "json:sley.run.report.v0",
+        "host:Network",
+        "host:scoped-capability"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.run.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/value/kind", "value": "Ok" },
+          { "pointer": "/value/value/value", "value": "Ada" }
+        ]
+      }
+    },
+    {
       "name": "run_shell_json",
       "args": [
         "run",

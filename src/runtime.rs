@@ -90,6 +90,8 @@ pub struct RuntimeGate {
     pub effect: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub root: Option<PathBuf>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub scope: Option<String>,
 }
 
 impl RuntimeGate {
@@ -97,6 +99,7 @@ impl RuntimeGate {
         Self {
             effect: effect.into(),
             root: None,
+            scope: None,
         }
     }
 
@@ -104,6 +107,15 @@ impl RuntimeGate {
         Self {
             effect: effect.into(),
             root: Some(root.into()),
+            scope: None,
+        }
+    }
+
+    pub fn with_scope(effect: impl Into<String>, scope: impl Into<String>) -> Self {
+        Self {
+            effect: effect.into(),
+            root: None,
+            scope: Some(scope.into()),
         }
     }
 }
@@ -141,6 +153,10 @@ impl RuntimeGates {
 
     pub fn grant_effect_root(&mut self, effect: impl Into<String>, root: impl Into<PathBuf>) {
         self.grant(RuntimeGate::with_root(effect, root));
+    }
+
+    pub fn grant_effect_scope(&mut self, effect: impl Into<String>, scope: impl Into<String>) {
+        self.grant(RuntimeGate::with_scope(effect, scope));
     }
 
     pub fn is_empty(&self) -> bool {
@@ -1132,6 +1148,12 @@ fn eval_db_query(
     } else {
         None
     };
+    enforce_gate_scope(
+        gates.get("DatabaseRead"),
+        "database table",
+        &parsed.table,
+        expr,
+    )?;
     let rows = match gates.db_rows(&parsed.table) {
         Some(rows) => rows,
         None if mode.returns_result() => {
@@ -1218,6 +1240,7 @@ fn eval_db_insert(
             "database table name cannot be empty",
         ));
     }
+    enforce_gate_scope(gates.get("DatabaseWrite"), "database table", &table, expr)?;
 
     let row = value_or_propagate!(eval_expr(program, task, &args[1], locals, gates));
     let row = match row {
@@ -1256,6 +1279,7 @@ fn eval_http_get_text(
             "http URL cannot be empty",
         ));
     }
+    enforce_gate_scope(gates.get("Network"), "URL", &url, expr)?;
 
     match gates.http_text(&url) {
         Some(body) => Ok(host_ok(Value::Text(body.to_string()))),
@@ -1287,6 +1311,7 @@ fn eval_secret_get(
             "secret name cannot be empty",
         ));
     }
+    enforce_gate_scope(gates.get("SecretRead"), "secret name", &name, expr)?;
 
     match gates.secret(&name) {
         Some(value) => Ok(host_ok(Value::Text(value.to_string()))),
@@ -1318,6 +1343,7 @@ fn eval_deploy_stage(
             "deploy target cannot be empty",
         ));
     }
+    enforce_gate_scope(gates.get("Deploy"), "deploy target", &target, expr)?;
 
     match gates.deploy_result(&target) {
         Some(result) => Ok(host_ok(Value::Text(result.to_string()))),
@@ -1349,6 +1375,7 @@ fn eval_spend_authorize(
             "spend request cannot be empty",
         ));
     }
+    enforce_gate_scope(gates.get("Spend"), "spend request", &request, expr)?;
 
     match gates.spend_result(&request) {
         Some(result) => Ok(host_ok(Value::Text(result.to_string()))),
@@ -1380,6 +1407,7 @@ fn eval_shell_run(
             "shell command cannot be empty",
         ));
     }
+    enforce_gate_scope(gates.get("Shell"), "shell command", &command, expr)?;
 
     match gates.shell_output(&command) {
         Some(output) => Ok(host_ok(Value::Text(output.to_string()))),
@@ -1411,6 +1439,7 @@ fn eval_model_complete(
             "model prompt cannot be empty",
         ));
     }
+    enforce_gate_scope(gates.get("ModelCall"), "model prompt", &prompt, expr)?;
 
     match gates.model_output(&prompt) {
         Some(output) => Ok(host_ok(Value::Text(output.to_string()))),
@@ -1606,6 +1635,33 @@ fn gate_path(gate: &RuntimeGate, path: &str, expr: &Expr) -> Result<PathBuf, Vec
         }
     }
     Ok(path)
+}
+
+fn enforce_gate_scope(
+    gate: Option<&RuntimeGate>,
+    resource_kind: &str,
+    resource: &str,
+    expr: &Expr,
+) -> Result<(), Vec<Diagnostic>> {
+    let Some(gate) = gate else {
+        return Ok(());
+    };
+    let Some(scope) = gate.scope.as_deref() else {
+        return Ok(());
+    };
+    if resource.starts_with(scope) {
+        return Ok(());
+    }
+    Err(vec![
+        Diagnostic::error(
+            "RUNTIME_CAPABILITY_SCOPE_DENIED",
+            format!(
+                "runtime capability `{}` is scoped to `{scope}` and cannot access {resource_kind} `{resource}`",
+                gate.effect
+            ),
+        )
+        .with_node(expr.id.clone()),
+    ])
 }
 
 fn absolute_normalized_path(path: &Path) -> PathBuf {

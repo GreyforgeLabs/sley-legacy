@@ -40,13 +40,17 @@ Current verified surface:
 
 - `cargo fmt --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 243 tests.
+- Current integration coverage is 246 tests.
 - `sley query --json` emits `schema: "sley.query.report.v0"` and supports
   `--kind all|modules|tasks|types|effects|calls`, `--module <module>`, and
   `--exported`, including strict task/take/type/effect/call row definitions.
 - `sley run --json` emits `schema: "sley.run.report.v0"` with a strict
   recursive runtime value payload and empty diagnostics on successful
-  deterministic execution.
+  deterministic execution. Runtime gates use `--cap EFFECT[=SCOPE]`; file
+  effects treat the scope as a filesystem root, while non-file seeded host
+  adapters enforce deterministic text-prefix scopes over database tables, URLs,
+  secret names, shell commands, model prompts, deploy targets, and spend
+  requests. Scope mismatches remain authority diagnostics.
 - `sley-contract` is available as an in-tree contract utility scaffold with
   `inventory`, `check-fixtures`, `validate`, and `inspect-deploy-artifacts`
   JSON Schema validation commands over `docs/schemas/`, `fixtures/contracts/`,
@@ -256,7 +260,7 @@ Non-negotiable constraints:
   `docs/SleyLanguageSpec.md`.
 - Keep runtime host adapters deterministic in v0. Seeded database, secret,
   deploy, spend, network, shell, and model adapters must not call real external
-  systems.
+  systems, and scoped capability mismatches must remain diagnostics.
 - Do not publish, deploy, spend, call providers, or mutate external systems
   without explicit operator approval.
 - Preserve unrelated local changes. This repo may already be dirty.

@@ -9596,6 +9596,19 @@ task main -> Result<Text, Error> uses Network {
 }
 
 #[test]
+fn runtime_scoped_network_capability_rejects_nonmatching_url() {
+    let source = r#"
+task main -> Result<Text, Error> uses Network {
+  return call http.try_get_text("https://other.test/profile")
+}
+"#;
+    let mut gates = RuntimeGates::new();
+    gates.grant_effect_scope("Network", "https://example.test/");
+    gates.grant_http_text("https://other.test/profile", "blocked");
+    assert_scope_denied(source, gates, "Network", "https://other.test/profile");
+}
+
+#[test]
 fn runtime_try_http_get_text_returns_error_for_missing_seed() {
     let source = r#"
 task main -> Result<Text, Error> uses Network {
@@ -9680,6 +9693,47 @@ task main -> Result<Text, Error> uses Network {
         &output.stdout,
         Value::Ok(Box::new(Value::Text("Ada".to_string()))),
     );
+}
+
+#[test]
+fn cli_run_accepts_scoped_network_capability() {
+    let root = temp_project_dir("runtime-http-scoped-cli");
+    fs::create_dir_all(&root).expect("create temp dir");
+    let source_path = root.join("main.sley");
+    fs::write(
+        &source_path,
+        r#"
+task main -> Result<Text, Error> uses Network {
+  return call http.try_get_text("https://example.test/profile")
+}
+"#,
+    )
+    .expect("write source");
+
+    let output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args([
+            "run",
+            "--json",
+            "--cap",
+            "Network=https://example.test/",
+            "--http-text",
+            "https://example.test/profile",
+            "Ada",
+            source_path.to_str().expect("utf-8 path"),
+        ])
+        .output()
+        .expect("run sley");
+    assert!(
+        output.status.success(),
+        "sley run failed: stdout={} stderr={}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_cli_run_value(
+        &output.stdout,
+        Value::Ok(Box::new(Value::Text("Ada".to_string()))),
+    );
+    let _ = fs::remove_dir_all(root);
 }
 
 #[test]
@@ -10456,6 +10510,100 @@ task main -> Text uses DatabaseRead {
         String::from_utf8_lossy(&output.stderr)
     );
     assert_cli_run_value(&output.stdout, Value::Text("Ada".to_string()));
+}
+
+#[test]
+fn runtime_scoped_seeded_host_resources_reject_nonmatching_keys() {
+    let mut database = RuntimeGates::new();
+    database.grant_effect_scope("DatabaseRead", "tenant_");
+    database.grant_db_rows(
+        "users",
+        vec![db_row([
+            ("id", Value::Text("u1".to_string())),
+            ("name", Value::Text("Ada".to_string())),
+        ])],
+    );
+    assert_scope_denied(
+        r#"
+task main -> Result<Text, Error> uses DatabaseRead {
+  bind row = call db.try_query_one("select * from users where id = ?", "u1")?
+  return Ok(row.text("name"))
+}
+"#,
+        database,
+        "DatabaseRead",
+        "users",
+    );
+
+    let mut secret = RuntimeGates::new();
+    secret.grant_effect_scope("SecretRead", "prod/");
+    secret.grant_secret("dev/api_key", "redacted");
+    assert_scope_denied(
+        r#"
+task main -> Result<Text, Error> uses SecretRead {
+  return call secrets.try_get("dev/api_key")
+}
+"#,
+        secret,
+        "SecretRead",
+        "dev/api_key",
+    );
+
+    let mut shell = RuntimeGates::new();
+    shell.grant_effect_scope("Shell", "safe:");
+    shell.grant_shell_output("date", "2026-05-06");
+    assert_scope_denied(
+        r#"
+task main -> Result<Text, Error> uses Shell {
+  return call shell.try_run("date")
+}
+"#,
+        shell,
+        "Shell",
+        "date",
+    );
+
+    let mut model = RuntimeGates::new();
+    model.grant_effect_scope("ModelCall", "classification:");
+    model.grant_model_output("draft a post", "no");
+    assert_scope_denied(
+        r#"
+task main -> Result<Text, Error> uses ModelCall {
+  return call model.try_complete("draft a post")
+}
+"#,
+        model,
+        "ModelCall",
+        "draft a post",
+    );
+
+    let mut deploy = RuntimeGates::new();
+    deploy.grant_effect_scope("Deploy", "staging/");
+    deploy.grant_deploy_result("prod/app", "blocked");
+    assert_scope_denied(
+        r#"
+task main -> Result<Text, Error> uses Deploy {
+  return call deploy.try_stage("prod/app")
+}
+"#,
+        deploy,
+        "Deploy",
+        "prod/app",
+    );
+
+    let mut spend = RuntimeGates::new();
+    spend.grant_effect_scope("Spend", "ads/");
+    spend.grant_spend_result("infra/budget", "blocked");
+    assert_scope_denied(
+        r#"
+task main -> Result<Text, Error> uses Spend {
+  return call spend.try_authorize("infra/budget")
+}
+"#,
+        spend,
+        "Spend",
+        "infra/budget",
+    );
 }
 
 #[test]
@@ -15326,6 +15474,24 @@ fn assert_error_record(value: &Value, code: &str, message_fragment: &str) {
     assert!(
         message.contains(message_fragment),
         "expected error message containing {message_fragment:?}, got {message:?}"
+    );
+}
+
+fn assert_scope_denied(source: &str, gates: RuntimeGates, effect: &str, resource: &str) {
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+    let diagnostics = run_main_with_gates(&program, &gates).expect_err("scope should reject");
+    assert!(
+        diagnostics.iter().any(|diagnostic| {
+            diagnostic.id == "RUNTIME_CAPABILITY_SCOPE_DENIED"
+                && diagnostic.message.contains(effect)
+                && diagnostic.message.contains(resource)
+        }),
+        "expected scope diagnostic for {effect} and {resource}, got {diagnostics:#?}"
     );
 }
 

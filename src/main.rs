@@ -76,7 +76,7 @@ enum Command {
     Run {
         #[arg(long)]
         json: bool,
-        #[arg(long = "cap", value_name = "EFFECT[=ROOT]")]
+        #[arg(long = "cap", value_name = "EFFECT[=SCOPE]")]
         cap: Vec<String>,
         #[arg(long = "db-table", value_name = "TABLE=JSON")]
         db_table: Vec<String>,
@@ -184,7 +184,7 @@ enum Command {
         json: bool,
         #[arg(long)]
         deny_warnings: bool,
-        #[arg(long = "cap", value_name = "EFFECT[=ROOT]")]
+        #[arg(long = "cap", value_name = "EFFECT[=SCOPE]")]
         cap: Vec<String>,
         #[arg(long = "db-table", value_name = "TABLE=JSON")]
         db_table: Vec<String>,
@@ -211,7 +211,7 @@ enum Command {
         artifacts_dir: Option<PathBuf>,
         #[arg(long, default_value = "staging")]
         environment: String,
-        #[arg(long = "cap", value_name = "EFFECT[=ROOT]")]
+        #[arg(long = "cap", value_name = "EFFECT[=SCOPE]")]
         cap: Vec<String>,
         #[arg(long = "db-table", value_name = "TABLE=JSON")]
         db_table: Vec<String>,
@@ -1581,9 +1581,13 @@ fn parse_runtime_gates(values: &[String]) -> Result<RuntimeGates> {
         }
         match root {
             Some(root) if !root.trim().is_empty() => {
-                gates.grant(RuntimeGate::with_root(effect, PathBuf::from(root.trim())));
+                if matches!(effect, "FileRead" | "FileWrite") {
+                    gates.grant(RuntimeGate::with_root(effect, PathBuf::from(root.trim())));
+                } else {
+                    gates.grant(RuntimeGate::with_scope(effect, root.trim()));
+                }
             }
-            Some(_) => anyhow::bail!("runtime capability `{effect}` has an empty root"),
+            Some(_) => anyhow::bail!("runtime capability `{effect}` has an empty scope"),
             None => gates.grant_effect(effect),
         }
     }
