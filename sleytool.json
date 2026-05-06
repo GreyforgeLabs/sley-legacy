@@ -13,7 +13,7 @@
   "primary_user": "repo maintainers and application developers",
   "priority": "P0",
   "schema": "sley.tool.manifest.v0",
-  "status": "private_scaffold",
+  "status": "private_sley_native_source",
   "title": "Sley CI",
   "utility": "CI and pre-commit gate pack"
 }

@@ -6,7 +6,8 @@
   "scripts": {
     "fmt": "node test/check-format.mjs",
     "smoke": "bash test/smoke.sh",
-    "test": "bash test/smoke.sh"
+    "test": "bash test/smoke.sh",
+    "native": "make native"
   },
   "type": "module",
   "version": "0.0.0-private"
