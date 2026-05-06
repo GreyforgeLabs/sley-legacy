@@ -138,10 +138,11 @@ Rules:
   takes and lint-driven delete templates plus cleanup transactions for unused
   private type/effect declarations, plus lint-driven `AddModuleDeclaration`
   templates for missing module declarations with target/project-aware module
-  name inference, plus `delete_unused_import` templates for unused imports
-  that validate through checked `DeleteNode`, plus `migrate_raw_host_adapter`
-  templates for eligible raw host calls that can move to fallible `try_`
-  adapters with `?`, with editable
+  name inference, plus `delete_unused_private_task` templates for dead private
+  tasks and `delete_unused_import` templates for unused imports that validate
+  through checked `DeleteNode`, plus `migrate_raw_host_adapter` templates for
+  eligible raw host calls that can move to fallible `try_` adapters with `?`,
+  with editable
   JSON pointers; it also consumes selected graph-slice movement affordances as
   `move_statement`,
   `move_take`, and destination-variant templates when legal graph-slice
@@ -454,6 +455,8 @@ The current smoke manifest covers:
   declaration surface targeting in edit-plan reports
 - lint-driven missing-module `AddModuleDeclaration` templates, module-name
   inference, and checked `sley fix` dry runs
+- lint-driven unused-private-task `DeleteNode` templates and checked `sley fix`
+  dry runs
 - lint-driven unused-import `DeleteNode` templates and checked `sley fix` dry
   runs
 - raw-host adapter migration templates that rewrite eligible raw host calls to

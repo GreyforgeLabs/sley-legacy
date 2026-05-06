@@ -1,0 +1,13 @@
+module app.tasks
+
+task main -> Int {
+  return call used()
+}
+
+task used -> Int {
+  return 1
+}
+
+task orphan -> Int {
+  return 2
+}

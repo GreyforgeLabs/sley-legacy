@@ -487,6 +487,67 @@
       }
     },
     {
+      "name": "plan_unused_private_task_template_json",
+      "args": [
+        "plan",
+        "--json",
+        "--graft-templates",
+        "--template-surface",
+        "task:app.tasks.orphan",
+        "examples/unused_private_task.sley"
+      ],
+      "covers": [
+        "cli:plan",
+        "graft:templates",
+        "graft:templates:unused-private-task-delete",
+        "lint:unused_private_task",
+        "json:sley.edit_plan.report.v0",
+        "json:sley.lint.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.edit_plan.report.v0" },
+          { "pointer": "/status", "value": "warnings" },
+          { "pointer": "/summary/lint_finding_count", "value": 1 },
+          { "pointer": "/lint/findings/0/id", "value": "UNUSED_PRIVATE_TASK" },
+          { "pointer": "/lint/findings/0/node", "value": "task:app.tasks.orphan" },
+          { "pointer": "/graft_templates/0/kind", "value": "delete_unused_private_task" },
+          { "pointer": "/graft_templates/0/surface", "value": "task:app.tasks.orphan" },
+          { "pointer": "/graft_templates/0/operation/op", "value": "DeleteNode" },
+          { "pointer": "/graft_templates/0/operation/target", "value": "task:app.tasks.orphan" }
+        ]
+      }
+    },
+    {
+      "name": "fix_unused_private_task_dry_run_json",
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "delete_unused_private_task",
+        "--template-surface",
+        "task:app.tasks.orphan",
+        "--dry-run",
+        "examples/unused_private_task.sley"
+      ],
+      "covers": [
+        "cli:fix",
+        "graft:templates:unused-private-task-delete",
+        "lint:unused_private_task",
+        "json:sley.graft.outcome.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/operation", "value": "DeleteNode" },
+          { "pointer": "/provenance/0/targets/0", "value": "task:app.tasks.orphan" }
+        ]
+      }
+    },
+    {
       "name": "plan_project_graft_templates_surface_json",
       "args": [
         "plan",

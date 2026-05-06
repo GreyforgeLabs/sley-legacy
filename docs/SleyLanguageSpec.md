@@ -651,10 +651,12 @@ checked `move_affordances`, and checked `delete_statement`/`delete_take`
 templates from `delete_affordances` when the starter delete graft validates,
 plus checked `replace_expression` templates from `replace_affordances` when the
 starter expression graft validates. It also turns checked
-`unused_private_type` and `unused_private_effect` lint findings into
-`DeleteNode` templates when the declaration delete validates against the
-checked candidate. When more than one unused private type/effect declaration
-can be deleted, the report also includes an all-or-nothing
+`unused_private_task` lint findings into `delete_unused_private_task`
+`DeleteNode` templates when the task delete validates against the checked
+candidate. Checked `unused_private_type` and `unused_private_effect` lint
+findings become `DeleteNode` templates when the declaration delete validates
+against the checked candidate. When more than one unused private type/effect
+declaration can be deleted, the report also includes an all-or-nothing
 `delete_unused_private_declarations` transaction template.
 `unused_import` lint findings become checked `delete_unused_import`
 `DeleteNode` templates when the import delete validates against the checked

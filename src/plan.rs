@@ -467,6 +467,7 @@ fn lint_graft_templates(
     module_name_hint: &str,
 ) -> Vec<EditPlanGraftTemplate> {
     let mut templates = lint_declaration_delete_templates(program, lint_report);
+    templates.extend(lint_private_task_delete_templates(program, lint_report));
     templates.extend(lint_unused_import_templates(program, lint_report));
     templates.extend(lint_missing_module_templates(
         program,
@@ -503,6 +504,35 @@ fn lint_declaration_delete_templates(
                 reason: format!(
                     "delete this unused private {declaration_kind} after checked lint proves it is unreferenced"
                 ),
+                surface: finding.node.clone(),
+                operation,
+                editable_json_pointers: Vec::new(),
+            })
+        })
+        .collect()
+}
+
+fn lint_private_task_delete_templates(
+    program: &Program,
+    lint_report: &LintReport,
+) -> Vec<EditPlanGraftTemplate> {
+    lint_report
+        .findings
+        .iter()
+        .filter(|finding| finding.id == "UNUSED_PRIVATE_TASK")
+        .filter_map(|finding| {
+            let operation = json!({
+                "op": "DeleteNode",
+                "target": finding.node
+            });
+            if !delete_affordance_checks(program, &operation) {
+                return None;
+            }
+            Some(EditPlanGraftTemplate {
+                kind: "delete_unused_private_task".to_string(),
+                reason:
+                    "delete this unused private task after checked lint proves no checked task calls it"
+                        .to_string(),
                 surface: finding.node.clone(),
                 operation,
                 editable_json_pointers: Vec::new(),
