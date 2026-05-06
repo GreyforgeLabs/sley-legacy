@@ -541,6 +541,7 @@ fn lint_graft_templates(
         program,
         lint_report,
     ));
+    templates.extend(lint_unused_pure_binding_templates(program, lint_report));
     templates
 }
 
@@ -557,6 +558,7 @@ fn is_lint_repair_kind(kind: &str) -> bool {
             | "migrate_raw_host_adapter"
             | "propagate_unchecked_result"
             | "qualify_imported_call"
+            | "delete_unused_pure_binding"
             | "delete_unused_private_declarations"
             | "delete_dead_private_tasks"
     )
@@ -724,6 +726,35 @@ fn lint_unused_declared_effect_templates(
                 kind: "remove_unused_declared_effect".to_string(),
                 reason:
                     "remove this unused declared effect after checked lint proves no checked call needs it"
+                        .to_string(),
+                surface: finding.node.clone(),
+                operation,
+                editable_json_pointers: Vec::new(),
+            })
+        })
+        .collect()
+}
+
+fn lint_unused_pure_binding_templates(
+    program: &Program,
+    lint_report: &LintReport,
+) -> Vec<EditPlanGraftTemplate> {
+    lint_report
+        .findings
+        .iter()
+        .filter(|finding| finding.id == "UNUSED_PURE_BINDING")
+        .filter_map(|finding| {
+            let operation = json!({
+                "op": "DeleteNode",
+                "target": finding.node
+            });
+            if !delete_affordance_checks(program, &operation) {
+                return None;
+            }
+            Some(EditPlanGraftTemplate {
+                kind: "delete_unused_pure_binding".to_string(),
+                reason:
+                    "delete this unused bind after checked lint proves the initializer is pure and unread"
                         .to_string(),
                 surface: finding.node.clone(),
                 operation,

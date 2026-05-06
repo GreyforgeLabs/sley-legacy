@@ -1,0 +1,8 @@
+module app.bindings
+
+task main -> Int {
+  bind stale = 1 + 2
+  bind used = 40
+
+  return used + 2
+}

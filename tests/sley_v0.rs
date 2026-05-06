@@ -2343,6 +2343,76 @@ fn edit_plan_graft_templates_include_unqualified_import_call_qualification() {
 }
 
 #[test]
+fn edit_plan_graft_templates_include_unused_pure_binding_delete() {
+    let source = include_str!("../examples/unused_pure_binding.sley");
+    let program = parse_program(source).expect("parse unused pure binding fixture");
+    let report = build_edit_plan_report_with_options(
+        "examples/unused_pure_binding.sley",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: None,
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "warnings");
+    assert_eq!(report.summary.lint_finding_count, 1);
+    assert_eq!(
+        report.lint.as_ref().expect("lint summary").findings[0].id,
+        "UNUSED_PURE_BINDING"
+    );
+    let template = report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "delete_unused_pure_binding")
+        .expect("unused pure binding delete template");
+    assert_eq!(template.surface, "block:task:app.bindings.main:stmt:0");
+    assert_eq!(
+        template.operation.pointer("/op"),
+        Some(&serde_json::json!("DeleteNode"))
+    );
+    assert_eq!(
+        template.operation.pointer("/target"),
+        Some(&serde_json::json!("block:task:app.bindings.main:stmt:0"))
+    );
+    assert!(template.editable_json_pointers.is_empty());
+    let graft: GraftInput =
+        serde_json::from_value(template.operation.clone()).expect("parse binding delete template");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:unused-pure-binding-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    assert!(
+        !outcome
+            .source
+            .expect("grafted source")
+            .contains("bind stale")
+    );
+
+    let targeted_report = build_edit_plan_report_with_options(
+        "examples/unused_pure_binding.sley",
+        Ok(program),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("block:task:app.bindings.main:stmt:0".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(targeted_report.status, "warnings");
+    assert!(targeted_report.diagnostics.is_empty());
+    assert_eq!(targeted_report.graft_templates.len(), 1);
+    assert_eq!(
+        targeted_report.graft_templates[0].kind,
+        "delete_unused_pure_binding"
+    );
+    assert!(targeted_report.transaction_templates.is_empty());
+}
+
+#[test]
 fn edit_plan_remove_take_transaction_requires_unused_take() {
     let source = r#"
 module app.plan
@@ -3686,6 +3756,21 @@ task helper -> Result<Text, Error> {
         include_str!("../fixtures/contracts/lint_unqualified_imported_call.json"),
     );
 
+    let unused_pure_binding_source = include_str!("../examples/unused_pure_binding.sley");
+    let unused_pure_binding_program =
+        parse_program(unused_pure_binding_source).expect("parse unused pure binding fixture");
+    let unused_pure_binding_lint = build_lint_report(
+        &unused_pure_binding_program,
+        LintOptions {
+            rules: vec![LintRule::UnusedPureBinding],
+            module: None,
+        },
+    );
+    assert_json_snapshot(
+        &unused_pure_binding_lint,
+        include_str!("../fixtures/contracts/lint_unused_pure_binding.json"),
+    );
+
     let missing_module_source = r#"
 task main -> Text {
   return "hello"
@@ -4335,7 +4420,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(28))
+        Some(&serde_json::json!(29))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -9304,6 +9389,63 @@ fn lint_report_flags_unqualified_imported_calls() {
 }
 
 #[test]
+fn lint_report_flags_unused_pure_bindings() {
+    let source = r#"
+module app.bindings
+
+task main -> Result<Int, Error> uses FileRead {
+  bind stale = 1 + 2
+  bind used = 40
+  bind host_unused = fs.read_text("examples/hello.sley")
+  bind fallible_unused = fs.try_read_text("examples/hello.sley")?
+  bind indexed_unused = [1, 2][0]
+  bind divided_unused = 10 / 2
+
+  return Ok(used + 2)
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+
+    let report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::UnusedPureBinding],
+            module: None,
+        },
+    );
+
+    assert_eq!(report.schema, LINT_REPORT_SCHEMA);
+    assert_eq!(report.status, "findings");
+    assert_eq!(report.entry_module, "app.bindings");
+    assert_eq!(report.filters.rules, vec!["unused_pure_binding"]);
+    assert_eq!(report.findings.len(), 1);
+    assert_eq!(report.findings[0].id, "UNUSED_PURE_BINDING");
+    assert_eq!(report.findings[0].rule, "unused_pure_binding");
+    assert_eq!(
+        report.findings[0].node,
+        "block:task:app.bindings.main:stmt:0"
+    );
+    assert_eq!(report.findings[0].module, "app.bindings");
+    assert!(report.findings[0].message.contains("binds `stale`"));
+    assert!(report.findings[0].hint.contains("delete bind `stale`"));
+
+    let scoped_report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::UnusedPureBinding],
+            module: Some("app.other".to_string()),
+        },
+    );
+    assert_eq!(scoped_report.status, "ok");
+    assert!(scoped_report.findings.is_empty());
+}
+
+#[test]
 fn lint_report_flags_missing_module_declarations() {
     let source = r#"
 task main -> Text {
@@ -11029,6 +11171,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:templates:qualified-import-call",
         "graft:templates:replace-expression",
         "graft:templates:unchecked-result",
+        "graft:templates:unused-pure-binding-delete",
         "graft:templates:unused-declared-effect-remove",
         "graft:templates:unused-import-delete",
         "graft:templates:unused-private-task-delete",
@@ -11049,6 +11192,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "lint:missing_module_declaration",
         "lint:unchecked_result",
         "lint:unqualified_imported_call",
+        "lint:unused_pure_binding",
         "query:tasks",
         "query:types",
         "query:effects",

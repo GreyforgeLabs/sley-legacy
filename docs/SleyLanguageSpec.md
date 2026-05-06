@@ -763,6 +763,9 @@ expression can be rewritten with `?` and the checked candidate still passes.
 `qualify_imported_call` graft templates when a simple imported task call can be
 rewritten through its import alias or module segment and the checked candidate
 still passes.
+`unused_pure_binding` lint findings become checked
+`delete_unused_pure_binding` `DeleteNode` templates when deleting the unread
+binding statement preserves a checked program.
 `--template-surface <surface>` selects a specific task surface by task node id
 or qualified task name, the `program` missing-module surface, or a lint surface
 by lint finding node id such as `import:app.main:app.stale`,
@@ -851,15 +854,17 @@ implicit `main` module instead of declaring a stable module name;
 fallible host or user-task `Result` instead of propagating, returning, or
 binding it; and `unqualified_imported_call`, which warns when a resolved call
 uses a simple imported task name instead of an alias- or module-qualified
-callee.
+callee; and `unused_pure_binding`, which warns when a local `bind` statement
+has an unread delete-safe initializer with no calls, raw fragments, `?`,
+indexing, division, or remainder operation.
 `--module <module>` scopes the lint to one module. `--rule unused-private-task`,
 `--rule unreachable-private-task`, `--rule unused-declared-effect`,
 `--rule unused-import`, `--rule unused-take`, `--rule unused-private-type`,
 `--rule unused-private-effect`, `--rule raw-host-adapter`,
 `--rule missing-module-declaration`, `--rule unchecked-result`, or
-`--rule unqualified-imported-call` selects one rule explicitly, and
-`--deny-warnings` turns findings into a nonzero CLI exit after printing the
-report. The v0 JSON root is `sley.lint.report.v0`.
+`--rule unqualified-imported-call`, or `--rule unused-pure-binding` selects one
+rule explicitly, and `--deny-warnings` turns findings into a nonzero CLI exit
+after printing the report. The v0 JSON root is `sley.lint.report.v0`.
 
 Diagnostics include machine-readable repair hints for common checker failures
 and selected graft planning failures. Hints are intentionally small and
@@ -958,8 +963,8 @@ refuse generic data disguised as Sley artifacts before compression begins.
   hygiene for unused declared effects, private declaration/import/API hygiene,
   raw-host-adapter and unchecked-result migration warnings with checked
   propagation templates, unqualified imported-call qualification templates, and
-  explicit module style warnings; broader style and migration lints remain
-  later work
+  unused pure binding cleanup templates, plus explicit module style warnings;
+  broader style and migration lints remain later work
 - `sley plan` emits deterministic ranked task edit surfaces, optional starter
   graft operation templates, rename-plus-call-site and add-take-plus-call-arg
   transaction templates, safe remove-take-plus-call-arg transaction templates
@@ -974,7 +979,8 @@ refuse generic data disguised as Sley artifacts before compression begins.
   before deployment review when the repair is unambiguous; preview actions keep
   `command` dry-run and add optional `write_command` for the mutating command.
   The CLI smoke suite locks previewed lint-repair writes followed by strict
-  verify for file and project targets, plus a repaired generated deploy
+  verify for file and project targets, including unused pure binding cleanup,
+  plus a repaired generated deploy
   scaffold re-verified with seeded `Deploy` authority and a strict seeded
   deploy verify report for the generated `sley new --template deploy` starter,
   plus a seeded SecretRead/Network/ModelCall/Deploy verify report for the

@@ -40,7 +40,7 @@ Current verified surface:
 
 - `cargo fmt --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 197 tests.
+- Current integration coverage is 199 tests.
 - `sley query --json` emits `schema: "sley.query.report.v0"` and supports
   `--kind all|modules|tasks|types|effects|calls`, `--module <module>`, and
   `--exported`, including strict task/take/type/effect/call row definitions.
@@ -70,13 +70,14 @@ Current verified surface:
   `--rule unused-import`, `--rule unused-take`, `--rule unused-private-type`,
   `--rule unused-private-effect`, `--rule raw-host-adapter`,
   `--rule missing-module-declaration`, `--rule unchecked-result`,
-  `--rule unqualified-imported-call`, and `--deny-warnings`.
+  `--rule unqualified-imported-call`, `--rule unused-pure-binding`, and
+  `--deny-warnings`.
 - The current lint rules are `unused_private_task` and
   `unreachable_private_task`, `unused_declared_effect`, and
   `unused_import`, `unused_take`, `unused_private_type`,
   `unused_private_effect`, `raw_host_adapter`,
   `missing_module_declaration`, `unchecked_result`, and
-  `unqualified_imported_call`.
+  `unqualified_imported_call`, and `unused_pure_binding`.
 - CLI smoke coverage is manifest-backed under
   `fixtures/cli_smokes/manifest.json`, including graph-slice replace
   affordances, checked `replace_expression` graft templates, and lint-driven
@@ -113,7 +114,9 @@ Current verified surface:
   and
   `unused_private_task` delete templates, fix dry runs, and a write-mode
   `delete_unused_import` cleanup that clears lint before
-  `sley verify --deny-warnings`, plus checked dead private task cleanup
+  `sley verify --deny-warnings`, plus checked `unused_pure_binding`
+  `DeleteNode` templates with lint/plan/fix-write/verify smoke coverage, plus
+  checked dead private task cleanup
   transactions for grouped unused/unreachable private task deletion, plus
   checked `unused_take` and `unused_declared_effect` remove templates and fix
   dry runs, plus manifest-staged temp files for write-mode CLI smokes,
@@ -303,6 +306,7 @@ cargo run -- lint --json --rule raw-host-adapter <target>
 cargo run -- lint --json --rule missing-module-declaration <target>
 cargo run -- lint --json --rule unchecked-result <target>
 cargo run -- lint --json --rule unqualified-imported-call <target>
+cargo run -- lint --json --rule unused-pure-binding <target>
 cargo run -- query --json --kind types <target>
 cargo run -- query --json --kind effects <target>
 ```
