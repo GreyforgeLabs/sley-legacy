@@ -602,7 +602,8 @@ and stdout expectations. The integration suite runs the manifest against the
 built `sley` binary and locks stable command exits, selected stdout substrings,
 JSON root schemas, graph slices, checked query reports, checked lint reports,
 doctor readiness reports, edit-plan reports, project scaffolds, ZJX preview
-envelopes, graft dry runs, and seeded host-adapter execution for
+envelopes, graft dry runs, graph-slice replace affordances, checked
+`replace_expression` graft templates, and seeded host-adapter execution for
 `FileRead`, `FileWrite`, `DatabaseRead`, `DatabaseWrite`, `Network`, `Shell`,
 `ModelCall`, `SecretRead`, `Deploy`, and `Spend`.
 

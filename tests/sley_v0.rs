@@ -7423,6 +7423,8 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "cli:zjx",
         "cli:graft-dry-run",
         "diagnostic:MISSING_RETURN",
+        "graft:templates:replace-expression",
+        "graph-slice:replace-affordances",
         "lint:unused_declared_effect",
         "lint:raw_host_adapter",
         "host:DatabaseRead",

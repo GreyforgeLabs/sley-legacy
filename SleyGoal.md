@@ -40,19 +40,24 @@ Current verified surface:
 
 - `cargo fmt --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 110 tests.
+- Current integration coverage is 161 tests.
 - `sley query --json` emits `schema: "sley.query.report.v0"` and supports
   `--kind all|modules|tasks|calls`, `--module <module>`, and `--exported`.
 - `sley lint --json` emits `schema: "sley.lint.report.v0"` and supports
   `--module <module>`, `--rule unused-private-task`,
-  `--rule unreachable-private-task`, and `--deny-warnings`.
+  `--rule unreachable-private-task`, `--rule unused-declared-effect`,
+  `--rule raw-host-adapter`, and `--deny-warnings`.
 - The current lint rules are `unused_private_task` and
-  `unreachable_private_task`.
+  `unreachable_private_task`, `unused_declared_effect`, and
+  `raw_host_adapter`.
 - CLI smoke coverage is manifest-backed under
-  `fixtures/cli_smokes/manifest.json`.
-- Stable JSON roots now include query reports, lint reports, and the CLI smoke
-  manifest in addition to AST, diagnostics, graph, graph slice, trace seal,
-  graft outcome, and ZJX envelope roots.
+  `fixtures/cli_smokes/manifest.json`, including graph-slice replace
+  affordances and checked `replace_expression` graft templates from
+  `sley plan --graft-templates`.
+- Stable JSON roots now include query reports, lint reports, doctor reports,
+  edit-plan reports, verify reports, project scaffold reports, and the CLI
+  smoke manifest in addition to AST, diagnostics, graph, graph slice, trace
+  seal, graft outcome, and ZJX envelope roots.
 
 Product thesis:
 

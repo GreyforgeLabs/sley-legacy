@@ -147,7 +147,11 @@
     {
       "name": "graph_project_slice_json",
       "args": ["graph", "--json", "--slice", "task:app.main.main", "examples/project"],
-      "covers": ["cli:graph-slice", "json:sley.symbol_graph.slice.v0"],
+      "covers": [
+        "cli:graph-slice",
+        "graph-slice:replace-affordances",
+        "json:sley.symbol_graph.slice.v0"
+      ],
       "expect": {
         "success": true,
         "stdout_json": [
@@ -159,7 +163,9 @@
           { "pointer": "/move_affordances/0/operation/op", "value": "MoveNode" },
           { "pointer": "/move_affordances/1/target_kind", "value": "import" },
           { "pointer": "/delete_affordances/0/operation/op", "value": "DeleteNode" },
-          { "pointer": "/replace_affordances/0/operation/op", "value": "ReplaceExpression" }
+          { "pointer": "/replace_affordances/0/target_kind", "value": "Call" },
+          { "pointer": "/replace_affordances/0/operation/op", "value": "ReplaceExpression" },
+          { "pointer": "/replace_affordances/0/editable_json_pointers/0", "value": "/payload/source" }
         ]
       }
     },
@@ -230,6 +236,7 @@
       "covers": [
         "cli:plan",
         "graft:templates",
+        "graft:templates:replace-expression",
         "json:sley.edit_plan.report.v0"
       ],
       "expect": {
@@ -241,7 +248,11 @@
           { "pointer": "/graft_templates/0/operation/op", "value": "ReplaceTaskBody" },
           { "pointer": "/graft_templates/0/operation/payload/statements/0", "value": "return 0" },
           { "pointer": "/graft_templates/1/operation/op", "value": "RenameDeclaration" },
-          { "pointer": "/graft_templates/4/kind", "value": "move_statement" }
+          { "pointer": "/graft_templates/4/kind", "value": "move_statement" },
+          { "pointer": "/graft_templates/5/kind", "value": "replace_expression" },
+          { "pointer": "/graft_templates/5/operation/op", "value": "ReplaceExpression" },
+          { "pointer": "/graft_templates/5/operation/target", "value": "block:task:app.main.main:stmt:0:expr" },
+          { "pointer": "/graft_templates/5/editable_json_pointers/0", "value": "/payload/source" }
         ]
       }
     },
@@ -258,6 +269,7 @@
       "covers": [
         "cli:plan",
         "graft:templates",
+        "graft:templates:replace-expression",
         "json:sley.edit_plan.report.v0"
       ],
       "expect": {
@@ -268,6 +280,8 @@
           { "pointer": "/graft_templates/0/operation/target", "value": "task:app.math.double" },
           { "pointer": "/graft_templates/2/operation/payload/position", "value": 1 },
           { "pointer": "/graft_templates/4/kind", "value": "move_take" },
+          { "pointer": "/graft_templates/6/kind", "value": "replace_expression" },
+          { "pointer": "/graft_templates/6/operation/target", "value": "block:task:app.math.double:stmt:0:expr" },
           { "pointer": "/transaction_templates/0/kind", "value": "rename_and_update_call_sites" },
           { "pointer": "/transaction_templates/0/transaction/ops/1/payload/from", "value": "math.double" },
           { "pointer": "/transaction_templates/0/transaction/ops/1/payload/replacement", "value": "math.renamed_double" },

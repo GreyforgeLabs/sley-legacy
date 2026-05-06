@@ -421,6 +421,8 @@ The current smoke manifest covers:
 - stable JSON roots for AST programs, diagnostics, symbol graphs, graph slices,
   query reports, lint reports, trace seals, graft outcomes, and ZJX preview
   envelopes
+- graph-slice replace affordances and checked `replace_expression` graft
+  templates in edit-plan reports
 - deterministic seeded execution for `FileRead`, `FileWrite`, `DatabaseRead`,
   `DatabaseWrite`, `Network`, `Shell`, `ModelCall`, `SecretRead`, `Deploy`,
   and `Spend`
