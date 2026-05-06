@@ -2287,6 +2287,7 @@
           { "pointer": "/filters/rules/9", "value": "unchecked_result" },
           { "pointer": "/filters/rules/10", "value": "unqualified_imported_call" },
           { "pointer": "/filters/rules/11", "value": "unused_pure_binding" },
+          { "pointer": "/filters/rules/12", "value": "mutable_binding_never_set" },
           { "pointer": "/findings", "value": [] }
         ]
       }
@@ -2656,6 +2657,31 @@
           { "pointer": "/filters/rules/0", "value": "unused_pure_binding" },
           { "pointer": "/findings/0/id", "value": "UNUSED_PURE_BINDING" },
           { "pointer": "/findings/0/node", "value": "block:task:app.bindings.main:stmt:0" }
+        ]
+      }
+    },
+    {
+      "name": "lint_mutable_binding_never_set_rule_json",
+      "args": [
+        "lint",
+        "--json",
+        "--rule",
+        "mutable-binding-never-set",
+        "examples/mutable_binding_style.sley"
+      ],
+      "covers": [
+        "cli:lint",
+        "lint:mutable_binding_never_set",
+        "json:sley.lint.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.lint.report.v0" },
+          { "pointer": "/status", "value": "findings" },
+          { "pointer": "/filters/rules/0", "value": "mutable_binding_never_set" },
+          { "pointer": "/findings/0/id", "value": "MUTABLE_BINDING_NEVER_SET" },
+          { "pointer": "/findings/0/node", "value": "block:task:app.mutable_style.main:stmt:0" }
         ]
       }
     },

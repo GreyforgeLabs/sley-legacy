@@ -39,7 +39,8 @@
       "missing_module_declaration",
       "unchecked_result",
       "unqualified_imported_call",
-      "unused_pure_binding"
+      "unused_pure_binding",
+      "mutable_binding_never_set"
     ],
     "finding_count": 0,
     "findings": []

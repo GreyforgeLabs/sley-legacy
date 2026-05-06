@@ -877,15 +877,18 @@ binding it; and `unqualified_imported_call`, which warns when a resolved call
 uses a simple imported task name instead of an alias- or module-qualified
 callee; and `unused_pure_binding`, which warns when a local `bind` statement
 has an unread delete-safe initializer with no calls, raw fragments, `?`,
-indexing, division, or remainder operation.
+indexing, division, or remainder operation; and `mutable_binding_never_set`,
+which warns when a mutable local such as `state` or `tally` is never assigned
+with `set`.
 `--module <module>` scopes the lint to one module. `--rule unused-private-task`,
 `--rule unreachable-private-task`, `--rule unused-declared-effect`,
 `--rule unused-import`, `--rule unused-take`, `--rule unused-private-type`,
 `--rule unused-private-effect`, `--rule raw-host-adapter`,
 `--rule missing-module-declaration`, `--rule unchecked-result`, or
-`--rule unqualified-imported-call`, or `--rule unused-pure-binding` selects one
-rule explicitly, and `--deny-warnings` turns findings into a nonzero CLI exit
-after printing the report. The v0 JSON root is `sley.lint.report.v0`.
+`--rule unqualified-imported-call`, `--rule unused-pure-binding`, or
+`--rule mutable-binding-never-set` selects one rule explicitly, and
+`--deny-warnings` turns findings into a nonzero CLI exit after printing the
+report. The v0 JSON root is `sley.lint.report.v0`.
 
 Diagnostics include machine-readable repair hints for common checker failures
 and selected graft planning failures. Hints are intentionally small and

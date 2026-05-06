@@ -951,6 +951,7 @@ enum CliLintRule {
     UncheckedResult,
     UnqualifiedImportedCall,
     UnusedPureBinding,
+    MutableBindingNeverSet,
 }
 
 impl From<CliLintRule> for LintRule {
@@ -968,6 +969,7 @@ impl From<CliLintRule> for LintRule {
             CliLintRule::UncheckedResult => Self::UncheckedResult,
             CliLintRule::UnqualifiedImportedCall => Self::UnqualifiedImportedCall,
             CliLintRule::UnusedPureBinding => Self::UnusedPureBinding,
+            CliLintRule::MutableBindingNeverSet => Self::MutableBindingNeverSet,
         }
     }
 }

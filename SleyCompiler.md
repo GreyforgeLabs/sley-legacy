@@ -242,7 +242,8 @@ Near-term:
    safe remove-take-plus-call-arg transactions for unused takes. `sley fix` can
    execute one named checked template through the graft checker. The lint
    surface now includes explicit module-declaration style warnings,
-   unqualified imported-call style warnings, and unused pure binding cleanup;
+   unqualified imported-call style warnings, mutable-local style warnings, and
+   unused pure binding cleanup;
    those are structurally repairable through checked plan/fix templates, with
    write/query/verify smoke coverage for imported-call qualification and
    write/verify smoke coverage for pure binding deletion. `sley plan

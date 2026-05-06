@@ -28,7 +28,8 @@
               "missing_module_declaration",
               "unchecked_result",
               "unqualified_imported_call",
-              "unused_pure_binding"
+              "unused_pure_binding",
+              "mutable_binding_never_set"
             ]
           },
           "uniqueItems": true
@@ -63,7 +64,8 @@
               "MISSING_MODULE_DECLARATION",
               "UNCHECKED_RESULT",
               "UNQUALIFIED_IMPORTED_CALL",
-              "UNUSED_PURE_BINDING"
+              "UNUSED_PURE_BINDING",
+              "MUTABLE_BINDING_NEVER_SET"
             ]
           },
           "rule": {
@@ -79,7 +81,8 @@
               "missing_module_declaration",
               "unchecked_result",
               "unqualified_imported_call",
-              "unused_pure_binding"
+              "unused_pure_binding",
+              "mutable_binding_never_set"
             ]
           },
           "severity": { "enum": ["warning"] },

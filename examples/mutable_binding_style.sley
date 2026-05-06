@@ -1,0 +1,9 @@
+module app.mutable_style
+
+task main -> Int {
+  state base = 21
+  tally total = 0
+  set total = total + base
+
+  return total
+}
