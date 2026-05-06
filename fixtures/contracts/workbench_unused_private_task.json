@@ -59,13 +59,13 @@
     "status": "findings",
     "findings": [
       {
-        "id": "lint:unused_private_task:task:app.workbench.orphan",
+        "id": "UNUSED_PRIVATE_TASK",
         "rule": "unused_private_task",
         "severity": "warning",
-        "message": "private task `app.workbench.orphan` is never called and is not the entrypoint",
+        "message": "private task `app.workbench.orphan` is not called by any checked task",
         "node": "task:app.workbench.orphan",
         "module": "app.workbench",
-        "hint": "delete the private task or export/call it intentionally"
+        "hint": "call it, export it, or delete it"
       }
     ]
   },

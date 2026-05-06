@@ -57,6 +57,9 @@ here. Dates use UTC-independent calendar dates from the local repo history.
   diagnostic rows to the strict query and diagnostic contract definitions.
 - `sley.migrate.report.v0` now schema-links checked migration operations to
   the strict edit-plan graft operation contract.
+- `sley.workbench.report.v0` now schema-links embedded doctor actions,
+  query rows, lint findings, edit-plan surfaces/actions, graph modules, and
+  graph slices to their source contracts.
 - The local syntax gate bootstraps Tree-sitter npm dependencies with `npm ci`
   when needed, and the GitHub composite action installs stable Node before
   running `make v1`.
