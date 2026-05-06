@@ -114,6 +114,8 @@ The graft outcome schema pins accepted provenance records with non-empty
 targets and `result: "accepted"`.
 The diagnostics schema exposes a shared diagnostic record used by graft,
 doctor, plan, and verify report schemas.
+Graph-slice move/delete/replace affordance operations reuse the strict graft
+operation schema from edit-plan reports.
 The trace receipt schema is a standalone JSONL record contract that references
 those accepted provenance records.
 The ZJX envelope schema pins a recomputable `graph_digest`, references the

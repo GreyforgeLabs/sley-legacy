@@ -193,9 +193,9 @@ Implemented now:
 - locked JSON contract snapshots under `fixtures/contracts/`, including
   checked query, lint, doctor, edit-plan, verify, and project scaffold reports
 - external v0 JSON Schema files under `docs/schemas/`, including strict
-  edit-plan graft operation and transaction template envelopes, a shared
-  diagnostic record schema, a standalone trace receipt schema, plus ZJX graph,
-  slice, and trace receipt handoff refs
+  edit-plan graft operation and transaction template envelopes reused by graph
+  slice affordances, a shared diagnostic record schema, a standalone trace
+  receipt schema, plus ZJX graph, slice, and trace receipt handoff refs
 - manifest-backed accepted/rejected synthetic conformance corpus fixtures under
   `fixtures/corpus/`, including declared and missing authority cases for the
   seeded host adapter surface
@@ -516,9 +516,10 @@ Known v0 limits:
 The current release-readiness phase is underway for the executable slice. The
 gold corpus and CLI smoke suite now have manifests with required coverage tags
 for seeded host adapters, stable JSON roots, graph/ZJX output, graft and fix
-dry runs, checked graph query reports including type/effect/call rows, doctor
-readiness, call-inspection next-actions, verify pre-deploy gates, edit-plan
-surfaces, call-site rename and remove-take/call-arg transaction
+dry runs, checked graph query reports including type/effect/call rows and graph
+slice affordances with strict graft operations, doctor readiness,
+call-inspection next-actions, verify pre-deploy gates, edit-plan surfaces,
+call-site rename and remove-take/call-arg transaction
 write/query/verify, typed scaffold next-actions for the deploy quickstart,
 strict seeded verify readiness for the generated deploy starter,
 scaffold-level seal/ZJX handoff actions,

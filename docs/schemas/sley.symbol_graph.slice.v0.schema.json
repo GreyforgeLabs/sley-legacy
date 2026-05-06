@@ -73,7 +73,7 @@
         "parent": { "type": "string" },
         "position": { "type": "integer", "minimum": 0 },
         "max_position": { "type": "integer", "minimum": 0 },
-        "operation": { "type": "object" },
+        "operation": { "$ref": "sley.edit_plan.report.v0#/$defs/graftOperation" },
         "editable_json_pointers": {
           "type": "array",
           "items": { "type": "string" }
@@ -96,7 +96,7 @@
       "properties": {
         "parent": { "type": "string" },
         "max_position": { "type": "integer", "minimum": 0 },
-        "operation": { "type": "object" },
+        "operation": { "$ref": "sley.edit_plan.report.v0#/$defs/graftOperation" },
         "editable_json_pointers": {
           "type": "array",
           "items": { "type": "string" }
@@ -119,7 +119,7 @@
         "target_kind": { "enum": ["import", "type", "effect", "task", "statement", "take"] },
         "parent": { "type": "string" },
         "position": { "type": "integer", "minimum": 0 },
-        "operation": { "type": "object" },
+        "operation": { "$ref": "sley.edit_plan.report.v0#/$defs/graftOperation" },
         "editable_json_pointers": {
           "type": "array",
           "items": { "type": "string" }
@@ -159,7 +159,7 @@
           ]
         },
         "parent": { "type": "string" },
-        "operation": { "type": "object" },
+        "operation": { "$ref": "sley.edit_plan.report.v0#/$defs/graftOperation" },
         "editable_json_pointers": {
           "type": "array",
           "items": { "type": "string" }
