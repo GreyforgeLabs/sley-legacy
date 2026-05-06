@@ -108,6 +108,7 @@ Stable v0 JSON roots:
 - `sley.symbol_graph.slice.v0`
 - `sley.query.report.v0`
 - `sley.lint.report.v0`
+- `sley.run.report.v0`
 - `sley.trace.receipt.v0`
 - `sley.trace.seal.v0`
 - `sley.graft.outcome.v0`
@@ -155,12 +156,12 @@ Current development phase:
   seeded spend authorization results through explicit fallible calls returning
   `Result<T, Error>`
 - release-readiness now includes manifest-backed CLI smokes for stable command
-  output, JSON roots, graph/ZJX surfaces, edit-plan reports, deploy dry-run
-  reports, graft/fix dry runs, strict edit-plan graft operation and transaction
-  template schema envelopes, direct graft writes, temp setup files for
-  write-mode smokes, explicit graft/fix trace receipts, non-empty trace receipt
-  seals, ZJX envelopes carrying schema-backed trace receipts, lint-driven fix
-  writes that clear warnings before verify, and seeded host-adapter execution
+  output, JSON roots, graph/ZJX surfaces, run reports, edit-plan reports,
+  deploy dry-run reports, graft/fix dry runs, strict edit-plan graft operation
+  and transaction template schema envelopes, direct graft writes, temp setup
+  files for write-mode smokes, explicit graft/fix trace receipts, non-empty
+  trace receipt seals, ZJX envelopes carrying schema-backed trace receipts,
+  lint-driven fix writes that clear warnings before verify, and seeded host-adapter execution
   while preserving typed recoverable failure records and keeping authority
   failures as diagnostics
 - checked graph query reports are available through `sley query --json` with
@@ -286,6 +287,8 @@ Current development phase:
   dry-run fix previews when the repair is unambiguous before deployment review;
   passed reports point agents to `sley seal --json <target>` and
   `sley zjx --json <target>` for review and handoff artifacts
+- `sley run --json` emits `sley.run.report.v0` on successful deterministic
+  execution, with the runtime value under `/value`
 - `sley deploy --json --dry-run` emits `sley.deploy.report.v0` and composes
   strict verify, trace seal, and ZJX package summaries into one local deploy
   package report; it records `live_deploy_allowed=false`, makes no external

@@ -24,7 +24,7 @@ use sley::plan::{
 };
 use sley::project::{ProjectGraph, ProjectManifest, load_project};
 use sley::query::{QueryKind, QueryOptions, QueryReport, build_query_report};
-use sley::runtime::{RuntimeGate, RuntimeGates, run_main, run_main_with_gates};
+use sley::runtime::{RuntimeGate, RuntimeGates, build_run_report, run_main, run_main_with_gates};
 use sley::scaffold::{ScaffoldOptions, ScaffoldTemplate, scaffold_project};
 use sley::symbols::{
     SymbolGraphSlice, build_symbol_graph, effect_module, import_owner_module, slice_symbol_graph,
@@ -402,7 +402,7 @@ fn run(cli: Cli) -> Result<()> {
             match result {
                 Ok(value) => {
                     if json {
-                        print_json(&value)?;
+                        print_json(&build_run_report(file.display().to_string(), value))?;
                     } else {
                         println!("{value:?}");
                     }

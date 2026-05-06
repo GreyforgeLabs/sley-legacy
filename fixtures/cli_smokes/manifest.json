@@ -181,13 +181,15 @@
         "staged",
         "{tmp}/agent-app"
       ],
-      "covers": ["cli:run", "host:Deploy"],
+      "covers": ["cli:run", "json:sley.run.report.v0", "host:Deploy"],
       "expect": {
         "success": true,
         "stdout_json": [
-          { "pointer": "/kind", "value": "Ok" },
-          { "pointer": "/value/kind", "value": "Text" },
-          { "pointer": "/value/value", "value": "staged" }
+          { "pointer": "/schema", "value": "sley.run.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/value/kind", "value": "Ok" },
+          { "pointer": "/value/value/kind", "value": "Text" },
+          { "pointer": "/value/value/value", "value": "staged" }
         ]
       }
     },
@@ -387,6 +389,7 @@
       ],
       "covers": [
         "cli:run",
+        "json:sley.run.report.v0",
         "scaffold:agent-quickstart",
         "host:SecretRead",
         "host:Network",
@@ -396,9 +399,11 @@
       "expect": {
         "success": true,
         "stdout_json": [
-          { "pointer": "/kind", "value": "Ok" },
-          { "pointer": "/value/kind", "value": "Text" },
-          { "pointer": "/value/value", "value": "profile ready | plan approved | staged" }
+          { "pointer": "/schema", "value": "sley.run.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/value/kind", "value": "Ok" },
+          { "pointer": "/value/value/kind", "value": "Text" },
+          { "pointer": "/value/value/value", "value": "profile ready | plan approved | staged" }
         ]
       }
     },
@@ -5924,13 +5929,15 @@
     {
       "name": "run_file_read_json",
       "args": ["run", "--json", "--cap", "FileRead=.", "examples/host_fallibility.sley"],
-      "covers": ["cli:run", "host:FileRead"],
+      "covers": ["cli:run", "json:sley.run.report.v0", "host:FileRead"],
       "expect": {
         "success": true,
         "stdout_contains": ["hello sley"],
         "stdout_json": [
-          { "pointer": "/kind", "value": "Ok" },
-          { "pointer": "/value/kind", "value": "Text" }
+          { "pointer": "/schema", "value": "sley.run.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/value/kind", "value": "Ok" },
+          { "pointer": "/value/value/kind", "value": "Text" }
         ]
       }
     },
@@ -5944,13 +5951,15 @@
         "FileWrite={tmp}",
         "{repo}/examples/file_write_gate.sley"
       ],
-      "covers": ["cli:run", "host:FileWrite"],
+      "covers": ["cli:run", "json:sley.run.report.v0", "host:FileWrite"],
       "expect": {
         "success": true,
         "stdout_json": [
-          { "pointer": "/kind", "value": "Ok" },
-          { "pointer": "/value/kind", "value": "Text" },
-          { "pointer": "/value/value", "value": "written" }
+          { "pointer": "/schema", "value": "sley.run.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/value/kind", "value": "Ok" },
+          { "pointer": "/value/value/kind", "value": "Text" },
+          { "pointer": "/value/value/value", "value": "written" }
         ]
       }
     },
@@ -5965,12 +5974,14 @@
         "users=examples/users.json",
         "examples/db_gate.sley"
       ],
-      "covers": ["cli:run", "host:DatabaseRead"],
+      "covers": ["cli:run", "json:sley.run.report.v0", "host:DatabaseRead"],
       "expect": {
         "success": true,
         "stdout_json": [
-          { "pointer": "/kind", "value": "Text" },
-          { "pointer": "/value", "value": "Ada" }
+          { "pointer": "/schema", "value": "sley.run.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/value/kind", "value": "Text" },
+          { "pointer": "/value/value", "value": "Ada" }
         ]
       }
     },
@@ -5987,13 +5998,20 @@
         "users=examples/users.json",
         "examples/db_write_gate.sley"
       ],
-      "covers": ["cli:run", "host:DatabaseRead", "host:DatabaseWrite"],
+      "covers": [
+        "cli:run",
+        "json:sley.run.report.v0",
+        "host:DatabaseRead",
+        "host:DatabaseWrite"
+      ],
       "expect": {
         "success": true,
         "stdout_json": [
-          { "pointer": "/kind", "value": "Ok" },
-          { "pointer": "/value/kind", "value": "Text" },
-          { "pointer": "/value/value", "value": "Lin" }
+          { "pointer": "/schema", "value": "sley.run.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/value/kind", "value": "Ok" },
+          { "pointer": "/value/value/kind", "value": "Text" },
+          { "pointer": "/value/value/value", "value": "Lin" }
         ]
       }
     },
@@ -6009,12 +6027,14 @@
         "Ada",
         "examples/network_gate.sley"
       ],
-      "covers": ["cli:run", "host:Network"],
+      "covers": ["cli:run", "json:sley.run.report.v0", "host:Network"],
       "expect": {
         "success": true,
         "stdout_json": [
-          { "pointer": "/kind", "value": "Ok" },
-          { "pointer": "/value/value", "value": "Ada" }
+          { "pointer": "/schema", "value": "sley.run.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/value/kind", "value": "Ok" },
+          { "pointer": "/value/value/value", "value": "Ada" }
         ]
       }
     },
@@ -6030,12 +6050,14 @@
         "2026-05-05",
         "examples/shell_gate.sley"
       ],
-      "covers": ["cli:run", "host:Shell"],
+      "covers": ["cli:run", "json:sley.run.report.v0", "host:Shell"],
       "expect": {
         "success": true,
         "stdout_json": [
-          { "pointer": "/kind", "value": "Ok" },
-          { "pointer": "/value/value", "value": "2026-05-05" }
+          { "pointer": "/schema", "value": "sley.run.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/value/kind", "value": "Ok" },
+          { "pointer": "/value/value/value", "value": "2026-05-05" }
         ]
       }
     },
@@ -6051,12 +6073,14 @@
         "Ada",
         "examples/model_gate.sley"
       ],
-      "covers": ["cli:run", "host:ModelCall"],
+      "covers": ["cli:run", "json:sley.run.report.v0", "host:ModelCall"],
       "expect": {
         "success": true,
         "stdout_json": [
-          { "pointer": "/kind", "value": "Ok" },
-          { "pointer": "/value/value", "value": "Ada" }
+          { "pointer": "/schema", "value": "sley.run.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/value/kind", "value": "Ok" },
+          { "pointer": "/value/value/value", "value": "Ada" }
         ]
       }
     },
@@ -6072,12 +6096,14 @@
         "redacted",
         "examples/secret_gate.sley"
       ],
-      "covers": ["cli:run", "host:SecretRead"],
+      "covers": ["cli:run", "json:sley.run.report.v0", "host:SecretRead"],
       "expect": {
         "success": true,
         "stdout_json": [
-          { "pointer": "/kind", "value": "Ok" },
-          { "pointer": "/value/value", "value": "redacted" }
+          { "pointer": "/schema", "value": "sley.run.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/value/kind", "value": "Ok" },
+          { "pointer": "/value/value/value", "value": "redacted" }
         ]
       }
     },
@@ -6093,12 +6119,14 @@
         "staged",
         "examples/deploy_gate.sley"
       ],
-      "covers": ["cli:run", "host:Deploy"],
+      "covers": ["cli:run", "json:sley.run.report.v0", "host:Deploy"],
       "expect": {
         "success": true,
         "stdout_json": [
-          { "pointer": "/kind", "value": "Ok" },
-          { "pointer": "/value/value", "value": "staged" }
+          { "pointer": "/schema", "value": "sley.run.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/value/kind", "value": "Ok" },
+          { "pointer": "/value/value/value", "value": "staged" }
         ]
       }
     },
@@ -6114,12 +6142,14 @@
         "authorized",
         "examples/spend_gate.sley"
       ],
-      "covers": ["cli:run", "host:Spend"],
+      "covers": ["cli:run", "json:sley.run.report.v0", "host:Spend"],
       "expect": {
         "success": true,
         "stdout_json": [
-          { "pointer": "/kind", "value": "Ok" },
-          { "pointer": "/value/value", "value": "authorized" }
+          { "pointer": "/schema", "value": "sley.run.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/value/kind", "value": "Ok" },
+          { "pointer": "/value/value/value", "value": "authorized" }
         ]
       }
     }

@@ -1,0 +1,10 @@
+{
+  "schema": "sley.run.report.v0",
+  "status": "passed",
+  "target": "examples/hello.sley",
+  "value": {
+    "kind": "Text",
+    "value": "hello sley"
+  },
+  "diagnostics": []
+}

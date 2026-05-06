@@ -13,6 +13,8 @@ use crate::symbols::{
     EffectResolution, TaskResolution, callee_path, resolve_effect, resolve_task, task_module,
 };
 
+pub const RUN_REPORT_SCHEMA: &str = "sley.run.report.v0";
+
 pub type DbRow = BTreeMap<String, Value>;
 pub type DbRows = Vec<DbRow>;
 
@@ -31,6 +33,25 @@ pub enum Value {
     Ok(Box<Value>),
     Err(Box<Value>),
     Raw(String),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct RunReport {
+    pub schema: String,
+    pub status: String,
+    pub target: String,
+    pub value: Value,
+    pub diagnostics: Vec<Diagnostic>,
+}
+
+pub fn build_run_report(target: impl Into<String>, value: Value) -> RunReport {
+    RunReport {
+        schema: RUN_REPORT_SCHEMA.to_string(),
+        status: "passed".to_string(),
+        target: target.into(),
+        value,
+        diagnostics: Vec::new(),
+    }
 }
 
 impl TryFrom<serde_json::Value> for Value {

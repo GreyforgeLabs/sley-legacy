@@ -25,7 +25,10 @@ use sley::plan::{
 };
 use sley::project::load_project;
 use sley::query::{QUERY_REPORT_SCHEMA, QueryKind, QueryOptions, build_query_report};
-use sley::runtime::{RuntimeGates, Value, run_main, run_main_with_gates};
+use sley::runtime::{
+    RUN_REPORT_SCHEMA, RunReport, RuntimeGates, Value, build_run_report, run_main,
+    run_main_with_gates,
+};
 use sley::scaffold::{
     PROJECT_SCAFFOLD_SCHEMA, ProjectScaffoldReport, ProjectScaffoldSummary, ScaffoldFile,
     ScaffoldNextAction, ScaffoldOptions, ScaffoldTemplate, scaffold_project,
@@ -105,6 +108,14 @@ struct CliSmokeExpectation {
 struct CliSmokeJsonExpectation {
     pointer: String,
     value: serde_json::Value,
+}
+
+fn assert_cli_run_value(stdout: &[u8], expected: Value) {
+    let report: RunReport = serde_json::from_slice(stdout).expect("parse run report");
+    assert_eq!(report.schema, RUN_REPORT_SCHEMA);
+    assert_eq!(report.status, "passed");
+    assert!(report.diagnostics.is_empty());
+    assert_eq!(report.value, expected);
 }
 
 #[test]
@@ -514,10 +525,9 @@ fn project_scaffold_creates_checked_deploy_project() {
             action.kind
         );
         if action.kind == "run_seeded_deploy" {
-            let value: Value = serde_json::from_str(&stdout).expect("parse runtime JSON");
-            assert_eq!(
-                value,
-                Value::Ok(Box::new(Value::Text("staged".to_string())))
+            assert_cli_run_value(
+                stdout.as_bytes(),
+                Value::Ok(Box::new(Value::Text("staged".to_string()))),
             );
         }
         if action.kind == "prepare_deploy_package" {
@@ -680,12 +690,11 @@ fn project_scaffold_creates_checked_agent_project() {
             assert!(root.join(".sley/ci-deploy/manifest.json").exists());
         }
         if action.kind == "run_seeded_agent" {
-            let value: Value = serde_json::from_str(&stdout).expect("parse agent runtime JSON");
-            assert_eq!(
-                value,
+            assert_cli_run_value(
+                stdout.as_bytes(),
                 Value::Ok(Box::new(Value::Text(
-                    "profile ready | plan approved | staged".to_string()
-                )))
+                    "profile ready | plan approved | staged".to_string(),
+                ))),
             );
         }
         if action.kind == "prepare_deploy_package" {
@@ -5731,6 +5740,12 @@ task main -> Used uses UsedEffect {
 
     let hello_source = include_str!("../examples/hello.sley");
     let hello_program = parse_program(hello_source).expect("parse hello fixture");
+    let hello_run_value = run_main(&hello_program).expect("run hello fixture");
+    let hello_run = build_run_report("examples/hello.sley", hello_run_value);
+    assert_json_snapshot(
+        &hello_run,
+        include_str!("../fixtures/contracts/run_hello_ready.json"),
+    );
     let seal = build_trace_seal(
         "examples/hello.sley",
         hello_source.as_bytes(),
@@ -6121,6 +6136,10 @@ task main -> Used uses UsedEffect {
         DIAGNOSTIC_REPORT_SCHEMA,
     );
     assert_schema_file(
+        include_str!("../docs/schemas/sley.run.report.v0.schema.json"),
+        RUN_REPORT_SCHEMA,
+    );
+    assert_schema_file(
         include_str!("../docs/schemas/sley.graft.outcome.v0.schema.json"),
         GRAFT_OUTCOME_SCHEMA,
     );
@@ -6224,7 +6243,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         inventory_json.pointer("/schema_count"),
-        Some(&serde_json::json!(23))
+        Some(&serde_json::json!(24))
     );
     let schema_ids = inventory_json
         .pointer("/schemas")
@@ -6235,6 +6254,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
         .collect::<BTreeSet<_>>();
     assert!(schema_ids.contains("sley.query.report.v0"));
     assert!(schema_ids.contains("sley.ast.node.v0"));
+    assert!(schema_ids.contains("sley.run.report.v0"));
     assert!(schema_ids.contains("sley.ci.report.v0"));
     assert!(schema_ids.contains("sley.deploy.artifact_check.v0"));
     assert!(schema_ids.contains("sley.deploy.artifacts.v0"));
@@ -6271,7 +6291,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(47))
+        Some(&serde_json::json!(48))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -8817,8 +8837,7 @@ task main -> Text uses FileRead {{
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
-    let value: Value = serde_json::from_slice(&output.stdout).expect("parse value");
-    assert_eq!(value, Value::Text("cli gate read".to_string()));
+    assert_cli_run_value(&output.stdout, Value::Text("cli gate read".to_string()));
 }
 
 #[test]
@@ -9383,8 +9402,10 @@ task main -> Result<Text, Error> uses Network {
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
-    let value: Value = serde_json::from_slice(&output.stdout).expect("parse value");
-    assert_eq!(value, Value::Ok(Box::new(Value::Text("Ada".to_string()))));
+    assert_cli_run_value(
+        &output.stdout,
+        Value::Ok(Box::new(Value::Text("Ada".to_string()))),
+    );
 }
 
 #[test]
@@ -9515,10 +9536,9 @@ task main -> Result<Text, Error> uses Shell {
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
-    let value: Value = serde_json::from_slice(&output.stdout).expect("parse value");
-    assert_eq!(
-        value,
-        Value::Ok(Box::new(Value::Text("2026-05-05".to_string())))
+    assert_cli_run_value(
+        &output.stdout,
+        Value::Ok(Box::new(Value::Text("2026-05-05".to_string()))),
     );
 }
 
@@ -9650,8 +9670,10 @@ task main -> Result<Text, Error> uses ModelCall {
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
-    let value: Value = serde_json::from_slice(&output.stdout).expect("parse value");
-    assert_eq!(value, Value::Ok(Box::new(Value::Text("Ada".to_string()))));
+    assert_cli_run_value(
+        &output.stdout,
+        Value::Ok(Box::new(Value::Text("Ada".to_string()))),
+    );
 }
 
 #[test]
@@ -9804,10 +9826,9 @@ task main -> Result<Text, Error> uses SecretRead {
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
-    let value: Value = serde_json::from_slice(&output.stdout).expect("parse value");
-    assert_eq!(
-        value,
-        Value::Ok(Box::new(Value::Text("redacted".to_string())))
+    assert_cli_run_value(
+        &output.stdout,
+        Value::Ok(Box::new(Value::Text("redacted".to_string()))),
     );
 }
 
@@ -9961,10 +9982,9 @@ task main -> Result<Text, Error> uses Deploy {
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
-    let value: Value = serde_json::from_slice(&output.stdout).expect("parse value");
-    assert_eq!(
-        value,
-        Value::Ok(Box::new(Value::Text("staged".to_string())))
+    assert_cli_run_value(
+        &output.stdout,
+        Value::Ok(Box::new(Value::Text("staged".to_string()))),
     );
 }
 
@@ -10118,10 +10138,9 @@ task main -> Result<Text, Error> uses Spend {
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
-    let value: Value = serde_json::from_slice(&output.stdout).expect("parse value");
-    assert_eq!(
-        value,
-        Value::Ok(Box::new(Value::Text("authorized".to_string())))
+    assert_cli_run_value(
+        &output.stdout,
+        Value::Ok(Box::new(Value::Text("authorized".to_string()))),
     );
 }
 
@@ -10162,8 +10181,7 @@ task main -> Text uses DatabaseRead {
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
-    let value: Value = serde_json::from_slice(&output.stdout).expect("parse value");
-    assert_eq!(value, Value::Text("Ada".to_string()));
+    assert_cli_run_value(&output.stdout, Value::Text("Ada".to_string()));
 }
 
 #[test]
@@ -14837,6 +14855,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "json:sley.symbol_graph.slice.v0",
         "json:sley.query.report.v0",
         "json:sley.lint.report.v0",
+        "json:sley.run.report.v0",
         "json:sley.project.scaffold.v0",
         "json:sley.doctor.report.v0",
         "json:sley.edit_plan.report.v0",

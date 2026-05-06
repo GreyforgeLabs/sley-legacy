@@ -1,0 +1,161 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.run.report.v0",
+  "title": "Sley Run Report v0",
+  "type": "object",
+  "required": ["schema", "status", "target", "value", "diagnostics"],
+  "properties": {
+    "schema": { "const": "sley.run.report.v0" },
+    "status": { "const": "passed" },
+    "target": { "type": "string", "minLength": 1 },
+    "value": { "$ref": "#/$defs/value" },
+    "diagnostics": {
+      "type": "array",
+      "items": { "$ref": "sley.diagnostics.report.v0#/$defs/diagnostic" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "value": {
+      "oneOf": [
+        { "$ref": "#/$defs/unitValue" },
+        { "$ref": "#/$defs/textValue" },
+        { "$ref": "#/$defs/intValue" },
+        { "$ref": "#/$defs/floatValue" },
+        { "$ref": "#/$defs/boolValue" },
+        { "$ref": "#/$defs/gateValue" },
+        { "$ref": "#/$defs/listValue" },
+        { "$ref": "#/$defs/mapValue" },
+        { "$ref": "#/$defs/recordValue" },
+        { "$ref": "#/$defs/okValue" },
+        { "$ref": "#/$defs/errValue" },
+        { "$ref": "#/$defs/rawValue" }
+      ]
+    },
+    "unitValue": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "kind": { "const": "Unit" }
+      },
+      "additionalProperties": false
+    },
+    "textValue": {
+      "type": "object",
+      "required": ["kind", "value"],
+      "properties": {
+        "kind": { "const": "Text" },
+        "value": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "intValue": {
+      "type": "object",
+      "required": ["kind", "value"],
+      "properties": {
+        "kind": { "const": "Int" },
+        "value": { "type": "integer" }
+      },
+      "additionalProperties": false
+    },
+    "floatValue": {
+      "type": "object",
+      "required": ["kind", "value"],
+      "properties": {
+        "kind": { "const": "Float" },
+        "value": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "boolValue": {
+      "type": "object",
+      "required": ["kind", "value"],
+      "properties": {
+        "kind": { "const": "Bool" },
+        "value": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "gateValue": {
+      "type": "object",
+      "required": ["kind", "value"],
+      "properties": {
+        "kind": { "const": "Gate" },
+        "value": { "$ref": "#/$defs/runtimeGate" }
+      },
+      "additionalProperties": false
+    },
+    "listValue": {
+      "type": "object",
+      "required": ["kind", "value"],
+      "properties": {
+        "kind": { "const": "List" },
+        "value": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/value" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "mapValue": {
+      "type": "object",
+      "required": ["kind", "value"],
+      "properties": {
+        "kind": { "const": "Map" },
+        "value": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/value" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "recordValue": {
+      "type": "object",
+      "required": ["kind", "value"],
+      "properties": {
+        "kind": { "const": "Record" },
+        "value": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/value" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "okValue": {
+      "type": "object",
+      "required": ["kind", "value"],
+      "properties": {
+        "kind": { "const": "Ok" },
+        "value": { "$ref": "#/$defs/value" }
+      },
+      "additionalProperties": false
+    },
+    "errValue": {
+      "type": "object",
+      "required": ["kind", "value"],
+      "properties": {
+        "kind": { "const": "Err" },
+        "value": { "$ref": "#/$defs/value" }
+      },
+      "additionalProperties": false
+    },
+    "rawValue": {
+      "type": "object",
+      "required": ["kind", "value"],
+      "properties": {
+        "kind": { "const": "Raw" },
+        "value": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "runtimeGate": {
+      "type": "object",
+      "required": ["effect"],
+      "properties": {
+        "effect": { "type": "string", "minLength": 1 },
+        "root": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  }
+}
