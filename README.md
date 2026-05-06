@@ -191,7 +191,8 @@ Implemented now:
   ambiguous names
 - locked JSON contract snapshots under `fixtures/contracts/`, including
   checked query, lint, doctor, edit-plan, verify, and project scaffold reports
-- external v0 JSON Schema files under `docs/schemas/`
+- external v0 JSON Schema files under `docs/schemas/`, including strict
+  edit-plan graft operation and transaction template envelopes
 - manifest-backed accepted/rejected synthetic conformance corpus fixtures under
   `fixtures/corpus/`, including declared and missing authority cases for the
   seeded host adapter surface
@@ -494,8 +495,9 @@ Known v0 limits:
   modules without adding checked declarations for those modules still reject
   before any source or trace mutation.
 - The AST JSON Schema now covers declarations, statements, expressions, type
-  expressions, spans, and provenance recursively. Other external JSON Schema
-  files remain narrower v0 root-contract schemas.
+  expressions, spans, and provenance recursively. The edit-plan schema also
+  pins strict graft operation and transaction template envelopes. Other
+  external JSON Schema files remain narrower v0 root-contract schemas.
 - `MoveNode` currently reorders statements within their existing block,
   moves statements across existing block parents with `payload.destination`,
   reorders takes within their owning task, reorders top-level imports, types,

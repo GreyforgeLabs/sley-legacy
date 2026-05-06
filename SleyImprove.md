@@ -120,7 +120,8 @@ Rules:
   `fixtures/contracts/`.
 - JSON Schema files live under `docs/schemas/`; the AST schema covers nested
   declarations, statements, expressions, type expressions, spans, and
-  provenance, while the remaining schema files are still root-contract v0
+  provenance, the edit-plan schema pins strict graft operation and transaction
+  template envelopes, and the remaining schema files are still root-contract v0
   shapes.
 - Diagnostics include stable IDs, node IDs, spans where possible, and repair
   hints for common checker failures.

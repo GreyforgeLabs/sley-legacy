@@ -3959,6 +3959,61 @@ fn ast_schema_covers_nested_contract_variants() {
 }
 
 #[test]
+fn edit_plan_schema_covers_strict_graft_template_payloads() {
+    let schema: serde_json::Value = serde_json::from_str(include_str!(
+        "../docs/schemas/sley.edit_plan.report.v0.schema.json"
+    ))
+    .expect("parse edit-plan schema");
+    assert_eq!(
+        schema.pointer("/$defs/graftTemplate/properties/operation/$ref"),
+        Some(&serde_json::json!("#/$defs/graftOperation"))
+    );
+    assert_eq!(
+        schema.pointer("/$defs/transactionTemplate/properties/transaction/$ref"),
+        Some(&serde_json::json!("#/$defs/graftTransaction"))
+    );
+    assert_eq!(
+        schema.pointer("/$defs/graftOperation/additionalProperties"),
+        Some(&serde_json::json!(false))
+    );
+    assert_eq!(
+        schema.pointer("/$defs/graftTransaction/additionalProperties"),
+        Some(&serde_json::json!(false))
+    );
+    assert_eq!(
+        schema.pointer("/$defs/graftTransaction/properties/ops/items/$ref"),
+        Some(&serde_json::json!("#/$defs/graftOperation"))
+    );
+    assert_eq!(
+        schema.pointer("/$defs/graftTransaction/properties/mode/enum"),
+        Some(&serde_json::json!(["all_or_nothing"]))
+    );
+    assert_eq!(
+        schema.pointer("/$defs/graftOperation/properties/op/enum"),
+        Some(&serde_json::json!([
+            "AddModuleDeclaration",
+            "AddTask",
+            "ReplaceTaskBody",
+            "AddTake",
+            "RemoveTake",
+            "RenameDeclaration",
+            "AddTypeDeclaration",
+            "AddEffectDeclaration",
+            "RemoveTaskEffect",
+            "AddImport",
+            "UpdateCallSites",
+            "UpdateCallArgs",
+            "ReplaceCallArg",
+            "RemoveCallArg",
+            "InsertStatement",
+            "ReplaceExpression",
+            "MoveNode",
+            "DeleteNode"
+        ]))
+    );
+}
+
+#[test]
 fn checker_diagnostics_include_actionable_repair_hints() {
     let source = r#"
 task takes_text -> Text {
