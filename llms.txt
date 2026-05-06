@@ -243,9 +243,9 @@ Current development phase:
   package report; it records `live_deploy_allowed=false`, makes no external
   mutations or provider calls, and keeps live deployment behind explicit
   operator approval. Add `--artifacts-dir <dir>` to write local
-  `deploy-report.json`, `seal.json`, and `zjx-envelope.json` handoff files
-  after the dry-run package is ready; `sley-ci deploy` passes the same flag
-  through to the wrapped deploy command
+  `deploy-report.json`, `seal.json`, `zjx-envelope.json`, and digest-bearing
+  `manifest.json` handoff files after the dry-run package is ready;
+  `sley-ci deploy` passes the same flag through to the wrapped deploy command
 - next development work should keep broadening style and migration lints
 - project graft writeback now supports create/update/delete module files and
   module rename, including manifest entry updates; top-level type/effect/task

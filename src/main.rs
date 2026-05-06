@@ -9,7 +9,9 @@ use serde::Serialize;
 use serde_json::Value as JsonValue;
 use sley::Program;
 use sley::checker::{check_program, has_errors};
-use sley::deploy::{DeployArtifacts, DeployReport, build_deploy_report};
+use sley::deploy::{
+    DeployArtifacts, DeployReport, build_deploy_artifact_manifest, build_deploy_report,
+};
 use sley::diagnostics::{Diagnostic, DiagnosticReport, RepairHint};
 use sley::doctor::{DoctorReport, build_doctor_report};
 use sley::formatter::format_program;
@@ -29,8 +31,8 @@ use sley::symbols::{
     task_module, type_module,
 };
 use sley::trace::{
-    TraceSeal, append_trace_receipt, build_trace_receipt, build_trace_seal, default_trace_path,
-    read_trace_receipts,
+    TraceSeal, append_trace_receipt, build_trace_receipt, build_trace_seal, content_digest,
+    default_trace_path, read_trace_receipts,
 };
 use sley::verify::{VerifyReport, build_verify_report};
 use sley::zjx::build_zjx_envelope;
@@ -1740,6 +1742,7 @@ fn deploy_artifacts(directory: &Path) -> DeployArtifacts {
         report: normalized_path(&directory.join("deploy-report.json")),
         seal: normalized_path(&directory.join("seal.json")),
         package: normalized_path(&directory.join("zjx-envelope.json")),
+        manifest: normalized_path(&directory.join("manifest.json")),
     }
 }
 
@@ -1755,21 +1758,31 @@ fn write_deploy_artifacts(
             directory.display()
         )
     })?;
-    write_json_file(&directory.join("deploy-report.json"), report)?;
-    if let Some(seal) = seal {
-        write_json_file(&directory.join("seal.json"), seal)?;
-    }
-    if let Some(package) = package {
-        write_json_file(&directory.join("zjx-envelope.json"), package)?;
-    }
+    let artifacts = report
+        .artifacts
+        .as_ref()
+        .context("ready deploy report is missing artifact paths")?;
+    let seal = seal.context("ready deploy report is missing trace seal artifact")?;
+    let package = package.context("ready deploy report is missing package artifact")?;
+    let report_digest = write_json_file(&directory.join("deploy-report.json"), report)?;
+    let seal_file_digest = write_json_file(&directory.join("seal.json"), seal)?;
+    let package_file_digest = write_json_file(&directory.join("zjx-envelope.json"), package)?;
+    let manifest = build_deploy_artifact_manifest(
+        report,
+        artifacts,
+        report_digest,
+        seal_file_digest,
+        package_file_digest,
+    );
+    write_json_file(&directory.join("manifest.json"), &manifest)?;
     Ok(())
 }
 
-fn write_json_file<T: Serialize>(path: &Path, value: &T) -> Result<()> {
-    let file =
-        fs::File::create(path).with_context(|| format!("failed to create {}", path.display()))?;
-    serde_json::to_writer_pretty(file, value)
-        .with_context(|| format!("failed to write JSON {}", path.display()))
+fn write_json_file<T: Serialize>(path: &Path, value: &T) -> Result<String> {
+    let bytes = serde_json::to_vec_pretty(value)
+        .with_context(|| format!("failed to serialize JSON {}", path.display()))?;
+    fs::write(path, &bytes).with_context(|| format!("failed to write JSON {}", path.display()))?;
+    Ok(content_digest(&bytes))
 }
 
 fn normalized_path(path: &Path) -> String {
@@ -2023,6 +2036,7 @@ fn print_human_deploy_report(report: &DeployReport) {
             "artifacts dir={} report={} seal={} package={}",
             artifacts.directory, artifacts.report, artifacts.seal, artifacts.package
         );
+        println!("artifact_manifest={}", artifacts.manifest);
     }
     for action in &report.next_actions {
         println!(

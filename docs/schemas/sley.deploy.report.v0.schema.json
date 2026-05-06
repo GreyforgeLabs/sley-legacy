@@ -95,12 +95,13 @@
     },
     "artifacts": {
       "type": "object",
-      "required": ["directory", "report", "seal", "package"],
+      "required": ["directory", "report", "seal", "package", "manifest"],
       "properties": {
         "directory": { "type": "string", "minLength": 1 },
         "report": { "type": "string", "minLength": 1 },
         "seal": { "type": "string", "minLength": 1 },
-        "package": { "type": "string", "minLength": 1 }
+        "package": { "type": "string", "minLength": 1 },
+        "manifest": { "type": "string", "minLength": 1 }
       },
       "additionalProperties": false
     },

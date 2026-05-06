@@ -114,9 +114,9 @@ Rules:
 
 - JSON output must be stable and versioned.
 - AST roots, diagnostic reports, symbol graphs, graph slices, query reports,
-  lint reports, doctor reports, verify reports, deploy dry-run reports, CI
-  reports, project scaffold reports, trace seals, ZJX envelopes, and graft
-  outcomes carry v0 schema IDs.
+  lint reports, doctor reports, verify reports, deploy dry-run reports, deploy
+  artifact manifests, CI reports, project scaffold reports, trace seals, ZJX
+  envelopes, and graft outcomes carry v0 schema IDs.
 - AST, diagnostic-report, graph-slice, query-report, lint-report,
   doctor-report, project-scaffold, and trace-seal snapshots are locked under
   `fixtures/contracts/`.
@@ -130,7 +130,8 @@ Rules:
   check/verify/deploy/smoke reports and `sley-contract`
   inventory/fixture-check/validate reports have versioned schemas, the graft
   outcome and trace receipt schemas pin accepted provenance records, the ZJX
-  envelope schema pins graph, slice, and trace receipt handoff refs, and the
+  envelope schema pins graph, slice, and trace receipt handoff refs, the deploy
+  artifact manifest schema pins report/seal/package file digests, and the
   remaining schema files are still root-contract v0 shapes.
 - Diagnostics include stable IDs, node IDs, spans where possible, and repair
   hints for common checker failures.
@@ -192,9 +193,9 @@ Rules:
   `sley.deploy.report.v0`. It is explicitly non-live: no provider calls,
   external mutations, infrastructure changes, or spend, and live deployment
   remains behind operator approval. `--artifacts-dir <dir>` writes local
-  `deploy-report.json`, `seal.json`, and `zjx-envelope.json` handoff files only
-  after the dry-run package is ready; `sley-ci deploy` passes the same flag
-  through to the wrapped deploy command.
+  `deploy-report.json`, `seal.json`, `zjx-envelope.json`, and digest-bearing
+  `manifest.json` handoff files only after the dry-run package is ready;
+  `sley-ci deploy` passes the same flag through to the wrapped deploy command.
 - Grafts support dry-run by default and an explicit `--dry-run` flag.
 - Graft input JSON is strict: unknown operation or payload fields reject instead
   of being silently ignored.
@@ -503,7 +504,7 @@ The current smoke manifest covers:
 - deploy and agent scaffold typed next-actions, first-run sequence execution,
   strict seeded `verify --json --deny-warnings` readiness, and local
   `sley deploy --dry-run` package reports, including optional deploy artifact
-  writes plus scaffold-level and passed-verify seal/ZJX handoff next-actions
+  manifests plus scaffold-level and passed-verify seal/ZJX handoff next-actions
   plus the agent scaffold's `sley-ci verify` and `sley-ci deploy` handoffs
 - doctor/verify warning next-actions that route agents to checked
   `sley plan --json --graft-templates` lint repair plans and unambiguous
@@ -547,7 +548,7 @@ The current smoke manifest covers:
   and `Spend`
 - local deploy package dry-runs that prove verify, seal, and ZJX package
   summaries without live deployment authority and can write explicit local
-  report/seal/package handoff artifacts
+  report/seal/package handoff artifacts with a digest manifest
 - temp-directory execution and temp setup files for write-mode cases so release
   tests do not mutate the repo checkout
 

@@ -1,9 +1,10 @@
 use serde::Serialize;
 
-use crate::trace::TraceSeal;
+use crate::trace::{TRACE_SEAL_SCHEMA, TraceSeal};
 use crate::verify::VerifyReport;
 use crate::zjx::SleyZjxEnvelope;
 
+pub const DEPLOY_ARTIFACTS_SCHEMA: &str = "sley.deploy.artifacts.v0";
 pub const DEPLOY_REPORT_SCHEMA: &str = "sley.deploy.report.v0";
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
@@ -64,6 +65,41 @@ pub struct DeployArtifacts {
     pub report: String,
     pub seal: String,
     pub package: String,
+    pub manifest: String,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct DeployArtifactManifest {
+    pub schema: String,
+    pub target: String,
+    pub environment: String,
+    pub mode: String,
+    pub policy: DeployPolicy,
+    pub summary: DeployArtifactSummary,
+    pub files: DeployArtifactFiles,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct DeployArtifactSummary {
+    pub verify_status: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub seal_digest: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub graph_digest: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct DeployArtifactFiles {
+    pub report: DeployArtifactFile,
+    pub seal: DeployArtifactFile,
+    pub package: DeployArtifactFile,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct DeployArtifactFile {
+    pub path: String,
+    pub schema: String,
+    pub digest: String,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -123,6 +159,55 @@ pub fn build_deploy_report(
         package,
         artifacts,
         next_actions,
+    }
+}
+
+pub fn build_deploy_artifact_manifest(
+    report: &DeployReport,
+    artifacts: &DeployArtifacts,
+    report_digest: impl Into<String>,
+    seal_file_digest: impl Into<String>,
+    package_file_digest: impl Into<String>,
+) -> DeployArtifactManifest {
+    let seal_schema = report
+        .seal
+        .as_ref()
+        .map(|seal| seal.schema.clone())
+        .unwrap_or_else(|| TRACE_SEAL_SCHEMA.to_string());
+    let package_schema = report
+        .package
+        .as_ref()
+        .map(|package| package.source_schema.clone())
+        .unwrap_or_else(|| "sley.zjx.envelope.v0".to_string());
+
+    DeployArtifactManifest {
+        schema: DEPLOY_ARTIFACTS_SCHEMA.to_string(),
+        target: report.target.clone(),
+        environment: report.environment.clone(),
+        mode: report.mode.clone(),
+        policy: report.policy.clone(),
+        summary: DeployArtifactSummary {
+            verify_status: report.summary.verify_status.clone(),
+            seal_digest: report.summary.seal_digest.clone(),
+            graph_digest: report.summary.graph_digest.clone(),
+        },
+        files: DeployArtifactFiles {
+            report: DeployArtifactFile {
+                path: artifacts.report.clone(),
+                schema: report.schema.clone(),
+                digest: report_digest.into(),
+            },
+            seal: DeployArtifactFile {
+                path: artifacts.seal.clone(),
+                schema: seal_schema,
+                digest: seal_file_digest.into(),
+            },
+            package: DeployArtifactFile {
+                path: artifacts.package.clone(),
+                schema: package_schema,
+                digest: package_file_digest.into(),
+            },
+        },
     }
 }
 
