@@ -8997,11 +8997,11 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/integration_test_count"),
-        Some(&serde_json::json!(296))
+        Some(&serde_json::json!(297))
     );
     assert_eq!(
         report_json.pointer("/summary/declared_integration_test_count"),
-        Some(&serde_json::json!(296))
+        Some(&serde_json::json!(297))
     );
     assert_eq!(
         report_json.pointer("/summary/test_count_matches_declared"),
@@ -9013,7 +9013,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/tests/integration_test_count"),
-        Some(&serde_json::json!(296))
+        Some(&serde_json::json!(297))
     );
     assert_eq!(
         report_json.pointer("/tests/declared_matches_actual"),
@@ -10353,6 +10353,23 @@ fn query_report_schema_exposes_strict_row_definitions() {
         schema.pointer("/$defs/callSummary/properties/expr_id/minLength"),
         Some(&serde_json::json!(1))
     );
+}
+
+#[test]
+fn lint_report_schema_pins_nonempty_finding_strings() {
+    let schema: serde_json::Value = serde_json::from_str(include_str!(
+        "../docs/schemas/sley.lint.report.v0.schema.json"
+    ))
+    .expect("parse lint report schema");
+    for pointer in [
+        "/properties/entry_module/minLength",
+        "/properties/findings/items/properties/message/minLength",
+        "/properties/findings/items/properties/node/minLength",
+        "/properties/findings/items/properties/module/minLength",
+        "/properties/findings/items/properties/hint/minLength",
+    ] {
+        assert_eq!(schema.pointer(pointer), Some(&serde_json::json!(1)));
+    }
 }
 
 #[test]
