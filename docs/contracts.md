@@ -19,8 +19,8 @@ make v1
 Current counts:
 
 - Schemas: `36`
-- Contract fixtures: `96`
-- Schema instances: `99`
+- Contract fixtures: `98`
+- Schema instances: `101`
 
 ## Core Compiler Roots
 
@@ -57,7 +57,7 @@ Current counts:
 | Schema ID | Producer | Purpose |
 |---|---|---|
 | `sley.ci.report.v0` | `sley-ci` | CI wrapper reports for check, lint, doctor, plan, run, verify, deploy, smoke, corpus, and examples. |
-| `sley.conformance.report.v0` | `sley-conformance report --json` | Release-readiness summary. |
+| `sley.conformance.report.v0` | `sley-conformance report --json` | Release-readiness summary, including the hard public-release gate shape. |
 | `sley.conformance.coverage.v0` | `sley-conformance coverage --json` | Required tag coverage result. |
 | `sley.conformance.manifest.v0` | `fixtures/corpus/manifest.json` | Accepted/rejected corpus manifest. |
 | `sley.cli_smoke.manifest.v0` | smoke manifests | CLI smoke manifest. |

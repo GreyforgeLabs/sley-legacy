@@ -1,0 +1,171 @@
+{
+  "schema": "sley.conformance.report.v0",
+  "status": "failed",
+  "summary": {
+    "schema_count": 1,
+    "schema_instance_count": 1,
+    "schema_without_instance_count": 0,
+    "contract_fixture_count": 1,
+    "contract_fixture_failed_count": 0,
+    "corpus_accepted_count": 1,
+    "corpus_rejected_count": 1,
+    "smoke_case_count": 1,
+    "example_project_count": 1,
+    "example_source_count": 1,
+    "integration_test_count": 1,
+    "declared_integration_test_count": 1,
+    "test_count_matches_declared": true,
+    "public_release_blocker_count": 5,
+    "issue_count": 1
+  },
+  "validation": {
+    "contract_fixtures": {
+      "name": "contract_fixtures",
+      "status": "passed",
+      "command": [
+        "sley-contract",
+        "check-fixtures",
+        "fixtures/contracts",
+        "--schemas",
+        "docs/schemas",
+        "--json"
+      ],
+      "report_schema": "sley.contract.fixture_check.v0",
+      "fixture_count": 1,
+      "passed_count": 1,
+      "failed_count": 0,
+      "issue_count": 0,
+      "issues": []
+    },
+    "manifests": []
+  },
+  "schemas": {
+    "schema_dir": "docs/schemas",
+    "fixture_dir": "fixtures/contracts",
+    "schemas": [
+      {
+        "id": "sley.ast.program.v0",
+        "path": "docs/schemas/sley.ast.program.v0.schema.json",
+        "title": "Sley AST Program v0"
+      }
+    ],
+    "instances": [
+      {
+        "schema_id": "sley.ast.program.v0",
+        "count": 1
+      }
+    ],
+    "schemas_without_instances": [],
+    "unknown_instance_schemas": []
+  },
+  "corpus": {
+    "manifest": "fixtures/corpus/manifest.json",
+    "accepted_count": 1,
+    "rejected_count": 1,
+    "tag_inventory": [
+      {
+        "tag": "language:pure-task-call",
+        "count": 1
+      }
+    ],
+    "feature_counts": [
+      {
+        "tag": "language",
+        "count": 1
+      }
+    ]
+  },
+  "smoke": {
+    "manifests": [
+      {
+        "path": "fixtures/cli_smokes/manifest.json",
+        "case_count": 1
+      }
+    ],
+    "case_count": 1,
+    "tag_inventory": [
+      {
+        "tag": "cli:check",
+        "count": 1
+      }
+    ],
+    "required_tags": [
+      "cli:check"
+    ],
+    "missing_required_tags": []
+  },
+  "examples": {
+    "root": "examples",
+    "project_count": 1,
+    "source_count": 1
+  },
+  "tests": {
+    "integration_test_file": "tests/sley_v0.rs",
+    "integration_test_count": 1,
+    "goal_doc": "SleyGoal.md",
+    "declared_integration_test_count": 1,
+    "declared_matches_actual": true
+  },
+  "release": {
+    "public_release_ready": false,
+    "blocker_count": 5,
+    "blockers": [
+      {
+        "code": "missing_license_file",
+        "message": "LICENSE is not present; choose the repository license before public release"
+      },
+      {
+        "code": "cargo_license_unresolved",
+        "message": "Cargo.toml does not declare `package.license` or `package.license-file`"
+      },
+      {
+        "code": "cargo_repository_unset",
+        "message": "Cargo.toml does not declare `package.repository` for public release consumers"
+      },
+      {
+        "code": "tree_sitter_package_license_unresolved",
+        "message": "tree-sitter-sley/package.json has no public release license"
+      },
+      {
+        "code": "tree_sitter_config_license_unresolved",
+        "message": "tree-sitter-sley/tree-sitter.json has no public release license"
+      }
+    ],
+    "cargo_package": {
+      "manifest": "Cargo.toml",
+      "name": "sley",
+      "version": "0.1.0",
+      "edition": "2024",
+      "rust_version": "1.85.0",
+      "description_present": true,
+      "readme_present": true,
+      "repository_present": false,
+      "license": null,
+      "license_file": null,
+      "publish": "false",
+      "publish_restricted": true
+    },
+    "tree_sitter_package": {
+      "package_json": "tree-sitter-sley/package.json",
+      "config": "tree-sitter-sley/tree-sitter.json",
+      "name": "tree-sitter-sley",
+      "version": "0.1.0",
+      "private": true,
+      "package_license": "UNLICENSED",
+      "package_description_present": true,
+      "config_license": "UNLICENSED",
+      "config_description_present": true
+    },
+    "license": {
+      "file": "LICENSE",
+      "present": false,
+      "operator_decision_required": true
+    }
+  },
+  "issues": [
+    {
+      "code": "public_release_not_ready",
+      "message": "`--require-public-release-ready` was set but public release has 5 blockers"
+    }
+  ]
+}
