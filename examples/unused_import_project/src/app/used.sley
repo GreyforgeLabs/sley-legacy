@@ -1,0 +1,5 @@
+module app.used
+
+export task value -> Int {
+  return 7
+}

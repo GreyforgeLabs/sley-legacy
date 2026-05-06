@@ -154,14 +154,16 @@ Current development phase:
   and lint-driven `DeleteNode` templates plus cleanup transactions for unused
   private type/effect declarations, plus `AddModuleDeclaration` templates for
   `missing_module_declaration` with module names inferred from the target file
-  or project-relative path, plus `migrate_raw_host_adapter` templates for raw
-  host calls that can safely move to fallible `try_` adapters with `?`, plus
+  or project-relative path, plus `delete_unused_import` templates for unused
+  imports that validate through checked `DeleteNode`, plus
+  `migrate_raw_host_adapter` templates for raw host calls that can safely move
+  to fallible `try_` adapters with `?`, plus
   `propagate_unchecked_result` templates for discarded `Result` expression
   statements; selected task graph-slice affordances are surfaced as checked
   `move_statement`/`move_take`, destination-variant, `delete_statement`,
   `delete_take`, and `replace_expression` templates where legal, or
   `--template-surface <surface>` can target a specific task id, qualified task
-  name, or lint finding declaration node; `--emit-graft <kind>` prints one
+  name, or lint finding node; `--emit-graft <kind>` prints one
   matching operation/transaction JSON object for `sley graft`
 - `sley fix --json --kind <kind>` consumes checked plan templates and applies
   one named operation or transaction through the same graft checker, emitting

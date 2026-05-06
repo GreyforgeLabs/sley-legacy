@@ -467,6 +467,7 @@ fn lint_graft_templates(
     module_name_hint: &str,
 ) -> Vec<EditPlanGraftTemplate> {
     let mut templates = lint_declaration_delete_templates(program, lint_report);
+    templates.extend(lint_unused_import_templates(program, lint_report));
     templates.extend(lint_missing_module_templates(
         program,
         lint_report,
@@ -502,6 +503,35 @@ fn lint_declaration_delete_templates(
                 reason: format!(
                     "delete this unused private {declaration_kind} after checked lint proves it is unreferenced"
                 ),
+                surface: finding.node.clone(),
+                operation,
+                editable_json_pointers: Vec::new(),
+            })
+        })
+        .collect()
+}
+
+fn lint_unused_import_templates(
+    program: &Program,
+    lint_report: &LintReport,
+) -> Vec<EditPlanGraftTemplate> {
+    lint_report
+        .findings
+        .iter()
+        .filter(|finding| finding.id == "UNUSED_IMPORT")
+        .filter_map(|finding| {
+            let operation = json!({
+                "op": "DeleteNode",
+                "target": finding.node
+            });
+            if !delete_affordance_checks(program, &operation) {
+                return None;
+            }
+            Some(EditPlanGraftTemplate {
+                kind: "delete_unused_import".to_string(),
+                reason:
+                    "delete this unused import after checked lint proves no checked task, type, or effect uses it"
+                        .to_string(),
                 surface: finding.node.clone(),
                 operation,
                 editable_json_pointers: Vec::new(),
@@ -820,7 +850,7 @@ fn select_template_surface<'a>(
             Diagnostic::error(
                 "PLAN_SURFACE_NOT_FOUND",
                 format!(
-                    "plan surface `{requested_surface}` was not found; use a task id, qualified task name, or lint finding declaration node"
+                    "plan surface `{requested_surface}` was not found; use a task id, qualified task name, or lint finding node"
                 ),
             )
             .with_node(requested_surface)

@@ -1,0 +1,5 @@
+module app.stale
+
+export type Stale = {
+  slot value: Text
+}

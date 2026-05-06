@@ -1213,6 +1213,82 @@ task main -> Used {
 }
 
 #[test]
+fn edit_plan_graft_templates_include_unused_import_delete() {
+    let root = temp_project_dir("unused-import-plan-template");
+    write_unused_import_project(&root);
+    let project = load_project(&root).expect("load unused import project");
+    let program = project.program;
+
+    let report = build_edit_plan_report_with_options(
+        root.display().to_string(),
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: None,
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "warnings");
+    assert!(
+        report
+            .lint
+            .as_ref()
+            .expect("lint summary")
+            .findings
+            .iter()
+            .any(|finding| {
+                finding.id == "UNUSED_IMPORT" && finding.node == "import:app.main:app.stale"
+            })
+    );
+
+    let template = report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "delete_unused_import")
+        .expect("unused import delete template");
+    assert_eq!(template.surface, "import:app.main:app.stale");
+    assert_eq!(
+        template.operation.pointer("/op"),
+        Some(&serde_json::json!("DeleteNode"))
+    );
+    assert_eq!(
+        template.operation.pointer("/target"),
+        Some(&serde_json::json!("import:app.main:app.stale"))
+    );
+    assert!(template.editable_json_pointers.is_empty());
+    let graft: GraftInput =
+        serde_json::from_value(template.operation.clone()).expect("parse unused import template");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:unused-import-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+
+    let targeted_report = build_edit_plan_report_with_options(
+        root.display().to_string(),
+        Ok(program),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("import:app.main:app.stale".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(targeted_report.status, "warnings");
+    assert!(targeted_report.diagnostics.is_empty());
+    assert_eq!(targeted_report.graft_templates.len(), 1);
+    assert_eq!(
+        targeted_report.graft_templates[0].kind,
+        "delete_unused_import"
+    );
+    assert!(targeted_report.transaction_templates.is_empty());
+
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
 fn edit_plan_graft_templates_include_missing_module_fix() {
     let source = r#"task main -> Text {
   return "hello"
@@ -8668,6 +8744,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:templates:raw-host-migration",
         "graft:templates:replace-expression",
         "graft:templates:unchecked-result",
+        "graft:templates:unused-import-delete",
         "graft:transactions:lint-declaration-cleanup",
         "graph-slice:replace-affordances",
         "lint:unused_declared_effect",

@@ -656,6 +656,9 @@ starter expression graft validates. It also turns checked
 checked candidate. When more than one unused private type/effect declaration
 can be deleted, the report also includes an all-or-nothing
 `delete_unused_private_declarations` transaction template.
+`unused_import` lint findings become checked `delete_unused_import`
+`DeleteNode` templates when the import delete validates against the checked
+candidate.
 `missing_module_declaration` lint findings become checked
 `add_module_declaration` graft templates on the `program` surface, with the
 starter module name inferred from project-relative path context when available.
@@ -667,10 +670,10 @@ still passes.
 `propagate_unchecked_result` graft templates when the discarded `Result`
 expression can be rewritten with `?` and the checked candidate still passes.
 `--template-surface <surface>` selects a specific task surface by task node id
-or qualified task name, the `program` missing-module surface, or a declaration
-lint surface by lint finding node id such as `type:app.module.Name` or
-`effect:app.module.Name`. For selected tasks with currently resolved inbound
-callers, the report also includes an
+or qualified task name, the `program` missing-module surface, or a lint surface
+by lint finding node id such as `import:app.main:app.stale`,
+`type:app.module.Name`, or `effect:app.module.Name`. For selected tasks with
+currently resolved inbound callers, the report also includes an
 all-or-nothing `RenameDeclaration` plus `UpdateCallSites` transaction template
 and an `AddTake` plus `UpdateCallArgs` transaction template. When the selected
 task has an unused normal take, `sley plan --graft-templates` can also emit a

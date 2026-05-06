@@ -426,6 +426,67 @@
       }
     },
     {
+      "name": "plan_unused_import_template_json",
+      "args": [
+        "plan",
+        "--json",
+        "--graft-templates",
+        "--template-surface",
+        "import:app.main:app.stale",
+        "examples/unused_import_project"
+      ],
+      "covers": [
+        "cli:plan",
+        "graft:templates",
+        "graft:templates:unused-import-delete",
+        "lint:unused_import",
+        "json:sley.edit_plan.report.v0",
+        "json:sley.lint.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.edit_plan.report.v0" },
+          { "pointer": "/status", "value": "warnings" },
+          { "pointer": "/summary/lint_finding_count", "value": 1 },
+          { "pointer": "/lint/findings/0/id", "value": "UNUSED_IMPORT" },
+          { "pointer": "/lint/findings/0/node", "value": "import:app.main:app.stale" },
+          { "pointer": "/graft_templates/0/kind", "value": "delete_unused_import" },
+          { "pointer": "/graft_templates/0/surface", "value": "import:app.main:app.stale" },
+          { "pointer": "/graft_templates/0/operation/op", "value": "DeleteNode" },
+          { "pointer": "/graft_templates/0/operation/target", "value": "import:app.main:app.stale" }
+        ]
+      }
+    },
+    {
+      "name": "fix_unused_import_dry_run_json",
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "delete_unused_import",
+        "--template-surface",
+        "import:app.main:app.stale",
+        "--dry-run",
+        "examples/unused_import_project"
+      ],
+      "covers": [
+        "cli:fix",
+        "graft:templates:unused-import-delete",
+        "lint:unused_import",
+        "json:sley.graft.outcome.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/operation", "value": "DeleteNode" },
+          { "pointer": "/provenance/0/targets/0", "value": "import:app.main:app.stale" }
+        ]
+      }
+    },
+    {
       "name": "plan_project_graft_templates_surface_json",
       "args": [
         "plan",

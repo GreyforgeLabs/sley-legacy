@@ -138,14 +138,16 @@ Rules:
   takes and lint-driven delete templates plus cleanup transactions for unused
   private type/effect declarations, plus lint-driven `AddModuleDeclaration`
   templates for missing module declarations with target/project-aware module
-  name inference, plus `migrate_raw_host_adapter` templates for eligible raw
-  host calls that can move to fallible `try_` adapters with `?`, with editable
+  name inference, plus `delete_unused_import` templates for unused imports
+  that validate through checked `DeleteNode`, plus `migrate_raw_host_adapter`
+  templates for eligible raw host calls that can move to fallible `try_`
+  adapters with `?`, with editable
   JSON pointers; it also consumes selected graph-slice movement affordances as
   `move_statement`,
   `move_take`, and destination-variant templates when legal graph-slice
   destinations exist. Agents can target a specific task surface by node id or
-  qualified name, the `program` missing-module surface, or a lint finding
-  declaration surface by node id. Agents can use `--emit-graft <kind>` to print
+  qualified name, the `program` missing-module surface, or a lint finding node
+  id. Agents can use `--emit-graft <kind>` to print
   one matching operation or transaction JSON directly for dry-run or write-mode
   `sley graft`.
 - `sley fix` consumes the same plan templates, selects one named operation or
@@ -452,6 +454,8 @@ The current smoke manifest covers:
   declaration surface targeting in edit-plan reports
 - lint-driven missing-module `AddModuleDeclaration` templates, module-name
   inference, and checked `sley fix` dry runs
+- lint-driven unused-import `DeleteNode` templates and checked `sley fix` dry
+  runs
 - raw-host adapter migration templates that rewrite eligible raw host calls to
   fallible `try_` adapters with checked `?` propagation
 - unchecked-result migration templates that add checked `?` propagation when

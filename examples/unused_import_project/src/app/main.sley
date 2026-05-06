@@ -1,0 +1,8 @@
+module app.main
+
+import app.used as used
+import app.stale as stale
+
+task main -> Int {
+  return call used.value()
+}

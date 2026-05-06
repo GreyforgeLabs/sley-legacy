@@ -1,0 +1,4 @@
+[project]
+name = "unused-import"
+root = "src"
+entry = "app.main"

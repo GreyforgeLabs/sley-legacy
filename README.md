@@ -118,7 +118,8 @@ Implemented now:
   rename-plus-call-site and add-take-plus-call-arg transaction templates for
   targeted caller surfaces, safe remove-take-plus-call-arg transaction
   templates for unused takes, lint-driven delete templates and cleanup
-  transactions for unused private types/effects, lint-driven
+  transactions for unused private types/effects, checked
+  `delete_unused_import` templates for unused imports, lint-driven
   `AddModuleDeclaration` templates for explicit module style fixes with module
   names inferred from the target file or project-relative path,
   `migrate_raw_host_adapter` templates for eligible raw host calls that can
@@ -126,7 +127,7 @@ Implemented now:
   `propagate_unchecked_result` templates for discarded `Result` expression
   statements that can be safely rewritten with `?`,
   `--template-surface <surface>` targeting for task, program, or lint
-  declaration surfaces, `--emit-graft <kind>` for direct
+  surfaces, `--emit-graft <kind>` for direct
   operation/transaction JSON handoff to `sley graft`, and
   `schema: "sley.edit_plan.report.v0"`
 - checked JSON fix previews with `sley fix --kind <kind>`, consuming the same
@@ -478,6 +479,7 @@ dry runs, checked graph query reports, doctor readiness, verify pre-deploy
 gates, edit-plan surfaces, typed scaffold next-actions for the deploy
 quickstart, strict seeded verify readiness for the generated deploy starter,
 lint-driven declaration delete templates and cleanup transactions,
+lint-driven unused-import delete templates,
 lint-driven module declaration fixes with inferred module names,
 raw-host adapter migration templates, unchecked-result propagation templates,
 private-task lint rules, declaration/import/API hygiene, authority hygiene, and
