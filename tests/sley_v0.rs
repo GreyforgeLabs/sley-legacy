@@ -5076,6 +5076,87 @@ fn edit_plan_graft_templates_include_absorbing_boolean_expression_simplify() {
 }
 
 #[test]
+fn edit_plan_graft_templates_include_idempotent_boolean_expression_simplify() {
+    let source = include_str!("../examples/idempotent_boolean_expression.sley");
+    let program = parse_program(source).expect("parse idempotent boolean fixture");
+    let report = build_edit_plan_report_with_options(
+        "examples/idempotent_boolean_expression.sley",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: None,
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "warnings");
+    assert_eq!(report.summary.lint_finding_count, 1);
+    assert_eq!(
+        report.lint.as_ref().expect("lint summary").findings[0].id,
+        "IDEMPOTENT_BOOLEAN_EXPRESSION"
+    );
+    let template = report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "simplify_idempotent_boolean_expression")
+        .expect("idempotent boolean expression simplify template");
+    assert_eq!(
+        template.surface,
+        "block:task:app.idempotent_boolean.main:stmt:1:expr"
+    );
+    assert_eq!(
+        template.operation.pointer("/op"),
+        Some(&serde_json::json!("ReplaceExpression"))
+    );
+    assert_eq!(
+        template.operation.pointer("/payload/source"),
+        Some(&serde_json::json!("ready"))
+    );
+    assert_eq!(template.editable_json_pointers, vec!["/payload/source"]);
+    let graft: GraftInput = serde_json::from_value(template.operation.clone())
+        .expect("parse idempotent boolean template");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:idempotent-boolean-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted_source = outcome.source.expect("grafted source");
+    assert!(grafted_source.contains("return ready"));
+    assert!(!grafted_source.contains("ready && ready"));
+    let grafted_program = parse_program(&grafted_source).expect("parse grafted source");
+    let lint_report = build_lint_report(
+        &grafted_program,
+        LintOptions {
+            rules: vec![LintRule::IdempotentBooleanExpression],
+            module: None,
+        },
+    );
+    assert_eq!(lint_report.status, "ok");
+
+    let targeted_report = build_edit_plan_report_with_options(
+        "examples/idempotent_boolean_expression.sley",
+        Ok(program),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some(
+                "block:task:app.idempotent_boolean.main:stmt:1:expr".to_string(),
+            ),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(targeted_report.status, "warnings");
+    assert!(targeted_report.diagnostics.is_empty());
+    assert_eq!(targeted_report.graft_templates.len(), 1);
+    assert_eq!(
+        targeted_report.graft_templates[0].kind,
+        "simplify_idempotent_boolean_expression"
+    );
+    assert!(targeted_report.transaction_templates.is_empty());
+}
+
+#[test]
 fn edit_plan_graft_templates_include_self_comparison_expression_simplify() {
     let source = include_str!("../examples/self_comparison_expression.sley");
     let program = parse_program(source).expect("parse self-comparison fixture");
@@ -7618,6 +7699,21 @@ task helper -> Result<Text, Error> {
         include_str!("../fixtures/contracts/lint_absorbing_boolean_expression.json"),
     );
 
+    let idempotent_boolean_source = include_str!("../examples/idempotent_boolean_expression.sley");
+    let idempotent_boolean_program =
+        parse_program(idempotent_boolean_source).expect("parse idempotent boolean fixture");
+    let idempotent_boolean_lint = build_lint_report(
+        &idempotent_boolean_program,
+        LintOptions {
+            rules: vec![LintRule::IdempotentBooleanExpression],
+            module: None,
+        },
+    );
+    assert_json_snapshot(
+        &idempotent_boolean_lint,
+        include_str!("../fixtures/contracts/lint_idempotent_boolean_expression.json"),
+    );
+
     let self_comparison_source = include_str!("../examples/self_comparison_expression.sley");
     let self_comparison_program =
         parse_program(self_comparison_source).expect("parse self-comparison fixture");
@@ -8426,7 +8522,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(81))
+        Some(&serde_json::json!(82))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -16053,6 +16149,86 @@ task main -> Bool {
 }
 
 #[test]
+fn lint_report_flags_idempotent_boolean_expressions() {
+    let source = r#"
+module app.idempotent_boolean
+
+task main -> Bool {
+  bind ready = true
+  bind total = 1
+  bind guarded = (total / 1 == 1) && (total / 1 == 1)
+  bind repeated_and = ready && ready
+  bind repeated_or = ready || ready
+
+  return repeated_and || repeated_and
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+
+    let report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::IdempotentBooleanExpression],
+            module: None,
+        },
+    );
+
+    assert_eq!(report.schema, LINT_REPORT_SCHEMA);
+    assert_eq!(report.status, "findings");
+    assert_eq!(report.entry_module, "app.idempotent_boolean");
+    assert_eq!(report.filters.rules, vec!["idempotent_boolean_expression"]);
+    assert_eq!(
+        report.findings.len(),
+        3,
+        "idempotent boolean cleanup should not drop division-bearing duplicated operands"
+    );
+    assert_eq!(report.findings[0].id, "IDEMPOTENT_BOOLEAN_EXPRESSION");
+    assert_eq!(report.findings[0].rule, "idempotent_boolean_expression");
+    let nodes: Vec<&str> = report
+        .findings
+        .iter()
+        .map(|finding| finding.node.as_str())
+        .collect();
+    assert!(nodes.contains(&"block:task:app.idempotent_boolean.main:stmt:3:expr"));
+    assert!(nodes.contains(&"block:task:app.idempotent_boolean.main:stmt:4:expr"));
+    assert!(nodes.contains(&"block:task:app.idempotent_boolean.main:stmt:5:expr"));
+    assert_eq!(report.findings[0].module, "app.idempotent_boolean");
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|finding| finding.message.contains("ready && ready"))
+    );
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|finding| finding.message.contains("ready || ready"))
+    );
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|finding| finding.hint.contains("ready"))
+    );
+
+    let scoped_report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::IdempotentBooleanExpression],
+            module: Some("app.other".to_string()),
+        },
+    );
+    assert_eq!(scoped_report.status, "ok");
+    assert!(scoped_report.findings.is_empty());
+}
+
+#[test]
 fn lint_report_flags_self_comparison_expressions() {
     let source = r#"
 module app.self_compare
@@ -18797,6 +18973,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:templates:unreachable-statement-delete",
         "graft:templates:redundant-boolean-if-statement",
         "graft:templates:same-branch-if-statement",
+        "graft:templates:idempotent-boolean-expression",
         "graft:templates:unused-declared-effect-remove",
         "graft:templates:unused-import-delete",
         "graft:templates:unused-private-task-delete",
@@ -18843,6 +19020,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "lint:identity_binary_expression",
         "lint:redundant_boolean_comparison",
         "lint:absorbing_boolean_expression",
+        "lint:idempotent_boolean_expression",
         "lint:self_comparison_expression",
         "lint:double_negation_expression",
         "lint:negated_comparison_expression",
@@ -18880,6 +19058,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:identity-text-concatenation-repair-write-verify",
         "readiness:redundant-boolean-repair-write-verify",
         "readiness:absorbing-boolean-repair-write-verify",
+        "readiness:idempotent-boolean-repair-write-verify",
         "readiness:self-comparison-repair-write-verify",
         "readiness:double-negation-repair-write-verify",
         "readiness:negated-comparison-repair-write-verify",

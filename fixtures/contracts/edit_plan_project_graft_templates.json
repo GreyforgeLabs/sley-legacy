@@ -60,6 +60,7 @@
       "identity_binary_expression",
       "redundant_boolean_comparison",
       "absorbing_boolean_expression",
+      "idempotent_boolean_expression",
       "self_comparison_expression",
       "double_negation_expression",
       "negated_comparison_expression",

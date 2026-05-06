@@ -18,7 +18,9 @@ use crate::lint::{
     constant_map_index_expression_replacement_source, constant_not_expression_replacement_source,
     constant_record_field_access_expression_replacement_source,
     constant_text_concatenation_expression_replacement_source,
-    double_negation_expression_replacement_source, identity_binary_expression_replacement_source,
+    double_negation_expression_replacement_source,
+    idempotent_boolean_expression_replacement_source,
+    identity_binary_expression_replacement_source,
     negated_comparison_expression_replacement_source, qualified_imported_call_replacement_source,
     raw_host_adapter_replacement, redundant_boolean_comparison_replacement_source,
     redundant_boolean_if_expression_replacement_source,
@@ -665,6 +667,10 @@ fn lint_graft_templates(
         program,
         lint_report,
     ));
+    templates.extend(lint_idempotent_boolean_expression_templates(
+        program,
+        lint_report,
+    ));
     templates.extend(lint_self_comparison_expression_templates(
         program,
         lint_report,
@@ -717,6 +723,7 @@ fn is_lint_repair_kind(kind: &str) -> bool {
             | "simplify_same_branch_if_statement"
             | "delete_unreachable_statement"
             | "simplify_absorbing_boolean_expression"
+            | "simplify_idempotent_boolean_expression"
             | "simplify_self_comparison_expression"
             | "convert_mutable_binding_to_bind"
             | "delete_unused_private_declarations"
@@ -1590,6 +1597,38 @@ fn lint_absorbing_boolean_expression_templates(
                 kind: "simplify_absorbing_boolean_expression".to_string(),
                 reason: "replace this absorbing boolean expression with the absorbing literal"
                     .to_string(),
+                surface: finding.node.clone(),
+                operation,
+                editable_json_pointers: vec!["/payload/source".to_string()],
+            })
+        })
+        .collect()
+}
+
+fn lint_idempotent_boolean_expression_templates(
+    program: &Program,
+    lint_report: &LintReport,
+) -> Vec<EditPlanGraftTemplate> {
+    lint_report
+        .findings
+        .iter()
+        .filter(|finding| finding.id == "IDEMPOTENT_BOOLEAN_EXPRESSION")
+        .filter_map(|finding| {
+            let replacement =
+                idempotent_boolean_expression_replacement_source(program, &finding.node)?;
+            let operation = json!({
+                "op": "ReplaceExpression",
+                "target": finding.node,
+                "payload": {
+                    "source": replacement
+                }
+            });
+            if !replace_affordance_checks(program, &operation) {
+                return None;
+            }
+            Some(EditPlanGraftTemplate {
+                kind: "simplify_idempotent_boolean_expression".to_string(),
+                reason: "replace this idempotent boolean expression with one side".to_string(),
                 surface: finding.node.clone(),
                 operation,
                 editable_json_pointers: vec!["/payload/source".to_string()],

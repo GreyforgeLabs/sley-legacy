@@ -136,6 +136,7 @@ Implemented now:
   `--rule identity-binary-expression`, or
   `--rule redundant-boolean-comparison`, or
   `--rule absorbing-boolean-expression`, or
+  `--rule idempotent-boolean-expression`, or
   `--rule self-comparison-expression`, or
   `--rule double-negation-expression`, or
   `--rule negated-comparison-expression`, or
@@ -236,6 +237,8 @@ Implemented now:
   against `true` or `false`,
   `simplify_absorbing_boolean_expression` templates for absorbing boolean
   literals that can collapse a short-circuiting expression safely,
+  `simplify_idempotent_boolean_expression` templates for delete-safe
+  `expr && expr` and `expr || expr` forms,
   `simplify_self_comparison_expression` templates for delete-safe `expr == expr`,
   `expr != expr`, `expr < expr`, `expr <= expr`, `expr > expr`, and
   `expr >= expr` comparisons,
