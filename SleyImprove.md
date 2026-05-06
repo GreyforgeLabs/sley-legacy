@@ -295,7 +295,8 @@ Rules:
   execution into one pass/warnings/blocked report; warning and denied-warning
   reports include `plan_lint_repairs` next-actions and unambiguous dry-run fix
   previews before deployment review, while passed reports include seal and ZJX
-  handoff next-actions.
+  handoff next-actions. Embedded runtime values reuse the strict
+  `sley.run.report.v0` value contract.
 - `sley deploy --dry-run` is the local deploy package helper consuming strict
   verify plus trace seal and ZJX package summaries into
   `sley.deploy.report.v0`. It is explicitly non-live: no provider calls,

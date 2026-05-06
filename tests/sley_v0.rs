@@ -8960,11 +8960,11 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/integration_test_count"),
-        Some(&serde_json::json!(294))
+        Some(&serde_json::json!(295))
     );
     assert_eq!(
         report_json.pointer("/summary/declared_integration_test_count"),
-        Some(&serde_json::json!(294))
+        Some(&serde_json::json!(295))
     );
     assert_eq!(
         report_json.pointer("/summary/test_count_matches_declared"),
@@ -8976,7 +8976,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/tests/integration_test_count"),
-        Some(&serde_json::json!(294))
+        Some(&serde_json::json!(295))
     );
     assert_eq!(
         report_json.pointer("/tests/declared_matches_actual"),
@@ -10250,6 +10250,18 @@ fn diagnostic_schema_is_shared_by_agent_reports() {
             "{schema_name} should reference the shared diagnostic schema"
         );
     }
+}
+
+#[test]
+fn verify_report_schema_reuses_strict_run_value_contract() {
+    let schema: serde_json::Value = serde_json::from_str(include_str!(
+        "../docs/schemas/sley.verify.report.v0.schema.json"
+    ))
+    .expect("parse verify report schema");
+    assert_eq!(
+        schema.pointer("/$defs/runtimeSummary/properties/value/$ref"),
+        Some(&serde_json::json!("sley.run.report.v0#/$defs/value"))
+    );
 }
 
 #[test]
