@@ -217,6 +217,10 @@ Rules:
   handoffs cannot silently drift. The template pack now also covers pure
   `library`, `cli`, and `data-pipeline` starts plus seeded `service-gate` and
   split-task `agent-task-pack` starts.
+- `examples/agent_project` is a packaged multi-module agent deployment starter
+  that keeps secret, network, model, and deploy authority explicit across
+  imported task boundaries and passes seeded check, lint, run, verify, deploy,
+  and examples conformance gates.
 - `sley plan` consumes the same checked surfaces into ranked task edit
   surfaces, call-row inspection next-actions, post-edit gate commands, and
   optional starter graft operation templates, rename-plus-call-site

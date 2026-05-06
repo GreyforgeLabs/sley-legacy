@@ -8948,7 +8948,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/example_source_count"),
-        Some(&serde_json::json!(68))
+        Some(&serde_json::json!(70))
     );
     assert_eq!(
         report_json.pointer("/summary/integration_test_count"),
@@ -9751,24 +9751,28 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     );
     assert_eq!(
         examples_json.pointer("/summary/step_count"),
-        Some(&serde_json::json!(132))
+        Some(&serde_json::json!(135))
     );
     assert_eq!(
         examples_json.pointer("/steps/0/name"),
-        Some(&serde_json::json!("project_check:examples/project"))
+        Some(&serde_json::json!("project_check:examples/agent_project"))
     );
     assert_eq!(
         examples_json.pointer("/steps/0/stdout_schema"),
         Some(&serde_json::json!("sley.diagnostics.report.v0"))
     );
     assert_eq!(
-        examples_json.pointer("/steps/3/name"),
+        examples_json.pointer("/steps/1/name"),
+        Some(&serde_json::json!("project_check:examples/project"))
+    );
+    assert_eq!(
+        examples_json.pointer("/steps/4/name"),
         Some(&serde_json::json!(
             "file_check:examples/absorbing_arithmetic_expression.sley"
         ))
     );
     assert_eq!(
-        examples_json.pointer("/steps/64/name"),
+        examples_json.pointer("/steps/65/name"),
         Some(&serde_json::json!(
             "format_round_trip:examples/absorbing_arithmetic_expression.sley"
         ))

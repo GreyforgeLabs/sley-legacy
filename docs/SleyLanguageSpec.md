@@ -813,7 +813,10 @@ under `sley.project.scaffold.v0`. The gated deploy, service, and agent
 scaffolds' generated next actions are checked first-run sequences: strict
 check, doctor readiness, task query, edit plan, lint gate, seeded verification
 with denied warnings, seeded run, local deploy dry-run package where
-applicable, seal, and ZJX package. The agent scaffolds also include
+applicable, seal, and ZJX package. The in-tree `examples/agent_project`
+packages the same seeded secret, network, model, and deploy authority through
+imported task boundaries so project checks cover multi-module agent deployment
+authoring as well as single-file examples. The agent scaffolds also include
 `sley-ci run`, `sley-ci verify`, and `sley-ci deploy --dry-run` next actions
 over the same deterministic seeds.
 

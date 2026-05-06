@@ -24,6 +24,9 @@ here. Dates use UTC-independent calendar dates from the local repo history.
 - Non-gating public-release packaging blockers in
   `sley-conformance report --json`, covering license and repository metadata
   decisions separately from executable conformance.
+- `examples/agent_project`, a packaged multi-module agent deployment project
+  covering imported task authority, seeded execution, strict linting, seeded
+  verification, and dry-run deploy packaging.
 
 ### Changed
 
