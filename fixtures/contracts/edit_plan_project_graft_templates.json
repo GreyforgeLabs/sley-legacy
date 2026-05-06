@@ -234,6 +234,23 @@
       "editable_json_pointers": [
         "/payload/source"
       ]
+    },
+    {
+      "kind": "insert_statement",
+      "reason": "insert one checked statement into the selected task body; edit /payload/source before applying",
+      "surface": "task:app.main.main",
+      "operation": {
+        "op": "InsertStatement",
+        "payload": {
+          "position": 0,
+          "source": "forge { }"
+        },
+        "target": "block:task:app.main.main"
+      },
+      "editable_json_pointers": [
+        "/payload/source",
+        "/payload/position"
+      ]
     }
   ],
   "next_actions": [

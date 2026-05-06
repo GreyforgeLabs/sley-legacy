@@ -157,7 +157,7 @@ Implemented now:
   `qualify_imported_call` templates for simple imported task calls that should
   be alias- or module-qualified,
   `--template-surface <surface>` targeting for task, block, statement, take,
-  expression, program, or lint surfaces, including checked block
+  expression, program, or lint surfaces, including checked task-body and block
   `insert_statement` starters, `--emit-graft <kind>` for direct
   operation/transaction JSON handoff to `sley graft`, and
   `schema: "sley.edit_plan.report.v0"`

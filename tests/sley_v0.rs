@@ -1185,6 +1185,24 @@ task main -> Result<Text, Error> {
         expression_template.editable_json_pointers,
         vec!["/payload/source".to_string()]
     );
+    let insert_template = report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "insert_statement")
+        .expect("insert statement template");
+    assert_eq!(insert_template.surface, "task:app.plan.main");
+    assert_eq!(
+        insert_template.operation.pointer("/op"),
+        Some(&serde_json::json!("InsertStatement"))
+    );
+    assert_eq!(
+        insert_template.operation.pointer("/target"),
+        Some(&serde_json::json!("block:task:app.plan.main"))
+    );
+    assert_eq!(
+        insert_template.operation.pointer("/payload/source"),
+        Some(&serde_json::json!("forge { }"))
+    );
     for template in &report.graft_templates {
         serde_json::from_value::<GraftInput>(template.operation.clone())
             .expect("template should be strict graft JSON");

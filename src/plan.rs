@@ -528,6 +528,9 @@ fn build_graft_templates(
     templates.extend(graph_slice_delete_templates(program, surface));
     templates.extend(graph_slice_replace_templates(program, surface));
     templates.extend(lint_templates);
+    if let Some(template) = task_body_insert_statement_template(program, surface) {
+        templates.push(template);
+    }
     Ok(templates)
 }
 
@@ -1376,6 +1379,36 @@ fn delete_task_template(surface: &EditPlanTaskSurface) -> EditPlanGraftTemplate 
         }),
         editable_json_pointers: Vec::new(),
     }
+}
+
+fn task_body_insert_statement_template(
+    program: &Program,
+    surface: &EditPlanTaskSurface,
+) -> Option<EditPlanGraftTemplate> {
+    let target = format!("block:{}", surface.id);
+    let operation = json!({
+        "op": "InsertStatement",
+        "target": target,
+        "payload": {
+            "source": "forge { }",
+            "position": 0
+        }
+    });
+    if !insert_statement_checks(program, &operation) {
+        return None;
+    }
+    Some(EditPlanGraftTemplate {
+        kind: "insert_statement".to_string(),
+        reason:
+            "insert one checked statement into the selected task body; edit /payload/source before applying"
+                .to_string(),
+        surface: surface.id.clone(),
+        operation,
+        editable_json_pointers: vec![
+            "/payload/source".to_string(),
+            "/payload/position".to_string(),
+        ],
+    })
 }
 
 fn graph_slice_move_templates(

@@ -246,9 +246,9 @@ Near-term:
    write/query/verify smoke coverage for imported-call qualification and
    write/verify smoke coverage for pure binding deletion. `sley plan
    --graft-templates --template-surface <node-id>` now accepts exact block,
-   statement, take, and expression node surfaces: blocks emit checked
-   `insert_statement` starters, statements/takes emit direct graph-slice
-   move/delete templates, and expressions emit a checked no-op
+   statement, take, and expression node surfaces: selected task and block
+   surfaces emit checked `insert_statement` starters, statements/takes emit
+   direct graph-slice move/delete templates, and expressions emit a checked no-op
    `replace_expression` starter that `--emit-graft` can hand directly to
    `sley graft`. `sley fix --dry-run` now has smoke coverage for executing
    those exact node-surface templates through the graft checker without
