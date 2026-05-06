@@ -185,7 +185,8 @@ Rules:
 - `sley-lsp` exposes a stdio language-server loop over current compiler
   surfaces: parse/check/lint diagnostics, formatting, document symbols,
   declaration hover, edit-plan code actions, and non-mutating
-  `sley.fix.preview` payloads.
+  `sley.fix.preview` payloads whose editor preview operations and transactions
+  reuse the strict edit-plan graft contracts.
 - `sley-workbench` exposes a local read-only inspection report and optional
   static HTML page over doctor/query/lint/plan/graph panels. Its report schema
   links embedded panel rows back to the source doctor, query, lint, edit-plan,

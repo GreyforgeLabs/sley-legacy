@@ -8960,11 +8960,11 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/integration_test_count"),
-        Some(&serde_json::json!(293))
+        Some(&serde_json::json!(294))
     );
     assert_eq!(
         report_json.pointer("/summary/declared_integration_test_count"),
-        Some(&serde_json::json!(293))
+        Some(&serde_json::json!(294))
     );
     assert_eq!(
         report_json.pointer("/summary/test_count_matches_declared"),
@@ -8976,7 +8976,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/tests/integration_test_count"),
-        Some(&serde_json::json!(293))
+        Some(&serde_json::json!(294))
     );
     assert_eq!(
         report_json.pointer("/tests/declared_matches_actual"),
@@ -10431,6 +10431,26 @@ fn edit_plan_schema_covers_strict_graft_template_payloads() {
             "MoveNode",
             "DeleteNode"
         ]))
+    );
+}
+
+#[test]
+fn lsp_fix_preview_schema_reuses_strict_edit_plan_operations() {
+    let schema: serde_json::Value = serde_json::from_str(include_str!(
+        "../docs/schemas/sley.lsp.fix_preview.v0.schema.json"
+    ))
+    .expect("parse LSP fix-preview schema");
+    assert_eq!(
+        schema.pointer("/$defs/code_action_preview/properties/operation/$ref"),
+        Some(&serde_json::json!(
+            "sley.edit_plan.report.v0#/$defs/graftOperation"
+        ))
+    );
+    assert_eq!(
+        schema.pointer("/$defs/code_action_preview/properties/transaction/$ref"),
+        Some(&serde_json::json!(
+            "sley.edit_plan.report.v0#/$defs/graftTransaction"
+        ))
     );
 }
 
