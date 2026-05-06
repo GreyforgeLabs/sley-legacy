@@ -27,7 +27,8 @@
               "raw_host_adapter",
               "missing_module_declaration",
               "unchecked_result",
-              "unqualified_imported_call"
+              "unqualified_imported_call",
+              "unused_pure_binding"
             ]
           },
           "uniqueItems": true
@@ -61,7 +62,8 @@
               "RAW_HOST_ADAPTER",
               "MISSING_MODULE_DECLARATION",
               "UNCHECKED_RESULT",
-              "UNQUALIFIED_IMPORTED_CALL"
+              "UNQUALIFIED_IMPORTED_CALL",
+              "UNUSED_PURE_BINDING"
             ]
           },
           "rule": {
@@ -76,7 +78,8 @@
               "raw_host_adapter",
               "missing_module_declaration",
               "unchecked_result",
-              "unqualified_imported_call"
+              "unqualified_imported_call",
+              "unused_pure_binding"
             ]
           },
           "severity": { "enum": ["warning"] },

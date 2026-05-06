@@ -34,7 +34,8 @@
       "raw_host_adapter",
       "missing_module_declaration",
       "unchecked_result",
-      "unqualified_imported_call"
+      "unqualified_imported_call",
+      "unused_pure_binding"
     ],
     "finding_count": 0,
     "findings": []

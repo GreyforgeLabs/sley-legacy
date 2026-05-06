@@ -170,7 +170,8 @@ Current development phase:
   hygiene rule `unused_take`, the declaration hygiene rules
   `unused_private_type` and `unused_private_effect`, and the migration rule
   `raw_host_adapter`, plus the style rules `missing_module_declaration` and
-  `unqualified_imported_call`, and the result-safety rule `unchecked_result`
+  `unqualified_imported_call`, the local cleanup rule
+  `unused_pure_binding`, and the result-safety rule `unchecked_result`
 - `sley new --json` emits `sley.project.scaffold.v0` and creates
   non-destructive `hello`, deterministic `deploy`, or deterministic `agent`
   starter projects that can immediately run through check, doctor, query,

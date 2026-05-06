@@ -3,8 +3,8 @@ use std::collections::{BTreeMap, BTreeSet};
 use serde::Serialize;
 
 use crate::ast::{
-    BindingKind, Block, Expr, ExprKind, ImportDecl, Program, Statement, StatementKind, TaskDecl,
-    TypeExpr,
+    BinaryOp, BindingKind, Block, Expr, ExprKind, ImportDecl, Program, Statement, StatementKind,
+    TaskDecl, TypeExpr,
 };
 use crate::authority::host_effects_for_callee;
 use crate::query::{QueryKind, QueryOptions, build_query_report};
@@ -29,6 +29,7 @@ pub enum LintRule {
     MissingModuleDeclaration,
     UncheckedResult,
     UnqualifiedImportedCall,
+    UnusedPureBinding,
 }
 
 impl LintRule {
@@ -45,6 +46,7 @@ impl LintRule {
             Self::MissingModuleDeclaration,
             Self::UncheckedResult,
             Self::UnqualifiedImportedCall,
+            Self::UnusedPureBinding,
         ]
     }
 
@@ -61,6 +63,7 @@ impl LintRule {
             Self::MissingModuleDeclaration => "missing_module_declaration",
             Self::UncheckedResult => "unchecked_result",
             Self::UnqualifiedImportedCall => "unqualified_imported_call",
+            Self::UnusedPureBinding => "unused_pure_binding",
         }
     }
 }
@@ -151,6 +154,12 @@ pub fn build_lint_report(program: &Program, options: LintOptions) -> LintReport 
     }
     if rules.contains(&LintRule::UnqualifiedImportedCall) {
         findings.extend(lint_unqualified_imported_calls(
+            program,
+            options.module.as_deref(),
+        ));
+    }
+    if rules.contains(&LintRule::UnusedPureBinding) {
+        findings.extend(lint_unused_pure_bindings(
             program,
             options.module.as_deref(),
         ));
@@ -690,6 +699,162 @@ fn lint_unused_takes(program: &Program, module: Option<&str>) -> Vec<LintFinding
                 })
         })
         .collect()
+}
+
+fn lint_unused_pure_bindings(program: &Program, module: Option<&str>) -> Vec<LintFinding> {
+    let mut findings = Vec::new();
+    for task in program
+        .tasks
+        .iter()
+        .filter(|task| module_matches(module, &task_module(task)))
+    {
+        collect_unused_pure_bindings_in_block(task, &task.body, &task.body, &mut findings);
+    }
+    findings
+}
+
+fn collect_unused_pure_bindings_in_block(
+    task: &TaskDecl,
+    task_body: &Block,
+    block: &Block,
+    findings: &mut Vec<LintFinding>,
+) {
+    for statement in &block.statements {
+        match &statement.kind {
+            StatementKind::Binding {
+                binding_kind,
+                name,
+                expr,
+                ..
+            } if binding_kind == &BindingKind::Bind
+                && expr_is_delete_safe_pure(expr)
+                && !block_uses_identifier_except_statement(task_body, name, &statement.id) =>
+            {
+                let task_name = task_fq_name(task);
+                let module_name = task_module(task);
+                findings.push(LintFinding {
+                    id: "UNUSED_PURE_BINDING".to_string(),
+                    rule: LintRule::UnusedPureBinding.as_str().to_string(),
+                    severity: "warning".to_string(),
+                    message: format!(
+                        "task `{task_name}` binds `{name}` to a pure value but never reads it"
+                    ),
+                    node: statement.id.clone(),
+                    module: module_name,
+                    hint: format!("delete bind `{name}` or read it in the task body"),
+                });
+            }
+            StatementKind::If {
+                then_block,
+                else_block,
+                ..
+            } => {
+                collect_unused_pure_bindings_in_block(task, task_body, then_block, findings);
+                if let Some(else_block) = else_block {
+                    collect_unused_pure_bindings_in_block(task, task_body, else_block, findings);
+                }
+            }
+            StatementKind::While { body, .. }
+            | StatementKind::For { body, .. }
+            | StatementKind::Forge { body } => {
+                collect_unused_pure_bindings_in_block(task, task_body, body, findings);
+            }
+            StatementKind::Binding { .. }
+            | StatementKind::Set { .. }
+            | StatementKind::Return { .. }
+            | StatementKind::Expr { .. } => {}
+        }
+    }
+}
+
+fn expr_is_delete_safe_pure(expr: &Expr) -> bool {
+    match &expr.kind {
+        ExprKind::Raw { .. }
+        | ExprKind::Call { .. }
+        | ExprKind::Index { .. }
+        | ExprKind::Try { .. } => false,
+        ExprKind::StringLiteral { .. }
+        | ExprKind::IntLiteral { .. }
+        | ExprKind::FloatLiteral { .. }
+        | ExprKind::BoolLiteral { .. }
+        | ExprKind::Identifier { .. } => true,
+        ExprKind::Unary { expr, .. } => expr_is_delete_safe_pure(expr),
+        ExprKind::Binary { op, left, right } => {
+            !matches!(op, BinaryOp::Divide | BinaryOp::Remainder)
+                && expr_is_delete_safe_pure(left)
+                && expr_is_delete_safe_pure(right)
+        }
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
+            expr_is_delete_safe_pure(condition)
+                && expr_is_delete_safe_pure(then_branch)
+                && expr_is_delete_safe_pure(else_branch)
+        }
+        ExprKind::ListLiteral { items } => items.iter().all(expr_is_delete_safe_pure),
+        ExprKind::MapLiteral { entries } => entries.iter().all(|entry| {
+            expr_is_delete_safe_pure(&entry.key) && expr_is_delete_safe_pure(&entry.value)
+        }),
+        ExprKind::FieldAccess { receiver, .. } => expr_is_delete_safe_pure(receiver),
+        ExprKind::RecordLiteral { fields, .. } => fields
+            .iter()
+            .all(|field| expr_is_delete_safe_pure(&field.expr)),
+    }
+}
+
+fn block_uses_identifier_except_statement(
+    block: &Block,
+    name: &str,
+    skipped_statement_id: &str,
+) -> bool {
+    block.statements.iter().any(|statement| {
+        statement_uses_identifier_except_statement(statement, name, skipped_statement_id)
+    })
+}
+
+fn statement_uses_identifier_except_statement(
+    statement: &Statement,
+    name: &str,
+    skipped_statement_id: &str,
+) -> bool {
+    if statement.id == skipped_statement_id {
+        return false;
+    }
+    match &statement.kind {
+        StatementKind::Binding { expr, .. }
+        | StatementKind::Set { expr, .. }
+        | StatementKind::Return { expr }
+        | StatementKind::Expr { expr } => expr_uses_identifier(expr, name),
+        StatementKind::If {
+            condition,
+            then_block,
+            else_block,
+        } => {
+            expr_uses_identifier(condition, name)
+                || block_uses_identifier_except_statement(then_block, name, skipped_statement_id)
+                || else_block.as_ref().is_some_and(|block| {
+                    block_uses_identifier_except_statement(block, name, skipped_statement_id)
+                })
+        }
+        StatementKind::While { condition, body } => {
+            expr_uses_identifier(condition, name)
+                || block_uses_identifier_except_statement(body, name, skipped_statement_id)
+        }
+        StatementKind::For {
+            item,
+            collection,
+            body,
+        } => {
+            expr_uses_identifier(collection, name)
+                || (item != name
+                    && block_uses_identifier_except_statement(body, name, skipped_statement_id))
+        }
+        StatementKind::Forge { body } => {
+            block_uses_identifier_except_statement(body, name, skipped_statement_id)
+        }
+    }
 }
 
 fn block_uses_identifier(block: &Block, name: &str) -> bool {

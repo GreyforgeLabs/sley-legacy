@@ -1,0 +1,20 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.bindings",
+  "filters": {
+    "module": null,
+    "rules": ["unused_pure_binding"]
+  },
+  "findings": [
+    {
+      "id": "UNUSED_PURE_BINDING",
+      "rule": "unused_pure_binding",
+      "severity": "warning",
+      "message": "task `app.bindings.main` binds `stale` to a pure value but never reads it",
+      "node": "block:task:app.bindings.main:stmt:0",
+      "module": "app.bindings",
+      "hint": "delete bind `stale` or read it in the task body"
+    }
+  ]
+}

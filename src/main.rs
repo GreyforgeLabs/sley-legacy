@@ -903,6 +903,7 @@ enum CliLintRule {
     MissingModuleDeclaration,
     UncheckedResult,
     UnqualifiedImportedCall,
+    UnusedPureBinding,
 }
 
 impl From<CliLintRule> for LintRule {
@@ -919,6 +920,7 @@ impl From<CliLintRule> for LintRule {
             CliLintRule::MissingModuleDeclaration => Self::MissingModuleDeclaration,
             CliLintRule::UncheckedResult => Self::UncheckedResult,
             CliLintRule::UnqualifiedImportedCall => Self::UnqualifiedImportedCall,
+            CliLintRule::UnusedPureBinding => Self::UnusedPureBinding,
         }
     }
 }

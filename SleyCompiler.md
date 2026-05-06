@@ -240,11 +240,12 @@ Near-term:
    rename-plus-call-site transactions, add-take-plus-call-arg transactions, and
    safe remove-take-plus-call-arg transactions for unused takes. `sley fix` can
    execute one named checked template through the graft checker. The lint
-   surface now includes explicit module-declaration style warnings and
-   unqualified imported-call style warnings; both are structurally repairable
-   through checked plan/fix templates, with write/query/verify smoke coverage
-   for imported-call qualification. Next broaden authority, style, and
-   migration lints.
+   surface now includes explicit module-declaration style warnings,
+   unqualified imported-call style warnings, and unused pure binding cleanup;
+   those are structurally repairable through checked plan/fix templates, with
+   write/query/verify smoke coverage for imported-call qualification and
+   write/verify smoke coverage for pure binding deletion. Next broaden
+   authority, style, and migration lints.
 5. Extend graph-slice graft planning around checked move/delete operations.
 6. Harden project graft writeback beyond existing-module edits.
 
