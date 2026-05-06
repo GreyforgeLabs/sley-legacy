@@ -411,12 +411,13 @@ shards. A graft is accepted only after parse, type, effect, authority, lifetime,
 and provenance checks pass for the implemented v0 surface.
 
 Current graft operations include adding explicit module declarations,
-adding/removing takes, removing task-declared effects, replacing task bodies, adding
-imports/effects/types/tasks, renaming declarations, updating call-sites,
+adding/removing takes, removing task-declared effects, replacing task bodies,
+adding imports/effects/types/tasks, renaming declarations, updating call-sites,
 updating, replacing, or removing call arguments, inserting checked task-body
-statements, replacing expressions by node id, and deleting checked graph nodes
-such as declarations, imports, takes, and statements. `MoveNode` reorders
-statements within their existing block, moves statements across existing block
+statements, replacing checked statements and expressions by node id, and
+deleting checked graph nodes such as declarations, imports, takes, and
+statements. `MoveNode` reorders statements within their existing block, moves
+statements across existing block
 parents with `payload.destination`, reorders takes within their owning task,
 moves takes across task take lists with `payload.destination`, and reorders
 top-level imports, types, effects, or tasks within their declaration lists. It
@@ -435,6 +436,7 @@ Implemented graph-edit payloads:
 { "op": "RemoveCallArg", "target": "task:app.math.double", "payload": { "from": "math.double", "position": 1, "scope": "module:app.main" } }
 { "op": "InsertStatement", "target": "task:app.main.main", "payload": { "position": 1, "source": "set total = total + 1" } }
 { "op": "InsertStatement", "target": "block:task:app.main.main:stmt:1:then", "payload": { "position": 0, "source": "forge { }" } }
+{ "op": "ReplaceStatement", "target": "block:task:app.main.main:stmt:0", "payload": { "source": "bind answer = 42" } }
 { "op": "ReplaceExpression", "target": "block:task:app.main.main:stmt:0:expr:right", "payload": { "source": "41" } }
 { "op": "DeleteNode", "target": "block:task:app.main.main:stmt:1" }
 { "op": "MoveNode", "target": "block:task:app.main.main:stmt:1", "payload": { "parent": "block:task:app.main.main", "position": 0 } }
@@ -459,9 +461,11 @@ removes one argument at a required `position` from matching calls. For all four
 operations, `scope` can limit the rewrite to a task or module.
 `InsertStatement` targets a task body or an exact block node id such as
 `block:task:app.main.main:stmt:1:then`; `sley plan --template-surface
-<block-id>` emits a checked starter template. `DeleteNode` can remove
-declarations, imports, takes, and statements, but rejects expression targets
-unless the agent uses `ReplaceExpression` instead. `MoveNode` currently
+<block-id>` emits a checked starter template. `ReplaceStatement` targets an
+exact statement node id and replaces it with exactly one checked statement
+parsed from `payload.source`. `DeleteNode` can remove declarations, imports,
+takes, and statements, but rejects expression targets unless the agent uses
+`ReplaceExpression` instead. `MoveNode` currently
 requires `payload.position`; `payload.parent` is optional but, when present,
 must identify the current parent. Statement moves use a block parent such as
 `block:task:app.main.main`; `payload.destination` can identify another existing
@@ -663,9 +667,9 @@ reports, checked lint reports, doctor readiness reports, edit-plan reports,
 project scaffolds, ZJX preview envelopes, graft dry runs and direct graft
 writes, write-mode fix trace receipts, non-empty trace receipt seals, ZJX
 envelopes carrying graph digests and schema-backed trace receipts, graph-slice
-insert and replace affordances, checked `insert_statement` and
-`replace_expression` graft templates, lint-driven fix writes that clear
-warnings before verify, deploy dry-run reports, typed deploy and agent
+insert and replace affordances, checked `insert_statement`,
+`replace_statement`, and `replace_expression` graft templates, lint-driven fix
+writes that clear warnings before verify, deploy dry-run reports, typed deploy and agent
 scaffold next-actions, and
 seeded host-adapter
 execution for `FileRead`, `FileWrite`, `DatabaseRead`, `DatabaseWrite`,
@@ -734,8 +738,9 @@ pointers naming the fields an agent should edit before running
 and adds `move_statement`/`move_take` templates plus destination variants from
 checked `move_affordances`, and checked `delete_statement`/`delete_take`
 templates from `delete_affordances` when the starter delete graft validates,
-plus checked `replace_expression` templates from `replace_affordances` when the
-starter expression graft validates. It also turns checked
+plus checked `replace_statement` and `replace_expression` templates from
+`replace_affordances` when the starter replace graft validates. It also turns
+checked
 `unused_private_task` lint findings into `delete_unused_private_task`
 `DeleteNode` templates when the task delete validates against the checked
 candidate. Checked `unused_private_type` and `unused_private_effect` lint
@@ -775,7 +780,8 @@ still passes.
 binding statement preserves a checked program.
 `--template-surface <surface>` selects a specific task surface by task node id
 or qualified task name, a block node id backed by graph-slice insert
-affordances, a statement or take node id for direct checked graph-slice
+affordances, a statement node id for direct checked graph-slice move/delete and
+`replace_statement` templates, a take node id for direct checked graph-slice
 move/delete templates, an expression node id for a checked no-op
 `replace_expression` starter template, the `program` missing-module surface,
 or a lint surface by lint finding node id such as `import:app.main:app.stale`,
@@ -793,9 +799,9 @@ guessing.
 `sley fix --kind <kind>` is the first deterministic plan-consuming fixer. It
 builds checked plan graft templates internally, selects exactly one named
 operation or transaction, applies it through the same graft checker, and emits
-the normal `sley.graft.outcome.v0` root. Exact statement, take, and expression
-node surfaces can be selected with `--template-surface` and executed without
-hand-authoring graft JSON. Single-operation templates can also accept
+the normal `sley.graft.outcome.v0` root. Exact block, statement, take, and
+expression node surfaces can be selected with `--template-surface` and executed
+without hand-authoring graft JSON. Single-operation templates can also accept
 `--source <source>`, `--source-file <path>`, and `--position <n>` overrides
 when their editable payload fields expose `/payload/source` or
 `/payload/position`; unsupported overrides reject with
@@ -832,11 +838,11 @@ editable JSON pointers so agents can copy a template, adjust
 `DeleteNode` planning; each delete affordance exposes the exact target, current
 parent, current position, starter operation JSON, and editable pointer list.
 Graph slices also include task-local `replace_affordances` for
-`ReplaceExpression` planning; each replace affordance exposes the exact
-expression target, expression kind, parent node id, starter operation JSON, and
-editable `/payload/source` pointer.
-Call-site and expression grafts now consume node ids and task identities from
-this shard.
+`ReplaceStatement` and `ReplaceExpression` planning; each replace affordance
+exposes the exact statement or expression target, target kind, parent node id,
+starter operation JSON, and editable `/payload/source` pointer.
+Call-site, statement, and expression grafts now consume node ids and task
+identities from this shard.
 
 `sley query` is the first checked graph query report. It parses and checks the
 target before emitting results, so semantic failures return the normal

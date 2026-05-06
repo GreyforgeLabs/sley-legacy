@@ -1499,18 +1499,27 @@ fn graph_slice_replace_templates(
     let Some(slice) = slice_symbol_graph(program, &surface.id) else {
         return Vec::new();
     };
-    let expression_prefix = format!("block:{}", surface.id);
+    let block_prefix = format!("block:{}", surface.id);
     slice
         .replace_affordances
         .into_iter()
-        .filter(|affordance| affordance.target.starts_with(&expression_prefix))
+        .filter(|affordance| affordance.target.starts_with(&block_prefix))
         .filter(|affordance| replace_affordance_checks(program, &affordance.operation))
         .map(|affordance| EditPlanGraftTemplate {
-            kind: "replace_expression".to_string(),
-            reason: format!(
-                "replace this {} expression using checked graph-slice ReplaceExpression affordance data",
-                affordance.target_kind
-            ),
+            kind: if affordance.target_kind == "statement" {
+                "replace_statement".to_string()
+            } else {
+                "replace_expression".to_string()
+            },
+            reason: if affordance.target_kind == "statement" {
+                "replace this statement using checked graph-slice ReplaceStatement affordance data"
+                    .to_string()
+            } else {
+                format!(
+                    "replace this {} expression using checked graph-slice ReplaceExpression affordance data",
+                    affordance.target_kind
+                )
+            },
             surface: surface.id.clone(),
             operation: affordance.operation,
             editable_json_pointers: affordance.editable_json_pointers,

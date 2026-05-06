@@ -125,6 +125,12 @@ pub enum GraftOperation {
         precondition: Option<JsonValue>,
         payload: InsertStatementPayload,
     },
+    ReplaceStatement {
+        target: String,
+        #[serde(default)]
+        precondition: Option<JsonValue>,
+        payload: SourcePayload,
+    },
     ReplaceExpression {
         target: String,
         #[serde(default)]
@@ -923,6 +929,33 @@ fn apply_one(
             }
             program.assign_ids();
             Ok(record(graft_id, actor, "InsertStatement", vec![target]))
+        }
+        GraftOperation::ReplaceStatement {
+            target,
+            precondition,
+            payload,
+        } => {
+            let task_index = owning_task_index_for_node(program, &target);
+            check_preconditions(program, task_index, precondition.as_ref())?;
+            let mut parsed = parse_block_source(&payload.source)?;
+            if parsed.statements.len() != 1 {
+                return Err(vec![Diagnostic::error(
+                    "GRAFT_EXPECTED_ONE_STATEMENT",
+                    "ReplaceStatement payload.source must parse to exactly one statement",
+                )]);
+            }
+            let statement = parsed.statements.remove(0);
+            if !replace_statement(program, &target, statement) {
+                return Err(vec![
+                    Diagnostic::error(
+                        "GRAFT_TARGET_MISSING",
+                        format!("statement target `{target}` does not exist"),
+                    )
+                    .with_node(target.clone()),
+                ]);
+            }
+            program.assign_ids();
+            Ok(record(graft_id, actor, "ReplaceStatement", vec![target]))
         }
         GraftOperation::ReplaceExpression {
             target,
@@ -2913,6 +2946,64 @@ fn replace_expression(program: &mut Program, target: &str, replacement: Expr) ->
         }
     }
     false
+}
+
+fn replace_statement(program: &mut Program, target: &str, replacement: Statement) -> bool {
+    let mut replacement = Some(replacement);
+    for task in &mut program.tasks {
+        if replace_statement_in_block(&mut task.body, target, &mut replacement) {
+            return true;
+        }
+    }
+    false
+}
+
+fn replace_statement_in_block(
+    block: &mut Block,
+    target: &str,
+    replacement: &mut Option<Statement>,
+) -> bool {
+    if let Some(index) = block
+        .statements
+        .iter()
+        .position(|statement| statement.id == target)
+    {
+        let Some(replacement) = replacement.take() else {
+            return false;
+        };
+        block.statements[index] = replacement;
+        return true;
+    }
+    block
+        .statements
+        .iter_mut()
+        .any(|statement| replace_statement_in_statement(statement, target, replacement))
+}
+
+fn replace_statement_in_statement(
+    statement: &mut Statement,
+    target: &str,
+    replacement: &mut Option<Statement>,
+) -> bool {
+    match &mut statement.kind {
+        StatementKind::If {
+            then_block,
+            else_block,
+            ..
+        } => {
+            replace_statement_in_block(then_block, target, replacement)
+                || else_block
+                    .as_mut()
+                    .is_some_and(|block| replace_statement_in_block(block, target, replacement))
+        }
+        StatementKind::While { body, .. }
+        | StatementKind::For { body, .. }
+        | StatementKind::Forge { body } => replace_statement_in_block(body, target, replacement),
+        StatementKind::Binding { .. }
+        | StatementKind::Set { .. }
+        | StatementKind::Return { .. }
+        | StatementKind::Expr { .. } => false,
+    }
 }
 
 fn replace_expression_in_block(block: &mut Block, target: &str, replacement: &Expr) -> bool {

@@ -219,7 +219,8 @@ Current development phase:
   selected task graph-slice
   affordances are surfaced as checked
   `move_statement`/`move_take`, destination-variant, `delete_statement`,
-  `delete_take`, and `replace_expression` templates where legal, or
+  `delete_take`, `replace_statement`, and `replace_expression` templates where
+  legal, or
   `--template-surface <surface>` can target a specific task id, qualified task
   name, block node id, statement node id, take node id, expression node id, or
   lint finding node; selected task and block surfaces emit checked
@@ -290,7 +291,8 @@ Current development phase:
   --graft-templates` surfaces checked task-internal `delete_statement` and
   `delete_take` templates when the starter delete graft validates
 - graph slices expose `replace_affordances` for task-local
-  `ReplaceExpression` planning; `sley plan --graft-templates` surfaces checked
+  `ReplaceStatement` and `ReplaceExpression` planning; `sley plan
+  --graft-templates` surfaces checked `replace_statement` and
   `replace_expression` templates when the starter replace graft validates
 - manifest-backed accepted/rejected synthetic gold corpus growth
 - broader graph-slice graft operations around insert/move/delete/replace planning

@@ -178,7 +178,8 @@ Rules:
   qualified name for task-body templates including a checked
   `insert_statement` starter, a block node id backed by graph-slice insert
   affordances for a checked `insert_statement`
-  starter, a statement or take node id for direct checked graph-slice
+  starter, a statement node id for direct checked graph-slice move/delete and
+  `replace_statement` templates, a take node id for direct checked graph-slice
   move/delete templates, an expression node id for a checked no-op
   `replace_expression` starter, the `program` missing-module surface, or a lint
   finding node id. Agents can use `--emit-graft <kind>` to print
@@ -310,14 +311,15 @@ Minimum useful graft operations:
 - `ReplaceCallArg`
 - `RemoveCallArg`
 - `InsertStatement`
+- `ReplaceStatement`
 - `ReplaceExpression`
 - `MoveNode`
 - `DeleteNode`
 
 `AddModuleDeclaration`, `RemoveTaskEffect`, `UpdateCallSites`,
 `UpdateCallArgs`, `ReplaceCallArg`, `RemoveCallArg`, `InsertStatement`,
-`ReplaceExpression`, `DeleteNode`, and `MoveNode` are now implemented for the
-v0 in-memory checked program.
+`ReplaceStatement`, `ReplaceExpression`, `DeleteNode`, and `MoveNode` are now
+implemented for the v0 in-memory checked program.
 `AddModuleDeclaration` turns module-less source into an explicit module and is
 surfaced through `sley plan --graft-templates`/`sley fix` for
 `missing_module_declaration`; the starter module name comes from the target
@@ -348,10 +350,11 @@ block insertion, plus bounded `MoveNode` affordances for import, type, effect,
 task, statement, and take movement planning, including exact parent ids and
 destination insertion limits, starter operation JSON, and editable JSON
 pointers. They also expose bounded `DeleteNode` affordances for import, type,
-effect, task, statement, and take deletion planning, plus `ReplaceExpression`
+effect, task, statement, and take deletion planning, plus `ReplaceStatement`
+affordances for whole task-local statement replacement and `ReplaceExpression`
 affordances for task-local expression replacement; `sley plan
---graft-templates` filters selected task-internal delete and expression replace
-templates through the checker before surfacing them.
+--graft-templates` filters selected task-internal delete, statement replace,
+and expression replace templates through the checker before surfacing them.
 
 The important rule is not that all operations exist immediately. The important
 rule is that unsupported operations reject cleanly with explicit diagnostics.
@@ -513,8 +516,9 @@ The current smoke manifest covers:
   `rename_and_update_call_sites` transaction through `sley fix --write`
 - a write/query/verify smoke for `remove_take_and_remove_call_arg`, proving
   unused-take cleanup can also update resolved callers
-- graph-slice insert and replace affordances plus checked `insert_statement`
-  and `replace_expression` graft templates in edit-plan reports
+- graph-slice insert and replace affordances plus checked `insert_statement`,
+  `replace_statement`, and `replace_expression` graft templates in edit-plan
+  reports
 - checked `sley fix --source`, `--source-file`, and `--position` payload
   overrides for single-operation templates, including unsupported override
   diagnostics
@@ -717,8 +721,8 @@ Near-term:
 
 Medium-term:
 
-1. Extend graph-slice grafts beyond call-site, statement, expression, move, and
-   delete edits.
+1. Extend graph-slice grafts beyond call-site, statement, expression, move,
+   delete, and replace edits.
 2. Move trace seals and ZJX preview payloads into a compressed binary `.zjx`
    handoff.
 3. Expand runtime host capability values beyond seeded v0 adapters: deploy

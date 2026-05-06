@@ -40,7 +40,7 @@ Current verified surface:
 
 - `cargo fmt --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 209 tests.
+- Current integration coverage is 212 tests.
 - `sley query --json` emits `schema: "sley.query.report.v0"` and supports
   `--kind all|modules|tasks|types|effects|calls`, `--module <module>`, and
   `--exported`, including strict task/take/type/effect/call row definitions.
@@ -81,10 +81,11 @@ Current verified surface:
   `mutable_binding_never_set`.
 - CLI smoke coverage is manifest-backed under
   `fixtures/cli_smokes/manifest.json`, including graph-slice insert and
-  replace affordances, checked `insert_statement` and `replace_expression` graft
-  templates, task-body insert graft emission, direct block, statement, take,
-  and expression node surface targeting with expression `--emit-graft`, direct
-  statement-surface delete graft emission, exact node-surface
+  replace affordances, checked `insert_statement`, `replace_statement`, and
+  `replace_expression` graft templates, task-body insert graft emission, direct
+  block, statement, take, and expression node surface targeting with expression
+  and statement `--emit-graft`, direct statement-surface delete graft emission,
+  exact node-surface
   `sley fix --dry-run` previews including nested block and statement nodes,
   checked `sley fix --source`, `--source-file`, and `--position` payload
   overrides, unsupported override diagnostics, and lint-driven declaration delete

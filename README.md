@@ -159,7 +159,8 @@ Implemented now:
   be alias- or module-qualified,
   `--template-surface <surface>` targeting for task, block, statement, take,
   expression, program, or lint surfaces, including checked task-body and block
-  `insert_statement` starters, `--emit-graft <kind>` for direct
+  `insert_statement` starters plus checked statement-surface
+  `replace_statement` starters, `--emit-graft <kind>` for direct
   operation/transaction JSON handoff to `sley graft`, and
   `schema: "sley.edit_plan.report.v0"`
 - checked JSON fix previews with `sley fix --kind <kind>`, consuming the same
@@ -209,9 +210,10 @@ Implemented now:
   adding/removing takes, removing task-declared effects, replacing task bodies, adding
   imports/effects/types/tasks, renaming declarations, updating call-sites,
   updating/replacing/removing call arguments, inserting checked task-body
-  statements, replacing nested expressions by node id, deleting checked graph
-  nodes such as declarations, imports, takes, and statements, and moving
-  checked statements or top-level declaration order within their current parent
+  statements, replacing checked statements and nested expressions by node id,
+  deleting checked graph nodes such as declarations, imports, takes, and
+  statements, and moving checked statements or top-level declaration order
+  within their current parent
 - strict graft input JSON for the v0 operation shapes; unknown graft fields are
   rejected instead of silently ignored
 - versioned JSON report roots for diagnostics with a shared diagnostic record
@@ -246,7 +248,8 @@ Implemented now:
   `write_command` vectors, a staged previewed-repair write smoke that proves
   strict verify readiness afterward, a project-level previewed unused-import
   repair write followed by strict verify, generated deploy and agent scaffold
-  quickstarts that re-verify with seeded authority, missing-module checked
+  quickstarts that re-verify with seeded authority, statement-surface
+  `replace_statement` planning and fix dry runs, missing-module checked
   repair templates with module-name inference, lint-driven fix writes that
   clear warnings before verify, and seeded host-adapter execution
 - compact agent onboarding pack in `llms.txt`
@@ -548,9 +551,10 @@ Known v0 limits:
   before any source or trace mutation.
 - The AST JSON Schema now covers declarations, statements, expressions, type
   expressions, spans, and provenance recursively. The edit-plan schema also
-  pins strict graft operation and transaction template envelopes. The graft
-  outcome schema pins strict accepted provenance records. Other external JSON
-  Schema files remain narrower v0 root-contract schemas.
+  pins strict graft operation and transaction template envelopes, including
+  `ReplaceStatement`. The graft outcome schema pins strict accepted provenance
+  records. Other external JSON Schema files remain narrower v0 root-contract
+  schemas.
 - `MoveNode` currently reorders statements within their existing block,
   moves statements across existing block parents with `payload.destination`,
   reorders takes within their owning task, reorders top-level imports, types,

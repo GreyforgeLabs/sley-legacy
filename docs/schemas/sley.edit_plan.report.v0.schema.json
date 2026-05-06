@@ -242,6 +242,7 @@
             "ReplaceCallArg",
             "RemoveCallArg",
             "InsertStatement",
+            "ReplaceStatement",
             "ReplaceExpression",
             "MoveNode",
             "DeleteNode"

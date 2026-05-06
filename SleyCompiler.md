@@ -252,8 +252,9 @@ Near-term:
    statement, take, and expression node surfaces: selected task and block
    surfaces emit checked `insert_statement` starters, graph slices expose
    insert affordances, statements/takes emit direct graph-slice move/delete
-   templates, and expressions emit a checked no-op `replace_expression` starter
-   that `--emit-graft` can hand directly to `sley graft`.
+   templates, statements also emit checked `replace_statement` starters, and
+   expressions emit a checked no-op `replace_expression` starter that
+   `--emit-graft` can hand directly to `sley graft`.
    `sley fix --dry-run` can now override editable template
    payloads with `--source`, `--source-file`, and `--position` before executing
    those exact node-surface templates through the graft checker without
@@ -264,8 +265,8 @@ Near-term:
 
 Medium-term:
 
-1. Extend graph-slice grafts beyond call-site, statement, expression, move, and
-   delete edits.
+1. Extend graph-slice grafts beyond call-site, statement, expression, move,
+   delete, and replace edits.
 2. Move trace seals into a compressed binary `.zjx` handoff.
 3. Grow capability-backed runtime host values beyond seeded v0 adapters:
    deploy beyond seeded stage results, spend beyond seeded authorization text,
