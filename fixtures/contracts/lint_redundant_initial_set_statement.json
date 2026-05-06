@@ -16,7 +16,7 @@
       "message": "task `app.redundant_initial_set.main` initializes mutable `count` and immediately replaces it before any read",
       "node": "block:task:app.redundant_initial_set.main:stmt:1",
       "module": "app.redundant_initial_set",
-      "hint": "fold `set count = ...` into the mutable initializer"
+      "hint": "fold `set count = ...` into the initializer, or convert it to `bind` when no later mutation remains"
     }
   ]
 }

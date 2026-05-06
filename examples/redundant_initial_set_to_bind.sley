@@ -1,0 +1,8 @@
+module app.redundant_initial_set_to_bind
+
+task main -> Int {
+  state count = 0
+  set count = 1
+
+  return count
+}

@@ -263,8 +263,9 @@ Current development phase:
   `delete_self_assignment_statement` templates for no-op mutation statements,
   plus `delete_overwritten_set_statement` templates for dead set statements
   immediately overwritten before any read,
-  plus `fold_redundant_initial_set_into_binding` transactions for safe
-  immediate mutable-initializer replacements,
+  plus `fold_redundant_initial_set_into_binding` and
+  `convert_redundant_initial_set_to_bind` transactions for safe immediate
+  mutable-initializer replacements,
   plus
   `delete_constant_false_if_statement` templates for never-executed
   `if false` statements without `else` branches, plus

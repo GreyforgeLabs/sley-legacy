@@ -40,7 +40,7 @@ Current verified surface:
 
 - `cargo fmt --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 285 tests.
+- Current integration coverage is 286 tests.
 - `sley query --json` emits `schema: "sley.query.report.v0"` and supports
   `--kind all|modules|tasks|types|effects|calls`, `--module <module>`, and
   `--exported`, including strict task/take/type/effect/call row definitions.
@@ -81,7 +81,8 @@ Current verified surface:
   `--rule unqualified-imported-call`, `--rule unused-pure-binding`,
   `--rule unused-pure-expression-statement`,
   `--rule mutable-binding-never-set`, `--rule self-assignment-statement`,
-  `--rule overwritten-set-statement`, `--rule constant-if-expression`,
+  `--rule overwritten-set-statement`,
+  `--rule redundant-initial-set-statement`, `--rule constant-if-expression`,
   `--rule constant-if-statement`,
   `--rule constant-false-if-statement`,
   `--rule constant-false-while-statement`,
@@ -137,7 +138,7 @@ Current verified surface:
   `redundant_boolean_if_statement`, `same_branch_if_expression`, and
   `same_branch_if_statement`, and `unreachable_statement`, and
   `absorbing_arithmetic_expression`, `self_assignment_statement`, and
-  `overwritten_set_statement`.
+  `overwritten_set_statement`, and `redundant_initial_set_statement`.
 - CLI smoke coverage is manifest-backed under
   `fixtures/cli_smokes/manifest.json`, including graph-slice insert and
   replace affordances, checked `insert_statement`, `replace_statement`, and
@@ -194,7 +195,8 @@ Current verified surface:
   smoke coverage, plus checked `overwritten_set_statement` findings and
   `delete_overwritten_set_statement` templates with lint/plan/fix-write/verify
   smoke coverage, plus checked `redundant_initial_set_statement` findings and
-  `fold_redundant_initial_set_into_binding` transactions with lint/plan/fix-write/verify
+  `fold_redundant_initial_set_into_binding` and
+  `convert_redundant_initial_set_to_bind` transactions with lint/plan/fix-write/verify
   smoke coverage, plus checked `constant_if_expression` style findings and
   `simplify_constant_if_expression` templates with lint/plan/fix-write/verify
   smoke coverage, plus checked `constant_if_statement` style findings and
@@ -469,6 +471,7 @@ cargo run -- lint --json --rule unused-pure-expression-statement <target>
 cargo run -- lint --json --rule mutable-binding-never-set <target>
 cargo run -- lint --json --rule self-assignment-statement <target>
 cargo run -- lint --json --rule overwritten-set-statement <target>
+cargo run -- lint --json --rule redundant-initial-set-statement <target>
 cargo run -- lint --json --rule constant-if-expression <target>
 cargo run -- lint --json --rule constant-if-statement <target>
 cargo run -- lint --json --rule constant-false-if-statement <target>

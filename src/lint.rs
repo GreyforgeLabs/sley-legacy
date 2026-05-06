@@ -4714,7 +4714,8 @@ fn collect_redundant_initial_set_statements_in_block(
             && !expr_uses_identifier(next_expr, name)
             && expr_is_delete_safe_pure(expr)
             && expr_is_delete_safe_pure(next_expr)
-            && block_has_real_set_identifier_except_statement(task_body, name, &next.id)
+            && (block_has_real_set_identifier_except_statement(task_body, name, &next.id)
+                || !block_sets_identifier_except_statement(task_body, name, &next.id))
         {
             let task_name = task_fq_name(task);
             findings.push(LintFinding {
@@ -4726,7 +4727,9 @@ fn collect_redundant_initial_set_statements_in_block(
                 ),
                 node: next.id.clone(),
                 module: task_module(task),
-                hint: format!("fold `set {name} = ...` into the mutable initializer"),
+                hint: format!(
+                    "fold `set {name} = ...` into the initializer, or convert it to `bind` when no later mutation remains"
+                ),
             });
         }
     }
@@ -5039,6 +5042,49 @@ fn block_sets_identifier(block: &Block, name: &str) -> bool {
         .statements
         .iter()
         .any(|statement| statement_sets_identifier(statement, name))
+}
+
+fn block_sets_identifier_except_statement(
+    block: &Block,
+    name: &str,
+    skipped_statement_id: &str,
+) -> bool {
+    block.statements.iter().any(|statement| {
+        statement_sets_identifier_except_statement(statement, name, skipped_statement_id)
+    })
+}
+
+fn statement_sets_identifier_except_statement(
+    statement: &Statement,
+    name: &str,
+    skipped_statement_id: &str,
+) -> bool {
+    if statement.id == skipped_statement_id {
+        return false;
+    }
+    match &statement.kind {
+        StatementKind::Set {
+            name: candidate, ..
+        } => candidate == name,
+        StatementKind::If {
+            then_block,
+            else_block,
+            ..
+        } => {
+            block_sets_identifier_except_statement(then_block, name, skipped_statement_id)
+                || else_block.as_ref().is_some_and(|block| {
+                    block_sets_identifier_except_statement(block, name, skipped_statement_id)
+                })
+        }
+        StatementKind::While { body, .. }
+        | StatementKind::For { body, .. }
+        | StatementKind::Forge { body } => {
+            block_sets_identifier_except_statement(body, name, skipped_statement_id)
+        }
+        StatementKind::Binding { .. }
+        | StatementKind::Return { .. }
+        | StatementKind::Expr { .. } => false,
+    }
 }
 
 fn block_has_real_set_identifier_except_statement(

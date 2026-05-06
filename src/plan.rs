@@ -690,6 +690,7 @@ fn is_lint_repair_kind(kind: &str) -> bool {
             | "delete_self_assignment_statement"
             | "delete_overwritten_set_statement"
             | "fold_redundant_initial_set_into_binding"
+            | "convert_redundant_initial_set_to_bind"
             | "simplify_constant_if_expression"
             | "simplify_constant_if_statement"
             | "delete_constant_false_if_statement"
@@ -2865,67 +2866,100 @@ fn lint_redundant_initial_set_transaction_templates(
         .filter(|finding| requested_surface.is_none_or(|surface| surface == finding.node))
         .filter_map(|finding| {
             let pair = find_redundant_initial_set_pair(program, &finding.node)?;
-            let transaction = json!({
-                "transaction": format!(
-                    "txn_fold_redundant_initial_set_{}",
-                    finding.node.replace([':', '.'], "_")
-                ),
-                "mode": "all_or_nothing",
-                "ops": [
-                    {
-                        "op": "ReplaceExpression",
-                        "target": pair.binding_expr_id,
-                        "payload": {
-                            "source": pair.set_expr_source
-                        }
-                    },
-                    {
-                        "op": "DeleteNode",
-                        "target": finding.node
-                    }
-                ]
-            });
+            let (kind, reason, actor, editable_json_pointers, transaction) = if pair.has_real_set {
+                (
+                    "fold_redundant_initial_set_into_binding",
+                    "fold this immediate set into the mutable initializer in one checked graft",
+                    "agent:plan-fold-redundant-initial-set",
+                    vec!["/ops/0/payload/source".to_string()],
+                    json!({
+                        "transaction": format!(
+                            "txn_fold_redundant_initial_set_{}",
+                            finding.node.replace([':', '.'], "_")
+                        ),
+                        "mode": "all_or_nothing",
+                        "ops": [
+                            {
+                                "op": "ReplaceExpression",
+                                "target": pair.binding_expr_id,
+                                "payload": {
+                                    "source": pair.set_expr_source
+                                }
+                            },
+                            {
+                                "op": "DeleteNode",
+                                "target": finding.node
+                            }
+                        ]
+                    }),
+                )
+            } else if pair.no_other_set {
+                (
+                    "convert_redundant_initial_set_to_bind",
+                    "convert this one-time mutable initializer replacement into an immutable bind",
+                    "agent:plan-convert-redundant-initial-set",
+                    vec!["/ops/0/payload/source".to_string()],
+                    json!({
+                        "transaction": format!(
+                            "txn_convert_redundant_initial_set_{}",
+                            finding.node.replace([':', '.'], "_")
+                        ),
+                        "mode": "all_or_nothing",
+                        "ops": [
+                            {
+                                "op": "ReplaceStatement",
+                                "target": pair.binding_statement_id,
+                                "payload": {
+                                    "source": pair.bind_source
+                                }
+                            },
+                            {
+                                "op": "DeleteNode",
+                                "target": finding.node
+                            }
+                        ]
+                    }),
+                )
+            } else {
+                return None;
+            };
             let Ok(input) = serde_json::from_value::<GraftInput>(transaction.clone()) else {
                 return None;
             };
-            if apply_graft_input(
-                program,
-                input,
-                Some("agent:plan-fold-redundant-initial-set".to_string()),
-            )
-            .status
-                != "accepted"
-            {
+            if apply_graft_input(program, input, Some(actor.to_string())).status != "accepted" {
                 return None;
             }
             Some(EditPlanTransactionTemplate {
-                kind: "fold_redundant_initial_set_into_binding".to_string(),
-                reason: "fold this immediate set into the mutable initializer in one checked graft"
-                    .to_string(),
+                kind: kind.to_string(),
+                reason: reason.to_string(),
                 surface: finding.node.clone(),
                 transaction,
-                editable_json_pointers: vec!["/ops/0/payload/source".to_string()],
+                editable_json_pointers,
             })
         })
         .collect()
 }
 
 struct RedundantInitialSetPair {
+    binding_statement_id: String,
     binding_expr_id: String,
     set_expr_source: String,
+    bind_source: String,
+    has_real_set: bool,
+    no_other_set: bool,
 }
 
 fn find_redundant_initial_set_pair(
     program: &Program,
     set_target: &str,
 ) -> Option<RedundantInitialSetPair> {
-    program
-        .tasks
-        .iter()
-        .find_map(|task| find_redundant_initial_set_pair_in_block(&task.body, set_target))
+    program.tasks.iter().find_map(|task| {
+        find_redundant_initial_set_pair_in_block(&task.body, &task.body, set_target)
+    })
 }
 
 fn find_redundant_initial_set_pair_in_block(
+    task_body: &Block,
     block: &Block,
     set_target: &str,
 ) -> Option<RedundantInitialSetPair> {
@@ -2950,9 +2984,18 @@ fn find_redundant_initial_set_pair_in_block(
             && binding_kind.is_mutable_local()
             && name == set_name
         {
+            let set_expr_source = set_expr.source.trim().to_string();
+            let bind_source =
+                binding_statement_as_bind_source_with_expr(binding, &set_expr_source)?;
             return Some(RedundantInitialSetPair {
+                binding_statement_id: binding.id.clone(),
                 binding_expr_id: binding_expr.id.clone(),
-                set_expr_source: set_expr.source.trim().to_string(),
+                set_expr_source,
+                bind_source,
+                has_real_set: block_has_real_set_identifier_except_statement(
+                    task_body, name, set_target,
+                ),
+                no_other_set: !block_sets_identifier_except_statement(task_body, name, set_target),
             });
         }
     }
@@ -2963,16 +3006,17 @@ fn find_redundant_initial_set_pair_in_block(
                 then_block,
                 else_block,
                 ..
-            } => find_redundant_initial_set_pair_in_block(then_block, set_target).or_else(|| {
-                else_block.as_ref().and_then(|else_block| {
-                    find_redundant_initial_set_pair_in_block(else_block, set_target)
-                })
-            }),
+            } => find_redundant_initial_set_pair_in_block(task_body, then_block, set_target)
+                .or_else(|| {
+                    else_block.as_ref().and_then(|else_block| {
+                        find_redundant_initial_set_pair_in_block(task_body, else_block, set_target)
+                    })
+                }),
             StatementKind::While { body, .. } | StatementKind::For { body, .. } => {
-                find_redundant_initial_set_pair_in_block(body, set_target)
+                find_redundant_initial_set_pair_in_block(task_body, body, set_target)
             }
             StatementKind::Forge { body } => {
-                find_redundant_initial_set_pair_in_block(body, set_target)
+                find_redundant_initial_set_pair_in_block(task_body, body, set_target)
             }
             StatementKind::Binding { .. }
             | StatementKind::Set { .. }
@@ -2984,6 +3028,100 @@ fn find_redundant_initial_set_pair_in_block(
         }
     }
     None
+}
+
+fn block_sets_identifier_except_statement(
+    block: &Block,
+    name: &str,
+    skipped_statement_id: &str,
+) -> bool {
+    block.statements.iter().any(|statement| {
+        statement_sets_identifier_except_statement(statement, name, skipped_statement_id)
+    })
+}
+
+fn statement_sets_identifier_except_statement(
+    statement: &Statement,
+    name: &str,
+    skipped_statement_id: &str,
+) -> bool {
+    if statement.id == skipped_statement_id {
+        return false;
+    }
+    match &statement.kind {
+        StatementKind::Set {
+            name: candidate, ..
+        } => candidate == name,
+        StatementKind::If {
+            then_block,
+            else_block,
+            ..
+        } => {
+            block_sets_identifier_except_statement(then_block, name, skipped_statement_id)
+                || else_block.as_ref().is_some_and(|block| {
+                    block_sets_identifier_except_statement(block, name, skipped_statement_id)
+                })
+        }
+        StatementKind::While { body, .. }
+        | StatementKind::For { body, .. }
+        | StatementKind::Forge { body } => {
+            block_sets_identifier_except_statement(body, name, skipped_statement_id)
+        }
+        StatementKind::Binding { .. }
+        | StatementKind::Return { .. }
+        | StatementKind::Expr { .. } => false,
+    }
+}
+
+fn block_has_real_set_identifier_except_statement(
+    block: &Block,
+    name: &str,
+    skipped_statement_id: &str,
+) -> bool {
+    block.statements.iter().any(|statement| {
+        real_set_identifier_except_statement(statement, name, skipped_statement_id)
+    })
+}
+
+fn real_set_identifier_except_statement(
+    statement: &Statement,
+    name: &str,
+    skipped_statement_id: &str,
+) -> bool {
+    if statement.id == skipped_statement_id {
+        return false;
+    }
+    match &statement.kind {
+        StatementKind::Set {
+            name: candidate,
+            expr,
+        } => {
+            candidate == name
+                && !matches!(&expr.kind, ExprKind::Identifier { name } if name == candidate)
+        }
+        StatementKind::If {
+            then_block,
+            else_block,
+            ..
+        } => {
+            block_has_real_set_identifier_except_statement(then_block, name, skipped_statement_id)
+                || else_block.as_ref().is_some_and(|block| {
+                    block_has_real_set_identifier_except_statement(
+                        block,
+                        name,
+                        skipped_statement_id,
+                    )
+                })
+        }
+        StatementKind::While { body, .. }
+        | StatementKind::For { body, .. }
+        | StatementKind::Forge { body } => {
+            block_has_real_set_identifier_except_statement(body, name, skipped_statement_id)
+        }
+        StatementKind::Binding { .. }
+        | StatementKind::Return { .. }
+        | StatementKind::Expr { .. } => false,
+    }
 }
 
 struct StatementLocation<'a> {
@@ -3073,6 +3211,32 @@ fn binding_statement_as_bind_source(statement: &Statement) -> Option<String> {
     }
     source.push_str(" = ");
     source.push_str(expr.source.trim());
+    Some(source)
+}
+
+fn binding_statement_as_bind_source_with_expr(
+    statement: &Statement,
+    expr_source: &str,
+) -> Option<String> {
+    let StatementKind::Binding {
+        binding_kind,
+        name,
+        type_ann,
+        ..
+    } = &statement.kind
+    else {
+        return None;
+    };
+    if !binding_kind.is_mutable_local() {
+        return None;
+    }
+    let mut source = format!("bind {name}");
+    if let Some(type_ann) = type_ann {
+        source.push_str(": ");
+        source.push_str(&type_ann.display());
+    }
+    source.push_str(" = ");
+    source.push_str(expr_source.trim());
     Some(source)
 }
 
