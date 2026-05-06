@@ -45,6 +45,7 @@ pub enum LintRule {
     SelfComparisonExpression,
     DoubleNegationExpression,
     RedundantBooleanIfExpression,
+    RedundantBooleanIfStatement,
     SameBranchIfExpression,
     UnreachableStatement,
 }
@@ -78,6 +79,7 @@ impl LintRule {
             Self::SelfComparisonExpression,
             Self::DoubleNegationExpression,
             Self::RedundantBooleanIfExpression,
+            Self::RedundantBooleanIfStatement,
             Self::SameBranchIfExpression,
             Self::UnreachableStatement,
         ]
@@ -111,6 +113,7 @@ impl LintRule {
             Self::SelfComparisonExpression => "self_comparison_expression",
             Self::DoubleNegationExpression => "double_negation_expression",
             Self::RedundantBooleanIfExpression => "redundant_boolean_if_expression",
+            Self::RedundantBooleanIfStatement => "redundant_boolean_if_statement",
             Self::SameBranchIfExpression => "same_branch_if_expression",
             Self::UnreachableStatement => "unreachable_statement",
         }
@@ -278,6 +281,12 @@ pub fn build_lint_report(program: &Program, options: LintOptions) -> LintReport 
     }
     if rules.contains(&LintRule::RedundantBooleanIfExpression) {
         findings.extend(lint_redundant_boolean_if_expressions(
+            program,
+            options.module.as_deref(),
+        ));
+    }
+    if rules.contains(&LintRule::RedundantBooleanIfStatement) {
+        findings.extend(lint_redundant_boolean_if_statements(
             program,
             options.module.as_deref(),
         ));
@@ -1032,6 +1041,21 @@ fn lint_redundant_boolean_if_expressions(
     findings
 }
 
+fn lint_redundant_boolean_if_statements(
+    program: &Program,
+    module: Option<&str>,
+) -> Vec<LintFinding> {
+    let mut findings = Vec::new();
+    for task in program
+        .tasks
+        .iter()
+        .filter(|task| module_matches(module, &task_module(task)))
+    {
+        collect_redundant_boolean_if_statements_in_block(task, &task.body, &mut findings);
+    }
+    findings
+}
+
 fn lint_same_branch_if_expressions(program: &Program, module: Option<&str>) -> Vec<LintFinding> {
     let mut findings = Vec::new();
     for task in program
@@ -1178,6 +1202,81 @@ fn same_branch_if_expression_replacement(expr: &Expr) -> Option<String> {
     } else {
         None
     }
+}
+
+fn collect_redundant_boolean_if_statements_in_block(
+    task: &TaskDecl,
+    block: &Block,
+    findings: &mut Vec<LintFinding>,
+) {
+    for statement in &block.statements {
+        match &statement.kind {
+            StatementKind::If {
+                then_block,
+                else_block,
+                ..
+            } => {
+                if let Some(replacement) = redundant_boolean_if_statement_replacement(statement) {
+                    let task_name = task_fq_name(task);
+                    findings.push(LintFinding {
+                        id: "REDUNDANT_BOOLEAN_IF_STATEMENT".to_string(),
+                        rule: LintRule::RedundantBooleanIfStatement.as_str().to_string(),
+                        severity: "warning".to_string(),
+                        message: format!("task `{task_name}` has a redundant boolean if statement"),
+                        node: statement.id.clone(),
+                        module: task_module(task),
+                        hint: format!("replace the boolean if statement with `{replacement}`"),
+                    });
+                }
+                collect_redundant_boolean_if_statements_in_block(task, then_block, findings);
+                if let Some(else_block) = else_block {
+                    collect_redundant_boolean_if_statements_in_block(task, else_block, findings);
+                }
+            }
+            StatementKind::While { body, .. }
+            | StatementKind::For { body, .. }
+            | StatementKind::Forge { body } => {
+                collect_redundant_boolean_if_statements_in_block(task, body, findings);
+            }
+            StatementKind::Binding { .. }
+            | StatementKind::Set { .. }
+            | StatementKind::Return { .. }
+            | StatementKind::Expr { .. } => {}
+        }
+    }
+}
+
+fn redundant_boolean_if_statement_replacement(statement: &Statement) -> Option<String> {
+    let StatementKind::If {
+        condition,
+        then_block,
+        else_block,
+    } = &statement.kind
+    else {
+        return None;
+    };
+    if bool_literal_value(condition).is_some() {
+        return None;
+    }
+    let else_block = else_block.as_ref()?;
+    match (
+        single_return_bool_literal(then_block),
+        single_return_bool_literal(else_block),
+    ) {
+        (Some(true), Some(false)) => Some(format!("return {}", condition.source)),
+        (Some(false), Some(true)) => Some(format!("return {}", negated_boolean_source(condition))),
+        _ => None,
+    }
+}
+
+fn single_return_bool_literal(block: &Block) -> Option<bool> {
+    let [statement] = block.statements.as_slice() else {
+        return None;
+    };
+    let StatementKind::Return { expr } = &statement.kind else {
+        return None;
+    };
+    bool_literal_value(expr)
 }
 
 fn collect_redundant_boolean_if_expressions_in_block(
@@ -4083,6 +4182,52 @@ fn redundant_boolean_if_expression_replacement_in_expr(
         | ExprKind::BoolLiteral { .. }
         | ExprKind::Identifier { .. } => None,
     }
+}
+
+pub fn redundant_boolean_if_statement_replacement_source(
+    program: &Program,
+    target: &str,
+) -> Option<String> {
+    program
+        .tasks
+        .iter()
+        .find_map(|task| redundant_boolean_if_statement_replacement_in_block(&task.body, target))
+}
+
+fn redundant_boolean_if_statement_replacement_in_block(
+    block: &Block,
+    target: &str,
+) -> Option<String> {
+    block
+        .statements
+        .iter()
+        .find_map(|statement| match &statement.kind {
+            StatementKind::If {
+                then_block,
+                else_block,
+                ..
+            } => {
+                if statement.id == target {
+                    return redundant_boolean_if_statement_replacement(statement);
+                }
+                redundant_boolean_if_statement_replacement_in_block(then_block, target).or_else(
+                    || {
+                        else_block.as_ref().and_then(|block| {
+                            redundant_boolean_if_statement_replacement_in_block(block, target)
+                        })
+                    },
+                )
+            }
+            StatementKind::While { body, .. }
+            | StatementKind::For { body, .. }
+            | StatementKind::Forge { body } => {
+                redundant_boolean_if_statement_replacement_in_block(body, target)
+            }
+            StatementKind::Binding { .. }
+            | StatementKind::Set { .. }
+            | StatementKind::Return { .. }
+            | StatementKind::Expr { .. } => None,
+        })
 }
 
 pub fn same_branch_if_expression_replacement_source(

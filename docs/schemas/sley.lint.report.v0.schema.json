@@ -43,6 +43,7 @@
               "self_comparison_expression",
               "double_negation_expression",
               "redundant_boolean_if_expression",
+              "redundant_boolean_if_statement",
               "same_branch_if_expression",
               "unreachable_statement"
             ]
@@ -94,6 +95,7 @@
               "SELF_COMPARISON_EXPRESSION",
               "DOUBLE_NEGATION_EXPRESSION",
               "REDUNDANT_BOOLEAN_IF_EXPRESSION",
+              "REDUNDANT_BOOLEAN_IF_STATEMENT",
               "SAME_BRANCH_IF_EXPRESSION",
               "UNREACHABLE_STATEMENT"
             ]
@@ -126,6 +128,7 @@
               "self_comparison_expression",
               "double_negation_expression",
               "redundant_boolean_if_expression",
+              "redundant_boolean_if_statement",
               "same_branch_if_expression",
               "unreachable_statement"
             ]

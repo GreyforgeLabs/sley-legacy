@@ -72,6 +72,7 @@
         "self_comparison_expression",
         "double_negation_expression",
         "redundant_boolean_if_expression",
+        "redundant_boolean_if_statement",
         "same_branch_if_expression",
         "unreachable_statement"
       ],
