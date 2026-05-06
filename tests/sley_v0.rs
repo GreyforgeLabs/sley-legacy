@@ -2993,6 +2993,87 @@ fn edit_plan_graft_templates_include_unused_pure_expression_statement_delete() {
 }
 
 #[test]
+fn edit_plan_graft_templates_include_self_assignment_statement_delete() {
+    let source = include_str!("../examples/self_assignment_statement.sley");
+    let program = parse_program(source).expect("parse self assignment fixture");
+    let report = build_edit_plan_report_with_options(
+        "examples/self_assignment_statement.sley",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: None,
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "warnings");
+    assert_eq!(report.summary.lint_finding_count, 1);
+    assert_eq!(
+        report.lint.as_ref().expect("lint summary").findings[0].id,
+        "SELF_ASSIGNMENT_STATEMENT"
+    );
+    let template = report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "delete_self_assignment_statement")
+        .expect("self assignment statement delete template");
+    assert_eq!(
+        template.surface,
+        "block:task:app.self_assignment.main:stmt:1"
+    );
+    assert_eq!(
+        template.operation.pointer("/op"),
+        Some(&serde_json::json!("DeleteNode"))
+    );
+    assert_eq!(
+        template.operation.pointer("/target"),
+        Some(&serde_json::json!(
+            "block:task:app.self_assignment.main:stmt:1"
+        ))
+    );
+    assert!(template.editable_json_pointers.is_empty());
+    let graft: GraftInput = serde_json::from_value(template.operation.clone())
+        .expect("parse self assignment delete template");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:self-assignment-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted_source = outcome.source.expect("grafted source");
+    assert!(!grafted_source.contains("set count = count\n"));
+    assert!(grafted_source.contains("set count = count + 1"));
+    let grafted_program = parse_program(&grafted_source).expect("parse grafted source");
+    let lint_report = build_lint_report(
+        &grafted_program,
+        LintOptions {
+            rules: vec![LintRule::SelfAssignmentStatement],
+            module: None,
+        },
+    );
+    assert_eq!(lint_report.status, "ok");
+
+    let targeted_report = build_edit_plan_report_with_options(
+        "examples/self_assignment_statement.sley",
+        Ok(program),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("block:task:app.self_assignment.main:stmt:1".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(targeted_report.status, "warnings");
+    assert!(targeted_report.diagnostics.is_empty());
+    assert_eq!(targeted_report.graft_templates.len(), 1);
+    assert_eq!(
+        targeted_report.graft_templates[0].kind,
+        "delete_self_assignment_statement"
+    );
+    assert!(targeted_report.transaction_templates.is_empty());
+}
+
+#[test]
 fn edit_plan_graft_templates_include_unreachable_statement_delete() {
     let source = include_str!("../examples/unreachable_statement.sley");
     let program = parse_program(source).expect("parse unreachable statement fixture");
@@ -6797,6 +6878,21 @@ task helper -> Result<Text, Error> {
         include_str!("../fixtures/contracts/lint_mutable_binding_never_set.json"),
     );
 
+    let self_assignment_source = include_str!("../examples/self_assignment_statement.sley");
+    let self_assignment_program =
+        parse_program(self_assignment_source).expect("parse self assignment fixture");
+    let self_assignment_lint = build_lint_report(
+        &self_assignment_program,
+        LintOptions {
+            rules: vec![LintRule::SelfAssignmentStatement],
+            module: None,
+        },
+    );
+    assert_json_snapshot(
+        &self_assignment_lint,
+        include_str!("../fixtures/contracts/lint_self_assignment_statement.json"),
+    );
+
     let constant_if_source = include_str!("../examples/constant_if_expression.sley");
     let constant_if_program = parse_program(constant_if_source).expect("parse constant if fixture");
     let constant_if_lint = build_lint_report(
@@ -7893,7 +7989,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(78))
+        Some(&serde_json::json!(79))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -13787,6 +13883,69 @@ task main -> Int {
 }
 
 #[test]
+fn lint_report_flags_self_assignment_statements() {
+    let source = r#"
+module app.self_assignment
+
+task main -> Int {
+  state count = 1
+  set count = count
+  set count = count + 1
+  if count > 1 {
+    set count = count
+  }
+  set count = count - 1
+
+  return count
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+
+    let report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::SelfAssignmentStatement],
+            module: None,
+        },
+    );
+
+    assert_eq!(report.schema, LINT_REPORT_SCHEMA);
+    assert_eq!(report.status, "findings");
+    assert_eq!(report.entry_module, "app.self_assignment");
+    assert_eq!(report.filters.rules, vec!["self_assignment_statement"]);
+    assert_eq!(report.findings.len(), 2);
+    assert_eq!(report.findings[0].id, "SELF_ASSIGNMENT_STATEMENT");
+    assert_eq!(report.findings[0].rule, "self_assignment_statement");
+    let nodes: Vec<&str> = report
+        .findings
+        .iter()
+        .map(|finding| finding.node.as_str())
+        .collect();
+    assert!(nodes.contains(&"block:task:app.self_assignment.main:stmt:1"));
+    assert!(nodes.contains(&"block:task:app.self_assignment.main:stmt:3:then:stmt:0"));
+    assert!(!nodes.contains(&"block:task:app.self_assignment.main:stmt:2"));
+    assert!(!nodes.contains(&"block:task:app.self_assignment.main:stmt:4"));
+    assert_eq!(report.findings[0].module, "app.self_assignment");
+    assert!(report.findings[0].message.contains("set count = count"));
+    assert!(report.findings[0].hint.contains("delete"));
+
+    let scoped_report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::SelfAssignmentStatement],
+            module: Some("app.other".to_string()),
+        },
+    );
+    assert_eq!(scoped_report.status, "ok");
+    assert!(scoped_report.findings.is_empty());
+}
+
+#[test]
 fn lint_report_flags_constant_if_expressions() {
     let source = r#"
 module app.constant_if
@@ -18022,6 +18181,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:templates:unchecked-result",
         "graft:templates:unused-pure-binding-delete",
         "graft:templates:unused-pure-expression-statement-delete",
+        "graft:templates:self-assignment-statement-delete",
         "graft:templates:constant-if-statement",
         "graft:templates:constant-false-if-statement-delete",
         "graft:templates:constant-false-while-statement-delete",
@@ -18064,6 +18224,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "lint:unused_pure_binding",
         "lint:unused_pure_expression_statement",
         "lint:mutable_binding_never_set",
+        "lint:self_assignment_statement",
         "lint:constant_if_expression",
         "lint:constant_if_statement",
         "lint:constant_false_if_statement",
@@ -18133,6 +18294,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:lint-repair-write-command",
         "readiness:lint-repair-write-verify",
         "readiness:mutable-binding-repair-write-verify",
+        "readiness:self-assignment-repair-write-verify",
         "readiness:unused-pure-expression-repair-write-verify",
         "readiness:project-lint-repair-write-verify",
         "readiness:project-import-write-verify",

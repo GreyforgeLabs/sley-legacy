@@ -185,7 +185,8 @@ Current development phase:
   `unqualified_imported_call`, the local cleanup rule
   `unused_pure_binding`, the no-op expression cleanup rule
   `unused_pure_expression_statement`, the mutable-local style rule
-  `mutable_binding_never_set`, the expression simplification rule
+  `mutable_binding_never_set`, the self-assignment cleanup rule
+  `self_assignment_statement`, the expression simplification rule
   `constant_if_expression`, the constant-if statement simplification rule
   `constant_if_statement`, the constant-false if cleanup rule
   `constant_false_if_statement`, the constant-false while cleanup rule
@@ -257,6 +258,8 @@ Current development phase:
   calls that should be alias- or module-qualified, plus
   `delete_unused_pure_expression_statement` templates for no-op pure
   expression statements, plus
+  `delete_self_assignment_statement` templates for no-op mutation statements,
+  plus
   `delete_constant_false_if_statement` templates for never-executed
   `if false` statements without `else` branches, plus
   `delete_constant_false_while_statement` templates for never-executed

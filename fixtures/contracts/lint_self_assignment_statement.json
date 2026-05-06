@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.self_assignment",
+  "filters": {
+    "module": null,
+    "rules": [
+      "self_assignment_statement"
+    ]
+  },
+  "findings": [
+    {
+      "id": "SELF_ASSIGNMENT_STATEMENT",
+      "rule": "self_assignment_statement",
+      "severity": "warning",
+      "message": "task `app.self_assignment.main` has a no-op self-assignment `set count = count`",
+      "node": "block:task:app.self_assignment.main:stmt:1",
+      "module": "app.self_assignment",
+      "hint": "delete this no-op assignment to `count`"
+    }
+  ]
+}

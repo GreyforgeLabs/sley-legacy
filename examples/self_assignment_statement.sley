@@ -1,0 +1,9 @@
+module app.self_assignment
+
+task main -> Int {
+  state count = 1
+  set count = count
+  set count = count + 1
+
+  return count
+}
