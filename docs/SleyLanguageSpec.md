@@ -651,8 +651,9 @@ Current v0 trace seal JSON has this root shape:
 
 The v0 JSON contracts are locked by small snapshots under
 `fixtures/contracts/` and JSON Schema files under `docs/schemas/`, including
-graft outcome fixtures plus full symbol graph and ZJX envelope fixtures for
-handoff roots. The AST program schema now recursively describes imports,
+contract inventory/validate fixtures, graft outcome fixtures, and full symbol
+graph and ZJX envelope fixtures for handoff roots. The AST program schema now
+recursively describes imports,
 types, effects, tasks, takes, statements, expressions, type expressions, spans,
 and provenance records. The diagnostic schema pins the shared diagnostic and
 repair-hint shape. The query schema exposes strict task, take, type, effect,
