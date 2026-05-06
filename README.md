@@ -340,7 +340,8 @@ Implemented now:
   fixtures
 - manifest-backed accepted/rejected synthetic conformance corpus fixtures under
   `fixtures/corpus/`, including declared and missing authority cases for the
-  seeded host adapter surface
+  seeded host adapter surface and an accepted agent deploy pipeline that
+  composes SecretRead, Network, ModelCall, and Deploy
 - manifest-backed CLI smoke conformance cases under `fixtures/cli_smokes/`,
   covering stable command output, JSON roots, graph/ZJX surfaces, doctor
   readiness, edit-plan surfaces, verify pre-deploy gates, project scaffolding,
@@ -359,8 +360,8 @@ Implemented now:
   name/source/module overrides,
   missing-module checked repair templates with module-name inference,
   lint-driven fix writes that clear warnings before verify, including empty-if
-  cleanup, and seeded
-  host-adapter execution
+  cleanup, a standalone agent deploy pipeline example with check/lint/run/verify/deploy
+  dry-run coverage, and seeded host-adapter execution
 - compact agent onboarding pack in `llms.txt`
 
 Project form:
@@ -386,6 +387,16 @@ sley-ci deploy --json --dry-run --artifacts-dir .sley/ci-deploy --cap SecretRead
 sley-contract inspect-deploy-artifacts .sley/deploy --schemas docs/schemas --json
 sley seal --json .
 sley zjx --json .
+```
+
+Standalone dogfood example:
+
+```bash
+sley check --json examples/agent_deploy_pipeline.sley
+sley lint --json --deny-warnings examples/agent_deploy_pipeline.sley
+sley run --json --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged examples/agent_deploy_pipeline.sley
+sley verify --json --deny-warnings --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged examples/agent_deploy_pipeline.sley
+sley deploy --json --dry-run --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged examples/agent_deploy_pipeline.sley
 ```
 
 `sley new` refuses to overwrite existing `sley.toml`, `README.md`, or entry

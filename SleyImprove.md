@@ -482,7 +482,8 @@ The synthetic corpus lives under `fixtures/corpus/`. It has a
 growing deliberately, with accepted fixtures that must parse/check/round-trip
 and rejected fixtures that lock expected diagnostic IDs. The current corpus
 already covers declared and missing authority for all deterministic seeded host
-adapters.
+adapters, plus an accepted agent deploy pipeline that composes SecretRead,
+Network, ModelCall, and Deploy.
 
 Corpus categories:
 
@@ -559,6 +560,9 @@ The current smoke manifest covers:
   manifests plus scaffold-level and passed-verify seal/ZJX handoff next-actions
   plus the agent scaffold's `sley-ci run`/`sley-ci verify`/`sley-ci deploy`
   handoffs
+- a standalone dogfood agent deploy pipeline example with strict
+  check/lint/run/verify/deploy dry-run coverage across SecretRead, Network,
+  ModelCall, and Deploy
 - doctor/verify warning next-actions that route agents to checked
   `sley plan --json --graft-templates` lint repair plans and unambiguous
   `sley fix --dry-run` previews with explicit `write_command` vectors, plus a
