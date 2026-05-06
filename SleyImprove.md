@@ -618,6 +618,10 @@ The current smoke manifest covers:
   checked `delete_overwritten_set_statement` templates that remove dead `set`
   statements immediately overwritten before any read through
   lint/plan/fix-write/verify CLI smoke coverage
+- redundant initial set warnings through `redundant_initial_set_statement`,
+  plus checked `fold_redundant_initial_set_into_binding` transactions that
+  fold a safe immediate `set` into the mutable initializer while preserving
+  later real mutation
 - constant-if expression style warnings through `constant_if_expression`, plus
   checked `simplify_constant_if_expression` templates that replace
   expression-level `if true/false` with the branch that executes
@@ -820,6 +824,9 @@ The v0 lint rules are:
 - `overwritten_set_statement`: a delete-safe `set name = ...` immediately
   followed by another `set name = ...` is reported so agents can remove dead
   local mutation noise before deploy verification.
+- `redundant_initial_set_statement`: a mutable local initialized and then
+  immediately assigned a delete-safe replacement is reported so agents can
+  fold the replacement into the initializer when later real mutation remains.
 - `constant_if_expression`: an expression-level `if true/false { ... } else { ... }`
   is reported so agents can replace it with the branch that actually executes.
 - `constant_if_statement`: a statement-level `if true/false { ... } else { ... }`

@@ -995,6 +995,7 @@ enum CliLintRule {
     AbsorbingArithmeticExpression,
     SelfAssignmentStatement,
     OverwrittenSetStatement,
+    RedundantInitialSetStatement,
 }
 
 impl From<CliLintRule> for LintRule {
@@ -1047,6 +1048,7 @@ impl From<CliLintRule> for LintRule {
             CliLintRule::AbsorbingArithmeticExpression => Self::AbsorbingArithmeticExpression,
             CliLintRule::SelfAssignmentStatement => Self::SelfAssignmentStatement,
             CliLintRule::OverwrittenSetStatement => Self::OverwrittenSetStatement,
+            CliLintRule::RedundantInitialSetStatement => Self::RedundantInitialSetStatement,
         }
     }
 }

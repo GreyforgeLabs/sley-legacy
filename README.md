@@ -117,7 +117,8 @@ Implemented now:
   `--rule unqualified-imported-call`, `--rule unused-pure-binding`,
   `--rule unused-pure-expression-statement`, or
   `--rule mutable-binding-never-set`, `--rule self-assignment-statement`,
-  `--rule overwritten-set-statement`, `--rule constant-if-expression`,
+  `--rule overwritten-set-statement`,
+  `--rule redundant-initial-set-statement`, `--rule constant-if-expression`,
   `--rule constant-if-statement`,
   `--rule constant-false-if-statement`,
   `--rule constant-false-while-statement`,
@@ -192,6 +193,8 @@ Implemented now:
   mutations,
   `delete_overwritten_set_statement` templates for dead `set` statements
   immediately overwritten before any read,
+  `fold_redundant_initial_set_into_binding` transactions for mutable
+  initializers immediately replaced by a safe first `set`,
   `simplify_constant_if_expression` templates for constant `if` expressions
   that can be replaced by the branch that executes,
   `simplify_constant_if_statement` templates for constant `if` statements that

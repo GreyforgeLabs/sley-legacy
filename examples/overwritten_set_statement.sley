@@ -1,7 +1,11 @@
 module app.overwritten_set
 
+task seed -> Int {
+  return 0
+}
+
 task main -> Int {
-  state count = 0
+  state count = seed()
   set count = 1
   set count = 2
 

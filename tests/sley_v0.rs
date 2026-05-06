@@ -3155,6 +3155,104 @@ fn edit_plan_graft_templates_include_overwritten_set_statement_delete() {
 }
 
 #[test]
+fn edit_plan_transaction_templates_include_redundant_initial_set_fold() {
+    let source = include_str!("../examples/redundant_initial_set_statement.sley");
+    let program = parse_program(source).expect("parse redundant initial set fixture");
+    let report = build_edit_plan_report_with_options(
+        "examples/redundant_initial_set_statement.sley",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: None,
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "warnings");
+    assert_eq!(report.summary.lint_finding_count, 1);
+    assert_eq!(
+        report.lint.as_ref().expect("lint summary").findings[0].id,
+        "REDUNDANT_INITIAL_SET_STATEMENT"
+    );
+    let template = report
+        .transaction_templates
+        .iter()
+        .find(|template| template.kind == "fold_redundant_initial_set_into_binding")
+        .expect("redundant initial set fold transaction");
+    assert_eq!(
+        template.surface,
+        "block:task:app.redundant_initial_set.main:stmt:1"
+    );
+    assert_eq!(
+        template.transaction.pointer("/ops/0/op"),
+        Some(&serde_json::json!("ReplaceExpression"))
+    );
+    assert_eq!(
+        template.transaction.pointer("/ops/0/target"),
+        Some(&serde_json::json!(
+            "block:task:app.redundant_initial_set.main:stmt:0:expr"
+        ))
+    );
+    assert_eq!(
+        template.transaction.pointer("/ops/0/payload/source"),
+        Some(&serde_json::json!("1"))
+    );
+    assert_eq!(
+        template.transaction.pointer("/ops/1/op"),
+        Some(&serde_json::json!("DeleteNode"))
+    );
+    assert_eq!(
+        template.transaction.pointer("/ops/1/target"),
+        Some(&serde_json::json!(
+            "block:task:app.redundant_initial_set.main:stmt:1"
+        ))
+    );
+    assert_eq!(
+        template.editable_json_pointers,
+        vec!["/ops/0/payload/source"]
+    );
+    let graft: GraftInput = serde_json::from_value(template.transaction.clone())
+        .expect("parse redundant initial set transaction template");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:redundant-initial-set-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted_source = outcome.source.expect("grafted source");
+    assert!(grafted_source.contains("state count = 1"));
+    assert!(!grafted_source.contains("set count = 1\n"));
+    assert!(grafted_source.contains("set count = count + 1"));
+    let grafted_program = parse_program(&grafted_source).expect("parse grafted source");
+    let lint_report = build_lint_report(
+        &grafted_program,
+        LintOptions {
+            rules: vec![LintRule::RedundantInitialSetStatement],
+            module: None,
+        },
+    );
+    assert_eq!(lint_report.status, "ok");
+
+    let targeted_report = build_edit_plan_report_with_options(
+        "examples/redundant_initial_set_statement.sley",
+        Ok(program),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("block:task:app.redundant_initial_set.main:stmt:1".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(targeted_report.status, "warnings");
+    assert!(targeted_report.diagnostics.is_empty());
+    assert_eq!(targeted_report.transaction_templates.len(), 1);
+    assert_eq!(
+        targeted_report.transaction_templates[0].kind,
+        "fold_redundant_initial_set_into_binding"
+    );
+}
+
+#[test]
 fn edit_plan_graft_templates_include_unreachable_statement_delete() {
     let source = include_str!("../examples/unreachable_statement.sley");
     let program = parse_program(source).expect("parse unreachable statement fixture");
@@ -6989,6 +7087,22 @@ task helper -> Result<Text, Error> {
         include_str!("../fixtures/contracts/lint_overwritten_set_statement.json"),
     );
 
+    let redundant_initial_set_source =
+        include_str!("../examples/redundant_initial_set_statement.sley");
+    let redundant_initial_set_program =
+        parse_program(redundant_initial_set_source).expect("parse redundant initial set fixture");
+    let redundant_initial_set_lint = build_lint_report(
+        &redundant_initial_set_program,
+        LintOptions {
+            rules: vec![LintRule::RedundantInitialSetStatement],
+            module: None,
+        },
+    );
+    assert_json_snapshot(
+        &redundant_initial_set_lint,
+        include_str!("../fixtures/contracts/lint_redundant_initial_set_statement.json"),
+    );
+
     let constant_if_source = include_str!("../examples/constant_if_expression.sley");
     let constant_if_program = parse_program(constant_if_source).expect("parse constant if fixture");
     let constant_if_lint = build_lint_report(
@@ -8085,7 +8199,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(80))
+        Some(&serde_json::json!(81))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -14115,6 +14229,82 @@ task main -> Int {
 }
 
 #[test]
+fn lint_report_flags_redundant_initial_set_statements() {
+    let source = r#"
+module app.redundant_initial_set
+
+task main -> Int {
+  state count = 0
+  set count = 1
+  set count = count + 1
+  state kept = 0
+  set kept = kept + 1
+  set kept = 2
+  state indexed = 0
+  set indexed = [1, 2][0]
+  set indexed = 3
+  state once = 0
+  set once = 1
+  if count > 0 {
+    state total = 0
+    set total = 2
+    set total = total + count
+  }
+
+  return count
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+
+    let report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::RedundantInitialSetStatement],
+            module: None,
+        },
+    );
+
+    assert_eq!(report.schema, LINT_REPORT_SCHEMA);
+    assert_eq!(report.status, "findings");
+    assert_eq!(report.entry_module, "app.redundant_initial_set");
+    assert_eq!(
+        report.filters.rules,
+        vec!["redundant_initial_set_statement"]
+    );
+    assert_eq!(report.findings.len(), 2);
+    assert_eq!(report.findings[0].id, "REDUNDANT_INITIAL_SET_STATEMENT");
+    assert_eq!(report.findings[0].rule, "redundant_initial_set_statement");
+    let nodes: Vec<&str> = report
+        .findings
+        .iter()
+        .map(|finding| finding.node.as_str())
+        .collect();
+    assert!(nodes.contains(&"block:task:app.redundant_initial_set.main:stmt:1"));
+    assert!(nodes.contains(&"block:task:app.redundant_initial_set.main:stmt:11:then:stmt:1"));
+    assert!(!nodes.contains(&"block:task:app.redundant_initial_set.main:stmt:4"));
+    assert!(!nodes.contains(&"block:task:app.redundant_initial_set.main:stmt:7"));
+    assert!(!nodes.contains(&"block:task:app.redundant_initial_set.main:stmt:10"));
+    assert_eq!(report.findings[0].module, "app.redundant_initial_set");
+    assert!(report.findings[0].message.contains("immediately replaces"));
+    assert!(report.findings[0].hint.contains("mutable initializer"));
+
+    let scoped_report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::RedundantInitialSetStatement],
+            module: Some("app.other".to_string()),
+        },
+    );
+    assert_eq!(scoped_report.status, "ok");
+    assert!(scoped_report.findings.is_empty());
+}
+
+#[test]
 fn lint_report_flags_constant_if_expressions() {
     let source = r#"
 module app.constant_if
@@ -18352,6 +18542,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:templates:unused-pure-expression-statement-delete",
         "graft:templates:self-assignment-statement-delete",
         "graft:templates:overwritten-set-statement-delete",
+        "graft:transactions:redundant-initial-set-fold",
         "graft:templates:constant-if-statement",
         "graft:templates:constant-false-if-statement-delete",
         "graft:templates:constant-false-while-statement-delete",
@@ -18396,6 +18587,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "lint:mutable_binding_never_set",
         "lint:self_assignment_statement",
         "lint:overwritten_set_statement",
+        "lint:redundant_initial_set_statement",
         "lint:constant_if_expression",
         "lint:constant_if_statement",
         "lint:constant_false_if_statement",
@@ -18467,6 +18659,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:mutable-binding-repair-write-verify",
         "readiness:self-assignment-repair-write-verify",
         "readiness:overwritten-set-repair-write-verify",
+        "readiness:redundant-initial-set-repair-write-verify",
         "readiness:unused-pure-expression-repair-write-verify",
         "readiness:project-lint-repair-write-verify",
         "readiness:project-import-write-verify",

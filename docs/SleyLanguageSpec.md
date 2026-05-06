@@ -824,6 +824,10 @@ no-op `set name = name` mutation preserves a checked program.
 `delete_overwritten_set_statement` `DeleteNode` templates when deleting a
 delete-safe `set` statement immediately overwritten before any read preserves a
 checked program.
+`redundant_initial_set_statement` lint findings become checked
+`fold_redundant_initial_set_into_binding` transaction templates when replacing
+the mutable binding initializer and deleting the immediate `set` preserves a
+checked program.
 `constant_if_expression` lint findings become checked
 `simplify_constant_if_expression` `ReplaceExpression` templates when replacing
 an expression-level `if true/false` with the branch that executes preserves a
@@ -1048,6 +1052,9 @@ with `set`; and `self_assignment_statement`, which warns when a no-op
 `set name = name` mutation can be deleted; and `overwritten_set_statement`,
 which warns when a delete-safe `set name = ...` statement is immediately
 overwritten by another `set name = ...` before any read; and
+`redundant_initial_set_statement`, which warns when a mutable local initializer
+is immediately replaced by a delete-safe first `set` before any read while
+later real mutation remains; and
 `constant_if_expression`, which warns when an expression-level
 `if true/false { ... } else { ... }` can be replaced with the branch that
 executes; and `constant_if_statement`, which warns when a statement-level

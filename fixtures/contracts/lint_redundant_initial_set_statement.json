@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.redundant_initial_set",
+  "filters": {
+    "module": null,
+    "rules": [
+      "redundant_initial_set_statement"
+    ]
+  },
+  "findings": [
+    {
+      "id": "REDUNDANT_INITIAL_SET_STATEMENT",
+      "rule": "redundant_initial_set_statement",
+      "severity": "warning",
+      "message": "task `app.redundant_initial_set.main` initializes mutable `count` and immediately replaces it before any read",
+      "node": "block:task:app.redundant_initial_set.main:stmt:1",
+      "module": "app.redundant_initial_set",
+      "hint": "fold `set count = ...` into the mutable initializer"
+    }
+  ]
+}
