@@ -198,6 +198,13 @@
       ]
     },
     {
+      "path": "rejected/missing_return.sley",
+      "covers": [
+        "language:missing-return",
+        "diagnostic:MISSING_RETURN"
+      ]
+    },
+    {
       "path": "rejected/type_mismatch.sley",
       "covers": [
         "language:type-mismatch",

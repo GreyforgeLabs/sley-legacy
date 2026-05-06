@@ -1,0 +1,5 @@
+module corpus.rejected
+
+task main -> Int {
+  bind value = 41
+}

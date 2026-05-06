@@ -7269,6 +7269,7 @@ fn assert_corpus_manifest_has_release_coverage(manifest: &CorpusManifest) {
         "rejected:Shell",
         "rejected:Spend",
         "diagnostic:EFFECT_UNAUTHORIZED",
+        "diagnostic:MISSING_RETURN",
         "diagnostic:TYPE_MISMATCH",
         "diagnostic:UNKNOWN_IDENTIFIER",
         "formatter:round-trip",
