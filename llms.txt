@@ -106,6 +106,7 @@ Stable v0 JSON roots:
 - `sley.graft.outcome.v0`
 - `sley.zjx.envelope.v0`
 - `sley.cli_smoke.manifest.v0`
+- `sley.ci.report.v0`
 - `sley.project.scaffold.v0`
 - `sley.doctor.report.v0`
 - `sley.verify.report.v0`
@@ -118,6 +119,8 @@ The query schema exposes strict task, take, type, effect, and call summary row
 definitions for downstream bindings.
 The `sley-contract` binary exposes `inventory`, `check-fixtures`, and
 `validate` JSON Schema validation reports for schema/fixture contract-kit work.
+The `sley-ci` binary exposes `check`, `verify`, and `smoke` reports for local
+CI and pre-commit gates over existing Sley commands.
 Graph-slice move/delete/replace affordance operations reuse the strict graft
 operation schema from edit-plan reports.
 Graph-slice focus, optional task, and inbound/outbound call summaries reuse

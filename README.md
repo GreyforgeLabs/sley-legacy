@@ -116,6 +116,9 @@ Implemented now:
   and `validate` JSON Schema validation commands over `docs/schemas/` and
   `fixtures/contracts/`, using versioned JSON report roots for downstream
   contract-kit work
+- in-tree `sley-ci` utility with `check`, `verify`, and `smoke` wrappers over
+  existing Sley check/lint/verify gates and CLI smoke manifests, emitting
+  `schema: "sley.ci.report.v0"` for CI and pre-commit integration
 - checked JSON readiness reports with `sley doctor`, consuming strict
   diagnostics plus query and lint summaries, with call-bearing reports routing
   agents to strict `sley query --kind calls` inspection, warning next-actions
@@ -198,9 +201,11 @@ Implemented now:
   argument mismatches, condition mismatches, effect authority, and private or
   ambiguous names
 - locked JSON contract snapshots under `fixtures/contracts/`, including
-  checked query, lint, doctor, edit-plan, verify, and project scaffold reports
+  checked query, lint, doctor, edit-plan, verify, CI, and project scaffold
+  reports
 - external v0 JSON Schema files under `docs/schemas/`, including strict
   query task/take/type/effect/call row definitions,
+  `sley-ci` check/verify/smoke reports,
   `sley-contract` inventory/fixture-check/validate reports,
   edit-plan graft operation and transaction template envelopes reused by graph
   slice affordances, graph-slice focus/task/call summary refs, a shared
@@ -237,6 +242,8 @@ sley query --json --kind tasks .
 sley plan --json .
 sley lint --json --deny-warnings .
 sley verify --json --deny-warnings --cap Deploy --deploy-result staging staged .
+sley-ci check --json .
+sley-ci verify --json --deny-warnings --cap Deploy --deploy-result staging staged .
 sley run --json --cap Deploy --deploy-result staging staged .
 sley seal --json .
 sley zjx --json .

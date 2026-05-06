@@ -3739,6 +3739,10 @@ task main -> Used uses UsedEffect {
         "sley.cli_smoke.manifest.v0",
     );
     assert_schema_file(
+        include_str!("../docs/schemas/sley.ci.report.v0.schema.json"),
+        "sley.ci.report.v0",
+    );
+    assert_schema_file(
         include_str!("../docs/schemas/sley.contract.inventory.v0.schema.json"),
         "sley.contract.inventory.v0",
     );
@@ -3790,7 +3794,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         inventory_json.pointer("/schema_count"),
-        Some(&serde_json::json!(18))
+        Some(&serde_json::json!(19))
     );
     let schema_ids = inventory_json
         .pointer("/schemas")
@@ -3800,6 +3804,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
         .filter_map(|schema| schema.pointer("/id").and_then(serde_json::Value::as_str))
         .collect::<BTreeSet<_>>();
     assert!(schema_ids.contains("sley.query.report.v0"));
+    assert!(schema_ids.contains("sley.ci.report.v0"));
     assert!(schema_ids.contains("sley.contract.inventory.v0"));
     assert!(schema_ids.contains("sley.contract.fixture_check.v0"));
     assert!(schema_ids.contains("sley.contract.validate.v0"));
@@ -3832,7 +3837,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(22))
+        Some(&serde_json::json!(23))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -3955,6 +3960,171 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
         Some(&serde_json::json!("schema_mismatch"))
     );
     let _ = fs::remove_dir_all(malformed_root);
+}
+
+#[test]
+fn sley_ci_wraps_check_verify_and_smoke_manifest() {
+    let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+
+    let check = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
+        .current_dir(&repo_root)
+        .args(["check", "--json", "examples/project"])
+        .output()
+        .expect("run sley-ci check");
+    assert!(
+        check.status.success(),
+        "sley-ci check failed: {}",
+        String::from_utf8_lossy(&check.stderr)
+    );
+    let check_json: serde_json::Value =
+        serde_json::from_slice(&check.stdout).expect("parse sley-ci check JSON");
+    assert_eq!(
+        check_json.pointer("/schema"),
+        Some(&serde_json::json!("sley.ci.report.v0"))
+    );
+    assert_eq!(
+        check_json.pointer("/status"),
+        Some(&serde_json::json!("passed"))
+    );
+    assert_eq!(
+        check_json.pointer("/command"),
+        Some(&serde_json::json!("check"))
+    );
+    assert_eq!(
+        check_json.pointer("/summary/step_count"),
+        Some(&serde_json::json!(2))
+    );
+    assert_eq!(
+        check_json.pointer("/steps/0/stdout_schema"),
+        Some(&serde_json::json!("sley.diagnostics.report.v0"))
+    );
+    assert_eq!(
+        check_json.pointer("/steps/1/stdout_schema"),
+        Some(&serde_json::json!("sley.lint.report.v0"))
+    );
+
+    let deploy_root = temp_project_dir("sley-ci-deploy");
+    let scaffold = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .current_dir(&repo_root)
+        .args([
+            "new",
+            "--json",
+            "--template",
+            "deploy",
+            "--name",
+            "agent-app",
+            "--module",
+            "app.main",
+            &sley_string(&deploy_root),
+        ])
+        .output()
+        .expect("run sley new for sley-ci");
+    assert!(
+        scaffold.status.success(),
+        "sley new failed: {}",
+        String::from_utf8_lossy(&scaffold.stderr)
+    );
+    let verify = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
+        .current_dir(&repo_root)
+        .args([
+            "verify",
+            "--json",
+            "--deny-warnings",
+            "--cap",
+            "Deploy",
+            "--deploy-result",
+            "staging",
+            "staged",
+            &sley_string(&deploy_root),
+        ])
+        .output()
+        .expect("run sley-ci verify");
+    assert!(
+        verify.status.success(),
+        "sley-ci verify failed: {}",
+        String::from_utf8_lossy(&verify.stderr)
+    );
+    let verify_json: serde_json::Value =
+        serde_json::from_slice(&verify.stdout).expect("parse sley-ci verify JSON");
+    assert_eq!(
+        verify_json.pointer("/schema"),
+        Some(&serde_json::json!("sley.ci.report.v0"))
+    );
+    assert_eq!(
+        verify_json.pointer("/status"),
+        Some(&serde_json::json!("passed"))
+    );
+    assert_eq!(
+        verify_json.pointer("/steps/0/stdout_schema"),
+        Some(&serde_json::json!("sley.verify.report.v0"))
+    );
+
+    let smoke_root = temp_project_dir("sley-ci-smoke");
+    fs::create_dir_all(&smoke_root).expect("create sley-ci smoke root");
+    let smoke_manifest = smoke_root.join("manifest.json");
+    fs::write(
+        &smoke_manifest,
+        r#"{
+  "schema": "sley.cli_smoke.manifest.v0",
+  "cases": [
+    {
+      "name": "parse_hello_json",
+      "args": ["parse", "--json", "{repo}/examples/hello.sley"],
+      "covers": ["cli:parse", "json:sley.ast.program.v0"],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.ast.program.v0" },
+          { "pointer": "/tasks/0/name", "value": "main" }
+        ]
+      }
+    }
+  ]
+}
+"#,
+    )
+    .expect("write sley-ci smoke manifest");
+    let smoke = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
+        .current_dir(&repo_root)
+        .args([
+            "smoke",
+            "--json",
+            "--repo-root",
+            &sley_string(&repo_root),
+            &sley_string(&smoke_manifest),
+        ])
+        .output()
+        .expect("run sley-ci smoke");
+    assert!(
+        smoke.status.success(),
+        "sley-ci smoke failed: {}",
+        String::from_utf8_lossy(&smoke.stderr)
+    );
+    let smoke_json: serde_json::Value =
+        serde_json::from_slice(&smoke.stdout).expect("parse sley-ci smoke JSON");
+    assert_eq!(
+        smoke_json.pointer("/schema"),
+        Some(&serde_json::json!("sley.ci.report.v0"))
+    );
+    assert_eq!(
+        smoke_json.pointer("/status"),
+        Some(&serde_json::json!("passed"))
+    );
+    assert_eq!(
+        smoke_json.pointer("/command"),
+        Some(&serde_json::json!("smoke"))
+    );
+    assert_eq!(
+        smoke_json.pointer("/steps/0/covers/0"),
+        Some(&serde_json::json!("cli:parse"))
+    );
+    assert_eq!(
+        smoke_json.pointer("/steps/0/stdout_schema"),
+        Some(&serde_json::json!("sley.ast.program.v0"))
+    );
+
+    let _ = fs::remove_dir_all(deploy_root);
+    let _ = fs::remove_dir_all(smoke_root);
 }
 
 #[test]

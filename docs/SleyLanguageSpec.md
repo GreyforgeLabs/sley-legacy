@@ -580,7 +580,8 @@ The CLI smoke manifest carries
 `schema: "sley.cli_smoke.manifest.v0"`. Project scaffold reports carry
 `schema: "sley.project.scaffold.v0"`. Doctor readiness reports carry
 `schema: "sley.doctor.report.v0"`. Edit-plan reports carry
-`schema: "sley.edit_plan.report.v0"`. Contract utility reports carry
+`schema: "sley.edit_plan.report.v0"`. CI wrapper reports carry
+`schema: "sley.ci.report.v0"`. Contract utility reports carry
 `schema: "sley.contract.inventory.v0"`,
 `schema: "sley.contract.fixture_check.v0"`, or
 `schema: "sley.contract.validate.v0"`.

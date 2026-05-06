@@ -113,8 +113,8 @@ Rules:
 
 - JSON output must be stable and versioned.
 - AST roots, diagnostic reports, symbol graphs, graph slices, query reports,
-  lint reports, doctor reports, verify reports, project scaffold reports, trace
-  seals, ZJX envelopes, and graft outcomes carry v0 schema IDs.
+  lint reports, doctor reports, verify reports, CI reports, project scaffold
+  reports, trace seals, ZJX envelopes, and graft outcomes carry v0 schema IDs.
 - AST, diagnostic-report, graph-slice, query-report, lint-report,
   doctor-report, project-scaffold, and trace-seal snapshots are locked under
   `fixtures/contracts/`.
@@ -124,7 +124,8 @@ Rules:
   definitions, the diagnostic schema exposes a shared diagnostic record, the
   edit-plan schema pins strict graft operation and transaction template
   envelopes reused by graph-slice affordances, the graph-slice schema links
-  focus, task, and call-summary payloads to shared contracts, `sley-contract`
+  focus, task, and call-summary payloads to shared contracts, `sley-ci`
+  check/verify/smoke reports and `sley-contract`
   inventory/fixture-check/validate reports have versioned schemas, the graft
   outcome and trace receipt schemas pin accepted provenance records, the ZJX
   envelope schema pins graph, slice, and trace receipt handoff refs, and the
@@ -476,9 +477,9 @@ The current smoke manifest covers:
   records, symbol graphs, graph slices, query reports, lint reports, trace
   receipts, trace seals, graft outcomes with strict accepted provenance
   records, query task/take/type/effect/call row definitions, graph-slice
-  focus/task/call payloads, graph-slice affordance operations, `sley-contract`
-  JSON Schema validation reports, and ZJX preview envelopes with graph digest
-  and nested handoff refs
+  focus/task/call payloads, graph-slice affordance operations, `sley-ci`
+  reports, `sley-contract` JSON Schema validation reports, and ZJX preview
+  envelopes with graph digest and nested handoff refs
 - query report direct task/take/type/effect/call row definitions
 - doctor/plan call-bearing reports route agents to strict
   `sley query --kind calls` next-actions

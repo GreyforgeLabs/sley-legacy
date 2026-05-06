@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.ci.report.v0",
+  "title": "Sley CI Report v0",
+  "type": "object",
+  "required": ["schema", "status", "command", "summary", "steps", "issues"],
+  "properties": {
+    "schema": { "const": "sley.ci.report.v0" },
+    "status": { "enum": ["passed", "failed"] },
+    "command": { "enum": ["check", "verify", "smoke"] },
+    "target": { "type": "string", "minLength": 1 },
+    "manifest": { "type": "string", "minLength": 1 },
+    "summary": { "$ref": "#/$defs/summary" },
+    "steps": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/step" }
+    },
+    "issues": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/issue" }
+    }
+  },
+  "$defs": {
+    "summary": {
+      "type": "object",
+      "required": ["step_count", "passed_count", "failed_count"],
+      "properties": {
+        "step_count": { "type": "integer", "minimum": 0 },
+        "passed_count": { "type": "integer", "minimum": 0 },
+        "failed_count": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "step": {
+      "type": "object",
+      "required": [
+        "name",
+        "status",
+        "command",
+        "expected_success",
+        "actual_success",
+        "issues"
+      ],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "status": { "enum": ["passed", "failed"] },
+        "command": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        },
+        "expected_success": { "type": "boolean" },
+        "actual_success": { "type": "boolean" },
+        "exit_code": { "type": "integer" },
+        "stdout_schema": { "type": "string", "minLength": 1 },
+        "covers": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "issues": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/issue" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "issue": {
+      "type": "object",
+      "required": ["code", "message"],
+      "properties": {
+        "code": { "type": "string", "minLength": 1 },
+        "message": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
