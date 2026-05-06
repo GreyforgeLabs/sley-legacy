@@ -150,7 +150,9 @@ Current development phase:
 - `sley doctor --json` emits `sley.doctor.report.v0` and consumes strict
   diagnostics plus checked query/lint summaries into one agent readiness report;
   warning reports include `plan_lint_repairs` next-actions that call
-  `sley plan --json --graft-templates <target>`
+  `sley plan --json --graft-templates <target>` and `preview_lint_repair`
+  next-actions with `sley fix --json --dry-run` when exactly one checked lint
+  repair exists
 - `sley plan --json` emits `sley.edit_plan.report.v0` and consumes strict
   diagnostics plus checked query/lint findings into ranked task edit surfaces,
   graft targets, and post-edit gate commands; add `--graft-templates` to emit
@@ -190,8 +192,8 @@ Current development phase:
   diagnostics, checked query/lint summaries, and deterministic runtime
   execution into one CI/pre-deploy gate; the deploy scaffold has a checked
   `--deny-warnings --cap Deploy --deploy-result staging staged` smoke, and
-  denied warning reports route agents to checked lint repair plans before
-  deployment review
+  denied warning reports route agents to checked lint repair plans plus
+  dry-run fix previews when the repair is unambiguous before deployment review
 - next development work should keep broadening style and migration lints
 - project graft writeback now supports create/update/delete module files and
   module rename, including manifest entry updates; top-level type/effect/task

@@ -4,6 +4,7 @@ use crate::Program;
 use crate::checker::{check_program, has_errors};
 use crate::diagnostics::Diagnostic;
 use crate::lint::{LintOptions, LintReport, build_lint_report};
+use crate::plan::{CheckedLintRepair, single_checked_lint_repair};
 use crate::query::{QueryKind, QueryOptions, QueryReport, build_query_report};
 
 pub const DOCTOR_REPORT_SCHEMA: &str = "sley.doctor.report.v0";
@@ -136,8 +137,9 @@ pub fn build_doctor_report(
         call_count: query.call_count,
         lint_finding_count,
     };
+    let checked_lint_repair = single_checked_lint_repair(&target, &program, &lint_report);
     let next_actions = if lint_finding_count > 0 {
-        lint_actions(&target)
+        lint_actions(&target, checked_lint_repair.as_ref())
     } else {
         ready_actions(&target, &query_report)
     };
@@ -221,8 +223,8 @@ fn blocked_actions(target: &str) -> Vec<DoctorAction> {
     }]
 }
 
-fn lint_actions(target: &str) -> Vec<DoctorAction> {
-    vec![
+fn lint_actions(target: &str, checked_repair: Option<&CheckedLintRepair>) -> Vec<DoctorAction> {
+    let mut actions = vec![
         DoctorAction {
             kind: "repair_lint_findings".to_string(),
             reason: "warning-grade hygiene findings should be resolved or deliberately accepted"
@@ -235,11 +237,34 @@ fn lint_actions(target: &str) -> Vec<DoctorAction> {
                 .to_string(),
             command: command(["sley", "plan", "--json", "--graft-templates", target]),
         },
-        DoctorAction {
-            kind: "inspect_tasks".to_string(),
-            reason: "task and call facts usually identify the narrowest edit surface".to_string(),
-            command: command(["sley", "query", "--json", "--kind", "tasks", target]),
-        },
+    ];
+    if let Some(repair) = checked_repair {
+        actions.push(DoctorAction {
+            kind: "preview_lint_repair".to_string(),
+            reason: "exactly one checked lint repair is available; preview it before writing"
+                .to_string(),
+            command: fix_command(target, repair),
+        });
+    }
+    actions.push(DoctorAction {
+        kind: "inspect_tasks".to_string(),
+        reason: "task and call facts usually identify the narrowest edit surface".to_string(),
+        command: command(["sley", "query", "--json", "--kind", "tasks", target]),
+    });
+    actions
+}
+
+fn fix_command(target: &str, repair: &CheckedLintRepair) -> Vec<String> {
+    vec![
+        "sley".to_string(),
+        "fix".to_string(),
+        "--json".to_string(),
+        "--kind".to_string(),
+        repair.kind.clone(),
+        "--template-surface".to_string(),
+        repair.surface.clone(),
+        "--dry-run".to_string(),
+        target.to_string(),
     ]
 }
 

@@ -129,7 +129,8 @@
         "json:sley.query.report.v0",
         "json:sley.lint.report.v0",
         "lint:unused_private_task",
-        "readiness:lint-repair-plan"
+        "readiness:lint-repair-plan",
+        "readiness:lint-repair-preview"
       ],
       "expect": {
         "success": false,
@@ -141,7 +142,12 @@
           { "pointer": "/next_actions/0/kind", "value": "repair_lint_findings" },
           { "pointer": "/next_actions/1/kind", "value": "plan_lint_repairs" },
           { "pointer": "/next_actions/1/command/1", "value": "plan" },
-          { "pointer": "/next_actions/1/command/3", "value": "--graft-templates" }
+          { "pointer": "/next_actions/1/command/3", "value": "--graft-templates" },
+          { "pointer": "/next_actions/2/kind", "value": "preview_lint_repair" },
+          { "pointer": "/next_actions/2/command/1", "value": "fix" },
+          { "pointer": "/next_actions/2/command/4", "value": "delete_unused_private_task" },
+          { "pointer": "/next_actions/2/command/6", "value": "task:app.warning.orphan" },
+          { "pointer": "/next_actions/2/command/7", "value": "--dry-run" }
         ]
       }
     },
@@ -312,7 +318,8 @@
         "json:sley.query.report.v0",
         "json:sley.lint.report.v0",
         "lint:unused_private_task",
-        "readiness:lint-repair-plan"
+        "readiness:lint-repair-plan",
+        "readiness:lint-repair-preview"
       ],
       "expect": {
         "success": true,
@@ -323,7 +330,12 @@
           { "pointer": "/next_actions/0/kind", "value": "repair_lint_findings" },
           { "pointer": "/next_actions/1/kind", "value": "plan_lint_repairs" },
           { "pointer": "/next_actions/1/command/1", "value": "plan" },
-          { "pointer": "/next_actions/1/command/3", "value": "--graft-templates" }
+          { "pointer": "/next_actions/1/command/3", "value": "--graft-templates" },
+          { "pointer": "/next_actions/2/kind", "value": "preview_lint_repair" },
+          { "pointer": "/next_actions/2/command/1", "value": "fix" },
+          { "pointer": "/next_actions/2/command/4", "value": "delete_unused_private_task" },
+          { "pointer": "/next_actions/2/command/6", "value": "task:app.warning.orphan" },
+          { "pointer": "/next_actions/2/command/7", "value": "--dry-run" }
         ]
       }
     },

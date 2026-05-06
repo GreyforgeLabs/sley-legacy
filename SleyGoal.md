@@ -68,9 +68,10 @@ Current verified surface:
   first-run sequence is executed by tests, including a strict seeded
   `sley verify --json --deny-warnings` readiness smoke for the generated
   deploy project and warning-state doctor/verify next-actions that route to
-  `sley plan --json --graft-templates`, and checked `unchecked_result`
-  migration templates that turn discarded `Result` expression statements into
-  explicit `?` propagation when valid, plus checked `unused_import` and
+  `sley plan --json --graft-templates` plus unambiguous
+  `sley fix --dry-run` previews, and checked `unchecked_result` migration
+  templates that turn discarded `Result` expression statements into explicit
+  `?` propagation when valid, plus checked `unused_import` and
   `unused_private_task` delete templates, fix dry runs, and a write-mode
   `delete_unused_import` cleanup that clears lint before
   `sley verify --deny-warnings`, plus checked dead private task cleanup

@@ -128,7 +128,9 @@ Rules:
   `sley.query.report.v0`, and `sley.lint.report.v0` into a single readiness
   report for pre-edit agent planning; warning and denied-warning reports now
   include `plan_lint_repairs` next-actions that call checked
-  `sley plan --json --graft-templates <target>` repair planning.
+  `sley plan --json --graft-templates <target>` repair planning, plus
+  `preview_lint_repair` dry-run fix commands when exactly one checked lint
+  repair exists.
 - `sley new --json` emits typed scaffold `next_actions` plus legacy
   `next_commands`; the deploy starter's generated action sequence is executed
   in integration coverage so first-run check, doctor, query, plan, lint,
@@ -166,7 +168,8 @@ Rules:
 - `sley verify` is the deterministic CI/pre-deploy helper consuming strict
   check, `sley.query.report.v0`, `sley.lint.report.v0`, and seeded runtime
   execution into one pass/warnings/blocked report; warning and denied-warning
-  reports include `plan_lint_repairs` next-actions before deployment review.
+  reports include `plan_lint_repairs` next-actions and unambiguous dry-run fix
+  previews before deployment review.
 - Grafts support dry-run by default and an explicit `--dry-run` flag.
 - Graft input JSON is strict: unknown operation or payload fields reject instead
   of being silently ignored.
@@ -464,7 +467,8 @@ The current smoke manifest covers:
 - deploy scaffold typed next-actions, first-run sequence execution, and strict
   seeded `verify --json --deny-warnings` readiness
 - doctor/verify warning next-actions that route agents to checked
-  `sley plan --json --graft-templates` lint repair plans
+  `sley plan --json --graft-templates` lint repair plans and unambiguous
+  `sley fix --dry-run` previews
 - lint-driven declaration delete templates, cleanup transactions, and direct
   declaration surface targeting in edit-plan reports
 - lint-driven missing-module `AddModuleDeclaration` templates, module-name

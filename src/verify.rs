@@ -4,6 +4,7 @@ use crate::Program;
 use crate::checker::{check_program, has_errors};
 use crate::diagnostics::Diagnostic;
 use crate::lint::{LintOptions, LintReport, build_lint_report};
+use crate::plan::{CheckedLintRepair, single_checked_lint_repair};
 use crate::query::{QueryKind, QueryOptions, QueryReport, build_query_report};
 use crate::runtime::{RuntimeGates, Value, run_main, run_main_with_gates};
 
@@ -91,6 +92,7 @@ pub fn build_verify_report(
     let program = match program_result {
         Ok(program) => program,
         Err(diagnostics) => {
+            let actions = check_actions(&target);
             return blocked_report(
                 target,
                 None,
@@ -98,13 +100,14 @@ pub fn build_verify_report(
                 None,
                 None,
                 VerifyRuntimeSummary::skipped(),
-                check_actions,
+                actions,
             );
         }
     };
 
     let diagnostics = check_program(&program);
     if has_errors(&diagnostics) {
+        let actions = check_actions(&target);
         return blocked_report(
             target,
             Some(program.module_name().to_string()),
@@ -112,7 +115,7 @@ pub fn build_verify_report(
             None,
             None,
             VerifyRuntimeSummary::skipped(),
-            check_actions,
+            actions,
         );
     }
 
@@ -128,8 +131,10 @@ pub fn build_verify_report(
     let query = summarize_query(&query_report);
     let lint = summarize_lint(&lint_report);
     let lint_finding_count = lint.finding_count;
+    let checked_lint_repair = single_checked_lint_repair(&target, &program, &lint_report);
 
     if deny_warnings && lint_finding_count > 0 {
+        let actions = lint_actions(&target, checked_lint_repair.as_ref());
         return blocked_report(
             target,
             Some(program.module_name().to_string()),
@@ -137,7 +142,7 @@ pub fn build_verify_report(
             Some(query),
             Some(lint),
             VerifyRuntimeSummary::skipped(),
-            lint_actions,
+            actions,
         );
     }
 
@@ -148,6 +153,7 @@ pub fn build_verify_report(
             diagnostics: Vec::new(),
         },
         Err(diagnostics) => {
+            let actions = runtime_actions(&target);
             return blocked_report(
                 target,
                 Some(program.module_name().to_string()),
@@ -159,7 +165,7 @@ pub fn build_verify_report(
                     value: None,
                     diagnostics,
                 },
-                runtime_actions,
+                actions,
             );
         }
     };
@@ -170,7 +176,7 @@ pub fn build_verify_report(
         "passed"
     };
     let actions = if lint_finding_count > 0 {
-        lint_actions(&target)
+        lint_actions(&target, checked_lint_repair.as_ref())
     } else {
         passed_actions(&target)
     };
@@ -215,7 +221,7 @@ fn blocked_report(
     query: Option<VerifyQuerySummary>,
     lint: Option<VerifyLintSummary>,
     runtime: VerifyRuntimeSummary,
-    actions: fn(&str) -> Vec<VerifyAction>,
+    actions: Vec<VerifyAction>,
 ) -> VerifyReport {
     let summary = build_summary(&diagnostics, query.as_ref(), lint.as_ref(), &runtime);
     VerifyReport {
@@ -228,7 +234,7 @@ fn blocked_report(
         query,
         lint,
         runtime: Some(runtime),
-        next_actions: actions(&target),
+        next_actions: actions,
     }
 }
 
@@ -294,8 +300,8 @@ fn check_actions(target: &str) -> Vec<VerifyAction> {
     }]
 }
 
-fn lint_actions(target: &str) -> Vec<VerifyAction> {
-    vec![
+fn lint_actions(target: &str, checked_repair: Option<&CheckedLintRepair>) -> Vec<VerifyAction> {
+    let mut actions = vec![
         VerifyAction {
             kind: "repair_lint_findings".to_string(),
             reason: "warning-grade lint findings should be resolved before deployment review"
@@ -308,11 +314,34 @@ fn lint_actions(target: &str) -> Vec<VerifyAction> {
                 .to_string(),
             command: command(["sley", "plan", "--json", "--graft-templates", target]),
         },
-        VerifyAction {
-            kind: "inspect_tasks".to_string(),
-            reason: "query task and call facts before planning a repair".to_string(),
-            command: command(["sley", "query", "--json", "--kind", "tasks", target]),
-        },
+    ];
+    if let Some(repair) = checked_repair {
+        actions.push(VerifyAction {
+            kind: "preview_lint_repair".to_string(),
+            reason: "exactly one checked lint repair is available; preview it before writing"
+                .to_string(),
+            command: fix_command(target, repair),
+        });
+    }
+    actions.push(VerifyAction {
+        kind: "inspect_tasks".to_string(),
+        reason: "query task and call facts before planning a repair".to_string(),
+        command: command(["sley", "query", "--json", "--kind", "tasks", target]),
+    });
+    actions
+}
+
+fn fix_command(target: &str, repair: &CheckedLintRepair) -> Vec<String> {
+    vec![
+        "sley".to_string(),
+        "fix".to_string(),
+        "--json".to_string(),
+        "--kind".to_string(),
+        repair.kind.clone(),
+        "--template-surface".to_string(),
+        repair.surface.clone(),
+        "--dry-run".to_string(),
+        target.to_string(),
     ]
 }
 

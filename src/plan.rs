@@ -131,6 +131,12 @@ pub struct EditPlanTransactionTemplate {
     pub editable_json_pointers: Vec<String>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CheckedLintRepair {
+    pub kind: String,
+    pub surface: String,
+}
+
 pub fn build_edit_plan_report(
     target: impl Into<String>,
     program_result: Result<Program, Vec<Diagnostic>>,
@@ -146,6 +152,56 @@ pub fn build_edit_plan_report(
             module_name_hint: None,
         },
     )
+}
+
+pub fn single_checked_lint_repair(
+    target: impl Into<String>,
+    program: &Program,
+    lint_report: &LintReport,
+) -> Option<CheckedLintRepair> {
+    if lint_report.findings.len() != 1 {
+        return None;
+    }
+    let target = target.into();
+    let surface = lint_report.findings[0].node.clone();
+    let report = build_edit_plan_report_with_options(
+        target,
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some(surface.clone()),
+            module_name_hint: None,
+        },
+    );
+    if !report.diagnostics.is_empty() {
+        return None;
+    }
+    let repairs = report
+        .graft_templates
+        .iter()
+        .filter(|template| template.surface == surface && is_lint_repair_kind(&template.kind))
+        .map(|template| CheckedLintRepair {
+            kind: template.kind.clone(),
+            surface: template.surface.clone(),
+        })
+        .chain(
+            report
+                .transaction_templates
+                .iter()
+                .filter(|template| {
+                    template.surface == surface && is_lint_repair_kind(&template.kind)
+                })
+                .map(|template| CheckedLintRepair {
+                    kind: template.kind.clone(),
+                    surface: template.surface.clone(),
+                }),
+        )
+        .collect::<Vec<_>>();
+    match repairs.as_slice() {
+        [repair] => Some(repair.clone()),
+        _ => None,
+    }
 }
 
 pub fn build_edit_plan_report_with_options(
@@ -479,6 +535,23 @@ fn lint_graft_templates(
     templates.extend(lint_raw_host_adapter_templates(program, lint_report));
     templates.extend(lint_unchecked_result_templates(program, lint_report));
     templates
+}
+
+fn is_lint_repair_kind(kind: &str) -> bool {
+    matches!(
+        kind,
+        "delete_unused_private_type"
+            | "delete_unused_private_effect"
+            | "delete_unused_private_task"
+            | "delete_unused_import"
+            | "remove_unused_take"
+            | "remove_unused_declared_effect"
+            | "add_module_declaration"
+            | "migrate_raw_host_adapter"
+            | "propagate_unchecked_result"
+            | "delete_unused_private_declarations"
+            | "delete_dead_private_tasks"
+    )
 }
 
 fn lint_declaration_delete_templates(

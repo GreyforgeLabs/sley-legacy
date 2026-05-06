@@ -566,6 +566,24 @@ task orphan -> Int {
             warning_file.display().to_string()
         ]))
     );
+    assert_eq!(
+        warnings_json.pointer("/next_actions/2/kind"),
+        Some(&serde_json::json!("preview_lint_repair"))
+    );
+    assert_eq!(
+        warnings_json.pointer("/next_actions/2/command"),
+        Some(&serde_json::json!([
+            "sley",
+            "fix",
+            "--json",
+            "--kind",
+            "delete_unused_private_task",
+            "--template-surface",
+            "task:app.warning.orphan",
+            "--dry-run",
+            warning_file.display().to_string()
+        ]))
+    );
 
     let denied = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
         .args(["doctor", "--json", "--deny-warnings"])
@@ -586,6 +604,38 @@ task orphan -> Int {
     assert_eq!(
         denied_json.pointer("/next_actions/1/kind"),
         Some(&serde_json::json!("plan_lint_repairs"))
+    );
+    assert_eq!(
+        denied_json.pointer("/next_actions/2/kind"),
+        Some(&serde_json::json!("preview_lint_repair"))
+    );
+
+    let ambiguous = parse_program(
+        r#"
+module app.ambiguous
+
+task main -> Int {
+  return 1
+}
+
+task first -> Int {
+  return 2
+}
+
+task second -> Int {
+  return 3
+}
+"#,
+    )
+    .expect("parse ambiguous warnings");
+    let ambiguous_report = build_doctor_report("app.ambiguous", Ok(ambiguous), false);
+    assert_eq!(ambiguous_report.summary.lint_finding_count, 2);
+    assert!(
+        !ambiguous_report
+            .next_actions
+            .iter()
+            .any(|action| action.kind == "preview_lint_repair"),
+        "ambiguous lint repair reports should require planning first"
     );
 
     let _ = fs::remove_dir_all(root);
@@ -3661,6 +3711,42 @@ task main -> Text uses Network {
     assert_eq!(
         report.next_actions[1].command,
         vec!["sley", "plan", "--json", "--graft-templates", "app.effects"]
+    );
+    assert_eq!(report.next_actions[2].kind, "preview_lint_repair");
+    assert_eq!(
+        report.next_actions[2].command,
+        vec![
+            "sley",
+            "fix",
+            "--json",
+            "--kind",
+            "remove_unused_declared_effect",
+            "--template-surface",
+            "effect-use:task:app.effects.main:0:Network",
+            "--dry-run",
+            "app.effects"
+        ]
+    );
+
+    let ambiguous = parse_program(
+        r#"
+module app.effects
+
+task main -> Text uses Network, Shell {
+  return "ready"
+}
+"#,
+    )
+    .expect("parse ambiguous unused effects");
+    let ambiguous_report =
+        build_verify_report("app.effects", Ok(ambiguous), RuntimeGates::new(), true);
+    assert_eq!(ambiguous_report.summary.lint_finding_count, 2);
+    assert!(
+        !ambiguous_report
+            .next_actions
+            .iter()
+            .any(|action| action.kind == "preview_lint_repair"),
+        "ambiguous verify lint repair reports should require planning first"
     );
 }
 
@@ -9327,6 +9413,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "lint:missing_module_declaration",
         "lint:unchecked_result",
         "readiness:lint-repair-plan",
+        "readiness:lint-repair-preview",
         "scaffold:deploy-quickstart",
         "scaffold:next-actions",
         "scaffold:verify-ready",

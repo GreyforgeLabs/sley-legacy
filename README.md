@@ -111,7 +111,8 @@ Implemented now:
   `schema: "sley.lint.report.v0"` for warning-grade graph and authority lints
 - checked JSON readiness reports with `sley doctor`, consuming strict
   diagnostics plus query and lint summaries, with warning next-actions that
-  route agents to `sley plan --json --graft-templates`, and
+  route agents to `sley plan --json --graft-templates` and, when exactly one
+  checked lint repair exists, a non-mutating `sley fix --dry-run` preview, and
   `schema: "sley.doctor.report.v0"` for agent pre-edit gates
 - checked JSON edit-plan reports with `sley plan`, consuming strict
   diagnostics plus query and lint findings into ranked task edit surfaces,
@@ -150,7 +151,7 @@ Implemented now:
   diagnostics, query summaries, lint findings, and deterministic runtime
   execution into `schema: "sley.verify.report.v0"` for CI and pre-deploy gates;
   warning or denied-warning reports point to checked graft-template repair
-  planning before deployment review
+  planning and expose a dry-run fix preview when the repair is unambiguous
 - JSON project scaffold reports with `sley new --json`, `hello` and `deploy`
   templates, relative created-file paths, next-command vectors, typed
   next-action reasons, and
@@ -192,9 +193,10 @@ Implemented now:
   graft/fix dry runs, direct graft writes, temp setup files for write-mode
   smokes, explicit graft/fix trace receipts, trace seals over non-empty receipt
   chains, ZJX envelopes carrying trace receipts, doctor/verify warning
-  next-actions that route to lint repair plans, missing-module checked repair
-  templates with module-name inference, lint-driven fix writes that clear
-  warnings before verify, and seeded host-adapter execution
+  next-actions that route to lint repair plans and unambiguous dry-run fix
+  previews, missing-module checked repair templates with module-name inference,
+  lint-driven fix writes that clear warnings before verify, and seeded
+  host-adapter execution
 - compact agent onboarding pack in `llms.txt`
 
 Project form:
