@@ -10316,6 +10316,262 @@
       }
     },
     {
+      "name": "check_agent_project_json",
+      "args": ["check", "--json", "examples/agent_project"],
+      "covers": [
+        "cli:check",
+        "dogfood:agent-project",
+        "examples:project",
+        "json:sley.diagnostics.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.diagnostics.report.v0" },
+          { "pointer": "/status", "value": "ok" }
+        ]
+      }
+    },
+    {
+      "name": "lint_agent_project_json",
+      "args": ["lint", "--json", "--deny-warnings", "examples/agent_project"],
+      "covers": [
+        "cli:lint",
+        "dogfood:agent-project",
+        "examples:project",
+        "json:sley.lint.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.lint.report.v0" },
+          { "pointer": "/status", "value": "ok" },
+          { "pointer": "/entry_module", "value": "agent.main" }
+        ]
+      }
+    },
+    {
+      "name": "query_agent_project_calls_json",
+      "args": ["query", "--json", "--kind", "calls", "examples/agent_project"],
+      "covers": [
+        "cli:query",
+        "dogfood:agent-project",
+        "examples:project",
+        "json:sley.query.report.v0",
+        "query:calls"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.query.report.v0" },
+          { "pointer": "/kind", "value": "calls" },
+          { "pointer": "/entry_module", "value": "agent.main" },
+          { "pointer": "/calls/0/callee", "value": "pipe.collect_profile" },
+          { "pointer": "/calls/0/target", "value": "agent.pipeline.collect_profile" },
+          { "pointer": "/calls/1/callee", "value": "pipe.draft_plan" },
+          { "pointer": "/calls/1/target", "value": "agent.pipeline.draft_plan" },
+          { "pointer": "/calls/2/callee", "value": "pipe.stage_release" },
+          { "pointer": "/calls/2/target", "value": "agent.pipeline.stage_release" }
+        ]
+      }
+    },
+    {
+      "name": "doctor_agent_project_json",
+      "args": ["doctor", "--json", "examples/agent_project"],
+      "covers": [
+        "cli:doctor",
+        "dogfood:agent-project",
+        "examples:project",
+        "json:sley.doctor.report.v0",
+        "readiness:inspect-calls"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.doctor.report.v0" },
+          { "pointer": "/status", "value": "ready" },
+          { "pointer": "/summary/module_count", "value": 2 },
+          { "pointer": "/summary/task_count", "value": 4 },
+          { "pointer": "/summary/call_count", "value": 11 },
+          { "pointer": "/query/effectful_tasks/0/effects/0", "value": "SecretRead" },
+          { "pointer": "/query/effectful_tasks/1/qualified_name", "value": "agent.pipeline.collect_profile" },
+          { "pointer": "/query/effectful_tasks/2/effects/0", "value": "ModelCall" },
+          { "pointer": "/query/effectful_tasks/3/effects/0", "value": "Deploy" },
+          { "pointer": "/next_actions/1/kind", "value": "inspect_calls" }
+        ]
+      }
+    },
+    {
+      "name": "run_agent_project_json",
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "SecretRead",
+        "--secret",
+        "api_key",
+        "redacted",
+        "--cap",
+        "Network",
+        "--http-text",
+        "https://example.test/profile",
+        "profile ready",
+        "--cap",
+        "ModelCall",
+        "--model-output",
+        "deploy-plan",
+        "plan approved",
+        "--cap",
+        "Deploy",
+        "--deploy-result",
+        "staging",
+        "staged",
+        "examples/agent_project"
+      ],
+      "covers": [
+        "cli:run",
+        "dogfood:agent-project",
+        "examples:project",
+        "json:sley.run.report.v0",
+        "host:SecretRead",
+        "host:Network",
+        "host:ModelCall",
+        "host:Deploy"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.run.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/target", "value": "examples/agent_project" },
+          { "pointer": "/value/kind", "value": "Ok" },
+          { "pointer": "/value/value/kind", "value": "Text" },
+          { "pointer": "/value/value/value", "value": "profile ready | plan approved | staged" }
+        ]
+      }
+    },
+    {
+      "name": "verify_agent_project_json",
+      "args": [
+        "verify",
+        "--json",
+        "--deny-warnings",
+        "--cap",
+        "SecretRead",
+        "--secret",
+        "api_key",
+        "redacted",
+        "--cap",
+        "Network",
+        "--http-text",
+        "https://example.test/profile",
+        "profile ready",
+        "--cap",
+        "ModelCall",
+        "--model-output",
+        "deploy-plan",
+        "plan approved",
+        "--cap",
+        "Deploy",
+        "--deploy-result",
+        "staging",
+        "staged",
+        "examples/agent_project"
+      ],
+      "covers": [
+        "cli:verify",
+        "dogfood:agent-project",
+        "examples:project",
+        "json:sley.verify.report.v0",
+        "host:SecretRead",
+        "host:Network",
+        "host:ModelCall",
+        "host:Deploy"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.verify.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/entry_module", "value": "agent.main" },
+          { "pointer": "/summary/module_count", "value": 2 },
+          { "pointer": "/summary/task_count", "value": 4 },
+          { "pointer": "/summary/call_count", "value": 11 },
+          { "pointer": "/summary/lint_finding_count", "value": 0 },
+          { "pointer": "/runtime/value/kind", "value": "Ok" },
+          { "pointer": "/runtime/value/value/value", "value": "profile ready | plan approved | staged" },
+          { "pointer": "/next_actions/0/kind", "value": "seal_verified_target" },
+          { "pointer": "/next_actions/1/kind", "value": "package_verified_target" }
+        ]
+      }
+    },
+    {
+      "name": "deploy_agent_project_artifacts_json",
+      "args": [
+        "deploy",
+        "--json",
+        "--dry-run",
+        "--artifacts-dir",
+        "{tmp}/agent-project-artifacts",
+        "--cap",
+        "SecretRead",
+        "--secret",
+        "api_key",
+        "redacted",
+        "--cap",
+        "Network",
+        "--http-text",
+        "https://example.test/profile",
+        "profile ready",
+        "--cap",
+        "ModelCall",
+        "--model-output",
+        "deploy-plan",
+        "plan approved",
+        "--cap",
+        "Deploy",
+        "--deploy-result",
+        "staging",
+        "staged",
+        "examples/agent_project"
+      ],
+      "covers": [
+        "cli:deploy",
+        "dogfood:agent-project",
+        "examples:project",
+        "json:sley.deploy.report.v0",
+        "readiness:deploy-package-artifacts",
+        "readiness:deploy-package-dry-run",
+        "host:SecretRead",
+        "host:Network",
+        "host:ModelCall",
+        "host:Deploy"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_contains": [
+          "agent-project-artifacts",
+          "deploy-report.json",
+          "seal.json",
+          "zjx-envelope.json",
+          "manifest.json"
+        ],
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.deploy.report.v0" },
+          { "pointer": "/status", "value": "ready" },
+          { "pointer": "/summary/verify_status", "value": "passed" },
+          { "pointer": "/summary/module_count", "value": 2 },
+          { "pointer": "/summary/task_count", "value": 4 },
+          { "pointer": "/verify/runtime/value/value/value", "value": "profile ready | plan approved | staged" },
+          { "pointer": "/policy/live_deploy_allowed", "value": false },
+          { "pointer": "/policy/provider_calls", "value": false },
+          { "pointer": "/next_actions/2/kind", "value": "inspect_deploy_artifacts" },
+          { "pointer": "/next_actions/2/command/1", "value": "inspect-deploy-artifacts" },
+          { "pointer": "/next_actions/2/command/3", "value": "--schemas" }
+        ]
+      }
+    },
+    {
       "name": "run_spend_json",
       "args": [
         "run",

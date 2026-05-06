@@ -27,6 +27,8 @@ here. Dates use UTC-independent calendar dates from the local repo history.
 - `examples/agent_project`, a packaged multi-module agent deployment project
   covering imported task authority, seeded execution, strict linting, seeded
   verification, and dry-run deploy packaging.
+- CLI smoke coverage for the packaged agent project across check, lint, call
+  query, doctor, seeded run, seeded verify, and deploy artifact packaging.
 
 ### Changed
 
