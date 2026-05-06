@@ -1,0 +1,5 @@
+module app.constant_if
+
+task main -> Int {
+  return if true { 41 } else { 0 }
+}

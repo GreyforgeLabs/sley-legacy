@@ -31,6 +31,7 @@ pub enum LintRule {
     UnqualifiedImportedCall,
     UnusedPureBinding,
     MutableBindingNeverSet,
+    ConstantIfExpression,
 }
 
 impl LintRule {
@@ -49,6 +50,7 @@ impl LintRule {
             Self::UnqualifiedImportedCall,
             Self::UnusedPureBinding,
             Self::MutableBindingNeverSet,
+            Self::ConstantIfExpression,
         ]
     }
 
@@ -67,6 +69,7 @@ impl LintRule {
             Self::UnqualifiedImportedCall => "unqualified_imported_call",
             Self::UnusedPureBinding => "unused_pure_binding",
             Self::MutableBindingNeverSet => "mutable_binding_never_set",
+            Self::ConstantIfExpression => "constant_if_expression",
         }
     }
 }
@@ -169,6 +172,12 @@ pub fn build_lint_report(program: &Program, options: LintOptions) -> LintReport 
     }
     if rules.contains(&LintRule::MutableBindingNeverSet) {
         findings.extend(lint_mutable_bindings_never_set(
+            program,
+            options.module.as_deref(),
+        ));
+    }
+    if rules.contains(&LintRule::ConstantIfExpression) {
+        findings.extend(lint_constant_if_expressions(
             program,
             options.module.as_deref(),
         ));
@@ -732,6 +741,140 @@ fn lint_mutable_bindings_never_set(program: &Program, module: Option<&str>) -> V
         collect_mutable_bindings_never_set_in_block(task, &task.body, &task.body, &mut findings);
     }
     findings
+}
+
+fn lint_constant_if_expressions(program: &Program, module: Option<&str>) -> Vec<LintFinding> {
+    let mut findings = Vec::new();
+    for task in program
+        .tasks
+        .iter()
+        .filter(|task| module_matches(module, &task_module(task)))
+    {
+        collect_constant_if_expressions_in_block(task, &task.body, &mut findings);
+    }
+    findings
+}
+
+fn collect_constant_if_expressions_in_block(
+    task: &TaskDecl,
+    block: &Block,
+    findings: &mut Vec<LintFinding>,
+) {
+    for statement in &block.statements {
+        match &statement.kind {
+            StatementKind::Binding { expr, .. }
+            | StatementKind::Set { expr, .. }
+            | StatementKind::Return { expr }
+            | StatementKind::Expr { expr } => {
+                collect_constant_if_expressions_in_expr(task, expr, findings);
+            }
+            StatementKind::If {
+                condition,
+                then_block,
+                else_block,
+            } => {
+                collect_constant_if_expressions_in_expr(task, condition, findings);
+                collect_constant_if_expressions_in_block(task, then_block, findings);
+                if let Some(else_block) = else_block {
+                    collect_constant_if_expressions_in_block(task, else_block, findings);
+                }
+            }
+            StatementKind::While { condition, body } => {
+                collect_constant_if_expressions_in_expr(task, condition, findings);
+                collect_constant_if_expressions_in_block(task, body, findings);
+            }
+            StatementKind::For {
+                collection, body, ..
+            } => {
+                collect_constant_if_expressions_in_expr(task, collection, findings);
+                collect_constant_if_expressions_in_block(task, body, findings);
+            }
+            StatementKind::Forge { body } => {
+                collect_constant_if_expressions_in_block(task, body, findings);
+            }
+        }
+    }
+}
+
+fn collect_constant_if_expressions_in_expr(
+    task: &TaskDecl,
+    expr: &Expr,
+    findings: &mut Vec<LintFinding>,
+) {
+    if let ExprKind::If {
+        condition,
+        then_branch,
+        else_branch,
+    } = &expr.kind
+    {
+        if let ExprKind::BoolLiteral { value } = &condition.kind {
+            let value = *value;
+            let task_name = task_fq_name(task);
+            let module_name = task_module(task);
+            let branch = if value { "then" } else { "else" };
+            findings.push(LintFinding {
+                id: "CONSTANT_IF_EXPRESSION".to_string(),
+                rule: LintRule::ConstantIfExpression.as_str().to_string(),
+                severity: "warning".to_string(),
+                message: format!(
+                    "task `{task_name}` has an if expression with constant `{value}` condition"
+                ),
+                node: expr.id.clone(),
+                module: module_name,
+                hint: format!("replace the if expression with its `{branch}` branch"),
+            });
+        }
+        collect_constant_if_expressions_in_expr(task, condition, findings);
+        collect_constant_if_expressions_in_expr(task, then_branch, findings);
+        collect_constant_if_expressions_in_expr(task, else_branch, findings);
+        return;
+    }
+
+    match &expr.kind {
+        ExprKind::Unary { expr, .. } | ExprKind::Try { expr } => {
+            collect_constant_if_expressions_in_expr(task, expr, findings);
+        }
+        ExprKind::Binary { left, right, .. } => {
+            collect_constant_if_expressions_in_expr(task, left, findings);
+            collect_constant_if_expressions_in_expr(task, right, findings);
+        }
+        ExprKind::Call { callee, args } => {
+            collect_constant_if_expressions_in_expr(task, callee, findings);
+            for arg in args {
+                collect_constant_if_expressions_in_expr(task, arg, findings);
+            }
+        }
+        ExprKind::ListLiteral { items } => {
+            for item in items {
+                collect_constant_if_expressions_in_expr(task, item, findings);
+            }
+        }
+        ExprKind::MapLiteral { entries } => {
+            for entry in entries {
+                collect_constant_if_expressions_in_expr(task, &entry.key, findings);
+                collect_constant_if_expressions_in_expr(task, &entry.value, findings);
+            }
+        }
+        ExprKind::Index { collection, index } => {
+            collect_constant_if_expressions_in_expr(task, collection, findings);
+            collect_constant_if_expressions_in_expr(task, index, findings);
+        }
+        ExprKind::FieldAccess { receiver, .. } => {
+            collect_constant_if_expressions_in_expr(task, receiver, findings);
+        }
+        ExprKind::RecordLiteral { fields, .. } => {
+            for field in fields {
+                collect_constant_if_expressions_in_expr(task, &field.expr, findings);
+            }
+        }
+        ExprKind::If { .. }
+        | ExprKind::Raw { .. }
+        | ExprKind::StringLiteral { .. }
+        | ExprKind::IntLiteral { .. }
+        | ExprKind::FloatLiteral { .. }
+        | ExprKind::BoolLiteral { .. }
+        | ExprKind::Identifier { .. } => {}
+    }
 }
 
 fn collect_mutable_bindings_never_set_in_block(
@@ -1485,6 +1628,117 @@ fn replace_call_callee(source: &str, callee: &str, replacement_callee: &str) -> 
         return None;
     }
     Some(format!("{leading}{prefix}{replacement_callee}{suffix}"))
+}
+
+pub fn constant_if_expression_replacement_source(
+    program: &Program,
+    target: &str,
+) -> Option<String> {
+    program
+        .tasks
+        .iter()
+        .find_map(|task| constant_if_expression_replacement_in_block(&task.body, target))
+}
+
+fn constant_if_expression_replacement_in_block(block: &Block, target: &str) -> Option<String> {
+    block
+        .statements
+        .iter()
+        .find_map(|statement| match &statement.kind {
+            StatementKind::Binding { expr, .. }
+            | StatementKind::Set { expr, .. }
+            | StatementKind::Return { expr }
+            | StatementKind::Expr { expr } => {
+                constant_if_expression_replacement_in_expr(expr, target)
+            }
+            StatementKind::If {
+                condition,
+                then_block,
+                else_block,
+            } => constant_if_expression_replacement_in_expr(condition, target)
+                .or_else(|| constant_if_expression_replacement_in_block(then_block, target))
+                .or_else(|| {
+                    else_block.as_ref().and_then(|block| {
+                        constant_if_expression_replacement_in_block(block, target)
+                    })
+                }),
+            StatementKind::While { condition, body } => {
+                constant_if_expression_replacement_in_expr(condition, target)
+                    .or_else(|| constant_if_expression_replacement_in_block(body, target))
+            }
+            StatementKind::For {
+                collection, body, ..
+            } => constant_if_expression_replacement_in_expr(collection, target)
+                .or_else(|| constant_if_expression_replacement_in_block(body, target)),
+            StatementKind::Forge { body } => {
+                constant_if_expression_replacement_in_block(body, target)
+            }
+        })
+}
+
+fn constant_if_expression_replacement_in_expr(expr: &Expr, target: &str) -> Option<String> {
+    if expr.id == target {
+        if let ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } = &expr.kind
+        {
+            if let ExprKind::BoolLiteral { value } = &condition.kind {
+                return Some(if *value {
+                    then_branch.source.clone()
+                } else {
+                    else_branch.source.clone()
+                });
+            }
+        }
+    }
+
+    match &expr.kind {
+        ExprKind::Unary { expr, .. } | ExprKind::Try { expr } => {
+            constant_if_expression_replacement_in_expr(expr, target)
+        }
+        ExprKind::Binary { left, right, .. } => {
+            constant_if_expression_replacement_in_expr(left, target)
+                .or_else(|| constant_if_expression_replacement_in_expr(right, target))
+        }
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => constant_if_expression_replacement_in_expr(condition, target)
+            .or_else(|| constant_if_expression_replacement_in_expr(then_branch, target))
+            .or_else(|| constant_if_expression_replacement_in_expr(else_branch, target)),
+        ExprKind::Call { callee, args } => {
+            constant_if_expression_replacement_in_expr(callee, target).or_else(|| {
+                args.iter()
+                    .find_map(|arg| constant_if_expression_replacement_in_expr(arg, target))
+            })
+        }
+        ExprKind::ListLiteral { items } => items
+            .iter()
+            .find_map(|item| constant_if_expression_replacement_in_expr(item, target)),
+        ExprKind::MapLiteral { entries } => entries.iter().find_map(|entry| {
+            constant_if_expression_replacement_in_expr(&entry.key, target)
+                .or_else(|| constant_if_expression_replacement_in_expr(&entry.value, target))
+        }),
+        ExprKind::Index { collection, index } => {
+            constant_if_expression_replacement_in_expr(collection, target)
+                .or_else(|| constant_if_expression_replacement_in_expr(index, target))
+        }
+        ExprKind::FieldAccess { receiver, .. } => {
+            constant_if_expression_replacement_in_expr(receiver, target)
+        }
+        ExprKind::RecordLiteral { fields, .. } => fields
+            .iter()
+            .find_map(|field| constant_if_expression_replacement_in_expr(&field.expr, target)),
+        ExprKind::Raw { .. }
+        | ExprKind::StringLiteral { .. }
+        | ExprKind::IntLiteral { .. }
+        | ExprKind::FloatLiteral { .. }
+        | ExprKind::BoolLiteral { .. }
+        | ExprKind::Identifier { .. } => None,
+    }
 }
 
 fn normalize_effect_name(program: &Program, module: &str, effect: &str) -> String {

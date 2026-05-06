@@ -29,7 +29,8 @@
               "unchecked_result",
               "unqualified_imported_call",
               "unused_pure_binding",
-              "mutable_binding_never_set"
+              "mutable_binding_never_set",
+              "constant_if_expression"
             ]
           },
           "uniqueItems": true
@@ -65,7 +66,8 @@
               "UNCHECKED_RESULT",
               "UNQUALIFIED_IMPORTED_CALL",
               "UNUSED_PURE_BINDING",
-              "MUTABLE_BINDING_NEVER_SET"
+              "MUTABLE_BINDING_NEVER_SET",
+              "CONSTANT_IF_EXPRESSION"
             ]
           },
           "rule": {
@@ -82,7 +84,8 @@
               "unchecked_result",
               "unqualified_imported_call",
               "unused_pure_binding",
-              "mutable_binding_never_set"
+              "mutable_binding_never_set",
+              "constant_if_expression"
             ]
           },
           "severity": { "enum": ["warning"] },

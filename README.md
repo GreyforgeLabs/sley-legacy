@@ -114,7 +114,7 @@ Implemented now:
   `--rule unused-private-effect`, `--rule raw-host-adapter`,
   `--rule missing-module-declaration`, `--rule unchecked-result`, or
   `--rule unqualified-imported-call`, `--rule unused-pure-binding`, or
-  `--rule mutable-binding-never-set`
+  `--rule mutable-binding-never-set`, or `--rule constant-if-expression`
   filters, and
   `schema: "sley.lint.report.v0"` for warning-grade graph and authority lints
 - in-tree `sley-contract` utility scaffold with `inventory`, `check-fixtures`,
@@ -157,6 +157,8 @@ Implemented now:
   statements that can be safely rewritten with `?`,
   `qualify_imported_call` templates for simple imported task calls that should
   be alias- or module-qualified,
+  `simplify_constant_if_expression` templates for constant `if` expressions
+  that can be replaced by the branch that executes,
   `--template-surface <surface>` targeting for task, block, statement, take,
   expression, program, or lint surfaces, including checked task-body and block
   `insert_statement` starters, checked statement-surface `replace_statement`
@@ -605,6 +607,7 @@ raw-host adapter migration templates, unchecked-result propagation templates,
 unqualified imported-call qualification templates with write/query/verify
 coverage, unused pure binding delete templates with write/verify coverage,
 mutable-binding conversion transactions with write/verify coverage,
+constant-if expression simplification templates with write/verify coverage,
 private-task lint rules,
 declaration/import/API hygiene, authority hygiene, and explicit module style
 warnings. The next logical phase is to keep broadening style and migration

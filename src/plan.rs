@@ -9,8 +9,8 @@ use crate::checker::{check_program, has_errors};
 use crate::diagnostics::{Diagnostic, RepairHint};
 use crate::graft::{GraftInput, apply_graft_input};
 use crate::lint::{
-    LintOptions, LintReport, build_lint_report, qualified_imported_call_replacement_source,
-    raw_host_adapter_replacement,
+    LintOptions, LintReport, build_lint_report, constant_if_expression_replacement_source,
+    qualified_imported_call_replacement_source, raw_host_adapter_replacement,
 };
 use crate::query::{QueryKind, QueryOptions, QueryReport, QueryTakeSummary, build_query_report};
 use crate::symbols::{slice_symbol_graph, task_fq_name, task_module, type_module};
@@ -559,6 +559,7 @@ fn lint_graft_templates(
         lint_report,
     ));
     templates.extend(lint_unused_pure_binding_templates(program, lint_report));
+    templates.extend(lint_constant_if_expression_templates(program, lint_report));
     templates
 }
 
@@ -576,6 +577,7 @@ fn is_lint_repair_kind(kind: &str) -> bool {
             | "propagate_unchecked_result"
             | "qualify_imported_call"
             | "delete_unused_pure_binding"
+            | "simplify_constant_if_expression"
             | "convert_mutable_binding_to_bind"
             | "delete_unused_private_declarations"
             | "delete_dead_private_tasks"
@@ -777,6 +779,38 @@ fn lint_unused_pure_binding_templates(
                 surface: finding.node.clone(),
                 operation,
                 editable_json_pointers: Vec::new(),
+            })
+        })
+        .collect()
+}
+
+fn lint_constant_if_expression_templates(
+    program: &Program,
+    lint_report: &LintReport,
+) -> Vec<EditPlanGraftTemplate> {
+    lint_report
+        .findings
+        .iter()
+        .filter(|finding| finding.id == "CONSTANT_IF_EXPRESSION")
+        .filter_map(|finding| {
+            let replacement = constant_if_expression_replacement_source(program, &finding.node)?;
+            let operation = json!({
+                "op": "ReplaceExpression",
+                "target": finding.node,
+                "payload": {
+                    "source": replacement
+                }
+            });
+            if !replace_affordance_checks(program, &operation) {
+                return None;
+            }
+            Some(EditPlanGraftTemplate {
+                kind: "simplify_constant_if_expression".to_string(),
+                reason: "replace this constant if expression with the branch that can execute"
+                    .to_string(),
+                surface: finding.node.clone(),
+                operation,
+                editable_json_pointers: vec!["/payload/source".to_string()],
             })
         })
         .collect()

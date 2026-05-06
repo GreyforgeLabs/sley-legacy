@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.constant_if",
+  "filters": {
+    "module": null,
+    "rules": [
+      "constant_if_expression"
+    ]
+  },
+  "findings": [
+    {
+      "id": "CONSTANT_IF_EXPRESSION",
+      "rule": "constant_if_expression",
+      "severity": "warning",
+      "message": "task `app.constant_if.main` has an if expression with constant `true` condition",
+      "node": "block:task:app.constant_if.main:stmt:0:expr",
+      "module": "app.constant_if",
+      "hint": "replace the if expression with its `then` branch"
+    }
+  ]
+}
