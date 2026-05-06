@@ -130,8 +130,8 @@ The query schema exposes strict task, take, type, effect, and call summary row
 definitions for downstream bindings.
 The `sley-contract` binary exposes `inventory`, `check-fixtures`, `validate`,
 and `inspect-deploy-artifacts` JSON Schema validation reports for
-schema/fixture/deploy-handoff contract-kit work; inventory and validate
-reports have locked fixtures.
+schema/fixture/deploy-handoff contract-kit work; inventory, fixture-check, and
+validate reports have locked fixtures.
 The `sley-ci` binary exposes `check`, `lint`, `doctor`, `plan`, `run`, `verify`, `deploy`, and `smoke` reports
 for local CI and pre-commit gates over existing Sley commands.
 Graph-slice insert/move/delete/replace affordance operations reuse the strict

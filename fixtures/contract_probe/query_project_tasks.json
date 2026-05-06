@@ -1,0 +1,27 @@
+{
+  "schema": "sley.query.report.v0",
+  "kind": "tasks",
+  "entry_module": "app.main",
+  "filters": {
+    "module": "app.main",
+    "exported_only": false
+  },
+  "modules": [],
+  "tasks": [
+    {
+      "id": "task:app.main.main",
+      "name": "main",
+      "module": "app.main",
+      "qualified_name": "app.main.main",
+      "exported": false,
+      "takes": [],
+      "return_type": "Int",
+      "effects": [],
+      "outbound_call_count": 1,
+      "inbound_call_count": 0
+    }
+  ],
+  "types": [],
+  "effects": [],
+  "calls": []
+}

@@ -1,0 +1,18 @@
+{
+  "schema": "sley.contract.fixture_check.v0",
+  "status": "passed",
+  "validation_level": "json_schema_draft_2020_12",
+  "schema_dir": "docs/schemas",
+  "fixtures_dir": "fixtures/contract_probe",
+  "fixture_count": 1,
+  "passed_count": 1,
+  "failed_count": 0,
+  "fixtures": [
+    {
+      "path": "fixtures/contract_probe/query_project_tasks.json",
+      "status": "passed",
+      "schema_id": "sley.query.report.v0",
+      "issues": []
+    }
+  ]
+}

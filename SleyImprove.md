@@ -125,8 +125,8 @@ Rules:
 - AST program/node, diagnostic-report, symbol-graph, graph-slice, query-report,
   lint-report, run-report, graft-outcome, trace-report, trace-seal,
   ZJX-envelope, doctor-report, project-scaffold, and CI/deploy report
-  snapshots, plus contract inventory/validate report snapshots, are locked
-  under `fixtures/contracts/`.
+  snapshots, plus contract inventory/fixture-check/validate report snapshots,
+  are locked under `fixtures/contracts/`.
 - JSON Schema files live under `docs/schemas/`; the AST schema covers nested
   declarations, statements, expressions, type expressions, spans, and
   provenance, the query schema exposes strict task/take/type/effect/call row
