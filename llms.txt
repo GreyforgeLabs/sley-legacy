@@ -195,7 +195,8 @@ Current development phase:
   `constant_list_index_expression`, the constant map index rule
   `constant_map_index_expression`, the constant record field access rule
   `constant_record_field_access_expression`, the constant len rule
-  `constant_len_expression`, the empty-if cleanup rule
+  `constant_len_expression`, the constant not rule
+  `constant_not_expression`, the empty-if cleanup rule
   `empty_if_statement`, the empty-for cleanup rule
   `empty_for_statement`, the empty-forge cleanup rule
   `empty_forge_statement`, the identity simplification rule
@@ -265,7 +266,8 @@ Current development phase:
   plus `simplify_constant_map_index_expression` templates for literal map
   indexes, plus `simplify_constant_record_field_access_expression` templates
   for literal record field access, plus `simplify_constant_len_expression`
-  templates for literal `len` calls,
+  templates for literal `len` calls, plus
+  `simplify_constant_not_expression` templates for literal boolean negation,
   plus
   `simplify_negated_comparison_expression` templates for inverted
   comparisons, plus

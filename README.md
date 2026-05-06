@@ -126,6 +126,7 @@ Implemented now:
   `--rule constant-map-index-expression`,
   `--rule constant-record-field-access-expression`,
   `--rule constant-len-expression`,
+  `--rule constant-not-expression`,
   `--rule empty-if-statement`,
   `--rule empty-for-statement`,
   `--rule empty-forge-statement`,
@@ -204,6 +205,8 @@ Implemented now:
   record field access that can be replaced by the selected scalar literal,
   `simplify_constant_len_expression` templates for literal `len` calls that
   can be replaced by the literal length,
+  `simplify_constant_not_expression` templates for literal boolean negation
+  that can be replaced by the resulting boolean literal,
   `delete_empty_if_statement` templates for no-op `if` statements with
   delete-safe conditions and empty branches,
   `delete_empty_for_statement` templates for `for` statements over literal
@@ -712,6 +715,7 @@ coverage,
 constant record field access expression simplification templates with
 write/verify coverage,
 constant len expression simplification templates with write/verify coverage,
+constant not expression simplification templates with write/verify coverage,
 empty-if statement delete templates with write/verify coverage,
 empty-for statement delete templates with write/verify coverage,
 empty-forge statement delete templates with write/verify coverage,

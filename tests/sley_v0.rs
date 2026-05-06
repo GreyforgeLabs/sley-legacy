@@ -3856,6 +3856,85 @@ fn edit_plan_graft_templates_include_constant_len_expression_simplify() {
 }
 
 #[test]
+fn edit_plan_graft_templates_include_constant_not_expression_simplify() {
+    let source = include_str!("../examples/constant_not_expression.sley");
+    let program = parse_program(source).expect("parse constant not fixture");
+    let report = build_edit_plan_report_with_options(
+        "examples/constant_not_expression.sley",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: None,
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "warnings");
+    assert_eq!(report.summary.lint_finding_count, 1);
+    assert_eq!(
+        report.lint.as_ref().expect("lint summary").findings[0].id,
+        "CONSTANT_NOT_EXPRESSION"
+    );
+    let template = report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "simplify_constant_not_expression")
+        .expect("constant not simplify template");
+    assert_eq!(
+        template.surface,
+        "block:task:app.constant_not.main:stmt:0:expr"
+    );
+    assert_eq!(
+        template.operation.pointer("/op"),
+        Some(&serde_json::json!("ReplaceExpression"))
+    );
+    assert_eq!(
+        template.operation.pointer("/payload/source"),
+        Some(&serde_json::json!("false"))
+    );
+    assert_eq!(template.editable_json_pointers, vec!["/payload/source"]);
+    let graft: GraftInput =
+        serde_json::from_value(template.operation.clone()).expect("parse constant not template");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:constant-not-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted_source = outcome.source.expect("grafted source");
+    assert!(grafted_source.contains("return false"));
+    assert!(!grafted_source.contains("return !true"));
+    let grafted_program = parse_program(&grafted_source).expect("parse grafted source");
+    let lint_report = build_lint_report(
+        &grafted_program,
+        LintOptions {
+            rules: vec![LintRule::ConstantNotExpression],
+            module: None,
+        },
+    );
+    assert_eq!(lint_report.status, "ok");
+
+    let targeted_report = build_edit_plan_report_with_options(
+        "examples/constant_not_expression.sley",
+        Ok(program),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("block:task:app.constant_not.main:stmt:0:expr".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(targeted_report.status, "warnings");
+    assert!(targeted_report.diagnostics.is_empty());
+    assert_eq!(targeted_report.graft_templates.len(), 1);
+    assert_eq!(
+        targeted_report.graft_templates[0].kind,
+        "simplify_constant_not_expression"
+    );
+    assert!(targeted_report.transaction_templates.is_empty());
+}
+
+#[test]
 fn edit_plan_graft_templates_include_empty_if_statement_delete() {
     let source = include_str!("../examples/empty_if_statement.sley");
     let program = parse_program(source).expect("parse empty if fixture");
@@ -6657,6 +6736,21 @@ task helper -> Result<Text, Error> {
         include_str!("../fixtures/contracts/lint_constant_len_expression.json"),
     );
 
+    let constant_not_source = include_str!("../examples/constant_not_expression.sley");
+    let constant_not_program =
+        parse_program(constant_not_source).expect("parse constant not fixture");
+    let constant_not_lint = build_lint_report(
+        &constant_not_program,
+        LintOptions {
+            rules: vec![LintRule::ConstantNotExpression],
+            module: None,
+        },
+    );
+    assert_json_snapshot(
+        &constant_not_lint,
+        include_str!("../fixtures/contracts/lint_constant_not_expression.json"),
+    );
+
     let empty_if_source = include_str!("../examples/empty_if_statement.sley");
     let empty_if_program = parse_program(empty_if_source).expect("parse empty if fixture");
     let empty_if_lint = build_lint_report(
@@ -7552,7 +7646,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(75))
+        Some(&serde_json::json!(76))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -14284,6 +14378,82 @@ task main -> Int {
 }
 
 #[test]
+fn lint_report_flags_constant_not_expressions() {
+    let source = r#"
+module app.constant_not
+
+task runtime_flag -> Bool {
+  return true
+}
+
+task main -> Bool {
+  bind false_value = !true
+  bind true_value = !false
+  bind runtime_value = !call runtime_flag()
+
+  return !false
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+
+    let report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::ConstantNotExpression],
+            module: None,
+        },
+    );
+
+    assert_eq!(report.schema, LINT_REPORT_SCHEMA);
+    assert_eq!(report.status, "findings");
+    assert_eq!(report.entry_module, "app.constant_not");
+    assert_eq!(report.filters.rules, vec!["constant_not_expression"]);
+    assert_eq!(
+        report.findings.len(),
+        3,
+        "constant not should skip runtime boolean expressions"
+    );
+    assert_eq!(report.findings[0].id, "CONSTANT_NOT_EXPRESSION");
+    assert_eq!(report.findings[0].rule, "constant_not_expression");
+    let nodes: Vec<&str> = report
+        .findings
+        .iter()
+        .map(|finding| finding.node.as_str())
+        .collect();
+    assert!(nodes.contains(&"block:task:app.constant_not.main:stmt:0:expr"));
+    assert!(nodes.contains(&"block:task:app.constant_not.main:stmt:1:expr"));
+    assert!(nodes.contains(&"block:task:app.constant_not.main:stmt:3:expr"));
+    assert_eq!(report.findings[0].module, "app.constant_not");
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|finding| finding.hint.contains("false"))
+    );
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|finding| finding.hint.contains("true"))
+    );
+
+    let scoped_report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::ConstantNotExpression],
+            module: Some("app.other".to_string()),
+        },
+    );
+    assert_eq!(scoped_report.status, "ok");
+    assert!(scoped_report.findings.is_empty());
+}
+
+#[test]
 fn lint_report_flags_empty_if_statements() {
     let source = r#"
 module app.empty_if
@@ -17422,6 +17592,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:templates:constant-map-index-expression",
         "graft:templates:constant-record-field-access-expression",
         "graft:templates:constant-len-expression",
+        "graft:templates:constant-not-expression",
         "graft:templates:empty-if-statement-delete",
         "graft:templates:empty-for-statement-delete",
         "graft:templates:empty-forge-statement-delete",
@@ -17462,6 +17633,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "lint:constant_map_index_expression",
         "lint:constant_record_field_access_expression",
         "lint:constant_len_expression",
+        "lint:constant_not_expression",
         "lint:empty_if_statement",
         "lint:empty_for_statement",
         "lint:empty_forge_statement",
@@ -17491,6 +17663,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:constant-map-index-repair-write-verify",
         "readiness:constant-record-field-access-repair-write-verify",
         "readiness:constant-len-repair-write-verify",
+        "readiness:constant-not-repair-write-verify",
         "readiness:empty-if-repair-write-verify",
         "readiness:empty-for-repair-write-verify",
         "readiness:empty-forge-repair-write-verify",

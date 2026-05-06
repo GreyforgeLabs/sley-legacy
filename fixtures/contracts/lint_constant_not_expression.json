@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.constant_not",
+  "filters": {
+    "module": null,
+    "rules": [
+      "constant_not_expression"
+    ]
+  },
+  "findings": [
+    {
+      "id": "CONSTANT_NOT_EXPRESSION",
+      "rule": "constant_not_expression",
+      "severity": "warning",
+      "message": "task `app.constant_not.main` has a constant not expression `!true`",
+      "node": "block:task:app.constant_not.main:stmt:0:expr",
+      "module": "app.constant_not",
+      "hint": "replace the constant not expression with `false`"
+    }
+  ]
+}

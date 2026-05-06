@@ -1,0 +1,5 @@
+module app.constant_not
+
+task main -> Bool {
+  return !true
+}

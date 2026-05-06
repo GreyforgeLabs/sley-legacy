@@ -976,6 +976,7 @@ enum CliLintRule {
     ConstantMapIndexExpression,
     ConstantRecordFieldAccessExpression,
     ConstantLenExpression,
+    ConstantNotExpression,
     EmptyIfStatement,
     EmptyForStatement,
     EmptyForgeStatement,
@@ -1023,6 +1024,7 @@ impl From<CliLintRule> for LintRule {
                 Self::ConstantRecordFieldAccessExpression
             }
             CliLintRule::ConstantLenExpression => Self::ConstantLenExpression,
+            CliLintRule::ConstantNotExpression => Self::ConstantNotExpression,
             CliLintRule::EmptyIfStatement => Self::EmptyIfStatement,
             CliLintRule::EmptyForStatement => Self::EmptyForStatement,
             CliLintRule::EmptyForgeStatement => Self::EmptyForgeStatement,
