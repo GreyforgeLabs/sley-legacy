@@ -1243,6 +1243,48 @@ task main -> Result<Text, Error> {
 }
 
 #[test]
+fn edit_plan_replace_task_body_template_uses_float_default_return() {
+    let source = r#"
+module app.plan
+
+task main -> Float {
+  return 1.5
+}
+"#;
+    let program = parse_program(source).expect("parse float template plan fixture");
+    let report = build_edit_plan_report_with_options(
+        "app.plan",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("task:app.plan.main".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "ready");
+    let template = report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "replace_task_body")
+        .expect("replace task body template");
+    assert_eq!(
+        template.operation.pointer("/payload/statements/0"),
+        Some(&serde_json::json!("return 0.0"))
+    );
+    let graft: GraftInput =
+        serde_json::from_value(template.operation.clone()).expect("parse float replace template");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:float-replace-task-body-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted = parse_program(&outcome.source.expect("grafted source")).expect("parse grafted");
+    assert_eq!(run_main(&grafted), Ok(Value::Float(0.0)));
+}
+
+#[test]
 fn edit_plan_graft_templates_can_target_program_declaration_surface() {
     let source = r#"
 module app.plan
@@ -8727,6 +8769,39 @@ task main -> Int {
         parse_program("task main -> Int {\n  return call missing()\n}\n").expect("parse source");
     let diagnostics = check_program(&unknown_task);
     assert_has_repair_hint(&diagnostics, "UNKNOWN_TASK", "declare_or_import_task");
+}
+
+#[test]
+fn checker_repair_hints_use_typed_default_sources_for_result_arguments() {
+    let source = r#"
+task main -> Int {
+  return call helper(0)
+}
+
+task helper -> Int {
+  take value: Result<Int, Error>
+
+  return 1
+}
+"#;
+    let program = parse_program(source).expect("parse result argument hint source");
+    let diagnostics = check_program(&program);
+    let diagnostic = diagnostics
+        .iter()
+        .find(|diagnostic| diagnostic.id == "CALL_ARGUMENT_TYPE_MISMATCH")
+        .expect("call argument type mismatch");
+    let hint = diagnostic
+        .repair_hints
+        .iter()
+        .find(|hint| hint.kind == "replace_call_arg")
+        .expect("replace call arg hint");
+    let replacement: serde_json::Value =
+        serde_json::from_str(hint.replacement.as_deref().expect("replacement JSON"))
+            .expect("replacement should parse");
+    assert_eq!(
+        replacement.pointer("/payload/source"),
+        Some(&serde_json::json!("Ok(0)"))
+    );
 }
 
 #[test]

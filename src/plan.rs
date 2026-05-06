@@ -3041,6 +3041,7 @@ fn default_return_statement(return_type: &str) -> String {
 fn default_expression(ty: &str) -> &'static str {
     match ty.trim() {
         "Int" => "0",
+        "Float" => "0.0",
         "Text" => "\"\"",
         "Bool" => "false",
         _ => "TODO_VALUE",
