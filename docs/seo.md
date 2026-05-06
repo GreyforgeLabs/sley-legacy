@@ -7,7 +7,7 @@ Meta description:
 `Run one obvious Sley quality gate for format, check, lint, verify, seal, ZJX handoff, and manifest-backed CLI smoke checks.`
 
 Canonical URL:
-`https://sley.dev/tools/sley-ci`
+`https://sley.greyforge.tech/tools/sley-ci`
 
 Private GitHub URL:
 `https://github.com/GreyforgeLabs/sley-ci`

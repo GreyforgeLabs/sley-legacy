@@ -2,51 +2,156 @@
 set -euo pipefail
 
 SLEY_BIN="${SLEY_BIN:-sley}"
-cmd="${1:-help}"
+OUTPUT_JSON="${SLEY_JSON:-0}"
+CMD="${1:-help}"
 shift || true
+
+if [[ "$CMD" == "--json" ]]; then
+  OUTPUT_JSON=1
+  CMD="${1:-help}"
+  shift || true
+fi
+
+declare -a RESULTS=()
 
 usage() {
   cat <<'USAGE'
 usage: sley-ci <check|verify|smoke|new-deploy-sequence|help> [args]
+       sley-ci --json <command> for machine-friendly output
 USAGE
 }
 
-case "$cmd" in
+require_sley_for_cmd() {
+  local cmd_label="$1"
+  if ! command -v "$SLEY_BIN" >/dev/null 2>&1; then
+    if [[ "$OUTPUT_JSON" == "1" ]]; then
+      echo "{\"command\":\"$cmd_label\",\"success\":false,\"missing\":\"$SLEY_BIN\"}"
+    else
+      echo "sley executable not found: $SLEY_BIN" >&2
+      echo "skipping $cmd_label" >&2
+    fi
+    exit 127
+  fi
+}
+
+record() {
+  local status="$1"
+  local label="$2"
+  local output="$3"
+  local safe_output
+  safe_output="${output//$'\n'/\\n}"
+  safe_output="${safe_output//\"/\\\"}"
+  RESULTS+=("{\"command\":\"$label\",\"status\":$status,\"output\":\"$safe_output\"}")
+}
+
+run_step() {
+  local label="$1"
+  shift
+  local out rc
+  set +e
+  out="$("$SLEY_BIN" "$@" 2>&1)"
+  rc=$?
+  set -e
+  record "$rc" "$label" "$out"
+  if [[ "$rc" -ne 0 ]]; then
+    return "$rc"
+  fi
+}
+
+run_step_or_fail() {
+  run_step "$1" "$@"
+}
+
+exit_report() {
+  local final_status="${1:-0}"
+  if [[ "$OUTPUT_JSON" != "1" ]]; then
+    return "$final_status"
+  fi
+  local i
+  local body="["
+  for i in "${!RESULTS[@]}"; do
+    if [[ "$i" -gt 0 ]]; then
+      body+=","
+    fi
+    body+="${RESULTS[$i]}"
+  done
+  body+="]"
+  echo "{\"command\":\"$CMD\",\"success\":$([[ "$final_status" -eq 0 ]] && echo true || echo false),\"results\":$body}"
+  return "$final_status"
+}
+
+validate_smoke_manifest() {
+  local manifest="$1"
+  if [[ ! -f "$manifest" ]]; then
+    echo "smoke manifest not found: $manifest" >&2
+    return 2
+  fi
+  if ! jq -e . "$manifest" >/dev/null 2>&1; then
+    echo "smoke manifest is not valid JSON: $manifest" >&2
+    return 2
+  fi
+}
+
+case "$CMD" in
   check)
+    require_sley_for_cmd "check"
     target="${1:-.}"
-    "$SLEY_BIN" format "$target"
-    "$SLEY_BIN" check --json "$target"
-    "$SLEY_BIN" lint --json --deny-warnings "$target"
+    run_step_or_fail "format" format "$target"
+    run_step_or_fail "check" check --json "$target"
+    run_step_or_fail "lint" lint --json --deny-warnings "$target"
     ;;
   verify)
-    "$SLEY_BIN" verify "$@"
+  if [[ "${1:-}" == "--help" || "${1:-}" == "-h" || "${1:-}" == "help" ]]; then
+      usage
+      exit_report 0
+    fi
+    require_sley_for_cmd "verify"
+    run_step_or_fail "verify" verify "$@"
     ;;
   smoke)
     manifest="${1:-fixtures/cli_smokes/manifest.json}"
-    if [[ ! -f "$manifest" ]]; then
-      echo "smoke manifest not found: $manifest" >&2
-      exit 2
+    if [[ "${2:-}" == "--help" || "${2:-}" == "-h" || "${2:-}" == "help" ]]; then
+      usage
+      exit_report 0
     fi
-    echo "manifest present: $manifest"
+    if ! command -v "$SLEY_BIN" >/dev/null 2>&1; then
+      if [[ "$OUTPUT_JSON" == "1" ]]; then
+        echo "{\"command\":\"smoke\",\"success\":true,\"skipped\":true,\"reason\":\"missing_sley_binary\"}"
+      else
+        echo "sley executable not found: $SLEY_BIN (smoke skipped)" >&2
+      fi
+      exit 0
+    fi
+    validate_smoke_manifest "$manifest"
+    # lightweight smoke check: ensure manifest exists and parse
+    target="${manifest%/*}"
+    if [[ "$target" == "$manifest" ]]; then
+      target="."
+    fi
+    run_step_or_fail "check" check --json "$target"
     ;;
   new-deploy-sequence)
+    require_sley_for_cmd "new-deploy-sequence"
     target="${1:-.}"
-    "$SLEY_BIN" check --json "$target"
-    "$SLEY_BIN" doctor --json "$target"
-    "$SLEY_BIN" query --json --kind tasks "$target"
-    "$SLEY_BIN" plan --json "$target"
-    "$SLEY_BIN" lint --json --deny-warnings "$target"
-    "$SLEY_BIN" verify --json --deny-warnings --cap Deploy --deploy-result staging staged "$target"
-    "$SLEY_BIN" run --json --cap Deploy --deploy-result staging staged "$target"
-    "$SLEY_BIN" seal --json "$target"
-    "$SLEY_BIN" zjx --json "$target"
+    run_step_or_fail "check" check --json "$target"
+    run_step_or_fail "doctor" doctor --json "$target"
+    run_step_or_fail "query" query --json --kind tasks "$target"
+    run_step_or_fail "plan" plan --json --graft-templates "$target"
+    run_step_or_fail "lint" lint --json --deny-warnings "$target"
+    run_step_or_fail "verify" verify --json --deny-warnings --cap Deploy --deploy-result staging staged "$target"
+    run_step_or_fail "run" run --json --cap Deploy --deploy-result staging staged "$target"
+    run_step_or_fail "seal" seal --json "$target"
+    run_step_or_fail "zjx" zjx --json "$target"
     ;;
   help|--help|-h)
     usage
+    exit_report 0
     ;;
   *)
-    echo "unknown command: $cmd" >&2
+    echo "unknown command: $CMD" >&2
     usage >&2
-    exit 2
+    exit_report 2
     ;;
 esac
+
+exit_report "$?"

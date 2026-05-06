@@ -7,7 +7,7 @@
     "sley.zjx.envelope.v0",
     "sley.cli_smoke.manifest.v0"
   ],
-  "future_url": "https://sley.dev/tools/sley-ci",
+  "future_url": "https://sley.greyforge.tech/tools/sley-ci",
   "github": "https://github.com/GreyforgeLabs/sley-ci",
   "name": "sley-ci",
   "primary_user": "repo maintainers and application developers",
