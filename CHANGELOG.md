@@ -31,6 +31,8 @@ here. Dates use UTC-independent calendar dates from the local repo history.
   query, doctor, seeded run, seeded verify, and deploy artifact packaging.
 - CLI smoke coverage for scoped host authority crossing imported agent-project
   task boundaries, including a deterministic imported-module scope-denial case.
+- Integration coverage for the `agent-project` scaffold when the requested
+  entry module is already named `pipeline`.
 
 ### Changed
 

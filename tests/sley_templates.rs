@@ -211,6 +211,83 @@ fn scaffold_template_pack_creates_lint_clean_runnable_projects() {
     }
 }
 
+#[test]
+fn agent_project_template_avoids_pipeline_module_collision() {
+    let root = temp_project_dir("agent-project-pipeline-collision");
+    let scaffold = sley_cmd()
+        .args([
+            "new",
+            "--json",
+            "--template",
+            "agent-project",
+            "--name",
+            "pipeline-agent",
+            "--module",
+            "agent.pipeline",
+        ])
+        .arg(&root)
+        .output()
+        .expect("run sley new agent-project collision case");
+    let scaffold_stdout =
+        String::from_utf8(scaffold.stdout).expect("scaffold stdout should be utf8");
+    let scaffold_stderr =
+        String::from_utf8(scaffold.stderr).expect("scaffold stderr should be utf8");
+    assert!(
+        scaffold.status.success(),
+        "sley new agent-project collision case failed\nstdout: {scaffold_stdout}\nstderr: {scaffold_stderr}"
+    );
+    let scaffold_json: JsonValue =
+        serde_json::from_str(&scaffold_stdout).expect("parse scaffold JSON");
+    assert_eq!(
+        scaffold_json.pointer("/files/2/path"),
+        Some(&json!("src/agent/pipeline.sley"))
+    );
+    assert_eq!(
+        scaffold_json.pointer("/files/3/path"),
+        Some(&json!("src/agent/agent_pipeline.sley"))
+    );
+
+    let entry_path = root.join("src/agent/pipeline.sley");
+    let pipeline_path = root.join("src/agent/agent_pipeline.sley");
+    assert!(entry_path.exists());
+    assert!(pipeline_path.exists());
+    let entry_source = fs::read_to_string(&entry_path).expect("read generated entry module");
+    assert!(entry_source.contains("import agent.agent_pipeline as pipe"));
+
+    run_success(&root, &["check", "--json", "."]);
+    run_success(&root, &["lint", "--json", "--deny-warnings", "."]);
+    run_success(
+        &root,
+        &[
+            "run",
+            "--json",
+            "--cap",
+            "SecretRead",
+            "--secret",
+            "api_key",
+            "redacted",
+            "--cap",
+            "Network",
+            "--http-text",
+            "https://example.test/profile",
+            "profile ready",
+            "--cap",
+            "ModelCall",
+            "--model-output",
+            "deploy-plan",
+            "plan approved",
+            "--cap",
+            "Deploy",
+            "--deploy-result",
+            "staging",
+            "staged",
+            ".",
+        ],
+    );
+
+    let _ = fs::remove_dir_all(root);
+}
+
 struct TemplateCase {
     template: &'static str,
     expected_action: &'static str,
