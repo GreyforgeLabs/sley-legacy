@@ -39,6 +39,7 @@
       "unused_pure_expression_statement",
       "mutable_binding_never_set",
       "constant_if_expression",
+      "constant_false_while_statement",
       "identity_binary_expression",
       "redundant_boolean_comparison",
       "absorbing_boolean_expression",

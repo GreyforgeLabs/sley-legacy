@@ -568,6 +568,10 @@ fn lint_graft_templates(
         lint_report,
     ));
     templates.extend(lint_constant_if_expression_templates(program, lint_report));
+    templates.extend(lint_constant_false_while_statement_templates(
+        program,
+        lint_report,
+    ));
     templates.extend(lint_identity_binary_expression_templates(
         program,
         lint_report,
@@ -616,6 +620,7 @@ fn is_lint_repair_kind(kind: &str) -> bool {
             | "delete_unused_pure_binding"
             | "delete_unused_pure_expression_statement"
             | "simplify_constant_if_expression"
+            | "delete_constant_false_while_statement"
             | "simplify_identity_binary_expression"
             | "simplify_redundant_boolean_comparison"
             | "simplify_double_negation_expression"
@@ -884,6 +889,33 @@ fn lint_constant_if_expression_templates(
                 surface: finding.node.clone(),
                 operation,
                 editable_json_pointers: vec!["/payload/source".to_string()],
+            })
+        })
+        .collect()
+}
+
+fn lint_constant_false_while_statement_templates(
+    program: &Program,
+    lint_report: &LintReport,
+) -> Vec<EditPlanGraftTemplate> {
+    lint_report
+        .findings
+        .iter()
+        .filter(|finding| finding.id == "CONSTANT_FALSE_WHILE_STATEMENT")
+        .filter_map(|finding| {
+            let operation = json!({
+                "op": "DeleteNode",
+                "target": finding.node
+            });
+            if !delete_affordance_checks(program, &operation) {
+                return None;
+            }
+            Some(EditPlanGraftTemplate {
+                kind: "delete_constant_false_while_statement".to_string(),
+                reason: "delete this never-executed while statement".to_string(),
+                surface: finding.node.clone(),
+                operation,
+                editable_json_pointers: Vec::new(),
             })
         })
         .collect()

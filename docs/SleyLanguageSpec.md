@@ -788,6 +788,9 @@ the no-op pure expression statement preserves a checked program.
 `simplify_constant_if_expression` `ReplaceExpression` templates when replacing
 an expression-level `if true/false` with the branch that executes preserves a
 checked program.
+`constant_false_while_statement` lint findings become checked
+`delete_constant_false_while_statement` `DeleteNode` templates when deleting a
+never-executed `while false` statement preserves a checked program.
 `identity_binary_expression` lint findings become checked
 `simplify_identity_binary_expression` `ReplaceExpression` templates when
 replacing `x + 0`, `x * 1`, `flag && true`, or `flag || false` with the
@@ -937,7 +940,9 @@ delete-safe pure expression and discards it; and `mutable_binding_never_set`,
 which warns when a mutable local such as `state` or `tally` is never assigned
 with `set`; and `constant_if_expression`, which warns when an expression-level
 `if true/false { ... } else { ... }` can be replaced with the branch that
-executes; and `identity_binary_expression`, which warns when a checked identity
+executes; and `constant_false_while_statement`, which warns when a
+`while false { ... }` statement can be removed as never-executed code; and
+`identity_binary_expression`, which warns when a checked identity
 binary expression such as `x + 0`, `x * 1`, `flag && true`, or `flag || false`
 can be replaced with the non-identity side; and
 `redundant_boolean_comparison`, which warns when a checked comparison against
@@ -963,6 +968,7 @@ guaranteed `return` in the same block.
 `--rule unqualified-imported-call`, `--rule unused-pure-binding`, or
 `--rule unused-pure-expression-statement`, or
 `--rule mutable-binding-never-set`, `--rule constant-if-expression`, or
+`--rule constant-false-while-statement`, or
 `--rule identity-binary-expression`, or
 `--rule redundant-boolean-comparison`, or
 `--rule absorbing-boolean-expression`, or `--rule self-comparison-expression`, or
@@ -1071,7 +1077,8 @@ refuse generic data disguised as Sley artifacts before compression begins.
   raw-host-adapter and unchecked-result migration warnings with checked
   propagation templates, unqualified imported-call qualification templates,
   unused pure binding cleanup templates, unused pure expression statement
-  cleanup templates, unreachable statement cleanup templates, and mutable
+  cleanup templates, constant-false while statement cleanup templates,
+  unreachable statement cleanup templates, and mutable
   binding conversion transactions, constant-if, identity binary expression, redundant boolean
   comparison, and double negation simplification templates, plus explicit
   module style warnings;
@@ -1091,8 +1098,8 @@ refuse generic data disguised as Sley artifacts before compression begins.
   `command` dry-run and add optional `write_command` for the mutating command.
   The CLI smoke suite locks previewed lint-repair writes followed by strict
   verify for file and project targets, including unused pure binding cleanup,
-  unused pure expression statement cleanup, unreachable statement cleanup, and
-  mutable binding conversion,
+  unused pure expression statement cleanup, constant-false while statement
+  cleanup, unreachable statement cleanup, and mutable binding conversion,
   plus a repaired generated deploy
   scaffold re-verified with seeded `Deploy` authority and a strict seeded
   deploy verify report for the generated `sley new --template deploy` starter,

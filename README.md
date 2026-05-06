@@ -116,6 +116,7 @@ Implemented now:
   `--rule unqualified-imported-call`, `--rule unused-pure-binding`,
   `--rule unused-pure-expression-statement`, or
   `--rule mutable-binding-never-set`, `--rule constant-if-expression`,
+  `--rule constant-false-while-statement`,
   `--rule identity-binary-expression`, or
   `--rule redundant-boolean-comparison`, or
   `--rule absorbing-boolean-expression`, or
@@ -170,6 +171,8 @@ Implemented now:
   expression statements,
   `simplify_constant_if_expression` templates for constant `if` expressions
   that can be replaced by the branch that executes,
+  `delete_constant_false_while_statement` templates for never-executed
+  `while false` statements,
   `simplify_identity_binary_expression` templates for identity binary
   expressions that can be replaced by the non-identity side,
   `simplify_redundant_boolean_comparison` templates for boolean comparisons
@@ -635,6 +638,7 @@ coverage, unused pure binding delete templates with write/verify coverage,
 unused pure expression statement delete templates with write/verify coverage,
 mutable-binding conversion transactions with write/verify coverage,
 constant-if expression simplification templates with write/verify coverage,
+constant-false while statement delete templates with write/verify coverage,
 identity binary expression simplification templates with write/verify coverage,
 redundant boolean comparison simplification templates with write/verify
 coverage,
