@@ -9754,6 +9754,31 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
         Some(&serde_json::json!("sley.diagnostics.report.v0"))
     );
 
+    let corpus_dir = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
+        .current_dir(&repo_root)
+        .args(["corpus", "--json", "fixtures/corpus"])
+        .output()
+        .expect("run sley-ci corpus directory form");
+    assert!(
+        corpus_dir.status.success(),
+        "sley-ci corpus directory form failed: {}",
+        String::from_utf8_lossy(&corpus_dir.stderr)
+    );
+    let corpus_dir_json: serde_json::Value =
+        serde_json::from_slice(&corpus_dir.stdout).expect("parse sley-ci corpus dir JSON");
+    assert_eq!(
+        corpus_dir_json.pointer("/status"),
+        Some(&serde_json::json!("passed"))
+    );
+    assert_eq!(
+        corpus_dir_json.pointer("/manifest"),
+        Some(&serde_json::json!("fixtures/corpus/manifest.json"))
+    );
+    assert_eq!(
+        corpus_dir_json.pointer("/summary/step_count"),
+        Some(&serde_json::json!(43))
+    );
+
     let examples = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
         .current_dir(&repo_root)
         .args(["examples", "--json", "examples"])
