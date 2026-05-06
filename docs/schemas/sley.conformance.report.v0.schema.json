@@ -13,6 +13,7 @@
     "smoke",
     "examples",
     "tests",
+    "release",
     "issues"
   ],
   "properties": {
@@ -25,6 +26,7 @@
     "smoke": { "$ref": "#/$defs/smoke" },
     "examples": { "$ref": "#/$defs/examples" },
     "tests": { "$ref": "#/$defs/tests" },
+    "release": { "$ref": "#/$defs/release" },
     "issues": {
       "type": "array",
       "items": { "$ref": "#/$defs/issue" }
@@ -47,6 +49,7 @@
         "integration_test_count",
         "declared_integration_test_count",
         "test_count_matches_declared",
+        "public_release_blocker_count",
         "issue_count"
       ],
       "properties": {
@@ -66,6 +69,7 @@
           "minimum": 0
         },
         "test_count_matches_declared": { "type": "boolean" },
+        "public_release_blocker_count": { "type": "integer", "minimum": 0 },
         "issue_count": { "type": "integer", "minimum": 0 }
       },
       "additionalProperties": false
@@ -247,6 +251,97 @@
           "minimum": 0
         },
         "declared_matches_actual": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "release": {
+      "type": "object",
+      "required": [
+        "public_release_ready",
+        "blocker_count",
+        "blockers",
+        "cargo_package",
+        "tree_sitter_package",
+        "license"
+      ],
+      "properties": {
+        "public_release_ready": { "type": "boolean" },
+        "blocker_count": { "type": "integer", "minimum": 0 },
+        "blockers": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/issue" }
+        },
+        "cargo_package": { "$ref": "#/$defs/cargoPackage" },
+        "tree_sitter_package": { "$ref": "#/$defs/treeSitterPackage" },
+        "license": { "$ref": "#/$defs/license" }
+      },
+      "additionalProperties": false
+    },
+    "cargoPackage": {
+      "type": "object",
+      "required": [
+        "manifest",
+        "name",
+        "version",
+        "edition",
+        "rust_version",
+        "description_present",
+        "readme_present",
+        "repository_present",
+        "license",
+        "license_file",
+        "publish",
+        "publish_restricted"
+      ],
+      "properties": {
+        "manifest": { "type": "string", "minLength": 1 },
+        "name": { "type": ["string", "null"], "minLength": 1 },
+        "version": { "type": ["string", "null"], "minLength": 1 },
+        "edition": { "type": ["string", "null"], "minLength": 1 },
+        "rust_version": { "type": ["string", "null"], "minLength": 1 },
+        "description_present": { "type": "boolean" },
+        "readme_present": { "type": "boolean" },
+        "repository_present": { "type": "boolean" },
+        "license": { "type": ["string", "null"], "minLength": 1 },
+        "license_file": { "type": ["string", "null"], "minLength": 1 },
+        "publish": { "type": ["string", "null"], "minLength": 1 },
+        "publish_restricted": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "treeSitterPackage": {
+      "type": "object",
+      "required": [
+        "package_json",
+        "config",
+        "name",
+        "version",
+        "private",
+        "package_license",
+        "package_description_present",
+        "config_license",
+        "config_description_present"
+      ],
+      "properties": {
+        "package_json": { "type": "string", "minLength": 1 },
+        "config": { "type": "string", "minLength": 1 },
+        "name": { "type": ["string", "null"], "minLength": 1 },
+        "version": { "type": ["string", "null"], "minLength": 1 },
+        "private": { "type": ["boolean", "null"] },
+        "package_license": { "type": ["string", "null"], "minLength": 1 },
+        "package_description_present": { "type": "boolean" },
+        "config_license": { "type": ["string", "null"], "minLength": 1 },
+        "config_description_present": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "license": {
+      "type": "object",
+      "required": ["file", "present", "operator_decision_required"],
+      "properties": {
+        "file": { "type": "string", "minLength": 1 },
+        "present": { "type": "boolean" },
+        "operator_decision_required": { "type": "boolean" }
       },
       "additionalProperties": false
     },

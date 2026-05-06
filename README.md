@@ -164,7 +164,8 @@ Implemented now:
 - in-tree `sley-conformance` utility with `report` and `coverage` commands for
   schema/fixture instance coverage, contract validation status, corpus coverage
   tags, smoke coverage tags, packaged example counts, and the declared
-  integration-test count, emitting
+  integration-test count, plus non-gating public-release packaging blockers,
+  emitting
   `schema: "sley.conformance.report.v0"` and
   `schema: "sley.conformance.coverage.v0"`
 - in-tree `tree-sitter-sley` syntax grammar bootstrap with checked
