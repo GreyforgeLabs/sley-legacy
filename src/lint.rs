@@ -4614,7 +4614,7 @@ fn collect_overwritten_set_statements_in_block(
         ) = (&current.kind, &next.kind)
             && name == next_name
             && identifier_name(expr) != Some(name.as_str())
-            && identifier_name(next_expr) != Some(name.as_str())
+            && !expr_uses_identifier(next_expr, name)
             && expr_is_delete_safe_pure(expr)
             && expr_is_delete_safe_pure(next_expr)
         {
