@@ -125,9 +125,8 @@ Current verified surface:
   generated first-run sequences are executed by tests, including strict seeded
   `sley verify --json --deny-warnings` readiness smokes and local
   `sley deploy --json --dry-run` package reports for the generated deploy and
-  agent projects, direct `sley-ci run` seeded execution coverage, and
-  `sley-ci verify`/`sley-ci deploy` handoffs for the seeded agent project,
-  plus warning-state doctor/verify next-actions that route to
+  agent projects and `sley-ci run`/`sley-ci verify`/`sley-ci deploy` handoffs
+  for the seeded agent project, plus warning-state doctor/verify next-actions that route to
   `sley plan --json --graft-templates` plus unambiguous
   `sley fix --dry-run` previews carrying explicit `write_command` vectors with
   a staged write-and-verify smoke for a previewed repair plus a project-level

@@ -365,6 +365,11 @@ fn next_actions(template: ScaffoldTemplate) -> Vec<ScaffoldNextAction> {
                 seeded_agent_command("sley", "run"),
             ),
             next_action(
+                "ci_run_seeded_agent",
+                "run the same deterministic execution through the local CI wrapper",
+                seeded_agent_command("sley-ci", "run"),
+            ),
+            next_action(
                 "prepare_deploy_package",
                 "build the local dry-run deploy report after seeded agent verification",
                 seeded_agent_command("sley", "deploy"),
