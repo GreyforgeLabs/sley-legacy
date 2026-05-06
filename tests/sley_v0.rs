@@ -8981,11 +8981,11 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/corpus_accepted_count"),
-        Some(&serde_json::json!(15))
+        Some(&serde_json::json!(16))
     );
     assert_eq!(
         report_json.pointer("/summary/corpus_rejected_count"),
-        Some(&serde_json::json!(16))
+        Some(&serde_json::json!(17))
     );
     assert_eq!(
         report_json.pointer("/summary/smoke_case_count"),
@@ -9858,7 +9858,7 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     );
     assert_eq!(
         corpus_json.pointer("/summary/step_count"),
-        Some(&serde_json::json!(46))
+        Some(&serde_json::json!(49))
     );
     assert_eq!(
         corpus_json.pointer("/steps/0/name"),
@@ -9877,13 +9877,13 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
         ))
     );
     assert_eq!(
-        corpus_json.pointer("/steps/30/name"),
+        corpus_json.pointer("/steps/32/name"),
         Some(&serde_json::json!(
             "rejected_check:rejected/authority/missing_database_read_effect.sley"
         ))
     );
     assert_eq!(
-        corpus_json.pointer("/steps/30/stdout_schema"),
+        corpus_json.pointer("/steps/32/stdout_schema"),
         Some(&serde_json::json!("sley.diagnostics.report.v0"))
     );
 
@@ -9909,7 +9909,7 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     );
     assert_eq!(
         corpus_dir_json.pointer("/summary/step_count"),
-        Some(&serde_json::json!(46))
+        Some(&serde_json::json!(49))
     );
 
     let examples = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
@@ -19498,6 +19498,7 @@ fn assert_corpus_manifest_has_release_coverage(manifest: &CorpusManifest) {
         "accepted:SecretRead",
         "accepted:Shell",
         "accepted:Spend",
+        "accepted:agent-spend-authority",
         "accepted:agent-split-authority",
         "rejected:DatabaseRead",
         "rejected:DatabaseWrite",
@@ -19510,6 +19511,7 @@ fn assert_corpus_manifest_has_release_coverage(manifest: &CorpusManifest) {
         "rejected:Shell",
         "rejected:Spend",
         "rejected:agent-transitive-effect",
+        "rejected:spend-transitive-effect",
         "diagnostic:EFFECT_UNAUTHORIZED",
         "diagnostic:DUPLICATE_TASK",
         "diagnostic:DUPLICATE_TYPE",

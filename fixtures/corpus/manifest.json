@@ -117,6 +117,16 @@
       ]
     },
     {
+      "path": "accepted/agent_spend_authority.sley",
+      "covers": [
+        "accepted:agent-spend-authority",
+        "host:spend.try_authorize",
+        "authority:declared-effects",
+        "authority:transitive-effects",
+        "formatter:round-trip"
+      ]
+    },
+    {
       "path": "accepted/mutable_sum.sley",
       "covers": [
         "language:mutable-loop",
@@ -236,6 +246,16 @@
         "rejected:agent-transitive-effect",
         "host:secrets.try_get",
         "host:http.try_get_text",
+        "authority:missing-effect",
+        "authority:transitive-effects",
+        "diagnostic:EFFECT_UNAUTHORIZED"
+      ]
+    },
+    {
+      "path": "rejected/authority/missing_transitive_spend_effect.sley",
+      "covers": [
+        "rejected:spend-transitive-effect",
+        "host:spend.try_authorize",
         "authority:missing-effect",
         "authority:transitive-effects",
         "diagnostic:EFFECT_UNAUTHORIZED"
