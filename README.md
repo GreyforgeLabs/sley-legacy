@@ -114,8 +114,9 @@ Implemented now:
   `--rule unused-private-effect`, `--rule raw-host-adapter`,
   `--rule missing-module-declaration`, `--rule unchecked-result`, or
   `--rule unqualified-imported-call`, `--rule unused-pure-binding`, or
-  `--rule mutable-binding-never-set`, `--rule constant-if-expression`, or
-  `--rule identity-binary-expression`
+  `--rule mutable-binding-never-set`, `--rule constant-if-expression`,
+  `--rule identity-binary-expression`, or
+  `--rule redundant-boolean-comparison`
   filters, and
   `schema: "sley.lint.report.v0"` for warning-grade graph and authority lints
 - in-tree `sley-contract` utility scaffold with `inventory`, `check-fixtures`,
@@ -162,6 +163,8 @@ Implemented now:
   that can be replaced by the branch that executes,
   `simplify_identity_binary_expression` templates for identity binary
   expressions that can be replaced by the non-identity side,
+  `simplify_redundant_boolean_comparison` templates for boolean comparisons
+  against `true` or `false`,
   `--template-surface <surface>` targeting for task, block, statement, take,
   expression, program, or lint surfaces, including checked task-body and block
   `insert_statement` starters, checked statement-surface `replace_statement`
@@ -612,6 +615,8 @@ coverage, unused pure binding delete templates with write/verify coverage,
 mutable-binding conversion transactions with write/verify coverage,
 constant-if expression simplification templates with write/verify coverage,
 identity binary expression simplification templates with write/verify coverage,
+redundant boolean comparison simplification templates with write/verify
+coverage,
 private-task lint rules,
 declaration/import/API hygiene, authority hygiene, and explicit module style
 warnings. The next logical phase is to keep broadening style and migration

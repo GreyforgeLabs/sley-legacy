@@ -963,6 +963,7 @@ enum CliLintRule {
     MutableBindingNeverSet,
     ConstantIfExpression,
     IdentityBinaryExpression,
+    RedundantBooleanComparison,
 }
 
 impl From<CliLintRule> for LintRule {
@@ -983,6 +984,7 @@ impl From<CliLintRule> for LintRule {
             CliLintRule::MutableBindingNeverSet => Self::MutableBindingNeverSet,
             CliLintRule::ConstantIfExpression => Self::ConstantIfExpression,
             CliLintRule::IdentityBinaryExpression => Self::IdentityBinaryExpression,
+            CliLintRule::RedundantBooleanComparison => Self::RedundantBooleanComparison,
         }
     }
 }
