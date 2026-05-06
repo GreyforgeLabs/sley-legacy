@@ -1752,6 +1752,41 @@
       }
     },
     {
+      "name": "fix_nested_block_surface_insert_override_dry_run_json",
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "insert_statement",
+        "--template-surface",
+        "block:task:app.collections.sum:stmt:2:body",
+        "--source",
+        "set index = index + 2",
+        "--position",
+        "1",
+        "--dry-run",
+        "examples/collections.sley"
+      ],
+      "covers": [
+        "cli:fix",
+        "fix:payload-override-source",
+        "fix:payload-override-position",
+        "graft:templates:block-surface-insert",
+        "graft:templates:nested-block-surface",
+        "json:sley.graft.outcome.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_contains": ["set index = index + 2"],
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/operation", "value": "InsertStatement" },
+          { "pointer": "/provenance/0/targets/0", "value": "block:task:app.collections.sum:stmt:2:body" }
+        ]
+      }
+    },
+    {
       "name": "plan_statement_surface_emit_delete_graft_json",
       "args": [
         "plan",
@@ -1860,6 +1895,68 @@
           { "pointer": "/status", "value": "accepted" },
           { "pointer": "/provenance/0/operation", "value": "ReplaceExpression" },
           { "pointer": "/provenance/0/targets/0", "value": "block:task:app.math.double:stmt:0:expr:right" }
+        ]
+      }
+    },
+    {
+      "name": "fix_expression_surface_replace_override_dry_run_json",
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "replace_expression",
+        "--template-surface",
+        "block:task:app.math.double:stmt:0:expr:right",
+        "--source",
+        "3",
+        "--dry-run",
+        "examples/project"
+      ],
+      "covers": [
+        "cli:fix",
+        "fix:payload-override-source",
+        "graft:templates:expression-surface-replace",
+        "json:sley.graft.outcome.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_contains": ["return value * 3"],
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/operation", "value": "ReplaceExpression" },
+          { "pointer": "/provenance/0/targets/0", "value": "block:task:app.math.double:stmt:0:expr:right" }
+        ]
+      }
+    },
+    {
+      "name": "fix_take_surface_source_override_rejected_json",
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "move_take",
+        "--template-surface",
+        "take:task:app.math.double:0:value",
+        "--source",
+        "0",
+        "--dry-run",
+        "examples/project"
+      ],
+      "covers": [
+        "cli:fix",
+        "diagnostic:FIX_OVERRIDE_UNSUPPORTED",
+        "fix:payload-override-unsupported",
+        "graft:templates:take-surface",
+        "json:sley.graft.outcome.v0"
+      ],
+      "expect": {
+        "success": false,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "rejected" },
+          { "pointer": "/diagnostics/0/id", "value": "FIX_OVERRIDE_UNSUPPORTED" },
+          { "pointer": "/diagnostics/0/repair_hints/0/kind", "value": "inspect_editable_pointers" }
         ]
       }
     },

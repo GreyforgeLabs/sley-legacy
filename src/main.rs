@@ -157,6 +157,10 @@ enum Command {
         kind: String,
         #[arg(long)]
         template_surface: Option<String>,
+        #[arg(long, value_name = "SOURCE")]
+        source: Option<String>,
+        #[arg(long, value_name = "POSITION")]
+        position: Option<usize>,
         #[arg(long)]
         write: bool,
         #[arg(long, conflicts_with = "write")]
@@ -601,6 +605,8 @@ fn run(cli: Cli) -> Result<()> {
             json,
             kind,
             template_surface,
+            source,
+            position,
             write,
             dry_run,
             actor,
@@ -622,7 +628,9 @@ fn run(cli: Cli) -> Result<()> {
                 emit_graft_outcome(&outcome, json)?;
                 anyhow::bail!("fix plan blocked");
             }
-            let graft_value = match planned_graft_value(&report, &kind) {
+            let graft_value = match planned_graft_value(&report, &kind)
+                .and_then(|value| apply_fix_template_overrides(value, &kind, source, position))
+            {
                 Ok(value) => value,
                 Err(diagnostic) => {
                     let outcome = rejected_graft_outcome(vec![diagnostic]);
@@ -1666,6 +1674,83 @@ fn planned_graft_value(
             "Run `sley plan --json --graft-templates --template-surface <surface> <target>`",
         ))),
     }
+}
+
+fn apply_fix_template_overrides(
+    mut value: JsonValue,
+    kind: &str,
+    source: Option<String>,
+    position: Option<usize>,
+) -> std::result::Result<JsonValue, Diagnostic> {
+    if source.is_none() && position.is_none() {
+        return Ok(value);
+    }
+    if value.get("transaction").is_some() || value.get("ops").is_some() {
+        return Err(fix_override_unsupported(
+            kind,
+            "fix payload overrides are supported only for single-operation templates",
+        ));
+    }
+    if let Some(source) = source {
+        override_fix_payload_string(&mut value, kind, "source", source)?;
+    }
+    if let Some(position) = position {
+        override_fix_payload_usize(&mut value, kind, "position", position)?;
+    }
+    Ok(value)
+}
+
+fn override_fix_payload_string(
+    value: &mut JsonValue,
+    kind: &str,
+    field: &str,
+    replacement: String,
+) -> std::result::Result<(), Diagnostic> {
+    let pointer = format!("/payload/{field}");
+    let Some(slot) = value.pointer_mut(&pointer) else {
+        return Err(fix_override_unsupported(
+            kind,
+            format!("fix template `{kind}` does not expose editable `{pointer}`"),
+        ));
+    };
+    if !slot.is_string() {
+        return Err(fix_override_unsupported(
+            kind,
+            format!("fix template `{kind}` exposes `{pointer}`, but it is not a string"),
+        ));
+    }
+    *slot = JsonValue::String(replacement);
+    Ok(())
+}
+
+fn override_fix_payload_usize(
+    value: &mut JsonValue,
+    kind: &str,
+    field: &str,
+    replacement: usize,
+) -> std::result::Result<(), Diagnostic> {
+    let pointer = format!("/payload/{field}");
+    let Some(slot) = value.pointer_mut(&pointer) else {
+        return Err(fix_override_unsupported(
+            kind,
+            format!("fix template `{kind}` does not expose editable `{pointer}`"),
+        ));
+    };
+    if slot.as_u64().is_none() {
+        return Err(fix_override_unsupported(
+            kind,
+            format!("fix template `{kind}` exposes `{pointer}`, but it is not an unsigned integer"),
+        ));
+    }
+    *slot = serde_json::json!(replacement);
+    Ok(())
+}
+
+fn fix_override_unsupported(kind: &str, message: impl Into<String>) -> Diagnostic {
+    Diagnostic::error("FIX_OVERRIDE_UNSUPPORTED", message)
+        .with_repair_hint(RepairHint::new("inspect_editable_pointers").with_replacement(format!(
+            "Run `sley plan --json --graft-templates [--template-surface <surface>] <target>` and inspect `editable_json_pointers` before using --source/--position with `{kind}`"
+        )))
 }
 
 fn edit_plan_options_for_target(

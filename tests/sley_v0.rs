@@ -10406,6 +10406,120 @@ task main -> Unit {
 }
 
 #[test]
+fn fix_template_source_and_position_overrides_dry_run_without_writing() {
+    let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let target = repo_root.join("examples/collections.sley");
+    let original = fs::read_to_string(&target).expect("read collections example");
+
+    let output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args([
+            "fix",
+            "--json",
+            "--kind",
+            "insert_statement",
+            "--template-surface",
+            "block:task:app.collections.sum:stmt:2:body",
+            "--source",
+            "set index = index + 2",
+            "--position",
+            "1",
+            "--dry-run",
+        ])
+        .arg(&target)
+        .output()
+        .expect("dry-run insert override fix");
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+    assert!(
+        output.status.success(),
+        "fix dry-run should accept overridden insert; stdout={stdout} stderr={}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let outcome: GraftOutcome = serde_json::from_str(&stdout).expect("parse outcome");
+    assert_eq!(outcome.status, "accepted");
+    assert_eq!(outcome.provenance[0].operation, "InsertStatement");
+    let source = outcome.source.as_deref().expect("dry-run source");
+    assert!(
+        source.contains("set total = total + values[index]\n    set index = index + 2\n    set index = index + 1"),
+        "{source}"
+    );
+    assert_eq!(
+        fs::read_to_string(&target).expect("read collections after dry-run"),
+        original
+    );
+}
+
+#[test]
+fn fix_template_source_override_replaces_expression_and_rejects_unsupported_fields() {
+    let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let target = repo_root.join("examples/project");
+    let math_file = repo_root.join("examples/project/src/app/math.sley");
+    let original_math = fs::read_to_string(&math_file).expect("read math example");
+
+    let output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args([
+            "fix",
+            "--json",
+            "--kind",
+            "replace_expression",
+            "--template-surface",
+            "block:task:app.math.double:stmt:0:expr:right",
+            "--source",
+            "3",
+            "--dry-run",
+        ])
+        .arg(&target)
+        .output()
+        .expect("dry-run replace expression override fix");
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+    assert!(
+        output.status.success(),
+        "fix dry-run should accept overridden replacement; stdout={stdout} stderr={}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let outcome: GraftOutcome = serde_json::from_str(&stdout).expect("parse outcome");
+    assert_eq!(outcome.status, "accepted");
+    assert_eq!(outcome.provenance[0].operation, "ReplaceExpression");
+    assert!(
+        outcome
+            .source
+            .as_deref()
+            .expect("dry-run source")
+            .contains("return value * 3"),
+        "{outcome:#?}"
+    );
+    assert_eq!(
+        fs::read_to_string(&math_file).expect("read math after dry-run"),
+        original_math
+    );
+
+    let unsupported = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args([
+            "fix",
+            "--json",
+            "--kind",
+            "move_take",
+            "--template-surface",
+            "take:task:app.math.double:0:value",
+            "--source",
+            "0",
+            "--dry-run",
+        ])
+        .arg(&target)
+        .output()
+        .expect("dry-run unsupported source override");
+    let unsupported_stdout = String::from_utf8(unsupported.stdout).expect("stdout utf8");
+    assert!(
+        !unsupported.status.success(),
+        "unsupported override should reject; stdout={unsupported_stdout} stderr={}",
+        String::from_utf8_lossy(&unsupported.stderr)
+    );
+    let rejected: GraftOutcome =
+        serde_json::from_str(&unsupported_stdout).expect("parse rejected outcome");
+    assert_eq!(rejected.status, "rejected");
+    assert_eq!(rejected.diagnostics[0].id, "FIX_OVERRIDE_UNSUPPORTED");
+}
+
+#[test]
 fn file_fix_write_adds_module_declaration() {
     let root = temp_project_dir("file-fix-module-declaration");
     fs::create_dir_all(&root).expect("create temp dir");
