@@ -785,6 +785,10 @@ binding statement preserves a checked program.
 `simplify_constant_if_expression` `ReplaceExpression` templates when replacing
 an expression-level `if true/false` with the branch that executes preserves a
 checked program.
+`identity_binary_expression` lint findings become checked
+`simplify_identity_binary_expression` `ReplaceExpression` templates when
+replacing `x + 0`, `x * 1`, `flag && true`, or `flag || false` with the
+non-identity side preserves a checked program.
 `--template-surface program` emits checked `add_task`,
 `add_type_declaration`, `add_effect_declaration`, and `add_import` starters for
 adding new declarations and imports to the current program module.
@@ -901,15 +905,17 @@ indexing, division, or remainder operation; and `mutable_binding_never_set`,
 which warns when a mutable local such as `state` or `tally` is never assigned
 with `set`; and `constant_if_expression`, which warns when an expression-level
 `if true/false { ... } else { ... }` can be replaced with the branch that
-executes.
+executes; and `identity_binary_expression`, which warns when a checked identity
+binary expression such as `x + 0`, `x * 1`, `flag && true`, or `flag || false`
+can be replaced with the non-identity side.
 `--module <module>` scopes the lint to one module. `--rule unused-private-task`,
 `--rule unreachable-private-task`, `--rule unused-declared-effect`,
 `--rule unused-import`, `--rule unused-take`, `--rule unused-private-type`,
 `--rule unused-private-effect`, `--rule raw-host-adapter`,
 `--rule missing-module-declaration`, `--rule unchecked-result`, or
 `--rule unqualified-imported-call`, `--rule unused-pure-binding`, or
-`--rule mutable-binding-never-set`, or `--rule constant-if-expression` selects
-one rule explicitly, and
+`--rule mutable-binding-never-set`, `--rule constant-if-expression`, or
+`--rule identity-binary-expression` selects one rule explicitly, and
 `--deny-warnings` turns findings into a nonzero CLI exit after printing the
 report. The v0 JSON root is `sley.lint.report.v0`.
 
@@ -1011,8 +1017,8 @@ refuse generic data disguised as Sley artifacts before compression begins.
   raw-host-adapter and unchecked-result migration warnings with checked
   propagation templates, unqualified imported-call qualification templates,
   unused pure binding cleanup templates, and mutable binding conversion
-  transactions, constant-if expression simplification templates, plus explicit
-  module style warnings;
+  transactions, constant-if and identity binary expression simplification
+  templates, plus explicit module style warnings;
   broader style and migration lints remain later work
 - `sley plan` emits deterministic ranked task edit surfaces, optional starter
   graft operation templates, rename-plus-call-site and add-take-plus-call-arg

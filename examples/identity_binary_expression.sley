@@ -1,0 +1,7 @@
+module app.identity_binary
+
+task main -> Int {
+  bind base = 41
+
+  return base + 0
+}

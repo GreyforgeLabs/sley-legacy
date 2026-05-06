@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.identity_binary",
+  "filters": {
+    "module": null,
+    "rules": [
+      "identity_binary_expression"
+    ]
+  },
+  "findings": [
+    {
+      "id": "IDENTITY_BINARY_EXPRESSION",
+      "rule": "identity_binary_expression",
+      "severity": "warning",
+      "message": "task `app.identity_binary.main` has an identity binary expression `base + 0`",
+      "node": "block:task:app.identity_binary.main:stmt:1:expr",
+      "module": "app.identity_binary",
+      "hint": "replace the identity binary expression with `base`"
+    }
+  ]
+}

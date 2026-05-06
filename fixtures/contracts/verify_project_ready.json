@@ -37,7 +37,8 @@
       "unqualified_imported_call",
       "unused_pure_binding",
       "mutable_binding_never_set",
-      "constant_if_expression"
+      "constant_if_expression",
+      "identity_binary_expression"
     ],
     "finding_count": 0,
     "findings": []

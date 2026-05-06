@@ -2547,6 +2547,7 @@
           { "pointer": "/filters/rules/11", "value": "unused_pure_binding" },
           { "pointer": "/filters/rules/12", "value": "mutable_binding_never_set" },
           { "pointer": "/filters/rules/13", "value": "constant_if_expression" },
+          { "pointer": "/filters/rules/14", "value": "identity_binary_expression" },
           { "pointer": "/findings", "value": [] }
         ]
       }
@@ -3207,6 +3208,155 @@
         "json:sley.lint.report.v0",
         "lint:constant_if_expression",
         "readiness:constant-if-repair-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.verify.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/summary/warning_count", "value": 0 },
+          { "pointer": "/summary/lint_finding_count", "value": 0 },
+          { "pointer": "/runtime/value/kind", "value": "Int" },
+          { "pointer": "/runtime/value/value", "value": 12 },
+          { "pointer": "/lint/status", "value": "ok" }
+        ]
+      }
+    },
+    {
+      "name": "lint_identity_binary_expression_rule_json",
+      "args": [
+        "lint",
+        "--json",
+        "--rule",
+        "identity-binary-expression",
+        "examples/identity_binary_expression.sley"
+      ],
+      "covers": [
+        "cli:lint",
+        "lint:identity_binary_expression",
+        "json:sley.lint.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.lint.report.v0" },
+          { "pointer": "/status", "value": "findings" },
+          { "pointer": "/filters/rules/0", "value": "identity_binary_expression" },
+          { "pointer": "/findings/0/id", "value": "IDENTITY_BINARY_EXPRESSION" },
+          { "pointer": "/findings/0/node", "value": "block:task:app.identity_binary.main:stmt:1:expr" }
+        ]
+      }
+    },
+    {
+      "name": "plan_identity_binary_expression_template_json",
+      "args": [
+        "plan",
+        "--json",
+        "--graft-templates",
+        "--template-surface",
+        "block:task:app.identity_binary.main:stmt:1:expr",
+        "examples/identity_binary_expression.sley"
+      ],
+      "covers": [
+        "cli:plan",
+        "graft:templates:identity-binary-expression",
+        "lint:identity_binary_expression",
+        "json:sley.edit_plan.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.edit_plan.report.v0" },
+          { "pointer": "/status", "value": "warnings" },
+          { "pointer": "/lint/findings/0/id", "value": "IDENTITY_BINARY_EXPRESSION" },
+          { "pointer": "/graft_templates/0/kind", "value": "simplify_identity_binary_expression" },
+          { "pointer": "/graft_templates/0/surface", "value": "block:task:app.identity_binary.main:stmt:1:expr" },
+          { "pointer": "/graft_templates/0/operation/op", "value": "ReplaceExpression" },
+          { "pointer": "/graft_templates/0/operation/payload/source", "value": "base" }
+        ]
+      }
+    },
+    {
+      "name": "fix_identity_binary_expression_write_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/fix-identity-binary/main.sley",
+          "content": "module app.identity_fix\n\ntask main -> Int {\n  bind base = 12\n\n  return base + 0\n}\n"
+        }
+      ],
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "simplify_identity_binary_expression",
+        "--template-surface",
+        "block:task:app.identity_fix.main:stmt:1:expr",
+        "--write",
+        "--actor",
+        "agent:cli-smoke",
+        "{tmp}/fix-identity-binary/main.sley"
+      ],
+      "covers": [
+        "cli:fix",
+        "cli:fix-write",
+        "cli:smoke-setup-files",
+        "fix:lint-cleanup-write",
+        "fix:write-source",
+        "graft:templates:identity-binary-expression",
+        "json:sley.graft.outcome.v0",
+        "lint:identity_binary_expression",
+        "readiness:identity-binary-repair-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/actor", "value": "agent:cli-smoke" },
+          { "pointer": "/provenance/0/operation", "value": "ReplaceExpression" },
+          { "pointer": "/provenance/0/targets/0", "value": "block:task:app.identity_fix.main:stmt:1:expr" }
+        ]
+      }
+    },
+    {
+      "name": "lint_fix_identity_binary_expression_write_json",
+      "args": [
+        "lint",
+        "--json",
+        "--rule",
+        "identity-binary-expression",
+        "{tmp}/fix-identity-binary/main.sley"
+      ],
+      "covers": [
+        "cli:lint",
+        "fix:lint-cleanup-write",
+        "lint:identity_binary_expression",
+        "json:sley.lint.report.v0",
+        "readiness:identity-binary-repair-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.lint.report.v0" },
+          { "pointer": "/status", "value": "ok" }
+        ]
+      }
+    },
+    {
+      "name": "verify_fix_identity_binary_expression_write_json",
+      "args": [
+        "verify",
+        "--json",
+        "--deny-warnings",
+        "{tmp}/fix-identity-binary/main.sley"
+      ],
+      "covers": [
+        "cli:verify",
+        "fix:lint-cleanup-write",
+        "json:sley.verify.report.v0",
+        "json:sley.lint.report.v0",
+        "lint:identity_binary_expression",
+        "readiness:identity-binary-repair-write-verify"
       ],
       "expect": {
         "success": true,
