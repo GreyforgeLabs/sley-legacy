@@ -8,6 +8,41 @@ use serde_json::{Value as JsonValue, json};
 mod support;
 
 #[test]
+fn zjx_tool_report_schema_pins_digest_and_diff_strings() {
+    let schema: JsonValue = serde_json::from_str(include_str!(
+        "../docs/schemas/sley.zjx.tool.report.v0.schema.json"
+    ))
+    .expect("parse ZJX tool report schema");
+    for pointer in [
+        "/$defs/envelopeSummary/properties/target/minLength",
+        "/$defs/envelopeSummary/properties/format/minLength",
+        "/$defs/envelopeSummary/properties/compression/minLength",
+        "/$defs/envelopeDiff/properties/modules_added/items/minLength",
+        "/$defs/envelopeDiff/properties/modules_removed/items/minLength",
+        "/$defs/envelopeDiff/properties/tasks_added/items/minLength",
+        "/$defs/envelopeDiff/properties/tasks_removed/items/minLength",
+    ] {
+        assert_eq!(
+            schema.pointer(pointer),
+            Some(&json!(1)),
+            "{pointer} should reject empty strings"
+        );
+    }
+    for pointer in [
+        "/$defs/envelopeSummary/properties/graph_digest/pattern",
+        "/$defs/envelopeSummary/properties/computed_graph_digest/pattern",
+        "/$defs/digestCheck/properties/declared/pattern",
+        "/$defs/digestCheck/properties/computed/pattern",
+    ] {
+        assert_eq!(
+            schema.pointer(pointer),
+            Some(&json!("^sha256:[0-9a-f]{64}$")),
+            "{pointer} should require sha256-prefixed graph digests"
+        );
+    }
+}
+
+#[test]
 fn zjx_tool_inspects_extracts_diffs_and_rejects_tampered_digest() {
     let root = temp_project_dir("zjx-tool");
     fs::create_dir_all(&root).expect("create temp root");
