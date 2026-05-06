@@ -139,7 +139,9 @@ Current development phase:
   `raw_host_adapter`, plus the style rule `missing_module_declaration`
 - `sley new --json` emits `sley.project.scaffold.v0` and creates
   non-destructive `hello` or deterministic `deploy` starter projects that can
-  immediately run through check, query, plan, lint, and seeded runtime gates
+  immediately run through check, doctor, query, plan, lint, and seeded runtime
+  gates; scaffold JSON includes typed `next_actions` plus legacy
+  `next_commands`
 - `sley doctor --json` emits `sley.doctor.report.v0` and consumes strict
   diagnostics plus checked query/lint summaries into one agent readiness report
 - `sley plan --json` emits `sley.edit_plan.report.v0` and consumes strict

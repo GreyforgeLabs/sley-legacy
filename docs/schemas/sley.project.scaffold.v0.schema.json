@@ -3,7 +3,7 @@
   "$id": "sley.project.scaffold.v0",
   "title": "Sley Project Scaffold Report v0",
   "type": "object",
-  "required": ["schema", "status", "project", "files", "next_commands"],
+  "required": ["schema", "status", "project", "files", "next_commands", "next_actions"],
   "properties": {
     "schema": { "const": "sley.project.scaffold.v0" },
     "status": { "const": "created" },
@@ -39,6 +39,24 @@
         "type": "array",
         "minItems": 1,
         "items": { "type": "string" }
+      }
+    },
+    "next_actions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["kind", "reason", "command"],
+        "properties": {
+          "kind": { "type": "string", "minLength": 1 },
+          "reason": { "type": "string", "minLength": 1 },
+          "command": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string" }
+          }
+        },
+        "additionalProperties": false
       }
     }
   },

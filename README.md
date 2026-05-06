@@ -135,7 +135,8 @@ Implemented now:
   diagnostics, query summaries, lint findings, and deterministic runtime
   execution into `schema: "sley.verify.report.v0"` for CI and pre-deploy gates
 - JSON project scaffold reports with `sley new --json`, `hello` and `deploy`
-  templates, relative created-file paths, next-command vectors, and
+  templates, relative created-file paths, next-command vectors, typed
+  next-action reasons, and
   `schema: "sley.project.scaffold.v0"`
 - JSONL trace sidecars for accepted graft receipts when `sley graft --write`
   applies a change, plus content-addressed trace seals with `sley seal`
@@ -469,9 +470,9 @@ The current release-readiness phase is underway for the executable slice. The
 gold corpus and CLI smoke suite now have manifests with required coverage tags
 for seeded host adapters, stable JSON roots, graph/ZJX output, graft and fix
 dry runs, checked graph query reports, doctor readiness, verify pre-deploy
-gates, edit-plan surfaces, lint-driven declaration delete templates and
-cleanup transactions, lint-driven module declaration fixes with inferred module
-names, private-task lint rules, declaration/import/API hygiene, authority
-hygiene, raw-host migration warnings, and explicit module style warnings. The
-next logical phase is to broaden style and migration lints before broadening
-the language again.
+gates, edit-plan surfaces, typed scaffold next-actions for the deploy
+quickstart, lint-driven declaration delete templates and cleanup transactions,
+lint-driven module declaration fixes with inferred module names, private-task
+lint rules, declaration/import/API hygiene, authority hygiene, raw-host
+migration warnings, and explicit module style warnings. The next logical phase
+is to broaden style and migration lints before broadening the language again.

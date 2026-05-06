@@ -24,6 +24,7 @@ use sley::query::{QUERY_REPORT_SCHEMA, QueryKind, QueryOptions, build_query_repo
 use sley::runtime::{RuntimeGates, Value, run_main, run_main_with_gates};
 use sley::scaffold::{
     PROJECT_SCAFFOLD_SCHEMA, ProjectScaffoldReport, ProjectScaffoldSummary, ScaffoldFile,
+    ScaffoldNextAction,
 };
 use sley::symbols::{SYMBOL_GRAPH_SCHEMA, SYMBOL_GRAPH_SLICE_SCHEMA, slice_symbol_graph};
 use sley::trace::{
@@ -413,43 +414,39 @@ fn project_scaffold_creates_checked_deploy_project() {
         !has_errors(&diagnostics),
         "unexpected scaffold diagnostics: {diagnostics:#?}"
     );
-
-    let lint_output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
-        .args(["lint", "--json", "--deny-warnings"])
-        .arg(&root)
-        .output()
-        .expect("lint scaffolded project");
-    assert!(
-        lint_output.status.success(),
-        "lint stdout: {}\nlint stderr: {}",
-        String::from_utf8(lint_output.stdout).expect("lint stdout utf8"),
-        String::from_utf8(lint_output.stderr).expect("lint stderr utf8")
-    );
-
-    let run_output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
-        .args([
-            "run",
-            "--json",
-            "--cap",
-            "Deploy",
-            "--deploy-result",
-            "staging",
-            "staged",
-        ])
-        .arg(&root)
-        .output()
-        .expect("run scaffolded project");
-    let run_stdout = String::from_utf8(run_output.stdout).expect("run stdout utf8");
-    let run_stderr = String::from_utf8(run_output.stderr).expect("run stderr utf8");
-    assert!(
-        run_output.status.success(),
-        "stdout: {run_stdout}\nstderr: {run_stderr}"
-    );
-    let value: Value = serde_json::from_str(&run_stdout).expect("parse runtime JSON");
-    assert_eq!(
-        value,
-        Value::Ok(Box::new(Value::Text("staged".to_string())))
-    );
+    let report: ProjectScaffoldReport =
+        serde_json::from_str(&stdout).expect("parse scaffold report");
+    assert_eq!(report.next_actions.len(), report.next_commands.len());
+    assert_eq!(report.next_actions[5].kind, "verify_seeded_deploy");
+    assert_eq!(report.next_actions[6].kind, "run_seeded_deploy");
+    for (action, command) in report.next_actions.iter().zip(&report.next_commands) {
+        assert_eq!(
+            &action.command, command,
+            "next action command should mirror legacy next_commands"
+        );
+        assert_eq!(command.first().map(String::as_str), Some("sley"));
+        let output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+            .current_dir(&root)
+            .args(&command[1..])
+            .output()
+            .unwrap_or_else(|error| panic!("run scaffold next action {}: {error}", action.kind));
+        let stdout = String::from_utf8(output.stdout)
+            .unwrap_or_else(|error| panic!("next action {} stdout utf8: {error}", action.kind));
+        let stderr = String::from_utf8(output.stderr)
+            .unwrap_or_else(|error| panic!("next action {} stderr utf8: {error}", action.kind));
+        assert!(
+            output.status.success(),
+            "next action {} should succeed\nstdout: {stdout}\nstderr: {stderr}",
+            action.kind
+        );
+        if action.kind == "run_seeded_deploy" {
+            let value: Value = serde_json::from_str(&stdout).expect("parse runtime JSON");
+            assert_eq!(
+                value,
+                Value::Ok(Box::new(Value::Text("staged".to_string())))
+            );
+        }
+    }
 
     let overwrite = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
         .args(["new", "--json", "--name", "agent-app"])
@@ -2678,6 +2675,12 @@ task main -> Used uses UsedEffect {
             ],
             vec![
                 "sley".to_string(),
+                "doctor".to_string(),
+                "--json".to_string(),
+                ".".to_string(),
+            ],
+            vec![
+                "sley".to_string(),
                 "query".to_string(),
                 "--json".to_string(),
                 "--kind".to_string(),
@@ -2719,6 +2722,94 @@ task main -> Used uses UsedEffect {
                 "staged".to_string(),
                 ".".to_string(),
             ],
+        ],
+        next_actions: vec![
+            ScaffoldNextAction {
+                kind: "check_project".to_string(),
+                reason: "confirm the scaffold parses and passes strict checks".to_string(),
+                command: vec![
+                    "sley".to_string(),
+                    "check".to_string(),
+                    "--json".to_string(),
+                    ".".to_string(),
+                ],
+            },
+            ScaffoldNextAction {
+                kind: "doctor_project".to_string(),
+                reason:
+                    "summarize strict checks, query facts, and lint gates in one readiness report"
+                        .to_string(),
+                command: vec![
+                    "sley".to_string(),
+                    "doctor".to_string(),
+                    "--json".to_string(),
+                    ".".to_string(),
+                ],
+            },
+            ScaffoldNextAction {
+                kind: "inspect_tasks".to_string(),
+                reason: "read the entry task surface before editing".to_string(),
+                command: vec![
+                    "sley".to_string(),
+                    "query".to_string(),
+                    "--json".to_string(),
+                    "--kind".to_string(),
+                    "tasks".to_string(),
+                    ".".to_string(),
+                ],
+            },
+            ScaffoldNextAction {
+                kind: "plan_first_edit".to_string(),
+                reason: "ask Loom for ranked edit surfaces and post-edit gates".to_string(),
+                command: vec![
+                    "sley".to_string(),
+                    "plan".to_string(),
+                    "--json".to_string(),
+                    ".".to_string(),
+                ],
+            },
+            ScaffoldNextAction {
+                kind: "lint_gate".to_string(),
+                reason: "keep warning-grade hygiene strict before runtime work".to_string(),
+                command: vec![
+                    "sley".to_string(),
+                    "lint".to_string(),
+                    "--json".to_string(),
+                    "--deny-warnings".to_string(),
+                    ".".to_string(),
+                ],
+            },
+            ScaffoldNextAction {
+                kind: "verify_seeded_deploy".to_string(),
+                reason: "verify deploy authority with a seeded provider result".to_string(),
+                command: vec![
+                    "sley".to_string(),
+                    "verify".to_string(),
+                    "--json".to_string(),
+                    "--cap".to_string(),
+                    "Deploy".to_string(),
+                    "--deploy-result".to_string(),
+                    "staging".to_string(),
+                    "staged".to_string(),
+                    ".".to_string(),
+                ],
+            },
+            ScaffoldNextAction {
+                kind: "run_seeded_deploy".to_string(),
+                reason: "execute the deploy-gated starter with deterministic seeded authority"
+                    .to_string(),
+                command: vec![
+                    "sley".to_string(),
+                    "run".to_string(),
+                    "--json".to_string(),
+                    "--cap".to_string(),
+                    "Deploy".to_string(),
+                    "--deploy-result".to_string(),
+                    "staging".to_string(),
+                    "staged".to_string(),
+                    ".".to_string(),
+                ],
+            },
         ],
     };
     assert_json_snapshot(
@@ -8367,6 +8458,8 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "lint:unused_private_effect",
         "lint:raw_host_adapter",
         "lint:missing_module_declaration",
+        "scaffold:deploy-quickstart",
+        "scaffold:next-actions",
         "host:DatabaseRead",
         "host:DatabaseWrite",
         "host:Deploy",

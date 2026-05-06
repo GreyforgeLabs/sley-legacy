@@ -127,6 +127,10 @@ Rules:
 - `sley doctor` is the first deterministic helper consuming strict check,
   `sley.query.report.v0`, and `sley.lint.report.v0` into a single readiness
   report for pre-edit agent planning.
+- `sley new --json` emits typed scaffold `next_actions` plus legacy
+  `next_commands`; the deploy starter's generated action sequence is executed
+  in integration coverage so first-run check, doctor, query, plan, lint,
+  verify, and run gates cannot silently drift.
 - `sley plan` consumes the same checked surfaces into ranked task edit
   surfaces, post-edit gate commands, and optional starter graft operation
   templates, rename-plus-call-site transactions, and add-take-plus-call-arg
@@ -440,6 +444,7 @@ The current smoke manifest covers:
   envelopes
 - graph-slice replace affordances and checked `replace_expression` graft
   templates in edit-plan reports
+- deploy scaffold typed next-actions and first-run sequence execution
 - lint-driven declaration delete templates, cleanup transactions, and direct
   declaration surface targeting in edit-plan reports
 - lint-driven missing-module `AddModuleDeclaration` templates, module-name

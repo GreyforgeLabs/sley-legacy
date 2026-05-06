@@ -2,7 +2,7 @@ use std::fs::{self, OpenOptions};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::diagnostics::Diagnostic;
 
@@ -30,16 +30,17 @@ pub struct ScaffoldOptions {
     pub template: ScaffoldTemplate,
 }
 
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ProjectScaffoldReport {
     pub schema: String,
     pub status: String,
     pub project: ProjectScaffoldSummary,
     pub files: Vec<ScaffoldFile>,
     pub next_commands: Vec<Vec<String>>,
+    pub next_actions: Vec<ScaffoldNextAction>,
 }
 
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ProjectScaffoldSummary {
     pub name: String,
     pub root: String,
@@ -48,10 +49,17 @@ pub struct ProjectScaffoldSummary {
     pub template: String,
 }
 
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ScaffoldFile {
     pub path: String,
     pub kind: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ScaffoldNextAction {
+    pub kind: String,
+    pub reason: String,
+    pub command: Vec<String>,
 }
 
 pub fn scaffold_project(
@@ -143,6 +151,11 @@ pub fn scaffold_project(
         &template_source(&module, options.template),
     )?;
 
+    let next_actions = next_actions(options.template);
+    let next_commands = next_actions
+        .iter()
+        .map(|action| action.command.clone())
+        .collect();
     Ok(ProjectScaffoldReport {
         schema: PROJECT_SCAFFOLD_SCHEMA.to_string(),
         status: "created".to_string(),
@@ -154,7 +167,8 @@ pub fn scaffold_project(
             template: options.template.as_str().to_string(),
         },
         files,
-        next_commands: next_commands(options.template),
+        next_commands,
+        next_actions,
     })
 }
 
@@ -204,7 +218,7 @@ fn readme_source(name: &str, template: ScaffoldTemplate) -> String {
         ),
     };
     format!(
-        "# {name}\n\nGenerated Sley project.\n\n```bash\nsley check --json .\nsley query --json --kind tasks .\nsley plan --json .\nsley lint --json --deny-warnings .\n{verify}\n{run}\n```\n"
+        "# {name}\n\nGenerated Sley project.\n\n```bash\nsley check --json .\nsley doctor --json .\nsley query --json --kind tasks .\nsley plan --json .\nsley lint --json --deny-warnings .\n{verify}\n{run}\n```\n"
     )
 }
 
@@ -221,78 +235,90 @@ task main -> Result<Text, Error> uses Deploy {{\n  bind result = call deploy.try
     }
 }
 
-fn next_commands(template: ScaffoldTemplate) -> Vec<Vec<String>> {
-    let mut commands = vec![
-        vec![
-            "sley".to_string(),
-            "check".to_string(),
-            "--json".to_string(),
-            ".".to_string(),
-        ],
-        vec![
-            "sley".to_string(),
-            "query".to_string(),
-            "--json".to_string(),
-            "--kind".to_string(),
-            "tasks".to_string(),
-            ".".to_string(),
-        ],
-        vec![
-            "sley".to_string(),
-            "plan".to_string(),
-            "--json".to_string(),
-            ".".to_string(),
-        ],
-        vec![
-            "sley".to_string(),
-            "lint".to_string(),
-            "--json".to_string(),
-            "--deny-warnings".to_string(),
-            ".".to_string(),
-        ],
+fn next_actions(template: ScaffoldTemplate) -> Vec<ScaffoldNextAction> {
+    let mut actions = vec![
+        next_action(
+            "check_project",
+            "confirm the scaffold parses and passes strict checks",
+            vec!["sley", "check", "--json", "."],
+        ),
+        next_action(
+            "doctor_project",
+            "summarize strict checks, query facts, and lint gates in one readiness report",
+            vec!["sley", "doctor", "--json", "."],
+        ),
+        next_action(
+            "inspect_tasks",
+            "read the entry task surface before editing",
+            vec!["sley", "query", "--json", "--kind", "tasks", "."],
+        ),
+        next_action(
+            "plan_first_edit",
+            "ask Loom for ranked edit surfaces and post-edit gates",
+            vec!["sley", "plan", "--json", "."],
+        ),
+        next_action(
+            "lint_gate",
+            "keep warning-grade hygiene strict before runtime work",
+            vec!["sley", "lint", "--json", "--deny-warnings", "."],
+        ),
     ];
-    let extra_commands = match template {
+    let extra_actions = match template {
         ScaffoldTemplate::Hello => vec![
-            vec![
-                "sley".to_string(),
-                "verify".to_string(),
-                "--json".to_string(),
-                ".".to_string(),
-            ],
-            vec![
-                "sley".to_string(),
-                "run".to_string(),
-                "--json".to_string(),
-                ".".to_string(),
-            ],
+            next_action(
+                "verify_local",
+                "run the deterministic verification gate",
+                vec!["sley", "verify", "--json", "."],
+            ),
+            next_action(
+                "run_local",
+                "execute the pure starter task",
+                vec!["sley", "run", "--json", "."],
+            ),
         ],
         ScaffoldTemplate::Deploy => vec![
-            vec![
-                "sley".to_string(),
-                "verify".to_string(),
-                "--json".to_string(),
-                "--cap".to_string(),
-                "Deploy".to_string(),
-                "--deploy-result".to_string(),
-                "staging".to_string(),
-                "staged".to_string(),
-                ".".to_string(),
-            ],
-            vec![
-                "sley".to_string(),
-                "run".to_string(),
-                "--json".to_string(),
-                "--cap".to_string(),
-                "Deploy".to_string(),
-                "--deploy-result".to_string(),
-                "staging".to_string(),
-                "staged".to_string(),
-                ".".to_string(),
-            ],
+            next_action(
+                "verify_seeded_deploy",
+                "verify deploy authority with a seeded provider result",
+                vec![
+                    "sley",
+                    "verify",
+                    "--json",
+                    "--cap",
+                    "Deploy",
+                    "--deploy-result",
+                    "staging",
+                    "staged",
+                    ".",
+                ],
+            ),
+            next_action(
+                "run_seeded_deploy",
+                "execute the deploy-gated starter with deterministic seeded authority",
+                vec![
+                    "sley",
+                    "run",
+                    "--json",
+                    "--cap",
+                    "Deploy",
+                    "--deploy-result",
+                    "staging",
+                    "staged",
+                    ".",
+                ],
+            ),
         ],
     };
-    commands.extend(extra_commands);
-    commands
+    actions.extend(extra_actions);
+    actions
+}
+
+fn next_action(kind: &str, reason: &str, command: Vec<&str>) -> ScaffoldNextAction {
+    ScaffoldNextAction {
+        kind: kind.to_string(),
+        reason: reason.to_string(),
+        command: command.into_iter().map(str::to_string).collect(),
+    }
 }
 
 fn module_source_path(source_root: &str, module: &str) -> PathBuf {

@@ -612,9 +612,10 @@ built `sley` binary and locks stable command exits, selected stdout substrings,
 JSON root schemas, graph slices, checked query reports, checked lint reports,
 doctor readiness reports, edit-plan reports, project scaffolds, ZJX preview
 envelopes, graft dry runs, graph-slice replace affordances, checked
-`replace_expression` graft templates, and seeded host-adapter execution for
-`FileRead`, `FileWrite`, `DatabaseRead`, `DatabaseWrite`, `Network`, `Shell`,
-`ModelCall`, `SecretRead`, `Deploy`, and `Spend`.
+`replace_expression` graft templates, typed deploy scaffold next-actions, and
+seeded host-adapter execution for `FileRead`, `FileWrite`, `DatabaseRead`,
+`DatabaseWrite`, `Network`, `Shell`, `ModelCall`, `SecretRead`, `Deploy`, and
+`Spend`.
 
 `sley new` is the v0 project scaffold command. It writes a `sley.toml`,
 `README.md`, and entry module source file, refusing to overwrite any of those
@@ -622,7 +623,10 @@ paths when they already exist. `--template hello` creates a pure starter.
 `--template deploy` creates a deterministic `Deploy`-gated starter that runs
 with a seeded `deploy.try_stage` result and does not call providers or mutate
 infrastructure. `--json` emits the scaffold report with relative file paths
-and exact next-command vectors under `sley.project.scaffold.v0`.
+exact next-command vectors, and typed next-action reasons under
+`sley.project.scaffold.v0`. The deploy scaffold's generated next actions are
+the checked first-run sequence: strict check, doctor readiness, task query,
+edit plan, lint gate, seeded deploy verification, and seeded deploy run.
 
 `sley doctor` is the first deterministic helper that consumes the strict
 checker plus checked query and lint reports into one agent readiness report.
