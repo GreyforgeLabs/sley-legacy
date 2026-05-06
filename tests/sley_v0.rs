@@ -3143,6 +3143,73 @@ fn edit_plan_graft_templates_include_constant_false_while_statement_delete() {
 }
 
 #[test]
+fn edit_plan_graft_templates_include_empty_for_statement_delete() {
+    let source = include_str!("../examples/empty_for_statement.sley");
+    let program = parse_program(source).expect("parse empty for fixture");
+    let report = build_edit_plan_report_with_options(
+        "examples/empty_for_statement.sley",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: None,
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "warnings");
+    assert_eq!(report.summary.lint_finding_count, 1);
+    assert_eq!(
+        report.lint.as_ref().expect("lint summary").findings[0].id,
+        "EMPTY_FOR_STATEMENT"
+    );
+    let template = report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "delete_empty_for_statement")
+        .expect("empty for delete template");
+    assert_eq!(template.surface, "block:task:app.empty_for.main:stmt:1");
+    assert_eq!(
+        template.operation.pointer("/op"),
+        Some(&serde_json::json!("DeleteNode"))
+    );
+    assert_eq!(
+        template.operation.pointer("/target"),
+        Some(&serde_json::json!("block:task:app.empty_for.main:stmt:1"))
+    );
+    assert!(template.editable_json_pointers.is_empty());
+    let graft: GraftInput = serde_json::from_value(template.operation.clone())
+        .expect("parse empty for delete template");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:empty-for-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted_source = outcome.source.expect("grafted source");
+    assert!(!grafted_source.contains("for item in []"));
+    assert!(grafted_source.contains("return value"));
+
+    let targeted_report = build_edit_plan_report_with_options(
+        "examples/empty_for_statement.sley",
+        Ok(program),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("block:task:app.empty_for.main:stmt:1".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(targeted_report.status, "warnings");
+    assert!(targeted_report.diagnostics.is_empty());
+    assert_eq!(targeted_report.graft_templates.len(), 1);
+    assert_eq!(
+        targeted_report.graft_templates[0].kind,
+        "delete_empty_for_statement"
+    );
+    assert!(targeted_report.transaction_templates.is_empty());
+}
+
+#[test]
 fn edit_plan_graft_templates_include_identity_binary_expression_simplify() {
     let source = include_str!("../examples/identity_binary_expression.sley");
     let program = parse_program(source).expect("parse identity binary fixture");
@@ -5349,6 +5416,20 @@ task helper -> Result<Text, Error> {
         include_str!("../fixtures/contracts/lint_constant_false_while_statement.json"),
     );
 
+    let empty_for_source = include_str!("../examples/empty_for_statement.sley");
+    let empty_for_program = parse_program(empty_for_source).expect("parse empty for fixture");
+    let empty_for_lint = build_lint_report(
+        &empty_for_program,
+        LintOptions {
+            rules: vec![LintRule::EmptyForStatement],
+            module: None,
+        },
+    );
+    assert_json_snapshot(
+        &empty_for_lint,
+        include_str!("../fixtures/contracts/lint_empty_for_statement.json"),
+    );
+
     let identity_binary_source = include_str!("../examples/identity_binary_expression.sley");
     let identity_binary_program =
         parse_program(identity_binary_source).expect("parse identity binary fixture");
@@ -6109,7 +6190,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(42))
+        Some(&serde_json::json!(43))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -11536,6 +11617,75 @@ task main -> Int {
 }
 
 #[test]
+fn lint_report_flags_empty_for_statements() {
+    let source = r#"
+module app.empty_for
+
+task main -> Int {
+  state total = 0
+
+  for item in [] {
+    set total = 1
+  }
+
+  for item in [1] {
+    set total = total + item
+  }
+
+  if total > 0 {
+    for item in [] {
+      set total = 7
+    }
+  }
+
+  return total
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+
+    let report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::EmptyForStatement],
+            module: None,
+        },
+    );
+
+    assert_eq!(report.schema, LINT_REPORT_SCHEMA);
+    assert_eq!(report.status, "findings");
+    assert_eq!(report.entry_module, "app.empty_for");
+    assert_eq!(report.filters.rules, vec!["empty_for_statement"]);
+    assert_eq!(report.findings.len(), 2);
+    assert_eq!(report.findings[0].id, "EMPTY_FOR_STATEMENT");
+    assert_eq!(report.findings[0].rule, "empty_for_statement");
+    let nodes: Vec<&str> = report
+        .findings
+        .iter()
+        .map(|finding| finding.node.as_str())
+        .collect();
+    assert!(nodes.contains(&"block:task:app.empty_for.main:stmt:1"));
+    assert!(nodes.contains(&"block:task:app.empty_for.main:stmt:3:then:stmt:0"));
+    assert_eq!(report.findings[0].module, "app.empty_for");
+    assert!(report.findings[0].message.contains("empty list"));
+    assert!(report.findings[0].hint.contains("delete"));
+
+    let scoped_report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::EmptyForStatement],
+            module: Some("app.other".to_string()),
+        },
+    );
+    assert_eq!(scoped_report.status, "ok");
+    assert!(scoped_report.findings.is_empty());
+}
+
+#[test]
 fn lint_report_flags_identity_binary_expressions() {
     let source = r#"
 module app.identity_binary
@@ -14233,6 +14383,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:templates:unused-pure-binding-delete",
         "graft:templates:unused-pure-expression-statement-delete",
         "graft:templates:constant-false-while-statement-delete",
+        "graft:templates:empty-for-statement-delete",
         "graft:templates:unreachable-statement-delete",
         "graft:templates:unused-declared-effect-remove",
         "graft:templates:unused-import-delete",
@@ -14260,6 +14411,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "lint:mutable_binding_never_set",
         "lint:constant_if_expression",
         "lint:constant_false_while_statement",
+        "lint:empty_for_statement",
         "lint:identity_binary_expression",
         "lint:redundant_boolean_comparison",
         "lint:absorbing_boolean_expression",
@@ -14275,6 +14427,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:call-transaction-write-verify",
         "readiness:constant-if-repair-write-verify",
         "readiness:constant-false-while-repair-write-verify",
+        "readiness:empty-for-repair-write-verify",
         "readiness:deploy-package-artifacts",
         "readiness:deploy-package-dry-run",
         "readiness:inspect-calls",

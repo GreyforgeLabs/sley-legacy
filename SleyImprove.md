@@ -101,7 +101,7 @@ sley fix --json --kind <kind> [--template-surface <surface>] [--name <name>] [--
 sley verify --json [--deny-warnings] [runtime gates/seeds] <target>
 sley deploy --json --dry-run [--artifacts-dir <dir>] [runtime gates/seeds] <target>
 sley query --json [--kind all|modules|tasks|types|effects|calls] [--module <module>] <target>
-sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter|missing-module-declaration|unchecked-result|unqualified-imported-call|unused-pure-binding|unused-pure-expression-statement|mutable-binding-never-set|constant-if-expression|constant-false-while-statement|identity-binary-expression|redundant-boolean-comparison|absorbing-boolean-expression|self-comparison-expression|double-negation-expression|redundant-boolean-if-expression|same-branch-if-expression|unreachable-statement] [--module <module>] <target>
+sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter|missing-module-declaration|unchecked-result|unqualified-imported-call|unused-pure-binding|unused-pure-expression-statement|mutable-binding-never-set|constant-if-expression|constant-false-while-statement|empty-for-statement|identity-binary-expression|redundant-boolean-comparison|absorbing-boolean-expression|self-comparison-expression|double-negation-expression|redundant-boolean-if-expression|same-branch-if-expression|unreachable-statement] [--module <module>] <target>
 sley trace --json <target>
 sley seal --json <target>
 sley zjx --json [--slice <node-id>] <target>
@@ -604,6 +604,9 @@ The current smoke manifest covers:
   `delete_constant_false_while_statement` templates that remove never-executed
   `while false` statements through lint/plan/fix-write/verify CLI smoke
   coverage
+- empty-for statement warnings through `empty_for_statement`, plus checked
+  `delete_empty_for_statement` templates that remove `for` loops over literal
+  empty lists through lint/plan/fix-write/verify CLI smoke coverage
 - identity binary expression style warnings through `identity_binary_expression`,
   plus checked `simplify_identity_binary_expression` templates that replace
   `x + 0`, `x * 1`, `flag && true`, or `flag || false` forms with the
@@ -722,6 +725,9 @@ The v0 lint rules are:
 - `constant_false_while_statement`: a `while false { ... }` statement is
   reported so agents can remove never-executed loop bodies without touching
   authority work that would otherwise run.
+- `empty_for_statement`: a `for item in [] { ... }` statement is reported so
+  agents can remove never-executed loop bodies without evaluating or dropping
+  any non-empty collection expression.
 - `identity_binary_expression`: a checked identity binary expression such as
   `x + 0`, `x * 1`, `flag && true`, or `flag || false` is reported so agents
   can replace it with the non-identity side.
@@ -756,6 +762,7 @@ The command supports `--module <module>`, `--rule unused-private-task`,
 `--rule unused-pure-expression-statement`,
 `--rule mutable-binding-never-set`, `--rule constant-if-expression`,
 `--rule constant-false-while-statement`,
+`--rule empty-for-statement`,
 `--rule identity-binary-expression`, `--rule redundant-boolean-comparison`,
 `--rule absorbing-boolean-expression`, `--rule self-comparison-expression`,
 `--rule double-negation-expression`, `--rule redundant-boolean-if-expression`,

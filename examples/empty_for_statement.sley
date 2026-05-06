@@ -1,0 +1,11 @@
+module app.empty_for
+
+task main -> Int {
+  bind value = 41
+
+  for item in [] {
+    return 0
+  }
+
+  return value
+}
