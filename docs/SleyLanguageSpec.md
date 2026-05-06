@@ -1,6 +1,6 @@
 # Sley Language Specification
 
-Status: v0 executable slice plus module task/type/effect namespace, runtime gates, Sley-level Result flow, typed host fallibility, seeded database host reads/writes, seeded secret values, seeded deploy stage results, seeded spend authorizations, seeded network host text, seeded shell host output, seeded model completions, trace tooling, checked lint tooling, and checked edit-plan tooling
+Status: v0 executable slice plus module task/type/effect namespace, runtime gates with filesystem roots and non-file seeded resource scopes, Sley-level Result flow, typed host fallibility, seeded database host reads/writes, seeded secret values, seeded deploy stage results, seeded spend authorizations, seeded network host text, seeded shell host output, seeded model completions, trace tooling, checked lint tooling, and checked edit-plan tooling
 
 Sley is a human-readable, agent-writable structural language. The canonical
 program model is a typed graph. `.sley` source is the stable review projection,
@@ -224,7 +224,7 @@ as valid in the example above because only `path` is an ordinary take. The gate
 effect must also appear in the task's `uses` list; otherwise the checker emits
 `GATE_EFFECT_UNDECLARED`.
 
-The CLI grants runtime gates with repeated `--cap EFFECT[=ROOT]` flags:
+The CLI grants runtime gates with repeated `--cap EFFECT[=SCOPE]` flags:
 
 ```bash
 sley run --cap FileRead=/tmp/sley program.sley
@@ -238,6 +238,12 @@ calls return direct values and surface host I/O failures as diagnostics.
 `try_` filesystem calls return `Result<T, Error>` and surface recoverable I/O
 failures as `Err({ code, message })`. When a gate has a root, filesystem host
 calls reject paths outside that root with `RUNTIME_CAPABILITY_SCOPE_DENIED`.
+For non-filesystem host effects, `=SCOPE` is a deterministic text prefix over
+the seeded resource key: database table, URL, secret name, shell command, model
+prompt, deploy target, or spend request. A scoped host adapter that tries to
+touch a non-matching seeded resource fails with
+`RUNTIME_CAPABILITY_SCOPE_DENIED`; this remains an authority diagnostic, not a
+recoverable `Result` error.
 
 `DatabaseRead` currently backs deterministic seeded-table reads. The runtime
 does not open a real database connection in v0; the host supplies JSON rows:
@@ -1103,7 +1109,8 @@ refuse generic data disguised as Sley artifacts before compression begins.
   seeded database reads, per-run deterministic database inserts, seeded secret
   values, seeded deployment stage results, seeded spend authorizations, seeded
   network text responses, seeded shell command outputs, and seeded model prompt
-  completions
+  completions; non-file seeded adapters now support deterministic text-prefix
+  scopes over their seeded resource keys
 - Sley-level `Result` values, `?` propagation, and typed filesystem,
   database, secret, deploy, spend, network, shell, and model host fallibility
   execute

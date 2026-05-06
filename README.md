@@ -59,9 +59,10 @@ Implemented now:
   indexing, `len`, record literals, record field access, explicit
   `Ok(value)`/`Err(error)` result values, and `?` propagation for Sley-level
   results
-- runtime gates with `sley run --cap EFFECT[=ROOT]`; effectful tasks reject
+- runtime gates with `sley run --cap EFFECT[=SCOPE]`; effectful tasks reject
   without matching gates, `Gate<Effect>` takes are injected at runtime, and
   `fs.read_text`/`fs.write_text` are backed by root-scoped file capabilities
+  while non-file seeded adapters can be narrowed by deterministic text scopes
 - deterministic database host seeding with `sley run --cap DatabaseRead
   --db-table TABLE=rows.json`; `db.query_one` and `db.query` read seeded JSON
   rows, and `DbRow` values expose `row.text`, `row.int`, `row.float`,
@@ -595,8 +596,10 @@ Known v0 limits:
   deterministic seeded prompt-completion adapter. `SecretRead` has a
   deterministic seeded secret-value adapter. The `Deploy` adapter returns
   deterministic seeded stage results, and the `Spend` adapter returns
-  deterministic seeded authorization results. None of the seeded host adapters
-  perform live network, shell, model, secret, deploy, or spend actions.
+  deterministic seeded authorization results. Non-file adapters can be scoped
+  by resource-key prefix with `--cap EFFECT=SCOPE`, and scope mismatches remain
+  authority diagnostics. None of the seeded host adapters perform live network,
+  shell, model, secret, deploy, or spend actions.
 - Sley-level `Result` values and `?` propagation execute, and fallible
   filesystem, database, network, shell, model, secret, deploy, and spend host
   variants return typed `Error` records.
