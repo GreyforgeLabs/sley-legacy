@@ -49,11 +49,14 @@ Current verified surface:
   over `docs/schemas/` and `fixtures/contracts/`.
 - `sley-ci` is available as an in-tree CI wrapper with `check`, `verify`,
   `deploy`, and `smoke` commands that emit `schema: "sley.ci.report.v0"` over
-  existing Sley check/lint/verify/deploy and CLI smoke manifest gates.
+  existing Sley check/lint/verify/deploy and CLI smoke manifest gates,
+  including deploy artifact directory pass-through.
 - `sley deploy --json --dry-run` emits `schema: "sley.deploy.report.v0"` and
   composes strict verify, trace seal, and ZJX package summaries into a
   local-only deploy package report that forbids live deployment, provider
   calls, external mutation, and spend without explicit operator approval.
+  `--artifacts-dir <dir>` writes local `deploy-report.json`, `seal.json`, and
+  `zjx-envelope.json` handoff files after the dry-run package is ready.
 - `sley new --json --template hello|deploy|agent` emits
   `schema: "sley.project.scaffold.v0"` and creates deterministic first-run
   starter projects, including a seeded agent quickstart that composes
@@ -96,9 +99,10 @@ Current verified surface:
   call-bearing reports that route agents to strict call-row inspection, a
   write/query/verify smoke for the call-row-driven rename-and-update-call-sites
   transaction, a write/query/verify smoke for the unused-take-plus-call-arg
-  removal transaction, and checked `unchecked_result` migration templates that
-  turn discarded `Result` expression statements into explicit `?` propagation
-  when valid, plus checked `unused_import` and
+  removal transaction, explicit deploy artifact handoff writes for dry-run
+  packages, and checked `unchecked_result` migration templates that turn
+  discarded `Result` expression statements into explicit `?` propagation when
+  valid, plus checked `unused_import` and
   `unused_private_task` delete templates, fix dry runs, and a write-mode
   `delete_unused_import` cleanup that clears lint before
   `sley verify --deny-warnings`, plus checked dead private task cleanup

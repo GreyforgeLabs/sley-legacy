@@ -560,7 +560,7 @@ sley query --json --kind tasks --module app.main <target>
 sley query --json --kind types --module app.main <target>
 sley query --json --kind effects --module app.main <target>
 sley lint --json <target>
-sley deploy --json --dry-run <target>
+sley deploy --json --dry-run [--artifacts-dir <dir>] <target>
 sley trace --json <target>
 sley seal --json <target>
 ```
@@ -583,6 +583,8 @@ The CLI smoke manifest carries
 `schema: "sley.doctor.report.v0"`. Edit-plan reports carry
 `schema: "sley.edit_plan.report.v0"`. CI wrapper reports carry
 `schema: "sley.ci.report.v0"` for check, verify, deploy, and smoke wrappers.
+The deploy wrapper passes `--artifacts-dir <dir>` through to `sley deploy`
+when local handoff files are requested.
 Deploy dry-run reports carry
 `schema: "sley.deploy.report.v0"`. Contract utility reports carry
 `schema: "sley.contract.inventory.v0"`,
@@ -687,7 +689,10 @@ ZJX package summary. Its JSON root is `sley.deploy.report.v0`. The report
 records `live_deploy_allowed=false`, `external_mutations=false`,
 `provider_calls=false`, and `requires_operator_approval=true`; it does not
 upload artifacts, start services, push branches, call providers, spend money,
-or mutate infrastructure.
+or mutate infrastructure. When `--artifacts-dir <dir>` is supplied and the
+dry-run package is ready, the command writes local `deploy-report.json`,
+`seal.json`, and `zjx-envelope.json` handoff files and records their paths in
+the deploy report.
 
 `sley doctor` is the first deterministic helper that consumes the strict
 checker plus checked query and lint reports into one agent readiness report.

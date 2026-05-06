@@ -25,6 +25,7 @@
     "verify": { "$ref": "sley.verify.report.v0" },
     "seal": { "$ref": "sley.trace.seal.v0" },
     "package": { "$ref": "#/$defs/package" },
+    "artifacts": { "$ref": "#/$defs/artifacts" },
     "next_actions": {
       "type": "array",
       "items": { "$ref": "#/$defs/action" }
@@ -89,6 +90,17 @@
         "graph_digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
         "module_count": { "type": "integer", "minimum": 0 },
         "trace_receipt_count": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "artifacts": {
+      "type": "object",
+      "required": ["directory", "report", "seal", "package"],
+      "properties": {
+        "directory": { "type": "string", "minLength": 1 },
+        "report": { "type": "string", "minLength": 1 },
+        "seal": { "type": "string", "minLength": 1 },
+        "package": { "type": "string", "minLength": 1 }
       },
       "additionalProperties": false
     },

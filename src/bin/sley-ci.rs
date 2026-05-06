@@ -57,6 +57,8 @@ enum Command {
         json: bool,
         #[arg(long)]
         dry_run: bool,
+        #[arg(long = "artifacts-dir")]
+        artifacts_dir: Option<PathBuf>,
         #[arg(long, default_value = "staging")]
         environment: String,
         #[arg(long = "cap", value_name = "EFFECT[=ROOT]")]
@@ -238,6 +240,7 @@ fn run(cli: Cli) -> Result<(CiReport, bool)> {
         Command::Deploy {
             json,
             dry_run: _dry_run,
+            artifacts_dir,
             environment,
             cap,
             db_table,
@@ -259,7 +262,13 @@ fn run(cli: Cli) -> Result<(CiReport, bool)> {
                 shell_output,
                 model_output,
             };
-            let report = build_deploy_report(&sley_bin, &target, &environment, &runtime)?;
+            let report = build_deploy_report(
+                &sley_bin,
+                &target,
+                &environment,
+                artifacts_dir.as_deref(),
+                &runtime,
+            )?;
             Ok((report, json))
         }
         Command::Smoke {
@@ -353,6 +362,7 @@ fn build_deploy_report(
     sley_bin: &Path,
     target: &Path,
     environment: &str,
+    artifacts_dir: Option<&Path>,
     runtime: &RuntimeArgs,
 ) -> Result<CiReport> {
     let cwd = env::current_dir()?;
@@ -363,6 +373,10 @@ fn build_deploy_report(
         "--environment".into(),
         environment.into(),
     ];
+    if let Some(artifacts_dir) = artifacts_dir {
+        args.push("--artifacts-dir".into());
+        args.push(path_string(artifacts_dir));
+    }
     append_runtime_args(&mut args, runtime);
     args.push(path_string(target));
     let steps = vec![run_sley_step(sley_bin, &cwd, "deploy_dry_run", args, true, Vec::new()).step];

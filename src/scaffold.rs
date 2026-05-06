@@ -221,12 +221,12 @@ fn readme_source(name: &str, template: ScaffoldTemplate) -> String {
         ScaffoldTemplate::Deploy => (
             "sley verify --json --deny-warnings --cap Deploy --deploy-result staging staged .",
             "sley run --json --cap Deploy --deploy-result staging staged .",
-            "sley deploy --json --dry-run --cap Deploy --deploy-result staging staged .",
+            "sley deploy --json --dry-run --artifacts-dir .sley/deploy --cap Deploy --deploy-result staging staged .",
         ),
         ScaffoldTemplate::Agent => (
             "sley verify --json --deny-warnings --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile \"profile ready\" --cap ModelCall --model-output deploy-plan \"plan approved\" --cap Deploy --deploy-result staging staged .",
             "sley run --json --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile \"profile ready\" --cap ModelCall --model-output deploy-plan \"plan approved\" --cap Deploy --deploy-result staging staged .",
-            "sley deploy --json --dry-run --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile \"profile ready\" --cap ModelCall --model-output deploy-plan \"plan approved\" --cap Deploy --deploy-result staging staged .",
+            "sley deploy --json --dry-run --artifacts-dir .sley/deploy --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile \"profile ready\" --cap ModelCall --model-output deploy-plan \"plan approved\" --cap Deploy --deploy-result staging staged .",
         ),
     };
     let deploy_line = if deploy.is_empty() {
@@ -337,6 +337,8 @@ fn next_actions(template: ScaffoldTemplate) -> Vec<ScaffoldNextAction> {
                     "deploy",
                     "--json",
                     "--dry-run",
+                    "--artifacts-dir",
+                    ".sley/deploy",
                     "--cap",
                     "Deploy",
                     "--deploy-result",
@@ -428,6 +430,15 @@ fn seeded_agent_command(binary: &'static str, verb: &'static str) -> Vec<&'stati
     }
     if verb == "deploy" {
         command.insert(3, "--dry-run");
+        command.insert(4, "--artifacts-dir");
+        command.insert(
+            5,
+            if binary == "sley-ci" {
+                ".sley/ci-deploy"
+            } else {
+                ".sley/deploy"
+            },
+        );
     }
     command
 }
