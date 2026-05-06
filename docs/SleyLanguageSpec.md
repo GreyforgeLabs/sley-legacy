@@ -596,7 +596,8 @@ The CLI smoke manifest carries
 `schema: "sley.project.scaffold.v0"`. Doctor readiness reports carry
 `schema: "sley.doctor.report.v0"`. Edit-plan reports carry
 `schema: "sley.edit_plan.report.v0"`. CI wrapper reports carry
-`schema: "sley.ci.report.v0"` for check, lint, doctor, plan, verify, deploy, and smoke wrappers.
+`schema: "sley.ci.report.v0"` for check, lint, doctor, plan, run, verify,
+deploy, and smoke wrappers.
 The deploy wrapper passes `--artifacts-dir <dir>` through to `sley deploy`
 when local handoff files are requested. Deploy dry-run reports carry
 `schema: "sley.deploy.report.v0"`; deploy artifact manifests carry
@@ -702,6 +703,8 @@ package. The agent scaffold also includes `sley-ci verify` and
 report carries `status: "passed"`, the target path, a recursive runtime value
 payload, and an empty diagnostics array; parse/check/runtime failures continue
 to use the diagnostics report path.
+`sley-ci run --json` wraps the same deterministic runtime execution under
+`sley.ci.report.v0` for local CI and pre-commit gates.
 
 `sley deploy --dry-run` is the v0 local deploy package command. It refuses to
 run unless `--dry-run` is present. It consumes the same deterministic runtime

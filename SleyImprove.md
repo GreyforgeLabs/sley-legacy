@@ -105,6 +105,7 @@ sley lint --json [--rule unused-private-task|unreachable-private-task|unused-dec
 sley-ci lint --json [--deny-warnings] [--rule <rule>] [--module <module>] <target>
 sley-ci doctor --json [--deny-warnings] <target>
 sley-ci plan --json [--deny-warnings] [--graft-templates] [--template-surface <surface>] <target>
+sley-ci run --json [runtime gates/seeds] <target>
 sley trace --json <target>
 sley seal --json <target>
 sley zjx --json [--slice <node-id>] <target>
@@ -132,7 +133,7 @@ Rules:
   pins strict graft operation and transaction template
   envelopes reused by graph-slice affordances, the graph-slice schema links
   focus, task, and call-summary payloads to shared contracts, `sley-ci`
-  check/lint/doctor/plan/verify/deploy/smoke reports and `sley-contract`
+  check/lint/doctor/plan/run/verify/deploy/smoke reports and `sley-contract`
   inventory/fixture-check/validate/deploy-artifact-check reports have versioned
   schemas, the graft outcome and trace receipt schemas pin accepted provenance
   records, the ZJX envelope schema pins graph, slice, and trace receipt handoff
@@ -154,8 +155,8 @@ Rules:
   `next_commands`; the deploy and agent starters' generated action sequences
   are executed in integration coverage so first-run check, doctor, query, plan,
   lint, warning-denying verify, run, deploy dry-run package, seal, ZJX package
-  gates, and the agent starter's `sley-ci verify`/`sley-ci deploy` handoffs
-  cannot silently drift.
+  gates, the agent starter's `sley-ci verify`/`sley-ci deploy` handoffs, and
+  independent `sley-ci run` wrapper coverage cannot silently drift.
 - `sley plan` consumes the same checked surfaces into ranked task edit
   surfaces, call-row inspection next-actions, post-edit gate commands, and
   optional starter graft operation templates, rename-plus-call-site
@@ -216,8 +217,10 @@ Rules:
   remains behind operator approval. `--artifacts-dir <dir>` writes local
   `deploy-report.json`, `seal.json`, `zjx-envelope.json`, and digest-bearing
   `manifest.json` handoff files only after the dry-run package is ready;
-  `sley-ci deploy` passes the same flag through to the wrapped deploy command,
-  and `sley-contract inspect-deploy-artifacts` revalidates the handoff
+  `sley-ci run` wraps deterministic runtime execution under
+  `sley.ci.report.v0`, `sley-ci deploy` passes the same flag through to the
+  wrapped deploy command, and `sley-contract inspect-deploy-artifacts`
+  revalidates the handoff
   manifest, schemas, and digests.
 - Grafts support dry-run by default and an explicit `--dry-run` flag.
 - Graft input JSON is strict: unknown operation or payload fields reject instead
@@ -549,7 +552,8 @@ The current smoke manifest covers:
   strict seeded `verify --json --deny-warnings` readiness, and local
   `sley deploy --dry-run` package reports, including optional deploy artifact
   manifests plus scaffold-level and passed-verify seal/ZJX handoff next-actions
-  plus the agent scaffold's `sley-ci verify` and `sley-ci deploy` handoffs
+  plus independent `sley-ci run` coverage and the agent scaffold's
+  `sley-ci verify`/`sley-ci deploy` handoffs
 - doctor/verify warning next-actions that route agents to checked
   `sley plan --json --graft-templates` lint repair plans and unambiguous
   `sley fix --dry-run` previews with explicit `write_command` vectors, plus a

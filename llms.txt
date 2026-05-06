@@ -22,6 +22,7 @@ cargo run -- deploy --json --dry-run --artifacts-dir .sley/deploy <file-or-proje
 cargo run --bin sley-ci -- lint --json --deny-warnings <file-or-project>
 cargo run --bin sley-ci -- doctor --json --deny-warnings <file-or-project>
 cargo run --bin sley-ci -- plan --json --graft-templates <file-or-project>
+cargo run --bin sley-ci -- run --json <file-or-project>
 cargo run --bin sley-ci -- deploy --json --dry-run --artifacts-dir .sley/ci-deploy <file-or-project>
 cargo run --bin sley-contract -- inspect-deploy-artifacts .sley/deploy --schemas docs/schemas --json
 cargo run -- seal --json <file-or-project>
@@ -129,7 +130,7 @@ definitions for downstream bindings.
 The `sley-contract` binary exposes `inventory`, `check-fixtures`, `validate`,
 and `inspect-deploy-artifacts` JSON Schema validation reports for
 schema/fixture/deploy-handoff contract-kit work.
-The `sley-ci` binary exposes `check`, `lint`, `doctor`, `plan`, `verify`, `deploy`, and `smoke` reports
+The `sley-ci` binary exposes `check`, `lint`, `doctor`, `plan`, `run`, `verify`, `deploy`, and `smoke` reports
 for local CI and pre-commit gates over existing Sley commands.
 Graph-slice insert/move/delete/replace affordance operations reuse the strict
 graft operation schema from edit-plan reports.
@@ -281,8 +282,9 @@ Current development phase:
   execution into one CI/pre-deploy gate; the deploy scaffold has a checked
   `--deny-warnings --cap Deploy --deploy-result staging staged` smoke, and
   the agent scaffold has a checked seeded SecretRead/Network/ModelCall/Deploy
-  verify smoke through both `sley verify` and `sley-ci verify`, plus deploy
-  package smoke through `sley deploy` and `sley-ci deploy`; denied warning
+  verify smoke through both `sley verify` and `sley-ci verify`, direct runtime
+  smoke through `sley run` and `sley-ci run`, plus deploy package smoke through
+  `sley deploy` and `sley-ci deploy`; denied warning
   reports route agents to checked lint repair plans plus
   dry-run fix previews when the repair is unambiguous before deployment review;
   passed reports point agents to `sley seal --json <target>` and

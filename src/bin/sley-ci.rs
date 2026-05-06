@@ -59,6 +59,28 @@ enum Command {
         template_surface: Option<String>,
         target: PathBuf,
     },
+    /// Run the Sley deterministic runtime gate over one target.
+    Run {
+        #[arg(long)]
+        json: bool,
+        #[arg(long = "cap", value_name = "EFFECT[=ROOT]")]
+        cap: Vec<String>,
+        #[arg(long = "db-table", value_name = "TABLE=JSON")]
+        db_table: Vec<String>,
+        #[arg(long = "secret", value_names = ["NAME", "TEXT"], num_args = 2)]
+        secret: Vec<String>,
+        #[arg(long = "deploy-result", value_names = ["TARGET", "TEXT"], num_args = 2)]
+        deploy_result: Vec<String>,
+        #[arg(long = "spend-result", value_names = ["REQUEST", "TEXT"], num_args = 2)]
+        spend_result: Vec<String>,
+        #[arg(long = "http-text", value_names = ["URL", "TEXT"], num_args = 2)]
+        http_text: Vec<String>,
+        #[arg(long = "shell-output", value_names = ["COMMAND", "TEXT"], num_args = 2)]
+        shell_output: Vec<String>,
+        #[arg(long = "model-output", value_names = ["PROMPT", "TEXT"], num_args = 2)]
+        model_output: Vec<String>,
+        target: PathBuf,
+    },
     /// Run the Sley verify gate over one target.
     Verify {
         #[arg(long)]
@@ -278,6 +300,31 @@ fn run(cli: Cli) -> Result<(CiReport, bool)> {
             )?;
             Ok((report, json))
         }
+        Command::Run {
+            json,
+            cap,
+            db_table,
+            secret,
+            deploy_result,
+            spend_result,
+            http_text,
+            shell_output,
+            model_output,
+            target,
+        } => {
+            let runtime = RuntimeArgs {
+                cap,
+                db_table,
+                secret,
+                deploy_result,
+                spend_result,
+                http_text,
+                shell_output,
+                model_output,
+            };
+            let report = build_run_report(&sley_bin, &target, &runtime)?;
+            Ok((report, json))
+        }
         Command::Verify {
             json,
             deny_warnings,
@@ -473,6 +520,21 @@ fn build_plan_report(
     let steps = vec![run_sley_step(sley_bin, &cwd, "plan", args, true, Vec::new()).step];
     Ok(finalize_report(
         "plan",
+        Some(path_string(target)),
+        None,
+        steps,
+        Vec::new(),
+    ))
+}
+
+fn build_run_report(sley_bin: &Path, target: &Path, runtime: &RuntimeArgs) -> Result<CiReport> {
+    let cwd = env::current_dir()?;
+    let mut args = vec!["run".into(), "--json".into()];
+    append_runtime_args(&mut args, runtime);
+    args.push(path_string(target));
+    let steps = vec![run_sley_step(sley_bin, &cwd, "run", args, true, Vec::new()).step];
+    Ok(finalize_report(
+        "run",
         Some(path_string(target)),
         None,
         steps,
