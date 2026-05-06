@@ -113,7 +113,7 @@ Implemented now:
   and
   `schema: "sley.lint.report.v0"` for warning-grade graph and authority lints
 - in-tree `sley-contract` utility scaffold with `inventory`, `check-fixtures`,
-  and `validate` root-matching commands over `docs/schemas/` and
+  and `validate` JSON Schema validation commands over `docs/schemas/` and
   `fixtures/contracts/`, using versioned JSON report roots for downstream
   contract-kit work
 - checked JSON readiness reports with `sley doctor`, consuming strict

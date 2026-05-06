@@ -477,8 +477,8 @@ The current smoke manifest covers:
   receipts, trace seals, graft outcomes with strict accepted provenance
   records, query task/take/type/effect/call row definitions, graph-slice
   focus/task/call payloads, graph-slice affordance operations, `sley-contract`
-  root-matching reports, and ZJX preview envelopes with graph digest and nested
-  handoff refs
+  JSON Schema validation reports, and ZJX preview envelopes with graph digest
+  and nested handoff refs
 - query report direct task/take/type/effect/call row definitions
 - doctor/plan call-bearing reports route agents to strict
   `sley query --kind calls` next-actions

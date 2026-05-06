@@ -10,10 +10,11 @@ use serde_json::Value as JsonValue;
 const INVENTORY_SCHEMA: &str = "sley.contract.inventory.v0";
 const FIXTURE_CHECK_SCHEMA: &str = "sley.contract.fixture_check.v0";
 const VALIDATE_SCHEMA: &str = "sley.contract.validate.v0";
+const VALIDATION_LEVEL: &str = "json_schema_draft_2020_12";
 
 #[derive(Debug, Parser)]
 #[command(name = "sley-contract")]
-#[command(about = "Inspect Sley JSON schemas and contract fixture roots")]
+#[command(about = "Inspect Sley JSON schemas and validate contract fixtures")]
 struct Cli {
     #[command(subcommand)]
     command: Command,
@@ -27,7 +28,7 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
-    /// Check that every fixture has a known top-level schema ID.
+    /// Validate every fixture against its matching top-level schema ID.
     CheckFixtures {
         fixtures_dir: PathBuf,
         #[arg(long, default_value = "docs/schemas")]
@@ -35,7 +36,7 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
-    /// Check one report's top-level schema ID against the requested schema.
+    /// Validate one report against the requested schema.
     Validate {
         #[arg(long)]
         schema: String,
@@ -87,8 +88,7 @@ struct FixtureCheck {
     status: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     schema_id: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    issue: Option<ContractIssue>,
+    issues: Vec<ContractIssue>,
 }
 
 #[derive(Debug, Serialize)]
@@ -108,6 +108,12 @@ struct ValidateReport {
 struct ContractIssue {
     code: String,
     message: String,
+}
+
+#[derive(Debug)]
+struct SchemaDocument {
+    info: SchemaInfo,
+    value: JsonValue,
 }
 
 fn main() -> Result<()> {
@@ -147,7 +153,10 @@ fn main() -> Result<()> {
 }
 
 fn build_inventory_report(schema_dir: &Path) -> Result<InventoryReport> {
-    let schemas = discover_schemas(schema_dir)?;
+    let schemas: Vec<SchemaInfo> = load_schema_documents(schema_dir)?
+        .into_iter()
+        .map(|schema| schema.info)
+        .collect();
     Ok(InventoryReport {
         schema: INVENTORY_SCHEMA.to_string(),
         status: "passed".to_string(),
@@ -161,11 +170,12 @@ fn build_fixture_check_report(
     schema_dir: &Path,
     fixtures_dir: &Path,
 ) -> Result<FixtureCheckReport> {
-    let schema_ids = discover_schema_ids(schema_dir)?;
+    let schemas = load_schema_documents(schema_dir)?;
+    let registry = build_schema_registry(&schemas)?;
     let fixture_paths = list_json_files(fixtures_dir, false)?;
     let fixtures = fixture_paths
         .iter()
-        .map(|path| check_fixture(path, &schema_ids))
+        .map(|path| check_fixture(path, &schemas, &registry))
         .collect::<Vec<_>>();
     let failed_count = fixtures
         .iter()
@@ -181,7 +191,7 @@ fn build_fixture_check_report(
             "failed"
         }
         .to_string(),
-        validation_level: "schema_root_match".to_string(),
+        validation_level: VALIDATION_LEVEL.to_string(),
         schema_dir: path_string(schema_dir),
         fixtures_dir: path_string(fixtures_dir),
         fixture_count,
@@ -196,10 +206,12 @@ fn build_validate_report(
     requested_schema: &str,
     report_path: &Path,
 ) -> Result<ValidateReport> {
-    let schema_ids = discover_schema_ids(schema_dir)?;
+    let schemas = load_schema_documents(schema_dir)?;
+    let registry = build_schema_registry(&schemas)?;
     let mut issues = Vec::new();
+    let requested_document = find_schema(&schemas, requested_schema);
 
-    if !schema_ids.contains(requested_schema) {
+    if requested_document.is_none() {
         issues.push(issue(
             "unknown_requested_schema",
             format!(
@@ -209,19 +221,32 @@ fn build_validate_report(
         ));
     }
 
-    let (report_schema, parse_issue) = read_report_schema(report_path);
+    let (report_value, parse_issue) = read_json_report(report_path);
     if let Some(issue) = parse_issue {
         issues.push(issue);
     }
-    if let Some(actual_schema) = report_schema.as_deref() {
-        if actual_schema != requested_schema {
-            issues.push(issue(
-                "schema_mismatch",
-                format!(
-                    "report schema {actual_schema:?} does not match requested schema {requested_schema:?}"
-                ),
-            ));
+
+    let report_schema = report_value
+        .as_ref()
+        .and_then(|value| string_field(value, "schema"));
+
+    match report_schema.as_deref() {
+        Some(actual_schema) if actual_schema == requested_schema => {
+            if let (Some(document), Some(value)) = (requested_document, report_value.as_ref()) {
+                issues.extend(validate_instance(document, &registry, value));
+            }
         }
+        Some(actual_schema) => issues.push(issue(
+            "schema_mismatch",
+            format!(
+                "report schema {actual_schema:?} does not match requested schema {requested_schema:?}"
+            ),
+        )),
+        None if report_value.is_some() => issues.push(issue(
+            "missing_schema",
+            "report does not have a top-level string schema field",
+        )),
+        None => {}
     }
 
     Ok(ValidateReport {
@@ -232,7 +257,7 @@ fn build_validate_report(
             "failed"
         }
         .to_string(),
-        validation_level: "schema_root_match".to_string(),
+        validation_level: VALIDATION_LEVEL.to_string(),
         requested_schema: requested_schema.to_string(),
         report_path: path_string(report_path),
         schema_dir: path_string(schema_dir),
@@ -241,7 +266,7 @@ fn build_validate_report(
     })
 }
 
-fn discover_schemas(schema_dir: &Path) -> Result<Vec<SchemaInfo>> {
+fn load_schema_documents(schema_dir: &Path) -> Result<Vec<SchemaDocument>> {
     let mut seen = BTreeSet::new();
     let mut schemas = Vec::new();
     for path in list_json_files(schema_dir, true)? {
@@ -251,74 +276,153 @@ fn discover_schemas(schema_dir: &Path) -> Result<Vec<SchemaInfo>> {
         if !seen.insert(id.clone()) {
             return Err(anyhow!("duplicate schema id {id:?} in {}", path.display()));
         }
-        schemas.push(SchemaInfo {
-            id,
-            path: path_string(&path),
-            title: string_field(&value, "title"),
-            draft: string_field(&value, "$schema"),
-            root_type: string_field(&value, "type"),
+        schemas.push(SchemaDocument {
+            info: SchemaInfo {
+                id,
+                path: path_string(&path),
+                title: string_field(&value, "title"),
+                draft: string_field(&value, "$schema"),
+                root_type: string_field(&value, "type"),
+            },
+            value,
         });
     }
     if schemas.is_empty() {
         return Err(anyhow!("no schema files found in {}", schema_dir.display()));
     }
-    schemas.sort_by(|left, right| left.id.cmp(&right.id));
+    schemas.sort_by(|left, right| left.info.id.cmp(&right.info.id));
     Ok(schemas)
 }
 
-fn discover_schema_ids(schema_dir: &Path) -> Result<BTreeSet<String>> {
-    Ok(discover_schemas(schema_dir)?
-        .into_iter()
-        .map(|schema| schema.id)
-        .collect())
+fn build_schema_registry<'a>(schemas: &'a [SchemaDocument]) -> Result<jsonschema::Registry<'a>> {
+    let mut builder = jsonschema::Registry::new();
+    for schema in schemas {
+        builder = builder
+            .add(schema.info.id.as_str(), &schema.value)
+            .map_err(|error| {
+                anyhow!(
+                    "failed to register schema {} from {}: {error}",
+                    schema.info.id,
+                    schema.info.path
+                )
+            })?;
+    }
+    builder
+        .prepare()
+        .map_err(|error| anyhow!("failed to prepare schema registry: {error}"))
 }
 
-fn check_fixture(path: &Path, schema_ids: &BTreeSet<String>) -> FixtureCheck {
-    let (schema_id, parse_issue) = read_report_schema(path);
+fn find_schema<'a>(schemas: &'a [SchemaDocument], schema_id: &str) -> Option<&'a SchemaDocument> {
+    schemas.iter().find(|schema| schema.info.id == schema_id)
+}
+
+fn check_fixture(
+    path: &Path,
+    schemas: &[SchemaDocument],
+    registry: &jsonschema::Registry<'_>,
+) -> FixtureCheck {
+    let (value, parse_issue) = read_json_report(path);
     if let Some(issue) = parse_issue {
         return FixtureCheck {
             path: path_string(path),
             status: "failed".to_string(),
-            schema_id,
-            issue: Some(issue),
+            schema_id: None,
+            issues: vec![issue],
         };
     }
 
+    let Some(value) = value else {
+        return FixtureCheck {
+            path: path_string(path),
+            status: "failed".to_string(),
+            schema_id: None,
+            issues: vec![issue(
+                "invalid_json",
+                "fixture could not be read as a JSON report",
+            )],
+        };
+    };
+
+    let schema_id = string_field(&value, "schema");
     let Some(schema_id) = schema_id else {
         return FixtureCheck {
             path: path_string(path),
             status: "failed".to_string(),
             schema_id: None,
-            issue: Some(issue(
+            issues: vec![issue(
                 "missing_schema",
                 "fixture does not have a top-level string schema field",
-            )),
+            )],
         };
     };
 
-    if !schema_ids.contains(&schema_id) {
+    let Some(schema) = find_schema(schemas, &schema_id) else {
         return FixtureCheck {
             path: path_string(path),
             status: "failed".to_string(),
             schema_id: Some(schema_id.clone()),
-            issue: Some(issue(
+            issues: vec![issue(
                 "unknown_schema",
                 format!("fixture references unknown schema {schema_id:?}"),
-            )),
+            )],
         };
-    }
+    };
 
+    let issues = validate_instance(schema, registry, &value);
     FixtureCheck {
         path: path_string(path),
-        status: "passed".to_string(),
+        status: if issues.is_empty() {
+            "passed"
+        } else {
+            "failed"
+        }
+        .to_string(),
         schema_id: Some(schema_id),
-        issue: None,
+        issues,
     }
 }
 
-fn read_report_schema(path: &Path) -> (Option<String>, Option<ContractIssue>) {
+fn validate_instance(
+    schema: &SchemaDocument,
+    registry: &jsonschema::Registry<'_>,
+    instance: &JsonValue,
+) -> Vec<ContractIssue> {
+    let validator = match jsonschema::options()
+        .with_registry(registry)
+        .with_base_uri(schema.info.id.clone())
+        .build(&schema.value)
+    {
+        Ok(validator) => validator,
+        Err(error) => {
+            return vec![issue(
+                "invalid_schema",
+                format!(
+                    "schema {} from {} could not be compiled: {error}",
+                    schema.info.id, schema.info.path
+                ),
+            )];
+        }
+    };
+
+    validator
+        .iter_errors(instance)
+        .map(|error| {
+            issue(
+                "schema_validation_error",
+                format!(
+                    "{} at instance {} against schema {}",
+                    error,
+                    error.instance_path(),
+                    error.schema_path()
+                ),
+            )
+        })
+        .collect()
+}
+
+fn read_json_report(path: &Path) -> (Option<JsonValue>, Option<ContractIssue>) {
     match read_json_file(path) {
-        Ok(value) => (string_field(&value, "schema"), None),
+        Ok(value) => (Some(value), None),
         Err(error) => (
             None,
             Some(issue(
@@ -402,12 +506,13 @@ fn emit_fixture_check(report: &FixtureCheckReport, json: bool) -> Result<()> {
     );
     for fixture in &report.fixtures {
         if fixture.status == "failed" {
-            let message = fixture
-                .issue
-                .as_ref()
-                .map(|issue| issue.message.as_str())
-                .unwrap_or("unknown issue");
-            println!("failed {} {}", fixture.path, message);
+            if fixture.issues.is_empty() {
+                println!("failed {} unknown issue", fixture.path);
+                continue;
+            }
+            for issue in &fixture.issues {
+                println!("failed {} {} {}", fixture.path, issue.code, issue.message);
+            }
         }
     }
     Ok(())
