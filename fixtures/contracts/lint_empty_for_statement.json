@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.empty_for",
+  "filters": {
+    "module": null,
+    "rules": [
+      "empty_for_statement"
+    ]
+  },
+  "findings": [
+    {
+      "id": "EMPTY_FOR_STATEMENT",
+      "rule": "empty_for_statement",
+      "severity": "warning",
+      "message": "task `app.empty_for.main` has a for statement over an empty list",
+      "node": "block:task:app.empty_for.main:stmt:1",
+      "module": "app.empty_for",
+      "hint": "delete this never-executed for statement"
+    }
+  ]
+}

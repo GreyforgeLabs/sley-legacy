@@ -40,7 +40,7 @@ Current verified surface:
 
 - `cargo fmt --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 239 tests.
+- Current integration coverage is 241 tests.
 - `sley query --json` emits `schema: "sley.query.report.v0"` and supports
   `--kind all|modules|tasks|types|effects|calls`, `--module <module>`, and
   `--exported`, including strict task/take/type/effect/call row definitions.
@@ -74,6 +74,7 @@ Current verified surface:
   `--rule unused-pure-expression-statement`,
   `--rule mutable-binding-never-set`, `--rule constant-if-expression`,
   `--rule constant-false-while-statement`,
+  `--rule empty-for-statement`,
   `--rule identity-binary-expression`,
   `--rule redundant-boolean-comparison`,
   `--rule absorbing-boolean-expression`,
@@ -91,6 +92,7 @@ Current verified surface:
   `unused_pure_expression_statement`, and `mutable_binding_never_set`,
   `constant_if_expression`,
   `constant_false_while_statement`,
+  `empty_for_statement`,
   `identity_binary_expression`, `redundant_boolean_comparison`, and
   `absorbing_boolean_expression`, `self_comparison_expression`,
   `double_negation_expression`, `redundant_boolean_if_expression`, and
@@ -151,6 +153,8 @@ Current verified surface:
   smoke coverage, plus checked `constant_false_while_statement` dead-loop
   findings and `delete_constant_false_while_statement` templates with
   lint/plan/fix-write/verify
+  smoke coverage, plus checked `empty_for_statement` dead-loop findings and
+  `delete_empty_for_statement` templates with lint/plan/fix-write/verify
   smoke coverage, plus checked `identity_binary_expression` style findings and
   `simplify_identity_binary_expression` templates with lint/plan/fix-write/verify
   smoke coverage, plus checked `redundant_boolean_comparison` style findings and
@@ -369,6 +373,7 @@ cargo run -- lint --json --rule unused-pure-expression-statement <target>
 cargo run -- lint --json --rule mutable-binding-never-set <target>
 cargo run -- lint --json --rule constant-if-expression <target>
 cargo run -- lint --json --rule constant-false-while-statement <target>
+cargo run -- lint --json --rule empty-for-statement <target>
 cargo run -- lint --json --rule identity-binary-expression <target>
 cargo run -- lint --json --rule redundant-boolean-comparison <target>
 cargo run -- lint --json --rule absorbing-boolean-expression <target>

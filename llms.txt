@@ -176,7 +176,8 @@ Current development phase:
   `unused_pure_expression_statement`, the mutable-local style rule
   `mutable_binding_never_set`, the expression simplification rule
   `constant_if_expression`, the constant-false while cleanup rule
-  `constant_false_while_statement`, the identity simplification rule
+  `constant_false_while_statement`, the empty-for cleanup rule
+  `empty_for_statement`, the identity simplification rule
   `identity_binary_expression`, the redundant boolean comparison rule
   `redundant_boolean_comparison`, the absorbing boolean expression rule
   `absorbing_boolean_expression`, the self-comparison expression rule
@@ -230,6 +231,8 @@ Current development phase:
   expression statements, plus
   `delete_constant_false_while_statement` templates for never-executed
   `while false` statements, plus
+  `delete_empty_for_statement` templates for `for` statements over literal
+  empty lists, plus
   `delete_unreachable_statement` templates for dead statements after a
   guaranteed return, plus
   `convert_mutable_binding_to_bind` transactions for never-set mutable locals;

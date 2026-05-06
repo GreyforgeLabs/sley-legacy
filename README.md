@@ -117,6 +117,7 @@ Implemented now:
   `--rule unused-pure-expression-statement`, or
   `--rule mutable-binding-never-set`, `--rule constant-if-expression`,
   `--rule constant-false-while-statement`,
+  `--rule empty-for-statement`,
   `--rule identity-binary-expression`, or
   `--rule redundant-boolean-comparison`, or
   `--rule absorbing-boolean-expression`, or
@@ -173,6 +174,8 @@ Implemented now:
   that can be replaced by the branch that executes,
   `delete_constant_false_while_statement` templates for never-executed
   `while false` statements,
+  `delete_empty_for_statement` templates for `for` statements over literal
+  empty lists,
   `simplify_identity_binary_expression` templates for identity binary
   expressions that can be replaced by the non-identity side,
   `simplify_redundant_boolean_comparison` templates for boolean comparisons
@@ -639,6 +642,7 @@ unused pure expression statement delete templates with write/verify coverage,
 mutable-binding conversion transactions with write/verify coverage,
 constant-if expression simplification templates with write/verify coverage,
 constant-false while statement delete templates with write/verify coverage,
+empty-for statement delete templates with write/verify coverage,
 identity binary expression simplification templates with write/verify coverage,
 redundant boolean comparison simplification templates with write/verify
 coverage,
