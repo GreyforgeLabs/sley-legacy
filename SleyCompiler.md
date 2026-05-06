@@ -221,12 +221,14 @@ Near-term:
    next-actions through seal/ZJX handoff, including the seeded agent
    `sley-ci verify` and `sley-ci deploy` handoffs plus local
    `sley deploy --dry-run` package reports and digest-bearing artifact
-   manifests, graft/fix dry runs, strict edit-plan graft
+   manifests with deterministic reinspection, graft/fix dry runs, strict
+   edit-plan graft
    operation/transaction schema envelopes reused by graph-slice affordances,
    graph-slice focus/task/call-summary contracts, shared diagnostic records,
    standalone trace receipt schemas, checked graph query reports with strict
    task/take/type/effect/call row definitions, `sley-ci` wrapper reports, and
-   `sley-contract` JSON Schema contract validation reports,
+   `sley-contract` JSON Schema contract validation and deploy artifact check
+   reports,
    call-site rename and remove-take/call-arg transaction write/verify,
    passed-verify seal/ZJX handoff next-actions, and private-task lint reports.
 4. Consume `sley.query.report.v0` and `sley.lint.report.v0` from helper

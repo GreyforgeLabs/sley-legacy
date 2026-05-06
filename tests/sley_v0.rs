@@ -4184,6 +4184,10 @@ task main -> Used uses UsedEffect {
         include_str!("../docs/schemas/sley.deploy.artifacts.v0.schema.json"),
         DEPLOY_ARTIFACTS_SCHEMA,
     );
+    assert_schema_file(
+        include_str!("../docs/schemas/sley.deploy.artifact_check.v0.schema.json"),
+        "sley.deploy.artifact_check.v0",
+    );
 }
 
 #[test]
@@ -4208,7 +4212,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         inventory_json.pointer("/schema_count"),
-        Some(&serde_json::json!(21))
+        Some(&serde_json::json!(22))
     );
     let schema_ids = inventory_json
         .pointer("/schemas")
@@ -4219,6 +4223,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
         .collect::<BTreeSet<_>>();
     assert!(schema_ids.contains("sley.query.report.v0"));
     assert!(schema_ids.contains("sley.ci.report.v0"));
+    assert!(schema_ids.contains("sley.deploy.artifact_check.v0"));
     assert!(schema_ids.contains("sley.deploy.artifacts.v0"));
     assert!(schema_ids.contains("sley.deploy.report.v0"));
     assert!(schema_ids.contains("sley.contract.inventory.v0"));
@@ -4253,7 +4258,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(26))
+        Some(&serde_json::json!(27))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -4308,6 +4313,91 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
         validate_json.pointer("/issues"),
         Some(&serde_json::json!([]))
     );
+
+    let artifact_root = temp_project_dir("contract-deploy-artifacts");
+    let deploy_artifacts = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .current_dir(&repo_root)
+        .args([
+            "deploy",
+            "--json",
+            "--dry-run",
+            "--artifacts-dir",
+            &sley_string(&artifact_root),
+            "examples/hello.sley",
+        ])
+        .output()
+        .expect("build deploy artifacts");
+    assert!(
+        deploy_artifacts.status.success(),
+        "deploy artifacts failed: {}",
+        String::from_utf8_lossy(&deploy_artifacts.stderr)
+    );
+    let artifact_check = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-contract"))
+        .current_dir(&repo_root)
+        .args([
+            "inspect-deploy-artifacts",
+            &sley_string(&artifact_root),
+            "--schemas",
+            "docs/schemas",
+            "--json",
+        ])
+        .output()
+        .expect("inspect deploy artifacts");
+    assert!(
+        artifact_check.status.success(),
+        "deploy artifact check failed: {}",
+        String::from_utf8_lossy(&artifact_check.stderr)
+    );
+    let artifact_check_json: serde_json::Value =
+        serde_json::from_slice(&artifact_check.stdout).expect("parse artifact check JSON");
+    assert_eq!(
+        artifact_check_json.pointer("/schema"),
+        Some(&serde_json::json!("sley.deploy.artifact_check.v0"))
+    );
+    assert_eq!(
+        artifact_check_json.pointer("/status"),
+        Some(&serde_json::json!("passed"))
+    );
+    assert_eq!(
+        artifact_check_json.pointer("/summary/file_count"),
+        Some(&serde_json::json!(3))
+    );
+    assert_eq!(
+        artifact_check_json.pointer("/summary/issue_count"),
+        Some(&serde_json::json!(0))
+    );
+    assert_eq!(
+        artifact_check_json.pointer("/files/0/role"),
+        Some(&serde_json::json!("report"))
+    );
+
+    let seal_path = artifact_root.join("seal.json");
+    let mut seal_source = fs::read_to_string(&seal_path).expect("read seal for tamper check");
+    seal_source.push('\n');
+    fs::write(&seal_path, seal_source).expect("tamper seal artifact digest");
+    let tampered = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-contract"))
+        .current_dir(&repo_root)
+        .args([
+            "inspect-deploy-artifacts",
+            &sley_string(&artifact_root),
+            "--schemas",
+            "docs/schemas",
+            "--json",
+        ])
+        .output()
+        .expect("inspect tampered deploy artifacts");
+    assert!(!tampered.status.success());
+    let tampered_json: serde_json::Value =
+        serde_json::from_slice(&tampered.stdout).expect("parse tampered artifact check JSON");
+    assert_eq!(
+        tampered_json.pointer("/status"),
+        Some(&serde_json::json!("failed"))
+    );
+    assert_eq!(
+        tampered_json.pointer("/files/1/issues/0/code"),
+        Some(&serde_json::json!("digest_mismatch"))
+    );
+    let _ = fs::remove_dir_all(artifact_root);
 
     let invalid_report = temp_project_dir("contract-invalid-report");
     fs::create_dir_all(&invalid_report).expect("create invalid contract dir");

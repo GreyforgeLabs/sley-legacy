@@ -20,6 +20,7 @@ cargo run -- fix --json --kind delete_unused_private_declarations --write <file-
 cargo run -- verify --json <file-or-project>
 cargo run -- deploy --json --dry-run --artifacts-dir .sley/deploy <file-or-project>
 cargo run --bin sley-ci -- deploy --json --dry-run --artifacts-dir .sley/ci-deploy <file-or-project>
+cargo run --bin sley-contract -- inspect-deploy-artifacts .sley/deploy --schemas docs/schemas --json
 cargo run -- seal --json <file-or-project>
 cargo run -- graft --json --dry-run <file> <graft.json>
 cargo run -- graft --json --write <file> <graft.json>
@@ -120,8 +121,9 @@ The diagnostics schema exposes a shared diagnostic record used by graft,
 doctor, plan, and verify report schemas.
 The query schema exposes strict task, take, type, effect, and call summary row
 definitions for downstream bindings.
-The `sley-contract` binary exposes `inventory`, `check-fixtures`, and
-`validate` JSON Schema validation reports for schema/fixture contract-kit work.
+The `sley-contract` binary exposes `inventory`, `check-fixtures`, `validate`,
+and `inspect-deploy-artifacts` JSON Schema validation reports for
+schema/fixture/deploy-handoff contract-kit work.
 The `sley-ci` binary exposes `check`, `verify`, `deploy`, and `smoke` reports
 for local CI and pre-commit gates over existing Sley commands.
 Graph-slice move/delete/replace affordance operations reuse the strict graft
@@ -245,7 +247,10 @@ Current development phase:
   operator approval. Add `--artifacts-dir <dir>` to write local
   `deploy-report.json`, `seal.json`, `zjx-envelope.json`, and digest-bearing
   `manifest.json` handoff files after the dry-run package is ready;
-  `sley-ci deploy` passes the same flag through to the wrapped deploy command
+  `sley-ci deploy` passes the same flag through to the wrapped deploy command.
+  Use `sley-contract inspect-deploy-artifacts <dir> --schemas docs/schemas
+  --json` to validate the handoff manifest, schemas, and file digests after the
+  directory moves between agent sessions
 - next development work should keep broadening style and migration lints
 - project graft writeback now supports create/update/delete module files and
   module rename, including manifest entry updates; top-level type/effect/task

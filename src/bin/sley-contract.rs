@@ -6,10 +6,12 @@ use anyhow::{Context, Result, anyhow};
 use clap::{Parser, Subcommand};
 use serde::Serialize;
 use serde_json::Value as JsonValue;
+use sley::trace::content_digest;
 
 const INVENTORY_SCHEMA: &str = "sley.contract.inventory.v0";
 const FIXTURE_CHECK_SCHEMA: &str = "sley.contract.fixture_check.v0";
 const VALIDATE_SCHEMA: &str = "sley.contract.validate.v0";
+const DEPLOY_ARTIFACT_CHECK_SCHEMA: &str = "sley.deploy.artifact_check.v0";
 const VALIDATION_LEVEL: &str = "json_schema_draft_2020_12";
 
 #[derive(Debug, Parser)]
@@ -41,6 +43,14 @@ enum Command {
         #[arg(long)]
         schema: String,
         report: PathBuf,
+        #[arg(long, default_value = "docs/schemas")]
+        schemas: PathBuf,
+        #[arg(long)]
+        json: bool,
+    },
+    /// Verify a local deploy artifact directory against its manifest and schemas.
+    InspectDeployArtifacts {
+        artifacts_dir: PathBuf,
         #[arg(long, default_value = "docs/schemas")]
         schemas: PathBuf,
         #[arg(long)]
@@ -110,6 +120,43 @@ struct ContractIssue {
     message: String,
 }
 
+#[derive(Debug, Serialize)]
+struct DeployArtifactCheckReport {
+    schema: String,
+    status: String,
+    validation_level: String,
+    artifacts_dir: String,
+    manifest_path: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    manifest_schema: Option<String>,
+    summary: DeployArtifactCheckSummary,
+    files: Vec<DeployArtifactFileCheck>,
+    issues: Vec<ContractIssue>,
+}
+
+#[derive(Debug, Serialize)]
+struct DeployArtifactCheckSummary {
+    file_count: usize,
+    passed_count: usize,
+    failed_count: usize,
+    issue_count: usize,
+}
+
+#[derive(Debug, Serialize)]
+struct DeployArtifactFileCheck {
+    role: String,
+    status: String,
+    path: String,
+    manifest_path: String,
+    expected_schema: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    actual_schema: Option<String>,
+    expected_digest: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    actual_digest: Option<String>,
+    issues: Vec<ContractIssue>,
+}
+
 #[derive(Debug)]
 struct SchemaDocument {
     info: SchemaInfo,
@@ -144,6 +191,18 @@ fn main() -> Result<()> {
             let report = build_validate_report(&schemas, &schema, &report)?;
             let failed = report.status == "failed";
             emit_validate(&report, json)?;
+            if failed {
+                std::process::exit(1);
+            }
+        }
+        Command::InspectDeployArtifacts {
+            artifacts_dir,
+            schemas,
+            json,
+        } => {
+            let report = build_deploy_artifact_check_report(&schemas, &artifacts_dir)?;
+            let failed = report.status == "failed";
+            emit_deploy_artifact_check(&report, json)?;
             if failed {
                 std::process::exit(1);
             }
@@ -266,6 +325,82 @@ fn build_validate_report(
     })
 }
 
+fn build_deploy_artifact_check_report(
+    schema_dir: &Path,
+    artifacts_dir: &Path,
+) -> Result<DeployArtifactCheckReport> {
+    let schemas = load_schema_documents(schema_dir)?;
+    let registry = build_schema_registry(&schemas)?;
+    let manifest_path = artifacts_dir.join("manifest.json");
+    let (manifest_value, parse_issue) = read_json_report(&manifest_path);
+    let mut issues = Vec::new();
+    if let Some(issue) = parse_issue {
+        issues.push(issue);
+    }
+
+    let manifest_schema = manifest_value
+        .as_ref()
+        .and_then(|value| string_field(value, "schema"));
+    match manifest_schema.as_deref() {
+        Some("sley.deploy.artifacts.v0") => {
+            if let (Some(schema), Some(value)) = (
+                find_schema(&schemas, "sley.deploy.artifacts.v0"),
+                manifest_value.as_ref(),
+            ) {
+                issues.extend(validate_instance(schema, &registry, value));
+            }
+        }
+        Some(schema) => issues.push(issue(
+            "manifest_schema_mismatch",
+            format!("manifest schema {schema:?} is not \"sley.deploy.artifacts.v0\""),
+        )),
+        None if manifest_value.is_some() => issues.push(issue(
+            "manifest_missing_schema",
+            "manifest does not have a top-level string schema field",
+        )),
+        None => {}
+    }
+
+    let mut files = Vec::new();
+    if let Some(manifest) = manifest_value.as_ref() {
+        for role in ["report", "seal", "package"] {
+            match manifest_file_spec(manifest, role) {
+                Some(spec) => files.push(check_deploy_artifact_file(
+                    artifacts_dir,
+                    role,
+                    spec,
+                    &schemas,
+                    &registry,
+                )),
+                None => issues.push(issue(
+                    "manifest_file_spec_missing",
+                    format!("manifest is missing a complete files.{role} record"),
+                )),
+            }
+        }
+    }
+
+    let failed_count = files.iter().filter(|file| file.status == "failed").count();
+    let issue_count = issues.len() + files.iter().map(|file| file.issues.len()).sum::<usize>();
+    let file_count = files.len();
+    Ok(DeployArtifactCheckReport {
+        schema: DEPLOY_ARTIFACT_CHECK_SCHEMA.to_string(),
+        status: if issue_count == 0 { "passed" } else { "failed" }.to_string(),
+        validation_level: VALIDATION_LEVEL.to_string(),
+        artifacts_dir: path_string(artifacts_dir),
+        manifest_path: path_string(&manifest_path),
+        manifest_schema,
+        summary: DeployArtifactCheckSummary {
+            file_count,
+            passed_count: file_count.saturating_sub(failed_count),
+            failed_count,
+            issue_count,
+        },
+        files,
+        issues,
+    })
+}
+
 fn load_schema_documents(schema_dir: &Path) -> Result<Vec<SchemaDocument>> {
     let mut seen = BTreeSet::new();
     let mut schemas = Vec::new();
@@ -380,6 +515,121 @@ fn check_fixture(
         schema_id: Some(schema_id),
         issues,
     }
+}
+
+struct ArtifactFileSpec {
+    manifest_path: String,
+    schema: String,
+    digest: String,
+}
+
+fn manifest_file_spec(manifest: &JsonValue, role: &str) -> Option<ArtifactFileSpec> {
+    let prefix = format!("/files/{role}");
+    Some(ArtifactFileSpec {
+        manifest_path: manifest
+            .pointer(&format!("{prefix}/path"))
+            .and_then(JsonValue::as_str)?
+            .to_string(),
+        schema: manifest
+            .pointer(&format!("{prefix}/schema"))
+            .and_then(JsonValue::as_str)?
+            .to_string(),
+        digest: manifest
+            .pointer(&format!("{prefix}/digest"))
+            .and_then(JsonValue::as_str)?
+            .to_string(),
+    })
+}
+
+fn check_deploy_artifact_file(
+    artifacts_dir: &Path,
+    role: &str,
+    spec: ArtifactFileSpec,
+    schemas: &[SchemaDocument],
+    registry: &jsonschema::Registry<'_>,
+) -> DeployArtifactFileCheck {
+    let path = resolve_artifact_path(artifacts_dir, &spec.manifest_path);
+    let mut issues = Vec::new();
+    let mut actual_schema = None;
+    let mut actual_digest = None;
+
+    match fs::read(&path) {
+        Ok(bytes) => {
+            let digest = content_digest(&bytes);
+            if digest != spec.digest {
+                issues.push(issue(
+                    "digest_mismatch",
+                    format!(
+                        "artifact digest {digest:?} does not match manifest digest {:?}",
+                        spec.digest
+                    ),
+                ));
+            }
+            actual_digest = Some(digest);
+
+            match serde_json::from_slice::<JsonValue>(&bytes) {
+                Ok(value) => {
+                    actual_schema = string_field(&value, "schema");
+                    match actual_schema.as_deref() {
+                        Some(schema) if schema == spec.schema => {
+                            if let Some(document) = find_schema(schemas, &spec.schema) {
+                                issues.extend(validate_instance(document, registry, &value));
+                            } else {
+                                issues.push(issue(
+                                    "unknown_artifact_schema",
+                                    format!("schema {:?} was not found", spec.schema),
+                                ));
+                            }
+                        }
+                        Some(schema) => issues.push(issue(
+                            "schema_mismatch",
+                            format!(
+                                "artifact schema {schema:?} does not match manifest schema {:?}",
+                                spec.schema
+                            ),
+                        )),
+                        None => issues.push(issue(
+                            "missing_schema",
+                            "artifact does not have a top-level string schema field",
+                        )),
+                    }
+                }
+                Err(error) => issues.push(issue(
+                    "invalid_json",
+                    format!("failed to parse artifact JSON {}: {error}", path.display()),
+                )),
+            }
+        }
+        Err(error) => issues.push(issue(
+            "artifact_read_failed",
+            format!("failed to read artifact {}: {error}", path.display()),
+        )),
+    }
+
+    DeployArtifactFileCheck {
+        role: role.to_string(),
+        status: if issues.is_empty() {
+            "passed"
+        } else {
+            "failed"
+        }
+        .to_string(),
+        path: path_string(&path),
+        manifest_path: spec.manifest_path,
+        expected_schema: spec.schema,
+        actual_schema,
+        expected_digest: spec.digest,
+        actual_digest,
+        issues,
+    }
+}
+
+fn resolve_artifact_path(artifacts_dir: &Path, manifest_path: &str) -> PathBuf {
+    let declared = PathBuf::from(manifest_path);
+    declared
+        .file_name()
+        .map(|file_name| artifacts_dir.join(file_name))
+        .unwrap_or_else(|| artifacts_dir.join(manifest_path))
 }
 
 fn validate_instance(
@@ -528,6 +778,25 @@ fn emit_validate(report: &ValidateReport, json: bool) -> Result<()> {
     );
     for issue in &report.issues {
         println!("{} {}", issue.code, issue.message);
+    }
+    Ok(())
+}
+
+fn emit_deploy_artifact_check(report: &DeployArtifactCheckReport, json: bool) -> Result<()> {
+    if json {
+        return print_json(report);
+    }
+    println!(
+        "sley-contract inspect-deploy-artifacts status={} files={} issues={}",
+        report.status, report.summary.file_count, report.summary.issue_count
+    );
+    for issue in &report.issues {
+        println!("{} {}", issue.code, issue.message);
+    }
+    for file in &report.files {
+        for issue in &file.issues {
+            println!("{} {} {}", file.role, issue.code, issue.message);
+        }
     }
     Ok(())
 }

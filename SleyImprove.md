@@ -115,8 +115,9 @@ Rules:
 - JSON output must be stable and versioned.
 - AST roots, diagnostic reports, symbol graphs, graph slices, query reports,
   lint reports, doctor reports, verify reports, deploy dry-run reports, deploy
-  artifact manifests, CI reports, project scaffold reports, trace seals, ZJX
-  envelopes, and graft outcomes carry v0 schema IDs.
+  artifact manifests, deploy artifact check reports, CI reports, project
+  scaffold reports, trace seals, ZJX envelopes, and graft outcomes carry v0
+  schema IDs.
 - AST, diagnostic-report, graph-slice, query-report, lint-report,
   doctor-report, project-scaffold, and trace-seal snapshots are locked under
   `fixtures/contracts/`.
@@ -128,11 +129,11 @@ Rules:
   envelopes reused by graph-slice affordances, the graph-slice schema links
   focus, task, and call-summary payloads to shared contracts, `sley-ci`
   check/verify/deploy/smoke reports and `sley-contract`
-  inventory/fixture-check/validate reports have versioned schemas, the graft
-  outcome and trace receipt schemas pin accepted provenance records, the ZJX
-  envelope schema pins graph, slice, and trace receipt handoff refs, the deploy
-  artifact manifest schema pins report/seal/package file digests, and the
-  remaining schema files are still root-contract v0 shapes.
+  inventory/fixture-check/validate/deploy-artifact-check reports have versioned
+  schemas, the graft outcome and trace receipt schemas pin accepted provenance
+  records, the ZJX envelope schema pins graph, slice, and trace receipt handoff
+  refs, the deploy artifact manifest schema pins report/seal/package file
+  digests, and the remaining schema files are still root-contract v0 shapes.
 - Diagnostics include stable IDs, node IDs, spans where possible, and repair
   hints for common checker failures.
 - `sley doctor` is the first deterministic helper consuming strict check,
@@ -195,7 +196,9 @@ Rules:
   remains behind operator approval. `--artifacts-dir <dir>` writes local
   `deploy-report.json`, `seal.json`, `zjx-envelope.json`, and digest-bearing
   `manifest.json` handoff files only after the dry-run package is ready;
-  `sley-ci deploy` passes the same flag through to the wrapped deploy command.
+  `sley-ci deploy` passes the same flag through to the wrapped deploy command,
+  and `sley-contract inspect-deploy-artifacts` revalidates the handoff
+  manifest, schemas, and digests.
 - Grafts support dry-run by default and an explicit `--dry-run` flag.
 - Graft input JSON is strict: unknown operation or payload fields reject instead
   of being silently ignored.
@@ -490,8 +493,8 @@ The current smoke manifest covers:
   receipts, trace seals, graft outcomes with strict accepted provenance
   records, query task/take/type/effect/call row definitions, graph-slice
   focus/task/call payloads, graph-slice affordance operations, `sley-ci`
-  reports, `sley-contract` JSON Schema validation reports, and ZJX preview
-  envelopes with graph digest and nested handoff refs
+  reports, `sley-contract` JSON Schema validation reports, deploy artifact
+  checks, and ZJX preview envelopes with graph digest and nested handoff refs
 - query report direct task/take/type/effect/call row definitions
 - doctor/plan call-bearing reports route agents to strict
   `sley query --kind calls` next-actions
@@ -548,7 +551,8 @@ The current smoke manifest covers:
   and `Spend`
 - local deploy package dry-runs that prove verify, seal, and ZJX package
   summaries without live deployment authority and can write explicit local
-  report/seal/package handoff artifacts with a digest manifest
+  report/seal/package handoff artifacts with a digest manifest plus a
+  deterministic reinspection command
 - temp-directory execution and temp setup files for write-mode cases so release
   tests do not mutate the repo checkout
 

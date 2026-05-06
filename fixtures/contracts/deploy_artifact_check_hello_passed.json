@@ -1,0 +1,50 @@
+{
+  "schema": "sley.deploy.artifact_check.v0",
+  "status": "passed",
+  "validation_level": "json_schema_draft_2020_12",
+  "artifacts_dir": "artifacts",
+  "manifest_path": "artifacts/manifest.json",
+  "manifest_schema": "sley.deploy.artifacts.v0",
+  "summary": {
+    "file_count": 3,
+    "passed_count": 3,
+    "failed_count": 0,
+    "issue_count": 0
+  },
+  "files": [
+    {
+      "role": "report",
+      "status": "passed",
+      "path": "artifacts/deploy-report.json",
+      "manifest_path": "artifacts/deploy-report.json",
+      "expected_schema": "sley.deploy.report.v0",
+      "actual_schema": "sley.deploy.report.v0",
+      "expected_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "actual_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "issues": []
+    },
+    {
+      "role": "seal",
+      "status": "passed",
+      "path": "artifacts/seal.json",
+      "manifest_path": "artifacts/seal.json",
+      "expected_schema": "sley.trace.seal.v0",
+      "actual_schema": "sley.trace.seal.v0",
+      "expected_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "actual_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "issues": []
+    },
+    {
+      "role": "package",
+      "status": "passed",
+      "path": "artifacts/zjx-envelope.json",
+      "manifest_path": "artifacts/zjx-envelope.json",
+      "expected_schema": "sley.zjx.envelope.v0",
+      "actual_schema": "sley.zjx.envelope.v0",
+      "expected_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+      "actual_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+      "issues": []
+    }
+  ],
+  "issues": []
+}
