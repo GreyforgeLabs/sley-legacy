@@ -56,7 +56,7 @@
   },
   "lint": {
     "source_schema": "sley.lint.report.v0",
-    "status": "warnings",
+    "status": "findings",
     "findings": [
       {
         "id": "lint:unused_private_task:task:app.workbench.orphan",

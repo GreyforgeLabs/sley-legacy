@@ -42,11 +42,34 @@ task orphan -> Text {
     );
 
     let report: JsonValue = serde_json::from_slice(&output.stdout).expect("parse workbench JSON");
+    let report_path = root.join("workbench-report.json");
+    fs::write(&report_path, &output.stdout).expect("write workbench report");
+    let contract = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-contract"))
+        .current_dir(env!("CARGO_MANIFEST_DIR"))
+        .args([
+            "validate",
+            "--schema",
+            "sley.workbench.report.v0",
+            report_path.to_str().expect("report path"),
+            "--schemas",
+            "docs/schemas",
+            "--json",
+        ])
+        .output()
+        .expect("validate workbench report schema");
+    assert!(
+        contract.status.success(),
+        "workbench report schema validation failed\nstdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&contract.stdout),
+        String::from_utf8_lossy(&contract.stderr)
+    );
+
     assert_eq!(
         report.pointer("/schema"),
         Some(&json!("sley.workbench.report.v0"))
     );
     assert_eq!(report.pointer("/status"), Some(&json!("warnings")));
+    assert_eq!(report.pointer("/lint/status"), Some(&json!("findings")));
     assert_eq!(report.pointer("/summary/module_count"), Some(&json!(1)));
     assert_eq!(report.pointer("/summary/task_count"), Some(&json!(2)));
     assert_eq!(
