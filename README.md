@@ -425,6 +425,8 @@ Implemented now:
   through `.github/actions/sley-v1/action.yml`, `.github/workflows/v1.yml`,
   and `.pre-commit-config.yaml`
 - compact agent onboarding pack in `llms.txt`
+- release-facing `CHANGELOG.md` and `docs/contracts.md` files covering the
+  current contract roots, validation commands, and release-candidate deltas
 
 Repository release gate:
 

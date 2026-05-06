@@ -348,6 +348,10 @@ they create more surface area than they prove. The current priority is trust:
 contracts, gates, syntax review, editor diagnostics, and graph/graft
 inspection.
 
+Current release packaging docs now include `CHANGELOG.md` and
+`docs/contracts.md`. Repository license selection remains an explicit operator
+decision before public release.
+
 ## Completion Gates
 
 A utility is ready for first public open source release only when:

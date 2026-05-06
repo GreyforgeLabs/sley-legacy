@@ -199,11 +199,13 @@ inspection, digest verification, graph extraction, and envelope diff outputs.
 
 Contract references:
 
+- `docs/contracts.md`
 - `docs/SleyLanguageSpec.md`
 - `docs/schemas/*.schema.json`
 - `fixtures/contracts/*.json`
 - `fixtures/grafts/*.json`
 - `tests/sley_v0.rs`
+- `CHANGELOG.md`
 
 Current development phase:
 

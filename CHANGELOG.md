@@ -1,0 +1,38 @@
+# Changelog
+
+All notable Sley changes for the current release-candidate line are tracked
+here. Dates use UTC-independent calendar dates from the local repo history.
+
+## Unreleased
+
+### Added
+
+- `sley-docgen reference`, a checked JSON and optional Markdown reference
+  generator over query-derived module, task, type, effect, and capability docs.
+- `sley-sandbox-runner run`, a manifest-backed deterministic replay utility
+  for seeded runtime capability and host adapter checks.
+- `sley-migrate report`, a checked source migration and schema drift report
+  utility.
+- `sley-agent-bench run`, a deterministic agent repair-loop benchmark over
+  query, lint, plan, fix, verify, seal, and ZJX evidence.
+- `sley-zjx`, a read-only inspection utility for preview ZJX envelopes.
+- Expanded `sley new` templates for library, CLI, service-gate, data-pipeline,
+  deploy, agent, and agent-task-pack starters.
+- `sley-workbench`, `sley-lsp`, `sley-conformance`, `sley-contract`, and
+  `sley-ci` bootstraps for the local v1 release gate.
+- `docs/contracts.md`, a contract map for the current schema-backed JSON roots.
+
+### Changed
+
+- `make v1` now includes checks for LSP, workbench, agent bench, migrate,
+  docgen, sandbox runner, ZJX tools, contract fixtures, conformance, corpus,
+  examples, and CLI smokes.
+- Contract inventory now tracks 36 schemas, 96 contract fixtures, and 99 schema
+  instances through the conformance report.
+
+### Notes
+
+- Live provider calls, live deployment, external spend, real secret reads, and
+  compressed binary ZJX archive writing remain outside the v0 executable slice.
+- License selection is intentionally not asserted here; it requires an explicit
+  operator decision before public release.
