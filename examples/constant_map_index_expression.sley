@@ -1,0 +1,5 @@
+module app.constant_map_index
+
+task main -> Text {
+  return map { "alpha": "ready", "beta": "done" }["beta"]
+}

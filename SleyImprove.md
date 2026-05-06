@@ -101,7 +101,7 @@ sley fix --json --kind <kind> [--template-surface <surface>] [--name <name>] [--
 sley verify --json [--deny-warnings] [runtime gates/seeds] <target>
 sley deploy --json --dry-run [--artifacts-dir <dir>] [runtime gates/seeds] <target>
 sley query --json [--kind all|modules|tasks|types|effects|calls] [--module <module>] <target>
-sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter|missing-module-declaration|unchecked-result|unqualified-imported-call|unused-pure-binding|unused-pure-expression-statement|mutable-binding-never-set|constant-if-expression|constant-if-statement|constant-false-while-statement|constant-comparison-expression|constant-arithmetic-expression|constant-text-concatenation-expression|constant-list-index-expression|empty-if-statement|empty-for-statement|empty-forge-statement|identity-binary-expression|redundant-boolean-comparison|absorbing-boolean-expression|self-comparison-expression|double-negation-expression|negated-comparison-expression|redundant-boolean-if-expression|redundant-boolean-if-statement|same-branch-if-expression|same-branch-if-statement|unreachable-statement] [--module <module>] <target>
+sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter|missing-module-declaration|unchecked-result|unqualified-imported-call|unused-pure-binding|unused-pure-expression-statement|mutable-binding-never-set|constant-if-expression|constant-if-statement|constant-false-while-statement|constant-comparison-expression|constant-arithmetic-expression|constant-text-concatenation-expression|constant-list-index-expression|constant-map-index-expression|empty-if-statement|empty-for-statement|empty-forge-statement|identity-binary-expression|redundant-boolean-comparison|absorbing-boolean-expression|self-comparison-expression|double-negation-expression|negated-comparison-expression|redundant-boolean-if-expression|redundant-boolean-if-statement|same-branch-if-expression|same-branch-if-statement|unreachable-statement] [--module <module>] <target>
 sley-ci lint --json [--deny-warnings] [--rule <rule>] [--module <module>] <target>
 sley-ci doctor --json [--deny-warnings] <target>
 sley-ci plan --json [--deny-warnings] [--graft-templates] [--template-surface <surface>] <target>
@@ -641,6 +641,11 @@ The current smoke manifest covers:
   `simplify_constant_list_index_expression` templates that replace literal list
   indexes over scalar literals with the indexed literal through
   lint/plan/fix-write/verify CLI smoke coverage
+- constant map index expression warnings through
+  `constant_map_index_expression`, plus checked
+  `simplify_constant_map_index_expression` templates that replace literal map
+  indexes over scalar literal values with the indexed literal through
+  lint/plan/fix-write/verify CLI smoke coverage
 - empty-if statement warnings through `empty_if_statement`, plus checked
   `delete_empty_if_statement` templates that remove no-op `if` statements with
   delete-safe conditions and empty branches through lint/plan/fix-write/verify
@@ -803,6 +808,10 @@ The v0 lint rules are:
   `[10, 20, 30][1]` is reported when the list contains only scalar literals and
   the nonnegative integer index is in range, so agents can replace it with the
   selected literal without dropping runtime work.
+- `constant_map_index_expression`: checked literal map indexing such as
+  `map { "one": "ready" }["one"]` is reported when all keys are text literals,
+  all values are scalar literals, and the indexed key is present, so agents can
+  replace it with the selected literal without dropping runtime work.
 - `empty_if_statement`: an `if` statement with a delete-safe condition and
   empty branches is reported so agents can delete no-op control flow without
   dropping calls, indexing, `?`, division, or remainder work.
@@ -861,6 +870,7 @@ The command supports `--module <module>`, `--rule unused-private-task`,
 `--rule constant-arithmetic-expression`,
 `--rule constant-text-concatenation-expression`,
 `--rule constant-list-index-expression`,
+`--rule constant-map-index-expression`,
 `--rule empty-if-statement`,
 `--rule empty-for-statement`,
 `--rule empty-forge-statement`,

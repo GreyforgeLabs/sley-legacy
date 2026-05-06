@@ -45,6 +45,7 @@
       "constant_arithmetic_expression",
       "constant_text_concatenation_expression",
       "constant_list_index_expression",
+      "constant_map_index_expression",
       "empty_if_statement",
       "empty_for_statement",
       "empty_forge_statement",
