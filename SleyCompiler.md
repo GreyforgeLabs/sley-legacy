@@ -246,7 +246,7 @@ Near-term:
    surface now includes explicit module-declaration style warnings,
    unqualified imported-call style warnings, mutable-local style warnings,
    unused pure binding cleanup, no-op pure expression statement cleanup,
-   constant-false while statement cleanup, empty-if statement cleanup,
+   constant-false if and while statement cleanup, empty-if statement cleanup,
    empty-for statement cleanup, and unreachable statement cleanup, plus
    constant-if expression and statement simplification, constant comparison
    simplification, constant arithmetic simplification, constant text
@@ -259,8 +259,9 @@ Near-term:
    write/query/verify smoke coverage for imported-call qualification and
    write/verify smoke coverage for pure binding deletion, pure expression
    statement deletion, constant-if statement simplification, constant-false
-   while statement deletion, empty-if statement deletion, empty-for statement
-   deletion, unreachable statement deletion, mutable binding conversion,
+   if statement deletion, constant-false while statement deletion, empty-if
+   statement deletion, empty-for statement deletion, unreachable statement
+   deletion, mutable binding conversion,
    constant-if expression simplification, constant comparison simplification,
    constant arithmetic simplification, constant text concatenation
    simplification, constant list index simplification, constant map index

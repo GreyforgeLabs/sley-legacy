@@ -1,0 +1,9 @@
+module app.constant_false_if
+
+task main -> Int {
+  if false {
+    return 0
+  }
+
+  return 42
+}

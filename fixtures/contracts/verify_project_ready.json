@@ -40,6 +40,7 @@
       "mutable_binding_never_set",
       "constant_if_expression",
       "constant_if_statement",
+      "constant_false_if_statement",
       "constant_false_while_statement",
       "constant_comparison_expression",
       "constant_arithmetic_expression",

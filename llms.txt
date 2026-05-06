@@ -187,7 +187,8 @@ Current development phase:
   `unused_pure_expression_statement`, the mutable-local style rule
   `mutable_binding_never_set`, the expression simplification rule
   `constant_if_expression`, the constant-if statement simplification rule
-  `constant_if_statement`, the constant-false while cleanup rule
+  `constant_if_statement`, the constant-false if cleanup rule
+  `constant_false_if_statement`, the constant-false while cleanup rule
   `constant_false_while_statement`, the constant comparison simplification rule
   `constant_comparison_expression`, the constant arithmetic simplification rule
   `constant_arithmetic_expression`, the constant text concatenation rule
@@ -254,6 +255,8 @@ Current development phase:
   calls that should be alias- or module-qualified, plus
   `delete_unused_pure_expression_statement` templates for no-op pure
   expression statements, plus
+  `delete_constant_false_if_statement` templates for never-executed
+  `if false` statements without `else` branches, plus
   `delete_constant_false_while_statement` templates for never-executed
   `while false` statements, plus
   `simplify_constant_comparison_expression` templates for literal comparisons

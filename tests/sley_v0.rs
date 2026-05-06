@@ -3226,6 +3226,78 @@ fn edit_plan_graft_templates_include_constant_if_statement_simplify() {
 }
 
 #[test]
+fn edit_plan_graft_templates_include_constant_false_if_statement_delete() {
+    let source = include_str!("../examples/constant_false_if_statement.sley");
+    let program = parse_program(source).expect("parse constant false if fixture");
+    let report = build_edit_plan_report_with_options(
+        "examples/constant_false_if_statement.sley",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: None,
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "warnings");
+    assert_eq!(report.summary.lint_finding_count, 1);
+    assert_eq!(
+        report.lint.as_ref().expect("lint summary").findings[0].id,
+        "CONSTANT_FALSE_IF_STATEMENT"
+    );
+    let template = report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "delete_constant_false_if_statement")
+        .expect("constant false if delete template");
+    assert_eq!(
+        template.surface,
+        "block:task:app.constant_false_if.main:stmt:0"
+    );
+    assert_eq!(
+        template.operation.pointer("/op"),
+        Some(&serde_json::json!("DeleteNode"))
+    );
+    assert_eq!(
+        template.operation.pointer("/target"),
+        Some(&serde_json::json!(
+            "block:task:app.constant_false_if.main:stmt:0"
+        ))
+    );
+    assert!(template.editable_json_pointers.is_empty());
+    let graft: GraftInput = serde_json::from_value(template.operation.clone())
+        .expect("parse constant false if delete template");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:constant-false-if-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted_source = outcome.source.expect("grafted source");
+    assert!(!grafted_source.contains("if false"));
+    assert!(grafted_source.contains("return 42"));
+
+    let targeted_report = build_edit_plan_report_with_options(
+        "examples/constant_false_if_statement.sley",
+        Ok(program),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("block:task:app.constant_false_if.main:stmt:0".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(targeted_report.status, "warnings");
+    assert!(targeted_report.diagnostics.is_empty());
+    assert_eq!(targeted_report.graft_templates.len(), 1);
+    assert_eq!(
+        targeted_report.graft_templates[0].kind,
+        "delete_constant_false_if_statement"
+    );
+    assert!(targeted_report.transaction_templates.is_empty());
+}
+
+#[test]
 fn edit_plan_graft_templates_include_constant_false_while_statement_delete() {
     let source = include_str!("../examples/constant_false_while_statement.sley");
     let program = parse_program(source).expect("parse constant false while fixture");
@@ -6610,6 +6682,21 @@ task helper -> Result<Text, Error> {
         include_str!("../fixtures/contracts/lint_constant_if_statement.json"),
     );
 
+    let constant_false_if_source = include_str!("../examples/constant_false_if_statement.sley");
+    let constant_false_if_program =
+        parse_program(constant_false_if_source).expect("parse constant false if fixture");
+    let constant_false_if_lint = build_lint_report(
+        &constant_false_if_program,
+        LintOptions {
+            rules: vec![LintRule::ConstantFalseIfStatement],
+            module: None,
+        },
+    );
+    assert_json_snapshot(
+        &constant_false_if_lint,
+        include_str!("../fixtures/contracts/lint_constant_false_if_statement.json"),
+    );
+
     let constant_false_while_source =
         include_str!("../examples/constant_false_while_statement.sley");
     let constant_false_while_program =
@@ -7646,7 +7733,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(76))
+        Some(&serde_json::json!(77))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -13663,6 +13750,84 @@ task main -> Int {
 }
 
 #[test]
+fn lint_report_flags_constant_false_if_statements() {
+    let source = r#"
+module app.constant_false_if
+
+task main -> Int {
+  if false {
+    return 1
+  }
+
+  if false {
+    bind skipped = 2
+  }
+
+  if false {
+    bind skipped_with_else = 3
+  } else {
+    bind active = 4
+  }
+
+  if true {
+    if false {
+      bind nested = 5
+    }
+  }
+
+  return 6
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+
+    let report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::ConstantFalseIfStatement],
+            module: None,
+        },
+    );
+
+    assert_eq!(report.schema, LINT_REPORT_SCHEMA);
+    assert_eq!(report.status, "findings");
+    assert_eq!(report.entry_module, "app.constant_false_if");
+    assert_eq!(report.filters.rules, vec!["constant_false_if_statement"]);
+    assert_eq!(
+        report.findings.len(),
+        3,
+        "constant false if should skip false if statements with else branches"
+    );
+    assert_eq!(report.findings[0].id, "CONSTANT_FALSE_IF_STATEMENT");
+    assert_eq!(report.findings[0].rule, "constant_false_if_statement");
+    let nodes: Vec<&str> = report
+        .findings
+        .iter()
+        .map(|finding| finding.node.as_str())
+        .collect();
+    assert!(nodes.contains(&"block:task:app.constant_false_if.main:stmt:0"));
+    assert!(nodes.contains(&"block:task:app.constant_false_if.main:stmt:1"));
+    assert!(nodes.contains(&"block:task:app.constant_false_if.main:stmt:3:then:stmt:0"));
+    assert_eq!(report.findings[0].module, "app.constant_false_if");
+    assert!(report.findings[0].message.contains("constant `false`"));
+    assert!(report.findings[0].hint.contains("never-executed if"));
+
+    let scoped_report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::ConstantFalseIfStatement],
+            module: Some("app.other".to_string()),
+        },
+    );
+    assert_eq!(scoped_report.status, "ok");
+    assert!(scoped_report.findings.is_empty());
+}
+
+#[test]
 fn lint_report_flags_constant_false_while_statements() {
     let source = r#"
 module app.false_while
@@ -17584,6 +17749,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:templates:unused-pure-binding-delete",
         "graft:templates:unused-pure-expression-statement-delete",
         "graft:templates:constant-if-statement",
+        "graft:templates:constant-false-if-statement-delete",
         "graft:templates:constant-false-while-statement-delete",
         "graft:templates:constant-comparison-expression",
         "graft:templates:constant-arithmetic-expression",
@@ -17625,6 +17791,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "lint:mutable_binding_never_set",
         "lint:constant_if_expression",
         "lint:constant_if_statement",
+        "lint:constant_false_if_statement",
         "lint:constant_false_while_statement",
         "lint:constant_comparison_expression",
         "lint:constant_arithmetic_expression",
@@ -17655,6 +17822,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:call-transaction-write-verify",
         "readiness:constant-if-repair-write-verify",
         "readiness:constant-if-statement-repair-write-verify",
+        "readiness:constant-false-if-repair-write-verify",
         "readiness:constant-false-while-repair-write-verify",
         "readiness:constant-comparison-repair-write-verify",
         "readiness:constant-arithmetic-repair-write-verify",
