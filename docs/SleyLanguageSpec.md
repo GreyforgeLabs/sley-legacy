@@ -1358,10 +1358,11 @@ recomputable graph digests, optional graph slices, and trace receipts; it is
 not yet a compressed `.zjx` archive.
 
 The current `sley-zjx` utility is read-only for source files and preview
-envelopes. It can inspect envelope metadata, recompute and verify the embedded
-symbol-graph digest, extract the graph JSON to stdout or an explicit output
-path, and diff two envelopes by target, digest, module IDs, task IDs, and trace
-receipt count. Its report root is `sley.zjx.tool.report.v0`.
+envelopes. It can validate envelope shape, preview scope, and graph digest,
+inspect envelope metadata, recompute and verify the embedded symbol-graph
+digest, extract the graph JSON to stdout or an explicit output path, and diff
+two envelopes by target, digest, module IDs, task IDs, and trace receipt count.
+Its report root is `sley.zjx.tool.report.v0`.
 
 The future compressed Sley runtime must validate Sley structure before packing.
 It must not treat envelope metadata as proof of Sley scope. The lock boundary

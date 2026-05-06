@@ -233,12 +233,13 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
 9. `sley-zjx-tools`
    - Inspection and verification utilities for `.zjx` envelopes, graph
      digests, trace receipts, and seal chains.
-   - MVP: `inspect`, `verify-digest`, `extract-graph`, and `diff-envelope`.
+   - MVP: `validate`, `inspect`, `verify-digest`, `extract-graph`, and
+     `diff-envelope`.
    - Current bootstrap: in-tree `src/bin/sley-zjx.rs` implements the MVP
      commands for current `sley.zjx.envelope.v0` preview JSON envelopes, emits
      `schema: "sley.zjx.tool.report.v0"`, and is covered by integration tests
-     for inspection, digest verification, graph extraction, envelope diffing,
-     and tampered digest rejection.
+     for validation, inspection, digest verification, graph extraction,
+     envelope diffing, and tampered digest rejection.
 
 10. `sley-migrate`
     - Checked migration helpers for language or contract changes.

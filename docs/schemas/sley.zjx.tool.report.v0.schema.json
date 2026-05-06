@@ -8,7 +8,13 @@
     "schema": { "const": "sley.zjx.tool.report.v0" },
     "status": { "enum": ["passed", "failed"] },
     "command": {
-      "enum": ["inspect", "verify-digest", "extract-graph", "diff-envelope"]
+      "enum": [
+        "validate",
+        "inspect",
+        "verify-digest",
+        "extract-graph",
+        "diff-envelope"
+      ]
     },
     "envelopes": {
       "type": "array",

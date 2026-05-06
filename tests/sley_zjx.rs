@@ -32,6 +32,11 @@ fn zjx_tool_inspects_extracts_diffs_and_rejects_tampered_digest() {
     );
     assert_eq!(inspect.pointer("/envelopes/0/task_count"), Some(&json!(1)));
 
+    let validate = run_zjx_success(&["validate", "--json", path_str(&hello_envelope).as_str()]);
+    assert_eq!(validate.pointer("/command"), Some(&json!("validate")));
+    assert_eq!(validate.pointer("/status"), Some(&json!("passed")));
+    assert_eq!(validate.pointer("/digest/matches"), Some(&json!(true)));
+
     let digest = run_zjx_success(&[
         "verify-digest",
         "--json",
