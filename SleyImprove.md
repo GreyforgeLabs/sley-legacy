@@ -97,7 +97,7 @@ sley graph --json --slice <node-id> <target>
 sley new --json [--template hello|deploy] [--name <name>] [--module <module>] <path>
 sley doctor --json [--deny-warnings] <target>
 sley plan --json [--deny-warnings] [--graft-templates] [--template-surface <surface>] [--emit-graft <kind>] <target>
-sley fix --json --kind <kind> [--template-surface <surface>] [--dry-run|--write] <target>
+sley fix --json --kind <kind> [--template-surface <surface>] [--dry-run|--write] [--trace <trace.jsonl>] <target>
 sley verify --json [--deny-warnings] [runtime gates/seeds] <target>
 sley query --json [--kind all|modules|tasks|calls] [--module <module>] <target>
 sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter|missing-module-declaration|unchecked-result] [--module <module>] <target>
@@ -158,7 +158,9 @@ Rules:
 - `sley fix` consumes the same plan templates, selects one named operation or
   transaction kind, applies it through the graft checker, and emits
   `sley.graft.outcome.v0`; it is non-mutating by default and mutates only with
-  explicit `--write`.
+  explicit `--write`. Accepted write-mode fixes use the default trace sidecar
+  or an explicit `--trace <trace.jsonl>` receipt path; dry-run fixes never
+  append receipts.
 - `sley verify` is the deterministic CI/pre-deploy helper consuming strict
   check, `sley.query.report.v0`, `sley.lint.report.v0`, and seeded runtime
   execution into one pass/warnings/blocked report.
@@ -484,6 +486,10 @@ The current smoke manifest covers:
   and `Spend`
 - temp-directory execution for the file-write case so release tests do not
   mutate the repo checkout
+
+Separate integration coverage locks explicit
+`sley fix --write --trace <trace.jsonl>` receipt redirection and proves
+`sley fix --dry-run --trace <trace.jsonl>` remains non-mutating.
 
 ## Improvement 9: Checked Graph Query Reports
 

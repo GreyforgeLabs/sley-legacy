@@ -142,7 +142,8 @@ Implemented now:
   the graft checker, including `add_module_declaration` for
   `missing_module_declaration` lint findings with contextual module-name
   inference; default and `--dry-run` mode stay non-mutating, while `--write`
-  uses the same checked writeback, trace receipts, and
+  uses the same checked writeback, trace receipts, optional
+  `--trace <trace.jsonl>` receipt path, and
   `schema: "sley.graft.outcome.v0"` as `sley graft`
 - checked JSON verification reports with `sley verify`, consuming strict
   diagnostics, query summaries, lint findings, and deterministic runtime
@@ -151,8 +152,10 @@ Implemented now:
   templates, relative created-file paths, next-command vectors, typed
   next-action reasons, and
   `schema: "sley.project.scaffold.v0"`
-- JSONL trace sidecars for accepted graft receipts when `sley graft --write`
-  applies a change, plus content-addressed trace seals with `sley seal`
+- JSONL trace sidecars for accepted graft/fix receipts when
+  `sley graft --write` or `sley fix --write` applies a change, with
+  `--trace <trace.jsonl>` for explicit receipt paths, plus content-addressed
+  trace seals with `sley seal`
 - project-aware `sley graft --write <project>` source-file writeback for
   accepted edits that resolve to existing modules, plus checked creation of new
   module files declared by the graft candidate, deletion of removed module

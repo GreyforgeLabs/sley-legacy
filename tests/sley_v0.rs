@@ -8209,6 +8209,98 @@ fn file_fix_write_adds_module_declaration() {
 }
 
 #[test]
+fn file_fix_write_respects_explicit_trace_path() {
+    let root = temp_project_dir("file-fix-explicit-trace");
+    fs::create_dir_all(&root).expect("create temp dir");
+    let file = root.join("main.sley");
+    let trace_path = root.join("receipts/custom-trace.jsonl");
+    let default_trace_path = root.join(".sley/trace.jsonl");
+    let source = r#"task main -> Text {
+  return "hello"
+}
+"#;
+    fs::write(&file, source).expect("write module-less source");
+
+    let dry_run = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args([
+            "fix",
+            "--json",
+            "--kind",
+            "add_module_declaration",
+            "--dry-run",
+            "--actor",
+            "agent:trace-test",
+            "--trace",
+        ])
+        .arg(&trace_path)
+        .arg(&file)
+        .output()
+        .expect("dry-run module declaration fix with explicit trace");
+    let dry_stdout = String::from_utf8(dry_run.stdout).expect("dry-run stdout utf8");
+    assert!(
+        dry_run.status.success(),
+        "dry-run module fix should accept; stdout={dry_stdout} stderr={}",
+        String::from_utf8_lossy(&dry_run.stderr)
+    );
+    let dry_outcome: GraftOutcome =
+        serde_json::from_str(&dry_stdout).expect("parse dry-run outcome");
+    assert_eq!(dry_outcome.status, "accepted");
+    assert_eq!(
+        fs::read_to_string(&file).expect("read after dry-run"),
+        source
+    );
+    assert!(!trace_path.exists());
+    assert!(!default_trace_path.exists());
+
+    let write = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args([
+            "fix",
+            "--json",
+            "--kind",
+            "add_module_declaration",
+            "--write",
+            "--actor",
+            "agent:trace-test",
+            "--trace",
+        ])
+        .arg(&trace_path)
+        .arg(&file)
+        .output()
+        .expect("write module declaration fix with explicit trace");
+    let write_stdout = String::from_utf8(write.stdout).expect("write stdout utf8");
+    assert!(
+        write.status.success(),
+        "write module fix should accept; stdout={write_stdout} stderr={}",
+        String::from_utf8_lossy(&write.stderr)
+    );
+    let write_outcome: GraftOutcome =
+        serde_json::from_str(&write_stdout).expect("parse write outcome");
+    assert_eq!(write_outcome.status, "accepted");
+    assert_eq!(write_outcome.provenance[0].actor, "agent:trace-test");
+    assert_eq!(
+        write_outcome.provenance[0].operation,
+        "AddModuleDeclaration"
+    );
+    assert_eq!(
+        fs::read_to_string(&file).expect("read fixed source"),
+        "module main\n\ntask main -> Text {\n  return \"hello\"\n}\n"
+    );
+
+    let receipts = read_trace_receipts(&trace_path).expect("read explicit trace");
+    assert_eq!(receipts.len(), 1);
+    assert_eq!(receipts[0].schema, TRACE_RECEIPT_SCHEMA);
+    assert_eq!(receipts[0].target, file.display().to_string());
+    assert_eq!(receipts[0].provenance[0].actor, "agent:trace-test");
+    assert_eq!(receipts[0].provenance[0].operation, "AddModuleDeclaration");
+    assert!(
+        !default_trace_path.exists(),
+        "explicit trace path should not also write the default sidecar"
+    );
+
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
 fn file_fix_write_infers_project_relative_module_declaration() {
     let root = temp_project_dir("file-fix-project-relative-module");
     fs::create_dir_all(root.join("src/app/jobs")).expect("create project dirs");

@@ -490,11 +490,13 @@ moves reject with `GRAFT_MOVE_UNSUPPORTED`. Each accepted edit reparses the
 payload when applicable, rewrites the AST, refreshes expression source text, and
 reruns the checker before returning formatted source.
 
-Accepted grafts written with `sley graft --write` append receipt records to a
-local `.sley/trace.jsonl` sidecar unless the caller passes an explicit trace
-path. The trace sidecar is a local provenance store. `sley seal` turns the
-current source, symbol graph, and trace receipt chain into a deterministic
-content-addressed seal.
+Accepted grafts written with `sley graft --write` and plan-consuming fixes
+written with `sley fix --write` append receipt records to a local
+`.sley/trace.jsonl` sidecar unless the caller passes an explicit
+`--trace <trace.jsonl>` path. Dry-run paths never append receipts. The trace
+sidecar is a local provenance store. `sley seal` turns the current source,
+symbol graph, and trace receipt chain into a deterministic content-addressed
+seal.
 
 `RenameDeclaration` can rename tasks, types, effects, and module targets such
 as `module:app.extra`. Module rename updates declaration ownership and import
@@ -551,7 +553,7 @@ sley graph --json --slice task:app.main.main <target>
 sley new --json --template deploy --name agent-app agent-app
 sley doctor --json <target>
 sley plan --json [--graft-templates] [--template-surface <surface>] [--emit-graft <kind>] <target>
-sley fix --json --kind <kind> [--template-surface <surface>] [--dry-run|--write] <target>
+sley fix --json --kind <kind> [--template-surface <surface>] [--dry-run|--write] [--trace <trace.jsonl>] <target>
 sley query --json --kind tasks --module app.main <target>
 sley lint --json <target>
 sley trace --json <target>
@@ -700,7 +702,8 @@ builds checked plan graft templates internally, selects exactly one named
 operation or transaction, applies it through the same graft checker, and emits
 the normal `sley.graft.outcome.v0` root. Default and `--dry-run` mode are
 non-mutating. `--write` uses the same project or file writeback and trace
-receipt path as `sley graft --write`.
+receipt path as `sley graft --write`, including explicit
+`--trace <trace.jsonl>` receipt redirection.
 
 A graph slice is a bounded shard around a module, task, type, effect, or import.
 Task slices include the selected task AST, visible module declarations,
