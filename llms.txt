@@ -193,7 +193,8 @@ Current development phase:
   `sley.graft.outcome.v0`; default and `--dry-run` mode are non-mutating, and
   `--write` records the normal graft trace receipt or a caller-supplied
   `--trace <trace.jsonl>` path; CLI smokes cover a call-row-driven
-  `rename_and_update_call_sites` write followed by call query and verify;
+  `rename_and_update_call_sites` write and an unused-take
+  `remove_take_and_remove_call_arg` write followed by call query and verify;
   `add_module_declaration` is the checked fixer
   for explicit module-declaration style warnings and uses the same module-name
   inference

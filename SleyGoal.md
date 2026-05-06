@@ -78,7 +78,8 @@ Current verified surface:
   scaffold-level and passed-verify seal/ZJX handoff next-actions, doctor/plan
   call-bearing reports that route agents to strict call-row inspection, a
   write/query/verify smoke for the call-row-driven rename-and-update-call-sites
-  transaction, and checked `unchecked_result` migration templates that
+  transaction, a write/query/verify smoke for the unused-take-plus-call-arg
+  removal transaction, and checked `unchecked_result` migration templates that
   turn discarded `Result` expression statements into explicit `?` propagation
   when valid, plus checked `unused_import` and
   `unused_private_task` delete templates, fix dry runs, and a write-mode

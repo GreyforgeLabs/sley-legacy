@@ -473,6 +473,8 @@ The current smoke manifest covers:
   `sley query --kind calls` next-actions
 - a write/query/verify smoke for the call-row-driven
   `rename_and_update_call_sites` transaction through `sley fix --write`
+- a write/query/verify smoke for `remove_take_and_remove_call_arg`, proving
+  unused-take cleanup can also update resolved callers
 - graph-slice replace affordances and checked `replace_expression` graft
   templates in edit-plan reports
 - deploy scaffold typed next-actions, first-run sequence execution, and strict

@@ -1346,6 +1346,111 @@
       }
     },
     {
+      "name": "fix_remove_take_remove_call_arg_write_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/remove-take-call-arg/sley.toml",
+          "content": "[project]\nname = \"remove-take-call-arg\"\nroot = \"src\"\nentry = \"app.main\"\n"
+        },
+        {
+          "path": "{tmp}/remove-take-call-arg/src/app/main.sley",
+          "content": "module app.main\n\nimport app.math as math\n\ntask main -> Int {\n  return call math.adjust(41, 1)\n}\n"
+        },
+        {
+          "path": "{tmp}/remove-take-call-arg/src/app/math.sley",
+          "content": "module app.math\n\nexport task adjust -> Int {\n  take value: Int\n  take unused: Int\n\n  return value\n}\n"
+        }
+      ],
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "remove_take_and_remove_call_arg",
+        "--template-surface",
+        "task:app.math.adjust",
+        "--write",
+        "--actor",
+        "agent:cli-smoke",
+        "{tmp}/remove-take-call-arg"
+      ],
+      "covers": [
+        "cli:fix",
+        "cli:fix-write",
+        "cli:smoke-setup-files",
+        "fix:remove-take-transaction-write",
+        "fix:write-source",
+        "graft:transactions:remove-take-call-arg",
+        "json:sley.graft.outcome.v0",
+        "lint:unused_take",
+        "query:calls",
+        "readiness:remove-take-transaction-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/actor", "value": "agent:cli-smoke" },
+          { "pointer": "/provenance/0/operation", "value": "RemoveTake" },
+          { "pointer": "/provenance/0/targets/0", "value": "task:app.math.adjust" },
+          { "pointer": "/provenance/1/operation", "value": "RemoveCallArg" },
+          { "pointer": "/provenance/1/targets/0", "value": "task:app.math.adjust" },
+          { "pointer": "/provenance/1/targets/1", "value": "calls:1" }
+        ]
+      }
+    },
+    {
+      "name": "query_remove_take_remove_call_arg_write_json",
+      "args": ["query", "--json", "--kind", "calls", "{tmp}/remove-take-call-arg"],
+      "covers": [
+        "cli:query",
+        "fix:remove-take-transaction-write",
+        "graft:transactions:remove-take-call-arg",
+        "json:sley.query.report.v0",
+        "query:calls",
+        "readiness:remove-take-transaction-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.query.report.v0" },
+          { "pointer": "/kind", "value": "calls" },
+          { "pointer": "/calls/0/callee", "value": "math.adjust" },
+          { "pointer": "/calls/0/source", "value": "call math.adjust(41)" },
+          { "pointer": "/calls/0/status", "value": "resolved" },
+          { "pointer": "/calls/0/target", "value": "app.math.adjust" }
+        ]
+      }
+    },
+    {
+      "name": "verify_remove_take_remove_call_arg_write_json",
+      "args": ["verify", "--json", "--deny-warnings", "{tmp}/remove-take-call-arg"],
+      "covers": [
+        "cli:verify",
+        "fix:remove-take-transaction-write",
+        "graft:transactions:remove-take-call-arg",
+        "json:sley.verify.report.v0",
+        "json:sley.query.report.v0",
+        "json:sley.lint.report.v0",
+        "lint:unused_take",
+        "readiness:remove-take-transaction-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.verify.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/summary/warning_count", "value": 0 },
+          { "pointer": "/summary/lint_finding_count", "value": 0 },
+          { "pointer": "/summary/call_count", "value": 1 },
+          { "pointer": "/summary/runtime_status", "value": "passed" },
+          { "pointer": "/runtime/value/kind", "value": "Int" },
+          { "pointer": "/runtime/value/value", "value": 41 },
+          { "pointer": "/lint/status", "value": "ok" }
+        ]
+      }
+    },
+    {
       "name": "verify_project_json",
       "args": ["verify", "--json", "examples/project"],
       "covers": [
