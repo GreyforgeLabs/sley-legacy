@@ -112,6 +112,10 @@ Implemented now:
   `--rule missing-module-declaration`, or `--rule unchecked-result` filters,
   and
   `schema: "sley.lint.report.v0"` for warning-grade graph and authority lints
+- in-tree `sley-contract` utility scaffold with `inventory`, `check-fixtures`,
+  and `validate` root-matching commands over `docs/schemas/` and
+  `fixtures/contracts/`, using versioned JSON report roots for downstream
+  contract-kit work
 - checked JSON readiness reports with `sley doctor`, consuming strict
   diagnostics plus query and lint summaries, with call-bearing reports routing
   agents to strict `sley query --kind calls` inspection, warning next-actions
@@ -195,6 +199,7 @@ Implemented now:
   checked query, lint, doctor, edit-plan, verify, and project scaffold reports
 - external v0 JSON Schema files under `docs/schemas/`, including strict
   query task/take/type/effect/call row definitions,
+  `sley-contract` inventory/fixture-check/validate reports,
   edit-plan graft operation and transaction template envelopes reused by graph
   slice affordances, graph-slice focus/task/call summary refs, a shared
   diagnostic record schema, a standalone trace receipt schema, plus ZJX graph,

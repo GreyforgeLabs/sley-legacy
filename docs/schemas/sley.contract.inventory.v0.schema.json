@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.contract.inventory.v0",
+  "title": "Sley Contract Inventory Report v0",
+  "type": "object",
+  "required": ["schema", "status", "schema_dir", "schema_count", "schemas"],
+  "properties": {
+    "schema": { "const": "sley.contract.inventory.v0" },
+    "status": { "enum": ["passed"] },
+    "schema_dir": { "type": "string", "minLength": 1 },
+    "schema_count": { "type": "integer", "minimum": 1 },
+    "schemas": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/schemaInfo" }
+    }
+  },
+  "$defs": {
+    "schemaInfo": {
+      "type": "object",
+      "required": ["id", "path"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "title": { "type": "string", "minLength": 1 },
+        "draft": { "type": "string", "minLength": 1 },
+        "root_type": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

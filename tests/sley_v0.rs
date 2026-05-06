@@ -3739,6 +3739,18 @@ task main -> Used uses UsedEffect {
         "sley.cli_smoke.manifest.v0",
     );
     assert_schema_file(
+        include_str!("../docs/schemas/sley.contract.inventory.v0.schema.json"),
+        "sley.contract.inventory.v0",
+    );
+    assert_schema_file(
+        include_str!("../docs/schemas/sley.contract.fixture_check.v0.schema.json"),
+        "sley.contract.fixture_check.v0",
+    );
+    assert_schema_file(
+        include_str!("../docs/schemas/sley.contract.validate.v0.schema.json"),
+        "sley.contract.validate.v0",
+    );
+    assert_schema_file(
         include_str!("../docs/schemas/sley.project.scaffold.v0.schema.json"),
         PROJECT_SCAFFOLD_SCHEMA,
     );
@@ -3754,6 +3766,137 @@ task main -> Used uses UsedEffect {
         include_str!("../docs/schemas/sley.verify.report.v0.schema.json"),
         VERIFY_REPORT_SCHEMA,
     );
+}
+
+#[test]
+fn contract_utility_inventories_schemas_and_checks_fixture_roots() {
+    let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+
+    let inventory = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-contract"))
+        .current_dir(&repo_root)
+        .args(["inventory", "docs/schemas", "--json"])
+        .output()
+        .expect("run sley-contract inventory");
+    assert!(
+        inventory.status.success(),
+        "inventory failed: {}",
+        String::from_utf8_lossy(&inventory.stderr)
+    );
+    let inventory_json: serde_json::Value =
+        serde_json::from_slice(&inventory.stdout).expect("parse inventory JSON");
+    assert_eq!(
+        inventory_json.pointer("/schema"),
+        Some(&serde_json::json!("sley.contract.inventory.v0"))
+    );
+    assert_eq!(
+        inventory_json.pointer("/schema_count"),
+        Some(&serde_json::json!(18))
+    );
+    let schema_ids = inventory_json
+        .pointer("/schemas")
+        .and_then(serde_json::Value::as_array)
+        .expect("inventory schemas")
+        .iter()
+        .filter_map(|schema| schema.pointer("/id").and_then(serde_json::Value::as_str))
+        .collect::<BTreeSet<_>>();
+    assert!(schema_ids.contains("sley.query.report.v0"));
+    assert!(schema_ids.contains("sley.contract.inventory.v0"));
+    assert!(schema_ids.contains("sley.contract.fixture_check.v0"));
+    assert!(schema_ids.contains("sley.contract.validate.v0"));
+
+    let fixture_check = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-contract"))
+        .current_dir(&repo_root)
+        .args([
+            "check-fixtures",
+            "fixtures/contracts",
+            "--schemas",
+            "docs/schemas",
+            "--json",
+        ])
+        .output()
+        .expect("run sley-contract check-fixtures");
+    assert!(
+        fixture_check.status.success(),
+        "fixture check failed: {}",
+        String::from_utf8_lossy(&fixture_check.stderr)
+    );
+    let fixture_json: serde_json::Value =
+        serde_json::from_slice(&fixture_check.stdout).expect("parse fixture check JSON");
+    assert_eq!(
+        fixture_json.pointer("/schema"),
+        Some(&serde_json::json!("sley.contract.fixture_check.v0"))
+    );
+    assert_eq!(
+        fixture_json.pointer("/validation_level"),
+        Some(&serde_json::json!("schema_root_match"))
+    );
+    assert_eq!(
+        fixture_json.pointer("/fixture_count"),
+        Some(&serde_json::json!(22))
+    );
+    assert_eq!(
+        fixture_json.pointer("/failed_count"),
+        Some(&serde_json::json!(0))
+    );
+
+    let validate = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-contract"))
+        .current_dir(&repo_root)
+        .args([
+            "validate",
+            "--schema",
+            "sley.query.report.v0",
+            "fixtures/contracts/query_project_tasks.json",
+            "--schemas",
+            "docs/schemas",
+            "--json",
+        ])
+        .output()
+        .expect("run sley-contract validate");
+    assert!(
+        validate.status.success(),
+        "validate failed: {}",
+        String::from_utf8_lossy(&validate.stderr)
+    );
+    let validate_json: serde_json::Value =
+        serde_json::from_slice(&validate.stdout).expect("parse validate JSON");
+    assert_eq!(
+        validate_json.pointer("/schema"),
+        Some(&serde_json::json!("sley.contract.validate.v0"))
+    );
+    assert_eq!(
+        validate_json.pointer("/status"),
+        Some(&serde_json::json!("passed"))
+    );
+
+    let malformed_root = temp_project_dir("contract-mismatch");
+    fs::create_dir_all(&malformed_root).expect("create contract mismatch dir");
+    let malformed = malformed_root.join("bad.json");
+    fs::write(&malformed, r#"{"schema":"sley.missing.v0"}"#).expect("write mismatch report");
+    let mismatch = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-contract"))
+        .current_dir(&repo_root)
+        .args([
+            "validate",
+            "--schema",
+            "sley.query.report.v0",
+            &sley_string(&malformed),
+            "--schemas",
+            "docs/schemas",
+            "--json",
+        ])
+        .output()
+        .expect("run mismatched sley-contract validate");
+    assert!(!mismatch.status.success());
+    let mismatch_json: serde_json::Value =
+        serde_json::from_slice(&mismatch.stdout).expect("parse mismatch JSON");
+    assert_eq!(
+        mismatch_json.pointer("/status"),
+        Some(&serde_json::json!("failed"))
+    );
+    assert_eq!(
+        mismatch_json.pointer("/issues/0/code"),
+        Some(&serde_json::json!("schema_mismatch"))
+    );
+    let _ = fs::remove_dir_all(malformed_root);
 }
 
 #[test]
