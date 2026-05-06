@@ -121,17 +121,18 @@ Rules:
   graphs, graph slices, query reports, lint reports, run reports, doctor
   reports, verify reports, deploy dry-run reports, deploy artifact manifests,
   deploy artifact check reports, CI reports, project scaffold reports, trace
-  seals, ZJX envelopes, and graft outcomes carry v0 schema IDs.
-- AST program/node, diagnostic-report, run-report, graph-slice, query-report,
-  lint-report, doctor-report, project-scaffold, and trace-seal snapshots are
-  locked under `fixtures/contracts/`.
+  reports, trace seals, ZJX envelopes, and graft outcomes carry v0 schema IDs.
+- AST program/node, diagnostic-report, run-report, trace-report, graph-slice,
+  query-report, lint-report, doctor-report, project-scaffold, and trace-seal
+  snapshots are locked under `fixtures/contracts/`.
 - JSON Schema files live under `docs/schemas/`; the AST schema covers nested
   declarations, statements, expressions, type expressions, spans, and
   provenance, the query schema exposes strict task/take/type/effect/call row
-  definitions, the run schema pins recursive runtime value payloads, the
-  diagnostic schema exposes a shared diagnostic record, the edit-plan schema
-  pins strict graft operation and transaction template
-  envelopes reused by graph-slice affordances, the graph-slice schema links
+  definitions, the run schema pins recursive runtime value payloads, the trace
+  report schema wraps trace receipt records, the diagnostic schema exposes a
+  shared diagnostic record, the edit-plan schema pins strict graft operation
+  and transaction template envelopes reused by graph-slice affordances,
+  the graph-slice schema links
   focus, task, and call-summary payloads to shared contracts, `sley-ci`
   check/lint/doctor/plan/run/verify/deploy/smoke reports and `sley-contract`
   inventory/fixture-check/validate/deploy-artifact-check reports have versioned
@@ -525,9 +526,9 @@ The current smoke manifest covers:
   zjx, and graft dry-run/write commands
 - stable JSON roots for AST programs, diagnostics with shared diagnostic
   records, symbol graphs, graph slices, query reports, lint reports, run
-  reports, trace receipts, trace seals, graft outcomes with strict accepted
-  provenance records, query task/take/type/effect/call row definitions,
-  graph-slice focus/task/call payloads, graph-slice affordance operations,
+  reports, trace reports, trace receipts, trace seals, graft outcomes with
+  strict accepted provenance records, query task/take/type/effect/call row
+  definitions, graph-slice focus/task/call payloads, graph-slice affordance operations,
   `sley-ci` reports, `sley-contract` JSON Schema validation reports, deploy
   artifact checks, and ZJX preview envelopes with graph digest and nested
   handoff refs

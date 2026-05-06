@@ -1,0 +1,24 @@
+{
+  "schema": "sley.trace.report.v0",
+  "status": "ok",
+  "target": "examples/hello.sley",
+  "trace_path": "examples/.sley/trace.jsonl",
+  "receipt_count": 1,
+  "receipts": [
+    {
+      "schema": "sley.trace.receipt.v0",
+      "target": "examples/hello.sley",
+      "written_at": "2026-05-05T00:00:00Z",
+      "provenance": [
+        {
+          "graft_id": "graft_test",
+          "actor": "agent:test",
+          "timestamp": "2026-05-05T00:00:00Z",
+          "operation": "AddTake",
+          "targets": ["task:app.hello.main"],
+          "result": "accepted"
+        }
+      ]
+    }
+  ]
+}

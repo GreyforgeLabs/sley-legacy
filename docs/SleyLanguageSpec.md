@@ -587,7 +587,8 @@ graphs carry
 `schema: "sley.graft.outcome.v0"`, checked query reports carry
 `schema: "sley.query.report.v0"`, checked lint reports carry
 `schema: "sley.lint.report.v0"`, run reports carry
-`schema: "sley.run.report.v0"`, trace receipts carry
+`schema: "sley.run.report.v0"`, trace reports carry
+`schema: "sley.trace.report.v0"`, trace receipts carry
 `schema: "sley.trace.receipt.v0"`, trace seals carry
 `schema: "sley.trace.seal.v0"`, and ZJX preview envelopes carry
 `schema: "sley.zjx.envelope.v0"`.
@@ -606,6 +607,19 @@ when local handoff files are requested. Deploy dry-run reports carry
 `schema: "sley.contract.inventory.v0"`,
 `schema: "sley.contract.fixture_check.v0"`, or
 `schema: "sley.contract.validate.v0"`.
+
+Current `sley trace --json` reports have this root shape:
+
+```json
+{
+  "schema": "sley.trace.report.v0",
+  "status": "ok",
+  "target": "examples/hello.sley",
+  "trace_path": "examples/.sley/trace.jsonl",
+  "receipt_count": 0,
+  "receipts": []
+}
+```
 
 Current v0 trace receipt JSONL records have this root shape:
 

@@ -11,6 +11,7 @@ use crate::ast::{Program, ProvenanceRecord};
 use crate::symbols::build_symbol_graph;
 
 pub const TRACE_RECEIPT_SCHEMA: &str = "sley.trace.receipt.v0";
+pub const TRACE_REPORT_SCHEMA: &str = "sley.trace.report.v0";
 pub const TRACE_SEAL_SCHEMA: &str = "sley.trace.seal.v0";
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -19,6 +20,16 @@ pub struct TraceReceipt {
     pub target: String,
     pub written_at: String,
     pub provenance: Vec<ProvenanceRecord>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct TraceReport {
+    pub schema: String,
+    pub status: String,
+    pub target: String,
+    pub trace_path: String,
+    pub receipt_count: usize,
+    pub receipts: Vec<TraceReceipt>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -68,6 +79,22 @@ pub fn build_trace_receipt(
         target: target.as_ref().display().to_string(),
         written_at: now_rfc3339(),
         provenance,
+    }
+}
+
+pub fn build_trace_report(
+    target: impl Into<String>,
+    trace_path: impl AsRef<Path>,
+    receipts: Vec<TraceReceipt>,
+) -> TraceReport {
+    let receipt_count = receipts.len();
+    TraceReport {
+        schema: TRACE_REPORT_SCHEMA.to_string(),
+        status: "ok".to_string(),
+        target: target.into(),
+        trace_path: trace_path.as_ref().display().to_string(),
+        receipt_count,
+        receipts,
     }
 }
 

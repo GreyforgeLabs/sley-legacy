@@ -37,8 +37,9 @@ use sley::symbols::{
     SYMBOL_GRAPH_SCHEMA, SYMBOL_GRAPH_SLICE_SCHEMA, build_symbol_graph, slice_symbol_graph,
 };
 use sley::trace::{
-    TRACE_RECEIPT_SCHEMA, TRACE_SEAL_SCHEMA, TraceReceipt, append_trace_receipt,
-    build_trace_receipt, build_trace_seal, content_digest, read_trace_receipts,
+    TRACE_RECEIPT_SCHEMA, TRACE_REPORT_SCHEMA, TRACE_SEAL_SCHEMA, TraceReceipt,
+    append_trace_receipt, build_trace_receipt, build_trace_report, build_trace_seal,
+    content_digest, read_trace_receipts,
 };
 use sley::verify::{VERIFY_REPORT_SCHEMA, build_verify_report};
 use sley::zjx::build_zjx_envelope;
@@ -5760,6 +5761,28 @@ task main -> Used uses UsedEffect {
         &hello_run,
         include_str!("../fixtures/contracts/run_hello_ready.json"),
     );
+    let trace_report_receipt = TraceReceipt {
+        schema: TRACE_RECEIPT_SCHEMA.to_string(),
+        target: "examples/hello.sley".to_string(),
+        written_at: "2026-05-05T00:00:00Z".to_string(),
+        provenance: vec![ProvenanceRecord {
+            graft_id: "graft_test".to_string(),
+            actor: "agent:test".to_string(),
+            timestamp: "2026-05-05T00:00:00Z".to_string(),
+            operation: "AddTake".to_string(),
+            targets: vec!["task:app.hello.main".to_string()],
+            result: "accepted".to_string(),
+        }],
+    };
+    let trace_report = build_trace_report(
+        "examples/hello.sley",
+        "examples/.sley/trace.jsonl",
+        vec![trace_report_receipt],
+    );
+    assert_json_snapshot(
+        &trace_report,
+        include_str!("../fixtures/contracts/trace_report_hello_receipt.json"),
+    );
     let seal = build_trace_seal(
         "examples/hello.sley",
         hello_source.as_bytes(),
@@ -6186,6 +6209,10 @@ task main -> Used uses UsedEffect {
         TRACE_RECEIPT_SCHEMA,
     );
     assert_schema_file(
+        include_str!("../docs/schemas/sley.trace.report.v0.schema.json"),
+        TRACE_REPORT_SCHEMA,
+    );
+    assert_schema_file(
         include_str!("../docs/schemas/sley.cli_smoke.manifest.v0.schema.json"),
         "sley.cli_smoke.manifest.v0",
     );
@@ -6257,7 +6284,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         inventory_json.pointer("/schema_count"),
-        Some(&serde_json::json!(24))
+        Some(&serde_json::json!(25))
     );
     let schema_ids = inventory_json
         .pointer("/schemas")
@@ -6269,6 +6296,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     assert!(schema_ids.contains("sley.query.report.v0"));
     assert!(schema_ids.contains("sley.ast.node.v0"));
     assert!(schema_ids.contains("sley.run.report.v0"));
+    assert!(schema_ids.contains("sley.trace.report.v0"));
     assert!(schema_ids.contains("sley.ci.report.v0"));
     assert!(schema_ids.contains("sley.deploy.artifact_check.v0"));
     assert!(schema_ids.contains("sley.deploy.artifacts.v0"));
@@ -6305,7 +6333,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(49))
+        Some(&serde_json::json!(50))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -14948,6 +14976,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "json:sley.verify.report.v0",
         "json:sley.deploy.report.v0",
         "json:sley.trace.receipt.v0",
+        "json:sley.trace.report.v0",
         "json:sley.trace.seal.v0",
         "json:sley.zjx.envelope.v0",
         "trace:explicit-path",
