@@ -17,12 +17,12 @@
   "properties": {
     "schema": { "const": "sley.query.report.v0" },
     "kind": { "enum": ["all", "modules", "tasks", "types", "effects", "calls"] },
-    "entry_module": { "type": "string" },
+    "entry_module": { "type": "string", "minLength": 1 },
     "filters": {
       "type": "object",
       "required": ["module", "exported_only"],
       "properties": {
-        "module": { "type": ["string", "null"] },
+        "module": { "type": ["string", "null"], "minLength": 1 },
         "exported_only": { "type": "boolean" }
       },
       "additionalProperties": false
@@ -30,97 +30,15 @@
     "modules": { "type": "array", "items": { "$ref": "#/$defs/moduleSummary" } },
     "tasks": {
       "type": "array",
-      "items": {
-        "type": "object",
-        "required": [
-          "id",
-          "name",
-          "module",
-          "qualified_name",
-          "exported",
-          "takes",
-          "return_type",
-          "effects",
-          "outbound_call_count",
-          "inbound_call_count"
-        ],
-        "properties": {
-          "id": { "type": "string" },
-          "name": { "type": "string" },
-          "module": { "type": "string" },
-          "qualified_name": { "type": "string" },
-          "exported": { "type": "boolean" },
-          "takes": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "required": ["name", "binding_kind", "type"],
-              "properties": {
-                "name": { "type": "string" },
-                "binding_kind": { "type": "string" },
-                "type": { "type": "string" }
-              },
-              "additionalProperties": false
-            }
-          },
-          "return_type": { "type": "string" },
-          "effects": { "type": "array", "items": { "type": "string" } },
-          "outbound_call_count": { "type": "integer", "minimum": 0 },
-          "inbound_call_count": { "type": "integer", "minimum": 0 }
-        },
-        "additionalProperties": false
-      }
+      "items": { "$ref": "#/$defs/queryTaskSummary" }
     },
     "types": {
       "type": "array",
-      "items": {
-        "type": "object",
-        "required": [
-          "id",
-          "name",
-          "module",
-          "qualified_name",
-          "exported",
-          "value",
-          "fields"
-        ],
-        "properties": {
-          "id": { "type": "string" },
-          "name": { "type": "string" },
-          "module": { "type": "string" },
-          "qualified_name": { "type": "string" },
-          "exported": { "type": "boolean" },
-          "value": { "type": "string" },
-          "fields": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "required": ["name", "type"],
-              "properties": {
-                "name": { "type": "string" },
-                "type": { "type": "string" }
-              },
-              "additionalProperties": false
-            }
-          }
-        },
-        "additionalProperties": false
-      }
+      "items": { "$ref": "#/$defs/queryTypeSummary" }
     },
     "effects": {
       "type": "array",
-      "items": {
-        "type": "object",
-        "required": ["id", "name", "module", "qualified_name", "exported"],
-        "properties": {
-          "id": { "type": "string" },
-          "name": { "type": "string" },
-          "module": { "type": "string" },
-          "qualified_name": { "type": "string" },
-          "exported": { "type": "boolean" }
-        },
-        "additionalProperties": false
-      }
+      "items": { "$ref": "#/$defs/queryEffectSummary" }
     },
     "calls": { "type": "array", "items": { "$ref": "#/$defs/callSummary" } }
   },
@@ -129,7 +47,7 @@
       "type": "object",
       "required": ["module", "imports", "types", "effects", "tasks"],
       "properties": {
-        "module": { "type": "string" },
+        "module": { "type": "string", "minLength": 1 },
         "imports": { "type": "array", "items": { "$ref": "#/$defs/importSummary" } },
         "types": { "type": "array", "items": { "$ref": "#/$defs/declarationSummary" } },
         "effects": { "type": "array", "items": { "$ref": "#/$defs/declarationSummary" } },
@@ -141,9 +59,9 @@
       "type": "object",
       "required": ["id", "module"],
       "properties": {
-        "id": { "type": "string" },
-        "module": { "type": "string" },
-        "alias": { "type": "string" }
+        "id": { "type": "string", "minLength": 1 },
+        "module": { "type": "string", "minLength": 1 },
+        "alias": { "type": "string", "minLength": 1 }
       },
       "additionalProperties": false
     },
@@ -151,8 +69,98 @@
       "type": "object",
       "required": ["name", "id", "exported"],
       "properties": {
-        "name": { "type": "string" },
-        "id": { "type": "string" },
+        "name": { "type": "string", "minLength": 1 },
+        "id": { "type": "string", "minLength": 1 },
+        "exported": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "queryTaskSummary": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "module",
+        "qualified_name",
+        "exported",
+        "takes",
+        "return_type",
+        "effects",
+        "outbound_call_count",
+        "inbound_call_count"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "module": { "type": "string", "minLength": 1 },
+        "qualified_name": { "type": "string", "minLength": 1 },
+        "exported": { "type": "boolean" },
+        "takes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/queryTakeSummary" }
+        },
+        "return_type": { "type": "string", "minLength": 1 },
+        "effects": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "outbound_call_count": { "type": "integer", "minimum": 0 },
+        "inbound_call_count": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "queryTakeSummary": {
+      "type": "object",
+      "required": ["name", "binding_kind", "type"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "binding_kind": { "type": "string", "minLength": 1 },
+        "type": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "queryTypeSummary": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "module",
+        "qualified_name",
+        "exported",
+        "value",
+        "fields"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "module": { "type": "string", "minLength": 1 },
+        "qualified_name": { "type": "string", "minLength": 1 },
+        "exported": { "type": "boolean" },
+        "value": { "type": "string", "minLength": 1 },
+        "fields": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/queryTypeFieldSummary" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "queryTypeFieldSummary": {
+      "type": "object",
+      "required": ["name", "type"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "type": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "queryEffectSummary": {
+      "type": "object",
+      "required": ["id", "name", "module", "qualified_name", "exported"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "module": { "type": "string", "minLength": 1 },
+        "qualified_name": { "type": "string", "minLength": 1 },
         "exported": { "type": "boolean" }
       },
       "additionalProperties": false
@@ -161,16 +169,19 @@
       "type": "object",
       "required": ["from", "from_module", "expr_id", "source", "callee", "status"],
       "properties": {
-        "from": { "type": "string" },
-        "from_module": { "type": "string" },
-        "expr_id": { "type": "string" },
-        "source": { "type": "string" },
-        "callee": { "type": "string" },
+        "from": { "type": "string", "minLength": 1 },
+        "from_module": { "type": "string", "minLength": 1 },
+        "expr_id": { "type": "string", "minLength": 1 },
+        "source": { "type": "string", "minLength": 1 },
+        "callee": { "type": "string", "minLength": 1 },
         "status": {
           "enum": ["resolved", "unknown", "ambiguous", "private", "intrinsic"]
         },
-        "target": { "type": "string" },
-        "candidates": { "type": "array", "items": { "type": "string" } }
+        "target": { "type": "string", "minLength": 1 },
+        "candidates": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
       },
       "additionalProperties": false
     }

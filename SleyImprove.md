@@ -120,7 +120,8 @@ Rules:
   `fixtures/contracts/`.
 - JSON Schema files live under `docs/schemas/`; the AST schema covers nested
   declarations, statements, expressions, type expressions, spans, and
-  provenance, the diagnostic schema exposes a shared diagnostic record, the
+  provenance, the query schema exposes strict task/take/type/effect/call row
+  definitions, the diagnostic schema exposes a shared diagnostic record, the
   edit-plan schema pins strict graft operation and transaction template
   envelopes reused by graph-slice affordances, the graph-slice schema links
   focus, task, and call-summary payloads to shared contracts, the graft outcome
@@ -473,10 +474,10 @@ The current smoke manifest covers:
 - stable JSON roots for AST programs, diagnostics with shared diagnostic
   records, symbol graphs, graph slices, query reports, lint reports, trace
   receipts, trace seals, graft outcomes with strict accepted provenance
-  records, graph-slice focus/task/call payloads, graph-slice affordance
-  operations, and ZJX preview envelopes with graph digest and nested handoff
-  refs
-- query report direct task/type/effect declaration rows and strict call rows
+  records, query task/take/type/effect/call row definitions, graph-slice
+  focus/task/call payloads, graph-slice affordance operations, and ZJX preview
+  envelopes with graph digest and nested handoff refs
+- query report direct task/take/type/effect/call row definitions
 - doctor/plan call-bearing reports route agents to strict
   `sley query --kind calls` next-actions
 - a write/query/verify smoke for the call-row-driven

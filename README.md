@@ -101,8 +101,8 @@ Implemented now:
   structural graft planning
 - checked JSON query reports with
   `sley query --kind all|modules|tasks|types|effects|calls`, optional
-  `--module` and `--exported` filters, top-level task/type/effect rows, strict
-  call rows, and `schema: "sley.query.report.v0"` for tool-facing graph
+  `--module` and `--exported` filters, strict task/take/type/effect/call row
+  definitions, and `schema: "sley.query.report.v0"` for tool-facing graph
   inspection
 - checked JSON lint reports with `sley lint`, optional `--module` and
   `--rule unused-private-task`, `--rule unreachable-private-task`,
@@ -194,6 +194,7 @@ Implemented now:
 - locked JSON contract snapshots under `fixtures/contracts/`, including
   checked query, lint, doctor, edit-plan, verify, and project scaffold reports
 - external v0 JSON Schema files under `docs/schemas/`, including strict
+  query task/take/type/effect/call row definitions,
   edit-plan graft operation and transaction template envelopes reused by graph
   slice affordances, graph-slice focus/task/call summary refs, a shared
   diagnostic record schema, a standalone trace receipt schema, plus ZJX graph,
@@ -518,9 +519,11 @@ Known v0 limits:
 The current release-readiness phase is underway for the executable slice. The
 gold corpus and CLI smoke suite now have manifests with required coverage tags
 for seeded host adapters, stable JSON roots, graph/ZJX output, graft and fix
-dry runs, checked graph query reports including type/effect/call rows and graph
-slice focus/task/call payloads plus affordances with strict graft operations,
-doctor readiness, call-inspection next-actions, verify pre-deploy gates,
+dry runs, checked graph query reports including strict
+task/take/type/effect/call row definitions and graph-slice focus/task/call
+payloads plus affordances with strict graft operations, doctor readiness,
+call-inspection next-actions,
+verify pre-deploy gates,
 edit-plan surfaces, call-site rename and remove-take/call-arg transaction
 write/query/verify, typed scaffold next-actions for the deploy quickstart,
 strict seeded verify readiness for the generated deploy starter,
