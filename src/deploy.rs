@@ -137,7 +137,7 @@ pub fn build_deploy_report(
         graph_digest: package.as_ref().map(|package| package.graph_digest.clone()),
     };
     let next_actions = if ready {
-        ready_actions(&target)
+        ready_actions(&target, artifacts.as_ref())
     } else {
         blocked_actions(&target)
     };
@@ -223,8 +223,8 @@ fn summarize_package(package: SleyZjxEnvelope) -> DeployPackageSummary {
     }
 }
 
-fn ready_actions(target: &str) -> Vec<DeployAction> {
-    vec![
+fn ready_actions(target: &str, artifacts: Option<&DeployArtifacts>) -> Vec<DeployAction> {
+    let mut actions = vec![
         DeployAction {
             kind: "review_seal".to_string(),
             reason: "inspect the content-addressed seal before any live deployment decision"
@@ -237,7 +237,23 @@ fn ready_actions(target: &str) -> Vec<DeployAction> {
                 .to_string(),
             command: command(["sley", "zjx", "--json", target]),
         },
-    ]
+    ];
+    if let Some(artifacts) = artifacts {
+        actions.push(DeployAction {
+            kind: "inspect_deploy_artifacts".to_string(),
+            reason: "validate the deploy handoff directory before operator deployment approval"
+                .to_string(),
+            command: command([
+                "sley-contract",
+                "inspect-deploy-artifacts",
+                artifacts.directory.as_str(),
+                "--schemas",
+                "docs/schemas",
+                "--json",
+            ]),
+        });
+    }
+    actions
 }
 
 fn blocked_actions(target: &str) -> Vec<DeployAction> {

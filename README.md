@@ -326,7 +326,8 @@ Implemented now:
   external mutation, and provider calls are not allowed without explicit
   operator approval; `--artifacts-dir <dir>` writes local `deploy-report.json`,
   `seal.json`, `zjx-envelope.json`, and a digest-bearing `manifest.json`
-  handoff file only after the dry-run package is ready
+  handoff file only after the dry-run package is ready, and the ready report
+  points agents to `sley-contract inspect-deploy-artifacts`
 - JSON project scaffold reports with `sley new --json`, `hello`, `library`,
   `cli`, `service-gate`, `data-pipeline`, `deploy`, `agent`, and
   `agent-task-pack` templates, relative created-file paths, next-command

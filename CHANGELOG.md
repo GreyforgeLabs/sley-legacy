@@ -35,6 +35,9 @@ here. Dates use UTC-independent calendar dates from the local repo history.
   running `make v1`.
 - Plain-text `sley-conformance report` output now lists public-release blockers
   directly instead of only reporting the blocker count.
+- Ready deploy dry-run reports with artifact directories now include an
+  `inspect_deploy_artifacts` next action for validating handoff bundles before
+  operator approval.
 - Contract inventory now tracks 36 schemas, 96 contract fixtures, and 99 schema
   instances through the conformance report.
 - The Rust package metadata now declares its supported Rust floor, description,
