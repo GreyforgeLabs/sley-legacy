@@ -700,7 +700,9 @@ Accepted fixtures must parse, check, and formatter-round-trip. Rejected
 fixtures carry a JSON sidecar listing the diagnostic ids that must remain
 stable. The current corpus locks declared and missing authority coverage for
 the deterministic seeded host adapters and transitive authority propagation
-through split-task agent helpers. `sley-ci corpus --json fixtures/corpus` and
+through split-task agent helpers, plus accepted/rejected module namespace
+coverage for exported declarations and duplicate declaration diagnostics.
+`sley-ci corpus --json fixtures/corpus` and
 `sley-ci corpus --json fixtures/corpus/manifest.json` expose the same
 accepted/rejected gate as a machine-readable CI report: accepted cases run
 strict check plus formatter round-trip checks, while rejected cases must fail

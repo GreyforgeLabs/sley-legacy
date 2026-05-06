@@ -1,0 +1,19 @@
+module corpus.accepted.module_namespace
+
+export type Profile = {
+  slot id: Text
+  slot name: Text
+}
+
+effect Audit
+
+export task describe -> Text {
+  take profile: Profile
+
+  return profile.name
+}
+
+task main -> Text {
+  bind profile = Profile { id: "u1", name: "Ada" }
+  return call describe(profile)
+}

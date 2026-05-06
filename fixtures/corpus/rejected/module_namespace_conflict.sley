@@ -1,0 +1,20 @@
+module corpus.rejected.module_namespace
+
+effect Audit
+effect Audit
+
+type User = {
+  slot id: Int
+}
+
+type User = {
+  slot id: Text
+}
+
+task main -> Int {
+  return 1
+}
+
+task main -> Int {
+  return 2
+}

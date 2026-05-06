@@ -226,6 +226,9 @@ Rules:
 - The accepted/rejected synthetic gold corpus now includes split-task agent
   authority fixtures for transitive effect propagation, so helper-task authority
   drift is covered outside the large CLI smoke manifest too.
+- The synthetic gold corpus now includes accepted/rejected module namespace
+  fixtures for exported declarations and duplicate type/effect/task
+  diagnostics.
 - `sley-ci smoke --repo-root .` now resolves the repo root before `{repo}`
   expansion and accepts either a smoke directory or `manifest.json`, keeping
   temp-cwd smoke cases portable across direct agent invocation and the `make v1`
@@ -552,7 +555,9 @@ and rejected fixtures that lock expected diagnostic IDs. The current corpus
 already covers declared and missing authority for all deterministic seeded host
 adapters, an accepted agent deploy pipeline that composes SecretRead, Network,
 ModelCall, and Deploy, and accepted/rejected split-task agent authority fixtures
-that lock transitive effect propagation.
+that lock transitive effect propagation, plus accepted/rejected module
+namespace fixtures for exported declarations and duplicate declaration
+diagnostics.
 
 Corpus categories:
 

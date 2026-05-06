@@ -8944,11 +8944,11 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/corpus_accepted_count"),
-        Some(&serde_json::json!(14))
+        Some(&serde_json::json!(15))
     );
     assert_eq!(
         report_json.pointer("/summary/corpus_rejected_count"),
-        Some(&serde_json::json!(15))
+        Some(&serde_json::json!(16))
     );
     assert_eq!(
         report_json.pointer("/summary/smoke_case_count"),
@@ -9821,7 +9821,7 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     );
     assert_eq!(
         corpus_json.pointer("/summary/step_count"),
-        Some(&serde_json::json!(43))
+        Some(&serde_json::json!(46))
     );
     assert_eq!(
         corpus_json.pointer("/steps/0/name"),
@@ -9840,13 +9840,13 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
         ))
     );
     assert_eq!(
-        corpus_json.pointer("/steps/28/name"),
+        corpus_json.pointer("/steps/30/name"),
         Some(&serde_json::json!(
             "rejected_check:rejected/authority/missing_database_read_effect.sley"
         ))
     );
     assert_eq!(
-        corpus_json.pointer("/steps/28/stdout_schema"),
+        corpus_json.pointer("/steps/30/stdout_schema"),
         Some(&serde_json::json!("sley.diagnostics.report.v0"))
     );
 
@@ -9872,7 +9872,7 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     );
     assert_eq!(
         corpus_dir_json.pointer("/summary/step_count"),
-        Some(&serde_json::json!(43))
+        Some(&serde_json::json!(46))
     );
 
     let examples = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
@@ -19442,10 +19442,14 @@ fn assert_corpus_manifest_has_release_coverage(manifest: &CorpusManifest) {
         "rejected:Spend",
         "rejected:agent-transitive-effect",
         "diagnostic:EFFECT_UNAUTHORIZED",
+        "diagnostic:DUPLICATE_TASK",
+        "diagnostic:DUPLICATE_TYPE",
+        "diagnostic:DUPLICATE_EFFECT",
         "diagnostic:MISSING_RETURN",
         "diagnostic:TYPE_MISMATCH",
         "diagnostic:UNKNOWN_IDENTIFIER",
         "authority:transitive-effects",
+        "language:module-namespace",
         "formatter:round-trip",
     ];
     for tag in required {

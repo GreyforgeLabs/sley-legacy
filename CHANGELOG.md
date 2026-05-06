@@ -38,6 +38,8 @@ here. Dates use UTC-independent calendar dates from the local repo history.
 - Expanded `fixtures/ci_smoke_probe` from a parse-only probe into a
   deterministic `sley-ci smoke` contract covering parse, query, graft dry-run,
   and seeded multi-capability agent runtime authority.
+- Accepted and rejected synthetic corpus fixtures for module namespace coverage,
+  including exported declarations and duplicate type/effect/task diagnostics.
 
 ### Changed
 
