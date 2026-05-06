@@ -471,6 +471,8 @@ The current smoke manifest covers:
 - query report direct task/type/effect declaration rows and strict call rows
 - doctor/plan call-bearing reports route agents to strict
   `sley query --kind calls` next-actions
+- a write/query/verify smoke for the call-row-driven
+  `rename_and_update_call_sites` transaction through `sley fix --write`
 - graph-slice replace affordances and checked `replace_expression` graft
   templates in edit-plan reports
 - deploy scaffold typed next-actions, first-run sequence execution, and strict

@@ -715,7 +715,9 @@ operation or transaction, applies it through the same graft checker, and emits
 the normal `sley.graft.outcome.v0` root. Default and `--dry-run` mode are
 non-mutating. `--write` uses the same project or file writeback and trace
 receipt path as `sley graft --write`, including explicit
-`--trace <trace.jsonl>` receipt redirection.
+`--trace <trace.jsonl>` receipt redirection. The CLI smoke surface covers a
+call-row-driven `rename_and_update_call_sites` write followed by strict call
+query and verification.
 
 A graph slice is a bounded shard around a module, task, type, effect, or import.
 Task slices include the selected task AST, visible module declarations,

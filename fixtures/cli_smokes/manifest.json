@@ -1244,6 +1244,108 @@
       }
     },
     {
+      "name": "fix_rename_update_call_sites_write_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/rename-call-sites/sley.toml",
+          "content": "[project]\nname = \"rename-call-sites\"\nroot = \"src\"\nentry = \"app.main\"\n"
+        },
+        {
+          "path": "{tmp}/rename-call-sites/src/app/main.sley",
+          "content": "module app.main\n\nimport app.math as math\n\ntask main -> Int {\n  return call math.double(21)\n}\n"
+        },
+        {
+          "path": "{tmp}/rename-call-sites/src/app/math.sley",
+          "content": "module app.math\n\nexport task double -> Int {\n  take value: Int\n\n  return value * 2\n}\n"
+        }
+      ],
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "rename_and_update_call_sites",
+        "--template-surface",
+        "task:app.math.double",
+        "--write",
+        "--actor",
+        "agent:cli-smoke",
+        "{tmp}/rename-call-sites"
+      ],
+      "covers": [
+        "cli:fix",
+        "cli:fix-write",
+        "cli:smoke-setup-files",
+        "fix:call-transaction-write",
+        "fix:write-source",
+        "graft:transactions:rename-call-sites",
+        "json:sley.graft.outcome.v0",
+        "query:calls",
+        "readiness:call-transaction-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/actor", "value": "agent:cli-smoke" },
+          { "pointer": "/provenance/0/operation", "value": "RenameDeclaration" },
+          { "pointer": "/provenance/0/targets/0", "value": "task:app.math.double" },
+          { "pointer": "/provenance/1/operation", "value": "UpdateCallSites" },
+          { "pointer": "/provenance/1/targets/0", "value": "task:app.math.renamed_double" },
+          { "pointer": "/provenance/1/targets/1", "value": "calls:1" }
+        ]
+      }
+    },
+    {
+      "name": "query_rename_update_call_sites_write_json",
+      "args": ["query", "--json", "--kind", "calls", "{tmp}/rename-call-sites"],
+      "covers": [
+        "cli:query",
+        "fix:call-transaction-write",
+        "graft:transactions:rename-call-sites",
+        "json:sley.query.report.v0",
+        "query:calls",
+        "readiness:call-transaction-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.query.report.v0" },
+          { "pointer": "/kind", "value": "calls" },
+          { "pointer": "/calls/0/callee", "value": "math.renamed_double" },
+          { "pointer": "/calls/0/status", "value": "resolved" },
+          { "pointer": "/calls/0/target", "value": "app.math.renamed_double" }
+        ]
+      }
+    },
+    {
+      "name": "verify_rename_update_call_sites_write_json",
+      "args": ["verify", "--json", "--deny-warnings", "{tmp}/rename-call-sites"],
+      "covers": [
+        "cli:verify",
+        "fix:call-transaction-write",
+        "graft:transactions:rename-call-sites",
+        "json:sley.verify.report.v0",
+        "json:sley.query.report.v0",
+        "json:sley.lint.report.v0",
+        "readiness:call-transaction-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.verify.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/summary/warning_count", "value": 0 },
+          { "pointer": "/summary/lint_finding_count", "value": 0 },
+          { "pointer": "/summary/call_count", "value": 1 },
+          { "pointer": "/summary/runtime_status", "value": "passed" },
+          { "pointer": "/runtime/value/kind", "value": "Int" },
+          { "pointer": "/runtime/value/value", "value": 42 },
+          { "pointer": "/lint/status", "value": "ok" }
+        ]
+      }
+    },
+    {
       "name": "verify_project_json",
       "args": ["verify", "--json", "examples/project"],
       "covers": [

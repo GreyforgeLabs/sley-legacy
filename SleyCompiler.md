@@ -219,8 +219,8 @@ Near-term:
    host adapter surface, stable JSON roots, project scaffolding, graph/ZJX
    output, typed deploy scaffold next-actions through seal/ZJX handoff,
    graft/fix dry runs, checked graph query reports with task/type/effect/call
-   rows, passed-verify seal/ZJX handoff next-actions, and private-task lint
-   reports.
+   rows, call-site rename transaction write/verify, passed-verify seal/ZJX
+   handoff next-actions, and private-task lint reports.
 4. Consume `sley.query.report.v0` and `sley.lint.report.v0` from helper
    passes. `sley doctor` is the first deterministic readiness helper on top of
    those surfaces, call-bearing doctor/plan reports now route agents to strict

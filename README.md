@@ -511,8 +511,9 @@ gold corpus and CLI smoke suite now have manifests with required coverage tags
 for seeded host adapters, stable JSON roots, graph/ZJX output, graft and fix
 dry runs, checked graph query reports including type/effect/call rows, doctor
 readiness, call-inspection next-actions, verify pre-deploy gates, edit-plan
-surfaces, typed scaffold next-actions for the deploy quickstart, strict seeded
-verify readiness for the generated deploy starter,
+surfaces, call-site rename transaction write/query/verify, typed scaffold
+next-actions for the deploy quickstart, strict seeded verify readiness for the
+generated deploy starter,
 scaffold-level seal/ZJX handoff actions,
 temp setup files for write-mode CLI smokes, direct graft write smokes,
 explicit graft/fix write trace receipts, non-empty trace seal receipts,
