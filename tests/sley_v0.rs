@@ -2852,6 +2852,76 @@ fn edit_plan_graft_templates_include_unused_pure_binding_delete() {
 }
 
 #[test]
+fn edit_plan_graft_templates_include_unused_pure_expression_statement_delete() {
+    let source = include_str!("../examples/unused_pure_expression_statement.sley");
+    let program = parse_program(source).expect("parse unused pure expression statement fixture");
+    let report = build_edit_plan_report_with_options(
+        "examples/unused_pure_expression_statement.sley",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: None,
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "warnings");
+    assert_eq!(report.summary.lint_finding_count, 1);
+    assert_eq!(
+        report.lint.as_ref().expect("lint summary").findings[0].id,
+        "UNUSED_PURE_EXPRESSION_STATEMENT"
+    );
+    let template = report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "delete_unused_pure_expression_statement")
+        .expect("unused pure expression statement delete template");
+    assert_eq!(template.surface, "block:task:app.unused_expr.main:stmt:1");
+    assert_eq!(
+        template.operation.pointer("/op"),
+        Some(&serde_json::json!("DeleteNode"))
+    );
+    assert_eq!(
+        template.operation.pointer("/target"),
+        Some(&serde_json::json!("block:task:app.unused_expr.main:stmt:1"))
+    );
+    assert!(template.editable_json_pointers.is_empty());
+    let graft: GraftInput = serde_json::from_value(template.operation.clone())
+        .expect("parse expression delete template");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:unused-pure-expression-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    assert!(
+        !outcome
+            .source
+            .expect("grafted source")
+            .contains("value + 1")
+    );
+
+    let targeted_report = build_edit_plan_report_with_options(
+        "examples/unused_pure_expression_statement.sley",
+        Ok(program),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("block:task:app.unused_expr.main:stmt:1".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(targeted_report.status, "warnings");
+    assert!(targeted_report.diagnostics.is_empty());
+    assert_eq!(targeted_report.graft_templates.len(), 1);
+    assert_eq!(
+        targeted_report.graft_templates[0].kind,
+        "delete_unused_pure_expression_statement"
+    );
+    assert!(targeted_report.transaction_templates.is_empty());
+}
+
+#[test]
 fn edit_plan_graft_templates_include_constant_if_expression_simplify() {
     let source = include_str!("../examples/constant_if_expression.sley");
     let program = parse_program(source).expect("parse constant if fixture");
@@ -5061,6 +5131,22 @@ task helper -> Result<Text, Error> {
         include_str!("../fixtures/contracts/lint_unused_pure_binding.json"),
     );
 
+    let unused_pure_expression_source =
+        include_str!("../examples/unused_pure_expression_statement.sley");
+    let unused_pure_expression_program = parse_program(unused_pure_expression_source)
+        .expect("parse unused pure expression statement fixture");
+    let unused_pure_expression_lint = build_lint_report(
+        &unused_pure_expression_program,
+        LintOptions {
+            rules: vec![LintRule::UnusedPureExpressionStatement],
+            module: None,
+        },
+    );
+    assert_json_snapshot(
+        &unused_pure_expression_lint,
+        include_str!("../fixtures/contracts/lint_unused_pure_expression_statement.json"),
+    );
+
     let mutable_binding_source = include_str!("../examples/mutable_binding_style.sley");
     let mutable_binding_program =
         parse_program(mutable_binding_source).expect("parse mutable binding fixture");
@@ -5850,7 +5936,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(39))
+        Some(&serde_json::json!(40))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -10970,6 +11056,67 @@ task main -> Result<Int, Error> uses FileRead {
 }
 
 #[test]
+fn lint_report_flags_unused_pure_expression_statements() {
+    let source = r#"
+module app.unused_expr
+
+task main -> Result<Int, Error> uses FileRead {
+  bind used = 40
+
+  used + 2
+  used / 2
+  fs.read_text("examples/hello.sley")
+  fs.try_read_text("examples/hello.sley")?
+  [1, 2][0]
+
+  return Ok(used + 2)
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+
+    let report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::UnusedPureExpressionStatement],
+            module: None,
+        },
+    );
+
+    assert_eq!(report.schema, LINT_REPORT_SCHEMA);
+    assert_eq!(report.status, "findings");
+    assert_eq!(report.entry_module, "app.unused_expr");
+    assert_eq!(
+        report.filters.rules,
+        vec!["unused_pure_expression_statement"]
+    );
+    assert_eq!(report.findings.len(), 1);
+    assert_eq!(report.findings[0].id, "UNUSED_PURE_EXPRESSION_STATEMENT");
+    assert_eq!(report.findings[0].rule, "unused_pure_expression_statement");
+    assert_eq!(
+        report.findings[0].node,
+        "block:task:app.unused_expr.main:stmt:1"
+    );
+    assert_eq!(report.findings[0].module, "app.unused_expr");
+    assert!(report.findings[0].message.contains("used + 2"));
+    assert!(report.findings[0].hint.contains("delete"));
+
+    let scoped_report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::UnusedPureExpressionStatement],
+            module: Some("app.other".to_string()),
+        },
+    );
+    assert_eq!(scoped_report.status, "ok");
+    assert!(scoped_report.findings.is_empty());
+}
+
+#[test]
 fn lint_report_flags_mutable_bindings_never_set() {
     let source = r#"
 module app.mutable_style
@@ -13769,6 +13916,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:templates:statement-surface-replace",
         "graft:templates:unchecked-result",
         "graft:templates:unused-pure-binding-delete",
+        "graft:templates:unused-pure-expression-statement-delete",
         "graft:templates:unused-declared-effect-remove",
         "graft:templates:unused-import-delete",
         "graft:templates:unused-private-task-delete",
@@ -13791,6 +13939,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "lint:unchecked_result",
         "lint:unqualified_imported_call",
         "lint:unused_pure_binding",
+        "lint:unused_pure_expression_statement",
         "lint:mutable_binding_never_set",
         "lint:constant_if_expression",
         "lint:identity_binary_expression",
@@ -13822,6 +13971,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:lint-repair-write-command",
         "readiness:lint-repair-write-verify",
         "readiness:mutable-binding-repair-write-verify",
+        "readiness:unused-pure-expression-repair-write-verify",
         "readiness:project-lint-repair-write-verify",
         "readiness:project-import-write-verify",
         "readiness:remove-take-transaction-write-verify",

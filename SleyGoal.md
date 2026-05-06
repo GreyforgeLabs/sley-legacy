@@ -40,7 +40,7 @@ Current verified surface:
 
 - `cargo fmt --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 233 tests.
+- Current integration coverage is 235 tests.
 - `sley query --json` emits `schema: "sley.query.report.v0"` and supports
   `--kind all|modules|tasks|types|effects|calls`, `--module <module>`, and
   `--exported`, including strict task/take/type/effect/call row definitions.
@@ -71,6 +71,7 @@ Current verified surface:
   `--rule unused-private-effect`, `--rule raw-host-adapter`,
   `--rule missing-module-declaration`, `--rule unchecked-result`,
   `--rule unqualified-imported-call`, `--rule unused-pure-binding`,
+  `--rule unused-pure-expression-statement`,
   `--rule mutable-binding-never-set`, `--rule constant-if-expression`,
   `--rule identity-binary-expression`,
   `--rule redundant-boolean-comparison`,
@@ -84,8 +85,9 @@ Current verified surface:
   `unused_import`, `unused_take`, `unused_private_type`,
   `unused_private_effect`, `raw_host_adapter`,
   `missing_module_declaration`, `unchecked_result`, and
-  `unqualified_imported_call`, `unused_pure_binding`, and
-  `mutable_binding_never_set`, `constant_if_expression`,
+  `unqualified_imported_call`, `unused_pure_binding`,
+  `unused_pure_expression_statement`, and `mutable_binding_never_set`,
+  `constant_if_expression`,
   `identity_binary_expression`, `redundant_boolean_comparison`, and
   `absorbing_boolean_expression`, `self_comparison_expression`,
   `double_negation_expression`, `redundant_boolean_if_expression`, and
@@ -137,6 +139,8 @@ Current verified surface:
   `delete_unused_import` cleanup that clears lint before
   `sley verify --deny-warnings`, plus checked `unused_pure_binding`
   `DeleteNode` templates with lint/plan/fix-write/verify smoke coverage, plus
+  checked `unused_pure_expression_statement` `DeleteNode` templates with
+  lint/plan/fix-write/verify smoke coverage, plus
   checked `mutable_binding_never_set` style findings and a
   `convert_mutable_binding_to_bind` transaction with plan/fix-write/verify
   smoke coverage, plus checked `constant_if_expression` style findings and
@@ -353,6 +357,7 @@ cargo run -- lint --json --rule missing-module-declaration <target>
 cargo run -- lint --json --rule unchecked-result <target>
 cargo run -- lint --json --rule unqualified-imported-call <target>
 cargo run -- lint --json --rule unused-pure-binding <target>
+cargo run -- lint --json --rule unused-pure-expression-statement <target>
 cargo run -- lint --json --rule mutable-binding-never-set <target>
 cargo run -- lint --json --rule constant-if-expression <target>
 cargo run -- lint --json --rule identity-binary-expression <target>

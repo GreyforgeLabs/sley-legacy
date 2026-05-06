@@ -563,6 +563,10 @@ fn lint_graft_templates(
         lint_report,
     ));
     templates.extend(lint_unused_pure_binding_templates(program, lint_report));
+    templates.extend(lint_unused_pure_expression_statement_templates(
+        program,
+        lint_report,
+    ));
     templates.extend(lint_constant_if_expression_templates(program, lint_report));
     templates.extend(lint_identity_binary_expression_templates(
         program,
@@ -609,6 +613,7 @@ fn is_lint_repair_kind(kind: &str) -> bool {
             | "propagate_unchecked_result"
             | "qualify_imported_call"
             | "delete_unused_pure_binding"
+            | "delete_unused_pure_expression_statement"
             | "simplify_constant_if_expression"
             | "simplify_identity_binary_expression"
             | "simplify_redundant_boolean_comparison"
@@ -815,6 +820,33 @@ fn lint_unused_pure_binding_templates(
                 reason:
                     "delete this unused bind after checked lint proves the initializer is pure and unread"
                         .to_string(),
+                surface: finding.node.clone(),
+                operation,
+                editable_json_pointers: Vec::new(),
+            })
+        })
+        .collect()
+}
+
+fn lint_unused_pure_expression_statement_templates(
+    program: &Program,
+    lint_report: &LintReport,
+) -> Vec<EditPlanGraftTemplate> {
+    lint_report
+        .findings
+        .iter()
+        .filter(|finding| finding.id == "UNUSED_PURE_EXPRESSION_STATEMENT")
+        .filter_map(|finding| {
+            let operation = json!({
+                "op": "DeleteNode",
+                "target": finding.node
+            });
+            if !delete_affordance_checks(program, &operation) {
+                return None;
+            }
+            Some(EditPlanGraftTemplate {
+                kind: "delete_unused_pure_expression_statement".to_string(),
+                reason: "delete this no-op pure expression statement".to_string(),
                 surface: finding.node.clone(),
                 operation,
                 editable_json_pointers: Vec::new(),

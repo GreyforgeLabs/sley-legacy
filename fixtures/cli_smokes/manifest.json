@@ -2545,15 +2545,16 @@
           { "pointer": "/filters/rules/9", "value": "unchecked_result" },
           { "pointer": "/filters/rules/10", "value": "unqualified_imported_call" },
           { "pointer": "/filters/rules/11", "value": "unused_pure_binding" },
-          { "pointer": "/filters/rules/12", "value": "mutable_binding_never_set" },
-          { "pointer": "/filters/rules/13", "value": "constant_if_expression" },
-          { "pointer": "/filters/rules/14", "value": "identity_binary_expression" },
-          { "pointer": "/filters/rules/15", "value": "redundant_boolean_comparison" },
-          { "pointer": "/filters/rules/16", "value": "absorbing_boolean_expression" },
-          { "pointer": "/filters/rules/17", "value": "self_comparison_expression" },
-          { "pointer": "/filters/rules/18", "value": "double_negation_expression" },
-          { "pointer": "/filters/rules/19", "value": "redundant_boolean_if_expression" },
-          { "pointer": "/filters/rules/20", "value": "same_branch_if_expression" },
+          { "pointer": "/filters/rules/12", "value": "unused_pure_expression_statement" },
+          { "pointer": "/filters/rules/13", "value": "mutable_binding_never_set" },
+          { "pointer": "/filters/rules/14", "value": "constant_if_expression" },
+          { "pointer": "/filters/rules/15", "value": "identity_binary_expression" },
+          { "pointer": "/filters/rules/16", "value": "redundant_boolean_comparison" },
+          { "pointer": "/filters/rules/17", "value": "absorbing_boolean_expression" },
+          { "pointer": "/filters/rules/18", "value": "self_comparison_expression" },
+          { "pointer": "/filters/rules/19", "value": "double_negation_expression" },
+          { "pointer": "/filters/rules/20", "value": "redundant_boolean_if_expression" },
+          { "pointer": "/filters/rules/21", "value": "same_branch_if_expression" },
           { "pointer": "/findings", "value": [] }
         ]
       }
@@ -2923,6 +2924,31 @@
           { "pointer": "/filters/rules/0", "value": "unused_pure_binding" },
           { "pointer": "/findings/0/id", "value": "UNUSED_PURE_BINDING" },
           { "pointer": "/findings/0/node", "value": "block:task:app.bindings.main:stmt:0" }
+        ]
+      }
+    },
+    {
+      "name": "lint_unused_pure_expression_statement_rule_json",
+      "args": [
+        "lint",
+        "--json",
+        "--rule",
+        "unused-pure-expression-statement",
+        "examples/unused_pure_expression_statement.sley"
+      ],
+      "covers": [
+        "cli:lint",
+        "lint:unused_pure_expression_statement",
+        "json:sley.lint.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.lint.report.v0" },
+          { "pointer": "/status", "value": "findings" },
+          { "pointer": "/filters/rules/0", "value": "unused_pure_expression_statement" },
+          { "pointer": "/findings/0/id", "value": "UNUSED_PURE_EXPRESSION_STATEMENT" },
+          { "pointer": "/findings/0/node", "value": "block:task:app.unused_expr.main:stmt:1" }
         ]
       }
     },
@@ -4407,6 +4433,156 @@
         "json:sley.lint.report.v0",
         "lint:unused_pure_binding",
         "readiness:lint-repair-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.verify.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/summary/warning_count", "value": 0 },
+          { "pointer": "/summary/lint_finding_count", "value": 0 },
+          { "pointer": "/runtime/value/kind", "value": "Int" },
+          { "pointer": "/runtime/value/value", "value": 42 },
+          { "pointer": "/lint/status", "value": "ok" }
+        ]
+      }
+    },
+    {
+      "name": "plan_unused_pure_expression_statement_template_json",
+      "args": [
+        "plan",
+        "--json",
+        "--graft-templates",
+        "--template-surface",
+        "block:task:app.unused_expr.main:stmt:1",
+        "examples/unused_pure_expression_statement.sley"
+      ],
+      "covers": [
+        "cli:plan",
+        "graft:templates:unused-pure-expression-statement-delete",
+        "lint:unused_pure_expression_statement",
+        "json:sley.edit_plan.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.edit_plan.report.v0" },
+          { "pointer": "/status", "value": "warnings" },
+          { "pointer": "/lint/findings/0/id", "value": "UNUSED_PURE_EXPRESSION_STATEMENT" },
+          { "pointer": "/graft_templates/0/kind", "value": "delete_unused_pure_expression_statement" },
+          { "pointer": "/graft_templates/0/surface", "value": "block:task:app.unused_expr.main:stmt:1" },
+          { "pointer": "/graft_templates/0/operation/op", "value": "DeleteNode" },
+          { "pointer": "/graft_templates/0/operation/target", "value": "block:task:app.unused_expr.main:stmt:1" }
+        ]
+      }
+    },
+    {
+      "name": "fix_unused_pure_expression_statement_dry_run_json",
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "delete_unused_pure_expression_statement",
+        "--dry-run",
+        "examples/unused_pure_expression_statement.sley"
+      ],
+      "covers": [
+        "cli:fix",
+        "graft:templates:unused-pure-expression-statement-delete",
+        "lint:unused_pure_expression_statement",
+        "json:sley.graft.outcome.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/operation", "value": "DeleteNode" },
+          { "pointer": "/provenance/0/targets/0", "value": "block:task:app.unused_expr.main:stmt:1" }
+        ]
+      }
+    },
+    {
+      "name": "fix_unused_pure_expression_statement_write_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/fix-unused-pure-expression/main.sley",
+          "content": "module app.expression_cleanup\n\ntask main -> Int {\n  1 + 2\n\n  return 42\n}\n"
+        }
+      ],
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "delete_unused_pure_expression_statement",
+        "--template-surface",
+        "block:task:app.expression_cleanup.main:stmt:0",
+        "--write",
+        "--actor",
+        "agent:cli-smoke",
+        "{tmp}/fix-unused-pure-expression/main.sley"
+      ],
+      "covers": [
+        "cli:fix",
+        "cli:fix-write",
+        "cli:smoke-setup-files",
+        "fix:lint-cleanup-write",
+        "fix:write-source",
+        "graft:templates:unused-pure-expression-statement-delete",
+        "json:sley.graft.outcome.v0",
+        "lint:unused_pure_expression_statement",
+        "readiness:unused-pure-expression-repair-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/actor", "value": "agent:cli-smoke" },
+          { "pointer": "/provenance/0/operation", "value": "DeleteNode" },
+          { "pointer": "/provenance/0/targets/0", "value": "block:task:app.expression_cleanup.main:stmt:0" }
+        ]
+      }
+    },
+    {
+      "name": "lint_fix_unused_pure_expression_statement_write_json",
+      "args": [
+        "lint",
+        "--json",
+        "--rule",
+        "unused-pure-expression-statement",
+        "{tmp}/fix-unused-pure-expression/main.sley"
+      ],
+      "covers": [
+        "cli:lint",
+        "fix:lint-cleanup-write",
+        "lint:unused_pure_expression_statement",
+        "json:sley.lint.report.v0",
+        "readiness:unused-pure-expression-repair-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.lint.report.v0" },
+          { "pointer": "/status", "value": "ok" }
+        ]
+      }
+    },
+    {
+      "name": "verify_fix_unused_pure_expression_statement_write_json",
+      "args": [
+        "verify",
+        "--json",
+        "--deny-warnings",
+        "{tmp}/fix-unused-pure-expression/main.sley"
+      ],
+      "covers": [
+        "cli:verify",
+        "fix:lint-cleanup-write",
+        "json:sley.verify.report.v0",
+        "json:sley.lint.report.v0",
+        "lint:unused_pure_expression_statement",
+        "readiness:unused-pure-expression-repair-write-verify"
       ],
       "expect": {
         "success": true,

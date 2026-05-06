@@ -781,6 +781,9 @@ still passes.
 `unused_pure_binding` lint findings become checked
 `delete_unused_pure_binding` `DeleteNode` templates when deleting the unread
 binding statement preserves a checked program.
+`unused_pure_expression_statement` lint findings become checked
+`delete_unused_pure_expression_statement` `DeleteNode` templates when deleting
+the no-op pure expression statement preserves a checked program.
 `constant_if_expression` lint findings become checked
 `simplify_constant_if_expression` `ReplaceExpression` templates when replacing
 an expression-level `if true/false` with the branch that executes preserves a
@@ -925,7 +928,9 @@ binding it; and `unqualified_imported_call`, which warns when a resolved call
 uses a simple imported task name instead of an alias- or module-qualified
 callee; and `unused_pure_binding`, which warns when a local `bind` statement
 has an unread delete-safe initializer with no calls, raw fragments, `?`,
-indexing, division, or remainder operation; and `mutable_binding_never_set`,
+indexing, division, or remainder operation; and
+`unused_pure_expression_statement`, which warns when a statement evaluates a
+delete-safe pure expression and discards it; and `mutable_binding_never_set`,
 which warns when a mutable local such as `state` or `tally` is never assigned
 with `set`; and `constant_if_expression`, which warns when an expression-level
 `if true/false { ... } else { ... }` can be replaced with the branch that
@@ -951,6 +956,7 @@ has identical branches and a delete-safe condition.
 `--rule unused-private-effect`, `--rule raw-host-adapter`,
 `--rule missing-module-declaration`, `--rule unchecked-result`, or
 `--rule unqualified-imported-call`, `--rule unused-pure-binding`, or
+`--rule unused-pure-expression-statement`, or
 `--rule mutable-binding-never-set`, `--rule constant-if-expression`, or
 `--rule identity-binary-expression`, or
 `--rule redundant-boolean-comparison`, or
@@ -1058,8 +1064,9 @@ refuse generic data disguised as Sley artifacts before compression begins.
   hygiene for unused declared effects, private declaration/import/API hygiene,
   raw-host-adapter and unchecked-result migration warnings with checked
   propagation templates, unqualified imported-call qualification templates,
-  unused pure binding cleanup templates, and mutable binding conversion
-  transactions, constant-if, identity binary expression, redundant boolean
+  unused pure binding cleanup templates, unused pure expression statement
+  cleanup templates, and mutable binding conversion transactions, constant-if,
+  identity binary expression, redundant boolean
   comparison, and double negation simplification templates, plus explicit
   module style warnings;
   broader style and migration lints remain later work
@@ -1077,8 +1084,8 @@ refuse generic data disguised as Sley artifacts before compression begins.
   before deployment review when the repair is unambiguous; preview actions keep
   `command` dry-run and add optional `write_command` for the mutating command.
   The CLI smoke suite locks previewed lint-repair writes followed by strict
-  verify for file and project targets, including unused pure binding cleanup
-  and mutable binding conversion,
+  verify for file and project targets, including unused pure binding cleanup,
+  unused pure expression statement cleanup, and mutable binding conversion,
   plus a repaired generated deploy
   scaffold re-verified with seeded `Deploy` authority and a strict seeded
   deploy verify report for the generated `sley new --template deploy` starter,

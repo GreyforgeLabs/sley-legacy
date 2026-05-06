@@ -113,7 +113,8 @@ Implemented now:
   `--rule unused-take`, `--rule unused-private-type`,
   `--rule unused-private-effect`, `--rule raw-host-adapter`,
   `--rule missing-module-declaration`, `--rule unchecked-result`, or
-  `--rule unqualified-imported-call`, `--rule unused-pure-binding`, or
+  `--rule unqualified-imported-call`, `--rule unused-pure-binding`,
+  `--rule unused-pure-expression-statement`, or
   `--rule mutable-binding-never-set`, `--rule constant-if-expression`,
   `--rule identity-binary-expression`, or
   `--rule redundant-boolean-comparison`, or
@@ -164,6 +165,8 @@ Implemented now:
   statements that can be safely rewritten with `?`,
   `qualify_imported_call` templates for simple imported task calls that should
   be alias- or module-qualified,
+  `delete_unused_pure_expression_statement` templates for no-op pure
+  expression statements,
   `simplify_constant_if_expression` templates for constant `if` expressions
   that can be replaced by the branch that executes,
   `simplify_identity_binary_expression` templates for identity binary
@@ -626,6 +629,7 @@ verify,
 raw-host adapter migration templates, unchecked-result propagation templates,
 unqualified imported-call qualification templates with write/query/verify
 coverage, unused pure binding delete templates with write/verify coverage,
+unused pure expression statement delete templates with write/verify coverage,
 mutable-binding conversion transactions with write/verify coverage,
 constant-if expression simplification templates with write/verify coverage,
 identity binary expression simplification templates with write/verify coverage,

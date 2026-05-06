@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.unused_expr",
+  "filters": {
+    "module": null,
+    "rules": [
+      "unused_pure_expression_statement"
+    ]
+  },
+  "findings": [
+    {
+      "id": "UNUSED_PURE_EXPRESSION_STATEMENT",
+      "rule": "unused_pure_expression_statement",
+      "severity": "warning",
+      "message": "task `app.unused_expr.main` has an unused pure expression statement `value + 1`",
+      "node": "block:task:app.unused_expr.main:stmt:1",
+      "module": "app.unused_expr",
+      "hint": "delete this no-op expression statement"
+    }
+  ]
+}

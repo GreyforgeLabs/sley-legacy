@@ -30,6 +30,7 @@ pub enum LintRule {
     UncheckedResult,
     UnqualifiedImportedCall,
     UnusedPureBinding,
+    UnusedPureExpressionStatement,
     MutableBindingNeverSet,
     ConstantIfExpression,
     IdentityBinaryExpression,
@@ -56,6 +57,7 @@ impl LintRule {
             Self::UncheckedResult,
             Self::UnqualifiedImportedCall,
             Self::UnusedPureBinding,
+            Self::UnusedPureExpressionStatement,
             Self::MutableBindingNeverSet,
             Self::ConstantIfExpression,
             Self::IdentityBinaryExpression,
@@ -82,6 +84,7 @@ impl LintRule {
             Self::UncheckedResult => "unchecked_result",
             Self::UnqualifiedImportedCall => "unqualified_imported_call",
             Self::UnusedPureBinding => "unused_pure_binding",
+            Self::UnusedPureExpressionStatement => "unused_pure_expression_statement",
             Self::MutableBindingNeverSet => "mutable_binding_never_set",
             Self::ConstantIfExpression => "constant_if_expression",
             Self::IdentityBinaryExpression => "identity_binary_expression",
@@ -187,6 +190,12 @@ pub fn build_lint_report(program: &Program, options: LintOptions) -> LintReport 
     }
     if rules.contains(&LintRule::UnusedPureBinding) {
         findings.extend(lint_unused_pure_bindings(
+            program,
+            options.module.as_deref(),
+        ));
+    }
+    if rules.contains(&LintRule::UnusedPureExpressionStatement) {
+        findings.extend(lint_unused_pure_expression_statements(
             program,
             options.module.as_deref(),
         ));
@@ -790,6 +799,21 @@ fn lint_unused_pure_bindings(program: &Program, module: Option<&str>) -> Vec<Lin
         .filter(|task| module_matches(module, &task_module(task)))
     {
         collect_unused_pure_bindings_in_block(task, &task.body, &task.body, &mut findings);
+    }
+    findings
+}
+
+fn lint_unused_pure_expression_statements(
+    program: &Program,
+    module: Option<&str>,
+) -> Vec<LintFinding> {
+    let mut findings = Vec::new();
+    for task in program
+        .tasks
+        .iter()
+        .filter(|task| module_matches(module, &task_module(task)))
+    {
+        collect_unused_pure_expression_statements_in_block(task, &task.body, &mut findings);
     }
     findings
 }
@@ -2142,6 +2166,51 @@ fn collect_unused_pure_bindings_in_block(
             | StatementKind::For { body, .. }
             | StatementKind::Forge { body } => {
                 collect_unused_pure_bindings_in_block(task, task_body, body, findings);
+            }
+            StatementKind::Binding { .. }
+            | StatementKind::Set { .. }
+            | StatementKind::Return { .. }
+            | StatementKind::Expr { .. } => {}
+        }
+    }
+}
+
+fn collect_unused_pure_expression_statements_in_block(
+    task: &TaskDecl,
+    block: &Block,
+    findings: &mut Vec<LintFinding>,
+) {
+    for statement in &block.statements {
+        match &statement.kind {
+            StatementKind::Expr { expr } if expr_is_delete_safe_pure(expr) => {
+                let task_name = task_fq_name(task);
+                findings.push(LintFinding {
+                    id: "UNUSED_PURE_EXPRESSION_STATEMENT".to_string(),
+                    rule: LintRule::UnusedPureExpressionStatement.as_str().to_string(),
+                    severity: "warning".to_string(),
+                    message: format!(
+                        "task `{task_name}` has an unused pure expression statement `{}`",
+                        expr.source
+                    ),
+                    node: statement.id.clone(),
+                    module: task_module(task),
+                    hint: "delete this no-op expression statement".to_string(),
+                });
+            }
+            StatementKind::If {
+                then_block,
+                else_block,
+                ..
+            } => {
+                collect_unused_pure_expression_statements_in_block(task, then_block, findings);
+                if let Some(else_block) = else_block {
+                    collect_unused_pure_expression_statements_in_block(task, else_block, findings);
+                }
+            }
+            StatementKind::While { body, .. }
+            | StatementKind::For { body, .. }
+            | StatementKind::Forge { body } => {
+                collect_unused_pure_expression_statements_in_block(task, body, findings);
             }
             StatementKind::Binding { .. }
             | StatementKind::Set { .. }
