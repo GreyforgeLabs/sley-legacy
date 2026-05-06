@@ -739,7 +739,9 @@ The release-readiness view is exposed through `sley-conformance report
 --json`. It inventories schema IDs, fixture and manifest schema instances,
 contract fixture validation status, release manifest validation status, corpus
 tags, smoke tags, packaged example counts, and declared integration-test count
-drift under one stable conformance root. It also reports non-gating
+drift under one stable conformance root. `--corpus-manifest` and repeated
+`--smoke-manifest` arguments accept either explicit manifest files or
+directories containing `manifest.json`. It also reports non-gating
 public-release blockers such as unresolved license and repository metadata, so
 the executable gate can pass while publication decisions remain explicit. The
 plain-text report lists those release blockers directly; the JSON report keeps
