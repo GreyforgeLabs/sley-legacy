@@ -3777,6 +3777,85 @@ fn edit_plan_graft_templates_include_constant_record_field_access_expression_sim
 }
 
 #[test]
+fn edit_plan_graft_templates_include_constant_len_expression_simplify() {
+    let source = include_str!("../examples/constant_len_expression.sley");
+    let program = parse_program(source).expect("parse constant len fixture");
+    let report = build_edit_plan_report_with_options(
+        "examples/constant_len_expression.sley",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: None,
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "warnings");
+    assert_eq!(report.summary.lint_finding_count, 1);
+    assert_eq!(
+        report.lint.as_ref().expect("lint summary").findings[0].id,
+        "CONSTANT_LEN_EXPRESSION"
+    );
+    let template = report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "simplify_constant_len_expression")
+        .expect("constant len simplify template");
+    assert_eq!(
+        template.surface,
+        "block:task:app.constant_len.main:stmt:0:expr"
+    );
+    assert_eq!(
+        template.operation.pointer("/op"),
+        Some(&serde_json::json!("ReplaceExpression"))
+    );
+    assert_eq!(
+        template.operation.pointer("/payload/source"),
+        Some(&serde_json::json!("3"))
+    );
+    assert_eq!(template.editable_json_pointers, vec!["/payload/source"]);
+    let graft: GraftInput =
+        serde_json::from_value(template.operation.clone()).expect("parse constant len template");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:constant-len-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted_source = outcome.source.expect("grafted source");
+    assert!(grafted_source.contains("return 3"));
+    assert!(!grafted_source.contains("len([\"red\", \"blue\", \"green\"])"));
+    let grafted_program = parse_program(&grafted_source).expect("parse grafted source");
+    let lint_report = build_lint_report(
+        &grafted_program,
+        LintOptions {
+            rules: vec![LintRule::ConstantLenExpression],
+            module: None,
+        },
+    );
+    assert_eq!(lint_report.status, "ok");
+
+    let targeted_report = build_edit_plan_report_with_options(
+        "examples/constant_len_expression.sley",
+        Ok(program),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("block:task:app.constant_len.main:stmt:0:expr".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(targeted_report.status, "warnings");
+    assert!(targeted_report.diagnostics.is_empty());
+    assert_eq!(targeted_report.graft_templates.len(), 1);
+    assert_eq!(
+        targeted_report.graft_templates[0].kind,
+        "simplify_constant_len_expression"
+    );
+    assert!(targeted_report.transaction_templates.is_empty());
+}
+
+#[test]
 fn edit_plan_graft_templates_include_empty_if_statement_delete() {
     let source = include_str!("../examples/empty_if_statement.sley");
     let program = parse_program(source).expect("parse empty if fixture");
@@ -6563,6 +6642,21 @@ task helper -> Result<Text, Error> {
         include_str!("../fixtures/contracts/lint_constant_record_field_access_expression.json"),
     );
 
+    let constant_len_source = include_str!("../examples/constant_len_expression.sley");
+    let constant_len_program =
+        parse_program(constant_len_source).expect("parse constant len fixture");
+    let constant_len_lint = build_lint_report(
+        &constant_len_program,
+        LintOptions {
+            rules: vec![LintRule::ConstantLenExpression],
+            module: None,
+        },
+    );
+    assert_json_snapshot(
+        &constant_len_lint,
+        include_str!("../fixtures/contracts/lint_constant_len_expression.json"),
+    );
+
     let empty_if_source = include_str!("../examples/empty_if_statement.sley");
     let empty_if_program = parse_program(empty_if_source).expect("parse empty if fixture");
     let empty_if_lint = build_lint_report(
@@ -7458,7 +7552,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(74))
+        Some(&serde_json::json!(75))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -14099,6 +14193,97 @@ task main -> Text {
 }
 
 #[test]
+fn lint_report_flags_constant_len_expressions() {
+    let source = r#"
+module app.constant_len
+
+task make_runtime -> Text {
+  return "runtime"
+}
+
+task main -> Int {
+  bind text_len = len("agent")
+  bind list_len = len([1, 2, 3])
+  bind map_len = len(map { "one": "ready", "two": "done" })
+  bind runtime_list = len([call make_runtime()])
+  bind runtime_map = len(map { "one": call make_runtime() })
+
+  return len("done")
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+
+    let report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::ConstantLenExpression],
+            module: None,
+        },
+    );
+
+    assert_eq!(report.schema, LINT_REPORT_SCHEMA);
+    assert_eq!(report.status, "findings");
+    assert_eq!(report.entry_module, "app.constant_len");
+    assert_eq!(report.filters.rules, vec!["constant_len_expression"]);
+    assert_eq!(
+        report.findings.len(),
+        4,
+        "constant len should skip literal collections that evaluate runtime values"
+    );
+    assert_eq!(report.findings[0].id, "CONSTANT_LEN_EXPRESSION");
+    assert_eq!(report.findings[0].rule, "constant_len_expression");
+    let nodes: Vec<&str> = report
+        .findings
+        .iter()
+        .map(|finding| finding.node.as_str())
+        .collect();
+    assert!(nodes.contains(&"block:task:app.constant_len.main:stmt:0:expr"));
+    assert!(nodes.contains(&"block:task:app.constant_len.main:stmt:1:expr"));
+    assert!(nodes.contains(&"block:task:app.constant_len.main:stmt:2:expr"));
+    assert!(nodes.contains(&"block:task:app.constant_len.main:stmt:5:expr"));
+    assert_eq!(report.findings[0].module, "app.constant_len");
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|finding| finding.hint.contains("5"))
+    );
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|finding| finding.hint.contains("3"))
+    );
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|finding| finding.hint.contains("2"))
+    );
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|finding| finding.hint.contains("4"))
+    );
+
+    let scoped_report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::ConstantLenExpression],
+            module: Some("app.other".to_string()),
+        },
+    );
+    assert_eq!(scoped_report.status, "ok");
+    assert!(scoped_report.findings.is_empty());
+}
+
+#[test]
 fn lint_report_flags_empty_if_statements() {
     let source = r#"
 module app.empty_if
@@ -17236,6 +17421,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:templates:constant-list-index-expression",
         "graft:templates:constant-map-index-expression",
         "graft:templates:constant-record-field-access-expression",
+        "graft:templates:constant-len-expression",
         "graft:templates:empty-if-statement-delete",
         "graft:templates:empty-for-statement-delete",
         "graft:templates:empty-forge-statement-delete",
@@ -17275,6 +17461,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "lint:constant_list_index_expression",
         "lint:constant_map_index_expression",
         "lint:constant_record_field_access_expression",
+        "lint:constant_len_expression",
         "lint:empty_if_statement",
         "lint:empty_for_statement",
         "lint:empty_forge_statement",
@@ -17303,6 +17490,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:constant-list-index-repair-write-verify",
         "readiness:constant-map-index-repair-write-verify",
         "readiness:constant-record-field-access-repair-write-verify",
+        "readiness:constant-len-repair-write-verify",
         "readiness:empty-if-repair-write-verify",
         "readiness:empty-for-repair-write-verify",
         "readiness:empty-forge-repair-write-verify",

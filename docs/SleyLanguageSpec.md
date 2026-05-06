@@ -852,6 +852,10 @@ literal preserves a checked program.
 `simplify_constant_record_field_access_expression` `ReplaceExpression`
 templates when replacing a present literal record field access over scalar
 literal values with the selected literal preserves a checked program.
+`constant_len_expression` lint findings become checked
+`simplify_constant_len_expression` `ReplaceExpression` templates when
+replacing a literal `len` call over literal text, list, or map values with the
+literal length preserves a checked program.
 `empty_if_statement` lint findings become checked
 `delete_empty_if_statement` `DeleteNode` templates when deleting a no-op `if`
 statement with a delete-safe condition and empty branches preserves a checked
@@ -1043,6 +1047,9 @@ dropping runtime work; and
 `constant_record_field_access_expression`, which warns when a present literal
 record field access over scalar literal values can be replaced by the selected
 literal without dropping runtime work; and
+`constant_len_expression`, which warns when a literal `len` call over literal
+text, list, or map values can be replaced by the literal length without
+dropping runtime work; and
 `empty_if_statement`, which warns when an `if` statement with a delete-safe
 condition and empty branches can be removed as no-op control flow; and
 `empty_for_statement`, which warns when a `for item in [] { ... }` statement
@@ -1090,6 +1097,7 @@ guaranteed `return` in the same block.
 `--rule constant-list-index-expression`, or
 `--rule constant-map-index-expression`, or
 `--rule constant-record-field-access-expression`, or
+`--rule constant-len-expression`, or
 `--rule empty-if-statement`, or
 `--rule empty-for-statement`, or
 `--rule empty-forge-statement`, or
@@ -1235,6 +1243,7 @@ refuse generic data disguised as Sley artifacts before compression begins.
   cleanup, constant-if statement simplification, constant arithmetic expression
   cleanup, constant text concatenation cleanup, constant list index cleanup,
   constant map index cleanup, constant record field access cleanup,
+  constant len cleanup,
   empty-if statement cleanup,
   empty-for statement cleanup,
   empty-forge statement cleanup,

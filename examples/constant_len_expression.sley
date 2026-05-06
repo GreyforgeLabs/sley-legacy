@@ -1,0 +1,5 @@
+module app.constant_len
+
+task main -> Int {
+  return len(["red", "blue", "green"])
+}

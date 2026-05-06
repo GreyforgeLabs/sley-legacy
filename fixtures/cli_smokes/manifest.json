@@ -2564,20 +2564,21 @@
           { "pointer": "/filters/rules/20", "value": "constant_list_index_expression" },
           { "pointer": "/filters/rules/21", "value": "constant_map_index_expression" },
           { "pointer": "/filters/rules/22", "value": "constant_record_field_access_expression" },
-          { "pointer": "/filters/rules/23", "value": "empty_if_statement" },
-          { "pointer": "/filters/rules/24", "value": "empty_for_statement" },
-          { "pointer": "/filters/rules/25", "value": "empty_forge_statement" },
-          { "pointer": "/filters/rules/26", "value": "identity_binary_expression" },
-          { "pointer": "/filters/rules/27", "value": "redundant_boolean_comparison" },
-          { "pointer": "/filters/rules/28", "value": "absorbing_boolean_expression" },
-          { "pointer": "/filters/rules/29", "value": "self_comparison_expression" },
-          { "pointer": "/filters/rules/30", "value": "double_negation_expression" },
-          { "pointer": "/filters/rules/31", "value": "negated_comparison_expression" },
-          { "pointer": "/filters/rules/32", "value": "redundant_boolean_if_expression" },
-          { "pointer": "/filters/rules/33", "value": "redundant_boolean_if_statement" },
-          { "pointer": "/filters/rules/34", "value": "same_branch_if_expression" },
-          { "pointer": "/filters/rules/35", "value": "same_branch_if_statement" },
-          { "pointer": "/filters/rules/36", "value": "unreachable_statement" },
+          { "pointer": "/filters/rules/23", "value": "constant_len_expression" },
+          { "pointer": "/filters/rules/24", "value": "empty_if_statement" },
+          { "pointer": "/filters/rules/25", "value": "empty_for_statement" },
+          { "pointer": "/filters/rules/26", "value": "empty_forge_statement" },
+          { "pointer": "/filters/rules/27", "value": "identity_binary_expression" },
+          { "pointer": "/filters/rules/28", "value": "redundant_boolean_comparison" },
+          { "pointer": "/filters/rules/29", "value": "absorbing_boolean_expression" },
+          { "pointer": "/filters/rules/30", "value": "self_comparison_expression" },
+          { "pointer": "/filters/rules/31", "value": "double_negation_expression" },
+          { "pointer": "/filters/rules/32", "value": "negated_comparison_expression" },
+          { "pointer": "/filters/rules/33", "value": "redundant_boolean_if_expression" },
+          { "pointer": "/filters/rules/34", "value": "redundant_boolean_if_statement" },
+          { "pointer": "/filters/rules/35", "value": "same_branch_if_expression" },
+          { "pointer": "/filters/rules/36", "value": "same_branch_if_statement" },
+          { "pointer": "/filters/rules/37", "value": "unreachable_statement" },
           { "pointer": "/findings", "value": [] }
         ]
       }
@@ -4518,6 +4519,155 @@
           { "pointer": "/summary/lint_finding_count", "value": 0 },
           { "pointer": "/runtime/value/kind", "value": "Text" },
           { "pointer": "/runtime/value/value", "value": "Ada" },
+          { "pointer": "/lint/status", "value": "ok" }
+        ]
+      }
+    },
+    {
+      "name": "lint_constant_len_expression_rule_json",
+      "args": [
+        "lint",
+        "--json",
+        "--rule",
+        "constant-len-expression",
+        "examples/constant_len_expression.sley"
+      ],
+      "covers": [
+        "cli:lint",
+        "lint:constant_len_expression",
+        "json:sley.lint.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.lint.report.v0" },
+          { "pointer": "/status", "value": "findings" },
+          { "pointer": "/filters/rules/0", "value": "constant_len_expression" },
+          { "pointer": "/findings/0/id", "value": "CONSTANT_LEN_EXPRESSION" },
+          { "pointer": "/findings/0/node", "value": "block:task:app.constant_len.main:stmt:0:expr" }
+        ]
+      }
+    },
+    {
+      "name": "plan_constant_len_expression_template_json",
+      "args": [
+        "plan",
+        "--json",
+        "--graft-templates",
+        "--template-surface",
+        "block:task:app.constant_len.main:stmt:0:expr",
+        "examples/constant_len_expression.sley"
+      ],
+      "covers": [
+        "cli:plan",
+        "graft:templates:constant-len-expression",
+        "lint:constant_len_expression",
+        "json:sley.edit_plan.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.edit_plan.report.v0" },
+          { "pointer": "/status", "value": "warnings" },
+          { "pointer": "/lint/findings/0/id", "value": "CONSTANT_LEN_EXPRESSION" },
+          { "pointer": "/graft_templates/0/kind", "value": "simplify_constant_len_expression" },
+          { "pointer": "/graft_templates/0/surface", "value": "block:task:app.constant_len.main:stmt:0:expr" },
+          { "pointer": "/graft_templates/0/operation/op", "value": "ReplaceExpression" },
+          { "pointer": "/graft_templates/0/operation/payload/source", "value": "3" }
+        ]
+      }
+    },
+    {
+      "name": "fix_constant_len_expression_write_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/fix-constant-len/main.sley",
+          "content": "module app.constant_len_fix\n\ntask main -> Int {\n  return len([\"red\", \"blue\", \"green\"])\n}\n"
+        }
+      ],
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "simplify_constant_len_expression",
+        "--template-surface",
+        "block:task:app.constant_len_fix.main:stmt:0:expr",
+        "--write",
+        "--actor",
+        "agent:cli-smoke",
+        "{tmp}/fix-constant-len/main.sley"
+      ],
+      "covers": [
+        "cli:fix",
+        "cli:fix-write",
+        "cli:smoke-setup-files",
+        "fix:lint-cleanup-write",
+        "fix:write-source",
+        "graft:templates:constant-len-expression",
+        "json:sley.graft.outcome.v0",
+        "lint:constant_len_expression",
+        "readiness:constant-len-repair-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/actor", "value": "agent:cli-smoke" },
+          { "pointer": "/provenance/0/operation", "value": "ReplaceExpression" },
+          { "pointer": "/provenance/0/targets/0", "value": "block:task:app.constant_len_fix.main:stmt:0:expr" }
+        ]
+      }
+    },
+    {
+      "name": "lint_fix_constant_len_expression_write_json",
+      "args": [
+        "lint",
+        "--json",
+        "--rule",
+        "constant-len-expression",
+        "{tmp}/fix-constant-len/main.sley"
+      ],
+      "covers": [
+        "cli:lint",
+        "fix:lint-cleanup-write",
+        "lint:constant_len_expression",
+        "json:sley.lint.report.v0",
+        "readiness:constant-len-repair-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.lint.report.v0" },
+          { "pointer": "/status", "value": "ok" }
+        ]
+      }
+    },
+    {
+      "name": "verify_fix_constant_len_expression_write_json",
+      "args": [
+        "verify",
+        "--json",
+        "--deny-warnings",
+        "{tmp}/fix-constant-len/main.sley"
+      ],
+      "covers": [
+        "cli:verify",
+        "fix:lint-cleanup-write",
+        "json:sley.verify.report.v0",
+        "json:sley.lint.report.v0",
+        "lint:constant_len_expression",
+        "readiness:constant-len-repair-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.verify.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/summary/warning_count", "value": 0 },
+          { "pointer": "/summary/lint_finding_count", "value": 0 },
+          { "pointer": "/runtime/value/kind", "value": "Int" },
+          { "pointer": "/runtime/value/value", "value": 3 },
           { "pointer": "/lint/status", "value": "ok" }
         ]
       }

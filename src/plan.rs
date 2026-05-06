@@ -12,7 +12,8 @@ use crate::lint::{
     LintOptions, LintReport, absorbing_boolean_expression_replacement_source, build_lint_report,
     constant_arithmetic_expression_replacement_source,
     constant_comparison_expression_replacement_source, constant_if_expression_replacement_source,
-    constant_if_statement_replacement_source, constant_list_index_expression_replacement_source,
+    constant_if_statement_replacement_source, constant_len_expression_replacement_source,
+    constant_list_index_expression_replacement_source,
     constant_map_index_expression_replacement_source,
     constant_record_field_access_expression_replacement_source,
     constant_text_concatenation_expression_replacement_source,
@@ -605,6 +606,7 @@ fn lint_graft_templates(
         program,
         lint_report,
     ));
+    templates.extend(lint_constant_len_expression_templates(program, lint_report));
     templates.extend(lint_empty_if_statement_templates(program, lint_report));
     templates.extend(lint_empty_for_statement_templates(program, lint_report));
     templates.extend(lint_empty_forge_statement_templates(program, lint_report));
@@ -676,6 +678,7 @@ fn is_lint_repair_kind(kind: &str) -> bool {
             | "simplify_constant_list_index_expression"
             | "simplify_constant_map_index_expression"
             | "simplify_constant_record_field_access_expression"
+            | "simplify_constant_len_expression"
             | "delete_empty_if_statement"
             | "delete_empty_for_statement"
             | "delete_empty_forge_statement"
@@ -1206,6 +1209,37 @@ fn lint_constant_record_field_access_expression_templates(
                 reason:
                     "replace this constant record field access expression with the selected literal"
                         .to_string(),
+                surface: finding.node.clone(),
+                operation,
+                editable_json_pointers: vec!["/payload/source".to_string()],
+            })
+        })
+        .collect()
+}
+
+fn lint_constant_len_expression_templates(
+    program: &Program,
+    lint_report: &LintReport,
+) -> Vec<EditPlanGraftTemplate> {
+    lint_report
+        .findings
+        .iter()
+        .filter(|finding| finding.id == "CONSTANT_LEN_EXPRESSION")
+        .filter_map(|finding| {
+            let replacement = constant_len_expression_replacement_source(program, &finding.node)?;
+            let operation = json!({
+                "op": "ReplaceExpression",
+                "target": finding.node,
+                "payload": {
+                    "source": replacement
+                }
+            });
+            if !replace_affordance_checks(program, &operation) {
+                return None;
+            }
+            Some(EditPlanGraftTemplate {
+                kind: "simplify_constant_len_expression".to_string(),
+                reason: "replace this constant len expression with the literal length".to_string(),
                 surface: finding.node.clone(),
                 operation,
                 editable_json_pointers: vec!["/payload/source".to_string()],

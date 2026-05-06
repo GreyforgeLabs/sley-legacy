@@ -264,8 +264,8 @@ Near-term:
    constant-if expression simplification, constant comparison simplification,
    constant arithmetic simplification, constant text concatenation
    simplification, constant list index simplification, constant map index
-   simplification, constant record field access simplification, identity binary
-   simplification, and
+   simplification, constant record field access simplification, constant len
+   simplification, identity binary simplification, and
    redundant boolean comparison
    simplification, absorbing boolean expression simplification,
    self-comparison expression simplification, double negation
