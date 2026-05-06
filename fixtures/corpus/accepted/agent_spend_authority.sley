@@ -1,0 +1,10 @@
+module corpus.accepted.agent_spend_authority
+
+task authorize_budget -> Result<Text, Error> uses Spend {
+  return call spend.try_authorize("ads-budget")
+}
+
+task main -> Result<Text, Error> uses Spend {
+  bind authorization = call authorize_budget()?
+  return Ok("budget gate: " + authorization)
+}

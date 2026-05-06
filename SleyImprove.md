@@ -567,9 +567,9 @@ and rejected fixtures that lock expected diagnostic IDs. The current corpus
 already covers declared and missing authority for all deterministic seeded host
 adapters, an accepted agent deploy pipeline that composes SecretRead, Network,
 ModelCall, and Deploy, and accepted/rejected split-task agent authority fixtures
-that lock transitive effect propagation, plus accepted/rejected module
-namespace fixtures for exported declarations and duplicate declaration
-diagnostics.
+that lock transitive effect propagation, including a spend helper boundary,
+plus accepted/rejected module namespace fixtures for exported declarations and
+duplicate declaration diagnostics.
 
 Corpus categories:
 

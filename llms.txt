@@ -463,5 +463,6 @@ Current development phase:
   `add_effect_declaration`; source-backed declaration starters can be executed
   through `sley fix --source` or `--source-file`, and name-backed starters can
   use `--name`
-- manifest-backed accepted/rejected synthetic gold corpus growth
+- manifest-backed accepted/rejected synthetic gold corpus growth, including
+  spend helper boundaries for transitive authority checks
 - broader graph-slice graft operations around insert/move/delete/replace planning
