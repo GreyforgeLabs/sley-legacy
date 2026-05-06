@@ -43,7 +43,8 @@
       "mutable_binding_never_set",
       "constant_if_expression",
       "identity_binary_expression",
-      "redundant_boolean_comparison"
+      "redundant_boolean_comparison",
+      "double_negation_expression"
     ],
     "finding_count": 0
   },

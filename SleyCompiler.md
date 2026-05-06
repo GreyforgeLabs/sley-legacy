@@ -246,12 +246,13 @@ Near-term:
    surface now includes explicit module-declaration style warnings,
    unqualified imported-call style warnings, mutable-local style warnings, and
    unused pure binding cleanup, plus constant-if, identity binary expression,
-   and redundant boolean comparison simplification;
+   redundant boolean comparison, and double negation simplification;
    those are structurally repairable through checked plan/fix templates, with
    write/query/verify smoke coverage for imported-call qualification and
    write/verify smoke coverage for pure binding deletion, mutable binding
    conversion, constant-if simplification, identity binary simplification, and
-   redundant boolean comparison simplification.
+   redundant boolean comparison simplification, and double negation
+   simplification.
    `sley plan
    --graft-templates --template-surface <node-id>` now accepts exact block,
    statement, take, and expression node surfaces: selected task and block

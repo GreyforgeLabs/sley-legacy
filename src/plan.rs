@@ -10,8 +10,9 @@ use crate::diagnostics::{Diagnostic, RepairHint};
 use crate::graft::{GraftInput, apply_graft_input};
 use crate::lint::{
     LintOptions, LintReport, build_lint_report, constant_if_expression_replacement_source,
-    identity_binary_expression_replacement_source, qualified_imported_call_replacement_source,
-    raw_host_adapter_replacement, redundant_boolean_comparison_replacement_source,
+    double_negation_expression_replacement_source, identity_binary_expression_replacement_source,
+    qualified_imported_call_replacement_source, raw_host_adapter_replacement,
+    redundant_boolean_comparison_replacement_source,
 };
 use crate::query::{QueryKind, QueryOptions, QueryReport, QueryTakeSummary, build_query_report};
 use crate::symbols::{slice_symbol_graph, task_fq_name, task_module, type_module};
@@ -569,6 +570,10 @@ fn lint_graft_templates(
         program,
         lint_report,
     ));
+    templates.extend(lint_double_negation_expression_templates(
+        program,
+        lint_report,
+    ));
     templates
 }
 
@@ -589,6 +594,7 @@ fn is_lint_repair_kind(kind: &str) -> bool {
             | "simplify_constant_if_expression"
             | "simplify_identity_binary_expression"
             | "simplify_redundant_boolean_comparison"
+            | "simplify_double_negation_expression"
             | "convert_mutable_binding_to_bind"
             | "delete_unused_private_declarations"
             | "delete_dead_private_tasks"
@@ -884,6 +890,39 @@ fn lint_redundant_boolean_comparison_templates(
             Some(EditPlanGraftTemplate {
                 kind: "simplify_redundant_boolean_comparison".to_string(),
                 reason: "replace this redundant boolean comparison with the boolean expression"
+                    .to_string(),
+                surface: finding.node.clone(),
+                operation,
+                editable_json_pointers: vec!["/payload/source".to_string()],
+            })
+        })
+        .collect()
+}
+
+fn lint_double_negation_expression_templates(
+    program: &Program,
+    lint_report: &LintReport,
+) -> Vec<EditPlanGraftTemplate> {
+    lint_report
+        .findings
+        .iter()
+        .filter(|finding| finding.id == "DOUBLE_NEGATION_EXPRESSION")
+        .filter_map(|finding| {
+            let replacement =
+                double_negation_expression_replacement_source(program, &finding.node)?;
+            let operation = json!({
+                "op": "ReplaceExpression",
+                "target": finding.node,
+                "payload": {
+                    "source": replacement
+                }
+            });
+            if !replace_affordance_checks(program, &operation) {
+                return None;
+            }
+            Some(EditPlanGraftTemplate {
+                kind: "simplify_double_negation_expression".to_string(),
+                reason: "replace this double negation expression with the inner boolean expression"
                     .to_string(),
                 surface: finding.node.clone(),
                 operation,

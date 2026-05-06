@@ -4,7 +4,7 @@ use serde::Serialize;
 
 use crate::ast::{
     BinaryOp, BindingKind, Block, Expr, ExprKind, ImportDecl, Program, Statement, StatementKind,
-    TaskDecl, TypeExpr,
+    TaskDecl, TypeExpr, UnaryOp,
 };
 use crate::authority::host_effects_for_callee;
 use crate::query::{QueryKind, QueryOptions, build_query_report};
@@ -34,6 +34,7 @@ pub enum LintRule {
     ConstantIfExpression,
     IdentityBinaryExpression,
     RedundantBooleanComparison,
+    DoubleNegationExpression,
 }
 
 impl LintRule {
@@ -55,6 +56,7 @@ impl LintRule {
             Self::ConstantIfExpression,
             Self::IdentityBinaryExpression,
             Self::RedundantBooleanComparison,
+            Self::DoubleNegationExpression,
         ]
     }
 
@@ -76,6 +78,7 @@ impl LintRule {
             Self::ConstantIfExpression => "constant_if_expression",
             Self::IdentityBinaryExpression => "identity_binary_expression",
             Self::RedundantBooleanComparison => "redundant_boolean_comparison",
+            Self::DoubleNegationExpression => "double_negation_expression",
         }
     }
 }
@@ -196,6 +199,12 @@ pub fn build_lint_report(program: &Program, options: LintOptions) -> LintReport 
     }
     if rules.contains(&LintRule::RedundantBooleanComparison) {
         findings.extend(lint_redundant_boolean_comparisons(
+            program,
+            options.module.as_deref(),
+        ));
+    }
+    if rules.contains(&LintRule::DoubleNegationExpression) {
+        findings.extend(lint_double_negation_expressions(
             program,
             options.module.as_deref(),
         ));
@@ -795,6 +804,156 @@ fn lint_redundant_boolean_comparisons(program: &Program, module: Option<&str>) -
         collect_redundant_boolean_comparisons_in_block(task, &task.body, &mut findings);
     }
     findings
+}
+
+fn lint_double_negation_expressions(program: &Program, module: Option<&str>) -> Vec<LintFinding> {
+    let mut findings = Vec::new();
+    for task in program
+        .tasks
+        .iter()
+        .filter(|task| module_matches(module, &task_module(task)))
+    {
+        collect_double_negation_expressions_in_block(task, &task.body, &mut findings);
+    }
+    findings
+}
+
+fn collect_double_negation_expressions_in_block(
+    task: &TaskDecl,
+    block: &Block,
+    findings: &mut Vec<LintFinding>,
+) {
+    for statement in &block.statements {
+        match &statement.kind {
+            StatementKind::Binding { expr, .. }
+            | StatementKind::Set { expr, .. }
+            | StatementKind::Return { expr }
+            | StatementKind::Expr { expr } => {
+                collect_double_negation_expressions_in_expr(task, expr, findings);
+            }
+            StatementKind::If {
+                condition,
+                then_block,
+                else_block,
+            } => {
+                collect_double_negation_expressions_in_expr(task, condition, findings);
+                collect_double_negation_expressions_in_block(task, then_block, findings);
+                if let Some(else_block) = else_block {
+                    collect_double_negation_expressions_in_block(task, else_block, findings);
+                }
+            }
+            StatementKind::While { condition, body } => {
+                collect_double_negation_expressions_in_expr(task, condition, findings);
+                collect_double_negation_expressions_in_block(task, body, findings);
+            }
+            StatementKind::For {
+                collection, body, ..
+            } => {
+                collect_double_negation_expressions_in_expr(task, collection, findings);
+                collect_double_negation_expressions_in_block(task, body, findings);
+            }
+            StatementKind::Forge { body } => {
+                collect_double_negation_expressions_in_block(task, body, findings);
+            }
+        }
+    }
+}
+
+fn collect_double_negation_expressions_in_expr(
+    task: &TaskDecl,
+    expr: &Expr,
+    findings: &mut Vec<LintFinding>,
+) {
+    if let Some(replacement) = double_negation_expression_replacement(expr) {
+        let task_name = task_fq_name(task);
+        findings.push(LintFinding {
+            id: "DOUBLE_NEGATION_EXPRESSION".to_string(),
+            rule: LintRule::DoubleNegationExpression.as_str().to_string(),
+            severity: "warning".to_string(),
+            message: format!(
+                "task `{task_name}` has a double negation expression `{}`",
+                expr.source
+            ),
+            node: expr.id.clone(),
+            module: task_module(task),
+            hint: format!(
+                "replace the double negation expression with `{}`",
+                replacement.source
+            ),
+        });
+    }
+
+    match &expr.kind {
+        ExprKind::Unary { expr, .. } | ExprKind::Try { expr } => {
+            collect_double_negation_expressions_in_expr(task, expr, findings);
+        }
+        ExprKind::Binary { left, right, .. } => {
+            collect_double_negation_expressions_in_expr(task, left, findings);
+            collect_double_negation_expressions_in_expr(task, right, findings);
+        }
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
+            collect_double_negation_expressions_in_expr(task, condition, findings);
+            collect_double_negation_expressions_in_expr(task, then_branch, findings);
+            collect_double_negation_expressions_in_expr(task, else_branch, findings);
+        }
+        ExprKind::Call { callee, args } => {
+            collect_double_negation_expressions_in_expr(task, callee, findings);
+            for arg in args {
+                collect_double_negation_expressions_in_expr(task, arg, findings);
+            }
+        }
+        ExprKind::ListLiteral { items } => {
+            for item in items {
+                collect_double_negation_expressions_in_expr(task, item, findings);
+            }
+        }
+        ExprKind::MapLiteral { entries } => {
+            for entry in entries {
+                collect_double_negation_expressions_in_expr(task, &entry.key, findings);
+                collect_double_negation_expressions_in_expr(task, &entry.value, findings);
+            }
+        }
+        ExprKind::Index { collection, index } => {
+            collect_double_negation_expressions_in_expr(task, collection, findings);
+            collect_double_negation_expressions_in_expr(task, index, findings);
+        }
+        ExprKind::FieldAccess { receiver, .. } => {
+            collect_double_negation_expressions_in_expr(task, receiver, findings);
+        }
+        ExprKind::RecordLiteral { fields, .. } => {
+            for field in fields {
+                collect_double_negation_expressions_in_expr(task, &field.expr, findings);
+            }
+        }
+        ExprKind::Raw { .. }
+        | ExprKind::StringLiteral { .. }
+        | ExprKind::IntLiteral { .. }
+        | ExprKind::FloatLiteral { .. }
+        | ExprKind::BoolLiteral { .. }
+        | ExprKind::Identifier { .. } => {}
+    }
+}
+
+fn double_negation_expression_replacement(expr: &Expr) -> Option<&Expr> {
+    let ExprKind::Unary {
+        op: UnaryOp::Not,
+        expr: inner,
+    } = &expr.kind
+    else {
+        return None;
+    };
+    let ExprKind::Unary {
+        op: UnaryOp::Not,
+        expr: replacement,
+    } = &inner.kind
+    else {
+        return None;
+    };
+    Some(replacement)
 }
 
 fn collect_redundant_boolean_comparisons_in_block(
@@ -2306,6 +2465,105 @@ fn redundant_boolean_comparison_replacement_in_expr(expr: &Expr, target: &str) -
         ExprKind::RecordLiteral { fields, .. } => fields.iter().find_map(|field| {
             redundant_boolean_comparison_replacement_in_expr(&field.expr, target)
         }),
+        ExprKind::Raw { .. }
+        | ExprKind::StringLiteral { .. }
+        | ExprKind::IntLiteral { .. }
+        | ExprKind::FloatLiteral { .. }
+        | ExprKind::BoolLiteral { .. }
+        | ExprKind::Identifier { .. } => None,
+    }
+}
+
+pub fn double_negation_expression_replacement_source(
+    program: &Program,
+    target: &str,
+) -> Option<String> {
+    program
+        .tasks
+        .iter()
+        .find_map(|task| double_negation_expression_replacement_in_block(&task.body, target))
+}
+
+fn double_negation_expression_replacement_in_block(block: &Block, target: &str) -> Option<String> {
+    block
+        .statements
+        .iter()
+        .find_map(|statement| match &statement.kind {
+            StatementKind::Binding { expr, .. }
+            | StatementKind::Set { expr, .. }
+            | StatementKind::Return { expr }
+            | StatementKind::Expr { expr } => {
+                double_negation_expression_replacement_in_expr(expr, target)
+            }
+            StatementKind::If {
+                condition,
+                then_block,
+                else_block,
+            } => double_negation_expression_replacement_in_expr(condition, target)
+                .or_else(|| double_negation_expression_replacement_in_block(then_block, target))
+                .or_else(|| {
+                    else_block.as_ref().and_then(|block| {
+                        double_negation_expression_replacement_in_block(block, target)
+                    })
+                }),
+            StatementKind::While { condition, body } => {
+                double_negation_expression_replacement_in_expr(condition, target)
+                    .or_else(|| double_negation_expression_replacement_in_block(body, target))
+            }
+            StatementKind::For {
+                collection, body, ..
+            } => double_negation_expression_replacement_in_expr(collection, target)
+                .or_else(|| double_negation_expression_replacement_in_block(body, target)),
+            StatementKind::Forge { body } => {
+                double_negation_expression_replacement_in_block(body, target)
+            }
+        })
+}
+
+fn double_negation_expression_replacement_in_expr(expr: &Expr, target: &str) -> Option<String> {
+    if expr.id == target {
+        return double_negation_expression_replacement(expr)
+            .map(|replacement| replacement.source.clone());
+    }
+
+    match &expr.kind {
+        ExprKind::Unary { expr, .. } | ExprKind::Try { expr } => {
+            double_negation_expression_replacement_in_expr(expr, target)
+        }
+        ExprKind::Binary { left, right, .. } => {
+            double_negation_expression_replacement_in_expr(left, target)
+                .or_else(|| double_negation_expression_replacement_in_expr(right, target))
+        }
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => double_negation_expression_replacement_in_expr(condition, target)
+            .or_else(|| double_negation_expression_replacement_in_expr(then_branch, target))
+            .or_else(|| double_negation_expression_replacement_in_expr(else_branch, target)),
+        ExprKind::Call { callee, args } => {
+            double_negation_expression_replacement_in_expr(callee, target).or_else(|| {
+                args.iter()
+                    .find_map(|arg| double_negation_expression_replacement_in_expr(arg, target))
+            })
+        }
+        ExprKind::ListLiteral { items } => items
+            .iter()
+            .find_map(|item| double_negation_expression_replacement_in_expr(item, target)),
+        ExprKind::MapLiteral { entries } => entries.iter().find_map(|entry| {
+            double_negation_expression_replacement_in_expr(&entry.key, target)
+                .or_else(|| double_negation_expression_replacement_in_expr(&entry.value, target))
+        }),
+        ExprKind::Index { collection, index } => {
+            double_negation_expression_replacement_in_expr(collection, target)
+                .or_else(|| double_negation_expression_replacement_in_expr(index, target))
+        }
+        ExprKind::FieldAccess { receiver, .. } => {
+            double_negation_expression_replacement_in_expr(receiver, target)
+        }
+        ExprKind::RecordLiteral { fields, .. } => fields
+            .iter()
+            .find_map(|field| double_negation_expression_replacement_in_expr(&field.expr, target)),
         ExprKind::Raw { .. }
         | ExprKind::StringLiteral { .. }
         | ExprKind::IntLiteral { .. }
