@@ -1,0 +1,4 @@
+[project]
+name = "agent-project"
+root = "src"
+entry = "agent.main"

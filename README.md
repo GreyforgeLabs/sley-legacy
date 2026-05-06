@@ -503,6 +503,17 @@ sley deploy --json --dry-run --artifacts-dir .sley/dogfood-deploy --cap SecretRe
 sley-contract inspect-deploy-artifacts .sley/dogfood-deploy --schemas docs/schemas --json
 ```
 
+Packaged multi-module agent project:
+
+```bash
+sley check --json examples/agent_project
+sley lint --json --deny-warnings examples/agent_project
+sley query --json --kind calls examples/agent_project
+sley run --json --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged examples/agent_project
+sley verify --json --deny-warnings --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged examples/agent_project
+sley deploy --json --dry-run --artifacts-dir .sley/agent-project-deploy --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged examples/agent_project
+```
+
 `sley new` refuses to overwrite existing `sley.toml`, `README.md`, or entry
 source files. `--template hello`, `--template library`, `--template cli`, and
 `--template data-pipeline` create pure starters. `--template service-gate`

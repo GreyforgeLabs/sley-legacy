@@ -609,6 +609,7 @@ cargo run -- run --json --cap ModelCall --model-output name Ada examples/model_g
 cargo run -- run --json --cap SecretRead --secret api_key redacted examples/secret_gate.sley
 cargo run -- run --json --cap Deploy --deploy-result staging staged examples/deploy_gate.sley
 cargo run -- run --json --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged examples/agent_deploy_pipeline.sley
+cargo run -- run --json --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged examples/agent_project
 cargo run -- run --json --cap Spend --spend-result ads-budget authorized examples/spend_gate.sley
 ```
 
