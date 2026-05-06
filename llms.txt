@@ -109,6 +109,9 @@ Stable v0 JSON roots:
 - `sley.doctor.report.v0`
 - `sley.verify.report.v0`
 
+The graft outcome schema pins accepted provenance records with non-empty
+targets and `result: "accepted"`.
+
 Contract references:
 
 - `docs/SleyLanguageSpec.md`
