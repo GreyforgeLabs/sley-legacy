@@ -618,12 +618,14 @@ repair-hint shape. Symbol graph, graph slice, and query schemas also pin module
 import/declaration summary shapes so agents can rely on stable import node ids
 for graft targets. The edit-plan schema pins strict graft operation and
 transaction template envelopes, and graph-slice move/delete/replace affordance
-operations reuse that strict graft operation schema. The graft outcome schema
-pins strict accepted provenance records. The trace receipt schema pins the
-JSONL receipt record for accepted write provenance. The ZJX envelope schema
-pins the graph digest, graph root, optional graph slice root, and trace receipt
-schema used for handoff. The remaining schema files currently pin their
-top-level contract shape and stable schema IDs.
+operations reuse that strict graft operation schema. Graph-slice focus,
+optional task, and inbound/outbound call summaries reuse AST and query report
+contracts. The graft outcome schema pins strict accepted provenance records.
+The trace receipt schema pins the JSONL receipt record for accepted write
+provenance. The ZJX envelope schema pins the graph digest, graph root, optional
+graph slice root, and trace receipt schema used for handoff. The remaining
+schema files currently pin their top-level contract shape and stable schema
+IDs.
 
 The compiler conformance corpus lives under `fixtures/corpus/`. Its
 `manifest.json` lists every accepted and rejected fixture plus coverage tags.

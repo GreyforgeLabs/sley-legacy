@@ -20,21 +20,38 @@
   ],
   "properties": {
     "schema": { "const": "sley.symbol_graph.slice.v0" },
-    "target": { "type": "string" },
-    "entry_module": { "type": "string" },
-    "focus": { "type": "object" },
+    "target": { "type": "string", "minLength": 1 },
+    "entry_module": { "type": "string", "minLength": 1 },
+    "focus": { "$ref": "#/$defs/sliceFocus" },
     "imports": { "type": "array", "items": { "$ref": "#/$defs/importSummary" } },
     "types": { "type": "array", "items": { "$ref": "#/$defs/declarationSummary" } },
     "effects": { "type": "array", "items": { "$ref": "#/$defs/declarationSummary" } },
     "tasks": { "type": "array", "items": { "$ref": "#/$defs/declarationSummary" } },
-    "task": { "type": "object" },
+    "task": { "$ref": "sley.ast.program.v0#/$defs/taskDecl" },
     "move_affordances": { "type": "array", "items": { "$ref": "#/$defs/moveAffordance" } },
     "delete_affordances": { "type": "array", "items": { "$ref": "#/$defs/deleteAffordance" } },
     "replace_affordances": { "type": "array", "items": { "$ref": "#/$defs/replaceAffordance" } },
-    "outbound_calls": { "type": "array", "items": { "type": "object" } },
-    "inbound_calls": { "type": "array", "items": { "type": "object" } }
+    "outbound_calls": {
+      "type": "array",
+      "items": { "$ref": "sley.query.report.v0#/$defs/callSummary" }
+    },
+    "inbound_calls": {
+      "type": "array",
+      "items": { "$ref": "sley.query.report.v0#/$defs/callSummary" }
+    }
   },
   "$defs": {
+    "sliceFocus": {
+      "type": "object",
+      "required": ["kind", "id", "module", "name"],
+      "properties": {
+        "kind": { "enum": ["module", "task", "type", "effect", "import"] },
+        "id": { "type": "string", "minLength": 1 },
+        "module": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
     "importSummary": {
       "type": "object",
       "required": ["id", "module"],

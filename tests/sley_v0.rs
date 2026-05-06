@@ -4098,6 +4098,44 @@ fn graph_slice_schema_reuses_strict_graft_operation_affordances() {
 }
 
 #[test]
+fn graph_slice_schema_covers_focus_task_and_call_summaries() {
+    let schema: serde_json::Value = serde_json::from_str(include_str!(
+        "../docs/schemas/sley.symbol_graph.slice.v0.schema.json"
+    ))
+    .expect("parse graph slice schema");
+    assert_eq!(
+        schema.pointer("/properties/focus/$ref"),
+        Some(&serde_json::json!("#/$defs/sliceFocus"))
+    );
+    assert_eq!(
+        schema.pointer("/$defs/sliceFocus/additionalProperties"),
+        Some(&serde_json::json!(false))
+    );
+    assert_eq!(
+        schema.pointer("/$defs/sliceFocus/properties/kind/enum"),
+        Some(&serde_json::json!([
+            "module", "task", "type", "effect", "import"
+        ]))
+    );
+    assert_eq!(
+        schema.pointer("/properties/task/$ref"),
+        Some(&serde_json::json!("sley.ast.program.v0#/$defs/taskDecl"))
+    );
+    assert_eq!(
+        schema.pointer("/properties/outbound_calls/items/$ref"),
+        Some(&serde_json::json!(
+            "sley.query.report.v0#/$defs/callSummary"
+        ))
+    );
+    assert_eq!(
+        schema.pointer("/properties/inbound_calls/items/$ref"),
+        Some(&serde_json::json!(
+            "sley.query.report.v0#/$defs/callSummary"
+        ))
+    );
+}
+
+#[test]
 fn edit_plan_schema_covers_strict_graft_template_payloads() {
     let schema: serde_json::Value = serde_json::from_str(include_str!(
         "../docs/schemas/sley.edit_plan.report.v0.schema.json"
