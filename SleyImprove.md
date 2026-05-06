@@ -130,12 +130,12 @@ Rules:
   surfaces, post-edit gate commands, and optional starter graft operation
   templates, rename-plus-call-site transactions, and add-take-plus-call-arg
   transactions, plus safe remove-take-plus-call-arg transactions for unused
-  takes and lint-driven delete templates for unused private type/effect
-  declarations, with editable JSON pointers; it also consumes selected
-  graph-slice movement affordances as `move_statement`, `move_take`, and
-  destination-variant templates when legal graph-slice destinations exist.
-  Agents can target a specific task surface by node id or qualified name, or a
-  lint finding declaration surface by node id.
+  takes and lint-driven delete templates plus cleanup transactions for unused
+  private type/effect declarations, with editable JSON pointers; it also
+  consumes selected graph-slice movement affordances as `move_statement`,
+  `move_take`, and destination-variant templates when legal graph-slice
+  destinations exist. Agents can target a specific task surface by node id or
+  qualified name, or a lint finding declaration surface by node id.
 - `sley verify` is the deterministic CI/pre-deploy helper consuming strict
   check, `sley.query.report.v0`, `sley.lint.report.v0`, and seeded runtime
   execution into one pass/warnings/blocked report.
@@ -425,8 +425,8 @@ The current smoke manifest covers:
   envelopes
 - graph-slice replace affordances and checked `replace_expression` graft
   templates in edit-plan reports
-- lint-driven declaration delete templates and direct declaration surface
-  targeting in edit-plan reports
+- lint-driven declaration delete templates, cleanup transactions, and direct
+  declaration surface targeting in edit-plan reports
 - private declaration hygiene through the checked `unused_private_type` and
   `unused_private_effect` lint rules
 - import hygiene through the checked `unused_import` lint rule

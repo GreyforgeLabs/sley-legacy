@@ -263,6 +263,7 @@
         "cli:plan",
         "graft:templates",
         "graft:templates:lint-declaration-delete",
+        "graft:transactions:lint-declaration-cleanup",
         "lint:unused_private_type",
         "lint:unused_private_effect",
         "json:sley.edit_plan.report.v0",
@@ -281,7 +282,11 @@
           { "pointer": "/graft_templates/4/operation/target", "value": "effect:app.hygiene.OrphanEffect" },
           { "pointer": "/graft_templates/5/kind", "value": "delete_unused_private_type" },
           { "pointer": "/graft_templates/5/operation/op", "value": "DeleteNode" },
-          { "pointer": "/graft_templates/5/operation/target", "value": "type:app.hygiene.Orphan" }
+          { "pointer": "/graft_templates/5/operation/target", "value": "type:app.hygiene.Orphan" },
+          { "pointer": "/transaction_templates/0/kind", "value": "delete_unused_private_declarations" },
+          { "pointer": "/transaction_templates/0/transaction/mode", "value": "all_or_nothing" },
+          { "pointer": "/transaction_templates/0/transaction/ops/0/target", "value": "effect:app.hygiene.OrphanEffect" },
+          { "pointer": "/transaction_templates/0/transaction/ops/1/target", "value": "type:app.hygiene.Orphan" }
         ]
       }
     },

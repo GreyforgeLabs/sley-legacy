@@ -225,6 +225,7 @@ pub fn build_edit_plan_report_with_options(
             &task_surfaces,
             &query_report,
             &program,
+            &lint_report,
             options.template_surface.as_deref(),
         )
         .unwrap_or_default()
@@ -726,12 +727,14 @@ fn build_transaction_templates(
     surfaces: &[EditPlanTaskSurface],
     query: &QueryReport,
     program: &Program,
+    lint_report: &LintReport,
     requested_surface: Option<&str>,
 ) -> Result<Vec<EditPlanTransactionTemplate>, Diagnostic> {
+    let mut templates =
+        lint_declaration_delete_transaction_templates(program, lint_report, requested_surface);
     let Some(surface) = select_template_surface(surfaces, requested_surface)? else {
-        return Ok(Vec::new());
+        return Ok(templates);
     };
-    let mut templates = Vec::new();
     if surface.inbound_call_count > 0 {
         let rename = rename_update_call_sites_template(surface, query);
         if let Some(rename) = rename {
@@ -747,6 +750,50 @@ fn build_transaction_templates(
         }
     }
     Ok(templates)
+}
+
+fn lint_declaration_delete_transaction_templates(
+    program: &Program,
+    lint_report: &LintReport,
+    requested_surface: Option<&str>,
+) -> Vec<EditPlanTransactionTemplate> {
+    if requested_surface.is_some() {
+        return Vec::new();
+    }
+    let delete_templates = lint_declaration_delete_templates(program, lint_report);
+    if delete_templates.len() < 2 {
+        return Vec::new();
+    }
+    let ops = delete_templates
+        .iter()
+        .map(|template| template.operation.clone())
+        .collect::<Vec<_>>();
+    let transaction = json!({
+        "transaction": "txn_delete_unused_private_declarations",
+        "mode": "all_or_nothing",
+        "ops": ops
+    });
+    let Ok(input) = serde_json::from_value::<GraftInput>(transaction.clone()) else {
+        return Vec::new();
+    };
+    if apply_graft_input(
+        program,
+        input,
+        Some("agent:plan-delete-declaration-transaction".to_string()),
+    )
+    .status
+        != "accepted"
+    {
+        return Vec::new();
+    }
+    vec![EditPlanTransactionTemplate {
+        kind: "delete_unused_private_declarations".to_string(),
+        reason: "delete all unused private type/effect declarations in one all-or-nothing graft"
+            .to_string(),
+        surface: "lint:unused_private_declarations".to_string(),
+        transaction,
+        editable_json_pointers: Vec::new(),
+    }]
 }
 
 fn rename_update_call_sites_template(

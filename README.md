@@ -114,9 +114,9 @@ Implemented now:
   graft target ids, optional `--graft-templates` starter operation payloads,
   rename-plus-call-site and add-take-plus-call-arg transaction templates for
   targeted caller surfaces, safe remove-take-plus-call-arg transaction
-  templates for unused takes, lint-driven delete templates for unused private
-  types/effects, `--template-surface <surface>` targeting for task or lint
-  declaration surfaces, and
+  templates for unused takes, lint-driven delete templates and cleanup
+  transactions for unused private types/effects, `--template-surface <surface>`
+  targeting for task or lint declaration surfaces, and
   `schema: "sley.edit_plan.report.v0"`
 - checked JSON verification reports with `sley verify`, consuming strict
   diagnostics, query summaries, lint findings, and deterministic runtime
@@ -455,7 +455,7 @@ The current release-readiness phase is underway for the executable slice. The
 gold corpus and CLI smoke suite now have manifests with required coverage tags
 for seeded host adapters, stable JSON roots, graph/ZJX output, graft dry runs,
 checked graph query reports, doctor readiness, verify pre-deploy gates,
-edit-plan surfaces, lint-driven declaration delete templates, private-task
-lint rules, declaration/import/API hygiene, authority hygiene, and raw-host
-migration warnings. The next logical phase is to broaden style and migration
-lints before broadening the language again.
+edit-plan surfaces, lint-driven declaration delete templates and cleanup
+transactions, private-task lint rules, declaration/import/API hygiene,
+authority hygiene, and raw-host migration warnings. The next logical phase is
+to broaden style and migration lints before broadening the language again.

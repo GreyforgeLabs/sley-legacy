@@ -1113,6 +1113,49 @@ task main -> Used {
         }),
         "used private type should not receive a lint-driven delete template"
     );
+    assert_eq!(report.transaction_templates.len(), 1);
+    assert_eq!(
+        report.transaction_templates[0].kind,
+        "delete_unused_private_declarations"
+    );
+    assert_eq!(
+        report.transaction_templates[0].surface,
+        "lint:unused_private_declarations"
+    );
+    assert_eq!(
+        report.transaction_templates[0].transaction.pointer("/mode"),
+        Some(&serde_json::json!("all_or_nothing"))
+    );
+    assert_eq!(
+        report.transaction_templates[0]
+            .transaction
+            .pointer("/ops/0/target"),
+        Some(&serde_json::json!("effect:app.plan.OrphanEffect"))
+    );
+    assert_eq!(
+        report.transaction_templates[0]
+            .transaction
+            .pointer("/ops/1/target"),
+        Some(&serde_json::json!("type:app.plan.Orphan"))
+    );
+    assert!(
+        report.transaction_templates[0]
+            .editable_json_pointers
+            .is_empty()
+    );
+    let cleanup_transaction: GraftInput =
+        serde_json::from_value(report.transaction_templates[0].transaction.clone())
+            .expect("parse declaration cleanup transaction template");
+    let cleanup_outcome = apply_graft_input(
+        &program,
+        cleanup_transaction,
+        Some("agent:declaration-cleanup-transaction-test".to_string()),
+    );
+    assert_eq!(
+        cleanup_outcome.status, "accepted",
+        "{:#?}",
+        cleanup_outcome.diagnostics
+    );
 
     let targeted_type_report = build_edit_plan_report_with_options(
         "app.plan",
@@ -7818,6 +7861,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:templates:lint-declaration-delete",
         "graft:templates:lint-declaration-target",
         "graft:templates:replace-expression",
+        "graft:transactions:lint-declaration-cleanup",
         "graph-slice:replace-affordances",
         "lint:unused_declared_effect",
         "lint:unused_import",

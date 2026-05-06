@@ -145,8 +145,9 @@ Current development phase:
   starter graft operation payloads, rename-plus-call-site transactions, and
   add-take-plus-call-arg transactions for the highest-ranked task surface, plus
   safe remove-take-plus-call-arg transactions when an unused take can be proven
-  and lint-driven `DeleteNode` templates for unused private type/effect
-  declarations; selected task graph-slice affordances are surfaced as checked
+  and lint-driven `DeleteNode` templates plus cleanup transactions for unused
+  private type/effect declarations; selected task graph-slice affordances are
+  surfaced as checked
   `move_statement`/`move_take`, destination-variant, `delete_statement`,
   `delete_take`, and `replace_expression` templates where legal, or
   `--template-surface <surface>` can target a specific task id, qualified task

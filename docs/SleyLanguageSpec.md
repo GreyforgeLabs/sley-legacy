@@ -640,7 +640,9 @@ plus checked `replace_expression` templates from `replace_affordances` when the
 starter expression graft validates. It also turns checked
 `unused_private_type` and `unused_private_effect` lint findings into
 `DeleteNode` templates when the declaration delete validates against the
-checked candidate.
+checked candidate. When more than one unused private type/effect declaration
+can be deleted, the report also includes an all-or-nothing
+`delete_unused_private_declarations` transaction template.
 `--template-surface <surface>` selects a specific task surface by task node id
 or qualified task name, or a declaration lint surface by lint finding node id
 such as `type:app.module.Name` or `effect:app.module.Name`. For selected tasks
@@ -801,9 +803,9 @@ archive.
 - `sley plan` emits deterministic ranked task edit surfaces, optional starter
   graft operation templates, rename-plus-call-site and add-take-plus-call-arg
   transaction templates, safe remove-take-plus-call-arg transaction templates
-  for unused takes, lint-driven delete templates for unused private
-  types/effects, and post-edit gate commands; it does not yet choose or execute
-  a final graft for the agent
+  for unused takes, lint-driven delete templates and cleanup transactions for
+  unused private types/effects, and post-edit gate commands; it does not yet
+  choose or execute a final graft for the agent
 - `sley verify` emits a deterministic CI/pre-deploy report over strict check,
   query/lint summaries, and runtime execution; live deploy/provider calls
   remain outside v0
