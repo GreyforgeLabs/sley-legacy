@@ -154,8 +154,9 @@ Implemented now:
   directories, using versioned JSON report roots for downstream contract-kit
   work
 - in-tree `sley-ci` utility with `check`, `lint`, `doctor`, `plan`, `run`,
-  `verify`, `deploy`, and `smoke` wrappers over existing Sley
-  check/lint/doctor/plan/run/verify/deploy gates and CLI smoke manifests, emitting
+  `verify`, `deploy`, `smoke`, and `corpus` wrappers over existing Sley
+  check/lint/doctor/plan/run/verify/deploy gates, CLI smoke manifests, and the
+  accepted/rejected compiler conformance corpus, emitting
   `schema: "sley.ci.report.v0"` for CI and pre-commit integration
 - checked JSON readiness reports with `sley doctor`, consuming strict
   diagnostics plus query and lint summaries, with call-bearing reports routing
@@ -387,6 +388,7 @@ sley-ci run --json --cap SecretRead --secret api_key redacted --cap Network --ht
 sley run --json --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged .
 sley deploy --json --dry-run --artifacts-dir .sley/deploy --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged .
 sley-ci deploy --json --dry-run --artifacts-dir .sley/ci-deploy --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged .
+sley-ci corpus --json fixtures/corpus/manifest.json
 sley-contract inspect-deploy-artifacts .sley/deploy --schemas docs/schemas --json
 sley seal --json .
 sley zjx --json .

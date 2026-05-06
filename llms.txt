@@ -24,6 +24,7 @@ cargo run --bin sley-ci -- doctor --json --deny-warnings <file-or-project>
 cargo run --bin sley-ci -- plan --json --graft-templates <file-or-project>
 cargo run --bin sley-ci -- run --json <file-or-project>
 cargo run --bin sley-ci -- deploy --json --dry-run --artifacts-dir .sley/ci-deploy <file-or-project>
+cargo run --bin sley-ci -- corpus --json fixtures/corpus/manifest.json
 cargo run --bin sley-contract -- inspect-deploy-artifacts .sley/deploy --schemas docs/schemas --json
 cargo run -- seal --json <file-or-project>
 cargo run -- graft --json --dry-run <file> <graft.json>
@@ -132,7 +133,7 @@ The `sley-contract` binary exposes `inventory`, `check-fixtures`, `validate`,
 and `inspect-deploy-artifacts` JSON Schema validation reports for
 schema/fixture/deploy-handoff contract-kit work; inventory, fixture-check, and
 validate reports have locked fixtures.
-The `sley-ci` binary exposes `check`, `lint`, `doctor`, `plan`, `run`, `verify`, `deploy`, and `smoke` reports
+The `sley-ci` binary exposes `check`, `lint`, `doctor`, `plan`, `run`, `verify`, `deploy`, `smoke`, and `corpus` reports
 for local CI and pre-commit gates over existing Sley commands.
 Graph-slice insert/move/delete/replace affordance operations reuse the strict
 graft operation schema from edit-plan reports.

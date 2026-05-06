@@ -605,7 +605,7 @@ The CLI smoke manifest carries
 `schema: "sley.doctor.report.v0"`. Edit-plan reports carry
 `schema: "sley.edit_plan.report.v0"`. CI wrapper reports carry
 `schema: "sley.ci.report.v0"` for check, lint, doctor, plan, run, verify,
-deploy, and smoke wrappers.
+deploy, smoke, and corpus wrappers.
 The deploy wrapper passes `--artifacts-dir <dir>` through to `sley deploy`
 when local handoff files are requested. Deploy dry-run reports carry
 `schema: "sley.deploy.report.v0"`; deploy artifact manifests carry
@@ -683,7 +683,11 @@ The compiler conformance corpus lives under `fixtures/corpus/`. Its
 Accepted fixtures must parse, check, and formatter-round-trip. Rejected
 fixtures carry a JSON sidecar listing the diagnostic ids that must remain
 stable. The current corpus locks declared and missing authority coverage for
-the deterministic seeded host adapters.
+the deterministic seeded host adapters. `sley-ci corpus --json
+fixtures/corpus/manifest.json` exposes the same accepted/rejected gate as a
+machine-readable CI report: accepted cases run strict check plus formatter
+round-trip checks, while rejected cases must fail with the expected diagnostic
+ids from their sidecars.
 
 The executable CLI conformance smokes live under `fixtures/cli_smokes/`. Their
 `manifest.json` lists stable commands, working-directory mode, optional temp

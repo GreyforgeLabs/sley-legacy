@@ -9345,6 +9345,61 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
         include_str!("../fixtures/contracts/ci_smoke_probe_ready.json"),
     );
 
+    let corpus = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
+        .current_dir(&repo_root)
+        .args(["corpus", "--json", "fixtures/corpus/manifest.json"])
+        .output()
+        .expect("run sley-ci corpus");
+    assert!(
+        corpus.status.success(),
+        "sley-ci corpus failed: {}",
+        String::from_utf8_lossy(&corpus.stderr)
+    );
+    let corpus_json: serde_json::Value =
+        serde_json::from_slice(&corpus.stdout).expect("parse sley-ci corpus JSON");
+    assert_eq!(
+        corpus_json.pointer("/schema"),
+        Some(&serde_json::json!("sley.ci.report.v0"))
+    );
+    assert_eq!(
+        corpus_json.pointer("/status"),
+        Some(&serde_json::json!("passed"))
+    );
+    assert_eq!(
+        corpus_json.pointer("/command"),
+        Some(&serde_json::json!("corpus"))
+    );
+    assert_eq!(
+        corpus_json.pointer("/summary/step_count"),
+        Some(&serde_json::json!(40))
+    );
+    assert_eq!(
+        corpus_json.pointer("/steps/0/name"),
+        Some(&serde_json::json!(
+            "accepted_check:accepted/authority/database_read.sley"
+        ))
+    );
+    assert_eq!(
+        corpus_json.pointer("/steps/0/stdout_schema"),
+        Some(&serde_json::json!("sley.diagnostics.report.v0"))
+    );
+    assert_eq!(
+        corpus_json.pointer("/steps/1/name"),
+        Some(&serde_json::json!(
+            "accepted_format_round_trip:accepted/authority/database_read.sley"
+        ))
+    );
+    assert_eq!(
+        corpus_json.pointer("/steps/26/name"),
+        Some(&serde_json::json!(
+            "rejected_check:rejected/authority/missing_database_read_effect.sley"
+        ))
+    );
+    assert_eq!(
+        corpus_json.pointer("/steps/26/stdout_schema"),
+        Some(&serde_json::json!("sley.diagnostics.report.v0"))
+    );
+
     let _ = fs::remove_dir_all(deploy_root);
     let _ = fs::remove_dir_all(smoke_root);
 }

@@ -141,6 +141,12 @@ enum Command {
         repo_root: Option<PathBuf>,
         manifest: PathBuf,
     },
+    /// Run the accepted/rejected compiler conformance corpus.
+    Corpus {
+        #[arg(long)]
+        json: bool,
+        manifest: PathBuf,
+    },
 }
 
 #[derive(Debug, Serialize)]
@@ -245,6 +251,27 @@ struct SmokeExpectation {
 struct JsonExpectation {
     pointer: String,
     value: JsonValue,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CorpusManifest {
+    schema: String,
+    accepted: Vec<CorpusCase>,
+    rejected: Vec<CorpusCase>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CorpusCase {
+    path: String,
+    covers: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CorpusExpectation {
+    diagnostics: Vec<String>,
 }
 
 fn main() -> Result<()> {
@@ -392,6 +419,10 @@ fn run(cli: Cli) -> Result<(CiReport, bool)> {
         } => {
             let repo_root = repo_root.unwrap_or(env::current_dir()?);
             let report = build_smoke_report(&sley_bin, &repo_root, &manifest);
+            Ok((report, json))
+        }
+        Command::Corpus { json, manifest } => {
+            let report = build_corpus_report(&sley_bin, &manifest);
             Ok((report, json))
         }
     }
@@ -650,6 +681,228 @@ fn build_smoke_report(sley_bin: &Path, repo_root: &Path, manifest_path: &Path) -
     )
 }
 
+fn build_corpus_report(sley_bin: &Path, manifest_path: &Path) -> CiReport {
+    let mut issues = Vec::new();
+    let manifest = match read_corpus_manifest(manifest_path) {
+        Ok(manifest) => manifest,
+        Err(error) => {
+            issues.push(issue(
+                "corpus_manifest_read_failed",
+                format!(
+                    "failed to read corpus manifest {}: {error}",
+                    manifest_path.display()
+                ),
+            ));
+            return finalize_report(
+                "corpus",
+                None,
+                Some(path_string(manifest_path)),
+                Vec::new(),
+                issues,
+            );
+        }
+    };
+    if manifest.schema != "sley.conformance.manifest.v0" {
+        issues.push(issue(
+            "corpus_manifest_schema_mismatch",
+            format!(
+                "corpus manifest schema {:?} does not match {:?}",
+                manifest.schema, "sley.conformance.manifest.v0"
+            ),
+        ));
+    }
+
+    let cwd = env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+    let corpus_root = manifest_path.parent().unwrap_or_else(|| Path::new("."));
+    let tmp_root = temp_corpus_dir();
+    let mut steps = Vec::new();
+    if let Err(error) = fs::create_dir_all(&tmp_root) {
+        issues.push(issue(
+            "temp_dir_create_failed",
+            format!("failed to create {}: {error}", tmp_root.display()),
+        ));
+    } else {
+        for (index, case) in manifest.accepted.iter().enumerate() {
+            let file = corpus_root.join(&case.path);
+            steps.push(
+                run_sley_step(
+                    sley_bin,
+                    &cwd,
+                    &format!("accepted_check:{}", case.path),
+                    vec!["check".into(), "--json".into(), path_string(&file)],
+                    true,
+                    case.covers.clone(),
+                )
+                .step,
+            );
+            steps.push(run_corpus_format_round_trip_step(
+                sley_bin, &cwd, &tmp_root, index, &file, case,
+            ));
+        }
+        for case in &manifest.rejected {
+            let file = corpus_root.join(&case.path);
+            steps.push(run_corpus_rejected_check(sley_bin, &cwd, &file, case));
+        }
+    }
+    let _ = fs::remove_dir_all(&tmp_root);
+
+    finalize_report(
+        "corpus",
+        None,
+        Some(path_string(manifest_path)),
+        steps,
+        issues,
+    )
+}
+
+fn run_corpus_format_round_trip_step(
+    sley_bin: &Path,
+    cwd: &Path,
+    tmp_root: &Path,
+    index: usize,
+    file: &Path,
+    case: &CorpusCase,
+) -> CiStep {
+    let file_arg = path_string(file);
+    let args = vec!["format".into(), file_arg];
+    let mut issues = Vec::new();
+    let mut actual_success = false;
+    let mut exit_code = None;
+    match ProcessCommand::new(sley_bin)
+        .current_dir(cwd)
+        .args(&args)
+        .output()
+    {
+        Ok(output) => {
+            actual_success = output.status.success();
+            exit_code = output.status.code();
+            let formatted = String::from_utf8_lossy(&output.stdout).into_owned();
+            let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
+            if !actual_success {
+                issues.push(issue(
+                    "exit_status_mismatch",
+                    format!("expected success=true, got success=false; stderr={stderr:?}"),
+                ));
+            } else {
+                let round_trip_file = tmp_root.join(format!("format-round-trip-{index}.sley"));
+                if let Err(error) = fs::write(&round_trip_file, &formatted) {
+                    issues.push(issue(
+                        "format_round_trip_write_failed",
+                        format!("failed to write {}: {error}", round_trip_file.display()),
+                    ));
+                } else {
+                    match ProcessCommand::new(sley_bin)
+                        .current_dir(cwd)
+                        .args(["format", &path_string(&round_trip_file)])
+                        .output()
+                    {
+                        Ok(second) => {
+                            if !second.status.success() {
+                                issues.push(issue(
+                                    "format_round_trip_failed",
+                                    format!(
+                                        "formatted source failed to format again; stderr={:?}",
+                                        String::from_utf8_lossy(&second.stderr)
+                                    ),
+                                ));
+                            } else if formatted != String::from_utf8_lossy(&second.stdout) {
+                                issues.push(issue(
+                                    "format_round_trip_unstable",
+                                    "formatter output changed after a second format pass",
+                                ));
+                            }
+                        }
+                        Err(error) => issues.push(issue(
+                            "command_spawn_failed",
+                            format!("failed to run sley format round trip: {error}"),
+                        )),
+                    }
+                }
+            }
+        }
+        Err(error) => issues.push(issue(
+            "command_spawn_failed",
+            format!("failed to run sley format: {error}"),
+        )),
+    }
+    CiStep {
+        name: format!("accepted_format_round_trip:{}", case.path),
+        status: if issues.is_empty() {
+            "passed".into()
+        } else {
+            "failed".into()
+        },
+        command: command_vector(&args),
+        expected_success: true,
+        actual_success,
+        exit_code,
+        stdout_schema: None,
+        covers: case.covers.clone(),
+        issues,
+    }
+}
+
+fn run_corpus_rejected_check(
+    sley_bin: &Path,
+    cwd: &Path,
+    file: &Path,
+    case: &CorpusCase,
+) -> CiStep {
+    let mut run = run_sley_step(
+        sley_bin,
+        cwd,
+        &format!("rejected_check:{}", case.path),
+        vec!["check".into(), "--json".into(), path_string(file)],
+        false,
+        case.covers.clone(),
+    );
+    let expectation_path = file.with_extension("json");
+    match read_corpus_expectation(&expectation_path) {
+        Ok(expectation) => apply_corpus_diagnostic_expectations(&mut run, &expectation),
+        Err(error) => run.step.issues.push(issue(
+            "corpus_expectation_read_failed",
+            format!("failed to read {}: {error}", expectation_path.display()),
+        )),
+    }
+    run.step.status = if run.step.issues.is_empty() {
+        "passed".into()
+    } else {
+        "failed".into()
+    };
+    run.step
+}
+
+fn apply_corpus_diagnostic_expectations(run: &mut StepRun, expectation: &CorpusExpectation) {
+    let json = match serde_json::from_str::<JsonValue>(&run.stdout) {
+        Ok(json) => json,
+        Err(error) => {
+            run.step.issues.push(issue(
+                "stdout_json_parse_failed",
+                format!("stdout was not valid JSON: {error}"),
+            ));
+            return;
+        }
+    };
+    let actual_ids = json
+        .pointer("/diagnostics")
+        .and_then(JsonValue::as_array)
+        .map(|diagnostics| {
+            diagnostics
+                .iter()
+                .filter_map(|diagnostic| diagnostic.pointer("/id").and_then(JsonValue::as_str))
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default();
+    for expected in &expectation.diagnostics {
+        if !actual_ids.iter().any(|actual| actual == expected) {
+            run.step.issues.push(issue(
+                "expected_diagnostic_missing",
+                format!("expected diagnostic {expected}, got {:?}", actual_ids),
+            ));
+        }
+    }
+}
+
 fn run_smoke_case(sley_bin: &Path, repo_root: &Path, tmp_root: &Path, case: &SmokeCase) -> StepRun {
     let args = case
         .args
@@ -885,6 +1138,16 @@ fn read_smoke_manifest(path: &Path) -> Result<SmokeManifest> {
     Ok(serde_json::from_str(&source)?)
 }
 
+fn read_corpus_manifest(path: &Path) -> Result<CorpusManifest> {
+    let source = fs::read_to_string(path)?;
+    Ok(serde_json::from_str(&source)?)
+}
+
+fn read_corpus_expectation(path: &Path) -> Result<CorpusExpectation> {
+    let source = fs::read_to_string(path)?;
+    Ok(serde_json::from_str(&source)?)
+}
+
 fn write_smoke_setup_files(case: &SmokeCase, repo_root: &Path, tmp_root: &Path) -> Vec<CiIssue> {
     let mut issues = Vec::new();
     for file in &case.setup_files {
@@ -927,6 +1190,14 @@ fn temp_smoke_dir() -> PathBuf {
         .map(|duration| duration.as_nanos())
         .unwrap_or_default();
     env::temp_dir().join(format!("sley-ci-smoke-{}-{timestamp}", std::process::id()))
+}
+
+fn temp_corpus_dir() -> PathBuf {
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_nanos())
+        .unwrap_or_default();
+    env::temp_dir().join(format!("sley-ci-corpus-{}-{timestamp}", std::process::id()))
 }
 
 fn find_sley_binary() -> PathBuf {
