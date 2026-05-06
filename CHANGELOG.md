@@ -33,6 +33,8 @@ here. Dates use UTC-independent calendar dates from the local repo history.
 - The local syntax gate bootstraps Tree-sitter npm dependencies with `npm ci`
   when needed, and the GitHub composite action installs stable Node before
   running `make v1`.
+- Plain-text `sley-conformance report` output now lists public-release blockers
+  directly instead of only reporting the blocker count.
 - Contract inventory now tracks 36 schemas, 96 contract fixtures, and 99 schema
   instances through the conformance report.
 - The Rust package metadata now declares its supported Rust floor, description,

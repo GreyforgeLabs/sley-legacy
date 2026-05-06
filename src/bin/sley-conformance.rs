@@ -1384,6 +1384,9 @@ fn emit_report(report: &ConformanceReport, json: bool) -> Result<()> {
     for issue in &report.issues {
         println!("{} {}", issue.code, issue.message);
     }
+    for blocker in &report.release.blockers {
+        println!("release:{} {}", blocker.code, blocker.message);
+    }
     Ok(())
 }
 
