@@ -1,0 +1,99 @@
+{
+  "schema": "sley.migrate.report.v0",
+  "status": "migrations",
+  "target": "examples/legacy_file.sley",
+  "source_schema": "sley.edit_plan.report.v0",
+  "summary": {
+    "diagnostic_count": 0,
+    "migration_count": 2,
+    "raw_host_adapter_count": 1,
+    "module_declaration_count": 1,
+    "naming_cleanup_count": 0,
+    "result_propagation_count": 0,
+    "schema_drift_count": 1,
+    "issue_count": 0
+  },
+  "migrations": [
+    {
+      "kind": "add_module_declaration",
+      "category": "module_declaration",
+      "surface": "program",
+      "reason": "add an explicit module declaration so graph ids and project writeback stay stable",
+      "dry_run_command": [
+        "sley",
+        "fix",
+        "--json",
+        "--kind",
+        "add_module_declaration",
+        "--template-surface",
+        "program",
+        "--dry-run",
+        "examples/legacy_file.sley"
+      ],
+      "write_command": [
+        "sley",
+        "fix",
+        "--json",
+        "--kind",
+        "add_module_declaration",
+        "--template-surface",
+        "program",
+        "--write",
+        "examples/legacy_file.sley"
+      ],
+      "editable_json_pointers": ["/payload/name"],
+      "operation": {
+        "op": "AddModuleDeclaration",
+        "payload": {
+          "name": "legacy_file"
+        }
+      }
+    },
+    {
+      "kind": "migrate_raw_host_adapter",
+      "category": "raw_host_adapter",
+      "surface": "block:task:main.main:stmt:0:expr",
+      "reason": "replace the diagnostic-failing host adapter with a fallible try_ adapter and `?` propagation",
+      "dry_run_command": [
+        "sley",
+        "fix",
+        "--json",
+        "--kind",
+        "migrate_raw_host_adapter",
+        "--template-surface",
+        "block:task:main.main:stmt:0:expr",
+        "--dry-run",
+        "examples/legacy_file.sley"
+      ],
+      "write_command": [
+        "sley",
+        "fix",
+        "--json",
+        "--kind",
+        "migrate_raw_host_adapter",
+        "--template-surface",
+        "block:task:main.main:stmt:0:expr",
+        "--write",
+        "examples/legacy_file.sley"
+      ],
+      "editable_json_pointers": ["/payload/source"],
+      "operation": {
+        "op": "ReplaceExpression",
+        "payload": {
+          "source": "fs.try_read_text(\"examples/hello.sley\")?"
+        },
+        "target": "block:task:main.main:stmt:0:expr"
+      }
+    }
+  ],
+  "schema_drift": [
+    {
+      "kind": "schema_without_fixture",
+      "schema_id": "sley.example.report.v0",
+      "path": "docs/schemas/sley.example.report.v0.schema.json",
+      "message": "schema `sley.example.report.v0` has no fixture instance"
+    }
+  ],
+  "diagnostics": [],
+  "issues": []
+}

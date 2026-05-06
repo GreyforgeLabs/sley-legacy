@@ -34,6 +34,7 @@ make syntax
 cargo run --bin sley-lsp
 cargo run --bin sley-workbench -- --json --html .sley/workbench.html <file-or-project>
 cargo run --bin sley-agent-bench -- run --json
+cargo run --bin sley-migrate -- report --json --schemas docs/schemas --fixtures fixtures/contracts <file-or-project>
 cargo run --bin sley-zjx -- inspect --json <zjx-envelope.json>
 cargo run --bin sley-zjx -- verify-digest --json <zjx-envelope.json>
 cargo run -- seal --json <file-or-project>
@@ -126,6 +127,7 @@ Stable v0 JSON roots:
 - `sley.trace.seal.v0`
 - `sley.graft.outcome.v0`
 - `sley.agent_bench.report.v0`
+- `sley.migrate.report.v0`
 - `sley.zjx.envelope.v0`
 - `sley.zjx.tool.report.v0`
 - `sley.cli_smoke.manifest.v0`
@@ -164,6 +166,8 @@ The `sley-agent-bench` binary exposes
 `schema: "sley.agent_bench.report.v0"` for deterministic local repair-loop
 benchmarks over JSON inspection, checked fixes, post-fix gates, trace receipts,
 seal digests, and ZJX handoff evidence.
+The `sley-migrate` binary exposes `schema: "sley.migrate.report.v0"` for
+checked source migration reports and optional schema/fixture drift checks.
 The `sley-zjx` binary exposes `schema: "sley.zjx.tool.report.v0"` for
 read-only `inspect`, `verify-digest`, `extract-graph`, and `diff-envelope`
 commands over `sley.zjx.envelope.v0` preview envelopes.

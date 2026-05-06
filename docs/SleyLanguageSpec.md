@@ -600,7 +600,8 @@ graphs carry
 `schema: "sley.trace.seal.v0"`, ZJX preview envelopes carry
 `schema: "sley.zjx.envelope.v0"`, ZJX tool inspection reports carry
 `schema: "sley.zjx.tool.report.v0"`, and deterministic agent-loop benchmark
-reports carry `schema: "sley.agent_bench.report.v0"`.
+reports carry `schema: "sley.agent_bench.report.v0"`. Checked migration
+reports carry `schema: "sley.migrate.report.v0"`.
 The CLI smoke manifest carries
 `schema: "sley.cli_smoke.manifest.v0"`. The accepted/rejected compiler corpus
 manifest carries `schema: "sley.conformance.manifest.v0"`. Project scaffold reports carry
@@ -681,9 +682,10 @@ The trace receipt schema pins the JSONL receipt record for accepted write
 provenance. The ZJX envelope schema pins the graph digest, graph root, optional
 graph slice root, and trace receipt schema used for handoff. The LSP
 fix-preview schema pins the non-mutating editor command payload, the workbench
-schema pins the local inspection report root, and the agent-bench schema pins
-deterministic repair-loop evidence. The remaining schema files currently pin
-their top-level contract shape and stable schema IDs.
+schema pins the local inspection report root, the agent-bench schema pins
+deterministic repair-loop evidence, and the migrate schema pins checked
+migration commands plus schema-drift rows. The remaining schema files
+currently pin their top-level contract shape and stable schema IDs.
 
 The compiler conformance corpus lives under `fixtures/corpus/`. Its
 `manifest.json` lists every accepted and rejected fixture plus coverage tags.
@@ -753,6 +755,14 @@ bootstrap. `sley-agent-bench run --json` emits
 case through check, query, lint, checked repair planning, write-mode fix,
 post-fix lint/verify, trace receipt counting, seal, and ZJX evidence. It shells
 to the selected `sley` binary and never calls external providers.
+
+The local migration report loop is backed by the in-tree `sley-migrate`
+bootstrap. `sley-migrate report --json <target>` shells out to no providers
+and uses the checked edit-plan template surface to report module declaration,
+raw host adapter, imported-call naming, and unchecked-result propagation
+migration candidates. With `--schemas <dir> --fixtures <dir>`, it also reports
+schema IDs without fixture instances and fixture instances without matching
+schema files. The report is advisory and does not write source files.
 
 `sley new` is the v0 project scaffold command. It writes a `sley.toml`,
 `README.md`, and entry module source file, refusing to overwrite any of those
