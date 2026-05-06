@@ -27,6 +27,18 @@ enum Command {
         json: bool,
         target: PathBuf,
     },
+    /// Run the Sley lint gate over one target.
+    Lint {
+        #[arg(long)]
+        json: bool,
+        #[arg(long = "rule", value_name = "RULE")]
+        rule: Vec<String>,
+        #[arg(long)]
+        module: Option<String>,
+        #[arg(long)]
+        deny_warnings: bool,
+        target: PathBuf,
+    },
     /// Run the Sley verify gate over one target.
     Verify {
         #[arg(long)]
@@ -211,6 +223,17 @@ fn run(cli: Cli) -> Result<(CiReport, bool)> {
             let report = build_check_report(&sley_bin, &target)?;
             Ok((report, json))
         }
+        Command::Lint {
+            json,
+            rule,
+            module,
+            deny_warnings,
+            target,
+        } => {
+            let report =
+                build_lint_report(&sley_bin, &target, &rule, module.as_deref(), deny_warnings)?;
+            Ok((report, json))
+        }
         Command::Verify {
             json,
             deny_warnings,
@@ -328,6 +351,37 @@ fn build_check_report(sley_bin: &Path, target: &Path) -> Result<CiReport> {
     );
     Ok(finalize_report(
         "check",
+        Some(path_string(target)),
+        None,
+        steps,
+        Vec::new(),
+    ))
+}
+
+fn build_lint_report(
+    sley_bin: &Path,
+    target: &Path,
+    rules: &[String],
+    module: Option<&str>,
+    deny_warnings: bool,
+) -> Result<CiReport> {
+    let cwd = env::current_dir()?;
+    let mut args = vec!["lint".into(), "--json".into()];
+    for rule in rules {
+        args.push("--rule".into());
+        args.push(rule.clone());
+    }
+    if let Some(module) = module {
+        args.push("--module".into());
+        args.push(module.into());
+    }
+    if deny_warnings {
+        args.push("--deny-warnings".into());
+    }
+    args.push(path_string(target));
+    let steps = vec![run_sley_step(sley_bin, &cwd, "lint", args, true, Vec::new()).step];
+    Ok(finalize_report(
+        "lint",
         Some(path_string(target)),
         None,
         steps,

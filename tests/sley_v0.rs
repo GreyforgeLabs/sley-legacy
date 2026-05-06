@@ -6190,7 +6190,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(43))
+        Some(&serde_json::json!(44))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -6439,6 +6439,78 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     assert_eq!(
         check_json.pointer("/steps/1/stdout_schema"),
         Some(&serde_json::json!("sley.lint.report.v0"))
+    );
+
+    let lint = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
+        .current_dir(&repo_root)
+        .args(["lint", "--json", "--deny-warnings", "examples/project"])
+        .output()
+        .expect("run sley-ci lint");
+    assert!(
+        lint.status.success(),
+        "sley-ci lint failed: {}",
+        String::from_utf8_lossy(&lint.stderr)
+    );
+    let lint_json: serde_json::Value =
+        serde_json::from_slice(&lint.stdout).expect("parse sley-ci lint JSON");
+    assert_eq!(
+        lint_json.pointer("/schema"),
+        Some(&serde_json::json!("sley.ci.report.v0"))
+    );
+    assert_eq!(
+        lint_json.pointer("/status"),
+        Some(&serde_json::json!("passed"))
+    );
+    assert_eq!(
+        lint_json.pointer("/command"),
+        Some(&serde_json::json!("lint"))
+    );
+    assert_eq!(
+        lint_json.pointer("/steps/0/stdout_schema"),
+        Some(&serde_json::json!("sley.lint.report.v0"))
+    );
+    assert_json_snapshot(
+        &lint_json,
+        include_str!("../fixtures/contracts/ci_lint_project_ready.json"),
+    );
+
+    let denied_lint = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
+        .current_dir(&repo_root)
+        .args([
+            "lint",
+            "--json",
+            "--deny-warnings",
+            "--rule",
+            "empty-for-statement",
+            "examples/empty_for_statement.sley",
+        ])
+        .output()
+        .expect("run denied sley-ci lint");
+    assert!(
+        !denied_lint.status.success(),
+        "sley-ci lint with denied findings should fail"
+    );
+    let denied_lint_json: serde_json::Value =
+        serde_json::from_slice(&denied_lint.stdout).expect("parse denied sley-ci lint JSON");
+    assert_eq!(
+        denied_lint_json.pointer("/schema"),
+        Some(&serde_json::json!("sley.ci.report.v0"))
+    );
+    assert_eq!(
+        denied_lint_json.pointer("/status"),
+        Some(&serde_json::json!("failed"))
+    );
+    assert_eq!(
+        denied_lint_json.pointer("/command"),
+        Some(&serde_json::json!("lint"))
+    );
+    assert_eq!(
+        denied_lint_json.pointer("/steps/0/stdout_schema"),
+        Some(&serde_json::json!("sley.lint.report.v0"))
+    );
+    assert_eq!(
+        denied_lint_json.pointer("/steps/0/issues/0/code"),
+        Some(&serde_json::json!("exit_status_mismatch"))
     );
 
     let deploy_root = temp_project_dir("sley-ci-deploy");
