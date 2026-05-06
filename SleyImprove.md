@@ -469,7 +469,8 @@ The current smoke manifest covers:
 - doctor/verify warning next-actions that route agents to checked
   `sley plan --json --graft-templates` lint repair plans and unambiguous
   `sley fix --dry-run` previews, plus a staged write-and-verify smoke for the
-  previewed unused-private-task repair path
+  previewed unused-private-task repair path and a project-level previewed
+  unused-import repair path
 - lint-driven declaration delete templates, cleanup transactions, and direct
   declaration surface targeting in edit-plan reports
 - lint-driven missing-module `AddModuleDeclaration` templates, module-name

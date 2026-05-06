@@ -880,9 +880,9 @@ archive.
   query/lint summaries, and runtime execution; warning and denied-warning
   reports route agents to checked lint repair planning and dry-run fix previews
   before deployment review when the repair is unambiguous. The CLI smoke suite
-  locks a previewed lint-repair write followed by strict verify, plus a strict
-  seeded deploy verify report for the generated `sley new --template deploy`
-  starter, while live
+  locks previewed lint-repair writes followed by strict verify for file and
+  project targets, plus a strict seeded deploy verify report for the generated
+  `sley new --template deploy` starter, while live
   deploy/provider calls remain outside v0
 - no `match`, agent declarations, spawn/cast/join, or compressed ZJX archive
   writer yet

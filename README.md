@@ -195,9 +195,10 @@ Implemented now:
   chains, ZJX envelopes carrying trace receipts, doctor/verify warning
   next-actions that route to lint repair plans and unambiguous dry-run fix
   previews, a staged previewed-repair write smoke that proves strict verify
-  readiness afterward, missing-module checked repair templates with module-name
-  inference, lint-driven fix writes that clear warnings before verify, and
-  seeded host-adapter execution
+  readiness afterward, a project-level previewed unused-import repair write
+  followed by strict verify, missing-module checked repair templates with
+  module-name inference, lint-driven fix writes that clear warnings before
+  verify, and seeded host-adapter execution
 - compact agent onboarding pack in `llms.txt`
 
 Project form:

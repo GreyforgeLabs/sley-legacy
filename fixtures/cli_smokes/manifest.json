@@ -409,6 +409,117 @@
       }
     },
     {
+      "name": "verify_project_unused_import_preview_lint_repair_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/readiness-project/sley.toml",
+          "content": "[project]\nname = \"readiness-project\"\nroot = \"src\"\nentry = \"app.main\"\n"
+        },
+        {
+          "path": "{tmp}/readiness-project/src/app/main.sley",
+          "content": "module app.main\n\nimport app.used as used\nimport app.stale as stale\n\ntask main -> Int {\n  return call used.value()\n}\n"
+        },
+        {
+          "path": "{tmp}/readiness-project/src/app/used.sley",
+          "content": "module app.used\n\nexport task value -> Int {\n  return 7\n}\n"
+        },
+        {
+          "path": "{tmp}/readiness-project/src/app/stale.sley",
+          "content": "module app.stale\n\nexport task noop -> Int {\n  return 0\n}\n"
+        }
+      ],
+      "args": [
+        "verify",
+        "--json",
+        "--deny-warnings",
+        "{tmp}/readiness-project"
+      ],
+      "covers": [
+        "cli:verify",
+        "cli:smoke-setup-files",
+        "json:sley.verify.report.v0",
+        "json:sley.query.report.v0",
+        "json:sley.lint.report.v0",
+        "lint:unused_import",
+        "readiness:project-lint-repair-write-verify"
+      ],
+      "expect": {
+        "success": false,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.verify.report.v0" },
+          { "pointer": "/status", "value": "blocked" },
+          { "pointer": "/summary/lint_finding_count", "value": 1 },
+          { "pointer": "/summary/runtime_status", "value": "skipped" },
+          { "pointer": "/next_actions/2/kind", "value": "preview_lint_repair" },
+          { "pointer": "/next_actions/2/command/1", "value": "fix" },
+          { "pointer": "/next_actions/2/command/4", "value": "delete_unused_import" },
+          { "pointer": "/next_actions/2/command/6", "value": "import:app.main:app.stale" },
+          { "pointer": "/next_actions/2/command/7", "value": "--dry-run" }
+        ]
+      }
+    },
+    {
+      "name": "fix_previewed_unused_import_project_write_json",
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "delete_unused_import",
+        "--template-surface",
+        "import:app.main:app.stale",
+        "--write",
+        "--actor",
+        "agent:cli-smoke",
+        "{tmp}/readiness-project"
+      ],
+      "covers": [
+        "cli:fix",
+        "cli:fix-write",
+        "fix:write-source",
+        "graft:templates:unused-import-delete",
+        "json:sley.graft.outcome.v0",
+        "lint:unused_import",
+        "readiness:project-lint-repair-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/actor", "value": "agent:cli-smoke" },
+          { "pointer": "/provenance/0/operation", "value": "DeleteNode" },
+          { "pointer": "/provenance/0/targets/0", "value": "import:app.main:app.stale" }
+        ]
+      }
+    },
+    {
+      "name": "verify_previewed_unused_import_project_write_json",
+      "args": [
+        "verify",
+        "--json",
+        "--deny-warnings",
+        "{tmp}/readiness-project"
+      ],
+      "covers": [
+        "cli:verify",
+        "json:sley.verify.report.v0",
+        "json:sley.query.report.v0",
+        "json:sley.lint.report.v0",
+        "readiness:project-lint-repair-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.verify.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/summary/warning_count", "value": 0 },
+          { "pointer": "/summary/lint_finding_count", "value": 0 },
+          { "pointer": "/summary/runtime_status", "value": "passed" },
+          { "pointer": "/lint/status", "value": "ok" }
+        ]
+      }
+    },
+    {
       "name": "plan_project_json",
       "args": ["plan", "--json", "examples/project"],
       "covers": [
