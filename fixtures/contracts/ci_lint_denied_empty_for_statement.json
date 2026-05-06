@@ -1,0 +1,37 @@
+{
+  "schema": "sley.ci.report.v0",
+  "status": "failed",
+  "command": "lint",
+  "target": "examples/empty_for_statement.sley",
+  "summary": {
+    "step_count": 1,
+    "passed_count": 0,
+    "failed_count": 1
+  },
+  "steps": [
+    {
+      "name": "lint",
+      "status": "failed",
+      "command": [
+        "sley",
+        "lint",
+        "--json",
+        "--rule",
+        "empty-for-statement",
+        "--deny-warnings",
+        "examples/empty_for_statement.sley"
+      ],
+      "expected_success": true,
+      "actual_success": false,
+      "exit_code": 1,
+      "stdout_schema": "sley.lint.report.v0",
+      "issues": [
+        {
+          "code": "exit_status_mismatch",
+          "message": "expected success=true, got success=false; stderr=\"lint findings found\\n\""
+        }
+      ]
+    }
+  ],
+  "issues": []
+}
