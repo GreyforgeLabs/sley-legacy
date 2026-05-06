@@ -2571,24 +2571,25 @@
           { "pointer": "/filters/rules/24", "value": "constant_len_expression" },
           { "pointer": "/filters/rules/25", "value": "constant_not_expression" },
           { "pointer": "/filters/rules/26", "value": "empty_if_statement" },
-          { "pointer": "/filters/rules/27", "value": "empty_for_statement" },
-          { "pointer": "/filters/rules/28", "value": "empty_forge_statement" },
-          { "pointer": "/filters/rules/29", "value": "identity_binary_expression" },
-          { "pointer": "/filters/rules/30", "value": "redundant_boolean_comparison" },
-          { "pointer": "/filters/rules/31", "value": "absorbing_boolean_expression" },
-          { "pointer": "/filters/rules/32", "value": "idempotent_boolean_expression" },
-          { "pointer": "/filters/rules/33", "value": "self_comparison_expression" },
-          { "pointer": "/filters/rules/34", "value": "double_negation_expression" },
-          { "pointer": "/filters/rules/35", "value": "negated_comparison_expression" },
-          { "pointer": "/filters/rules/36", "value": "redundant_boolean_if_expression" },
-          { "pointer": "/filters/rules/37", "value": "redundant_boolean_if_statement" },
-          { "pointer": "/filters/rules/38", "value": "same_branch_if_expression" },
-          { "pointer": "/filters/rules/39", "value": "same_branch_if_statement" },
-          { "pointer": "/filters/rules/40", "value": "unreachable_statement" },
-          { "pointer": "/filters/rules/41", "value": "absorbing_arithmetic_expression" },
-          { "pointer": "/filters/rules/42", "value": "self_assignment_statement" },
-          { "pointer": "/filters/rules/43", "value": "overwritten_set_statement" },
-          { "pointer": "/filters/rules/44", "value": "redundant_initial_set_statement" },
+          { "pointer": "/filters/rules/27", "value": "empty_else_statement" },
+          { "pointer": "/filters/rules/28", "value": "empty_for_statement" },
+          { "pointer": "/filters/rules/29", "value": "empty_forge_statement" },
+          { "pointer": "/filters/rules/30", "value": "identity_binary_expression" },
+          { "pointer": "/filters/rules/31", "value": "redundant_boolean_comparison" },
+          { "pointer": "/filters/rules/32", "value": "absorbing_boolean_expression" },
+          { "pointer": "/filters/rules/33", "value": "idempotent_boolean_expression" },
+          { "pointer": "/filters/rules/34", "value": "self_comparison_expression" },
+          { "pointer": "/filters/rules/35", "value": "double_negation_expression" },
+          { "pointer": "/filters/rules/36", "value": "negated_comparison_expression" },
+          { "pointer": "/filters/rules/37", "value": "redundant_boolean_if_expression" },
+          { "pointer": "/filters/rules/38", "value": "redundant_boolean_if_statement" },
+          { "pointer": "/filters/rules/39", "value": "same_branch_if_expression" },
+          { "pointer": "/filters/rules/40", "value": "same_branch_if_statement" },
+          { "pointer": "/filters/rules/41", "value": "unreachable_statement" },
+          { "pointer": "/filters/rules/42", "value": "absorbing_arithmetic_expression" },
+          { "pointer": "/filters/rules/43", "value": "self_assignment_statement" },
+          { "pointer": "/filters/rules/44", "value": "overwritten_set_statement" },
+          { "pointer": "/filters/rules/45", "value": "redundant_initial_set_statement" },
           { "pointer": "/findings", "value": [] }
         ]
       }
@@ -5894,6 +5895,155 @@
         "json:sley.lint.report.v0",
         "lint:empty_if_statement",
         "readiness:empty-if-repair-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.verify.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/summary/warning_count", "value": 0 },
+          { "pointer": "/summary/lint_finding_count", "value": 0 },
+          { "pointer": "/runtime/value/kind", "value": "Int" },
+          { "pointer": "/runtime/value/value", "value": 42 },
+          { "pointer": "/lint/status", "value": "ok" }
+        ]
+      }
+    },
+    {
+      "name": "lint_empty_else_statement_rule_json",
+      "args": [
+        "lint",
+        "--json",
+        "--rule",
+        "empty-else-statement",
+        "examples/empty_else_statement.sley"
+      ],
+      "covers": [
+        "cli:lint",
+        "lint:empty_else_statement",
+        "json:sley.lint.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.lint.report.v0" },
+          { "pointer": "/status", "value": "findings" },
+          { "pointer": "/filters/rules/0", "value": "empty_else_statement" },
+          { "pointer": "/findings/0/id", "value": "EMPTY_ELSE_STATEMENT" },
+          { "pointer": "/findings/0/node", "value": "block:task:app.empty_else.main:stmt:1" }
+        ]
+      }
+    },
+    {
+      "name": "plan_empty_else_statement_template_json",
+      "args": [
+        "plan",
+        "--json",
+        "--graft-templates",
+        "--template-surface",
+        "block:task:app.empty_else.main:stmt:1",
+        "examples/empty_else_statement.sley"
+      ],
+      "covers": [
+        "cli:plan",
+        "graft:templates:empty-else-statement-remove",
+        "lint:empty_else_statement",
+        "json:sley.edit_plan.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.edit_plan.report.v0" },
+          { "pointer": "/status", "value": "warnings" },
+          { "pointer": "/lint/findings/0/id", "value": "EMPTY_ELSE_STATEMENT" },
+          { "pointer": "/graft_templates/0/kind", "value": "remove_empty_else_statement" },
+          { "pointer": "/graft_templates/0/surface", "value": "block:task:app.empty_else.main:stmt:1" },
+          { "pointer": "/graft_templates/0/operation/op", "value": "ReplaceStatement" },
+          { "pointer": "/graft_templates/0/operation/target", "value": "block:task:app.empty_else.main:stmt:1" }
+        ]
+      }
+    },
+    {
+      "name": "fix_empty_else_statement_write_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/fix-empty-else/main.sley",
+          "content": "module app.empty_else_fix\n\ntask main -> Int {\n  bind value = 42\n\n  if value > 0 {\n    return value\n  } else {\n  }\n\n  return 0\n}\n"
+        }
+      ],
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "remove_empty_else_statement",
+        "--template-surface",
+        "block:task:app.empty_else_fix.main:stmt:1",
+        "--write",
+        "--actor",
+        "agent:cli-smoke",
+        "{tmp}/fix-empty-else/main.sley"
+      ],
+      "covers": [
+        "cli:fix",
+        "cli:fix-write",
+        "cli:smoke-setup-files",
+        "fix:lint-cleanup-write",
+        "fix:write-source",
+        "graft:templates:empty-else-statement-remove",
+        "json:sley.graft.outcome.v0",
+        "lint:empty_else_statement",
+        "readiness:empty-else-repair-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/actor", "value": "agent:cli-smoke" },
+          { "pointer": "/provenance/0/operation", "value": "ReplaceStatement" },
+          { "pointer": "/provenance/0/targets/0", "value": "block:task:app.empty_else_fix.main:stmt:1" }
+        ]
+      }
+    },
+    {
+      "name": "lint_fix_empty_else_statement_write_json",
+      "args": [
+        "lint",
+        "--json",
+        "--rule",
+        "empty-else-statement",
+        "{tmp}/fix-empty-else/main.sley"
+      ],
+      "covers": [
+        "cli:lint",
+        "fix:lint-cleanup-write",
+        "lint:empty_else_statement",
+        "json:sley.lint.report.v0",
+        "readiness:empty-else-repair-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.lint.report.v0" },
+          { "pointer": "/status", "value": "ok" }
+        ]
+      }
+    },
+    {
+      "name": "verify_fix_empty_else_statement_write_json",
+      "args": [
+        "verify",
+        "--json",
+        "--deny-warnings",
+        "{tmp}/fix-empty-else/main.sley"
+      ],
+      "covers": [
+        "cli:verify",
+        "fix:lint-cleanup-write",
+        "json:sley.verify.report.v0",
+        "json:sley.lint.report.v0",
+        "lint:empty_else_statement",
+        "readiness:empty-else-repair-write-verify"
       ],
       "expect": {
         "success": true,

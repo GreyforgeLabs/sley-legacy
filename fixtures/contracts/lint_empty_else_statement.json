@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.empty_else",
+  "filters": {
+    "module": null,
+    "rules": [
+      "empty_else_statement"
+    ]
+  },
+  "findings": [
+    {
+      "id": "EMPTY_ELSE_STATEMENT",
+      "rule": "empty_else_statement",
+      "severity": "warning",
+      "message": "task `app.empty_else.main` has an empty else branch",
+      "node": "block:task:app.empty_else.main:stmt:1",
+      "module": "app.empty_else",
+      "hint": "remove this no-op else branch"
+    }
+  ]
+}

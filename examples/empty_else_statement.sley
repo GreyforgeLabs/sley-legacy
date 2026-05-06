@@ -1,0 +1,12 @@
+module app.empty_else
+
+task main -> Int {
+  bind value = 41
+
+  if value > 0 {
+    return value
+  } else {
+  }
+
+  return 0
+}

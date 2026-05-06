@@ -133,6 +133,7 @@ Implemented now:
   `--rule constant-len-expression`,
   `--rule constant-not-expression`,
   `--rule empty-if-statement`,
+  `--rule empty-else-statement`,
   `--rule empty-for-statement`,
   `--rule empty-forge-statement`,
   `--rule identity-binary-expression`, or
@@ -264,6 +265,7 @@ Implemented now:
   that can be replaced by the resulting boolean literal,
   `delete_empty_if_statement` templates for no-op `if` statements with
   delete-safe conditions and empty branches,
+  `remove_empty_else_statement` templates for no-op empty `else` branches,
   `delete_empty_for_statement` templates for `for` statements over literal
   empty lists,
   `delete_empty_forge_statement` templates for no-op `forge { }` starter
@@ -414,8 +416,9 @@ Implemented now:
   name/source/module overrides,
   missing-module checked repair templates with module-name inference,
   lint-driven fix writes that clear warnings before verify, including empty-if
-  cleanup, a standalone agent deploy pipeline example with check/lint/run/verify/deploy
-  dry-run coverage, and seeded host-adapter execution
+  and empty-else cleanup, a standalone agent deploy pipeline example with
+  check/lint/run/verify/deploy dry-run coverage, and seeded host-adapter
+  execution
 - packaged example conformance through `sley-ci examples --json examples`,
   covering project-root checks for `sley.toml` examples, standalone file checks,
   and formatter round trips for every shipped `.sley` source under `examples/`
@@ -847,6 +850,7 @@ write/verify coverage,
 constant len expression simplification templates with write/verify coverage,
 constant not expression simplification templates with write/verify coverage,
 empty-if statement delete templates with write/verify coverage,
+empty-else statement removal templates with write/verify coverage,
 empty-for statement delete templates with write/verify coverage,
 empty-forge statement delete templates with write/verify coverage,
 no-op self-assignment statement delete templates with write/verify coverage,

@@ -51,6 +51,7 @@
       "constant_len_expression",
       "constant_not_expression",
       "empty_if_statement",
+      "empty_else_statement",
       "empty_for_statement",
       "empty_forge_statement",
       "identity_binary_expression",
