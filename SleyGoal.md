@@ -40,11 +40,10 @@ Current verified surface:
 
 - `cargo fmt --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 190 tests.
+- Current integration coverage is 191 tests.
 - `sley query --json` emits `schema: "sley.query.report.v0"` and supports
   `--kind all|modules|tasks|types|effects|calls`, `--module <module>`, and
-  `--exported`, including top-level type/effect declaration rows and strict
-  call rows.
+  `--exported`, including strict task/take/type/effect/call row definitions.
 - `sley lint --json` emits `schema: "sley.lint.report.v0"` and supports
   `--module <module>`, `--rule unused-private-task`,
   `--rule unreachable-private-task`, `--rule unused-declared-effect`,
@@ -99,6 +98,8 @@ Current verified surface:
   smoke manifest in addition to AST, diagnostics, graph, graph slice, trace
   receipt, trace seal, graft outcome, and ZJX envelope roots. The edit-plan
   schema now pins strict graft operation and transaction template envelopes,
+  the query schema now exposes strict task/take/type/effect/call row
+  definitions,
   graph-slice affordance operations reuse that strict graft operation schema,
   graph-slice focus, task, and call summary payloads are schema-linked,
   the diagnostics schema exposes the shared diagnostic record used by

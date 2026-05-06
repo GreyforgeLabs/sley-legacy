@@ -4077,6 +4077,60 @@ fn diagnostic_schema_is_shared_by_agent_reports() {
 }
 
 #[test]
+fn query_report_schema_exposes_strict_row_definitions() {
+    let schema: serde_json::Value = serde_json::from_str(include_str!(
+        "../docs/schemas/sley.query.report.v0.schema.json"
+    ))
+    .expect("parse query report schema");
+    assert_eq!(
+        schema.pointer("/properties/entry_module/minLength"),
+        Some(&serde_json::json!(1))
+    );
+    assert_eq!(
+        schema.pointer("/properties/tasks/items/$ref"),
+        Some(&serde_json::json!("#/$defs/queryTaskSummary"))
+    );
+    assert_eq!(
+        schema.pointer("/properties/types/items/$ref"),
+        Some(&serde_json::json!("#/$defs/queryTypeSummary"))
+    );
+    assert_eq!(
+        schema.pointer("/properties/effects/items/$ref"),
+        Some(&serde_json::json!("#/$defs/queryEffectSummary"))
+    );
+    assert_eq!(
+        schema.pointer("/$defs/queryTaskSummary/additionalProperties"),
+        Some(&serde_json::json!(false))
+    );
+    assert_eq!(
+        schema.pointer("/$defs/queryTaskSummary/properties/takes/items/$ref"),
+        Some(&serde_json::json!("#/$defs/queryTakeSummary"))
+    );
+    assert_eq!(
+        schema.pointer("/$defs/queryTypeSummary/properties/fields/items/$ref"),
+        Some(&serde_json::json!("#/$defs/queryTypeFieldSummary"))
+    );
+    assert_eq!(
+        schema.pointer("/$defs/callSummary/additionalProperties"),
+        Some(&serde_json::json!(false))
+    );
+    assert_eq!(
+        schema.pointer("/$defs/callSummary/properties/status/enum"),
+        Some(&serde_json::json!([
+            "resolved",
+            "unknown",
+            "ambiguous",
+            "private",
+            "intrinsic"
+        ]))
+    );
+    assert_eq!(
+        schema.pointer("/$defs/callSummary/properties/expr_id/minLength"),
+        Some(&serde_json::json!(1))
+    );
+}
+
+#[test]
 fn graph_slice_schema_reuses_strict_graft_operation_affordances() {
     let schema: serde_json::Value = serde_json::from_str(include_str!(
         "../docs/schemas/sley.symbol_graph.slice.v0.schema.json"
