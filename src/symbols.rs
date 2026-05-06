@@ -609,6 +609,7 @@ fn build_slice(
         })
         .cloned()
         .collect::<Vec<_>>();
+    let focus_module = focus.module.clone();
 
     SymbolGraphSlice {
         schema: SYMBOL_GRAPH_SLICE_SCHEMA.to_string(),
@@ -620,7 +621,12 @@ fn build_slice(
         effects: module.effects,
         tasks: module.tasks,
         task: focus_task_index.map(|index| program.tasks[index].clone()),
-        move_affordances: build_move_affordances(program, focus_task_index, &module_task_indexes),
+        move_affordances: build_move_affordances(
+            program,
+            &focus_module,
+            focus_task_index,
+            &module_task_indexes,
+        ),
         outbound_calls,
         inbound_calls,
     }
@@ -628,6 +634,7 @@ fn build_slice(
 
 fn build_move_affordances(
     program: &Program,
+    focus_module: &str,
     focus_task_index: Option<usize>,
     module_task_indexes: &[usize],
 ) -> Vec<MoveNodeAffordance> {
@@ -640,7 +647,212 @@ fn build_move_affordances(
         collect_take_move_affordances(task, module_task_indexes, program, &mut affordances);
         collect_statement_move_affordances(task, &mut affordances);
     }
+    collect_module_move_affordances(program, focus_module, &mut affordances);
     affordances
+}
+
+fn collect_module_move_affordances(
+    program: &Program,
+    focus_module: &str,
+    affordances: &mut Vec<MoveNodeAffordance>,
+) {
+    let modules = program_modules(program);
+    collect_import_move_affordances(program, focus_module, &modules, affordances);
+    collect_type_move_affordances(program, focus_module, &modules, affordances);
+    collect_effect_move_affordances(program, focus_module, &modules, affordances);
+    collect_task_move_affordances(program, focus_module, &modules, affordances);
+}
+
+fn program_modules(program: &Program) -> BTreeSet<String> {
+    let mut modules = BTreeSet::new();
+    modules.insert(program.module_name().to_string());
+    for import in &program.imports {
+        modules.insert(import.module.clone());
+        modules.insert(import_owner_module(import));
+    }
+    for ty in &program.types {
+        modules.insert(type_module(ty));
+    }
+    for effect in &program.effects {
+        modules.insert(effect_module(effect));
+    }
+    for task in &program.tasks {
+        modules.insert(task_module(task));
+    }
+    modules
+}
+
+fn collect_import_move_affordances(
+    program: &Program,
+    focus_module: &str,
+    modules: &BTreeSet<String>,
+    affordances: &mut Vec<MoveNodeAffordance>,
+) {
+    let imports = program
+        .imports
+        .iter()
+        .filter(|import| import_owner_module(import) == focus_module)
+        .collect::<Vec<_>>();
+    let max_position = imports.len().saturating_sub(1);
+    for (position, import) in imports.into_iter().enumerate() {
+        let parent = format!("module:{focus_module}:imports");
+        affordances.push(module_move_affordance(
+            &import.id,
+            "import",
+            &parent,
+            position,
+            max_position,
+            modules,
+            focus_module,
+            "imports",
+            |module| {
+                program
+                    .imports
+                    .iter()
+                    .filter(|candidate| import_owner_module(candidate) == module)
+                    .count()
+            },
+        ));
+    }
+}
+
+fn collect_type_move_affordances(
+    program: &Program,
+    focus_module: &str,
+    modules: &BTreeSet<String>,
+    affordances: &mut Vec<MoveNodeAffordance>,
+) {
+    let types = program
+        .types
+        .iter()
+        .filter(|ty| type_module(ty) == focus_module)
+        .collect::<Vec<_>>();
+    let max_position = types.len().saturating_sub(1);
+    for (position, ty) in types.into_iter().enumerate() {
+        let parent = format!("module:{focus_module}:types");
+        affordances.push(module_move_affordance(
+            &ty.id,
+            "type",
+            &parent,
+            position,
+            max_position,
+            modules,
+            focus_module,
+            "types",
+            |module| {
+                program
+                    .types
+                    .iter()
+                    .filter(|candidate| type_module(candidate) == module)
+                    .count()
+            },
+        ));
+    }
+}
+
+fn collect_effect_move_affordances(
+    program: &Program,
+    focus_module: &str,
+    modules: &BTreeSet<String>,
+    affordances: &mut Vec<MoveNodeAffordance>,
+) {
+    let effects = program
+        .effects
+        .iter()
+        .filter(|effect| effect_module(effect) == focus_module)
+        .collect::<Vec<_>>();
+    let max_position = effects.len().saturating_sub(1);
+    for (position, effect) in effects.into_iter().enumerate() {
+        let parent = format!("module:{focus_module}:effects");
+        affordances.push(module_move_affordance(
+            &effect.id,
+            "effect",
+            &parent,
+            position,
+            max_position,
+            modules,
+            focus_module,
+            "effects",
+            |module| {
+                program
+                    .effects
+                    .iter()
+                    .filter(|candidate| effect_module(candidate) == module)
+                    .count()
+            },
+        ));
+    }
+}
+
+fn collect_task_move_affordances(
+    program: &Program,
+    focus_module: &str,
+    modules: &BTreeSet<String>,
+    affordances: &mut Vec<MoveNodeAffordance>,
+) {
+    let tasks = program
+        .tasks
+        .iter()
+        .filter(|task| task_module(task) == focus_module)
+        .collect::<Vec<_>>();
+    let max_position = tasks.len().saturating_sub(1);
+    for (position, task) in tasks.into_iter().enumerate() {
+        let parent = format!("module:{focus_module}:tasks");
+        affordances.push(module_move_affordance(
+            &task.id,
+            "task",
+            &parent,
+            position,
+            max_position,
+            modules,
+            focus_module,
+            "tasks",
+            |module| {
+                program
+                    .tasks
+                    .iter()
+                    .filter(|candidate| task_module(candidate) == module)
+                    .count()
+            },
+        ));
+    }
+}
+
+fn module_move_affordance(
+    target: &str,
+    target_kind: &str,
+    parent: &str,
+    position: usize,
+    max_position: usize,
+    modules: &BTreeSet<String>,
+    source_module: &str,
+    parent_kind: &str,
+    destination_len: impl Fn(&str) -> usize,
+) -> MoveNodeAffordance {
+    let destinations = modules
+        .iter()
+        .filter(|module| module.as_str() != source_module)
+        .map(|module| {
+            let destination_parent = format!("module:{module}:{parent_kind}");
+            let max_position = destination_len(module);
+            MoveNodeDestination {
+                parent: destination_parent.clone(),
+                max_position,
+                operation: move_node_operation(target, &destination_parent, None, max_position),
+                editable_json_pointers: move_node_editable_json_pointers(),
+            }
+        })
+        .collect();
+    MoveNodeAffordance {
+        target: target.to_string(),
+        target_kind: target_kind.to_string(),
+        parent: parent.to_string(),
+        position,
+        max_position,
+        operation: move_node_operation(target, parent, None, position),
+        editable_json_pointers: move_node_editable_json_pointers(),
+        destinations,
+    }
 }
 
 fn collect_take_move_affordances(

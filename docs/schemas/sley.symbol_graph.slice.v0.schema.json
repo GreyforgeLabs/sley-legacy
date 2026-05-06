@@ -65,7 +65,7 @@
       ],
       "properties": {
         "target": { "type": "string" },
-        "target_kind": { "enum": ["statement", "take"] },
+        "target_kind": { "enum": ["import", "type", "effect", "task", "statement", "take"] },
         "parent": { "type": "string" },
         "position": { "type": "integer", "minimum": 0 },
         "max_position": { "type": "integer", "minimum": 0 },

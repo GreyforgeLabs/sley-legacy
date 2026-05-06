@@ -5639,6 +5639,83 @@ task main -> Int {
 }
 
 #[test]
+fn graph_slice_reports_module_move_affordances() {
+    let source = r#"
+module app.main
+
+import app.extra
+
+effect Audit
+
+type User = {
+  slot name: Text
+}
+
+task helper -> Int {
+  return 2
+}
+
+task main -> Int {
+  return 1
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let slice = slice_symbol_graph(&program, "module:app.main").expect("slice module");
+
+    let import = slice
+        .move_affordances
+        .iter()
+        .find(|affordance| affordance.target == "import:app.main:app.extra")
+        .expect("import move affordance");
+    assert_eq!(import.target_kind, "import");
+    assert_eq!(import.parent, "module:app.main:imports");
+    assert_eq!(
+        import.operation.pointer("/payload/parent"),
+        Some(&serde_json::json!("module:app.main:imports"))
+    );
+
+    let ty = slice
+        .move_affordances
+        .iter()
+        .find(|affordance| affordance.target == "type:app.main.User")
+        .expect("type move affordance");
+    assert_eq!(ty.target_kind, "type");
+    assert_eq!(ty.parent, "module:app.main:types");
+
+    let effect = slice
+        .move_affordances
+        .iter()
+        .find(|affordance| affordance.target == "effect:app.main.Audit")
+        .expect("effect move affordance");
+    assert_eq!(effect.target_kind, "effect");
+    assert_eq!(effect.parent, "module:app.main:effects");
+
+    let task = slice
+        .move_affordances
+        .iter()
+        .find(|affordance| affordance.target == "task:app.main.helper")
+        .expect("task move affordance");
+    assert_eq!(task.target_kind, "task");
+    assert_eq!(task.parent, "module:app.main:tasks");
+    assert_eq!(task.position, 0);
+    assert_eq!(task.max_position, 1);
+    let destination = task
+        .destinations
+        .iter()
+        .find(|destination| destination.parent == "module:app.extra:tasks")
+        .expect("task module destination");
+    assert_eq!(destination.max_position, 0);
+    assert_eq!(
+        destination.operation.pointer("/payload/parent"),
+        Some(&serde_json::json!("module:app.extra:tasks"))
+    );
+    let graft: GraftInput =
+        serde_json::from_value(destination.operation.clone()).expect("parse module move");
+    let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+}
+
+#[test]
 fn query_report_lists_checked_project_tasks() {
     let project_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("examples/project");
     let project = load_project(&project_root).expect("load project");

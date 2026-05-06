@@ -74,6 +74,25 @@
         "/payload/position"
       ],
       "destinations": []
+    },
+    {
+      "target": "task:main.main",
+      "target_kind": "task",
+      "parent": "module:main:tasks",
+      "position": 0,
+      "max_position": 0,
+      "operation": {
+        "op": "MoveNode",
+        "payload": {
+          "parent": "module:main:tasks",
+          "position": 0
+        },
+        "target": "task:main.main"
+      },
+      "editable_json_pointers": [
+        "/payload/position"
+      ],
+      "destinations": []
     }
   ],
   "outbound_calls": [],

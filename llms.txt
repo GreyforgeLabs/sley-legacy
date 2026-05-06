@@ -159,8 +159,9 @@ Current development phase:
   a `replace_expression` repair hint
 - graph, graph-slice, and query module import summaries expose canonical import
   node ids for graft targets such as `import:app.main:app.math`
-- graph slices expose `move_affordances` for bounded statement/take `MoveNode`
-  planning, including exact parent ids, safe destination insertion limits,
-  starter operation JSON, and editable JSON pointers
+- graph slices expose `move_affordances` for bounded import/type/effect/task,
+  statement, and take `MoveNode` planning, including exact parent ids,
+  destination insertion limits, starter operation JSON, and editable JSON
+  pointers
 - manifest-backed accepted/rejected synthetic gold corpus growth
 - broader graph-slice graft operations around move/delete planning

@@ -643,13 +643,14 @@ task. This is the first stable agent-facing query surface for graft planning.
 Import summaries expose canonical import node ids such as
 `import:app.main:app.shared`, so import `MoveNode` and `DeleteNode` grafts can
 copy targets directly from graph, graph-slice, or query JSON. Graph slices also
-include `move_affordances` for bounded statement and take movement planning:
-each affordance exposes the exact `MoveNode` target, current parent, current
-position, in-parent maximum position, and safe destination parents with their
-insertion limits. Affordances and destination entries also carry strict starter
-`MoveNode` operation JSON plus editable JSON pointers so agents can copy a
-template, adjust `/payload/position`, and dry-run the graft. Call-site and
-expression grafts now consume node ids and task identities from this shard.
+include `move_affordances` for bounded import, type, effect, task, statement,
+and take movement planning: each affordance exposes the exact `MoveNode`
+target, current parent, current position, in-parent maximum position, and
+available destination parents with their insertion limits. Affordances and
+destination entries also carry strict starter `MoveNode` operation JSON plus
+editable JSON pointers so agents can copy a template, adjust
+`/payload/position`, and dry-run the graft. Call-site and expression grafts now
+consume node ids and task identities from this shard.
 
 `sley query` is the first checked graph query report. It parses and checks the
 target before emitting results, so semantic failures return the normal
