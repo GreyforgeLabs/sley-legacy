@@ -546,7 +546,8 @@ The current smoke manifest covers:
   the owning task can return `Result`
 - unqualified imported-call style templates that rewrite simple imported calls
   to alias- or module-qualified calls before future imports can make them
-  ambiguous
+  ambiguous, with a write/query/verify smoke that proves `sley fix --write`
+  clears strict lint on a temp project
 - private declaration hygiene through the checked `unused_private_type` and
   `unused_private_effect` lint rules
 - import hygiene through the checked `unused_import` lint rule

@@ -2018,6 +2018,97 @@
       }
     },
     {
+      "name": "fix_unqualified_imported_call_project_write_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/qualify-import-call/sley.toml",
+          "content": "[project]\nname = \"qualify-import-call\"\nroot = \"src\"\nentry = \"app.main\"\n"
+        },
+        {
+          "path": "{tmp}/qualify-import-call/src/app/main.sley",
+          "content": "module app.main\n\nimport app.math as math\n\ntask main -> Int {\n  return call double(21)\n}\n"
+        },
+        {
+          "path": "{tmp}/qualify-import-call/src/app/math.sley",
+          "content": "module app.math\n\nexport task double -> Int {\n  take value: Int\n\n  return value * 2\n}\n"
+        }
+      ],
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "qualify_imported_call",
+        "--template-surface",
+        "block:task:app.main.main:stmt:0:expr",
+        "--write",
+        "--actor",
+        "agent:cli-smoke",
+        "{tmp}/qualify-import-call"
+      ],
+      "covers": [
+        "cli:fix",
+        "cli:fix-write",
+        "cli:smoke-setup-files",
+        "fix:write-source",
+        "graft:templates:qualified-import-call",
+        "json:sley.graft.outcome.v0",
+        "lint:unqualified_imported_call",
+        "readiness:project-lint-repair-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/actor", "value": "agent:cli-smoke" },
+          { "pointer": "/provenance/0/operation", "value": "ReplaceExpression" },
+          { "pointer": "/provenance/0/targets/0", "value": "block:task:app.main.main:stmt:0:expr" }
+        ]
+      }
+    },
+    {
+      "name": "query_unqualified_imported_call_project_write_json",
+      "args": ["query", "--json", "--kind", "calls", "{tmp}/qualify-import-call"],
+      "covers": [
+        "cli:query",
+        "query:calls",
+        "graft:templates:qualified-import-call",
+        "readiness:project-lint-repair-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.query.report.v0" },
+          { "pointer": "/calls/0/source", "value": "call math.double(21)" },
+          { "pointer": "/calls/0/callee", "value": "math.double" },
+          { "pointer": "/calls/0/target", "value": "app.math.double" }
+        ]
+      }
+    },
+    {
+      "name": "verify_unqualified_imported_call_project_write_json",
+      "args": ["verify", "--json", "--deny-warnings", "{tmp}/qualify-import-call"],
+      "covers": [
+        "cli:verify",
+        "json:sley.verify.report.v0",
+        "json:sley.lint.report.v0",
+        "lint:unqualified_imported_call",
+        "readiness:project-lint-repair-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.verify.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/summary/warning_count", "value": 0 },
+          { "pointer": "/summary/lint_finding_count", "value": 0 },
+          { "pointer": "/runtime/value/kind", "value": "Int" },
+          { "pointer": "/runtime/value/value", "value": 42 },
+          { "pointer": "/lint/status", "value": "ok" }
+        ]
+      }
+    },
+    {
       "name": "plan_missing_module_template_json",
       "args": [
         "plan",
