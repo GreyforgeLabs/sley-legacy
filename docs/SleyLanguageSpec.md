@@ -515,15 +515,17 @@ When the target is a project directory or `sley.toml`, `sley graft` loads the
 manifest entry module and transitively imported modules before checking the
 graft. Accepted project writeback projects the checked candidate AST back to the
 existing module files that own changed imports, types, effects, or tasks, and
-can create checked new module files under the project source root when the graft
-candidate owns declarations in those modules. It deletes loaded module files
-whose imports and declarations are removed from the checked candidate, and can
-rename module files by deleting the old loaded module file and creating the new
-checked module file. If the renamed module is the project entry module,
+can add imports to existing on-disk module files that were not yet loaded
+through the entry import graph after validating their module declarations. It
+can create checked new module files under the project source root when the
+graft candidate owns declarations in those modules. It deletes loaded module
+files whose imports and declarations are removed from the checked candidate,
+and can rename module files by deleting the old loaded module file and creating
+the new checked module file. If the renamed module is the project entry module,
 writeback updates `sley.toml` to point at the new entry. Unchanged module files
-are left byte-for-byte untouched. Project writeback rejects before mutation when
-a graft imports a missing module without adding checked declarations for it,
-using `PROJECT_WRITEBACK_UNKNOWN_IMPORT`.
+are left byte-for-byte untouched. Project writeback rejects before mutation
+when a graft imports a truly missing module without adding checked declarations
+for it, using `PROJECT_WRITEBACK_UNKNOWN_IMPORT`.
 
 `sley graft --dry-run` is an explicit non-mutating preview mode. Plain
 `sley graft` remains non-mutating by default; only `--write` changes source or
@@ -1034,6 +1036,8 @@ refuse generic data disguised as Sley artifacts before compression begins.
   checked cross-task take movement, top-level declaration ordering, and
   top-level import/type/effect/task movement into known modules; expression
   movement is still an explicit rejection
-- project graft writeback updates existing module files, creates checked new
-  module files, deletes removed module files, renames module files, and updates
-  the project manifest for entry-module renames
+- project graft writeback updates existing module files, adds imports to
+  existing on-disk module files that were not yet loaded through the entry
+  import graph, creates checked new module files, deletes removed module files,
+  renames module files, and updates the project manifest for entry-module
+  renames

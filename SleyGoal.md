@@ -40,7 +40,7 @@ Current verified surface:
 
 - `cargo fmt --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 214 tests.
+- Current integration coverage is 215 tests.
 - `sley query --json` emits `schema: "sley.query.report.v0"` and supports
   `--kind all|modules|tasks|types|effects|calls`, `--module <module>`, and
   `--exported`, including strict task/take/type/effect/call row definitions.
@@ -138,7 +138,9 @@ Current verified surface:
   redirection, follow-up `sley trace --trace <path>` receipt inspection, and
   `sley seal --trace <path>` plus `sley zjx --trace <path>` over non-empty
   receipt chains with recomputable graph digests while
-  `sley fix --dry-run --trace <path>` remains non-mutating.
+  `sley fix --dry-run --trace <path>` remains non-mutating, plus project
+  `AddImport` writeback into an existing on-disk module file that was not yet
+  loaded through the entry import graph followed by a strict project check.
 - Stable JSON roots now include bounded AST node reports, query reports, lint
   reports, doctor reports, edit-plan reports, verify reports, deploy dry-run
   reports, deploy artifact manifests, deploy artifact check reports, project

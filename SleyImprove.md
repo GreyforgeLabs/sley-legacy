@@ -331,7 +331,9 @@ file stem or project-relative source path. `DeleteNode` supports checked
 deletion of declarations, imports, takes, and statements.
 `MoveNode` supports checked in-parent statement reordering and top-level
 declaration ordering. Project-aware multi-file writeback now updates existing
-module files, creates checked new module files declared by the graft candidate,
+module files, can add an import to an existing on-disk module file that was not
+yet loaded through the entry import graph after validating its module
+declaration, creates checked new module files declared by the graft candidate,
 and deletes removed module files once the checked candidate no longer imports
 them. It also supports module rename by rewriting module ownership and imports,
 creating the renamed checked module file, and deleting the old loaded module
@@ -568,6 +570,9 @@ The current smoke manifest covers:
   `sley seal --trace <trace.jsonl>` sealing and
   `sley zjx --trace <trace.jsonl>` envelope transport over a non-empty receipt
   chain with a recomputable graph digest
+- project `AddImport` writeback into an existing on-disk module file that was
+  not yet loaded through the entry import graph, followed by a strict project
+  check
 - raw-host adapter migration templates that rewrite eligible raw host calls to
   fallible `try_` adapters with checked `?` propagation
 - unchecked-result migration templates that add checked `?` propagation when
