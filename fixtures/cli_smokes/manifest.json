@@ -9966,6 +9966,42 @@
       }
     },
     {
+      "name": "verify_agent_spend_authority_json",
+      "args": [
+        "verify",
+        "--json",
+        "--deny-warnings",
+        "--cap",
+        "Spend",
+        "--spend-result",
+        "ads-budget",
+        "authorized",
+        "fixtures/corpus/accepted/agent_spend_authority.sley"
+      ],
+      "covers": [
+        "cli:verify",
+        "json:sley.verify.report.v0",
+        "host:Spend",
+        "authority:transitive-effects",
+        "readiness:verify-package-next-action",
+        "runtime:seeded-host-authority"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.verify.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/target", "value": "fixtures/corpus/accepted/agent_spend_authority.sley" },
+          { "pointer": "/summary/runtime_status", "value": "passed" },
+          { "pointer": "/runtime/value/kind", "value": "Ok" },
+          { "pointer": "/runtime/value/value/kind", "value": "Text" },
+          { "pointer": "/runtime/value/value/value", "value": "budget gate: authorized" },
+          { "pointer": "/next_actions/0/kind", "value": "seal_verified_target" },
+          { "pointer": "/next_actions/1/kind", "value": "package_verified_target" }
+        ]
+      }
+    },
+    {
       "name": "run_spend_scope_denied_json",
       "args": [
         "run",
