@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.migrate.report.v0",
+  "title": "Sley Migrate Report v0",
+  "type": "object",
+  "required": [
+    "schema",
+    "status",
+    "target",
+    "source_schema",
+    "summary",
+    "migrations",
+    "schema_drift",
+    "diagnostics",
+    "issues"
+  ],
+  "properties": {
+    "schema": { "const": "sley.migrate.report.v0" },
+    "status": { "enum": ["ready", "migrations", "blocked"] },
+    "target": { "type": "string", "minLength": 1 },
+    "source_schema": { "const": "sley.edit_plan.report.v0" },
+    "summary": { "$ref": "#/$defs/summary" },
+    "migrations": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/migration" }
+    },
+    "schema_drift": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/schemaDrift" }
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "issues": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/issue" }
+    }
+  },
+  "$defs": {
+    "summary": {
+      "type": "object",
+      "required": [
+        "diagnostic_count",
+        "migration_count",
+        "raw_host_adapter_count",
+        "module_declaration_count",
+        "naming_cleanup_count",
+        "result_propagation_count",
+        "schema_drift_count",
+        "issue_count"
+      ],
+      "properties": {
+        "diagnostic_count": { "type": "integer", "minimum": 0 },
+        "migration_count": { "type": "integer", "minimum": 0 },
+        "raw_host_adapter_count": { "type": "integer", "minimum": 0 },
+        "module_declaration_count": { "type": "integer", "minimum": 0 },
+        "naming_cleanup_count": { "type": "integer", "minimum": 0 },
+        "result_propagation_count": { "type": "integer", "minimum": 0 },
+        "schema_drift_count": { "type": "integer", "minimum": 0 },
+        "issue_count": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "migration": {
+      "type": "object",
+      "required": [
+        "kind",
+        "category",
+        "surface",
+        "reason",
+        "dry_run_command",
+        "write_command",
+        "editable_json_pointers",
+        "operation"
+      ],
+      "properties": {
+        "kind": { "type": "string", "minLength": 1 },
+        "category": {
+          "enum": [
+            "module_declaration",
+            "raw_host_adapter",
+            "naming_cleanup",
+            "result_propagation"
+          ]
+        },
+        "surface": { "type": "string", "minLength": 1 },
+        "reason": { "type": "string", "minLength": 1 },
+        "dry_run_command": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        },
+        "write_command": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        },
+        "editable_json_pointers": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "operation": { "type": "object" }
+      },
+      "additionalProperties": false
+    },
+    "schemaDrift": {
+      "type": "object",
+      "required": ["kind", "schema_id", "path", "message"],
+      "properties": {
+        "kind": { "enum": ["fixture_without_schema", "schema_without_fixture"] },
+        "schema_id": { "type": "string", "minLength": 1 },
+        "path": { "type": "string" },
+        "message": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "issue": {
+      "type": "object",
+      "required": ["code", "message"],
+      "properties": {
+        "code": { "type": "string", "minLength": 1 },
+        "message": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

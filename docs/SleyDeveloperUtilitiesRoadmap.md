@@ -231,6 +231,12 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
     - Checked migration helpers for language or contract changes.
     - MVP: raw host adapter migration, module declaration insertion, old naming
       cleanup, and schema-version drift reports.
+    - Current bootstrap: in-tree `src/bin/sley-migrate.rs` reports checked
+      source migrations from existing edit-plan templates for module
+      declarations, raw host adapters, imported-call naming cleanup, and
+      unchecked-result propagation, emits `schema: "sley.migrate.report.v0"`,
+      and can optionally compare schema files against contract fixtures for
+      drift without mutating source files.
 
 11. `sley-docgen`
     - Generates human docs from `sley query` reports and source examples.
