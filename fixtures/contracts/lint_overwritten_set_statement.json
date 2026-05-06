@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.overwritten_set",
+  "filters": {
+    "module": null,
+    "rules": [
+      "overwritten_set_statement"
+    ]
+  },
+  "findings": [
+    {
+      "id": "OVERWRITTEN_SET_STATEMENT",
+      "rule": "overwritten_set_statement",
+      "severity": "warning",
+      "message": "task `app.overwritten_set.main` sets `count` and immediately overwrites it before any read",
+      "node": "block:task:app.overwritten_set.main:stmt:1",
+      "module": "app.overwritten_set",
+      "hint": "delete the first `set count = ...` statement"
+    }
+  ]
+}

@@ -61,6 +61,7 @@ pub enum LintRule {
     UnreachableStatement,
     AbsorbingArithmeticExpression,
     SelfAssignmentStatement,
+    OverwrittenSetStatement,
 }
 
 impl LintRule {
@@ -108,6 +109,7 @@ impl LintRule {
             Self::UnreachableStatement,
             Self::AbsorbingArithmeticExpression,
             Self::SelfAssignmentStatement,
+            Self::OverwrittenSetStatement,
         ]
     }
 
@@ -155,6 +157,7 @@ impl LintRule {
             Self::UnreachableStatement => "unreachable_statement",
             Self::AbsorbingArithmeticExpression => "absorbing_arithmetic_expression",
             Self::SelfAssignmentStatement => "self_assignment_statement",
+            Self::OverwrittenSetStatement => "overwritten_set_statement",
         }
     }
 }
@@ -269,6 +272,12 @@ pub fn build_lint_report(program: &Program, options: LintOptions) -> LintReport 
     }
     if rules.contains(&LintRule::SelfAssignmentStatement) {
         findings.extend(lint_self_assignment_statements(
+            program,
+            options.module.as_deref(),
+        ));
+    }
+    if rules.contains(&LintRule::OverwrittenSetStatement) {
+        findings.extend(lint_overwritten_set_statements(
             program,
             options.module.as_deref(),
         ));
@@ -1028,6 +1037,18 @@ fn lint_self_assignment_statements(program: &Program, module: Option<&str>) -> V
         .filter(|task| module_matches(module, &task_module(task)))
     {
         collect_self_assignment_statements_in_block(task, &task.body, &mut findings);
+    }
+    findings
+}
+
+fn lint_overwritten_set_statements(program: &Program, module: Option<&str>) -> Vec<LintFinding> {
+    let mut findings = Vec::new();
+    for task in program
+        .tasks
+        .iter()
+        .filter(|task| module_matches(module, &task_module(task)))
+    {
+        collect_overwritten_set_statements_in_block(task, &task.body, &mut findings);
     }
     findings
 }
@@ -4573,6 +4594,67 @@ fn identifier_name(expr: &Expr) -> Option<&str> {
     match &expr.kind {
         ExprKind::Identifier { name } => Some(name),
         _ => None,
+    }
+}
+
+fn collect_overwritten_set_statements_in_block(
+    task: &TaskDecl,
+    block: &Block,
+    findings: &mut Vec<LintFinding>,
+) {
+    for pair in block.statements.windows(2) {
+        let current = &pair[0];
+        let next = &pair[1];
+        if let (
+            StatementKind::Set { name, expr },
+            StatementKind::Set {
+                name: next_name,
+                expr: next_expr,
+            },
+        ) = (&current.kind, &next.kind)
+            && name == next_name
+            && identifier_name(expr) != Some(name.as_str())
+            && identifier_name(next_expr) != Some(name.as_str())
+            && expr_is_delete_safe_pure(expr)
+            && expr_is_delete_safe_pure(next_expr)
+        {
+            let task_name = task_fq_name(task);
+            findings.push(LintFinding {
+                id: "OVERWRITTEN_SET_STATEMENT".to_string(),
+                rule: LintRule::OverwrittenSetStatement.as_str().to_string(),
+                severity: "warning".to_string(),
+                message: format!(
+                    "task `{task_name}` sets `{name}` and immediately overwrites it before any read"
+                ),
+                node: current.id.clone(),
+                module: task_module(task),
+                hint: format!("delete the first `set {name} = ...` statement"),
+            });
+        }
+    }
+
+    for statement in &block.statements {
+        match &statement.kind {
+            StatementKind::If {
+                then_block,
+                else_block,
+                ..
+            } => {
+                collect_overwritten_set_statements_in_block(task, then_block, findings);
+                if let Some(else_block) = else_block {
+                    collect_overwritten_set_statements_in_block(task, else_block, findings);
+                }
+            }
+            StatementKind::While { body, .. }
+            | StatementKind::For { body, .. }
+            | StatementKind::Forge { body } => {
+                collect_overwritten_set_statements_in_block(task, body, findings);
+            }
+            StatementKind::Binding { .. }
+            | StatementKind::Set { .. }
+            | StatementKind::Return { .. }
+            | StatementKind::Expr { .. } => {}
+        }
     }
 }
 

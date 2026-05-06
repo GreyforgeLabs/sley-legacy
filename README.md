@@ -116,8 +116,8 @@ Implemented now:
   `--rule missing-module-declaration`, `--rule unchecked-result`, or
   `--rule unqualified-imported-call`, `--rule unused-pure-binding`,
   `--rule unused-pure-expression-statement`, or
-  `--rule mutable-binding-never-set`, `--rule constant-if-expression`,
-  `--rule self-assignment-statement`,
+  `--rule mutable-binding-never-set`, `--rule self-assignment-statement`,
+  `--rule overwritten-set-statement`, `--rule constant-if-expression`,
   `--rule constant-if-statement`,
   `--rule constant-false-if-statement`,
   `--rule constant-false-while-statement`,
@@ -190,6 +190,8 @@ Implemented now:
   expression statements,
   `delete_self_assignment_statement` templates for no-op `set name = name`
   mutations,
+  `delete_overwritten_set_statement` templates for dead `set` statements
+  immediately overwritten before any read,
   `simplify_constant_if_expression` templates for constant `if` expressions
   that can be replaced by the branch that executes,
   `simplify_constant_if_statement` templates for constant `if` statements that
@@ -733,6 +735,7 @@ empty-if statement delete templates with write/verify coverage,
 empty-for statement delete templates with write/verify coverage,
 empty-forge statement delete templates with write/verify coverage,
 no-op self-assignment statement delete templates with write/verify coverage,
+overwritten set statement delete templates with write/verify coverage,
 identity binary expression simplification templates, including empty-text
 concatenation cleanup, with write/verify coverage,
 redundant boolean comparison simplification templates with write/verify
