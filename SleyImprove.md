@@ -175,20 +175,22 @@ Rules:
   `move_statement`,
   `move_take`, and destination-variant templates when legal graph-slice
   destinations exist. Agents can target a specific task surface by node id or
-  qualified name, a statement or take node id for direct checked graph-slice
-  move/delete templates, an expression node id for a checked no-op
-  `replace_expression` starter, the `program` missing-module surface, or a lint
-  finding node id. Agents can use `--emit-graft <kind>` to print
+  qualified name, a block node id for a checked `insert_statement` starter, a
+  statement or take node id for direct checked graph-slice move/delete
+  templates, an expression node id for a checked no-op `replace_expression`
+  starter, the `program` missing-module surface, or a lint finding node id.
+  Agents can use `--emit-graft <kind>` to print
   one matching operation or transaction JSON directly for dry-run or write-mode
   `sley graft`.
 - `sley fix` consumes the same plan templates, selects one named operation or
   transaction kind, applies it through the graft checker, and emits
   `sley.graft.outcome.v0`; it is non-mutating by default and mutates only with
-  explicit `--write`. Exact statement, nested statement, take, and expression
-  node surfaces are covered by non-mutating fix dry-run smokes so agents can
-  execute a chosen checked node template without hand-authoring graft JSON.
-  Accepted write-mode fixes use the default trace sidecar or an explicit
-  `--trace <trace.jsonl>` receipt path; dry-run fixes never append receipts.
+  explicit `--write`. Exact block, nested block, statement, nested statement,
+  take, and expression node surfaces are covered by non-mutating fix dry-run
+  smokes so agents can execute a chosen checked node template without
+  hand-authoring graft JSON. Accepted write-mode fixes use the default trace
+  sidecar or an explicit `--trace <trace.jsonl>` receipt path; dry-run fixes
+  never append receipts.
 - `sley verify` is the deterministic CI/pre-deploy helper consuming strict
   check, `sley.query.report.v0`, `sley.lint.report.v0`, and seeded runtime
   execution into one pass/warnings/blocked report; warning and denied-warning

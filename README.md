@@ -156,15 +156,16 @@ Implemented now:
   statements that can be safely rewritten with `?`,
   `qualify_imported_call` templates for simple imported task calls that should
   be alias- or module-qualified,
-  `--template-surface <surface>` targeting for task, statement, take,
-  expression, program, or lint surfaces, `--emit-graft <kind>` for direct
+  `--template-surface <surface>` targeting for task, block, statement, take,
+  expression, program, or lint surfaces, including checked block
+  `insert_statement` starters, `--emit-graft <kind>` for direct
   operation/transaction JSON handoff to `sley graft`, and
   `schema: "sley.edit_plan.report.v0"`
 - checked JSON fix previews with `sley fix --kind <kind>`, consuming the same
   plan graft templates and applying one named operation or transaction through
-  the graft checker, including exact statement/take/expression node surfaces
-  selected with `--template-surface`, and including `add_module_declaration` for
-  `missing_module_declaration` lint findings with contextual module-name
+  the graft checker, including exact block/statement/take/expression node
+  surfaces selected with `--template-surface`, and including
+  `add_module_declaration` for `missing_module_declaration` lint findings with contextual module-name
   inference; default and `--dry-run` mode stay non-mutating, while `--write`
   uses the same checked writeback, trace receipts, optional
   `--trace <trace.jsonl>` receipt path, and

@@ -1467,6 +1467,92 @@ task main -> Int {
 }
 
 #[test]
+fn edit_plan_graft_templates_can_target_block_surfaces() {
+    let source = r#"
+module app.plan
+
+task main -> Int {
+  if true {
+    return 1
+  } else {
+    return 0
+  }
+}
+"#;
+    let program = parse_program(source).expect("parse block surface plan fixture");
+    let top_block = "block:task:app.plan.main";
+    let report = build_edit_plan_report_with_options(
+        "app.plan",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some(top_block.to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "ready");
+    assert!(report.diagnostics.is_empty());
+    assert_eq!(report.graft_templates.len(), 1);
+    let template = &report.graft_templates[0];
+    assert_eq!(template.kind, "insert_statement");
+    assert_eq!(template.surface, top_block);
+    assert_eq!(
+        template.operation.pointer("/op"),
+        Some(&serde_json::json!("InsertStatement"))
+    );
+    assert_eq!(
+        template.operation.pointer("/target"),
+        Some(&serde_json::json!(top_block))
+    );
+    assert_eq!(
+        template.operation.pointer("/payload/source"),
+        Some(&serde_json::json!("forge { }"))
+    );
+    assert_eq!(
+        template.operation.pointer("/payload/position"),
+        Some(&serde_json::json!(0))
+    );
+    assert_eq!(
+        template.editable_json_pointers,
+        vec![
+            "/payload/source".to_string(),
+            "/payload/position".to_string()
+        ]
+    );
+    let graft: GraftInput =
+        serde_json::from_value(template.operation.clone()).expect("parse block insert template");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:block-surface-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+
+    let nested_block = "block:task:app.plan.main:stmt:0:then";
+    let nested_report = build_edit_plan_report_with_options(
+        "app.plan",
+        Ok(program),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some(nested_block.to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(nested_report.status, "ready");
+    assert_eq!(nested_report.graft_templates.len(), 1);
+    assert_eq!(nested_report.graft_templates[0].kind, "insert_statement");
+    assert_eq!(nested_report.graft_templates[0].surface, nested_block);
+    assert_eq!(
+        nested_report.graft_templates[0]
+            .operation
+            .pointer("/target"),
+        Some(&serde_json::json!(nested_block))
+    );
+}
+
+#[test]
 fn edit_plan_graft_templates_include_move_destinations() {
     let source = r#"
 module app.plan
@@ -3115,6 +3201,35 @@ task main -> Int {
     assert!(grafted_source.contains("set total = total + 4"));
     let grafted = parse_program(&grafted_source).expect("parse grafted source");
     assert_eq!(run_main(&grafted), Ok(Value::Int(5)));
+}
+
+#[test]
+fn insert_statement_graft_adds_checked_nested_block_statement() {
+    let source = r#"
+task main -> Int {
+  state total = 1
+  if true {
+    set total = total + 4
+  }
+  return total
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let graft_source = r#"
+{
+  "op": "InsertStatement",
+  "target": "block:task:main.main:stmt:1:then",
+  "payload": { "source": "set total = total + 37", "position": 1 }
+}
+"#;
+    let graft: GraftInput = serde_json::from_str(graft_source).expect("parse graft");
+    let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
+
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted_source = outcome.source.expect("grafted source");
+    assert!(grafted_source.contains("set total = total + 37"));
+    let grafted = parse_program(&grafted_source).expect("parse grafted source");
+    assert_eq!(run_main(&grafted), Ok(Value::Int(42)));
 }
 
 #[test]
