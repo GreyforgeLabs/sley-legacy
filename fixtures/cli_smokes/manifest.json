@@ -10154,6 +10154,104 @@
       }
     },
     {
+      "name": "run_agent_data_authority_json",
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "DatabaseRead",
+        "--cap",
+        "DatabaseWrite",
+        "fixtures/corpus/accepted/agent_data_authority.sley"
+      ],
+      "covers": [
+        "cli:run",
+        "json:sley.run.report.v0",
+        "host:DatabaseRead",
+        "host:DatabaseWrite",
+        "authority:transitive-effects",
+        "runtime:seeded-host-authority"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.run.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/target", "value": "fixtures/corpus/accepted/agent_data_authority.sley" },
+          { "pointer": "/value/kind", "value": "Ok" },
+          { "pointer": "/value/value/kind", "value": "Text" },
+          { "pointer": "/value/value/value", "value": "profile: Kai" }
+        ]
+      }
+    },
+    {
+      "name": "verify_agent_data_authority_json",
+      "args": [
+        "verify",
+        "--json",
+        "--deny-warnings",
+        "--cap",
+        "DatabaseRead",
+        "--cap",
+        "DatabaseWrite",
+        "fixtures/corpus/accepted/agent_data_authority.sley"
+      ],
+      "covers": [
+        "cli:verify",
+        "json:sley.verify.report.v0",
+        "host:DatabaseRead",
+        "host:DatabaseWrite",
+        "authority:transitive-effects",
+        "readiness:verify-package-next-action",
+        "runtime:seeded-host-authority"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.verify.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/target", "value": "fixtures/corpus/accepted/agent_data_authority.sley" },
+          { "pointer": "/summary/runtime_status", "value": "passed" },
+          { "pointer": "/runtime/value/kind", "value": "Ok" },
+          { "pointer": "/runtime/value/value/kind", "value": "Text" },
+          { "pointer": "/runtime/value/value/value", "value": "profile: Kai" },
+          { "pointer": "/next_actions/0/kind", "value": "seal_verified_target" },
+          { "pointer": "/next_actions/1/kind", "value": "package_verified_target" }
+        ]
+      }
+    },
+    {
+      "name": "run_agent_data_scope_denied_json",
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "DatabaseRead=user",
+        "--cap",
+        "DatabaseWrite=orders",
+        "fixtures/corpus/accepted/agent_data_authority.sley"
+      ],
+      "covers": [
+        "cli:run",
+        "json:sley.diagnostics.report.v0",
+        "diagnostic:RUNTIME_CAPABILITY_SCOPE_DENIED",
+        "host:DatabaseRead",
+        "host:DatabaseWrite",
+        "host:scoped-capability",
+        "authority:transitive-effects"
+      ],
+      "expect": {
+        "success": false,
+        "stderr_contains": ["operation failed"],
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.diagnostics.report.v0" },
+          { "pointer": "/status", "value": "error" },
+          { "pointer": "/diagnostics/0/id", "value": "RUNTIME_CAPABILITY_SCOPE_DENIED" },
+          { "pointer": "/diagnostics/0/node", "value": "block:task:corpus.accepted.agent_data_authority.upsert_profile:stmt:0:expr:try" }
+        ]
+      }
+    },
+    {
       "name": "run_spend_scope_denied_json",
       "args": [
         "run",

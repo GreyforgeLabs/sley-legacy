@@ -127,6 +127,17 @@
       ]
     },
     {
+      "path": "accepted/agent_data_authority.sley",
+      "covers": [
+        "accepted:agent-data-authority",
+        "host:db.try_insert",
+        "host:db.try_query_one",
+        "authority:declared-effects",
+        "authority:transitive-effects",
+        "formatter:round-trip"
+      ]
+    },
+    {
       "path": "accepted/mutable_sum.sley",
       "covers": [
         "language:mutable-loop",
@@ -256,6 +267,17 @@
       "covers": [
         "rejected:spend-transitive-effect",
         "host:spend.try_authorize",
+        "authority:missing-effect",
+        "authority:transitive-effects",
+        "diagnostic:EFFECT_UNAUTHORIZED"
+      ]
+    },
+    {
+      "path": "rejected/authority/missing_transitive_data_write_effect.sley",
+      "covers": [
+        "rejected:data-write-transitive-effect",
+        "host:db.try_insert",
+        "host:db.try_query_one",
         "authority:missing-effect",
         "authority:transitive-effects",
         "diagnostic:EFFECT_UNAUTHORIZED"

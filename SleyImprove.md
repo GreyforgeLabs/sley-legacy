@@ -235,8 +235,9 @@ Rules:
   passes seeded check, lint, run, verify, deploy, examples conformance, scoped
   imported-host authority, and CLI smoke gates.
 - The accepted/rejected synthetic gold corpus now includes split-task agent
-  authority fixtures for transitive effect propagation, so helper-task authority
-  drift is covered outside the large CLI smoke manifest too.
+  authority fixtures for transitive deploy, spend, and data mutation effect
+  propagation, so helper-task authority drift is covered outside the large CLI
+  smoke manifest too.
 - The synthetic gold corpus now includes accepted/rejected module namespace
   fixtures for exported declarations and duplicate type/effect/task
   diagnostics.

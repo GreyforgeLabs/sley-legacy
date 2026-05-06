@@ -466,5 +466,5 @@ Current development phase:
   through `sley fix --source` or `--source-file`, and name-backed starters can
   use `--name`
 - manifest-backed accepted/rejected synthetic gold corpus growth, including
-  spend helper boundaries for transitive authority checks
+  spend and data helper boundaries for transitive authority checks
 - broader graph-slice graft operations around insert/move/delete/replace planning
