@@ -452,7 +452,7 @@ the built `sley` binary.
 The current smoke manifest covers:
 
 - parse, format, check, run, ast, graph, graph-slice, query, lint, trace, seal,
-  zjx, and graft dry-run commands
+  zjx, and graft dry-run/write commands
 - stable JSON roots for AST programs, diagnostics, symbol graphs, graph slices,
   query reports, lint reports, trace seals, graft outcomes, and ZJX preview
   envelopes
@@ -475,7 +475,8 @@ The current smoke manifest covers:
 - lint-driven unused-import `DeleteNode` templates and checked `sley fix` dry
   runs
 - manifest-staged temp files for write-mode smokes, including
-  `sley fix --write --trace <trace.jsonl>` receipt redirection and follow-up
+  direct `sley graft --write --trace <trace.jsonl>` source mutation,
+  `sley fix --write --trace <trace.jsonl>` receipt redirection, and follow-up
   `sley trace --trace <trace.jsonl>` receipt inspection
 - raw-host adapter migration templates that rewrite eligible raw host calls to
   fallible `try_` adapters with checked `?` propagation

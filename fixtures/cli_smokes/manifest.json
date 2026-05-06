@@ -1157,6 +1157,95 @@
       }
     },
     {
+      "name": "graft_add_take_write_trace_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/graft-write/main.sley",
+          "content": "module graft_write\n\ntask main -> Int {\n  return 1\n}\n"
+        },
+        {
+          "path": "{tmp}/graft-write/add_take.json",
+          "content": "{\n  \"op\": \"AddTake\",\n  \"target\": \"task:graft_write.main\",\n  \"payload\": { \"name\": \"amount\", \"type\": \"Int\" }\n}\n"
+        }
+      ],
+      "args": [
+        "graft",
+        "--json",
+        "--write",
+        "--actor",
+        "agent:cli-smoke",
+        "--trace",
+        "{tmp}/graft-write/trace.jsonl",
+        "{tmp}/graft-write/main.sley",
+        "{tmp}/graft-write/add_take.json"
+      ],
+      "covers": [
+        "cli:graft-write",
+        "cli:smoke-setup-files",
+        "graft:operations:add-take",
+        "graft:write-source",
+        "json:sley.graft.outcome.v0",
+        "trace:explicit-path"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/actor", "value": "agent:cli-smoke" },
+          { "pointer": "/provenance/0/operation", "value": "AddTake" },
+          { "pointer": "/provenance/0/targets/0", "value": "task:graft_write.main" }
+        ]
+      }
+    },
+    {
+      "name": "trace_graft_write_explicit_trace_json",
+      "args": [
+        "trace",
+        "--json",
+        "--trace",
+        "{tmp}/graft-write/trace.jsonl",
+        "{tmp}/graft-write/main.sley"
+      ],
+      "covers": [
+        "cli:trace",
+        "json:sley.trace.receipt.v0",
+        "trace:explicit-path"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/0/schema", "value": "sley.trace.receipt.v0" },
+          { "pointer": "/0/provenance/0/actor", "value": "agent:cli-smoke" },
+          { "pointer": "/0/provenance/0/operation", "value": "AddTake" }
+        ]
+      }
+    },
+    {
+      "name": "query_graft_write_temp_source_json",
+      "args": [
+        "query",
+        "--json",
+        "--kind",
+        "tasks",
+        "{tmp}/graft-write/main.sley"
+      ],
+      "covers": [
+        "cli:query",
+        "graft:write-source",
+        "json:sley.query.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.query.report.v0" },
+          { "pointer": "/tasks/0/qualified_name", "value": "graft_write.main" },
+          { "pointer": "/tasks/0/takes/0/name", "value": "amount" },
+          { "pointer": "/tasks/0/takes/0/type", "value": "Int" }
+        ]
+      }
+    },
+    {
       "name": "trace_hello_json",
       "args": ["trace", "--json", "examples/hello.sley"],
       "covers": ["cli:trace"],

@@ -613,9 +613,10 @@ setup files, coverage tags, and stdout expectations. The integration suite runs
 the manifest against the built `sley` binary and locks stable command exits,
 selected stdout substrings, JSON root schemas, graph slices, checked query
 reports, checked lint reports, doctor readiness reports, edit-plan reports,
-project scaffolds, ZJX preview envelopes, graft dry runs, write-mode fix trace
-receipts, graph-slice replace affordances, checked `replace_expression` graft
-templates, typed deploy scaffold next-actions, and seeded host-adapter
+project scaffolds, ZJX preview envelopes, graft dry runs and direct graft
+writes, write-mode fix trace receipts, graph-slice replace affordances, checked
+`replace_expression` graft templates, typed deploy scaffold next-actions, and
+seeded host-adapter
 execution for `FileRead`, `FileWrite`, `DatabaseRead`, `DatabaseWrite`,
 `Network`, `Shell`, `ModelCall`, `SecretRead`, `Deploy`, and `Spend`.
 

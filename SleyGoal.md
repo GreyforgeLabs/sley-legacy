@@ -74,8 +74,9 @@ Current verified surface:
   transactions for grouped unused/unreachable private task deletion, plus
   checked `unused_take` and `unused_declared_effect` remove templates and fix
   dry runs, plus manifest-staged temp files for write-mode CLI smokes,
-  explicit `sley fix --write --trace <path>` receipt redirection, and
-  follow-up `sley trace --trace <path>` receipt inspection while
+  direct `sley graft --write --trace <path>` source mutation and receipt
+  redirection, explicit `sley fix --write --trace <path>` receipt
+  redirection, and follow-up `sley trace --trace <path>` receipt inspection while
   `sley fix --dry-run --trace <path>` remains non-mutating.
 - Stable JSON roots now include query reports, lint reports, doctor reports,
   edit-plan reports, verify reports, project scaffold reports, and the CLI
