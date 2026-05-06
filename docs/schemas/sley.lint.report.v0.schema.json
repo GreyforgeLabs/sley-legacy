@@ -7,7 +7,7 @@
   "properties": {
     "schema": { "const": "sley.lint.report.v0" },
     "status": { "enum": ["ok", "findings"] },
-    "entry_module": { "type": "string" },
+    "entry_module": { "type": "string", "minLength": 1 },
     "filters": {
       "type": "object",
       "required": ["module", "rules"],
@@ -185,10 +185,10 @@
             ]
           },
           "severity": { "enum": ["warning"] },
-          "message": { "type": "string" },
-          "node": { "type": "string" },
-          "module": { "type": "string" },
-          "hint": { "type": "string" }
+          "message": { "type": "string", "minLength": 1 },
+          "node": { "type": "string", "minLength": 1 },
+          "module": { "type": "string", "minLength": 1 },
+          "hint": { "type": "string", "minLength": 1 }
         },
         "additionalProperties": false
       }
