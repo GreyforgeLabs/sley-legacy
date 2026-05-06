@@ -9935,6 +9935,37 @@
       }
     },
     {
+      "name": "run_agent_spend_authority_json",
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "Spend",
+        "--spend-result",
+        "ads-budget",
+        "authorized",
+        "fixtures/corpus/accepted/agent_spend_authority.sley"
+      ],
+      "covers": [
+        "cli:run",
+        "json:sley.run.report.v0",
+        "host:Spend",
+        "authority:transitive-effects",
+        "runtime:seeded-host-authority"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.run.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/target", "value": "fixtures/corpus/accepted/agent_spend_authority.sley" },
+          { "pointer": "/value/kind", "value": "Ok" },
+          { "pointer": "/value/value/kind", "value": "Text" },
+          { "pointer": "/value/value/value", "value": "budget gate: authorized" }
+        ]
+      }
+    },
+    {
       "name": "run_spend_scope_denied_json",
       "args": [
         "run",
