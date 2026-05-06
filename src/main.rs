@@ -5,10 +5,11 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand, ValueEnum};
+use serde::Serialize;
 use serde_json::Value as JsonValue;
 use sley::Program;
 use sley::checker::{check_program, has_errors};
-use sley::deploy::{DeployReport, build_deploy_report};
+use sley::deploy::{DeployArtifacts, DeployReport, build_deploy_report};
 use sley::diagnostics::{Diagnostic, DiagnosticReport, RepairHint};
 use sley::doctor::{DoctorReport, build_doctor_report};
 use sley::formatter::format_program;
@@ -192,6 +193,8 @@ enum Command {
         json: bool,
         #[arg(long)]
         dry_run: bool,
+        #[arg(long = "artifacts-dir")]
+        artifacts_dir: Option<PathBuf>,
         #[arg(long, default_value = "staging")]
         environment: String,
         #[arg(long = "cap", value_name = "EFFECT[=ROOT]")]
@@ -668,6 +671,7 @@ fn run(cli: Cli) -> Result<()> {
         Command::Deploy {
             json,
             dry_run,
+            artifacts_dir,
             environment,
             cap,
             db_table,
@@ -727,7 +731,26 @@ fn run(cli: Cli) -> Result<()> {
                     (verify, None, None)
                 }
             };
-            let report = build_deploy_report(target, environment, verify, seal, package);
+            let artifacts = if verify.status == "passed" {
+                artifacts_dir
+                    .as_ref()
+                    .map(|directory| deploy_artifacts(directory))
+            } else {
+                None
+            };
+            let report = build_deploy_report(
+                target,
+                environment,
+                verify,
+                seal.clone(),
+                package.clone(),
+                artifacts,
+            );
+            if let Some(directory) = &artifacts_dir
+                && report.status == "ready"
+            {
+                write_deploy_artifacts(directory, &report, seal.as_ref(), package.as_ref())?;
+            }
             if json {
                 print_json(&report)?;
             } else {
@@ -1711,6 +1734,44 @@ fn project_source_bytes(project: &ProjectGraph) -> Result<Vec<u8>> {
     Ok(bytes)
 }
 
+fn deploy_artifacts(directory: &Path) -> DeployArtifacts {
+    DeployArtifacts {
+        directory: normalized_path(directory),
+        report: normalized_path(&directory.join("deploy-report.json")),
+        seal: normalized_path(&directory.join("seal.json")),
+        package: normalized_path(&directory.join("zjx-envelope.json")),
+    }
+}
+
+fn write_deploy_artifacts(
+    directory: &Path,
+    report: &DeployReport,
+    seal: Option<&TraceSeal>,
+    package: Option<&sley::zjx::SleyZjxEnvelope>,
+) -> Result<()> {
+    fs::create_dir_all(directory).with_context(|| {
+        format!(
+            "failed to create deploy artifacts dir {}",
+            directory.display()
+        )
+    })?;
+    write_json_file(&directory.join("deploy-report.json"), report)?;
+    if let Some(seal) = seal {
+        write_json_file(&directory.join("seal.json"), seal)?;
+    }
+    if let Some(package) = package {
+        write_json_file(&directory.join("zjx-envelope.json"), package)?;
+    }
+    Ok(())
+}
+
+fn write_json_file<T: Serialize>(path: &Path, value: &T) -> Result<()> {
+    let file =
+        fs::File::create(path).with_context(|| format!("failed to create {}", path.display()))?;
+    serde_json::to_writer_pretty(file, value)
+        .with_context(|| format!("failed to write JSON {}", path.display()))
+}
+
 fn normalized_path(path: &Path) -> String {
     path.to_string_lossy().replace('\\', "/")
 }
@@ -1956,6 +2017,12 @@ fn print_human_deploy_report(report: &DeployReport) {
     }
     if let Some(digest) = &report.summary.graph_digest {
         println!("graph_digest={digest}");
+    }
+    if let Some(artifacts) = &report.artifacts {
+        println!(
+            "artifacts dir={} report={} seal={} package={}",
+            artifacts.directory, artifacts.report, artifacts.seal, artifacts.package
+        );
     }
     for action in &report.next_actions {
         println!(

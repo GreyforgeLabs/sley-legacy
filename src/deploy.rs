@@ -20,6 +20,8 @@ pub struct DeployReport {
     pub seal: Option<TraceSeal>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub package: Option<DeployPackageSummary>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub artifacts: Option<DeployArtifacts>,
     pub next_actions: Vec<DeployAction>,
 }
 
@@ -57,6 +59,14 @@ pub struct DeployPackageSummary {
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct DeployArtifacts {
+    pub directory: String,
+    pub report: String,
+    pub seal: String,
+    pub package: String,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct DeployAction {
     pub kind: String,
     pub reason: String,
@@ -69,6 +79,7 @@ pub fn build_deploy_report(
     verify: VerifyReport,
     seal: Option<TraceSeal>,
     package: Option<SleyZjxEnvelope>,
+    artifacts: Option<DeployArtifacts>,
 ) -> DeployReport {
     let target = target.into();
     let environment = environment.into();
@@ -110,6 +121,7 @@ pub fn build_deploy_report(
         verify,
         seal,
         package,
+        artifacts,
         next_actions,
     }
 }

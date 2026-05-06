@@ -173,7 +173,9 @@ Implemented now:
   composing strict verify, trace seal, and ZJX package summaries into
   `schema: "sley.deploy.report.v0"` while recording that live deployment,
   external mutation, and provider calls are not allowed without explicit
-  operator approval
+  operator approval; `--artifacts-dir <dir>` writes local `deploy-report.json`,
+  `seal.json`, and `zjx-envelope.json` handoff files only after the dry-run
+  package is ready
 - JSON project scaffold reports with `sley new --json`, `hello`, `deploy`,
   and `agent` templates, relative created-file paths, next-command vectors, typed
   next-action reasons through check, doctor, query, plan, lint, verify, run,
@@ -252,8 +254,8 @@ sley verify --json --deny-warnings --cap SecretRead --secret api_key redacted --
 sley-ci check --json .
 sley-ci verify --json --deny-warnings --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged .
 sley run --json --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged .
-sley deploy --json --dry-run --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged .
-sley-ci deploy --json --dry-run --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged .
+sley deploy --json --dry-run --artifacts-dir .sley/deploy --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged .
+sley-ci deploy --json --dry-run --artifacts-dir .sley/ci-deploy --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged .
 sley seal --json .
 sley zjx --json .
 ```
@@ -558,7 +560,7 @@ verify and deploy dry-run pre-deploy gates,
 edit-plan surfaces, call-site rename and remove-take/call-arg transaction
 write/query/verify, typed scaffold next-actions for deploy and agent
 quickstarts, strict seeded verify readiness for the generated deploy and agent
-starters, deploy dry-run package reports,
+starters, deploy dry-run package reports with optional local artifact handoff,
 scaffold-level seal/ZJX handoff actions,
 temp setup files for write-mode CLI smokes, direct graft write smokes,
 explicit graft/fix write trace receipts, non-empty trace seal receipts,

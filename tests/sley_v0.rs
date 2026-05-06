@@ -7,7 +7,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use sley::ast::{AST_PROGRAM_SCHEMA, ExprKind, ProvenanceRecord, StatementKind};
 use sley::authority::{host_effect_contracts, host_effects_for_callee};
 use sley::checker::{check_program, has_errors};
-use sley::deploy::{DEPLOY_REPORT_SCHEMA, build_deploy_report};
+use sley::deploy::{DEPLOY_REPORT_SCHEMA, DeployArtifacts, build_deploy_report};
 use sley::diagnostics::{DIAGNOSTIC_REPORT_SCHEMA, DiagnosticReport};
 use sley::doctor::{DOCTOR_REPORT_SCHEMA, build_doctor_report};
 use sley::formatter::format_program;
@@ -474,6 +474,13 @@ fn project_scaffold_creates_checked_deploy_project() {
                 value.pointer("/policy/live_deploy_allowed"),
                 Some(&serde_json::json!(false))
             );
+            assert_eq!(
+                value.pointer("/artifacts/report"),
+                Some(&serde_json::json!(".sley/deploy/deploy-report.json"))
+            );
+            assert!(root.join(".sley/deploy/deploy-report.json").exists());
+            assert!(root.join(".sley/deploy/seal.json").exists());
+            assert!(root.join(".sley/deploy/zjx-envelope.json").exists());
         }
     }
 
@@ -608,6 +615,9 @@ fn project_scaffold_creates_checked_agent_project() {
                 value.pointer("/steps/0/stdout_schema"),
                 Some(&serde_json::json!(DEPLOY_REPORT_SCHEMA))
             );
+            assert!(root.join(".sley/ci-deploy/deploy-report.json").exists());
+            assert!(root.join(".sley/ci-deploy/seal.json").exists());
+            assert!(root.join(".sley/ci-deploy/zjx-envelope.json").exists());
         }
         if action.kind == "run_seeded_agent" {
             let value: Value = serde_json::from_str(&stdout).expect("parse agent runtime JSON");
@@ -630,6 +640,13 @@ fn project_scaffold_creates_checked_agent_project() {
                 value.pointer("/policy/provider_calls"),
                 Some(&serde_json::json!(false))
             );
+            assert_eq!(
+                value.pointer("/artifacts/report"),
+                Some(&serde_json::json!(".sley/deploy/deploy-report.json"))
+            );
+            assert!(root.join(".sley/deploy/deploy-report.json").exists());
+            assert!(root.join(".sley/deploy/seal.json").exists());
+            assert!(root.join(".sley/deploy/zjx-envelope.json").exists());
         }
     }
 
@@ -688,6 +705,55 @@ fn deploy_dry_run_reports_verified_package_without_live_mutation() {
         json.pointer("/policy/requires_operator_approval"),
         Some(&serde_json::json!(true))
     );
+
+    let artifacts_root = temp_project_dir("deploy-artifacts");
+    let artifacts_dir = artifacts_root.join("package");
+    let artifacts_dir_arg = sley_string(&artifacts_dir);
+    let output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args([
+            "deploy",
+            "--json",
+            "--dry-run",
+            "--artifacts-dir",
+            &artifacts_dir_arg,
+            "examples/hello.sley",
+        ])
+        .output()
+        .expect("run deploy dry-run with artifacts");
+    let stdout = String::from_utf8(output.stdout).expect("deploy artifacts stdout utf8");
+    let stderr = String::from_utf8(output.stderr).expect("deploy artifacts stderr utf8");
+    assert!(
+        output.status.success(),
+        "stdout: {stdout}\nstderr: {stderr}"
+    );
+    let json: serde_json::Value =
+        serde_json::from_str(&stdout).expect("parse deploy artifacts JSON");
+    assert_eq!(
+        json.pointer("/artifacts/report"),
+        Some(&serde_json::json!(format!(
+            "{}/deploy-report.json",
+            artifacts_dir_arg
+        )))
+    );
+    assert!(artifacts_dir.join("deploy-report.json").exists());
+    assert!(artifacts_dir.join("seal.json").exists());
+    assert!(artifacts_dir.join("zjx-envelope.json").exists());
+    let package_json: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(artifacts_dir.join("zjx-envelope.json")).unwrap())
+            .expect("parse deploy package artifact");
+    assert_eq!(
+        package_json.pointer("/schema"),
+        Some(&serde_json::json!("sley.zjx.envelope.v0"))
+    );
+    let report_json: serde_json::Value = serde_json::from_str(
+        &fs::read_to_string(artifacts_dir.join("deploy-report.json")).unwrap(),
+    )
+    .expect("parse deploy report artifact");
+    assert_eq!(
+        report_json.pointer("/schema"),
+        Some(&serde_json::json!(DEPLOY_REPORT_SCHEMA))
+    );
+    let _ = fs::remove_dir_all(artifacts_root);
 }
 
 #[test]
@@ -3640,6 +3706,12 @@ task main -> Used uses UsedEffect {
         hello_verify,
         Some(seal.clone()),
         Some(hello_package),
+        Some(DeployArtifacts {
+            directory: "artifacts".to_string(),
+            report: "artifacts/deploy-report.json".to_string(),
+            seal: "artifacts/seal.json".to_string(),
+            package: "artifacts/zjx-envelope.json".to_string(),
+        }),
     );
     assert_json_snapshot(
         &deploy,
@@ -3732,6 +3804,8 @@ task main -> Used uses UsedEffect {
                 "deploy".to_string(),
                 "--json".to_string(),
                 "--dry-run".to_string(),
+                "--artifacts-dir".to_string(),
+                ".sley/deploy".to_string(),
                 "--cap".to_string(),
                 "Deploy".to_string(),
                 "--deploy-result".to_string(),
@@ -3850,6 +3924,8 @@ task main -> Used uses UsedEffect {
                     "deploy".to_string(),
                     "--json".to_string(),
                     "--dry-run".to_string(),
+                    "--artifacts-dir".to_string(),
+                    ".sley/deploy".to_string(),
                     "--cap".to_string(),
                     "Deploy".to_string(),
                     "--deploy-result".to_string(),
@@ -4334,12 +4410,16 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
         verify_json.pointer("/steps/0/stdout_schema"),
         Some(&serde_json::json!("sley.verify.report.v0"))
     );
+    let ci_deploy_artifacts = deploy_root.join(".sley/ci-deploy");
+    let ci_deploy_artifacts_arg = sley_string(&ci_deploy_artifacts);
     let deploy = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
         .current_dir(&repo_root)
         .args([
             "deploy",
             "--json",
             "--dry-run",
+            "--artifacts-dir",
+            &ci_deploy_artifacts_arg,
             "--cap",
             "Deploy",
             "--deploy-result",
@@ -4372,6 +4452,9 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
         deploy_json.pointer("/steps/0/stdout_schema"),
         Some(&serde_json::json!(DEPLOY_REPORT_SCHEMA))
     );
+    assert!(ci_deploy_artifacts.join("deploy-report.json").exists());
+    assert!(ci_deploy_artifacts.join("seal.json").exists());
+    assert!(ci_deploy_artifacts.join("zjx-envelope.json").exists());
 
     let smoke_root = temp_project_dir("sley-ci-smoke");
     fs::create_dir_all(&smoke_root).expect("create sley-ci smoke root");
@@ -10695,6 +10778,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "query:effects",
         "query:calls",
         "readiness:call-transaction-write-verify",
+        "readiness:deploy-package-artifacts",
         "readiness:deploy-package-dry-run",
         "readiness:inspect-calls",
         "readiness:deploy-lint-repair-write-verify",

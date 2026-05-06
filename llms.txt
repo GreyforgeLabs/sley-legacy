@@ -18,8 +18,8 @@ cargo run -- fix --json --kind add_module_declaration --dry-run <file-or-project
 cargo run -- fix --json --kind delete_unused_private_declarations --dry-run <file-or-project>
 cargo run -- fix --json --kind delete_unused_private_declarations --write <file-or-project>
 cargo run -- verify --json <file-or-project>
-cargo run -- deploy --json --dry-run <file-or-project>
-cargo run --bin sley-ci -- deploy --json --dry-run <file-or-project>
+cargo run -- deploy --json --dry-run --artifacts-dir .sley/deploy <file-or-project>
+cargo run --bin sley-ci -- deploy --json --dry-run --artifacts-dir .sley/ci-deploy <file-or-project>
 cargo run -- seal --json <file-or-project>
 cargo run -- graft --json --dry-run <file> <graft.json>
 cargo run -- graft --json --write <file> <graft.json>
@@ -242,7 +242,10 @@ Current development phase:
   strict verify, trace seal, and ZJX package summaries into one local deploy
   package report; it records `live_deploy_allowed=false`, makes no external
   mutations or provider calls, and keeps live deployment behind explicit
-  operator approval
+  operator approval. Add `--artifacts-dir <dir>` to write local
+  `deploy-report.json`, `seal.json`, and `zjx-envelope.json` handoff files
+  after the dry-run package is ready; `sley-ci deploy` passes the same flag
+  through to the wrapped deploy command
 - next development work should keep broadening style and migration lints
 - project graft writeback now supports create/update/delete module files and
   module rename, including manifest entry updates; top-level type/effect/task

@@ -111,6 +111,12 @@
     "module_count": 1,
     "trace_receipt_count": 0
   },
+  "artifacts": {
+    "directory": "artifacts",
+    "report": "artifacts/deploy-report.json",
+    "seal": "artifacts/seal.json",
+    "package": "artifacts/zjx-envelope.json"
+  },
   "next_actions": [
     {
       "kind": "review_seal",

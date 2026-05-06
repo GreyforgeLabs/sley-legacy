@@ -55,6 +55,8 @@
           { "pointer": "/next_actions/6/command/1", "value": "run" },
           { "pointer": "/next_actions/7/kind", "value": "prepare_deploy_package" },
           { "pointer": "/next_actions/7/command/1", "value": "deploy" },
+          { "pointer": "/next_actions/7/command/4", "value": "--artifacts-dir" },
+          { "pointer": "/next_actions/7/command/5", "value": ".sley/deploy" },
           { "pointer": "/next_actions/8/kind", "value": "seal_project" },
           { "pointer": "/next_actions/9/kind", "value": "package_project" },
           { "pointer": "/next_actions/9/command/1", "value": "zjx" }
@@ -226,6 +228,42 @@
       }
     },
     {
+      "name": "deploy_new_deploy_project_artifacts_json",
+      "args": [
+        "deploy",
+        "--json",
+        "--dry-run",
+        "--artifacts-dir",
+        "{tmp}/deploy-artifacts/agent-app",
+        "--cap",
+        "Deploy",
+        "--deploy-result",
+        "staging",
+        "staged",
+        "{tmp}/agent-app"
+      ],
+      "covers": [
+        "cli:deploy",
+        "json:sley.deploy.report.v0",
+        "readiness:deploy-package-artifacts",
+        "readiness:deploy-package-dry-run",
+        "scaffold:deploy-quickstart",
+        "host:Deploy"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_contains": [
+          "deploy-report.json",
+          "seal.json",
+          "zjx-envelope.json"
+        ],
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.deploy.report.v0" },
+          { "pointer": "/status", "value": "ready" }
+        ]
+      }
+    },
+    {
       "name": "new_agent_project_json",
       "cwd": "tmp",
       "args": [
@@ -259,8 +297,12 @@
           { "pointer": "/next_actions/7/kind", "value": "run_seeded_agent" },
           { "pointer": "/next_actions/8/kind", "value": "prepare_deploy_package" },
           { "pointer": "/next_actions/8/command/1", "value": "deploy" },
+          { "pointer": "/next_actions/8/command/4", "value": "--artifacts-dir" },
+          { "pointer": "/next_actions/8/command/5", "value": ".sley/deploy" },
           { "pointer": "/next_actions/9/kind", "value": "ci_deploy_package" },
           { "pointer": "/next_actions/9/command/0", "value": "sley-ci" },
+          { "pointer": "/next_actions/9/command/4", "value": "--artifacts-dir" },
+          { "pointer": "/next_actions/9/command/5", "value": ".sley/ci-deploy" },
           { "pointer": "/next_actions/11/kind", "value": "package_project" }
         ]
       }

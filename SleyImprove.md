@@ -99,7 +99,7 @@ sley doctor --json [--deny-warnings] <target>
 sley plan --json [--deny-warnings] [--graft-templates] [--template-surface <surface>] [--emit-graft <kind>] <target>
 sley fix --json --kind <kind> [--template-surface <surface>] [--dry-run|--write] [--trace <trace.jsonl>] <target>
 sley verify --json [--deny-warnings] [runtime gates/seeds] <target>
-sley deploy --json --dry-run [runtime gates/seeds] <target>
+sley deploy --json --dry-run [--artifacts-dir <dir>] [runtime gates/seeds] <target>
 sley query --json [--kind all|modules|tasks|types|effects|calls] [--module <module>] <target>
 sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter|missing-module-declaration|unchecked-result] [--module <module>] <target>
 sley trace --json <target>
@@ -191,7 +191,10 @@ Rules:
   verify plus trace seal and ZJX package summaries into
   `sley.deploy.report.v0`. It is explicitly non-live: no provider calls,
   external mutations, infrastructure changes, or spend, and live deployment
-  remains behind operator approval.
+  remains behind operator approval. `--artifacts-dir <dir>` writes local
+  `deploy-report.json`, `seal.json`, and `zjx-envelope.json` handoff files only
+  after the dry-run package is ready; `sley-ci deploy` passes the same flag
+  through to the wrapped deploy command.
 - Grafts support dry-run by default and an explicit `--dry-run` flag.
 - Graft input JSON is strict: unknown operation or payload fields reject instead
   of being silently ignored.
@@ -499,9 +502,9 @@ The current smoke manifest covers:
   templates in edit-plan reports
 - deploy and agent scaffold typed next-actions, first-run sequence execution,
   strict seeded `verify --json --deny-warnings` readiness, and local
-  `sley deploy --dry-run` package reports, including scaffold-level and
-  passed-verify seal/ZJX handoff next-actions plus the agent scaffold's
-  `sley-ci verify` and `sley-ci deploy` handoffs
+  `sley deploy --dry-run` package reports, including optional deploy artifact
+  writes plus scaffold-level and passed-verify seal/ZJX handoff next-actions
+  plus the agent scaffold's `sley-ci verify` and `sley-ci deploy` handoffs
 - doctor/verify warning next-actions that route agents to checked
   `sley plan --json --graft-templates` lint repair plans and unambiguous
   `sley fix --dry-run` previews with explicit `write_command` vectors, plus a
@@ -543,7 +546,8 @@ The current smoke manifest covers:
   `DatabaseWrite`, `Network`, `Shell`, `ModelCall`, `SecretRead`, `Deploy`,
   and `Spend`
 - local deploy package dry-runs that prove verify, seal, and ZJX package
-  summaries without live deployment authority
+  summaries without live deployment authority and can write explicit local
+  report/seal/package handoff artifacts
 - temp-directory execution and temp setup files for write-mode cases so release
   tests do not mutate the repo checkout
 
