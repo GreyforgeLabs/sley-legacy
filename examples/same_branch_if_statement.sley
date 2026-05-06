@@ -1,0 +1,11 @@
+module app.same_branch_if_statement
+
+task main -> Int {
+  bind total = 41
+
+  if total > 0 {
+    return total
+  } else {
+    return total
+  }
+}

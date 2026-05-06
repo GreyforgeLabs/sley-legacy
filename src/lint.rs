@@ -47,6 +47,7 @@ pub enum LintRule {
     RedundantBooleanIfExpression,
     RedundantBooleanIfStatement,
     SameBranchIfExpression,
+    SameBranchIfStatement,
     UnreachableStatement,
 }
 
@@ -81,6 +82,7 @@ impl LintRule {
             Self::RedundantBooleanIfExpression,
             Self::RedundantBooleanIfStatement,
             Self::SameBranchIfExpression,
+            Self::SameBranchIfStatement,
             Self::UnreachableStatement,
         ]
     }
@@ -115,6 +117,7 @@ impl LintRule {
             Self::RedundantBooleanIfExpression => "redundant_boolean_if_expression",
             Self::RedundantBooleanIfStatement => "redundant_boolean_if_statement",
             Self::SameBranchIfExpression => "same_branch_if_expression",
+            Self::SameBranchIfStatement => "same_branch_if_statement",
             Self::UnreachableStatement => "unreachable_statement",
         }
     }
@@ -293,6 +296,12 @@ pub fn build_lint_report(program: &Program, options: LintOptions) -> LintReport 
     }
     if rules.contains(&LintRule::SameBranchIfExpression) {
         findings.extend(lint_same_branch_if_expressions(
+            program,
+            options.module.as_deref(),
+        ));
+    }
+    if rules.contains(&LintRule::SameBranchIfStatement) {
+        findings.extend(lint_same_branch_if_statements(
             program,
             options.module.as_deref(),
         ));
@@ -1068,6 +1077,18 @@ fn lint_same_branch_if_expressions(program: &Program, module: Option<&str>) -> V
     findings
 }
 
+fn lint_same_branch_if_statements(program: &Program, module: Option<&str>) -> Vec<LintFinding> {
+    let mut findings = Vec::new();
+    for task in program
+        .tasks
+        .iter()
+        .filter(|task| module_matches(module, &task_module(task)))
+    {
+        collect_same_branch_if_statements_in_block(task, &task.body, &mut findings);
+    }
+    findings
+}
+
 fn collect_same_branch_if_expressions_in_block(
     task: &TaskDecl,
     block: &Block,
@@ -1202,6 +1223,75 @@ fn same_branch_if_expression_replacement(expr: &Expr) -> Option<String> {
     } else {
         None
     }
+}
+
+fn collect_same_branch_if_statements_in_block(
+    task: &TaskDecl,
+    block: &Block,
+    findings: &mut Vec<LintFinding>,
+) {
+    for statement in &block.statements {
+        match &statement.kind {
+            StatementKind::If {
+                then_block,
+                else_block,
+                ..
+            } => {
+                if let Some(replacement) = same_branch_if_statement_replacement(statement) {
+                    let task_name = task_fq_name(task);
+                    findings.push(LintFinding {
+                        id: "SAME_BRANCH_IF_STATEMENT".to_string(),
+                        rule: LintRule::SameBranchIfStatement.as_str().to_string(),
+                        severity: "warning".to_string(),
+                        message: format!(
+                            "task `{task_name}` has an if statement with identical branches"
+                        ),
+                        node: statement.id.clone(),
+                        module: task_module(task),
+                        hint: format!("replace the if statement with `{replacement}`"),
+                    });
+                }
+                collect_same_branch_if_statements_in_block(task, then_block, findings);
+                if let Some(else_block) = else_block {
+                    collect_same_branch_if_statements_in_block(task, else_block, findings);
+                }
+            }
+            StatementKind::While { body, .. }
+            | StatementKind::For { body, .. }
+            | StatementKind::Forge { body } => {
+                collect_same_branch_if_statements_in_block(task, body, findings);
+            }
+            StatementKind::Binding { .. }
+            | StatementKind::Set { .. }
+            | StatementKind::Return { .. }
+            | StatementKind::Expr { .. } => {}
+        }
+    }
+}
+
+fn same_branch_if_statement_replacement(statement: &Statement) -> Option<String> {
+    let StatementKind::If {
+        condition,
+        then_block,
+        else_block,
+    } = &statement.kind
+    else {
+        return None;
+    };
+    if bool_literal_value(condition).is_some() || !expr_is_delete_safe_pure(condition) {
+        return None;
+    }
+    let else_block = else_block.as_ref()?;
+    let then_source = single_statement_source(then_block)?;
+    let else_source = single_statement_source(else_block)?;
+    (then_source == else_source).then_some(then_source)
+}
+
+fn single_statement_source(block: &Block) -> Option<String> {
+    let [statement] = block.statements.as_slice() else {
+        return None;
+    };
+    Some(format_statement_source(statement))
 }
 
 fn collect_redundant_boolean_if_statements_in_block(
@@ -4326,6 +4416,47 @@ fn same_branch_if_expression_replacement_in_expr(expr: &Expr, target: &str) -> O
         | ExprKind::BoolLiteral { .. }
         | ExprKind::Identifier { .. } => None,
     }
+}
+
+pub fn same_branch_if_statement_replacement_source(
+    program: &Program,
+    target: &str,
+) -> Option<String> {
+    program
+        .tasks
+        .iter()
+        .find_map(|task| same_branch_if_statement_replacement_in_block(&task.body, target))
+}
+
+fn same_branch_if_statement_replacement_in_block(block: &Block, target: &str) -> Option<String> {
+    block
+        .statements
+        .iter()
+        .find_map(|statement| match &statement.kind {
+            StatementKind::If {
+                then_block,
+                else_block,
+                ..
+            } => {
+                if statement.id == target {
+                    return same_branch_if_statement_replacement(statement);
+                }
+                same_branch_if_statement_replacement_in_block(then_block, target).or_else(|| {
+                    else_block.as_ref().and_then(|block| {
+                        same_branch_if_statement_replacement_in_block(block, target)
+                    })
+                })
+            }
+            StatementKind::While { body, .. }
+            | StatementKind::For { body, .. }
+            | StatementKind::Forge { body } => {
+                same_branch_if_statement_replacement_in_block(body, target)
+            }
+            StatementKind::Binding { .. }
+            | StatementKind::Set { .. }
+            | StatementKind::Return { .. }
+            | StatementKind::Expr { .. } => None,
+        })
 }
 
 fn normalize_effect_name(program: &Program, module: &str, effect: &str) -> String {

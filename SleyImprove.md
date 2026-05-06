@@ -101,7 +101,7 @@ sley fix --json --kind <kind> [--template-surface <surface>] [--name <name>] [--
 sley verify --json [--deny-warnings] [runtime gates/seeds] <target>
 sley deploy --json --dry-run [--artifacts-dir <dir>] [runtime gates/seeds] <target>
 sley query --json [--kind all|modules|tasks|types|effects|calls] [--module <module>] <target>
-sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter|missing-module-declaration|unchecked-result|unqualified-imported-call|unused-pure-binding|unused-pure-expression-statement|mutable-binding-never-set|constant-if-expression|constant-if-statement|constant-false-while-statement|empty-if-statement|empty-for-statement|empty-forge-statement|identity-binary-expression|redundant-boolean-comparison|absorbing-boolean-expression|self-comparison-expression|double-negation-expression|redundant-boolean-if-expression|redundant-boolean-if-statement|same-branch-if-expression|unreachable-statement] [--module <module>] <target>
+sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter|missing-module-declaration|unchecked-result|unqualified-imported-call|unused-pure-binding|unused-pure-expression-statement|mutable-binding-never-set|constant-if-expression|constant-if-statement|constant-false-while-statement|empty-if-statement|empty-for-statement|empty-forge-statement|identity-binary-expression|redundant-boolean-comparison|absorbing-boolean-expression|self-comparison-expression|double-negation-expression|redundant-boolean-if-expression|redundant-boolean-if-statement|same-branch-if-expression|same-branch-if-statement|unreachable-statement] [--module <module>] <target>
 sley-ci lint --json [--deny-warnings] [--rule <rule>] [--module <module>] <target>
 sley-ci doctor --json [--deny-warnings] <target>
 sley-ci plan --json [--deny-warnings] [--graft-templates] [--template-surface <surface>] <target>
@@ -668,6 +668,11 @@ The current smoke manifest covers:
   `simplify_same_branch_if_expression` templates that replace
   `if condition { value } else { value }` with `value` when the condition is
   delete-safe
+- same-branch if statement style warnings through
+  `same_branch_if_statement`, plus checked
+  `simplify_same_branch_if_statement` templates that replace an `if` statement
+  whose branches contain the same single statement when the condition is
+  delete-safe
 - unreachable statement warnings through `unreachable_statement`, plus checked
   `delete_unreachable_statement` templates that delete dead statements after a
   guaranteed return
@@ -792,6 +797,9 @@ The v0 lint rules are:
   branch source is reported when the condition is delete-safe, so agents can
   replace it with either branch without dropping authority work or recoverable
   failures.
+- `same_branch_if_statement`: a checked statement-level `if` with identical
+  single-statement branches is reported when the condition is delete-safe, so
+  agents can replace the control-flow wrapper with either branch statement.
 - `unreachable_statement`: a statement after a guaranteed `return` in the same
   block is reported so agents can remove dead task-body code.
 
@@ -812,6 +820,7 @@ The command supports `--module <module>`, `--rule unused-private-task`,
 `--rule absorbing-boolean-expression`, `--rule self-comparison-expression`,
 `--rule double-negation-expression`, `--rule redundant-boolean-if-expression`,
 `--rule redundant-boolean-if-statement`, `--rule same-branch-if-expression`,
+`--rule same-branch-if-statement`,
 `--rule unreachable-statement`,
 and
 `--deny-warnings` lets CI turn findings into a failing exit after the JSON

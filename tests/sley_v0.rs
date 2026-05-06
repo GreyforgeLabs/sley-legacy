@@ -4079,6 +4079,87 @@ fn edit_plan_graft_templates_include_same_branch_if_expression_simplify() {
 }
 
 #[test]
+fn edit_plan_graft_templates_include_same_branch_if_statement_simplify() {
+    let source = include_str!("../examples/same_branch_if_statement.sley");
+    let program = parse_program(source).expect("parse same branch if statement fixture");
+    let report = build_edit_plan_report_with_options(
+        "examples/same_branch_if_statement.sley",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: None,
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "warnings");
+    assert_eq!(report.summary.lint_finding_count, 1);
+    assert_eq!(
+        report.lint.as_ref().expect("lint summary").findings[0].id,
+        "SAME_BRANCH_IF_STATEMENT"
+    );
+    let template = report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "simplify_same_branch_if_statement")
+        .expect("same branch if statement simplify template");
+    assert_eq!(
+        template.surface,
+        "block:task:app.same_branch_if_statement.main:stmt:1"
+    );
+    assert_eq!(
+        template.operation.pointer("/op"),
+        Some(&serde_json::json!("ReplaceStatement"))
+    );
+    assert_eq!(
+        template.operation.pointer("/payload/source"),
+        Some(&serde_json::json!("return total"))
+    );
+    assert_eq!(template.editable_json_pointers, vec!["/payload/source"]);
+    let graft: GraftInput = serde_json::from_value(template.operation.clone())
+        .expect("parse same branch if statement template");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:same-branch-if-statement-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted_source = outcome.source.expect("grafted source");
+    assert!(grafted_source.contains("return total"));
+    assert!(!grafted_source.contains("if total > 0"));
+    let grafted_program = parse_program(&grafted_source).expect("parse grafted source");
+    let lint_report = build_lint_report(
+        &grafted_program,
+        LintOptions {
+            rules: vec![LintRule::SameBranchIfStatement],
+            module: None,
+        },
+    );
+    assert_eq!(lint_report.status, "ok");
+
+    let targeted_report = build_edit_plan_report_with_options(
+        "examples/same_branch_if_statement.sley",
+        Ok(program),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some(
+                "block:task:app.same_branch_if_statement.main:stmt:1".to_string(),
+            ),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(targeted_report.status, "warnings");
+    assert!(targeted_report.diagnostics.is_empty());
+    assert_eq!(targeted_report.graft_templates.len(), 1);
+    assert_eq!(
+        targeted_report.graft_templates[0].kind,
+        "simplify_same_branch_if_statement"
+    );
+    assert!(targeted_report.transaction_templates.is_empty());
+}
+
+#[test]
 fn edit_plan_transaction_templates_include_mutable_binding_conversion() {
     let source = include_str!("../examples/mutable_binding_style.sley");
     let program = parse_program(source).expect("parse mutable binding fixture");
@@ -5942,6 +6023,21 @@ task helper -> Result<Text, Error> {
         include_str!("../fixtures/contracts/lint_same_branch_if_expression.json"),
     );
 
+    let same_branch_if_statement_source = include_str!("../examples/same_branch_if_statement.sley");
+    let same_branch_if_statement_program = parse_program(same_branch_if_statement_source)
+        .expect("parse same branch if statement fixture");
+    let same_branch_if_statement_lint = build_lint_report(
+        &same_branch_if_statement_program,
+        LintOptions {
+            rules: vec![LintRule::SameBranchIfStatement],
+            module: None,
+        },
+    );
+    assert_json_snapshot(
+        &same_branch_if_statement_lint,
+        include_str!("../fixtures/contracts/lint_same_branch_if_statement.json"),
+    );
+
     let missing_module_source = r#"
 task main -> Text {
   return "hello"
@@ -6642,7 +6738,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(66))
+        Some(&serde_json::json!(67))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -13438,6 +13534,72 @@ task main -> Int {
 }
 
 #[test]
+fn lint_report_flags_same_branch_if_statements() {
+    let source = r#"
+module app.same_branch_if_statement
+
+task main -> Int {
+  bind total = 1
+
+  if total / 1 == 1 {
+    return 5
+  } else {
+    return 5
+  }
+
+  if total > 0 {
+    return total
+  } else {
+    return total
+  }
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+
+    let report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::SameBranchIfStatement],
+            module: None,
+        },
+    );
+
+    assert_eq!(report.schema, LINT_REPORT_SCHEMA);
+    assert_eq!(report.status, "findings");
+    assert_eq!(report.entry_module, "app.same_branch_if_statement");
+    assert_eq!(report.filters.rules, vec!["same_branch_if_statement"]);
+    assert_eq!(
+        report.findings.len(),
+        1,
+        "division-bearing conditions should not be dropped as same-branch statement simplifications"
+    );
+    assert_eq!(report.findings[0].id, "SAME_BRANCH_IF_STATEMENT");
+    assert_eq!(report.findings[0].rule, "same_branch_if_statement");
+    assert_eq!(
+        report.findings[0].node,
+        "block:task:app.same_branch_if_statement.main:stmt:2"
+    );
+    assert_eq!(report.findings[0].module, "app.same_branch_if_statement");
+    assert!(report.findings[0].message.contains("identical branches"));
+    assert!(report.findings[0].hint.contains("return total"));
+
+    let scoped_report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::SameBranchIfStatement],
+            module: Some("app.other".to_string()),
+        },
+    );
+    assert_eq!(scoped_report.status, "ok");
+    assert!(scoped_report.findings.is_empty());
+}
+
+#[test]
 fn lint_report_flags_missing_module_declarations() {
     let source = r#"
 task main -> Text {
@@ -15674,6 +15836,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:templates:empty-forge-statement-delete",
         "graft:templates:unreachable-statement-delete",
         "graft:templates:redundant-boolean-if-statement",
+        "graft:templates:same-branch-if-statement",
         "graft:templates:unused-declared-effect-remove",
         "graft:templates:unused-import-delete",
         "graft:templates:unused-private-task-delete",
@@ -15712,6 +15875,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "lint:redundant_boolean_if_expression",
         "lint:redundant_boolean_if_statement",
         "lint:same_branch_if_expression",
+        "lint:same_branch_if_statement",
         "lint:unreachable_statement",
         "query:tasks",
         "query:types",
@@ -15736,6 +15900,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:redundant-boolean-if-repair-write-verify",
         "readiness:redundant-boolean-if-statement-repair-write-verify",
         "readiness:same-branch-if-repair-write-verify",
+        "readiness:same-branch-if-statement-repair-write-verify",
         "readiness:unreachable-statement-repair-write-verify",
         "readiness:lint-repair-plan",
         "readiness:lint-repair-preview",

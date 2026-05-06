@@ -130,6 +130,7 @@ Implemented now:
   `--rule redundant-boolean-if-expression`, or
   `--rule redundant-boolean-if-statement`, or
   `--rule same-branch-if-expression`, or
+  `--rule same-branch-if-statement`, or
   `--rule unreachable-statement`
   filters, and
   `schema: "sley.lint.report.v0"` for warning-grade graph and authority lints
@@ -202,6 +203,8 @@ Implemented now:
   statements that can return the condition or its negation directly,
   `simplify_same_branch_if_expression` templates for same-branch `if`
   expressions with delete-safe conditions,
+  `simplify_same_branch_if_statement` templates for same-branch `if`
+  statements with delete-safe conditions,
   `delete_unreachable_statement` templates for dead statements after a
   guaranteed return,
   `--template-surface <surface>` targeting for task, block, statement, take,
@@ -681,6 +684,8 @@ coverage,
 double negation expression simplification templates with write/verify coverage,
 redundant boolean-if statement simplification templates with write/verify
 coverage,
+same-branch if expression and statement simplification templates with
+write/verify coverage,
 unreachable statement delete templates with write/verify coverage,
 private-task lint rules,
 declaration/import/API hygiene, authority hygiene, and explicit module style
