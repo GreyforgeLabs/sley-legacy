@@ -628,13 +628,15 @@ treats lint findings as blocked while still printing
 `schema: "sley.edit_plan.report.v0"`. `--graft-templates` adds starter strict
 graft operation payloads for the highest-ranked task surface, plus JSON
 pointers naming the fields an agent should edit before running
-`sley graft --json --dry-run`. `--template-surface <task>` selects a specific
-task surface by task node id or qualified task name. For selected tasks with
-currently resolved inbound callers, the report also includes an all-or-nothing
-`RenameDeclaration` plus `UpdateCallSites` transaction template and an
-`AddTake` plus `UpdateCallArgs` transaction template. When the selected task has
-an unused normal take, `sley plan --graft-templates` can also emit a
-`RemoveTake` plus `RemoveCallArg` transaction template.
+`sley graft --json --dry-run`; it also consumes the selected task graph slice
+and adds `move_statement`/`move_take` templates from checked `move_affordances`.
+`--template-surface <task>` selects a specific task surface by task node id or
+qualified task name. For selected tasks with currently resolved inbound callers,
+the report also includes an all-or-nothing `RenameDeclaration` plus
+`UpdateCallSites` transaction template and an `AddTake` plus `UpdateCallArgs`
+transaction template. When the selected task has an unused normal take,
+`sley plan --graft-templates` can also emit a `RemoveTake` plus `RemoveCallArg`
+transaction template.
 
 A graph slice is a bounded shard around a module, task, type, effect, or import.
 Task slices include the selected task AST, visible module declarations,

@@ -7,7 +7,7 @@ use crate::checker::{check_program, has_errors};
 use crate::diagnostics::{Diagnostic, RepairHint};
 use crate::lint::{LintOptions, LintReport, build_lint_report};
 use crate::query::{QueryKind, QueryOptions, QueryReport, QueryTakeSummary, build_query_report};
-use crate::symbols::task_fq_name;
+use crate::symbols::{slice_symbol_graph, task_fq_name};
 
 pub const EDIT_PLAN_REPORT_SCHEMA: &str = "sley.edit_plan.report.v0";
 
@@ -204,7 +204,11 @@ pub fn build_edit_plan_report_with_options(
     let task_surfaces = build_task_surfaces(&query_report);
     let mut diagnostics = diagnostics;
     let graft_templates = if options.include_graft_templates {
-        match build_graft_templates(&task_surfaces, options.template_surface.as_deref()) {
+        match build_graft_templates(
+            &program,
+            &task_surfaces,
+            options.template_surface.as_deref(),
+        ) {
             Ok(templates) => templates,
             Err(diagnostic) => {
                 diagnostics.push(diagnostic);
@@ -403,6 +407,7 @@ fn surface_rank(surface: &EditPlanTaskSurface, entry_task: &str) -> u8 {
 }
 
 fn build_graft_templates(
+    program: &Program,
     surfaces: &[EditPlanTaskSurface],
     requested_surface: Option<&str>,
 ) -> Result<Vec<EditPlanGraftTemplate>, Diagnostic> {
@@ -424,6 +429,7 @@ fn build_graft_templates(
     {
         templates.push(delete_task_template(surface));
     }
+    templates.extend(graph_slice_move_templates(program, surface));
     Ok(templates)
 }
 
@@ -543,6 +549,35 @@ fn delete_task_template(surface: &EditPlanTaskSurface) -> EditPlanGraftTemplate 
         }),
         editable_json_pointers: Vec::new(),
     }
+}
+
+fn graph_slice_move_templates(
+    program: &Program,
+    surface: &EditPlanTaskSurface,
+) -> Vec<EditPlanGraftTemplate> {
+    let Some(slice) = slice_symbol_graph(program, &surface.id) else {
+        return Vec::new();
+    };
+    let statement_prefix = format!("block:{}", surface.id);
+    let take_prefix = format!("take:{}:", surface.id);
+    slice
+        .move_affordances
+        .into_iter()
+        .filter(|affordance| {
+            affordance.target.starts_with(&statement_prefix)
+                || affordance.target.starts_with(&take_prefix)
+        })
+        .map(|affordance| EditPlanGraftTemplate {
+            kind: format!("move_{}", affordance.target_kind),
+            reason: format!(
+                "move or reorder this {} using graph-slice MoveNode affordance data",
+                affordance.target_kind
+            ),
+            surface: surface.id.clone(),
+            operation: affordance.operation,
+            editable_json_pointers: affordance.editable_json_pointers,
+        })
+        .collect()
 }
 
 fn build_transaction_templates(

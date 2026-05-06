@@ -644,7 +644,7 @@ task main -> Result<Text, Error> {
         },
     );
     assert_eq!(report.status, "ready");
-    assert_eq!(report.graft_templates.len(), 4);
+    assert_eq!(report.graft_templates.len(), 5);
     assert_eq!(report.graft_templates[0].kind, "replace_task_body");
     assert_eq!(
         report.graft_templates[0]
@@ -665,6 +665,15 @@ task main -> Result<Text, Error> {
             .operation
             .pointer("/payload/parent"),
         Some(&serde_json::json!("module:app.plan:tasks"))
+    );
+    assert_eq!(report.graft_templates[4].kind, "move_statement");
+    assert_eq!(
+        report.graft_templates[4].operation.pointer("/target"),
+        Some(&serde_json::json!("block:task:app.plan.main:stmt:0"))
+    );
+    assert_eq!(
+        report.graft_templates[4].editable_json_pointers,
+        vec!["/payload/position".to_string()]
     );
     for template in &report.graft_templates {
         serde_json::from_value::<GraftInput>(template.operation.clone())
@@ -708,6 +717,16 @@ task helper -> Int {
     );
     assert_eq!(report.status, "ready");
     assert_eq!(report.graft_templates[0].surface, "task:app.plan.helper");
+    assert!(
+        report
+            .graft_templates
+            .iter()
+            .any(|template| template.kind == "move_take"
+                && template.operation.pointer("/target")
+                    == Some(&serde_json::json!("take:task:app.plan.helper:0:value"))),
+        "expected graph-slice take move template, got {:#?}",
+        report.graft_templates
+    );
     assert_eq!(
         report.graft_templates[0].operation.pointer("/target"),
         Some(&serde_json::json!("task:app.plan.helper"))

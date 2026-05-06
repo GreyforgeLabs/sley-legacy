@@ -150,6 +150,38 @@
         "/payload/parent",
         "/payload/position"
       ]
+    },
+    {
+      "kind": "move_take",
+      "reason": "move or reorder this take using graph-slice MoveNode affordance data",
+      "surface": "task:app.math.double",
+      "operation": {
+        "op": "MoveNode",
+        "payload": {
+          "parent": "task:app.math.double:takes",
+          "position": 0
+        },
+        "target": "take:task:app.math.double:0:value"
+      },
+      "editable_json_pointers": [
+        "/payload/position"
+      ]
+    },
+    {
+      "kind": "move_statement",
+      "reason": "move or reorder this statement using graph-slice MoveNode affordance data",
+      "surface": "task:app.math.double",
+      "operation": {
+        "op": "MoveNode",
+        "payload": {
+          "parent": "block:task:app.math.double",
+          "position": 0
+        },
+        "target": "block:task:app.math.double:stmt:0"
+      },
+      "editable_json_pointers": [
+        "/payload/position"
+      ]
     }
   ],
   "transaction_templates": [

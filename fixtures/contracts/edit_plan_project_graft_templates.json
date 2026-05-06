@@ -150,6 +150,22 @@
         "/payload/parent",
         "/payload/position"
       ]
+    },
+    {
+      "kind": "move_statement",
+      "reason": "move or reorder this statement using graph-slice MoveNode affordance data",
+      "surface": "task:app.main.main",
+      "operation": {
+        "op": "MoveNode",
+        "payload": {
+          "parent": "block:task:app.main.main",
+          "position": 0
+        },
+        "target": "block:task:app.main.main:stmt:0"
+      },
+      "editable_json_pointers": [
+        "/payload/position"
+      ]
     }
   ],
   "next_actions": [

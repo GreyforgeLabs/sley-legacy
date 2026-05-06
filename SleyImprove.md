@@ -130,8 +130,9 @@ Rules:
   surfaces, post-edit gate commands, and optional starter graft operation
   templates, rename-plus-call-site transactions, and add-take-plus-call-arg
   transactions, plus safe remove-take-plus-call-arg transactions for unused
-  takes, with editable JSON pointers; agents can target a specific task surface
-  by node id or qualified name.
+  takes, with editable JSON pointers; it also consumes selected graph-slice
+  movement affordances as `move_statement` and `move_take` templates. Agents can
+  target a specific task surface by node id or qualified name.
 - `sley verify` is the deterministic CI/pre-deploy helper consuming strict
   check, `sley.query.report.v0`, `sley.lint.report.v0`, and seeded runtime
   execution into one pass/warnings/blocked report.
