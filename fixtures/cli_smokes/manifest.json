@@ -1787,6 +1787,48 @@
       }
     },
     {
+      "name": "fix_nested_block_surface_insert_source_file_override_dry_run_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/source-file-statement.sleypart",
+          "content": "set total = total + 10"
+        }
+      ],
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "insert_statement",
+        "--template-surface",
+        "block:task:app.collections.sum:stmt:2:body",
+        "--source-file",
+        "{tmp}/source-file-statement.sleypart",
+        "--position",
+        "1",
+        "--dry-run",
+        "examples/collections.sley"
+      ],
+      "covers": [
+        "cli:fix",
+        "cli:smoke-setup-files",
+        "fix:payload-override-source-file",
+        "fix:payload-override-position",
+        "graft:templates:block-surface-insert",
+        "graft:templates:nested-block-surface",
+        "json:sley.graft.outcome.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_contains": ["set total = total + 10"],
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/operation", "value": "InsertStatement" },
+          { "pointer": "/provenance/0/targets/0", "value": "block:task:app.collections.sum:stmt:2:body" }
+        ]
+      }
+    },
+    {
       "name": "plan_statement_surface_emit_delete_graft_json",
       "args": [
         "plan",

@@ -85,8 +85,8 @@ Current verified surface:
   and expression node surface targeting with expression `--emit-graft`, direct
   statement-surface delete graft emission, exact node-surface
   `sley fix --dry-run` previews including nested block and statement nodes,
-  checked `sley fix --source` and `--position` payload overrides, unsupported
-  override diagnostics, and lint-driven declaration delete
+  checked `sley fix --source`, `--source-file`, and `--position` payload
+  overrides, unsupported override diagnostics, and lint-driven declaration delete
   templates and cleanup transactions, including direct
   declaration surface targeting, direct graft JSON emission, and checked
   `sley fix` dry-run execution from `sley plan --graft-templates`, plus
