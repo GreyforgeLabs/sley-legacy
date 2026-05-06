@@ -208,6 +208,7 @@ pub fn build_edit_plan_report_with_options(
         match build_graft_templates(
             &program,
             &task_surfaces,
+            &lint_report,
             options.template_surface.as_deref(),
         ) {
             Ok(templates) => templates,
@@ -410,10 +411,12 @@ fn surface_rank(surface: &EditPlanTaskSurface, entry_task: &str) -> u8 {
 fn build_graft_templates(
     program: &Program,
     surfaces: &[EditPlanTaskSurface],
+    lint_report: &LintReport,
     requested_surface: Option<&str>,
 ) -> Result<Vec<EditPlanGraftTemplate>, Diagnostic> {
+    let lint_templates = lint_declaration_delete_templates(program, lint_report);
     let Some(surface) = select_template_surface(surfaces, requested_surface)? else {
-        return Ok(Vec::new());
+        return Ok(lint_templates);
     };
 
     let mut templates = vec![
@@ -433,7 +436,41 @@ fn build_graft_templates(
     templates.extend(graph_slice_move_templates(program, surface));
     templates.extend(graph_slice_delete_templates(program, surface));
     templates.extend(graph_slice_replace_templates(program, surface));
+    templates.extend(lint_templates);
     Ok(templates)
+}
+
+fn lint_declaration_delete_templates(
+    program: &Program,
+    lint_report: &LintReport,
+) -> Vec<EditPlanGraftTemplate> {
+    lint_report
+        .findings
+        .iter()
+        .filter_map(|finding| {
+            let (kind, declaration_kind) = match finding.id.as_str() {
+                "UNUSED_PRIVATE_TYPE" => ("delete_unused_private_type", "type"),
+                "UNUSED_PRIVATE_EFFECT" => ("delete_unused_private_effect", "effect"),
+                _ => return None,
+            };
+            let operation = json!({
+                "op": "DeleteNode",
+                "target": finding.node
+            });
+            if !delete_affordance_checks(program, &operation) {
+                return None;
+            }
+            Some(EditPlanGraftTemplate {
+                kind: kind.to_string(),
+                reason: format!(
+                    "delete this unused private {declaration_kind} after checked lint proves it is unreferenced"
+                ),
+                surface: finding.node.clone(),
+                operation,
+                editable_json_pointers: Vec::new(),
+            })
+        })
+        .collect()
 }
 
 fn select_template_surface<'a>(

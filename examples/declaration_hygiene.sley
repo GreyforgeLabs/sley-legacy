@@ -1,0 +1,10 @@
+module app.hygiene
+
+type Orphan = {
+  slot id: Int
+}
+
+effect OrphanEffect
+
+task main -> Unit {
+}

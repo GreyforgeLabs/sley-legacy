@@ -1023,6 +1023,99 @@ task main -> Int {
 }
 
 #[test]
+fn edit_plan_graft_templates_include_lint_declaration_deletes() {
+    let source = r#"
+module app.plan
+
+type Used = {
+  slot name: Text
+}
+
+type Orphan = {
+  slot id: Int
+}
+
+effect OrphanEffect
+
+task main -> Used {
+  return Used { name: "Ada" }
+}
+"#;
+    let program = parse_program(source).expect("parse lint declaration delete template fixture");
+    let report = build_edit_plan_report_with_options(
+        "app.plan",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: None,
+        },
+    );
+    assert_eq!(report.status, "warnings");
+    assert_eq!(report.summary.lint_finding_count, 2);
+
+    let type_delete = report
+        .graft_templates
+        .iter()
+        .find(|template| {
+            template.kind == "delete_unused_private_type"
+                && template.surface == "type:app.plan.Orphan"
+                && template.operation.pointer("/target")
+                    == Some(&serde_json::json!("type:app.plan.Orphan"))
+        })
+        .expect("unused private type delete template");
+    assert_eq!(
+        type_delete.operation.pointer("/op"),
+        Some(&serde_json::json!("DeleteNode"))
+    );
+    assert!(type_delete.editable_json_pointers.is_empty());
+    let type_graft: GraftInput =
+        serde_json::from_value(type_delete.operation.clone()).expect("parse type delete template");
+    let type_outcome = apply_graft_input(
+        &program,
+        type_graft,
+        Some("agent:type-delete-template-test".to_string()),
+    );
+    assert_eq!(
+        type_outcome.status, "accepted",
+        "{:#?}",
+        type_outcome.diagnostics
+    );
+
+    let effect_delete = report
+        .graft_templates
+        .iter()
+        .find(|template| {
+            template.kind == "delete_unused_private_effect"
+                && template.surface == "effect:app.plan.OrphanEffect"
+                && template.operation.pointer("/target")
+                    == Some(&serde_json::json!("effect:app.plan.OrphanEffect"))
+        })
+        .expect("unused private effect delete template");
+    let effect_graft: GraftInput = serde_json::from_value(effect_delete.operation.clone())
+        .expect("parse effect delete template");
+    let effect_outcome = apply_graft_input(
+        &program,
+        effect_graft,
+        Some("agent:effect-delete-template-test".to_string()),
+    );
+    assert_eq!(
+        effect_outcome.status, "accepted",
+        "{:#?}",
+        effect_outcome.diagnostics
+    );
+
+    assert!(
+        !report.graft_templates.iter().any(|template| {
+            template.kind == "delete_unused_private_type"
+                && template.operation.pointer("/target")
+                    == Some(&serde_json::json!("type:app.plan.Used"))
+        }),
+        "used private type should not receive a lint-driven delete template"
+    );
+}
+
+#[test]
 fn edit_plan_remove_take_transaction_requires_unused_take() {
     let source = r#"
 module app.plan
@@ -7675,6 +7768,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "cli:zjx",
         "cli:graft-dry-run",
         "diagnostic:MISSING_RETURN",
+        "graft:templates:lint-declaration-delete",
         "graft:templates:replace-expression",
         "graph-slice:replace-affordances",
         "lint:unused_declared_effect",

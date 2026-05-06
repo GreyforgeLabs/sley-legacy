@@ -257,6 +257,35 @@
       }
     },
     {
+      "name": "plan_declaration_hygiene_graft_templates_json",
+      "args": ["plan", "--json", "--graft-templates", "examples/declaration_hygiene.sley"],
+      "covers": [
+        "cli:plan",
+        "graft:templates",
+        "graft:templates:lint-declaration-delete",
+        "lint:unused_private_type",
+        "lint:unused_private_effect",
+        "json:sley.edit_plan.report.v0",
+        "json:sley.lint.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.edit_plan.report.v0" },
+          { "pointer": "/status", "value": "warnings" },
+          { "pointer": "/summary/lint_finding_count", "value": 2 },
+          { "pointer": "/lint/findings/0/id", "value": "UNUSED_PRIVATE_EFFECT" },
+          { "pointer": "/lint/findings/1/id", "value": "UNUSED_PRIVATE_TYPE" },
+          { "pointer": "/graft_templates/4/kind", "value": "delete_unused_private_effect" },
+          { "pointer": "/graft_templates/4/operation/op", "value": "DeleteNode" },
+          { "pointer": "/graft_templates/4/operation/target", "value": "effect:app.hygiene.OrphanEffect" },
+          { "pointer": "/graft_templates/5/kind", "value": "delete_unused_private_type" },
+          { "pointer": "/graft_templates/5/operation/op", "value": "DeleteNode" },
+          { "pointer": "/graft_templates/5/operation/target", "value": "type:app.hygiene.Orphan" }
+        ]
+      }
+    },
+    {
       "name": "plan_project_graft_templates_surface_json",
       "args": [
         "plan",

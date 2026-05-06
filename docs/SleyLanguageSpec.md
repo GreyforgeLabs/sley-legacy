@@ -637,7 +637,10 @@ and adds `move_statement`/`move_take` templates plus destination variants from
 checked `move_affordances`, and checked `delete_statement`/`delete_take`
 templates from `delete_affordances` when the starter delete graft validates,
 plus checked `replace_expression` templates from `replace_affordances` when the
-starter expression graft validates.
+starter expression graft validates. It also turns checked
+`unused_private_type` and `unused_private_effect` lint findings into
+`DeleteNode` templates when the declaration delete validates against the
+checked candidate.
 `--template-surface <task>` selects a specific task surface by task node id or
 qualified task name. For selected tasks with currently resolved inbound callers,
 the report also includes an all-or-nothing `RenameDeclaration` plus
@@ -797,8 +800,9 @@ archive.
 - `sley plan` emits deterministic ranked task edit surfaces, optional starter
   graft operation templates, rename-plus-call-site and add-take-plus-call-arg
   transaction templates, safe remove-take-plus-call-arg transaction templates
-  for unused takes, and post-edit gate commands; it does not yet choose or
-  execute a final graft for the agent
+  for unused takes, lint-driven delete templates for unused private
+  types/effects, and post-edit gate commands; it does not yet choose or execute
+  a final graft for the agent
 - `sley verify` emits a deterministic CI/pre-deploy report over strict check,
   query/lint summaries, and runtime execution; live deploy/provider calls
   remain outside v0
