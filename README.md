@@ -219,6 +219,8 @@ Implemented now:
   planning and expose a dry-run fix preview plus explicit `write_command` when
   the repair is unambiguous, while passed reports point to `sley seal --json`
   and `sley zjx --json` handoff artifacts
+- schema-versioned runtime reports with `sley run --json`, carrying successful
+  deterministic execution values under `schema: "sley.run.report.v0"`
 - local-only deploy dry-run reports with `sley deploy --json --dry-run`,
   composing strict verify, trace seal, and ZJX package summaries into
   `schema: "sley.deploy.report.v0"` while recording that live deployment,
@@ -256,17 +258,19 @@ Implemented now:
   within their current parent
 - strict graft input JSON for the v0 operation shapes; unknown graft fields are
   rejected instead of silently ignored
-- versioned JSON report roots for diagnostics with a shared diagnostic record
-  schema and graft outcomes with strict accepted provenance records
+- versioned JSON report roots for deterministic `sley run --json` results,
+  diagnostics with a shared diagnostic record schema, and graft outcomes with
+  strict accepted provenance records
 - repair hints on common checker diagnostics, including unknown identifiers,
   unknown tasks, type mismatches, return mismatches, missing return paths, call
   argument mismatches, condition mismatches, effect authority, and private or
   ambiguous names
 - locked JSON contract snapshots under `fixtures/contracts/`, including
-  checked query, lint, doctor, edit-plan, verify, deploy dry-run, deploy
+  checked run, query, lint, doctor, edit-plan, verify, deploy dry-run, deploy
   artifact check, CI, and project scaffold reports
 - external v0 JSON Schema files under `docs/schemas/`, including strict
   query task/take/type/effect/call row definitions,
+  strict runtime value definitions for `sley.run.report.v0`,
   `sley-ci` check/lint/doctor/plan/verify/deploy/smoke reports,
   `sley-contract` inventory/fixture-check/validate/deploy-artifact-check reports,
   edit-plan graft operation and transaction template envelopes reused by graph
@@ -347,6 +351,8 @@ and leaves unchanged module files alone. It can add imports to existing
 on-disk module files that were not yet loaded through the entry import graph,
 create checked new module files, delete removed loaded module files, rename
 module files, and update `sley.toml` when the manifest entry module is renamed.
+`sley run --json` emits `sley.run.report.v0` on successful deterministic
+execution with the runtime value under `/value`.
 
 Module visibility:
 
@@ -617,7 +623,7 @@ Known v0 limits:
 The current release-readiness phase is underway for the executable slice. The
 gold corpus and CLI smoke suite now have manifests with required coverage tags
 for seeded host adapters, stable JSON roots, graph/ZJX output, graft and fix
-dry runs, checked graph query reports including strict
+dry runs, checked run reports, checked graph query reports including strict
 task/take/type/effect/call row definitions and graph-slice focus/task/call
 payloads plus affordances with strict graft operations, doctor readiness,
 call-inspection next-actions,

@@ -586,7 +586,8 @@ graphs carry
 `schema: "sley.symbol_graph.slice.v0"`, graft outcomes carry
 `schema: "sley.graft.outcome.v0"`, checked query reports carry
 `schema: "sley.query.report.v0"`, checked lint reports carry
-`schema: "sley.lint.report.v0"`, trace receipts carry
+`schema: "sley.lint.report.v0"`, run reports carry
+`schema: "sley.run.report.v0"`, trace receipts carry
 `schema: "sley.trace.receipt.v0"`, trace seals carry
 `schema: "sley.trace.seal.v0"`, and ZJX preview envelopes carry
 `schema: "sley.zjx.envelope.v0"`.
@@ -665,12 +666,13 @@ The executable CLI conformance smokes live under `fixtures/cli_smokes/`. Their
 setup files, coverage tags, and stdout expectations. The integration suite runs
 the manifest against the built `sley` binary and locks stable command exits,
 selected stdout substrings, JSON root schemas, graph slices, checked query
-reports, checked lint reports, doctor readiness reports, edit-plan reports,
-project scaffolds, ZJX preview envelopes, graft dry runs and direct graft
-writes, write-mode fix trace receipts, non-empty trace receipt seals, ZJX
-envelopes carrying graph digests and schema-backed trace receipts, graph-slice
-insert and replace affordances, checked `insert_statement`,
-`replace_statement`, and `replace_expression` graft templates, lint-driven fix
+reports, checked lint reports, run reports, doctor readiness reports,
+edit-plan reports, project scaffolds, ZJX preview envelopes, graft dry runs
+and direct graft writes, write-mode fix trace receipts, non-empty trace
+receipt seals, ZJX envelopes carrying graph digests and schema-backed trace
+receipts, graph-slice insert and replace affordances, checked
+`insert_statement`, `replace_statement`, and `replace_expression` graft
+templates, lint-driven fix
 writes that clear warnings before verify, program-surface declaration/import
 template planning and dry-run fixes with name/source/module overrides, deploy
 dry-run reports, typed deploy and agent scaffold next-actions, and
@@ -695,6 +697,11 @@ check, doctor readiness, task query, edit plan, lint gate, seeded verification
 with denied warnings, seeded run, local deploy dry-run package, seal, and ZJX
 package. The agent scaffold also includes `sley-ci verify` and
 `sley-ci deploy --dry-run` next actions over the same deterministic seeds.
+
+`sley run --json` emits `sley.run.report.v0` on successful execution. The
+report carries `status: "passed"`, the target path, a recursive runtime value
+payload, and an empty diagnostics array; parse/check/runtime failures continue
+to use the diagnostics report path.
 
 `sley deploy --dry-run` is the v0 local deploy package command. It refuses to
 run unless `--dry-run` is present. It consumes the same deterministic runtime
