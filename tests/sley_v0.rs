@@ -9414,6 +9414,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "lint:unchecked_result",
         "readiness:lint-repair-plan",
         "readiness:lint-repair-preview",
+        "readiness:lint-repair-write-verify",
         "scaffold:deploy-quickstart",
         "scaffold:next-actions",
         "scaffold:verify-ready",

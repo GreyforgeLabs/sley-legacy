@@ -340,6 +340,75 @@
       }
     },
     {
+      "name": "fix_previewed_unused_private_task_write_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/readiness-warning/warning.sley",
+          "content": "module app.warning\n\ntask main -> Int {\n  return 1\n}\n\ntask orphan -> Int {\n  return 2\n}\n"
+        }
+      ],
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "delete_unused_private_task",
+        "--template-surface",
+        "task:app.warning.orphan",
+        "--write",
+        "--actor",
+        "agent:cli-smoke",
+        "{tmp}/readiness-warning/warning.sley"
+      ],
+      "covers": [
+        "cli:fix",
+        "cli:fix-write",
+        "cli:smoke-setup-files",
+        "fix:write-source",
+        "graft:templates:unused-private-task-delete",
+        "json:sley.graft.outcome.v0",
+        "lint:unused_private_task",
+        "readiness:lint-repair-preview",
+        "readiness:lint-repair-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/actor", "value": "agent:cli-smoke" },
+          { "pointer": "/provenance/0/operation", "value": "DeleteNode" },
+          { "pointer": "/provenance/0/targets/0", "value": "task:app.warning.orphan" }
+        ]
+      }
+    },
+    {
+      "name": "verify_previewed_unused_private_task_write_json",
+      "args": [
+        "verify",
+        "--json",
+        "--deny-warnings",
+        "{tmp}/readiness-warning/warning.sley"
+      ],
+      "covers": [
+        "cli:verify",
+        "json:sley.verify.report.v0",
+        "json:sley.query.report.v0",
+        "json:sley.lint.report.v0",
+        "readiness:lint-repair-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.verify.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/summary/warning_count", "value": 0 },
+          { "pointer": "/summary/lint_finding_count", "value": 0 },
+          { "pointer": "/summary/runtime_status", "value": "passed" },
+          { "pointer": "/lint/status", "value": "ok" }
+        ]
+      }
+    },
+    {
       "name": "plan_project_json",
       "args": ["plan", "--json", "examples/project"],
       "covers": [
