@@ -2584,6 +2584,7 @@
           { "pointer": "/filters/rules/40", "value": "absorbing_arithmetic_expression" },
           { "pointer": "/filters/rules/41", "value": "self_assignment_statement" },
           { "pointer": "/filters/rules/42", "value": "overwritten_set_statement" },
+          { "pointer": "/filters/rules/43", "value": "redundant_initial_set_statement" },
           { "pointer": "/findings", "value": [] }
         ]
       }
@@ -3418,6 +3419,160 @@
         "json:sley.lint.report.v0",
         "lint:overwritten_set_statement",
         "readiness:overwritten-set-repair-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.verify.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/summary/warning_count", "value": 0 },
+          { "pointer": "/summary/lint_finding_count", "value": 0 },
+          { "pointer": "/runtime/value/kind", "value": "Int" },
+          { "pointer": "/runtime/value/value", "value": 2 },
+          { "pointer": "/lint/status", "value": "ok" }
+        ]
+      }
+    },
+    {
+      "name": "lint_redundant_initial_set_statement_rule_json",
+      "args": [
+        "lint",
+        "--json",
+        "--rule",
+        "redundant-initial-set-statement",
+        "examples/redundant_initial_set_statement.sley"
+      ],
+      "covers": [
+        "cli:lint",
+        "lint:redundant_initial_set_statement",
+        "json:sley.lint.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.lint.report.v0" },
+          { "pointer": "/status", "value": "findings" },
+          { "pointer": "/filters/rules/0", "value": "redundant_initial_set_statement" },
+          { "pointer": "/findings/0/id", "value": "REDUNDANT_INITIAL_SET_STATEMENT" },
+          { "pointer": "/findings/0/node", "value": "block:task:app.redundant_initial_set.main:stmt:1" }
+        ]
+      }
+    },
+    {
+      "name": "plan_redundant_initial_set_statement_template_json",
+      "args": [
+        "plan",
+        "--json",
+        "--graft-templates",
+        "--template-surface",
+        "block:task:app.redundant_initial_set.main:stmt:1",
+        "examples/redundant_initial_set_statement.sley"
+      ],
+      "covers": [
+        "cli:plan",
+        "graft:transactions:redundant-initial-set-fold",
+        "lint:redundant_initial_set_statement",
+        "json:sley.edit_plan.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.edit_plan.report.v0" },
+          { "pointer": "/status", "value": "warnings" },
+          { "pointer": "/lint/findings/0/id", "value": "REDUNDANT_INITIAL_SET_STATEMENT" },
+          { "pointer": "/transaction_templates/0/kind", "value": "fold_redundant_initial_set_into_binding" },
+          { "pointer": "/transaction_templates/0/surface", "value": "block:task:app.redundant_initial_set.main:stmt:1" },
+          { "pointer": "/transaction_templates/0/transaction/ops/0/op", "value": "ReplaceExpression" },
+          { "pointer": "/transaction_templates/0/transaction/ops/0/target", "value": "block:task:app.redundant_initial_set.main:stmt:0:expr" },
+          { "pointer": "/transaction_templates/0/transaction/ops/0/payload/source", "value": "1" },
+          { "pointer": "/transaction_templates/0/transaction/ops/1/op", "value": "DeleteNode" },
+          { "pointer": "/transaction_templates/0/transaction/ops/1/target", "value": "block:task:app.redundant_initial_set.main:stmt:1" }
+        ]
+      }
+    },
+    {
+      "name": "fix_redundant_initial_set_statement_write_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/fix-redundant-initial-set/main.sley",
+          "content": "module app.redundant_initial_set_fix\n\ntask main -> Int {\n  state count = 0\n  set count = 1\n  set count = count + 1\n\n  return count\n}\n"
+        }
+      ],
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "fold_redundant_initial_set_into_binding",
+        "--template-surface",
+        "block:task:app.redundant_initial_set_fix.main:stmt:1",
+        "--write",
+        "--actor",
+        "agent:cli-smoke",
+        "{tmp}/fix-redundant-initial-set/main.sley"
+      ],
+      "covers": [
+        "cli:fix",
+        "cli:fix-write",
+        "cli:smoke-setup-files",
+        "fix:lint-cleanup-write",
+        "fix:write-source",
+        "graft:transactions:redundant-initial-set-fold",
+        "json:sley.graft.outcome.v0",
+        "lint:redundant_initial_set_statement",
+        "readiness:redundant-initial-set-repair-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/actor", "value": "agent:cli-smoke" },
+          { "pointer": "/provenance/0/operation", "value": "ReplaceExpression" },
+          { "pointer": "/provenance/0/targets/0", "value": "block:task:app.redundant_initial_set_fix.main:stmt:0:expr" },
+          { "pointer": "/provenance/1/operation", "value": "DeleteNode" },
+          { "pointer": "/provenance/1/targets/0", "value": "block:task:app.redundant_initial_set_fix.main:stmt:1" }
+        ]
+      }
+    },
+    {
+      "name": "lint_fix_redundant_initial_set_statement_write_json",
+      "args": [
+        "lint",
+        "--json",
+        "--rule",
+        "redundant-initial-set-statement",
+        "{tmp}/fix-redundant-initial-set/main.sley"
+      ],
+      "covers": [
+        "cli:lint",
+        "fix:lint-cleanup-write",
+        "lint:redundant_initial_set_statement",
+        "json:sley.lint.report.v0",
+        "readiness:redundant-initial-set-repair-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.lint.report.v0" },
+          { "pointer": "/status", "value": "ok" }
+        ]
+      }
+    },
+    {
+      "name": "verify_fix_redundant_initial_set_statement_write_json",
+      "args": [
+        "verify",
+        "--json",
+        "--deny-warnings",
+        "{tmp}/fix-redundant-initial-set/main.sley"
+      ],
+      "covers": [
+        "cli:verify",
+        "fix:lint-cleanup-write",
+        "json:sley.verify.report.v0",
+        "json:sley.lint.report.v0",
+        "lint:redundant_initial_set_statement",
+        "readiness:redundant-initial-set-repair-write-verify"
       ],
       "expect": {
         "success": true,

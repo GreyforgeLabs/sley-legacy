@@ -62,6 +62,7 @@ pub enum LintRule {
     AbsorbingArithmeticExpression,
     SelfAssignmentStatement,
     OverwrittenSetStatement,
+    RedundantInitialSetStatement,
 }
 
 impl LintRule {
@@ -110,6 +111,7 @@ impl LintRule {
             Self::AbsorbingArithmeticExpression,
             Self::SelfAssignmentStatement,
             Self::OverwrittenSetStatement,
+            Self::RedundantInitialSetStatement,
         ]
     }
 
@@ -158,6 +160,7 @@ impl LintRule {
             Self::AbsorbingArithmeticExpression => "absorbing_arithmetic_expression",
             Self::SelfAssignmentStatement => "self_assignment_statement",
             Self::OverwrittenSetStatement => "overwritten_set_statement",
+            Self::RedundantInitialSetStatement => "redundant_initial_set_statement",
         }
     }
 }
@@ -278,6 +281,12 @@ pub fn build_lint_report(program: &Program, options: LintOptions) -> LintReport 
     }
     if rules.contains(&LintRule::OverwrittenSetStatement) {
         findings.extend(lint_overwritten_set_statements(
+            program,
+            options.module.as_deref(),
+        ));
+    }
+    if rules.contains(&LintRule::RedundantInitialSetStatement) {
+        findings.extend(lint_redundant_initial_set_statements(
             program,
             options.module.as_deref(),
         ));
@@ -1049,6 +1058,26 @@ fn lint_overwritten_set_statements(program: &Program, module: Option<&str>) -> V
         .filter(|task| module_matches(module, &task_module(task)))
     {
         collect_overwritten_set_statements_in_block(task, &task.body, &mut findings);
+    }
+    findings
+}
+
+fn lint_redundant_initial_set_statements(
+    program: &Program,
+    module: Option<&str>,
+) -> Vec<LintFinding> {
+    let mut findings = Vec::new();
+    for task in program
+        .tasks
+        .iter()
+        .filter(|task| module_matches(module, &task_module(task)))
+    {
+        collect_redundant_initial_set_statements_in_block(
+            task,
+            &task.body,
+            &task.body,
+            &mut findings,
+        );
     }
     findings
 }
@@ -4658,6 +4687,79 @@ fn collect_overwritten_set_statements_in_block(
     }
 }
 
+fn collect_redundant_initial_set_statements_in_block(
+    task: &TaskDecl,
+    task_body: &Block,
+    block: &Block,
+    findings: &mut Vec<LintFinding>,
+) {
+    for pair in block.statements.windows(2) {
+        let current = &pair[0];
+        let next = &pair[1];
+        if let (
+            StatementKind::Binding {
+                binding_kind,
+                name,
+                expr,
+                ..
+            },
+            StatementKind::Set {
+                name: next_name,
+                expr: next_expr,
+            },
+        ) = (&current.kind, &next.kind)
+            && binding_kind.is_mutable_local()
+            && name == next_name
+            && !expr_uses_identifier(expr, name)
+            && !expr_uses_identifier(next_expr, name)
+            && expr_is_delete_safe_pure(expr)
+            && expr_is_delete_safe_pure(next_expr)
+            && block_has_real_set_identifier_except_statement(task_body, name, &next.id)
+        {
+            let task_name = task_fq_name(task);
+            findings.push(LintFinding {
+                id: "REDUNDANT_INITIAL_SET_STATEMENT".to_string(),
+                rule: LintRule::RedundantInitialSetStatement.as_str().to_string(),
+                severity: "warning".to_string(),
+                message: format!(
+                    "task `{task_name}` initializes mutable `{name}` and immediately replaces it before any read"
+                ),
+                node: next.id.clone(),
+                module: task_module(task),
+                hint: format!("fold `set {name} = ...` into the mutable initializer"),
+            });
+        }
+    }
+
+    for statement in &block.statements {
+        match &statement.kind {
+            StatementKind::If {
+                then_block,
+                else_block,
+                ..
+            } => {
+                collect_redundant_initial_set_statements_in_block(
+                    task, task_body, then_block, findings,
+                );
+                if let Some(else_block) = else_block {
+                    collect_redundant_initial_set_statements_in_block(
+                        task, task_body, else_block, findings,
+                    );
+                }
+            }
+            StatementKind::While { body, .. }
+            | StatementKind::For { body, .. }
+            | StatementKind::Forge { body } => {
+                collect_redundant_initial_set_statements_in_block(task, task_body, body, findings);
+            }
+            StatementKind::Binding { .. }
+            | StatementKind::Set { .. }
+            | StatementKind::Return { .. }
+            | StatementKind::Expr { .. } => {}
+        }
+    }
+}
+
 fn collect_unused_pure_bindings_in_block(
     task: &TaskDecl,
     task_body: &Block,
@@ -4937,6 +5039,54 @@ fn block_sets_identifier(block: &Block, name: &str) -> bool {
         .statements
         .iter()
         .any(|statement| statement_sets_identifier(statement, name))
+}
+
+fn block_has_real_set_identifier_except_statement(
+    block: &Block,
+    name: &str,
+    skipped_statement_id: &str,
+) -> bool {
+    block.statements.iter().any(|statement| {
+        real_set_identifier_except_statement(statement, name, skipped_statement_id)
+    })
+}
+
+fn real_set_identifier_except_statement(
+    statement: &Statement,
+    name: &str,
+    skipped_statement_id: &str,
+) -> bool {
+    if statement.id == skipped_statement_id {
+        return false;
+    }
+    match &statement.kind {
+        StatementKind::Set {
+            name: candidate,
+            expr,
+        } => candidate == name && identifier_name(expr) != Some(name),
+        StatementKind::If {
+            then_block,
+            else_block,
+            ..
+        } => {
+            block_has_real_set_identifier_except_statement(then_block, name, skipped_statement_id)
+                || else_block.as_ref().is_some_and(|block| {
+                    block_has_real_set_identifier_except_statement(
+                        block,
+                        name,
+                        skipped_statement_id,
+                    )
+                })
+        }
+        StatementKind::While { body, .. }
+        | StatementKind::For { body, .. }
+        | StatementKind::Forge { body } => {
+            block_has_real_set_identifier_except_statement(body, name, skipped_statement_id)
+        }
+        StatementKind::Binding { .. }
+        | StatementKind::Return { .. }
+        | StatementKind::Expr { .. } => false,
+    }
 }
 
 fn statement_sets_identifier(statement: &Statement, name: &str) -> bool {

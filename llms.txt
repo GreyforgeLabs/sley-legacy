@@ -187,7 +187,8 @@ Current development phase:
   `unused_pure_expression_statement`, the mutable-local style rule
   `mutable_binding_never_set`, the self-assignment cleanup rule
   `self_assignment_statement`, the overwritten-set cleanup rule
-  `overwritten_set_statement`, the expression simplification rule
+  `overwritten_set_statement`, the redundant-initial-set cleanup rule
+  `redundant_initial_set_statement`, the expression simplification rule
   `constant_if_expression`, the constant-if statement simplification rule
   `constant_if_statement`, the constant-false if cleanup rule
   `constant_false_if_statement`, the constant-false while cleanup rule
@@ -262,6 +263,8 @@ Current development phase:
   `delete_self_assignment_statement` templates for no-op mutation statements,
   plus `delete_overwritten_set_statement` templates for dead set statements
   immediately overwritten before any read,
+  plus `fold_redundant_initial_set_into_binding` transactions for safe
+  immediate mutable-initializer replacements,
   plus
   `delete_constant_false_if_statement` templates for never-executed
   `if false` statements without `else` branches, plus

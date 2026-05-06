@@ -1,0 +1,9 @@
+module app.redundant_initial_set
+
+task main -> Int {
+  state count = 0
+  set count = 1
+  set count = count + 1
+
+  return count
+}

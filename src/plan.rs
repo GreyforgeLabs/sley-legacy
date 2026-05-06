@@ -689,6 +689,7 @@ fn is_lint_repair_kind(kind: &str) -> bool {
             | "delete_unused_pure_expression_statement"
             | "delete_self_assignment_statement"
             | "delete_overwritten_set_statement"
+            | "fold_redundant_initial_set_into_binding"
             | "simplify_constant_if_expression"
             | "simplify_constant_if_statement"
             | "delete_constant_false_if_statement"
@@ -2764,6 +2765,11 @@ fn build_transaction_templates(
         lint_report,
         requested_surface,
     ));
+    templates.extend(lint_redundant_initial_set_transaction_templates(
+        program,
+        lint_report,
+        requested_surface,
+    ));
     if requested_surface.is_some() && !templates.is_empty() {
         return Ok(templates);
     }
@@ -2845,6 +2851,139 @@ fn lint_mutable_binding_to_bind_transaction_templates(
             })
         })
         .collect()
+}
+
+fn lint_redundant_initial_set_transaction_templates(
+    program: &Program,
+    lint_report: &LintReport,
+    requested_surface: Option<&str>,
+) -> Vec<EditPlanTransactionTemplate> {
+    lint_report
+        .findings
+        .iter()
+        .filter(|finding| finding.id == "REDUNDANT_INITIAL_SET_STATEMENT")
+        .filter(|finding| requested_surface.is_none_or(|surface| surface == finding.node))
+        .filter_map(|finding| {
+            let pair = find_redundant_initial_set_pair(program, &finding.node)?;
+            let transaction = json!({
+                "transaction": format!(
+                    "txn_fold_redundant_initial_set_{}",
+                    finding.node.replace([':', '.'], "_")
+                ),
+                "mode": "all_or_nothing",
+                "ops": [
+                    {
+                        "op": "ReplaceExpression",
+                        "target": pair.binding_expr_id,
+                        "payload": {
+                            "source": pair.set_expr_source
+                        }
+                    },
+                    {
+                        "op": "DeleteNode",
+                        "target": finding.node
+                    }
+                ]
+            });
+            let Ok(input) = serde_json::from_value::<GraftInput>(transaction.clone()) else {
+                return None;
+            };
+            if apply_graft_input(
+                program,
+                input,
+                Some("agent:plan-fold-redundant-initial-set".to_string()),
+            )
+            .status
+                != "accepted"
+            {
+                return None;
+            }
+            Some(EditPlanTransactionTemplate {
+                kind: "fold_redundant_initial_set_into_binding".to_string(),
+                reason: "fold this immediate set into the mutable initializer in one checked graft"
+                    .to_string(),
+                surface: finding.node.clone(),
+                transaction,
+                editable_json_pointers: vec!["/ops/0/payload/source".to_string()],
+            })
+        })
+        .collect()
+}
+
+struct RedundantInitialSetPair {
+    binding_expr_id: String,
+    set_expr_source: String,
+}
+
+fn find_redundant_initial_set_pair(
+    program: &Program,
+    set_target: &str,
+) -> Option<RedundantInitialSetPair> {
+    program
+        .tasks
+        .iter()
+        .find_map(|task| find_redundant_initial_set_pair_in_block(&task.body, set_target))
+}
+
+fn find_redundant_initial_set_pair_in_block(
+    block: &Block,
+    set_target: &str,
+) -> Option<RedundantInitialSetPair> {
+    for pair in block.statements.windows(2) {
+        let binding = &pair[0];
+        let set = &pair[1];
+        if set.id != set_target {
+            continue;
+        }
+        if let (
+            StatementKind::Binding {
+                binding_kind,
+                name,
+                expr: binding_expr,
+                ..
+            },
+            StatementKind::Set {
+                name: set_name,
+                expr: set_expr,
+            },
+        ) = (&binding.kind, &set.kind)
+            && binding_kind.is_mutable_local()
+            && name == set_name
+        {
+            return Some(RedundantInitialSetPair {
+                binding_expr_id: binding_expr.id.clone(),
+                set_expr_source: set_expr.source.trim().to_string(),
+            });
+        }
+    }
+
+    for statement in &block.statements {
+        let pair = match &statement.kind {
+            StatementKind::If {
+                then_block,
+                else_block,
+                ..
+            } => find_redundant_initial_set_pair_in_block(then_block, set_target).or_else(|| {
+                else_block.as_ref().and_then(|else_block| {
+                    find_redundant_initial_set_pair_in_block(else_block, set_target)
+                })
+            }),
+            StatementKind::While { body, .. } | StatementKind::For { body, .. } => {
+                find_redundant_initial_set_pair_in_block(body, set_target)
+            }
+            StatementKind::Forge { body } => {
+                find_redundant_initial_set_pair_in_block(body, set_target)
+            }
+            StatementKind::Binding { .. }
+            | StatementKind::Set { .. }
+            | StatementKind::Return { .. }
+            | StatementKind::Expr { .. } => None,
+        };
+        if pair.is_some() {
+            return pair;
+        }
+    }
+    None
 }
 
 struct StatementLocation<'a> {
