@@ -249,7 +249,10 @@ Near-term:
    take, and expression node surfaces: statements/takes emit direct
    graph-slice move/delete templates, while expressions emit a checked no-op
    `replace_expression` starter that `--emit-graft` can hand directly to
-   `sley graft`. Next broaden authority, style, and migration lints.
+   `sley graft`. `sley fix --dry-run` now has smoke coverage for executing
+   those exact node-surface templates through the graft checker without
+   hand-authored graft files. Next broaden authority, style, and migration
+   lints.
 5. Extend graph-slice graft planning around checked move/delete operations.
 6. Harden project graft writeback beyond existing-module edits.
 
