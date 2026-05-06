@@ -2069,6 +2069,7 @@ fn self_comparison_expression_replacement(expr: &Expr) -> Option<String> {
     match op {
         BinaryOp::Equal => Some("true".to_string()),
         BinaryOp::NotEqual => Some("false".to_string()),
+        BinaryOp::Less | BinaryOp::Greater => Some("false".to_string()),
         _ => None,
     }
 }
