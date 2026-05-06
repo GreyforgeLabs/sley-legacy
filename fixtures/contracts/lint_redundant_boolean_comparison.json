@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.boolean_compare",
+  "filters": {
+    "module": null,
+    "rules": [
+      "redundant_boolean_comparison"
+    ]
+  },
+  "findings": [
+    {
+      "id": "REDUNDANT_BOOLEAN_COMPARISON",
+      "rule": "redundant_boolean_comparison",
+      "severity": "warning",
+      "message": "task `app.boolean_compare.main` has a redundant boolean comparison `ready == true`",
+      "node": "block:task:app.boolean_compare.main:stmt:1:expr",
+      "module": "app.boolean_compare",
+      "hint": "replace the boolean comparison with `ready`"
+    }
+  ]
+}

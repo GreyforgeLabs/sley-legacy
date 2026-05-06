@@ -1,0 +1,7 @@
+module app.boolean_compare
+
+task main -> Bool {
+  bind ready = true
+
+  return ready == true
+}
