@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.trace.receipt.v0",
+  "title": "Sley Trace Receipt v0",
+  "type": "object",
+  "required": ["schema", "target", "written_at", "provenance"],
+  "properties": {
+    "schema": { "const": "sley.trace.receipt.v0" },
+    "target": { "type": "string", "minLength": 1 },
+    "written_at": { "type": "string", "minLength": 1 },
+    "provenance": {
+      "type": "array",
+      "items": { "$ref": "sley.graft.outcome.v0#/$defs/provenanceRecord" }
+    }
+  },
+  "additionalProperties": false
+}

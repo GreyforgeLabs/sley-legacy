@@ -570,7 +570,8 @@ AST roots carry `schema: "sley.ast.program.v0"`. Diagnostic reports carry
 `schema: "sley.symbol_graph.slice.v0"`, graft outcomes carry
 `schema: "sley.graft.outcome.v0"`, checked query reports carry
 `schema: "sley.query.report.v0"`, checked lint reports carry
-`schema: "sley.lint.report.v0"`, trace seals carry
+`schema: "sley.lint.report.v0"`, trace receipts carry
+`schema: "sley.trace.receipt.v0"`, trace seals carry
 `schema: "sley.trace.seal.v0"`, and ZJX preview envelopes carry
 `schema: "sley.zjx.envelope.v0"`.
 The CLI smoke manifest carries
@@ -578,6 +579,17 @@ The CLI smoke manifest carries
 `schema: "sley.project.scaffold.v0"`. Doctor readiness reports carry
 `schema: "sley.doctor.report.v0"`. Edit-plan reports carry
 `schema: "sley.edit_plan.report.v0"`.
+
+Current v0 trace receipt JSONL records have this root shape:
+
+```json
+{
+  "schema": "sley.trace.receipt.v0",
+  "target": "examples/hello.sley",
+  "written_at": "2026-05-05T00:00:00Z",
+  "provenance": []
+}
+```
 
 Current v0 trace seal JSON has this root shape:
 
@@ -603,9 +615,10 @@ and provenance records. Symbol graph, graph slice, and query schemas also pin
 module import/declaration summary shapes so agents can rely on stable import
 node ids for graft targets. The edit-plan schema pins strict graft operation
 and transaction template envelopes. The graft outcome schema pins strict
-accepted provenance records. The ZJX envelope schema pins the graph digest,
-graph root, optional graph slice root, and trace receipt shape used for
-handoff. The remaining schema files currently pin their top-level contract
+accepted provenance records. The trace receipt schema pins the JSONL receipt
+record for accepted write provenance. The ZJX envelope schema pins the graph
+digest, graph root, optional graph slice root, and trace receipt schema used
+for handoff. The remaining schema files currently pin their top-level contract
 shape and stable schema IDs.
 
 The compiler conformance corpus lives under `fixtures/corpus/`. Its
@@ -623,8 +636,8 @@ selected stdout substrings, JSON root schemas, graph slices, checked query
 reports, checked lint reports, doctor readiness reports, edit-plan reports,
 project scaffolds, ZJX preview envelopes, graft dry runs and direct graft
 writes, write-mode fix trace receipts, non-empty trace receipt seals, ZJX
-envelopes carrying graph digests and trace receipts, graph-slice replace
-affordances, checked
+envelopes carrying graph digests and schema-backed trace receipts, graph-slice
+replace affordances, checked
 `replace_expression` graft templates, lint-driven fix writes that clear
 warnings before verify, typed deploy scaffold next-actions, and
 seeded host-adapter

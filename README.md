@@ -193,8 +193,8 @@ Implemented now:
 - locked JSON contract snapshots under `fixtures/contracts/`, including
   checked query, lint, doctor, edit-plan, verify, and project scaffold reports
 - external v0 JSON Schema files under `docs/schemas/`, including strict
-  edit-plan graft operation and transaction template envelopes plus ZJX graph,
-  slice, and trace receipt handoff refs
+  edit-plan graft operation and transaction template envelopes, a standalone
+  trace receipt schema, plus ZJX graph, slice, and trace receipt handoff refs
 - manifest-backed accepted/rejected synthetic conformance corpus fixtures under
   `fixtures/corpus/`, including declared and missing authority cases for the
   seeded host adapter surface
@@ -203,7 +203,7 @@ Implemented now:
   readiness, edit-plan surfaces, verify pre-deploy gates, project scaffolding,
   graft/fix dry runs, direct graft writes, temp setup files for write-mode
   smokes, explicit graft/fix trace receipts, trace seals over non-empty receipt
-  chains, ZJX envelopes carrying graph digests and trace receipts,
+  chains, ZJX envelopes carrying graph digests and schema-backed trace receipts,
   passed-verify next-actions for seal and ZJX handoff artifacts,
   doctor/verify warning next-actions that route to lint repair plans and
   unambiguous dry-run fix previews with explicit
@@ -523,8 +523,8 @@ strict seeded verify readiness for the generated deploy starter,
 scaffold-level seal/ZJX handoff actions,
 temp setup files for write-mode CLI smokes, direct graft write smokes,
 explicit graft/fix write trace receipts, non-empty trace seal receipts,
-ZJX envelopes carrying trace receipts, passed-verify seal/ZJX next-actions,
-lint-driven declaration delete templates and cleanup transactions,
+ZJX envelopes carrying schema-backed trace receipts, passed-verify seal/ZJX
+next-actions, lint-driven declaration delete templates and cleanup transactions,
 lint-driven unused-private-task delete templates,
 dead private task cleanup transactions,
 lint-driven unused-take remove templates,
