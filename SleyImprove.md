@@ -563,8 +563,10 @@ The current smoke manifest covers:
 - unused pure binding templates that delete unread side-effect-free `bind`
   statements through checked `DeleteNode`, with lint/plan/fix-write/verify
   CLI smoke coverage
-- mutable binding style warnings through `mutable_binding_never_set`, which
-  catches mutable locals that are never assigned with `set`
+- mutable binding style warnings through `mutable_binding_never_set`, plus a
+  checked `convert_mutable_binding_to_bind` transaction that rewrites a
+  never-set mutable local into `bind` through lint/plan/fix-write/verify CLI
+  smoke coverage
 - private declaration hygiene through the checked `unused_private_type` and
   `unused_private_effect` lint rules
 - import hygiene through the checked `unused_import` lint rule

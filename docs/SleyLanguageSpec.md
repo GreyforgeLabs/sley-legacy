@@ -986,8 +986,9 @@ refuse generic data disguised as Sley artifacts before compression begins.
 - `sley lint` currently ships warning-grade private-task graph rules, authority
   hygiene for unused declared effects, private declaration/import/API hygiene,
   raw-host-adapter and unchecked-result migration warnings with checked
-  propagation templates, unqualified imported-call qualification templates, and
-  unused pure binding cleanup templates, plus explicit module style warnings;
+  propagation templates, unqualified imported-call qualification templates,
+  unused pure binding cleanup templates, and mutable binding conversion
+  transactions, plus explicit module style warnings;
   broader style and migration lints remain later work
 - `sley plan` emits deterministic ranked task edit surfaces, optional starter
   graft operation templates, rename-plus-call-site and add-take-plus-call-arg
@@ -1003,7 +1004,8 @@ refuse generic data disguised as Sley artifacts before compression begins.
   before deployment review when the repair is unambiguous; preview actions keep
   `command` dry-run and add optional `write_command` for the mutating command.
   The CLI smoke suite locks previewed lint-repair writes followed by strict
-  verify for file and project targets, including unused pure binding cleanup,
+  verify for file and project targets, including unused pure binding cleanup
+  and mutable binding conversion,
   plus a repaired generated deploy
   scaffold re-verified with seeded `Deploy` authority and a strict seeded
   deploy verify report for the generated `sley new --template deploy` starter,

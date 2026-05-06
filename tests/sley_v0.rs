@@ -2728,6 +2728,102 @@ fn edit_plan_graft_templates_include_unused_pure_binding_delete() {
 }
 
 #[test]
+fn edit_plan_transaction_templates_include_mutable_binding_conversion() {
+    let source = include_str!("../examples/mutable_binding_style.sley");
+    let program = parse_program(source).expect("parse mutable binding fixture");
+    let report = build_edit_plan_report_with_options(
+        "examples/mutable_binding_style.sley",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: None,
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "warnings");
+    assert_eq!(report.summary.lint_finding_count, 1);
+    assert_eq!(
+        report.lint.as_ref().expect("lint summary").findings[0].id,
+        "MUTABLE_BINDING_NEVER_SET"
+    );
+    let template = report
+        .transaction_templates
+        .iter()
+        .find(|template| template.kind == "convert_mutable_binding_to_bind")
+        .expect("mutable binding conversion transaction template");
+    assert_eq!(template.surface, "block:task:app.mutable_style.main:stmt:0");
+    assert_eq!(
+        template.transaction.pointer("/ops/0/op"),
+        Some(&serde_json::json!("DeleteNode"))
+    );
+    assert_eq!(
+        template.transaction.pointer("/ops/0/target"),
+        Some(&serde_json::json!(
+            "block:task:app.mutable_style.main:stmt:0"
+        ))
+    );
+    assert_eq!(
+        template.transaction.pointer("/ops/1/op"),
+        Some(&serde_json::json!("InsertStatement"))
+    );
+    assert_eq!(
+        template.transaction.pointer("/ops/1/target"),
+        Some(&serde_json::json!("block:task:app.mutable_style.main"))
+    );
+    assert_eq!(
+        template.transaction.pointer("/ops/1/payload/source"),
+        Some(&serde_json::json!("bind base = 21"))
+    );
+    assert_eq!(
+        template.transaction.pointer("/ops/1/payload/position"),
+        Some(&serde_json::json!(0))
+    );
+    assert_eq!(
+        template.editable_json_pointers,
+        vec!["/ops/1/payload/source".to_string()]
+    );
+    let graft: GraftInput = serde_json::from_value(template.transaction.clone())
+        .expect("parse mutable binding conversion transaction");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:mutable-binding-conversion-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted_source = outcome.source.expect("grafted source");
+    assert!(grafted_source.contains("bind base = 21"));
+    assert!(!grafted_source.contains("state base"));
+    let grafted_program = parse_program(&grafted_source).expect("parse grafted source");
+    let lint_report = build_lint_report(
+        &grafted_program,
+        LintOptions {
+            rules: vec![LintRule::MutableBindingNeverSet],
+            module: None,
+        },
+    );
+    assert_eq!(lint_report.status, "ok");
+
+    let targeted_report = build_edit_plan_report_with_options(
+        "examples/mutable_binding_style.sley",
+        Ok(program),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("block:task:app.mutable_style.main:stmt:0".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(targeted_report.status, "warnings");
+    assert!(targeted_report.diagnostics.is_empty());
+    assert_eq!(targeted_report.transaction_templates.len(), 1);
+    assert_eq!(
+        targeted_report.transaction_templates[0].kind,
+        "convert_mutable_binding_to_bind"
+    );
+}
+
+#[test]
 fn edit_plan_remove_take_transaction_requires_unused_take() {
     let source = r#"
 module app.plan
@@ -11815,6 +11911,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:templates:unused-take-remove",
         "graft:transactions:dead-private-task-cleanup",
         "graft:transactions:lint-declaration-cleanup",
+        "graft:transactions:mutable-binding-to-bind",
         "graft:transactions:remove-take-call-arg",
         "graft:transactions:rename-call-sites",
         "graph-slice:replace-affordances",
@@ -11844,6 +11941,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:lint-repair-preview",
         "readiness:lint-repair-write-command",
         "readiness:lint-repair-write-verify",
+        "readiness:mutable-binding-repair-write-verify",
         "readiness:project-lint-repair-write-verify",
         "readiness:remove-take-transaction-write-verify",
         "readiness:verify-package-next-action",
