@@ -10491,6 +10491,105 @@
       }
     },
     {
+      "name": "run_agent_project_scoped_json",
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "SecretRead=api_",
+        "--secret",
+        "api_key",
+        "redacted",
+        "--cap",
+        "Network=https://example.test/profile",
+        "--http-text",
+        "https://example.test/profile",
+        "profile ready",
+        "--cap",
+        "ModelCall=deploy",
+        "--model-output",
+        "deploy-plan",
+        "plan approved",
+        "--cap",
+        "Deploy=stag",
+        "--deploy-result",
+        "staging",
+        "staged",
+        "examples/agent_project"
+      ],
+      "covers": [
+        "cli:run",
+        "dogfood:agent-project",
+        "examples:project",
+        "json:sley.run.report.v0",
+        "host:SecretRead",
+        "host:Network",
+        "host:ModelCall",
+        "host:Deploy",
+        "host:scoped-capability",
+        "project:imported-host-authority"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.run.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/target", "value": "examples/agent_project" },
+          { "pointer": "/value/kind", "value": "Ok" },
+          { "pointer": "/value/value/kind", "value": "Text" },
+          { "pointer": "/value/value/value", "value": "profile ready | plan approved | staged" }
+        ]
+      }
+    },
+    {
+      "name": "run_agent_project_network_scope_denied_json",
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "SecretRead=api_",
+        "--secret",
+        "api_key",
+        "redacted",
+        "--cap",
+        "Network=https://wrong.example/",
+        "--http-text",
+        "https://example.test/profile",
+        "profile ready",
+        "--cap",
+        "ModelCall=deploy",
+        "--model-output",
+        "deploy-plan",
+        "plan approved",
+        "--cap",
+        "Deploy=stag",
+        "--deploy-result",
+        "staging",
+        "staged",
+        "examples/agent_project"
+      ],
+      "covers": [
+        "cli:run",
+        "dogfood:agent-project",
+        "examples:project",
+        "json:sley.diagnostics.report.v0",
+        "diagnostic:RUNTIME_CAPABILITY_SCOPE_DENIED",
+        "host:Network",
+        "host:scoped-capability",
+        "project:imported-host-authority"
+      ],
+      "expect": {
+        "success": false,
+        "stderr_contains": ["operation failed"],
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.diagnostics.report.v0" },
+          { "pointer": "/status", "value": "error" },
+          { "pointer": "/diagnostics/0/id", "value": "RUNTIME_CAPABILITY_SCOPE_DENIED" },
+          { "pointer": "/diagnostics/0/node", "value": "block:task:agent.pipeline.collect_profile:stmt:1:expr:try" }
+        ]
+      }
+    },
+    {
       "name": "verify_agent_project_json",
       "args": [
         "verify",
