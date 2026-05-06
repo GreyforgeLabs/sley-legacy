@@ -13210,6 +13210,7 @@ task main -> Bool {
   bind ready = true
   bind total = 1
   bind guarded = (total / 1 == 1) == (total / 1 == 1)
+  bind strict = total < total
   bind inverted = ready != ready
 
   return ready == ready
@@ -13236,7 +13237,7 @@ task main -> Bool {
     assert_eq!(report.filters.rules, vec!["self_comparison_expression"]);
     assert_eq!(
         report.findings.len(),
-        2,
+        3,
         "self-comparison should not drop division-bearing duplicated operands"
     );
     assert_eq!(report.findings[0].id, "SELF_COMPARISON_EXPRESSION");
@@ -13246,8 +13247,9 @@ task main -> Bool {
         .iter()
         .map(|finding| finding.node.as_str())
         .collect();
-    assert!(nodes.contains(&"block:task:app.self_compare.main:stmt:3:expr"));
     assert!(nodes.contains(&"block:task:app.self_compare.main:stmt:4:expr"));
+    assert!(nodes.contains(&"block:task:app.self_compare.main:stmt:5:expr"));
+    assert!(nodes.contains(&"block:task:app.self_compare.main:stmt:3:expr"));
     assert_eq!(report.findings[0].module, "app.self_compare");
     assert!(
         report
@@ -13260,6 +13262,12 @@ task main -> Bool {
             .findings
             .iter()
             .any(|finding| finding.message.contains("ready == ready"))
+    );
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|finding| finding.message.contains("total < total"))
     );
     assert!(
         report

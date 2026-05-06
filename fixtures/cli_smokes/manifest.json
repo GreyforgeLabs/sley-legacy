@@ -4652,7 +4652,7 @@
       "setup_files": [
         {
           "path": "{tmp}/fix-self-comparison/main.sley",
-          "content": "module app.self_compare_fix\n\ntask main -> Bool {\n  return true == true\n}\n"
+          "content": "module app.self_compare_fix\n\ntask main -> Bool {\n  return 7 > 7\n}\n"
         }
       ],
       "args": [
@@ -4737,7 +4737,7 @@
           { "pointer": "/summary/warning_count", "value": 0 },
           { "pointer": "/summary/lint_finding_count", "value": 0 },
           { "pointer": "/runtime/value/kind", "value": "Bool" },
-          { "pointer": "/runtime/value/value", "value": true },
+          { "pointer": "/runtime/value/value", "value": false },
           { "pointer": "/lint/status", "value": "ok" }
         ]
       }

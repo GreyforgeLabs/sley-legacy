@@ -194,8 +194,8 @@ Implemented now:
   against `true` or `false`,
   `simplify_absorbing_boolean_expression` templates for absorbing boolean
   literals that can collapse a short-circuiting expression safely,
-  `simplify_self_comparison_expression` templates for delete-safe `expr == expr`
-  and `expr != expr` comparisons,
+  `simplify_self_comparison_expression` templates for delete-safe `expr == expr`,
+  `expr != expr`, `expr < expr`, and `expr > expr` comparisons,
   `simplify_double_negation_expression` templates for `!!expr` forms,
   `simplify_redundant_boolean_if_expression` templates for boolean `if`
   expressions that can be replaced by the condition or its negation,

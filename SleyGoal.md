@@ -186,7 +186,8 @@ Current verified surface:
   smoke coverage, plus checked `absorbing_boolean_expression` style findings
   and `simplify_absorbing_boolean_expression` templates with lint/plan/fix-write/verify
   smoke coverage, plus checked `self_comparison_expression` style findings and
-  `simplify_self_comparison_expression` templates with lint/plan/fix-write/verify
+  `simplify_self_comparison_expression` templates, including strict
+  self-ordering cleanup, with lint/plan/fix-write/verify
   smoke coverage, plus checked `double_negation_expression` style findings and
   `simplify_double_negation_expression` templates with lint/plan/fix-write/verify
   smoke coverage, plus checked `redundant_boolean_if_expression` style findings
