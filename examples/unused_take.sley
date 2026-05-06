@@ -1,0 +1,8 @@
+module app.takes
+
+task main -> Int {
+  take value: Int
+  take unused: Int
+
+  return value
+}

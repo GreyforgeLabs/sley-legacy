@@ -1400,6 +1400,90 @@ task orphan -> Int {
 }
 
 #[test]
+fn edit_plan_graft_templates_include_unused_take_remove() {
+    let source = r#"
+module app.takes
+
+task main -> Int {
+  take value: Int
+  take unused: Int
+
+  return value
+}
+"#;
+    let program = parse_program(source).expect("parse unused take plan fixture");
+    let report = build_edit_plan_report_with_options(
+        "app.takes",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: None,
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "warnings");
+    assert_eq!(report.summary.lint_finding_count, 1);
+    assert_eq!(
+        report.lint.as_ref().expect("lint summary").findings[0].id,
+        "UNUSED_TAKE"
+    );
+
+    let template = report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "remove_unused_take")
+        .expect("unused take remove template");
+    assert_eq!(template.surface, "take:task:app.takes.main:1:unused");
+    assert_eq!(
+        template.operation.pointer("/op"),
+        Some(&serde_json::json!("RemoveTake"))
+    );
+    assert_eq!(
+        template.operation.pointer("/target"),
+        Some(&serde_json::json!("task:app.takes.main"))
+    );
+    assert_eq!(
+        template.operation.pointer("/payload/name"),
+        Some(&serde_json::json!("unused"))
+    );
+    assert!(template.editable_json_pointers.is_empty());
+    let graft: GraftInput =
+        serde_json::from_value(template.operation.clone()).expect("parse unused take template");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:unused-take-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    assert!(
+        !outcome
+            .source
+            .expect("grafted source")
+            .contains("take unused")
+    );
+
+    let targeted_report = build_edit_plan_report_with_options(
+        "app.takes",
+        Ok(program),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("take:task:app.takes.main:1:unused".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(targeted_report.status, "warnings");
+    assert!(targeted_report.diagnostics.is_empty());
+    assert_eq!(targeted_report.graft_templates.len(), 1);
+    assert_eq!(
+        targeted_report.graft_templates[0].kind,
+        "remove_unused_take"
+    );
+    assert!(targeted_report.transaction_templates.is_empty());
+}
+
+#[test]
 fn edit_plan_graft_templates_include_unused_import_delete() {
     let root = temp_project_dir("unused-import-plan-template");
     write_unused_import_project(&root);
@@ -8933,6 +9017,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:templates:unchecked-result",
         "graft:templates:unused-import-delete",
         "graft:templates:unused-private-task-delete",
+        "graft:templates:unused-take-remove",
         "graft:transactions:dead-private-task-cleanup",
         "graft:transactions:lint-declaration-cleanup",
         "graph-slice:replace-affordances",

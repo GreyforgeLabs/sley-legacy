@@ -611,6 +611,68 @@
       }
     },
     {
+      "name": "plan_unused_take_template_json",
+      "args": [
+        "plan",
+        "--json",
+        "--graft-templates",
+        "--template-surface",
+        "take:task:app.takes.main:1:unused",
+        "examples/unused_take.sley"
+      ],
+      "covers": [
+        "cli:plan",
+        "graft:templates",
+        "graft:templates:unused-take-remove",
+        "lint:unused_take",
+        "json:sley.edit_plan.report.v0",
+        "json:sley.lint.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.edit_plan.report.v0" },
+          { "pointer": "/status", "value": "warnings" },
+          { "pointer": "/summary/lint_finding_count", "value": 1 },
+          { "pointer": "/lint/findings/0/id", "value": "UNUSED_TAKE" },
+          { "pointer": "/lint/findings/0/node", "value": "take:task:app.takes.main:1:unused" },
+          { "pointer": "/graft_templates/0/kind", "value": "remove_unused_take" },
+          { "pointer": "/graft_templates/0/surface", "value": "take:task:app.takes.main:1:unused" },
+          { "pointer": "/graft_templates/0/operation/op", "value": "RemoveTake" },
+          { "pointer": "/graft_templates/0/operation/target", "value": "task:app.takes.main" },
+          { "pointer": "/graft_templates/0/operation/payload/name", "value": "unused" }
+        ]
+      }
+    },
+    {
+      "name": "fix_unused_take_dry_run_json",
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "remove_unused_take",
+        "--template-surface",
+        "take:task:app.takes.main:1:unused",
+        "--dry-run",
+        "examples/unused_take.sley"
+      ],
+      "covers": [
+        "cli:fix",
+        "graft:templates:unused-take-remove",
+        "lint:unused_take",
+        "json:sley.graft.outcome.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/operation", "value": "RemoveTake" },
+          { "pointer": "/provenance/0/targets/0", "value": "task:app.takes.main" }
+        ]
+      }
+    },
+    {
       "name": "plan_project_graft_templates_surface_json",
       "args": [
         "plan",

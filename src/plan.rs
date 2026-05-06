@@ -469,6 +469,7 @@ fn lint_graft_templates(
     let mut templates = lint_declaration_delete_templates(program, lint_report);
     templates.extend(lint_private_task_delete_templates(program, lint_report));
     templates.extend(lint_unused_import_templates(program, lint_report));
+    templates.extend(lint_unused_take_templates(program, lint_report));
     templates.extend(lint_missing_module_templates(
         program,
         lint_report,
@@ -568,6 +569,49 @@ fn lint_unused_import_templates(
             })
         })
         .collect()
+}
+
+fn lint_unused_take_templates(
+    program: &Program,
+    lint_report: &LintReport,
+) -> Vec<EditPlanGraftTemplate> {
+    lint_report
+        .findings
+        .iter()
+        .filter(|finding| finding.id == "UNUSED_TAKE")
+        .filter_map(|finding| {
+            let (task, take_name) = find_take_target(program, &finding.node)?;
+            let operation = json!({
+                "op": "RemoveTake",
+                "target": task.id,
+                "payload": {
+                    "name": take_name
+                }
+            });
+            if !graft_operation_checks(program, &operation, Some("agent:plan-remove-unused-take"))
+            {
+                return None;
+            }
+            Some(EditPlanGraftTemplate {
+                kind: "remove_unused_take".to_string(),
+                reason:
+                    "remove this unused normal take after checked lint proves the task body never reads it"
+                        .to_string(),
+                surface: finding.node.clone(),
+                operation,
+                editable_json_pointers: Vec::new(),
+            })
+        })
+        .collect()
+}
+
+fn find_take_target<'a>(program: &'a Program, target: &str) -> Option<(&'a TaskDecl, String)> {
+    program.tasks.iter().find_map(|task| {
+        task.takes
+            .iter()
+            .find(|take| take.id == target)
+            .map(|take| (task, take.name.clone()))
+    })
 }
 
 fn lint_missing_module_templates(

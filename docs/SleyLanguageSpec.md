@@ -662,6 +662,8 @@ When lint proves multiple dead private tasks through `unused_private_task` or
 `unreachable_private_task`, the report can include an all-or-nothing
 `delete_dead_private_tasks` transaction template so disconnected cycles are
 deleted together instead of one invalid intermediate task at a time.
+`unused_take` lint findings become checked `remove_unused_take` `RemoveTake`
+templates when the take can be removed without leaving invalid call sites.
 `unused_import` lint findings become checked `delete_unused_import`
 `DeleteNode` templates when the import delete validates against the checked
 candidate.
