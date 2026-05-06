@@ -40,7 +40,7 @@ Current verified surface:
 
 - `cargo fmt --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 213 tests.
+- Current integration coverage is 214 tests.
 - `sley query --json` emits `schema: "sley.query.report.v0"` and supports
   `--kind all|modules|tasks|types|effects|calls`, `--module <module>`, and
   `--exported`, including strict task/take/type/effect/call row definitions.
@@ -89,10 +89,10 @@ Current verified surface:
   `add_type_declaration`, and `add_effect_declaration` starters, direct
   program-surface `add_task` graft emission, exact node-surface
   `sley fix --dry-run` previews including nested block and statement nodes,
-  checked `sley fix --source`, `--source-file`, and `--position` payload
-  overrides, unsupported override diagnostics, and lint-driven declaration delete
-  templates and cleanup transactions, including direct
-  declaration surface targeting, direct graft JSON emission, and checked
+  checked `sley fix --name`, `--type`, `--source`, `--source-file`, and
+  `--position` payload overrides, unsupported override diagnostics, and
+  lint-driven declaration delete templates and cleanup transactions, including
+  direct declaration surface targeting, direct graft JSON emission, and checked
   `sley fix` dry-run execution from `sley plan --graft-templates`, plus
   lint-driven missing-module declaration templates with target/project-aware
   module-name inference and checked fix dry runs, checked raw-host adapter

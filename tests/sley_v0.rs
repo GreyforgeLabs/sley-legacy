@@ -10945,6 +10945,97 @@ fn fix_template_source_and_position_overrides_dry_run_without_writing() {
 }
 
 #[test]
+fn fix_template_name_and_type_overrides_dry_run_without_writing() {
+    let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let target = repo_root.join("examples/project");
+    let main_file = target.join("src/app/main.sley");
+    let original_main = fs::read_to_string(&main_file).expect("read main example");
+
+    let add_take = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args([
+            "fix",
+            "--json",
+            "--kind",
+            "add_take",
+            "--template-surface",
+            "task:app.main.main",
+            "--name",
+            "limit",
+            "--type",
+            "Int",
+            "--position",
+            "0",
+            "--dry-run",
+        ])
+        .arg(&target)
+        .output()
+        .expect("dry-run add-take name/type override fix");
+    let add_take_stdout = String::from_utf8(add_take.stdout).expect("stdout utf8");
+    assert!(
+        add_take.status.success(),
+        "fix dry-run should accept name/type add-take override; stdout={add_take_stdout} stderr={}",
+        String::from_utf8_lossy(&add_take.stderr)
+    );
+    let add_take_outcome: GraftOutcome =
+        serde_json::from_str(&add_take_stdout).expect("parse add-take outcome");
+    assert_eq!(add_take_outcome.status, "accepted");
+    assert_eq!(add_take_outcome.provenance[0].operation, "AddTake");
+    assert!(
+        add_take_outcome
+            .source
+            .as_deref()
+            .expect("dry-run source")
+            .contains("take limit: Int"),
+        "{add_take_outcome:#?}"
+    );
+    assert_eq!(
+        fs::read_to_string(&main_file).expect("read main after add-take dry-run"),
+        original_main
+    );
+
+    let add_effect = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args([
+            "fix",
+            "--json",
+            "--kind",
+            "add_effect_declaration",
+            "--template-surface",
+            "program",
+            "--name",
+            "Audit",
+            "--dry-run",
+        ])
+        .arg(&target)
+        .output()
+        .expect("dry-run add-effect name override fix");
+    let add_effect_stdout = String::from_utf8(add_effect.stdout).expect("stdout utf8");
+    assert!(
+        add_effect.status.success(),
+        "fix dry-run should accept name add-effect override; stdout={add_effect_stdout} stderr={}",
+        String::from_utf8_lossy(&add_effect.stderr)
+    );
+    let add_effect_outcome: GraftOutcome =
+        serde_json::from_str(&add_effect_stdout).expect("parse add-effect outcome");
+    assert_eq!(add_effect_outcome.status, "accepted");
+    assert_eq!(
+        add_effect_outcome.provenance[0].operation,
+        "AddEffectDeclaration"
+    );
+    assert!(
+        add_effect_outcome
+            .source
+            .as_deref()
+            .expect("dry-run source")
+            .contains("effect Audit"),
+        "{add_effect_outcome:#?}"
+    );
+    assert_eq!(
+        fs::read_to_string(&main_file).expect("read main after add-effect dry-run"),
+        original_main
+    );
+}
+
+#[test]
 fn fix_template_source_override_replaces_expression_and_rejects_unsupported_fields() {
     let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let target = repo_root.join("examples/project");
@@ -12125,7 +12216,9 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "fix:call-transaction-write",
         "fix:lint-cleanup-write",
         "fix:remove-take-transaction-write",
+        "fix:payload-override-name",
         "fix:write-source",
+        "fix:payload-override-type",
         "graft:write-source",
         "graft:operations:add-module-declaration",
         "graft:templates:add-task",

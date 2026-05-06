@@ -232,10 +232,11 @@ Current development phase:
 - `sley fix --json --kind <kind>` consumes checked plan templates and applies
   one named operation or transaction through the same graft checker, emitting
   `sley.graft.outcome.v0`; exact block, statement, take, and expression node
-  surfaces can be selected with `--template-surface`; `--source <source>`,
-  `--source-file <path>`, and `--position <n>` can override matching editable
-  payload fields on single-operation templates before the normal graft checker
-  runs; default and `--dry-run` mode are
+  surfaces can be selected with `--template-surface`; `--name <name>`,
+  `--type <type>`, `--source <source>`, `--source-file <path>`, and
+  `--position <n>` can override matching editable payload fields on
+  single-operation templates before the normal graft checker runs; default and
+  `--dry-run` mode are
   non-mutating, and `--write` records the normal graft trace receipt or a
   caller-supplied `--trace <trace.jsonl>` path; CLI smokes cover a call-row-driven
   `rename_and_update_call_sites` write and an unused-take
@@ -300,6 +301,7 @@ Current development phase:
 - `sley plan --graft-templates --template-surface program` surfaces checked
   declaration starters for `add_task`, `add_type_declaration`, and
   `add_effect_declaration`; source-backed declaration starters can be executed
-  through `sley fix --source` or `--source-file`
+  through `sley fix --source` or `--source-file`, and name-backed starters can
+  use `--name`
 - manifest-backed accepted/rejected synthetic gold corpus growth
 - broader graph-slice graft operations around insert/move/delete/replace planning

@@ -562,7 +562,7 @@ sley graph --json --slice task:app.main.main <target>
 sley new --json --template agent --name agent-app agent-app
 sley doctor --json <target>
 sley plan --json [--graft-templates] [--template-surface <surface>] [--emit-graft <kind>] <target>
-sley fix --json --kind <kind> [--template-surface <surface>] [--source <source>|--source-file <path>] [--position <n>] [--dry-run|--write] [--trace <trace.jsonl>] <target>
+sley fix --json --kind <kind> [--template-surface <surface>] [--name <name>] [--type <type>] [--source <source>|--source-file <path>] [--position <n>] [--dry-run|--write] [--trace <trace.jsonl>] <target>
 sley query --json --kind tasks --module app.main <target>
 sley query --json --kind types --module app.main <target>
 sley query --json --kind effects --module app.main <target>
@@ -670,8 +670,8 @@ envelopes carrying graph digests and schema-backed trace receipts, graph-slice
 insert and replace affordances, checked `insert_statement`,
 `replace_statement`, and `replace_expression` graft templates, lint-driven fix
 writes that clear warnings before verify, program-surface declaration template
-planning and `add_task` dry-run fixes, deploy dry-run reports, typed deploy and
-agent scaffold next-actions, and
+planning and declaration dry-run fixes with name/source overrides, deploy
+dry-run reports, typed deploy and agent scaffold next-actions, and
 seeded host-adapter
 execution for `FileRead`, `FileWrite`, `DatabaseRead`, `DatabaseWrite`,
 `Network`, `Shell`, `ModelCall`, `SecretRead`, `Deploy`, and `Spend`.
@@ -808,8 +808,9 @@ the normal `sley.graft.outcome.v0` root. Exact block, statement, take, and
 expression node surfaces, plus the `program` declaration surface, can be
 selected with `--template-surface` and executed without hand-authoring graft
 JSON. Single-operation templates can also accept
-`--source <source>`, `--source-file <path>`, and `--position <n>` overrides
-when their editable payload fields expose `/payload/source` or
+`--name <name>`, `--type <type>`, `--source <source>`,
+`--source-file <path>`, and `--position <n>` overrides when their editable
+payload fields expose `/payload/name`, `/payload/type`, `/payload/source`, or
 `/payload/position`; unsupported overrides reject with
 `FIX_OVERRIDE_UNSUPPORTED` before any write path. Default and `--dry-run` mode
 are non-mutating.

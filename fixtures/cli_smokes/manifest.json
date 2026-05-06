@@ -1209,6 +1209,72 @@
       }
     },
     {
+      "name": "fix_program_surface_add_effect_name_override_dry_run_json",
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "add_effect_declaration",
+        "--template-surface",
+        "program",
+        "--name",
+        "Audit",
+        "--dry-run",
+        "examples/project"
+      ],
+      "covers": [
+        "cli:fix",
+        "fix:payload-override-name",
+        "graft:templates:program-surface-declarations",
+        "json:sley.graft.outcome.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_contains": ["effect Audit"],
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/operation", "value": "AddEffectDeclaration" }
+        ]
+      }
+    },
+    {
+      "name": "fix_task_surface_add_take_name_type_dry_run_json",
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "add_take",
+        "--template-surface",
+        "task:app.main.main",
+        "--name",
+        "limit",
+        "--type",
+        "Int",
+        "--position",
+        "0",
+        "--dry-run",
+        "examples/project"
+      ],
+      "covers": [
+        "cli:fix",
+        "fix:payload-override-name",
+        "fix:payload-override-type",
+        "fix:payload-override-position",
+        "json:sley.graft.outcome.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_contains": ["take limit: Int"],
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/operation", "value": "AddTake" },
+          { "pointer": "/provenance/0/targets/0", "value": "task:app.main.main" }
+        ]
+      }
+    },
+    {
       "name": "plan_declaration_hygiene_graft_templates_json",
       "args": ["plan", "--json", "--graft-templates", "examples/declaration_hygiene.sley"],
       "covers": [

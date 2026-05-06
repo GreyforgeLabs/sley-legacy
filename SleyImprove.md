@@ -97,7 +97,7 @@ sley graph --json --slice <node-id> <target>
 sley new --json [--template hello|deploy|agent] [--name <name>] [--module <module>] <path>
 sley doctor --json [--deny-warnings] <target>
 sley plan --json [--deny-warnings] [--graft-templates] [--template-surface <surface>] [--emit-graft <kind>] <target>
-sley fix --json --kind <kind> [--template-surface <surface>] [--source <source>|--source-file <path>] [--position <n>] [--dry-run|--write] [--trace <trace.jsonl>] <target>
+sley fix --json --kind <kind> [--template-surface <surface>] [--name <name>] [--type <type>] [--source <source>|--source-file <path>] [--position <n>] [--dry-run|--write] [--trace <trace.jsonl>] <target>
 sley verify --json [--deny-warnings] [runtime gates/seeds] <target>
 sley deploy --json --dry-run [--artifacts-dir <dir>] [runtime gates/seeds] <target>
 sley query --json [--kind all|modules|tasks|types|effects|calls] [--module <module>] <target>
@@ -192,9 +192,11 @@ Rules:
   explicit `--write`. Exact block, nested block, statement, nested statement,
   take, and expression node surfaces are covered by non-mutating fix dry-run
   smokes so agents can execute a chosen checked node template without
-  hand-authoring graft JSON. Accepted write-mode fixes use the default trace
-  sidecar or an explicit `--trace <trace.jsonl>` receipt path; dry-run fixes
-  never append receipts.
+  hand-authoring graft JSON. Single-operation templates can override editable
+  `/payload/name`, `/payload/type`, `/payload/source`, and `/payload/position`
+  fields with `--name`, `--type`, `--source`/`--source-file`, and `--position`.
+  Accepted write-mode fixes use the default trace sidecar or an explicit
+  `--trace <trace.jsonl>` receipt path; dry-run fixes never append receipts.
 - `sley verify` is the deterministic CI/pre-deploy helper consuming strict
   check, `sley.query.report.v0`, `sley.lint.report.v0`, and seeded runtime
   execution into one pass/warnings/blocked report; warning and denied-warning
@@ -361,7 +363,7 @@ and expression replace templates through the checker before surfacing them.
 `add_task`, `add_type_declaration`, and `add_effect_declaration` starters so
 agents can add new declarations without hand-authoring graft JSON; `sley fix`
 can execute the source-backed declaration starters with `--source` or
-`--source-file`.
+`--source-file` and name-backed starters with `--name`.
 
 The important rule is not that all operations exist immediately. The important
 rule is that unsupported operations reject cleanly with explicit diagnostics.
@@ -529,9 +531,9 @@ The current smoke manifest covers:
 - program-surface declaration templates for checked `add_task`,
   `add_type_declaration`, and `add_effect_declaration` starters, plus
   `add_task` emission and dry-run fix execution with a source override
-- checked `sley fix --source`, `--source-file`, and `--position` payload
-  overrides for single-operation templates, including unsupported override
-  diagnostics
+- checked `sley fix --name`, `--type`, `--source`, `--source-file`, and
+  `--position` payload overrides for single-operation templates, including
+  unsupported override diagnostics
 - deploy and agent scaffold typed next-actions, first-run sequence execution,
   strict seeded `verify --json --deny-warnings` readiness, and local
   `sley deploy --dry-run` package reports, including optional deploy artifact

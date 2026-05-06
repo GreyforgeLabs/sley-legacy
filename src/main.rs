@@ -157,6 +157,10 @@ enum Command {
         kind: String,
         #[arg(long)]
         template_surface: Option<String>,
+        #[arg(long, value_name = "NAME")]
+        name: Option<String>,
+        #[arg(long = "type", value_name = "TYPE")]
+        ty: Option<String>,
         #[arg(long, value_name = "SOURCE")]
         source: Option<String>,
         #[arg(long, value_name = "PATH", conflicts_with = "source")]
@@ -607,6 +611,8 @@ fn run(cli: Cli) -> Result<()> {
             json,
             kind,
             template_surface,
+            name,
+            ty,
             source,
             source_file,
             position,
@@ -639,9 +645,9 @@ fn run(cli: Cli) -> Result<()> {
                     anyhow::bail!("fix source override unavailable");
                 }
             };
-            let graft_value = match planned_graft_value(&report, &kind)
-                .and_then(|value| apply_fix_template_overrides(value, &kind, source, position))
-            {
+            let graft_value = match planned_graft_value(&report, &kind).and_then(|value| {
+                apply_fix_template_overrides(value, &kind, name, ty, source, position)
+            }) {
                 Ok(value) => value,
                 Err(diagnostic) => {
                     let outcome = rejected_graft_outcome(vec![diagnostic]);
@@ -1714,10 +1720,12 @@ fn load_fix_source_override(
 fn apply_fix_template_overrides(
     mut value: JsonValue,
     kind: &str,
+    name: Option<String>,
+    ty: Option<String>,
     source: Option<String>,
     position: Option<usize>,
 ) -> std::result::Result<JsonValue, Diagnostic> {
-    if source.is_none() && position.is_none() {
+    if name.is_none() && ty.is_none() && source.is_none() && position.is_none() {
         return Ok(value);
     }
     if value.get("transaction").is_some() || value.get("ops").is_some() {
@@ -1725,6 +1733,12 @@ fn apply_fix_template_overrides(
             kind,
             "fix payload overrides are supported only for single-operation templates",
         ));
+    }
+    if let Some(name) = name {
+        override_fix_payload_string(&mut value, kind, "name", name)?;
+    }
+    if let Some(ty) = ty {
+        override_fix_payload_string(&mut value, kind, "type", ty)?;
     }
     if let Some(source) = source {
         override_fix_payload_string(&mut value, kind, "source", source)?;
@@ -1784,7 +1798,7 @@ fn override_fix_payload_usize(
 fn fix_override_unsupported(kind: &str, message: impl Into<String>) -> Diagnostic {
     Diagnostic::error("FIX_OVERRIDE_UNSUPPORTED", message)
         .with_repair_hint(RepairHint::new("inspect_editable_pointers").with_replacement(format!(
-            "Run `sley plan --json --graft-templates [--template-surface <surface>] <target>` and inspect `editable_json_pointers` before using --source/--source-file/--position with `{kind}`"
+            "Run `sley plan --json --graft-templates [--template-surface <surface>] <target>` and inspect `editable_json_pointers` before using --name/--type/--source/--source-file/--position with `{kind}`"
         )))
 }
 
