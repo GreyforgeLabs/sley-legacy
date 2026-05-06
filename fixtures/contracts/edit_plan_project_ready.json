@@ -51,6 +51,7 @@
       "constant_list_index_expression",
       "constant_map_index_expression",
       "constant_record_field_access_expression",
+      "constant_len_expression",
       "empty_if_statement",
       "empty_for_statement",
       "empty_forge_statement",

@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.constant_len",
+  "filters": {
+    "module": null,
+    "rules": [
+      "constant_len_expression"
+    ]
+  },
+  "findings": [
+    {
+      "id": "CONSTANT_LEN_EXPRESSION",
+      "rule": "constant_len_expression",
+      "severity": "warning",
+      "message": "task `app.constant_len.main` has a constant len expression `len([\"red\", \"blue\", \"green\"])`",
+      "node": "block:task:app.constant_len.main:stmt:0:expr",
+      "module": "app.constant_len",
+      "hint": "replace the constant len expression with `3`"
+    }
+  ]
+}

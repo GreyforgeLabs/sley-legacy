@@ -101,7 +101,7 @@ sley fix --json --kind <kind> [--template-surface <surface>] [--name <name>] [--
 sley verify --json [--deny-warnings] [runtime gates/seeds] <target>
 sley deploy --json --dry-run [--artifacts-dir <dir>] [runtime gates/seeds] <target>
 sley query --json [--kind all|modules|tasks|types|effects|calls] [--module <module>] <target>
-sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter|missing-module-declaration|unchecked-result|unqualified-imported-call|unused-pure-binding|unused-pure-expression-statement|mutable-binding-never-set|constant-if-expression|constant-if-statement|constant-false-while-statement|constant-comparison-expression|constant-arithmetic-expression|constant-text-concatenation-expression|constant-list-index-expression|constant-map-index-expression|constant-record-field-access-expression|empty-if-statement|empty-for-statement|empty-forge-statement|identity-binary-expression|redundant-boolean-comparison|absorbing-boolean-expression|self-comparison-expression|double-negation-expression|negated-comparison-expression|redundant-boolean-if-expression|redundant-boolean-if-statement|same-branch-if-expression|same-branch-if-statement|unreachable-statement] [--module <module>] <target>
+sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter|missing-module-declaration|unchecked-result|unqualified-imported-call|unused-pure-binding|unused-pure-expression-statement|mutable-binding-never-set|constant-if-expression|constant-if-statement|constant-false-while-statement|constant-comparison-expression|constant-arithmetic-expression|constant-text-concatenation-expression|constant-list-index-expression|constant-map-index-expression|constant-record-field-access-expression|constant-len-expression|empty-if-statement|empty-for-statement|empty-forge-statement|identity-binary-expression|redundant-boolean-comparison|absorbing-boolean-expression|self-comparison-expression|double-negation-expression|negated-comparison-expression|redundant-boolean-if-expression|redundant-boolean-if-statement|same-branch-if-expression|same-branch-if-statement|unreachable-statement] [--module <module>] <target>
 sley-ci lint --json [--deny-warnings] [--rule <rule>] [--module <module>] <target>
 sley-ci doctor --json [--deny-warnings] <target>
 sley-ci plan --json [--deny-warnings] [--graft-templates] [--template-surface <surface>] <target>
@@ -651,6 +651,10 @@ The current smoke manifest covers:
   `simplify_constant_record_field_access_expression` templates that replace
   literal record field access over scalar literal values with the selected
   field literal through lint/plan/fix-write/verify CLI smoke coverage
+- constant len expression warnings through `constant_len_expression`, plus
+  checked `simplify_constant_len_expression` templates that replace literal
+  `len` calls over literal text, literal lists, or literal maps with the
+  literal length through lint/plan/fix-write/verify CLI smoke coverage
 - empty-if statement warnings through `empty_if_statement`, plus checked
   `delete_empty_if_statement` templates that remove no-op `if` statements with
   delete-safe conditions and empty branches through lint/plan/fix-write/verify
@@ -821,6 +825,11 @@ The v0 lint rules are:
   access such as `User { name: "Ada" }.name` is reported when the receiver is a
   record literal with scalar literal values and the field is present, so agents
   can replace it with the selected literal without dropping runtime work.
+- `constant_len_expression`: checked literal `len` calls such as
+  `len(["a", "b"])` are reported when the argument is a literal text, a list
+  with scalar literal items, or a map with text literal keys and scalar literal
+  values, so agents can replace it with the literal length without dropping
+  runtime work.
 - `empty_if_statement`: an `if` statement with a delete-safe condition and
   empty branches is reported so agents can delete no-op control flow without
   dropping calls, indexing, `?`, division, or remainder work.
@@ -881,6 +890,7 @@ The command supports `--module <module>`, `--rule unused-private-task`,
 `--rule constant-list-index-expression`,
 `--rule constant-map-index-expression`,
 `--rule constant-record-field-access-expression`,
+`--rule constant-len-expression`,
 `--rule empty-if-statement`,
 `--rule empty-for-statement`,
 `--rule empty-forge-statement`,
