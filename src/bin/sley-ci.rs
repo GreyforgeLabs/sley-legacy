@@ -47,6 +47,18 @@ enum Command {
         deny_warnings: bool,
         target: PathBuf,
     },
+    /// Run the Sley edit-plan readiness helper over one target.
+    Plan {
+        #[arg(long)]
+        json: bool,
+        #[arg(long)]
+        deny_warnings: bool,
+        #[arg(long)]
+        graft_templates: bool,
+        #[arg(long, requires = "graft_templates")]
+        template_surface: Option<String>,
+        target: PathBuf,
+    },
     /// Run the Sley verify gate over one target.
     Verify {
         #[arg(long)]
@@ -250,6 +262,22 @@ fn run(cli: Cli) -> Result<(CiReport, bool)> {
             let report = build_doctor_report(&sley_bin, &target, deny_warnings)?;
             Ok((report, json))
         }
+        Command::Plan {
+            json,
+            deny_warnings,
+            graft_templates,
+            template_surface,
+            target,
+        } => {
+            let report = build_plan_report(
+                &sley_bin,
+                &target,
+                deny_warnings,
+                graft_templates,
+                template_surface.as_deref(),
+            )?;
+            Ok((report, json))
+        }
         Command::Verify {
             json,
             deny_warnings,
@@ -415,6 +443,36 @@ fn build_doctor_report(sley_bin: &Path, target: &Path, deny_warnings: bool) -> R
     let steps = vec![run_sley_step(sley_bin, &cwd, "doctor", args, true, Vec::new()).step];
     Ok(finalize_report(
         "doctor",
+        Some(path_string(target)),
+        None,
+        steps,
+        Vec::new(),
+    ))
+}
+
+fn build_plan_report(
+    sley_bin: &Path,
+    target: &Path,
+    deny_warnings: bool,
+    graft_templates: bool,
+    template_surface: Option<&str>,
+) -> Result<CiReport> {
+    let cwd = env::current_dir()?;
+    let mut args = vec!["plan".into(), "--json".into()];
+    if deny_warnings {
+        args.push("--deny-warnings".into());
+    }
+    if graft_templates {
+        args.push("--graft-templates".into());
+    }
+    if let Some(template_surface) = template_surface {
+        args.push("--template-surface".into());
+        args.push(template_surface.into());
+    }
+    args.push(path_string(target));
+    let steps = vec![run_sley_step(sley_bin, &cwd, "plan", args, true, Vec::new()).step];
+    Ok(finalize_report(
+        "plan",
         Some(path_string(target)),
         None,
         steps,
