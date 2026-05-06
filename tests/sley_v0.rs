@@ -5560,13 +5560,51 @@ task main -> Int {
     assert_eq!(nested_statement.parent, "block:task:main.main:stmt:1:then");
     assert_eq!(nested_statement.position, 0);
     assert_eq!(nested_statement.max_position, 0);
+    assert_eq!(
+        nested_statement.operation.pointer("/op"),
+        Some(&serde_json::json!("MoveNode"))
+    );
+    assert_eq!(
+        nested_statement.operation.pointer("/payload/parent"),
+        Some(&serde_json::json!("block:task:main.main:stmt:1:then"))
+    );
+    assert_eq!(
+        nested_statement.editable_json_pointers,
+        vec!["/payload/position".to_string()]
+    );
+    let nested_graft: GraftInput =
+        serde_json::from_value(nested_statement.operation.clone()).expect("parse nested move");
+    let nested_outcome = apply_graft_input(&program, nested_graft, Some("agent:test".to_string()));
+    assert_eq!(
+        nested_outcome.status, "accepted",
+        "{:#?}",
+        nested_outcome.diagnostics
+    );
+    let top_destination = nested_statement
+        .destinations
+        .iter()
+        .find(|destination| destination.parent == "block:task:main.main")
+        .expect("top-level destination block");
     assert!(
-        nested_statement
-            .destinations
-            .iter()
-            .any(|destination| destination.parent == "block:task:main.main"
-                && destination.max_position == 3),
-        "expected top-level destination block, got {nested_statement:#?}"
+        top_destination.max_position == 3,
+        "expected top-level destination block insertion limit, got {top_destination:#?}"
+    );
+    assert_eq!(
+        top_destination.operation.pointer("/payload/destination"),
+        Some(&serde_json::json!("block:task:main.main"))
+    );
+    assert_eq!(
+        top_destination.operation.pointer("/payload/position"),
+        Some(&serde_json::json!(3))
+    );
+    let destination_graft: GraftInput =
+        serde_json::from_value(top_destination.operation.clone()).expect("parse destination move");
+    let destination_outcome =
+        apply_graft_input(&program, destination_graft, Some("agent:test".to_string()));
+    assert_eq!(
+        destination_outcome.status, "accepted",
+        "{:#?}",
+        destination_outcome.diagnostics
     );
     assert!(
         !nested_statement
@@ -5587,6 +5625,10 @@ task main -> Int {
     assert_eq!(take.parent, "task:main.main:takes");
     assert_eq!(take.position, 0);
     assert_eq!(take.max_position, 0);
+    assert_eq!(
+        take.operation.pointer("/target"),
+        Some(&serde_json::json!("take:task:main.main:0:value"))
+    );
     assert!(
         take.destinations
             .iter()

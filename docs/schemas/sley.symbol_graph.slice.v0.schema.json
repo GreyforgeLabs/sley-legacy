@@ -59,6 +59,8 @@
         "parent",
         "position",
         "max_position",
+        "operation",
+        "editable_json_pointers",
         "destinations"
       ],
       "properties": {
@@ -67,6 +69,11 @@
         "parent": { "type": "string" },
         "position": { "type": "integer", "minimum": 0 },
         "max_position": { "type": "integer", "minimum": 0 },
+        "operation": { "type": "object" },
+        "editable_json_pointers": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
         "destinations": {
           "type": "array",
           "items": { "$ref": "#/$defs/moveDestination" }
@@ -76,10 +83,20 @@
     },
     "moveDestination": {
       "type": "object",
-      "required": ["parent", "max_position"],
+      "required": [
+        "parent",
+        "max_position",
+        "operation",
+        "editable_json_pointers"
+      ],
       "properties": {
         "parent": { "type": "string" },
-        "max_position": { "type": "integer", "minimum": 0 }
+        "max_position": { "type": "integer", "minimum": 0 },
+        "operation": { "type": "object" },
+        "editable_json_pointers": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
       },
       "additionalProperties": false
     }

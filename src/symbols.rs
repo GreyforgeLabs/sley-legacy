@@ -1,6 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use serde::Serialize;
+use serde_json::{Value as JsonValue, json};
 
 use crate::ast::{
     Block, EffectDecl, Expr, ExprKind, ImportDecl, Program, Statement, StatementKind, TaskDecl,
@@ -106,20 +107,24 @@ pub struct TaskCallSummary {
     pub candidates: Vec<String>,
 }
 
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct MoveNodeAffordance {
     pub target: String,
     pub target_kind: String,
     pub parent: String,
     pub position: usize,
     pub max_position: usize,
+    pub operation: JsonValue,
+    pub editable_json_pointers: Vec<String>,
     pub destinations: Vec<MoveNodeDestination>,
 }
 
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct MoveNodeDestination {
     pub parent: String,
     pub max_position: usize,
+    pub operation: JsonValue,
+    pub editable_json_pointers: Vec<String>,
 }
 
 pub fn build_symbol_graph(program: &Program) -> SymbolGraph {
@@ -654,6 +659,13 @@ fn collect_take_move_affordances(
                 (destination.id != task.id).then(|| MoveNodeDestination {
                     parent: format!("{}:takes", destination.id),
                     max_position: destination.takes.len(),
+                    operation: move_node_operation(
+                        &take.id,
+                        &parent,
+                        Some(&format!("{}:takes", destination.id)),
+                        destination.takes.len(),
+                    ),
+                    editable_json_pointers: move_node_editable_json_pointers(),
                 })
             })
             .collect();
@@ -663,6 +675,8 @@ fn collect_take_move_affordances(
             parent: parent.clone(),
             position,
             max_position,
+            operation: move_node_operation(&take.id, &parent, None, position),
+            editable_json_pointers: move_node_editable_json_pointers(),
             destinations,
         });
     }
@@ -763,6 +777,13 @@ fn collect_statement_move_affordances_in_block(
             .map(|destination| MoveNodeDestination {
                 parent: destination.parent.clone(),
                 max_position: destination.max_position,
+                operation: move_node_operation(
+                    &statement.id,
+                    parent,
+                    Some(&destination.parent),
+                    destination.max_position,
+                ),
+                editable_json_pointers: move_node_editable_json_pointers(),
             })
             .collect();
         affordances.push(MoveNodeAffordance {
@@ -771,6 +792,8 @@ fn collect_statement_move_affordances_in_block(
             parent: parent.to_string(),
             position,
             max_position,
+            operation: move_node_operation(&statement.id, parent, None, position),
+            editable_json_pointers: move_node_editable_json_pointers(),
             destinations: destination_parents,
         });
         match &statement.kind {
@@ -824,6 +847,32 @@ fn collect_statement_move_affordances_in_block(
             | StatementKind::Expr { .. } => {}
         }
     }
+}
+
+fn move_node_operation(
+    target: &str,
+    parent: &str,
+    destination: Option<&str>,
+    position: usize,
+) -> JsonValue {
+    let mut payload = json!({
+        "parent": parent,
+        "position": position,
+    });
+    if let Some(destination) = destination
+        && let Some(payload) = payload.as_object_mut()
+    {
+        payload.insert("destination".to_string(), json!(destination));
+    }
+    json!({
+        "op": "MoveNode",
+        "target": target,
+        "payload": payload
+    })
+}
+
+fn move_node_editable_json_pointers() -> Vec<String> {
+    vec!["/payload/position".to_string()]
 }
 
 fn module_summary(program: &Program, module: &str) -> ModuleSymbolSummary {

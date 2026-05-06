@@ -646,8 +646,10 @@ copy targets directly from graph, graph-slice, or query JSON. Graph slices also
 include `move_affordances` for bounded statement and take movement planning:
 each affordance exposes the exact `MoveNode` target, current parent, current
 position, in-parent maximum position, and safe destination parents with their
-insertion limits. Call-site and expression grafts now consume node ids and task
-identities from this shard.
+insertion limits. Affordances and destination entries also carry strict starter
+`MoveNode` operation JSON plus editable JSON pointers so agents can copy a
+template, adjust `/payload/position`, and dry-run the graft. Call-site and
+expression grafts now consume node ids and task identities from this shard.
 
 `sley query` is the first checked graph query report. It parses and checks the
 target before emitting results, so semantic failures return the normal

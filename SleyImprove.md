@@ -262,7 +262,7 @@ import node ids so agents can copy import graft targets directly from the
 machine contract instead of reconstructing them.
 Graph slices also expose bounded `MoveNode` affordances for statement and take
 movement planning, including exact parent ids and safe destination insertion
-limits.
+limits, starter operation JSON, and editable JSON pointers.
 
 The important rule is not that all operations exist immediately. The important
 rule is that unsupported operations reject cleanly with explicit diagnostics.

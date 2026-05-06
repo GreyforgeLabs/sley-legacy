@@ -95,6 +95,17 @@
       "parent": "block:task:app.main.main",
       "position": 0,
       "max_position": 0,
+      "operation": {
+        "op": "MoveNode",
+        "payload": {
+          "parent": "block:task:app.main.main",
+          "position": 0
+        },
+        "target": "block:task:app.main.main:stmt:0"
+      },
+      "editable_json_pointers": [
+        "/payload/position"
+      ],
       "destinations": []
     }
   ],
