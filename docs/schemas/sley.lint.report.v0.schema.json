@@ -33,7 +33,8 @@
               "constant_if_expression",
               "identity_binary_expression",
               "redundant_boolean_comparison",
-              "double_negation_expression"
+              "double_negation_expression",
+              "redundant_boolean_if_expression"
             ]
           },
           "uniqueItems": true
@@ -73,7 +74,8 @@
               "CONSTANT_IF_EXPRESSION",
               "IDENTITY_BINARY_EXPRESSION",
               "REDUNDANT_BOOLEAN_COMPARISON",
-              "DOUBLE_NEGATION_EXPRESSION"
+              "DOUBLE_NEGATION_EXPRESSION",
+              "REDUNDANT_BOOLEAN_IF_EXPRESSION"
             ]
           },
           "rule": {
@@ -94,7 +96,8 @@
               "constant_if_expression",
               "identity_binary_expression",
               "redundant_boolean_comparison",
-              "double_negation_expression"
+              "double_negation_expression",
+              "redundant_boolean_if_expression"
             ]
           },
           "severity": { "enum": ["warning"] },

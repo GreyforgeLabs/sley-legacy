@@ -117,7 +117,8 @@ Implemented now:
   `--rule mutable-binding-never-set`, `--rule constant-if-expression`,
   `--rule identity-binary-expression`, or
   `--rule redundant-boolean-comparison`, or
-  `--rule double-negation-expression`
+  `--rule double-negation-expression`, or
+  `--rule redundant-boolean-if-expression`
   filters, and
   `schema: "sley.lint.report.v0"` for warning-grade graph and authority lints
 - in-tree `sley-contract` utility scaffold with `inventory`, `check-fixtures`,
@@ -167,6 +168,8 @@ Implemented now:
   `simplify_redundant_boolean_comparison` templates for boolean comparisons
   against `true` or `false`,
   `simplify_double_negation_expression` templates for `!!expr` forms,
+  `simplify_redundant_boolean_if_expression` templates for boolean `if`
+  expressions that can be replaced by the condition or its negation,
   `--template-surface <surface>` targeting for task, block, statement, take,
   expression, program, or lint surfaces, including checked task-body and block
   `insert_statement` starters, checked statement-surface `replace_statement`

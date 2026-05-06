@@ -40,7 +40,8 @@
       "constant_if_expression",
       "identity_binary_expression",
       "redundant_boolean_comparison",
-      "double_negation_expression"
+      "double_negation_expression",
+      "redundant_boolean_if_expression"
     ],
     "finding_count": 0,
     "findings": []

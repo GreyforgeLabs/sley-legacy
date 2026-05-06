@@ -1,0 +1,7 @@
+module app.boolean_if
+
+task main -> Bool {
+  bind ready = true
+
+  return if ready { true } else { false }
+}
