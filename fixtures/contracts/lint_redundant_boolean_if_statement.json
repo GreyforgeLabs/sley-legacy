@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.boolean_if_statement",
+  "filters": {
+    "module": null,
+    "rules": [
+      "redundant_boolean_if_statement"
+    ]
+  },
+  "findings": [
+    {
+      "id": "REDUNDANT_BOOLEAN_IF_STATEMENT",
+      "rule": "redundant_boolean_if_statement",
+      "severity": "warning",
+      "message": "task `app.boolean_if_statement.main` has a redundant boolean if statement",
+      "node": "block:task:app.boolean_if_statement.main:stmt:1",
+      "module": "app.boolean_if_statement",
+      "hint": "replace the boolean if statement with `return ready`"
+    }
+  ]
+}

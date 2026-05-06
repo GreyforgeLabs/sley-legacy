@@ -128,6 +128,7 @@ Implemented now:
   `--rule self-comparison-expression`, or
   `--rule double-negation-expression`, or
   `--rule redundant-boolean-if-expression`, or
+  `--rule redundant-boolean-if-statement`, or
   `--rule same-branch-if-expression`, or
   `--rule unreachable-statement`
   filters, and
@@ -197,6 +198,8 @@ Implemented now:
   `simplify_double_negation_expression` templates for `!!expr` forms,
   `simplify_redundant_boolean_if_expression` templates for boolean `if`
   expressions that can be replaced by the condition or its negation,
+  `simplify_redundant_boolean_if_statement` templates for boolean `if`
+  statements that can return the condition or its negation directly,
   `simplify_same_branch_if_expression` templates for same-branch `if`
   expressions with delete-safe conditions,
   `delete_unreachable_statement` templates for dead statements after a
@@ -676,6 +679,8 @@ identity binary expression simplification templates with write/verify coverage,
 redundant boolean comparison simplification templates with write/verify
 coverage,
 double negation expression simplification templates with write/verify coverage,
+redundant boolean-if statement simplification templates with write/verify
+coverage,
 unreachable statement delete templates with write/verify coverage,
 private-task lint rules,
 declaration/import/API hygiene, authority hygiene, and explicit module style

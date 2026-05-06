@@ -3921,6 +3921,85 @@ fn edit_plan_graft_templates_include_redundant_boolean_if_expression_simplify() 
 }
 
 #[test]
+fn edit_plan_graft_templates_include_redundant_boolean_if_statement_simplify() {
+    let source = include_str!("../examples/redundant_boolean_if_statement.sley");
+    let program = parse_program(source).expect("parse redundant boolean if statement fixture");
+    let report = build_edit_plan_report_with_options(
+        "examples/redundant_boolean_if_statement.sley",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: None,
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "warnings");
+    assert_eq!(report.summary.lint_finding_count, 1);
+    assert_eq!(
+        report.lint.as_ref().expect("lint summary").findings[0].id,
+        "REDUNDANT_BOOLEAN_IF_STATEMENT"
+    );
+    let template = report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "simplify_redundant_boolean_if_statement")
+        .expect("redundant boolean if statement simplify template");
+    assert_eq!(
+        template.surface,
+        "block:task:app.boolean_if_statement.main:stmt:1"
+    );
+    assert_eq!(
+        template.operation.pointer("/op"),
+        Some(&serde_json::json!("ReplaceStatement"))
+    );
+    assert_eq!(
+        template.operation.pointer("/payload/source"),
+        Some(&serde_json::json!("return ready"))
+    );
+    assert_eq!(template.editable_json_pointers, vec!["/payload/source"]);
+    let graft: GraftInput = serde_json::from_value(template.operation.clone())
+        .expect("parse redundant boolean if statement template");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:boolean-if-statement-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted_source = outcome.source.expect("grafted source");
+    assert!(grafted_source.contains("return ready"));
+    assert!(!grafted_source.contains("if ready"));
+    let grafted_program = parse_program(&grafted_source).expect("parse grafted source");
+    let lint_report = build_lint_report(
+        &grafted_program,
+        LintOptions {
+            rules: vec![LintRule::RedundantBooleanIfStatement],
+            module: None,
+        },
+    );
+    assert_eq!(lint_report.status, "ok");
+
+    let targeted_report = build_edit_plan_report_with_options(
+        "examples/redundant_boolean_if_statement.sley",
+        Ok(program),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("block:task:app.boolean_if_statement.main:stmt:1".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(targeted_report.status, "warnings");
+    assert!(targeted_report.diagnostics.is_empty());
+    assert_eq!(targeted_report.graft_templates.len(), 1);
+    assert_eq!(
+        targeted_report.graft_templates[0].kind,
+        "simplify_redundant_boolean_if_statement"
+    );
+    assert!(targeted_report.transaction_templates.is_empty());
+}
+
+#[test]
 fn edit_plan_graft_templates_include_same_branch_if_expression_simplify() {
     let source = include_str!("../examples/same_branch_if_expression.sley");
     let program = parse_program(source).expect("parse same branch if fixture");
@@ -5831,6 +5910,23 @@ task helper -> Result<Text, Error> {
         include_str!("../fixtures/contracts/lint_redundant_boolean_if_expression.json"),
     );
 
+    let redundant_boolean_if_statement_source =
+        include_str!("../examples/redundant_boolean_if_statement.sley");
+    let redundant_boolean_if_statement_program =
+        parse_program(redundant_boolean_if_statement_source)
+            .expect("parse redundant boolean if statement fixture");
+    let redundant_boolean_if_statement_lint = build_lint_report(
+        &redundant_boolean_if_statement_program,
+        LintOptions {
+            rules: vec![LintRule::RedundantBooleanIfStatement],
+            module: None,
+        },
+    );
+    assert_json_snapshot(
+        &redundant_boolean_if_statement_lint,
+        include_str!("../fixtures/contracts/lint_redundant_boolean_if_statement.json"),
+    );
+
     let same_branch_if_source = include_str!("../examples/same_branch_if_expression.sley");
     let same_branch_if_program =
         parse_program(same_branch_if_source).expect("parse same branch if fixture");
@@ -6546,7 +6642,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(65))
+        Some(&serde_json::json!(66))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -13215,6 +13311,75 @@ task main -> Bool {
 }
 
 #[test]
+fn lint_report_flags_redundant_boolean_if_statements() {
+    let source = r#"
+module app.boolean_if_statement
+
+task main -> Bool {
+  bind ready = true
+  bind nested = ready && true
+
+  if ready {
+    return true
+  } else {
+    return false
+  }
+
+  if nested {
+    return false
+  } else {
+    return true
+  }
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+
+    let report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::RedundantBooleanIfStatement],
+            module: None,
+        },
+    );
+
+    assert_eq!(report.schema, LINT_REPORT_SCHEMA);
+    assert_eq!(report.status, "findings");
+    assert_eq!(report.entry_module, "app.boolean_if_statement");
+    assert_eq!(report.filters.rules, vec!["redundant_boolean_if_statement"]);
+    assert_eq!(report.findings.len(), 2);
+    assert_eq!(report.findings[0].id, "REDUNDANT_BOOLEAN_IF_STATEMENT");
+    assert_eq!(report.findings[0].rule, "redundant_boolean_if_statement");
+    assert_eq!(
+        report.findings[0].node,
+        "block:task:app.boolean_if_statement.main:stmt:2"
+    );
+    assert_eq!(report.findings[0].module, "app.boolean_if_statement");
+    assert!(report.findings[0].message.contains("boolean if statement"));
+    assert!(report.findings[0].hint.contains("return ready"));
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|finding| finding.hint.contains("return !nested"))
+    );
+
+    let scoped_report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::RedundantBooleanIfStatement],
+            module: Some("app.other".to_string()),
+        },
+    );
+    assert_eq!(scoped_report.status, "ok");
+    assert!(scoped_report.findings.is_empty());
+}
+
+#[test]
 fn lint_report_flags_same_branch_if_expressions() {
     let source = r#"
 module app.same_branch_if
@@ -15508,6 +15673,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:templates:empty-for-statement-delete",
         "graft:templates:empty-forge-statement-delete",
         "graft:templates:unreachable-statement-delete",
+        "graft:templates:redundant-boolean-if-statement",
         "graft:templates:unused-declared-effect-remove",
         "graft:templates:unused-import-delete",
         "graft:templates:unused-private-task-delete",
@@ -15544,6 +15710,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "lint:self_comparison_expression",
         "lint:double_negation_expression",
         "lint:redundant_boolean_if_expression",
+        "lint:redundant_boolean_if_statement",
         "lint:same_branch_if_expression",
         "lint:unreachable_statement",
         "query:tasks",
@@ -15567,6 +15734,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:self-comparison-repair-write-verify",
         "readiness:double-negation-repair-write-verify",
         "readiness:redundant-boolean-if-repair-write-verify",
+        "readiness:redundant-boolean-if-statement-repair-write-verify",
         "readiness:same-branch-if-repair-write-verify",
         "readiness:unreachable-statement-repair-write-verify",
         "readiness:lint-repair-plan",

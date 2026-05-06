@@ -101,7 +101,7 @@ sley fix --json --kind <kind> [--template-surface <surface>] [--name <name>] [--
 sley verify --json [--deny-warnings] [runtime gates/seeds] <target>
 sley deploy --json --dry-run [--artifacts-dir <dir>] [runtime gates/seeds] <target>
 sley query --json [--kind all|modules|tasks|types|effects|calls] [--module <module>] <target>
-sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter|missing-module-declaration|unchecked-result|unqualified-imported-call|unused-pure-binding|unused-pure-expression-statement|mutable-binding-never-set|constant-if-expression|constant-if-statement|constant-false-while-statement|empty-if-statement|empty-for-statement|empty-forge-statement|identity-binary-expression|redundant-boolean-comparison|absorbing-boolean-expression|self-comparison-expression|double-negation-expression|redundant-boolean-if-expression|same-branch-if-expression|unreachable-statement] [--module <module>] <target>
+sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter|missing-module-declaration|unchecked-result|unqualified-imported-call|unused-pure-binding|unused-pure-expression-statement|mutable-binding-never-set|constant-if-expression|constant-if-statement|constant-false-while-statement|empty-if-statement|empty-for-statement|empty-forge-statement|identity-binary-expression|redundant-boolean-comparison|absorbing-boolean-expression|self-comparison-expression|double-negation-expression|redundant-boolean-if-expression|redundant-boolean-if-statement|same-branch-if-expression|unreachable-statement] [--module <module>] <target>
 sley-ci lint --json [--deny-warnings] [--rule <rule>] [--module <module>] <target>
 sley-ci doctor --json [--deny-warnings] <target>
 sley-ci plan --json [--deny-warnings] [--graft-templates] [--template-surface <surface>] <target>
@@ -658,6 +658,11 @@ The current smoke manifest covers:
   `simplify_redundant_boolean_if_expression` templates that replace
   `if flag { true } else { false }` with `flag` and the inverted form with
   `!flag`
+- redundant boolean-if statement style warnings through
+  `redundant_boolean_if_statement`, plus checked
+  `simplify_redundant_boolean_if_statement` templates that replace
+  `if flag { return true } else { return false }` with `return flag` and the
+  inverted form with `return !flag`
 - same-branch if expression style warnings through
   `same_branch_if_expression`, plus checked
   `simplify_same_branch_if_expression` templates that replace
@@ -779,6 +784,10 @@ The v0 lint rules are:
 - `redundant_boolean_if_expression`: a checked expression-level
   `if flag { true } else { false }` or inverted boolean branch pair is
   reported so agents can replace it with the condition or its negation.
+- `redundant_boolean_if_statement`: a checked statement-level
+  `if flag { return true } else { return false }` or inverted boolean return
+  pair is reported so agents can replace it with a direct return of the
+  condition or its negation.
 - `same_branch_if_expression`: a checked expression-level `if` with identical
   branch source is reported when the condition is delete-safe, so agents can
   replace it with either branch without dropping authority work or recoverable
@@ -802,7 +811,8 @@ The command supports `--module <module>`, `--rule unused-private-task`,
 `--rule identity-binary-expression`, `--rule redundant-boolean-comparison`,
 `--rule absorbing-boolean-expression`, `--rule self-comparison-expression`,
 `--rule double-negation-expression`, `--rule redundant-boolean-if-expression`,
-`--rule same-branch-if-expression`, `--rule unreachable-statement`,
+`--rule redundant-boolean-if-statement`, `--rule same-branch-if-expression`,
+`--rule unreachable-statement`,
 and
 `--deny-warnings` lets CI turn findings into a failing exit after the JSON
 report is printed.

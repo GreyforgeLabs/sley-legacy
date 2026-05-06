@@ -862,6 +862,10 @@ program.
 `simplify_redundant_boolean_if_expression` `ReplaceExpression` templates when
 replacing `if flag { true } else { false }` with `flag`, or the inverted form
 with `!flag`, preserves a checked program.
+`redundant_boolean_if_statement` lint findings become checked
+`simplify_redundant_boolean_if_statement` `ReplaceStatement` templates when
+replacing `if flag { return true } else { return false }` with `return flag`,
+or the inverted form with `return !flag`, preserves a checked program.
 `same_branch_if_expression` lint findings become checked
 `simplify_same_branch_if_expression` `ReplaceExpression` templates when
 replacing `if condition { value } else { value }` with `value` preserves a
@@ -1011,6 +1015,8 @@ and `double_negation_expression`, which warns when a checked `!!expr` form can
 be replaced with the inner boolean expression; and
 `redundant_boolean_if_expression`, which warns when a checked expression-level
 boolean `if` can be replaced with the condition or its negation; and
+`redundant_boolean_if_statement`, which warns when a checked statement-level
+boolean `if` can return the condition or its negation directly; and
 `same_branch_if_expression`, which warns when a checked expression-level `if`
 has identical branches and a delete-safe condition.
 `unreachable_statement`, which warns when a statement appears after a
@@ -1033,6 +1039,7 @@ guaranteed `return` in the same block.
 `--rule absorbing-boolean-expression`, or `--rule self-comparison-expression`, or
 `--rule double-negation-expression`, or
 `--rule redundant-boolean-if-expression`, or
+`--rule redundant-boolean-if-statement`, or
 `--rule same-branch-if-expression`, or
 `--rule unreachable-statement` selects one rule explicitly, and
 `--deny-warnings` turns findings into a nonzero CLI exit after printing the
@@ -1140,12 +1147,12 @@ refuse generic data disguised as Sley artifacts before compression begins.
   cleanup templates, constant-false while statement cleanup templates,
   empty-if statement cleanup templates,
   empty-for statement cleanup templates, empty-forge statement cleanup
-  templates, unreachable statement cleanup
-  templates, and mutable
+  templates, redundant boolean-if statement cleanup templates,
+  unreachable statement cleanup templates, and mutable
   binding conversion transactions, constant-if expression and statement
   simplification, identity binary expression, redundant boolean
-  comparison, and double negation simplification templates, plus explicit
-  module style warnings;
+  comparison, double negation simplification, and redundant boolean-if
+  expression/statement simplification templates, plus explicit module style warnings;
   broader style and migration lints remain later work
 - `sley plan` emits deterministic ranked task edit surfaces, optional starter
   graft operation templates, rename-plus-call-site and add-take-plus-call-arg

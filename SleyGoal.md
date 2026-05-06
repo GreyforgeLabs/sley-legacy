@@ -40,7 +40,7 @@ Current verified surface:
 
 - `cargo fmt --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 250 tests.
+- Current integration coverage is 252 tests.
 - `sley query --json` emits `schema: "sley.query.report.v0"` and supports
   `--kind all|modules|tasks|types|effects|calls`, `--module <module>`, and
   `--exported`, including strict task/take/type/effect/call row definitions.
@@ -92,6 +92,7 @@ Current verified surface:
   `--rule self-comparison-expression`,
   `--rule double-negation-expression`,
   `--rule redundant-boolean-if-expression`,
+  `--rule redundant-boolean-if-statement`,
   `--rule same-branch-if-expression`, `--rule unreachable-statement`, and
   `--deny-warnings`.
 - The current lint rules are `unused_private_task` and
@@ -109,8 +110,9 @@ Current verified surface:
   `empty_forge_statement`,
   `identity_binary_expression`, `redundant_boolean_comparison`, and
   `absorbing_boolean_expression`, `self_comparison_expression`,
-  `double_negation_expression`, `redundant_boolean_if_expression`, and
-  `same_branch_if_expression`, and `unreachable_statement`.
+  `double_negation_expression`, `redundant_boolean_if_expression`,
+  `redundant_boolean_if_statement`, and `same_branch_if_expression`, and
+  `unreachable_statement`.
 - CLI smoke coverage is manifest-backed under
   `fixtures/cli_smokes/manifest.json`, including graph-slice insert and
   replace affordances, checked `insert_statement`, `replace_statement`, and
@@ -188,6 +190,8 @@ Current verified surface:
   `simplify_double_negation_expression` templates with lint/plan/fix-write/verify
   smoke coverage, plus checked `redundant_boolean_if_expression` style findings
   and `simplify_redundant_boolean_if_expression` templates with lint/plan/fix-write/verify
+  smoke coverage, plus checked `redundant_boolean_if_statement` style findings
+  and `simplify_redundant_boolean_if_statement` templates with lint/plan/fix-write/verify
   smoke coverage, plus checked `same_branch_if_expression` style findings and
   `simplify_same_branch_if_expression` templates with lint/plan/fix-write/verify
   smoke coverage, plus checked `unreachable_statement` dead-code findings and
@@ -409,6 +413,7 @@ cargo run -- lint --json --rule absorbing-boolean-expression <target>
 cargo run -- lint --json --rule self-comparison-expression <target>
 cargo run -- lint --json --rule double-negation-expression <target>
 cargo run -- lint --json --rule redundant-boolean-if-expression <target>
+cargo run -- lint --json --rule redundant-boolean-if-statement <target>
 cargo run -- lint --json --rule same-branch-if-expression <target>
 cargo run -- lint --json --rule unreachable-statement <target>
 cargo run -- query --json --kind types <target>
