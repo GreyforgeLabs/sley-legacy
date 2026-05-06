@@ -863,6 +863,9 @@ The current `sley zjx` command emits a preview JSON payload with
 optional graph slices, and trace receipts; it is not yet a compressed `.zjx`
 archive.
 
+The future compressed Sley runtime must validate Sley structure before packing;
+the lock boundary is specified in `docs/SleyZjxRuntimeLockSpec.md`.
+
 ## Current Gaps
 
 - runtime gates currently back filesystem text reads/writes, deterministic
