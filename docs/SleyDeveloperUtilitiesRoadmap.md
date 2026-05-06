@@ -85,15 +85,17 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
    - MVP commands:
      - `sley-ci check .`
      - `sley-ci verify --deny-warnings .`
+     - `sley-ci deploy --dry-run .`
      - `sley-ci smoke fixtures/cli_smokes/manifest.json`
    - Scaffold:
      - `action.yml`;
      - `bin/sley-ci`;
      - `.pre-commit-hooks.yaml`;
      - sample workflow under `examples/github-actions/`.
-   - Current bootstrap: in-tree `src/bin/sley-ci.rs` exposes `check`, `verify`,
-     and `smoke` wrappers with `schema: "sley.ci.report.v0"` output; GitHub
-     Action, pre-commit hook, and sample workflow packaging remain future work.
+   - Current bootstrap: in-tree `src/bin/sley-ci.rs` exposes `check`,
+     `verify`, `deploy`, and `smoke` wrappers with
+     `schema: "sley.ci.report.v0"` output; GitHub Action, pre-commit hook, and
+     sample workflow packaging remain future work.
    - Bootstrap done when generated `sley new --template deploy` and
      `sley new --template agent` projects can run seeded verify gates, local
      deploy dry-run package reports, and a CLI smoke manifest through `sley-ci`.

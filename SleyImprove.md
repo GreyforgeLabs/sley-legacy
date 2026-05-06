@@ -127,7 +127,7 @@ Rules:
   edit-plan schema pins strict graft operation and transaction template
   envelopes reused by graph-slice affordances, the graph-slice schema links
   focus, task, and call-summary payloads to shared contracts, `sley-ci`
-  check/verify/smoke reports and `sley-contract`
+  check/verify/deploy/smoke reports and `sley-contract`
   inventory/fixture-check/validate reports have versioned schemas, the graft
   outcome and trace receipt schemas pin accepted provenance records, the ZJX
   envelope schema pins graph, slice, and trace receipt handoff refs, and the
@@ -148,8 +148,8 @@ Rules:
   `next_commands`; the deploy and agent starters' generated action sequences
   are executed in integration coverage so first-run check, doctor, query, plan,
   lint, warning-denying verify, run, deploy dry-run package, seal, ZJX package
-  gates, and the agent starter's `sley-ci verify` handoff cannot silently
-  drift.
+  gates, and the agent starter's `sley-ci verify`/`sley-ci deploy` handoffs
+  cannot silently drift.
 - `sley plan` consumes the same checked surfaces into ranked task edit
   surfaces, call-row inspection next-actions, post-edit gate commands, and
   optional starter graft operation templates, rename-plus-call-site
@@ -501,7 +501,7 @@ The current smoke manifest covers:
   strict seeded `verify --json --deny-warnings` readiness, and local
   `sley deploy --dry-run` package reports, including scaffold-level and
   passed-verify seal/ZJX handoff next-actions plus the agent scaffold's
-  `sley-ci verify` handoff
+  `sley-ci verify` and `sley-ci deploy` handoffs
 - doctor/verify warning next-actions that route agents to checked
   `sley plan --json --graft-templates` lint repair plans and unambiguous
   `sley fix --dry-run` previews with explicit `write_command` vectors, plus a

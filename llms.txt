@@ -19,6 +19,7 @@ cargo run -- fix --json --kind delete_unused_private_declarations --dry-run <fil
 cargo run -- fix --json --kind delete_unused_private_declarations --write <file-or-project>
 cargo run -- verify --json <file-or-project>
 cargo run -- deploy --json --dry-run <file-or-project>
+cargo run --bin sley-ci -- deploy --json --dry-run <file-or-project>
 cargo run -- seal --json <file-or-project>
 cargo run -- graft --json --dry-run <file> <graft.json>
 cargo run -- graft --json --write <file> <graft.json>
@@ -121,8 +122,8 @@ The query schema exposes strict task, take, type, effect, and call summary row
 definitions for downstream bindings.
 The `sley-contract` binary exposes `inventory`, `check-fixtures`, and
 `validate` JSON Schema validation reports for schema/fixture contract-kit work.
-The `sley-ci` binary exposes `check`, `verify`, and `smoke` reports for local
-CI and pre-commit gates over existing Sley commands.
+The `sley-ci` binary exposes `check`, `verify`, `deploy`, and `smoke` reports
+for local CI and pre-commit gates over existing Sley commands.
 Graph-slice move/delete/replace affordance operations reuse the strict graft
 operation schema from edit-plan reports.
 Graph-slice focus, optional task, and inbound/outbound call summaries reuse
@@ -231,7 +232,8 @@ Current development phase:
   execution into one CI/pre-deploy gate; the deploy scaffold has a checked
   `--deny-warnings --cap Deploy --deploy-result staging staged` smoke, and
   the agent scaffold has a checked seeded SecretRead/Network/ModelCall/Deploy
-  verify smoke through both `sley verify` and `sley-ci verify`; denied warning
+  verify smoke through both `sley verify` and `sley-ci verify`, plus deploy
+  package smoke through `sley deploy` and `sley-ci deploy`; denied warning
   reports route agents to checked lint repair plans plus
   dry-run fix previews when the repair is unambiguous before deployment review;
   passed reports point agents to `sley seal --json <target>` and
