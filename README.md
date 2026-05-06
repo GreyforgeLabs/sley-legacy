@@ -833,6 +833,8 @@ and agent quickstarts, strict seeded verify readiness for the generated gated
 starters, deploy dry-run package reports with optional local artifact
 manifests, scaffold-level seal/ZJX handoff actions,
 temp setup files for write-mode CLI smokes, direct graft write smokes,
+the lightweight `sley-ci smoke` probe for parse, query, graft dry-run, and
+seeded multi-capability agent runtime authority,
 project `AddImport` writeback into existing unloaded module files plus
 follow-up strict project checks through direct graft JSON and `sley fix --write`,
 explicit graft/fix write trace reports and receipts, non-empty trace seal receipts,

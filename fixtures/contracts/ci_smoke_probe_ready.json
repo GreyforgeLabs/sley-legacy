@@ -4,8 +4,8 @@
   "command": "smoke",
   "manifest": "fixtures/ci_smoke_probe/manifest.json",
   "summary": {
-    "step_count": 1,
-    "passed_count": 1,
+    "step_count": 4,
+    "passed_count": 4,
     "failed_count": 0
   },
   "steps": [
@@ -25,6 +25,95 @@
       "covers": [
         "cli:parse",
         "json:sley.ast.program.v0"
+      ],
+      "issues": []
+    },
+    {
+      "name": "query_project_calls_json",
+      "status": "passed",
+      "command": [
+        "sley",
+        "query",
+        "--json",
+        "--kind",
+        "calls",
+        "examples/project"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "stdout_schema": "sley.query.report.v0",
+      "covers": [
+        "cli:query",
+        "json:sley.query.report.v0",
+        "query:calls",
+        "ci-smoke:multi-case"
+      ],
+      "issues": []
+    },
+    {
+      "name": "graft_insert_statement_dry_run_json",
+      "status": "passed",
+      "command": [
+        "sley",
+        "graft",
+        "--json",
+        "--dry-run",
+        "fixtures/ci_smoke_probe/graft_target.sley",
+        "fixtures/ci_smoke_probe/insert_statement.json"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "stdout_schema": "sley.graft.outcome.v0",
+      "covers": [
+        "cli:graft",
+        "graft:operations:insert-statement",
+        "json:sley.graft.outcome.v0"
+      ],
+      "issues": []
+    },
+    {
+      "name": "run_agent_deploy_pipeline_seeded_authority_json",
+      "status": "passed",
+      "command": [
+        "sley",
+        "run",
+        "--json",
+        "--cap",
+        "SecretRead",
+        "--secret",
+        "api_key",
+        "redacted",
+        "--cap",
+        "Network",
+        "--http-text",
+        "https://example.test/profile",
+        "profile ready",
+        "--cap",
+        "ModelCall",
+        "--model-output",
+        "deploy-plan",
+        "plan approved",
+        "--cap",
+        "Deploy",
+        "--deploy-result",
+        "staging",
+        "staged",
+        "fixtures/corpus/accepted/agent_deploy_pipeline.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "stdout_schema": "sley.run.report.v0",
+      "covers": [
+        "cli:run",
+        "json:sley.run.report.v0",
+        "runtime:seeded-host-authority",
+        "host:SecretRead",
+        "host:Network",
+        "host:ModelCall",
+        "host:Deploy"
       ],
       "issues": []
     }

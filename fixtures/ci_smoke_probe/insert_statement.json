@@ -1,0 +1,8 @@
+{
+  "op": "InsertStatement",
+  "target": "block:task:app.graft_probe.main",
+  "payload": {
+    "position": 0,
+    "source": "bind extra = 1"
+  }
+}

@@ -1,0 +1,5 @@
+module app.graft_probe
+
+task main -> Int {
+  return 41
+}

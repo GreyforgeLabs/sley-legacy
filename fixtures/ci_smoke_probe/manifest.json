@@ -12,6 +12,97 @@
           { "pointer": "/tasks/0/name", "value": "main" }
         ]
       }
+    },
+    {
+      "name": "query_project_calls_json",
+      "args": ["query", "--json", "--kind", "calls", "examples/project"],
+      "covers": [
+        "cli:query",
+        "json:sley.query.report.v0",
+        "query:calls",
+        "ci-smoke:multi-case"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.query.report.v0" },
+          { "pointer": "/kind", "value": "calls" },
+          { "pointer": "/calls/0/from", "value": "app.main.main" },
+          { "pointer": "/calls/0/status", "value": "resolved" },
+          { "pointer": "/calls/0/target", "value": "app.math.double" }
+        ]
+      }
+    },
+    {
+      "name": "graft_insert_statement_dry_run_json",
+      "args": [
+        "graft",
+        "--json",
+        "--dry-run",
+        "fixtures/ci_smoke_probe/graft_target.sley",
+        "fixtures/ci_smoke_probe/insert_statement.json"
+      ],
+      "covers": [
+        "cli:graft",
+        "graft:operations:insert-statement",
+        "json:sley.graft.outcome.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/operation", "value": "InsertStatement" },
+          { "pointer": "/provenance/0/targets/0", "value": "block:task:app.graft_probe.main" }
+        ]
+      }
+    },
+    {
+      "name": "run_agent_deploy_pipeline_seeded_authority_json",
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "SecretRead",
+        "--secret",
+        "api_key",
+        "redacted",
+        "--cap",
+        "Network",
+        "--http-text",
+        "https://example.test/profile",
+        "profile ready",
+        "--cap",
+        "ModelCall",
+        "--model-output",
+        "deploy-plan",
+        "plan approved",
+        "--cap",
+        "Deploy",
+        "--deploy-result",
+        "staging",
+        "staged",
+        "fixtures/corpus/accepted/agent_deploy_pipeline.sley"
+      ],
+      "covers": [
+        "cli:run",
+        "json:sley.run.report.v0",
+        "runtime:seeded-host-authority",
+        "host:SecretRead",
+        "host:Network",
+        "host:ModelCall",
+        "host:Deploy"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.run.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/value/kind", "value": "Ok" },
+          { "pointer": "/value/value/kind", "value": "Text" },
+          { "pointer": "/value/value/value", "value": "profile ready | plan approved | staged" }
+        ]
+      }
     }
   ]
 }
