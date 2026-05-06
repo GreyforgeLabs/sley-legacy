@@ -994,6 +994,7 @@ enum CliLintRule {
     UnreachableStatement,
     AbsorbingArithmeticExpression,
     SelfAssignmentStatement,
+    OverwrittenSetStatement,
 }
 
 impl From<CliLintRule> for LintRule {
@@ -1045,6 +1046,7 @@ impl From<CliLintRule> for LintRule {
             CliLintRule::UnreachableStatement => Self::UnreachableStatement,
             CliLintRule::AbsorbingArithmeticExpression => Self::AbsorbingArithmeticExpression,
             CliLintRule::SelfAssignmentStatement => Self::SelfAssignmentStatement,
+            CliLintRule::OverwrittenSetStatement => Self::OverwrittenSetStatement,
         }
     }
 }

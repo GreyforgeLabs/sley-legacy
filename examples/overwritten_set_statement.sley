@@ -1,0 +1,9 @@
+module app.overwritten_set
+
+task main -> Int {
+  state count = 0
+  set count = 1
+  set count = 2
+
+  return count
+}

@@ -820,6 +820,10 @@ the no-op pure expression statement preserves a checked program.
 `self_assignment_statement` lint findings become checked
 `delete_self_assignment_statement` `DeleteNode` templates when deleting a
 no-op `set name = name` mutation preserves a checked program.
+`overwritten_set_statement` lint findings become checked
+`delete_overwritten_set_statement` `DeleteNode` templates when deleting a
+delete-safe `set` statement immediately overwritten before any read preserves a
+checked program.
 `constant_if_expression` lint findings become checked
 `simplify_constant_if_expression` `ReplaceExpression` templates when replacing
 an expression-level `if true/false` with the branch that executes preserves a
@@ -1041,11 +1045,14 @@ indexing, division, or remainder operation; and
 delete-safe pure expression and discards it; and `mutable_binding_never_set`,
 which warns when a mutable local such as `state` or `tally` is never assigned
 with `set`; and `self_assignment_statement`, which warns when a no-op
-`set name = name` mutation can be deleted; and `constant_if_expression`, which
-warns when an expression-level `if true/false { ... } else { ... }` can be
-replaced with the branch that executes; and `constant_if_statement`, which
-warns when a statement-level `if true/false { ... } else { ... }` can be
-replaced by its single executing branch statement; and
+`set name = name` mutation can be deleted; and `overwritten_set_statement`,
+which warns when a delete-safe `set name = ...` statement is immediately
+overwritten by another `set name = ...` before any read; and
+`constant_if_expression`, which warns when an expression-level
+`if true/false { ... } else { ... }` can be replaced with the branch that
+executes; and `constant_if_statement`, which warns when a statement-level
+`if true/false { ... } else { ... }` can be replaced by its single executing
+branch statement; and
 `constant_false_if_statement`, which warns when a
 never-executed `if false { ... }` statement without an `else` branch can be
 deleted; and `constant_false_while_statement`, which warns when a
@@ -1113,7 +1120,7 @@ guaranteed `return` in the same block.
 `--rule unqualified-imported-call`, `--rule unused-pure-binding`, or
 `--rule unused-pure-expression-statement`, or
 `--rule mutable-binding-never-set`, `--rule self-assignment-statement`, or
-`--rule constant-if-expression`, or
+`--rule overwritten-set-statement`, or `--rule constant-if-expression`, or
 `--rule constant-if-statement`, or
 `--rule constant-false-if-statement`, or
 `--rule constant-false-while-statement`, or
@@ -1242,7 +1249,8 @@ refuse generic data disguised as Sley artifacts before compression begins.
   raw-host-adapter and unchecked-result migration warnings with checked
   propagation templates, unqualified imported-call qualification templates,
   unused pure binding cleanup templates, unused pure expression statement
-  cleanup templates, self-assignment statement cleanup templates,
+  cleanup templates, self-assignment statement cleanup templates, overwritten
+  set statement cleanup templates,
   constant-false if and while statement cleanup templates,
   empty-if statement cleanup templates,
   empty-for statement cleanup templates, empty-forge statement cleanup

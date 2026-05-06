@@ -581,6 +581,10 @@ fn lint_graft_templates(
         program,
         lint_report,
     ));
+    templates.extend(lint_overwritten_set_statement_templates(
+        program,
+        lint_report,
+    ));
     templates.extend(lint_constant_if_expression_templates(program, lint_report));
     templates.extend(lint_constant_if_statement_templates(program, lint_report));
     templates.extend(lint_constant_false_if_statement_templates(
@@ -684,6 +688,7 @@ fn is_lint_repair_kind(kind: &str) -> bool {
             | "delete_unused_pure_binding"
             | "delete_unused_pure_expression_statement"
             | "delete_self_assignment_statement"
+            | "delete_overwritten_set_statement"
             | "simplify_constant_if_expression"
             | "simplify_constant_if_statement"
             | "delete_constant_false_if_statement"
@@ -963,6 +968,33 @@ fn lint_self_assignment_statement_templates(
             Some(EditPlanGraftTemplate {
                 kind: "delete_self_assignment_statement".to_string(),
                 reason: "delete this no-op self-assignment statement".to_string(),
+                surface: finding.node.clone(),
+                operation,
+                editable_json_pointers: Vec::new(),
+            })
+        })
+        .collect()
+}
+
+fn lint_overwritten_set_statement_templates(
+    program: &Program,
+    lint_report: &LintReport,
+) -> Vec<EditPlanGraftTemplate> {
+    lint_report
+        .findings
+        .iter()
+        .filter(|finding| finding.id == "OVERWRITTEN_SET_STATEMENT")
+        .filter_map(|finding| {
+            let operation = json!({
+                "op": "DeleteNode",
+                "target": finding.node
+            });
+            if !delete_affordance_checks(program, &operation) {
+                return None;
+            }
+            Some(EditPlanGraftTemplate {
+                kind: "delete_overwritten_set_statement".to_string(),
+                reason: "delete this dead set before an immediate overwrite".to_string(),
                 surface: finding.node.clone(),
                 operation,
                 editable_json_pointers: Vec::new(),
