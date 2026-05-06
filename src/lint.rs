@@ -2,7 +2,9 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use serde::Serialize;
 
-use crate::ast::{Block, Expr, ExprKind, ImportDecl, Program, Statement, StatementKind, TypeExpr};
+use crate::ast::{
+    BindingKind, Block, Expr, ExprKind, ImportDecl, Program, Statement, StatementKind, TypeExpr,
+};
 use crate::authority::host_effects_for_callee;
 use crate::query::{QueryKind, QueryOptions, build_query_report};
 use crate::symbols::{
@@ -18,6 +20,7 @@ pub enum LintRule {
     UnreachablePrivateTask,
     UnusedDeclaredEffect,
     UnusedImport,
+    UnusedTake,
     RawHostAdapter,
 }
 
@@ -28,6 +31,7 @@ impl LintRule {
             Self::UnreachablePrivateTask,
             Self::UnusedDeclaredEffect,
             Self::UnusedImport,
+            Self::UnusedTake,
             Self::RawHostAdapter,
         ]
     }
@@ -38,6 +42,7 @@ impl LintRule {
             Self::UnreachablePrivateTask => "unreachable_private_task",
             Self::UnusedDeclaredEffect => "unused_declared_effect",
             Self::UnusedImport => "unused_import",
+            Self::UnusedTake => "unused_take",
             Self::RawHostAdapter => "raw_host_adapter",
         }
     }
@@ -99,6 +104,9 @@ pub fn build_lint_report(program: &Program, options: LintOptions) -> LintReport 
     }
     if rules.contains(&LintRule::UnusedImport) {
         findings.extend(lint_unused_imports(program, options.module.as_deref()));
+    }
+    if rules.contains(&LintRule::UnusedTake) {
+        findings.extend(lint_unused_takes(program, options.module.as_deref()));
     }
     if rules.contains(&LintRule::RawHostAdapter) {
         findings.extend(lint_raw_host_adapters(program, options.module.as_deref()));
@@ -326,6 +334,112 @@ fn lint_unused_declared_effects(program: &Program, module: Option<&str>) -> Vec<
 
 fn module_matches(filter: Option<&str>, module: &str) -> bool {
     filter.is_none_or(|filter| filter == module)
+}
+
+fn lint_unused_takes(program: &Program, module: Option<&str>) -> Vec<LintFinding> {
+    program
+        .tasks
+        .iter()
+        .filter(|task| module_matches(module, &task_module(task)))
+        .flat_map(|task| {
+            let qualified_name = task_fq_name(task);
+            let module_name = task_module(task);
+            task.takes
+                .iter()
+                .filter(|take| take.binding_kind == BindingKind::Take)
+                .filter(|take| !block_uses_identifier(&task.body, &take.name))
+                .map(move |take| LintFinding {
+                    id: "UNUSED_TAKE".to_string(),
+                    rule: LintRule::UnusedTake.as_str().to_string(),
+                    severity: "warning".to_string(),
+                    message: format!(
+                        "task `{qualified_name}` declares take `{}` but never reads it",
+                        take.name
+                    ),
+                    node: take.id.clone(),
+                    module: module_name.clone(),
+                    hint: format!(
+                        "remove take `{}` and update callers, or read it in the task body",
+                        take.name
+                    ),
+                })
+        })
+        .collect()
+}
+
+fn block_uses_identifier(block: &Block, name: &str) -> bool {
+    block
+        .statements
+        .iter()
+        .any(|statement| statement_uses_identifier(statement, name))
+}
+
+fn statement_uses_identifier(statement: &Statement, name: &str) -> bool {
+    match &statement.kind {
+        StatementKind::Binding { expr, .. }
+        | StatementKind::Set { expr, .. }
+        | StatementKind::Return { expr }
+        | StatementKind::Expr { expr } => expr_uses_identifier(expr, name),
+        StatementKind::If {
+            condition,
+            then_block,
+            else_block,
+        } => {
+            expr_uses_identifier(condition, name)
+                || block_uses_identifier(then_block, name)
+                || else_block
+                    .as_ref()
+                    .is_some_and(|block| block_uses_identifier(block, name))
+        }
+        StatementKind::While { condition, body } => {
+            expr_uses_identifier(condition, name) || block_uses_identifier(body, name)
+        }
+        StatementKind::For {
+            collection, body, ..
+        } => expr_uses_identifier(collection, name) || block_uses_identifier(body, name),
+        StatementKind::Forge { body } => block_uses_identifier(body, name),
+    }
+}
+
+fn expr_uses_identifier(expr: &Expr, name: &str) -> bool {
+    match &expr.kind {
+        ExprKind::Identifier { name: candidate } => candidate == name,
+        ExprKind::Unary { expr, .. } | ExprKind::Try { expr } => expr_uses_identifier(expr, name),
+        ExprKind::Binary { left, right, .. } => {
+            expr_uses_identifier(left, name) || expr_uses_identifier(right, name)
+        }
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
+            expr_uses_identifier(condition, name)
+                || expr_uses_identifier(then_branch, name)
+                || expr_uses_identifier(else_branch, name)
+        }
+        ExprKind::Call { callee, args } => {
+            expr_uses_identifier(callee, name)
+                || args.iter().any(|arg| expr_uses_identifier(arg, name))
+        }
+        ExprKind::ListLiteral { items } => {
+            items.iter().any(|item| expr_uses_identifier(item, name))
+        }
+        ExprKind::MapLiteral { entries } => entries.iter().any(|entry| {
+            expr_uses_identifier(&entry.key, name) || expr_uses_identifier(&entry.value, name)
+        }),
+        ExprKind::Index { collection, index } => {
+            expr_uses_identifier(collection, name) || expr_uses_identifier(index, name)
+        }
+        ExprKind::FieldAccess { receiver, .. } => expr_uses_identifier(receiver, name),
+        ExprKind::RecordLiteral { fields, .. } => fields
+            .iter()
+            .any(|field| expr_uses_identifier(&field.expr, name)),
+        ExprKind::Raw { .. }
+        | ExprKind::StringLiteral { .. }
+        | ExprKind::IntLiteral { .. }
+        | ExprKind::FloatLiteral { .. }
+        | ExprKind::BoolLiteral { .. } => false,
+    }
 }
 
 fn lint_unused_imports(program: &Program, module: Option<&str>) -> Vec<LintFinding> {

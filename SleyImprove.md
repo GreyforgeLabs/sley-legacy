@@ -99,7 +99,7 @@ sley doctor --json [--deny-warnings] <target>
 sley plan --json [--deny-warnings] [--graft-templates] [--template-surface <task>] <target>
 sley verify --json [--deny-warnings] [runtime gates/seeds] <target>
 sley query --json [--kind all|modules|tasks|calls] [--module <module>] <target>
-sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|raw-host-adapter] [--module <module>] <target>
+sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|raw-host-adapter] [--module <module>] <target>
 sley trace --json <target>
 sley seal --json <target>
 sley zjx --json [--slice <node-id>] <target>
@@ -424,6 +424,7 @@ The current smoke manifest covers:
 - graph-slice replace affordances and checked `replace_expression` graft
   templates in edit-plan reports
 - import hygiene through the checked `unused_import` lint rule
+- API hygiene through the checked `unused_take` lint rule
 - deterministic seeded execution for `FileRead`, `FileWrite`, `DatabaseRead`,
   `DatabaseWrite`, `Network`, `Shell`, `ModelCall`, `SecretRead`, `Deploy`,
   and `Spend`
@@ -465,13 +466,16 @@ The v0 lint rules are:
   host call or resolved called-task effect justifies it.
 - `unused_import`: an import is reported when no checked task, type, or effect
   uses it.
+- `unused_take`: a normal task take is reported when the task body never reads
+  it.
 - `raw_host_adapter`: a legacy diagnostic-failing host call is reported when a
   fallible `try_` adapter should replace it.
 
 The command supports `--module <module>`, `--rule unused-private-task`,
 `--rule unreachable-private-task`, `--rule unused-declared-effect`,
-`--rule unused-import`, `--rule raw-host-adapter`, and `--deny-warnings` lets
-CI turn findings into a failing exit after the JSON report is printed.
+`--rule unused-import`, `--rule unused-take`, `--rule raw-host-adapter`, and
+`--deny-warnings` lets CI turn findings into a failing exit after the JSON
+report is printed.
 
 This is not production lint coverage yet. It is the first stable surface for
 agent-facing hygiene, authority lints, migration hints, and eventually

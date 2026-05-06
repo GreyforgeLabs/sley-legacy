@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.takes",
+  "filters": {
+    "module": null,
+    "rules": [
+      "unused_take"
+    ]
+  },
+  "findings": [
+    {
+      "id": "UNUSED_TAKE",
+      "rule": "unused_take",
+      "severity": "warning",
+      "message": "task `app.takes.helper` declares take `unused` but never reads it",
+      "node": "take:task:app.takes.helper:1:unused",
+      "module": "app.takes",
+      "hint": "remove take `unused` and update callers, or read it in the task body"
+    }
+  ]
+}

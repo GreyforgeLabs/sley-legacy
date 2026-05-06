@@ -844,7 +844,7 @@ task main -> Int {
             template_surface: Some("task:app.plan.main".to_string()),
         },
     );
-    assert_eq!(main_report.status, "ready");
+    assert_eq!(main_report.status, "warnings");
     let statement_destination = main_report
         .graft_templates
         .iter()
@@ -893,7 +893,7 @@ task main -> Int {
             template_surface: Some("task:app.plan.helper".to_string()),
         },
     );
-    assert_eq!(helper_report.status, "ready");
+    assert_eq!(helper_report.status, "warnings");
     let take_destination = helper_report
         .graft_templates
         .iter()
@@ -953,7 +953,7 @@ task main -> Int {
             template_surface: Some("task:app.plan.main".to_string()),
         },
     );
-    assert_eq!(main_report.status, "ready");
+    assert_eq!(main_report.status, "warnings");
     let statement_delete = main_report
         .graft_templates
         .iter()
@@ -998,7 +998,7 @@ task main -> Int {
             template_surface: Some("task:app.plan.helper".to_string()),
         },
     );
-    assert_eq!(helper_report.status, "ready");
+    assert_eq!(helper_report.status, "warnings");
     let take_delete = helper_report
         .graft_templates
         .iter()
@@ -1048,7 +1048,7 @@ task helper -> Int {
             template_surface: Some("task:app.plan.helper".to_string()),
         },
     );
-    assert_eq!(report.status, "ready");
+    assert_eq!(report.status, "warnings");
     assert_eq!(report.transaction_templates.len(), 3);
     assert_eq!(
         report.transaction_templates[2].kind,
@@ -2233,6 +2233,34 @@ task main -> Text uses Network {
         include_str!("../fixtures/contracts/lint_unused_import.json"),
     );
     let _ = fs::remove_dir_all(unused_import_root);
+
+    let unused_take_source = r#"
+module app.takes
+
+task main -> Int {
+  return call helper(21, 0)
+}
+
+task helper -> Int {
+  take value: Int
+  take unused: Int
+
+  return value
+}
+"#;
+    let unused_take_program =
+        parse_program(unused_take_source).expect("parse unused take lint fixture");
+    let unused_take_lint = build_lint_report(
+        &unused_take_program,
+        LintOptions {
+            rules: vec![LintRule::UnusedTake],
+            module: None,
+        },
+    );
+    assert_json_snapshot(
+        &unused_take_lint,
+        include_str!("../fixtures/contracts/lint_unused_take.json"),
+    );
 
     let hello_source = include_str!("../examples/hello.sley");
     let hello_program = parse_program(hello_source).expect("parse hello fixture");
@@ -6391,6 +6419,54 @@ fn lint_report_flags_unused_imports() {
 }
 
 #[test]
+fn lint_report_flags_unused_takes() {
+    let source = r#"
+module app.takes
+
+task main -> Int uses FileRead {
+  return call helper(21, 0)
+}
+
+task helper -> Int uses FileRead {
+  take value: Int
+  take unused: Int
+  take gate files: Gate<FileRead>
+
+  return value
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+
+    let report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::UnusedTake],
+            module: None,
+        },
+    );
+
+    assert_eq!(report.schema, LINT_REPORT_SCHEMA);
+    assert_eq!(report.status, "findings");
+    assert_eq!(report.entry_module, "app.takes");
+    assert_eq!(report.filters.rules, vec!["unused_take"]);
+    assert_eq!(report.findings.len(), 1);
+    assert_eq!(report.findings[0].id, "UNUSED_TAKE");
+    assert_eq!(report.findings[0].rule, "unused_take");
+    assert_eq!(
+        report.findings[0].node,
+        "take:task:app.takes.helper:1:unused"
+    );
+    assert_eq!(report.findings[0].module, "app.takes");
+    assert!(report.findings[0].message.contains("take `unused`"));
+    assert!(report.findings[0].hint.contains("update callers"));
+}
+
+#[test]
 fn trace_receipts_round_trip_as_jsonl() {
     let root = temp_project_dir("trace-round-trip");
     let trace_path = root.join(".sley/trace.jsonl");
@@ -7487,6 +7563,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graph-slice:replace-affordances",
         "lint:unused_declared_effect",
         "lint:unused_import",
+        "lint:unused_take",
         "lint:raw_host_adapter",
         "host:DatabaseRead",
         "host:DatabaseWrite",
