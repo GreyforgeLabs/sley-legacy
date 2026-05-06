@@ -393,6 +393,8 @@ Standalone dogfood example:
 
 ```bash
 sley check --json examples/agent_deploy_pipeline.sley
+sley doctor --json examples/agent_deploy_pipeline.sley
+sley query --json --kind calls examples/agent_deploy_pipeline.sley
 sley lint --json --deny-warnings examples/agent_deploy_pipeline.sley
 sley run --json --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged examples/agent_deploy_pipeline.sley
 sley verify --json --deny-warnings --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged examples/agent_deploy_pipeline.sley

@@ -9342,6 +9342,57 @@
       }
     },
     {
+      "name": "query_agent_deploy_pipeline_calls_json",
+      "args": [
+        "query",
+        "--json",
+        "--kind",
+        "calls",
+        "examples/agent_deploy_pipeline.sley"
+      ],
+      "covers": [
+        "cli:query",
+        "dogfood:agent-deploy-pipeline",
+        "json:sley.query.report.v0",
+        "query:calls"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.query.report.v0" },
+          { "pointer": "/kind", "value": "calls" },
+          { "pointer": "/entry_module", "value": "app.agent_deploy_pipeline" },
+          { "pointer": "/calls/0/callee", "value": "secrets.try_get" },
+          { "pointer": "/calls/1/callee", "value": "http.try_get_text" },
+          { "pointer": "/calls/2/callee", "value": "model.try_complete" },
+          { "pointer": "/calls/3/callee", "value": "deploy.try_stage" }
+        ]
+      }
+    },
+    {
+      "name": "doctor_agent_deploy_pipeline_json",
+      "args": ["doctor", "--json", "examples/agent_deploy_pipeline.sley"],
+      "covers": [
+        "cli:doctor",
+        "dogfood:agent-deploy-pipeline",
+        "json:sley.doctor.report.v0",
+        "readiness:inspect-calls"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.doctor.report.v0" },
+          { "pointer": "/status", "value": "ready" },
+          { "pointer": "/summary/call_count", "value": 7 },
+          { "pointer": "/query/effectful_tasks/0/effects/0", "value": "SecretRead" },
+          { "pointer": "/query/effectful_tasks/0/effects/1", "value": "Network" },
+          { "pointer": "/query/effectful_tasks/0/effects/2", "value": "ModelCall" },
+          { "pointer": "/query/effectful_tasks/0/effects/3", "value": "Deploy" },
+          { "pointer": "/next_actions/1/kind", "value": "inspect_calls" }
+        ]
+      }
+    },
+    {
       "name": "run_agent_deploy_pipeline_json",
       "args": [
         "run",
