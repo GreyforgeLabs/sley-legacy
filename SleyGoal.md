@@ -12,6 +12,8 @@ Read these first:
 - `README.md`
 - `llms.txt`
 - `docs/SleyLanguageSpec.md`
+- `docs/BrandingAssets.md` when touching public-facing Sley identity, images,
+  profile surfaces, banners, or post art
 - `SleyCompiler.md`
 - `SleyImprove.md`
 - `Cargo.toml`
