@@ -9412,6 +9412,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "lint:raw_host_adapter",
         "lint:missing_module_declaration",
         "lint:unchecked_result",
+        "readiness:deploy-lint-repair-write-verify",
         "readiness:lint-repair-plan",
         "readiness:lint-repair-preview",
         "readiness:lint-repair-write-verify",

@@ -71,9 +71,10 @@ Current verified surface:
   `sley plan --json --graft-templates` plus unambiguous
   `sley fix --dry-run` previews with a staged write-and-verify smoke for a
   previewed repair plus a project-level previewed unused-import write-and-verify
-  smoke, and checked `unchecked_result` migration templates that turn discarded
-  `Result` expression statements into explicit `?` propagation when valid, plus
-  checked `unused_import` and
+  smoke and a generated deploy scaffold repair loop re-verified with seeded
+  deploy authority, and checked `unchecked_result` migration templates that
+  turn discarded `Result` expression statements into explicit `?` propagation
+  when valid, plus checked `unused_import` and
   `unused_private_task` delete templates, fix dry runs, and a write-mode
   `delete_unused_import` cleanup that clears lint before
   `sley verify --deny-warnings`, plus checked dead private task cleanup

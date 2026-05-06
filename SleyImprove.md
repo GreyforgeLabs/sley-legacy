@@ -470,7 +470,8 @@ The current smoke manifest covers:
   `sley plan --json --graft-templates` lint repair plans and unambiguous
   `sley fix --dry-run` previews, plus a staged write-and-verify smoke for the
   previewed unused-private-task repair path and a project-level previewed
-  unused-import repair path
+  unused-import repair path, including a generated deploy scaffold re-verified
+  with seeded deploy authority
 - lint-driven declaration delete templates, cleanup transactions, and direct
   declaration surface targeting in edit-plan reports
 - lint-driven missing-module `AddModuleDeclaration` templates, module-name

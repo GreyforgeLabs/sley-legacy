@@ -881,8 +881,9 @@ archive.
   reports route agents to checked lint repair planning and dry-run fix previews
   before deployment review when the repair is unambiguous. The CLI smoke suite
   locks previewed lint-repair writes followed by strict verify for file and
-  project targets, plus a strict seeded deploy verify report for the generated
-  `sley new --template deploy` starter, while live
+  project targets, plus a repaired generated deploy scaffold re-verified with
+  seeded `Deploy` authority and a strict seeded deploy verify report for the
+  generated `sley new --template deploy` starter, while live
   deploy/provider calls remain outside v0
 - no `match`, agent declarations, spawn/cast/join, or compressed ZJX archive
   writer yet

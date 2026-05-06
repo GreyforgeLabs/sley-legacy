@@ -196,9 +196,10 @@ Implemented now:
   next-actions that route to lint repair plans and unambiguous dry-run fix
   previews, a staged previewed-repair write smoke that proves strict verify
   readiness afterward, a project-level previewed unused-import repair write
-  followed by strict verify, missing-module checked repair templates with
-  module-name inference, lint-driven fix writes that clear warnings before
-  verify, and seeded host-adapter execution
+  followed by strict verify, a generated deploy scaffold repair loop that
+  re-verifies with seeded deploy authority, missing-module checked repair
+  templates with module-name inference, lint-driven fix writes that clear
+  warnings before verify, and seeded host-adapter execution
 - compact agent onboarding pack in `llms.txt`
 
 Project form:

@@ -154,7 +154,8 @@ Current development phase:
   next-actions with `sley fix --json --dry-run` when exactly one checked lint
   repair exists; CLI smokes now prove the previewed repair can be written and
   followed by clean `sley verify --json --deny-warnings` for both single-file
-  and multi-file project targets
+  and multi-file project targets, including a generated deploy scaffold
+  re-verified with seeded `Deploy` authority
 - `sley plan --json` emits `sley.edit_plan.report.v0` and consumes strict
   diagnostics plus checked query/lint findings into ranked task edit surfaces,
   graft targets, and post-edit gate commands; add `--graft-templates` to emit

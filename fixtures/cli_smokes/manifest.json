@@ -174,6 +174,128 @@
       }
     },
     {
+      "name": "verify_deploy_project_unused_import_preview_repair_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/agent-app/src/app/main.sley",
+          "content": "module app.main\n\nimport app.stale as stale\n\ntask main -> Result<Text, Error> uses Deploy {\n  bind result = call deploy.try_stage(\"staging\")?\n\n  return Ok(result)\n}\n"
+        },
+        {
+          "path": "{tmp}/agent-app/src/app/stale.sley",
+          "content": "module app.stale\n\nexport task noop -> Int {\n  return 0\n}\n"
+        }
+      ],
+      "args": [
+        "verify",
+        "--json",
+        "--deny-warnings",
+        "--cap",
+        "Deploy",
+        "--deploy-result",
+        "staging",
+        "staged",
+        "{tmp}/agent-app"
+      ],
+      "covers": [
+        "cli:verify",
+        "cli:smoke-setup-files",
+        "json:sley.verify.report.v0",
+        "json:sley.query.report.v0",
+        "json:sley.lint.report.v0",
+        "lint:unused_import",
+        "readiness:deploy-lint-repair-write-verify",
+        "scaffold:deploy-quickstart"
+      ],
+      "expect": {
+        "success": false,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.verify.report.v0" },
+          { "pointer": "/status", "value": "blocked" },
+          { "pointer": "/summary/lint_finding_count", "value": 1 },
+          { "pointer": "/summary/runtime_status", "value": "skipped" },
+          { "pointer": "/next_actions/2/kind", "value": "preview_lint_repair" },
+          { "pointer": "/next_actions/2/command/1", "value": "fix" },
+          { "pointer": "/next_actions/2/command/4", "value": "delete_unused_import" },
+          { "pointer": "/next_actions/2/command/6", "value": "import:app.main:app.stale" },
+          { "pointer": "/next_actions/2/command/7", "value": "--dry-run" }
+        ]
+      }
+    },
+    {
+      "name": "fix_previewed_unused_import_deploy_project_write_json",
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "delete_unused_import",
+        "--template-surface",
+        "import:app.main:app.stale",
+        "--write",
+        "--actor",
+        "agent:cli-smoke",
+        "{tmp}/agent-app"
+      ],
+      "covers": [
+        "cli:fix",
+        "cli:fix-write",
+        "fix:write-source",
+        "graft:templates:unused-import-delete",
+        "json:sley.graft.outcome.v0",
+        "lint:unused_import",
+        "readiness:deploy-lint-repair-write-verify",
+        "scaffold:deploy-quickstart"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/actor", "value": "agent:cli-smoke" },
+          { "pointer": "/provenance/0/operation", "value": "DeleteNode" },
+          { "pointer": "/provenance/0/targets/0", "value": "import:app.main:app.stale" }
+        ]
+      }
+    },
+    {
+      "name": "verify_previewed_unused_import_deploy_project_write_json",
+      "args": [
+        "verify",
+        "--json",
+        "--deny-warnings",
+        "--cap",
+        "Deploy",
+        "--deploy-result",
+        "staging",
+        "staged",
+        "{tmp}/agent-app"
+      ],
+      "covers": [
+        "cli:verify",
+        "host:Deploy",
+        "json:sley.verify.report.v0",
+        "json:sley.query.report.v0",
+        "json:sley.lint.report.v0",
+        "readiness:deploy-lint-repair-write-verify",
+        "scaffold:deploy-quickstart",
+        "scaffold:verify-ready"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.verify.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/summary/warning_count", "value": 0 },
+          { "pointer": "/summary/lint_finding_count", "value": 0 },
+          { "pointer": "/summary/runtime_status", "value": "passed" },
+          { "pointer": "/lint/status", "value": "ok" },
+          { "pointer": "/runtime/status", "value": "passed" },
+          { "pointer": "/runtime/value/kind", "value": "Ok" },
+          { "pointer": "/runtime/value/value/kind", "value": "Text" },
+          { "pointer": "/runtime/value/value/value", "value": "staged" }
+        ]
+      }
+    },
+    {
       "name": "format_hello_stdout",
       "args": ["format", "examples/hello.sley"],
       "covers": ["cli:format"],
