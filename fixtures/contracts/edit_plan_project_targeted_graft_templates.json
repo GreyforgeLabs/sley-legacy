@@ -321,6 +321,18 @@
       ]
     },
     {
+      "kind": "inspect_calls",
+      "reason": "strict call rows show caller/callee edges before rename, arity, or authority edits",
+      "command": [
+        "sley",
+        "query",
+        "--json",
+        "--kind",
+        "calls",
+        "examples/project"
+      ]
+    },
+    {
       "kind": "post_edit_doctor",
       "reason": "preserve strict diagnostics and lint readiness after structural edits",
       "command": [

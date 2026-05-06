@@ -126,8 +126,10 @@ Rules:
   hints for common checker failures.
 - `sley doctor` is the first deterministic helper consuming strict check,
   `sley.query.report.v0`, and `sley.lint.report.v0` into a single readiness
-  report for pre-edit agent planning; warning and denied-warning reports now
-  include `plan_lint_repairs` next-actions that call checked
+  report for pre-edit agent planning; reports with checked calls now include
+  `inspect_calls` next-actions for strict call-row inspection, and warning
+  and denied-warning reports now include `plan_lint_repairs` next-actions that
+  call checked
   `sley plan --json --graft-templates <target>` repair planning, plus
   `preview_lint_repair` dry-run fix commands when exactly one checked lint
   repair exists; those preview actions keep `command` non-mutating and add
@@ -138,9 +140,10 @@ Rules:
   warning-denying verify, run, seal, and ZJX package gates cannot silently
   drift.
 - `sley plan` consumes the same checked surfaces into ranked task edit
-  surfaces, post-edit gate commands, and optional starter graft operation
-  templates, rename-plus-call-site transactions, and add-take-plus-call-arg
-  transactions, plus safe remove-take-plus-call-arg transactions for unused
+  surfaces, call-row inspection next-actions, post-edit gate commands, and
+  optional starter graft operation templates, rename-plus-call-site
+  transactions, and add-take-plus-call-arg transactions, plus safe
+  remove-take-plus-call-arg transactions for unused
   takes and lint-driven delete templates plus cleanup transactions for unused
   private type/effect declarations, plus lint-driven `AddModuleDeclaration`
   templates for missing module declarations with target/project-aware module
@@ -466,6 +469,8 @@ The current smoke manifest covers:
   query reports, lint reports, trace seals, graft outcomes, and ZJX preview
   envelopes
 - query report direct task/type/effect declaration rows and strict call rows
+- doctor/plan call-bearing reports route agents to strict
+  `sley query --kind calls` next-actions
 - graph-slice replace affordances and checked `replace_expression` graft
   templates in edit-plan reports
 - deploy scaffold typed next-actions, first-run sequence execution, and strict

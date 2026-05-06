@@ -141,7 +141,7 @@ pub fn build_doctor_report(
     };
     let checked_lint_repair = single_checked_lint_repair(&target, &program, &lint_report);
     let next_actions = if lint_finding_count > 0 {
-        lint_actions(&target, checked_lint_repair.as_ref())
+        lint_actions(&target, checked_lint_repair.as_ref(), &query_report)
     } else {
         ready_actions(&target, &query_report)
     };
@@ -226,7 +226,11 @@ fn blocked_actions(target: &str) -> Vec<DoctorAction> {
     }]
 }
 
-fn lint_actions(target: &str, checked_repair: Option<&CheckedLintRepair>) -> Vec<DoctorAction> {
+fn lint_actions(
+    target: &str,
+    checked_repair: Option<&CheckedLintRepair>,
+    query: &QueryReport,
+) -> Vec<DoctorAction> {
     let mut actions = vec![
         DoctorAction {
             kind: "repair_lint_findings".to_string(),
@@ -258,6 +262,9 @@ fn lint_actions(target: &str, checked_repair: Option<&CheckedLintRepair>) -> Vec
         command: command(["sley", "query", "--json", "--kind", "tasks", target]),
         write_command: None,
     });
+    if !query.calls.is_empty() {
+        actions.push(inspect_calls_action(target));
+    }
     actions
 }
 
@@ -276,20 +283,21 @@ fn fix_command(target: &str, repair: &CheckedLintRepair, write: bool) -> Vec<Str
 }
 
 fn ready_actions(target: &str, query: &QueryReport) -> Vec<DoctorAction> {
-    let mut actions = vec![
-        DoctorAction {
-            kind: "inspect_tasks".to_string(),
-            reason: "query task facts before planning edits".to_string(),
-            command: command(["sley", "query", "--json", "--kind", "tasks", target]),
-            write_command: None,
-        },
-        DoctorAction {
-            kind: "lint_gate".to_string(),
-            reason: "preserve the warning-grade lint gate after edits".to_string(),
-            command: command(["sley", "lint", "--json", "--deny-warnings", target]),
-            write_command: None,
-        },
-    ];
+    let mut actions = vec![DoctorAction {
+        kind: "inspect_tasks".to_string(),
+        reason: "query task facts before planning edits".to_string(),
+        command: command(["sley", "query", "--json", "--kind", "tasks", target]),
+        write_command: None,
+    }];
+    if !query.calls.is_empty() {
+        actions.push(inspect_calls_action(target));
+    }
+    actions.push(DoctorAction {
+        kind: "lint_gate".to_string(),
+        reason: "preserve the warning-grade lint gate after edits".to_string(),
+        command: command(["sley", "lint", "--json", "--deny-warnings", target]),
+        write_command: None,
+    });
 
     let entry_task = format!("{}.main", query.entry_module);
     if let Some(task) = query
@@ -320,6 +328,17 @@ fn ready_actions(target: &str, query: &QueryReport) -> Vec<DoctorAction> {
     }
 
     actions
+}
+
+fn inspect_calls_action(target: &str) -> DoctorAction {
+    DoctorAction {
+        kind: "inspect_calls".to_string(),
+        reason:
+            "strict call rows show caller/callee edges before rename, arity, or authority edits"
+                .to_string(),
+        command: command(["sley", "query", "--json", "--kind", "calls", target]),
+        write_command: None,
+    }
 }
 
 fn command<const N: usize>(items: [&str; N]) -> Vec<String> {

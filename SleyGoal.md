@@ -75,8 +75,9 @@ Current verified surface:
   a staged write-and-verify smoke for a previewed repair plus a project-level
   previewed unused-import write-and-verify smoke and a generated deploy
   scaffold repair loop re-verified with seeded deploy authority, plus
-  scaffold-level and passed-verify seal/ZJX handoff next-actions, and checked
-  `unchecked_result` migration templates that
+  scaffold-level and passed-verify seal/ZJX handoff next-actions, doctor/plan
+  call-bearing reports that route agents to strict call-row inspection, and
+  checked `unchecked_result` migration templates that
   turn discarded `Result` expression statements into explicit `?` propagation
   when valid, plus checked `unused_import` and
   `unused_private_task` delete templates, fix dry runs, and a write-mode

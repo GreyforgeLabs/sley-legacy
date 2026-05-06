@@ -112,17 +112,19 @@ Implemented now:
   and
   `schema: "sley.lint.report.v0"` for warning-grade graph and authority lints
 - checked JSON readiness reports with `sley doctor`, consuming strict
-  diagnostics plus query and lint summaries, with warning next-actions that
-  route agents to `sley plan --json --graft-templates` and, when exactly one
-  checked lint repair exists, a non-mutating `sley fix --dry-run` preview plus
-  an explicit `write_command` for the matching `sley fix --write`, and
+  diagnostics plus query and lint summaries, with call-bearing reports routing
+  agents to strict `sley query --kind calls` inspection, warning next-actions
+  that route agents to `sley plan --json --graft-templates`, and, when exactly
+  one checked lint repair exists, a non-mutating `sley fix --dry-run` preview
+  plus an explicit `write_command` for the matching `sley fix --write`, and
   `schema: "sley.doctor.report.v0"` for agent pre-edit gates
 - checked JSON edit-plan reports with `sley plan`, consuming strict
   diagnostics plus query and lint findings into ranked task edit surfaces,
-  graft target ids, optional `--graft-templates` starter operation payloads,
-  rename-plus-call-site and add-take-plus-call-arg transaction templates for
-  targeted caller surfaces, safe remove-take-plus-call-arg transaction
-  templates for unused takes, lint-driven delete templates and cleanup
+  graft target ids, call-row inspection next-actions, optional
+  `--graft-templates` starter operation payloads, rename-plus-call-site and
+  add-take-plus-call-arg transaction templates for targeted caller surfaces,
+  safe remove-take-plus-call-arg transaction templates for unused takes,
+  lint-driven delete templates and cleanup
   transactions for unused private types/effects, checked
   `delete_unused_private_task` templates for dead private tasks, checked
   `delete_dead_private_tasks` cleanup transactions for dead private task
@@ -508,8 +510,9 @@ The current release-readiness phase is underway for the executable slice. The
 gold corpus and CLI smoke suite now have manifests with required coverage tags
 for seeded host adapters, stable JSON roots, graph/ZJX output, graft and fix
 dry runs, checked graph query reports including type/effect/call rows, doctor
-readiness, verify pre-deploy gates, edit-plan surfaces, typed scaffold next-actions for the deploy
-quickstart, strict seeded verify readiness for the generated deploy starter,
+readiness, call-inspection next-actions, verify pre-deploy gates, edit-plan
+surfaces, typed scaffold next-actions for the deploy quickstart, strict seeded
+verify readiness for the generated deploy starter,
 scaffold-level seal/ZJX handoff actions,
 temp setup files for write-mode CLI smokes, direct graft write smokes,
 explicit graft/fix write trace receipts, non-empty trace seal receipts,

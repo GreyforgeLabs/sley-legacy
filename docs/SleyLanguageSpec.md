@@ -640,10 +640,11 @@ deploy run, seal, and ZJX package.
 checker plus checked query and lint reports into one agent readiness report.
 It reports `ready`, `warnings`, or `blocked`; includes source schema references
 for the consumed query and lint surfaces; and gives next-command vectors for
-inspection, lint gates, checked `sley plan --json --graft-templates` repair
-planning when lint findings exist, non-mutating `sley fix --dry-run` previews
-when exactly one checked lint repair exists, explicit optional `write_command`
-vectors for the matching `sley fix --write`, and entrypoint runs.
+task inspection, strict call-row inspection when checked calls exist, lint
+gates, checked `sley plan --json --graft-templates` repair planning when lint
+findings exist, non-mutating `sley fix --dry-run` previews when exactly one
+checked lint repair exists, explicit optional `write_command` vectors for the
+matching `sley fix --write`, and entrypoint runs.
 `--deny-warnings` treats lint findings as blocked while still printing the
 versioned report.
 
@@ -652,8 +653,9 @@ strict checker, checked query, and checked lint surfaces. It reports `ready`,
 `warnings`, or `blocked`; carries full lint findings; ranks task edit surfaces
 with stable task ids, qualified names, takes, call counts, declared effects,
 graft target ids, and planning notes; and gives next-command vectors for graph
-slice inspection plus post-edit doctor and verify gates. `--deny-warnings`
-treats lint findings as blocked while still printing
+slice inspection, strict call-row inspection when checked calls exist, plus
+post-edit doctor and verify gates. `--deny-warnings` treats lint findings as
+blocked while still printing
 `schema: "sley.edit_plan.report.v0"`. `--graft-templates` adds starter strict
 graft operation payloads for the highest-ranked task surface, plus JSON
 pointers naming the fields an agent should edit before running

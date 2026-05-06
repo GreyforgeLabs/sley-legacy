@@ -514,6 +514,21 @@ fn doctor_report_summarizes_readiness_and_lint_gates() {
         ready_json.pointer("/lint/source_schema"),
         Some(&serde_json::json!("sley.lint.report.v0"))
     );
+    assert_eq!(
+        ready_json.pointer("/next_actions/1/kind"),
+        Some(&serde_json::json!("inspect_calls"))
+    );
+    assert_eq!(
+        ready_json.pointer("/next_actions/1/command"),
+        Some(&serde_json::json!([
+            "sley",
+            "query",
+            "--json",
+            "--kind",
+            "calls",
+            "examples/project"
+        ]))
+    );
 
     let root = temp_project_dir("doctor-warnings");
     fs::create_dir_all(&root).expect("create doctor temp dir");
@@ -599,6 +614,15 @@ task orphan -> Int {
             "--write",
             warning_file.display().to_string()
         ]))
+    );
+    assert!(
+        warnings_json
+            .pointer("/next_actions")
+            .and_then(serde_json::Value::as_array)
+            .expect("warning next actions")
+            .iter()
+            .all(|action| action.pointer("/kind") != Some(&serde_json::json!("inspect_calls"))),
+        "call-free warning reports should not suggest call-row inspection"
     );
 
     let denied = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
@@ -699,6 +723,11 @@ task orphan -> Int {
     assert_eq!(
         report.next_actions[0].kind, "repair_lint_findings",
         "warning plans should lead with the lint repair surface"
+    );
+    assert_eq!(report.next_actions[2].kind, "inspect_calls");
+    assert_eq!(
+        report.next_actions[2].command,
+        vec!["sley", "query", "--json", "--kind", "calls", "app.plan"]
     );
     assert!(
         report.graft_templates.is_empty(),
@@ -9581,6 +9610,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "query:types",
         "query:effects",
         "query:calls",
+        "readiness:inspect-calls",
         "readiness:deploy-lint-repair-write-verify",
         "readiness:lint-repair-plan",
         "readiness:lint-repair-preview",

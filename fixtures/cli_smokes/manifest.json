@@ -483,7 +483,8 @@
         "cli:doctor",
         "json:sley.doctor.report.v0",
         "json:sley.query.report.v0",
-        "json:sley.lint.report.v0"
+        "json:sley.lint.report.v0",
+        "readiness:inspect-calls"
       ],
       "expect": {
         "success": true,
@@ -494,7 +495,9 @@
           { "pointer": "/lint/source_schema", "value": "sley.lint.report.v0" },
           { "pointer": "/summary/module_count", "value": 2 },
           { "pointer": "/summary/task_count", "value": 2 },
-          { "pointer": "/next_actions/0/kind", "value": "inspect_tasks" }
+          { "pointer": "/next_actions/0/kind", "value": "inspect_tasks" },
+          { "pointer": "/next_actions/1/kind", "value": "inspect_calls" },
+          { "pointer": "/next_actions/1/command/4", "value": "calls" }
         ]
       }
     },
@@ -732,7 +735,8 @@
         "cli:plan",
         "json:sley.edit_plan.report.v0",
         "json:sley.query.report.v0",
-        "json:sley.lint.report.v0"
+        "json:sley.lint.report.v0",
+        "readiness:inspect-calls"
       ],
       "expect": {
         "success": true,
@@ -744,7 +748,9 @@
           { "pointer": "/summary/task_surface_count", "value": 2 },
           { "pointer": "/task_surfaces/0/id", "value": "task:app.main.main" },
           { "pointer": "/task_surfaces/0/graft_targets/1", "value": "module:app.main:tasks" },
-          { "pointer": "/next_actions/0/kind", "value": "inspect_primary_surface" }
+          { "pointer": "/next_actions/0/kind", "value": "inspect_primary_surface" },
+          { "pointer": "/next_actions/1/kind", "value": "inspect_calls" },
+          { "pointer": "/next_actions/1/command/4", "value": "calls" }
         ]
       }
     },

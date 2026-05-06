@@ -223,10 +223,11 @@ Near-term:
    reports.
 4. Consume `sley.query.report.v0` and `sley.lint.report.v0` from helper
    passes. `sley doctor` is the first deterministic readiness helper on top of
-   those surfaces, and `sley plan --graft-templates` now turns them into ranked
-   edit surfaces plus starter graft operation payloads, rename-plus-call-site
-   transactions, add-take-plus-call-arg transactions, and safe
-   remove-take-plus-call-arg transactions for unused takes. `sley fix` can
+   those surfaces, call-bearing doctor/plan reports now route agents to strict
+   call-row inspection, and `sley plan --graft-templates` now turns them into
+   ranked edit surfaces plus starter graft operation payloads,
+   rename-plus-call-site transactions, add-take-plus-call-arg transactions, and
+   safe remove-take-plus-call-arg transactions for unused takes. `sley fix` can
    execute one named checked template through the graft checker. The lint
    surface now includes explicit module-declaration style warnings, and those
    warnings are structurally repairable through `AddModuleDeclaration` plan/fix

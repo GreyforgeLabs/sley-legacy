@@ -323,7 +323,7 @@ pub fn build_edit_plan_report_with_options(
     let next_actions = if error_count > 0 {
         template_surface_actions(&target)
     } else if warning_count > 0 {
-        warning_actions(&target, &task_surfaces)
+        warning_actions(&target, &query_report, &task_surfaces)
     } else {
         ready_actions(&target, &query_report, &task_surfaces)
     };
@@ -1768,7 +1768,11 @@ fn template_surface_actions(target: &str) -> Vec<EditPlanAction> {
     }]
 }
 
-fn warning_actions(target: &str, surfaces: &[EditPlanTaskSurface]) -> Vec<EditPlanAction> {
+fn warning_actions(
+    target: &str,
+    query: &QueryReport,
+    surfaces: &[EditPlanTaskSurface],
+) -> Vec<EditPlanAction> {
     let mut actions = vec![
         EditPlanAction {
             kind: "repair_lint_findings".to_string(),
@@ -1782,6 +1786,9 @@ fn warning_actions(target: &str, surfaces: &[EditPlanTaskSurface]) -> Vec<EditPl
             command: command(["sley", "query", "--json", "--kind", "tasks", target]),
         },
     ];
+    if !query.calls.is_empty() {
+        actions.push(inspect_calls_action(target));
+    }
     if let Some(surface) = surfaces.first() {
         actions.push(inspect_surface_action(target, &surface.id));
     }
@@ -1803,6 +1810,9 @@ fn ready_actions(
             command: command(["sley", "query", "--json", "--kind", "modules", target]),
         });
     }
+    if !query.calls.is_empty() {
+        actions.push(inspect_calls_action(target));
+    }
     actions.push(EditPlanAction {
         kind: "post_edit_doctor".to_string(),
         reason: "preserve strict diagnostics and lint readiness after structural edits".to_string(),
@@ -1814,6 +1824,16 @@ fn ready_actions(
         command: verify_command(target, query),
     });
     actions
+}
+
+fn inspect_calls_action(target: &str) -> EditPlanAction {
+    EditPlanAction {
+        kind: "inspect_calls".to_string(),
+        reason:
+            "strict call rows show caller/callee edges before rename, arity, or authority edits"
+                .to_string(),
+        command: command(["sley", "query", "--json", "--kind", "calls", target]),
+    }
 }
 
 fn inspect_surface_action(target: &str, surface_id: &str) -> EditPlanAction {
