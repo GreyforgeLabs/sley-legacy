@@ -1365,6 +1365,108 @@ task main -> Int {
 }
 
 #[test]
+fn edit_plan_graft_templates_can_target_statement_surfaces() {
+    let source = r#"
+module app.plan
+
+task main -> Int {
+  tally total = 1
+  set total = total + 1
+  return total
+}
+"#;
+    let program = parse_program(source).expect("parse statement surface plan fixture");
+    let target = "block:task:app.plan.main:stmt:1";
+    let report = build_edit_plan_report_with_options(
+        "app.plan",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some(target.to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "ready");
+    assert!(report.diagnostics.is_empty());
+    assert_eq!(report.graft_templates.len(), 2);
+    assert!(report.transaction_templates.is_empty());
+    assert!(report.graft_templates.iter().all(|template| {
+        template.surface == target
+            && template.operation.pointer("/target") == Some(&serde_json::json!(target))
+    }));
+    assert!(
+        report
+            .graft_templates
+            .iter()
+            .any(|template| template.kind == "move_statement"
+                && template.editable_json_pointers == vec!["/payload/position".to_string()])
+    );
+    let delete_template = report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "delete_statement")
+        .expect("delete statement template");
+    let graft: GraftInput =
+        serde_json::from_value(delete_template.operation.clone()).expect("parse delete template");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:statement-surface-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+}
+
+#[test]
+fn edit_plan_graft_templates_can_target_take_surfaces() {
+    let source = r#"
+module app.plan
+
+task main -> Int {
+  take first: Int
+  take second: Int
+
+  return first + second
+}
+"#;
+    let program = parse_program(source).expect("parse take surface plan fixture");
+    let target = "take:task:app.plan.main:1:second";
+    let report = build_edit_plan_report_with_options(
+        "app.plan",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some(target.to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "ready");
+    assert!(report.diagnostics.is_empty());
+    assert_eq!(report.graft_templates.len(), 1);
+    assert!(report.transaction_templates.is_empty());
+    let template = &report.graft_templates[0];
+    assert_eq!(template.kind, "move_take");
+    assert_eq!(template.surface, target);
+    assert_eq!(
+        template.operation.pointer("/target"),
+        Some(&serde_json::json!(target))
+    );
+    assert_eq!(
+        template.editable_json_pointers,
+        vec!["/payload/position".to_string()]
+    );
+    let graft: GraftInput =
+        serde_json::from_value(template.operation.clone()).expect("parse take move template");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:take-surface-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+}
+
+#[test]
 fn edit_plan_graft_templates_include_move_destinations() {
     let source = r#"
 module app.plan

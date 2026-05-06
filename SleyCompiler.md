@@ -245,10 +245,11 @@ Near-term:
    those are structurally repairable through checked plan/fix templates, with
    write/query/verify smoke coverage for imported-call qualification and
    write/verify smoke coverage for pure binding deletion. `sley plan
-   --graft-templates --template-surface <expression-node-id>` now emits a
-   checked no-op `replace_expression` starter that `--emit-graft` can hand
-   directly to `sley graft`. Next broaden authority, style, and migration
-   lints.
+   --graft-templates --template-surface <node-id>` now accepts exact statement,
+   take, and expression node surfaces: statements/takes emit direct
+   graph-slice move/delete templates, while expressions emit a checked no-op
+   `replace_expression` starter that `--emit-graft` can hand directly to
+   `sley graft`. Next broaden authority, style, and migration lints.
 5. Extend graph-slice graft planning around checked move/delete operations.
 6. Harden project graft writeback beyond existing-module edits.
 

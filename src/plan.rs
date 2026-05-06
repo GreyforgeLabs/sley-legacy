@@ -497,6 +497,11 @@ fn build_graft_templates(
         if let Some(template) = expression_surface_replace_template(program, requested_surface) {
             return Ok(vec![template]);
         }
+        if let Some(templates) =
+            direct_graph_slice_graft_templates(program, surfaces, requested_surface)
+        {
+            return Ok(templates);
+        }
     }
     let Some(surface) = select_template_surface(surfaces, requested_surface)? else {
         return Ok(lint_templates);
@@ -964,6 +969,51 @@ fn expression_surface_replace_template(
     })
 }
 
+fn direct_graph_slice_graft_templates(
+    program: &Program,
+    surfaces: &[EditPlanTaskSurface],
+    requested_surface: &str,
+) -> Option<Vec<EditPlanGraftTemplate>> {
+    let owner_task = owning_task_surface_id(requested_surface)?;
+    let surface = surfaces.iter().find(|surface| surface.id == owner_task)?;
+    let mut templates = Vec::new();
+    templates.extend(graph_slice_move_templates(program, surface));
+    templates.extend(graph_slice_delete_templates(program, surface));
+    templates.extend(graph_slice_replace_templates(program, surface));
+    let templates = templates
+        .into_iter()
+        .filter(|template| operation_target(&template.operation) == Some(requested_surface))
+        .map(|mut template| {
+            template.surface = requested_surface.to_string();
+            template
+        })
+        .collect::<Vec<_>>();
+    if templates.is_empty() {
+        None
+    } else {
+        Some(templates)
+    }
+}
+
+fn owning_task_surface_id(surface: &str) -> Option<&str> {
+    if let Some(rest) = surface.strip_prefix("block:") {
+        return rest
+            .split_once(":stmt:")
+            .map(|(task_surface, _statement_path)| task_surface);
+    }
+    if let Some(rest) = surface.strip_prefix("take:") {
+        let mut parts = rest.rsplitn(3, ':');
+        parts.next()?;
+        parts.next()?;
+        return parts.next();
+    }
+    None
+}
+
+fn operation_target(operation: &JsonValue) -> Option<&str> {
+    operation.pointer("/target").and_then(JsonValue::as_str)
+}
+
 fn find_expr_source(program: &Program, target: &str) -> Option<String> {
     find_expr_surface(program, target).map(|surface| surface.source)
 }
@@ -1188,13 +1238,13 @@ fn select_template_surface<'a>(
             Diagnostic::error(
                 "PLAN_SURFACE_NOT_FOUND",
                 format!(
-                    "plan surface `{requested_surface}` was not found; use a task id, qualified task name, expression node id, or lint finding node"
+                    "plan surface `{requested_surface}` was not found; use a task id, qualified task name, statement node id, take node id, expression node id, or lint finding node"
                 ),
             )
             .with_node(requested_surface)
             .with_repair_hint(
                 RepairHint::new("inspect_task_surfaces")
-                    .with_replacement("Run `sley ast --json <target>` or `sley plan --json <target>` and choose an expression node id, task_surfaces id, task qualified_name, or lint.findings node"),
+                    .with_replacement("Run `sley ast --json <target>` or `sley plan --json <target>` and choose a statement, take, or expression node id, task_surfaces id, task qualified_name, or lint.findings node"),
             )
         })
 }
@@ -1905,7 +1955,7 @@ fn template_surface_actions(target: &str) -> Vec<EditPlanAction> {
     vec![EditPlanAction {
         kind: "inspect_plan_surfaces".to_string(),
         reason:
-            "choose a valid task, expression, or lint surface before requesting graft templates"
+            "choose a valid task, statement, take, expression, or lint surface before requesting graft templates"
                 .to_string(),
         command: command(["sley", "plan", "--json", target]),
     }]
