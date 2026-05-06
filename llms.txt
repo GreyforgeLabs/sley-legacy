@@ -141,7 +141,8 @@ The trace report schema wraps trace receipt JSONL records for `sley trace --json
 the trace receipt schema pins each standalone JSONL record and references
 accepted provenance records.
 The ZJX envelope schema pins a recomputable `graph_digest`, references the
-symbol graph, graph slice, and trace receipt schemas.
+symbol graph, graph slice, and trace receipt schemas, and has a locked fixture
+beside the full symbol graph fixture.
 
 Contract references:
 

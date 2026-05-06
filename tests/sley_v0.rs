@@ -5755,6 +5755,11 @@ task main -> Used uses UsedEffect {
 
     let hello_source = include_str!("../examples/hello.sley");
     let hello_program = parse_program(hello_source).expect("parse hello fixture");
+    let hello_graph = build_symbol_graph(&hello_program);
+    assert_json_snapshot(
+        &hello_graph,
+        include_str!("../fixtures/contracts/symbol_graph_hello.json"),
+    );
     let hello_run_value = run_main(&hello_program).expect("run hello fixture");
     let hello_run = build_run_report("examples/hello.sley", hello_run_value);
     assert_json_snapshot(
@@ -5800,11 +5805,10 @@ task main -> Used uses UsedEffect {
         RuntimeGates::new(),
         true,
     );
-    let hello_package = build_zjx_envelope(
-        "examples/hello.sley",
-        build_symbol_graph(&hello_program),
-        None,
-        Vec::new(),
+    let hello_package = build_zjx_envelope("examples/hello.sley", hello_graph, None, Vec::new());
+    assert_json_snapshot(
+        &hello_package,
+        include_str!("../fixtures/contracts/zjx_hello_ready.json"),
     );
     let deploy = build_deploy_report(
         "examples/hello.sley",
@@ -6333,7 +6337,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(50))
+        Some(&serde_json::json!(52))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
