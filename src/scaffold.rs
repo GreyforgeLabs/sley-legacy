@@ -212,19 +212,30 @@ fn manifest_source(name: &str, module: &str) -> String {
 }
 
 fn readme_source(name: &str, template: ScaffoldTemplate) -> String {
-    let (verify, run) = match template {
-        ScaffoldTemplate::Hello => ("sley verify --json --deny-warnings .", "sley run --json ."),
+    let (verify, run, deploy) = match template {
+        ScaffoldTemplate::Hello => (
+            "sley verify --json --deny-warnings .",
+            "sley run --json .",
+            "",
+        ),
         ScaffoldTemplate::Deploy => (
             "sley verify --json --deny-warnings --cap Deploy --deploy-result staging staged .",
             "sley run --json --cap Deploy --deploy-result staging staged .",
+            "sley deploy --json --dry-run --cap Deploy --deploy-result staging staged .",
         ),
         ScaffoldTemplate::Agent => (
             "sley verify --json --deny-warnings --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile \"profile ready\" --cap ModelCall --model-output deploy-plan \"plan approved\" --cap Deploy --deploy-result staging staged .",
             "sley run --json --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile \"profile ready\" --cap ModelCall --model-output deploy-plan \"plan approved\" --cap Deploy --deploy-result staging staged .",
+            "sley deploy --json --dry-run --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile \"profile ready\" --cap ModelCall --model-output deploy-plan \"plan approved\" --cap Deploy --deploy-result staging staged .",
         ),
     };
+    let deploy_line = if deploy.is_empty() {
+        String::new()
+    } else {
+        format!("{deploy}\n")
+    };
     format!(
-        "# {name}\n\nGenerated Sley project.\n\n```bash\nsley check --json .\nsley doctor --json .\nsley query --json --kind tasks .\nsley plan --json .\nsley lint --json --deny-warnings .\n{verify}\n{run}\nsley seal --json .\nsley zjx --json .\n```\n"
+        "# {name}\n\nGenerated Sley project.\n\n```bash\nsley check --json .\nsley doctor --json .\nsley query --json --kind tasks .\nsley plan --json .\nsley lint --json --deny-warnings .\n{verify}\n{run}\n{deploy_line}sley seal --json .\nsley zjx --json .\n```\n"
     )
 }
 
@@ -318,6 +329,22 @@ fn next_actions(template: ScaffoldTemplate) -> Vec<ScaffoldNextAction> {
                     ".",
                 ],
             ),
+            next_action(
+                "prepare_deploy_package",
+                "build the local dry-run deploy report after seeded verification",
+                vec![
+                    "sley",
+                    "deploy",
+                    "--json",
+                    "--dry-run",
+                    "--cap",
+                    "Deploy",
+                    "--deploy-result",
+                    "staging",
+                    "staged",
+                    ".",
+                ],
+            ),
         ],
         ScaffoldTemplate::Agent => vec![
             next_action(
@@ -334,6 +361,11 @@ fn next_actions(template: ScaffoldTemplate) -> Vec<ScaffoldNextAction> {
                 "run_seeded_agent",
                 "execute the agent starter with deterministic seeded authority",
                 seeded_agent_command("sley", "run"),
+            ),
+            next_action(
+                "prepare_deploy_package",
+                "build the local dry-run deploy report after seeded agent verification",
+                seeded_agent_command("sley", "deploy"),
             ),
         ],
     };
@@ -388,6 +420,9 @@ fn seeded_agent_command(binary: &'static str, verb: &'static str) -> Vec<&'stati
     ];
     if verb == "verify" {
         command.insert(3, "--deny-warnings");
+    }
+    if verb == "deploy" {
+        command.insert(3, "--dry-run");
     }
     command
 }

@@ -95,8 +95,8 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
      and `smoke` wrappers with `schema: "sley.ci.report.v0"` output; GitHub
      Action, pre-commit hook, and sample workflow packaging remain future work.
    - Bootstrap done when generated `sley new --template deploy` and
-     `sley new --template agent` projects can run seeded verify gates and a CLI
-     smoke manifest through `sley-ci`.
+     `sley new --template agent` projects can run seeded verify gates, local
+     deploy dry-run package reports, and a CLI smoke manifest through `sley-ci`.
 
 3. `tree-sitter-sley`
    - Inputs: `.sley` source fixtures.

@@ -19,6 +19,7 @@ Implemented now:
 - `sley plan`
 - `sley fix`
 - `sley verify`
+- `sley deploy`
 - `sley trace`
 - `sley seal`
 - `sley zjx`
@@ -167,6 +168,11 @@ Implemented now:
   planning and expose a dry-run fix preview plus explicit `write_command` when
   the repair is unambiguous, while passed reports point to `sley seal --json`
   and `sley zjx --json` handoff artifacts
+- local-only deploy dry-run reports with `sley deploy --json --dry-run`,
+  composing strict verify, trace seal, and ZJX package summaries into
+  `schema: "sley.deploy.report.v0"` while recording that live deployment,
+  external mutation, and provider calls are not allowed without explicit
+  operator approval
 - JSON project scaffold reports with `sley new --json`, `hello`, `deploy`,
   and `agent` templates, relative created-file paths, next-command vectors, typed
   next-action reasons through check, doctor, query, plan, lint, verify, run,
@@ -201,8 +207,8 @@ Implemented now:
   argument mismatches, condition mismatches, effect authority, and private or
   ambiguous names
 - locked JSON contract snapshots under `fixtures/contracts/`, including
-  checked query, lint, doctor, edit-plan, verify, CI, and project scaffold
-  reports
+  checked query, lint, doctor, edit-plan, verify, deploy dry-run, CI, and
+  project scaffold reports
 - external v0 JSON Schema files under `docs/schemas/`, including strict
   query task/take/type/effect/call row definitions,
   `sley-ci` check/verify/smoke reports,
@@ -245,6 +251,7 @@ sley verify --json --deny-warnings --cap SecretRead --secret api_key redacted --
 sley-ci check --json .
 sley-ci verify --json --deny-warnings --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged .
 sley run --json --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged .
+sley deploy --json --dry-run --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged .
 sley seal --json .
 sley zjx --json .
 ```
@@ -268,8 +275,8 @@ entry = "app.main"
 Module `app.main` resolves to `src/app/main.sley`. `sley parse`,
 `sley check`, `sley run`, `sley ast`, `sley graph`, `sley query`,
 `sley lint`, `sley doctor`, `sley plan`, `sley fix`, `sley verify`,
-`sley seal`, `sley zjx`, and `sley graft` accept either a single `.sley` file
-or a project directory containing `sley.toml`. Project graft
+`sley deploy`, `sley seal`, `sley zjx`, and `sley graft` accept either a
+single `.sley` file or a project directory containing `sley.toml`. Project graft
 writeback projects the checked candidate back to existing owning module files
 and leaves unchanged module files alone. It can create checked new module
 files, delete removed loaded module files, rename module files, and update
@@ -545,11 +552,11 @@ dry runs, checked graph query reports including strict
 task/take/type/effect/call row definitions and graph-slice focus/task/call
 payloads plus affordances with strict graft operations, doctor readiness,
 call-inspection next-actions,
-verify pre-deploy gates,
+verify and deploy dry-run pre-deploy gates,
 edit-plan surfaces, call-site rename and remove-take/call-arg transaction
 write/query/verify, typed scaffold next-actions for deploy and agent
 quickstarts, strict seeded verify readiness for the generated deploy and agent
-starters,
+starters, deploy dry-run package reports,
 scaffold-level seal/ZJX handoff actions,
 temp setup files for write-mode CLI smokes, direct graft write smokes,
 explicit graft/fix write trace receipts, non-empty trace seal receipts,

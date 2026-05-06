@@ -560,6 +560,7 @@ sley query --json --kind tasks --module app.main <target>
 sley query --json --kind types --module app.main <target>
 sley query --json --kind effects --module app.main <target>
 sley lint --json <target>
+sley deploy --json --dry-run <target>
 sley trace --json <target>
 sley seal --json <target>
 ```
@@ -581,7 +582,8 @@ The CLI smoke manifest carries
 `schema: "sley.project.scaffold.v0"`. Doctor readiness reports carry
 `schema: "sley.doctor.report.v0"`. Edit-plan reports carry
 `schema: "sley.edit_plan.report.v0"`. CI wrapper reports carry
-`schema: "sley.ci.report.v0"`. Contract utility reports carry
+`schema: "sley.ci.report.v0"`. Deploy dry-run reports carry
+`schema: "sley.deploy.report.v0"`. Contract utility reports carry
 `schema: "sley.contract.inventory.v0"`,
 `schema: "sley.contract.fixture_check.v0"`, or
 `schema: "sley.contract.validate.v0"`.
@@ -652,7 +654,8 @@ writes, write-mode fix trace receipts, non-empty trace receipt seals, ZJX
 envelopes carrying graph digests and schema-backed trace receipts, graph-slice
 replace affordances, checked
 `replace_expression` graft templates, lint-driven fix writes that clear
-warnings before verify, typed deploy and agent scaffold next-actions, and
+warnings before verify, deploy dry-run reports, typed deploy and agent
+scaffold next-actions, and
 seeded host-adapter
 execution for `FileRead`, `FileWrite`, `DatabaseRead`, `DatabaseWrite`,
 `Network`, `Shell`, `ModelCall`, `SecretRead`, `Deploy`, and `Spend`.
@@ -671,8 +674,19 @@ scaffold report with relative file paths, exact next-command vectors, and typed
 next-action reasons under `sley.project.scaffold.v0`. The deploy and agent
 scaffolds' generated next actions are checked first-run sequences: strict
 check, doctor readiness, task query, edit plan, lint gate, seeded verification
-with denied warnings, seeded run, seal, and ZJX package. The agent scaffold
-also includes a `sley-ci verify` next action over the same deterministic seeds.
+with denied warnings, seeded run, local deploy dry-run package, seal, and ZJX
+package. The agent scaffold also includes a `sley-ci verify` next action over
+the same deterministic seeds.
+
+`sley deploy --dry-run` is the v0 local deploy package command. It refuses to
+run unless `--dry-run` is present. It consumes the same deterministic runtime
+gates and seed flags as `sley run` and `sley verify`, runs strict verification
+with denied warnings, and only when verification passes builds a trace seal and
+ZJX package summary. Its JSON root is `sley.deploy.report.v0`. The report
+records `live_deploy_allowed=false`, `external_mutations=false`,
+`provider_calls=false`, and `requires_operator_approval=true`; it does not
+upload artifacts, start services, push branches, call providers, spend money,
+or mutate infrastructure.
 
 `sley doctor` is the first deterministic helper that consumes the strict
 checker plus checked query and lint reports into one agent readiness report.
@@ -945,8 +959,8 @@ refuse generic data disguised as Sley artifacts before compression begins.
   plus a seeded SecretRead/Network/ModelCall/Deploy verify report for the
   generated `sley new --template agent` starter, including passed-verify
   next-actions for `sley seal --json` and `sley zjx --json` handoff artifacts,
-  while live
-  deploy/provider calls remain outside v0
+  while `sley deploy --dry-run` adds a local deploy package report over verify,
+  seal, and ZJX summaries; live deploy/provider calls remain outside v0
 - no `match`, agent declarations, spawn/cast/join, or compressed ZJX archive
   writer yet
 - `MoveNode` supports checked in-parent and cross-parent statement movement

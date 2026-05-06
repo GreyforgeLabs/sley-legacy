@@ -81,6 +81,18 @@
     ],
     [
       "sley",
+      "deploy",
+      "--json",
+      "--dry-run",
+      "--cap",
+      "Deploy",
+      "--deploy-result",
+      "staging",
+      "staged",
+      "."
+    ],
+    [
+      "sley",
       "seal",
       "--json",
       "."
@@ -169,6 +181,22 @@
         "sley",
         "run",
         "--json",
+        "--cap",
+        "Deploy",
+        "--deploy-result",
+        "staging",
+        "staged",
+        "."
+      ]
+    },
+    {
+      "kind": "prepare_deploy_package",
+      "reason": "build the local dry-run deploy report after seeded verification",
+      "command": [
+        "sley",
+        "deploy",
+        "--json",
+        "--dry-run",
         "--cap",
         "Deploy",
         "--deploy-result",

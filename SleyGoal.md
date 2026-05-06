@@ -40,7 +40,7 @@ Current verified surface:
 
 - `cargo fmt --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 194 tests.
+- Current integration coverage is 195 tests.
 - `sley query --json` emits `schema: "sley.query.report.v0"` and supports
   `--kind all|modules|tasks|types|effects|calls`, `--module <module>`, and
   `--exported`, including strict task/take/type/effect/call row definitions.
@@ -50,6 +50,10 @@ Current verified surface:
 - `sley-ci` is available as an in-tree CI wrapper with `check`, `verify`, and
   `smoke` commands that emit `schema: "sley.ci.report.v0"` over existing Sley
   check/lint/verify and CLI smoke manifest gates.
+- `sley deploy --json --dry-run` emits `schema: "sley.deploy.report.v0"` and
+  composes strict verify, trace seal, and ZJX package summaries into a
+  local-only deploy package report that forbids live deployment, provider
+  calls, external mutation, and spend without explicit operator approval.
 - `sley new --json --template hello|deploy|agent` emits
   `schema: "sley.project.scaffold.v0"` and creates deterministic first-run
   starter projects, including a seeded agent quickstart that composes
@@ -77,9 +81,10 @@ Current verified surface:
   migration templates that rewrite eligible raw calls to fallible `try_`
   calls with `?`, and typed deploy and agent scaffold next-actions whose
   generated first-run sequences are executed by tests, including strict seeded
-  `sley verify --json --deny-warnings` readiness smokes for the generated
-  deploy and agent projects and a `sley-ci verify` handoff for the seeded
-  agent project, plus warning-state doctor/verify next-actions that route to
+  `sley verify --json --deny-warnings` readiness smokes and local
+  `sley deploy --json --dry-run` package reports for the generated deploy and
+  agent projects and a `sley-ci verify` handoff for the seeded agent project,
+  plus warning-state doctor/verify next-actions that route to
   `sley plan --json --graft-templates` plus unambiguous
   `sley fix --dry-run` previews carrying explicit `write_command` vectors with
   a staged write-and-verify smoke for a previewed repair plus a project-level
@@ -107,10 +112,11 @@ Current verified surface:
   receipt chains with recomputable graph digests while
   `sley fix --dry-run --trace <path>` remains non-mutating.
 - Stable JSON roots now include query reports, lint reports, doctor reports,
-  edit-plan reports, verify reports, project scaffold reports, `sley-ci`
-  reports, `sley-contract` utility reports, and the CLI smoke manifest in
-  addition to AST, diagnostics, graph, graph slice, trace receipt, trace seal,
-  graft outcome, and ZJX envelope roots. The edit-plan schema now pins strict
+  edit-plan reports, verify reports, deploy dry-run reports, project scaffold
+  reports, `sley-ci` reports, `sley-contract` utility reports, and the CLI
+  smoke manifest in addition to AST, diagnostics, graph, graph slice, trace
+  receipt, trace seal, graft outcome, and ZJX envelope roots. The edit-plan
+  schema now pins strict
   graft operation and transaction template envelopes,
   the query schema now exposes strict task/take/type/effect/call row
   definitions,

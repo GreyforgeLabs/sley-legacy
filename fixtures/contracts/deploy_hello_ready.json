@@ -1,0 +1,136 @@
+{
+  "schema": "sley.deploy.report.v0",
+  "status": "ready",
+  "mode": "dry_run",
+  "target": "examples/hello.sley",
+  "environment": "staging",
+  "policy": {
+    "live_deploy_allowed": false,
+    "external_mutations": false,
+    "provider_calls": false,
+    "requires_operator_approval": true
+  },
+  "summary": {
+    "verify_status": "passed",
+    "seal_status": "passed",
+    "package_status": "passed",
+    "module_count": 1,
+    "task_count": 1,
+    "receipt_count": 0,
+    "seal_digest": "sha256:e745af8f70d04261392318572d67de9812473096734dec702d648d00647efbb4",
+    "graph_digest": "sha256:0f16c5f58f19a8ab64645b60056ea9be0188f9e809531b6190d410f2dbb06040"
+  },
+  "verify": {
+    "schema": "sley.verify.report.v0",
+    "status": "passed",
+    "target": "examples/hello.sley",
+    "entry_module": "app.hello",
+    "summary": {
+      "error_count": 0,
+      "warning_count": 0,
+      "module_count": 1,
+      "task_count": 1,
+      "call_count": 0,
+      "lint_finding_count": 0,
+      "runtime_status": "passed"
+    },
+    "diagnostics": [],
+    "query": {
+      "source_schema": "sley.query.report.v0",
+      "kind": "all",
+      "module_count": 1,
+      "task_count": 1,
+      "call_count": 0
+    },
+    "lint": {
+      "source_schema": "sley.lint.report.v0",
+      "status": "ok",
+      "rules": [
+        "unused_private_task",
+        "unreachable_private_task",
+        "unused_declared_effect",
+        "unused_import",
+        "unused_take",
+        "unused_private_type",
+        "unused_private_effect",
+        "raw_host_adapter",
+        "missing_module_declaration",
+        "unchecked_result"
+      ],
+      "finding_count": 0,
+      "findings": []
+    },
+    "runtime": {
+      "status": "passed",
+      "value": {
+        "kind": "Text",
+        "value": "hello sley"
+      },
+      "diagnostics": []
+    },
+    "next_actions": [
+      {
+        "kind": "seal_verified_target",
+        "reason": "create a content-addressed review artifact after verification",
+        "command": [
+          "sley",
+          "seal",
+          "--json",
+          "examples/hello.sley"
+        ]
+      },
+      {
+        "kind": "package_verified_target",
+        "reason": "create a ZJX preview envelope for agent handoff after verification",
+        "command": [
+          "sley",
+          "zjx",
+          "--json",
+          "examples/hello.sley"
+        ]
+      }
+    ]
+  },
+  "seal": {
+    "schema": "sley.trace.seal.v0",
+    "target": "examples/hello.sley",
+    "source_digest": "sha256:b48f684bb3544e1346918cf78bb0bad96e3295d164d0df281f4d6a52e09ecedd",
+    "graph_digest": "sha256:0f16c5f58f19a8ab64645b60056ea9be0188f9e809531b6190d410f2dbb06040",
+    "trace_digest": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "seal_digest": "sha256:e745af8f70d04261392318572d67de9812473096734dec702d648d00647efbb4",
+    "module_count": 1,
+    "task_count": 1,
+    "receipt_count": 0
+  },
+  "package": {
+    "source_schema": "sley.zjx.envelope.v0",
+    "format": "zjx-preview-json",
+    "compression": "none",
+    "target": "examples/hello.sley",
+    "graph_digest": "sha256:0f16c5f58f19a8ab64645b60056ea9be0188f9e809531b6190d410f2dbb06040",
+    "module_count": 1,
+    "trace_receipt_count": 0
+  },
+  "next_actions": [
+    {
+      "kind": "review_seal",
+      "reason": "inspect the content-addressed seal before any live deployment decision",
+      "command": [
+        "sley",
+        "seal",
+        "--json",
+        "examples/hello.sley"
+      ]
+    },
+    {
+      "kind": "review_package",
+      "reason": "inspect the ZJX preview envelope before operator deployment approval",
+      "command": [
+        "sley",
+        "zjx",
+        "--json",
+        "examples/hello.sley"
+      ]
+    }
+  ]
+}
