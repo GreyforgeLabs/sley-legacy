@@ -108,7 +108,7 @@ sley-ci plan --json [--deny-warnings] [--graft-templates] [--template-surface <s
 sley-ci run --json [runtime gates/seeds] <target>
 sley-ci corpus --json <fixtures/corpus|fixtures/corpus/manifest.json>
 sley-ci examples --json examples
-sley-conformance report --json
+sley-conformance report --json [--corpus-manifest <fixtures/corpus|fixtures/corpus/manifest.json>] [--smoke-manifest <fixtures/cli_smokes|fixtures/cli_smokes/manifest.json>]
 sley-conformance report --json --require-public-release-ready
 sley-conformance coverage --json --require-tag <tag>
 make smoke

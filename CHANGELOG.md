@@ -60,6 +60,8 @@ here. Dates use UTC-independent calendar dates from the local repo history.
   `fixtures/corpus/manifest.json` path.
 - `make smoke` now runs both the broad CLI smoke suite and the lightweight
   `sley-ci smoke` wrapper probe.
+- `sley-conformance report` and `sley-conformance coverage` now accept
+  manifest directories for `--corpus-manifest` and `--smoke-manifest`.
 - Ready deploy dry-run reports with artifact directories now include an
   `inspect_deploy_artifacts` next action for validating handoff bundles before
   operator approval.

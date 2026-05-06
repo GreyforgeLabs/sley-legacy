@@ -9091,6 +9091,71 @@ fn conformance_report_summarizes_release_surface() {
         coverage_json.pointer("/missing_tags"),
         Some(&serde_json::json!([]))
     );
+
+    let directory_report = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-conformance"))
+        .current_dir(&repo_root)
+        .args([
+            "report",
+            "--json",
+            "--corpus-manifest",
+            "fixtures/corpus",
+            "--smoke-manifest",
+            "fixtures/cli_smokes",
+            "--smoke-manifest",
+            "fixtures/ci_smoke_probe",
+            "--sley-contract-bin",
+            env!("CARGO_BIN_EXE_sley-contract"),
+        ])
+        .output()
+        .expect("run sley-conformance report with manifest directories");
+    assert!(
+        directory_report.status.success(),
+        "directory conformance report failed: {}",
+        String::from_utf8_lossy(&directory_report.stderr)
+    );
+    let directory_report_json: serde_json::Value = serde_json::from_slice(&directory_report.stdout)
+        .expect("parse directory conformance report JSON");
+    assert_eq!(
+        directory_report_json.pointer("/status"),
+        Some(&serde_json::json!("passed"))
+    );
+    assert_eq!(
+        directory_report_json.pointer("/corpus/manifest"),
+        Some(&serde_json::json!("fixtures/corpus/manifest.json"))
+    );
+    assert_eq!(
+        directory_report_json.pointer("/smoke/manifests/1/path"),
+        Some(&serde_json::json!("fixtures/ci_smoke_probe/manifest.json"))
+    );
+
+    let directory_coverage = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-conformance"))
+        .current_dir(&repo_root)
+        .args([
+            "coverage",
+            "--json",
+            "--corpus-manifest",
+            "fixtures/corpus",
+            "--smoke-manifest",
+            "fixtures/ci_smoke_probe",
+            "--require-tag",
+            "ci-smoke:multi-case",
+            "--require-tag",
+            "runtime:seeded-host-authority",
+        ])
+        .output()
+        .expect("run sley-conformance coverage with manifest directories");
+    assert!(
+        directory_coverage.status.success(),
+        "directory conformance coverage failed: {}",
+        String::from_utf8_lossy(&directory_coverage.stderr)
+    );
+    let directory_coverage_json: serde_json::Value =
+        serde_json::from_slice(&directory_coverage.stdout)
+            .expect("parse directory conformance coverage JSON");
+    assert_eq!(
+        directory_coverage_json.pointer("/status"),
+        Some(&serde_json::json!("passed"))
+    );
 }
 
 #[test]

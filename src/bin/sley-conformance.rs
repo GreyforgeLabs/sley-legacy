@@ -330,6 +330,7 @@ fn main() -> Result<()> {
             markdown,
             html,
         } => {
+            let corpus_manifest = normalize_manifest_path(corpus_manifest);
             let smoke_manifests = normalize_smoke_manifests(smoke_manifest);
             let mut report = build_report(
                 &schema_dir,
@@ -367,6 +368,7 @@ fn main() -> Result<()> {
             corpus_manifest,
             smoke_manifest,
         } => {
+            let corpus_manifest = normalize_manifest_path(corpus_manifest);
             let smoke_manifests = normalize_smoke_manifests(smoke_manifest);
             let report = build_coverage_report(&corpus_manifest, &smoke_manifests, require_tag);
             emit_coverage(&report, json)?;
@@ -1270,13 +1272,22 @@ fn feature_prefix(tag: &str) -> String {
 }
 
 fn normalize_smoke_manifests(paths: Vec<PathBuf>) -> Vec<PathBuf> {
-    if paths.is_empty() {
+    let paths = if paths.is_empty() {
         vec![
             PathBuf::from("fixtures/cli_smokes/manifest.json"),
             PathBuf::from("fixtures/ci_smoke_probe/manifest.json"),
         ]
     } else {
         paths
+    };
+    paths.into_iter().map(normalize_manifest_path).collect()
+}
+
+fn normalize_manifest_path(path: PathBuf) -> PathBuf {
+    if path.is_dir() {
+        path.join("manifest.json")
+    } else {
+        path
     }
 }
 
