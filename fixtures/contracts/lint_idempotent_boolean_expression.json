@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.idempotent_boolean",
+  "filters": {
+    "module": null,
+    "rules": [
+      "idempotent_boolean_expression"
+    ]
+  },
+  "findings": [
+    {
+      "id": "IDEMPOTENT_BOOLEAN_EXPRESSION",
+      "rule": "idempotent_boolean_expression",
+      "severity": "warning",
+      "message": "task `app.idempotent_boolean.main` has an idempotent boolean expression `ready && ready`",
+      "node": "block:task:app.idempotent_boolean.main:stmt:1:expr",
+      "module": "app.idempotent_boolean",
+      "hint": "replace the idempotent boolean expression with `ready`"
+    }
+  ]
+}

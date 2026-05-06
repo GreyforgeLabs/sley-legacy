@@ -100,6 +100,7 @@ Current verified surface:
   `--rule identity-binary-expression`,
   `--rule redundant-boolean-comparison`,
   `--rule absorbing-boolean-expression`,
+  `--rule idempotent-boolean-expression`,
   `--rule self-comparison-expression`,
   `--rule double-negation-expression`,
   `--rule negated-comparison-expression`,
@@ -132,7 +133,8 @@ Current verified surface:
   `empty_for_statement`,
   `empty_forge_statement`,
   `identity_binary_expression`, `redundant_boolean_comparison`, and
-  `absorbing_boolean_expression`, `self_comparison_expression`,
+  `absorbing_boolean_expression`, `idempotent_boolean_expression`,
+  `self_comparison_expression`,
   `double_negation_expression`, `negated_comparison_expression`,
   `redundant_boolean_if_expression`,
   `redundant_boolean_if_statement`, `same_branch_if_expression`, and
@@ -246,7 +248,10 @@ Current verified surface:
   `simplify_redundant_boolean_comparison` templates with lint/plan/fix-write/verify
   smoke coverage, plus checked `absorbing_boolean_expression` style findings
   and `simplify_absorbing_boolean_expression` templates with lint/plan/fix-write/verify
-  smoke coverage, plus checked `self_comparison_expression` style findings and
+  smoke coverage, plus checked `idempotent_boolean_expression` style findings
+  and `simplify_idempotent_boolean_expression` templates with
+  lint/plan/fix-write/verify smoke coverage, plus checked
+  `self_comparison_expression` style findings and
   `simplify_self_comparison_expression` templates, including strict and
   non-strict self-ordering cleanup, with lint/plan/fix-write/verify
   smoke coverage, plus checked `double_negation_expression` style findings and
@@ -494,6 +499,7 @@ cargo run -- lint --json --rule empty-forge-statement <target>
 cargo run -- lint --json --rule identity-binary-expression <target>
 cargo run -- lint --json --rule redundant-boolean-comparison <target>
 cargo run -- lint --json --rule absorbing-boolean-expression <target>
+cargo run -- lint --json --rule idempotent-boolean-expression <target>
 cargo run -- lint --json --rule self-comparison-expression <target>
 cargo run -- lint --json --rule double-negation-expression <target>
 cargo run -- lint --json --rule negated-comparison-expression <target>

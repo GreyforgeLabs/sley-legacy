@@ -101,7 +101,7 @@ sley fix --json --kind <kind> [--template-surface <surface>] [--name <name>] [--
 sley verify --json [--deny-warnings] [runtime gates/seeds] <target>
 sley deploy --json --dry-run [--artifacts-dir <dir>] [runtime gates/seeds] <target>
 sley query --json [--kind all|modules|tasks|types|effects|calls] [--module <module>] <target>
-sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter|missing-module-declaration|unchecked-result|unqualified-imported-call|unused-pure-binding|unused-pure-expression-statement|mutable-binding-never-set|self-assignment-statement|overwritten-set-statement|redundant-initial-set-statement|constant-if-expression|constant-if-statement|constant-false-if-statement|constant-false-while-statement|constant-comparison-expression|constant-arithmetic-expression|constant-text-concatenation-expression|constant-list-index-expression|constant-map-index-expression|constant-record-field-access-expression|constant-len-expression|constant-not-expression|empty-if-statement|empty-for-statement|empty-forge-statement|identity-binary-expression|redundant-boolean-comparison|absorbing-boolean-expression|self-comparison-expression|double-negation-expression|negated-comparison-expression|redundant-boolean-if-expression|redundant-boolean-if-statement|same-branch-if-expression|same-branch-if-statement|unreachable-statement|absorbing-arithmetic-expression] [--module <module>] <target>
+sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter|missing-module-declaration|unchecked-result|unqualified-imported-call|unused-pure-binding|unused-pure-expression-statement|mutable-binding-never-set|self-assignment-statement|overwritten-set-statement|redundant-initial-set-statement|constant-if-expression|constant-if-statement|constant-false-if-statement|constant-false-while-statement|constant-comparison-expression|constant-arithmetic-expression|constant-text-concatenation-expression|constant-list-index-expression|constant-map-index-expression|constant-record-field-access-expression|constant-len-expression|constant-not-expression|empty-if-statement|empty-for-statement|empty-forge-statement|identity-binary-expression|redundant-boolean-comparison|absorbing-boolean-expression|idempotent-boolean-expression|self-comparison-expression|double-negation-expression|negated-comparison-expression|redundant-boolean-if-expression|redundant-boolean-if-statement|same-branch-if-expression|same-branch-if-statement|unreachable-statement|absorbing-arithmetic-expression] [--module <module>] <target>
 sley-ci lint --json [--deny-warnings] [--rule <rule>] [--module <module>] <target>
 sley-ci doctor --json [--deny-warnings] <target>
 sley-ci plan --json [--deny-warnings] [--graft-templates] [--template-surface <surface>] <target>
@@ -709,6 +709,10 @@ The current smoke manifest covers:
   `simplify_absorbing_boolean_expression` templates that replace
   `false && expr` and `true || expr`, or delete-safe left-side forms such as
   `expr && false` and `expr || true`, with the absorbing literal
+- idempotent boolean expression style warnings through
+  `idempotent_boolean_expression`, plus checked
+  `simplify_idempotent_boolean_expression` templates that replace delete-safe
+  `expr && expr` and `expr || expr` forms with one operand
 - self-comparison expression style warnings through
   `self_comparison_expression`, plus checked
   `simplify_self_comparison_expression` templates that replace delete-safe
@@ -892,6 +896,9 @@ The v0 lint rules are:
   delete-safe `expr && false`, or delete-safe `expr || true` form is reported
   so agents can replace it with the absorbing literal without dropping
   authority work or recoverable failures.
+- `idempotent_boolean_expression`: a checked delete-safe `expr && expr` or
+  `expr || expr` form is reported so agents can replace it with one operand
+  without dropping authority work or recoverable failures.
 - `absorbing_arithmetic_expression`: a checked multiplication by zero with a
   delete-safe nonliteral side is reported so agents can replace it with the
   zero literal without dropping authority work or recoverable failures.
@@ -946,7 +953,8 @@ The command supports `--module <module>`, `--rule unused-private-task`,
 `--rule empty-for-statement`,
 `--rule empty-forge-statement`,
 `--rule identity-binary-expression`, `--rule redundant-boolean-comparison`,
-`--rule absorbing-boolean-expression`, `--rule self-comparison-expression`,
+`--rule absorbing-boolean-expression`, `--rule idempotent-boolean-expression`,
+`--rule self-comparison-expression`,
 `--rule double-negation-expression`, `--rule negated-comparison-expression`,
 `--rule redundant-boolean-if-expression`,
 `--rule redundant-boolean-if-statement`, `--rule same-branch-if-expression`,
