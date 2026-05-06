@@ -553,6 +553,61 @@
       }
     },
     {
+      "name": "plan_missing_module_template_json",
+      "args": [
+        "plan",
+        "--json",
+        "--graft-templates",
+        "--template-surface",
+        "program",
+        "examples/deploy_gate.sley"
+      ],
+      "covers": [
+        "cli:plan",
+        "graft:templates:missing-module",
+        "lint:missing_module_declaration",
+        "json:sley.edit_plan.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.edit_plan.report.v0" },
+          { "pointer": "/status", "value": "warnings" },
+          { "pointer": "/graft_templates/0/kind", "value": "add_module_declaration" },
+          { "pointer": "/graft_templates/0/surface", "value": "program" },
+          { "pointer": "/graft_templates/0/operation/op", "value": "AddModuleDeclaration" },
+          { "pointer": "/graft_templates/0/operation/payload/name", "value": "app.main" },
+          { "pointer": "/graft_templates/0/editable_json_pointers/0", "value": "/payload/name" }
+        ]
+      }
+    },
+    {
+      "name": "fix_missing_module_declaration_dry_run_json",
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "add_module_declaration",
+        "--dry-run",
+        "examples/deploy_gate.sley"
+      ],
+      "covers": [
+        "cli:fix",
+        "graft:operations:add-module-declaration",
+        "lint:missing_module_declaration",
+        "json:sley.graft.outcome.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/operation", "value": "AddModuleDeclaration" },
+          { "pointer": "/provenance/0/targets/0", "value": "module:app.main" }
+        ]
+      }
+    },
+    {
       "name": "trace_hello_json",
       "args": ["trace", "--json", "examples/hello.sley"],
       "covers": ["cli:trace"],

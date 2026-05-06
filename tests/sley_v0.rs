@@ -1206,6 +1206,69 @@ task main -> Used {
 }
 
 #[test]
+fn edit_plan_graft_templates_include_missing_module_fix() {
+    let source = r#"task main -> Text {
+  return "hello"
+}
+"#;
+    let program = parse_program(source).expect("parse missing module plan fixture");
+    let report = build_edit_plan_report_with_options(
+        "missing_module.sley",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: None,
+        },
+    );
+    assert_eq!(report.status, "warnings");
+    assert_eq!(report.summary.lint_finding_count, 1);
+    assert_eq!(
+        report.lint.as_ref().expect("lint summary").findings[0].id,
+        "MISSING_MODULE_DECLARATION"
+    );
+    let template = report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "add_module_declaration")
+        .expect("missing module graft template");
+    assert_eq!(template.surface, "program");
+    assert_eq!(
+        template.operation.pointer("/op"),
+        Some(&serde_json::json!("AddModuleDeclaration"))
+    );
+    assert_eq!(
+        template.operation.pointer("/payload/name"),
+        Some(&serde_json::json!("app.main"))
+    );
+    assert_eq!(template.editable_json_pointers, vec!["/payload/name"]);
+    let graft: GraftInput =
+        serde_json::from_value(template.operation.clone()).expect("parse module template");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:module-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+
+    let targeted_report = build_edit_plan_report_with_options(
+        "missing_module.sley",
+        Ok(program),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("program".to_string()),
+        },
+    );
+    assert_eq!(targeted_report.status, "warnings");
+    assert_eq!(targeted_report.graft_templates.len(), 1);
+    assert_eq!(
+        targeted_report.graft_templates[0].kind,
+        "add_module_declaration"
+    );
+}
+
+#[test]
 fn edit_plan_remove_take_transaction_requires_unused_take() {
     let source = r#"
 module app.plan
@@ -2248,6 +2311,49 @@ task main -> Int {
 }
 "#;
     assert!(serde_json::from_str::<GraftInput>(unknown_contract_field).is_err());
+}
+
+#[test]
+fn add_module_declaration_graft_sets_explicit_module() {
+    let source = r#"task main -> Text {
+  return "hello"
+}
+"#;
+    let program = parse_program(source).expect("parse module-less source");
+    let graft: GraftInput = serde_json::from_str(
+        r#"{ "op": "AddModuleDeclaration", "payload": { "name": "app.main" } }"#,
+    )
+    .expect("parse module declaration graft");
+    let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
+    assert_eq!(outcome.schema, GRAFT_OUTCOME_SCHEMA);
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    assert_eq!(outcome.provenance[0].operation, "AddModuleDeclaration");
+    assert_eq!(
+        outcome.provenance[0].targets,
+        vec!["module:app.main".to_string()]
+    );
+    let grafted_source = outcome.source.expect("grafted module source");
+    assert_eq!(
+        grafted_source,
+        "module app.main\n\ntask main -> Text {\n  return \"hello\"\n}\n"
+    );
+    let grafted = parse_program(&grafted_source).expect("parse grafted module source");
+    assert_eq!(grafted.module.as_deref(), Some("app.main"));
+    assert_eq!(grafted.tasks[0].id, "task:app.main.main");
+
+    let existing = parse_program("module app.old\n\ntask main -> Unit {\n}\n")
+        .expect("parse existing module source");
+    let duplicate: GraftInput = serde_json::from_str(
+        r#"{ "op": "AddModuleDeclaration", "payload": { "name": "app.main" } }"#,
+    )
+    .expect("parse duplicate module graft");
+    let duplicate_outcome = apply_graft_input(&existing, duplicate, Some("agent:test".to_string()));
+    assert_eq!(duplicate_outcome.status, "rejected");
+    assert_has_repair_hint(
+        &duplicate_outcome.diagnostics,
+        "GRAFT_MODULE_EXISTS",
+        "resolve_namespace_conflict",
+    );
 }
 
 #[test]
@@ -7230,6 +7336,55 @@ task main -> Unit {
 }
 
 #[test]
+fn file_fix_write_adds_module_declaration() {
+    let root = temp_project_dir("file-fix-module-declaration");
+    fs::create_dir_all(&root).expect("create temp dir");
+    let file = root.join("main.sley");
+    fs::write(
+        &file,
+        r#"task main -> Text {
+  return "hello"
+}
+"#,
+    )
+    .expect("write module-less source");
+
+    let output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args([
+            "fix",
+            "--json",
+            "--kind",
+            "add_module_declaration",
+            "--write",
+        ])
+        .arg(&file)
+        .output()
+        .expect("write module declaration fix");
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+    assert!(
+        output.status.success(),
+        "module fix should write; stdout={stdout} stderr={}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let outcome: GraftOutcome = serde_json::from_str(&stdout).expect("parse fix outcome");
+    assert_eq!(outcome.status, "accepted");
+    assert_eq!(outcome.provenance[0].operation, "AddModuleDeclaration");
+    assert_eq!(
+        fs::read_to_string(&file).expect("read fixed source"),
+        "module app.main\n\ntask main -> Text {\n  return \"hello\"\n}\n"
+    );
+    let fixed_source = fs::read_to_string(&file).expect("read fixed source");
+    let fixed = parse_program(&fixed_source).expect("parse fixed source");
+    let lint = build_lint_report(&fixed, LintOptions::default());
+    assert_eq!(lint.status, "ok", "unexpected lint findings: {lint:#?}");
+    let receipts = read_trace_receipts(root.join(".sley/trace.jsonl")).expect("read trace");
+    assert_eq!(receipts.len(), 1);
+    assert_eq!(receipts[0].provenance[0].operation, "AddModuleDeclaration");
+
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
 fn project_graft_write_creates_checked_new_module() {
     let root = temp_project_dir("project-graft-new-module");
     fs::create_dir_all(root.join("src/app")).expect("create project dirs");
@@ -8125,8 +8280,10 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "cli:zjx",
         "cli:graft-dry-run",
         "diagnostic:MISSING_RETURN",
+        "graft:operations:add-module-declaration",
         "graft:templates:lint-declaration-delete",
         "graft:templates:lint-declaration-target",
+        "graft:templates:missing-module",
         "graft:templates:replace-expression",
         "graft:transactions:lint-declaration-cleanup",
         "graph-slice:replace-affordances",

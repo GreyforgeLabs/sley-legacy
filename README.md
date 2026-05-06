@@ -117,14 +117,18 @@ Implemented now:
   rename-plus-call-site and add-take-plus-call-arg transaction templates for
   targeted caller surfaces, safe remove-take-plus-call-arg transaction
   templates for unused takes, lint-driven delete templates and cleanup
-  transactions for unused private types/effects, `--template-surface <surface>`
-  targeting for task or lint declaration surfaces, `--emit-graft <kind>` for
-  direct operation/transaction JSON handoff to `sley graft`, and
+  transactions for unused private types/effects, lint-driven
+  `AddModuleDeclaration` templates for explicit module style fixes,
+  `--template-surface <surface>` targeting for task, program, or lint
+  declaration surfaces, `--emit-graft <kind>` for direct
+  operation/transaction JSON handoff to `sley graft`, and
   `schema: "sley.edit_plan.report.v0"`
 - checked JSON fix previews with `sley fix --kind <kind>`, consuming the same
   plan graft templates and applying one named operation or transaction through
-  the graft checker; default and `--dry-run` mode stay non-mutating, while
-  `--write` uses the same checked writeback, trace receipts, and
+  the graft checker, including `add_module_declaration` for
+  `missing_module_declaration` lint findings; default and `--dry-run` mode stay
+  non-mutating, while `--write` uses the same checked writeback, trace
+  receipts, and
   `schema: "sley.graft.outcome.v0"` as `sley graft`
 - checked JSON verification reports with `sley verify`, consuming strict
   diagnostics, query summaries, lint findings, and deterministic runtime
@@ -141,13 +145,13 @@ Implemented now:
   writeback with manifest entry updates when needed
 - a first ZJX-ready JSON envelope command for graph snapshots, optional graph
   slices, and trace receipts
-- structural graft operations for adding/removing takes, replacing task bodies,
-  adding imports/effects/types/tasks, renaming declarations, updating
-  call-sites, updating/replacing/removing call arguments, inserting checked
-  task-body statements, replacing nested expressions by node id, deleting
-  checked graph nodes such as declarations, imports, takes, and statements, and
-  moving checked statements or top-level declaration order within their current
-  parent
+- structural graft operations for adding explicit module declarations,
+  adding/removing takes, replacing task bodies, adding
+  imports/effects/types/tasks, renaming declarations, updating call-sites,
+  updating/replacing/removing call arguments, inserting checked task-body
+  statements, replacing nested expressions by node id, deleting checked graph
+  nodes such as declarations, imports, takes, and statements, and moving
+  checked statements or top-level declaration order within their current parent
 - strict graft input JSON for the v0 operation shapes; unknown graft fields are
   rejected instead of silently ignored
 - versioned JSON report roots for diagnostics and graft outcomes
@@ -164,7 +168,8 @@ Implemented now:
 - manifest-backed CLI smoke conformance cases under `fixtures/cli_smokes/`,
   covering stable command output, JSON roots, graph/ZJX surfaces, doctor
   readiness, edit-plan surfaces, verify pre-deploy gates, project scaffolding,
-  graft dry runs, and seeded host-adapter execution
+  graft dry runs, missing-module checked repair templates, and seeded
+  host-adapter execution
 - compact agent onboarding pack in `llms.txt`
 
 Project form:
@@ -464,7 +469,7 @@ gold corpus and CLI smoke suite now have manifests with required coverage tags
 for seeded host adapters, stable JSON roots, graph/ZJX output, graft and fix
 dry runs, checked graph query reports, doctor readiness, verify pre-deploy
 gates, edit-plan surfaces, lint-driven declaration delete templates and
-cleanup transactions, private-task lint rules, declaration/import/API hygiene,
-authority hygiene, raw-host migration warnings, and explicit module style
-warnings. The next logical phase is to broaden style and migration lints before
-broadening the language again.
+cleanup transactions, lint-driven module declaration fixes, private-task lint
+rules, declaration/import/API hygiene, authority hygiene, raw-host migration
+warnings, and explicit module style warnings. The next logical phase is to
+broaden style and migration lints before broadening the language again.

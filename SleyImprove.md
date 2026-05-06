@@ -132,13 +132,15 @@ Rules:
   templates, rename-plus-call-site transactions, and add-take-plus-call-arg
   transactions, plus safe remove-take-plus-call-arg transactions for unused
   takes and lint-driven delete templates plus cleanup transactions for unused
-  private type/effect declarations, with editable JSON pointers; it also
-  consumes selected graph-slice movement affordances as `move_statement`,
+  private type/effect declarations, plus lint-driven `AddModuleDeclaration`
+  templates for missing module declarations, with editable JSON pointers; it
+  also consumes selected graph-slice movement affordances as `move_statement`,
   `move_take`, and destination-variant templates when legal graph-slice
   destinations exist. Agents can target a specific task surface by node id or
-  qualified name, or a lint finding declaration surface by node id. Agents can
-  use `--emit-graft <kind>` to print one matching operation or transaction JSON
-  directly for `sley graft --dry-run` or `sley graft --write`.
+  qualified name, the `program` missing-module surface, or a lint finding
+  declaration surface by node id. Agents can use `--emit-graft <kind>` to print
+  one matching operation or transaction JSON directly for dry-run or write-mode
+  `sley graft`.
 - `sley fix` consumes the same plan templates, selects one named operation or
   transaction kind, applies it through the graft checker, and emits
   `sley.graft.outcome.v0`; it is non-mutating by default and mutates only with
@@ -233,6 +235,7 @@ Agents should be trained to prefer grafts over raw file edits.
 Minimum useful graft operations:
 
 - `AddTake`
+- `AddModuleDeclaration`
 - `RemoveTake`
 - `ReplaceTaskBody`
 - `AddTask`
@@ -249,10 +252,13 @@ Minimum useful graft operations:
 - `MoveNode`
 - `DeleteNode`
 
-`UpdateCallSites`, `UpdateCallArgs`, `ReplaceCallArg`, `RemoveCallArg`,
-`InsertStatement`, `ReplaceExpression`, `DeleteNode`, and `MoveNode` are now
-implemented for the v0 in-memory checked program. `DeleteNode` supports checked
-deletion of declarations, imports, takes, and statements.
+`AddModuleDeclaration`, `UpdateCallSites`, `UpdateCallArgs`, `ReplaceCallArg`,
+`RemoveCallArg`, `InsertStatement`, `ReplaceExpression`, `DeleteNode`, and
+`MoveNode` are now implemented for the v0 in-memory checked program.
+`AddModuleDeclaration` turns module-less source into an explicit module and is
+surfaced through `sley plan --graft-templates`/`sley fix` for
+`missing_module_declaration`. `DeleteNode` supports checked deletion of
+declarations, imports, takes, and statements.
 `MoveNode` supports checked in-parent statement reordering and top-level
 declaration ordering. Project-aware multi-file writeback now updates existing
 module files, creates checked new module files declared by the graft candidate,
@@ -434,6 +440,8 @@ The current smoke manifest covers:
   templates in edit-plan reports
 - lint-driven declaration delete templates, cleanup transactions, and direct
   declaration surface targeting in edit-plan reports
+- lint-driven missing-module `AddModuleDeclaration` templates and checked
+  `sley fix` dry runs
 - private declaration hygiene through the checked `unused_private_type` and
   `unused_private_effect` lint rules
 - import hygiene through the checked `unused_import` lint rule

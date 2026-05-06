@@ -415,7 +415,7 @@ fn build_graft_templates(
     lint_report: &LintReport,
     requested_surface: Option<&str>,
 ) -> Result<Vec<EditPlanGraftTemplate>, Diagnostic> {
-    let lint_templates = lint_declaration_delete_templates(program, lint_report);
+    let lint_templates = lint_graft_templates(program, lint_report);
     if let Some(requested_surface) = requested_surface {
         let requested_lint_templates = lint_templates
             .iter()
@@ -451,6 +451,12 @@ fn build_graft_templates(
     Ok(templates)
 }
 
+fn lint_graft_templates(program: &Program, lint_report: &LintReport) -> Vec<EditPlanGraftTemplate> {
+    let mut templates = lint_declaration_delete_templates(program, lint_report);
+    templates.extend(lint_missing_module_templates(program, lint_report));
+    templates
+}
+
 fn lint_declaration_delete_templates(
     program: &Program,
     lint_report: &LintReport,
@@ -479,6 +485,41 @@ fn lint_declaration_delete_templates(
                 surface: finding.node.clone(),
                 operation,
                 editable_json_pointers: Vec::new(),
+            })
+        })
+        .collect()
+}
+
+fn lint_missing_module_templates(
+    program: &Program,
+    lint_report: &LintReport,
+) -> Vec<EditPlanGraftTemplate> {
+    lint_report
+        .findings
+        .iter()
+        .filter(|finding| finding.id == "MISSING_MODULE_DECLARATION")
+        .filter_map(|finding| {
+            let operation = json!({
+                "op": "AddModuleDeclaration",
+                "payload": {
+                    "name": "app.main"
+                }
+            });
+            if !graft_operation_checks(
+                program,
+                &operation,
+                Some("agent:plan-add-module-declaration"),
+            ) {
+                return None;
+            }
+            Some(EditPlanGraftTemplate {
+                kind: "add_module_declaration".to_string(),
+                reason:
+                    "add an explicit module declaration so graph ids and project writeback stay stable"
+                        .to_string(),
+                surface: finding.node.clone(),
+                operation,
+                editable_json_pointers: vec!["/payload/name".to_string()],
             })
         })
         .collect()
@@ -672,16 +713,14 @@ fn graph_slice_delete_templates(
 }
 
 fn delete_affordance_checks(program: &Program, operation: &JsonValue) -> bool {
+    graft_operation_checks(program, operation, Some("agent:plan-delete-affordance"))
+}
+
+fn graft_operation_checks(program: &Program, operation: &JsonValue, actor: Option<&str>) -> bool {
     let Ok(input) = serde_json::from_value::<GraftInput>(operation.clone()) else {
         return false;
     };
-    apply_graft_input(
-        program,
-        input,
-        Some("agent:plan-delete-affordance".to_string()),
-    )
-    .status
-        == "accepted"
+    apply_graft_input(program, input, actor.map(str::to_string)).status == "accepted"
 }
 
 fn graph_slice_replace_templates(

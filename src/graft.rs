@@ -40,6 +40,11 @@ pub struct GraftTransaction {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(tag = "op", deny_unknown_fields)]
 pub enum GraftOperation {
+    AddModuleDeclaration {
+        #[serde(default)]
+        precondition: Option<JsonValue>,
+        payload: NamedPayload,
+    },
     AddTask {
         #[serde(default)]
         precondition: Option<JsonValue>,
@@ -354,6 +359,20 @@ fn apply_one(
     actor: &str,
 ) -> Result<ProvenanceRecord, Vec<Diagnostic>> {
     match op {
+        GraftOperation::AddModuleDeclaration {
+            precondition,
+            payload,
+        } => {
+            check_preconditions(program, None, precondition.as_ref())?;
+            add_module_declaration(program, &payload.name)?;
+            program.assign_ids();
+            Ok(record(
+                graft_id,
+                actor,
+                "AddModuleDeclaration",
+                vec![format!("module:{}", payload.name)],
+            ))
+        }
         GraftOperation::AddTake {
             target,
             precondition,
@@ -900,6 +919,71 @@ fn apply_one(
             Ok(record(graft_id, actor, "MoveNode", vec![target, moved]))
         }
     }
+}
+
+fn add_module_declaration(program: &mut Program, module: &str) -> Result<(), Vec<Diagnostic>> {
+    if let Some(diagnostic) = validate_module_name(module) {
+        return Err(vec![diagnostic]);
+    }
+    if let Some(existing) = &program.module {
+        return Err(vec![
+            Diagnostic::error(
+                "GRAFT_MODULE_EXISTS",
+                format!("module `{existing}` is already declared"),
+            )
+            .with_node(format!("module:{existing}"))
+            .with_repair_hint(
+                RepairHint::new("resolve_namespace_conflict")
+                    .with_target(format!("module:{existing}"))
+                    .with_replacement(
+                        "Use RenameDeclaration on the existing module target instead",
+                    ),
+            ),
+        ]);
+    }
+    let old_module = program.module_name().to_string();
+    let modules = program_modules(program);
+    if module != old_module && modules.contains(module) {
+        return Err(vec![
+            Diagnostic::error(
+                "GRAFT_MODULE_EXISTS",
+                format!("module `{module}` already exists"),
+            )
+            .with_node(format!("module:{module}"))
+            .with_repair_hint(
+                RepairHint::new("resolve_namespace_conflict")
+                    .with_target(format!("module:{module}"))
+                    .with_replacement("Choose a distinct module path for the source file"),
+            ),
+        ]);
+    }
+
+    program.module = Some(module.to_string());
+    for import in &mut program.imports {
+        if import
+            .owner_module
+            .as_deref()
+            .is_none_or(|owner| owner == old_module)
+        {
+            import.owner_module = Some(module.to_string());
+        }
+    }
+    for ty in &mut program.types {
+        if type_module(ty) == old_module {
+            ty.module = Some(module.to_string());
+        }
+    }
+    for effect in &mut program.effects {
+        if effect_module(effect) == old_module {
+            effect.module = Some(module.to_string());
+        }
+    }
+    for task in &mut program.tasks {
+        if task_module(task) == old_module {
+            task.module = Some(module.to_string());
+        }
+    }
+    Ok(())
 }
 
 fn rename_module(program: &mut Program, old: &str, new: &str) -> Result<(), Vec<Diagnostic>> {

@@ -14,6 +14,7 @@ cargo run -- graph --json <file-or-project>
 cargo run -- graph --json --slice <node-id> <file-or-project>
 cargo run -- new --json --template deploy --name agent-app agent-app
 cargo run -- doctor --json <file-or-project>
+cargo run -- fix --json --kind add_module_declaration --dry-run <file-or-project>
 cargo run -- fix --json --kind delete_unused_private_declarations --dry-run <file-or-project>
 cargo run -- fix --json --kind delete_unused_private_declarations --write <file-or-project>
 cargo run -- verify --json <file-or-project>
@@ -148,7 +149,8 @@ Current development phase:
   add-take-plus-call-arg transactions for the highest-ranked task surface, plus
   safe remove-take-plus-call-arg transactions when an unused take can be proven
   and lint-driven `DeleteNode` templates plus cleanup transactions for unused
-  private type/effect declarations; selected task graph-slice affordances are
+  private type/effect declarations, plus `AddModuleDeclaration` templates for
+  `missing_module_declaration`; selected task graph-slice affordances are
   surfaced as checked
   `move_statement`/`move_take`, destination-variant, `delete_statement`,
   `delete_take`, and `replace_expression` templates where legal, or
@@ -158,7 +160,8 @@ Current development phase:
 - `sley fix --json --kind <kind>` consumes checked plan templates and applies
   one named operation or transaction through the same graft checker, emitting
   `sley.graft.outcome.v0`; default and `--dry-run` mode are non-mutating, and
-  `--write` records the normal graft trace receipt
+  `--write` records the normal graft trace receipt; `add_module_declaration`
+  is the checked fixer for explicit module-declaration style warnings
 - graft call-argument edits are structural: use `UpdateCallArgs` to insert,
   `ReplaceCallArg` to replace, and `RemoveCallArg` to remove checked caller
   arguments by task target plus optional `from`/`scope`
