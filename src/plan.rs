@@ -12,8 +12,9 @@ use crate::lint::{
     LintOptions, LintReport, absorbing_boolean_expression_replacement_source, build_lint_report,
     constant_arithmetic_expression_replacement_source,
     constant_comparison_expression_replacement_source, constant_if_expression_replacement_source,
-    constant_if_statement_replacement_source, double_negation_expression_replacement_source,
-    identity_binary_expression_replacement_source,
+    constant_if_statement_replacement_source,
+    constant_text_concatenation_expression_replacement_source,
+    double_negation_expression_replacement_source, identity_binary_expression_replacement_source,
     negated_comparison_expression_replacement_source, qualified_imported_call_replacement_source,
     raw_host_adapter_replacement, redundant_boolean_comparison_replacement_source,
     redundant_boolean_if_expression_replacement_source,
@@ -586,6 +587,10 @@ fn lint_graft_templates(
         program,
         lint_report,
     ));
+    templates.extend(lint_constant_text_concatenation_expression_templates(
+        program,
+        lint_report,
+    ));
     templates.extend(lint_empty_if_statement_templates(program, lint_report));
     templates.extend(lint_empty_for_statement_templates(program, lint_report));
     templates.extend(lint_empty_forge_statement_templates(program, lint_report));
@@ -653,6 +658,7 @@ fn is_lint_repair_kind(kind: &str) -> bool {
             | "delete_constant_false_while_statement"
             | "simplify_constant_comparison_expression"
             | "simplify_constant_arithmetic_expression"
+            | "simplify_constant_text_concatenation_expression"
             | "delete_empty_if_statement"
             | "delete_empty_for_statement"
             | "delete_empty_forge_statement"
@@ -1049,6 +1055,39 @@ fn lint_constant_arithmetic_expression_templates(
             Some(EditPlanGraftTemplate {
                 kind: "simplify_constant_arithmetic_expression".to_string(),
                 reason: "replace this constant arithmetic expression with its numeric result"
+                    .to_string(),
+                surface: finding.node.clone(),
+                operation,
+                editable_json_pointers: vec!["/payload/source".to_string()],
+            })
+        })
+        .collect()
+}
+
+fn lint_constant_text_concatenation_expression_templates(
+    program: &Program,
+    lint_report: &LintReport,
+) -> Vec<EditPlanGraftTemplate> {
+    lint_report
+        .findings
+        .iter()
+        .filter(|finding| finding.id == "CONSTANT_TEXT_CONCATENATION_EXPRESSION")
+        .filter_map(|finding| {
+            let replacement =
+                constant_text_concatenation_expression_replacement_source(program, &finding.node)?;
+            let operation = json!({
+                "op": "ReplaceExpression",
+                "target": finding.node,
+                "payload": {
+                    "source": replacement
+                }
+            });
+            if !replace_affordance_checks(program, &operation) {
+                return None;
+            }
+            Some(EditPlanGraftTemplate {
+                kind: "simplify_constant_text_concatenation_expression".to_string(),
+                reason: "replace this constant text concatenation with one text literal"
                     .to_string(),
                 surface: finding.node.clone(),
                 operation,

@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.constant_text_concat",
+  "filters": {
+    "module": null,
+    "rules": [
+      "constant_text_concatenation_expression"
+    ]
+  },
+  "findings": [
+    {
+      "id": "CONSTANT_TEXT_CONCATENATION_EXPRESSION",
+      "rule": "constant_text_concatenation_expression",
+      "severity": "warning",
+      "message": "task `app.constant_text_concat.main` has a constant text concatenation expression `\"Sley \" + \"agents\"`",
+      "node": "block:task:app.constant_text_concat.main:stmt:0:expr",
+      "module": "app.constant_text_concat",
+      "hint": "replace the constant text concatenation with `\"Sley agents\"`"
+    }
+  ]
+}

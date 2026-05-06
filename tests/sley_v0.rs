@@ -3411,6 +3411,87 @@ fn edit_plan_graft_templates_include_constant_arithmetic_expression_simplify() {
 }
 
 #[test]
+fn edit_plan_graft_templates_include_constant_text_concatenation_expression_simplify() {
+    let source = include_str!("../examples/constant_text_concatenation_expression.sley");
+    let program = parse_program(source).expect("parse constant text concatenation fixture");
+    let report = build_edit_plan_report_with_options(
+        "examples/constant_text_concatenation_expression.sley",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: None,
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "warnings");
+    assert_eq!(report.summary.lint_finding_count, 1);
+    assert_eq!(
+        report.lint.as_ref().expect("lint summary").findings[0].id,
+        "CONSTANT_TEXT_CONCATENATION_EXPRESSION"
+    );
+    let template = report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "simplify_constant_text_concatenation_expression")
+        .expect("constant text concatenation simplify template");
+    assert_eq!(
+        template.surface,
+        "block:task:app.constant_text_concat.main:stmt:0:expr"
+    );
+    assert_eq!(
+        template.operation.pointer("/op"),
+        Some(&serde_json::json!("ReplaceExpression"))
+    );
+    assert_eq!(
+        template.operation.pointer("/payload/source"),
+        Some(&serde_json::json!("\"Sley agents\""))
+    );
+    assert_eq!(template.editable_json_pointers, vec!["/payload/source"]);
+    let graft: GraftInput = serde_json::from_value(template.operation.clone())
+        .expect("parse constant text concatenation template");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:constant-text-concat-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted_source = outcome.source.expect("grafted source");
+    assert!(grafted_source.contains("return \"Sley agents\""));
+    assert!(!grafted_source.contains("\"Sley \" + \"agents\""));
+    let grafted_program = parse_program(&grafted_source).expect("parse grafted source");
+    let lint_report = build_lint_report(
+        &grafted_program,
+        LintOptions {
+            rules: vec![LintRule::ConstantTextConcatenationExpression],
+            module: None,
+        },
+    );
+    assert_eq!(lint_report.status, "ok");
+
+    let targeted_report = build_edit_plan_report_with_options(
+        "examples/constant_text_concatenation_expression.sley",
+        Ok(program),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some(
+                "block:task:app.constant_text_concat.main:stmt:0:expr".to_string(),
+            ),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(targeted_report.status, "warnings");
+    assert!(targeted_report.diagnostics.is_empty());
+    assert_eq!(targeted_report.graft_templates.len(), 1);
+    assert_eq!(
+        targeted_report.graft_templates[0].kind,
+        "simplify_constant_text_concatenation_expression"
+    );
+    assert!(targeted_report.transaction_templates.is_empty());
+}
+
+#[test]
 fn edit_plan_graft_templates_include_empty_if_statement_delete() {
     let source = include_str!("../examples/empty_if_statement.sley");
     let program = parse_program(source).expect("parse empty if fixture");
@@ -6134,6 +6215,22 @@ task helper -> Result<Text, Error> {
         include_str!("../fixtures/contracts/lint_constant_arithmetic_expression.json"),
     );
 
+    let constant_text_concatenation_source =
+        include_str!("../examples/constant_text_concatenation_expression.sley");
+    let constant_text_concatenation_program = parse_program(constant_text_concatenation_source)
+        .expect("parse constant text concatenation fixture");
+    let constant_text_concatenation_lint = build_lint_report(
+        &constant_text_concatenation_program,
+        LintOptions {
+            rules: vec![LintRule::ConstantTextConcatenationExpression],
+            module: None,
+        },
+    );
+    assert_json_snapshot(
+        &constant_text_concatenation_lint,
+        include_str!("../fixtures/contracts/lint_constant_text_concatenation_expression.json"),
+    );
+
     let empty_if_source = include_str!("../examples/empty_if_statement.sley");
     let empty_if_program = parse_program(empty_if_source).expect("parse empty if fixture");
     let empty_if_lint = build_lint_report(
@@ -7029,7 +7126,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(70))
+        Some(&serde_json::json!(71))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -13254,6 +13351,97 @@ task main -> Float {
 }
 
 #[test]
+fn lint_report_flags_constant_text_concatenation_expressions() {
+    let source = r#"
+module app.constant_text_concat
+
+task suffix -> Text {
+  return "agent"
+}
+
+task main -> Text {
+  bind greeting = "Hello, " + "agent"
+  bind escaped = "line\n" + "tab\t"
+  bind runtime = "prefix " + call suffix()
+
+  return "Sley" + " ready"
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+
+    let report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::ConstantTextConcatenationExpression],
+            module: None,
+        },
+    );
+
+    assert_eq!(report.schema, LINT_REPORT_SCHEMA);
+    assert_eq!(report.status, "findings");
+    assert_eq!(report.entry_module, "app.constant_text_concat");
+    assert_eq!(
+        report.filters.rules,
+        vec!["constant_text_concatenation_expression"]
+    );
+    assert_eq!(
+        report.findings.len(),
+        3,
+        "constant text concatenation should skip runtime text expressions"
+    );
+    assert_eq!(
+        report.findings[0].id,
+        "CONSTANT_TEXT_CONCATENATION_EXPRESSION"
+    );
+    assert_eq!(
+        report.findings[0].rule,
+        "constant_text_concatenation_expression"
+    );
+    let nodes: Vec<&str> = report
+        .findings
+        .iter()
+        .map(|finding| finding.node.as_str())
+        .collect();
+    assert!(nodes.contains(&"block:task:app.constant_text_concat.main:stmt:0:expr"));
+    assert!(nodes.contains(&"block:task:app.constant_text_concat.main:stmt:1:expr"));
+    assert!(nodes.contains(&"block:task:app.constant_text_concat.main:stmt:3:expr"));
+    assert_eq!(report.findings[0].module, "app.constant_text_concat");
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|finding| finding.hint.contains("\"Hello, agent\""))
+    );
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|finding| finding.hint.contains("\"line\\ntab\\t\""))
+    );
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|finding| finding.hint.contains("\"Sley ready\""))
+    );
+
+    let scoped_report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::ConstantTextConcatenationExpression],
+            module: Some("app.other".to_string()),
+        },
+    );
+    assert_eq!(scoped_report.status, "ok");
+    assert!(scoped_report.findings.is_empty());
+}
+
+#[test]
 fn lint_report_flags_empty_if_statements() {
     let source = r#"
 module app.empty_if
@@ -16387,6 +16575,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:templates:constant-false-while-statement-delete",
         "graft:templates:constant-comparison-expression",
         "graft:templates:constant-arithmetic-expression",
+        "graft:templates:constant-text-concatenation-expression",
         "graft:templates:empty-if-statement-delete",
         "graft:templates:empty-for-statement-delete",
         "graft:templates:empty-forge-statement-delete",
@@ -16422,6 +16611,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "lint:constant_false_while_statement",
         "lint:constant_comparison_expression",
         "lint:constant_arithmetic_expression",
+        "lint:constant_text_concatenation_expression",
         "lint:empty_if_statement",
         "lint:empty_for_statement",
         "lint:empty_forge_statement",
@@ -16446,6 +16636,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:constant-false-while-repair-write-verify",
         "readiness:constant-comparison-repair-write-verify",
         "readiness:constant-arithmetic-repair-write-verify",
+        "readiness:constant-text-concatenation-repair-write-verify",
         "readiness:empty-if-repair-write-verify",
         "readiness:empty-for-repair-write-verify",
         "readiness:empty-forge-repair-write-verify",

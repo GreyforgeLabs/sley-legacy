@@ -836,6 +836,10 @@ program.
 `simplify_constant_arithmetic_expression` `ReplaceExpression` templates when
 replacing safe numeric literal arithmetic with its result preserves a checked
 program.
+`constant_text_concatenation_expression` lint findings become checked
+`simplify_constant_text_concatenation_expression` `ReplaceExpression`
+templates when replacing text literal concatenation with one escaped text
+literal preserves a checked program.
 `empty_if_statement` lint findings become checked
 `delete_empty_if_statement` `DeleteNode` templates when deleting a no-op `if`
 statement with a delete-safe condition and empty branches preserves a checked
@@ -1016,6 +1020,8 @@ can be replaced by its boolean result; and
 `constant_arithmetic_expression`, which warns when checked numeric literal
 arithmetic can be replaced by its result without overlapping identity cleanup
 or folding divide-by-zero; and
+`constant_text_concatenation_expression`, which warns when checked text literal
+concatenation can be replaced by one escaped text literal; and
 `empty_if_statement`, which warns when an `if` statement with a delete-safe
 condition and empty branches can be removed as no-op control flow; and
 `empty_for_statement`, which warns when a `for item in [] { ... }` statement
@@ -1059,6 +1065,7 @@ guaranteed `return` in the same block.
 `--rule constant-false-while-statement`, or
 `--rule constant-comparison-expression`, or
 `--rule constant-arithmetic-expression`, or
+`--rule constant-text-concatenation-expression`, or
 `--rule empty-if-statement`, or
 `--rule empty-for-statement`, or
 `--rule empty-forge-statement`, or
@@ -1202,7 +1209,8 @@ refuse generic data disguised as Sley artifacts before compression begins.
   verify for file and project targets, including unused pure binding cleanup,
   unused pure expression statement cleanup, constant-false while statement
   cleanup, constant-if statement simplification, constant arithmetic expression
-  cleanup, empty-if statement cleanup, empty-for statement cleanup,
+  cleanup, constant text concatenation cleanup, empty-if statement cleanup,
+  empty-for statement cleanup,
   empty-forge statement cleanup,
   unreachable statement cleanup, and mutable binding conversion,
   plus a repaired generated deploy

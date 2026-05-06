@@ -971,6 +971,7 @@ enum CliLintRule {
     ConstantFalseWhileStatement,
     ConstantComparisonExpression,
     ConstantArithmeticExpression,
+    ConstantTextConcatenationExpression,
     EmptyIfStatement,
     EmptyForStatement,
     EmptyForgeStatement,
@@ -1009,6 +1010,9 @@ impl From<CliLintRule> for LintRule {
             CliLintRule::ConstantFalseWhileStatement => Self::ConstantFalseWhileStatement,
             CliLintRule::ConstantComparisonExpression => Self::ConstantComparisonExpression,
             CliLintRule::ConstantArithmeticExpression => Self::ConstantArithmeticExpression,
+            CliLintRule::ConstantTextConcatenationExpression => {
+                Self::ConstantTextConcatenationExpression
+            }
             CliLintRule::EmptyIfStatement => Self::EmptyIfStatement,
             CliLintRule::EmptyForStatement => Self::EmptyForStatement,
             CliLintRule::EmptyForgeStatement => Self::EmptyForgeStatement,
