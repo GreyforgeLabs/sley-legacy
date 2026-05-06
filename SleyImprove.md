@@ -106,7 +106,7 @@ sley-ci lint --json [--deny-warnings] [--rule <rule>] [--module <module>] <targe
 sley-ci doctor --json [--deny-warnings] <target>
 sley-ci plan --json [--deny-warnings] [--graft-templates] [--template-surface <surface>] <target>
 sley-ci run --json [runtime gates/seeds] <target>
-sley-ci corpus --json <fixtures/corpus/manifest.json>
+sley-ci corpus --json <fixtures/corpus|fixtures/corpus/manifest.json>
 sley-ci examples --json examples
 sley-conformance report --json
 sley-conformance report --json --require-public-release-ready
@@ -580,10 +580,10 @@ Each corpus item should include:
 
 The manifest is part of the release gate: new corpus files should not be added
 silently outside it, and required release coverage tags should remain explicit.
-The same manifest is executable through `sley-ci corpus --json
-fixtures/corpus/manifest.json`, which runs accepted fixtures through strict
-check and formatter round-trip steps and rejected fixtures through diagnostic
-ID checks against their sidecars.
+The same manifest is executable through `sley-ci corpus --json fixtures/corpus`
+or `sley-ci corpus --json fixtures/corpus/manifest.json`, which runs accepted
+fixtures through strict check and formatter round-trip steps and rejected
+fixtures through diagnostic ID checks against their sidecars.
 
 This corpus becomes the real bridge from "Codex does not know Sley" to "agents
 can operate Sley reliably."

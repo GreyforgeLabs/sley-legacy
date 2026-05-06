@@ -145,6 +145,7 @@ enum Command {
     Corpus {
         #[arg(long)]
         json: bool,
+        /// Corpus manifest path, or a corpus directory containing manifest.json.
         manifest: PathBuf,
     },
     /// Run packaged example conformance checks.
@@ -695,8 +696,9 @@ fn build_smoke_report(sley_bin: &Path, repo_root: &Path, manifest_path: &Path) -
 }
 
 fn build_corpus_report(sley_bin: &Path, manifest_path: &Path) -> CiReport {
+    let manifest_path = resolve_corpus_manifest_path(manifest_path);
     let mut issues = Vec::new();
-    let manifest = match read_corpus_manifest(manifest_path) {
+    let manifest = match read_corpus_manifest(&manifest_path) {
         Ok(manifest) => manifest,
         Err(error) => {
             issues.push(issue(
@@ -709,7 +711,7 @@ fn build_corpus_report(sley_bin: &Path, manifest_path: &Path) -> CiReport {
             return finalize_report(
                 "corpus",
                 None,
-                Some(path_string(manifest_path)),
+                Some(path_string(&manifest_path)),
                 Vec::new(),
                 issues,
             );
@@ -768,7 +770,7 @@ fn build_corpus_report(sley_bin: &Path, manifest_path: &Path) -> CiReport {
     finalize_report(
         "corpus",
         None,
-        Some(path_string(manifest_path)),
+        Some(path_string(&manifest_path)),
         steps,
         issues,
     )
@@ -1260,6 +1262,14 @@ fn read_smoke_manifest(path: &Path) -> Result<SmokeManifest> {
 fn read_corpus_manifest(path: &Path) -> Result<CorpusManifest> {
     let source = fs::read_to_string(path)?;
     Ok(serde_json::from_str(&source)?)
+}
+
+fn resolve_corpus_manifest_path(path: &Path) -> PathBuf {
+    if path.is_dir() {
+        path.join("manifest.json")
+    } else {
+        path.to_path_buf()
+    }
 }
 
 fn read_corpus_expectation(path: &Path) -> Result<CorpusExpectation> {

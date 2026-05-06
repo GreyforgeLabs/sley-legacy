@@ -473,7 +473,7 @@ sley-ci run --json --cap SecretRead --secret api_key redacted --cap Network --ht
 sley run --json --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged .
 sley deploy --json --dry-run --artifacts-dir .sley/deploy --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged .
 sley-ci deploy --json --dry-run --artifacts-dir .sley/ci-deploy --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged .
-sley-ci corpus --json fixtures/corpus/manifest.json
+sley-ci corpus --json fixtures/corpus
 sley-ci examples --json examples
 sley-conformance report --json
 sley-conformance coverage --json --require-tag cli:check --require-tag json:sley.trace.receipt.v0
