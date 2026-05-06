@@ -40,7 +40,7 @@ Current verified surface:
 
 - `cargo fmt --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 165 tests.
+- Current integration coverage is 166 tests.
 - `sley query --json` emits `schema: "sley.query.report.v0"` and supports
   `--kind all|modules|tasks|calls`, `--module <module>`, and `--exported`.
 - `sley lint --json` emits `schema: "sley.lint.report.v0"` and supports

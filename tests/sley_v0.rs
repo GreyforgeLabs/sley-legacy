@@ -6965,6 +6965,101 @@ export task double -> Int {
 }
 
 #[test]
+fn project_graft_write_applies_declaration_cleanup_transaction() {
+    let root = temp_project_dir("project-graft-declaration-cleanup");
+    fs::create_dir_all(root.join("src/app")).expect("create project dirs");
+    fs::write(
+        root.join("sley.toml"),
+        r#"
+[project]
+entry = "app.main"
+"#,
+    )
+    .expect("write manifest");
+    let main_source = r#"module app.main
+
+type Orphan = {
+  slot id: Int
+}
+
+effect OrphanEffect
+
+task main -> Unit {
+}
+"#;
+    let main_path = root.join("src/app/main.sley");
+    let graft_path = root.join("cleanup_declarations.json");
+    fs::write(&main_path, main_source).expect("write main module");
+
+    let project = load_project(&root).expect("load cleanup project");
+    let plan = build_edit_plan_report_with_options(
+        root.to_string_lossy(),
+        Ok(project.program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: None,
+        },
+    );
+    let cleanup = plan
+        .transaction_templates
+        .iter()
+        .find(|template| template.kind == "delete_unused_private_declarations")
+        .expect("declaration cleanup transaction");
+    fs::write(
+        &graft_path,
+        serde_json::to_string_pretty(&cleanup.transaction).expect("serialize cleanup transaction"),
+    )
+    .expect("write cleanup graft");
+
+    let output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args(["graft", "--json", "--write"])
+        .arg(&root)
+        .arg(&graft_path)
+        .output()
+        .expect("run declaration cleanup graft");
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+    assert!(
+        output.status.success(),
+        "project writeback should apply declaration cleanup; stdout={stdout} stderr={}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let outcome: GraftOutcome = serde_json::from_str(&stdout).expect("parse outcome");
+    assert_eq!(outcome.status, "accepted");
+    assert_eq!(outcome.provenance.len(), 2);
+    assert!(
+        outcome
+            .provenance
+            .iter()
+            .all(|record| record.operation == "DeleteNode")
+    );
+    assert_eq!(
+        fs::read_to_string(&main_path).expect("read cleaned main"),
+        "module app.main\n\ntask main -> Unit {\n}\n"
+    );
+
+    let cleaned = load_project(&root).expect("reload cleaned project");
+    let diagnostics = check_program(&cleaned.program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+    let lint = build_lint_report(&cleaned.program, LintOptions::default());
+    assert_eq!(lint.status, "ok", "unexpected lint findings: {lint:#?}");
+    let receipts = read_trace_receipts(root.join(".sley/trace.jsonl")).expect("read trace");
+    assert_eq!(receipts.len(), 1);
+    assert_eq!(receipts[0].provenance.len(), 2);
+    assert!(
+        receipts[0]
+            .provenance
+            .iter()
+            .all(|record| record.operation == "DeleteNode")
+    );
+
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
 fn project_graft_write_creates_checked_new_module() {
     let root = temp_project_dir("project-graft-new-module");
     fs::create_dir_all(root.join("src/app")).expect("create project dirs");
