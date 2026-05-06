@@ -121,6 +121,8 @@ Implemented now:
   transactions for unused private types/effects, lint-driven
   `AddModuleDeclaration` templates for explicit module style fixes with module
   names inferred from the target file or project-relative path,
+  `migrate_raw_host_adapter` templates for eligible raw host calls that can
+  move to fallible `try_` adapters with `?`,
   `propagate_unchecked_result` templates for discarded `Result` expression
   statements that can be safely rewritten with `?`,
   `--template-surface <surface>` targeting for task, program, or lint
@@ -477,7 +479,7 @@ gates, edit-plan surfaces, typed scaffold next-actions for the deploy
 quickstart, strict seeded verify readiness for the generated deploy starter,
 lint-driven declaration delete templates and cleanup transactions,
 lint-driven module declaration fixes with inferred module names,
-unchecked-result propagation templates, private-task
-lint rules, declaration/import/API hygiene, authority hygiene, raw-host
-migration warnings, and explicit module style warnings. The next logical phase
-is to broaden style and migration lints before broadening the language again.
+raw-host adapter migration templates, unchecked-result propagation templates,
+private-task lint rules, declaration/import/API hygiene, authority hygiene, and
+explicit module style warnings. The next logical phase is to broaden style and
+migration lints before broadening the language again.

@@ -138,8 +138,10 @@ Rules:
   takes and lint-driven delete templates plus cleanup transactions for unused
   private type/effect declarations, plus lint-driven `AddModuleDeclaration`
   templates for missing module declarations with target/project-aware module
-  name inference, with editable JSON pointers; it also consumes selected
-  graph-slice movement affordances as `move_statement`,
+  name inference, plus `migrate_raw_host_adapter` templates for eligible raw
+  host calls that can move to fallible `try_` adapters with `?`, with editable
+  JSON pointers; it also consumes selected graph-slice movement affordances as
+  `move_statement`,
   `move_take`, and destination-variant templates when legal graph-slice
   destinations exist. Agents can target a specific task surface by node id or
   qualified name, the `program` missing-module surface, or a lint finding
@@ -450,6 +452,8 @@ The current smoke manifest covers:
   declaration surface targeting in edit-plan reports
 - lint-driven missing-module `AddModuleDeclaration` templates, module-name
   inference, and checked `sley fix` dry runs
+- raw-host adapter migration templates that rewrite eligible raw host calls to
+  fallible `try_` adapters with checked `?` propagation
 - unchecked-result migration templates that add checked `?` propagation when
   the owning task can return `Result`
 - private declaration hygiene through the checked `unused_private_type` and

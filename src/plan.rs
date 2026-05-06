@@ -8,7 +8,7 @@ use crate::ast::{BindingKind, Block, Expr, ExprKind, Statement, StatementKind, T
 use crate::checker::{check_program, has_errors};
 use crate::diagnostics::{Diagnostic, RepairHint};
 use crate::graft::{GraftInput, apply_graft_input};
-use crate::lint::{LintOptions, LintReport, build_lint_report};
+use crate::lint::{LintOptions, LintReport, build_lint_report, raw_host_adapter_replacement};
 use crate::query::{QueryKind, QueryOptions, QueryReport, QueryTakeSummary, build_query_report};
 use crate::symbols::{slice_symbol_graph, task_fq_name};
 
@@ -472,6 +472,7 @@ fn lint_graft_templates(
         lint_report,
         module_name_hint,
     ));
+    templates.extend(lint_raw_host_adapter_templates(program, lint_report));
     templates.extend(lint_unchecked_result_templates(program, lint_report));
     templates
 }
@@ -543,6 +544,55 @@ fn lint_missing_module_templates(
             })
         })
         .collect()
+}
+
+fn lint_raw_host_adapter_templates(
+    program: &Program,
+    lint_report: &LintReport,
+) -> Vec<EditPlanGraftTemplate> {
+    lint_report
+        .findings
+        .iter()
+        .filter(|finding| finding.id == "RAW_HOST_ADAPTER")
+        .filter_map(|finding| {
+            let source = find_expr_source(program, &finding.node)?;
+            let replacement = raw_host_adapter_replacement_source(&source)?;
+            let operation = json!({
+                "op": "ReplaceExpression",
+                "target": finding.node,
+                "payload": {
+                    "source": replacement
+                }
+            });
+            if !replace_affordance_checks(program, &operation) {
+                return None;
+            }
+            Some(EditPlanGraftTemplate {
+                kind: "migrate_raw_host_adapter".to_string(),
+                reason:
+                    "replace the diagnostic-failing host adapter with a fallible try_ adapter and `?` propagation"
+                        .to_string(),
+                surface: finding.node.clone(),
+                operation,
+                editable_json_pointers: vec!["/payload/source".to_string()],
+            })
+        })
+        .collect()
+}
+
+fn raw_host_adapter_replacement_source(source: &str) -> Option<String> {
+    let source = source.trim();
+    for raw in ["fs.read_text", "fs.write_text", "db.query_one", "db.query"] {
+        let Some(rest) = source.strip_prefix(raw) else {
+            continue;
+        };
+        if !rest.starts_with('(') {
+            continue;
+        }
+        let replacement = raw_host_adapter_replacement(raw)?;
+        return Some(format!("{replacement}{rest}?"));
+    }
+    None
 }
 
 fn lint_unchecked_result_templates(

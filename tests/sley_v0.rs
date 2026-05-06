@@ -1278,6 +1278,78 @@ fn edit_plan_graft_templates_include_missing_module_fix() {
 }
 
 #[test]
+fn edit_plan_graft_templates_include_raw_host_adapter_migration() {
+    let source = r#"
+module app.plan
+
+task main -> Result<Text, Error> uses FileRead {
+  bind text = fs.read_text("examples/hello.sley")
+
+  return Ok(text)
+}
+"#;
+    let program = parse_program(source).expect("parse raw host migration plan fixture");
+    let report = build_edit_plan_report_with_options(
+        "app.plan",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: None,
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "warnings");
+    assert_eq!(report.summary.lint_finding_count, 1);
+    assert_eq!(
+        report.lint.as_ref().expect("lint summary").findings[0].id,
+        "RAW_HOST_ADAPTER"
+    );
+    let template = report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "migrate_raw_host_adapter")
+        .expect("raw host migration template");
+    assert_eq!(template.surface, "block:task:app.plan.main:stmt:0:expr");
+    assert_eq!(
+        template.operation.pointer("/op"),
+        Some(&serde_json::json!("ReplaceExpression"))
+    );
+    assert_eq!(
+        template.operation.pointer("/payload/source"),
+        Some(&serde_json::json!(
+            "fs.try_read_text(\"examples/hello.sley\")?"
+        ))
+    );
+    assert_eq!(template.editable_json_pointers, vec!["/payload/source"]);
+    let graft: GraftInput =
+        serde_json::from_value(template.operation.clone()).expect("parse raw host template");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:raw-host-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+
+    let targeted_report = build_edit_plan_report_with_options(
+        "app.plan",
+        Ok(program),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("block:task:app.plan.main:stmt:0:expr".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(targeted_report.status, "warnings");
+    assert_eq!(targeted_report.graft_templates.len(), 1);
+    assert_eq!(
+        targeted_report.graft_templates[0].kind,
+        "migrate_raw_host_adapter"
+    );
+}
+
+#[test]
 fn edit_plan_graft_templates_include_unchecked_result_propagation() {
     let source = r#"
 module app.plan
@@ -8593,6 +8665,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:templates:lint-declaration-target",
         "graft:templates:module-name-inference",
         "graft:templates:missing-module",
+        "graft:templates:raw-host-migration",
         "graft:templates:replace-expression",
         "graft:templates:unchecked-result",
         "graft:transactions:lint-declaration-cleanup",

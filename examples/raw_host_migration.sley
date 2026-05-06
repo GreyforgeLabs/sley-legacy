@@ -1,0 +1,7 @@
+module app.raw_migration
+
+task main -> Result<Text, Error> uses FileRead {
+  bind text = fs.read_text("examples/hello.sley")
+
+  return Ok(text)
+}

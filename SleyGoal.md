@@ -40,7 +40,7 @@ Current verified surface:
 
 - `cargo fmt --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 174 tests.
+- Current integration coverage is 175 tests.
 - `sley query --json` emits `schema: "sley.query.report.v0"` and supports
   `--kind all|modules|tasks|calls`, `--module <module>`, and `--exported`.
 - `sley lint --json` emits `schema: "sley.lint.report.v0"` and supports
@@ -62,12 +62,14 @@ Current verified surface:
   declaration surface targeting, direct graft JSON emission, and checked
   `sley fix` dry-run execution from `sley plan --graft-templates`, plus
   lint-driven missing-module declaration templates with target/project-aware
-  module-name inference and checked fix dry runs, and typed deploy scaffold
-  next-actions whose generated first-run sequence is executed by tests,
-  including a strict seeded `sley verify --json --deny-warnings` readiness
-  smoke for the generated deploy project, and checked `unchecked_result`
-  migration templates that turn discarded `Result` expression statements into
-  explicit `?` propagation when valid.
+  module-name inference and checked fix dry runs, checked raw-host adapter
+  migration templates that rewrite eligible raw calls to fallible `try_`
+  calls with `?`, and typed deploy scaffold next-actions whose generated
+  first-run sequence is executed by tests, including a strict seeded
+  `sley verify --json --deny-warnings` readiness smoke for the generated
+  deploy project, and checked `unchecked_result` migration templates that turn
+  discarded `Result` expression statements into explicit `?` propagation when
+  valid.
 - Stable JSON roots now include query reports, lint reports, doctor reports,
   edit-plan reports, verify reports, project scaffold reports, and the CLI
   smoke manifest in addition to AST, diagnostics, graph, graph slice, trace
@@ -232,7 +234,9 @@ cargo run -- lint --json --rule unused-private-task <target>
 cargo run -- lint --json --rule unreachable-private-task <target>
 cargo run -- lint --json --rule unused-private-type <target>
 cargo run -- lint --json --rule unused-private-effect <target>
+cargo run -- lint --json --rule raw-host-adapter <target>
 cargo run -- lint --json --rule missing-module-declaration <target>
+cargo run -- lint --json --rule unchecked-result <target>
 ```
 
 5. If changing runtime authority, test both the authorized and unauthorized

@@ -1109,7 +1109,7 @@ fn fallible_host_call(callee: &str) -> bool {
     )
 }
 
-fn raw_host_adapter_replacement(callee: &str) -> Option<&'static str> {
+pub fn raw_host_adapter_replacement(callee: &str) -> Option<&'static str> {
     match callee {
         "fs.read_text" => Some("fs.try_read_text"),
         "fs.write_text" => Some("fs.try_write_text"),

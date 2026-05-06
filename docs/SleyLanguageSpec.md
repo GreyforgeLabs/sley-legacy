@@ -659,6 +659,13 @@ can be deleted, the report also includes an all-or-nothing
 `missing_module_declaration` lint findings become checked
 `add_module_declaration` graft templates on the `program` surface, with the
 starter module name inferred from project-relative path context when available.
+`raw_host_adapter` lint findings become checked
+`migrate_raw_host_adapter` graft templates when the raw host call can be
+rewritten to the fallible `try_` adapter with `?` and the checked candidate
+still passes.
+`unchecked_result` lint findings become checked
+`propagate_unchecked_result` graft templates when the discarded `Result`
+expression can be rewritten with `?` and the checked candidate still passes.
 `--template-surface <surface>` selects a specific task surface by task node id
 or qualified task name, the `program` missing-module surface, or a declaration
 lint surface by lint finding node id such as `type:app.module.Name` or
@@ -833,8 +840,9 @@ archive.
   JSON Schema files are still narrower v0 root contracts
 - `sley lint` currently ships warning-grade private-task graph rules, authority
   hygiene for unused declared effects, private declaration/import/API hygiene,
-  raw-host-adapter and unchecked-result migration warnings, and explicit module
-  style warnings; broader style and migration lints remain later work
+  raw-host-adapter and unchecked-result migration warnings with checked
+  propagation templates, and explicit module style warnings; broader style and
+  migration lints remain later work
 - `sley plan` emits deterministic ranked task edit surfaces, optional starter
   graft operation templates, rename-plus-call-site and add-take-plus-call-arg
   transaction templates, safe remove-take-plus-call-arg transaction templates

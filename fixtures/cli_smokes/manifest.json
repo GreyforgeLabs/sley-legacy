@@ -591,6 +591,35 @@
       }
     },
     {
+      "name": "plan_raw_host_adapter_template_json",
+      "args": [
+        "plan",
+        "--json",
+        "--graft-templates",
+        "--template-surface",
+        "block:task:app.raw_migration.main:stmt:0:expr",
+        "examples/raw_host_migration.sley"
+      ],
+      "covers": [
+        "cli:plan",
+        "graft:templates:raw-host-migration",
+        "lint:raw_host_adapter",
+        "json:sley.edit_plan.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.edit_plan.report.v0" },
+          { "pointer": "/status", "value": "warnings" },
+          { "pointer": "/lint/findings/0/id", "value": "RAW_HOST_ADAPTER" },
+          { "pointer": "/graft_templates/0/kind", "value": "migrate_raw_host_adapter" },
+          { "pointer": "/graft_templates/0/surface", "value": "block:task:app.raw_migration.main:stmt:0:expr" },
+          { "pointer": "/graft_templates/0/operation/op", "value": "ReplaceExpression" },
+          { "pointer": "/graft_templates/0/operation/payload/source", "value": "fs.try_read_text(\"examples/hello.sley\")?" }
+        ]
+      }
+    },
+    {
       "name": "lint_missing_module_declaration_rule_json",
       "args": ["lint", "--json", "--rule", "missing-module-declaration", "examples/deploy_gate.sley"],
       "covers": ["cli:lint", "lint:missing_module_declaration", "json:sley.lint.report.v0"],
@@ -702,6 +731,32 @@
           { "pointer": "/status", "value": "accepted" },
           { "pointer": "/provenance/0/operation", "value": "AddModuleDeclaration" },
           { "pointer": "/provenance/0/targets/0", "value": "module:deploy_gate" }
+        ]
+      }
+    },
+    {
+      "name": "fix_raw_host_adapter_dry_run_json",
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "migrate_raw_host_adapter",
+        "--dry-run",
+        "examples/raw_host_migration.sley"
+      ],
+      "covers": [
+        "cli:fix",
+        "graft:templates:raw-host-migration",
+        "lint:raw_host_adapter",
+        "json:sley.graft.outcome.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/operation", "value": "ReplaceExpression" },
+          { "pointer": "/provenance/0/targets/0", "value": "block:task:app.raw_migration.main:stmt:0:expr" }
         ]
       }
     },
