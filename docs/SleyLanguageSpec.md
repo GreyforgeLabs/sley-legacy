@@ -72,7 +72,10 @@ Hard rules:
 Tasks have names, explicit `take` inputs, return types, declared effects, and a
 block of statements. Pure zero-take `main` can run in the current interpreter.
 Effectful `main` can run only when the caller supplies matching runtime gates,
-and `main` still cannot require ordinary non-gate takes.
+and `main` still cannot require ordinary non-gate takes. Non-`Unit` tasks must
+return on every statically guaranteed path; the checker accepts a direct
+`return` or an `if` statement whose then and else blocks both guarantee a
+return.
 
 ```sley
 task sum -> Int {
@@ -716,6 +719,8 @@ starter graft. Return type mismatches carry both the declaration-level
 the returned expression. Binding and assignment type mismatches likewise include
 structural `replace_expression` hints for the initializer or assigned
 expression, alongside the older type-change or source-level replacement hints.
+Missing return paths in non-`Unit` tasks produce `MISSING_RETURN` with
+`insert_return` and `replace_task_body` repair hints.
 Condition, collection element, map key/value, index key, and record-field
 expression mismatches include structural `replace_expression` hints when the
 checker has a clear expected replacement type for the offending expression.

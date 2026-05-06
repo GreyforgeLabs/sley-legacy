@@ -140,8 +140,9 @@ Implemented now:
   rejected instead of silently ignored
 - versioned JSON report roots for diagnostics and graft outcomes
 - repair hints on common checker diagnostics, including unknown identifiers,
-  unknown tasks, type mismatches, return mismatches, call argument mismatches,
-  condition mismatches, effect authority, and private or ambiguous names
+  unknown tasks, type mismatches, return mismatches, missing return paths, call
+  argument mismatches, condition mismatches, effect authority, and private or
+  ambiguous names
 - locked JSON contract snapshots under `fixtures/contracts/`, including
   checked query, lint, doctor, edit-plan, verify, and project scaffold reports
 - external v0 JSON Schema files under `docs/schemas/`

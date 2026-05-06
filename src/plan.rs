@@ -608,10 +608,6 @@ fn graph_slice_delete_templates(
             affordance.target.starts_with(&statement_prefix)
                 || affordance.target.starts_with(&take_prefix)
         })
-        .filter(|affordance| {
-            affordance.target_kind != "statement"
-                || !statement_target_is_return(program, &affordance.target)
-        })
         .filter(|affordance| delete_affordance_checks(program, &affordance.operation))
         .map(|affordance| EditPlanGraftTemplate {
             kind: format!("delete_{}", affordance.target_kind),
@@ -637,45 +633,6 @@ fn delete_affordance_checks(program: &Program, operation: &JsonValue) -> bool {
     )
     .status
         == "accepted"
-}
-
-fn statement_target_is_return(program: &Program, target: &str) -> bool {
-    program
-        .tasks
-        .iter()
-        .any(|task| block_statement_target_is_return(&task.body, target))
-}
-
-fn block_statement_target_is_return(block: &Block, target: &str) -> bool {
-    block
-        .statements
-        .iter()
-        .any(|statement| statement_target_or_child_is_return(statement, target))
-}
-
-fn statement_target_or_child_is_return(statement: &Statement, target: &str) -> bool {
-    if statement.id == target {
-        return matches!(statement.kind, StatementKind::Return { .. });
-    }
-    match &statement.kind {
-        StatementKind::If {
-            then_block,
-            else_block,
-            ..
-        } => {
-            block_statement_target_is_return(then_block, target)
-                || else_block
-                    .as_ref()
-                    .is_some_and(|block| block_statement_target_is_return(block, target))
-        }
-        StatementKind::While { body, .. }
-        | StatementKind::For { body, .. }
-        | StatementKind::Forge { body } => block_statement_target_is_return(body, target),
-        StatementKind::Binding { .. }
-        | StatementKind::Set { .. }
-        | StatementKind::Return { .. }
-        | StatementKind::Expr { .. } => false,
-    }
 }
 
 fn build_transaction_templates(

@@ -75,6 +75,9 @@ Agent rules:
   expression type.
 - For `RETURN_TYPE_MISMATCH`, use `change_return_type` only when the signature
   should change; otherwise prefer structural `replace_expression` graft JSON.
+- For `MISSING_RETURN`, add a guaranteed return path or use the
+  `replace_task_body` starter; do not delete the last return from a non-`Unit`
+  task.
 - Do not add effects only to silence diagnostics; the authority must be real.
 - Do not invent binding kinds. The stable vocabulary is in
   `docs/SleyLanguageSpec.md`.

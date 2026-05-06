@@ -203,6 +203,8 @@ Priority diagnostic families:
   `RemoveCallArg` and safe remove-take transaction templates for unused takes
 - return type mismatch: implemented with `change_return_type`,
   `replace_return_expression`, and structural `ReplaceExpression`
+- missing return paths in non-`Unit` tasks: implemented with `MISSING_RETURN`,
+  `insert_return`, and `replace_task_body`
 - immutable binding mutation: implemented with `use_mutable_binding_kind`
 - undeclared effects: implemented with `declare_or_import_effect`
 - unauthorized host authority: implemented with `add_required_effect`

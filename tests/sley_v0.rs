@@ -1884,6 +1884,37 @@ task main -> Int {
 }
 
 #[test]
+fn delete_node_rejects_removing_required_return_statement() {
+    let source = r#"
+task main -> Int {
+  bind debug = 1
+  return 42
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let graft_source = r#"
+{
+  "op": "DeleteNode",
+  "target": "block:task:main.main:stmt:1"
+}
+"#;
+    let graft: GraftInput = serde_json::from_str(graft_source).expect("parse graft");
+    let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
+
+    assert_eq!(outcome.status, "rejected");
+    assert!(outcome.source.is_none());
+    assert!(
+        outcome
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.id == "MISSING_RETURN"),
+        "expected missing return diagnostic, got {:#?}",
+        outcome.diagnostics
+    );
+    assert_has_repair_hint(&outcome.diagnostics, "MISSING_RETURN", "insert_return");
+}
+
+#[test]
 fn delete_node_graft_removes_declarations_and_takes() {
     let source = r#"
 type Scratch = {
@@ -2687,6 +2718,48 @@ task main -> Int {
         parse_program("task main -> Int {\n  return call missing()\n}\n").expect("parse source");
     let diagnostics = check_program(&unknown_task);
     assert_has_repair_hint(&diagnostics, "UNKNOWN_TASK", "declare_or_import_task");
+}
+
+#[test]
+fn checker_requires_non_unit_tasks_to_return_on_every_path() {
+    let source = r#"
+task missing -> Int {
+  bind value = 1
+}
+
+task partial -> Int {
+  if true {
+    return 1
+  }
+  bind fallback = 2
+}
+
+task complete -> Int {
+  if true {
+    return 1
+  } else {
+    return 2
+  }
+}
+
+task side_effect_only -> Unit {
+  bind done = true
+}
+"#;
+    let program = parse_program(source).expect("parse missing return source");
+    let diagnostics = check_program(&program);
+    let missing_return_nodes = diagnostics
+        .iter()
+        .filter(|diagnostic| diagnostic.id == "MISSING_RETURN")
+        .map(|diagnostic| diagnostic.node.as_deref().expect("diagnostic node"))
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        missing_return_nodes,
+        vec!["task:main.missing", "task:main.partial"]
+    );
+    assert_has_repair_hint(&diagnostics, "MISSING_RETURN", "insert_return");
+    assert_has_repair_hint(&diagnostics, "MISSING_RETURN", "replace_task_body");
 }
 
 #[test]

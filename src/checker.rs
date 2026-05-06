@@ -251,6 +251,7 @@ fn check_task(
         record_types,
         diagnostics,
     );
+    check_task_returns(program, task, diagnostics);
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -644,6 +645,87 @@ fn check_block(
             }
         }
     }
+}
+
+fn check_task_returns(program: &Program, task: &TaskDecl, diagnostics: &mut Vec<Diagnostic>) {
+    let expected_return =
+        normalize_type_expr_silent(program, &task_module(task), &task.return_type);
+    if is_unit_type(&expected_return) || block_guarantees_return(&task.body) {
+        return;
+    }
+
+    let return_statement = default_return_statement_hint(&expected_return);
+    diagnostics.push(
+        Diagnostic::error(
+            "MISSING_RETURN",
+            format!(
+                "task `{}` must return `{}` on every path",
+                task.name,
+                expected_return.display()
+            ),
+        )
+        .with_node(task.id.clone())
+        .with_repair_hint(
+            RepairHint::new("insert_return")
+                .with_target(task.id.clone())
+                .with_replacement(return_statement.clone()),
+        )
+        .with_repair_hint(
+            RepairHint::new("replace_task_body")
+                .with_target(task.id.clone())
+                .with_replacement(format!(
+                    "{{\"op\":\"ReplaceTaskBody\",\"target\":\"{}\",\"payload\":{{\"statements\":[\"{}\"]}}}}",
+                    task.id,
+                    escape_json_string_content(&return_statement)
+                )),
+        ),
+    );
+}
+
+fn block_guarantees_return(block: &Block) -> bool {
+    block.statements.iter().any(statement_guarantees_return)
+}
+
+fn statement_guarantees_return(statement: &crate::ast::Statement) -> bool {
+    match &statement.kind {
+        StatementKind::Return { .. } => true,
+        StatementKind::If {
+            then_block,
+            else_block,
+            ..
+        } => else_block.as_ref().is_some_and(|else_block| {
+            block_guarantees_return(then_block) && block_guarantees_return(else_block)
+        }),
+        StatementKind::Binding { .. }
+        | StatementKind::Set { .. }
+        | StatementKind::Expr { .. }
+        | StatementKind::While { .. }
+        | StatementKind::For { .. }
+        | StatementKind::Forge { .. } => false,
+    }
+}
+
+fn default_return_statement_hint(ty: &TypeExpr) -> String {
+    format!("return {}", default_expr_hint_for_type(ty))
+}
+
+fn default_expr_hint_for_type(ty: &TypeExpr) -> String {
+    match ty {
+        TypeExpr::Named { name } if name == "Int" => "0".to_string(),
+        TypeExpr::Named { name } if name == "Float" => "0.0".to_string(),
+        TypeExpr::Named { name } if name == "Bool" => "false".to_string(),
+        TypeExpr::Named { name } if name == "Text" => "\"\"".to_string(),
+        TypeExpr::Generic { name, args } if name == "Result" && !args.is_empty() => {
+            format!("Ok({})", default_expr_hint_for_type(&args[0]))
+        }
+        TypeExpr::Generic { name, .. } if name == "List" => "[]".to_string(),
+        TypeExpr::Generic { name, .. } if name == "Map" => "{}".to_string(),
+        _ => format!("<{}>", ty.display()),
+    }
+}
+
+fn escape_json_string_content(value: &str) -> String {
+    value.replace('\\', "\\\\").replace('"', "\\\"")
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -2682,6 +2764,10 @@ fn is_named_type(ty: &TypeExpr, expected: &str) -> bool {
 
 fn is_bool_type(ty: &TypeExpr) -> bool {
     is_named_type(ty, "Bool")
+}
+
+fn is_unit_type(ty: &TypeExpr) -> bool {
+    is_named_type(ty, "Unit")
 }
 
 fn is_numeric_type(ty: &TypeExpr) -> bool {
