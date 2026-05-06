@@ -711,6 +711,9 @@ The executable CLI conformance smokes live under `fixtures/cli_smokes/`. Their
 setup files, coverage tags, and stdout expectations. The integration suite runs
 the manifest against the built `sley` binary, while `sley-ci smoke --json
 --repo-root . fixtures/cli_smokes` accepts the suite directory directly. The
+lightweight `fixtures/ci_smoke_probe` manifest separately locks the `sley-ci
+smoke` wrapper over parse, query, graft dry-run, and seeded multi-capability
+agent runtime authority cases. The
 smoke gate locks stable command exits, selected stdout substrings, JSON root
 schemas, graph slices, checked query reports, checked lint reports, run
 reports, doctor readiness reports, edit-plan reports, project scaffolds, ZJX

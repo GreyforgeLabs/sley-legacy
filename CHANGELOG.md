@@ -35,6 +35,9 @@ here. Dates use UTC-independent calendar dates from the local repo history.
   entry module is already named `pipeline`.
 - Accepted and rejected synthetic corpus fixtures for split-task agent
   authority, locking transitive effect propagation.
+- Expanded `fixtures/ci_smoke_probe` from a parse-only probe into a
+  deterministic `sley-ci smoke` contract covering parse, query, graft dry-run,
+  and seeded multi-capability agent runtime authority.
 
 ### Changed
 
