@@ -1,0 +1,16 @@
+{
+  "schema": "sley.graft.outcome.v0",
+  "status": "accepted",
+  "diagnostics": [],
+  "source": "task main -> Int {\n  bind extra = 41\n  return 1\n}\n",
+  "provenance": [
+    {
+      "graft_id": "txn_contract_insert",
+      "actor": "agent:test",
+      "timestamp": "2026-05-05T00:00:00Z",
+      "operation": "InsertStatement",
+      "targets": ["task:main.main"],
+      "result": "accepted"
+    }
+  ]
+}

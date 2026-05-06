@@ -5242,6 +5242,36 @@ fn json_contract_snapshots_are_locked() {
         include_str!("../fixtures/contracts/diagnostic_report_unknown_identifier.json"),
     );
 
+    let graft: GraftInput = serde_json::from_str(
+        r#"
+{
+  "transaction": "txn_contract_insert",
+  "actor": "agent:test",
+  "mode": "all_or_nothing",
+  "ops": [
+    {
+      "op": "InsertStatement",
+      "target": "task:main.main",
+      "payload": { "source": "bind extra = 41", "position": 0 }
+    }
+  ]
+}
+"#,
+    )
+    .expect("parse contract graft");
+    let mut graft_outcome = apply_graft_input(&program, graft, None);
+    assert_eq!(
+        graft_outcome.status, "accepted",
+        "{:#?}",
+        graft_outcome.diagnostics
+    );
+    assert_eq!(graft_outcome.provenance.len(), 1);
+    graft_outcome.provenance[0].timestamp = "2026-05-05T00:00:00Z".to_string();
+    assert_json_snapshot(
+        &graft_outcome,
+        include_str!("../fixtures/contracts/graft_outcome_insert_statement.json"),
+    );
+
     let slice = slice_symbol_graph(&program, "task:main.main").expect("slice main");
     assert_json_snapshot(
         &slice,
@@ -6337,7 +6367,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(52))
+        Some(&serde_json::json!(53))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),

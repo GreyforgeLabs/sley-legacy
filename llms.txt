@@ -123,7 +123,7 @@ Stable v0 JSON roots:
 - `sley.deploy.report.v0`
 
 The graft outcome schema pins accepted provenance records with non-empty
-targets and `result: "accepted"`.
+targets and `result: "accepted"` and has a locked accepted-operation fixture.
 The diagnostics schema exposes a shared diagnostic record used by graft,
 doctor, plan, and verify report schemas.
 The query schema exposes strict task, take, type, effect, and call summary row

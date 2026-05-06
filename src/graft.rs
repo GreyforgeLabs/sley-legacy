@@ -265,11 +265,11 @@ pub struct ExpressionPayload {
 pub struct GraftOutcome {
     pub schema: String,
     pub status: String,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    #[serde(default)]
     pub diagnostics: Vec<Diagnostic>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub source: Option<String>,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    #[serde(default)]
     pub provenance: Vec<ProvenanceRecord>,
 }
 

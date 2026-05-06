@@ -542,13 +542,14 @@ Current v0 graft outcome JSON has this root shape:
 {
   "schema": "sley.graft.outcome.v0",
   "status": "accepted",
+  "diagnostics": [],
   "source": "task main -> Int {\n  return 1\n}\n",
   "provenance": []
 }
 ```
 
 Rejected graft outcomes use the same schema and `status: "rejected"`, omit
-`source`, clear `provenance`, and include diagnostics.
+`source`, emit `provenance: []`, and include diagnostics.
 Accepted provenance entries are strict records with `graft_id`, `actor`,
 `timestamp`, `operation`, non-empty `targets`, and `result: "accepted"`.
 
@@ -650,8 +651,8 @@ Current v0 trace seal JSON has this root shape:
 
 The v0 JSON contracts are locked by small snapshots under
 `fixtures/contracts/` and JSON Schema files under `docs/schemas/`, including
-full symbol graph and ZJX envelope fixtures for handoff roots. The AST program
-schema now recursively describes imports,
+graft outcome fixtures plus full symbol graph and ZJX envelope fixtures for
+handoff roots. The AST program schema now recursively describes imports,
 types, effects, tasks, takes, statements, expressions, type expressions, spans,
 and provenance records. The diagnostic schema pins the shared diagnostic and
 repair-hint shape. The query schema exposes strict task, take, type, effect,
