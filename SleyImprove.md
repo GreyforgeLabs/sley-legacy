@@ -112,6 +112,7 @@ sley-conformance report --json [--corpus-manifest <fixtures/corpus|fixtures/corp
 sley-conformance report --json --require-public-release-ready
 sley-conformance coverage --json --require-tag <tag>
 make smoke
+make public-release-check
 make v1
 make syntax
 sley-lsp

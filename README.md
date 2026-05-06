@@ -452,7 +452,7 @@ For a public release cut, run the stricter metadata gate after the operator has
 chosen license and repository values:
 
 ```bash
-sley-conformance report --json --require-public-release-ready
+make public-release-check
 ```
 
 Project form:
