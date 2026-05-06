@@ -159,7 +159,8 @@ Rules:
   shared diagnostic record, the edit-plan schema pins strict graft operation
   and transaction template envelopes reused by graph-slice affordances,
   the graph-slice schema links
-  focus, task, and call-summary payloads to shared contracts, `sley-ci`
+  focus, task, call-summary, and insert/move/delete/replace affordance payloads
+  to shared contracts, `sley-ci`
   check/lint/doctor/plan/run/verify/deploy/smoke/corpus/examples reports,
   LSP fix-preview payloads, workbench reports, docgen reports, agent-bench
   reports, migrate reports, sandbox manifests, sandbox-runner reports,

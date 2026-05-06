@@ -863,7 +863,9 @@
       "args": ["graph", "--json", "--slice", "task:app.main.main", "examples/project"],
       "covers": [
         "cli:graph-slice",
+        "graph-slice:delete-affordances",
         "graph-slice:insert-affordances",
+        "graph-slice:move-affordances",
         "graph-slice:replace-affordances",
         "json:sley.symbol_graph.slice.v0"
       ],
@@ -880,7 +882,12 @@
           { "pointer": "/move_affordances/0/target", "value": "block:task:app.main.main:stmt:0" },
           { "pointer": "/move_affordances/0/operation/op", "value": "MoveNode" },
           { "pointer": "/move_affordances/1/target_kind", "value": "import" },
+          { "pointer": "/move_affordances/1/destinations/0/operation/payload/parent", "value": "module:app.math:imports" },
+          { "pointer": "/move_affordances/2/target_kind", "value": "task" },
+          { "pointer": "/move_affordances/2/destinations/0/operation/payload/parent", "value": "module:app.math:tasks" },
           { "pointer": "/delete_affordances/0/operation/op", "value": "DeleteNode" },
+          { "pointer": "/delete_affordances/1/target_kind", "value": "import" },
+          { "pointer": "/delete_affordances/2/target_kind", "value": "task" },
           { "pointer": "/replace_affordances/0/target_kind", "value": "Call" },
           { "pointer": "/replace_affordances/0/operation/op", "value": "ReplaceExpression" },
           { "pointer": "/replace_affordances/0/editable_json_pointers/0", "value": "/payload/source" }

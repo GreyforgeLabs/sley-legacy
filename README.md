@@ -835,7 +835,8 @@ gold corpus and CLI smoke suite now have manifests with required coverage tags
 for seeded host adapters, stable JSON roots, graph/ZJX output, graft and fix
 dry runs, checked run reports, checked graph query reports including strict
 task/take/type/effect/call row definitions and graph-slice focus/task/call
-payloads plus affordances with strict graft operations, doctor readiness,
+payloads plus insert/move/delete/replace affordances with strict graft
+operations, doctor readiness,
 call-inspection next-actions,
 verify and deploy dry-run pre-deploy gates,
 edit-plan surfaces, call-site rename and remove-take/call-arg transaction
