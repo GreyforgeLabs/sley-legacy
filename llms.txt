@@ -127,9 +127,9 @@ Current development phase:
 - release-readiness now includes manifest-backed CLI smokes for stable command
   output, JSON roots, graph/ZJX surfaces, edit-plan reports, graft/fix dry
   runs, direct graft writes, temp setup files for write-mode smokes, explicit
-  graft/fix trace receipts, non-empty trace receipt seals, and seeded
-  host-adapter execution while preserving typed recoverable failure records and
-  keeping authority failures as
+  graft/fix trace receipts, non-empty trace receipt seals, ZJX envelopes
+  carrying trace receipts, and seeded host-adapter execution while preserving
+  typed recoverable failure records and keeping authority failures as
   diagnostics
 - checked graph query reports are available through `sley query --json` with
   root schema `sley.query.report.v0`

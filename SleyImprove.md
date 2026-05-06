@@ -478,7 +478,9 @@ The current smoke manifest covers:
   direct `sley graft --write --trace <trace.jsonl>` source mutation,
   `sley fix --write --trace <trace.jsonl>` receipt redirection, and follow-up
   `sley trace --trace <trace.jsonl>` receipt inspection plus
-  `sley seal --trace <trace.jsonl>` sealing over a non-empty receipt chain
+  `sley seal --trace <trace.jsonl>` sealing and
+  `sley zjx --trace <trace.jsonl>` envelope transport over a non-empty receipt
+  chain
 - raw-host adapter migration templates that rewrite eligible raw host calls to
   fallible `try_` adapters with checked `?` propagation
 - unchecked-result migration templates that add checked `?` propagation when

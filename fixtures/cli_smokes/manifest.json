@@ -1247,6 +1247,33 @@
       }
     },
     {
+      "name": "zjx_graft_write_explicit_trace_json",
+      "args": [
+        "zjx",
+        "--json",
+        "--trace",
+        "{tmp}/graft-write/trace.jsonl",
+        "{tmp}/graft-write/main.sley"
+      ],
+      "covers": [
+        "cli:zjx",
+        "json:sley.zjx.envelope.v0",
+        "trace:explicit-path",
+        "zjx:trace-receipts"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.zjx.envelope.v0" },
+          { "pointer": "/format", "value": "zjx-preview-json" },
+          { "pointer": "/compression", "value": "none" },
+          { "pointer": "/trace_receipts/0/schema", "value": "sley.trace.receipt.v0" },
+          { "pointer": "/trace_receipts/0/provenance/0/actor", "value": "agent:cli-smoke" },
+          { "pointer": "/trace_receipts/0/provenance/0/operation", "value": "AddTake" }
+        ]
+      }
+    },
+    {
       "name": "query_graft_write_temp_source_json",
       "args": [
         "query",
