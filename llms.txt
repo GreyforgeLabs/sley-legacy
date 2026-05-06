@@ -152,9 +152,9 @@ Current development phase:
   movement into known modules is supported, including AddImport-then-MoveNode
   transactions that create new module files from moved declarations
 - `MoveNode` supports cross-parent statement movement between existing block
-  parents with `payload.destination`, plus take reordering within the owning
-  task; cross-task take movement and expression movement remain explicit
-  rejections, and expression move rejection carries a `replace_expression`
-  repair hint
+  parents with `payload.destination`, take reordering within the owning task,
+  and checked cross-task take movement into another task's take list; expression
+  movement remains an explicit rejection, and expression move rejection carries
+  a `replace_expression` repair hint
 - manifest-backed accepted/rejected synthetic gold corpus growth
 - broader graph-slice graft operations around move/delete planning

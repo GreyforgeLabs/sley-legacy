@@ -252,11 +252,12 @@ effect, and task movement into known modules is implemented for checked project
 writeback, including AddImport-then-MoveNode transactions that create the
 destination module file from the moved declaration. Cross-parent statement
 movement between existing block parents is implemented with
-`payload.destination`. Take reordering within the owning task is implemented.
-Cross-task take movement, expression movement, import cross-module movement, and
-broader graph-contract hardening remain open. Unsupported expression movement
-returns a `replace_expression` repair hint so agents can plan the supported
-structural edit.
+`payload.destination`. Take reordering within the owning task and checked
+cross-task take movement into another task's take list are implemented.
+Expression movement, import cross-module movement, and broader graph-contract
+hardening remain open. Unsupported expression movement returns a
+`replace_expression` repair hint so agents can plan the supported structural
+edit.
 
 The important rule is not that all operations exist immediately. The important
 rule is that unsupported operations reject cleanly with explicit diagnostics.
@@ -511,8 +512,8 @@ Near-term:
 3. Start consuming `sley.query.report.v0` and `sley.lint.report.v0` from Sley
    helper passes, then broaden authority, style, and migration lints.
 4. Extend graph-slice grafts around move/delete planning.
-5. Harden graph-slice grafts for cross-task take movement planning, richer
-   expression edit planning, and broader graph-contract checks.
+5. Harden graph-slice grafts for richer take movement planning, expression edit
+   planning, and broader graph-contract checks.
 
 Medium-term:
 

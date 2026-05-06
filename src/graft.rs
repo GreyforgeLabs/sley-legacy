@@ -1281,23 +1281,6 @@ fn move_take(
     target: &str,
     payload: &MoveNodePayload,
 ) -> Result<Option<String>, Vec<Diagnostic>> {
-    if payload.destination.is_some() {
-        return if take_exists(program, target) {
-            Err(vec![
-                Diagnostic::error(
-                    "GRAFT_MOVE_UNSUPPORTED",
-                    "MoveNode payload.destination is not supported for take targets",
-                )
-                .with_repair_hint(unsupported_graft_operation_hint(
-                    target,
-                    "Omit payload.destination and reorder the take within its owning task",
-                ))
-                .with_node(target.to_string()),
-            ])
-        } else {
-            Ok(None)
-        };
-    }
     let Some((task_index, take_index)) =
         program
             .tasks
@@ -1314,15 +1297,61 @@ fn move_take(
     };
 
     let task_id = program.tasks[task_index].id.clone();
-    ensure_parent_in_strings(
-        payload,
-        &[
-            task_id.clone(),
-            format!("{task_id}:takes"),
-            format!("takes:{task_id}"),
-        ],
-        target,
-    )?;
+    let accepted_source_parents = [
+        task_id.clone(),
+        format!("{task_id}:takes"),
+        format!("takes:{task_id}"),
+    ];
+    ensure_parent_in_strings(payload, &accepted_source_parents, target)?;
+
+    if let Some(destination) = payload.destination.as_deref() {
+        let Some(destination_task_index) = task_index_for_take_parent(program, destination) else {
+            return Err(vec![
+                Diagnostic::error(
+                    "GRAFT_TARGET_MISSING",
+                    format!("MoveNode take destination `{destination}` does not exist"),
+                )
+                .with_node(destination.to_string()),
+            ]);
+        };
+
+        let destination_task_id = program.tasks[destination_task_index].id.clone();
+        if task_index == destination_task_index {
+            let takes = &mut program.tasks[task_index].takes;
+            if payload.position >= takes.len() {
+                return Err(position_out_of_range(
+                    target,
+                    payload.position,
+                    takes.len(),
+                    &format!("{destination_task_id}:takes"),
+                ));
+            }
+            if take_index != payload.position {
+                let take = takes.remove(take_index);
+                takes.insert(payload.position, take);
+            }
+        } else {
+            let destination_len = program.tasks[destination_task_index].takes.len();
+            if payload.position > destination_len {
+                return Err(position_out_of_range(
+                    target,
+                    payload.position,
+                    destination_len,
+                    &format!("{destination_task_id}:takes"),
+                ));
+            }
+            let take = program.tasks[task_index].takes.remove(take_index);
+            program.tasks[destination_task_index]
+                .takes
+                .insert(payload.position, take);
+        }
+
+        return Ok(Some(format!(
+            "take:{task_id}->{destination_task_id}:{}",
+            payload.position
+        )));
+    }
+
     let takes = &mut program.tasks[task_index].takes;
     if payload.position >= takes.len() {
         return Err(position_out_of_range(
@@ -1337,6 +1366,16 @@ fn move_take(
         takes.insert(payload.position, take);
     }
     Ok(Some(format!("take:{take_index}->{}", payload.position)))
+}
+
+fn task_index_for_take_parent(program: &Program, parent: &str) -> Option<usize> {
+    if let Some(task_target) = parent.strip_suffix(":takes") {
+        return program.find_task_index(task_target);
+    }
+    if let Some(task_target) = parent.strip_prefix("takes:") {
+        return program.find_task_index(task_target);
+    }
+    program.find_task_index(parent)
 }
 
 fn ensure_parent_in_strings(

@@ -413,10 +413,11 @@ updating, replacing, or removing call arguments, inserting checked task-body
 statements, replacing expressions by node id, and deleting checked graph nodes
 such as declarations, imports, takes, and statements. `MoveNode` reorders
 statements within their existing block, moves statements across existing block
-parents with `payload.destination`, reorders takes within their owning task, and
-reorders top-level imports, types, effects, or tasks within their declaration
-lists. It can also move top-level types, effects, or tasks into a known loaded
-or imported module parent such as `module:app.extra:tasks`.
+parents with `payload.destination`, reorders takes within their owning task,
+moves takes across task take lists with `payload.destination`, and reorders
+top-level imports, types, effects, or tasks within their declaration lists. It
+can also move top-level types, effects, or tasks into a known loaded or imported
+module parent such as `module:app.extra:tasks`.
 Unsupported graph movement returns explicit diagnostics until implemented.
 
 Implemented graph-edit payloads:
@@ -433,6 +434,7 @@ Implemented graph-edit payloads:
 { "op": "MoveNode", "target": "block:task:app.main.main:stmt:1", "payload": { "parent": "block:task:app.main.main", "position": 0 } }
 { "op": "MoveNode", "target": "block:task:app.main.main:stmt:1:then:stmt:0", "payload": { "parent": "block:task:app.main.main:stmt:1:then", "destination": "block:task:app.main.main", "position": 1 } }
 { "op": "MoveNode", "target": "take:task:app.main.helper:value", "payload": { "parent": "task:app.main.helper:takes", "position": 0 } }
+{ "op": "MoveNode", "target": "take:task:app.main.helper:value", "payload": { "parent": "task:app.main.helper:takes", "destination": "task:app.main.main:takes", "position": 0 } }
 { "op": "MoveNode", "target": "task:app.main.helper", "payload": { "parent": "program.tasks", "position": 0 } }
 { "op": "MoveNode", "target": "task:app.main.helper", "payload": { "parent": "module:app.extra:tasks", "position": 0 } }
 ```
@@ -451,9 +453,11 @@ must identify the current parent. Statement moves use a block parent such as
 `block:task:app.main.main`; `payload.destination` can identify another existing
 block parent for checked cross-parent statement movement. A statement cannot be
 moved into one of its own child blocks. Take moves accept a parent such as
-`task:app.main.helper:takes` and reorder within that task's take list. Top-level
-declaration moves accept `program.imports`, `program.types`, `program.effects`,
-or `program.tasks`. Top-level type, effect, and task moves can use
+`task:app.main.helper:takes` and reorder within that task's take list; with
+`payload.destination`, they can move into another task take parent such as
+`task:app.main.main:takes`. Top-level declaration moves accept
+`program.imports`, `program.types`, `program.effects`, or `program.tasks`.
+Top-level type, effect, and task moves can use
 `module:<path>:types`, `module:<path>:effects`, or `module:<path>:tasks` to
 change declaration ownership and place the declaration at a module-local
 position. The destination module must already be loaded or imported in the
@@ -461,8 +465,8 @@ checked candidate; an all-or-nothing transaction can therefore `AddImport` for
 the destination module before `MoveNode`, and project writeback will create the
 new checked module file when the moved declaration is its first declaration.
 Otherwise `GRAFT_MODULE_MISSING` rejects the move before mutation. Expression
-moves, cross-task take moves, and import cross-module moves reject with
-`GRAFT_MOVE_UNSUPPORTED`. Each accepted edit reparses the payload when
+moves and import cross-module moves reject with `GRAFT_MOVE_UNSUPPORTED`. Each
+accepted edit reparses the payload when
 applicable, rewrites the AST, refreshes expression source text, and reruns the
 checker before returning formatted source.
 

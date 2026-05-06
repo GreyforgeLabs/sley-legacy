@@ -1423,7 +1423,52 @@ task main -> Int {
 }
 
 #[test]
-fn move_node_rejects_destination_for_take_moves() {
+fn move_node_graft_moves_take_across_tasks() {
+    let source = r#"
+task helper -> Int {
+  take tenant: Text
+
+  return 1
+}
+
+task main -> Int {
+  return call helper()
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let graft_source = r#"
+{
+  "op": "MoveNode",
+  "target": "take:task:main.helper:tenant",
+  "payload": {
+    "parent": "task:main.helper:takes",
+    "destination": "task:main.main:takes",
+    "position": 0
+  }
+}
+"#;
+    let graft: GraftInput = serde_json::from_str(graft_source).expect("parse graft");
+    let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
+
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted_source = outcome.source.as_deref().expect("grafted source");
+    assert!(
+        !grafted_source.contains("task helper -> Int {\n  take tenant: Text"),
+        "{grafted_source}"
+    );
+    assert!(
+        grafted_source.contains("task main -> Int {\n  take tenant: Text"),
+        "{grafted_source}"
+    );
+    let grafted = parse_program(grafted_source).expect("parse grafted source");
+    assert!(
+        !has_errors(&check_program(&grafted)),
+        "cross-task take move should check cleanly"
+    );
+}
+
+#[test]
+fn move_node_rejects_unknown_take_destination() {
     let source = r#"
 task helper -> Int {
   take value: Int
@@ -1432,7 +1477,7 @@ task helper -> Int {
 }
 
 task main -> Int {
-  return call helper(1)
+  return 1
 }
 "#;
     let program = parse_program(source).expect("parse source");
@@ -1442,7 +1487,7 @@ task main -> Int {
   "target": "take:task:main.helper:value",
   "payload": {
     "parent": "task:main.helper:takes",
-    "destination": "task:main.main:takes",
+    "destination": "task:main.missing:takes",
     "position": 0
   }
 }
@@ -1455,14 +1500,9 @@ task main -> Int {
         outcome
             .diagnostics
             .iter()
-            .any(|diagnostic| diagnostic.id == "GRAFT_MOVE_UNSUPPORTED"),
-        "expected move unsupported diagnostic, got {:#?}",
+            .any(|diagnostic| diagnostic.id == "GRAFT_TARGET_MISSING"),
+        "expected missing destination diagnostic, got {:#?}",
         outcome.diagnostics
-    );
-    assert_has_repair_hint(
-        &outcome.diagnostics,
-        "GRAFT_MOVE_UNSUPPORTED",
-        "use_supported_graft_operation",
     );
 }
 
