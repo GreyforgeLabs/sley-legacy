@@ -1,0 +1,224 @@
+{
+  "schema": "sley.symbol_graph.slice.v0",
+  "target": "module:app.math",
+  "entry_module": "app.main",
+  "focus": {
+    "kind": "module",
+    "id": "module:app.math",
+    "module": "app.math",
+    "name": "app.math"
+  },
+  "imports": [],
+  "types": [],
+  "effects": [],
+  "tasks": [
+    {
+      "name": "double",
+      "id": "task:app.math.double",
+      "exported": true
+    }
+  ],
+  "insert_affordances": [
+    {
+      "target": "block:task:app.math.double",
+      "target_kind": "block",
+      "max_position": 1,
+      "operation": {
+        "op": "InsertStatement",
+        "payload": {
+          "position": 1,
+          "source": "forge { }"
+        },
+        "target": "block:task:app.math.double"
+      },
+      "editable_json_pointers": [
+        "/payload/source",
+        "/payload/position"
+      ]
+    }
+  ],
+  "move_affordances": [
+    {
+      "target": "take:task:app.math.double:0:value",
+      "target_kind": "take",
+      "parent": "task:app.math.double:takes",
+      "position": 0,
+      "max_position": 0,
+      "operation": {
+        "op": "MoveNode",
+        "payload": {
+          "parent": "task:app.math.double:takes",
+          "position": 0
+        },
+        "target": "take:task:app.math.double:0:value"
+      },
+      "editable_json_pointers": [
+        "/payload/position"
+      ],
+      "destinations": []
+    },
+    {
+      "target": "block:task:app.math.double:stmt:0",
+      "target_kind": "statement",
+      "parent": "block:task:app.math.double",
+      "position": 0,
+      "max_position": 0,
+      "operation": {
+        "op": "MoveNode",
+        "payload": {
+          "parent": "block:task:app.math.double",
+          "position": 0
+        },
+        "target": "block:task:app.math.double:stmt:0"
+      },
+      "editable_json_pointers": [
+        "/payload/position"
+      ],
+      "destinations": []
+    },
+    {
+      "target": "task:app.math.double",
+      "target_kind": "task",
+      "parent": "module:app.math:tasks",
+      "position": 0,
+      "max_position": 0,
+      "operation": {
+        "op": "MoveNode",
+        "payload": {
+          "parent": "module:app.math:tasks",
+          "position": 0
+        },
+        "target": "task:app.math.double"
+      },
+      "editable_json_pointers": [
+        "/payload/position"
+      ],
+      "destinations": [
+        {
+          "parent": "module:app.main:tasks",
+          "max_position": 1,
+          "operation": {
+            "op": "MoveNode",
+            "payload": {
+              "parent": "module:app.main:tasks",
+              "position": 1
+            },
+            "target": "task:app.math.double"
+          },
+          "editable_json_pointers": [
+            "/payload/position"
+          ]
+        }
+      ]
+    }
+  ],
+  "delete_affordances": [
+    {
+      "target": "take:task:app.math.double:0:value",
+      "target_kind": "take",
+      "parent": "task:app.math.double:takes",
+      "position": 0,
+      "operation": {
+        "op": "DeleteNode",
+        "target": "take:task:app.math.double:0:value"
+      },
+      "editable_json_pointers": []
+    },
+    {
+      "target": "block:task:app.math.double:stmt:0",
+      "target_kind": "statement",
+      "parent": "block:task:app.math.double",
+      "position": 0,
+      "operation": {
+        "op": "DeleteNode",
+        "target": "block:task:app.math.double:stmt:0"
+      },
+      "editable_json_pointers": []
+    },
+    {
+      "target": "task:app.math.double",
+      "target_kind": "task",
+      "parent": "module:app.math:tasks",
+      "position": 0,
+      "operation": {
+        "op": "DeleteNode",
+        "target": "task:app.math.double"
+      },
+      "editable_json_pointers": []
+    }
+  ],
+  "replace_affordances": [
+    {
+      "target": "block:task:app.math.double:stmt:0:expr",
+      "target_kind": "Binary",
+      "parent": "block:task:app.math.double:stmt:0",
+      "operation": {
+        "op": "ReplaceExpression",
+        "payload": {
+          "source": "value * 2"
+        },
+        "target": "block:task:app.math.double:stmt:0:expr"
+      },
+      "editable_json_pointers": [
+        "/payload/source"
+      ]
+    },
+    {
+      "target": "block:task:app.math.double:stmt:0:expr:left",
+      "target_kind": "Identifier",
+      "parent": "block:task:app.math.double:stmt:0:expr",
+      "operation": {
+        "op": "ReplaceExpression",
+        "payload": {
+          "source": "value"
+        },
+        "target": "block:task:app.math.double:stmt:0:expr:left"
+      },
+      "editable_json_pointers": [
+        "/payload/source"
+      ]
+    },
+    {
+      "target": "block:task:app.math.double:stmt:0:expr:right",
+      "target_kind": "IntLiteral",
+      "parent": "block:task:app.math.double:stmt:0:expr",
+      "operation": {
+        "op": "ReplaceExpression",
+        "payload": {
+          "source": "2"
+        },
+        "target": "block:task:app.math.double:stmt:0:expr:right"
+      },
+      "editable_json_pointers": [
+        "/payload/source"
+      ]
+    },
+    {
+      "target": "block:task:app.math.double:stmt:0",
+      "target_kind": "statement",
+      "parent": "block:task:app.math.double",
+      "operation": {
+        "op": "ReplaceStatement",
+        "payload": {
+          "source": "return value * 2"
+        },
+        "target": "block:task:app.math.double:stmt:0"
+      },
+      "editable_json_pointers": [
+        "/payload/source"
+      ]
+    }
+  ],
+  "outbound_calls": [],
+  "inbound_calls": [
+    {
+      "from": "app.main.main",
+      "from_module": "app.main",
+      "expr_id": "block:task:app.main.main:stmt:0:expr",
+      "source": "call math.double(21)",
+      "callee": "math.double",
+      "status": "resolved",
+      "target": "app.math.double"
+    }
+  ]
+}
