@@ -1,0 +1,5 @@
+module app.constant_text_concat
+
+task main -> Text {
+  return "Sley " + "agents"
+}

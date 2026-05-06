@@ -121,6 +121,7 @@ Implemented now:
   `--rule constant-false-while-statement`,
   `--rule constant-comparison-expression`,
   `--rule constant-arithmetic-expression`,
+  `--rule constant-text-concatenation-expression`,
   `--rule empty-if-statement`,
   `--rule empty-for-statement`,
   `--rule empty-forge-statement`,
@@ -189,6 +190,8 @@ Implemented now:
   that can be replaced by their boolean result,
   `simplify_constant_arithmetic_expression` templates for numeric literal
   arithmetic that can be replaced by its result,
+  `simplify_constant_text_concatenation_expression` templates for text literal
+  concatenation that can be replaced by one text literal,
   `delete_empty_if_statement` templates for no-op `if` statements with
   delete-safe conditions and empty branches,
   `delete_empty_for_statement` templates for `for` statements over literal
@@ -688,6 +691,8 @@ constant comparison expression simplification templates with write/verify
 coverage,
 constant arithmetic expression simplification templates with write/verify
 coverage,
+constant text concatenation expression simplification templates with
+write/verify coverage,
 empty-if statement delete templates with write/verify coverage,
 empty-for statement delete templates with write/verify coverage,
 empty-forge statement delete templates with write/verify coverage,
