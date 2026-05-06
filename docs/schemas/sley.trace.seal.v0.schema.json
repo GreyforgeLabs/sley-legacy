@@ -16,7 +16,7 @@
   ],
   "properties": {
     "schema": { "const": "sley.trace.seal.v0" },
-    "target": { "type": "string" },
+    "target": { "type": "string", "minLength": 1 },
     "source_digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
     "graph_digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
     "trace_digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
