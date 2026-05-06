@@ -8452,6 +8452,21 @@ task main -> Used uses UsedEffect {
 }
 
 #[test]
+fn ci_report_schema_covers_all_ci_commands() {
+    let schema: serde_json::Value = serde_json::from_str(include_str!(
+        "../docs/schemas/sley.ci.report.v0.schema.json"
+    ))
+    .expect("parse CI report schema");
+    assert_eq!(
+        schema.pointer("/properties/command/enum"),
+        Some(&serde_json::json!([
+            "check", "lint", "doctor", "plan", "run", "verify", "deploy", "smoke", "corpus",
+            "examples"
+        ]))
+    );
+}
+
+#[test]
 fn contract_utility_inventories_schemas_and_validates_fixtures() {
     let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 

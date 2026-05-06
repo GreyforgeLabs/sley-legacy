@@ -44,7 +44,7 @@ Current verified surface:
 
 - `cargo fmt -- --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 289 tests.
+- Current integration coverage is 290 tests.
 - `make v1` wraps fmt, whitespace diff check, full Rust tests, contract
   fixture and release-manifest validation, corpus conformance, packaged example
   conformance, and CLI smoke conformance.
