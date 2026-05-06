@@ -399,6 +399,7 @@ sley lint --json --deny-warnings examples/agent_deploy_pipeline.sley
 sley run --json --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged examples/agent_deploy_pipeline.sley
 sley verify --json --deny-warnings --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged examples/agent_deploy_pipeline.sley
 sley deploy --json --dry-run --artifacts-dir .sley/dogfood-deploy --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged examples/agent_deploy_pipeline.sley
+sley-contract inspect-deploy-artifacts .sley/dogfood-deploy --schemas docs/schemas --json
 ```
 
 `sley new` refuses to overwrite existing `sley.toml`, `README.md`, or entry
