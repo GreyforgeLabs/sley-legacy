@@ -28,9 +28,9 @@ Visual rules:
 | File | Role | Status |
 |---|---|---|
 | `canonical/sley_loom_graph_board.png` | full review board | canonical theme reference |
-| `canonical/sley_loom_graph_profile_1024.png` | profile image | canonical internal candidate |
-| `canonical/sley_loom_graph_banner_1500x500.png` | social banner | canonical internal candidate |
-| `canonical/sley_loom_graph_post_1200x675.png` | standard post image | canonical internal candidate |
+| `canonical/sley_loom_graph_profile_1024.png` | profile image | approved for `sley.greyforge.tech` |
+| `canonical/sley_loom_graph_banner_1500x500.png` | social banner | approved for `sley.greyforge.tech` |
+| `canonical/sley_loom_graph_post_1200x675.png` | standard post image | approved for `sley.greyforge.tech` |
 
 ## Review Record
 
@@ -40,6 +40,8 @@ Visual rules:
 - Approval scope: `internal_review`
 - Rights state: `generated_pending_human_approval`
 - Operator note: `I like this best for its simplicity and theme.`
+- Public-use update: approved by operator request on 2026-05-06 for the
+  `sley.greyforge.tech` WebForge subdomain pages and social metadata.
 
 Held concept:
 
@@ -50,4 +52,5 @@ Rejected concept:
 
 - `rejected/sley_graft_arena_board.png`
 
-Public release still requires an explicit public-use/privacy/doctrine review.
+Public use is approved only for `sley.greyforge.tech` and Sley-specific social
+metadata unless a later review expands the scope.

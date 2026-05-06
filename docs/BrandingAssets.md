@@ -16,4 +16,6 @@ Machine-readable review and hash data lives in
 
 The review app batch was a temporary local approval surface only. These assets
 are not ForgeVideo production media and have no Drawn_To_Empire relationship.
-Public use still needs explicit public-use/privacy/doctrine review.
+Public use is approved for `sley.greyforge.tech` pages and Sley-specific social
+metadata as of 2026-05-06. New public surfaces still need their own
+public-use/privacy/doctrine review.
