@@ -10,9 +10,10 @@ use crate::diagnostics::{Diagnostic, RepairHint};
 use crate::graft::{GraftInput, apply_graft_input};
 use crate::lint::{
     LintOptions, LintReport, absorbing_boolean_expression_replacement_source, build_lint_report,
-    constant_if_expression_replacement_source, double_negation_expression_replacement_source,
-    identity_binary_expression_replacement_source, qualified_imported_call_replacement_source,
-    raw_host_adapter_replacement, redundant_boolean_comparison_replacement_source,
+    constant_if_expression_replacement_source, constant_if_statement_replacement_source,
+    double_negation_expression_replacement_source, identity_binary_expression_replacement_source,
+    qualified_imported_call_replacement_source, raw_host_adapter_replacement,
+    redundant_boolean_comparison_replacement_source,
     redundant_boolean_if_expression_replacement_source,
     same_branch_if_expression_replacement_source, self_comparison_expression_replacement_source,
 };
@@ -568,6 +569,7 @@ fn lint_graft_templates(
         lint_report,
     ));
     templates.extend(lint_constant_if_expression_templates(program, lint_report));
+    templates.extend(lint_constant_if_statement_templates(program, lint_report));
     templates.extend(lint_constant_false_while_statement_templates(
         program,
         lint_report,
@@ -623,6 +625,7 @@ fn is_lint_repair_kind(kind: &str) -> bool {
             | "delete_unused_pure_binding"
             | "delete_unused_pure_expression_statement"
             | "simplify_constant_if_expression"
+            | "simplify_constant_if_statement"
             | "delete_constant_false_while_statement"
             | "delete_empty_if_statement"
             | "delete_empty_for_statement"
@@ -892,6 +895,39 @@ fn lint_constant_if_expression_templates(
                 kind: "simplify_constant_if_expression".to_string(),
                 reason: "replace this constant if expression with the branch that can execute"
                     .to_string(),
+                surface: finding.node.clone(),
+                operation,
+                editable_json_pointers: vec!["/payload/source".to_string()],
+            })
+        })
+        .collect()
+}
+
+fn lint_constant_if_statement_templates(
+    program: &Program,
+    lint_report: &LintReport,
+) -> Vec<EditPlanGraftTemplate> {
+    lint_report
+        .findings
+        .iter()
+        .filter(|finding| finding.id == "CONSTANT_IF_STATEMENT")
+        .filter_map(|finding| {
+            let replacement = constant_if_statement_replacement_source(program, &finding.node)?;
+            let operation = json!({
+                "op": "ReplaceStatement",
+                "target": finding.node,
+                "payload": {
+                    "source": replacement
+                }
+            });
+            if !replace_affordance_checks(program, &operation) {
+                return None;
+            }
+            Some(EditPlanGraftTemplate {
+                kind: "simplify_constant_if_statement".to_string(),
+                reason:
+                    "replace this constant if statement with its single executing branch statement"
+                        .to_string(),
                 surface: finding.node.clone(),
                 operation,
                 editable_json_pointers: vec!["/payload/source".to_string()],

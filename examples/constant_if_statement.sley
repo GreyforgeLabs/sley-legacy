@@ -1,0 +1,13 @@
+module app.constant_if_statement
+
+task main -> Int {
+  state value = 0
+
+  if true {
+    set value = 42
+  } else {
+    set value = 1
+  }
+
+  return value
+}

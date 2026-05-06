@@ -821,6 +821,10 @@ the no-op pure expression statement preserves a checked program.
 `simplify_constant_if_expression` `ReplaceExpression` templates when replacing
 an expression-level `if true/false` with the branch that executes preserves a
 checked program.
+`constant_if_statement` lint findings become checked
+`simplify_constant_if_statement` `ReplaceStatement` templates when replacing a
+statement-level `if true/false` with its single executing branch statement
+preserves a checked program.
 `constant_false_while_statement` lint findings become checked
 `delete_constant_false_while_statement` `DeleteNode` templates when deleting a
 never-executed `while false` statement preserves a checked program.
@@ -983,7 +987,9 @@ delete-safe pure expression and discards it; and `mutable_binding_never_set`,
 which warns when a mutable local such as `state` or `tally` is never assigned
 with `set`; and `constant_if_expression`, which warns when an expression-level
 `if true/false { ... } else { ... }` can be replaced with the branch that
-executes; and `constant_false_while_statement`, which warns when a
+executes; and `constant_if_statement`, which warns when a statement-level
+`if true/false { ... } else { ... }` can be replaced by its single executing
+branch statement; and `constant_false_while_statement`, which warns when a
 `while false { ... }` statement can be removed as never-executed code; and
 `empty_if_statement`, which warns when an `if` statement with a delete-safe
 condition and empty branches can be removed as no-op control flow; and
@@ -1017,6 +1023,7 @@ guaranteed `return` in the same block.
 `--rule unqualified-imported-call`, `--rule unused-pure-binding`, or
 `--rule unused-pure-expression-statement`, or
 `--rule mutable-binding-never-set`, `--rule constant-if-expression`, or
+`--rule constant-if-statement`, or
 `--rule constant-false-while-statement`, or
 `--rule empty-if-statement`, or
 `--rule empty-for-statement`, or
@@ -1135,7 +1142,8 @@ refuse generic data disguised as Sley artifacts before compression begins.
   empty-for statement cleanup templates, empty-forge statement cleanup
   templates, unreachable statement cleanup
   templates, and mutable
-  binding conversion transactions, constant-if, identity binary expression, redundant boolean
+  binding conversion transactions, constant-if expression and statement
+  simplification, identity binary expression, redundant boolean
   comparison, and double negation simplification templates, plus explicit
   module style warnings;
   broader style and migration lints remain later work
@@ -1155,7 +1163,8 @@ refuse generic data disguised as Sley artifacts before compression begins.
   The CLI smoke suite locks previewed lint-repair writes followed by strict
   verify for file and project targets, including unused pure binding cleanup,
   unused pure expression statement cleanup, constant-false while statement
-  cleanup, empty-if statement cleanup, empty-for statement cleanup,
+  cleanup, constant-if statement simplification, empty-if statement cleanup,
+  empty-for statement cleanup,
   empty-forge statement cleanup,
   unreachable statement cleanup, and mutable binding conversion,
   plus a repaired generated deploy

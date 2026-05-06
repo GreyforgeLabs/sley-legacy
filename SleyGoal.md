@@ -40,7 +40,7 @@ Current verified surface:
 
 - `cargo fmt --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 248 tests.
+- Current integration coverage is 250 tests.
 - `sley query --json` emits `schema: "sley.query.report.v0"` and supports
   `--kind all|modules|tasks|types|effects|calls`, `--module <module>`, and
   `--exported`, including strict task/take/type/effect/call row definitions.
@@ -81,6 +81,7 @@ Current verified surface:
   `--rule unqualified-imported-call`, `--rule unused-pure-binding`,
   `--rule unused-pure-expression-statement`,
   `--rule mutable-binding-never-set`, `--rule constant-if-expression`,
+  `--rule constant-if-statement`,
   `--rule constant-false-while-statement`,
   `--rule empty-if-statement`,
   `--rule empty-for-statement`,
@@ -101,6 +102,7 @@ Current verified surface:
   `unqualified_imported_call`, `unused_pure_binding`,
   `unused_pure_expression_statement`, and `mutable_binding_never_set`,
   `constant_if_expression`,
+  `constant_if_statement`,
   `constant_false_while_statement`,
   `empty_if_statement`,
   `empty_for_statement`,
@@ -162,6 +164,8 @@ Current verified surface:
   `convert_mutable_binding_to_bind` transaction with plan/fix-write/verify
   smoke coverage, plus checked `constant_if_expression` style findings and
   `simplify_constant_if_expression` templates with lint/plan/fix-write/verify
+  smoke coverage, plus checked `constant_if_statement` style findings and
+  `simplify_constant_if_statement` templates with lint/plan/fix-write/verify
   smoke coverage, plus checked `constant_false_while_statement` dead-loop
   findings and `delete_constant_false_while_statement` templates with
   lint/plan/fix-write/verify
@@ -394,6 +398,7 @@ cargo run -- lint --json --rule unused-pure-binding <target>
 cargo run -- lint --json --rule unused-pure-expression-statement <target>
 cargo run -- lint --json --rule mutable-binding-never-set <target>
 cargo run -- lint --json --rule constant-if-expression <target>
+cargo run -- lint --json --rule constant-if-statement <target>
 cargo run -- lint --json --rule constant-false-while-statement <target>
 cargo run -- lint --json --rule empty-if-statement <target>
 cargo run -- lint --json --rule empty-for-statement <target>
