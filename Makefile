@@ -37,20 +37,23 @@ lsp:
 workbench:
 	cargo check --bin sley-workbench
 
-agent-bench:
-	cargo check --bin sley-agent-bench
+agent-bench: build-cli
+	cargo run --bin sley-agent-bench -- run --json
 
 migrate:
-	cargo check --bin sley-migrate
+	cargo run --bin sley-migrate -- report --json examples/raw_host_migration.sley
 
 docgen:
-	cargo check --bin sley-docgen
+	cargo run --bin sley-docgen -- reference --json examples/agent_deploy_pipeline.sley
 
 sandbox-runner:
-	cargo check --bin sley-sandbox-runner
+	cargo run --bin sley-sandbox-runner -- run --json fixtures/contracts/sandbox_manifest_agent_pipeline.json
 
 zjx-tools:
-	cargo check --bin sley-zjx
+	cargo run --bin sley-zjx -- inspect --json fixtures/contracts/zjx_hello_ready.json
+	cargo run --bin sley-zjx -- verify-digest --json fixtures/contracts/zjx_hello_ready.json
+	cargo run --bin sley-zjx -- extract-graph --json fixtures/contracts/zjx_hello_ready.json
+	cargo run --bin sley-zjx -- diff-envelope --json fixtures/contracts/zjx_hello_ready.json fixtures/contracts/zjx_hello_ready.json
 
 tree-sitter-sley/node_modules/.package-lock.json: tree-sitter-sley/package.json tree-sitter-sley/package-lock.json
 	npm --prefix tree-sitter-sley ci
