@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.self_compare",
+  "filters": {
+    "module": null,
+    "rules": [
+      "self_comparison_expression"
+    ]
+  },
+  "findings": [
+    {
+      "id": "SELF_COMPARISON_EXPRESSION",
+      "rule": "self_comparison_expression",
+      "severity": "warning",
+      "message": "task `app.self_compare.main` has a self-comparison expression `ready == ready`",
+      "node": "block:task:app.self_compare.main:stmt:1:expr",
+      "module": "app.self_compare",
+      "hint": "replace the self-comparison expression with `true`"
+    }
+  ]
+}

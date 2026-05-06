@@ -118,6 +118,7 @@ Implemented now:
   `--rule identity-binary-expression`, or
   `--rule redundant-boolean-comparison`, or
   `--rule absorbing-boolean-expression`, or
+  `--rule self-comparison-expression`, or
   `--rule double-negation-expression`, or
   `--rule redundant-boolean-if-expression`, or
   `--rule same-branch-if-expression`
@@ -171,6 +172,8 @@ Implemented now:
   against `true` or `false`,
   `simplify_absorbing_boolean_expression` templates for absorbing boolean
   literals that can collapse a short-circuiting expression safely,
+  `simplify_self_comparison_expression` templates for delete-safe `expr == expr`
+  and `expr != expr` comparisons,
   `simplify_double_negation_expression` templates for `!!expr` forms,
   `simplify_redundant_boolean_if_expression` templates for boolean `if`
   expressions that can be replaced by the condition or its negation,

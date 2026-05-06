@@ -1,0 +1,7 @@
+module app.self_compare
+
+task main -> Bool {
+  bind ready = true
+
+  return ready == ready
+}
