@@ -8944,7 +8944,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/smoke_case_count"),
-        Some(&serde_json::json!(359))
+        Some(&serde_json::json!(361))
     );
     assert_eq!(
         report_json.pointer("/summary/example_source_count"),
@@ -19620,6 +19620,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "host:SecretRead",
         "host:Shell",
         "host:Spend",
+        "project:imported-host-authority",
         "json:sley.ast.node.v0",
         "json:sley.ast.program.v0",
         "json:sley.diagnostics.report.v0",
