@@ -607,6 +607,8 @@ manifest carries `schema: "sley.conformance.manifest.v0"`. Project scaffold repo
 `schema: "sley.edit_plan.report.v0"`. CI wrapper reports carry
 `schema: "sley.ci.report.v0"` for check, lint, doctor, plan, run, verify,
 deploy, smoke, corpus, and examples wrappers.
+Conformance visibility reports carry `schema: "sley.conformance.report.v0"`;
+coverage-tag checks carry `schema: "sley.conformance.coverage.v0"`.
 The deploy wrapper passes `--artifacts-dir <dir>` through to `sley deploy`
 when local handoff files are requested. Deploy dry-run reports carry
 `schema: "sley.deploy.report.v0"`; deploy artifact manifests carry
@@ -713,6 +715,13 @@ The packaged example gate is exposed through `sley-ci examples --json
 examples`. It checks each `sley.toml` example as a project root, checks
 standalone `.sley` examples directly, and formatter-round-trips every shipped
 `.sley` source under `examples/`.
+
+The release-readiness view is exposed through `sley-conformance report
+--json`. It inventories schema IDs, fixture and manifest schema instances,
+contract fixture validation status, release manifest validation status, corpus
+tags, smoke tags, and packaged example counts under one stable conformance
+root. `sley-conformance coverage --json --require-tag <tag>` checks explicit
+coverage tags across the corpus and smoke manifests for focused release gates.
 
 `sley new` is the v0 project scaffold command. It writes a `sley.toml`,
 `README.md`, and entry module source file, refusing to overwrite any of those

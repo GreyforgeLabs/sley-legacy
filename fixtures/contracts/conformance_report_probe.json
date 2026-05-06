@@ -1,0 +1,99 @@
+{
+  "schema": "sley.conformance.report.v0",
+  "status": "passed",
+  "summary": {
+    "schema_count": 1,
+    "schema_instance_count": 1,
+    "schema_without_instance_count": 0,
+    "contract_fixture_count": 1,
+    "contract_fixture_failed_count": 0,
+    "corpus_accepted_count": 1,
+    "corpus_rejected_count": 1,
+    "smoke_case_count": 1,
+    "example_project_count": 1,
+    "example_source_count": 1,
+    "issue_count": 0
+  },
+  "validation": {
+    "contract_fixtures": {
+      "name": "contract_fixtures",
+      "status": "passed",
+      "command": [
+        "sley-contract",
+        "check-fixtures",
+        "fixtures/contracts",
+        "--schemas",
+        "docs/schemas",
+        "--json"
+      ],
+      "report_schema": "sley.contract.fixture_check.v0",
+      "fixture_count": 1,
+      "passed_count": 1,
+      "failed_count": 0,
+      "issue_count": 0,
+      "issues": []
+    },
+    "manifests": []
+  },
+  "schemas": {
+    "schema_dir": "docs/schemas",
+    "fixture_dir": "fixtures/contracts",
+    "schemas": [
+      {
+        "id": "sley.ast.program.v0",
+        "path": "docs/schemas/sley.ast.program.v0.schema.json",
+        "title": "Sley AST Program v0"
+      }
+    ],
+    "instances": [
+      {
+        "schema_id": "sley.ast.program.v0",
+        "count": 1
+      }
+    ],
+    "schemas_without_instances": [],
+    "unknown_instance_schemas": []
+  },
+  "corpus": {
+    "manifest": "fixtures/corpus/manifest.json",
+    "accepted_count": 1,
+    "rejected_count": 1,
+    "tag_inventory": [
+      {
+        "tag": "language:pure-task-call",
+        "count": 1
+      }
+    ],
+    "feature_counts": [
+      {
+        "tag": "language",
+        "count": 1
+      }
+    ]
+  },
+  "smoke": {
+    "manifests": [
+      {
+        "path": "fixtures/cli_smokes/manifest.json",
+        "case_count": 1
+      }
+    ],
+    "case_count": 1,
+    "tag_inventory": [
+      {
+        "tag": "cli:check",
+        "count": 1
+      }
+    ],
+    "required_tags": [
+      "cli:check"
+    ],
+    "missing_required_tags": []
+  },
+  "examples": {
+    "root": "examples",
+    "project_count": 1,
+    "source_count": 1
+  },
+  "issues": []
+}

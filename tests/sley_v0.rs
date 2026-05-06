@@ -8406,6 +8406,14 @@ task main -> Used uses UsedEffect {
         "sley.conformance.manifest.v0",
     );
     assert_schema_file(
+        include_str!("../docs/schemas/sley.conformance.report.v0.schema.json"),
+        "sley.conformance.report.v0",
+    );
+    assert_schema_file(
+        include_str!("../docs/schemas/sley.conformance.coverage.v0.schema.json"),
+        "sley.conformance.coverage.v0",
+    );
+    assert_schema_file(
         include_str!("../docs/schemas/sley.ci.report.v0.schema.json"),
         "sley.ci.report.v0",
     );
@@ -8492,7 +8500,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         inventory_json.pointer("/schema_count"),
-        Some(&serde_json::json!(26))
+        Some(&serde_json::json!(28))
     );
     let schema_ids = inventory_json
         .pointer("/schemas")
@@ -8507,6 +8515,8 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     assert!(schema_ids.contains("sley.trace.report.v0"));
     assert!(schema_ids.contains("sley.ci.report.v0"));
     assert!(schema_ids.contains("sley.conformance.manifest.v0"));
+    assert!(schema_ids.contains("sley.conformance.report.v0"));
+    assert!(schema_ids.contains("sley.conformance.coverage.v0"));
     assert!(schema_ids.contains("sley.deploy.artifact_check.v0"));
     assert!(schema_ids.contains("sley.deploy.artifacts.v0"));
     assert!(schema_ids.contains("sley.deploy.report.v0"));
@@ -8542,7 +8552,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(85))
+        Some(&serde_json::json!(88))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -8778,6 +8788,89 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
         Some(&serde_json::json!("schema_mismatch"))
     );
     let _ = fs::remove_dir_all(malformed_root);
+}
+
+#[test]
+fn conformance_report_summarizes_release_surface() {
+    let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let report = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-conformance"))
+        .current_dir(&repo_root)
+        .args([
+            "report",
+            "--json",
+            "--sley-contract-bin",
+            env!("CARGO_BIN_EXE_sley-contract"),
+        ])
+        .output()
+        .expect("run sley-conformance report");
+    assert!(
+        report.status.success(),
+        "sley-conformance report failed: {}",
+        String::from_utf8_lossy(&report.stderr)
+    );
+    let report_json: serde_json::Value =
+        serde_json::from_slice(&report.stdout).expect("parse conformance report JSON");
+    assert_eq!(
+        report_json.pointer("/schema"),
+        Some(&serde_json::json!("sley.conformance.report.v0"))
+    );
+    assert_eq!(
+        report_json.pointer("/status"),
+        Some(&serde_json::json!("passed"))
+    );
+    assert_eq!(
+        report_json.pointer("/summary/schema_count"),
+        Some(&serde_json::json!(28))
+    );
+    assert_eq!(
+        report_json.pointer("/summary/schema_without_instance_count"),
+        Some(&serde_json::json!(0))
+    );
+    assert_eq!(
+        report_json.pointer("/summary/contract_fixture_count"),
+        Some(&serde_json::json!(88))
+    );
+    assert_eq!(
+        report_json.pointer("/summary/smoke_case_count"),
+        Some(&serde_json::json!(346))
+    );
+    assert_eq!(
+        report_json.pointer("/summary/example_source_count"),
+        Some(&serde_json::json!(67))
+    );
+    assert_eq!(report_json.pointer("/issues"), Some(&serde_json::json!([])));
+
+    let coverage = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-conformance"))
+        .current_dir(&repo_root)
+        .args([
+            "coverage",
+            "--json",
+            "--require-tag",
+            "cli:check",
+            "--require-tag",
+            "json:sley.trace.receipt.v0",
+        ])
+        .output()
+        .expect("run sley-conformance coverage");
+    assert!(
+        coverage.status.success(),
+        "sley-conformance coverage failed: {}",
+        String::from_utf8_lossy(&coverage.stderr)
+    );
+    let coverage_json: serde_json::Value =
+        serde_json::from_slice(&coverage.stdout).expect("parse conformance coverage JSON");
+    assert_eq!(
+        coverage_json.pointer("/schema"),
+        Some(&serde_json::json!("sley.conformance.coverage.v0"))
+    );
+    assert_eq!(
+        coverage_json.pointer("/status"),
+        Some(&serde_json::json!("passed"))
+    );
+    assert_eq!(
+        coverage_json.pointer("/missing_tags"),
+        Some(&serde_json::json!([]))
+    );
 }
 
 #[test]

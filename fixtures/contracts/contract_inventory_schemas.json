@@ -2,7 +2,7 @@
   "schema": "sley.contract.inventory.v0",
   "status": "passed",
   "schema_dir": "docs/schemas",
-  "schema_count": 26,
+  "schema_count": 28,
   "schemas": [
     {
       "id": "sley.ast.node.v0",
@@ -33,9 +33,23 @@
       "root_type": "object"
     },
     {
+      "id": "sley.conformance.coverage.v0",
+      "path": "docs/schemas/sley.conformance.coverage.v0.schema.json",
+      "title": "Sley Conformance Coverage Report v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
       "id": "sley.conformance.manifest.v0",
       "path": "docs/schemas/sley.conformance.manifest.v0.schema.json",
       "title": "Sley Conformance Manifest v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.conformance.report.v0",
+      "path": "docs/schemas/sley.conformance.report.v0.schema.json",
+      "title": "Sley Conformance Report v0",
       "draft": "https://json-schema.org/draft/2020-12/schema",
       "root_type": "object"
     },

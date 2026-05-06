@@ -1,4 +1,4 @@
-.PHONY: fmt diff-check test contracts corpus examples smoke v1
+.PHONY: fmt diff-check test contracts conformance corpus examples smoke v1
 
 fmt:
 	cargo fmt -- --check
@@ -15,6 +15,9 @@ contracts:
 	cargo run --bin sley-contract -- validate --schema sley.cli_smoke.manifest.v0 fixtures/cli_smokes/manifest.json --schemas docs/schemas --json
 	cargo run --bin sley-contract -- validate --schema sley.cli_smoke.manifest.v0 fixtures/ci_smoke_probe/manifest.json --schemas docs/schemas --json
 
+conformance:
+	cargo run --bin sley-conformance -- report --json
+
 corpus:
 	cargo run --bin sley-ci -- corpus --json fixtures/corpus/manifest.json
 
@@ -24,4 +27,4 @@ examples:
 smoke:
 	cargo run --bin sley-ci -- smoke --json --repo-root $(CURDIR) fixtures/cli_smokes/manifest.json
 
-v1: fmt diff-check test contracts corpus examples smoke
+v1: fmt diff-check test contracts conformance corpus examples smoke
