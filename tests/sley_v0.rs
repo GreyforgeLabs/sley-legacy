@@ -6371,7 +6371,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(58))
+        Some(&serde_json::json!(59))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -6860,6 +6860,40 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     assert_json_snapshot(
         &run_json,
         include_str!("../fixtures/contracts/ci_run_project_ready.json"),
+    );
+
+    let stable_verify = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
+        .current_dir(&repo_root)
+        .args(["verify", "--json", "--deny-warnings", "examples/project"])
+        .output()
+        .expect("run stable sley-ci verify");
+    assert!(
+        stable_verify.status.success(),
+        "stable sley-ci verify failed: {}",
+        String::from_utf8_lossy(&stable_verify.stderr)
+    );
+    let stable_verify_json: serde_json::Value =
+        serde_json::from_slice(&stable_verify.stdout).expect("parse stable sley-ci verify JSON");
+    assert_json_snapshot(
+        &stable_verify_json,
+        include_str!("../fixtures/contracts/ci_verify_project_ready.json"),
+    );
+
+    let stable_deploy = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
+        .current_dir(&repo_root)
+        .args(["deploy", "--json", "--dry-run", "examples/project"])
+        .output()
+        .expect("run stable sley-ci deploy");
+    assert!(
+        stable_deploy.status.success(),
+        "stable sley-ci deploy failed: {}",
+        String::from_utf8_lossy(&stable_deploy.stderr)
+    );
+    let stable_deploy_json: serde_json::Value =
+        serde_json::from_slice(&stable_deploy.stdout).expect("parse stable sley-ci deploy JSON");
+    assert_json_snapshot(
+        &stable_deploy_json,
+        include_str!("../fixtures/contracts/ci_deploy_project_ready.json"),
     );
 
     let denied_plan = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
