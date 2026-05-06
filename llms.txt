@@ -187,7 +187,8 @@ Current development phase:
   `unused_pure_expression_statement`, the mutable-local style rule
   `mutable_binding_never_set`, the expression simplification rule
   `constant_if_expression`, the constant-false while cleanup rule
-  `constant_false_while_statement`, the empty-for cleanup rule
+  `constant_false_while_statement`, the empty-if cleanup rule
+  `empty_if_statement`, the empty-for cleanup rule
   `empty_for_statement`, the empty-forge cleanup rule
   `empty_forge_statement`, the identity simplification rule
   `identity_binary_expression`, the redundant boolean comparison rule
@@ -243,6 +244,8 @@ Current development phase:
   expression statements, plus
   `delete_constant_false_while_statement` templates for never-executed
   `while false` statements, plus
+  `delete_empty_if_statement` templates for no-op `if` statements with
+  delete-safe conditions and empty branches, plus
   `delete_empty_for_statement` templates for `for` statements over literal
   empty lists, plus
   `delete_empty_forge_statement` templates for no-op `forge { }` starter
@@ -308,7 +311,8 @@ Current development phase:
   Use `sley-contract inspect-deploy-artifacts <dir> --schemas docs/schemas
   --json` to validate the handoff manifest, schemas, and file digests after the
   directory moves between agent sessions
-- next development work should keep broadening style and migration lints
+- next development work should keep broadening style and migration lints after
+  the empty-if cleanup path
 - project graft writeback now supports create/update/delete module files,
   `AddImport` writes to existing on-disk module files that were not yet loaded
   through the entry import graph, and module rename, including manifest entry

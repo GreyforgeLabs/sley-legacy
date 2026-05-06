@@ -40,7 +40,7 @@ Current verified surface:
 
 - `cargo fmt --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 246 tests.
+- Current integration coverage is 248 tests.
 - `sley query --json` emits `schema: "sley.query.report.v0"` and supports
   `--kind all|modules|tasks|types|effects|calls`, `--module <module>`, and
   `--exported`, including strict task/take/type/effect/call row definitions.
@@ -82,6 +82,7 @@ Current verified surface:
   `--rule unused-pure-expression-statement`,
   `--rule mutable-binding-never-set`, `--rule constant-if-expression`,
   `--rule constant-false-while-statement`,
+  `--rule empty-if-statement`,
   `--rule empty-for-statement`,
   `--rule empty-forge-statement`,
   `--rule identity-binary-expression`,
@@ -101,6 +102,7 @@ Current verified surface:
   `unused_pure_expression_statement`, and `mutable_binding_never_set`,
   `constant_if_expression`,
   `constant_false_while_statement`,
+  `empty_if_statement`,
   `empty_for_statement`,
   `empty_forge_statement`,
   `identity_binary_expression`, `redundant_boolean_comparison`, and
@@ -163,7 +165,10 @@ Current verified surface:
   smoke coverage, plus checked `constant_false_while_statement` dead-loop
   findings and `delete_constant_false_while_statement` templates with
   lint/plan/fix-write/verify
-  smoke coverage, plus checked `empty_for_statement` dead-loop findings and
+  smoke coverage, plus checked `empty_if_statement` no-op control-flow
+  findings and `delete_empty_if_statement` templates with
+  lint/plan/fix-write/verify smoke coverage, plus checked
+  `empty_for_statement` dead-loop findings and
   `delete_empty_for_statement` templates with lint/plan/fix-write/verify
   smoke coverage, plus checked `empty_forge_statement` no-op block findings and
   `delete_empty_forge_statement` templates with lint/plan/fix-write/verify
@@ -390,6 +395,7 @@ cargo run -- lint --json --rule unused-pure-expression-statement <target>
 cargo run -- lint --json --rule mutable-binding-never-set <target>
 cargo run -- lint --json --rule constant-if-expression <target>
 cargo run -- lint --json --rule constant-false-while-statement <target>
+cargo run -- lint --json --rule empty-if-statement <target>
 cargo run -- lint --json --rule empty-for-statement <target>
 cargo run -- lint --json --rule empty-forge-statement <target>
 cargo run -- lint --json --rule identity-binary-expression <target>

@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.empty_if",
+  "filters": {
+    "module": null,
+    "rules": [
+      "empty_if_statement"
+    ]
+  },
+  "findings": [
+    {
+      "id": "EMPTY_IF_STATEMENT",
+      "rule": "empty_if_statement",
+      "severity": "warning",
+      "message": "task `app.empty_if.main` has an empty if statement",
+      "node": "block:task:app.empty_if.main:stmt:1",
+      "module": "app.empty_if",
+      "hint": "delete this no-op if statement"
+    }
+  ]
+}
