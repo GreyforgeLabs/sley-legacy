@@ -180,6 +180,8 @@ Implemented now:
   writeback with manifest entry updates when needed
 - a first ZJX-ready JSON envelope command for graph snapshots, recomputable
   graph digests, optional graph slices, and trace receipts
+- a future-runtime lock spec at `docs/SleyZjxRuntimeLockSpec.md`, requiring
+  `zjx-sley` to validate Sley structure before compressing Sley artifacts
 - structural graft operations for adding explicit module declarations,
   adding/removing takes, removing task-declared effects, replacing task bodies, adding
   imports/effects/types/tasks, renaming declarations, updating call-sites,
@@ -487,6 +489,11 @@ Known v0 limits:
 - `sley zjx` emits the first Sley ZJX envelope payload as JSON with
   `compression=none` and a recomputable graph digest; the binary compressed
   archive handoff remains a later integration step.
+- The future compressed `zjx-sley` runtime must not trust envelope metadata as
+  the file lock. It must follow `docs/SleyZjxRuntimeLockSpec.md`: reconstruct
+  and validate Sley graph structure, recompute the graph hash, reject unknown
+  or opaque fields, and refuse generic CSV, JSONL, checkpoint, backup, or blob
+  payloads disguised as Sley artifacts.
 - Runtime host support is intentionally narrow: `FileRead`/`FileWrite` have
   root-scoped filesystem handlers, `DatabaseRead` has a deterministic
   seeded-table adapter, and `DatabaseWrite` has a deterministic per-run insert
