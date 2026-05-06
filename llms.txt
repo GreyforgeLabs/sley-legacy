@@ -32,6 +32,7 @@ cargo run --bin sley-contract -- inspect-deploy-artifacts .sley/deploy --schemas
 make v1
 make syntax
 cargo run --bin sley-lsp
+cargo run --bin sley-workbench -- --json --html .sley/workbench.html <file-or-project>
 cargo run -- seal --json <file-or-project>
 cargo run -- graft --json --dry-run <file> <graft.json>
 cargo run -- graft --json --write <file> <graft.json>
@@ -151,6 +152,9 @@ The `sley-lsp` binary exposes stdio LSP diagnostics, formatting, document
 symbols, declaration hover, edit-plan code actions, and non-mutating
 `sley.fix.preview` payloads backed by compiler modules; the preview payload
 uses `schema: "sley.lsp.fix_preview.v0"` and has a locked contract fixture.
+The `sley-workbench` binary exposes `schema: "sley.workbench.report.v0"` and
+optional static HTML over doctor/query/lint/plan/graph panels without source
+file writes.
 The repo-level `Makefile`, `.github/actions/sley-v1/action.yml`,
 `.github/workflows/v1.yml`, and `.pre-commit-config.yaml` all route release
 checks through `make v1`.

@@ -172,6 +172,9 @@ Implemented now:
   compiler diagnostics plus lint warnings, formatting edits, document symbols,
   declaration hover, checked edit-plan code actions, and a non-mutating
   `sley.fix.preview` command for editor repair previews
+- in-tree `sley-workbench` local inspection bootstrap that emits
+  `schema: "sley.workbench.report.v0"` and optional static HTML over
+  doctor/query/lint/plan/graph panels without writing source files
 - checked JSON readiness reports with `sley doctor`, consuming strict
   diagnostics plus query and lint summaries, with call-bearing reports routing
   agents to strict `sley query --kind calls` inspection, warning next-actions
@@ -344,13 +347,14 @@ Implemented now:
 - locked JSON contract snapshots under `fixtures/contracts/`, including
   symbol graphs, graft outcomes, ZJX envelopes, checked run, query, lint,
   doctor, edit-plan, verify, deploy dry-run, deploy artifact check, CI, and
-  project scaffold reports, LSP fix-preview payloads, plus contract inventory,
-  fixture-check, and validate reports
+  project scaffold reports, LSP fix-preview payloads, workbench reports, plus
+  contract inventory, fixture-check, and validate reports
 - external v0 JSON Schema files under `docs/schemas/`, including strict
   query task/take/type/effect/call row definitions,
   strict runtime value definitions for `sley.run.report.v0`,
   `sley-ci` check/lint/doctor/plan/run/verify/deploy/smoke/corpus/examples reports,
   `sley.lsp.fix_preview.v0` preview-command payloads,
+  `sley.workbench.report.v0` local inspection reports,
   `sley-contract` inventory/fixture-check/validate/deploy-artifact-check reports,
   edit-plan graft operation and transaction template envelopes reused by graph
   slice affordances, graph-slice focus/task/call summary refs, a shared
@@ -430,6 +434,7 @@ sley-conformance coverage --json --require-tag cli:check --require-tag json:sley
 sley-contract inspect-deploy-artifacts .sley/deploy --schemas docs/schemas --json
 make syntax
 sley-lsp
+sley-workbench --json --html .sley/workbench.html .
 sley seal --json .
 sley zjx --json .
 ```

@@ -1,0 +1,117 @@
+{
+  "schema": "sley.workbench.report.v0",
+  "status": "warnings",
+  "target": "examples/workbench_unused.sley",
+  "summary": {
+    "module_count": 1,
+    "task_count": 2,
+    "type_count": 0,
+    "effect_count": 0,
+    "call_count": 0,
+    "lint_finding_count": 1,
+    "graft_template_count": 1,
+    "transaction_template_count": 0,
+    "diagnostic_count": 0,
+    "issue_count": 0
+  },
+  "diagnostics": [],
+  "doctor": {
+    "status": "warnings",
+    "error_count": 0,
+    "warning_count": 1,
+    "next_actions": []
+  },
+  "query": {
+    "source_schema": "sley.query.report.v0",
+    "entry_module": "app.workbench",
+    "modules": ["app.workbench"],
+    "tasks": [
+      {
+        "id": "task:app.workbench.main",
+        "name": "main",
+        "module": "app.workbench",
+        "qualified_name": "app.workbench.main",
+        "exported": false,
+        "takes": [],
+        "return_type": "Text",
+        "effects": [],
+        "outbound_call_count": 0,
+        "inbound_call_count": 0
+      },
+      {
+        "id": "task:app.workbench.orphan",
+        "name": "orphan",
+        "module": "app.workbench",
+        "qualified_name": "app.workbench.orphan",
+        "exported": false,
+        "takes": [],
+        "return_type": "Text",
+        "effects": [],
+        "outbound_call_count": 0,
+        "inbound_call_count": 0
+      }
+    ],
+    "types": [],
+    "calls": []
+  },
+  "lint": {
+    "source_schema": "sley.lint.report.v0",
+    "status": "warnings",
+    "findings": [
+      {
+        "id": "lint:unused_private_task:task:app.workbench.orphan",
+        "rule": "unused_private_task",
+        "severity": "warning",
+        "message": "private task `app.workbench.orphan` is never called and is not the entrypoint",
+        "node": "task:app.workbench.orphan",
+        "module": "app.workbench",
+        "hint": "delete the private task or export/call it intentionally"
+      }
+    ]
+  },
+  "plan": {
+    "source_schema": "sley.edit_plan.report.v0",
+    "status": "warnings",
+    "task_surfaces": [],
+    "graft_templates": [
+      {
+        "kind": "delete_unused_private_task",
+        "surface": "task:app.workbench.orphan",
+        "reason": "delete unused private task reported by lint",
+        "editable_json_pointers": [],
+        "payload": {
+          "op": "DeleteNode",
+          "target": "task:app.workbench.orphan"
+        }
+      }
+    ],
+    "transaction_templates": [],
+    "next_actions": []
+  },
+  "graph": {
+    "source_schema": "sley.symbol_graph.v0",
+    "entry_module": "app.workbench",
+    "module_count": 1,
+    "modules": [
+      {
+        "module": "app.workbench",
+        "imports": [],
+        "types": [],
+        "effects": [],
+        "tasks": [
+          {
+            "name": "main",
+            "id": "task:app.workbench.main",
+            "exported": false
+          },
+          {
+            "name": "orphan",
+            "id": "task:app.workbench.orphan",
+            "exported": false
+          }
+        ]
+      }
+    ]
+  },
+  "issues": []
+}

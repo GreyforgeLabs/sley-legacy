@@ -165,6 +165,10 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
      - local-only web app backed by a small command runner;
      - no external network calls;
      - write mode disabled by default.
+   - Current bootstrap: in-tree `src/bin/sley-workbench.rs` emits
+     `schema: "sley.workbench.report.v0"` plus optional static HTML over
+     doctor/query/lint/plan/graph panels. It reads compiler data directly and
+     writes only the requested HTML report path, never source files.
    - Done when a developer can open `examples/project`, select a lint finding,
      preview the checked fix, and inspect the post-fix gate commands.
 
@@ -250,8 +254,9 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
 4. Extend `sley-lsp` from the current in-tree server toward project-wide
    workspace support, editor extension shims, and richer hover/details while
    keeping compiler modules as the semantic authority.
-5. Build `sley-workbench` using only the same JSON roots the LSP and agents
-   consume.
+5. Extend `sley-workbench` from the current static local report toward a live
+   selector UI that can focus lint findings and graph slices without enabling
+   writes by default.
 6. Add `sley-conformance` once schema and smoke gaps become annoying enough to
    justify a dashboard.
 
