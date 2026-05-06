@@ -13,6 +13,7 @@
     "effects",
     "tasks",
     "move_affordances",
+    "delete_affordances",
     "outbound_calls",
     "inbound_calls"
   ],
@@ -27,6 +28,7 @@
     "tasks": { "type": "array", "items": { "$ref": "#/$defs/declarationSummary" } },
     "task": { "type": "object" },
     "move_affordances": { "type": "array", "items": { "$ref": "#/$defs/moveAffordance" } },
+    "delete_affordances": { "type": "array", "items": { "$ref": "#/$defs/deleteAffordance" } },
     "outbound_calls": { "type": "array", "items": { "type": "object" } },
     "inbound_calls": { "type": "array", "items": { "type": "object" } }
   },
@@ -92,6 +94,29 @@
       "properties": {
         "parent": { "type": "string" },
         "max_position": { "type": "integer", "minimum": 0 },
+        "operation": { "type": "object" },
+        "editable_json_pointers": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "deleteAffordance": {
+      "type": "object",
+      "required": [
+        "target",
+        "target_kind",
+        "parent",
+        "position",
+        "operation",
+        "editable_json_pointers"
+      ],
+      "properties": {
+        "target": { "type": "string" },
+        "target_kind": { "enum": ["import", "type", "effect", "task", "statement", "take"] },
+        "parent": { "type": "string" },
+        "position": { "type": "integer", "minimum": 0 },
         "operation": { "type": "object" },
         "editable_json_pointers": {
           "type": "array",

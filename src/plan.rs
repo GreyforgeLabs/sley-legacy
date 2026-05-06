@@ -5,6 +5,7 @@ use crate::Program;
 use crate::ast::{BindingKind, Block, Expr, ExprKind, Statement, StatementKind, TaskDecl};
 use crate::checker::{check_program, has_errors};
 use crate::diagnostics::{Diagnostic, RepairHint};
+use crate::graft::{GraftInput, apply_graft_input};
 use crate::lint::{LintOptions, LintReport, build_lint_report};
 use crate::query::{QueryKind, QueryOptions, QueryReport, QueryTakeSummary, build_query_report};
 use crate::symbols::{slice_symbol_graph, task_fq_name};
@@ -430,6 +431,7 @@ fn build_graft_templates(
         templates.push(delete_task_template(surface));
     }
     templates.extend(graph_slice_move_templates(program, surface));
+    templates.extend(graph_slice_delete_templates(program, surface));
     Ok(templates)
 }
 
@@ -588,6 +590,92 @@ fn graph_slice_move_templates(
         }
     }
     templates
+}
+
+fn graph_slice_delete_templates(
+    program: &Program,
+    surface: &EditPlanTaskSurface,
+) -> Vec<EditPlanGraftTemplate> {
+    let Some(slice) = slice_symbol_graph(program, &surface.id) else {
+        return Vec::new();
+    };
+    let statement_prefix = format!("block:{}", surface.id);
+    let take_prefix = format!("take:{}:", surface.id);
+    slice
+        .delete_affordances
+        .into_iter()
+        .filter(|affordance| {
+            affordance.target.starts_with(&statement_prefix)
+                || affordance.target.starts_with(&take_prefix)
+        })
+        .filter(|affordance| {
+            affordance.target_kind != "statement"
+                || !statement_target_is_return(program, &affordance.target)
+        })
+        .filter(|affordance| delete_affordance_checks(program, &affordance.operation))
+        .map(|affordance| EditPlanGraftTemplate {
+            kind: format!("delete_{}", affordance.target_kind),
+            reason: format!(
+                "delete this {} using checked graph-slice DeleteNode affordance data",
+                affordance.target_kind
+            ),
+            surface: surface.id.clone(),
+            operation: affordance.operation,
+            editable_json_pointers: affordance.editable_json_pointers,
+        })
+        .collect()
+}
+
+fn delete_affordance_checks(program: &Program, operation: &JsonValue) -> bool {
+    let Ok(input) = serde_json::from_value::<GraftInput>(operation.clone()) else {
+        return false;
+    };
+    apply_graft_input(
+        program,
+        input,
+        Some("agent:plan-delete-affordance".to_string()),
+    )
+    .status
+        == "accepted"
+}
+
+fn statement_target_is_return(program: &Program, target: &str) -> bool {
+    program
+        .tasks
+        .iter()
+        .any(|task| block_statement_target_is_return(&task.body, target))
+}
+
+fn block_statement_target_is_return(block: &Block, target: &str) -> bool {
+    block
+        .statements
+        .iter()
+        .any(|statement| statement_target_or_child_is_return(statement, target))
+}
+
+fn statement_target_or_child_is_return(statement: &Statement, target: &str) -> bool {
+    if statement.id == target {
+        return matches!(statement.kind, StatementKind::Return { .. });
+    }
+    match &statement.kind {
+        StatementKind::If {
+            then_block,
+            else_block,
+            ..
+        } => {
+            block_statement_target_is_return(then_block, target)
+                || else_block
+                    .as_ref()
+                    .is_some_and(|block| block_statement_target_is_return(block, target))
+        }
+        StatementKind::While { body, .. }
+        | StatementKind::For { body, .. }
+        | StatementKind::Forge { body } => block_statement_target_is_return(body, target),
+        StatementKind::Binding { .. }
+        | StatementKind::Set { .. }
+        | StatementKind::Return { .. }
+        | StatementKind::Expr { .. } => false,
+    }
 }
 
 fn build_transaction_templates(

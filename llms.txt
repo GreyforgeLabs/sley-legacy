@@ -166,5 +166,9 @@ Current development phase:
   statement, and take `MoveNode` planning, including exact parent ids,
   destination insertion limits, starter operation JSON, and editable JSON
   pointers
+- graph slices expose `delete_affordances` for bounded
+  import/type/effect/task/statement/take `DeleteNode` planning; `sley plan
+  --graft-templates` surfaces checked task-internal `delete_statement` and
+  `delete_take` templates when the starter delete graft validates
 - manifest-backed accepted/rejected synthetic gold corpus growth
 - broader graph-slice graft operations around move/delete planning

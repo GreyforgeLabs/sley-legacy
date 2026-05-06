@@ -630,7 +630,8 @@ graft operation payloads for the highest-ranked task surface, plus JSON
 pointers naming the fields an agent should edit before running
 `sley graft --json --dry-run`; it also consumes the selected task graph slice
 and adds `move_statement`/`move_take` templates plus destination variants from
-checked `move_affordances`.
+checked `move_affordances`, and checked `delete_statement`/`delete_take`
+templates from `delete_affordances` when the starter delete graft validates.
 `--template-surface <task>` selects a specific task surface by task node id or
 qualified task name. For selected tasks with currently resolved inbound callers,
 the report also includes an all-or-nothing `RenameDeclaration` plus
@@ -652,8 +653,12 @@ target, current parent, current position, in-parent maximum position, and
 available destination parents with their insertion limits. Affordances and
 destination entries also carry strict starter `MoveNode` operation JSON plus
 editable JSON pointers so agents can copy a template, adjust
-`/payload/position`, and dry-run the graft. Call-site and expression grafts now
-consume node ids and task identities from this shard.
+`/payload/position`, and dry-run the graft. Graph slices also include
+`delete_affordances` for import, type, effect, task, statement, and take
+`DeleteNode` planning; each delete affordance exposes the exact target, current
+parent, current position, starter operation JSON, and editable pointer list.
+Call-site and expression grafts now consume node ids and task identities from
+this shard.
 
 `sley query` is the first checked graph query report. It parses and checks the
 target before emitting results, so semantic failures return the normal

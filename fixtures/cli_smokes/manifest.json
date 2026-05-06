@@ -137,7 +137,8 @@
           { "pointer": "/imports/0/id", "value": "import:app.main:app.math" },
           { "pointer": "/move_affordances/0/target", "value": "block:task:app.main.main:stmt:0" },
           { "pointer": "/move_affordances/0/operation/op", "value": "MoveNode" },
-          { "pointer": "/move_affordances/1/target_kind", "value": "import" }
+          { "pointer": "/move_affordances/1/target_kind", "value": "import" },
+          { "pointer": "/delete_affordances/0/operation/op", "value": "DeleteNode" }
         ]
       }
     },

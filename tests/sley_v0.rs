@@ -911,6 +911,101 @@ task main -> Int {
 }
 
 #[test]
+fn edit_plan_graft_templates_include_checked_delete_affordances() {
+    let source = r#"
+module app.plan
+
+export task helper -> Int {
+  take unused: Int
+
+  return 1
+}
+
+task main -> Int {
+  bind debug = 1
+  return 42
+}
+"#;
+    let program = parse_program(source).expect("parse delete template fixture");
+    let main_report = build_edit_plan_report_with_options(
+        "app.plan",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("task:app.plan.main".to_string()),
+        },
+    );
+    assert_eq!(main_report.status, "ready");
+    let statement_delete = main_report
+        .graft_templates
+        .iter()
+        .find(|template| {
+            template.kind == "delete_statement"
+                && template.operation.pointer("/target")
+                    == Some(&serde_json::json!("block:task:app.plan.main:stmt:0"))
+        })
+        .expect("checked statement delete template");
+    assert_eq!(
+        statement_delete.operation.pointer("/op"),
+        Some(&serde_json::json!("DeleteNode"))
+    );
+    assert!(statement_delete.editable_json_pointers.is_empty());
+    let statement_graft: GraftInput = serde_json::from_value(statement_delete.operation.clone())
+        .expect("parse statement delete template");
+    let statement_outcome = apply_graft_input(
+        &program,
+        statement_graft,
+        Some("agent:statement-delete-template-test".to_string()),
+    );
+    assert_eq!(
+        statement_outcome.status, "accepted",
+        "{:#?}",
+        statement_outcome.diagnostics
+    );
+    assert!(
+        !main_report.graft_templates.iter().any(|template| {
+            template.kind == "delete_statement"
+                && template.operation.pointer("/target")
+                    == Some(&serde_json::json!("block:task:app.plan.main:stmt:1"))
+        }),
+        "return deletion should be filtered because the checked graft rejects"
+    );
+
+    let helper_report = build_edit_plan_report_with_options(
+        "app.plan",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("task:app.plan.helper".to_string()),
+        },
+    );
+    assert_eq!(helper_report.status, "ready");
+    let take_delete = helper_report
+        .graft_templates
+        .iter()
+        .find(|template| {
+            template.kind == "delete_take"
+                && template.operation.pointer("/target")
+                    == Some(&serde_json::json!("take:task:app.plan.helper:0:unused"))
+        })
+        .expect("checked take delete template");
+    let take_graft: GraftInput =
+        serde_json::from_value(take_delete.operation.clone()).expect("parse take delete template");
+    let take_outcome = apply_graft_input(
+        &program,
+        take_graft,
+        Some("agent:take-delete-template-test".to_string()),
+    );
+    assert_eq!(
+        take_outcome.status, "accepted",
+        "{:#?}",
+        take_outcome.diagnostics
+    );
+}
+
+#[test]
 fn edit_plan_remove_take_transaction_requires_unused_take() {
     let source = r#"
 module app.plan
@@ -5767,6 +5862,34 @@ task main -> Int {
                 && destination.max_position == 1),
         "expected helper take destination, got {take:#?}"
     );
+
+    let delete_take = slice
+        .delete_affordances
+        .iter()
+        .find(|affordance| affordance.target == "take:task:main.main:0:value")
+        .expect("take delete affordance");
+    assert_eq!(delete_take.target_kind, "take");
+    assert_eq!(delete_take.parent, "task:main.main:takes");
+    assert_eq!(delete_take.position, 0);
+    assert_eq!(
+        delete_take.operation.pointer("/op"),
+        Some(&serde_json::json!("DeleteNode"))
+    );
+    assert!(delete_take.editable_json_pointers.is_empty());
+
+    let delete_statement = slice
+        .delete_affordances
+        .iter()
+        .find(|affordance| affordance.target == "block:task:main.main:stmt:1:then:stmt:0")
+        .expect("nested statement delete affordance");
+    assert_eq!(delete_statement.target_kind, "statement");
+    assert_eq!(delete_statement.parent, "block:task:main.main:stmt:1:then");
+    assert_eq!(
+        delete_statement.operation.pointer("/target"),
+        Some(&serde_json::json!(
+            "block:task:main.main:stmt:1:then:stmt:0"
+        ))
+    );
 }
 
 #[test]
@@ -5844,6 +5967,27 @@ task main -> Int {
         serde_json::from_value(destination.operation.clone()).expect("parse module move");
     let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
     assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+
+    let delete_import = slice
+        .delete_affordances
+        .iter()
+        .find(|affordance| affordance.target == "import:app.main:app.extra")
+        .expect("import delete affordance");
+    assert_eq!(delete_import.target_kind, "import");
+    assert_eq!(delete_import.parent, "module:app.main:imports");
+    assert_eq!(
+        delete_import.operation.pointer("/op"),
+        Some(&serde_json::json!("DeleteNode"))
+    );
+
+    let delete_task = slice
+        .delete_affordances
+        .iter()
+        .find(|affordance| affordance.target == "task:app.main.helper")
+        .expect("task delete affordance");
+    assert_eq!(delete_task.target_kind, "task");
+    assert_eq!(delete_task.parent, "module:app.main:tasks");
+    assert_eq!(delete_task.position, 0);
 }
 
 #[test]

@@ -81,6 +81,7 @@ pub struct SymbolGraphSlice {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub task: Option<TaskDecl>,
     pub move_affordances: Vec<MoveNodeAffordance>,
+    pub delete_affordances: Vec<DeleteNodeAffordance>,
     pub outbound_calls: Vec<TaskCallSummary>,
     pub inbound_calls: Vec<TaskCallSummary>,
 }
@@ -123,6 +124,16 @@ pub struct MoveNodeAffordance {
 pub struct MoveNodeDestination {
     pub parent: String,
     pub max_position: usize,
+    pub operation: JsonValue,
+    pub editable_json_pointers: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct DeleteNodeAffordance {
+    pub target: String,
+    pub target_kind: String,
+    pub parent: String,
+    pub position: usize,
     pub operation: JsonValue,
     pub editable_json_pointers: Vec<String>,
 }
@@ -627,6 +638,12 @@ fn build_slice(
             focus_task_index,
             &module_task_indexes,
         ),
+        delete_affordances: build_delete_affordances(
+            program,
+            &focus_module,
+            focus_task_index,
+            &module_task_indexes,
+        ),
         outbound_calls,
         inbound_calls,
     }
@@ -1085,6 +1102,172 @@ fn move_node_operation(
 
 fn move_node_editable_json_pointers() -> Vec<String> {
     vec!["/payload/position".to_string()]
+}
+
+fn build_delete_affordances(
+    program: &Program,
+    focus_module: &str,
+    focus_task_index: Option<usize>,
+    module_task_indexes: &[usize],
+) -> Vec<DeleteNodeAffordance> {
+    let task_indexes = focus_task_index
+        .map(|index| vec![index])
+        .unwrap_or_else(|| module_task_indexes.to_vec());
+    let mut affordances = Vec::new();
+    for task_index in task_indexes {
+        let task = &program.tasks[task_index];
+        collect_take_delete_affordances(task, &mut affordances);
+        collect_statement_delete_affordances(task, &mut affordances);
+    }
+    collect_module_delete_affordances(program, focus_module, &mut affordances);
+    affordances
+}
+
+fn collect_module_delete_affordances(
+    program: &Program,
+    focus_module: &str,
+    affordances: &mut Vec<DeleteNodeAffordance>,
+) {
+    let import_parent = format!("module:{focus_module}:imports");
+    for (position, import) in program
+        .imports
+        .iter()
+        .filter(|import| import_owner_module(import) == focus_module)
+        .enumerate()
+    {
+        push_delete_affordance(affordances, &import.id, "import", &import_parent, position);
+    }
+
+    let type_parent = format!("module:{focus_module}:types");
+    for (position, ty) in program
+        .types
+        .iter()
+        .filter(|ty| type_module(ty) == focus_module)
+        .enumerate()
+    {
+        push_delete_affordance(affordances, &ty.id, "type", &type_parent, position);
+    }
+
+    let effect_parent = format!("module:{focus_module}:effects");
+    for (position, effect) in program
+        .effects
+        .iter()
+        .filter(|effect| effect_module(effect) == focus_module)
+        .enumerate()
+    {
+        push_delete_affordance(affordances, &effect.id, "effect", &effect_parent, position);
+    }
+
+    let task_parent = format!("module:{focus_module}:tasks");
+    for (position, task) in program
+        .tasks
+        .iter()
+        .filter(|task| task_module(task) == focus_module)
+        .enumerate()
+    {
+        push_delete_affordance(affordances, &task.id, "task", &task_parent, position);
+    }
+}
+
+fn collect_take_delete_affordances(task: &TaskDecl, affordances: &mut Vec<DeleteNodeAffordance>) {
+    let parent = format!("{}:takes", task.id);
+    for (position, take) in task.takes.iter().enumerate() {
+        push_delete_affordance(affordances, &take.id, "take", &parent, position);
+    }
+}
+
+fn collect_statement_delete_affordances(
+    task: &TaskDecl,
+    affordances: &mut Vec<DeleteNodeAffordance>,
+) {
+    collect_statement_delete_affordances_in_block(
+        &task.body,
+        &format!("block:{}", task.id),
+        affordances,
+    );
+}
+
+fn collect_statement_delete_affordances_in_block(
+    block: &Block,
+    parent: &str,
+    affordances: &mut Vec<DeleteNodeAffordance>,
+) {
+    for (position, statement) in block.statements.iter().enumerate() {
+        push_delete_affordance(affordances, &statement.id, "statement", parent, position);
+        match &statement.kind {
+            StatementKind::If {
+                then_block,
+                else_block,
+                ..
+            } => {
+                collect_statement_delete_affordances_in_block(
+                    then_block,
+                    &format!("{}:then", statement.id),
+                    affordances,
+                );
+                if let Some(else_block) = else_block {
+                    collect_statement_delete_affordances_in_block(
+                        else_block,
+                        &format!("{}:else", statement.id),
+                        affordances,
+                    );
+                }
+            }
+            StatementKind::While { body, .. } => {
+                collect_statement_delete_affordances_in_block(
+                    body,
+                    &format!("{}:body", statement.id),
+                    affordances,
+                );
+            }
+            StatementKind::For { body, .. } => {
+                collect_statement_delete_affordances_in_block(
+                    body,
+                    &format!("{}:body", statement.id),
+                    affordances,
+                );
+            }
+            StatementKind::Forge { body } => {
+                collect_statement_delete_affordances_in_block(
+                    body,
+                    &format!("{}:forge", statement.id),
+                    affordances,
+                );
+            }
+            StatementKind::Binding { .. }
+            | StatementKind::Set { .. }
+            | StatementKind::Return { .. }
+            | StatementKind::Expr { .. } => {}
+        }
+    }
+}
+
+fn push_delete_affordance(
+    affordances: &mut Vec<DeleteNodeAffordance>,
+    target: &str,
+    target_kind: &str,
+    parent: &str,
+    position: usize,
+) {
+    affordances.push(DeleteNodeAffordance {
+        target: target.to_string(),
+        target_kind: target_kind.to_string(),
+        parent: parent.to_string(),
+        position,
+        operation: delete_node_operation(target),
+        editable_json_pointers: delete_node_editable_json_pointers(),
+    });
+}
+
+fn delete_node_operation(target: &str) -> JsonValue {
+    json!({
+        "op": "DeleteNode",
+        "target": target
+    })
+}
+
+fn delete_node_editable_json_pointers() -> Vec<String> {
+    Vec::new()
 }
 
 fn module_summary(program: &Program, module: &str) -> ModuleSymbolSummary {
