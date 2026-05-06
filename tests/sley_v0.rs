@@ -4077,6 +4077,27 @@ fn diagnostic_schema_is_shared_by_agent_reports() {
 }
 
 #[test]
+fn graph_slice_schema_reuses_strict_graft_operation_affordances() {
+    let schema: serde_json::Value = serde_json::from_str(include_str!(
+        "../docs/schemas/sley.symbol_graph.slice.v0.schema.json"
+    ))
+    .expect("parse graph slice schema");
+    let operation_ref = serde_json::json!("sley.edit_plan.report.v0#/$defs/graftOperation");
+    for pointer in [
+        "/$defs/moveAffordance/properties/operation/$ref",
+        "/$defs/moveDestination/properties/operation/$ref",
+        "/$defs/deleteAffordance/properties/operation/$ref",
+        "/$defs/replaceAffordance/properties/operation/$ref",
+    ] {
+        assert_eq!(
+            schema.pointer(pointer),
+            Some(&operation_ref),
+            "graph slice operation at {pointer} should use the strict graft operation schema"
+        );
+    }
+}
+
+#[test]
 fn edit_plan_schema_covers_strict_graft_template_payloads() {
     let schema: serde_json::Value = serde_json::from_str(include_str!(
         "../docs/schemas/sley.edit_plan.report.v0.schema.json"
