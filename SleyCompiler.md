@@ -251,7 +251,7 @@ Near-term:
    constant-if expression and statement simplification, constant comparison
    simplification, constant arithmetic simplification, absorbing arithmetic
    simplification, constant text concatenation simplification, identity binary
-   expression,
+   expression including empty-text concatenation,
    redundant boolean comparison, absorbing boolean expression,
    self-comparison expression, double negation, negated comparison,
    redundant boolean-if expression and statement cleanup, and same-branch if
@@ -268,7 +268,8 @@ Near-term:
    constant text concatenation simplification, constant list index
    simplification, constant map index simplification, constant record field
    access simplification, constant len simplification, constant not
-   simplification, identity binary simplification,
+   simplification, identity binary simplification including empty-text
+   concatenation cleanup,
    and
    redundant boolean comparison
    simplification, absorbing boolean expression simplification,

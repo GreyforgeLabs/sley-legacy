@@ -220,7 +220,8 @@ Implemented now:
   `delete_empty_forge_statement` templates for no-op `forge { }` starter
   blocks,
   `simplify_identity_binary_expression` templates for identity binary
-  expressions that can be replaced by the non-identity side,
+  expressions, including empty-text concatenation, that can be replaced by the
+  non-identity side,
   `simplify_redundant_boolean_comparison` templates for boolean comparisons
   against `true` or `false`,
   `simplify_absorbing_boolean_expression` templates for absorbing boolean
@@ -728,7 +729,8 @@ constant not expression simplification templates with write/verify coverage,
 empty-if statement delete templates with write/verify coverage,
 empty-for statement delete templates with write/verify coverage,
 empty-forge statement delete templates with write/verify coverage,
-identity binary expression simplification templates with write/verify coverage,
+identity binary expression simplification templates, including empty-text
+concatenation cleanup, with write/verify coverage,
 redundant boolean comparison simplification templates with write/verify
 coverage,
 double negation expression simplification templates with write/verify coverage,

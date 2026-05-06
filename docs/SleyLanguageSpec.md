@@ -880,8 +880,8 @@ statement over a literal empty list preserves a checked program.
 `forge { }` starter block preserves a checked program.
 `identity_binary_expression` lint findings become checked
 `simplify_identity_binary_expression` `ReplaceExpression` templates when
-replacing `x + 0`, `x * 1`, `flag && true`, or `flag || false` with the
-non-identity side preserves a checked program.
+replacing `x + 0`, `x * 1`, `flag && true`, `flag || false`, or empty-text
+concatenation with the non-identity side preserves a checked program.
 `redundant_boolean_comparison` lint findings become checked
 `simplify_redundant_boolean_comparison` `ReplaceExpression` templates when
 replacing comparisons against `true` or `false` with the boolean expression or
@@ -1076,8 +1076,8 @@ can be removed as never-executed code; and
 `empty_forge_statement`, which warns when a no-op `forge { }` statement can be
 removed before readiness or deploy gates; and
 `identity_binary_expression`, which warns when a checked identity
-binary expression such as `x + 0`, `x * 1`, `flag && true`, or `flag || false`
-can be replaced with the non-identity side; and
+binary expression such as `x + 0`, `x * 1`, `flag && true`, `flag || false`,
+`"" + name`, or `name + ""` can be replaced with the non-identity side; and
 `redundant_boolean_comparison`, which warns when a checked comparison against
 `true` or `false` can be replaced with the boolean expression or its negation;
 and `absorbing_boolean_expression`, which warns when a checked
@@ -1243,7 +1243,8 @@ refuse generic data disguised as Sley artifacts before compression begins.
   unreachable statement cleanup templates, and mutable
   binding conversion transactions, constant-if expression and statement
   simplification, constant arithmetic and absorbing arithmetic simplification,
-  identity binary expression, redundant boolean
+  identity binary expression including empty-text concatenation,
+  redundant boolean
   comparison, double negation simplification, negated comparison
   simplification, and redundant boolean-if expression/statement simplification
   templates, plus explicit module style warnings;

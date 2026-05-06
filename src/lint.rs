@@ -2810,6 +2810,9 @@ fn collect_constant_text_concatenation_expressions_in_expr(
 }
 
 fn constant_text_concatenation_expression_replacement(expr: &Expr) -> Option<String> {
+    if identity_binary_expression_replacement(expr).is_some() {
+        return None;
+    }
     let ExprKind::Binary { op, left, right } = &expr.kind else {
         return None;
     };
@@ -4000,6 +4003,8 @@ fn identity_binary_expression_replacement(expr: &Expr) -> Option<&Expr> {
     match op {
         BinaryOp::Add if is_zero_literal(left) => Some(right),
         BinaryOp::Add if is_zero_literal(right) => Some(left),
+        BinaryOp::Add if is_empty_text_literal(left) => Some(right),
+        BinaryOp::Add if is_empty_text_literal(right) => Some(left),
         BinaryOp::Subtract if is_zero_literal(right) => Some(left),
         BinaryOp::Multiply if is_one_literal(left) => Some(right),
         BinaryOp::Multiply if is_one_literal(right) => Some(left),
@@ -4034,6 +4039,10 @@ fn is_true_literal(expr: &Expr) -> bool {
 
 fn is_false_literal(expr: &Expr) -> bool {
     matches!(&expr.kind, ExprKind::BoolLiteral { value: false })
+}
+
+fn is_empty_text_literal(expr: &Expr) -> bool {
+    matches!(&expr.kind, ExprKind::StringLiteral { value } if value.is_empty())
 }
 
 fn is_empty_list_literal(expr: &Expr) -> bool {
