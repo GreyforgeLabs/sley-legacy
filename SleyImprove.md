@@ -220,7 +220,7 @@ Rules:
 - `examples/agent_project` is a packaged multi-module agent deployment starter
   that keeps secret, network, model, and deploy authority explicit across
   imported task boundaries and passes seeded check, lint, run, verify, deploy,
-  and examples conformance gates.
+  examples conformance, and CLI smoke gates.
 - `sley plan` consumes the same checked surfaces into ranked task edit
   surfaces, call-row inspection next-actions, post-edit gate commands, and
   optional starter graft operation templates, rename-plus-call-site
