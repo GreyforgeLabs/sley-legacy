@@ -263,7 +263,8 @@ Near-term:
    deletion, unreachable statement deletion, mutable binding conversion,
    constant-if expression simplification, constant comparison simplification,
    constant arithmetic simplification, constant text concatenation
-   simplification, identity binary simplification, and
+   simplification, constant list index simplification, identity binary
+   simplification, and
    redundant boolean comparison
    simplification, absorbing boolean expression simplification,
    self-comparison expression simplification, double negation

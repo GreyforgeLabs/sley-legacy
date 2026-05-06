@@ -122,6 +122,7 @@ Implemented now:
   `--rule constant-comparison-expression`,
   `--rule constant-arithmetic-expression`,
   `--rule constant-text-concatenation-expression`,
+  `--rule constant-list-index-expression`,
   `--rule empty-if-statement`,
   `--rule empty-for-statement`,
   `--rule empty-forge-statement`,
@@ -192,6 +193,8 @@ Implemented now:
   arithmetic that can be replaced by its result,
   `simplify_constant_text_concatenation_expression` templates for text literal
   concatenation that can be replaced by one text literal,
+  `simplify_constant_list_index_expression` templates for literal list indexes
+  that can be replaced by the indexed scalar literal,
   `delete_empty_if_statement` templates for no-op `if` statements with
   delete-safe conditions and empty branches,
   `delete_empty_for_statement` templates for `for` statements over literal
@@ -693,6 +696,8 @@ constant arithmetic expression simplification templates with write/verify
 coverage,
 constant text concatenation expression simplification templates with
 write/verify coverage,
+constant list index expression simplification templates with write/verify
+coverage,
 empty-if statement delete templates with write/verify coverage,
 empty-for statement delete templates with write/verify coverage,
 empty-forge statement delete templates with write/verify coverage,

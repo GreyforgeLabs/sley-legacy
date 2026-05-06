@@ -191,7 +191,8 @@ Current development phase:
   `constant_false_while_statement`, the constant comparison simplification rule
   `constant_comparison_expression`, the constant arithmetic simplification rule
   `constant_arithmetic_expression`, the constant text concatenation rule
-  `constant_text_concatenation_expression`, the empty-if cleanup rule
+  `constant_text_concatenation_expression`, the constant list index rule
+  `constant_list_index_expression`, the empty-if cleanup rule
   `empty_if_statement`, the empty-for cleanup rule
   `empty_for_statement`, the empty-forge cleanup rule
   `empty_forge_statement`, the identity simplification rule
@@ -257,6 +258,8 @@ Current development phase:
   arithmetic, plus
   `simplify_constant_text_concatenation_expression` templates for text literal
   concatenation, plus
+  `simplify_constant_list_index_expression` templates for literal list indexes,
+  plus
   `simplify_negated_comparison_expression` templates for inverted
   comparisons, plus
   `simplify_constant_if_statement` templates for constant `if` statements with
