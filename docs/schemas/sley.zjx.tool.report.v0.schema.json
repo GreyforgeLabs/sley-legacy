@@ -50,11 +50,11 @@
       ],
       "properties": {
         "path": { "type": "string", "minLength": 1 },
-        "target": { "type": "string" },
-        "format": { "type": "string" },
-        "compression": { "type": "string" },
-        "graph_digest": { "type": "string" },
-        "computed_graph_digest": { "type": "string" },
+        "target": { "type": "string", "minLength": 1 },
+        "format": { "type": "string", "minLength": 1 },
+        "compression": { "type": "string", "minLength": 1 },
+        "graph_digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+        "computed_graph_digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
         "graph_digest_match": { "type": "boolean" },
         "module_count": { "type": "integer", "minimum": 0 },
         "import_count": { "type": "integer", "minimum": 0 },
@@ -70,8 +70,8 @@
       "type": "object",
       "required": ["declared", "computed", "matches"],
       "properties": {
-        "declared": { "type": "string" },
-        "computed": { "type": "string" },
+        "declared": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+        "computed": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
         "matches": { "type": "boolean" }
       },
       "additionalProperties": false
@@ -103,19 +103,19 @@
         "trace_receipt_count_delta": { "type": "integer" },
         "modules_added": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": { "type": "string", "minLength": 1 }
         },
         "modules_removed": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": { "type": "string", "minLength": 1 }
         },
         "tasks_added": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": { "type": "string", "minLength": 1 }
         },
         "tasks_removed": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": { "type": "string", "minLength": 1 }
         }
       },
       "additionalProperties": false
