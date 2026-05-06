@@ -124,6 +124,14 @@
       ]
     },
     {
+      "path": "accepted/module_namespace.sley",
+      "covers": [
+        "language:module-namespace",
+        "language:exported-declarations",
+        "formatter:round-trip"
+      ]
+    },
+    {
       "path": "accepted/pure_main.sley",
       "covers": [
         "language:pure-task-call",
@@ -238,6 +246,16 @@
       "covers": [
         "language:missing-return",
         "diagnostic:MISSING_RETURN"
+      ]
+    },
+    {
+      "path": "rejected/module_namespace_conflict.sley",
+      "covers": [
+        "language:module-namespace",
+        "language:namespace-conflict",
+        "diagnostic:DUPLICATE_EFFECT",
+        "diagnostic:DUPLICATE_TYPE",
+        "diagnostic:DUPLICATE_TASK"
       ]
     },
     {

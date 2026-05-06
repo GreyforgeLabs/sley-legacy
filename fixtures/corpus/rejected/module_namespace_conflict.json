@@ -1,0 +1,7 @@
+{
+  "diagnostics": [
+    "DUPLICATE_EFFECT",
+    "DUPLICATE_TYPE",
+    "DUPLICATE_TASK"
+  ]
+}
