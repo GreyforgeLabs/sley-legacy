@@ -584,6 +584,20 @@ task orphan -> Int {
             warning_file.display().to_string()
         ]))
     );
+    assert_eq!(
+        warnings_json.pointer("/next_actions/2/write_command"),
+        Some(&serde_json::json!([
+            "sley",
+            "fix",
+            "--json",
+            "--kind",
+            "delete_unused_private_task",
+            "--template-surface",
+            "task:app.warning.orphan",
+            "--write",
+            warning_file.display().to_string()
+        ]))
+    );
 
     let denied = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
         .args(["doctor", "--json", "--deny-warnings"])
@@ -3725,6 +3739,23 @@ task main -> Text uses Network {
             "effect-use:task:app.effects.main:0:Network",
             "--dry-run",
             "app.effects"
+        ]
+    );
+    assert_eq!(
+        report.next_actions[2]
+            .write_command
+            .as_ref()
+            .expect("write command"),
+        &vec![
+            "sley".to_string(),
+            "fix".to_string(),
+            "--json".to_string(),
+            "--kind".to_string(),
+            "remove_unused_declared_effect".to_string(),
+            "--template-surface".to_string(),
+            "effect-use:task:app.effects.main:0:Network".to_string(),
+            "--write".to_string(),
+            "app.effects".to_string()
         ]
     );
 
@@ -9415,6 +9446,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:deploy-lint-repair-write-verify",
         "readiness:lint-repair-plan",
         "readiness:lint-repair-preview",
+        "readiness:lint-repair-write-command",
         "readiness:lint-repair-write-verify",
         "readiness:project-lint-repair-write-verify",
         "scaffold:deploy-quickstart",

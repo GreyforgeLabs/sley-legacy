@@ -112,7 +112,8 @@ Implemented now:
 - checked JSON readiness reports with `sley doctor`, consuming strict
   diagnostics plus query and lint summaries, with warning next-actions that
   route agents to `sley plan --json --graft-templates` and, when exactly one
-  checked lint repair exists, a non-mutating `sley fix --dry-run` preview, and
+  checked lint repair exists, a non-mutating `sley fix --dry-run` preview plus
+  an explicit `write_command` for the matching `sley fix --write`, and
   `schema: "sley.doctor.report.v0"` for agent pre-edit gates
 - checked JSON edit-plan reports with `sley plan`, consuming strict
   diagnostics plus query and lint findings into ranked task edit surfaces,
@@ -151,7 +152,8 @@ Implemented now:
   diagnostics, query summaries, lint findings, and deterministic runtime
   execution into `schema: "sley.verify.report.v0"` for CI and pre-deploy gates;
   warning or denied-warning reports point to checked graft-template repair
-  planning and expose a dry-run fix preview when the repair is unambiguous
+  planning and expose a dry-run fix preview plus explicit `write_command` when
+  the repair is unambiguous
 - JSON project scaffold reports with `sley new --json`, `hello` and `deploy`
   templates, relative created-file paths, next-command vectors, typed
   next-action reasons, and
@@ -194,12 +196,13 @@ Implemented now:
   smokes, explicit graft/fix trace receipts, trace seals over non-empty receipt
   chains, ZJX envelopes carrying trace receipts, doctor/verify warning
   next-actions that route to lint repair plans and unambiguous dry-run fix
-  previews, a staged previewed-repair write smoke that proves strict verify
-  readiness afterward, a project-level previewed unused-import repair write
-  followed by strict verify, a generated deploy scaffold repair loop that
-  re-verifies with seeded deploy authority, missing-module checked repair
-  templates with module-name inference, lint-driven fix writes that clear
-  warnings before verify, and seeded host-adapter execution
+  previews with explicit `write_command` vectors, a staged previewed-repair
+  write smoke that proves strict verify readiness afterward, a project-level
+  previewed unused-import repair write followed by strict verify, a generated
+  deploy scaffold repair loop that re-verifies with seeded deploy authority,
+  missing-module checked repair templates with module-name inference,
+  lint-driven fix writes that clear warnings before verify, and seeded
+  host-adapter execution
 - compact agent onboarding pack in `llms.txt`
 
 Project form:

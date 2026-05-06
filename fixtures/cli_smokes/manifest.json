@@ -130,7 +130,8 @@
         "json:sley.lint.report.v0",
         "lint:unused_private_task",
         "readiness:lint-repair-plan",
-        "readiness:lint-repair-preview"
+        "readiness:lint-repair-preview",
+        "readiness:lint-repair-write-command"
       ],
       "expect": {
         "success": false,
@@ -147,7 +148,11 @@
           { "pointer": "/next_actions/2/command/1", "value": "fix" },
           { "pointer": "/next_actions/2/command/4", "value": "delete_unused_private_task" },
           { "pointer": "/next_actions/2/command/6", "value": "task:app.warning.orphan" },
-          { "pointer": "/next_actions/2/command/7", "value": "--dry-run" }
+          { "pointer": "/next_actions/2/command/7", "value": "--dry-run" },
+          { "pointer": "/next_actions/2/write_command/1", "value": "fix" },
+          { "pointer": "/next_actions/2/write_command/4", "value": "delete_unused_private_task" },
+          { "pointer": "/next_actions/2/write_command/6", "value": "task:app.warning.orphan" },
+          { "pointer": "/next_actions/2/write_command/7", "value": "--write" }
         ]
       }
     },
@@ -204,6 +209,7 @@
         "json:sley.lint.report.v0",
         "lint:unused_import",
         "readiness:deploy-lint-repair-write-verify",
+        "readiness:lint-repair-write-command",
         "scaffold:deploy-quickstart"
       ],
       "expect": {
@@ -217,7 +223,11 @@
           { "pointer": "/next_actions/2/command/1", "value": "fix" },
           { "pointer": "/next_actions/2/command/4", "value": "delete_unused_import" },
           { "pointer": "/next_actions/2/command/6", "value": "import:app.main:app.stale" },
-          { "pointer": "/next_actions/2/command/7", "value": "--dry-run" }
+          { "pointer": "/next_actions/2/command/7", "value": "--dry-run" },
+          { "pointer": "/next_actions/2/write_command/1", "value": "fix" },
+          { "pointer": "/next_actions/2/write_command/4", "value": "delete_unused_import" },
+          { "pointer": "/next_actions/2/write_command/6", "value": "import:app.main:app.stale" },
+          { "pointer": "/next_actions/2/write_command/7", "value": "--write" }
         ]
       }
     },
@@ -441,7 +451,8 @@
         "json:sley.lint.report.v0",
         "lint:unused_private_task",
         "readiness:lint-repair-plan",
-        "readiness:lint-repair-preview"
+        "readiness:lint-repair-preview",
+        "readiness:lint-repair-write-command"
       ],
       "expect": {
         "success": true,
@@ -457,7 +468,11 @@
           { "pointer": "/next_actions/2/command/1", "value": "fix" },
           { "pointer": "/next_actions/2/command/4", "value": "delete_unused_private_task" },
           { "pointer": "/next_actions/2/command/6", "value": "task:app.warning.orphan" },
-          { "pointer": "/next_actions/2/command/7", "value": "--dry-run" }
+          { "pointer": "/next_actions/2/command/7", "value": "--dry-run" },
+          { "pointer": "/next_actions/2/write_command/1", "value": "fix" },
+          { "pointer": "/next_actions/2/write_command/4", "value": "delete_unused_private_task" },
+          { "pointer": "/next_actions/2/write_command/6", "value": "task:app.warning.orphan" },
+          { "pointer": "/next_actions/2/write_command/7", "value": "--write" }
         ]
       }
     },
@@ -563,7 +578,8 @@
         "json:sley.query.report.v0",
         "json:sley.lint.report.v0",
         "lint:unused_import",
-        "readiness:project-lint-repair-write-verify"
+        "readiness:project-lint-repair-write-verify",
+        "readiness:lint-repair-write-command"
       ],
       "expect": {
         "success": false,
@@ -576,7 +592,11 @@
           { "pointer": "/next_actions/2/command/1", "value": "fix" },
           { "pointer": "/next_actions/2/command/4", "value": "delete_unused_import" },
           { "pointer": "/next_actions/2/command/6", "value": "import:app.main:app.stale" },
-          { "pointer": "/next_actions/2/command/7", "value": "--dry-run" }
+          { "pointer": "/next_actions/2/command/7", "value": "--dry-run" },
+          { "pointer": "/next_actions/2/write_command/1", "value": "fix" },
+          { "pointer": "/next_actions/2/write_command/4", "value": "delete_unused_import" },
+          { "pointer": "/next_actions/2/write_command/6", "value": "import:app.main:app.stale" },
+          { "pointer": "/next_actions/2/write_command/7", "value": "--write" }
         ]
       }
     },

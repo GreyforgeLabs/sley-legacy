@@ -80,6 +80,8 @@ pub struct VerifyAction {
     pub kind: String,
     pub reason: String,
     pub command: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub write_command: Option<Vec<String>>,
 }
 
 pub fn build_verify_report(
@@ -297,6 +299,7 @@ fn check_actions(target: &str) -> Vec<VerifyAction> {
         kind: "repair_diagnostics".to_string(),
         reason: "strict checking must pass before lint or runtime verification".to_string(),
         command: command(["sley", "check", "--json", target]),
+        write_command: None,
     }]
 }
 
@@ -307,12 +310,14 @@ fn lint_actions(target: &str, checked_repair: Option<&CheckedLintRepair>) -> Vec
             reason: "warning-grade lint findings should be resolved before deployment review"
                 .to_string(),
             command: command(["sley", "lint", "--json", target]),
+            write_command: None,
         },
         VerifyAction {
             kind: "plan_lint_repairs".to_string(),
             reason: "checked graft templates show which lint findings can be repaired structurally"
                 .to_string(),
             command: command(["sley", "plan", "--json", "--graft-templates", target]),
+            write_command: None,
         },
     ];
     if let Some(repair) = checked_repair {
@@ -320,18 +325,20 @@ fn lint_actions(target: &str, checked_repair: Option<&CheckedLintRepair>) -> Vec
             kind: "preview_lint_repair".to_string(),
             reason: "exactly one checked lint repair is available; preview it before writing"
                 .to_string(),
-            command: fix_command(target, repair),
+            command: fix_command(target, repair, false),
+            write_command: Some(fix_command(target, repair, true)),
         });
     }
     actions.push(VerifyAction {
         kind: "inspect_tasks".to_string(),
         reason: "query task and call facts before planning a repair".to_string(),
         command: command(["sley", "query", "--json", "--kind", "tasks", target]),
+        write_command: None,
     });
     actions
 }
 
-fn fix_command(target: &str, repair: &CheckedLintRepair) -> Vec<String> {
+fn fix_command(target: &str, repair: &CheckedLintRepair, write: bool) -> Vec<String> {
     vec![
         "sley".to_string(),
         "fix".to_string(),
@@ -340,7 +347,7 @@ fn fix_command(target: &str, repair: &CheckedLintRepair) -> Vec<String> {
         repair.kind.clone(),
         "--template-surface".to_string(),
         repair.surface.clone(),
-        "--dry-run".to_string(),
+        if write { "--write" } else { "--dry-run" }.to_string(),
         target.to_string(),
     ]
 }
@@ -350,6 +357,7 @@ fn runtime_actions(target: &str) -> Vec<VerifyAction> {
         kind: "repair_runtime_gate".to_string(),
         reason: "rerun with the required deterministic runtime gates and seeds".to_string(),
         command: command(["sley", "run", "--json", target]),
+        write_command: None,
     }]
 }
 
@@ -358,6 +366,7 @@ fn passed_actions(target: &str) -> Vec<VerifyAction> {
         kind: "seal_verified_target".to_string(),
         reason: "create a content-addressed review artifact after verification".to_string(),
         command: command(["sley", "seal", "--json", target]),
+        write_command: None,
     }]
 }
 

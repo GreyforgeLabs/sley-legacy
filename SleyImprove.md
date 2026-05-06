@@ -130,7 +130,8 @@ Rules:
   include `plan_lint_repairs` next-actions that call checked
   `sley plan --json --graft-templates <target>` repair planning, plus
   `preview_lint_repair` dry-run fix commands when exactly one checked lint
-  repair exists.
+  repair exists; those preview actions keep `command` non-mutating and add
+  optional `write_command` vectors for the matching write.
 - `sley new --json` emits typed scaffold `next_actions` plus legacy
   `next_commands`; the deploy starter's generated action sequence is executed
   in integration coverage so first-run check, doctor, query, plan, lint,
@@ -468,9 +469,10 @@ The current smoke manifest covers:
   seeded `verify --json --deny-warnings` readiness
 - doctor/verify warning next-actions that route agents to checked
   `sley plan --json --graft-templates` lint repair plans and unambiguous
-  `sley fix --dry-run` previews, plus a staged write-and-verify smoke for the
-  previewed unused-private-task repair path and a project-level previewed
-  unused-import repair path, including a generated deploy scaffold re-verified
+  `sley fix --dry-run` previews with explicit `write_command` vectors, plus a
+  staged write-and-verify smoke for the previewed unused-private-task repair
+  path and a project-level previewed unused-import repair path, including a
+  generated deploy scaffold re-verified
   with seeded deploy authority
 - lint-driven declaration delete templates, cleanup transactions, and direct
   declaration surface targeting in edit-plan reports

@@ -639,7 +639,8 @@ It reports `ready`, `warnings`, or `blocked`; includes source schema references
 for the consumed query and lint surfaces; and gives next-command vectors for
 inspection, lint gates, checked `sley plan --json --graft-templates` repair
 planning when lint findings exist, non-mutating `sley fix --dry-run` previews
-when exactly one checked lint repair exists, and entrypoint runs.
+when exactly one checked lint repair exists, explicit optional `write_command`
+vectors for the matching `sley fix --write`, and entrypoint runs.
 `--deny-warnings` treats lint findings as blocked while still printing the
 versioned report.
 
@@ -879,11 +880,13 @@ archive.
 - `sley verify` emits a deterministic CI/pre-deploy report over strict check,
   query/lint summaries, and runtime execution; warning and denied-warning
   reports route agents to checked lint repair planning and dry-run fix previews
-  before deployment review when the repair is unambiguous. The CLI smoke suite
-  locks previewed lint-repair writes followed by strict verify for file and
-  project targets, plus a repaired generated deploy scaffold re-verified with
-  seeded `Deploy` authority and a strict seeded deploy verify report for the
-  generated `sley new --template deploy` starter, while live
+  before deployment review when the repair is unambiguous; preview actions keep
+  `command` dry-run and add optional `write_command` for the mutating command.
+  The CLI smoke suite locks previewed lint-repair writes followed by strict
+  verify for file and project targets, plus a repaired generated deploy
+  scaffold re-verified with seeded `Deploy` authority and a strict seeded
+  deploy verify report for the generated `sley new --template deploy` starter,
+  while live
   deploy/provider calls remain outside v0
 - no `match`, agent declarations, spawn/cast/join, or compressed ZJX archive
   writer yet

@@ -116,6 +116,11 @@
           "type": "array",
           "minItems": 1,
           "items": { "type": "string" }
+        },
+        "write_command": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
         }
       },
       "additionalProperties": false

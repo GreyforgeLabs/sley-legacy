@@ -69,10 +69,11 @@ Current verified surface:
   `sley verify --json --deny-warnings` readiness smoke for the generated
   deploy project and warning-state doctor/verify next-actions that route to
   `sley plan --json --graft-templates` plus unambiguous
-  `sley fix --dry-run` previews with a staged write-and-verify smoke for a
-  previewed repair plus a project-level previewed unused-import write-and-verify
-  smoke and a generated deploy scaffold repair loop re-verified with seeded
-  deploy authority, and checked `unchecked_result` migration templates that
+  `sley fix --dry-run` previews carrying explicit `write_command` vectors with
+  a staged write-and-verify smoke for a previewed repair plus a project-level
+  previewed unused-import write-and-verify smoke and a generated deploy
+  scaffold repair loop re-verified with seeded deploy authority, and checked
+  `unchecked_result` migration templates that
   turn discarded `Result` expression statements into explicit `?` propagation
   when valid, plus checked `unused_import` and
   `unused_private_task` delete templates, fix dry runs, and a write-mode
