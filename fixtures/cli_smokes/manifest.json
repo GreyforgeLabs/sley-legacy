@@ -188,6 +188,136 @@
       }
     },
     {
+      "name": "new_agent_project_json",
+      "cwd": "tmp",
+      "args": [
+        "new",
+        "--json",
+        "--template",
+        "agent",
+        "--name",
+        "agent-bot",
+        "--module",
+        "app.main",
+        "{tmp}/agent-bot"
+      ],
+      "covers": [
+        "cli:new",
+        "json:sley.project.scaffold.v0",
+        "scaffold:agent-quickstart",
+        "scaffold:handoff-actions",
+        "scaffold:next-actions"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.project.scaffold.v0" },
+          { "pointer": "/status", "value": "created" },
+          { "pointer": "/project/name", "value": "agent-bot" },
+          { "pointer": "/project/template", "value": "agent" },
+          { "pointer": "/next_actions/5/kind", "value": "verify_seeded_agent" },
+          { "pointer": "/next_actions/6/kind", "value": "ci_verify_seeded_agent" },
+          { "pointer": "/next_actions/6/command/0", "value": "sley-ci" },
+          { "pointer": "/next_actions/7/kind", "value": "run_seeded_agent" },
+          { "pointer": "/next_actions/9/kind", "value": "package_project" }
+        ]
+      }
+    },
+    {
+      "name": "verify_new_agent_project_json",
+      "args": [
+        "verify",
+        "--json",
+        "--deny-warnings",
+        "--cap",
+        "SecretRead",
+        "--secret",
+        "api_key",
+        "redacted",
+        "--cap",
+        "Network",
+        "--http-text",
+        "https://example.test/profile",
+        "profile ready",
+        "--cap",
+        "ModelCall",
+        "--model-output",
+        "deploy-plan",
+        "plan approved",
+        "--cap",
+        "Deploy",
+        "--deploy-result",
+        "staging",
+        "staged",
+        "{tmp}/agent-bot"
+      ],
+      "covers": [
+        "cli:verify",
+        "json:sley.verify.report.v0",
+        "scaffold:agent-quickstart",
+        "scaffold:verify-ready",
+        "host:SecretRead",
+        "host:Network",
+        "host:ModelCall",
+        "host:Deploy"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.verify.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/summary/runtime_status", "value": "passed" },
+          { "pointer": "/runtime/value/kind", "value": "Ok" },
+          { "pointer": "/runtime/value/value/kind", "value": "Text" },
+          { "pointer": "/runtime/value/value/value", "value": "profile ready | plan approved | staged" }
+        ]
+      }
+    },
+    {
+      "name": "run_new_agent_project_json",
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "SecretRead",
+        "--secret",
+        "api_key",
+        "redacted",
+        "--cap",
+        "Network",
+        "--http-text",
+        "https://example.test/profile",
+        "profile ready",
+        "--cap",
+        "ModelCall",
+        "--model-output",
+        "deploy-plan",
+        "plan approved",
+        "--cap",
+        "Deploy",
+        "--deploy-result",
+        "staging",
+        "staged",
+        "{tmp}/agent-bot"
+      ],
+      "covers": [
+        "cli:run",
+        "scaffold:agent-quickstart",
+        "host:SecretRead",
+        "host:Network",
+        "host:ModelCall",
+        "host:Deploy"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/kind", "value": "Ok" },
+          { "pointer": "/value/kind", "value": "Text" },
+          { "pointer": "/value/value", "value": "profile ready | plan approved | staged" }
+        ]
+      }
+    },
+    {
       "name": "verify_deploy_project_unused_import_preview_repair_json",
       "setup_files": [
         {

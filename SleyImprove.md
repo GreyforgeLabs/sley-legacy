@@ -94,7 +94,7 @@ sley ast --json <target>
 sley ast --json --node <node-id> <target>
 sley graph --json <target>
 sley graph --json --slice <node-id> <target>
-sley new --json [--template hello|deploy] [--name <name>] [--module <module>] <path>
+sley new --json [--template hello|deploy|agent] [--name <name>] [--module <module>] <path>
 sley doctor --json [--deny-warnings] <target>
 sley plan --json [--deny-warnings] [--graft-templates] [--template-surface <surface>] [--emit-graft <kind>] <target>
 sley fix --json --kind <kind> [--template-surface <surface>] [--dry-run|--write] [--trace <trace.jsonl>] <target>
@@ -143,10 +143,10 @@ Rules:
   repair exists; those preview actions keep `command` non-mutating and add
   optional `write_command` vectors for the matching write.
 - `sley new --json` emits typed scaffold `next_actions` plus legacy
-  `next_commands`; the deploy starter's generated action sequence is executed
-  in integration coverage so first-run check, doctor, query, plan, lint,
-  warning-denying verify, run, seal, and ZJX package gates cannot silently
-  drift.
+  `next_commands`; the deploy and agent starters' generated action sequences
+  are executed in integration coverage so first-run check, doctor, query, plan,
+  lint, warning-denying verify, run, seal, ZJX package gates, and the agent
+  starter's `sley-ci verify` handoff cannot silently drift.
 - `sley plan` consumes the same checked surfaces into ranked task edit
   surfaces, call-row inspection next-actions, post-edit gate commands, and
   optional starter graft operation templates, rename-plus-call-site
@@ -489,16 +489,17 @@ The current smoke manifest covers:
   unused-take cleanup can also update resolved callers
 - graph-slice replace affordances and checked `replace_expression` graft
   templates in edit-plan reports
-- deploy scaffold typed next-actions, first-run sequence execution, and strict
-  seeded `verify --json --deny-warnings` readiness, including scaffold-level
-  and passed-verify seal/ZJX handoff next-actions
+- deploy and agent scaffold typed next-actions, first-run sequence execution,
+  and strict seeded `verify --json --deny-warnings` readiness, including
+  scaffold-level and passed-verify seal/ZJX handoff next-actions plus the
+  agent scaffold's `sley-ci verify` handoff
 - doctor/verify warning next-actions that route agents to checked
   `sley plan --json --graft-templates` lint repair plans and unambiguous
   `sley fix --dry-run` previews with explicit `write_command` vectors, plus a
   staged write-and-verify smoke for the previewed unused-private-task repair
-  path and a project-level previewed unused-import repair path, including a
-  generated deploy scaffold re-verified
-  with seeded deploy authority
+  path and a project-level previewed unused-import repair path, including
+  generated deploy and agent scaffold quickstarts re-verified with seeded
+  authority
 - lint-driven declaration delete templates, cleanup transactions, and direct
   declaration surface targeting in edit-plan reports
 - lint-driven missing-module `AddModuleDeclaration` templates, module-name

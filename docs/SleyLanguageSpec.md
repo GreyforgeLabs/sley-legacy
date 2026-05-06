@@ -552,7 +552,7 @@ sley ast --json <target>
 sley ast --json --node task:app.main.main <target>
 sley graph --json <target>
 sley graph --json --slice task:app.main.main <target>
-sley new --json --template deploy --name agent-app agent-app
+sley new --json --template agent --name agent-app agent-app
 sley doctor --json <target>
 sley plan --json [--graft-templates] [--template-surface <surface>] [--emit-graft <kind>] <target>
 sley fix --json --kind <kind> [--template-surface <surface>] [--dry-run|--write] [--trace <trace.jsonl>] <target>
@@ -652,7 +652,7 @@ writes, write-mode fix trace receipts, non-empty trace receipt seals, ZJX
 envelopes carrying graph digests and schema-backed trace receipts, graph-slice
 replace affordances, checked
 `replace_expression` graft templates, lint-driven fix writes that clear
-warnings before verify, typed deploy scaffold next-actions, and
+warnings before verify, typed deploy and agent scaffold next-actions, and
 seeded host-adapter
 execution for `FileRead`, `FileWrite`, `DatabaseRead`, `DatabaseWrite`,
 `Network`, `Shell`, `ModelCall`, `SecretRead`, `Deploy`, and `Spend`.
@@ -662,12 +662,17 @@ execution for `FileRead`, `FileWrite`, `DatabaseRead`, `DatabaseWrite`,
 paths when they already exist. `--template hello` creates a pure starter.
 `--template deploy` creates a deterministic `Deploy`-gated starter that runs
 with a seeded `deploy.try_stage` result and does not call providers or mutate
-infrastructure. `--json` emits the scaffold report with relative file paths
-exact next-command vectors, and typed next-action reasons under
-`sley.project.scaffold.v0`. The deploy scaffold's generated next actions are
-the checked first-run sequence: strict check, doctor readiness, task query,
-edit plan, lint gate, seeded deploy verification with denied warnings, seeded
-deploy run, seal, and ZJX package.
+infrastructure. `--template agent` creates a deterministic agentic starter that
+uses seeded `secrets.try_get`, `http.try_get_text`, `model.try_complete`, and
+`deploy.try_stage` calls under explicit `SecretRead`, `Network`, `ModelCall`,
+and `Deploy` gates without reading real secret stores, calling live networks or
+model providers, or mutating deployment infrastructure. `--json` emits the
+scaffold report with relative file paths, exact next-command vectors, and typed
+next-action reasons under `sley.project.scaffold.v0`. The deploy and agent
+scaffolds' generated next actions are checked first-run sequences: strict
+check, doctor readiness, task query, edit plan, lint gate, seeded verification
+with denied warnings, seeded run, seal, and ZJX package. The agent scaffold
+also includes a `sley-ci verify` next action over the same deterministic seeds.
 
 `sley doctor` is the first deterministic helper that consumes the strict
 checker plus checked query and lint reports into one agent readiness report.
@@ -937,8 +942,10 @@ refuse generic data disguised as Sley artifacts before compression begins.
   verify for file and project targets, plus a repaired generated deploy
   scaffold re-verified with seeded `Deploy` authority and a strict seeded
   deploy verify report for the generated `sley new --template deploy` starter,
-  including passed-verify next-actions for `sley seal --json` and
-  `sley zjx --json` handoff artifacts, while live
+  plus a seeded SecretRead/Network/ModelCall/Deploy verify report for the
+  generated `sley new --template agent` starter, including passed-verify
+  next-actions for `sley seal --json` and `sley zjx --json` handoff artifacts,
+  while live
   deploy/provider calls remain outside v0
 - no `match`, agent declarations, spawn/cast/join, or compressed ZJX archive
   writer yet

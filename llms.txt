@@ -12,7 +12,7 @@ cargo run -- ast --json <file-or-project>
 cargo run -- ast --json --node <node-id> <file-or-project>
 cargo run -- graph --json <file-or-project>
 cargo run -- graph --json --slice <node-id> <file-or-project>
-cargo run -- new --json --template deploy --name agent-app agent-app
+cargo run -- new --json --template agent --name agent-app agent-app
 cargo run -- doctor --json <file-or-project>
 cargo run -- fix --json --kind add_module_declaration --dry-run <file-or-project>
 cargo run -- fix --json --kind delete_unused_private_declarations --dry-run <file-or-project>
@@ -167,10 +167,11 @@ Current development phase:
   `raw_host_adapter`, plus the style rule `missing_module_declaration` and the
   result-safety rule `unchecked_result`
 - `sley new --json` emits `sley.project.scaffold.v0` and creates
-  non-destructive `hello` or deterministic `deploy` starter projects that can
-  immediately run through check, doctor, query, plan, lint, seeded runtime
-  gates with denied warnings, seal, and ZJX handoff packaging; scaffold JSON
-  includes typed `next_actions` plus legacy `next_commands`
+  non-destructive `hello`, deterministic `deploy`, or deterministic `agent`
+  starter projects that can immediately run through check, doctor, query,
+  plan, lint, seeded runtime gates with denied warnings, seal, and ZJX handoff
+  packaging; scaffold JSON includes typed `next_actions` plus legacy
+  `next_commands`
 - `sley doctor --json` emits `sley.doctor.report.v0` and consumes strict
   diagnostics plus checked query/lint summaries into one agent readiness report;
   call-bearing reports include `inspect_calls` next-actions for strict
@@ -182,8 +183,8 @@ Current development phase:
   an explicit `write_command` for the matching `sley fix --write`. CLI smokes
   prove the previewed repair can be written and followed by clean
   `sley verify --json --deny-warnings` for both single-file and multi-file
-  project targets, including a generated deploy scaffold re-verified with
-  seeded `Deploy` authority
+  project targets, including generated deploy and agent scaffold quickstarts
+  re-verified with seeded authority
 - `sley plan --json` emits `sley.edit_plan.report.v0` and consumes strict
   diagnostics plus checked query/lint findings into ranked task edit surfaces,
   graft targets, call-row inspection next-actions, and post-edit gate commands;
@@ -227,7 +228,9 @@ Current development phase:
   diagnostics, checked query/lint summaries, and deterministic runtime
   execution into one CI/pre-deploy gate; the deploy scaffold has a checked
   `--deny-warnings --cap Deploy --deploy-result staging staged` smoke, and
-  denied warning reports route agents to checked lint repair plans plus
+  the agent scaffold has a checked seeded SecretRead/Network/ModelCall/Deploy
+  verify smoke through both `sley verify` and `sley-ci verify`; denied warning
+  reports route agents to checked lint repair plans plus
   dry-run fix previews when the repair is unambiguous before deployment review;
   passed reports point agents to `sley seal --json <target>` and
   `sley zjx --json <target>` for review and handoff artifacts

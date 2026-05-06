@@ -27,8 +27,8 @@ Implemented now:
 - explicit non-mutating `sley graft --dry-run`; plain graft preview remains
   non-mutating unless `--write` is supplied
 - `sley.toml` project manifests for multi-file module graphs
-- non-destructive `sley new` project scaffolding with `hello` and
-  deterministic `deploy` starter templates
+- non-destructive `sley new` project scaffolding with `hello`,
+  deterministic `deploy`, and deterministic `agent` starter templates
 - module, import, type, effect, and task declarations
 - import aliases with `import app.math as math`
 - exported declarations with `export task`, `export type`, and `export effect`
@@ -167,8 +167,8 @@ Implemented now:
   planning and expose a dry-run fix preview plus explicit `write_command` when
   the repair is unambiguous, while passed reports point to `sley seal --json`
   and `sley zjx --json` handoff artifacts
-- JSON project scaffold reports with `sley new --json`, `hello` and `deploy`
-  templates, relative created-file paths, next-command vectors, typed
+- JSON project scaffold reports with `sley new --json`, `hello`, `deploy`,
+  and `agent` templates, relative created-file paths, next-command vectors, typed
   next-action reasons through check, doctor, query, plan, lint, verify, run,
   seal, and ZJX package steps, and
   `schema: "sley.project.scaffold.v0"`
@@ -225,8 +225,8 @@ Implemented now:
   unambiguous dry-run fix previews with explicit
   `write_command` vectors, a staged previewed-repair write smoke that proves
   strict verify readiness afterward, a project-level previewed unused-import
-  repair write followed by strict verify, a generated deploy scaffold repair
-  loop that re-verifies with seeded deploy authority, missing-module checked
+  repair write followed by strict verify, generated deploy and agent scaffold
+  quickstarts that re-verify with seeded authority, missing-module checked
   repair templates with module-name inference, lint-driven fix writes that
   clear warnings before verify, and seeded host-adapter execution
 - compact agent onboarding pack in `llms.txt`
@@ -234,17 +234,17 @@ Implemented now:
 Project form:
 
 ```bash
-sley new --template deploy --name agent-app agent-app
+sley new --template agent --name agent-app agent-app
 cd agent-app
 sley check --json .
 sley doctor --json .
 sley query --json --kind tasks .
 sley plan --json .
 sley lint --json --deny-warnings .
-sley verify --json --deny-warnings --cap Deploy --deploy-result staging staged .
+sley verify --json --deny-warnings --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged .
 sley-ci check --json .
-sley-ci verify --json --deny-warnings --cap Deploy --deploy-result staging staged .
-sley run --json --cap Deploy --deploy-result staging staged .
+sley-ci verify --json --deny-warnings --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged .
+sley run --json --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged .
 sley seal --json .
 sley zjx --json .
 ```
@@ -253,7 +253,10 @@ sley zjx --json .
 source files. `--template hello` creates a pure starter project.
 `--template deploy` creates a deterministic deployment-gated starter that
 uses the seeded `deploy.try_stage` adapter; it does not call deployment
-providers or mutate infrastructure.
+providers or mutate infrastructure. `--template agent` creates a deterministic
+agentic starter that composes seeded secret, network, model, and deploy
+authority through explicit gates; it does not read real secret stores, call live
+networks or model providers, or mutate deployment infrastructure.
 
 ```toml
 [project]
@@ -544,8 +547,9 @@ payloads plus affordances with strict graft operations, doctor readiness,
 call-inspection next-actions,
 verify pre-deploy gates,
 edit-plan surfaces, call-site rename and remove-take/call-arg transaction
-write/query/verify, typed scaffold next-actions for the deploy quickstart,
-strict seeded verify readiness for the generated deploy starter,
+write/query/verify, typed scaffold next-actions for deploy and agent
+quickstarts, strict seeded verify readiness for the generated deploy and agent
+starters,
 scaffold-level seal/ZJX handoff actions,
 temp setup files for write-mode CLI smokes, direct graft write smokes,
 explicit graft/fix write trace receipts, non-empty trace seal receipts,

@@ -15,7 +15,7 @@
         "root": { "type": "string", "minLength": 1 },
         "source_root": { "const": "src" },
         "entry_module": { "type": "string", "minLength": 1 },
-        "template": { "enum": ["hello", "deploy"] }
+        "template": { "enum": ["hello", "deploy", "agent"] }
       },
       "additionalProperties": false
     },

@@ -801,6 +801,7 @@ impl From<CliLintRule> for LintRule {
 enum CliScaffoldTemplate {
     Hello,
     Deploy,
+    Agent,
 }
 
 impl From<CliScaffoldTemplate> for ScaffoldTemplate {
@@ -808,6 +809,7 @@ impl From<CliScaffoldTemplate> for ScaffoldTemplate {
         match template {
             CliScaffoldTemplate::Hello => Self::Hello,
             CliScaffoldTemplate::Deploy => Self::Deploy,
+            CliScaffoldTemplate::Agent => Self::Agent,
         }
     }
 }
