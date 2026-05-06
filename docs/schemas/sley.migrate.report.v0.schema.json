@@ -89,12 +89,12 @@
         "dry_run_command": {
           "type": "array",
           "minItems": 1,
-          "items": { "type": "string" }
+          "items": { "type": "string", "minLength": 1 }
         },
         "write_command": {
           "type": "array",
           "minItems": 1,
-          "items": { "type": "string" }
+          "items": { "type": "string", "minLength": 1 }
         },
         "editable_json_pointers": {
           "type": "array",

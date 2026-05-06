@@ -8616,6 +8616,104 @@ fn deploy_artifact_schemas_pin_handoff_file_roles() {
 }
 
 #[test]
+fn report_command_schemas_pin_nonempty_argv_segments() {
+    let schemas = [
+        (
+            serde_json::from_str::<serde_json::Value>(include_str!(
+                "../docs/schemas/sley.project.scaffold.v0.schema.json"
+            ))
+            .expect("parse project scaffold schema"),
+            vec![
+                "/properties/next_commands/items/items/minLength",
+                "/properties/next_actions/items/properties/command/items/minLength",
+            ],
+        ),
+        (
+            serde_json::from_str::<serde_json::Value>(include_str!(
+                "../docs/schemas/sley.ci.report.v0.schema.json"
+            ))
+            .expect("parse CI report schema"),
+            vec!["/$defs/step/properties/command/items/minLength"],
+        ),
+        (
+            serde_json::from_str::<serde_json::Value>(include_str!(
+                "../docs/schemas/sley.conformance.report.v0.schema.json"
+            ))
+            .expect("parse conformance report schema"),
+            vec!["/$defs/validationRun/properties/command/items/minLength"],
+        ),
+        (
+            serde_json::from_str::<serde_json::Value>(include_str!(
+                "../docs/schemas/sley.doctor.report.v0.schema.json"
+            ))
+            .expect("parse doctor report schema"),
+            vec![
+                "/$defs/action/properties/command/items/minLength",
+                "/$defs/action/properties/write_command/items/minLength",
+            ],
+        ),
+        (
+            serde_json::from_str::<serde_json::Value>(include_str!(
+                "../docs/schemas/sley.verify.report.v0.schema.json"
+            ))
+            .expect("parse verify report schema"),
+            vec![
+                "/$defs/action/properties/command/items/minLength",
+                "/$defs/action/properties/write_command/items/minLength",
+            ],
+        ),
+        (
+            serde_json::from_str::<serde_json::Value>(include_str!(
+                "../docs/schemas/sley.deploy.report.v0.schema.json"
+            ))
+            .expect("parse deploy report schema"),
+            vec!["/$defs/action/properties/command/items/minLength"],
+        ),
+        (
+            serde_json::from_str::<serde_json::Value>(include_str!(
+                "../docs/schemas/sley.migrate.report.v0.schema.json"
+            ))
+            .expect("parse migrate report schema"),
+            vec![
+                "/$defs/migration/properties/dry_run_command/items/minLength",
+                "/$defs/migration/properties/write_command/items/minLength",
+            ],
+        ),
+        (
+            serde_json::from_str::<serde_json::Value>(include_str!(
+                "../docs/schemas/sley.edit_plan.report.v0.schema.json"
+            ))
+            .expect("parse edit plan report schema"),
+            vec!["/$defs/action/properties/command/items/minLength"],
+        ),
+        (
+            serde_json::from_str::<serde_json::Value>(include_str!(
+                "../docs/schemas/sley.agent_bench.report.v0.schema.json"
+            ))
+            .expect("parse agent bench report schema"),
+            vec!["/$defs/step/properties/command/items/minLength"],
+        ),
+        (
+            serde_json::from_str::<serde_json::Value>(include_str!(
+                "../docs/schemas/sley.lsp.fix_preview.v0.schema.json"
+            ))
+            .expect("parse LSP fix preview schema"),
+            vec!["/$defs/dry_run_command/properties/args/items/minLength"],
+        ),
+    ];
+
+    for (schema, pointers) in schemas {
+        for pointer in pointers {
+            assert_eq!(
+                schema.pointer(pointer),
+                Some(&serde_json::json!(1)),
+                "{pointer} should reject empty command segments"
+            );
+        }
+    }
+}
+
+#[test]
 fn contract_utility_inventories_schemas_and_validates_fixtures() {
     let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
@@ -8997,11 +9095,11 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/integration_test_count"),
-        Some(&serde_json::json!(297))
+        Some(&serde_json::json!(298))
     );
     assert_eq!(
         report_json.pointer("/summary/declared_integration_test_count"),
-        Some(&serde_json::json!(297))
+        Some(&serde_json::json!(298))
     );
     assert_eq!(
         report_json.pointer("/summary/test_count_matches_declared"),
@@ -9013,7 +9111,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/tests/integration_test_count"),
-        Some(&serde_json::json!(297))
+        Some(&serde_json::json!(298))
     );
     assert_eq!(
         report_json.pointer("/tests/declared_matches_actual"),
