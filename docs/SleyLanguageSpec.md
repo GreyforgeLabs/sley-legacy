@@ -825,6 +825,10 @@ checked program.
 `simplify_constant_if_statement` `ReplaceStatement` templates when replacing a
 statement-level `if true/false` with its single executing branch statement
 preserves a checked program.
+`constant_false_if_statement` lint findings become checked
+`delete_constant_false_if_statement` `DeleteNode` templates when deleting a
+never-executed `if false` statement without an `else` branch preserves a
+checked program.
 `constant_false_while_statement` lint findings become checked
 `delete_constant_false_while_statement` `DeleteNode` templates when deleting a
 never-executed `while false` statement preserves a checked program.
@@ -1033,7 +1037,9 @@ with `set`; and `constant_if_expression`, which warns when an expression-level
 `if true/false { ... } else { ... }` can be replaced with the branch that
 executes; and `constant_if_statement`, which warns when a statement-level
 `if true/false { ... } else { ... }` can be replaced by its single executing
-branch statement; and `constant_false_while_statement`, which warns when a
+branch statement; and `constant_false_if_statement`, which warns when a
+never-executed `if false { ... }` statement without an `else` branch can be
+deleted; and `constant_false_while_statement`, which warns when a
 `while false { ... }` statement can be removed as never-executed code; and
 `constant_comparison_expression`, which warns when a checked literal comparison
 can be replaced by its boolean result; and
@@ -1096,6 +1102,7 @@ guaranteed `return` in the same block.
 `--rule unused-pure-expression-statement`, or
 `--rule mutable-binding-never-set`, `--rule constant-if-expression`, or
 `--rule constant-if-statement`, or
+`--rule constant-false-if-statement`, or
 `--rule constant-false-while-statement`, or
 `--rule constant-comparison-expression`, or
 `--rule constant-arithmetic-expression`, or
@@ -1220,7 +1227,7 @@ refuse generic data disguised as Sley artifacts before compression begins.
   raw-host-adapter and unchecked-result migration warnings with checked
   propagation templates, unqualified imported-call qualification templates,
   unused pure binding cleanup templates, unused pure expression statement
-  cleanup templates, constant-false while statement cleanup templates,
+  cleanup templates, constant-false if and while statement cleanup templates,
   empty-if statement cleanup templates,
   empty-for statement cleanup templates, empty-forge statement cleanup
   templates, redundant boolean-if statement cleanup templates,
@@ -1247,8 +1254,9 @@ refuse generic data disguised as Sley artifacts before compression begins.
   The CLI smoke suite locks previewed lint-repair writes followed by strict
   verify for file and project targets, including unused pure binding cleanup,
   unused pure expression statement cleanup, constant-false while statement
-  cleanup, constant-if statement simplification, constant arithmetic expression
-  cleanup, constant text concatenation cleanup, constant list index cleanup,
+  cleanup, constant-if statement simplification, constant-false if statement
+  cleanup, constant arithmetic expression cleanup, constant text concatenation
+  cleanup, constant list index cleanup,
   constant map index cleanup, constant record field access cleanup,
   constant len cleanup,
   constant not cleanup,

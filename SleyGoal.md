@@ -40,7 +40,7 @@ Current verified surface:
 
 - `cargo fmt --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 274 tests.
+- Current integration coverage is 276 tests.
 - `sley query --json` emits `schema: "sley.query.report.v0"` and supports
   `--kind all|modules|tasks|types|effects|calls`, `--module <module>`, and
   `--exported`, including strict task/take/type/effect/call row definitions.
@@ -82,6 +82,7 @@ Current verified surface:
   `--rule unused-pure-expression-statement`,
   `--rule mutable-binding-never-set`, `--rule constant-if-expression`,
   `--rule constant-if-statement`,
+  `--rule constant-false-if-statement`,
   `--rule constant-false-while-statement`,
   `--rule constant-comparison-expression`,
   `--rule constant-arithmetic-expression`,
@@ -114,6 +115,7 @@ Current verified surface:
   `unused_pure_expression_statement`, and `mutable_binding_never_set`,
   `constant_if_expression`,
   `constant_if_statement`,
+  `constant_false_if_statement`,
   `constant_false_while_statement`,
   `constant_comparison_expression`,
   `constant_arithmetic_expression`,
@@ -187,6 +189,9 @@ Current verified surface:
   `simplify_constant_if_expression` templates with lint/plan/fix-write/verify
   smoke coverage, plus checked `constant_if_statement` style findings and
   `simplify_constant_if_statement` templates with lint/plan/fix-write/verify
+  smoke coverage, plus checked `constant_false_if_statement` dead-branch
+  findings and `delete_constant_false_if_statement` templates with
+  lint/plan/fix-write/verify
   smoke coverage, plus checked `constant_false_while_statement` dead-loop
   findings and `delete_constant_false_while_statement` templates with
   lint/plan/fix-write/verify
@@ -450,6 +455,7 @@ cargo run -- lint --json --rule unused-pure-expression-statement <target>
 cargo run -- lint --json --rule mutable-binding-never-set <target>
 cargo run -- lint --json --rule constant-if-expression <target>
 cargo run -- lint --json --rule constant-if-statement <target>
+cargo run -- lint --json --rule constant-false-if-statement <target>
 cargo run -- lint --json --rule constant-false-while-statement <target>
 cargo run -- lint --json --rule constant-comparison-expression <target>
 cargo run -- lint --json --rule constant-arithmetic-expression <target>

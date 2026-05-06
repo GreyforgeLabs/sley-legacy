@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.constant_false_if",
+  "filters": {
+    "module": null,
+    "rules": [
+      "constant_false_if_statement"
+    ]
+  },
+  "findings": [
+    {
+      "id": "CONSTANT_FALSE_IF_STATEMENT",
+      "rule": "constant_false_if_statement",
+      "severity": "warning",
+      "message": "task `app.constant_false_if.main` has an if statement with constant `false` condition and no else branch",
+      "node": "block:task:app.constant_false_if.main:stmt:0",
+      "module": "app.constant_false_if",
+      "hint": "delete this never-executed if statement"
+    }
+  ]
+}

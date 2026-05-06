@@ -101,7 +101,7 @@ sley fix --json --kind <kind> [--template-surface <surface>] [--name <name>] [--
 sley verify --json [--deny-warnings] [runtime gates/seeds] <target>
 sley deploy --json --dry-run [--artifacts-dir <dir>] [runtime gates/seeds] <target>
 sley query --json [--kind all|modules|tasks|types|effects|calls] [--module <module>] <target>
-sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter|missing-module-declaration|unchecked-result|unqualified-imported-call|unused-pure-binding|unused-pure-expression-statement|mutable-binding-never-set|constant-if-expression|constant-if-statement|constant-false-while-statement|constant-comparison-expression|constant-arithmetic-expression|constant-text-concatenation-expression|constant-list-index-expression|constant-map-index-expression|constant-record-field-access-expression|constant-len-expression|constant-not-expression|empty-if-statement|empty-for-statement|empty-forge-statement|identity-binary-expression|redundant-boolean-comparison|absorbing-boolean-expression|self-comparison-expression|double-negation-expression|negated-comparison-expression|redundant-boolean-if-expression|redundant-boolean-if-statement|same-branch-if-expression|same-branch-if-statement|unreachable-statement] [--module <module>] <target>
+sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter|missing-module-declaration|unchecked-result|unqualified-imported-call|unused-pure-binding|unused-pure-expression-statement|mutable-binding-never-set|constant-if-expression|constant-if-statement|constant-false-if-statement|constant-false-while-statement|constant-comparison-expression|constant-arithmetic-expression|constant-text-concatenation-expression|constant-list-index-expression|constant-map-index-expression|constant-record-field-access-expression|constant-len-expression|constant-not-expression|empty-if-statement|empty-for-statement|empty-forge-statement|identity-binary-expression|redundant-boolean-comparison|absorbing-boolean-expression|self-comparison-expression|double-negation-expression|negated-comparison-expression|redundant-boolean-if-expression|redundant-boolean-if-statement|same-branch-if-expression|same-branch-if-statement|unreachable-statement] [--module <module>] <target>
 sley-ci lint --json [--deny-warnings] [--rule <rule>] [--module <module>] <target>
 sley-ci doctor --json [--deny-warnings] <target>
 sley-ci plan --json [--deny-warnings] [--graft-templates] [--template-surface <surface>] <target>
@@ -616,6 +616,10 @@ The current smoke manifest covers:
 - constant-if statement style warnings through `constant_if_statement`, plus
   checked `simplify_constant_if_statement` templates that replace a
   statement-level `if true/false` with its single executing branch statement
+- constant-false if statement warnings through `constant_false_if_statement`,
+  plus checked `delete_constant_false_if_statement` templates that remove
+  never-executed `if false { ... }` statements without `else` branches through
+  lint/plan/fix-write/verify CLI smoke coverage
 - constant-false while statement warnings through
   `constant_false_while_statement`, plus checked
   `delete_constant_false_while_statement` templates that remove never-executed
@@ -803,6 +807,9 @@ The v0 lint rules are:
 - `constant_if_statement`: a statement-level `if true/false { ... } else { ... }`
   with one statement in the executing branch is reported so agents can replace
   the whole control-flow wrapper with that checked statement.
+- `constant_false_if_statement`: a statement-level `if false { ... }` without
+  an `else` branch is reported so agents can delete never-executed dead
+  branches without dropping runtime work.
 - `constant_false_while_statement`: a `while false { ... }` statement is
   reported so agents can remove never-executed loop bodies without touching
   authority work that would otherwise run.
@@ -890,6 +897,7 @@ The command supports `--module <module>`, `--rule unused-private-task`,
 `--rule unused-pure-expression-statement`,
 `--rule mutable-binding-never-set`, `--rule constant-if-expression`,
 `--rule constant-if-statement`,
+`--rule constant-false-if-statement`,
 `--rule constant-false-while-statement`,
 `--rule constant-comparison-expression`,
 `--rule constant-arithmetic-expression`,

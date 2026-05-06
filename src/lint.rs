@@ -35,6 +35,7 @@ pub enum LintRule {
     MutableBindingNeverSet,
     ConstantIfExpression,
     ConstantIfStatement,
+    ConstantFalseIfStatement,
     ConstantFalseWhileStatement,
     ConstantComparisonExpression,
     ConstantArithmeticExpression,
@@ -79,6 +80,7 @@ impl LintRule {
             Self::MutableBindingNeverSet,
             Self::ConstantIfExpression,
             Self::ConstantIfStatement,
+            Self::ConstantFalseIfStatement,
             Self::ConstantFalseWhileStatement,
             Self::ConstantComparisonExpression,
             Self::ConstantArithmeticExpression,
@@ -123,6 +125,7 @@ impl LintRule {
             Self::MutableBindingNeverSet => "mutable_binding_never_set",
             Self::ConstantIfExpression => "constant_if_expression",
             Self::ConstantIfStatement => "constant_if_statement",
+            Self::ConstantFalseIfStatement => "constant_false_if_statement",
             Self::ConstantFalseWhileStatement => "constant_false_while_statement",
             Self::ConstantComparisonExpression => "constant_comparison_expression",
             Self::ConstantArithmeticExpression => "constant_arithmetic_expression",
@@ -266,6 +269,12 @@ pub fn build_lint_report(program: &Program, options: LintOptions) -> LintReport 
     }
     if rules.contains(&LintRule::ConstantIfStatement) {
         findings.extend(lint_constant_if_statements(
+            program,
+            options.module.as_deref(),
+        ));
+    }
+    if rules.contains(&LintRule::ConstantFalseIfStatement) {
+        findings.extend(lint_constant_false_if_statements(
             program,
             options.module.as_deref(),
         ));
@@ -1013,6 +1022,18 @@ fn lint_constant_if_statements(program: &Program, module: Option<&str>) -> Vec<L
         .filter(|task| module_matches(module, &task_module(task)))
     {
         collect_constant_if_statements_in_block(task, &task.body, &mut findings);
+    }
+    findings
+}
+
+fn lint_constant_false_if_statements(program: &Program, module: Option<&str>) -> Vec<LintFinding> {
+    let mut findings = Vec::new();
+    for task in program
+        .tasks
+        .iter()
+        .filter(|task| module_matches(module, &task_module(task)))
+    {
+        collect_constant_false_if_statements_in_block(task, &task.body, &mut findings);
     }
     findings
 }
@@ -3940,6 +3961,51 @@ fn collect_constant_if_statements_in_block(
             | StatementKind::For { body, .. }
             | StatementKind::Forge { body } => {
                 collect_constant_if_statements_in_block(task, body, findings);
+            }
+            StatementKind::Binding { .. }
+            | StatementKind::Set { .. }
+            | StatementKind::Return { .. }
+            | StatementKind::Expr { .. } => {}
+        }
+    }
+}
+
+fn collect_constant_false_if_statements_in_block(
+    task: &TaskDecl,
+    block: &Block,
+    findings: &mut Vec<LintFinding>,
+) {
+    for statement in &block.statements {
+        match &statement.kind {
+            StatementKind::If {
+                condition,
+                then_block,
+                else_block,
+            } => {
+                if is_false_literal(condition) && else_block.is_none() {
+                    let task_name = task_fq_name(task);
+                    findings.push(LintFinding {
+                        id: "CONSTANT_FALSE_IF_STATEMENT".to_string(),
+                        rule: LintRule::ConstantFalseIfStatement.as_str().to_string(),
+                        severity: "warning".to_string(),
+                        message: format!(
+                            "task `{task_name}` has an if statement with constant `false` condition and no else branch"
+                        ),
+                        node: statement.id.clone(),
+                        module: task_module(task),
+                        hint: "delete this never-executed if statement".to_string(),
+                    });
+                } else {
+                    collect_constant_false_if_statements_in_block(task, then_block, findings);
+                    if let Some(else_block) = else_block {
+                        collect_constant_false_if_statements_in_block(task, else_block, findings);
+                    }
+                }
+            }
+            StatementKind::While { body, .. }
+            | StatementKind::For { body, .. }
+            | StatementKind::Forge { body } => {
+                collect_constant_false_if_statements_in_block(task, body, findings);
             }
             StatementKind::Binding { .. }
             | StatementKind::Set { .. }

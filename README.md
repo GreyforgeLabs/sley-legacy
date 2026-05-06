@@ -118,6 +118,7 @@ Implemented now:
   `--rule unused-pure-expression-statement`, or
   `--rule mutable-binding-never-set`, `--rule constant-if-expression`,
   `--rule constant-if-statement`,
+  `--rule constant-false-if-statement`,
   `--rule constant-false-while-statement`,
   `--rule constant-comparison-expression`,
   `--rule constant-arithmetic-expression`,
@@ -189,6 +190,8 @@ Implemented now:
   that can be replaced by the branch that executes,
   `simplify_constant_if_statement` templates for constant `if` statements that
   can be replaced by their single executing branch statement,
+  `delete_constant_false_if_statement` templates for never-executed `if false`
+  statements without an `else` branch,
   `delete_constant_false_while_statement` templates for never-executed
   `while false` statements,
   `simplify_constant_comparison_expression` templates for literal comparisons
@@ -701,6 +704,7 @@ unused pure expression statement delete templates with write/verify coverage,
 mutable-binding conversion transactions with write/verify coverage,
 constant-if expression simplification templates with write/verify coverage,
 constant-if statement simplification templates with write/verify coverage,
+constant-false if statement delete templates with write/verify coverage,
 constant-false while statement delete templates with write/verify coverage,
 constant comparison expression simplification templates with write/verify
 coverage,
