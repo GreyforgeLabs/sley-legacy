@@ -1721,6 +1721,36 @@
       }
     },
     {
+      "name": "fix_nested_statement_surface_delete_dry_run_json",
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "delete_statement",
+        "--template-surface",
+        "block:task:app.collections.sum:stmt:2:body:stmt:1",
+        "--dry-run",
+        "examples/collections.sley"
+      ],
+      "covers": [
+        "cli:fix",
+        "graft:templates:statement-surface",
+        "graft:templates:statement-surface-delete",
+        "graft:templates:nested-statement-surface",
+        "json:sley.graft.outcome.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/operation", "value": "DeleteNode" },
+          { "pointer": "/provenance/0/targets/0", "value": "block:task:app.collections.sum:stmt:2:body:stmt:1" },
+          { "pointer": "/provenance/0/targets/1", "value": "statement" }
+        ]
+      }
+    },
+    {
       "name": "fix_expression_surface_replace_dry_run_json",
       "args": [
         "fix",
