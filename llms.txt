@@ -111,6 +111,9 @@ Stable v0 JSON roots:
 
 The graft outcome schema pins accepted provenance records with non-empty
 targets and `result: "accepted"`.
+The ZJX envelope schema pins a recomputable `graph_digest`, references the
+symbol graph and graph slice schemas, and constrains trace receipts to accepted
+provenance records.
 
 Contract references:
 

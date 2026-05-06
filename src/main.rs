@@ -699,10 +699,11 @@ fn run(cli: Cli) -> Result<()> {
                 print_json(&envelope)?;
             } else {
                 println!(
-                    "zjx envelope schema={} format={} compression={} modules={} trace_receipts={}",
+                    "zjx envelope schema={} format={} compression={} graph_digest={} modules={} trace_receipts={}",
                     envelope.schema,
                     envelope.format,
                     envelope.compression,
+                    envelope.graph_digest,
                     envelope.graph.modules.len(),
                     envelope.trace_receipts.len()
                 );

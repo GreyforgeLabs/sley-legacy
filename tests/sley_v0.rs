@@ -26,12 +26,15 @@ use sley::scaffold::{
     PROJECT_SCAFFOLD_SCHEMA, ProjectScaffoldReport, ProjectScaffoldSummary, ScaffoldFile,
     ScaffoldNextAction,
 };
-use sley::symbols::{SYMBOL_GRAPH_SCHEMA, SYMBOL_GRAPH_SLICE_SCHEMA, slice_symbol_graph};
+use sley::symbols::{
+    SYMBOL_GRAPH_SCHEMA, SYMBOL_GRAPH_SLICE_SCHEMA, build_symbol_graph, slice_symbol_graph,
+};
 use sley::trace::{
     TRACE_RECEIPT_SCHEMA, TRACE_SEAL_SCHEMA, TraceReceipt, append_trace_receipt,
-    build_trace_receipt, build_trace_seal, read_trace_receipts,
+    build_trace_receipt, build_trace_seal, content_digest, read_trace_receipts,
 };
 use sley::verify::{VERIFY_REPORT_SCHEMA, build_verify_report};
+use sley::zjx::build_zjx_envelope;
 
 #[derive(Debug, serde::Deserialize)]
 struct CorpusExpectation {
@@ -4069,6 +4072,70 @@ fn graft_outcome_schema_covers_strict_provenance_records() {
             "DeleteNode"
         ]))
     );
+}
+
+#[test]
+fn zjx_envelope_schema_covers_handoff_contract_roots() {
+    let schema: serde_json::Value = serde_json::from_str(include_str!(
+        "../docs/schemas/sley.zjx.envelope.v0.schema.json"
+    ))
+    .expect("parse ZJX envelope schema");
+    assert_eq!(
+        schema.pointer("/required"),
+        Some(&serde_json::json!([
+            "schema",
+            "format",
+            "compression",
+            "target",
+            "graph_digest",
+            "graph"
+        ]))
+    );
+    assert_eq!(
+        schema.pointer("/properties/graph_digest/pattern"),
+        Some(&serde_json::json!("^sha256:[0-9a-f]{64}$"))
+    );
+    assert_eq!(
+        schema.pointer("/properties/graph/$ref"),
+        Some(&serde_json::json!("sley.symbol_graph.v0"))
+    );
+    assert_eq!(
+        schema.pointer("/properties/slice/$ref"),
+        Some(&serde_json::json!("sley.symbol_graph.slice.v0"))
+    );
+    assert_eq!(
+        schema.pointer("/properties/trace_receipts/items/$ref"),
+        Some(&serde_json::json!("#/$defs/traceReceipt"))
+    );
+    assert_eq!(
+        schema.pointer("/$defs/traceReceipt/additionalProperties"),
+        Some(&serde_json::json!(false))
+    );
+    assert_eq!(
+        schema.pointer("/$defs/traceReceipt/properties/schema/const"),
+        Some(&serde_json::json!(TRACE_RECEIPT_SCHEMA))
+    );
+    assert_eq!(
+        schema.pointer("/$defs/traceReceipt/properties/provenance/items/$ref"),
+        Some(&serde_json::json!(
+            "sley.graft.outcome.v0#/$defs/provenanceRecord"
+        ))
+    );
+}
+
+#[test]
+fn zjx_envelope_carries_recomputable_graph_digest() {
+    let program = parse_program(include_str!("../examples/hello.sley")).expect("parse hello");
+    let graph = build_symbol_graph(&program);
+    let graph_bytes = serde_json::to_vec(&graph).expect("serialize graph");
+    let expected_digest = content_digest(&graph_bytes);
+    let envelope = build_zjx_envelope("examples/hello.sley", graph, None, Vec::new());
+
+    assert_eq!(envelope.schema, "sley.zjx.envelope.v0");
+    assert_eq!(envelope.format, "zjx-preview-json");
+    assert_eq!(envelope.compression, "none");
+    assert_eq!(envelope.graph.schema, SYMBOL_GRAPH_SCHEMA);
+    assert_eq!(envelope.graph_digest, expected_digest);
 }
 
 #[test]
@@ -9767,6 +9834,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "json:sley.zjx.envelope.v0",
         "trace:explicit-path",
         "trace:seal-with-receipts",
+        "zjx:graph-digest",
         "zjx:trace-receipts",
     ];
     for tag in required {
