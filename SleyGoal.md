@@ -40,17 +40,19 @@ Current verified surface:
 
 - `cargo fmt --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 163 tests.
+- Current integration coverage is 164 tests.
 - `sley query --json` emits `schema: "sley.query.report.v0"` and supports
   `--kind all|modules|tasks|calls`, `--module <module>`, and `--exported`.
 - `sley lint --json` emits `schema: "sley.lint.report.v0"` and supports
   `--module <module>`, `--rule unused-private-task`,
   `--rule unreachable-private-task`, `--rule unused-declared-effect`,
-  `--rule unused-import`, `--rule unused-take`, `--rule raw-host-adapter`, and
+  `--rule unused-import`, `--rule unused-take`, `--rule unused-private-type`,
+  `--rule unused-private-effect`, `--rule raw-host-adapter`, and
   `--deny-warnings`.
 - The current lint rules are `unused_private_task` and
   `unreachable_private_task`, `unused_declared_effect`, and
-  `unused_import`, `unused_take`, and `raw_host_adapter`.
+  `unused_import`, `unused_take`, `unused_private_type`,
+  `unused_private_effect`, and `raw_host_adapter`.
 - CLI smoke coverage is manifest-backed under
   `fixtures/cli_smokes/manifest.json`, including graph-slice replace
   affordances and checked `replace_expression` graft templates from
@@ -217,6 +219,8 @@ cargo run -- query --json --kind all <target>
 cargo run -- lint --json <target>
 cargo run -- lint --json --rule unused-private-task <target>
 cargo run -- lint --json --rule unreachable-private-task <target>
+cargo run -- lint --json --rule unused-private-type <target>
+cargo run -- lint --json --rule unused-private-effect <target>
 ```
 
 5. If changing runtime authority, test both the authorized and unauthorized

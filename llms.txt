@@ -131,7 +131,9 @@ Current development phase:
   `sley.lint.report.v0`; private-task rules include `unused_private_task` and
   `unreachable_private_task`, the authority hygiene rule
   `unused_declared_effect`, the import hygiene rule `unused_import`, the API
-  hygiene rule `unused_take`, and the migration rule `raw_host_adapter`
+  hygiene rule `unused_take`, the declaration hygiene rules
+  `unused_private_type` and `unused_private_effect`, and the migration rule
+  `raw_host_adapter`
 - `sley new --json` emits `sley.project.scaffold.v0` and creates
   non-destructive `hello` or deterministic `deploy` starter projects that can
   immediately run through check, query, plan, lint, and seeded runtime gates

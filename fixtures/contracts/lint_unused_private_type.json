@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.decls",
+  "filters": {
+    "module": null,
+    "rules": [
+      "unused_private_type"
+    ]
+  },
+  "findings": [
+    {
+      "id": "UNUSED_PRIVATE_TYPE",
+      "rule": "unused_private_type",
+      "severity": "warning",
+      "message": "private type `app.decls.Orphan` is not referenced by any checked task, type, or record literal",
+      "node": "type:app.decls.Orphan",
+      "module": "app.decls",
+      "hint": "use type `Orphan` or delete it"
+    }
+  ]
+}

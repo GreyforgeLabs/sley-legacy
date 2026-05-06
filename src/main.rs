@@ -708,6 +708,8 @@ enum CliLintRule {
     UnusedDeclaredEffect,
     UnusedImport,
     UnusedTake,
+    UnusedPrivateType,
+    UnusedPrivateEffect,
     RawHostAdapter,
 }
 
@@ -719,6 +721,8 @@ impl From<CliLintRule> for LintRule {
             CliLintRule::UnusedDeclaredEffect => Self::UnusedDeclaredEffect,
             CliLintRule::UnusedImport => Self::UnusedImport,
             CliLintRule::UnusedTake => Self::UnusedTake,
+            CliLintRule::UnusedPrivateType => Self::UnusedPrivateType,
+            CliLintRule::UnusedPrivateEffect => Self::UnusedPrivateEffect,
             CliLintRule::RawHostAdapter => Self::RawHostAdapter,
         }
     }

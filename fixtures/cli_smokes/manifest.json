@@ -327,7 +327,9 @@
           { "pointer": "/filters/rules/2", "value": "unused_declared_effect" },
           { "pointer": "/filters/rules/3", "value": "unused_import" },
           { "pointer": "/filters/rules/4", "value": "unused_take" },
-          { "pointer": "/filters/rules/5", "value": "raw_host_adapter" },
+          { "pointer": "/filters/rules/5", "value": "unused_private_type" },
+          { "pointer": "/filters/rules/6", "value": "unused_private_effect" },
+          { "pointer": "/filters/rules/7", "value": "raw_host_adapter" },
           { "pointer": "/findings", "value": [] }
         ]
       }
@@ -370,6 +372,34 @@
           { "pointer": "/schema", "value": "sley.lint.report.v0" },
           { "pointer": "/status", "value": "ok" },
           { "pointer": "/filters/rules/0", "value": "unused_take" },
+          { "pointer": "/findings", "value": [] }
+        ]
+      }
+    },
+    {
+      "name": "lint_unused_private_type_rule_json",
+      "args": ["lint", "--json", "--rule", "unused-private-type", "examples/project"],
+      "covers": ["cli:lint", "lint:unused_private_type", "json:sley.lint.report.v0"],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.lint.report.v0" },
+          { "pointer": "/status", "value": "ok" },
+          { "pointer": "/filters/rules/0", "value": "unused_private_type" },
+          { "pointer": "/findings", "value": [] }
+        ]
+      }
+    },
+    {
+      "name": "lint_unused_private_effect_rule_json",
+      "args": ["lint", "--json", "--rule", "unused-private-effect", "examples/project"],
+      "covers": ["cli:lint", "lint:unused_private_effect", "json:sley.lint.report.v0"],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.lint.report.v0" },
+          { "pointer": "/status", "value": "ok" },
+          { "pointer": "/filters/rules/0", "value": "unused_private_effect" },
           { "pointer": "/findings", "value": [] }
         ]
       }

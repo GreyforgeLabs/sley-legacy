@@ -8,8 +8,9 @@ use crate::ast::{
 use crate::authority::host_effects_for_callee;
 use crate::query::{QueryKind, QueryOptions, build_query_report};
 use crate::symbols::{
-    EffectResolution, TypeResolution, collect_task_calls, import_owner_module, resolve_effect,
-    resolve_type, task_fq_name, task_module, type_module,
+    EffectResolution, TypeResolution, collect_task_calls, effect_fq_name, effect_module,
+    import_owner_module, resolve_effect, resolve_type, task_fq_name, task_module, type_fq_name,
+    type_module,
 };
 
 pub const LINT_REPORT_SCHEMA: &str = "sley.lint.report.v0";
@@ -21,6 +22,8 @@ pub enum LintRule {
     UnusedDeclaredEffect,
     UnusedImport,
     UnusedTake,
+    UnusedPrivateType,
+    UnusedPrivateEffect,
     RawHostAdapter,
 }
 
@@ -32,6 +35,8 @@ impl LintRule {
             Self::UnusedDeclaredEffect,
             Self::UnusedImport,
             Self::UnusedTake,
+            Self::UnusedPrivateType,
+            Self::UnusedPrivateEffect,
             Self::RawHostAdapter,
         ]
     }
@@ -43,6 +48,8 @@ impl LintRule {
             Self::UnusedDeclaredEffect => "unused_declared_effect",
             Self::UnusedImport => "unused_import",
             Self::UnusedTake => "unused_take",
+            Self::UnusedPrivateType => "unused_private_type",
+            Self::UnusedPrivateEffect => "unused_private_effect",
             Self::RawHostAdapter => "raw_host_adapter",
         }
     }
@@ -107,6 +114,18 @@ pub fn build_lint_report(program: &Program, options: LintOptions) -> LintReport 
     }
     if rules.contains(&LintRule::UnusedTake) {
         findings.extend(lint_unused_takes(program, options.module.as_deref()));
+    }
+    if rules.contains(&LintRule::UnusedPrivateType) {
+        findings.extend(lint_unused_private_types(
+            program,
+            options.module.as_deref(),
+        ));
+    }
+    if rules.contains(&LintRule::UnusedPrivateEffect) {
+        findings.extend(lint_unused_private_effects(
+            program,
+            options.module.as_deref(),
+        ));
     }
     if rules.contains(&LintRule::RawHostAdapter) {
         findings.extend(lint_raw_host_adapters(program, options.module.as_deref()));
@@ -334,6 +353,245 @@ fn lint_unused_declared_effects(program: &Program, module: Option<&str>) -> Vec<
 
 fn module_matches(filter: Option<&str>, module: &str) -> bool {
     filter.is_none_or(|filter| filter == module)
+}
+
+fn lint_unused_private_types(program: &Program, module: Option<&str>) -> Vec<LintFinding> {
+    let used_types = collect_used_type_names(program);
+    program
+        .types
+        .iter()
+        .filter(|ty| module_matches(module, &type_module(ty)))
+        .filter(|ty| !ty.exported)
+        .filter(|ty| !used_types.contains(&type_fq_name(ty)))
+        .map(|ty| {
+            let qualified_name = type_fq_name(ty);
+            LintFinding {
+                id: "UNUSED_PRIVATE_TYPE".to_string(),
+                rule: LintRule::UnusedPrivateType.as_str().to_string(),
+                severity: "warning".to_string(),
+                message: format!(
+                    "private type `{qualified_name}` is not referenced by any checked task, type, or record literal"
+                ),
+                node: ty.id.clone(),
+                module: type_module(ty),
+                hint: format!("use type `{}` or delete it", ty.name),
+            }
+        })
+        .collect()
+}
+
+fn lint_unused_private_effects(program: &Program, module: Option<&str>) -> Vec<LintFinding> {
+    let used_effects = collect_used_effect_names(program);
+    program
+        .effects
+        .iter()
+        .filter(|effect| module_matches(module, &effect_module(effect)))
+        .filter(|effect| !effect.exported)
+        .filter(|effect| !used_effects.contains(&effect_fq_name(effect)))
+        .map(|effect| {
+            let qualified_name = effect_fq_name(effect);
+            LintFinding {
+                id: "UNUSED_PRIVATE_EFFECT".to_string(),
+                rule: LintRule::UnusedPrivateEffect.as_str().to_string(),
+                severity: "warning".to_string(),
+                message: format!(
+                    "private effect `{qualified_name}` is not declared by any checked task"
+                ),
+                node: effect.id.clone(),
+                module: effect_module(effect),
+                hint: format!(
+                    "use effect `{}` in a task uses list or delete it",
+                    effect.name
+                ),
+            }
+        })
+        .collect()
+}
+
+fn collect_used_effect_names(program: &Program) -> BTreeSet<String> {
+    let mut used = BTreeSet::new();
+    for task in &program.tasks {
+        let module_name = task_module(task);
+        for effect in &task.effects {
+            if let EffectResolution::Resolved { fq_name, .. } =
+                resolve_effect(program, &module_name, effect)
+            {
+                used.insert(fq_name);
+            }
+        }
+    }
+    used
+}
+
+fn collect_used_type_names(program: &Program) -> BTreeSet<String> {
+    let mut used = BTreeSet::new();
+    for task in &program.tasks {
+        let module_name = task_module(task);
+        for take in &task.takes {
+            collect_type_expr_references(program, &module_name, &take.ty, &mut used, None);
+        }
+        collect_type_expr_references(program, &module_name, &task.return_type, &mut used, None);
+        collect_block_type_references(program, &module_name, &task.body, &mut used);
+    }
+    for ty in &program.types {
+        let module_name = type_module(ty);
+        let skip = type_fq_name(ty);
+        collect_type_expr_references(program, &module_name, &ty.value, &mut used, Some(&skip));
+    }
+    used
+}
+
+fn collect_block_type_references(
+    program: &Program,
+    module: &str,
+    block: &Block,
+    used: &mut BTreeSet<String>,
+) {
+    for statement in &block.statements {
+        collect_statement_type_references(program, module, statement, used);
+    }
+}
+
+fn collect_statement_type_references(
+    program: &Program,
+    module: &str,
+    statement: &Statement,
+    used: &mut BTreeSet<String>,
+) {
+    match &statement.kind {
+        StatementKind::Binding { type_ann, expr, .. } => {
+            if let Some(ty) = type_ann {
+                collect_type_expr_references(program, module, ty, used, None);
+            }
+            collect_expr_type_references(program, module, expr, used);
+        }
+        StatementKind::Set { expr, .. }
+        | StatementKind::Return { expr }
+        | StatementKind::Expr { expr } => collect_expr_type_references(program, module, expr, used),
+        StatementKind::If {
+            condition,
+            then_block,
+            else_block,
+        } => {
+            collect_expr_type_references(program, module, condition, used);
+            collect_block_type_references(program, module, then_block, used);
+            if let Some(else_block) = else_block {
+                collect_block_type_references(program, module, else_block, used);
+            }
+        }
+        StatementKind::While { condition, body } => {
+            collect_expr_type_references(program, module, condition, used);
+            collect_block_type_references(program, module, body, used);
+        }
+        StatementKind::For {
+            collection, body, ..
+        } => {
+            collect_expr_type_references(program, module, collection, used);
+            collect_block_type_references(program, module, body, used);
+        }
+        StatementKind::Forge { body } => collect_block_type_references(program, module, body, used),
+    }
+}
+
+fn collect_expr_type_references(
+    program: &Program,
+    module: &str,
+    expr: &Expr,
+    used: &mut BTreeSet<String>,
+) {
+    match &expr.kind {
+        ExprKind::Unary { expr, .. } | ExprKind::Try { expr } => {
+            collect_expr_type_references(program, module, expr, used);
+        }
+        ExprKind::Binary { left, right, .. } => {
+            collect_expr_type_references(program, module, left, used);
+            collect_expr_type_references(program, module, right, used);
+        }
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
+            collect_expr_type_references(program, module, condition, used);
+            collect_expr_type_references(program, module, then_branch, used);
+            collect_expr_type_references(program, module, else_branch, used);
+        }
+        ExprKind::Call { callee, args } => {
+            collect_expr_type_references(program, module, callee, used);
+            for arg in args {
+                collect_expr_type_references(program, module, arg, used);
+            }
+        }
+        ExprKind::ListLiteral { items } => {
+            for item in items {
+                collect_expr_type_references(program, module, item, used);
+            }
+        }
+        ExprKind::MapLiteral { entries } => {
+            for entry in entries {
+                collect_expr_type_references(program, module, &entry.key, used);
+                collect_expr_type_references(program, module, &entry.value, used);
+            }
+        }
+        ExprKind::Index { collection, index } => {
+            collect_expr_type_references(program, module, collection, used);
+            collect_expr_type_references(program, module, index, used);
+        }
+        ExprKind::FieldAccess { receiver, .. } => {
+            collect_expr_type_references(program, module, receiver, used);
+        }
+        ExprKind::RecordLiteral { type_name, fields } => {
+            if let Some(type_name) = type_name {
+                collect_type_name_reference(program, module, type_name, used, None);
+            }
+            for field in fields {
+                collect_expr_type_references(program, module, &field.expr, used);
+            }
+        }
+        ExprKind::Raw { .. }
+        | ExprKind::StringLiteral { .. }
+        | ExprKind::IntLiteral { .. }
+        | ExprKind::FloatLiteral { .. }
+        | ExprKind::BoolLiteral { .. }
+        | ExprKind::Identifier { .. } => {}
+    }
+}
+
+fn collect_type_expr_references(
+    program: &Program,
+    module: &str,
+    ty: &TypeExpr,
+    used: &mut BTreeSet<String>,
+    skip: Option<&str>,
+) {
+    match ty {
+        TypeExpr::Named { name } => collect_type_name_reference(program, module, name, used, skip),
+        TypeExpr::Generic { name, args } => {
+            collect_type_name_reference(program, module, name, used, skip);
+            for arg in args {
+                collect_type_expr_references(program, module, arg, used, skip);
+            }
+        }
+        TypeExpr::Record { fields } => {
+            for field in fields {
+                collect_type_expr_references(program, module, &field.ty, used, skip);
+            }
+        }
+    }
+}
+
+fn collect_type_name_reference(
+    program: &Program,
+    module: &str,
+    name: &str,
+    used: &mut BTreeSet<String>,
+    skip: Option<&str>,
+) {
+    if let TypeResolution::Resolved { fq_name, .. } = resolve_type(program, module, name)
+        && Some(fq_name.as_str()) != skip
+    {
+        used.insert(fq_name);
+    }
 }
 
 fn lint_unused_takes(program: &Program, module: Option<&str>) -> Vec<LintFinding> {

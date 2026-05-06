@@ -22,6 +22,8 @@
               "unused_declared_effect",
               "unused_import",
               "unused_take",
+              "unused_private_type",
+              "unused_private_effect",
               "raw_host_adapter"
             ]
           },
@@ -51,6 +53,8 @@
               "UNUSED_DECLARED_EFFECT",
               "UNUSED_IMPORT",
               "UNUSED_TAKE",
+              "UNUSED_PRIVATE_TYPE",
+              "UNUSED_PRIVATE_EFFECT",
               "RAW_HOST_ADAPTER"
             ]
           },
@@ -61,6 +65,8 @@
               "unused_declared_effect",
               "unused_import",
               "unused_take",
+              "unused_private_type",
+              "unused_private_effect",
               "raw_host_adapter"
             ]
           },

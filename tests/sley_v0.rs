@@ -2262,6 +2262,54 @@ task helper -> Int {
         include_str!("../fixtures/contracts/lint_unused_take.json"),
     );
 
+    let unused_type_effect_source = r#"
+module app.decls
+
+type Used = {
+  slot name: Text
+}
+
+type Orphan = {
+  slot id: Int
+}
+
+export type Public = {
+  slot value: Text
+}
+
+effect UsedEffect
+effect OrphanEffect
+export effect PublicEffect
+
+task main -> Used uses UsedEffect {
+  return Used { name: "Ada" }
+}
+"#;
+    let unused_type_effect_program =
+        parse_program(unused_type_effect_source).expect("parse unused declarations fixture");
+    let unused_type_lint = build_lint_report(
+        &unused_type_effect_program,
+        LintOptions {
+            rules: vec![LintRule::UnusedPrivateType],
+            module: None,
+        },
+    );
+    assert_json_snapshot(
+        &unused_type_lint,
+        include_str!("../fixtures/contracts/lint_unused_private_type.json"),
+    );
+    let unused_effect_lint = build_lint_report(
+        &unused_type_effect_program,
+        LintOptions {
+            rules: vec![LintRule::UnusedPrivateEffect],
+            module: None,
+        },
+    );
+    assert_json_snapshot(
+        &unused_effect_lint,
+        include_str!("../fixtures/contracts/lint_unused_private_effect.json"),
+    );
+
     let hello_source = include_str!("../examples/hello.sley");
     let hello_program = parse_program(hello_source).expect("parse hello fixture");
     let seal = build_trace_seal(
@@ -6467,6 +6515,74 @@ task helper -> Int uses FileRead {
 }
 
 #[test]
+fn lint_report_flags_unused_private_types_and_effects() {
+    let source = r#"
+module app.decls
+
+type Used = {
+  slot name: Text
+}
+
+type Orphan = {
+  slot id: Int
+}
+
+export type Public = {
+  slot value: Text
+}
+
+effect UsedEffect
+effect OrphanEffect
+export effect PublicEffect
+
+task main -> Used uses UsedEffect {
+  return Used { name: "Ada" }
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+
+    let type_report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::UnusedPrivateType],
+            module: None,
+        },
+    );
+    assert_eq!(type_report.schema, LINT_REPORT_SCHEMA);
+    assert_eq!(type_report.status, "findings");
+    assert_eq!(type_report.filters.rules, vec!["unused_private_type"]);
+    assert_eq!(type_report.findings.len(), 1);
+    assert_eq!(type_report.findings[0].id, "UNUSED_PRIVATE_TYPE");
+    assert_eq!(type_report.findings[0].rule, "unused_private_type");
+    assert_eq!(type_report.findings[0].node, "type:app.decls.Orphan");
+    assert_eq!(type_report.findings[0].module, "app.decls");
+
+    let effect_report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::UnusedPrivateEffect],
+            module: None,
+        },
+    );
+    assert_eq!(effect_report.schema, LINT_REPORT_SCHEMA);
+    assert_eq!(effect_report.status, "findings");
+    assert_eq!(effect_report.filters.rules, vec!["unused_private_effect"]);
+    assert_eq!(effect_report.findings.len(), 1);
+    assert_eq!(effect_report.findings[0].id, "UNUSED_PRIVATE_EFFECT");
+    assert_eq!(effect_report.findings[0].rule, "unused_private_effect");
+    assert_eq!(
+        effect_report.findings[0].node,
+        "effect:app.decls.OrphanEffect"
+    );
+    assert_eq!(effect_report.findings[0].module, "app.decls");
+}
+
+#[test]
 fn trace_receipts_round_trip_as_jsonl() {
     let root = temp_project_dir("trace-round-trip");
     let trace_path = root.join(".sley/trace.jsonl");
@@ -7564,6 +7680,8 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "lint:unused_declared_effect",
         "lint:unused_import",
         "lint:unused_take",
+        "lint:unused_private_type",
+        "lint:unused_private_effect",
         "lint:raw_host_adapter",
         "host:DatabaseRead",
         "host:DatabaseWrite",

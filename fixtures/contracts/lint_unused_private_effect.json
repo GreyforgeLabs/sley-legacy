@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.decls",
+  "filters": {
+    "module": null,
+    "rules": [
+      "unused_private_effect"
+    ]
+  },
+  "findings": [
+    {
+      "id": "UNUSED_PRIVATE_EFFECT",
+      "rule": "unused_private_effect",
+      "severity": "warning",
+      "message": "private effect `app.decls.OrphanEffect` is not declared by any checked task",
+      "node": "effect:app.decls.OrphanEffect",
+      "module": "app.decls",
+      "hint": "use effect `OrphanEffect` in a task uses list or delete it"
+    }
+  ]
+}

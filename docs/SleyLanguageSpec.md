@@ -691,14 +691,17 @@ tasks rather than from `main` or an exported task; and
 direct host call or resolved called-task effect justifies; `unused_import`,
 which warns when an import is not needed by any checked task, type, or effect;
 `unused_take`, which warns when a normal task take is never read by the task
-body; and `raw_host_adapter`, which warns on legacy diagnostic-failing host
-calls that should move to fallible `try_` adapters. `--module <module>` scopes
-the lint to one module. `--rule unused-private-task`,
+body; `unused_private_type`, which warns when a non-exported type is not
+referenced by any checked task, type, or record literal;
+`unused_private_effect`, which warns when a non-exported effect is not declared
+by any checked task; and `raw_host_adapter`, which warns on legacy
+diagnostic-failing host calls that should move to fallible `try_` adapters.
+`--module <module>` scopes the lint to one module. `--rule unused-private-task`,
 `--rule unreachable-private-task`, `--rule unused-declared-effect`,
-`--rule unused-import`, `--rule unused-take`, or `--rule raw-host-adapter`
-selects one rule explicitly, and `--deny-warnings` turns findings into a
-nonzero CLI exit after printing the report. The v0 JSON root is
-`sley.lint.report.v0`.
+`--rule unused-import`, `--rule unused-take`, `--rule unused-private-type`,
+`--rule unused-private-effect`, or `--rule raw-host-adapter` selects one rule
+explicitly, and `--deny-warnings` turns findings into a nonzero CLI exit after
+printing the report. The v0 JSON root is `sley.lint.report.v0`.
 
 Diagnostics include machine-readable repair hints for common checker failures
 and selected graft planning failures. Hints are intentionally small and
@@ -788,8 +791,9 @@ archive.
 - the AST JSON Schema covers nested AST and expression variants; the remaining
   JSON Schema files are still narrower v0 root contracts
 - `sley lint` currently ships warning-grade private-task graph rules, authority
-  hygiene for unused declared effects, import/API hygiene, and raw-host-adapter
-  migration warnings; broader style and migration lints remain later work
+  hygiene for unused declared effects, private declaration/import/API hygiene,
+  and raw-host-adapter migration warnings; broader style and migration lints
+  remain later work
 - `sley plan` emits deterministic ranked task edit surfaces, optional starter
   graft operation templates, rename-plus-call-site and add-take-plus-call-arg
   transaction templates, safe remove-take-plus-call-arg transaction templates
