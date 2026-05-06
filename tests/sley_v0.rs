@@ -14052,6 +14052,7 @@ task main -> Int {
   set count = 2
   set count = count
   set count = 3
+  set count = count + 1
   set count = [1, 2][0]
   set count = 4
   if count > 1 {
@@ -14090,9 +14091,10 @@ task main -> Int {
         .map(|finding| finding.node.as_str())
         .collect();
     assert!(nodes.contains(&"block:task:app.overwritten_set.main:stmt:1"));
-    assert!(nodes.contains(&"block:task:app.overwritten_set.main:stmt:7:then:stmt:0"));
+    assert!(nodes.contains(&"block:task:app.overwritten_set.main:stmt:8:then:stmt:0"));
     assert!(!nodes.contains(&"block:task:app.overwritten_set.main:stmt:3"));
-    assert!(!nodes.contains(&"block:task:app.overwritten_set.main:stmt:5"));
+    assert!(!nodes.contains(&"block:task:app.overwritten_set.main:stmt:4"));
+    assert!(!nodes.contains(&"block:task:app.overwritten_set.main:stmt:6"));
     assert_eq!(report.findings[0].module, "app.overwritten_set");
     assert!(
         report.findings[0]
