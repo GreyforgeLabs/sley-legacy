@@ -140,8 +140,9 @@ Current development phase:
   add-take-plus-call-arg transactions for the highest-ranked task surface, plus
   safe remove-take-plus-call-arg transactions when an unused take can be proven;
   selected task graph-slice move affordances are surfaced as extra
-  `move_statement`/`move_take` templates, or `--template-surface <task>` can
-  target a specific task id or qualified name
+  `move_statement`/`move_take` templates plus destination variants when legal
+  graph-slice destinations exist, or `--template-surface <task>` can target a
+  specific task id or qualified name
 - graft call-argument edits are structural: use `UpdateCallArgs` to insert,
   `ReplaceCallArg` to replace, and `RemoveCallArg` to remove checked caller
   arguments by task target plus optional `from`/`scope`

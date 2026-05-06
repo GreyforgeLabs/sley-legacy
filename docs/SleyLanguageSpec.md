@@ -629,7 +629,8 @@ treats lint findings as blocked while still printing
 graft operation payloads for the highest-ranked task surface, plus JSON
 pointers naming the fields an agent should edit before running
 `sley graft --json --dry-run`; it also consumes the selected task graph slice
-and adds `move_statement`/`move_take` templates from checked `move_affordances`.
+and adds `move_statement`/`move_take` templates plus destination variants from
+checked `move_affordances`.
 `--template-surface <task>` selects a specific task surface by task node id or
 qualified task name. For selected tasks with currently resolved inbound callers,
 the report also includes an all-or-nothing `RenameDeclaration` plus

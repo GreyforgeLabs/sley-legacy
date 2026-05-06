@@ -799,6 +799,118 @@ task helper -> Int {
 }
 
 #[test]
+fn edit_plan_graft_templates_include_move_destinations() {
+    let source = r#"
+module app.plan
+
+export task helper -> Int {
+  take unused: Int
+
+  return 1
+}
+
+task main -> Int {
+  tally total = 1
+  if true {
+    set total = total + 1
+  }
+  return total
+}
+"#;
+    let program = parse_program(source).expect("parse destination template fixture");
+    let main_report = build_edit_plan_report_with_options(
+        "app.plan",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("task:app.plan.main".to_string()),
+        },
+    );
+    assert_eq!(main_report.status, "ready");
+    let statement_destination = main_report
+        .graft_templates
+        .iter()
+        .find(|template| {
+            template.kind == "move_statement_destination"
+                && template.operation.pointer("/target")
+                    == Some(&serde_json::json!(
+                        "block:task:app.plan.main:stmt:1:then:stmt:0"
+                    ))
+                && template.operation.pointer("/payload/destination")
+                    == Some(&serde_json::json!("block:task:app.plan.main"))
+        })
+        .expect("statement destination template");
+    assert_eq!(
+        statement_destination.operation.pointer("/payload/parent"),
+        Some(&serde_json::json!("block:task:app.plan.main:stmt:1:then"))
+    );
+    assert_eq!(
+        statement_destination.operation.pointer("/payload/position"),
+        Some(&serde_json::json!(3))
+    );
+    assert_eq!(
+        statement_destination.editable_json_pointers,
+        vec!["/payload/position".to_string()]
+    );
+    let statement_graft: GraftInput =
+        serde_json::from_value(statement_destination.operation.clone())
+            .expect("parse statement destination template");
+    let statement_outcome = apply_graft_input(
+        &program,
+        statement_graft,
+        Some("agent:statement-destination-template-test".to_string()),
+    );
+    assert_eq!(
+        statement_outcome.status, "accepted",
+        "{:#?}",
+        statement_outcome.diagnostics
+    );
+
+    let helper_report = build_edit_plan_report_with_options(
+        "app.plan",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("task:app.plan.helper".to_string()),
+        },
+    );
+    assert_eq!(helper_report.status, "ready");
+    let take_destination = helper_report
+        .graft_templates
+        .iter()
+        .find(|template| {
+            template.kind == "move_take_destination"
+                && template.operation.pointer("/target")
+                    == Some(&serde_json::json!("take:task:app.plan.helper:0:unused"))
+                && template.operation.pointer("/payload/destination")
+                    == Some(&serde_json::json!("task:app.plan.main:takes"))
+        })
+        .expect("take destination template");
+    assert_eq!(
+        take_destination.operation.pointer("/payload/parent"),
+        Some(&serde_json::json!("task:app.plan.helper:takes"))
+    );
+    assert_eq!(
+        take_destination.operation.pointer("/payload/position"),
+        Some(&serde_json::json!(0))
+    );
+    let take_graft: GraftInput = serde_json::from_value(take_destination.operation.clone())
+        .expect("parse take destination template");
+    let take_outcome = apply_graft_input(
+        &program,
+        take_graft,
+        Some("agent:take-destination-template-test".to_string()),
+    );
+    assert_eq!(
+        take_outcome.status, "accepted",
+        "{:#?}",
+        take_outcome.diagnostics
+    );
+}
+
+#[test]
 fn edit_plan_remove_take_transaction_requires_unused_take() {
     let source = r#"
 module app.plan

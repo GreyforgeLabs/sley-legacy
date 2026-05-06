@@ -560,24 +560,34 @@ fn graph_slice_move_templates(
     };
     let statement_prefix = format!("block:{}", surface.id);
     let take_prefix = format!("take:{}:", surface.id);
-    slice
-        .move_affordances
-        .into_iter()
-        .filter(|affordance| {
-            affordance.target.starts_with(&statement_prefix)
-                || affordance.target.starts_with(&take_prefix)
-        })
-        .map(|affordance| EditPlanGraftTemplate {
-            kind: format!("move_{}", affordance.target_kind),
+    let mut templates = Vec::new();
+    for affordance in slice.move_affordances.into_iter().filter(|affordance| {
+        affordance.target.starts_with(&statement_prefix)
+            || affordance.target.starts_with(&take_prefix)
+    }) {
+        let target_kind = affordance.target_kind.clone();
+        templates.push(EditPlanGraftTemplate {
+            kind: format!("move_{target_kind}"),
             reason: format!(
-                "move or reorder this {} using graph-slice MoveNode affordance data",
-                affordance.target_kind
+                "move or reorder this {target_kind} using graph-slice MoveNode affordance data"
             ),
             surface: surface.id.clone(),
             operation: affordance.operation,
             editable_json_pointers: affordance.editable_json_pointers,
-        })
-        .collect()
+        });
+        for destination in affordance.destinations {
+            templates.push(EditPlanGraftTemplate {
+                kind: format!("move_{target_kind}_destination"),
+                reason: format!(
+                    "move this {target_kind} into a graph-slice destination parent using MoveNode affordance data"
+                ),
+                surface: surface.id.clone(),
+                operation: destination.operation,
+                editable_json_pointers: destination.editable_json_pointers,
+            });
+        }
+    }
+    templates
 }
 
 fn build_transaction_templates(
