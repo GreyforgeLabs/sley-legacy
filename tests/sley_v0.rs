@@ -6371,7 +6371,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(56))
+        Some(&serde_json::json!(57))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -6648,6 +6648,10 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     assert_eq!(
         check_json.pointer("/steps/1/stdout_schema"),
         Some(&serde_json::json!("sley.lint.report.v0"))
+    );
+    assert_json_snapshot(
+        &check_json,
+        include_str!("../fixtures/contracts/ci_check_project_ready.json"),
     );
 
     let lint = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
