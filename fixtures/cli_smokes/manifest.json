@@ -1117,6 +1117,98 @@
       }
     },
     {
+      "name": "plan_program_surface_declaration_templates_json",
+      "args": [
+        "plan",
+        "--json",
+        "--graft-templates",
+        "--template-surface",
+        "program",
+        "examples/project"
+      ],
+      "covers": [
+        "cli:plan",
+        "graft:templates",
+        "graft:templates:program-surface-declarations",
+        "json:sley.edit_plan.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.edit_plan.report.v0" },
+          { "pointer": "/graft_templates/0/kind", "value": "add_task" },
+          { "pointer": "/graft_templates/0/surface", "value": "program" },
+          { "pointer": "/graft_templates/0/operation/op", "value": "AddTask" },
+          { "pointer": "/graft_templates/0/operation/payload/source", "value": "module app.main\n\ntask new_task -> Int {\n  return 0\n}" },
+          { "pointer": "/graft_templates/0/editable_json_pointers/0", "value": "/payload/source" },
+          { "pointer": "/graft_templates/1/kind", "value": "add_type_declaration" },
+          { "pointer": "/graft_templates/1/operation/op", "value": "AddTypeDeclaration" },
+          { "pointer": "/graft_templates/1/operation/payload/source", "value": "module app.main\n\ntype NewRecord = {\n  slot value: Text\n}" },
+          { "pointer": "/graft_templates/2/kind", "value": "add_effect_declaration" },
+          { "pointer": "/graft_templates/2/operation/op", "value": "AddEffectDeclaration" },
+          { "pointer": "/graft_templates/2/operation/payload/name", "value": "NewEffect" },
+          { "pointer": "/graft_templates/2/editable_json_pointers/0", "value": "/payload/name" }
+        ]
+      }
+    },
+    {
+      "name": "plan_program_surface_emit_add_task_graft_json",
+      "args": [
+        "plan",
+        "--json",
+        "--graft-templates",
+        "--template-surface",
+        "program",
+        "--emit-graft",
+        "add_task",
+        "examples/project"
+      ],
+      "covers": [
+        "cli:plan",
+        "cli:plan-emit-graft",
+        "graft:templates:program-surface-declarations",
+        "graft:templates:add-task"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/op", "value": "AddTask" },
+          { "pointer": "/payload/source", "value": "module app.main\n\ntask new_task -> Int {\n  return 0\n}" }
+        ]
+      }
+    },
+    {
+      "name": "fix_program_surface_add_task_dry_run_json",
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "add_task",
+        "--template-surface",
+        "program",
+        "--source",
+        "module app.main\n\ntask helper -> Int {\n  return 7\n}",
+        "--dry-run",
+        "examples/project"
+      ],
+      "covers": [
+        "cli:fix",
+        "fix:payload-override-source",
+        "graft:templates:program-surface-declarations",
+        "graft:templates:add-task",
+        "json:sley.graft.outcome.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_contains": ["task helper"],
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/operation", "value": "AddTask" }
+        ]
+      }
+    },
+    {
       "name": "plan_declaration_hygiene_graft_templates_json",
       "args": ["plan", "--json", "--graft-templates", "examples/declaration_hygiene.sley"],
       "covers": [

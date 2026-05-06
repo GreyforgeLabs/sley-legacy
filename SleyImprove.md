@@ -181,8 +181,9 @@ Rules:
   starter, a statement node id for direct checked graph-slice move/delete and
   `replace_statement` templates, a take node id for direct checked graph-slice
   move/delete templates, an expression node id for a checked no-op
-  `replace_expression` starter, the `program` missing-module surface, or a lint
-  finding node id. Agents can use `--emit-graft <kind>` to print
+  `replace_expression` starter, the `program` surface for checked declaration
+  starters, the `program` missing-module surface, or a lint finding node id.
+  Agents can use `--emit-graft <kind>` to print
   one matching operation or transaction JSON directly for dry-run or write-mode
   `sley graft`.
 - `sley fix` consumes the same plan templates, selects one named operation or
@@ -316,10 +317,11 @@ Minimum useful graft operations:
 - `MoveNode`
 - `DeleteNode`
 
-`AddModuleDeclaration`, `RemoveTaskEffect`, `UpdateCallSites`,
-`UpdateCallArgs`, `ReplaceCallArg`, `RemoveCallArg`, `InsertStatement`,
-`ReplaceStatement`, `ReplaceExpression`, `DeleteNode`, and `MoveNode` are now
-implemented for the v0 in-memory checked program.
+`AddModuleDeclaration`, `AddTask`, `AddTypeDeclaration`,
+`AddEffectDeclaration`, `RemoveTaskEffect`, `UpdateCallSites`, `UpdateCallArgs`,
+`ReplaceCallArg`, `RemoveCallArg`, `InsertStatement`, `ReplaceStatement`,
+`ReplaceExpression`, `DeleteNode`, and `MoveNode` are now implemented for the
+v0 in-memory checked program.
 `AddModuleDeclaration` turns module-less source into an explicit module and is
 surfaced through `sley plan --graft-templates`/`sley fix` for
 `missing_module_declaration`; the starter module name comes from the target
@@ -355,6 +357,11 @@ affordances for whole task-local statement replacement and `ReplaceExpression`
 affordances for task-local expression replacement; `sley plan
 --graft-templates` filters selected task-internal delete, statement replace,
 and expression replace templates through the checker before surfacing them.
+`sley plan --graft-templates --template-surface program` now emits checked
+`add_task`, `add_type_declaration`, and `add_effect_declaration` starters so
+agents can add new declarations without hand-authoring graft JSON; `sley fix`
+can execute the source-backed declaration starters with `--source` or
+`--source-file`.
 
 The important rule is not that all operations exist immediately. The important
 rule is that unsupported operations reject cleanly with explicit diagnostics.
@@ -519,6 +526,9 @@ The current smoke manifest covers:
 - graph-slice insert and replace affordances plus checked `insert_statement`,
   `replace_statement`, and `replace_expression` graft templates in edit-plan
   reports
+- program-surface declaration templates for checked `add_task`,
+  `add_type_declaration`, and `add_effect_declaration` starters, plus
+  `add_task` emission and dry-run fix execution with a source override
 - checked `sley fix --source`, `--source-file`, and `--position` payload
   overrides for single-operation templates, including unsupported override
   diagnostics

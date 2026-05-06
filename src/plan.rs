@@ -13,7 +13,7 @@ use crate::lint::{
     raw_host_adapter_replacement,
 };
 use crate::query::{QueryKind, QueryOptions, QueryReport, QueryTakeSummary, build_query_report};
-use crate::symbols::{slice_symbol_graph, task_fq_name};
+use crate::symbols::{slice_symbol_graph, task_fq_name, task_module, type_module};
 
 pub const EDIT_PLAN_REPORT_SCHEMA: &str = "sley.edit_plan.report.v0";
 
@@ -493,6 +493,9 @@ fn build_graft_templates(
             .collect::<Vec<_>>();
         if !requested_lint_templates.is_empty() {
             return Ok(requested_lint_templates);
+        }
+        if requested_surface == "program" {
+            return Ok(program_surface_declaration_templates(program));
         }
         if let Some(template) = expression_surface_replace_template(program, requested_surface) {
             return Ok(vec![template]);
@@ -1281,15 +1284,125 @@ fn select_template_surface<'a>(
             Diagnostic::error(
                 "PLAN_SURFACE_NOT_FOUND",
                 format!(
-                    "plan surface `{requested_surface}` was not found; use a task id, qualified task name, block node id, statement node id, take node id, expression node id, or lint finding node"
+                    "plan surface `{requested_surface}` was not found; use `program`, a task id, qualified task name, block node id, statement node id, take node id, expression node id, or lint finding node"
                 ),
             )
             .with_node(requested_surface)
             .with_repair_hint(
                 RepairHint::new("inspect_task_surfaces")
-                    .with_replacement("Run `sley ast --json <target>` or `sley plan --json <target>` and choose a block, statement, take, or expression node id, task_surfaces id, task qualified_name, or lint.findings node"),
+                    .with_replacement("Run `sley ast --json <target>` or `sley plan --json <target>` and choose `program`, a block, statement, take, or expression node id, task_surfaces id, task qualified_name, or lint.findings node"),
             )
         })
+}
+
+fn program_surface_declaration_templates(program: &Program) -> Vec<EditPlanGraftTemplate> {
+    [
+        add_task_declaration_template(program),
+        add_type_declaration_template(program),
+        add_effect_declaration_template(program),
+    ]
+    .into_iter()
+    .flatten()
+    .collect()
+}
+
+fn add_task_declaration_template(program: &Program) -> Option<EditPlanGraftTemplate> {
+    let module = program.module_name();
+    let name = unique_name(
+        "new_task",
+        program
+            .tasks
+            .iter()
+            .filter(|task| task_module(task) == module)
+            .map(|task| task.name.as_str()),
+    );
+    let source = format!("module {module}\n\ntask {name} -> Int {{\n  return 0\n}}");
+    let operation = json!({
+        "op": "AddTask",
+        "payload": {
+            "source": source
+        }
+    });
+    if !graft_operation_checks(program, &operation, Some("agent:plan-add-task")) {
+        return None;
+    }
+    Some(EditPlanGraftTemplate {
+        kind: "add_task".to_string(),
+        reason: "add a checked task declaration to the current program module".to_string(),
+        surface: "program".to_string(),
+        operation,
+        editable_json_pointers: vec!["/payload/source".to_string()],
+    })
+}
+
+fn add_type_declaration_template(program: &Program) -> Option<EditPlanGraftTemplate> {
+    let module = program.module_name();
+    let name = unique_name(
+        "NewRecord",
+        program
+            .types
+            .iter()
+            .filter(|ty| type_module(ty) == module)
+            .map(|ty| ty.name.as_str()),
+    );
+    let source = format!("module {module}\n\ntype {name} = {{\n  slot value: Text\n}}");
+    let operation = json!({
+        "op": "AddTypeDeclaration",
+        "payload": {
+            "source": source
+        }
+    });
+    if !graft_operation_checks(program, &operation, Some("agent:plan-add-type-declaration")) {
+        return None;
+    }
+    Some(EditPlanGraftTemplate {
+        kind: "add_type_declaration".to_string(),
+        reason: "add a checked record type declaration to the current program module".to_string(),
+        surface: "program".to_string(),
+        operation,
+        editable_json_pointers: vec!["/payload/source".to_string()],
+    })
+}
+
+fn add_effect_declaration_template(program: &Program) -> Option<EditPlanGraftTemplate> {
+    let name = unique_name(
+        "NewEffect",
+        program.effects.iter().map(|effect| effect.name.as_str()),
+    );
+    let operation = json!({
+        "op": "AddEffectDeclaration",
+        "payload": {
+            "name": name
+        }
+    });
+    if !graft_operation_checks(
+        program,
+        &operation,
+        Some("agent:plan-add-effect-declaration"),
+    ) {
+        return None;
+    }
+    Some(EditPlanGraftTemplate {
+        kind: "add_effect_declaration".to_string(),
+        reason: "add a checked effect declaration to the current program module".to_string(),
+        surface: "program".to_string(),
+        operation,
+        editable_json_pointers: vec!["/payload/name".to_string()],
+    })
+}
+
+fn unique_name<'a>(base: &str, existing: impl Iterator<Item = &'a str>) -> String {
+    let existing = existing.collect::<Vec<_>>();
+    if !existing.contains(&base) {
+        return base.to_string();
+    }
+    for index in 2.. {
+        let candidate = format!("{base}{index}");
+        if !existing.iter().any(|name| *name == candidate) {
+            return candidate;
+        }
+    }
+    unreachable!("unbounded unique name search should return")
 }
 
 fn replace_task_body_template(surface: &EditPlanTaskSurface) -> EditPlanGraftTemplate {

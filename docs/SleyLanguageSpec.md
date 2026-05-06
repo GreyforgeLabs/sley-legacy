@@ -669,8 +669,9 @@ writes, write-mode fix trace receipts, non-empty trace receipt seals, ZJX
 envelopes carrying graph digests and schema-backed trace receipts, graph-slice
 insert and replace affordances, checked `insert_statement`,
 `replace_statement`, and `replace_expression` graft templates, lint-driven fix
-writes that clear warnings before verify, deploy dry-run reports, typed deploy and agent
-scaffold next-actions, and
+writes that clear warnings before verify, program-surface declaration template
+planning and `add_task` dry-run fixes, deploy dry-run reports, typed deploy and
+agent scaffold next-actions, and
 seeded host-adapter
 execution for `FileRead`, `FileWrite`, `DatabaseRead`, `DatabaseWrite`,
 `Network`, `Shell`, `ModelCall`, `SecretRead`, `Deploy`, and `Spend`.
@@ -778,13 +779,17 @@ still passes.
 `unused_pure_binding` lint findings become checked
 `delete_unused_pure_binding` `DeleteNode` templates when deleting the unread
 binding statement preserves a checked program.
+`--template-surface program` emits checked `add_task`,
+`add_type_declaration`, and `add_effect_declaration` starters for adding new
+declarations to the current program module.
 `--template-surface <surface>` selects a specific task surface by task node id
 or qualified task name, a block node id backed by graph-slice insert
 affordances, a statement node id for direct checked graph-slice move/delete and
 `replace_statement` templates, a take node id for direct checked graph-slice
 move/delete templates, an expression node id for a checked no-op
-`replace_expression` starter template, the `program` missing-module surface,
-or a lint surface by lint finding node id such as `import:app.main:app.stale`,
+`replace_expression` starter template, the `program` declaration and
+missing-module surface, or a lint surface by lint finding node id such as
+`import:app.main:app.stale`,
 `type:app.module.Name`, or `effect:app.module.Name`. For selected tasks with
 currently resolved inbound callers, the report also includes an
 all-or-nothing `RenameDeclaration` plus `UpdateCallSites` transaction template
@@ -800,8 +805,9 @@ guessing.
 builds checked plan graft templates internally, selects exactly one named
 operation or transaction, applies it through the same graft checker, and emits
 the normal `sley.graft.outcome.v0` root. Exact block, statement, take, and
-expression node surfaces can be selected with `--template-surface` and executed
-without hand-authoring graft JSON. Single-operation templates can also accept
+expression node surfaces, plus the `program` declaration surface, can be
+selected with `--template-surface` and executed without hand-authoring graft
+JSON. Single-operation templates can also accept
 `--source <source>`, `--source-file <path>`, and `--position <n>` overrides
 when their editable payload fields expose `/payload/source` or
 `/payload/position`; unsupported overrides reject with

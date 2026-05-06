@@ -159,8 +159,9 @@ Implemented now:
   be alias- or module-qualified,
   `--template-surface <surface>` targeting for task, block, statement, take,
   expression, program, or lint surfaces, including checked task-body and block
-  `insert_statement` starters plus checked statement-surface
-  `replace_statement` starters, `--emit-graft <kind>` for direct
+  `insert_statement` starters, checked statement-surface `replace_statement`
+  starters, and checked program-surface `add_task`, `add_type_declaration`,
+  and `add_effect_declaration` starters, `--emit-graft <kind>` for direct
   operation/transaction JSON handoff to `sley graft`, and
   `schema: "sley.edit_plan.report.v0"`
 - checked JSON fix previews with `sley fix --kind <kind>`, consuming the same
@@ -249,7 +250,8 @@ Implemented now:
   strict verify readiness afterward, a project-level previewed unused-import
   repair write followed by strict verify, generated deploy and agent scaffold
   quickstarts that re-verify with seeded authority, statement-surface
-  `replace_statement` planning and fix dry runs, missing-module checked
+  `replace_statement` planning and fix dry runs, program-surface declaration
+  planning and `add_task` fix dry runs, missing-module checked
   repair templates with module-name inference, lint-driven fix writes that
   clear warnings before verify, and seeded host-adapter execution
 - compact agent onboarding pack in `llms.txt`
