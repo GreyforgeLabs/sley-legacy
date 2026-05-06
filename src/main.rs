@@ -399,20 +399,48 @@ fn run(cli: Cli) -> Result<()> {
                 Err(diagnostics) => emit_diagnostics_and_fail(diagnostics, json),
             }
         }
-        Command::Ast {
-            json: _json,
-            node,
-            file,
-        } => {
+        Command::Ast { json, node, file } => {
             let program = load_target_program_or_fail(&file)?;
             if let Some(node) = node {
-                if let Some(task_index) = program.find_task_index(&node) {
-                    print_json(&program.tasks[task_index])?;
+                if let Some(report) = program.ast_node_report(&node) {
+                    if json {
+                        print_json(&report)?;
+                    } else {
+                        println!(
+                            "schema={} id={} kind={} module={} parent={}",
+                            report.schema,
+                            report.id,
+                            report.node_kind,
+                            report.module,
+                            report.parent.as_deref().unwrap_or("-")
+                        );
+                    }
                     return Ok(());
                 }
-                anyhow::bail!("node `{node}` was not found");
+                return emit_diagnostics_and_fail(
+                    vec![
+                        Diagnostic::error(
+                            "AST_NODE_NOT_FOUND",
+                            format!("AST node `{node}` was not found in {}", file.display()),
+                        )
+                        .with_node(node),
+                    ],
+                    json,
+                );
             }
-            print_json(&program)?;
+            if json {
+                print_json(&program)?;
+            } else {
+                println!(
+                    "schema={} module={} imports={} types={} effects={} tasks={}",
+                    program.schema,
+                    program.module_name(),
+                    program.imports.len(),
+                    program.types.len(),
+                    program.effects.len(),
+                    program.tasks.len()
+                );
+            }
             Ok(())
         }
         Command::Graph { json, slice, file } => {

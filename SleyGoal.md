@@ -40,7 +40,7 @@ Current verified surface:
 
 - `cargo fmt --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 199 tests.
+- Current integration coverage is 200 tests.
 - `sley query --json` emits `schema: "sley.query.report.v0"` and supports
   `--kind all|modules|tasks|types|effects|calls`, `--module <module>`, and
   `--exported`, including strict task/take/type/effect/call row definitions.
@@ -126,12 +126,13 @@ Current verified surface:
   `sley seal --trace <path>` plus `sley zjx --trace <path>` over non-empty
   receipt chains with recomputable graph digests while
   `sley fix --dry-run --trace <path>` remains non-mutating.
-- Stable JSON roots now include query reports, lint reports, doctor reports,
-  edit-plan reports, verify reports, deploy dry-run reports, deploy artifact
-  manifests, deploy artifact check reports, project scaffold reports, `sley-ci`
-  reports, `sley-contract` utility reports, and the CLI smoke manifest in
-  addition to AST, diagnostics, graph, graph slice, trace receipt, trace seal,
-  graft outcome, and ZJX envelope roots. The edit-plan schema now pins strict
+- Stable JSON roots now include bounded AST node reports, query reports, lint
+  reports, doctor reports, edit-plan reports, verify reports, deploy dry-run
+  reports, deploy artifact manifests, deploy artifact check reports, project
+  scaffold reports, `sley-ci` reports, `sley-contract` utility reports, and
+  the CLI smoke manifest in addition to AST program, diagnostics, graph, graph
+  slice, trace receipt, trace seal, graft outcome, and ZJX envelope roots. The
+  edit-plan schema now pins strict
   graft operation and transaction template envelopes,
   the query schema now exposes strict task/take/type/effect/call row
   definitions,
