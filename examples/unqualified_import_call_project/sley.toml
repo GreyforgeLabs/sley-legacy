@@ -1,0 +1,4 @@
+[project]
+name = "unqualified-import-call-demo"
+root = "src"
+entry = "app.main"

@@ -55,7 +55,8 @@
         "unused_private_effect",
         "raw_host_adapter",
         "missing_module_declaration",
-        "unchecked_result"
+        "unchecked_result",
+        "unqualified_imported_call"
       ],
       "finding_count": 0,
       "findings": []

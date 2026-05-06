@@ -1760,6 +1760,7 @@
           { "pointer": "/filters/rules/7", "value": "raw_host_adapter" },
           { "pointer": "/filters/rules/8", "value": "missing_module_declaration" },
           { "pointer": "/filters/rules/9", "value": "unchecked_result" },
+          { "pointer": "/filters/rules/10", "value": "unqualified_imported_call" },
           { "pointer": "/findings", "value": [] }
         ]
       }
@@ -1934,6 +1935,85 @@
           { "pointer": "/graft_templates/0/surface", "value": "block:task:app.unchecked.main:stmt:0:expr" },
           { "pointer": "/graft_templates/0/operation/op", "value": "ReplaceExpression" },
           { "pointer": "/graft_templates/0/operation/payload/source", "value": "fs.try_write_text(\"sley_cli_smoke.txt\", \"written\")?" }
+        ]
+      }
+    },
+    {
+      "name": "lint_unqualified_imported_call_rule_json",
+      "args": [
+        "lint",
+        "--json",
+        "--rule",
+        "unqualified-imported-call",
+        "examples/unqualified_import_call_project"
+      ],
+      "covers": [
+        "cli:lint",
+        "lint:unqualified_imported_call",
+        "json:sley.lint.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.lint.report.v0" },
+          { "pointer": "/status", "value": "findings" },
+          { "pointer": "/filters/rules/0", "value": "unqualified_imported_call" },
+          { "pointer": "/findings/0/id", "value": "UNQUALIFIED_IMPORTED_CALL" },
+          { "pointer": "/findings/0/node", "value": "block:task:app.main.main:stmt:0:expr" }
+        ]
+      }
+    },
+    {
+      "name": "plan_unqualified_imported_call_template_json",
+      "args": [
+        "plan",
+        "--json",
+        "--graft-templates",
+        "--template-surface",
+        "block:task:app.main.main:stmt:0:expr",
+        "examples/unqualified_import_call_project"
+      ],
+      "covers": [
+        "cli:plan",
+        "graft:templates:qualified-import-call",
+        "lint:unqualified_imported_call",
+        "json:sley.edit_plan.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.edit_plan.report.v0" },
+          { "pointer": "/status", "value": "warnings" },
+          { "pointer": "/lint/findings/0/id", "value": "UNQUALIFIED_IMPORTED_CALL" },
+          { "pointer": "/graft_templates/0/kind", "value": "qualify_imported_call" },
+          { "pointer": "/graft_templates/0/surface", "value": "block:task:app.main.main:stmt:0:expr" },
+          { "pointer": "/graft_templates/0/operation/op", "value": "ReplaceExpression" },
+          { "pointer": "/graft_templates/0/operation/payload/source", "value": "call math.double(21)" }
+        ]
+      }
+    },
+    {
+      "name": "fix_unqualified_imported_call_dry_run_json",
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "qualify_imported_call",
+        "--dry-run",
+        "examples/unqualified_import_call_project"
+      ],
+      "covers": [
+        "cli:fix",
+        "graft:templates:qualified-import-call",
+        "lint:unqualified_imported_call",
+        "json:sley.graft.outcome.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/targets/0", "value": "block:task:app.main.main:stmt:0:expr" }
         ]
       }
     },

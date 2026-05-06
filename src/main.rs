@@ -902,6 +902,7 @@ enum CliLintRule {
     RawHostAdapter,
     MissingModuleDeclaration,
     UncheckedResult,
+    UnqualifiedImportedCall,
 }
 
 impl From<CliLintRule> for LintRule {
@@ -917,6 +918,7 @@ impl From<CliLintRule> for LintRule {
             CliLintRule::RawHostAdapter => Self::RawHostAdapter,
             CliLintRule::MissingModuleDeclaration => Self::MissingModuleDeclaration,
             CliLintRule::UncheckedResult => Self::UncheckedResult,
+            CliLintRule::UnqualifiedImportedCall => Self::UnqualifiedImportedCall,
         }
     }
 }

@@ -9,9 +9,9 @@ use crate::ast::{
 use crate::authority::host_effects_for_callee;
 use crate::query::{QueryKind, QueryOptions, build_query_report};
 use crate::symbols::{
-    EffectResolution, TaskResolution, TypeResolution, callee_path, collect_task_calls,
-    effect_fq_name, effect_module, import_owner_module, resolve_effect, resolve_task, resolve_type,
-    task_fq_name, task_module, type_fq_name, type_module,
+    EffectResolution, TaskCallSummary, TaskResolution, TypeResolution, callee_path,
+    collect_task_calls, effect_fq_name, effect_module, import_owner_module, resolve_effect,
+    resolve_task, resolve_type, task_fq_name, task_module, type_fq_name, type_module,
 };
 
 pub const LINT_REPORT_SCHEMA: &str = "sley.lint.report.v0";
@@ -28,6 +28,7 @@ pub enum LintRule {
     RawHostAdapter,
     MissingModuleDeclaration,
     UncheckedResult,
+    UnqualifiedImportedCall,
 }
 
 impl LintRule {
@@ -43,6 +44,7 @@ impl LintRule {
             Self::RawHostAdapter,
             Self::MissingModuleDeclaration,
             Self::UncheckedResult,
+            Self::UnqualifiedImportedCall,
         ]
     }
 
@@ -58,6 +60,7 @@ impl LintRule {
             Self::RawHostAdapter => "raw_host_adapter",
             Self::MissingModuleDeclaration => "missing_module_declaration",
             Self::UncheckedResult => "unchecked_result",
+            Self::UnqualifiedImportedCall => "unqualified_imported_call",
         }
     }
 }
@@ -146,6 +149,12 @@ pub fn build_lint_report(program: &Program, options: LintOptions) -> LintReport 
     if rules.contains(&LintRule::UncheckedResult) {
         findings.extend(lint_unchecked_results(program, options.module.as_deref()));
     }
+    if rules.contains(&LintRule::UnqualifiedImportedCall) {
+        findings.extend(lint_unqualified_imported_calls(
+            program,
+            options.module.as_deref(),
+        ));
+    }
 
     findings.sort_by(|left, right| {
         left.rule
@@ -198,6 +207,31 @@ fn lint_missing_module_declaration(program: &Program, module: Option<&str>) -> V
         module: program.module_name().to_string(),
         hint: "add `module app.name` at the top of the file before deployable or project code".to_string(),
     }]
+}
+
+fn lint_unqualified_imported_calls(program: &Program, module: Option<&str>) -> Vec<LintFinding> {
+    collect_task_calls(program)
+        .into_iter()
+        .filter(|call| module_matches(module, &call.from_module))
+        .filter_map(|call| {
+            let replacement_callee = qualified_imported_call_callee(program, &call)?;
+            Some(LintFinding {
+                id: "UNQUALIFIED_IMPORTED_CALL".to_string(),
+                rule: LintRule::UnqualifiedImportedCall.as_str().to_string(),
+                severity: "warning".to_string(),
+                message: format!(
+                    "task `{}` calls imported task `{}` without a module qualifier",
+                    call.from, call.callee
+                ),
+                node: call.expr_id,
+                module: call.from_module,
+                hint: format!(
+                    "replace `{}` with `{replacement_callee}` so future imports cannot change resolution",
+                    call.callee
+                ),
+            })
+        })
+        .collect()
 }
 
 fn lint_unused_private_tasks(program: &Program, module: Option<&str>) -> Vec<LintFinding> {
@@ -1119,6 +1153,68 @@ pub fn raw_host_adapter_replacement(callee: &str) -> Option<&'static str> {
         "db.query" => Some("db.try_query"),
         _ => None,
     }
+}
+
+pub fn qualified_imported_call_replacement_source(
+    program: &Program,
+    target: &str,
+) -> Option<String> {
+    let call = collect_task_calls(program)
+        .into_iter()
+        .find(|call| call.expr_id == target)?;
+    let replacement_callee = qualified_imported_call_callee(program, &call)?;
+    replace_call_callee(&call.source, &call.callee, &replacement_callee)
+}
+
+fn qualified_imported_call_callee(program: &Program, call: &TaskCallSummary) -> Option<String> {
+    if call.status != "resolved" || call.callee.contains('.') {
+        return None;
+    }
+    let target = call.target.as_deref()?;
+    let (target_module, target_name) = target.rsplit_once('.')?;
+    if target_module == call.from_module || target_name != call.callee {
+        return None;
+    }
+    let qualifier = import_qualifier_for_module(program, &call.from_module, target_module)?;
+    Some(format!("{qualifier}.{}", call.callee))
+}
+
+fn import_qualifier_for_module(
+    program: &Program,
+    owner_module: &str,
+    imported_module: &str,
+) -> Option<String> {
+    program
+        .imports
+        .iter()
+        .find(|import| {
+            import_owner_module(import) == owner_module && import.module == imported_module
+        })
+        .and_then(|import| {
+            import.alias.clone().or_else(|| {
+                import
+                    .module
+                    .rsplit('.')
+                    .next()
+                    .filter(|segment| !segment.is_empty())
+                    .map(str::to_string)
+            })
+        })
+}
+
+fn replace_call_callee(source: &str, callee: &str, replacement_callee: &str) -> Option<String> {
+    let trimmed = source.trim_start();
+    let leading = &source[..source.len() - trimmed.len()];
+    let (prefix, rest) = if let Some(rest) = trimmed.strip_prefix("call ") {
+        ("call ", rest)
+    } else {
+        ("", trimmed)
+    };
+    let suffix = rest.strip_prefix(callee)?;
+    if !suffix.starts_with('(') {
+        return None;
+    }
+    Some(format!("{leading}{prefix}{replacement_callee}{suffix}"))
 }
 
 fn normalize_effect_name(program: &Program, module: &str, effect: &str) -> String {

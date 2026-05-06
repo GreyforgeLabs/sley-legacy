@@ -110,8 +110,8 @@ Implemented now:
   `--rule unused-declared-effect`, `--rule unused-import`,
   `--rule unused-take`, `--rule unused-private-type`,
   `--rule unused-private-effect`, `--rule raw-host-adapter`,
-  `--rule missing-module-declaration`, or `--rule unchecked-result` filters,
-  and
+  `--rule missing-module-declaration`, `--rule unchecked-result`, or
+  `--rule unqualified-imported-call` filters, and
   `schema: "sley.lint.report.v0"` for warning-grade graph and authority lints
 - in-tree `sley-contract` utility scaffold with `inventory`, `check-fixtures`,
   `validate`, and `inspect-deploy-artifacts` JSON validation commands over
@@ -151,6 +151,8 @@ Implemented now:
   move to fallible `try_` adapters with `?`,
   `propagate_unchecked_result` templates for discarded `Result` expression
   statements that can be safely rewritten with `?`,
+  `qualify_imported_call` templates for simple imported task calls that should
+  be alias- or module-qualified,
   `--template-surface <surface>` targeting for task, program, or lint
   surfaces, `--emit-graft <kind>` for direct
   operation/transaction JSON handoff to `sley graft`, and
@@ -577,6 +579,7 @@ lint-driven module declaration fixes with inferred module names,
 write-mode unused-import cleanup through `sley fix --write` plus post-fix
 verify,
 raw-host adapter migration templates, unchecked-result propagation templates,
-private-task lint rules, declaration/import/API hygiene, authority hygiene, and
-explicit module style warnings. The next logical phase is to broaden style and
-migration lints before broadening the language again.
+unqualified imported-call qualification templates, private-task lint rules,
+declaration/import/API hygiene, authority hygiene, and explicit module style
+warnings. The next logical phase is to keep broadening style and migration
+lints before broadening the language again.

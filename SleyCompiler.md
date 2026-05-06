@@ -230,7 +230,8 @@ Near-term:
    `sley-contract` JSON Schema contract validation and deploy artifact check
    reports,
    call-site rename and remove-take/call-arg transaction write/verify,
-   passed-verify seal/ZJX handoff next-actions, and private-task lint reports.
+   passed-verify seal/ZJX handoff next-actions, private-task lint reports, and
+   unqualified imported-call style migration reports.
 4. Consume `sley.query.report.v0` and `sley.lint.report.v0` from helper
    passes. `sley doctor` is the first deterministic readiness helper on top of
    those surfaces, call-bearing doctor/plan reports now route agents to strict
@@ -239,10 +240,10 @@ Near-term:
    rename-plus-call-site transactions, add-take-plus-call-arg transactions, and
    safe remove-take-plus-call-arg transactions for unused takes. `sley fix` can
    execute one named checked template through the graft checker. The lint
-   surface now includes explicit module-declaration style warnings, and those
-   warnings are structurally repairable through `AddModuleDeclaration` plan/fix
-   templates with target/project-aware module-name inference. Next broaden
-   authority, style, and migration lints.
+   surface now includes explicit module-declaration style warnings and
+   unqualified imported-call style warnings; both are structurally repairable
+   through checked plan/fix templates. Next broaden authority, style, and
+   migration lints.
 5. Extend graph-slice graft planning around checked move/delete operations.
 6. Harden project graft writeback beyond existing-module edits.
 
