@@ -93,6 +93,9 @@ Current verified surface:
 - `sley-workbench` is available as an in-tree local inspection bootstrap with
   JSON and optional static HTML panels over doctor, query, lint, edit-plan, and
   graph data.
+- `sley-docgen` is available as an in-tree checked reference generator with
+  `schema: "sley.docgen.report.v0"` and optional Markdown over module, task,
+  type, effect, and host capability docs from `sley.query.report.v0`.
 - `sley-agent-bench` is available as an in-tree deterministic repair-loop
   benchmark with `schema: "sley.agent_bench.report.v0"` over JSON inspection,
   lint failure, checked edit-plan repair selection, `sley fix --write`, strict
@@ -347,10 +350,10 @@ Current verified surface:
   reports, project scaffold reports, `sley-ci` reports including corpus and
   examples gates, `sley-conformance` report/coverage roots, `sley-contract`
   utility reports with locked inventory/fixture-check/validate fixtures, and
-  agent-bench reports, migrate reports, sandbox manifests, sandbox-runner
-  reports, and the CLI smoke manifest in addition to AST program, diagnostics,
-  graph, graph slice, trace report, trace receipt, trace seal, graft outcome,
-  and ZJX envelope roots. The edit-plan schema now pins strict
+  docgen reports, agent-bench reports, migrate reports, sandbox manifests,
+  sandbox-runner reports, and the CLI smoke manifest in addition to AST
+  program, diagnostics, graph, graph slice, trace report, trace receipt, trace
+  seal, graft outcome, and ZJX envelope roots. The edit-plan schema now pins strict
   graft operation and transaction template envelopes,
   the query schema now exposes strict task/take/type/effect/call row
   definitions,

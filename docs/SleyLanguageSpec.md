@@ -603,7 +603,8 @@ graphs carry
 reports carry `schema: "sley.agent_bench.report.v0"`. Checked migration
 reports carry `schema: "sley.migrate.report.v0"`. Deterministic sandbox
 manifests carry `schema: "sley.sandbox.manifest.v0"`; sandbox replay reports
-carry `schema: "sley.sandbox.report.v0"`.
+carry `schema: "sley.sandbox.report.v0"`. Generated reference reports carry
+`schema: "sley.docgen.report.v0"`.
 The CLI smoke manifest carries
 `schema: "sley.cli_smoke.manifest.v0"`. The accepted/rejected compiler corpus
 manifest carries `schema: "sley.conformance.manifest.v0"`. Project scaffold reports carry
@@ -687,8 +688,10 @@ fix-preview schema pins the non-mutating editor command payload, the workbench
 schema pins the local inspection report root, the agent-bench schema pins
 deterministic repair-loop evidence, and the migrate schema pins checked
 migration commands plus schema-drift rows. The sandbox manifest and report
-schemas pin deterministic replay inputs and replay evidence. The remaining
-schema files currently pin their top-level contract shape and stable schema IDs.
+schemas pin deterministic replay inputs and replay evidence. The docgen schema
+pins generated reference summaries, capability docs, and optional Markdown
+handoff paths. The remaining schema files currently pin their top-level
+contract shape and stable schema IDs.
 
 The compiler conformance corpus lives under `fixtures/corpus/`. Its
 `manifest.json` lists every accepted and rejected fixture plus coverage tags.
@@ -751,6 +754,14 @@ The local inspection loop is backed by the in-tree `sley-workbench` bootstrap.
 It emits `schema: "sley.workbench.report.v0"` and can write an explicit static
 HTML report containing doctor, query, lint, edit-plan, and graph panels. The
 workbench is read-only for source code; HTML output requires `--html <path>`.
+
+The local documentation loop is backed by the in-tree `sley-docgen` bootstrap.
+`sley-docgen reference --json <target>` emits
+`schema: "sley.docgen.report.v0"` from checked `sley.query.report.v0` data and
+the canonical host capability contract table. `--markdown <path>` writes a
+single reference page with module, task, type, effect, and capability sections.
+The target may be one `.sley` file or a project root; the command is read-only
+for source code.
 
 The local agent-loop benchmark is backed by the in-tree `sley-agent-bench`
 bootstrap. `sley-agent-bench run --json` emits

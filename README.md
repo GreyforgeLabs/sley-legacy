@@ -177,6 +177,9 @@ Implemented now:
 - in-tree `sley-workbench` local inspection bootstrap that emits
   `schema: "sley.workbench.report.v0"` and optional static HTML over
   doctor/query/lint/plan/graph panels without writing source files
+- in-tree `sley-docgen` reference generator that emits
+  `schema: "sley.docgen.report.v0"` and optional Markdown over checked
+  module, task, type, effect, and host capability reference data
 - in-tree `sley-agent-bench` deterministic repair-loop benchmark that emits
   `schema: "sley.agent_bench.report.v0"` after proving a JSON inspect, lint,
   plan, checked fix, verify, seal, and ZJX handoff path
@@ -365,15 +368,16 @@ Implemented now:
   symbol graphs, graft outcomes, ZJX envelopes, ZJX tool reports, checked run,
   query, lint, doctor, edit-plan, verify, deploy dry-run, deploy artifact
   check, CI, and project scaffold reports, LSP fix-preview payloads, workbench
-  reports, agent-bench reports, migrate reports, sandbox manifests and
-  sandbox-runner reports, plus contract inventory, fixture-check, and validate
-  reports
+  reports, docgen reports, agent-bench reports, migrate reports, sandbox
+  manifests and sandbox-runner reports, plus contract inventory, fixture-check,
+  and validate reports
 - external v0 JSON Schema files under `docs/schemas/`, including strict
   query task/take/type/effect/call row definitions,
   strict runtime value definitions for `sley.run.report.v0`,
   `sley-ci` check/lint/doctor/plan/run/verify/deploy/smoke/corpus/examples reports,
   `sley.lsp.fix_preview.v0` preview-command payloads,
   `sley.workbench.report.v0` local inspection reports,
+  `sley.docgen.report.v0` generated reference reports,
   `sley.agent_bench.report.v0` deterministic agent-loop benchmark reports,
   `sley.migrate.report.v0` checked migration reports,
   `sley.sandbox.manifest.v0` deterministic replay manifests,
@@ -460,6 +464,7 @@ sley-contract inspect-deploy-artifacts .sley/deploy --schemas docs/schemas --jso
 make syntax
 sley-lsp
 sley-workbench --json --html .sley/workbench.html .
+sley-docgen reference --json --markdown .sley/reference.md .
 sley-agent-bench run --json
 sley-migrate report --json --schemas docs/schemas --fixtures fixtures/contracts .
 sley-sandbox-runner run --json fixtures/contracts/sandbox_manifest_agent_pipeline.json

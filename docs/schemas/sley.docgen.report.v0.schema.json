@@ -1,0 +1,157 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.docgen.report.v0",
+  "title": "Sley Docgen Report v0",
+  "type": "object",
+  "required": [
+    "schema",
+    "status",
+    "target",
+    "source_schema",
+    "summary",
+    "filters",
+    "documents",
+    "modules",
+    "tasks",
+    "types",
+    "effects",
+    "capabilities",
+    "diagnostics",
+    "issues"
+  ],
+  "properties": {
+    "schema": { "const": "sley.docgen.report.v0" },
+    "status": { "enum": ["generated", "blocked"] },
+    "target": { "type": "string", "minLength": 1 },
+    "source_schema": { "const": "sley.query.report.v0" },
+    "markdown_path": { "type": "string", "minLength": 1 },
+    "summary": { "$ref": "#/$defs/summary" },
+    "filters": { "$ref": "#/$defs/filters" },
+    "documents": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/document" }
+    },
+    "modules": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/module" }
+    },
+    "tasks": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "types": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "effects": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "capabilities": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/capability" }
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "issues": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/issue" }
+    }
+  },
+  "$defs": {
+    "summary": {
+      "type": "object",
+      "required": [
+        "module_count",
+        "task_count",
+        "type_count",
+        "effect_count",
+        "capability_count",
+        "document_count",
+        "diagnostic_count",
+        "issue_count"
+      ],
+      "properties": {
+        "module_count": { "type": "integer", "minimum": 0 },
+        "task_count": { "type": "integer", "minimum": 0 },
+        "type_count": { "type": "integer", "minimum": 0 },
+        "effect_count": { "type": "integer", "minimum": 0 },
+        "capability_count": { "type": "integer", "minimum": 0 },
+        "document_count": { "type": "integer", "minimum": 0 },
+        "diagnostic_count": { "type": "integer", "minimum": 0 },
+        "issue_count": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "filters": {
+      "type": "object",
+      "required": ["module", "exported_only"],
+      "properties": {
+        "module": { "type": ["string", "null"], "minLength": 1 },
+        "exported_only": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "document": {
+      "type": "object",
+      "required": ["kind", "title", "section_count"],
+      "properties": {
+        "kind": { "type": "string", "minLength": 1 },
+        "title": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "section_count": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "module": {
+      "type": "object",
+      "required": [
+        "module",
+        "import_count",
+        "task_count",
+        "type_count",
+        "effect_count"
+      ],
+      "properties": {
+        "module": { "type": "string", "minLength": 1 },
+        "import_count": { "type": "integer", "minimum": 0 },
+        "task_count": { "type": "integer", "minimum": 0 },
+        "type_count": { "type": "integer", "minimum": 0 },
+        "effect_count": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "capability": {
+      "type": "object",
+      "required": ["effect", "aliases", "host_calls", "source_needles"],
+      "properties": {
+        "effect": { "type": "string", "minLength": 1 },
+        "aliases": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "host_calls": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "source_needles": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "issue": {
+      "type": "object",
+      "required": ["code", "message"],
+      "properties": {
+        "code": { "type": "string", "minLength": 1 },
+        "message": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
