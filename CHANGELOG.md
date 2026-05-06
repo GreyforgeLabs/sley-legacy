@@ -43,6 +43,9 @@ here. Dates use UTC-independent calendar dates from the local repo history.
 - `sley-conformance report --require-public-release-ready` now turns
   unresolved public-release blockers into a nonzero release-cut gate while the
   ordinary v1 executable gate remains advisory on metadata decisions.
+- `sley-ci smoke --repo-root <path>` now resolves the repo root before
+  expanding `{repo}`, so smoke cases that run from the temp cwd work with
+  relative repo-root arguments.
 - Ready deploy dry-run reports with artifact directories now include an
   `inspect_deploy_artifacts` next action for validating handoff bundles before
   operator approval.

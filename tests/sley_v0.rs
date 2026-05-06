@@ -9602,6 +9602,19 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
           { "pointer": "/tasks/0/name", "value": "main" }
         ]
       }
+    },
+    {
+      "name": "parse_hello_from_tmp_cwd_json",
+      "cwd": "tmp",
+      "args": ["parse", "--json", "{repo}/examples/hello.sley"],
+      "covers": ["cli:parse", "json:sley.ast.program.v0", "cli:smoke-relative-repo-root"],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.ast.program.v0" },
+          { "pointer": "/tasks/0/name", "value": "main" }
+        ]
+      }
     }
   ]
 }
@@ -9614,7 +9627,7 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
             "smoke",
             "--json",
             "--repo-root",
-            &sley_string(&repo_root),
+            ".",
             &sley_string(&smoke_manifest),
         ])
         .output()
@@ -9644,6 +9657,14 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     );
     assert_eq!(
         smoke_json.pointer("/steps/0/stdout_schema"),
+        Some(&serde_json::json!("sley.ast.program.v0"))
+    );
+    assert_eq!(
+        smoke_json.pointer("/steps/1/name"),
+        Some(&serde_json::json!("parse_hello_from_tmp_cwd_json"))
+    );
+    assert_eq!(
+        smoke_json.pointer("/steps/1/stdout_schema"),
         Some(&serde_json::json!("sley.ast.program.v0"))
     );
 

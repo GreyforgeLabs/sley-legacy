@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command as ProcessCommand;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
@@ -424,6 +424,9 @@ fn run(cli: Cli) -> Result<(CiReport, bool)> {
             manifest,
         } => {
             let repo_root = repo_root.unwrap_or(env::current_dir()?);
+            let repo_root = repo_root.canonicalize().with_context(|| {
+                format!("failed to resolve smoke repo root {}", repo_root.display())
+            })?;
             let report = build_smoke_report(&sley_bin, &repo_root, &manifest);
             Ok((report, json))
         }

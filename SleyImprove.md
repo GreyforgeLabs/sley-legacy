@@ -221,6 +221,9 @@ Rules:
   that keeps secret, network, model, and deploy authority explicit across
   imported task boundaries and passes seeded check, lint, run, verify, deploy,
   examples conformance, and CLI smoke gates.
+- `sley-ci smoke --repo-root .` now resolves the repo root before `{repo}`
+  expansion, keeping temp-cwd smoke cases portable across direct agent
+  invocation and the `make v1` absolute-root path.
 - `sley plan` consumes the same checked surfaces into ranked task edit
   surfaces, call-row inspection next-actions, post-edit gate commands, and
   optional starter graft operation templates, rename-plus-call-site
