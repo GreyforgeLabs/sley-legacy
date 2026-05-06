@@ -895,6 +895,34 @@
       }
     },
     {
+      "name": "graph_project_module_slice_json",
+      "args": ["graph", "--json", "--slice", "module:app.math", "examples/project"],
+      "covers": [
+        "cli:graph-slice",
+        "graph-slice:delete-affordances",
+        "graph-slice:inbound-calls",
+        "graph-slice:module-focus",
+        "graph-slice:move-affordances",
+        "graph-slice:replace-affordances",
+        "json:sley.symbol_graph.slice.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.symbol_graph.slice.v0" },
+          { "pointer": "/target", "value": "module:app.math" },
+          { "pointer": "/focus/kind", "value": "module" },
+          { "pointer": "/focus/module", "value": "app.math" },
+          { "pointer": "/tasks/0/id", "value": "task:app.math.double" },
+          { "pointer": "/inbound_calls/0/from", "value": "app.main.main" },
+          { "pointer": "/inbound_calls/0/target", "value": "app.math.double" },
+          { "pointer": "/move_affordances/2/destinations/0/operation/payload/parent", "value": "module:app.main:tasks" },
+          { "pointer": "/delete_affordances/2/target", "value": "task:app.math.double" },
+          { "pointer": "/replace_affordances/3/operation/op", "value": "ReplaceStatement" }
+        ]
+      }
+    },
+    {
       "name": "query_project_tasks_json",
       "args": ["query", "--json", "--kind", "tasks", "--module", "app.main", "examples/project"],
       "covers": ["cli:query", "json:sley.query.report.v0", "query:tasks"],

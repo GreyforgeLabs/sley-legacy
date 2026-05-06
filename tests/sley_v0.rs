@@ -8989,7 +8989,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/smoke_case_count"),
-        Some(&serde_json::json!(377))
+        Some(&serde_json::json!(378))
     );
     assert_eq!(
         report_json.pointer("/summary/example_source_count"),
@@ -19667,7 +19667,9 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:operations:remove-task-effect",
         "graft:project-existing-import-write",
         "graph-slice:delete-affordances",
+        "graph-slice:inbound-calls",
         "graph-slice:insert-affordances",
+        "graph-slice:module-focus",
         "graph-slice:move-affordances",
         "graft:templates:lint-declaration-delete",
         "graft:templates:lint-declaration-target",

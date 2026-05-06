@@ -33,7 +33,9 @@ const DEFAULT_SMOKE_TAGS: &[&str] = &[
     "cli:verify",
     "cli:zjx",
     "graph-slice:delete-affordances",
+    "graph-slice:inbound-calls",
     "graph-slice:insert-affordances",
+    "graph-slice:module-focus",
     "graph-slice:move-affordances",
     "graph-slice:replace-affordances",
 ];
