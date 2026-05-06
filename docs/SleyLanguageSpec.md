@@ -558,7 +558,7 @@ sley graph --json --slice task:app.main.main <target>
 sley new --json --template agent --name agent-app agent-app
 sley doctor --json <target>
 sley plan --json [--graft-templates] [--template-surface <surface>] [--emit-graft <kind>] <target>
-sley fix --json --kind <kind> [--template-surface <surface>] [--dry-run|--write] [--trace <trace.jsonl>] <target>
+sley fix --json --kind <kind> [--template-surface <surface>] [--source <source>] [--position <n>] [--dry-run|--write] [--trace <trace.jsonl>] <target>
 sley query --json --kind tasks --module app.main <target>
 sley query --json --kind types --module app.main <target>
 sley query --json --kind effects --module app.main <target>
@@ -794,7 +794,11 @@ builds checked plan graft templates internally, selects exactly one named
 operation or transaction, applies it through the same graft checker, and emits
 the normal `sley.graft.outcome.v0` root. Exact statement, take, and expression
 node surfaces can be selected with `--template-surface` and executed without
-hand-authoring graft JSON. Default and `--dry-run` mode are non-mutating.
+hand-authoring graft JSON. Single-operation templates can also accept
+`--source <source>` and `--position <n>` overrides when their editable payload
+fields expose `/payload/source` or `/payload/position`; unsupported overrides
+reject with `FIX_OVERRIDE_UNSUPPORTED` before any write path. Default and
+`--dry-run` mode are non-mutating.
 `--write` uses the same project or file writeback and trace receipt path as
 `sley graft --write`, including explicit
 `--trace <trace.jsonl>` receipt redirection. The CLI smoke surface covers a
