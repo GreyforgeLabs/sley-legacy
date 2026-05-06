@@ -1129,6 +1129,7 @@
       "covers": [
         "cli:plan",
         "graft:templates",
+        "graft:templates:add-import",
         "graft:templates:program-surface-declarations",
         "json:sley.edit_plan.report.v0"
       ],
@@ -1147,7 +1148,11 @@
           { "pointer": "/graft_templates/2/kind", "value": "add_effect_declaration" },
           { "pointer": "/graft_templates/2/operation/op", "value": "AddEffectDeclaration" },
           { "pointer": "/graft_templates/2/operation/payload/name", "value": "NewEffect" },
-          { "pointer": "/graft_templates/2/editable_json_pointers/0", "value": "/payload/name" }
+          { "pointer": "/graft_templates/2/editable_json_pointers/0", "value": "/payload/name" },
+          { "pointer": "/graft_templates/3/kind", "value": "add_import" },
+          { "pointer": "/graft_templates/3/operation/op", "value": "AddImport" },
+          { "pointer": "/graft_templates/3/operation/payload/module", "value": "app.new_module" },
+          { "pointer": "/graft_templates/3/editable_json_pointers/0", "value": "/payload/module" }
         ]
       }
     },
@@ -1235,6 +1240,37 @@
           { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
           { "pointer": "/status", "value": "accepted" },
           { "pointer": "/provenance/0/operation", "value": "AddEffectDeclaration" }
+        ]
+      }
+    },
+    {
+      "name": "fix_program_surface_add_import_module_override_dry_run_json",
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "add_import",
+        "--template-surface",
+        "program",
+        "--module",
+        "app.extra",
+        "--dry-run",
+        "examples/project"
+      ],
+      "covers": [
+        "cli:fix",
+        "fix:payload-override-module",
+        "graft:templates:add-import",
+        "graft:templates:program-surface-declarations",
+        "json:sley.graft.outcome.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_contains": ["import app.extra"],
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/operation", "value": "AddImport" }
         ]
       }
     },
@@ -3671,6 +3707,71 @@
     {
       "name": "check_project_existing_module_import_write_json",
       "args": ["check", "--json", "{tmp}/existing-import"],
+      "covers": [
+        "cli:check",
+        "graft:project-existing-import-write",
+        "json:sley.diagnostics.report.v0",
+        "readiness:project-import-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.diagnostics.report.v0" },
+          { "pointer": "/status", "value": "ok" }
+        ]
+      }
+    },
+    {
+      "name": "fix_project_existing_module_import_write_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/fix-existing-import/sley.toml",
+          "content": "[project]\nroot = \"src\"\nentry = \"app.main\"\n"
+        },
+        {
+          "path": "{tmp}/fix-existing-import/src/app/main.sley",
+          "content": "module app.main\n\ntask main -> Int {\n  return 1\n}\n"
+        },
+        {
+          "path": "{tmp}/fix-existing-import/src/app/extra.sley",
+          "content": "module app.extra\n\nexport task helper -> Int {\n  return 2\n}\n"
+        }
+      ],
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "add_import",
+        "--template-surface",
+        "program",
+        "--module",
+        "app.extra",
+        "--write",
+        "{tmp}/fix-existing-import"
+      ],
+      "covers": [
+        "cli:fix",
+        "cli:fix-write",
+        "cli:smoke-setup-files",
+        "fix:payload-override-module",
+        "graft:templates:add-import",
+        "graft:project-existing-import-write",
+        "json:sley.graft.outcome.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_contains": ["import app.extra"],
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/operation", "value": "AddImport" },
+          { "pointer": "/provenance/0/targets/0", "value": "import:app.extra" }
+        ]
+      }
+    },
+    {
+      "name": "check_fix_project_existing_module_import_write_json",
+      "args": ["check", "--json", "{tmp}/fix-existing-import"],
       "covers": [
         "cli:check",
         "graft:project-existing-import-write",

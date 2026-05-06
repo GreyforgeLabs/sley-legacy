@@ -226,14 +226,15 @@ Current development phase:
   lint finding node; selected task and block surfaces emit checked
   `insert_statement` starters, selected statement surfaces emit checked
   `replace_statement` starters, and the `program` surface emits checked
-  `add_task`, `add_type_declaration`, and `add_effect_declaration` starters;
-  `--emit-graft <kind>` prints one
+  `add_task`, `add_type_declaration`, `add_effect_declaration`, and
+  `add_import` starters; `--emit-graft <kind>` prints one
   matching operation/transaction JSON object for `sley graft`
 - `sley fix --json --kind <kind>` consumes checked plan templates and applies
   one named operation or transaction through the same graft checker, emitting
   `sley.graft.outcome.v0`; exact block, statement, take, and expression node
   surfaces can be selected with `--template-surface`; `--name <name>`,
-  `--type <type>`, `--source <source>`, `--source-file <path>`, and
+  `--type <type>`, `--module <module>`, `--source <source>`,
+  `--source-file <path>`, and
   `--position <n>` can override matching editable payload fields on
   single-operation templates before the normal graft checker runs; default and
   `--dry-run` mode are

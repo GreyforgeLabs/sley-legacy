@@ -257,14 +257,14 @@ Near-term:
    templates, statements also emit checked `replace_statement` starters, and
    expressions emit a checked no-op `replace_expression` starter that
    `--emit-graft` can hand directly to `sley graft`. The `program` surface now
-   emits checked `add_task`, `add_type_declaration`, and
-   `add_effect_declaration` starters so agents can add declarations through
-   the same plan/fix loop.
+   emits checked `add_task`, `add_type_declaration`,
+   `add_effect_declaration`, and `add_import` starters so agents can add
+   declarations and imports through the same plan/fix loop.
    `sley fix --dry-run` can now override editable template payloads with
-   `--name`, `--type`, `--source`, `--source-file`, and `--position` before
-   executing those exact node-surface templates through the graft checker
-   without hand-authored graft files. Next broaden authority, style, and
-   migration lints.
+   `--name`, `--type`, `--module`, `--source`, `--source-file`, and
+   `--position` before executing those exact node-surface templates through
+   the graft checker without hand-authored graft files. Next broaden authority,
+   style, and migration lints.
 5. Extend graph-slice graft planning around broader checked operations.
 6. Keep hardening project graft writeback beyond the current create, update,
    delete, rename, and existing-unloaded-module import write paths.
