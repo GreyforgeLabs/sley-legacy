@@ -10446,6 +10446,47 @@ fn fix_template_source_and_position_overrides_dry_run_without_writing() {
         fs::read_to_string(&target).expect("read collections after dry-run"),
         original
     );
+
+    let snippet_root = temp_project_dir("fix-source-file-override");
+    fs::create_dir_all(&snippet_root).expect("create source-file temp dir");
+    let snippet = snippet_root.join("statement.sleypart");
+    fs::write(&snippet, "set total = total + 10").expect("write source snippet");
+    let file_output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args([
+            "fix",
+            "--json",
+            "--kind",
+            "insert_statement",
+            "--template-surface",
+            "block:task:app.collections.sum:stmt:2:body",
+            "--source-file",
+        ])
+        .arg(&snippet)
+        .args(["--position", "1", "--dry-run"])
+        .arg(&target)
+        .output()
+        .expect("dry-run insert source-file override fix");
+    let file_stdout = String::from_utf8(file_output.stdout).expect("stdout utf8");
+    assert!(
+        file_output.status.success(),
+        "fix dry-run should accept source-file insert; stdout={file_stdout} stderr={}",
+        String::from_utf8_lossy(&file_output.stderr)
+    );
+    let file_outcome: GraftOutcome = serde_json::from_str(&file_stdout).expect("parse outcome");
+    assert_eq!(file_outcome.status, "accepted");
+    assert!(
+        file_outcome
+            .source
+            .as_deref()
+            .expect("dry-run source")
+            .contains("set total = total + 10"),
+        "{file_outcome:#?}"
+    );
+    assert_eq!(
+        fs::read_to_string(&target).expect("read collections after source-file dry-run"),
+        original
+    );
+    let _ = fs::remove_dir_all(snippet_root);
 }
 
 #[test]

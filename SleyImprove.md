@@ -97,7 +97,7 @@ sley graph --json --slice <node-id> <target>
 sley new --json [--template hello|deploy|agent] [--name <name>] [--module <module>] <path>
 sley doctor --json [--deny-warnings] <target>
 sley plan --json [--deny-warnings] [--graft-templates] [--template-surface <surface>] [--emit-graft <kind>] <target>
-sley fix --json --kind <kind> [--template-surface <surface>] [--source <source>] [--position <n>] [--dry-run|--write] [--trace <trace.jsonl>] <target>
+sley fix --json --kind <kind> [--template-surface <surface>] [--source <source>|--source-file <path>] [--position <n>] [--dry-run|--write] [--trace <trace.jsonl>] <target>
 sley verify --json [--deny-warnings] [runtime gates/seeds] <target>
 sley deploy --json --dry-run [--artifacts-dir <dir>] [runtime gates/seeds] <target>
 sley query --json [--kind all|modules|tasks|types|effects|calls] [--module <module>] <target>
@@ -513,8 +513,9 @@ The current smoke manifest covers:
   unused-take cleanup can also update resolved callers
 - graph-slice replace affordances and checked `replace_expression` graft
   templates in edit-plan reports
-- checked `sley fix --source` and `--position` payload overrides for
-  single-operation templates, including unsupported override diagnostics
+- checked `sley fix --source`, `--source-file`, and `--position` payload
+  overrides for single-operation templates, including unsupported override
+  diagnostics
 - deploy and agent scaffold typed next-actions, first-run sequence execution,
   strict seeded `verify --json --deny-warnings` readiness, and local
   `sley deploy --dry-run` package reports, including optional deploy artifact

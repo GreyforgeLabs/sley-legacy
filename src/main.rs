@@ -159,6 +159,8 @@ enum Command {
         template_surface: Option<String>,
         #[arg(long, value_name = "SOURCE")]
         source: Option<String>,
+        #[arg(long, value_name = "PATH", conflicts_with = "source")]
+        source_file: Option<PathBuf>,
         #[arg(long, value_name = "POSITION")]
         position: Option<usize>,
         #[arg(long)]
@@ -606,6 +608,7 @@ fn run(cli: Cli) -> Result<()> {
             kind,
             template_surface,
             source,
+            source_file,
             position,
             write,
             dry_run,
@@ -628,6 +631,14 @@ fn run(cli: Cli) -> Result<()> {
                 emit_graft_outcome(&outcome, json)?;
                 anyhow::bail!("fix plan blocked");
             }
+            let source = match load_fix_source_override(source, source_file) {
+                Ok(source) => source,
+                Err(diagnostic) => {
+                    let outcome = rejected_graft_outcome(vec![diagnostic]);
+                    emit_graft_outcome(&outcome, json)?;
+                    anyhow::bail!("fix source override unavailable");
+                }
+            };
             let graft_value = match planned_graft_value(&report, &kind)
                 .and_then(|value| apply_fix_template_overrides(value, &kind, source, position))
             {
@@ -1676,6 +1687,28 @@ fn planned_graft_value(
     }
 }
 
+fn load_fix_source_override(
+    source: Option<String>,
+    source_file: Option<PathBuf>,
+) -> std::result::Result<Option<String>, Diagnostic> {
+    let Some(source_file) = source_file else {
+        return Ok(source);
+    };
+    fs::read_to_string(&source_file).map(Some).map_err(|error| {
+        Diagnostic::error(
+            "FIX_SOURCE_READ_FAILED",
+            format!(
+                "failed to read --source-file {}: {error}",
+                source_file.display()
+            ),
+        )
+        .with_repair_hint(
+            RepairHint::new("check_source_file_path")
+                .with_replacement("Provide a readable source snippet file"),
+        )
+    })
+}
+
 fn apply_fix_template_overrides(
     mut value: JsonValue,
     kind: &str,
@@ -1749,7 +1782,7 @@ fn override_fix_payload_usize(
 fn fix_override_unsupported(kind: &str, message: impl Into<String>) -> Diagnostic {
     Diagnostic::error("FIX_OVERRIDE_UNSUPPORTED", message)
         .with_repair_hint(RepairHint::new("inspect_editable_pointers").with_replacement(format!(
-            "Run `sley plan --json --graft-templates [--template-surface <surface>] <target>` and inspect `editable_json_pointers` before using --source/--position with `{kind}`"
+            "Run `sley plan --json --graft-templates [--template-surface <surface>] <target>` and inspect `editable_json_pointers` before using --source/--source-file/--position with `{kind}`"
         )))
 }
 
