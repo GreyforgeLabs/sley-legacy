@@ -110,7 +110,7 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
      deploy dry-run package reports, a CLI smoke manifest, and the
      accepted/rejected corpus manifest and packaged examples through `sley-ci`.
      The repo-level `Makefile` now exposes `make v1` to run the current local
-     gate stack in one command.
+     gate stack, including Tree-sitter syntax parsing, in one command.
 
 3. `tree-sitter-sley`
    - Inputs: `.sley` source fixtures.
@@ -190,7 +190,7 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
      contract fixtures and release manifests through `sley-contract`, and
      inventories schema instances, corpus tags, smoke tags, packaged examples,
      and declared integration-test count drift. The repo-level `make v1` gate
-     runs the JSON report.
+     runs the JSON report and Tree-sitter syntax parsing.
    - Done when release-readiness gaps become visible without reading the whole
      test file.
 

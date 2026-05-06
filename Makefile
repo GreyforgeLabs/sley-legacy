@@ -51,4 +51,4 @@ zjx-tools:
 syntax:
 	npm --prefix tree-sitter-sley test
 
-v1: fmt diff-check test contracts conformance corpus examples smoke lsp workbench agent-bench migrate docgen sandbox-runner zjx-tools
+v1: fmt diff-check test contracts conformance corpus examples smoke lsp workbench agent-bench migrate docgen sandbox-runner zjx-tools syntax
