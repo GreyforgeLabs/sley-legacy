@@ -107,6 +107,7 @@ sley-ci doctor --json [--deny-warnings] <target>
 sley-ci plan --json [--deny-warnings] [--graft-templates] [--template-surface <surface>] <target>
 sley-ci run --json [runtime gates/seeds] <target>
 sley-ci corpus --json <fixtures/corpus/manifest.json>
+make v1
 sley trace --json <target>
 sley seal --json <target>
 sley zjx --json [--slice <node-id>] <target>
@@ -145,6 +146,9 @@ Rules:
   artifact manifest schema
   pins report/seal/package file digests, and the remaining schema files are
   still root-contract v0 shapes.
+- The repo-level `Makefile` exposes `make v1` as a local release gate over
+  formatting, whitespace diff checks, full Rust tests, contract fixtures,
+  corpus conformance, and CLI smokes.
 - Diagnostics include stable IDs, node IDs, spans where possible, and repair
   hints for common checker failures.
 - `sley doctor` is the first deterministic helper consuming strict check,

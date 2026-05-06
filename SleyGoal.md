@@ -29,6 +29,7 @@ Read these first:
 - `src/zjx.rs`
 - `src/main.rs`
 - `tests/sley_v0.rs`
+- `Makefile`
 - `docs/schemas/*.schema.json`
 - `fixtures/contracts/*.json`
 - `fixtures/cli_smokes/manifest.json`
@@ -38,9 +39,11 @@ Read these first:
 
 Current verified surface:
 
-- `cargo fmt --check` passes.
+- `cargo fmt -- --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 286 tests.
+- Current integration coverage is 289 tests.
+- `make v1` wraps fmt, whitespace diff check, full Rust tests, contract
+  fixture validation, corpus conformance, and CLI smoke conformance.
 - `sley query --json` emits `schema: "sley.query.report.v0"` and supports
   `--kind all|modules|tasks|types|effects|calls`, `--module <module>`, and
   `--exported`, including strict task/take/type/effect/call row definitions.
@@ -447,7 +450,7 @@ Default first moves in any new session:
 1. Run:
 
 ```bash
-cargo fmt --check
+cargo fmt -- --check
 cargo test
 ```
 
@@ -527,7 +530,8 @@ cargo run -- query --json --kind effects <target>
 Validation commands to prefer:
 
 ```bash
-cargo fmt --check
+make v1
+cargo fmt -- --check
 cargo test
 cargo run -- check --json examples/hello.sley
 cargo run -- run --json examples/hello.sley
