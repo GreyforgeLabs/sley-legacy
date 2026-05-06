@@ -445,8 +445,9 @@ can operate Sley reliably."
 
 The executable CLI smoke suite lives under `fixtures/cli_smokes/`. Its
 `manifest.json` lists stable command lines, optional temp-directory execution,
-coverage tags, stdout substrings, and JSON pointer/value expectations. The
-Rust integration suite runs those cases against the built `sley` binary.
+optional temp setup files, coverage tags, stdout substrings, and JSON
+pointer/value expectations. The Rust integration suite runs those cases against
+the built `sley` binary.
 
 The current smoke manifest covers:
 
@@ -473,6 +474,9 @@ The current smoke manifest covers:
   `sley fix` dry runs
 - lint-driven unused-import `DeleteNode` templates and checked `sley fix` dry
   runs
+- manifest-staged temp files for write-mode smokes, including
+  `sley fix --write --trace <trace.jsonl>` receipt redirection and follow-up
+  `sley trace --trace <trace.jsonl>` receipt inspection
 - raw-host adapter migration templates that rewrite eligible raw host calls to
   fallible `try_` adapters with checked `?` propagation
 - unchecked-result migration templates that add checked `?` propagation when
@@ -484,12 +488,8 @@ The current smoke manifest covers:
 - deterministic seeded execution for `FileRead`, `FileWrite`, `DatabaseRead`,
   `DatabaseWrite`, `Network`, `Shell`, `ModelCall`, `SecretRead`, `Deploy`,
   and `Spend`
-- temp-directory execution for the file-write case so release tests do not
-  mutate the repo checkout
-
-Separate integration coverage locks explicit
-`sley fix --write --trace <trace.jsonl>` receipt redirection and proves
-`sley fix --dry-run --trace <trace.jsonl>` remains non-mutating.
+- temp-directory execution and temp setup files for write-mode cases so release
+  tests do not mutate the repo checkout
 
 ## Improvement 9: Checked Graph Query Reports
 

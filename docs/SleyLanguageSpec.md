@@ -608,16 +608,16 @@ stable. The current corpus locks declared and missing authority coverage for
 the deterministic seeded host adapters.
 
 The executable CLI conformance smokes live under `fixtures/cli_smokes/`. Their
-`manifest.json` lists stable commands, working-directory mode, coverage tags,
-and stdout expectations. The integration suite runs the manifest against the
-built `sley` binary and locks stable command exits, selected stdout substrings,
-JSON root schemas, graph slices, checked query reports, checked lint reports,
-doctor readiness reports, edit-plan reports, project scaffolds, ZJX preview
-envelopes, graft dry runs, graph-slice replace affordances, checked
-`replace_expression` graft templates, typed deploy scaffold next-actions, and
-seeded host-adapter execution for `FileRead`, `FileWrite`, `DatabaseRead`,
-`DatabaseWrite`, `Network`, `Shell`, `ModelCall`, `SecretRead`, `Deploy`, and
-`Spend`.
+`manifest.json` lists stable commands, working-directory mode, optional temp
+setup files, coverage tags, and stdout expectations. The integration suite runs
+the manifest against the built `sley` binary and locks stable command exits,
+selected stdout substrings, JSON root schemas, graph slices, checked query
+reports, checked lint reports, doctor readiness reports, edit-plan reports,
+project scaffolds, ZJX preview envelopes, graft dry runs, write-mode fix trace
+receipts, graph-slice replace affordances, checked `replace_expression` graft
+templates, typed deploy scaffold next-actions, and seeded host-adapter
+execution for `FileRead`, `FileWrite`, `DatabaseRead`, `DatabaseWrite`,
+`Network`, `Shell`, `ModelCall`, `SecretRead`, `Deploy`, and `Spend`.
 
 `sley new` is the v0 project scaffold command. It writes a `sley.toml`,
 `README.md`, and entry module source file, refusing to overwrite any of those

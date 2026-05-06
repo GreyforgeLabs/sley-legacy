@@ -1072,6 +1072,91 @@
       }
     },
     {
+      "name": "fix_missing_module_declaration_write_trace_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/fix-trace/moduleless.sley",
+          "content": "task main -> Text {\n  return \"hello\"\n}\n"
+        }
+      ],
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "add_module_declaration",
+        "--write",
+        "--actor",
+        "agent:cli-smoke",
+        "--trace",
+        "{tmp}/fix-trace/trace.jsonl",
+        "{tmp}/fix-trace/moduleless.sley"
+      ],
+      "covers": [
+        "cli:fix",
+        "cli:fix-write",
+        "cli:smoke-setup-files",
+        "graft:operations:add-module-declaration",
+        "json:sley.graft.outcome.v0",
+        "trace:explicit-path"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/actor", "value": "agent:cli-smoke" },
+          { "pointer": "/provenance/0/operation", "value": "AddModuleDeclaration" },
+          { "pointer": "/provenance/0/targets/0", "value": "module:moduleless" }
+        ]
+      }
+    },
+    {
+      "name": "trace_fix_write_explicit_trace_json",
+      "args": [
+        "trace",
+        "--json",
+        "--trace",
+        "{tmp}/fix-trace/trace.jsonl",
+        "{tmp}/fix-trace/moduleless.sley"
+      ],
+      "covers": [
+        "cli:trace",
+        "json:sley.trace.receipt.v0",
+        "trace:explicit-path"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/0/schema", "value": "sley.trace.receipt.v0" },
+          { "pointer": "/0/provenance/0/actor", "value": "agent:cli-smoke" },
+          { "pointer": "/0/provenance/0/operation", "value": "AddModuleDeclaration" }
+        ]
+      }
+    },
+    {
+      "name": "lint_fix_write_temp_file_json",
+      "args": [
+        "lint",
+        "--json",
+        "--rule",
+        "missing-module-declaration",
+        "{tmp}/fix-trace/moduleless.sley"
+      ],
+      "covers": [
+        "cli:lint",
+        "fix:write-source",
+        "lint:missing_module_declaration",
+        "json:sley.lint.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.lint.report.v0" },
+          { "pointer": "/status", "value": "ok" }
+        ]
+      }
+    },
+    {
       "name": "trace_hello_json",
       "args": ["trace", "--json", "examples/hello.sley"],
       "covers": ["cli:trace"],

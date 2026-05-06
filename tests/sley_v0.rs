@@ -62,9 +62,17 @@ struct CliSmokeCase {
     name: String,
     #[serde(default)]
     cwd: CliSmokeCwd,
+    #[serde(default)]
+    setup_files: Vec<CliSmokeSetupFile>,
     args: Vec<String>,
     covers: Vec<String>,
     expect: CliSmokeExpectation,
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct CliSmokeSetupFile {
+    path: String,
+    content: String,
 }
 
 #[derive(Debug, Default, serde::Deserialize)]
@@ -313,6 +321,7 @@ fn cli_smoke_manifest_commands_match_stable_release_surface() {
     fs::create_dir_all(&tmp_root).expect("create CLI smoke temp dir");
 
     for case in &manifest.cases {
+        write_cli_smoke_setup_files(case, &repo_root, &tmp_root);
         let args = expand_cli_smoke_args(&case.args, &repo_root, &tmp_root);
         let cwd = match case.cwd {
             CliSmokeCwd::Repo => &repo_root,
@@ -9215,6 +9224,14 @@ fn assert_cli_smoke_manifest_is_well_formed(manifest: &CliSmokeManifest) {
             "CLI smoke {} must declare coverage tags",
             case.name
         );
+        for file in &case.setup_files {
+            assert!(
+                file.path.contains("{tmp}"),
+                "CLI smoke {} setup file {} must use {{tmp}} so smokes do not mutate the repo",
+                case.name,
+                file.path
+            );
+        }
         for expectation in &case.expect.stdout_json {
             assert!(
                 expectation.pointer.is_empty() || expectation.pointer.starts_with('/'),
@@ -9248,11 +9265,14 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "cli:lint",
         "cli:plan-emit-graft",
         "cli:fix",
+        "cli:fix-write",
         "cli:trace",
         "cli:seal",
         "cli:zjx",
         "cli:graft-dry-run",
+        "cli:smoke-setup-files",
         "diagnostic:MISSING_RETURN",
+        "fix:write-source",
         "graft:operations:add-module-declaration",
         "graft:operations:remove-task-effect",
         "graft:templates:lint-declaration-delete",
@@ -9303,8 +9323,10 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "json:sley.doctor.report.v0",
         "json:sley.edit_plan.report.v0",
         "json:sley.verify.report.v0",
+        "json:sley.trace.receipt.v0",
         "json:sley.trace.seal.v0",
         "json:sley.zjx.envelope.v0",
+        "trace:explicit-path",
     ];
     for tag in required {
         assert!(
@@ -9314,12 +9336,42 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
     }
 }
 
+fn write_cli_smoke_setup_files(case: &CliSmokeCase, repo_root: &Path, tmp_root: &Path) {
+    for file in &case.setup_files {
+        let path = PathBuf::from(expand_cli_smoke_text(&file.path, repo_root, tmp_root));
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent).unwrap_or_else(|error| {
+                panic!(
+                    "create setup directory for CLI smoke {} file {}: {error}",
+                    case.name,
+                    path.display()
+                )
+            });
+        }
+        fs::write(
+            &path,
+            expand_cli_smoke_text(&file.content, repo_root, tmp_root),
+        )
+        .unwrap_or_else(|error| {
+            panic!(
+                "write setup file for CLI smoke {} file {}: {error}",
+                case.name,
+                path.display()
+            )
+        });
+    }
+}
+
 fn expand_cli_smoke_args(args: &[String], repo_root: &Path, tmp_root: &Path) -> Vec<String> {
+    args.iter()
+        .map(|arg| expand_cli_smoke_text(arg, repo_root, tmp_root))
+        .collect()
+}
+
+fn expand_cli_smoke_text(text: &str, repo_root: &Path, tmp_root: &Path) -> String {
     let repo = repo_root.to_string_lossy();
     let tmp = tmp_root.to_string_lossy();
-    args.iter()
-        .map(|arg| arg.replace("{repo}", &repo).replace("{tmp}", &tmp))
-        .collect()
+    text.replace("{repo}", &repo).replace("{tmp}", &tmp)
 }
 
 fn temp_project_dir(name: &str) -> PathBuf {
