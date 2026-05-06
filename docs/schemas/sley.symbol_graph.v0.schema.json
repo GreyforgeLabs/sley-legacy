@@ -6,7 +6,7 @@
   "required": ["schema", "entry_module", "modules"],
   "properties": {
     "schema": { "const": "sley.symbol_graph.v0" },
-    "entry_module": { "type": "string" },
+    "entry_module": { "type": "string", "minLength": 1 },
     "modules": { "type": "array", "items": { "$ref": "#/$defs/moduleSummary" } }
   },
   "$defs": {
@@ -14,7 +14,7 @@
       "type": "object",
       "required": ["module", "imports", "types", "effects", "tasks"],
       "properties": {
-        "module": { "type": "string" },
+        "module": { "type": "string", "minLength": 1 },
         "imports": { "type": "array", "items": { "$ref": "#/$defs/importSummary" } },
         "types": { "type": "array", "items": { "$ref": "#/$defs/declarationSummary" } },
         "effects": { "type": "array", "items": { "$ref": "#/$defs/declarationSummary" } },
@@ -26,9 +26,9 @@
       "type": "object",
       "required": ["id", "module"],
       "properties": {
-        "id": { "type": "string" },
-        "module": { "type": "string" },
-        "alias": { "type": "string" }
+        "id": { "type": "string", "minLength": 1 },
+        "module": { "type": "string", "minLength": 1 },
+        "alias": { "type": "string", "minLength": 1 }
       },
       "additionalProperties": false
     },
@@ -36,8 +36,8 @@
       "type": "object",
       "required": ["name", "id", "exported"],
       "properties": {
-        "name": { "type": "string" },
-        "id": { "type": "string" },
+        "name": { "type": "string", "minLength": 1 },
+        "id": { "type": "string", "minLength": 1 },
         "exported": { "type": "boolean" }
       },
       "additionalProperties": false
