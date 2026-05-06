@@ -237,7 +237,8 @@ Implemented now:
   `simplify_absorbing_boolean_expression` templates for absorbing boolean
   literals that can collapse a short-circuiting expression safely,
   `simplify_self_comparison_expression` templates for delete-safe `expr == expr`,
-  `expr != expr`, `expr < expr`, and `expr > expr` comparisons,
+  `expr != expr`, `expr < expr`, `expr <= expr`, `expr > expr`, and
+  `expr >= expr` comparisons,
   `simplify_double_negation_expression` templates for `!!expr` forms,
   `simplify_negated_comparison_expression` templates for `!(left op right)`
   comparison inversions,

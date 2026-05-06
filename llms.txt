@@ -209,7 +209,8 @@ Current development phase:
   redundant boolean comparison rule
   `redundant_boolean_comparison`, the absorbing boolean expression rule
   `absorbing_boolean_expression`, the self-comparison expression rule
-  `self_comparison_expression`, the double negation simplification rule
+  `self_comparison_expression` including strict and non-strict ordering, the
+  double negation simplification rule
   `double_negation_expression`, the negated comparison simplification rule
   `negated_comparison_expression`, the redundant boolean-if simplification rule
   `redundant_boolean_if_expression`, the redundant boolean-if statement rule

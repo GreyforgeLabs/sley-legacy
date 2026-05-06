@@ -708,8 +708,8 @@ The current smoke manifest covers:
 - self-comparison expression style warnings through
   `self_comparison_expression`, plus checked
   `simplify_self_comparison_expression` templates that replace delete-safe
-  `expr == expr`, `expr != expr`, `expr < expr`, and `expr > expr` forms with
-  `true` or `false`
+  `expr == expr`, `expr != expr`, `expr < expr`, `expr <= expr`,
+  `expr > expr`, and `expr >= expr` forms with `true` or `false`
 - double negation expression style warnings through
   `double_negation_expression`, plus checked
   `simplify_double_negation_expression` templates that replace `!!expr` with
@@ -892,9 +892,9 @@ The v0 lint rules are:
   delete-safe nonliteral side is reported so agents can replace it with the
   zero literal without dropping authority work or recoverable failures.
 - `self_comparison_expression`: a checked delete-safe `expr == expr`,
-  `expr != expr`, `expr < expr`, or `expr > expr` form is reported so agents
-  can replace it with the constant boolean result without dropping authority
-  work or recoverable failures.
+  `expr != expr`, `expr < expr`, `expr <= expr`, `expr > expr`, or
+  `expr >= expr` form is reported so agents can replace it with the constant
+  boolean result without dropping authority work or recoverable failures.
 - `double_negation_expression`: a checked `!!expr` form is reported so agents
   can replace it with the inner boolean expression.
 - `negated_comparison_expression`: a checked `!(left op right)` comparison is
