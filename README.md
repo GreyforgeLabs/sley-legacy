@@ -114,9 +114,10 @@ Implemented now:
   and
   `schema: "sley.lint.report.v0"` for warning-grade graph and authority lints
 - in-tree `sley-contract` utility scaffold with `inventory`, `check-fixtures`,
-  and `validate` JSON Schema validation commands over `docs/schemas/` and
-  `fixtures/contracts/`, using versioned JSON report roots for downstream
-  contract-kit work
+  `validate`, and `inspect-deploy-artifacts` JSON validation commands over
+  `docs/schemas/`, `fixtures/contracts/`, and local deploy artifact
+  directories, using versioned JSON report roots for downstream contract-kit
+  work
 - in-tree `sley-ci` utility with `check`, `verify`, `deploy`, and `smoke`
   wrappers over existing Sley check/lint/verify/deploy gates and CLI smoke
   manifests, emitting
@@ -210,12 +211,12 @@ Implemented now:
   argument mismatches, condition mismatches, effect authority, and private or
   ambiguous names
 - locked JSON contract snapshots under `fixtures/contracts/`, including
-  checked query, lint, doctor, edit-plan, verify, deploy dry-run, CI, and
-  project scaffold reports
+  checked query, lint, doctor, edit-plan, verify, deploy dry-run, deploy
+  artifact check, CI, and project scaffold reports
 - external v0 JSON Schema files under `docs/schemas/`, including strict
   query task/take/type/effect/call row definitions,
   `sley-ci` check/verify/deploy/smoke reports,
-  `sley-contract` inventory/fixture-check/validate reports,
+  `sley-contract` inventory/fixture-check/validate/deploy-artifact-check reports,
   edit-plan graft operation and transaction template envelopes reused by graph
   slice affordances, graph-slice focus/task/call summary refs, a shared
   diagnostic record schema, a standalone trace receipt schema, plus ZJX graph,
@@ -256,6 +257,7 @@ sley-ci verify --json --deny-warnings --cap SecretRead --secret api_key redacted
 sley run --json --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged .
 sley deploy --json --dry-run --artifacts-dir .sley/deploy --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged .
 sley-ci deploy --json --dry-run --artifacts-dir .sley/ci-deploy --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged .
+sley-contract inspect-deploy-artifacts .sley/deploy --schemas docs/schemas --json
 sley seal --json .
 sley zjx --json .
 ```

@@ -586,7 +586,8 @@ The CLI smoke manifest carries
 The deploy wrapper passes `--artifacts-dir <dir>` through to `sley deploy`
 when local handoff files are requested. Deploy dry-run reports carry
 `schema: "sley.deploy.report.v0"`; deploy artifact manifests carry
-`schema: "sley.deploy.artifacts.v0"`. Contract utility reports carry
+`schema: "sley.deploy.artifacts.v0"`. Deploy artifact check reports carry
+`schema: "sley.deploy.artifact_check.v0"`. Contract utility reports carry
 `schema: "sley.contract.inventory.v0"`,
 `schema: "sley.contract.fixture_check.v0"`, or
 `schema: "sley.contract.validate.v0"`.
@@ -695,6 +696,9 @@ dry-run package is ready, the command writes local `deploy-report.json`,
 their paths in the deploy report. The manifest records each artifact path,
 schema, and content digest so another agent can verify the directory as one
 local handoff bundle before any operator-approved deployment step.
+`sley-contract inspect-deploy-artifacts <dir> --schemas docs/schemas --json`
+revalidates that bundle later by checking the manifest schema, each artifact
+schema, and each recorded file digest.
 
 `sley doctor` is the first deterministic helper that consumes the strict
 checker plus checked query and lint reports into one agent readiness report.

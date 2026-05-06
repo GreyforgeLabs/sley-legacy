@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.deploy.artifact_check.v0",
+  "title": "Sley Deploy Artifact Check Report v0",
+  "type": "object",
+  "required": [
+    "schema",
+    "status",
+    "validation_level",
+    "artifacts_dir",
+    "manifest_path",
+    "summary",
+    "files",
+    "issues"
+  ],
+  "properties": {
+    "schema": { "const": "sley.deploy.artifact_check.v0" },
+    "status": { "enum": ["passed", "failed"] },
+    "validation_level": { "const": "json_schema_draft_2020_12" },
+    "artifacts_dir": { "type": "string", "minLength": 1 },
+    "manifest_path": { "type": "string", "minLength": 1 },
+    "manifest_schema": { "type": "string", "minLength": 1 },
+    "summary": {
+      "type": "object",
+      "required": ["file_count", "passed_count", "failed_count", "issue_count"],
+      "properties": {
+        "file_count": { "type": "integer", "minimum": 0 },
+        "passed_count": { "type": "integer", "minimum": 0 },
+        "failed_count": { "type": "integer", "minimum": 0 },
+        "issue_count": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "files": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/file" }
+    },
+    "issues": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/issue" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "file": {
+      "type": "object",
+      "required": [
+        "role",
+        "status",
+        "path",
+        "manifest_path",
+        "expected_schema",
+        "expected_digest",
+        "issues"
+      ],
+      "properties": {
+        "role": { "enum": ["report", "seal", "package"] },
+        "status": { "enum": ["passed", "failed"] },
+        "path": { "type": "string", "minLength": 1 },
+        "manifest_path": { "type": "string", "minLength": 1 },
+        "expected_schema": { "type": "string", "minLength": 1 },
+        "actual_schema": { "type": "string", "minLength": 1 },
+        "expected_digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+        "actual_digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+        "issues": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/issue" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "issue": {
+      "type": "object",
+      "required": ["code", "message"],
+      "properties": {
+        "code": { "type": "string", "minLength": 1 },
+        "message": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  }
+}
