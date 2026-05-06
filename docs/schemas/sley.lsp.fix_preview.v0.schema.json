@@ -27,8 +27,8 @@
         "target": { "type": "string", "minLength": 1 },
         "kind": { "type": "string", "minLength": 1 },
         "surface": { "type": "string", "minLength": 1 },
-        "operation": { "type": "object" },
-        "transaction": { "type": "object" },
+        "operation": { "$ref": "sley.edit_plan.report.v0#/$defs/graftOperation" },
+        "transaction": { "$ref": "sley.edit_plan.report.v0#/$defs/graftTransaction" },
         "editableJsonPointers": {
           "type": "array",
           "items": { "type": "string" }

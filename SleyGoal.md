@@ -44,7 +44,7 @@ Current verified surface:
 
 - `cargo fmt -- --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 293 tests in the core `tests/sley_v0.rs`
+- Current integration coverage is 294 tests in the core `tests/sley_v0.rs`
   conformance file, with additional focused integration tests for LSP,
   workbench, agent bench, docgen, migration reports, sandbox replay, project
   templates, and ZJX envelope tools. The focused utility tests validate live
@@ -103,7 +103,8 @@ Current verified surface:
 - `sley-lsp` is available as an in-tree stdio language-server bootstrap with
   full-document sync, diagnostics, formatting, document symbols, declaration
   hover, checked edit-plan code actions, and a non-mutating
-  `sley.fix.preview` command.
+  `sley.fix.preview` command whose preview operations and transactions reuse
+  the strict edit-plan graft contracts.
 - `sley-workbench` is available as an in-tree local inspection bootstrap with
   JSON and optional static HTML panels over doctor, query, lint, edit-plan, and
   graph data; its report schema links embedded doctor, query, lint, edit-plan,

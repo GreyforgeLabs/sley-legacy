@@ -3,6 +3,8 @@ use std::process::{ChildStdout, Command as ProcessCommand, Stdio};
 
 use serde_json::{Value as JsonValue, json};
 
+mod support;
+
 #[test]
 fn lsp_publishes_diagnostics_formats_symbols_and_previews_code_actions() {
     let mut child = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-lsp"))
@@ -183,6 +185,9 @@ return "unused"
         }),
     );
     let preview = read_response(&mut reader, 5);
+    let report_bytes = serde_json::to_vec(preview.get("result").expect("preview result"))
+        .expect("serialize LSP fix preview report");
+    support::validate_report_schema("sley.lsp.fix_preview.v0", &report_bytes);
     assert_eq!(
         preview.pointer("/result/schema"),
         Some(&json!("sley.lsp.fix_preview.v0"))
@@ -192,6 +197,10 @@ return "unused"
         Some(&json!("delete_unused_private_task"))
     );
     assert_eq!(preview.pointer("/result/preview/uri"), Some(&json!(uri)));
+    assert_eq!(
+        preview.pointer("/result/preview/operation/op"),
+        Some(&json!("DeleteNode"))
+    );
 
     write_lsp(
         &mut stdin,
