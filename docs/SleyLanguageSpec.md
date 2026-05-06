@@ -816,6 +816,9 @@ with `!flag`, preserves a checked program.
 `simplify_same_branch_if_expression` `ReplaceExpression` templates when
 replacing `if condition { value } else { value }` with `value` preserves a
 checked program and the removed condition is delete-safe.
+`unreachable_statement` lint findings become checked
+`delete_unreachable_statement` `DeleteNode` templates when deleting a
+statement after a guaranteed return preserves a checked program.
 `--template-surface program` emits checked `add_task`,
 `add_type_declaration`, `add_effect_declaration`, and `add_import` starters for
 adding new declarations and imports to the current program module.
@@ -950,6 +953,8 @@ be replaced with the inner boolean expression; and
 boolean `if` can be replaced with the condition or its negation; and
 `same_branch_if_expression`, which warns when a checked expression-level `if`
 has identical branches and a delete-safe condition.
+`unreachable_statement`, which warns when a statement appears after a
+guaranteed `return` in the same block.
 `--module <module>` scopes the lint to one module. `--rule unused-private-task`,
 `--rule unreachable-private-task`, `--rule unused-declared-effect`,
 `--rule unused-import`, `--rule unused-take`, `--rule unused-private-type`,
@@ -963,7 +968,8 @@ has identical branches and a delete-safe condition.
 `--rule absorbing-boolean-expression`, or `--rule self-comparison-expression`, or
 `--rule double-negation-expression`, or
 `--rule redundant-boolean-if-expression`, or
-`--rule same-branch-if-expression` selects one rule explicitly, and
+`--rule same-branch-if-expression`, or
+`--rule unreachable-statement` selects one rule explicitly, and
 `--deny-warnings` turns findings into a nonzero CLI exit after printing the
 report. The v0 JSON root is `sley.lint.report.v0`.
 
@@ -1065,8 +1071,8 @@ refuse generic data disguised as Sley artifacts before compression begins.
   raw-host-adapter and unchecked-result migration warnings with checked
   propagation templates, unqualified imported-call qualification templates,
   unused pure binding cleanup templates, unused pure expression statement
-  cleanup templates, and mutable binding conversion transactions, constant-if,
-  identity binary expression, redundant boolean
+  cleanup templates, unreachable statement cleanup templates, and mutable
+  binding conversion transactions, constant-if, identity binary expression, redundant boolean
   comparison, and double negation simplification templates, plus explicit
   module style warnings;
   broader style and migration lints remain later work
@@ -1085,7 +1091,8 @@ refuse generic data disguised as Sley artifacts before compression begins.
   `command` dry-run and add optional `write_command` for the mutating command.
   The CLI smoke suite locks previewed lint-repair writes followed by strict
   verify for file and project targets, including unused pure binding cleanup,
-  unused pure expression statement cleanup, and mutable binding conversion,
+  unused pure expression statement cleanup, unreachable statement cleanup, and
+  mutable binding conversion,
   plus a repaired generated deploy
   scaffold re-verified with seeded `Deploy` authority and a strict seeded
   deploy verify report for the generated `sley new --template deploy` starter,

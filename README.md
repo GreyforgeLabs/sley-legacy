@@ -122,7 +122,8 @@ Implemented now:
   `--rule self-comparison-expression`, or
   `--rule double-negation-expression`, or
   `--rule redundant-boolean-if-expression`, or
-  `--rule same-branch-if-expression`
+  `--rule same-branch-if-expression`, or
+  `--rule unreachable-statement`
   filters, and
   `schema: "sley.lint.report.v0"` for warning-grade graph and authority lints
 - in-tree `sley-contract` utility scaffold with `inventory`, `check-fixtures`,
@@ -182,6 +183,8 @@ Implemented now:
   expressions that can be replaced by the condition or its negation,
   `simplify_same_branch_if_expression` templates for same-branch `if`
   expressions with delete-safe conditions,
+  `delete_unreachable_statement` templates for dead statements after a
+  guaranteed return,
   `--template-surface <surface>` targeting for task, block, statement, take,
   expression, program, or lint surfaces, including checked task-body and block
   `insert_statement` starters, checked statement-surface `replace_statement`
@@ -636,6 +639,7 @@ identity binary expression simplification templates with write/verify coverage,
 redundant boolean comparison simplification templates with write/verify
 coverage,
 double negation expression simplification templates with write/verify coverage,
+unreachable statement delete templates with write/verify coverage,
 private-task lint rules,
 declaration/import/API hygiene, authority hygiene, and explicit module style
 warnings. The next logical phase is to keep broadening style and migration

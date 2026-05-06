@@ -1,0 +1,8 @@
+module app.unreachable_statement
+
+task main -> Int {
+  bind value = 41
+
+  return value
+  return 0
+}

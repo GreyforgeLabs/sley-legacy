@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.unreachable_statement",
+  "filters": {
+    "module": null,
+    "rules": [
+      "unreachable_statement"
+    ]
+  },
+  "findings": [
+    {
+      "id": "UNREACHABLE_STATEMENT",
+      "rule": "unreachable_statement",
+      "severity": "warning",
+      "message": "task `app.unreachable_statement.main` has an unreachable statement after a guaranteed return",
+      "node": "block:task:app.unreachable_statement.main:stmt:2",
+      "module": "app.unreachable_statement",
+      "hint": "delete this unreachable statement"
+    }
+  ]
+}
