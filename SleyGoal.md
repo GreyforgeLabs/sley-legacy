@@ -51,9 +51,10 @@ Current verified surface:
 - `make v1` wraps fmt, whitespace diff check, full Rust tests, contract
   fixture and release-manifest validation, conformance summary reporting,
   corpus conformance, packaged example conformance, broad CLI smoke
-  conformance, the lightweight `sley-ci smoke` wrapper probe, deterministic
-  utility replays for workbench, agent-bench, migration, docgen,
-  sandbox-runner, and ZJX tools, and Tree-sitter syntax parsing.
+  conformance, the lightweight `sley-ci smoke` wrapper probe, the focused LSP
+  integration test, deterministic utility replays for workbench, agent-bench,
+  migration, docgen, sandbox-runner, and ZJX tools, and Tree-sitter syntax
+  parsing.
 - The synthetic gold corpus currently has 15 accepted fixtures and 16 rejected
   fixtures, including accepted/rejected split-task agent authority cases that
   lock transitive effect propagation and module namespace fixtures that lock

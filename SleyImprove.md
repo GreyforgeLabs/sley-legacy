@@ -173,8 +173,8 @@ Rules:
   formatting, whitespace diff checks, full Rust tests, contract fixtures,
   release-manifest validation, conformance summary reporting, declared
   integration-test count drift, corpus conformance, packaged examples, CLI
-  smokes, deterministic workbench, agent-bench, migration, docgen,
-  sandbox-runner, and ZJX tool replays.
+  smokes, the focused LSP integration test, deterministic workbench,
+  agent-bench, migration, docgen, sandbox-runner, and ZJX tool replays.
 - `sley-conformance report --require-public-release-ready` is the explicit
   public-cut gate for license and repository metadata; ordinary executable v1
   conformance remains advisory on those operator decisions.

@@ -32,7 +32,7 @@ smoke: build-cli
 	cargo run --bin sley-ci -- smoke --json --repo-root $(CURDIR) fixtures/ci_smoke_probe/manifest.json
 
 lsp:
-	cargo check --bin sley-lsp
+	cargo test --test sley_lsp
 
 workbench:
 	cargo run --bin sley-workbench -- --json examples/dead_private_tasks.sley
