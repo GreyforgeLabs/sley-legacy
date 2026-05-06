@@ -436,15 +436,24 @@ fn apply_one(
             payload,
         } => {
             check_preconditions(program, None, precondition.as_ref())?;
-            if program
+            if let Some(existing) = program
                 .effects
                 .iter()
-                .any(|effect| effect.name == payload.name)
+                .find(|effect| effect.name == payload.name)
             {
-                return Err(vec![Diagnostic::error(
-                    "GRAFT_EFFECT_EXISTS",
-                    format!("effect `{}` already exists", payload.name),
-                )]);
+                return Err(vec![
+                    Diagnostic::error(
+                        "GRAFT_EFFECT_EXISTS",
+                        format!("effect `{}` already exists", payload.name),
+                    )
+                    .with_node(existing.id.clone())
+                    .with_repair_hint(namespace_conflict_hint(
+                        "effect",
+                        &existing.id,
+                        &payload.name,
+                        &effect_module(existing),
+                    )),
+                ]);
             }
             program.effects.push(EffectDecl {
                 id: String::new(),
@@ -466,15 +475,26 @@ fn apply_one(
             payload,
         } => {
             check_preconditions(program, None, precondition.as_ref())?;
-            if program
+            if let Some(existing) = program
                 .imports
                 .iter()
-                .any(|import| import.module == payload.module)
+                .find(|import| import.module == payload.module)
             {
-                return Err(vec![Diagnostic::error(
-                    "GRAFT_IMPORT_EXISTS",
-                    format!("import `{}` already exists", payload.module),
-                )]);
+                return Err(vec![
+                    Diagnostic::error(
+                        "GRAFT_IMPORT_EXISTS",
+                        format!("import `{}` already exists", payload.module),
+                    )
+                    .with_node(existing.id.clone())
+                    .with_repair_hint(
+                        RepairHint::new("resolve_namespace_conflict")
+                            .with_target(existing.id.clone())
+                            .with_replacement(format!(
+                                "Remove the duplicate import or reuse existing import `{}`",
+                                payload.module
+                            )),
+                    ),
+                ]);
             }
             program.imports.push(ImportDecl {
                 id: String::new(),
@@ -504,15 +524,24 @@ fn apply_one(
                 )]);
             };
             let module = task_module(&task);
-            if program
+            if let Some(existing) = program
                 .tasks
                 .iter()
-                .any(|item| item.name == task.name && task_module(item) == module)
+                .find(|item| item.name == task.name && task_module(item) == module)
             {
-                return Err(vec![Diagnostic::error(
-                    "GRAFT_TASK_EXISTS",
-                    format!("task `{module}.{}` already exists", task.name),
-                )]);
+                return Err(vec![
+                    Diagnostic::error(
+                        "GRAFT_TASK_EXISTS",
+                        format!("task `{module}.{}` already exists", task.name),
+                    )
+                    .with_node(existing.id.clone())
+                    .with_repair_hint(namespace_conflict_hint(
+                        "task",
+                        &existing.id,
+                        &task.name,
+                        &module,
+                    )),
+                ]);
             }
             let target = task.name.clone();
             program.tasks.push(TaskDecl { ..task });
@@ -537,15 +566,24 @@ fn apply_one(
                 )]);
             };
             let module = type_module(&ty);
-            if program
+            if let Some(existing) = program
                 .types
                 .iter()
-                .any(|item| item.name == ty.name && type_module(item) == module)
+                .find(|item| item.name == ty.name && type_module(item) == module)
             {
-                return Err(vec![Diagnostic::error(
-                    "GRAFT_TYPE_EXISTS",
-                    format!("type `{module}.{}` already exists", ty.name),
-                )]);
+                return Err(vec![
+                    Diagnostic::error(
+                        "GRAFT_TYPE_EXISTS",
+                        format!("type `{module}.{}` already exists", ty.name),
+                    )
+                    .with_node(existing.id.clone())
+                    .with_repair_hint(namespace_conflict_hint(
+                        "type",
+                        &existing.id,
+                        &ty.name,
+                        &module,
+                    )),
+                ]);
             }
             let target = ty.name.clone();
             program.types.push(TypeDecl { ..ty });
@@ -882,6 +920,14 @@ fn rename_module(program: &mut Program, old: &str, new: &str) -> Result<(), Vec<
         return Err(vec![Diagnostic::error(
             "GRAFT_MODULE_EXISTS",
             format!("module `{new}` already exists"),
+        )
+        .with_node(format!("module:{new}"))
+        .with_repair_hint(
+            RepairHint::new("resolve_namespace_conflict")
+                .with_target(format!("module:{new}"))
+                .with_replacement(format!(
+                    "Choose a distinct module path or move declarations into existing module `{new}`"
+                )),
         )]);
     }
 
@@ -2237,6 +2283,14 @@ fn unsupported_graft_operation_hint(target: &str, guidance: impl Into<String>) -
     RepairHint::new("use_supported_graft_operation")
         .with_target(target)
         .with_replacement(guidance)
+}
+
+fn namespace_conflict_hint(kind: &str, target: &str, name: &str, module: &str) -> RepairHint {
+    RepairHint::new("resolve_namespace_conflict")
+        .with_target(target.to_string())
+        .with_replacement(format!(
+            "Rename the new `{kind} {name}` declaration or reuse existing `{module}.{name}`"
+        ))
 }
 
 fn parse_callee_source(source: &str) -> Result<Expr, Vec<Diagnostic>> {

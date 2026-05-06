@@ -663,6 +663,9 @@ move. Unsupported graft shapes also carry `use_supported_graft_operation`
 guidance that points agents toward the supported parent, destination, or
 operation shape; expression `DeleteNode` targets additionally carry
 `replace_expression` because expressions require replacement, not deletion.
+Duplicate task/type/effect checker diagnostics and graft namespace collisions
+carry `resolve_namespace_conflict` hints so agents rename, remove, or reuse the
+existing declaration instead of retrying the same colliding name.
 Stale graft precondition failures carry a `refresh_graft_precondition` hint so
 agents re-read current target state and rebuild the graft before retrying. Call
 argument type mismatches carry both an expression-level `replace_argument` hint

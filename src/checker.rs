@@ -68,7 +68,13 @@ fn collect_known_tasks(program: &Program, diagnostics: &mut Vec<Diagnostic>) -> 
                         task_module(task)
                     ),
                 )
-                .with_node(task.id.clone()),
+                .with_node(task.id.clone())
+                .with_repair_hint(namespace_conflict_hint(
+                    "task",
+                    &task.id,
+                    &task.name,
+                    &task_module(task),
+                )),
             );
         }
         known.insert(
@@ -129,7 +135,13 @@ fn collect_known_types(program: &Program, diagnostics: &mut Vec<Diagnostic>) {
                         type_module(ty)
                     ),
                 )
-                .with_node(ty.id.clone()),
+                .with_node(ty.id.clone())
+                .with_repair_hint(namespace_conflict_hint(
+                    "type",
+                    &ty.id,
+                    &ty.name,
+                    &type_module(ty),
+                )),
             );
         }
     }
@@ -148,10 +160,24 @@ fn collect_known_effects(program: &Program, diagnostics: &mut Vec<Diagnostic>) {
                         effect_module(effect)
                     ),
                 )
-                .with_node(effect.id.clone()),
+                .with_node(effect.id.clone())
+                .with_repair_hint(namespace_conflict_hint(
+                    "effect",
+                    &effect.id,
+                    &effect.name,
+                    &effect_module(effect),
+                )),
             );
         }
     }
+}
+
+fn namespace_conflict_hint(kind: &str, target: &str, name: &str, module: &str) -> RepairHint {
+    RepairHint::new("resolve_namespace_conflict")
+        .with_target(target.to_string())
+        .with_replacement(format!(
+            "Rename or remove one `{kind} {name}` declaration in module `{module}`"
+        ))
 }
 
 fn check_task(

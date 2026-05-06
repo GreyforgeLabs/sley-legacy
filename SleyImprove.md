@@ -209,7 +209,8 @@ Priority diagnostic families:
   hints that tell agents to re-read current target state before retrying
 - unsupported graft operation: implemented with `use_supported_graft_operation`
   hints, plus `replace_expression` guidance for expression move/delete attempts
-- module namespace conflicts
+- module namespace conflicts: implemented with `resolve_namespace_conflict`
+  hints for duplicate checker declarations and graft add/rename collisions
 
 ## Improvement 3: Graft-First Editing
 

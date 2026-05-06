@@ -849,6 +849,62 @@ fn stale_precondition_rejects_graft() {
 }
 
 #[test]
+fn graft_namespace_conflicts_include_repair_hints() {
+    let source = r#"
+module app.main
+import app.shared
+
+effect Audit
+
+type User = {
+  slot id: Int
+}
+
+task helper -> Int {
+  return 1
+}
+
+task main -> Int {
+  return call helper()
+}
+"#;
+    let program = parse_program(source).expect("parse namespace conflict source");
+    let cases = [
+        (
+            r#"{ "op": "AddEffectDeclaration", "payload": { "name": "Audit" } }"#,
+            "GRAFT_EFFECT_EXISTS",
+        ),
+        (
+            r#"{ "op": "AddImport", "payload": { "module": "app.shared" } }"#,
+            "GRAFT_IMPORT_EXISTS",
+        ),
+        (
+            r#"{ "op": "AddTask", "payload": { "source": "module app.main\n\ntask helper -> Int {\n  return 2\n}" } }"#,
+            "GRAFT_TASK_EXISTS",
+        ),
+        (
+            r#"{ "op": "AddTypeDeclaration", "payload": { "source": "module app.main\n\ntype User = {\n  slot id: Text\n}" } }"#,
+            "GRAFT_TYPE_EXISTS",
+        ),
+        (
+            r#"{ "op": "RenameDeclaration", "target": "module:app.main", "payload": { "name": "app.shared" } }"#,
+            "GRAFT_MODULE_EXISTS",
+        ),
+    ];
+
+    for (graft_source, diagnostic_id) in cases {
+        let graft: GraftInput = serde_json::from_str(graft_source).expect("parse graft");
+        let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
+        assert_eq!(outcome.status, "rejected", "{diagnostic_id}: {outcome:#?}");
+        assert_has_repair_hint(
+            &outcome.diagnostics,
+            diagnostic_id,
+            "resolve_namespace_conflict",
+        );
+    }
+}
+
+#[test]
 fn update_call_sites_graft_rewrites_renamed_task_calls() {
     let source = r#"
 task double -> Int {
@@ -2278,6 +2334,40 @@ task main -> Int {
         parse_program("task main -> Int {\n  return call missing()\n}\n").expect("parse source");
     let diagnostics = check_program(&unknown_task);
     assert_has_repair_hint(&diagnostics, "UNKNOWN_TASK", "declare_or_import_task");
+}
+
+#[test]
+fn checker_namespace_conflicts_include_repair_hints() {
+    let source = r#"
+effect Audit
+effect Audit
+
+type User = {
+  slot id: Int
+}
+
+type User = {
+  slot id: Text
+}
+
+task main -> Int {
+  return 1
+}
+
+task main -> Int {
+  return 2
+}
+"#;
+    let program = parse_program(source).expect("parse namespace conflict source");
+    let diagnostics = check_program(&program);
+
+    assert_has_repair_hint(
+        &diagnostics,
+        "DUPLICATE_EFFECT",
+        "resolve_namespace_conflict",
+    );
+    assert_has_repair_hint(&diagnostics, "DUPLICATE_TYPE", "resolve_namespace_conflict");
+    assert_has_repair_hint(&diagnostics, "DUPLICATE_TASK", "resolve_namespace_conflict");
 }
 
 #[test]
