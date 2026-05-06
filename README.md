@@ -424,7 +424,8 @@ Implemented now:
   conformance, CLI smoke conformance, and Tree-sitter syntax parsing
 - GitHub Actions and pre-commit entry points that run the same `make v1` gate
   through `.github/actions/sley-v1/action.yml`, `.github/workflows/v1.yml`,
-  and `.pre-commit-config.yaml`
+  and `.pre-commit-config.yaml`; the action installs Rust and Node tooling
+  before the gate
 - compact agent onboarding pack in `llms.txt`
 - release-facing `CHANGELOG.md` and `docs/contracts.md` files covering the
   current contract roots, validation commands, and release-candidate deltas

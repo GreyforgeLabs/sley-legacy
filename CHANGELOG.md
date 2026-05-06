@@ -30,6 +30,9 @@ here. Dates use UTC-independent calendar dates from the local repo history.
 - `make v1` now includes checks for LSP, workbench, agent bench, migrate,
   docgen, sandbox runner, ZJX tools, contract fixtures, conformance, corpus,
   examples, CLI smokes, and Tree-sitter syntax parsing.
+- The local syntax gate bootstraps Tree-sitter npm dependencies with `npm ci`
+  when needed, and the GitHub composite action installs stable Node before
+  running `make v1`.
 - Contract inventory now tracks 36 schemas, 96 contract fixtures, and 99 schema
   instances through the conformance report.
 - The Rust package metadata now declares its supported Rust floor, description,
