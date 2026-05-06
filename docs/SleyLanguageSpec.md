@@ -781,6 +781,10 @@ still passes.
 `unused_pure_binding` lint findings become checked
 `delete_unused_pure_binding` `DeleteNode` templates when deleting the unread
 binding statement preserves a checked program.
+`constant_if_expression` lint findings become checked
+`simplify_constant_if_expression` `ReplaceExpression` templates when replacing
+an expression-level `if true/false` with the branch that executes preserves a
+checked program.
 `--template-surface program` emits checked `add_task`,
 `add_type_declaration`, `add_effect_declaration`, and `add_import` starters for
 adding new declarations and imports to the current program module.
@@ -895,14 +899,17 @@ callee; and `unused_pure_binding`, which warns when a local `bind` statement
 has an unread delete-safe initializer with no calls, raw fragments, `?`,
 indexing, division, or remainder operation; and `mutable_binding_never_set`,
 which warns when a mutable local such as `state` or `tally` is never assigned
-with `set`.
+with `set`; and `constant_if_expression`, which warns when an expression-level
+`if true/false { ... } else { ... }` can be replaced with the branch that
+executes.
 `--module <module>` scopes the lint to one module. `--rule unused-private-task`,
 `--rule unreachable-private-task`, `--rule unused-declared-effect`,
 `--rule unused-import`, `--rule unused-take`, `--rule unused-private-type`,
 `--rule unused-private-effect`, `--rule raw-host-adapter`,
 `--rule missing-module-declaration`, `--rule unchecked-result`, or
 `--rule unqualified-imported-call`, `--rule unused-pure-binding`, or
-`--rule mutable-binding-never-set` selects one rule explicitly, and
+`--rule mutable-binding-never-set`, or `--rule constant-if-expression` selects
+one rule explicitly, and
 `--deny-warnings` turns findings into a nonzero CLI exit after printing the
 report. The v0 JSON root is `sley.lint.report.v0`.
 
@@ -1004,7 +1011,8 @@ refuse generic data disguised as Sley artifacts before compression begins.
   raw-host-adapter and unchecked-result migration warnings with checked
   propagation templates, unqualified imported-call qualification templates,
   unused pure binding cleanup templates, and mutable binding conversion
-  transactions, plus explicit module style warnings;
+  transactions, constant-if expression simplification templates, plus explicit
+  module style warnings;
   broader style and migration lints remain later work
 - `sley plan` emits deterministic ranked task edit surfaces, optional starter
   graft operation templates, rename-plus-call-site and add-take-plus-call-arg

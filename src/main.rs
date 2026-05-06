@@ -961,6 +961,7 @@ enum CliLintRule {
     UnqualifiedImportedCall,
     UnusedPureBinding,
     MutableBindingNeverSet,
+    ConstantIfExpression,
 }
 
 impl From<CliLintRule> for LintRule {
@@ -979,6 +980,7 @@ impl From<CliLintRule> for LintRule {
             CliLintRule::UnqualifiedImportedCall => Self::UnqualifiedImportedCall,
             CliLintRule::UnusedPureBinding => Self::UnusedPureBinding,
             CliLintRule::MutableBindingNeverSet => Self::MutableBindingNeverSet,
+            CliLintRule::ConstantIfExpression => Self::ConstantIfExpression,
         }
     }
 }

@@ -58,7 +58,8 @@
         "unchecked_result",
         "unqualified_imported_call",
         "unused_pure_binding",
-        "mutable_binding_never_set"
+        "mutable_binding_never_set",
+        "constant_if_expression"
       ],
       "finding_count": 0,
       "findings": []
