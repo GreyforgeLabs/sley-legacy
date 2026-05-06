@@ -40,7 +40,7 @@ Current verified surface:
 
 - `cargo fmt --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 184 tests.
+- Current integration coverage is 186 tests.
 - `sley query --json` emits `schema: "sley.query.report.v0"` and supports
   `--kind all|modules|tasks|types|effects|calls`, `--module <module>`, and
   `--exported`, including top-level type/effect declaration rows and strict
@@ -92,14 +92,16 @@ Current verified surface:
   redirection, explicit `sley fix --write --trace <path>` receipt
   redirection, follow-up `sley trace --trace <path>` receipt inspection, and
   `sley seal --trace <path>` plus `sley zjx --trace <path>` over non-empty
-  receipt chains while `sley fix --dry-run --trace <path>` remains
-  non-mutating.
+  receipt chains with recomputable graph digests while
+  `sley fix --dry-run --trace <path>` remains non-mutating.
 - Stable JSON roots now include query reports, lint reports, doctor reports,
   edit-plan reports, verify reports, project scaffold reports, and the CLI
   smoke manifest in addition to AST, diagnostics, graph, graph slice, trace
   seal, graft outcome, and ZJX envelope roots. The edit-plan schema now pins
   strict graft operation and transaction template envelopes, and the graft
-  outcome schema pins accepted provenance records.
+  outcome schema pins accepted provenance records. The ZJX envelope now carries
+  a recomputable graph digest and schema refs for graph, slice, and trace
+  receipt handoff contents.
 
 Product thesis:
 

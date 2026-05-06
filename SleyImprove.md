@@ -122,7 +122,9 @@ Rules:
   declarations, statements, expressions, type expressions, spans, and
   provenance, the edit-plan schema pins strict graft operation and transaction
   template envelopes, the graft outcome schema pins accepted provenance
-  records, and the remaining schema files are still root-contract v0 shapes.
+  records, the ZJX envelope schema pins graph, slice, and trace receipt
+  handoff refs, and the remaining schema files are still root-contract v0
+  shapes.
 - Diagnostics include stable IDs, node IDs, spans where possible, and repair
   hints for common checker failures.
 - `sley doctor` is the first deterministic helper consuming strict check,
@@ -468,7 +470,8 @@ The current smoke manifest covers:
   zjx, and graft dry-run/write commands
 - stable JSON roots for AST programs, diagnostics, symbol graphs, graph slices,
   query reports, lint reports, trace seals, graft outcomes with strict accepted
-  provenance records, and ZJX preview envelopes
+  provenance records, and ZJX preview envelopes with graph digest and nested
+  handoff refs
 - query report direct task/type/effect declaration rows and strict call rows
 - doctor/plan call-bearing reports route agents to strict
   `sley query --kind calls` next-actions
@@ -509,7 +512,7 @@ The current smoke manifest covers:
   `sley trace --trace <trace.jsonl>` receipt inspection plus
   `sley seal --trace <trace.jsonl>` sealing and
   `sley zjx --trace <trace.jsonl>` envelope transport over a non-empty receipt
-  chain
+  chain with a recomputable graph digest
 - raw-host adapter migration templates that rewrite eligible raw host calls to
   fallible `try_` adapters with checked `?` propagation
 - unchecked-result migration templates that add checked `?` propagation when

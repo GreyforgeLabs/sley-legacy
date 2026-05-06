@@ -173,8 +173,8 @@ Implemented now:
   module files declared by the graft candidate, deletion of removed module
   files no longer referenced by the checked candidate, and module rename
   writeback with manifest entry updates when needed
-- a first ZJX-ready JSON envelope command for graph snapshots, optional graph
-  slices, and trace receipts
+- a first ZJX-ready JSON envelope command for graph snapshots, recomputable
+  graph digests, optional graph slices, and trace receipts
 - structural graft operations for adding explicit module declarations,
   adding/removing takes, removing task-declared effects, replacing task bodies, adding
   imports/effects/types/tasks, renaming declarations, updating call-sites,
@@ -193,7 +193,8 @@ Implemented now:
 - locked JSON contract snapshots under `fixtures/contracts/`, including
   checked query, lint, doctor, edit-plan, verify, and project scaffold reports
 - external v0 JSON Schema files under `docs/schemas/`, including strict
-  edit-plan graft operation and transaction template envelopes
+  edit-plan graft operation and transaction template envelopes plus ZJX graph,
+  slice, and trace receipt handoff refs
 - manifest-backed accepted/rejected synthetic conformance corpus fixtures under
   `fixtures/corpus/`, including declared and missing authority cases for the
   seeded host adapter surface
@@ -202,9 +203,10 @@ Implemented now:
   readiness, edit-plan surfaces, verify pre-deploy gates, project scaffolding,
   graft/fix dry runs, direct graft writes, temp setup files for write-mode
   smokes, explicit graft/fix trace receipts, trace seals over non-empty receipt
-  chains, ZJX envelopes carrying trace receipts, passed-verify next-actions
-  for seal and ZJX handoff artifacts, doctor/verify warning next-actions that
-  route to lint repair plans and unambiguous dry-run fix previews with explicit
+  chains, ZJX envelopes carrying graph digests and trace receipts,
+  passed-verify next-actions for seal and ZJX handoff artifacts,
+  doctor/verify warning next-actions that route to lint repair plans and
+  unambiguous dry-run fix previews with explicit
   `write_command` vectors, a staged previewed-repair write smoke that proves
   strict verify readiness afterward, a project-level previewed unused-import
   repair write followed by strict verify, a generated deploy scaffold repair
@@ -474,8 +476,8 @@ Known v0 limits:
   content-addressed seal over the source, graph, and trace receipts, but the
   compressed `.zjx` archive remains a later integration step.
 - `sley zjx` emits the first Sley ZJX envelope payload as JSON with
-  `compression=none`; the binary compressed archive handoff remains a later
-  integration step.
+  `compression=none` and a recomputable graph digest; the binary compressed
+  archive handoff remains a later integration step.
 - Runtime host support is intentionally narrow: `FileRead`/`FileWrite` have
   root-scoped filesystem handlers, `DatabaseRead` has a deterministic
   seeded-table adapter, and `DatabaseWrite` has a deterministic per-run insert

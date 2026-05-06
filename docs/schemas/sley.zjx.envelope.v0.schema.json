@@ -3,15 +3,35 @@
   "$id": "sley.zjx.envelope.v0",
   "title": "Sley ZJX Envelope v0",
   "type": "object",
-  "required": ["schema", "format", "compression", "target", "graph"],
+  "required": ["schema", "format", "compression", "target", "graph_digest", "graph"],
   "properties": {
     "schema": { "const": "sley.zjx.envelope.v0" },
     "format": { "const": "zjx-preview-json" },
     "compression": { "const": "none" },
-    "target": { "type": "string" },
-    "graph": { "type": "object" },
-    "slice": { "type": "object" },
-    "trace_receipts": { "type": "array", "items": { "type": "object" } }
+    "target": { "type": "string", "minLength": 1 },
+    "graph_digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "graph": { "$ref": "sley.symbol_graph.v0" },
+    "slice": { "$ref": "sley.symbol_graph.slice.v0" },
+    "trace_receipts": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/traceReceipt" }
+    }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "$defs": {
+    "traceReceipt": {
+      "type": "object",
+      "required": ["schema", "target", "written_at", "provenance"],
+      "properties": {
+        "schema": { "const": "sley.trace.receipt.v0" },
+        "target": { "type": "string", "minLength": 1 },
+        "written_at": { "type": "string", "minLength": 1 },
+        "provenance": {
+          "type": "array",
+          "items": { "$ref": "sley.graft.outcome.v0#/$defs/provenanceRecord" }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
 }

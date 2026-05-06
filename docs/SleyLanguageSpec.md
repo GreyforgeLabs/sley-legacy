@@ -603,8 +603,10 @@ and provenance records. Symbol graph, graph slice, and query schemas also pin
 module import/declaration summary shapes so agents can rely on stable import
 node ids for graft targets. The edit-plan schema pins strict graft operation
 and transaction template envelopes. The graft outcome schema pins strict
-accepted provenance records. The remaining schema files currently pin their
-top-level contract shape and stable schema IDs.
+accepted provenance records. The ZJX envelope schema pins the graph digest,
+graph root, optional graph slice root, and trace receipt shape used for
+handoff. The remaining schema files currently pin their top-level contract
+shape and stable schema IDs.
 
 The compiler conformance corpus lives under `fixtures/corpus/`. Its
 `manifest.json` lists every accepted and rejected fixture plus coverage tags.
@@ -621,7 +623,8 @@ selected stdout substrings, JSON root schemas, graph slices, checked query
 reports, checked lint reports, doctor readiness reports, edit-plan reports,
 project scaffolds, ZJX preview envelopes, graft dry runs and direct graft
 writes, write-mode fix trace receipts, non-empty trace receipt seals, ZJX
-envelopes carrying trace receipts, graph-slice replace affordances, checked
+envelopes carrying graph digests and trace receipts, graph-slice replace
+affordances, checked
 `replace_expression` graft templates, lint-driven fix writes that clear
 warnings before verify, typed deploy scaffold next-actions, and
 seeded host-adapter
@@ -863,8 +866,8 @@ snapshots.
 
 The current `sley zjx` command emits a preview JSON payload with
 `compression=none`. It is a ZJX-ready semantic envelope for graph snapshots,
-optional graph slices, and trace receipts; it is not yet a compressed `.zjx`
-archive.
+recomputable graph digests, optional graph slices, and trace receipts; it is
+not yet a compressed `.zjx` archive.
 
 The future compressed Sley runtime must validate Sley structure before packing;
 the lock boundary is specified in `docs/SleyZjxRuntimeLockSpec.md`.

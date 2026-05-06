@@ -29,6 +29,8 @@ Current Sley state:
 - `sley zjx` emits a preview JSON envelope.
 - The current envelope uses `schema=sley.zjx.envelope.v0`,
   `format=zjx-preview-json`, and `compression=none`.
+- The current envelope includes `graph_digest=sha256:...` computed from the
+  emitted symbol graph JSON.
 - The current command is not a compressed `.zjx` archive writer.
 
 Current ZJX state:
@@ -214,7 +216,7 @@ Required validation:
 - validate optional slices and trace receipts;
 - recompute canonical graph bytes from the submitted graph;
 - compute graph hash;
-- compare any supplied hash fields against recomputed values;
+- compare the supplied `graph_digest` against the recomputed value;
 - pack only after structural validation succeeds.
 
 ### Future Canonical Graph Bytes
@@ -574,8 +576,8 @@ spoofing surface and will drift from Sley semantics.
 ## Open Questions
 
 - What is the exact canonical graph byte encoding for v0?
-- Should `sley zjx --json` include a graph hash now, or should only
-  `zjx-sley` write the scoped hash after validation?
+- Should `sley zjx --json` add source or trace digests, or should those remain
+  seal/runtime-manifest fields only?
 - What are the first free-runtime string and trace-size caps?
 - Should enterprise Sley projects be allowed larger string caps through a
   signed policy file?

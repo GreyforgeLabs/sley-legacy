@@ -2070,6 +2070,7 @@
         "cli:zjx",
         "json:sley.zjx.envelope.v0",
         "trace:explicit-path",
+        "zjx:graph-digest",
         "zjx:trace-receipts"
       ],
       "expect": {
@@ -2133,7 +2134,7 @@
     {
       "name": "zjx_project_slice_json",
       "args": ["zjx", "--json", "--slice", "task:app.main.main", "examples/project"],
-      "covers": ["cli:zjx", "json:sley.zjx.envelope.v0"],
+      "covers": ["cli:zjx", "json:sley.zjx.envelope.v0", "zjx:graph-digest"],
       "expect": {
         "success": true,
         "stdout_json": [
