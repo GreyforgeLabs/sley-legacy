@@ -116,7 +116,8 @@ Implemented now:
   `--rule unqualified-imported-call`, `--rule unused-pure-binding`, or
   `--rule mutable-binding-never-set`, `--rule constant-if-expression`,
   `--rule identity-binary-expression`, or
-  `--rule redundant-boolean-comparison`
+  `--rule redundant-boolean-comparison`, or
+  `--rule double-negation-expression`
   filters, and
   `schema: "sley.lint.report.v0"` for warning-grade graph and authority lints
 - in-tree `sley-contract` utility scaffold with `inventory`, `check-fixtures`,
@@ -165,6 +166,7 @@ Implemented now:
   expressions that can be replaced by the non-identity side,
   `simplify_redundant_boolean_comparison` templates for boolean comparisons
   against `true` or `false`,
+  `simplify_double_negation_expression` templates for `!!expr` forms,
   `--template-surface <surface>` targeting for task, block, statement, take,
   expression, program, or lint surfaces, including checked task-body and block
   `insert_statement` starters, checked statement-surface `replace_statement`
@@ -617,6 +619,7 @@ constant-if expression simplification templates with write/verify coverage,
 identity binary expression simplification templates with write/verify coverage,
 redundant boolean comparison simplification templates with write/verify
 coverage,
+double negation expression simplification templates with write/verify coverage,
 private-task lint rules,
 declaration/import/API hygiene, authority hygiene, and explicit module style
 warnings. The next logical phase is to keep broadening style and migration

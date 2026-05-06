@@ -793,6 +793,10 @@ non-identity side preserves a checked program.
 `simplify_redundant_boolean_comparison` `ReplaceExpression` templates when
 replacing comparisons against `true` or `false` with the boolean expression or
 its negation preserves a checked program.
+`double_negation_expression` lint findings become checked
+`simplify_double_negation_expression` `ReplaceExpression` templates when
+replacing `!!expr` with the inner boolean expression preserves a checked
+program.
 `--template-surface program` emits checked `add_task`,
 `add_type_declaration`, `add_effect_declaration`, and `add_import` starters for
 adding new declarations and imports to the current program module.
@@ -913,7 +917,9 @@ executes; and `identity_binary_expression`, which warns when a checked identity
 binary expression such as `x + 0`, `x * 1`, `flag && true`, or `flag || false`
 can be replaced with the non-identity side; and
 `redundant_boolean_comparison`, which warns when a checked comparison against
-`true` or `false` can be replaced with the boolean expression or its negation.
+`true` or `false` can be replaced with the boolean expression or its negation;
+and `double_negation_expression`, which warns when a checked `!!expr` form can
+be replaced with the inner boolean expression.
 `--module <module>` scopes the lint to one module. `--rule unused-private-task`,
 `--rule unreachable-private-task`, `--rule unused-declared-effect`,
 `--rule unused-import`, `--rule unused-take`, `--rule unused-private-type`,
@@ -922,7 +928,8 @@ can be replaced with the non-identity side; and
 `--rule unqualified-imported-call`, `--rule unused-pure-binding`, or
 `--rule mutable-binding-never-set`, `--rule constant-if-expression`, or
 `--rule identity-binary-expression`, or
-`--rule redundant-boolean-comparison` selects one rule explicitly, and
+`--rule redundant-boolean-comparison`, or
+`--rule double-negation-expression` selects one rule explicitly, and
 `--deny-warnings` turns findings into a nonzero CLI exit after printing the
 report. The v0 JSON root is `sley.lint.report.v0`.
 
@@ -1024,8 +1031,9 @@ refuse generic data disguised as Sley artifacts before compression begins.
   raw-host-adapter and unchecked-result migration warnings with checked
   propagation templates, unqualified imported-call qualification templates,
   unused pure binding cleanup templates, and mutable binding conversion
-  transactions, constant-if, identity binary expression, and redundant boolean
-  comparison simplification templates, plus explicit module style warnings;
+  transactions, constant-if, identity binary expression, redundant boolean
+  comparison, and double negation simplification templates, plus explicit
+  module style warnings;
   broader style and migration lints remain later work
 - `sley plan` emits deterministic ranked task edit surfaces, optional starter
   graft operation templates, rename-plus-call-site and add-take-plus-call-arg

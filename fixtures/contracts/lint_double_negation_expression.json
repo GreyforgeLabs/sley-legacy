@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.double_negation",
+  "filters": {
+    "module": null,
+    "rules": [
+      "double_negation_expression"
+    ]
+  },
+  "findings": [
+    {
+      "id": "DOUBLE_NEGATION_EXPRESSION",
+      "rule": "double_negation_expression",
+      "severity": "warning",
+      "message": "task `app.double_negation.main` has a double negation expression `!!ready`",
+      "node": "block:task:app.double_negation.main:stmt:1:expr",
+      "module": "app.double_negation",
+      "hint": "replace the double negation expression with `ready`"
+    }
+  ]
+}

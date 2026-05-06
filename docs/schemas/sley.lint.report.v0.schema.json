@@ -32,7 +32,8 @@
               "mutable_binding_never_set",
               "constant_if_expression",
               "identity_binary_expression",
-              "redundant_boolean_comparison"
+              "redundant_boolean_comparison",
+              "double_negation_expression"
             ]
           },
           "uniqueItems": true
@@ -71,7 +72,8 @@
               "MUTABLE_BINDING_NEVER_SET",
               "CONSTANT_IF_EXPRESSION",
               "IDENTITY_BINARY_EXPRESSION",
-              "REDUNDANT_BOOLEAN_COMPARISON"
+              "REDUNDANT_BOOLEAN_COMPARISON",
+              "DOUBLE_NEGATION_EXPRESSION"
             ]
           },
           "rule": {
@@ -91,7 +93,8 @@
               "mutable_binding_never_set",
               "constant_if_expression",
               "identity_binary_expression",
-              "redundant_boolean_comparison"
+              "redundant_boolean_comparison",
+              "double_negation_expression"
             ]
           },
           "severity": { "enum": ["warning"] },

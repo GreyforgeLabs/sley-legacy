@@ -40,7 +40,7 @@ Current verified surface:
 
 - `cargo fmt --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 223 tests.
+- Current integration coverage is 225 tests.
 - `sley query --json` emits `schema: "sley.query.report.v0"` and supports
   `--kind all|modules|tasks|types|effects|calls`, `--module <module>`, and
   `--exported`, including strict task/take/type/effect/call row definitions.
@@ -73,7 +73,8 @@ Current verified surface:
   `--rule unqualified-imported-call`, `--rule unused-pure-binding`,
   `--rule mutable-binding-never-set`, `--rule constant-if-expression`,
   `--rule identity-binary-expression`,
-  `--rule redundant-boolean-comparison`, and `--deny-warnings`.
+  `--rule redundant-boolean-comparison`,
+  `--rule double-negation-expression`, and `--deny-warnings`.
 - The current lint rules are `unused_private_task` and
   `unreachable_private_task`, `unused_declared_effect`, and
   `unused_import`, `unused_take`, `unused_private_type`,
@@ -81,7 +82,8 @@ Current verified surface:
   `missing_module_declaration`, `unchecked_result`, and
   `unqualified_imported_call`, `unused_pure_binding`, and
   `mutable_binding_never_set`, `constant_if_expression`,
-  `identity_binary_expression`, and `redundant_boolean_comparison`.
+  `identity_binary_expression`, `redundant_boolean_comparison`, and
+  `double_negation_expression`.
 - CLI smoke coverage is manifest-backed under
   `fixtures/cli_smokes/manifest.json`, including graph-slice insert and
   replace affordances, checked `insert_statement`, `replace_statement`, and
@@ -137,6 +139,8 @@ Current verified surface:
   `simplify_identity_binary_expression` templates with lint/plan/fix-write/verify
   smoke coverage, plus checked `redundant_boolean_comparison` style findings and
   `simplify_redundant_boolean_comparison` templates with lint/plan/fix-write/verify
+  smoke coverage, plus checked `double_negation_expression` style findings and
+  `simplify_double_negation_expression` templates with lint/plan/fix-write/verify
   smoke coverage, plus
   checked dead private task cleanup
   transactions for grouped unused/unreachable private task deletion, plus
@@ -339,6 +343,7 @@ cargo run -- lint --json --rule mutable-binding-never-set <target>
 cargo run -- lint --json --rule constant-if-expression <target>
 cargo run -- lint --json --rule identity-binary-expression <target>
 cargo run -- lint --json --rule redundant-boolean-comparison <target>
+cargo run -- lint --json --rule double-negation-expression <target>
 cargo run -- query --json --kind types <target>
 cargo run -- query --json --kind effects <target>
 ```

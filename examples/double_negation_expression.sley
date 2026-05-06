@@ -1,0 +1,7 @@
+module app.double_negation
+
+task main -> Bool {
+  bind ready = true
+
+  return !!ready
+}
