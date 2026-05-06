@@ -540,6 +540,8 @@ Current v0 graft outcome JSON has this root shape:
 
 Rejected graft outcomes use the same schema and `status: "rejected"`, omit
 `source`, clear `provenance`, and include diagnostics.
+Accepted provenance entries are strict records with `graft_id`, `actor`,
+`timestamp`, `operation`, non-empty `targets`, and `result: "accepted"`.
 
 ## Graph And Trace Tooling
 
@@ -600,8 +602,9 @@ types, effects, tasks, takes, statements, expressions, type expressions, spans,
 and provenance records. Symbol graph, graph slice, and query schemas also pin
 module import/declaration summary shapes so agents can rely on stable import
 node ids for graft targets. The edit-plan schema pins strict graft operation
-and transaction template envelopes. The remaining schema files currently pin
-their top-level contract shape and stable schema IDs.
+and transaction template envelopes. The graft outcome schema pins strict
+accepted provenance records. The remaining schema files currently pin their
+top-level contract shape and stable schema IDs.
 
 The compiler conformance corpus lives under `fixtures/corpus/`. Its
 `manifest.json` lists every accepted and rejected fixture plus coverage tags.

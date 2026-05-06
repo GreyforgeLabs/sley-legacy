@@ -9,7 +9,47 @@
     "status": { "enum": ["accepted", "rejected"] },
     "source": { "type": "string" },
     "diagnostics": { "type": "array", "items": { "type": "object" } },
-    "provenance": { "type": "array", "items": { "type": "object" } }
+    "provenance": { "type": "array", "items": { "$ref": "#/$defs/provenanceRecord" } }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "$defs": {
+    "provenanceRecord": {
+      "type": "object",
+      "required": ["graft_id", "actor", "timestamp", "operation", "targets", "result"],
+      "properties": {
+        "graft_id": { "type": "string", "minLength": 1 },
+        "actor": { "type": "string", "minLength": 1 },
+        "timestamp": { "type": "string", "minLength": 1 },
+        "operation": {
+          "enum": [
+            "AddModuleDeclaration",
+            "AddTask",
+            "ReplaceTaskBody",
+            "AddTake",
+            "RemoveTake",
+            "RenameDeclaration",
+            "AddTypeDeclaration",
+            "AddEffectDeclaration",
+            "RemoveTaskEffect",
+            "AddImport",
+            "UpdateCallSites",
+            "UpdateCallArgs",
+            "ReplaceCallArg",
+            "RemoveCallArg",
+            "InsertStatement",
+            "ReplaceExpression",
+            "MoveNode",
+            "DeleteNode"
+          ]
+        },
+        "targets": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 1
+        },
+        "result": { "enum": ["accepted"] }
+      },
+      "additionalProperties": false
+    }
+  }
 }

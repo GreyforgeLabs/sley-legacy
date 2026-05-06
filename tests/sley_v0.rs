@@ -4014,6 +4014,64 @@ fn edit_plan_schema_covers_strict_graft_template_payloads() {
 }
 
 #[test]
+fn graft_outcome_schema_covers_strict_provenance_records() {
+    let schema: serde_json::Value = serde_json::from_str(include_str!(
+        "../docs/schemas/sley.graft.outcome.v0.schema.json"
+    ))
+    .expect("parse graft outcome schema");
+    assert_eq!(
+        schema.pointer("/properties/provenance/items/$ref"),
+        Some(&serde_json::json!("#/$defs/provenanceRecord"))
+    );
+    assert_eq!(
+        schema.pointer("/$defs/provenanceRecord/additionalProperties"),
+        Some(&serde_json::json!(false))
+    );
+    assert_eq!(
+        schema.pointer("/$defs/provenanceRecord/required"),
+        Some(&serde_json::json!([
+            "graft_id",
+            "actor",
+            "timestamp",
+            "operation",
+            "targets",
+            "result"
+        ]))
+    );
+    assert_eq!(
+        schema.pointer("/$defs/provenanceRecord/properties/result/enum"),
+        Some(&serde_json::json!(["accepted"]))
+    );
+    assert_eq!(
+        schema.pointer("/$defs/provenanceRecord/properties/targets/minItems"),
+        Some(&serde_json::json!(1))
+    );
+    assert_eq!(
+        schema.pointer("/$defs/provenanceRecord/properties/operation/enum"),
+        Some(&serde_json::json!([
+            "AddModuleDeclaration",
+            "AddTask",
+            "ReplaceTaskBody",
+            "AddTake",
+            "RemoveTake",
+            "RenameDeclaration",
+            "AddTypeDeclaration",
+            "AddEffectDeclaration",
+            "RemoveTaskEffect",
+            "AddImport",
+            "UpdateCallSites",
+            "UpdateCallArgs",
+            "ReplaceCallArg",
+            "RemoveCallArg",
+            "InsertStatement",
+            "ReplaceExpression",
+            "MoveNode",
+            "DeleteNode"
+        ]))
+    );
+}
+
+#[test]
 fn checker_diagnostics_include_actionable_repair_hints() {
     let source = r#"
 task takes_text -> Text {

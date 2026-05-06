@@ -184,7 +184,8 @@ Implemented now:
   checked statements or top-level declaration order within their current parent
 - strict graft input JSON for the v0 operation shapes; unknown graft fields are
   rejected instead of silently ignored
-- versioned JSON report roots for diagnostics and graft outcomes
+- versioned JSON report roots for diagnostics and graft outcomes with strict
+  accepted provenance records
 - repair hints on common checker diagnostics, including unknown identifiers,
   unknown tasks, type mismatches, return mismatches, missing return paths, call
   argument mismatches, condition mismatches, effect authority, and private or
@@ -496,8 +497,9 @@ Known v0 limits:
   before any source or trace mutation.
 - The AST JSON Schema now covers declarations, statements, expressions, type
   expressions, spans, and provenance recursively. The edit-plan schema also
-  pins strict graft operation and transaction template envelopes. Other
-  external JSON Schema files remain narrower v0 root-contract schemas.
+  pins strict graft operation and transaction template envelopes. The graft
+  outcome schema pins strict accepted provenance records. Other external JSON
+  Schema files remain narrower v0 root-contract schemas.
 - `MoveNode` currently reorders statements within their existing block,
   moves statements across existing block parents with `payload.destination`,
   reorders takes within their owning task, reorders top-level imports, types,
