@@ -214,6 +214,68 @@
       "editable_json_pointers": []
     }
   ],
+  "replace_affordances": [
+    {
+      "target": "block:task:app.main.main:stmt:0:expr",
+      "target_kind": "Call",
+      "parent": "block:task:app.main.main:stmt:0",
+      "operation": {
+        "op": "ReplaceExpression",
+        "payload": {
+          "source": "call math.double(21)"
+        },
+        "target": "block:task:app.main.main:stmt:0:expr"
+      },
+      "editable_json_pointers": [
+        "/payload/source"
+      ]
+    },
+    {
+      "target": "block:task:app.main.main:stmt:0:expr:callee",
+      "target_kind": "FieldAccess",
+      "parent": "block:task:app.main.main:stmt:0:expr",
+      "operation": {
+        "op": "ReplaceExpression",
+        "payload": {
+          "source": "math.double"
+        },
+        "target": "block:task:app.main.main:stmt:0:expr:callee"
+      },
+      "editable_json_pointers": [
+        "/payload/source"
+      ]
+    },
+    {
+      "target": "block:task:app.main.main:stmt:0:expr:callee:receiver",
+      "target_kind": "Identifier",
+      "parent": "block:task:app.main.main:stmt:0:expr:callee",
+      "operation": {
+        "op": "ReplaceExpression",
+        "payload": {
+          "source": "math"
+        },
+        "target": "block:task:app.main.main:stmt:0:expr:callee:receiver"
+      },
+      "editable_json_pointers": [
+        "/payload/source"
+      ]
+    },
+    {
+      "target": "block:task:app.main.main:stmt:0:expr:arg:0",
+      "target_kind": "IntLiteral",
+      "parent": "block:task:app.main.main:stmt:0:expr",
+      "operation": {
+        "op": "ReplaceExpression",
+        "payload": {
+          "source": "21"
+        },
+        "target": "block:task:app.main.main:stmt:0:expr:arg:0"
+      },
+      "editable_json_pointers": [
+        "/payload/source"
+      ]
+    }
+  ],
   "outbound_calls": [
     {
       "from": "app.main.main",

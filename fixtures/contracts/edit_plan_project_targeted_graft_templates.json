@@ -182,6 +182,51 @@
       "editable_json_pointers": [
         "/payload/position"
       ]
+    },
+    {
+      "kind": "replace_expression",
+      "reason": "replace this Binary expression using checked graph-slice ReplaceExpression affordance data",
+      "surface": "task:app.math.double",
+      "operation": {
+        "op": "ReplaceExpression",
+        "payload": {
+          "source": "value * 2"
+        },
+        "target": "block:task:app.math.double:stmt:0:expr"
+      },
+      "editable_json_pointers": [
+        "/payload/source"
+      ]
+    },
+    {
+      "kind": "replace_expression",
+      "reason": "replace this Identifier expression using checked graph-slice ReplaceExpression affordance data",
+      "surface": "task:app.math.double",
+      "operation": {
+        "op": "ReplaceExpression",
+        "payload": {
+          "source": "value"
+        },
+        "target": "block:task:app.math.double:stmt:0:expr:left"
+      },
+      "editable_json_pointers": [
+        "/payload/source"
+      ]
+    },
+    {
+      "kind": "replace_expression",
+      "reason": "replace this IntLiteral expression using checked graph-slice ReplaceExpression affordance data",
+      "surface": "task:app.math.double",
+      "operation": {
+        "op": "ReplaceExpression",
+        "payload": {
+          "source": "2"
+        },
+        "target": "block:task:app.math.double:stmt:0:expr:right"
+      },
+      "editable_json_pointers": [
+        "/payload/source"
+      ]
     }
   ],
   "transaction_templates": [

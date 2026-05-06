@@ -166,6 +166,66 @@
       "editable_json_pointers": [
         "/payload/position"
       ]
+    },
+    {
+      "kind": "replace_expression",
+      "reason": "replace this Call expression using checked graph-slice ReplaceExpression affordance data",
+      "surface": "task:app.main.main",
+      "operation": {
+        "op": "ReplaceExpression",
+        "payload": {
+          "source": "call math.double(21)"
+        },
+        "target": "block:task:app.main.main:stmt:0:expr"
+      },
+      "editable_json_pointers": [
+        "/payload/source"
+      ]
+    },
+    {
+      "kind": "replace_expression",
+      "reason": "replace this FieldAccess expression using checked graph-slice ReplaceExpression affordance data",
+      "surface": "task:app.main.main",
+      "operation": {
+        "op": "ReplaceExpression",
+        "payload": {
+          "source": "math.double"
+        },
+        "target": "block:task:app.main.main:stmt:0:expr:callee"
+      },
+      "editable_json_pointers": [
+        "/payload/source"
+      ]
+    },
+    {
+      "kind": "replace_expression",
+      "reason": "replace this Identifier expression using checked graph-slice ReplaceExpression affordance data",
+      "surface": "task:app.main.main",
+      "operation": {
+        "op": "ReplaceExpression",
+        "payload": {
+          "source": "math"
+        },
+        "target": "block:task:app.main.main:stmt:0:expr:callee:receiver"
+      },
+      "editable_json_pointers": [
+        "/payload/source"
+      ]
+    },
+    {
+      "kind": "replace_expression",
+      "reason": "replace this IntLiteral expression using checked graph-slice ReplaceExpression affordance data",
+      "surface": "task:app.main.main",
+      "operation": {
+        "op": "ReplaceExpression",
+        "payload": {
+          "source": "21"
+        },
+        "target": "block:task:app.main.main:stmt:0:expr:arg:0"
+      },
+      "editable_json_pointers": [
+        "/payload/source"
+      ]
     }
   ],
   "next_actions": [

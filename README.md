@@ -95,7 +95,7 @@ Implemented now:
 - JSON AST output with `schema: "sley.ast.program.v0"`
 - JSON module symbol graph output for module imports and exported declarations,
   plus bounded graph slices with `sley graph --slice <node-id>`; symbol graph
-  and graph-slice JSON carry v0 schema IDs, including move and delete
+  and graph-slice JSON carry v0 schema IDs, including move, delete, and replace
   affordances for structural graft planning
 - checked JSON query reports with `sley query --kind all|modules|tasks|calls`,
   optional `--module` and `--exported` filters, and

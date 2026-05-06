@@ -432,6 +432,7 @@ fn build_graft_templates(
     }
     templates.extend(graph_slice_move_templates(program, surface));
     templates.extend(graph_slice_delete_templates(program, surface));
+    templates.extend(graph_slice_replace_templates(program, surface));
     Ok(templates)
 }
 
@@ -630,6 +631,45 @@ fn delete_affordance_checks(program: &Program, operation: &JsonValue) -> bool {
         program,
         input,
         Some("agent:plan-delete-affordance".to_string()),
+    )
+    .status
+        == "accepted"
+}
+
+fn graph_slice_replace_templates(
+    program: &Program,
+    surface: &EditPlanTaskSurface,
+) -> Vec<EditPlanGraftTemplate> {
+    let Some(slice) = slice_symbol_graph(program, &surface.id) else {
+        return Vec::new();
+    };
+    let expression_prefix = format!("block:{}", surface.id);
+    slice
+        .replace_affordances
+        .into_iter()
+        .filter(|affordance| affordance.target.starts_with(&expression_prefix))
+        .filter(|affordance| replace_affordance_checks(program, &affordance.operation))
+        .map(|affordance| EditPlanGraftTemplate {
+            kind: "replace_expression".to_string(),
+            reason: format!(
+                "replace this {} expression using checked graph-slice ReplaceExpression affordance data",
+                affordance.target_kind
+            ),
+            surface: surface.id.clone(),
+            operation: affordance.operation,
+            editable_json_pointers: affordance.editable_json_pointers,
+        })
+        .collect()
+}
+
+fn replace_affordance_checks(program: &Program, operation: &JsonValue) -> bool {
+    let Ok(input) = serde_json::from_value::<GraftInput>(operation.clone()) else {
+        return false;
+    };
+    apply_graft_input(
+        program,
+        input,
+        Some("agent:plan-replace-affordance".to_string()),
     )
     .status
         == "accepted"

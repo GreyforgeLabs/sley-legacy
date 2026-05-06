@@ -119,6 +119,23 @@
       "editable_json_pointers": []
     }
   ],
+  "replace_affordances": [
+    {
+      "target": "block:task:main.main:stmt:0:expr",
+      "target_kind": "IntLiteral",
+      "parent": "block:task:main.main:stmt:0",
+      "operation": {
+        "op": "ReplaceExpression",
+        "payload": {
+          "source": "1"
+        },
+        "target": "block:task:main.main:stmt:0:expr"
+      },
+      "editable_json_pointers": [
+        "/payload/source"
+      ]
+    }
+  ],
   "outbound_calls": [],
   "inbound_calls": []
 }

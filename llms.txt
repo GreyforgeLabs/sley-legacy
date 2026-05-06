@@ -173,5 +173,8 @@ Current development phase:
   import/type/effect/task/statement/take `DeleteNode` planning; `sley plan
   --graft-templates` surfaces checked task-internal `delete_statement` and
   `delete_take` templates when the starter delete graft validates
+- graph slices expose `replace_affordances` for task-local
+  `ReplaceExpression` planning; `sley plan --graft-templates` surfaces checked
+  `replace_expression` templates when the starter replace graft validates
 - manifest-backed accepted/rejected synthetic gold corpus growth
-- broader graph-slice graft operations around move/delete planning
+- broader graph-slice graft operations around move/delete/replace planning

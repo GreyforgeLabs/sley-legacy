@@ -634,7 +634,9 @@ pointers naming the fields an agent should edit before running
 `sley graft --json --dry-run`; it also consumes the selected task graph slice
 and adds `move_statement`/`move_take` templates plus destination variants from
 checked `move_affordances`, and checked `delete_statement`/`delete_take`
-templates from `delete_affordances` when the starter delete graft validates.
+templates from `delete_affordances` when the starter delete graft validates,
+plus checked `replace_expression` templates from `replace_affordances` when the
+starter expression graft validates.
 `--template-surface <task>` selects a specific task surface by task node id or
 qualified task name. For selected tasks with currently resolved inbound callers,
 the report also includes an all-or-nothing `RenameDeclaration` plus
@@ -660,6 +662,10 @@ editable JSON pointers so agents can copy a template, adjust
 `delete_affordances` for import, type, effect, task, statement, and take
 `DeleteNode` planning; each delete affordance exposes the exact target, current
 parent, current position, starter operation JSON, and editable pointer list.
+Graph slices also include task-local `replace_affordances` for
+`ReplaceExpression` planning; each replace affordance exposes the exact
+expression target, expression kind, parent node id, starter operation JSON, and
+editable `/payload/source` pointer.
 Call-site and expression grafts now consume node ids and task identities from
 this shard.
 

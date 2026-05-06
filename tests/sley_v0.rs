@@ -644,7 +644,7 @@ task main -> Result<Text, Error> {
         },
     );
     assert_eq!(report.status, "ready");
-    assert_eq!(report.graft_templates.len(), 5);
+    assert!(report.graft_templates.len() >= 6);
     assert_eq!(report.graft_templates[0].kind, "replace_task_body");
     assert_eq!(
         report.graft_templates[0]
@@ -674,6 +674,23 @@ task main -> Result<Text, Error> {
     assert_eq!(
         report.graft_templates[4].editable_json_pointers,
         vec!["/payload/position".to_string()]
+    );
+    let expression_template = report
+        .graft_templates
+        .iter()
+        .find(|template| {
+            template.kind == "replace_expression"
+                && template.operation.pointer("/target")
+                    == Some(&serde_json::json!("block:task:app.plan.main:stmt:0:expr"))
+        })
+        .expect("replace expression template");
+    assert_eq!(
+        expression_template.operation.pointer("/op"),
+        Some(&serde_json::json!("ReplaceExpression"))
+    );
+    assert_eq!(
+        expression_template.editable_json_pointers,
+        vec!["/payload/source".to_string()]
     );
     for template in &report.graft_templates {
         serde_json::from_value::<GraftInput>(template.operation.clone())
@@ -5962,6 +5979,35 @@ task main -> Int {
         Some(&serde_json::json!(
             "block:task:main.main:stmt:1:then:stmt:0"
         ))
+    );
+
+    let replace_return = slice
+        .replace_affordances
+        .iter()
+        .find(|affordance| affordance.target == "block:task:main.main:stmt:2:expr")
+        .expect("return expression replace affordance");
+    assert_eq!(replace_return.target_kind, "Identifier");
+    assert_eq!(replace_return.parent, "block:task:main.main:stmt:2");
+    assert_eq!(
+        replace_return.operation.pointer("/op"),
+        Some(&serde_json::json!("ReplaceExpression"))
+    );
+    assert_eq!(
+        replace_return.operation.pointer("/payload/source"),
+        Some(&serde_json::json!("total"))
+    );
+    assert_eq!(
+        replace_return.editable_json_pointers,
+        vec!["/payload/source".to_string()]
+    );
+    let replace_graft: GraftInput = serde_json::from_value(replace_return.operation.clone())
+        .expect("parse replace expression affordance");
+    let replace_outcome =
+        apply_graft_input(&program, replace_graft, Some("agent:test".to_string()));
+    assert_eq!(
+        replace_outcome.status, "accepted",
+        "{:#?}",
+        replace_outcome.diagnostics
     );
 }
 

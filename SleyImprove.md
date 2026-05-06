@@ -268,9 +268,10 @@ Graph slices also expose bounded `MoveNode` affordances for import, type,
 effect, task, statement, and take movement planning, including exact parent
 ids and destination insertion limits, starter operation JSON, and editable JSON
 pointers. They also expose bounded `DeleteNode` affordances for import, type,
-effect, task, statement, and take deletion planning; `sley plan
---graft-templates` filters selected task-internal delete templates through the
-checker before surfacing them.
+effect, task, statement, and take deletion planning, plus `ReplaceExpression`
+affordances for task-local expression replacement; `sley plan
+--graft-templates` filters selected task-internal delete and expression replace
+templates through the checker before surfacing them.
 
 The important rule is not that all operations exist immediately. The important
 rule is that unsupported operations reject cleanly with explicit diagnostics.
@@ -524,7 +525,7 @@ Near-term:
    graft, module, and runtime authority cases.
 3. Start consuming `sley.query.report.v0` and `sley.lint.report.v0` from Sley
    helper passes, then broaden authority, style, and migration lints.
-4. Extend graph-slice grafts around move/delete planning.
+4. Extend graph-slice grafts around move, delete, and replace planning.
 5. Harden graph-slice grafts for richer take movement planning, expression edit
    planning, and broader graph-contract checks.
 

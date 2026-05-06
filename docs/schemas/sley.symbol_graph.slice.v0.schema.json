@@ -14,6 +14,7 @@
     "tasks",
     "move_affordances",
     "delete_affordances",
+    "replace_affordances",
     "outbound_calls",
     "inbound_calls"
   ],
@@ -29,6 +30,7 @@
     "task": { "type": "object" },
     "move_affordances": { "type": "array", "items": { "$ref": "#/$defs/moveAffordance" } },
     "delete_affordances": { "type": "array", "items": { "$ref": "#/$defs/deleteAffordance" } },
+    "replace_affordances": { "type": "array", "items": { "$ref": "#/$defs/replaceAffordance" } },
     "outbound_calls": { "type": "array", "items": { "type": "object" } },
     "inbound_calls": { "type": "array", "items": { "type": "object" } }
   },
@@ -117,6 +119,46 @@
         "target_kind": { "enum": ["import", "type", "effect", "task", "statement", "take"] },
         "parent": { "type": "string" },
         "position": { "type": "integer", "minimum": 0 },
+        "operation": { "type": "object" },
+        "editable_json_pointers": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "replaceAffordance": {
+      "type": "object",
+      "required": [
+        "target",
+        "target_kind",
+        "parent",
+        "operation",
+        "editable_json_pointers"
+      ],
+      "properties": {
+        "target": { "type": "string" },
+        "target_kind": {
+          "enum": [
+            "Raw",
+            "StringLiteral",
+            "IntLiteral",
+            "FloatLiteral",
+            "BoolLiteral",
+            "Identifier",
+            "Unary",
+            "Binary",
+            "If",
+            "Call",
+            "ListLiteral",
+            "MapLiteral",
+            "Index",
+            "FieldAccess",
+            "RecordLiteral",
+            "Try"
+          ]
+        },
+        "parent": { "type": "string" },
         "operation": { "type": "object" },
         "editable_json_pointers": {
           "type": "array",

@@ -82,6 +82,7 @@ pub struct SymbolGraphSlice {
     pub task: Option<TaskDecl>,
     pub move_affordances: Vec<MoveNodeAffordance>,
     pub delete_affordances: Vec<DeleteNodeAffordance>,
+    pub replace_affordances: Vec<ReplaceExpressionAffordance>,
     pub outbound_calls: Vec<TaskCallSummary>,
     pub inbound_calls: Vec<TaskCallSummary>,
 }
@@ -134,6 +135,15 @@ pub struct DeleteNodeAffordance {
     pub target_kind: String,
     pub parent: String,
     pub position: usize,
+    pub operation: JsonValue,
+    pub editable_json_pointers: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct ReplaceExpressionAffordance {
+    pub target: String,
+    pub target_kind: String,
+    pub parent: String,
     pub operation: JsonValue,
     pub editable_json_pointers: Vec<String>,
 }
@@ -643,6 +653,11 @@ fn build_slice(
             &focus_module,
             focus_task_index,
             &module_task_indexes,
+        ),
+        replace_affordances: build_replace_affordances(
+            focus_task_index,
+            &module_task_indexes,
+            program,
         ),
         outbound_calls,
         inbound_calls,
@@ -1268,6 +1283,179 @@ fn delete_node_operation(target: &str) -> JsonValue {
 
 fn delete_node_editable_json_pointers() -> Vec<String> {
     Vec::new()
+}
+
+fn build_replace_affordances(
+    focus_task_index: Option<usize>,
+    module_task_indexes: &[usize],
+    program: &Program,
+) -> Vec<ReplaceExpressionAffordance> {
+    let task_indexes = focus_task_index
+        .map(|index| vec![index])
+        .unwrap_or_else(|| module_task_indexes.to_vec());
+    let mut affordances = Vec::new();
+    for task_index in task_indexes {
+        let task = &program.tasks[task_index];
+        collect_replace_affordances_in_block(&task.body, &mut affordances);
+    }
+    affordances
+}
+
+fn collect_replace_affordances_in_block(
+    block: &Block,
+    affordances: &mut Vec<ReplaceExpressionAffordance>,
+) {
+    for statement in &block.statements {
+        collect_replace_affordances_in_statement(statement, affordances);
+    }
+}
+
+fn collect_replace_affordances_in_statement(
+    statement: &Statement,
+    affordances: &mut Vec<ReplaceExpressionAffordance>,
+) {
+    match &statement.kind {
+        StatementKind::Binding { expr, .. }
+        | StatementKind::Set { expr, .. }
+        | StatementKind::Return { expr }
+        | StatementKind::Expr { expr } => {
+            collect_replace_affordances_in_expr(expr, &statement.id, affordances);
+        }
+        StatementKind::If {
+            condition,
+            then_block,
+            else_block,
+        } => {
+            collect_replace_affordances_in_expr(condition, &statement.id, affordances);
+            collect_replace_affordances_in_block(then_block, affordances);
+            if let Some(else_block) = else_block {
+                collect_replace_affordances_in_block(else_block, affordances);
+            }
+        }
+        StatementKind::While { condition, body } => {
+            collect_replace_affordances_in_expr(condition, &statement.id, affordances);
+            collect_replace_affordances_in_block(body, affordances);
+        }
+        StatementKind::For {
+            collection, body, ..
+        } => {
+            collect_replace_affordances_in_expr(collection, &statement.id, affordances);
+            collect_replace_affordances_in_block(body, affordances);
+        }
+        StatementKind::Forge { body } => {
+            collect_replace_affordances_in_block(body, affordances);
+        }
+    }
+}
+
+fn collect_replace_affordances_in_expr(
+    expr: &Expr,
+    parent: &str,
+    affordances: &mut Vec<ReplaceExpressionAffordance>,
+) {
+    push_replace_affordance(affordances, expr, parent);
+    match &expr.kind {
+        ExprKind::Unary { expr: inner, .. } | ExprKind::Try { expr: inner } => {
+            collect_replace_affordances_in_expr(inner, &expr.id, affordances);
+        }
+        ExprKind::Binary { left, right, .. } => {
+            collect_replace_affordances_in_expr(left, &expr.id, affordances);
+            collect_replace_affordances_in_expr(right, &expr.id, affordances);
+        }
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
+            collect_replace_affordances_in_expr(condition, &expr.id, affordances);
+            collect_replace_affordances_in_expr(then_branch, &expr.id, affordances);
+            collect_replace_affordances_in_expr(else_branch, &expr.id, affordances);
+        }
+        ExprKind::Call { callee, args } => {
+            collect_replace_affordances_in_expr(callee, &expr.id, affordances);
+            for arg in args {
+                collect_replace_affordances_in_expr(arg, &expr.id, affordances);
+            }
+        }
+        ExprKind::ListLiteral { items } => {
+            for item in items {
+                collect_replace_affordances_in_expr(item, &expr.id, affordances);
+            }
+        }
+        ExprKind::MapLiteral { entries } => {
+            for entry in entries {
+                collect_replace_affordances_in_expr(&entry.key, &expr.id, affordances);
+                collect_replace_affordances_in_expr(&entry.value, &expr.id, affordances);
+            }
+        }
+        ExprKind::Index { collection, index } => {
+            collect_replace_affordances_in_expr(collection, &expr.id, affordances);
+            collect_replace_affordances_in_expr(index, &expr.id, affordances);
+        }
+        ExprKind::FieldAccess { receiver, .. } => {
+            collect_replace_affordances_in_expr(receiver, &expr.id, affordances);
+        }
+        ExprKind::RecordLiteral { fields, .. } => {
+            for field in fields {
+                collect_replace_affordances_in_expr(&field.expr, &expr.id, affordances);
+            }
+        }
+        ExprKind::Raw { .. }
+        | ExprKind::StringLiteral { .. }
+        | ExprKind::IntLiteral { .. }
+        | ExprKind::FloatLiteral { .. }
+        | ExprKind::BoolLiteral { .. }
+        | ExprKind::Identifier { .. } => {}
+    }
+}
+
+fn push_replace_affordance(
+    affordances: &mut Vec<ReplaceExpressionAffordance>,
+    expr: &Expr,
+    parent: &str,
+) {
+    affordances.push(ReplaceExpressionAffordance {
+        target: expr.id.clone(),
+        target_kind: expr_kind_name(&expr.kind).to_string(),
+        parent: parent.to_string(),
+        operation: replace_expression_operation(&expr.id, &expr.source),
+        editable_json_pointers: replace_expression_editable_json_pointers(),
+    });
+}
+
+fn replace_expression_operation(target: &str, source: &str) -> JsonValue {
+    json!({
+        "op": "ReplaceExpression",
+        "target": target,
+        "payload": {
+            "source": source
+        }
+    })
+}
+
+fn replace_expression_editable_json_pointers() -> Vec<String> {
+    vec!["/payload/source".to_string()]
+}
+
+fn expr_kind_name(kind: &ExprKind) -> &'static str {
+    match kind {
+        ExprKind::Raw { .. } => "Raw",
+        ExprKind::StringLiteral { .. } => "StringLiteral",
+        ExprKind::IntLiteral { .. } => "IntLiteral",
+        ExprKind::FloatLiteral { .. } => "FloatLiteral",
+        ExprKind::BoolLiteral { .. } => "BoolLiteral",
+        ExprKind::Identifier { .. } => "Identifier",
+        ExprKind::Unary { .. } => "Unary",
+        ExprKind::Binary { .. } => "Binary",
+        ExprKind::If { .. } => "If",
+        ExprKind::Call { .. } => "Call",
+        ExprKind::ListLiteral { .. } => "ListLiteral",
+        ExprKind::MapLiteral { .. } => "MapLiteral",
+        ExprKind::Index { .. } => "Index",
+        ExprKind::FieldAccess { .. } => "FieldAccess",
+        ExprKind::RecordLiteral { .. } => "RecordLiteral",
+        ExprKind::Try { .. } => "Try",
+    }
 }
 
 fn module_summary(program: &Program, module: &str) -> ModuleSymbolSummary {
