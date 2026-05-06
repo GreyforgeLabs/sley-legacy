@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.absorbing_boolean",
+  "filters": {
+    "module": null,
+    "rules": [
+      "absorbing_boolean_expression"
+    ]
+  },
+  "findings": [
+    {
+      "id": "ABSORBING_BOOLEAN_EXPRESSION",
+      "rule": "absorbing_boolean_expression",
+      "severity": "warning",
+      "message": "task `app.absorbing_boolean.main` has an absorbing boolean expression `ready && false`",
+      "node": "block:task:app.absorbing_boolean.main:stmt:1:expr",
+      "module": "app.absorbing_boolean",
+      "hint": "replace the absorbing boolean expression with `false`"
+    }
+  ]
+}

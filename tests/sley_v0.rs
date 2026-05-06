@@ -3089,6 +3089,85 @@ fn edit_plan_graft_templates_include_redundant_boolean_comparison_simplify() {
 }
 
 #[test]
+fn edit_plan_graft_templates_include_absorbing_boolean_expression_simplify() {
+    let source = include_str!("../examples/absorbing_boolean_expression.sley");
+    let program = parse_program(source).expect("parse absorbing boolean fixture");
+    let report = build_edit_plan_report_with_options(
+        "examples/absorbing_boolean_expression.sley",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: None,
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "warnings");
+    assert_eq!(report.summary.lint_finding_count, 1);
+    assert_eq!(
+        report.lint.as_ref().expect("lint summary").findings[0].id,
+        "ABSORBING_BOOLEAN_EXPRESSION"
+    );
+    let template = report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "simplify_absorbing_boolean_expression")
+        .expect("absorbing boolean expression simplify template");
+    assert_eq!(
+        template.surface,
+        "block:task:app.absorbing_boolean.main:stmt:1:expr"
+    );
+    assert_eq!(
+        template.operation.pointer("/op"),
+        Some(&serde_json::json!("ReplaceExpression"))
+    );
+    assert_eq!(
+        template.operation.pointer("/payload/source"),
+        Some(&serde_json::json!("false"))
+    );
+    assert_eq!(template.editable_json_pointers, vec!["/payload/source"]);
+    let graft: GraftInput = serde_json::from_value(template.operation.clone())
+        .expect("parse absorbing boolean template");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:absorbing-boolean-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted_source = outcome.source.expect("grafted source");
+    assert!(grafted_source.contains("return false"));
+    assert!(!grafted_source.contains("ready && false"));
+    let grafted_program = parse_program(&grafted_source).expect("parse grafted source");
+    let lint_report = build_lint_report(
+        &grafted_program,
+        LintOptions {
+            rules: vec![LintRule::AbsorbingBooleanExpression],
+            module: None,
+        },
+    );
+    assert_eq!(lint_report.status, "ok");
+
+    let targeted_report = build_edit_plan_report_with_options(
+        "examples/absorbing_boolean_expression.sley",
+        Ok(program),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("block:task:app.absorbing_boolean.main:stmt:1:expr".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(targeted_report.status, "warnings");
+    assert!(targeted_report.diagnostics.is_empty());
+    assert_eq!(targeted_report.graft_templates.len(), 1);
+    assert_eq!(
+        targeted_report.graft_templates[0].kind,
+        "simplify_absorbing_boolean_expression"
+    );
+    assert!(targeted_report.transaction_templates.is_empty());
+}
+
+#[test]
 fn edit_plan_graft_templates_include_double_negation_expression_simplify() {
     let source = include_str!("../examples/double_negation_expression.sley");
     let program = parse_program(source).expect("parse double negation fixture");
@@ -4962,6 +5041,21 @@ task helper -> Result<Text, Error> {
         include_str!("../fixtures/contracts/lint_redundant_boolean_comparison.json"),
     );
 
+    let absorbing_boolean_source = include_str!("../examples/absorbing_boolean_expression.sley");
+    let absorbing_boolean_program =
+        parse_program(absorbing_boolean_source).expect("parse absorbing boolean fixture");
+    let absorbing_boolean_lint = build_lint_report(
+        &absorbing_boolean_program,
+        LintOptions {
+            rules: vec![LintRule::AbsorbingBooleanExpression],
+            module: None,
+        },
+    );
+    assert_json_snapshot(
+        &absorbing_boolean_lint,
+        include_str!("../fixtures/contracts/lint_absorbing_boolean_expression.json"),
+    );
+
     let double_negation_source = include_str!("../examples/double_negation_expression.sley");
     let double_negation_program =
         parse_program(double_negation_source).expect("parse double negation fixture");
@@ -5662,7 +5756,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(37))
+        Some(&serde_json::json!(38))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -10998,6 +11092,99 @@ task main -> Bool {
 }
 
 #[test]
+fn lint_report_flags_absorbing_boolean_expressions() {
+    let source = r#"
+module app.absorbing_boolean
+
+task main -> Bool {
+  bind ready = true
+  bind total = 1
+  bind guarded = (total / 1 == 1) && false
+  bind pure_or = ready || true
+  bind short_or = true || (total / 1 == 1)
+
+  return ready && false || false && (total / 1 == 1)
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+
+    let report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::AbsorbingBooleanExpression],
+            module: None,
+        },
+    );
+
+    assert_eq!(report.schema, LINT_REPORT_SCHEMA);
+    assert_eq!(report.status, "findings");
+    assert_eq!(report.entry_module, "app.absorbing_boolean");
+    assert_eq!(report.filters.rules, vec!["absorbing_boolean_expression"]);
+    assert_eq!(
+        report.findings.len(),
+        4,
+        "right-literal absorption should not drop division-bearing left operands"
+    );
+    assert_eq!(report.findings[0].id, "ABSORBING_BOOLEAN_EXPRESSION");
+    assert_eq!(report.findings[0].rule, "absorbing_boolean_expression");
+    let nodes: Vec<&str> = report
+        .findings
+        .iter()
+        .map(|finding| finding.node.as_str())
+        .collect();
+    assert!(nodes.contains(&"block:task:app.absorbing_boolean.main:stmt:3:expr"));
+    assert!(nodes.contains(&"block:task:app.absorbing_boolean.main:stmt:4:expr"));
+    assert!(nodes.contains(&"block:task:app.absorbing_boolean.main:stmt:5:expr:left"));
+    assert!(nodes.contains(&"block:task:app.absorbing_boolean.main:stmt:5:expr:right"));
+    assert_eq!(report.findings[0].module, "app.absorbing_boolean");
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|finding| finding.message.contains("ready && false"))
+    );
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|finding| finding.hint.contains("false"))
+    );
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|finding| finding.message.contains("false &&"))
+    );
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|finding| finding.message.contains("ready || true"))
+    );
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|finding| finding.message.contains("true ||"))
+    );
+
+    let scoped_report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::AbsorbingBooleanExpression],
+            module: Some("app.other".to_string()),
+        },
+    );
+    assert_eq!(scoped_report.status, "ok");
+    assert!(scoped_report.findings.is_empty());
+}
+
+#[test]
 fn lint_report_flags_double_negation_expressions() {
     let source = r#"
 module app.double_negation
@@ -13382,6 +13569,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:templates:constant-if-expression",
         "graft:templates:identity-binary-expression",
         "graft:templates:redundant-boolean-comparison",
+        "graft:templates:absorbing-boolean-expression",
         "graft:templates:double-negation-expression",
         "graft:templates:redundant-boolean-if-expression",
         "graft:templates:same-branch-if-expression",
@@ -13428,6 +13616,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "lint:constant_if_expression",
         "lint:identity_binary_expression",
         "lint:redundant_boolean_comparison",
+        "lint:absorbing_boolean_expression",
         "lint:double_negation_expression",
         "lint:redundant_boolean_if_expression",
         "lint:same_branch_if_expression",
@@ -13443,6 +13632,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:deploy-lint-repair-write-verify",
         "readiness:identity-binary-repair-write-verify",
         "readiness:redundant-boolean-repair-write-verify",
+        "readiness:absorbing-boolean-repair-write-verify",
         "readiness:double-negation-repair-write-verify",
         "readiness:redundant-boolean-if-repair-write-verify",
         "readiness:same-branch-if-repair-write-verify",

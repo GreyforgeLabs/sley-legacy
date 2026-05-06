@@ -176,7 +176,8 @@ Current development phase:
   `mutable_binding_never_set`, the expression simplification rule
   `constant_if_expression`, the identity simplification rule
   `identity_binary_expression`, the redundant boolean comparison rule
-  `redundant_boolean_comparison`, the double negation simplification rule
+  `redundant_boolean_comparison`, the absorbing boolean expression rule
+  `absorbing_boolean_expression`, the double negation simplification rule
   `double_negation_expression`, the redundant boolean-if simplification rule
   `redundant_boolean_if_expression`, the same-branch if simplification rule
   `same_branch_if_expression`, and the result-safety rule `unchecked_result`

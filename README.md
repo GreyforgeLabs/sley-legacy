@@ -117,6 +117,7 @@ Implemented now:
   `--rule mutable-binding-never-set`, `--rule constant-if-expression`,
   `--rule identity-binary-expression`, or
   `--rule redundant-boolean-comparison`, or
+  `--rule absorbing-boolean-expression`, or
   `--rule double-negation-expression`, or
   `--rule redundant-boolean-if-expression`, or
   `--rule same-branch-if-expression`
@@ -168,6 +169,8 @@ Implemented now:
   expressions that can be replaced by the non-identity side,
   `simplify_redundant_boolean_comparison` templates for boolean comparisons
   against `true` or `false`,
+  `simplify_absorbing_boolean_expression` templates for absorbing boolean
+  literals that can collapse a short-circuiting expression safely,
   `simplify_double_negation_expression` templates for `!!expr` forms,
   `simplify_redundant_boolean_if_expression` templates for boolean `if`
   expressions that can be replaced by the condition or its negation,

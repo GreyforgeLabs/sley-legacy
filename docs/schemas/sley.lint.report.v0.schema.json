@@ -33,6 +33,7 @@
               "constant_if_expression",
               "identity_binary_expression",
               "redundant_boolean_comparison",
+              "absorbing_boolean_expression",
               "double_negation_expression",
               "redundant_boolean_if_expression",
               "same_branch_if_expression"
@@ -75,6 +76,7 @@
               "CONSTANT_IF_EXPRESSION",
               "IDENTITY_BINARY_EXPRESSION",
               "REDUNDANT_BOOLEAN_COMPARISON",
+              "ABSORBING_BOOLEAN_EXPRESSION",
               "DOUBLE_NEGATION_EXPRESSION",
               "REDUNDANT_BOOLEAN_IF_EXPRESSION",
               "SAME_BRANCH_IF_EXPRESSION"
@@ -98,6 +100,7 @@
               "constant_if_expression",
               "identity_binary_expression",
               "redundant_boolean_comparison",
+              "absorbing_boolean_expression",
               "double_negation_expression",
               "redundant_boolean_if_expression",
               "same_branch_if_expression"
