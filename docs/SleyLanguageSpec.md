@@ -735,7 +735,9 @@ contract fixture validation status, release manifest validation status, corpus
 tags, smoke tags, packaged example counts, and declared integration-test count
 drift under one stable conformance root. It also reports non-gating
 public-release blockers such as unresolved license and repository metadata, so
-the executable gate can pass while publication decisions remain explicit.
+the executable gate can pass while publication decisions remain explicit. The
+plain-text report lists those release blockers directly; the JSON report keeps
+them under `release.blockers`.
 `sley-conformance coverage --json --require-tag <tag>` checks explicit
 coverage tags across the corpus and smoke manifests for focused release gates.
 

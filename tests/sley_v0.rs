@@ -8896,6 +8896,24 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(report_json.pointer("/issues"), Some(&serde_json::json!([])));
 
+    let text_report = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-conformance"))
+        .current_dir(&repo_root)
+        .args([
+            "report",
+            "--sley-contract-bin",
+            env!("CARGO_BIN_EXE_sley-contract"),
+        ])
+        .output()
+        .expect("run text sley-conformance report");
+    assert!(
+        text_report.status.success(),
+        "text sley-conformance report failed: {}",
+        String::from_utf8_lossy(&text_report.stderr)
+    );
+    let text_stdout = String::from_utf8(text_report.stdout).expect("text report stdout is utf8");
+    assert!(text_stdout.contains("public_release_blockers=5"));
+    assert!(text_stdout.contains("release:missing_license_file"));
+
     let coverage = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-conformance"))
         .current_dir(&repo_root)
         .args([
