@@ -58,6 +58,8 @@ here. Dates use UTC-independent calendar dates from the local repo history.
   directory containing `manifest.json`.
 - `sley-ci corpus` now accepts either `fixtures/corpus` or the explicit
   `fixtures/corpus/manifest.json` path.
+- `make smoke` now runs both the broad CLI smoke suite and the lightweight
+  `sley-ci smoke` wrapper probe.
 - Ready deploy dry-run reports with artifact directories now include an
   `inspect_deploy_artifacts` next action for validating handoff bundles before
   operator approval.
