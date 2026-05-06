@@ -317,6 +317,46 @@
       }
     },
     {
+      "name": "new_agent_project_template_json",
+      "cwd": "tmp",
+      "args": [
+        "new",
+        "--json",
+        "--template",
+        "agent-project",
+        "--name",
+        "agent-workspace",
+        "--module",
+        "agent.main",
+        "{tmp}/agent-workspace"
+      ],
+      "covers": [
+        "cli:new",
+        "json:sley.project.scaffold.v0",
+        "scaffold:agent-project-quickstart",
+        "scaffold:handoff-actions",
+        "scaffold:next-actions"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.project.scaffold.v0" },
+          { "pointer": "/status", "value": "created" },
+          { "pointer": "/project/name", "value": "agent-workspace" },
+          { "pointer": "/project/entry_module", "value": "agent.main" },
+          { "pointer": "/project/template", "value": "agent-project" },
+          { "pointer": "/files/2/path", "value": "src/agent/main.sley" },
+          { "pointer": "/files/3/path", "value": "src/agent/pipeline.sley" },
+          { "pointer": "/next_actions/5/kind", "value": "verify_seeded_agent" },
+          { "pointer": "/next_actions/6/kind", "value": "ci_verify_seeded_agent" },
+          { "pointer": "/next_actions/7/kind", "value": "run_seeded_agent" },
+          { "pointer": "/next_actions/9/kind", "value": "prepare_deploy_package" },
+          { "pointer": "/next_actions/10/kind", "value": "ci_deploy_package" },
+          { "pointer": "/next_actions/12/kind", "value": "package_project" }
+        ]
+      }
+    },
+    {
       "name": "verify_new_agent_project_json",
       "args": [
         "verify",

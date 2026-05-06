@@ -17,7 +17,7 @@ here. Dates use UTC-independent calendar dates from the local repo history.
   query, lint, plan, fix, verify, seal, and ZJX evidence.
 - `sley-zjx`, a read-only inspection utility for preview ZJX envelopes.
 - Expanded `sley new` templates for library, CLI, service-gate, data-pipeline,
-  deploy, agent, and agent-task-pack starters.
+  deploy, agent, agent-task-pack, and multi-module agent-project starters.
 - `sley-workbench`, `sley-lsp`, `sley-conformance`, `sley-contract`, and
   `sley-ci` bootstraps for the local v1 release gate.
 - `docs/contracts.md`, a contract map for the current schema-backed JSON roots.
@@ -52,7 +52,7 @@ here. Dates use UTC-independent calendar dates from the local repo history.
 - `sley lint --rule empty-else-statement` now flags no-op empty `else`
   branches and `sley plan --graft-templates` emits a checked
   `remove_empty_else_statement` repair.
-- Contract inventory now tracks 36 schemas, 98 contract fixtures, and 101 schema
+- Contract inventory now tracks 36 schemas, 99 contract fixtures, and 102 schema
   instances through the conformance report.
 - The Rust package metadata now declares its supported Rust floor, description,
   README, keywords, categories, and `publish = false` until publication

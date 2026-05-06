@@ -30,8 +30,8 @@ Implemented now:
 - `sley.toml` project manifests for multi-file module graphs
 - non-destructive `sley new` project scaffolding with `hello`, `library`,
   `cli`, deterministic `service-gate`, `data-pipeline`, deterministic
-  `deploy`, deterministic `agent`, and deterministic `agent-task-pack` starter
-  templates
+  `deploy`, deterministic `agent`, deterministic `agent-task-pack`, and
+  multi-module deterministic `agent-project` starter templates
 - module, import, type, effect, and task declarations
 - import aliases with `import app.math as math`
 - exported declarations with `export task`, `export type`, and `export effect`
@@ -334,9 +334,9 @@ Implemented now:
   points agents to `sley-contract inspect-deploy-artifacts`
 - JSON project scaffold reports with `sley new --json`, `hello`, `library`,
   `cli`, `service-gate`, `data-pipeline`, `deploy`, `agent`, and
-  `agent-task-pack` templates, relative created-file paths, next-command
-  vectors, typed next-action reasons through check, doctor, query, plan, lint,
-  verify, run, seal, and ZJX package steps, and
+  `agent-task-pack` and `agent-project` templates, relative created-file paths,
+  next-command vectors, typed next-action reasons through check, doctor, query,
+  plan, lint, verify, run, seal, and ZJX package steps, and
   `schema: "sley.project.scaffold.v0"`
 - JSONL trace sidecars for accepted graft/fix receipts when
   `sley graft --write` or `sley fix --write` applies a change, with
@@ -455,7 +455,7 @@ sley-conformance report --json --require-public-release-ready
 Project form:
 
 ```bash
-sley new --template agent --name agent-app agent-app
+sley new --template agent-project --name agent-app --module agent.main agent-app
 cd agent-app
 sley check --json .
 sley doctor --json .
@@ -521,10 +521,12 @@ creates a deterministic network-gated starter that runs with seeded
 `http.try_get_text` data. `--template deploy` creates a deterministic
 deployment-gated starter that uses the seeded `deploy.try_stage` adapter; it
 does not call deployment providers or mutate infrastructure. `--template agent`
-and `--template agent-task-pack` create deterministic agentic starters that
-compose seeded secret, network, model, and deploy authority through explicit
-gates; they do not read real secret stores, call live networks or model
-providers, or mutate deployment infrastructure.
+and `--template agent-task-pack` create deterministic single-module agentic
+starters. `--template agent-project` creates a deterministic multi-module
+agentic starter with an entry module and imported pipeline module. These
+agentic starters compose seeded secret, network, model, and deploy authority
+through explicit gates; they do not read real secret stores, call live
+networks or model providers, or mutate deployment infrastructure.
 
 ```toml
 [project]
