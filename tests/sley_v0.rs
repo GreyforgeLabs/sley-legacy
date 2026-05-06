@@ -1219,6 +1219,89 @@ task main -> Result<Text, Error> {
 }
 
 #[test]
+fn edit_plan_graft_templates_can_target_program_declaration_surface() {
+    let source = r#"
+module app.plan
+
+task main -> Int {
+  return 1
+}
+"#;
+    let program = parse_program(source).expect("parse program declaration surface fixture");
+    let report = build_edit_plan_report_with_options(
+        "app.plan",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("program".to_string()),
+            module_name_hint: None,
+        },
+    );
+
+    assert_eq!(report.status, "ready");
+    assert_eq!(report.graft_templates.len(), 3);
+    assert!(report.transaction_templates.is_empty());
+
+    let add_task = &report.graft_templates[0];
+    assert_eq!(add_task.kind, "add_task");
+    assert_eq!(add_task.surface, "program");
+    assert_eq!(
+        add_task.operation.pointer("/op"),
+        Some(&serde_json::json!("AddTask"))
+    );
+    assert_eq!(
+        add_task.operation.pointer("/payload/source"),
+        Some(&serde_json::json!(
+            "module app.plan\n\ntask new_task -> Int {\n  return 0\n}"
+        ))
+    );
+    assert_eq!(
+        add_task.editable_json_pointers,
+        vec!["/payload/source".to_string()]
+    );
+
+    let add_type = &report.graft_templates[1];
+    assert_eq!(add_type.kind, "add_type_declaration");
+    assert_eq!(
+        add_type.operation.pointer("/op"),
+        Some(&serde_json::json!("AddTypeDeclaration"))
+    );
+    assert_eq!(
+        add_type.operation.pointer("/payload/source"),
+        Some(&serde_json::json!(
+            "module app.plan\n\ntype NewRecord = {\n  slot value: Text\n}"
+        ))
+    );
+
+    let add_effect = &report.graft_templates[2];
+    assert_eq!(add_effect.kind, "add_effect_declaration");
+    assert_eq!(
+        add_effect.operation.pointer("/op"),
+        Some(&serde_json::json!("AddEffectDeclaration"))
+    );
+    assert_eq!(
+        add_effect.operation.pointer("/payload/name"),
+        Some(&serde_json::json!("NewEffect"))
+    );
+    assert_eq!(
+        add_effect.editable_json_pointers,
+        vec!["/payload/name".to_string()]
+    );
+
+    for template in &report.graft_templates {
+        let graft: GraftInput = serde_json::from_value(template.operation.clone())
+            .expect("program declaration template should parse");
+        let outcome = apply_graft_input(
+            &program,
+            graft,
+            Some("agent:program-declaration-template-test".to_string()),
+        );
+        assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    }
+}
+
+#[test]
 fn edit_plan_graft_templates_can_target_named_surfaces() {
     let source = r#"
 module app.plan
@@ -12045,6 +12128,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "fix:write-source",
         "graft:write-source",
         "graft:operations:add-module-declaration",
+        "graft:templates:add-task",
         "graft:operations:add-take",
         "graft:operations:remove-task-effect",
         "graph-slice:insert-affordances",
@@ -12052,6 +12136,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:templates:lint-declaration-target",
         "graft:templates:module-name-inference",
         "graft:templates:missing-module",
+        "graft:templates:program-surface-declarations",
         "graft:templates:raw-host-migration",
         "graft:templates:qualified-import-call",
         "graft:templates:replace-expression",
