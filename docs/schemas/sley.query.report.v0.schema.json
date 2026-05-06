@@ -122,7 +122,7 @@
         "additionalProperties": false
       }
     },
-    "calls": { "type": "array", "items": { "type": "object" } }
+    "calls": { "type": "array", "items": { "$ref": "#/$defs/callSummary" } }
   },
   "$defs": {
     "moduleSummary": {
@@ -154,6 +154,23 @@
         "name": { "type": "string" },
         "id": { "type": "string" },
         "exported": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "callSummary": {
+      "type": "object",
+      "required": ["from", "from_module", "expr_id", "source", "callee", "status"],
+      "properties": {
+        "from": { "type": "string" },
+        "from_module": { "type": "string" },
+        "expr_id": { "type": "string" },
+        "source": { "type": "string" },
+        "callee": { "type": "string" },
+        "status": {
+          "enum": ["resolved", "unknown", "ambiguous", "private", "intrinsic"]
+        },
+        "target": { "type": "string" },
+        "candidates": { "type": "array", "items": { "type": "string" } }
       },
       "additionalProperties": false
     }

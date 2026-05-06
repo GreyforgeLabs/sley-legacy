@@ -749,8 +749,9 @@ calls that originate from or resolve into that module.
 Task query rows include stable ids, qualified names, takes, return type text,
 declared effects, and inbound/outbound call counts. Type query rows include
 stable ids, qualified names, rendered type values, and record fields; effect
-query rows include stable ids and qualified names. The v0 JSON root is
-`sley.query.report.v0`.
+query rows include stable ids and qualified names. Call query rows include
+stable caller, expression, source, callee, status, target, and candidate
+fields. The v0 JSON root is `sley.query.report.v0`.
 
 `sley lint` is the first checked lint command built on the graph query surface.
 It parses and checks the target before emitting results, so semantic failures

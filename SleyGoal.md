@@ -43,7 +43,8 @@ Current verified surface:
 - Current integration coverage is 182 tests.
 - `sley query --json` emits `schema: "sley.query.report.v0"` and supports
   `--kind all|modules|tasks|types|effects|calls`, `--module <module>`, and
-  `--exported`, including top-level type and effect declaration rows.
+  `--exported`, including top-level type/effect declaration rows and strict
+  call rows.
 - `sley lint --json` emits `schema: "sley.lint.report.v0"` and supports
   `--module <module>`, `--rule unused-private-task`,
   `--rule unreachable-private-task`, `--rule unused-declared-effect`,

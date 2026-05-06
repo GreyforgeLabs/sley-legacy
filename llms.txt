@@ -134,7 +134,8 @@ Current development phase:
   diagnostics
 - checked graph query reports are available through `sley query --json` with
   root schema `sley.query.report.v0`; `--kind types` and `--kind effects`
-  give direct declaration rows for record and authority surfaces
+  give direct declaration rows for record and authority surfaces, while
+  `--kind calls` exposes strict call rows
 - checked lint reports are available through `sley lint --json` with root schema
   `sley.lint.report.v0`; private-task rules include `unused_private_task` and
   `unreachable_private_task`, the authority hygiene rule

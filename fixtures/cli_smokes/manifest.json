@@ -457,6 +457,26 @@
       }
     },
     {
+      "name": "query_project_calls_json",
+      "args": ["query", "--json", "--kind", "calls", "examples/project"],
+      "covers": ["cli:query", "json:sley.query.report.v0", "query:calls"],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.query.report.v0" },
+          { "pointer": "/kind", "value": "calls" },
+          { "pointer": "/calls/0/from", "value": "app.main.main" },
+          { "pointer": "/calls/0/from_module", "value": "app.main" },
+          { "pointer": "/calls/0/callee", "value": "math.double" },
+          { "pointer": "/calls/0/status", "value": "resolved" },
+          { "pointer": "/calls/0/target", "value": "app.math.double" },
+          { "pointer": "/tasks", "value": [] },
+          { "pointer": "/types", "value": [] },
+          { "pointer": "/effects", "value": [] }
+        ]
+      }
+    },
+    {
       "name": "doctor_project_json",
       "args": ["doctor", "--json", "examples/project"],
       "covers": [

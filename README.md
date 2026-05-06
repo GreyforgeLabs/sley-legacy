@@ -100,8 +100,9 @@ Implemented now:
   affordances for structural graft planning
 - checked JSON query reports with
   `sley query --kind all|modules|tasks|types|effects|calls`, optional
-  `--module` and `--exported` filters, top-level task/type/effect rows, and
-  `schema: "sley.query.report.v0"` for tool-facing graph inspection
+  `--module` and `--exported` filters, top-level task/type/effect rows, strict
+  call rows, and `schema: "sley.query.report.v0"` for tool-facing graph
+  inspection
 - checked JSON lint reports with `sley lint`, optional `--module` and
   `--rule unused-private-task`, `--rule unreachable-private-task`,
   `--rule unused-declared-effect`, `--rule unused-import`,
@@ -506,7 +507,7 @@ Known v0 limits:
 The current release-readiness phase is underway for the executable slice. The
 gold corpus and CLI smoke suite now have manifests with required coverage tags
 for seeded host adapters, stable JSON roots, graph/ZJX output, graft and fix
-dry runs, checked graph query reports including type/effect rows, doctor
+dry runs, checked graph query reports including type/effect/call rows, doctor
 readiness, verify pre-deploy gates, edit-plan surfaces, typed scaffold next-actions for the deploy
 quickstart, strict seeded verify readiness for the generated deploy starter,
 scaffold-level seal/ZJX handoff actions,

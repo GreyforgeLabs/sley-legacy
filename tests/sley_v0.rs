@@ -7578,6 +7578,26 @@ task main -> User {
         "app.profile.PublicEffect"
     );
     assert!(effects.effects[0].exported);
+
+    let calls = build_query_report(
+        &project.program,
+        QueryOptions {
+            kind: QueryKind::Calls,
+            module: None,
+            exported_only: false,
+        },
+    );
+    assert_eq!(calls.kind, "calls");
+    assert_eq!(calls.modules.len(), 0);
+    assert_eq!(calls.tasks.len(), 0);
+    assert_eq!(calls.types.len(), 0);
+    assert_eq!(calls.effects.len(), 0);
+    assert_eq!(calls.calls.len(), 1);
+    assert_eq!(calls.calls[0].from, "app.main.main");
+    assert_eq!(calls.calls[0].from_module, "app.main");
+    assert_eq!(calls.calls[0].callee, "math.double");
+    assert_eq!(calls.calls[0].status, "resolved");
+    assert_eq!(calls.calls[0].target.as_deref(), Some("app.math.double"));
 }
 
 #[test]
@@ -9560,6 +9580,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "query:tasks",
         "query:types",
         "query:effects",
+        "query:calls",
         "readiness:deploy-lint-repair-write-verify",
         "readiness:lint-repair-plan",
         "readiness:lint-repair-preview",

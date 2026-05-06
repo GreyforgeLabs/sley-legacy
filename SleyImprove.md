@@ -465,7 +465,7 @@ The current smoke manifest covers:
 - stable JSON roots for AST programs, diagnostics, symbol graphs, graph slices,
   query reports, lint reports, trace seals, graft outcomes, and ZJX preview
   envelopes
-- query report direct task/type/effect declaration rows
+- query report direct task/type/effect declaration rows and strict call rows
 - graph-slice replace affordances and checked `replace_expression` graft
   templates in edit-plan reports
 - deploy scaffold typed next-actions, first-run sequence execution, and strict
@@ -530,7 +530,8 @@ The v0 query report carries `schema: "sley.query.report.v0"` and supports:
 - type rows with stable ids, qualified names, rendered type values, and record
   fields
 - effect rows with stable ids and qualified names
-- call rows reused from the symbol graph call summary
+- strict call rows with caller, expression, source, callee, status, optional
+  target, and optional candidates
 
 This is the immediate substrate for lints, migration hints, project dashboards,
 and eventually non-authoritative Sley helper passes.
