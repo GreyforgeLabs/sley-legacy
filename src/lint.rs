@@ -25,6 +25,7 @@ pub enum LintRule {
     UnusedPrivateType,
     UnusedPrivateEffect,
     RawHostAdapter,
+    MissingModuleDeclaration,
 }
 
 impl LintRule {
@@ -38,6 +39,7 @@ impl LintRule {
             Self::UnusedPrivateType,
             Self::UnusedPrivateEffect,
             Self::RawHostAdapter,
+            Self::MissingModuleDeclaration,
         ]
     }
 
@@ -51,6 +53,7 @@ impl LintRule {
             Self::UnusedPrivateType => "unused_private_type",
             Self::UnusedPrivateEffect => "unused_private_effect",
             Self::RawHostAdapter => "raw_host_adapter",
+            Self::MissingModuleDeclaration => "missing_module_declaration",
         }
     }
 }
@@ -130,6 +133,12 @@ pub fn build_lint_report(program: &Program, options: LintOptions) -> LintReport 
     if rules.contains(&LintRule::RawHostAdapter) {
         findings.extend(lint_raw_host_adapters(program, options.module.as_deref()));
     }
+    if rules.contains(&LintRule::MissingModuleDeclaration) {
+        findings.extend(lint_missing_module_declaration(
+            program,
+            options.module.as_deref(),
+        ));
+    }
 
     findings.sort_by(|left, right| {
         left.rule
@@ -167,6 +176,21 @@ fn selected_rules(rules: Vec<LintRule>) -> Vec<LintRule> {
         .collect::<BTreeSet<_>>()
         .into_iter()
         .collect()
+}
+
+fn lint_missing_module_declaration(program: &Program, module: Option<&str>) -> Vec<LintFinding> {
+    if program.module.is_some() || !module_matches(module, program.module_name()) {
+        return Vec::new();
+    }
+    vec![LintFinding {
+        id: "MISSING_MODULE_DECLARATION".to_string(),
+        rule: LintRule::MissingModuleDeclaration.as_str().to_string(),
+        severity: "warning".to_string(),
+        message: "source relies on the implicit `main` module; declare an explicit module for stable project graph ids".to_string(),
+        node: "program".to_string(),
+        module: program.module_name().to_string(),
+        hint: "add `module app.name` at the top of the file before deployable or project code".to_string(),
+    }]
 }
 
 fn lint_unused_private_tasks(program: &Program, module: Option<&str>) -> Vec<LintFinding> {

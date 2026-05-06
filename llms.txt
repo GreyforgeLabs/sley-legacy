@@ -135,7 +135,7 @@ Current development phase:
   `unused_declared_effect`, the import hygiene rule `unused_import`, the API
   hygiene rule `unused_take`, the declaration hygiene rules
   `unused_private_type` and `unused_private_effect`, and the migration rule
-  `raw_host_adapter`
+  `raw_host_adapter`, plus the style rule `missing_module_declaration`
 - `sley new --json` emits `sley.project.scaffold.v0` and creates
   non-destructive `hello` or deterministic `deploy` starter projects that can
   immediately run through check, query, plan, lint, and seeded runtime gates

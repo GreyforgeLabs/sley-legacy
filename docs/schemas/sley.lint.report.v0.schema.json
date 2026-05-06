@@ -24,7 +24,8 @@
               "unused_take",
               "unused_private_type",
               "unused_private_effect",
-              "raw_host_adapter"
+              "raw_host_adapter",
+              "missing_module_declaration"
             ]
           },
           "uniqueItems": true
@@ -55,7 +56,8 @@
               "UNUSED_TAKE",
               "UNUSED_PRIVATE_TYPE",
               "UNUSED_PRIVATE_EFFECT",
-              "RAW_HOST_ADAPTER"
+              "RAW_HOST_ADAPTER",
+              "MISSING_MODULE_DECLARATION"
             ]
           },
           "rule": {
@@ -67,7 +69,8 @@
               "unused_take",
               "unused_private_type",
               "unused_private_effect",
-              "raw_host_adapter"
+              "raw_host_adapter",
+              "missing_module_declaration"
             ]
           },
           "severity": { "enum": ["warning"] },

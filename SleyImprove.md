@@ -100,7 +100,7 @@ sley plan --json [--deny-warnings] [--graft-templates] [--template-surface <surf
 sley fix --json --kind <kind> [--template-surface <surface>] [--dry-run|--write] <target>
 sley verify --json [--deny-warnings] [runtime gates/seeds] <target>
 sley query --json [--kind all|modules|tasks|calls] [--module <module>] <target>
-sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter] [--module <module>] <target>
+sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter|missing-module-declaration] [--module <module>] <target>
 sley trace --json <target>
 sley seal --json <target>
 sley zjx --json [--slice <node-id>] <target>
@@ -487,12 +487,15 @@ The v0 lint rules are:
   task declares it.
 - `raw_host_adapter`: a legacy diagnostic-failing host call is reported when a
   fallible `try_` adapter should replace it.
+- `missing_module_declaration`: a source file that relies on the implicit
+  `main` module is reported so deployable/project code gets stable graph ids.
 
 The command supports `--module <module>`, `--rule unused-private-task`,
 `--rule unreachable-private-task`, `--rule unused-declared-effect`,
 `--rule unused-import`, `--rule unused-take`, `--rule unused-private-type`,
-`--rule unused-private-effect`, `--rule raw-host-adapter`, and `--deny-warnings`
-lets CI turn findings into a failing exit after the JSON report is printed.
+`--rule unused-private-effect`, `--rule raw-host-adapter`,
+`--rule missing-module-declaration`, and `--deny-warnings` lets CI turn
+findings into a failing exit after the JSON report is printed.
 
 This is not production lint coverage yet. It is the first stable surface for
 agent-facing hygiene, authority lints, migration hints, and eventually

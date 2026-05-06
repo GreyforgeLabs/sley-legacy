@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "main",
+  "filters": {
+    "module": null,
+    "rules": [
+      "missing_module_declaration"
+    ]
+  },
+  "findings": [
+    {
+      "id": "MISSING_MODULE_DECLARATION",
+      "rule": "missing_module_declaration",
+      "severity": "warning",
+      "message": "source relies on the implicit `main` module; declare an explicit module for stable project graph ids",
+      "node": "program",
+      "module": "main",
+      "hint": "add `module app.name` at the top of the file before deployable or project code"
+    }
+  ]
+}

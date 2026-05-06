@@ -2400,6 +2400,25 @@ task main -> Text uses Network {
         include_str!("../fixtures/contracts/lint_raw_host_adapter.json"),
     );
 
+    let missing_module_source = r#"
+task main -> Text {
+  return "hello"
+}
+"#;
+    let missing_module_program =
+        parse_program(missing_module_source).expect("parse missing module lint fixture");
+    let missing_module_lint = build_lint_report(
+        &missing_module_program,
+        LintOptions {
+            rules: vec![LintRule::MissingModuleDeclaration],
+            module: None,
+        },
+    );
+    assert_json_snapshot(
+        &missing_module_lint,
+        include_str!("../fixtures/contracts/lint_missing_module_declaration.json"),
+    );
+
     let unused_import_root = temp_project_dir("unused-import-contract");
     write_unused_import_project(&unused_import_root);
     let unused_import_project =
@@ -6607,6 +6626,50 @@ fn lint_report_flags_raw_host_adapters() {
 }
 
 #[test]
+fn lint_report_flags_missing_module_declarations() {
+    let source = r#"
+task main -> Text {
+  return "hello"
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+
+    let report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::MissingModuleDeclaration],
+            module: None,
+        },
+    );
+
+    assert_eq!(report.schema, LINT_REPORT_SCHEMA);
+    assert_eq!(report.status, "findings");
+    assert_eq!(report.entry_module, "main");
+    assert_eq!(report.filters.rules, vec!["missing_module_declaration"]);
+    assert_eq!(report.findings.len(), 1);
+    assert_eq!(report.findings[0].id, "MISSING_MODULE_DECLARATION");
+    assert_eq!(report.findings[0].rule, "missing_module_declaration");
+    assert_eq!(report.findings[0].node, "program");
+    assert_eq!(report.findings[0].module, "main");
+    assert!(report.findings[0].hint.contains("module app.name"));
+
+    let scoped_report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::MissingModuleDeclaration],
+            module: Some("app.other".to_string()),
+        },
+    );
+    assert_eq!(scoped_report.status, "ok");
+    assert!(scoped_report.findings.is_empty());
+}
+
+#[test]
 fn lint_report_flags_unused_imports() {
     let root = temp_project_dir("unused-import");
     write_unused_import_project(&root);
@@ -8073,6 +8136,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "lint:unused_private_type",
         "lint:unused_private_effect",
         "lint:raw_host_adapter",
+        "lint:missing_module_declaration",
         "host:DatabaseRead",
         "host:DatabaseWrite",
         "host:Deploy",

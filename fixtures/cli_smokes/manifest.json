@@ -447,6 +447,7 @@
           { "pointer": "/filters/rules/5", "value": "unused_private_type" },
           { "pointer": "/filters/rules/6", "value": "unused_private_effect" },
           { "pointer": "/filters/rules/7", "value": "raw_host_adapter" },
+          { "pointer": "/filters/rules/8", "value": "missing_module_declaration" },
           { "pointer": "/findings", "value": [] }
         ]
       }
@@ -533,6 +534,21 @@
           { "pointer": "/filters/rules/0", "value": "raw_host_adapter" },
           { "pointer": "/findings/0/id", "value": "RAW_HOST_ADAPTER" },
           { "pointer": "/findings/0/rule", "value": "raw_host_adapter" }
+        ]
+      }
+    },
+    {
+      "name": "lint_missing_module_declaration_rule_json",
+      "args": ["lint", "--json", "--rule", "missing-module-declaration", "examples/deploy_gate.sley"],
+      "covers": ["cli:lint", "lint:missing_module_declaration", "json:sley.lint.report.v0"],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.lint.report.v0" },
+          { "pointer": "/status", "value": "findings" },
+          { "pointer": "/filters/rules/0", "value": "missing_module_declaration" },
+          { "pointer": "/findings/0/id", "value": "MISSING_MODULE_DECLARATION" },
+          { "pointer": "/findings/0/node", "value": "program" }
         ]
       }
     },
