@@ -117,6 +117,10 @@ sley-workbench --json [--html <path>] [--slice <node-id>] <target>
 sley trace --json <target>
 sley seal --json <target>
 sley zjx --json [--slice <node-id>] <target>
+sley-zjx inspect --json <zjx-envelope.json>
+sley-zjx verify-digest --json <zjx-envelope.json>
+sley-zjx extract-graph --json [--output <graph.json>] <zjx-envelope.json>
+sley-zjx diff-envelope --json <left-envelope.json> <right-envelope.json>
 sley graft --json <target> <graft.json>
 sley graft --json --dry-run <target> <graft.json>
 sley format <target>
@@ -129,11 +133,12 @@ Rules:
   graphs, graph slices, query reports, lint reports, run reports, doctor
   reports, verify reports, deploy dry-run reports, deploy artifact manifests,
   deploy artifact check reports, CI reports, project scaffold reports, trace
-  reports, trace seals, ZJX envelopes, and graft outcomes carry v0 schema IDs.
+  reports, trace seals, ZJX envelopes, ZJX tool reports, and graft outcomes
+  carry v0 schema IDs.
 - AST program/node, diagnostic-report, symbol-graph, graph-slice, query-report,
   lint-report, run-report, graft-outcome, trace-report, trace-seal,
-  ZJX-envelope, doctor-report, project-scaffold, and CI/deploy report
-  snapshots, LSP fix-preview payloads, workbench reports, plus
+  ZJX-envelope, ZJX-tool-report, doctor-report, project-scaffold, and CI/deploy
+  report snapshots, LSP fix-preview payloads, workbench reports, plus
   contract inventory/fixture-check/validate report snapshots, are locked under
   `fixtures/contracts/`.
 - JSON Schema files live under `docs/schemas/`; the AST schema covers nested
@@ -150,9 +155,9 @@ Rules:
   `sley-conformance` report/coverage roots, and `sley-contract`
   inventory/fixture-check/validate/deploy-artifact-check reports have versioned
   schemas and representative fixtures, the graft outcome and trace receipt
-  schemas pin accepted provenance records, the ZJX envelope schema pins graph,
-  slice, and trace receipt handoff refs with contract snapshots, the deploy
-  artifact manifest schema
+  schemas pin accepted provenance records, the ZJX envelope and tool report
+  schemas pin graph, slice, trace receipt, digest verification, extraction, and
+  diff handoff refs with contract snapshots, the deploy artifact manifest schema
   pins report/seal/package file digests, and the remaining schema files are
   still root-contract v0 shapes.
 - The repo-level `Makefile` exposes `make v1` as a local release gate over
@@ -169,6 +174,8 @@ Rules:
   `sley.fix.preview` payloads.
 - `sley-workbench` exposes a local read-only inspection report and optional
   static HTML page over doctor/query/lint/plan/graph panels.
+- `sley-zjx` exposes read-only preview-envelope inspection, graph digest
+  verification, graph extraction, and envelope diff reports.
 - Diagnostics include stable IDs, node IDs, spans where possible, and repair
   hints for common checker failures.
 - `sley doctor` is the first deterministic helper consuming strict check,

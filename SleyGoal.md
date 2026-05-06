@@ -44,7 +44,9 @@ Current verified surface:
 
 - `cargo fmt -- --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 291 tests.
+- Current integration coverage is 291 tests in the core `tests/sley_v0.rs`
+  conformance file, with additional focused integration tests for LSP,
+  workbench, project templates, and ZJX envelope tools.
 - `make v1` wraps fmt, whitespace diff check, full Rust tests, contract
   fixture and release-manifest validation, conformance summary reporting,
   corpus conformance, packaged example conformance, and CLI smoke conformance.
@@ -90,6 +92,9 @@ Current verified surface:
 - `sley-workbench` is available as an in-tree local inspection bootstrap with
   JSON and optional static HTML panels over doctor, query, lint, edit-plan, and
   graph data.
+- `sley-zjx` is available as an in-tree read-only envelope utility with
+  `inspect`, `verify-digest`, `extract-graph`, and `diff-envelope` commands
+  over preview ZJX JSON envelopes and `schema: "sley.zjx.tool.report.v0"`.
 - `sley deploy --json --dry-run` emits `schema: "sley.deploy.report.v0"` and
   composes strict verify, trace seal, and ZJX package summaries into a
   local-only deploy package report that forbids live deployment, provider
@@ -340,9 +345,9 @@ Current verified surface:
   the diagnostics schema exposes the shared diagnostic record used by
   graft/doctor/plan/verify report schemas, the trace report schema wraps trace
   receipt records, the graft outcome and trace receipt schemas pin accepted
-  provenance records, and the ZJX envelope now carries a recomputable graph
-  digest plus schema refs and locked fixtures for graph, slice, and trace
-  receipt handoff contents.
+  provenance records, and the ZJX envelope plus ZJX tool report roots now carry
+  recomputable graph digest and inspection contracts with locked fixtures for
+  graph, slice, trace receipt, and envelope handoff contents.
 
 Product thesis:
 

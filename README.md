@@ -177,6 +177,9 @@ Implemented now:
 - in-tree `sley-workbench` local inspection bootstrap that emits
   `schema: "sley.workbench.report.v0"` and optional static HTML over
   doctor/query/lint/plan/graph panels without writing source files
+- in-tree `sley-zjx` read-only envelope utility with `inspect`,
+  `verify-digest`, `extract-graph`, and `diff-envelope` commands over preview
+  ZJX JSON envelopes, emitting `schema: "sley.zjx.tool.report.v0"`
 - checked JSON readiness reports with `sley doctor`, consuming strict
   diagnostics plus query and lint summaries, with call-bearing reports routing
   agents to strict `sley query --kind calls` inspection, warning next-actions
@@ -348,16 +351,17 @@ Implemented now:
   argument mismatches, condition mismatches, effect authority, and private or
   ambiguous names
 - locked JSON contract snapshots under `fixtures/contracts/`, including
-  symbol graphs, graft outcomes, ZJX envelopes, checked run, query, lint,
-  doctor, edit-plan, verify, deploy dry-run, deploy artifact check, CI, and
-  project scaffold reports, LSP fix-preview payloads, workbench reports, plus
-  contract inventory, fixture-check, and validate reports
+  symbol graphs, graft outcomes, ZJX envelopes, ZJX tool reports, checked run,
+  query, lint, doctor, edit-plan, verify, deploy dry-run, deploy artifact
+  check, CI, and project scaffold reports, LSP fix-preview payloads, workbench
+  reports, plus contract inventory, fixture-check, and validate reports
 - external v0 JSON Schema files under `docs/schemas/`, including strict
   query task/take/type/effect/call row definitions,
   strict runtime value definitions for `sley.run.report.v0`,
   `sley-ci` check/lint/doctor/plan/run/verify/deploy/smoke/corpus/examples reports,
   `sley.lsp.fix_preview.v0` preview-command payloads,
   `sley.workbench.report.v0` local inspection reports,
+  `sley.zjx.tool.report.v0` envelope inspection reports,
   `sley-contract` inventory/fixture-check/validate/deploy-artifact-check reports,
   edit-plan graft operation and transaction template envelopes reused by graph
   slice affordances, graph-slice focus/task/call summary refs, a shared
@@ -373,8 +377,9 @@ Implemented now:
   readiness, edit-plan surfaces, verify pre-deploy gates, project scaffolding,
   graft/fix dry runs, direct graft writes, temp setup files for write-mode
   smokes, explicit graft/fix trace receipts, trace seals over non-empty receipt
-  chains, ZJX envelopes carrying graph digests and schema-backed trace receipts,
-  passed-verify next-actions for seal and ZJX handoff artifacts,
+  chains, ZJX envelopes carrying graph digests and schema-backed trace
+  receipts, ZJX tool reports, passed-verify next-actions for seal and ZJX
+  handoff artifacts,
   doctor/verify warning next-actions that route to lint repair plans and
   unambiguous dry-run fix previews with explicit
   `write_command` vectors, a staged previewed-repair write smoke that proves
@@ -440,6 +445,8 @@ sley-lsp
 sley-workbench --json --html .sley/workbench.html .
 sley seal --json .
 sley zjx --json .
+sley-zjx inspect --json envelope.json
+sley-zjx verify-digest --json envelope.json
 ```
 
 Standalone dogfood example:
@@ -710,7 +717,9 @@ Known v0 limits:
   compressed `.zjx` archive remains a later integration step.
 - `sley zjx` emits the first Sley ZJX envelope payload as JSON with
   `compression=none` and a recomputable graph digest; the binary compressed
-  archive handoff remains a later integration step.
+  archive handoff remains a later integration step. `sley-zjx` can inspect
+  those preview envelopes, recompute the embedded graph digest, extract the
+  symbol graph, and diff two envelopes without writing source files.
 - The future compressed `zjx-sley` runtime must not trust envelope metadata as
   the file lock. It must follow `docs/SleyZjxRuntimeLockSpec.md`: reconstruct
   and validate Sley graph structure, recompute the graph hash, reject unknown
