@@ -696,7 +696,7 @@ next-action reasons under `sley.project.scaffold.v0`. The deploy and agent
 scaffolds' generated next actions are checked first-run sequences: strict
 check, doctor readiness, task query, edit plan, lint gate, seeded verification
 with denied warnings, seeded run, local deploy dry-run package, seal, and ZJX
-package. The agent scaffold also includes `sley-ci verify` and
+package. The agent scaffold also includes `sley-ci run`, `sley-ci verify`, and
 `sley-ci deploy --dry-run` next actions over the same deterministic seeds.
 
 `sley run --json` emits `sley.run.report.v0` on successful execution. The

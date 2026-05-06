@@ -626,10 +626,11 @@ fn project_scaffold_creates_checked_agent_project() {
     assert_eq!(report.next_actions[5].kind, "verify_seeded_agent");
     assert_eq!(report.next_actions[6].kind, "ci_verify_seeded_agent");
     assert_eq!(report.next_actions[7].kind, "run_seeded_agent");
-    assert_eq!(report.next_actions[8].kind, "prepare_deploy_package");
-    assert_eq!(report.next_actions[9].kind, "ci_deploy_package");
-    assert_eq!(report.next_actions[10].kind, "seal_project");
-    assert_eq!(report.next_actions[11].kind, "package_project");
+    assert_eq!(report.next_actions[8].kind, "ci_run_seeded_agent");
+    assert_eq!(report.next_actions[9].kind, "prepare_deploy_package");
+    assert_eq!(report.next_actions[10].kind, "ci_deploy_package");
+    assert_eq!(report.next_actions[11].kind, "seal_project");
+    assert_eq!(report.next_actions[12].kind, "package_project");
 
     for (action, command) in report.next_actions.iter().zip(&report.next_commands) {
         assert_eq!(
@@ -688,6 +689,19 @@ fn project_scaffold_creates_checked_agent_project() {
             assert!(root.join(".sley/ci-deploy/seal.json").exists());
             assert!(root.join(".sley/ci-deploy/zjx-envelope.json").exists());
             assert!(root.join(".sley/ci-deploy/manifest.json").exists());
+        }
+        if action.kind == "ci_run_seeded_agent" {
+            let value: serde_json::Value =
+                serde_json::from_str(&stdout).expect("parse sley-ci run JSON");
+            assert_eq!(
+                value.pointer("/schema"),
+                Some(&serde_json::json!("sley.ci.report.v0"))
+            );
+            assert_eq!(value.pointer("/command"), Some(&serde_json::json!("run")));
+            assert_eq!(
+                value.pointer("/steps/0/stdout_schema"),
+                Some(&serde_json::json!(RUN_REPORT_SCHEMA))
+            );
         }
         if action.kind == "run_seeded_agent" {
             assert_cli_run_value(

@@ -155,8 +155,8 @@ Rules:
   `next_commands`; the deploy and agent starters' generated action sequences
   are executed in integration coverage so first-run check, doctor, query, plan,
   lint, warning-denying verify, run, deploy dry-run package, seal, ZJX package
-  gates, the agent starter's `sley-ci verify`/`sley-ci deploy` handoffs, and
-  independent `sley-ci run` wrapper coverage cannot silently drift.
+  gates, and the agent starter's `sley-ci run`/`sley-ci verify`/`sley-ci deploy`
+  handoffs cannot silently drift.
 - `sley plan` consumes the same checked surfaces into ranked task edit
   surfaces, call-row inspection next-actions, post-edit gate commands, and
   optional starter graft operation templates, rename-plus-call-site
@@ -552,8 +552,8 @@ The current smoke manifest covers:
   strict seeded `verify --json --deny-warnings` readiness, and local
   `sley deploy --dry-run` package reports, including optional deploy artifact
   manifests plus scaffold-level and passed-verify seal/ZJX handoff next-actions
-  plus independent `sley-ci run` coverage and the agent scaffold's
-  `sley-ci verify`/`sley-ci deploy` handoffs
+  plus the agent scaffold's `sley-ci run`/`sley-ci verify`/`sley-ci deploy`
+  handoffs
 - doctor/verify warning next-actions that route agents to checked
   `sley plan --json --graft-templates` lint repair plans and unambiguous
   `sley fix --dry-run` previews with explicit `write_command` vectors, plus a

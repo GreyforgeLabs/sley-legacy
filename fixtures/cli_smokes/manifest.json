@@ -298,15 +298,18 @@
           { "pointer": "/next_actions/6/kind", "value": "ci_verify_seeded_agent" },
           { "pointer": "/next_actions/6/command/0", "value": "sley-ci" },
           { "pointer": "/next_actions/7/kind", "value": "run_seeded_agent" },
-          { "pointer": "/next_actions/8/kind", "value": "prepare_deploy_package" },
-          { "pointer": "/next_actions/8/command/1", "value": "deploy" },
-          { "pointer": "/next_actions/8/command/4", "value": "--artifacts-dir" },
-          { "pointer": "/next_actions/8/command/5", "value": ".sley/deploy" },
-          { "pointer": "/next_actions/9/kind", "value": "ci_deploy_package" },
-          { "pointer": "/next_actions/9/command/0", "value": "sley-ci" },
+          { "pointer": "/next_actions/8/kind", "value": "ci_run_seeded_agent" },
+          { "pointer": "/next_actions/8/command/0", "value": "sley-ci" },
+          { "pointer": "/next_actions/8/command/1", "value": "run" },
+          { "pointer": "/next_actions/9/kind", "value": "prepare_deploy_package" },
+          { "pointer": "/next_actions/9/command/1", "value": "deploy" },
           { "pointer": "/next_actions/9/command/4", "value": "--artifacts-dir" },
-          { "pointer": "/next_actions/9/command/5", "value": ".sley/ci-deploy" },
-          { "pointer": "/next_actions/11/kind", "value": "package_project" }
+          { "pointer": "/next_actions/9/command/5", "value": ".sley/deploy" },
+          { "pointer": "/next_actions/10/kind", "value": "ci_deploy_package" },
+          { "pointer": "/next_actions/10/command/0", "value": "sley-ci" },
+          { "pointer": "/next_actions/10/command/4", "value": "--artifacts-dir" },
+          { "pointer": "/next_actions/10/command/5", "value": ".sley/ci-deploy" },
+          { "pointer": "/next_actions/12/kind", "value": "package_project" }
         ]
       }
     },
