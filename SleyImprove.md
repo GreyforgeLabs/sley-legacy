@@ -195,7 +195,8 @@ Rules:
   agent-facing edit loop, including JSON inspection, checked repair selection,
   write-mode fix, post-fix gates, trace receipt, seal, and ZJX evidence.
 - `sley-migrate` exposes checked source migration reports over edit-plan
-  templates and optional schema/fixture drift checks.
+  templates and optional schema/fixture drift checks; migration operations
+  reuse the strict edit-plan graft operation schema.
 - `sley-sandbox-runner` exposes deterministic manifest-backed runtime replays
   over seeded capabilities, files, tables, secrets, network text, shell output,
   model output, deploy results, and spend results.

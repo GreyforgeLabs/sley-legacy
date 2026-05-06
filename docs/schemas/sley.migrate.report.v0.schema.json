@@ -30,7 +30,7 @@
     },
     "diagnostics": {
       "type": "array",
-      "items": { "type": "object" }
+      "items": { "$ref": "sley.diagnostics.report.v0#/$defs/diagnostic" }
     },
     "issues": {
       "type": "array",
@@ -100,7 +100,7 @@
           "type": "array",
           "items": { "type": "string" }
         },
-        "operation": { "type": "object" }
+        "operation": { "$ref": "sley.edit_plan.report.v0#/$defs/graftOperation" }
       },
       "additionalProperties": false
     },

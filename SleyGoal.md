@@ -121,7 +121,8 @@ Current verified surface:
   with `schema: "sley.migrate.report.v0"` over module declaration insertion,
   raw host adapter migration, imported-call naming cleanup,
   unchecked-result propagation candidates, and optional schema/fixture drift
-  reports.
+  reports; checked migration operations reuse the strict edit-plan graft
+  operation schema.
 - `sley-sandbox-runner` is available as an in-tree deterministic replay
   utility with `schema: "sley.sandbox.report.v0"` over
   `schema: "sley.sandbox.manifest.v0"` manifests that seed capabilities,
