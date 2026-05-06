@@ -72,7 +72,8 @@ Current verified surface:
   `sley fix --dry-run` previews carrying explicit `write_command` vectors with
   a staged write-and-verify smoke for a previewed repair plus a project-level
   previewed unused-import write-and-verify smoke and a generated deploy
-  scaffold repair loop re-verified with seeded deploy authority, and checked
+  scaffold repair loop re-verified with seeded deploy authority, plus
+  passed-verify seal/ZJX handoff next-actions, and checked
   `unchecked_result` migration templates that
   turn discarded `Result` expression statements into explicit `?` propagation
   when valid, plus checked `unused_import` and

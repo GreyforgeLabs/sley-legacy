@@ -56,6 +56,16 @@
         "--json",
         "examples/project"
       ]
+    },
+    {
+      "kind": "package_verified_target",
+      "reason": "create a ZJX preview envelope for agent handoff after verification",
+      "command": [
+        "sley",
+        "zjx",
+        "--json",
+        "examples/project"
+      ]
     }
   ]
 }

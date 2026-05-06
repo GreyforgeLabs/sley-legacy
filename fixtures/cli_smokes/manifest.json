@@ -83,6 +83,7 @@
         "json:sley.verify.report.v0",
         "json:sley.query.report.v0",
         "json:sley.lint.report.v0",
+        "readiness:verify-package-next-action",
         "scaffold:deploy-quickstart",
         "scaffold:verify-ready",
         "host:Deploy"
@@ -104,7 +105,9 @@
           { "pointer": "/runtime/value/kind", "value": "Ok" },
           { "pointer": "/runtime/value/value/kind", "value": "Text" },
           { "pointer": "/runtime/value/value/value", "value": "staged" },
-          { "pointer": "/next_actions/0/kind", "value": "seal_verified_target" }
+          { "pointer": "/next_actions/0/kind", "value": "seal_verified_target" },
+          { "pointer": "/next_actions/1/kind", "value": "package_verified_target" },
+          { "pointer": "/next_actions/1/command/1", "value": "zjx" }
         ]
       }
     },
@@ -1180,7 +1183,8 @@
         "cli:verify",
         "json:sley.verify.report.v0",
         "json:sley.query.report.v0",
-        "json:sley.lint.report.v0"
+        "json:sley.lint.report.v0",
+        "readiness:verify-package-next-action"
       ],
       "expect": {
         "success": true,
@@ -1190,7 +1194,9 @@
           { "pointer": "/summary/runtime_status", "value": "passed" },
           { "pointer": "/runtime/value/kind", "value": "Int" },
           { "pointer": "/runtime/value/value", "value": 42 },
-          { "pointer": "/next_actions/0/kind", "value": "seal_verified_target" }
+          { "pointer": "/next_actions/0/kind", "value": "seal_verified_target" },
+          { "pointer": "/next_actions/1/kind", "value": "package_verified_target" },
+          { "pointer": "/next_actions/1/command/1", "value": "zjx" }
         ]
       }
     },

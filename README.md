@@ -153,7 +153,8 @@ Implemented now:
   execution into `schema: "sley.verify.report.v0"` for CI and pre-deploy gates;
   warning or denied-warning reports point to checked graft-template repair
   planning and expose a dry-run fix preview plus explicit `write_command` when
-  the repair is unambiguous
+  the repair is unambiguous, while passed reports point to `sley seal --json`
+  and `sley zjx --json` handoff artifacts
 - JSON project scaffold reports with `sley new --json`, `hello` and `deploy`
   templates, relative created-file paths, next-command vectors, typed
   next-action reasons, and
@@ -194,15 +195,15 @@ Implemented now:
   readiness, edit-plan surfaces, verify pre-deploy gates, project scaffolding,
   graft/fix dry runs, direct graft writes, temp setup files for write-mode
   smokes, explicit graft/fix trace receipts, trace seals over non-empty receipt
-  chains, ZJX envelopes carrying trace receipts, doctor/verify warning
-  next-actions that route to lint repair plans and unambiguous dry-run fix
-  previews with explicit `write_command` vectors, a staged previewed-repair
-  write smoke that proves strict verify readiness afterward, a project-level
-  previewed unused-import repair write followed by strict verify, a generated
-  deploy scaffold repair loop that re-verifies with seeded deploy authority,
-  missing-module checked repair templates with module-name inference,
-  lint-driven fix writes that clear warnings before verify, and seeded
-  host-adapter execution
+  chains, ZJX envelopes carrying trace receipts, passed-verify next-actions
+  for seal and ZJX handoff artifacts, doctor/verify warning next-actions that
+  route to lint repair plans and unambiguous dry-run fix previews with explicit
+  `write_command` vectors, a staged previewed-repair write smoke that proves
+  strict verify readiness afterward, a project-level previewed unused-import
+  repair write followed by strict verify, a generated deploy scaffold repair
+  loop that re-verifies with seeded deploy authority, missing-module checked
+  repair templates with module-name inference, lint-driven fix writes that
+  clear warnings before verify, and seeded host-adapter execution
 - compact agent onboarding pack in `llms.txt`
 
 Project form:
@@ -505,7 +506,7 @@ gates, edit-plan surfaces, typed scaffold next-actions for the deploy
 quickstart, strict seeded verify readiness for the generated deploy starter,
 temp setup files for write-mode CLI smokes, direct graft write smokes,
 explicit graft/fix write trace receipts, non-empty trace seal receipts,
-ZJX envelopes carrying trace receipts,
+ZJX envelopes carrying trace receipts, passed-verify seal/ZJX next-actions,
 lint-driven declaration delete templates and cleanup transactions,
 lint-driven unused-private-task delete templates,
 dead private task cleanup transactions,

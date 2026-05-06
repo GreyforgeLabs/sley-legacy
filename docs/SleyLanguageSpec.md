@@ -886,7 +886,8 @@ archive.
   verify for file and project targets, plus a repaired generated deploy
   scaffold re-verified with seeded `Deploy` authority and a strict seeded
   deploy verify report for the generated `sley new --template deploy` starter,
-  while live
+  including passed-verify next-actions for `sley seal --json` and
+  `sley zjx --json` handoff artifacts, while live
   deploy/provider calls remain outside v0
 - no `match`, agent declarations, spawn/cast/join, or compressed ZJX archive
   writer yet

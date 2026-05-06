@@ -218,7 +218,8 @@ Near-term:
    smoke conformance suite. They now cover runtime authority for the seeded
    host adapter surface, stable JSON roots, project scaffolding, graph/ZJX
    output, typed deploy scaffold next-actions, graft/fix dry runs, checked
-   graph query reports, and private-task lint reports.
+   graph query reports, passed-verify seal/ZJX handoff next-actions, and
+   private-task lint reports.
 4. Consume `sley.query.report.v0` and `sley.lint.report.v0` from helper
    passes. `sley doctor` is the first deterministic readiness helper on top of
    those surfaces, and `sley plan --graft-templates` now turns them into ranked

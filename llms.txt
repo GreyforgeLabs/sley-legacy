@@ -198,7 +198,9 @@ Current development phase:
   execution into one CI/pre-deploy gate; the deploy scaffold has a checked
   `--deny-warnings --cap Deploy --deploy-result staging staged` smoke, and
   denied warning reports route agents to checked lint repair plans plus
-  dry-run fix previews when the repair is unambiguous before deployment review
+  dry-run fix previews when the repair is unambiguous before deployment review;
+  passed reports point agents to `sley seal --json <target>` and
+  `sley zjx --json <target>` for review and handoff artifacts
 - next development work should keep broadening style and migration lints
 - project graft writeback now supports create/update/delete module files and
   module rename, including manifest entry updates; top-level type/effect/task

@@ -362,12 +362,21 @@ fn runtime_actions(target: &str) -> Vec<VerifyAction> {
 }
 
 fn passed_actions(target: &str) -> Vec<VerifyAction> {
-    vec![VerifyAction {
-        kind: "seal_verified_target".to_string(),
-        reason: "create a content-addressed review artifact after verification".to_string(),
-        command: command(["sley", "seal", "--json", target]),
-        write_command: None,
-    }]
+    vec![
+        VerifyAction {
+            kind: "seal_verified_target".to_string(),
+            reason: "create a content-addressed review artifact after verification".to_string(),
+            command: command(["sley", "seal", "--json", target]),
+            write_command: None,
+        },
+        VerifyAction {
+            kind: "package_verified_target".to_string(),
+            reason: "create a ZJX preview envelope for agent handoff after verification"
+                .to_string(),
+            command: command(["sley", "zjx", "--json", target]),
+            write_command: None,
+        },
+    ]
 }
 
 fn command<const N: usize>(items: [&str; N]) -> Vec<String> {

@@ -3609,6 +3609,17 @@ task main -> Used uses UsedEffect {
         RuntimeGates::new(),
         false,
     );
+    assert_eq!(verify.next_actions[0].kind, "seal_verified_target");
+    assert_eq!(verify.next_actions[1].kind, "package_verified_target");
+    assert_eq!(
+        verify.next_actions[1].command,
+        vec![
+            "sley".to_string(),
+            "zjx".to_string(),
+            "--json".to_string(),
+            "examples/project".to_string()
+        ]
+    );
     assert_json_snapshot(
         &verify,
         include_str!("../fixtures/contracts/verify_project_ready.json"),
@@ -9449,6 +9460,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:lint-repair-write-command",
         "readiness:lint-repair-write-verify",
         "readiness:project-lint-repair-write-verify",
+        "readiness:verify-package-next-action",
         "scaffold:deploy-quickstart",
         "scaffold:next-actions",
         "scaffold:verify-ready",

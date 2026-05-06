@@ -170,7 +170,8 @@ Rules:
   check, `sley.query.report.v0`, `sley.lint.report.v0`, and seeded runtime
   execution into one pass/warnings/blocked report; warning and denied-warning
   reports include `plan_lint_repairs` next-actions and unambiguous dry-run fix
-  previews before deployment review.
+  previews before deployment review, while passed reports include seal and ZJX
+  handoff next-actions.
 - Grafts support dry-run by default and an explicit `--dry-run` flag.
 - Graft input JSON is strict: unknown operation or payload fields reject instead
   of being silently ignored.
@@ -466,7 +467,8 @@ The current smoke manifest covers:
 - graph-slice replace affordances and checked `replace_expression` graft
   templates in edit-plan reports
 - deploy scaffold typed next-actions, first-run sequence execution, and strict
-  seeded `verify --json --deny-warnings` readiness
+  seeded `verify --json --deny-warnings` readiness, including passed-verify
+  seal/ZJX handoff next-actions
 - doctor/verify warning next-actions that route agents to checked
   `sley plan --json --graft-templates` lint repair plans and unambiguous
   `sley fix --dry-run` previews with explicit `write_command` vectors, plus a
