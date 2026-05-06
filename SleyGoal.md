@@ -44,7 +44,7 @@ Current verified surface:
 
 - `cargo fmt -- --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 295 tests in the core `tests/sley_v0.rs`
+- Current integration coverage is 296 tests in the core `tests/sley_v0.rs`
   conformance file, with additional focused integration tests for LSP,
   workbench, agent bench, docgen, migration reports, sandbox replay, project
   templates, and ZJX envelope tools. The focused utility tests validate live
@@ -140,9 +140,10 @@ Current verified surface:
   calls, external mutation, and spend without explicit operator approval.
   `--artifacts-dir <dir>` writes local `deploy-report.json`, `seal.json`,
   `zjx-envelope.json`, and digest-bearing `manifest.json` handoff files after
-  the dry-run package is ready, and the ready report points agents to
-  `sley-contract inspect-deploy-artifacts` to revalidate that handoff directory
-  after it moves between agent sessions.
+  the dry-run package is ready; artifact manifests pin report, seal, and
+  package file roles to their expected schemas, and the ready report points
+  agents to `sley-contract inspect-deploy-artifacts` to revalidate that handoff
+  directory after it moves between agent sessions.
 - `sley new --json --template hello|library|cli|service-gate|data-pipeline|deploy|agent|agent-task-pack|agent-project`
   emits `schema: "sley.project.scaffold.v0"` and creates deterministic
   first-run starter projects, including pure library/CLI/data-pipeline

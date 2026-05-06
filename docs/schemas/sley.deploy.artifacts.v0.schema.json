@@ -32,9 +32,9 @@
       "type": "object",
       "required": ["report", "seal", "package"],
       "properties": {
-        "report": { "$ref": "#/$defs/file" },
-        "seal": { "$ref": "#/$defs/file" },
-        "package": { "$ref": "#/$defs/file" }
+        "report": { "$ref": "#/$defs/reportFile" },
+        "seal": { "$ref": "#/$defs/sealFile" },
+        "package": { "$ref": "#/$defs/packageFile" }
       },
       "additionalProperties": false
     }
@@ -50,6 +50,39 @@
         "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
       },
       "additionalProperties": false
+    },
+    "reportFile": {
+      "allOf": [
+        { "$ref": "#/$defs/file" },
+        {
+          "type": "object",
+          "properties": {
+            "schema": { "const": "sley.deploy.report.v0" }
+          }
+        }
+      ]
+    },
+    "sealFile": {
+      "allOf": [
+        { "$ref": "#/$defs/file" },
+        {
+          "type": "object",
+          "properties": {
+            "schema": { "const": "sley.trace.seal.v0" }
+          }
+        }
+      ]
+    },
+    "packageFile": {
+      "allOf": [
+        { "$ref": "#/$defs/file" },
+        {
+          "type": "object",
+          "properties": {
+            "schema": { "const": "sley.zjx.envelope.v0" }
+          }
+        }
+      ]
     }
   }
 }

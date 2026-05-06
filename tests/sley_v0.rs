@@ -8579,6 +8579,43 @@ fn ci_report_schema_covers_all_ci_commands() {
 }
 
 #[test]
+fn deploy_artifact_schemas_pin_handoff_file_roles() {
+    let manifest_schema: serde_json::Value = serde_json::from_str(include_str!(
+        "../docs/schemas/sley.deploy.artifacts.v0.schema.json"
+    ))
+    .expect("parse deploy artifact manifest schema");
+    assert_eq!(
+        manifest_schema.pointer("/properties/files/properties/report/$ref"),
+        Some(&serde_json::json!("#/$defs/reportFile"))
+    );
+    assert_eq!(
+        manifest_schema.pointer("/$defs/reportFile/allOf/1/properties/schema/const"),
+        Some(&serde_json::json!("sley.deploy.report.v0"))
+    );
+    assert_eq!(
+        manifest_schema.pointer("/$defs/sealFile/allOf/1/properties/schema/const"),
+        Some(&serde_json::json!("sley.trace.seal.v0"))
+    );
+    assert_eq!(
+        manifest_schema.pointer("/$defs/packageFile/allOf/1/properties/schema/const"),
+        Some(&serde_json::json!("sley.zjx.envelope.v0"))
+    );
+
+    let check_schema: serde_json::Value = serde_json::from_str(include_str!(
+        "../docs/schemas/sley.deploy.artifact_check.v0.schema.json"
+    ))
+    .expect("parse deploy artifact check schema");
+    assert_eq!(
+        check_schema.pointer("/properties/manifest_schema/const"),
+        Some(&serde_json::json!("sley.deploy.artifacts.v0"))
+    );
+    assert_eq!(
+        check_schema.pointer("/$defs/file/properties/expected_schema/$ref"),
+        Some(&serde_json::json!("#/$defs/deployArtifactSchema"))
+    );
+}
+
+#[test]
 fn contract_utility_inventories_schemas_and_validates_fixtures() {
     let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
@@ -8960,11 +8997,11 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/integration_test_count"),
-        Some(&serde_json::json!(295))
+        Some(&serde_json::json!(296))
     );
     assert_eq!(
         report_json.pointer("/summary/declared_integration_test_count"),
-        Some(&serde_json::json!(295))
+        Some(&serde_json::json!(296))
     );
     assert_eq!(
         report_json.pointer("/summary/test_count_matches_declared"),
@@ -8976,7 +9013,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/tests/integration_test_count"),
-        Some(&serde_json::json!(295))
+        Some(&serde_json::json!(296))
     );
     assert_eq!(
         report_json.pointer("/tests/declared_matches_actual"),

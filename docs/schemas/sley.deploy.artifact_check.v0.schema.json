@@ -19,7 +19,7 @@
     "validation_level": { "const": "json_schema_draft_2020_12" },
     "artifacts_dir": { "type": "string", "minLength": 1 },
     "manifest_path": { "type": "string", "minLength": 1 },
-    "manifest_schema": { "type": "string", "minLength": 1 },
+    "manifest_schema": { "const": "sley.deploy.artifacts.v0" },
     "summary": {
       "type": "object",
       "required": ["file_count", "passed_count", "failed_count", "issue_count"],
@@ -58,8 +58,8 @@
         "status": { "enum": ["passed", "failed"] },
         "path": { "type": "string", "minLength": 1 },
         "manifest_path": { "type": "string", "minLength": 1 },
-        "expected_schema": { "type": "string", "minLength": 1 },
-        "actual_schema": { "type": "string", "minLength": 1 },
+        "expected_schema": { "$ref": "#/$defs/deployArtifactSchema" },
+        "actual_schema": { "$ref": "#/$defs/deployArtifactSchema" },
         "expected_digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
         "actual_digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
         "issues": {
@@ -68,6 +68,13 @@
         }
       },
       "additionalProperties": false
+    },
+    "deployArtifactSchema": {
+      "enum": [
+        "sley.deploy.report.v0",
+        "sley.trace.seal.v0",
+        "sley.zjx.envelope.v0"
+      ]
     },
     "issue": {
       "type": "object",
