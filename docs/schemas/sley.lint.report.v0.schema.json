@@ -12,7 +12,7 @@
       "type": "object",
       "required": ["module", "rules"],
       "properties": {
-        "module": { "type": ["string", "null"] },
+        "module": { "type": ["string", "null"], "minLength": 1 },
         "rules": {
           "type": "array",
           "items": {

@@ -16,7 +16,7 @@
     "schema": { "const": "sley.doctor.report.v0" },
     "status": { "enum": ["ready", "warnings", "blocked"] },
     "target": { "type": "string", "minLength": 1 },
-    "entry_module": { "type": ["string", "null"] },
+    "entry_module": { "type": ["string", "null"], "minLength": 1 },
     "summary": { "$ref": "#/$defs/summary" },
     "diagnostics": {
       "type": "array",
