@@ -12,6 +12,7 @@
     "corpus",
     "smoke",
     "examples",
+    "tests",
     "issues"
   ],
   "properties": {
@@ -23,6 +24,7 @@
     "corpus": { "$ref": "#/$defs/corpus" },
     "smoke": { "$ref": "#/$defs/smoke" },
     "examples": { "$ref": "#/$defs/examples" },
+    "tests": { "$ref": "#/$defs/tests" },
     "issues": {
       "type": "array",
       "items": { "$ref": "#/$defs/issue" }
@@ -42,6 +44,9 @@
         "smoke_case_count",
         "example_project_count",
         "example_source_count",
+        "integration_test_count",
+        "declared_integration_test_count",
+        "test_count_matches_declared",
         "issue_count"
       ],
       "properties": {
@@ -55,6 +60,12 @@
         "smoke_case_count": { "type": "integer", "minimum": 0 },
         "example_project_count": { "type": "integer", "minimum": 0 },
         "example_source_count": { "type": "integer", "minimum": 0 },
+        "integration_test_count": { "type": "integer", "minimum": 0 },
+        "declared_integration_test_count": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        },
+        "test_count_matches_declared": { "type": "boolean" },
         "issue_count": { "type": "integer", "minimum": 0 }
       },
       "additionalProperties": false
@@ -215,6 +226,27 @@
         "root": { "type": "string", "minLength": 1 },
         "project_count": { "type": "integer", "minimum": 0 },
         "source_count": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "tests": {
+      "type": "object",
+      "required": [
+        "integration_test_file",
+        "integration_test_count",
+        "goal_doc",
+        "declared_integration_test_count",
+        "declared_matches_actual"
+      ],
+      "properties": {
+        "integration_test_file": { "type": "string", "minLength": 1 },
+        "integration_test_count": { "type": "integer", "minimum": 0 },
+        "goal_doc": { "type": "string", "minLength": 1 },
+        "declared_integration_test_count": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        },
+        "declared_matches_actual": { "type": "boolean" }
       },
       "additionalProperties": false
     },

@@ -8838,6 +8838,26 @@ fn conformance_report_summarizes_release_surface() {
         report_json.pointer("/summary/example_source_count"),
         Some(&serde_json::json!(67))
     );
+    assert_eq!(
+        report_json.pointer("/summary/integration_test_count"),
+        Some(&serde_json::json!(291))
+    );
+    assert_eq!(
+        report_json.pointer("/summary/declared_integration_test_count"),
+        Some(&serde_json::json!(291))
+    );
+    assert_eq!(
+        report_json.pointer("/summary/test_count_matches_declared"),
+        Some(&serde_json::json!(true))
+    );
+    assert_eq!(
+        report_json.pointer("/tests/integration_test_count"),
+        Some(&serde_json::json!(291))
+    );
+    assert_eq!(
+        report_json.pointer("/tests/declared_matches_actual"),
+        Some(&serde_json::json!(true))
+    );
     assert_eq!(report_json.pointer("/issues"), Some(&serde_json::json!([])));
 
     let coverage = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-conformance"))

@@ -58,6 +58,10 @@ enum Command {
         smoke_manifest: Vec<PathBuf>,
         #[arg(long, default_value = "examples")]
         examples_root: PathBuf,
+        #[arg(long, default_value = "tests/sley_v0.rs")]
+        integration_tests: PathBuf,
+        #[arg(long, default_value = "SleyGoal.md")]
+        goal_doc: PathBuf,
         #[arg(long)]
         sley_contract_bin: Option<PathBuf>,
         #[arg(long)]
@@ -88,6 +92,7 @@ struct ConformanceReport {
     corpus: CorpusSection,
     smoke: SmokeSection,
     examples: ExamplesSection,
+    tests: TestSection,
     issues: Vec<ConformanceIssue>,
 }
 
@@ -103,6 +108,9 @@ struct ConformanceSummary {
     smoke_case_count: usize,
     example_project_count: usize,
     example_source_count: usize,
+    integration_test_count: usize,
+    declared_integration_test_count: Option<usize>,
+    test_count_matches_declared: bool,
     issue_count: usize,
 }
 
@@ -184,6 +192,15 @@ struct ExamplesSection {
     source_count: usize,
 }
 
+#[derive(Debug, Serialize)]
+struct TestSection {
+    integration_test_file: String,
+    integration_test_count: usize,
+    goal_doc: String,
+    declared_integration_test_count: Option<usize>,
+    declared_matches_actual: bool,
+}
+
 #[derive(Debug, Clone, Serialize)]
 struct TagCount {
     tag: String,
@@ -244,6 +261,8 @@ fn main() -> Result<()> {
             corpus_manifest,
             smoke_manifest,
             examples_root,
+            integration_tests,
+            goal_doc,
             sley_contract_bin,
             markdown,
             html,
@@ -255,6 +274,8 @@ fn main() -> Result<()> {
                 &corpus_manifest,
                 &smoke_manifests,
                 &examples_root,
+                &integration_tests,
+                &goal_doc,
                 sley_contract_bin.as_deref(),
             );
             if let Some(path) = markdown {
@@ -293,6 +314,8 @@ fn build_report(
     corpus_manifest: &Path,
     smoke_manifests: &[PathBuf],
     examples_root: &Path,
+    integration_tests: &Path,
+    goal_doc: &Path,
     sley_contract_bin: Option<&Path>,
 ) -> ConformanceReport {
     let mut issues = Vec::new();
@@ -364,6 +387,7 @@ fn build_report(
         ));
     }
     let examples = build_examples_section(examples_root, &mut issues);
+    let tests = build_test_section(integration_tests, goal_doc, &mut issues);
     let validation = build_validation_section(
         sley_contract_bin,
         schema_dir,
@@ -388,6 +412,9 @@ fn build_report(
         smoke_case_count: smoke.case_count,
         example_project_count: examples.project_count,
         example_source_count: examples.source_count,
+        integration_test_count: tests.integration_test_count,
+        declared_integration_test_count: tests.declared_integration_test_count,
+        test_count_matches_declared: tests.declared_matches_actual,
         issue_count,
     };
     let status = if issues.is_empty() {
@@ -415,6 +442,7 @@ fn build_report(
         corpus,
         smoke,
         examples,
+        tests,
         issues,
     }
 }
@@ -772,6 +800,76 @@ fn build_examples_section(root: &Path, issues: &mut Vec<ConformanceIssue>) -> Ex
     }
 }
 
+fn build_test_section(
+    integration_tests: &Path,
+    goal_doc: &Path,
+    issues: &mut Vec<ConformanceIssue>,
+) -> TestSection {
+    let integration_test_count = match fs::read_to_string(integration_tests) {
+        Ok(source) => source
+            .lines()
+            .filter(|line| line.trim() == "#[test]")
+            .count(),
+        Err(error) => {
+            issues.push(issue(
+                "integration_test_inventory_failed",
+                format!("failed to read {}: {error}", integration_tests.display()),
+            ));
+            0
+        }
+    };
+    let declared_integration_test_count = match fs::read_to_string(goal_doc) {
+        Ok(source) => parse_declared_integration_test_count(&source),
+        Err(error) => {
+            issues.push(issue(
+                "integration_test_declaration_read_failed",
+                format!("failed to read {}: {error}", goal_doc.display()),
+            ));
+            None
+        }
+    };
+    if declared_integration_test_count.is_none() {
+        issues.push(issue(
+            "integration_test_declaration_missing",
+            format!(
+                "{} does not declare the current integration coverage count",
+                goal_doc.display()
+            ),
+        ));
+    }
+    let declared_matches_actual = declared_integration_test_count == Some(integration_test_count);
+    if !declared_matches_actual {
+        issues.push(issue(
+            "integration_test_count_mismatch",
+            format!(
+                "integration test count is {}, but {} declares {:?}",
+                integration_test_count,
+                goal_doc.display(),
+                declared_integration_test_count
+            ),
+        ));
+    }
+    TestSection {
+        integration_test_file: path_string(integration_tests),
+        integration_test_count,
+        goal_doc: path_string(goal_doc),
+        declared_integration_test_count,
+        declared_matches_actual,
+    }
+}
+
+fn parse_declared_integration_test_count(source: &str) -> Option<usize> {
+    let marker = "Current integration coverage is ";
+    source.lines().find_map(|line| {
+        let start = line.find(marker)? + marker.len();
+        let digits = line[start..]
+            .chars()
+            .take_while(char::is_ascii_digit)
+            .collect::<String>();
+        digits.parse().ok()
+    })
+}
+
 fn collect_examples(
     path: &Path,
     project_count: &mut usize,
@@ -998,14 +1096,15 @@ fn emit_report(report: &ConformanceReport, json: bool) -> Result<()> {
         return Ok(());
     }
     println!(
-        "sley-conformance report status={} schemas={} fixtures={} corpus={}/{} smoke={} examples={}",
+        "sley-conformance report status={} schemas={} fixtures={} corpus={}/{} smoke={} examples={} tests={}",
         report.status,
         report.summary.schema_count,
         report.summary.contract_fixture_count,
         report.summary.corpus_accepted_count,
         report.summary.corpus_rejected_count,
         report.summary.smoke_case_count,
-        report.summary.example_source_count
+        report.summary.example_source_count,
+        report.summary.integration_test_count
     );
     for issue in &report.issues {
         println!("{} {}", issue.code, issue.message);
@@ -1055,6 +1154,15 @@ fn render_markdown(report: &ConformanceReport) -> String {
     output.push_str(&format!(
         "- Examples: `{}` projects, `{}` sources\n",
         report.summary.example_project_count, report.summary.example_source_count
+    ));
+    output.push_str(&format!(
+        "- Integration tests: `{}` declared, `{}` counted\n",
+        report
+            .tests
+            .declared_integration_test_count
+            .map(|count| count.to_string())
+            .unwrap_or_else(|| "none".to_string()),
+        report.tests.integration_test_count
     ));
     if !report.issues.is_empty() {
         output.push_str("\n## Issues\n\n");
