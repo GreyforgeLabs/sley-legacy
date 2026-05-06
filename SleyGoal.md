@@ -199,8 +199,8 @@ Current verified surface:
   deploy dry-run reports, deploy artifact manifests, deploy artifact check
   reports, project scaffold reports, `sley-ci` reports, `sley-contract`
   utility reports, and the CLI smoke manifest in addition to AST program,
-  diagnostics, graph, graph slice, trace receipt, trace seal, graft outcome,
-  and ZJX envelope roots. The edit-plan schema now pins strict
+  diagnostics, graph, graph slice, trace report, trace receipt, trace seal,
+  graft outcome, and ZJX envelope roots. The edit-plan schema now pins strict
   graft operation and transaction template envelopes,
   the query schema now exposes strict task/take/type/effect/call row
   definitions,
@@ -208,10 +208,10 @@ Current verified surface:
   strict graft operation schema,
   graph-slice focus, task, and call summary payloads are schema-linked,
   the diagnostics schema exposes the shared diagnostic record used by
-  graft/doctor/plan/verify report schemas, the graft outcome and trace receipt
-  schemas pin accepted provenance records, and the ZJX envelope now carries a
-  recomputable graph digest plus schema refs for graph, slice, and trace
-  receipt handoff contents.
+  graft/doctor/plan/verify report schemas, the trace report schema wraps trace
+  receipt records, the graft outcome and trace receipt schemas pin accepted
+  provenance records, and the ZJX envelope now carries a recomputable graph
+  digest plus schema refs for graph, slice, and trace receipt handoff contents.
 
 Product thesis:
 

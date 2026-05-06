@@ -275,8 +275,8 @@ Implemented now:
   `sley-contract` inventory/fixture-check/validate/deploy-artifact-check reports,
   edit-plan graft operation and transaction template envelopes reused by graph
   slice affordances, graph-slice focus/task/call summary refs, a shared
-  diagnostic record schema, a standalone trace receipt schema, plus ZJX graph,
-  slice, and trace receipt handoff refs
+  diagnostic record schema, a trace report schema over standalone trace
+  receipts, plus ZJX graph, slice, and trace receipt handoff refs
 - manifest-backed accepted/rejected synthetic conformance corpus fixtures under
   `fixtures/corpus/`, including declared and missing authority cases for the
   seeded host adapter surface
@@ -637,7 +637,7 @@ scaffold-level seal/ZJX handoff actions,
 temp setup files for write-mode CLI smokes, direct graft write smokes,
 project `AddImport` writeback into existing unloaded module files plus
 follow-up strict project checks through direct graft JSON and `sley fix --write`,
-explicit graft/fix write trace receipts, non-empty trace seal receipts,
+explicit graft/fix write trace reports and receipts, non-empty trace seal receipts,
 ZJX envelopes carrying schema-backed trace receipts, passed-verify seal/ZJX
 next-actions, lint-driven declaration delete templates and cleanup transactions,
 lint-driven unused-private-task delete templates,

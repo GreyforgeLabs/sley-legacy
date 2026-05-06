@@ -31,8 +31,8 @@ use sley::symbols::{
     task_module, type_module,
 };
 use sley::trace::{
-    TraceSeal, append_trace_receipt, build_trace_receipt, build_trace_seal, content_digest,
-    default_trace_path, read_trace_receipts,
+    TraceSeal, append_trace_receipt, build_trace_receipt, build_trace_report, build_trace_seal,
+    content_digest, default_trace_path, read_trace_receipts,
 };
 use sley::verify::{VerifyReport, build_verify_report};
 use sley::zjx::build_zjx_envelope;
@@ -823,7 +823,11 @@ fn run(cli: Cli) -> Result<()> {
             let trace_path = trace.unwrap_or_else(|| default_trace_path(&file));
             let receipts = read_trace_receipts(&trace_path)?;
             if json {
-                print_json(&receipts)?;
+                print_json(&build_trace_report(
+                    file.display().to_string(),
+                    &trace_path,
+                    receipts,
+                ))?;
             } else {
                 print_human_trace(&trace_path, &receipts);
             }

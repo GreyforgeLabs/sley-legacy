@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.trace.report.v0",
+  "title": "Sley Trace Report v0",
+  "type": "object",
+  "required": [
+    "schema",
+    "status",
+    "target",
+    "trace_path",
+    "receipt_count",
+    "receipts"
+  ],
+  "properties": {
+    "schema": { "const": "sley.trace.report.v0" },
+    "status": { "const": "ok" },
+    "target": { "type": "string", "minLength": 1 },
+    "trace_path": { "type": "string", "minLength": 1 },
+    "receipt_count": { "type": "integer", "minimum": 0 },
+    "receipts": {
+      "type": "array",
+      "items": { "$ref": "sley.trace.receipt.v0" }
+    }
+  },
+  "additionalProperties": false
+}

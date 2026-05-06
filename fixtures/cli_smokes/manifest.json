@@ -5441,15 +5441,18 @@
       ],
       "covers": [
         "cli:trace",
+        "json:sley.trace.report.v0",
         "json:sley.trace.receipt.v0",
         "trace:explicit-path"
       ],
       "expect": {
         "success": true,
         "stdout_json": [
-          { "pointer": "/0/schema", "value": "sley.trace.receipt.v0" },
-          { "pointer": "/0/provenance/0/actor", "value": "agent:cli-smoke" },
-          { "pointer": "/0/provenance/0/operation", "value": "AddModuleDeclaration" }
+          { "pointer": "/schema", "value": "sley.trace.report.v0" },
+          { "pointer": "/receipt_count", "value": 1 },
+          { "pointer": "/receipts/0/schema", "value": "sley.trace.receipt.v0" },
+          { "pointer": "/receipts/0/provenance/0/actor", "value": "agent:cli-smoke" },
+          { "pointer": "/receipts/0/provenance/0/operation", "value": "AddModuleDeclaration" }
         ]
       }
     },
@@ -5542,16 +5545,19 @@
       "covers": [
         "cli:trace",
         "fix:lint-cleanup-write",
+        "json:sley.trace.report.v0",
         "json:sley.trace.receipt.v0",
         "trace:explicit-path"
       ],
       "expect": {
         "success": true,
         "stdout_json": [
-          { "pointer": "/0/schema", "value": "sley.trace.receipt.v0" },
-          { "pointer": "/0/provenance/0/actor", "value": "agent:cli-smoke" },
-          { "pointer": "/0/provenance/0/operation", "value": "DeleteNode" },
-          { "pointer": "/0/provenance/0/targets/0", "value": "import:app.main:app.stale" }
+          { "pointer": "/schema", "value": "sley.trace.report.v0" },
+          { "pointer": "/receipt_count", "value": 1 },
+          { "pointer": "/receipts/0/schema", "value": "sley.trace.receipt.v0" },
+          { "pointer": "/receipts/0/provenance/0/actor", "value": "agent:cli-smoke" },
+          { "pointer": "/receipts/0/provenance/0/operation", "value": "DeleteNode" },
+          { "pointer": "/receipts/0/provenance/0/targets/0", "value": "import:app.main:app.stale" }
         ]
       }
     },
@@ -5658,15 +5664,18 @@
       ],
       "covers": [
         "cli:trace",
+        "json:sley.trace.report.v0",
         "json:sley.trace.receipt.v0",
         "trace:explicit-path"
       ],
       "expect": {
         "success": true,
         "stdout_json": [
-          { "pointer": "/0/schema", "value": "sley.trace.receipt.v0" },
-          { "pointer": "/0/provenance/0/actor", "value": "agent:cli-smoke" },
-          { "pointer": "/0/provenance/0/operation", "value": "AddTake" }
+          { "pointer": "/schema", "value": "sley.trace.report.v0" },
+          { "pointer": "/receipt_count", "value": 1 },
+          { "pointer": "/receipts/0/schema", "value": "sley.trace.receipt.v0" },
+          { "pointer": "/receipts/0/provenance/0/actor", "value": "agent:cli-smoke" },
+          { "pointer": "/receipts/0/provenance/0/operation", "value": "AddTake" }
         ]
       }
     },
@@ -5877,10 +5886,14 @@
     {
       "name": "trace_hello_json",
       "args": ["trace", "--json", "examples/hello.sley"],
-      "covers": ["cli:trace"],
+      "covers": ["cli:trace", "json:sley.trace.report.v0"],
       "expect": {
         "success": true,
-        "stdout_contains": ["[]"]
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.trace.report.v0" },
+          { "pointer": "/receipt_count", "value": 0 },
+          { "pointer": "/receipts", "value": [] }
+        ]
       }
     },
     {

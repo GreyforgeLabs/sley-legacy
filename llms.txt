@@ -111,6 +111,7 @@ Stable v0 JSON roots:
 - `sley.lint.report.v0`
 - `sley.run.report.v0`
 - `sley.trace.receipt.v0`
+- `sley.trace.report.v0`
 - `sley.trace.seal.v0`
 - `sley.graft.outcome.v0`
 - `sley.zjx.envelope.v0`
@@ -136,8 +137,9 @@ Graph-slice insert/move/delete/replace affordance operations reuse the strict
 graft operation schema from edit-plan reports.
 Graph-slice focus, optional task, and inbound/outbound call summaries reuse
 AST and query report contracts.
-The trace receipt schema is a standalone JSONL record contract that references
-those accepted provenance records.
+The trace report schema wraps trace receipt JSONL records for `sley trace --json`;
+the trace receipt schema pins each standalone JSONL record and references
+accepted provenance records.
 The ZJX envelope schema pins a recomputable `graph_digest`, references the
 symbol graph, graph slice, and trace receipt schemas.
 
