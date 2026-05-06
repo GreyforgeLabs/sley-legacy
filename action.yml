@@ -1,0 +1,19 @@
+name: Sley CI
+description: Run deterministic Sley compiler gates
+inputs:
+  target:
+    description: Sley file or project directory
+    required: false
+    default: "."
+  sley-bin:
+    description: Sley executable
+    required: false
+    default: "sley"
+runs:
+  using: composite
+  steps:
+    - name: Run Sley CI
+      shell: bash
+      env:
+        SLEY_BIN: ${{ inputs.sley-bin }}
+      run: ${{ github.action_path }}/bin/sley-ci check "${{ inputs.target }}"

@@ -1,0 +1,13 @@
+{
+  "description": "Reusable local, pre-commit, and GitHub Actions gates for Sley projects.",
+  "license": "MIT",
+  "name": "sley-ci",
+  "private": true,
+  "scripts": {
+    "fmt": "node test/check-format.mjs",
+    "smoke": "bash test/smoke.sh",
+    "test": "bash test/smoke.sh"
+  },
+  "type": "module",
+  "version": "0.0.0-private"
+}

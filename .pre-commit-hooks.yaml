@@ -1,0 +1,5 @@
+- id: sley-ci-check
+  name: Sley CI check
+  entry: bin/sley-ci check
+  language: script
+  pass_filenames: false

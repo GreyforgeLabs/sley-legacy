@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SLEY_BIN="${SLEY_BIN:-sley}"
+cmd="${1:-help}"
+shift || true
+
+usage() {
+  cat <<'USAGE'
+usage: sley-ci <check|verify|smoke|new-deploy-sequence|help> [args]
+USAGE
+}
+
+case "$cmd" in
+  check)
+    target="${1:-.}"
+    "$SLEY_BIN" format "$target"
+    "$SLEY_BIN" check --json "$target"
+    "$SLEY_BIN" lint --json --deny-warnings "$target"
+    ;;
+  verify)
+    "$SLEY_BIN" verify "$@"
+    ;;
+  smoke)
+    manifest="${1:-fixtures/cli_smokes/manifest.json}"
+    if [[ ! -f "$manifest" ]]; then
+      echo "smoke manifest not found: $manifest" >&2
+      exit 2
+    fi
+    echo "manifest present: $manifest"
+    ;;
+  new-deploy-sequence)
+    target="${1:-.}"
+    "$SLEY_BIN" check --json "$target"
+    "$SLEY_BIN" doctor --json "$target"
+    "$SLEY_BIN" query --json --kind tasks "$target"
+    "$SLEY_BIN" plan --json "$target"
+    "$SLEY_BIN" lint --json --deny-warnings "$target"
+    "$SLEY_BIN" verify --json --deny-warnings --cap Deploy --deploy-result staging staged "$target"
+    "$SLEY_BIN" run --json --cap Deploy --deploy-result staging staged "$target"
+    "$SLEY_BIN" seal --json "$target"
+    "$SLEY_BIN" zjx --json "$target"
+    ;;
+  help|--help|-h)
+    usage
+    ;;
+  *)
+    echo "unknown command: $cmd" >&2
+    usage >&2
+    exit 2
+    ;;
+esac

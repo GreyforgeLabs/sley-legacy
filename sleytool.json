@@ -1,0 +1,19 @@
+{
+  "consumed_roots": [
+    "sley.diagnostics.report.v0",
+    "sley.lint.report.v0",
+    "sley.verify.report.v0",
+    "sley.trace.seal.v0",
+    "sley.zjx.envelope.v0",
+    "sley.cli_smoke.manifest.v0"
+  ],
+  "future_url": "https://sley.dev/tools/sley-ci",
+  "github": "https://github.com/GreyforgeLabs/sley-ci",
+  "name": "sley-ci",
+  "primary_user": "repo maintainers and application developers",
+  "priority": "P0",
+  "schema": "sley.tool.manifest.v0",
+  "status": "private_scaffold",
+  "title": "Sley CI",
+  "utility": "CI and pre-commit gate pack"
+}
