@@ -223,9 +223,10 @@ Current development phase:
   matching operation/transaction JSON object for `sley graft`
 - `sley fix --json --kind <kind>` consumes checked plan templates and applies
   one named operation or transaction through the same graft checker, emitting
-  `sley.graft.outcome.v0`; default and `--dry-run` mode are non-mutating, and
-  `--write` records the normal graft trace receipt or a caller-supplied
-  `--trace <trace.jsonl>` path; CLI smokes cover a call-row-driven
+  `sley.graft.outcome.v0`; exact statement, take, and expression node surfaces
+  can be selected with `--template-surface`; default and `--dry-run` mode are
+  non-mutating, and `--write` records the normal graft trace receipt or a
+  caller-supplied `--trace <trace.jsonl>` path; CLI smokes cover a call-row-driven
   `rename_and_update_call_sites` write and an unused-take
   `remove_take_and_remove_call_arg` write followed by call query and verify;
   `qualify_imported_call` write, call query, and strict verify for imported
