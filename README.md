@@ -84,6 +84,6 @@ Implementation reality: Sley-native source-of-truth is now in `src/tool.sley`; c
 
     ## License
 
-    MIT. See [`LICENSE`](LICENSE).
+    Apache-2.0. See [`LICENSE`](LICENSE).
 
     Autonomy, Engineered.

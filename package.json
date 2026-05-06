@@ -1,6 +1,6 @@
 {
   "description": "Reusable local, pre-commit, and GitHub Actions gates for Sley projects.",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "name": "sley-ci",
   "private": true,
   "scripts": {
