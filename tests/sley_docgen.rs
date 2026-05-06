@@ -5,6 +5,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde_json::{Value as JsonValue, json};
 
+mod support;
+
 #[test]
 fn docgen_generates_reference_report_and_markdown() {
     let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -30,6 +32,7 @@ fn docgen_generates_reference_report_and_markdown() {
         String::from_utf8_lossy(&output.stderr)
     );
 
+    support::validate_report_schema("sley.docgen.report.v0", &output.stdout);
     let report: JsonValue = serde_json::from_slice(&output.stdout).expect("parse docgen report");
     assert_eq!(
         report.pointer("/schema"),

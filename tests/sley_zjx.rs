@@ -5,6 +5,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde_json::{Value as JsonValue, json};
 
+mod support;
+
 #[test]
 fn zjx_tool_inspects_extracts_diffs_and_rejects_tampered_digest() {
     let root = temp_project_dir("zjx-tool");
@@ -53,6 +55,12 @@ fn zjx_tool_inspects_extracts_diffs_and_rejects_tampered_digest() {
     let graph: JsonValue =
         serde_json::from_str(&fs::read_to_string(&graph_path).expect("read graph output"))
             .expect("parse graph output");
+    support::validate_report_schema(
+        "sley.symbol_graph.v0",
+        fs::read(&graph_path)
+            .expect("read graph output bytes")
+            .as_slice(),
+    );
     assert_eq!(
         graph.pointer("/schema"),
         Some(&json!("sley.symbol_graph.v0"))
@@ -97,6 +105,7 @@ fn zjx_tool_inspects_extracts_diffs_and_rejects_tampered_digest() {
     );
     let failed_json: JsonValue =
         serde_json::from_slice(&failed.stdout).expect("parse failed digest report");
+    support::validate_report_schema("sley.zjx.tool.report.v0", &failed.stdout);
     assert_eq!(failed_json.pointer("/status"), Some(&json!("failed")));
     assert_eq!(
         failed_json.pointer("/issues/0/code"),
@@ -116,6 +125,7 @@ fn write_zjx_envelope(target: &str, output_path: &Path) {
         "sley zjx {target} failed: {}",
         String::from_utf8_lossy(&output.stderr)
     );
+    support::validate_report_schema("sley.zjx.envelope.v0", &output.stdout);
     fs::write(output_path, output.stdout)
         .unwrap_or_else(|error| panic!("write {}: {error}", output_path.display()));
 }
@@ -132,6 +142,7 @@ fn run_zjx_success(args: &[&str]) -> JsonValue {
         "sley-zjx {} failed\nstdout: {stdout}\nstderr: {stderr}",
         args.join(" ")
     );
+    support::validate_report_schema("sley.zjx.tool.report.v0", stdout.as_bytes());
     serde_json::from_str(&stdout)
         .unwrap_or_else(|error| panic!("parse sley-zjx JSON: {error}\n{stdout}"))
 }
