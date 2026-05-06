@@ -5797,6 +5797,101 @@
       }
     },
     {
+      "name": "fix_identity_text_concatenation_expression_write_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/fix-identity-text/main.sley",
+          "content": "module app.identity_text_fix\n\ntask main -> Text {\n  bind label = \"agent\"\n\n  return \"\" + label\n}\n"
+        }
+      ],
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "simplify_identity_binary_expression",
+        "--template-surface",
+        "block:task:app.identity_text_fix.main:stmt:1:expr",
+        "--write",
+        "--actor",
+        "agent:cli-smoke",
+        "{tmp}/fix-identity-text/main.sley"
+      ],
+      "covers": [
+        "cli:fix",
+        "cli:fix-write",
+        "cli:smoke-setup-files",
+        "fix:lint-cleanup-write",
+        "fix:write-source",
+        "graft:templates:identity-binary-expression",
+        "json:sley.graft.outcome.v0",
+        "lint:identity_binary_expression",
+        "readiness:identity-text-concatenation-repair-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/actor", "value": "agent:cli-smoke" },
+          { "pointer": "/provenance/0/operation", "value": "ReplaceExpression" },
+          { "pointer": "/provenance/0/targets/0", "value": "block:task:app.identity_text_fix.main:stmt:1:expr" }
+        ]
+      }
+    },
+    {
+      "name": "lint_fix_identity_text_concatenation_expression_write_json",
+      "args": [
+        "lint",
+        "--json",
+        "--rule",
+        "identity-binary-expression",
+        "{tmp}/fix-identity-text/main.sley"
+      ],
+      "covers": [
+        "cli:lint",
+        "fix:lint-cleanup-write",
+        "lint:identity_binary_expression",
+        "json:sley.lint.report.v0",
+        "readiness:identity-text-concatenation-repair-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.lint.report.v0" },
+          { "pointer": "/status", "value": "ok" }
+        ]
+      }
+    },
+    {
+      "name": "verify_fix_identity_text_concatenation_expression_write_json",
+      "args": [
+        "verify",
+        "--json",
+        "--deny-warnings",
+        "{tmp}/fix-identity-text/main.sley"
+      ],
+      "covers": [
+        "cli:verify",
+        "fix:lint-cleanup-write",
+        "json:sley.verify.report.v0",
+        "json:sley.lint.report.v0",
+        "lint:identity_binary_expression",
+        "readiness:identity-text-concatenation-repair-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.verify.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/summary/warning_count", "value": 0 },
+          { "pointer": "/summary/lint_finding_count", "value": 0 },
+          { "pointer": "/runtime/value/kind", "value": "Text" },
+          { "pointer": "/runtime/value/value", "value": "agent" },
+          { "pointer": "/lint/status", "value": "ok" }
+        ]
+      }
+    },
+    {
       "name": "lint_redundant_boolean_comparison_rule_json",
       "args": [
         "lint",

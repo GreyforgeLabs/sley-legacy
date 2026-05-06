@@ -4368,6 +4368,69 @@ fn edit_plan_graft_templates_include_identity_binary_expression_simplify() {
 }
 
 #[test]
+fn edit_plan_graft_templates_include_text_identity_binary_expression_simplify() {
+    let source = r#"
+module app.identity_text
+
+task main -> Text {
+  bind label = "agent"
+
+  return "" + label
+}
+"#;
+    let program = parse_program(source).expect("parse identity text source");
+    let report = build_edit_plan_report_with_options(
+        "examples/identity_text_expression.sley",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: None,
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "warnings");
+    assert_eq!(report.summary.lint_finding_count, 1);
+    assert_eq!(
+        report.lint.as_ref().expect("lint summary").findings[0].id,
+        "IDENTITY_BINARY_EXPRESSION"
+    );
+    let template = report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "simplify_identity_binary_expression")
+        .expect("text identity binary expression simplify template");
+    assert_eq!(
+        template.surface,
+        "block:task:app.identity_text.main:stmt:1:expr"
+    );
+    assert_eq!(
+        template.operation.pointer("/payload/source"),
+        Some(&serde_json::json!("label"))
+    );
+    let graft: GraftInput =
+        serde_json::from_value(template.operation.clone()).expect("parse text identity template");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:text-identity-binary-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted_source = outcome.source.expect("grafted source");
+    assert!(grafted_source.contains("return label"));
+    assert!(!grafted_source.contains("\"\" + label"));
+    let grafted_program = parse_program(&grafted_source).expect("parse grafted source");
+    let lint_report = build_lint_report(
+        &grafted_program,
+        LintOptions {
+            rules: vec![LintRule::IdentityBinaryExpression],
+            module: None,
+        },
+    );
+    assert_eq!(lint_report.status, "ok");
+}
+
+#[test]
 fn edit_plan_graft_templates_include_redundant_boolean_comparison_simplify() {
     let source = include_str!("../examples/redundant_boolean_comparison.sley");
     let program = parse_program(source).expect("parse redundant boolean comparison fixture");
@@ -14261,6 +14324,7 @@ task suffix -> Text {
 task main -> Text {
   bind greeting = "Hello, " + "agent"
   bind escaped = "line\n" + "tab\t"
+  bind identity = "" + "agent"
   bind runtime = "prefix " + call suffix()
 
   return "Sley" + " ready"
@@ -14308,7 +14372,8 @@ task main -> Text {
         .collect();
     assert!(nodes.contains(&"block:task:app.constant_text_concat.main:stmt:0:expr"));
     assert!(nodes.contains(&"block:task:app.constant_text_concat.main:stmt:1:expr"));
-    assert!(nodes.contains(&"block:task:app.constant_text_concat.main:stmt:3:expr"));
+    assert!(!nodes.contains(&"block:task:app.constant_text_concat.main:stmt:2:expr"));
+    assert!(nodes.contains(&"block:task:app.constant_text_concat.main:stmt:4:expr"));
     assert_eq!(report.findings[0].module, "app.constant_text_concat");
     assert!(
         report
@@ -15013,6 +15078,11 @@ module app.identity_binary
 task main -> Int {
   bind amount = 10
   bind flag = true
+  bind label = "agent"
+  bind left_text = "" + label
+  bind right_text = label + ""
+  bind literal_text = "" + "literal"
+  bind constant_text = "Sley " + "agents"
 
   return if flag && true { amount * 1 } else { 0 + amount }
 }
@@ -15036,16 +15106,39 @@ task main -> Int {
     assert_eq!(report.status, "findings");
     assert_eq!(report.entry_module, "app.identity_binary");
     assert_eq!(report.filters.rules, vec!["identity_binary_expression"]);
-    assert_eq!(report.findings.len(), 3);
+    assert_eq!(report.findings.len(), 6);
     assert_eq!(report.findings[0].id, "IDENTITY_BINARY_EXPRESSION");
     assert_eq!(report.findings[0].rule, "identity_binary_expression");
-    assert_eq!(
-        report.findings[0].node,
-        "block:task:app.identity_binary.main:stmt:2:expr:condition"
-    );
     assert_eq!(report.findings[0].module, "app.identity_binary");
-    assert!(report.findings[0].message.contains("flag && true"));
-    assert!(report.findings[0].hint.contains("flag"));
+    let nodes: Vec<&str> = report
+        .findings
+        .iter()
+        .map(|finding| finding.node.as_str())
+        .collect();
+    assert!(nodes.contains(&"block:task:app.identity_binary.main:stmt:3:expr"));
+    assert!(nodes.contains(&"block:task:app.identity_binary.main:stmt:4:expr"));
+    assert!(nodes.contains(&"block:task:app.identity_binary.main:stmt:5:expr"));
+    assert!(!nodes.contains(&"block:task:app.identity_binary.main:stmt:6:expr"));
+    assert!(nodes.contains(&"block:task:app.identity_binary.main:stmt:7:expr:condition"));
+    assert!(nodes.contains(&"block:task:app.identity_binary.main:stmt:7:expr:then"));
+    assert!(nodes.contains(&"block:task:app.identity_binary.main:stmt:7:expr:else"));
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|finding| finding.hint.contains("label"))
+    );
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|finding| finding.hint.contains("\"literal\""))
+    );
+    assert!(
+        report.findings.iter().any(
+            |finding| finding.message.contains("flag && true") && finding.hint.contains("flag")
+        )
+    );
 
     let scoped_report = build_lint_report(
         &program,
@@ -18024,6 +18117,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:inspect-calls",
         "readiness:deploy-lint-repair-write-verify",
         "readiness:identity-binary-repair-write-verify",
+        "readiness:identity-text-concatenation-repair-write-verify",
         "readiness:redundant-boolean-repair-write-verify",
         "readiness:absorbing-boolean-repair-write-verify",
         "readiness:self-comparison-repair-write-verify",

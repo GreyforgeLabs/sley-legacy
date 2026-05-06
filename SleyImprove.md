@@ -680,8 +680,8 @@ The current smoke manifest covers:
   starter blocks through lint/plan/fix-write/verify CLI smoke coverage
 - identity binary expression style warnings through `identity_binary_expression`,
   plus checked `simplify_identity_binary_expression` templates that replace
-  `x + 0`, `x * 1`, `flag && true`, or `flag || false` forms with the
-  non-identity side
+  `x + 0`, `x * 1`, `flag && true`, `flag || false`, or empty-text
+  concatenation forms with the non-identity side
 - redundant boolean comparison style warnings through
   `redundant_boolean_comparison`, plus checked
   `simplify_redundant_boolean_comparison` templates that replace
@@ -858,8 +858,8 @@ The v0 lint rules are:
 - `empty_forge_statement`: a no-op `forge { }` statement is reported so
   agents can delete placeholder starter blocks before readiness or deploy gates.
 - `identity_binary_expression`: a checked identity binary expression such as
-  `x + 0`, `x * 1`, `flag && true`, or `flag || false` is reported so agents
-  can replace it with the non-identity side.
+  `x + 0`, `x * 1`, `flag && true`, `flag || false`, `"" + name`, or
+  `name + ""` is reported so agents can replace it with the non-identity side.
 - `redundant_boolean_comparison`: a checked comparison against `true` or
   `false` is reported so agents can replace it with the boolean expression or
   its negation.

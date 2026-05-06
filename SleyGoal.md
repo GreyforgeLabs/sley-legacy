@@ -40,7 +40,7 @@ Current verified surface:
 
 - `cargo fmt --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 278 tests.
+- Current integration coverage is 279 tests.
 - `sley query --json` emits `schema: "sley.query.report.v0"` and supports
   `--kind all|modules|tasks|types|effects|calls`, `--module <module>`, and
   `--exported`, including strict task/take/type/effect/call row definitions.
@@ -231,7 +231,8 @@ Current verified surface:
   `delete_empty_forge_statement` templates with lint/plan/fix-write/verify
   smoke coverage, plus checked `identity_binary_expression` style findings and
   `simplify_identity_binary_expression` templates with lint/plan/fix-write/verify
-  smoke coverage, plus checked `redundant_boolean_comparison` style findings and
+  smoke coverage, including empty-text concatenation cleanup, plus checked
+  `redundant_boolean_comparison` style findings and
   `simplify_redundant_boolean_comparison` templates with lint/plan/fix-write/verify
   smoke coverage, plus checked `absorbing_boolean_expression` style findings
   and `simplify_absorbing_boolean_expression` templates with lint/plan/fix-write/verify

@@ -202,7 +202,8 @@ Current development phase:
   `empty_if_statement`, the empty-for cleanup rule
   `empty_for_statement`, the empty-forge cleanup rule
   `empty_forge_statement`, the identity simplification rule
-  `identity_binary_expression`, the redundant boolean comparison rule
+  `identity_binary_expression` including empty-text concatenation, the
+  redundant boolean comparison rule
   `redundant_boolean_comparison`, the absorbing boolean expression rule
   `absorbing_boolean_expression`, the self-comparison expression rule
   `self_comparison_expression`, the double negation simplification rule
