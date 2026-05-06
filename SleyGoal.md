@@ -79,6 +79,10 @@ Current verified surface:
   contract validation status, release manifests, corpus tags, smoke tags, and
   packaged example counts, plus a check that the declared integration coverage
   count matches the test file.
+- `tree-sitter-sley` is available as an in-tree syntax grammar bootstrap with
+  `npm test` coverage for Tree-sitter parser generation, exact syntax corpus
+  trees, highlight query validation, and parsing of current `.sley` examples
+  plus accepted compiler corpus fixtures.
 - `sley deploy --json --dry-run` emits `schema: "sley.deploy.report.v0"` and
   composes strict verify, trace seal, and ZJX package summaries into a
   local-only deploy package report that forbids live deployment, provider

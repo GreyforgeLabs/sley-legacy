@@ -165,6 +165,9 @@ Implemented now:
   integration-test count, emitting
   `schema: "sley.conformance.report.v0"` and
   `schema: "sley.conformance.coverage.v0"`
+- in-tree `tree-sitter-sley` syntax grammar bootstrap with checked
+  Tree-sitter corpus tests, highlight queries, generated parser artifacts, and
+  fixture parsing over current examples plus accepted compiler corpus
 - checked JSON readiness reports with `sley doctor`, consuming strict
   diagnostics plus query and lint summaries, with call-bearing reports routing
   agents to strict `sley query --kind calls` inspection, warning next-actions
@@ -420,6 +423,7 @@ sley-ci examples --json examples
 sley-conformance report --json
 sley-conformance coverage --json --require-tag cli:check --require-tag json:sley.trace.receipt.v0
 sley-contract inspect-deploy-artifacts .sley/deploy --schemas docs/schemas --json
+make syntax
 sley seal --json .
 sley zjx --json .
 ```

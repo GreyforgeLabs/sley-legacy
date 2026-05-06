@@ -1,1 +1,3 @@
 /target/
+node_modules/
+tree-sitter-sley/.tree-sitter/

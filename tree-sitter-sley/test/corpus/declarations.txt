@@ -1,0 +1,128 @@
+================================================================================
+module imports declarations and a host call
+================================================================================
+
+module app.profile
+
+import app.math as math
+
+type User = {
+  slot id: Text
+  slot name: Text
+}
+
+effect DatabaseRead
+
+task get_user -> Result<User, Error> uses DatabaseRead {
+  take id: Text
+
+  bind row = call db.query_one("select * from users where id = ?", id)?
+  return Ok(User { id: row.text("id"), name: row.text("name") })
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (module_declaration
+    (qualified_identifier
+      (identifier)
+      (identifier)))
+  (import_declaration
+    (qualified_identifier
+      (identifier)
+      (identifier))
+    (identifier))
+  (type_declaration
+    (identifier)
+    (type_expression
+      (record_type
+        (record_type_field
+          (identifier)
+          (type_expression
+            (qualified_identifier
+              (identifier))))
+        (record_type_field
+          (identifier)
+          (type_expression
+            (qualified_identifier
+              (identifier)))))))
+  (effect_declaration
+    (identifier))
+  (task_declaration
+    (identifier)
+    (type_expression
+      (generic_type
+        (qualified_identifier
+          (identifier))
+        (type_expression
+          (qualified_identifier
+            (identifier)))
+        (type_expression
+          (qualified_identifier
+            (identifier)))))
+    (uses_clause
+      (qualified_identifier
+        (identifier)))
+    (task_block
+      (take_declaration
+        (identifier)
+        (type_expression
+          (qualified_identifier
+            (identifier))))
+      (statement
+        (binding_statement
+          (binding_keyword)
+          (identifier)
+          (expression
+            (try_expression
+              (expression
+                (call_expression
+                  (expression
+                    (field_expression
+                      (expression
+                        (call_keyword_expression
+                          (expression
+                            (qualified_identifier
+                              (identifier)))))
+                      (identifier)))
+                  (expression
+                    (string))
+                  (expression
+                    (qualified_identifier
+                      (identifier)))))))))
+      (statement
+        (return_statement
+          (expression
+            (call_expression
+              (expression
+                (qualified_type_identifier
+                  (type_identifier)))
+              (expression
+                (record_literal
+                  (typed_record_literal
+                    (qualified_type_identifier
+                      (type_identifier))
+                    (record_field
+                      (identifier)
+                      (expression
+                        (call_expression
+                          (expression
+                            (field_expression
+                              (expression
+                                (qualified_identifier
+                                  (identifier)))
+                              (identifier)))
+                          (expression
+                            (string)))))
+                    (record_field
+                      (identifier)
+                      (expression
+                        (call_expression
+                          (expression
+                            (field_expression
+                              (expression
+                                (qualified_identifier
+                                  (identifier)))
+                              (identifier)))
+                          (expression
+                            (string)))))))))))))))
