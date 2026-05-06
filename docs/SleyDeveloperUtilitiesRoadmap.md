@@ -80,25 +80,28 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
 
 2. `sley-ci`
    - Inputs: project path, selected capabilities, optional seeded runtime
-     values, optional smoke manifest.
+     values, optional smoke manifest, optional corpus manifest.
    - Outputs: pass/fail summary plus machine-readable report artifact.
    - MVP commands:
      - `sley-ci check .`
      - `sley-ci verify --deny-warnings .`
      - `sley-ci deploy --dry-run .`
      - `sley-ci smoke fixtures/cli_smokes/manifest.json`
+     - `sley-ci corpus fixtures/corpus/manifest.json`
    - Scaffold:
      - `action.yml`;
      - `bin/sley-ci`;
      - `.pre-commit-hooks.yaml`;
      - sample workflow under `examples/github-actions/`.
-   - Current bootstrap: in-tree `src/bin/sley-ci.rs` exposes `check`,
-     `verify`, `deploy`, and `smoke` wrappers with
+   - Current bootstrap: in-tree `src/bin/sley-ci.rs` exposes `check`, `lint`,
+     `doctor`, `plan`, `run`, `verify`, `deploy`, `smoke`, and `corpus`
+     wrappers with
      `schema: "sley.ci.report.v0"` output; GitHub Action, pre-commit hook, and
      sample workflow packaging remain future work.
    - Bootstrap done when generated `sley new --template deploy` and
      `sley new --template agent` projects can run seeded verify gates, local
-     deploy dry-run package reports, and a CLI smoke manifest through `sley-ci`.
+     deploy dry-run package reports, a CLI smoke manifest, and the
+     accepted/rejected corpus manifest through `sley-ci`.
 
 3. `tree-sitter-sley`
    - Inputs: `.sley` source fixtures.
