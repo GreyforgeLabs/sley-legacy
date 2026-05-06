@@ -101,7 +101,7 @@ sley fix --json --kind <kind> [--template-surface <surface>] [--name <name>] [--
 sley verify --json [--deny-warnings] [runtime gates/seeds] <target>
 sley deploy --json --dry-run [--artifacts-dir <dir>] [runtime gates/seeds] <target>
 sley query --json [--kind all|modules|tasks|types|effects|calls] [--module <module>] <target>
-sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter|missing-module-declaration|unchecked-result|unqualified-imported-call|unused-pure-binding|mutable-binding-never-set|constant-if-expression|identity-binary-expression|redundant-boolean-comparison|absorbing-boolean-expression|self-comparison-expression|double-negation-expression|redundant-boolean-if-expression|same-branch-if-expression] [--module <module>] <target>
+sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter|missing-module-declaration|unchecked-result|unqualified-imported-call|unused-pure-binding|unused-pure-expression-statement|mutable-binding-never-set|constant-if-expression|identity-binary-expression|redundant-boolean-comparison|absorbing-boolean-expression|self-comparison-expression|double-negation-expression|redundant-boolean-if-expression|same-branch-if-expression] [--module <module>] <target>
 sley trace --json <target>
 sley seal --json <target>
 sley zjx --json [--slice <node-id>] <target>
@@ -589,6 +589,9 @@ The current smoke manifest covers:
 - unused pure binding templates that delete unread side-effect-free `bind`
   statements through checked `DeleteNode`, with lint/plan/fix-write/verify
   CLI smoke coverage
+- unused pure expression statement templates that delete no-op side-effect-free
+  expression statements through checked `DeleteNode`, with
+  lint/plan/fix-write/verify CLI smoke coverage
 - mutable binding style warnings through `mutable_binding_never_set`, plus a
   checked `convert_mutable_binding_to_bind` transaction that rewrites a
   never-set mutable local into `bind` through lint/plan/fix-write/verify CLI
@@ -700,6 +703,9 @@ The v0 lint rules are:
 - `unused_pure_binding`: an unread local `bind` with a delete-safe initializer
   is reported so agents can remove dead local scaffolding without changing
   authority work or fallible execution.
+- `unused_pure_expression_statement`: a delete-safe pure expression statement
+  is reported so agents can remove no-op local computations without dropping
+  authority work or fallible execution.
 - `mutable_binding_never_set`: a mutable local such as `state` or `tally` is
   reported when it is never assigned with `set`; prefer `bind` unless real
   mutation is needed.
@@ -734,6 +740,7 @@ The command supports `--module <module>`, `--rule unused-private-task`,
 `--rule unused-private-effect`, `--rule raw-host-adapter`,
 `--rule missing-module-declaration`, `--rule unchecked-result`,
 `--rule unqualified-imported-call`, `--rule unused-pure-binding`,
+`--rule unused-pure-expression-statement`,
 `--rule mutable-binding-never-set`, `--rule constant-if-expression`,
 `--rule identity-binary-expression`, `--rule redundant-boolean-comparison`,
 `--rule absorbing-boolean-expression`, `--rule self-comparison-expression`,

@@ -1,0 +1,9 @@
+module app.unused_expr
+
+task main -> Int {
+  bind value = 41
+
+  value + 1
+
+  return value
+}

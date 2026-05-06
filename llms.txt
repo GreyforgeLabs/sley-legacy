@@ -172,7 +172,8 @@ Current development phase:
   `unused_private_type` and `unused_private_effect`, and the migration rule
   `raw_host_adapter`, plus the style rules `missing_module_declaration` and
   `unqualified_imported_call`, the local cleanup rule
-  `unused_pure_binding`, the mutable-local style rule
+  `unused_pure_binding`, the no-op expression cleanup rule
+  `unused_pure_expression_statement`, the mutable-local style rule
   `mutable_binding_never_set`, the expression simplification rule
   `constant_if_expression`, the identity simplification rule
   `identity_binary_expression`, the redundant boolean comparison rule
@@ -223,6 +224,8 @@ Current development phase:
   `propagate_unchecked_result` templates for discarded `Result` expression
   statements, plus `qualify_imported_call` templates for simple imported task
   calls that should be alias- or module-qualified, plus
+  `delete_unused_pure_expression_statement` templates for no-op pure
+  expression statements, plus
   `convert_mutable_binding_to_bind` transactions for never-set mutable locals;
   selected task graph-slice
   affordances are surfaced as checked
