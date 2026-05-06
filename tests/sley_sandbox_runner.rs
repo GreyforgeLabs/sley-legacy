@@ -5,6 +5,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde_json::{Value as JsonValue, json};
 
+mod support;
+
 #[test]
 fn sandbox_runner_replays_manifest_with_seeded_file_root() {
     let root = temp_project_dir("sandbox-runner");
@@ -54,6 +56,7 @@ task main -> Result<Text, Error> uses FileRead {
         String::from_utf8_lossy(&output.stderr)
     );
 
+    support::validate_report_schema("sley.sandbox.report.v0", &output.stdout);
     let report: JsonValue = serde_json::from_slice(&output.stdout).expect("parse sandbox report");
     assert_eq!(
         report.pointer("/schema"),

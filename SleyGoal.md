@@ -46,8 +46,9 @@ Current verified surface:
 - `cargo test` passes.
 - Current integration coverage is 293 tests in the core `tests/sley_v0.rs`
   conformance file, with additional focused integration tests for LSP,
-  workbench, agent bench, migration reports, project templates, and ZJX
-  envelope tools.
+  workbench, agent bench, docgen, migration reports, sandbox replay, project
+  templates, and ZJX envelope tools. The focused utility tests validate live
+  JSON reports against their declared schemas.
 - `make v1` wraps fmt, whitespace diff check, full Rust tests, contract
   fixture and release-manifest validation, conformance summary reporting,
   corpus conformance, packaged example conformance, broad CLI smoke
@@ -105,8 +106,7 @@ Current verified surface:
   `sley.fix.preview` command.
 - `sley-workbench` is available as an in-tree local inspection bootstrap with
   JSON and optional static HTML panels over doctor, query, lint, edit-plan, and
-  graph data. Focused integration coverage validates live workbench JSON
-  against `sley.workbench.report.v0`.
+  graph data.
 - `sley-docgen` is available as an in-tree checked reference generator with
   `schema: "sley.docgen.report.v0"` and optional Markdown over module, task,
   type, effect, and host capability docs from `sley.query.report.v0`.

@@ -5,6 +5,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde_json::{Value as JsonValue, json};
 
+mod support;
+
 #[test]
 fn migrate_reports_checked_source_migrations_and_schema_drift() {
     let root = temp_project_dir("migrate");
@@ -62,6 +64,7 @@ fn migrate_reports_checked_source_migrations_and_schema_drift() {
         String::from_utf8_lossy(&output.stderr)
     );
 
+    support::validate_report_schema("sley.migrate.report.v0", &output.stdout);
     let report: JsonValue = serde_json::from_slice(&output.stdout).expect("parse migrate JSON");
     assert_eq!(
         report.pointer("/schema"),

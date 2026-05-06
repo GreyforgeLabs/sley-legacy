@@ -5,6 +5,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde_json::{Value as JsonValue, json};
 
+mod support;
+
 #[test]
 fn workbench_reports_lint_repairs_and_writes_static_html_when_requested() {
     let root = temp_project_dir("workbench");
@@ -41,29 +43,8 @@ task orphan -> Text {
         String::from_utf8_lossy(&output.stderr)
     );
 
+    support::validate_report_schema("sley.workbench.report.v0", &output.stdout);
     let report: JsonValue = serde_json::from_slice(&output.stdout).expect("parse workbench JSON");
-    let report_path = root.join("workbench-report.json");
-    fs::write(&report_path, &output.stdout).expect("write workbench report");
-    let contract = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-contract"))
-        .current_dir(env!("CARGO_MANIFEST_DIR"))
-        .args([
-            "validate",
-            "--schema",
-            "sley.workbench.report.v0",
-            report_path.to_str().expect("report path"),
-            "--schemas",
-            "docs/schemas",
-            "--json",
-        ])
-        .output()
-        .expect("validate workbench report schema");
-    assert!(
-        contract.status.success(),
-        "workbench report schema validation failed\nstdout: {}\nstderr: {}",
-        String::from_utf8_lossy(&contract.stdout),
-        String::from_utf8_lossy(&contract.stderr)
-    );
-
     assert_eq!(
         report.pointer("/schema"),
         Some(&json!("sley.workbench.report.v0"))

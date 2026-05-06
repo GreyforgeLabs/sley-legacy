@@ -2,6 +2,8 @@ use std::process::Command as ProcessCommand;
 
 use serde_json::{Value as JsonValue, json};
 
+mod support;
+
 #[test]
 fn agent_bench_runs_checked_repair_loop_and_records_evidence() {
     let output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-agent-bench"))
@@ -15,6 +17,7 @@ fn agent_bench_runs_checked_repair_loop_and_records_evidence() {
         String::from_utf8_lossy(&output.stderr)
     );
 
+    support::validate_report_schema("sley.agent_bench.report.v0", &output.stdout);
     let report: JsonValue = serde_json::from_slice(&output.stdout).expect("parse agent bench JSON");
     assert_eq!(
         report.pointer("/schema"),

@@ -187,9 +187,7 @@ Rules:
   declaration hover, edit-plan code actions, and non-mutating
   `sley.fix.preview` payloads.
 - `sley-workbench` exposes a local read-only inspection report and optional
-  static HTML page over doctor/query/lint/plan/graph panels; focused
-  integration coverage validates live workbench JSON against
-  `sley.workbench.report.v0`.
+  static HTML page over doctor/query/lint/plan/graph panels.
 - `sley-docgen` exposes checked Markdown reference generation over
   query-derived module, task, type, effect, and host capability docs.
 - `sley-agent-bench` exposes a deterministic local benchmark for the
@@ -202,6 +200,9 @@ Rules:
   model output, deploy results, and spend results.
 - `sley-zjx` exposes read-only preview-envelope inspection, graph digest
   verification, graph extraction, and envelope diff reports.
+- Focused utility integration tests validate live docgen, migrate,
+  agent-bench, sandbox-runner, workbench, and ZJX JSON reports against their
+  declared schemas.
 - Diagnostics include stable IDs, node IDs, spans where possible, and repair
   hints for common checker failures.
 - `sley doctor` is the first deterministic helper consuming strict check,
