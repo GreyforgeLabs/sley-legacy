@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.same_branch_if",
+  "filters": {
+    "module": null,
+    "rules": [
+      "same_branch_if_expression"
+    ]
+  },
+  "findings": [
+    {
+      "id": "SAME_BRANCH_IF_EXPRESSION",
+      "rule": "same_branch_if_expression",
+      "severity": "warning",
+      "message": "task `app.same_branch_if.main` has an if expression with identical branches `if use_backup { 42 } else { 42 }`",
+      "node": "block:task:app.same_branch_if.main:stmt:1:expr",
+      "module": "app.same_branch_if",
+      "hint": "replace the if expression with `42`"
+    }
+  ]
+}

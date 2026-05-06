@@ -118,7 +118,8 @@ Implemented now:
   `--rule identity-binary-expression`, or
   `--rule redundant-boolean-comparison`, or
   `--rule double-negation-expression`, or
-  `--rule redundant-boolean-if-expression`
+  `--rule redundant-boolean-if-expression`, or
+  `--rule same-branch-if-expression`
   filters, and
   `schema: "sley.lint.report.v0"` for warning-grade graph and authority lints
 - in-tree `sley-contract` utility scaffold with `inventory`, `check-fixtures`,
@@ -170,6 +171,8 @@ Implemented now:
   `simplify_double_negation_expression` templates for `!!expr` forms,
   `simplify_redundant_boolean_if_expression` templates for boolean `if`
   expressions that can be replaced by the condition or its negation,
+  `simplify_same_branch_if_expression` templates for same-branch `if`
+  expressions with delete-safe conditions,
   `--template-surface <surface>` targeting for task, block, statement, take,
   expression, program, or lint surfaces, including checked task-body and block
   `insert_statement` starters, checked statement-surface `replace_statement`

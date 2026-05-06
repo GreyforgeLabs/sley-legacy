@@ -14,6 +14,7 @@ use crate::lint::{
     qualified_imported_call_replacement_source, raw_host_adapter_replacement,
     redundant_boolean_comparison_replacement_source,
     redundant_boolean_if_expression_replacement_source,
+    same_branch_if_expression_replacement_source,
 };
 use crate::query::{QueryKind, QueryOptions, QueryReport, QueryTakeSummary, build_query_report};
 use crate::symbols::{slice_symbol_graph, task_fq_name, task_module, type_module};
@@ -579,6 +580,10 @@ fn lint_graft_templates(
         program,
         lint_report,
     ));
+    templates.extend(lint_same_branch_if_expression_templates(
+        program,
+        lint_report,
+    ));
     templates
 }
 
@@ -601,6 +606,7 @@ fn is_lint_repair_kind(kind: &str) -> bool {
             | "simplify_redundant_boolean_comparison"
             | "simplify_double_negation_expression"
             | "simplify_redundant_boolean_if_expression"
+            | "simplify_same_branch_if_expression"
             | "convert_mutable_binding_to_bind"
             | "delete_unused_private_declarations"
             | "delete_dead_private_tasks"
@@ -963,6 +969,37 @@ fn lint_redundant_boolean_if_expression_templates(
                 kind: "simplify_redundant_boolean_if_expression".to_string(),
                 reason: "replace this redundant boolean if expression with the condition"
                     .to_string(),
+                surface: finding.node.clone(),
+                operation,
+                editable_json_pointers: vec!["/payload/source".to_string()],
+            })
+        })
+        .collect()
+}
+
+fn lint_same_branch_if_expression_templates(
+    program: &Program,
+    lint_report: &LintReport,
+) -> Vec<EditPlanGraftTemplate> {
+    lint_report
+        .findings
+        .iter()
+        .filter(|finding| finding.id == "SAME_BRANCH_IF_EXPRESSION")
+        .filter_map(|finding| {
+            let replacement = same_branch_if_expression_replacement_source(program, &finding.node)?;
+            let operation = json!({
+                "op": "ReplaceExpression",
+                "target": finding.node,
+                "payload": {
+                    "source": replacement
+                }
+            });
+            if !replace_affordance_checks(program, &operation) {
+                return None;
+            }
+            Some(EditPlanGraftTemplate {
+                kind: "simplify_same_branch_if_expression".to_string(),
+                reason: "replace this same-branch if expression with either branch".to_string(),
                 surface: finding.node.clone(),
                 operation,
                 editable_json_pointers: vec!["/payload/source".to_string()],

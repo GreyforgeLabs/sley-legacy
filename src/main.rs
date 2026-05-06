@@ -966,6 +966,7 @@ enum CliLintRule {
     RedundantBooleanComparison,
     DoubleNegationExpression,
     RedundantBooleanIfExpression,
+    SameBranchIfExpression,
 }
 
 impl From<CliLintRule> for LintRule {
@@ -989,6 +990,7 @@ impl From<CliLintRule> for LintRule {
             CliLintRule::RedundantBooleanComparison => Self::RedundantBooleanComparison,
             CliLintRule::DoubleNegationExpression => Self::DoubleNegationExpression,
             CliLintRule::RedundantBooleanIfExpression => Self::RedundantBooleanIfExpression,
+            CliLintRule::SameBranchIfExpression => Self::SameBranchIfExpression,
         }
     }
 }
