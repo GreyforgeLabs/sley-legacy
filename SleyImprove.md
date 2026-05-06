@@ -101,7 +101,7 @@ sley fix --json --kind <kind> [--template-surface <surface>] [--name <name>] [--
 sley verify --json [--deny-warnings] [runtime gates/seeds] <target>
 sley deploy --json --dry-run [--artifacts-dir <dir>] [runtime gates/seeds] <target>
 sley query --json [--kind all|modules|tasks|types|effects|calls] [--module <module>] <target>
-sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter|missing-module-declaration|unchecked-result|unqualified-imported-call|unused-pure-binding|unused-pure-expression-statement|mutable-binding-never-set|constant-if-expression|constant-if-statement|constant-false-if-statement|constant-false-while-statement|constant-comparison-expression|constant-arithmetic-expression|constant-text-concatenation-expression|constant-list-index-expression|constant-map-index-expression|constant-record-field-access-expression|constant-len-expression|constant-not-expression|empty-if-statement|empty-for-statement|empty-forge-statement|identity-binary-expression|redundant-boolean-comparison|absorbing-boolean-expression|self-comparison-expression|double-negation-expression|negated-comparison-expression|redundant-boolean-if-expression|redundant-boolean-if-statement|same-branch-if-expression|same-branch-if-statement|unreachable-statement] [--module <module>] <target>
+sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter|missing-module-declaration|unchecked-result|unqualified-imported-call|unused-pure-binding|unused-pure-expression-statement|mutable-binding-never-set|constant-if-expression|constant-if-statement|constant-false-if-statement|constant-false-while-statement|constant-comparison-expression|constant-arithmetic-expression|constant-text-concatenation-expression|constant-list-index-expression|constant-map-index-expression|constant-record-field-access-expression|constant-len-expression|constant-not-expression|empty-if-statement|empty-for-statement|empty-forge-statement|identity-binary-expression|redundant-boolean-comparison|absorbing-boolean-expression|self-comparison-expression|double-negation-expression|negated-comparison-expression|redundant-boolean-if-expression|redundant-boolean-if-statement|same-branch-if-expression|same-branch-if-statement|unreachable-statement|absorbing-arithmetic-expression] [--module <module>] <target>
 sley-ci lint --json [--deny-warnings] [--rule <rule>] [--module <module>] <target>
 sley-ci doctor --json [--deny-warnings] <target>
 sley-ci plan --json [--deny-warnings] [--graft-templates] [--template-surface <surface>] <target>
@@ -635,6 +635,11 @@ The current smoke manifest covers:
   `simplify_constant_arithmetic_expression` templates that replace safe numeric
   literal arithmetic with its result through lint/plan/fix-write/verify CLI
   smoke coverage
+- absorbing arithmetic expression warnings through
+  `absorbing_arithmetic_expression`, plus checked
+  `simplify_absorbing_arithmetic_expression` templates that replace delete-safe
+  multiplication by zero with the zero literal through lint/plan/fix-write/verify
+  CLI smoke coverage
 - constant text concatenation expression warnings through
   `constant_text_concatenation_expression`, plus checked
   `simplify_constant_text_concatenation_expression` templates that replace text
@@ -862,6 +867,9 @@ The v0 lint rules are:
   delete-safe `expr && false`, or delete-safe `expr || true` form is reported
   so agents can replace it with the absorbing literal without dropping
   authority work or recoverable failures.
+- `absorbing_arithmetic_expression`: a checked multiplication by zero with a
+  delete-safe nonliteral side is reported so agents can replace it with the
+  zero literal without dropping authority work or recoverable failures.
 - `self_comparison_expression`: a checked delete-safe `expr == expr`,
   `expr != expr`, `expr < expr`, or `expr > expr` form is reported so agents
   can replace it with the constant boolean result without dropping authority
@@ -917,6 +925,7 @@ The command supports `--module <module>`, `--rule unused-private-task`,
 `--rule redundant-boolean-if-statement`, `--rule same-branch-if-expression`,
 `--rule same-branch-if-statement`,
 `--rule unreachable-statement`,
+`--rule absorbing-arithmetic-expression`,
 and
 `--deny-warnings` lets CI turn findings into a failing exit after the JSON
 report is printed.

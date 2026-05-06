@@ -992,6 +992,7 @@ enum CliLintRule {
     SameBranchIfExpression,
     SameBranchIfStatement,
     UnreachableStatement,
+    AbsorbingArithmeticExpression,
 }
 
 impl From<CliLintRule> for LintRule {
@@ -1041,6 +1042,7 @@ impl From<CliLintRule> for LintRule {
             CliLintRule::SameBranchIfExpression => Self::SameBranchIfExpression,
             CliLintRule::SameBranchIfStatement => Self::SameBranchIfStatement,
             CliLintRule::UnreachableStatement => Self::UnreachableStatement,
+            CliLintRule::AbsorbingArithmeticExpression => Self::AbsorbingArithmeticExpression,
         }
     }
 }

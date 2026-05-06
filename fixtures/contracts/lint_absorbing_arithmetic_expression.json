@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.absorbing_arithmetic",
+  "filters": {
+    "module": null,
+    "rules": [
+      "absorbing_arithmetic_expression"
+    ]
+  },
+  "findings": [
+    {
+      "id": "ABSORBING_ARITHMETIC_EXPRESSION",
+      "rule": "absorbing_arithmetic_expression",
+      "severity": "warning",
+      "message": "task `app.absorbing_arithmetic.main` has an absorbing arithmetic expression `(1 + 2) * 0`",
+      "node": "block:task:app.absorbing_arithmetic.main:stmt:0:expr",
+      "module": "app.absorbing_arithmetic",
+      "hint": "replace the absorbing arithmetic expression with `0`"
+    }
+  ]
+}

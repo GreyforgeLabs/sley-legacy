@@ -1,0 +1,5 @@
+module app.absorbing_arithmetic
+
+task main -> Int {
+  return (1 + 2) * 0
+}
