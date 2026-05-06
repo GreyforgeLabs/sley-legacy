@@ -154,9 +154,10 @@ Implemented now:
   directories, using versioned JSON report roots for downstream contract-kit
   work
 - in-tree `sley-ci` utility with `check`, `lint`, `doctor`, `plan`, `run`,
-  `verify`, `deploy`, `smoke`, and `corpus` wrappers over existing Sley
-  check/lint/doctor/plan/run/verify/deploy gates, CLI smoke manifests, and the
-  accepted/rejected compiler conformance corpus, emitting
+  `verify`, `deploy`, `smoke`, `corpus`, and `examples` wrappers over existing
+  Sley check/lint/doctor/plan/run/verify/deploy gates, CLI smoke manifests,
+  the accepted/rejected compiler conformance corpus, and packaged examples,
+  emitting
   `schema: "sley.ci.report.v0"` for CI and pre-commit integration
 - checked JSON readiness reports with `sley doctor`, consuming strict
   diagnostics plus query and lint summaries, with call-bearing reports routing
@@ -335,7 +336,7 @@ Implemented now:
 - external v0 JSON Schema files under `docs/schemas/`, including strict
   query task/take/type/effect/call row definitions,
   strict runtime value definitions for `sley.run.report.v0`,
-  `sley-ci` check/lint/doctor/plan/run/verify/deploy/smoke/corpus reports,
+  `sley-ci` check/lint/doctor/plan/run/verify/deploy/smoke/corpus/examples reports,
   `sley-contract` inventory/fixture-check/validate/deploy-artifact-check reports,
   edit-plan graft operation and transaction template envelopes reused by graph
   slice affordances, graph-slice focus/task/call summary refs, a shared
@@ -366,9 +367,12 @@ Implemented now:
   lint-driven fix writes that clear warnings before verify, including empty-if
   cleanup, a standalone agent deploy pipeline example with check/lint/run/verify/deploy
   dry-run coverage, and seeded host-adapter execution
+- packaged example conformance through `sley-ci examples --json examples`,
+  covering project-root checks for `sley.toml` examples, standalone file checks,
+  and formatter round trips for every shipped `.sley` source under `examples/`
 - repo-level `Makefile` with `make v1` wrapping fmt, whitespace diff check,
-  full Rust tests, contract fixture validation, corpus conformance, and CLI
-  smoke conformance
+  full Rust tests, contract fixture validation, corpus conformance, packaged
+  example conformance, and CLI smoke conformance
 - GitHub Actions and pre-commit entry points that run the same `make v1` gate
   through `.github/actions/sley-v1/action.yml`, `.github/workflows/v1.yml`,
   and `.pre-commit-config.yaml`
@@ -405,6 +409,7 @@ sley run --json --cap SecretRead --secret api_key redacted --cap Network --http-
 sley deploy --json --dry-run --artifacts-dir .sley/deploy --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged .
 sley-ci deploy --json --dry-run --artifacts-dir .sley/ci-deploy --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged .
 sley-ci corpus --json fixtures/corpus/manifest.json
+sley-ci examples --json examples
 sley-contract inspect-deploy-artifacts .sley/deploy --schemas docs/schemas --json
 sley seal --json .
 sley zjx --json .

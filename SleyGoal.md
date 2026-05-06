@@ -46,7 +46,8 @@ Current verified surface:
 - `cargo test` passes.
 - Current integration coverage is 289 tests.
 - `make v1` wraps fmt, whitespace diff check, full Rust tests, contract
-  fixture validation, corpus conformance, and CLI smoke conformance.
+  fixture validation, corpus conformance, packaged example conformance, and
+  CLI smoke conformance.
 - `.github/actions/sley-v1/action.yml`, `.github/workflows/v1.yml`, and
   `.pre-commit-config.yaml` run the `make v1` gate so local and hosted checks
   use the same release surface.
@@ -65,12 +66,12 @@ Current verified surface:
   JSON Schema validation commands over `docs/schemas/`, `fixtures/contracts/`,
   and local deploy artifact directories.
 - `sley-ci` is available as an in-tree CI wrapper with `check`, `lint`,
-  `doctor`, `plan`, `run`, `verify`, `deploy`, `smoke`, and `corpus` commands
-  that emit
+  `doctor`, `plan`, `run`, `verify`, `deploy`, `smoke`, `corpus`, and
+  `examples` commands that emit
   `schema: "sley.ci.report.v0"` over
   existing Sley check/lint/doctor/plan/run/verify/deploy, CLI smoke manifest,
-  and accepted/rejected corpus gates, including deploy artifact directory
-  pass-through.
+  accepted/rejected corpus, and packaged example gates, including deploy
+  artifact directory pass-through.
 - `sley deploy --json --dry-run` emits `schema: "sley.deploy.report.v0"` and
   composes strict verify, trace seal, and ZJX package summaries into a
   local-only deploy package report that forbids live deployment, provider
@@ -304,8 +305,8 @@ Current verified surface:
 - Stable JSON roots now include bounded AST node reports, query reports, lint
   reports, run reports, doctor reports, edit-plan reports, verify reports,
   deploy dry-run reports, deploy artifact manifests, deploy artifact check
-  reports, project scaffold reports, `sley-ci` reports including the corpus
-  gate, `sley-contract`
+  reports, project scaffold reports, `sley-ci` reports including corpus and
+  examples gates, `sley-contract`
   utility reports with locked inventory/fixture-check/validate fixtures, and
   the CLI smoke manifest in addition to AST program,
   diagnostics, graph, graph slice, trace report, trace receipt, trace seal,
@@ -334,8 +335,8 @@ with a tight compiler-mediated loop:
 2. Inspect typed AST, symbol graph, query reports, lint reports, or graph
    slices.
 3. Propose a strict structural graft or a narrow source change.
-4. Run checker, formatter, query, lint, relevant runtime smokes, and corpus
-   gates.
+4. Run checker, formatter, query, lint, relevant runtime smokes, corpus gates,
+   and packaged example gates.
 5. Read stable diagnostics, repair hints, query summaries, and lint findings.
 6. Iterate until Loom accepts the change and the conformance surface is updated.
 7. Leave human-reviewable source, machine-readable contracts, trace receipts,

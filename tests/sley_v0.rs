@@ -9400,6 +9400,55 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
         Some(&serde_json::json!("sley.diagnostics.report.v0"))
     );
 
+    let examples = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
+        .current_dir(&repo_root)
+        .args(["examples", "--json", "examples"])
+        .output()
+        .expect("run sley-ci examples");
+    assert!(
+        examples.status.success(),
+        "sley-ci examples failed: {}",
+        String::from_utf8_lossy(&examples.stderr)
+    );
+    let examples_json: serde_json::Value =
+        serde_json::from_slice(&examples.stdout).expect("parse sley-ci examples JSON");
+    assert_eq!(
+        examples_json.pointer("/schema"),
+        Some(&serde_json::json!("sley.ci.report.v0"))
+    );
+    assert_eq!(
+        examples_json.pointer("/status"),
+        Some(&serde_json::json!("passed"))
+    );
+    assert_eq!(
+        examples_json.pointer("/command"),
+        Some(&serde_json::json!("examples"))
+    );
+    assert_eq!(
+        examples_json.pointer("/summary/step_count"),
+        Some(&serde_json::json!(130))
+    );
+    assert_eq!(
+        examples_json.pointer("/steps/0/name"),
+        Some(&serde_json::json!("project_check:examples/project"))
+    );
+    assert_eq!(
+        examples_json.pointer("/steps/0/stdout_schema"),
+        Some(&serde_json::json!("sley.diagnostics.report.v0"))
+    );
+    assert_eq!(
+        examples_json.pointer("/steps/3/name"),
+        Some(&serde_json::json!(
+            "file_check:examples/absorbing_arithmetic_expression.sley"
+        ))
+    );
+    assert_eq!(
+        examples_json.pointer("/steps/63/name"),
+        Some(&serde_json::json!(
+            "format_round_trip:examples/absorbing_arithmetic_expression.sley"
+        ))
+    );
+
     let _ = fs::remove_dir_all(deploy_root);
     let _ = fs::remove_dir_all(smoke_root);
 }

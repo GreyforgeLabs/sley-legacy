@@ -147,6 +147,12 @@ enum Command {
         json: bool,
         manifest: PathBuf,
     },
+    /// Run packaged example conformance checks.
+    Examples {
+        #[arg(long)]
+        json: bool,
+        root: PathBuf,
+    },
 }
 
 #[derive(Debug, Serialize)]
@@ -423,6 +429,10 @@ fn run(cli: Cli) -> Result<(CiReport, bool)> {
         }
         Command::Corpus { json, manifest } => {
             let report = build_corpus_report(&sley_bin, &manifest);
+            Ok((report, json))
+        }
+        Command::Examples { json, root } => {
+            let report = build_examples_report(&sley_bin, &root);
             Ok((report, json))
         }
     }
@@ -735,8 +745,14 @@ fn build_corpus_report(sley_bin: &Path, manifest_path: &Path) -> CiReport {
                 )
                 .step,
             );
-            steps.push(run_corpus_format_round_trip_step(
-                sley_bin, &cwd, &tmp_root, index, &file, case,
+            steps.push(run_format_round_trip_step(
+                sley_bin,
+                &cwd,
+                &tmp_root,
+                index,
+                &file,
+                &format!("accepted_format_round_trip:{}", case.path),
+                case.covers.clone(),
             ));
         }
         for case in &manifest.rejected {
@@ -755,13 +771,113 @@ fn build_corpus_report(sley_bin: &Path, manifest_path: &Path) -> CiReport {
     )
 }
 
-fn run_corpus_format_round_trip_step(
+fn build_examples_report(sley_bin: &Path, root: &Path) -> CiReport {
+    let cwd = env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+    let mut issues = Vec::new();
+    let mut project_roots = match collect_project_roots(root) {
+        Ok(project_roots) => project_roots,
+        Err(error) => {
+            issues.push(issue(
+                "examples_project_collect_failed",
+                format!(
+                    "failed to collect project roots under {}: {error}",
+                    root.display()
+                ),
+            ));
+            Vec::new()
+        }
+    };
+    let mut source_files = match collect_sley_sources(root) {
+        Ok(source_files) => source_files,
+        Err(error) => {
+            issues.push(issue(
+                "examples_source_collect_failed",
+                format!(
+                    "failed to collect Sley sources under {}: {error}",
+                    root.display()
+                ),
+            ));
+            Vec::new()
+        }
+    };
+    project_roots.sort();
+    source_files.sort();
+    if project_roots.is_empty() && source_files.is_empty() && issues.is_empty() {
+        issues.push(issue(
+            "examples_empty",
+            format!("no Sley examples found under {}", root.display()),
+        ));
+    }
+
+    let tmp_root = temp_examples_dir();
+    let mut steps = Vec::new();
+    if let Err(error) = fs::create_dir_all(&tmp_root) {
+        issues.push(issue(
+            "temp_dir_create_failed",
+            format!("failed to create {}: {error}", tmp_root.display()),
+        ));
+    } else {
+        for project_root in &project_roots {
+            steps.push(
+                run_sley_step(
+                    sley_bin,
+                    &cwd,
+                    &format!("project_check:{}", path_string(project_root)),
+                    vec!["check".into(), "--json".into(), path_string(project_root)],
+                    true,
+                    vec![
+                        "examples:project".into(),
+                        "json:sley.diagnostics.report.v0".into(),
+                    ],
+                )
+                .step,
+            );
+        }
+        for file in source_files.iter().filter(|file| {
+            !project_roots
+                .iter()
+                .any(|project_root| file.starts_with(project_root))
+        }) {
+            steps.push(
+                run_sley_step(
+                    sley_bin,
+                    &cwd,
+                    &format!("file_check:{}", path_string(file)),
+                    vec!["check".into(), "--json".into(), path_string(file)],
+                    true,
+                    vec![
+                        "examples:standalone".into(),
+                        "json:sley.diagnostics.report.v0".into(),
+                    ],
+                )
+                .step,
+            );
+        }
+        for (index, file) in source_files.iter().enumerate() {
+            steps.push(run_format_round_trip_step(
+                sley_bin,
+                &cwd,
+                &tmp_root,
+                index,
+                file,
+                &format!("format_round_trip:{}", path_string(file)),
+                vec!["examples:format-round-trip".into()],
+            ));
+        }
+    }
+    let _ = fs::remove_dir_all(&tmp_root);
+
+    finalize_report("examples", Some(path_string(root)), None, steps, issues)
+}
+
+fn run_format_round_trip_step(
     sley_bin: &Path,
     cwd: &Path,
     tmp_root: &Path,
     index: usize,
     file: &Path,
-    case: &CorpusCase,
+    name: &str,
+    covers: Vec<String>,
 ) -> CiStep {
     let file_arg = path_string(file);
     let args = vec!["format".into(), file_arg];
@@ -826,7 +942,7 @@ fn run_corpus_format_round_trip_step(
         )),
     }
     CiStep {
-        name: format!("accepted_format_round_trip:{}", case.path),
+        name: name.into(),
         status: if issues.is_empty() {
             "passed".into()
         } else {
@@ -837,7 +953,7 @@ fn run_corpus_format_round_trip_step(
         actual_success,
         exit_code,
         stdout_schema: None,
-        covers: case.covers.clone(),
+        covers,
         issues,
     }
 }
@@ -1148,6 +1264,54 @@ fn read_corpus_expectation(path: &Path) -> Result<CorpusExpectation> {
     Ok(serde_json::from_str(&source)?)
 }
 
+fn collect_project_roots(root: &Path) -> Result<Vec<PathBuf>> {
+    let mut roots = Vec::new();
+    collect_project_roots_into(root, &mut roots)?;
+    roots.sort();
+    Ok(roots)
+}
+
+fn collect_project_roots_into(path: &Path, roots: &mut Vec<PathBuf>) -> Result<()> {
+    if path.is_file() {
+        return Ok(());
+    }
+    let mut entries = fs::read_dir(path)?.collect::<std::result::Result<Vec<_>, _>>()?;
+    entries.sort_by_key(|entry| entry.path());
+    for entry in entries {
+        let entry_path = entry.path();
+        if entry_path.is_dir() {
+            collect_project_roots_into(&entry_path, roots)?;
+        } else if entry_path.file_name().and_then(|name| name.to_str()) == Some("sley.toml") {
+            if let Some(parent) = entry_path.parent() {
+                roots.push(parent.to_path_buf());
+            }
+        }
+    }
+    Ok(())
+}
+
+fn collect_sley_sources(root: &Path) -> Result<Vec<PathBuf>> {
+    let mut sources = Vec::new();
+    collect_sley_sources_into(root, &mut sources)?;
+    sources.sort();
+    Ok(sources)
+}
+
+fn collect_sley_sources_into(path: &Path, sources: &mut Vec<PathBuf>) -> Result<()> {
+    if path.is_file() {
+        if path.extension().and_then(|extension| extension.to_str()) == Some("sley") {
+            sources.push(path.to_path_buf());
+        }
+        return Ok(());
+    }
+    let mut entries = fs::read_dir(path)?.collect::<std::result::Result<Vec<_>, _>>()?;
+    entries.sort_by_key(|entry| entry.path());
+    for entry in entries {
+        collect_sley_sources_into(&entry.path(), sources)?;
+    }
+    Ok(())
+}
+
 fn write_smoke_setup_files(case: &SmokeCase, repo_root: &Path, tmp_root: &Path) -> Vec<CiIssue> {
     let mut issues = Vec::new();
     for file in &case.setup_files {
@@ -1198,6 +1362,17 @@ fn temp_corpus_dir() -> PathBuf {
         .map(|duration| duration.as_nanos())
         .unwrap_or_default();
     env::temp_dir().join(format!("sley-ci-corpus-{}-{timestamp}", std::process::id()))
+}
+
+fn temp_examples_dir() -> PathBuf {
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_nanos())
+        .unwrap_or_default();
+    env::temp_dir().join(format!(
+        "sley-ci-examples-{}-{timestamp}",
+        std::process::id()
+    ))
 }
 
 fn find_sley_binary() -> PathBuf {

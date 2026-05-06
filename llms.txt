@@ -25,6 +25,7 @@ cargo run --bin sley-ci -- plan --json --graft-templates <file-or-project>
 cargo run --bin sley-ci -- run --json <file-or-project>
 cargo run --bin sley-ci -- deploy --json --dry-run --artifacts-dir .sley/ci-deploy <file-or-project>
 cargo run --bin sley-ci -- corpus --json fixtures/corpus/manifest.json
+cargo run --bin sley-ci -- examples --json examples
 cargo run --bin sley-contract -- inspect-deploy-artifacts .sley/deploy --schemas docs/schemas --json
 make v1
 cargo run -- seal --json <file-or-project>
@@ -134,7 +135,7 @@ The `sley-contract` binary exposes `inventory`, `check-fixtures`, `validate`,
 and `inspect-deploy-artifacts` JSON Schema validation reports for
 schema/fixture/deploy-handoff contract-kit work; inventory, fixture-check, and
 validate reports have locked fixtures.
-The `sley-ci` binary exposes `check`, `lint`, `doctor`, `plan`, `run`, `verify`, `deploy`, `smoke`, and `corpus` reports
+The `sley-ci` binary exposes `check`, `lint`, `doctor`, `plan`, `run`, `verify`, `deploy`, `smoke`, `corpus`, and `examples` reports
 for local CI and pre-commit gates over existing Sley commands.
 The repo-level `Makefile`, `.github/actions/sley-v1/action.yml`,
 `.github/workflows/v1.yml`, and `.pre-commit-config.yaml` all route release
