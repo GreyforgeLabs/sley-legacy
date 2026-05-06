@@ -2,7 +2,7 @@
   "schema": "sley.contract.inventory.v0",
   "status": "passed",
   "schema_dir": "docs/schemas",
-  "schema_count": 35,
+  "schema_count": 36,
   "schemas": [
     {
       "id": "sley.agent_bench.report.v0",
@@ -106,6 +106,13 @@
       "id": "sley.diagnostics.report.v0",
       "path": "docs/schemas/sley.diagnostics.report.v0.schema.json",
       "title": "Sley Diagnostic Report v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.docgen.report.v0",
+      "path": "docs/schemas/sley.docgen.report.v0.schema.json",
+      "title": "Sley Docgen Report v0",
       "draft": "https://json-schema.org/draft/2020-12/schema",
       "root_type": "object"
     },

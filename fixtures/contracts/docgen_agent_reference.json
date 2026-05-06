@@ -1,0 +1,126 @@
+{
+  "schema": "sley.docgen.report.v0",
+  "status": "generated",
+  "target": "examples/agent_deploy_pipeline.sley",
+  "source_schema": "sley.query.report.v0",
+  "summary": {
+    "module_count": 1,
+    "task_count": 1,
+    "type_count": 0,
+    "effect_count": 0,
+    "capability_count": 10,
+    "document_count": 1,
+    "diagnostic_count": 0,
+    "issue_count": 0
+  },
+  "filters": {
+    "module": null,
+    "exported_only": false
+  },
+  "documents": [
+    {
+      "kind": "reference",
+      "title": "Sley Reference: app.agent_deploy_pipeline",
+      "section_count": 5
+    }
+  ],
+  "modules": [
+    {
+      "module": "app.agent_deploy_pipeline",
+      "import_count": 0,
+      "task_count": 1,
+      "type_count": 0,
+      "effect_count": 0
+    }
+  ],
+  "tasks": [
+    {
+      "id": "task:app.agent_deploy_pipeline.main",
+      "name": "main",
+      "module": "app.agent_deploy_pipeline",
+      "qualified_name": "app.agent_deploy_pipeline.main",
+      "exported": false,
+      "takes": [],
+      "return_type": "Result<Text, Error>",
+      "effects": ["SecretRead", "Network", "ModelCall", "Deploy"],
+      "outbound_call_count": 7,
+      "inbound_call_count": 0
+    }
+  ],
+  "types": [],
+  "effects": [],
+  "capabilities": [
+    {
+      "effect": "DatabaseRead",
+      "aliases": ["DbRead"],
+      "host_calls": [
+        "db.query",
+        "db.query_one",
+        "db.try_query",
+        "db.try_query_one"
+      ],
+      "source_needles": [
+        "db.query(",
+        "db.query_one(",
+        "db.try_query(",
+        "db.try_query_one("
+      ]
+    },
+    {
+      "effect": "DatabaseWrite",
+      "aliases": ["DbWrite"],
+      "host_calls": ["db.try_insert"],
+      "source_needles": ["db.try_insert("]
+    },
+    {
+      "effect": "Deploy",
+      "aliases": [],
+      "host_calls": ["deploy.try_stage"],
+      "source_needles": ["deploy.try_stage("]
+    },
+    {
+      "effect": "FileRead",
+      "aliases": [],
+      "host_calls": ["fs.read_text", "fs.try_read_text"],
+      "source_needles": ["fs.read_text(", "fs.try_read_text("]
+    },
+    {
+      "effect": "FileWrite",
+      "aliases": [],
+      "host_calls": ["fs.try_write_text", "fs.write_text"],
+      "source_needles": ["fs.try_write_text(", "fs.write_text("]
+    },
+    {
+      "effect": "ModelCall",
+      "aliases": [],
+      "host_calls": ["model.try_complete"],
+      "source_needles": ["model.try_complete("]
+    },
+    {
+      "effect": "Network",
+      "aliases": [],
+      "host_calls": ["http.try_get_text"],
+      "source_needles": ["http.try_get_text("]
+    },
+    {
+      "effect": "SecretRead",
+      "aliases": [],
+      "host_calls": ["secrets.try_get"],
+      "source_needles": ["secrets.try_get("]
+    },
+    {
+      "effect": "Shell",
+      "aliases": [],
+      "host_calls": ["shell.try_run"],
+      "source_needles": ["shell.try_run("]
+    },
+    {
+      "effect": "Spend",
+      "aliases": [],
+      "host_calls": ["spend.try_authorize"],
+      "source_needles": ["spend.try_authorize("]
+    }
+  ],
+  "diagnostics": [],
+  "issues": []
+}
