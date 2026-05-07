@@ -195,8 +195,9 @@ Rules:
   surfaces: parse/check/lint diagnostics with `sley.toml` project context and
   open-buffer overlays, formatting, document symbols, declaration metadata
   hover, workspace symbols, project completions, import/call definition jumps,
-  exact-range task references, document highlights, prepared cursor-aware
-  project task rename edits, edit-plan code actions, and
+  project task signature help, exact-range task references, document
+  highlights, prepared cursor-aware project task rename edits, edit-plan code
+  actions, and
   non-mutating `sley.fix.preview` payloads whose editor preview operations and
   transactions reuse the strict edit-plan graft contracts.
 - `sley-workbench` exposes a local read-only inspection report and optional

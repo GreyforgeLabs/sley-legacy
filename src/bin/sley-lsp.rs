@@ -161,6 +161,11 @@ fn handle_message<W: Write>(
                 send_response(writer, id, handle_completion(params, state))?;
             }
         }
+        "textDocument/signatureHelp" => {
+            if let Some(id) = id {
+                send_response(writer, id, handle_signature_help(params, state))?;
+            }
+        }
         "workspace/symbol" => {
             if let Some(id) = id {
                 send_response(writer, id, handle_workspace_symbol(params, state))?;
@@ -226,6 +231,9 @@ fn initialize_result() -> JsonValue {
             "completionProvider": {
                 "resolveProvider": false,
                 "triggerCharacters": [".", " ", ":", ">"]
+            },
+            "signatureHelpProvider": {
+                "triggerCharacters": ["(", ","]
             },
             "workspaceSymbolProvider": true,
             "referencesProvider": true,
@@ -438,6 +446,45 @@ fn handle_completion(params: JsonValue, state: &ServerState) -> JsonValue {
         analysis_program,
         project.as_ref(),
     ))
+}
+
+fn handle_signature_help(params: JsonValue, state: &ServerState) -> JsonValue {
+    let Some(uri) = text_document_uri(&params) else {
+        return JsonValue::Null;
+    };
+    let Some(document) = state.documents.get(&uri) else {
+        return JsonValue::Null;
+    };
+    let Some(position) = params.get("position") else {
+        return JsonValue::Null;
+    };
+    let Some((line, character)) = position_line_and_character(position) else {
+        return JsonValue::Null;
+    };
+    let Ok(current_program) = parse_program(&document.text) else {
+        return JsonValue::Null;
+    };
+    let project = project_graph_for_document(&uri, &current_program, state);
+    let analysis_program = project
+        .as_ref()
+        .map(|project| &project.program)
+        .unwrap_or(&current_program);
+    let Some((caller_module, callee_name, active_parameter)) =
+        call_signature_at_position(&current_program, &document.text, line, character)
+    else {
+        return JsonValue::Null;
+    };
+    match resolve_task(analysis_program, &caller_module, &callee_name) {
+        TaskResolution::Resolved { index, .. } => task_signature_help(
+            &analysis_program.tasks[index],
+            analysis_program.module_name(),
+            &callee_name,
+            active_parameter,
+        ),
+        TaskResolution::Unknown | TaskResolution::Ambiguous(_) | TaskResolution::Private(_) => {
+            JsonValue::Null
+        }
+    }
 }
 
 fn handle_workspace_symbol(params: JsonValue, state: &ServerState) -> JsonValue {
@@ -1022,6 +1069,77 @@ fn task_hover(task: &TaskDecl, default_module: &str) -> String {
         task.return_type.display(),
         task.id
     )
+}
+
+fn task_signature_help(
+    task: &TaskDecl,
+    default_module: &str,
+    callee_name: &str,
+    active_parameter: usize,
+) -> JsonValue {
+    let parameter_labels = task
+        .takes
+        .iter()
+        .map(|take| format!("{}: {}", take.name, take.ty.display()))
+        .collect::<Vec<_>>();
+    let parameters = parameter_labels
+        .iter()
+        .map(|label| {
+            json!({
+                "label": label,
+                "documentation": {
+                    "kind": "markdown",
+                    "value": format!("`{label}`")
+                }
+            })
+        })
+        .collect::<Vec<_>>();
+    let bounded_active_parameter = if task.takes.is_empty() {
+        0
+    } else {
+        active_parameter.min(task.takes.len().saturating_sub(1))
+    };
+    let takes = if task.takes.is_empty() {
+        "none".to_string()
+    } else {
+        parameter_labels
+            .iter()
+            .map(|label| format!("`{label}`"))
+            .collect::<Vec<_>>()
+            .join(", ")
+    };
+    let effects = if task.effects.is_empty() {
+        "none".to_string()
+    } else {
+        task.effects
+            .iter()
+            .map(|effect| format!("`{effect}`"))
+            .collect::<Vec<_>>()
+            .join(", ")
+    };
+    let label = format!(
+        "{callee_name}({}) -> {}",
+        parameter_labels.join(", "),
+        task.return_type.display()
+    );
+    json!({
+        "signatures": [{
+            "label": label,
+            "documentation": {
+                "kind": "markdown",
+                "value": format!(
+                    "task `{}`\n\nmodule: `{}`\nreturns: `{}`\ntakes: {takes}\neffects: {effects}\nnode: `{}`",
+                    task.name,
+                    task.module.as_deref().unwrap_or(default_module),
+                    task.return_type.display(),
+                    task.id
+                )
+            },
+            "parameters": parameters
+        }],
+        "activeSignature": 0,
+        "activeParameter": bounded_active_parameter
+    })
 }
 
 fn completion_items_for_program(
@@ -2593,6 +2711,26 @@ fn call_at_position(
     None
 }
 
+fn call_signature_at_position(
+    program: &Program,
+    source: &str,
+    line: usize,
+    character: usize,
+) -> Option<(String, String, usize)> {
+    for task in &program.tasks {
+        if let Some((callee_name, active_parameter)) =
+            call_signature_in_statements_at_position(&task.body.statements, source, line, character)
+        {
+            let caller_module = task
+                .module
+                .clone()
+                .unwrap_or_else(|| program.module_name().to_string());
+            return Some((caller_module, callee_name, active_parameter));
+        }
+    }
+    None
+}
+
 fn call_in_statements_at_line(statements: &[Statement], line: usize) -> Option<String> {
     for statement in statements {
         match &statement.kind {
@@ -2725,6 +2863,100 @@ fn call_in_statements_at_position(
     None
 }
 
+fn call_signature_in_statements_at_position(
+    statements: &[Statement],
+    source: &str,
+    line: usize,
+    character: usize,
+) -> Option<(String, usize)> {
+    for statement in statements {
+        match &statement.kind {
+            StatementKind::Binding { expr, .. }
+            | StatementKind::Set { expr, .. }
+            | StatementKind::Return { expr }
+            | StatementKind::Expr { expr } => {
+                if let Some(call) =
+                    call_signature_in_expr_at_position(expr, source, line, character)
+                {
+                    return Some(call);
+                }
+            }
+            StatementKind::If {
+                condition,
+                then_block,
+                else_block,
+            } => {
+                if let Some(call) =
+                    call_signature_in_expr_at_position(condition, source, line, character)
+                {
+                    return Some(call);
+                }
+                if let Some(call) = call_signature_in_statements_at_position(
+                    &then_block.statements,
+                    source,
+                    line,
+                    character,
+                ) {
+                    return Some(call);
+                }
+                if let Some(else_block) = else_block
+                    && let Some(call) = call_signature_in_statements_at_position(
+                        &else_block.statements,
+                        source,
+                        line,
+                        character,
+                    )
+                {
+                    return Some(call);
+                }
+            }
+            StatementKind::While { condition, body } => {
+                if let Some(call) =
+                    call_signature_in_expr_at_position(condition, source, line, character)
+                {
+                    return Some(call);
+                }
+                if let Some(call) = call_signature_in_statements_at_position(
+                    &body.statements,
+                    source,
+                    line,
+                    character,
+                ) {
+                    return Some(call);
+                }
+            }
+            StatementKind::For {
+                collection, body, ..
+            } => {
+                if let Some(call) =
+                    call_signature_in_expr_at_position(collection, source, line, character)
+                {
+                    return Some(call);
+                }
+                if let Some(call) = call_signature_in_statements_at_position(
+                    &body.statements,
+                    source,
+                    line,
+                    character,
+                ) {
+                    return Some(call);
+                }
+            }
+            StatementKind::Forge { body } => {
+                if let Some(call) = call_signature_in_statements_at_position(
+                    &body.statements,
+                    source,
+                    line,
+                    character,
+                ) {
+                    return Some(call);
+                }
+            }
+        }
+    }
+    None
+}
+
 fn call_in_expr_at_line(expr: &Expr, line: usize) -> Option<String> {
     match &expr.kind {
         ExprKind::Call { callee, args } => {
@@ -2830,6 +3062,151 @@ fn call_in_expr_at_position(
         | ExprKind::BoolLiteral { .. }
         | ExprKind::Identifier { .. } => None,
     }
+}
+
+fn call_signature_in_expr_at_position(
+    expr: &Expr,
+    source: &str,
+    line: usize,
+    character: usize,
+) -> Option<(String, usize)> {
+    match &expr.kind {
+        ExprKind::Call { callee, args } => {
+            if let Some(call) = call_signature_in_expr_at_position(callee, source, line, character)
+            {
+                return Some(call);
+            }
+            for arg in args {
+                if let Some(call) = call_signature_in_expr_at_position(arg, source, line, character)
+                {
+                    return Some(call);
+                }
+            }
+            let callee_name = callee_path(callee)?;
+            let active_parameter =
+                active_parameter_for_call_at_position(source, expr, line, character)?;
+            Some((callee_name, active_parameter))
+        }
+        ExprKind::Unary { expr, .. } | ExprKind::Try { expr } => {
+            call_signature_in_expr_at_position(expr, source, line, character)
+        }
+        ExprKind::Binary { left, right, .. } => {
+            call_signature_in_expr_at_position(left, source, line, character)
+                .or_else(|| call_signature_in_expr_at_position(right, source, line, character))
+        }
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => call_signature_in_expr_at_position(condition, source, line, character)
+            .or_else(|| call_signature_in_expr_at_position(then_branch, source, line, character))
+            .or_else(|| call_signature_in_expr_at_position(else_branch, source, line, character)),
+        ExprKind::ListLiteral { items } => items
+            .iter()
+            .find_map(|item| call_signature_in_expr_at_position(item, source, line, character)),
+        ExprKind::MapLiteral { entries } => entries.iter().find_map(|entry| {
+            call_signature_in_expr_at_position(&entry.key, source, line, character).or_else(|| {
+                call_signature_in_expr_at_position(&entry.value, source, line, character)
+            })
+        }),
+        ExprKind::Index { collection, index } => {
+            call_signature_in_expr_at_position(collection, source, line, character)
+                .or_else(|| call_signature_in_expr_at_position(index, source, line, character))
+        }
+        ExprKind::FieldAccess { receiver, .. } => {
+            call_signature_in_expr_at_position(receiver, source, line, character)
+        }
+        ExprKind::RecordLiteral { fields, .. } => fields.iter().find_map(|field| {
+            call_signature_in_expr_at_position(&field.expr, source, line, character)
+        }),
+        ExprKind::Raw { .. }
+        | ExprKind::StringLiteral { .. }
+        | ExprKind::IntLiteral { .. }
+        | ExprKind::FloatLiteral { .. }
+        | ExprKind::BoolLiteral { .. }
+        | ExprKind::Identifier { .. } => None,
+    }
+}
+
+fn active_parameter_for_call_at_position(
+    source: &str,
+    expr: &Expr,
+    line: usize,
+    character: usize,
+) -> Option<usize> {
+    if expr.source.contains('\n') {
+        return None;
+    }
+    let line_text = source.lines().nth(line)?;
+    let span = leading_span_for_expr(expr)?;
+    if span.line.saturating_sub(1) != line {
+        return None;
+    }
+    let cursor_byte = byte_offset_for_character(line_text, character);
+    let mut search_start_byte = 0usize;
+    while search_start_byte <= line_text.len() {
+        let Some(search_text) = line_text.get(search_start_byte..) else {
+            break;
+        };
+        let Some(relative_start_byte) = search_text.find(&expr.source) else {
+            break;
+        };
+        let expression_start_byte = search_start_byte + relative_start_byte;
+        let expression_end_byte = expression_start_byte + expr.source.len();
+        if cursor_byte >= expression_start_byte && cursor_byte <= expression_end_byte {
+            return active_parameter_for_call_source(
+                &expr.source,
+                cursor_byte - expression_start_byte,
+            );
+        }
+        search_start_byte = expression_end_byte.max(expression_start_byte + 1);
+    }
+    None
+}
+
+fn active_parameter_for_call_source(call_source: &str, cursor_byte: usize) -> Option<usize> {
+    let mut depth = 0usize;
+    let mut saw_arg_list = false;
+    let mut active_parameter = 0usize;
+    let mut in_string = false;
+    let mut escaped = false;
+
+    for (byte, ch) in call_source.char_indices() {
+        if byte >= cursor_byte {
+            break;
+        }
+        if in_string {
+            if escaped {
+                escaped = false;
+            } else if ch == '\\' {
+                escaped = true;
+            } else if ch == '"' {
+                in_string = false;
+            }
+            continue;
+        }
+        match ch {
+            '"' => in_string = true,
+            '(' => {
+                depth += 1;
+                if depth == 1 {
+                    saw_arg_list = true;
+                }
+            }
+            ')' => {
+                if depth == 1 {
+                    return None;
+                }
+                depth = depth.saturating_sub(1);
+            }
+            ',' if saw_arg_list && depth == 1 => {
+                active_parameter += 1;
+            }
+            _ => {}
+        }
+    }
+
+    saw_arg_list.then_some(active_parameter)
 }
 
 fn expr_contains_line(expr: &Expr, line: usize) -> bool {
