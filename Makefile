@@ -55,6 +55,7 @@ migrate:
 
 docgen:
 	cargo run --bin sley-docgen -- reference --json examples/agent_deploy_pipeline.sley
+	cargo run --bin sley-docgen -- reference --json --module agent.pipeline examples/agent_project
 
 sandbox-runner:
 	cargo run --bin sley-sandbox-runner -- run --json fixtures/contracts/sandbox_manifest_agent_pipeline.json

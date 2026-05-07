@@ -199,7 +199,8 @@ file writes; HTML includes local lint repair focus and graph target selectors
 for focused slice handoff.
 The `sley-docgen` binary exposes `schema: "sley.docgen.report.v0"` and
 optional Markdown over checked module, task, type, effect, and capability
-reference data, including seeded `--cap` args for deterministic host setup.
+reference data, including seeded `--cap` args for deterministic host setup; use
+`--module <module>` or `--exported-only` to narrow project-root references.
 The `sley-shadow` binary exposes `schema: "sley.shadow.report.v0"` and
 non-authoritatively consumes checked query/lint reports to link lint findings
 to query rows and derive seeded `--cap` args for effectful tasks on single-file

@@ -209,7 +209,8 @@ Implemented now:
 - in-tree `sley-docgen` reference generator that emits
   `schema: "sley.docgen.report.v0"` and optional Markdown over checked
   module, task, type, effect, and host capability reference data, including
-  seeded `--cap` args for deterministic host setup
+  seeded `--cap` args for deterministic host setup; project-root references
+  can be narrowed with `--module <module>` and `--exported-only`
 - in-tree `sley-shadow` helper replay that emits
   `schema: "sley.shadow.report.v0"` from checked `sley.query.report.v0` and
   `sley.lint.report.v0` data for single-file or project-root targets, linking

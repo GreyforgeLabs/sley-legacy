@@ -187,9 +187,10 @@ fn build_reference_report(args: ReferenceArgs) -> DocgenReport {
         },
     );
     let modules = summarize_modules(&query);
+    let title_module = filters.module.as_deref().unwrap_or(&query.entry_module);
     let documents = vec![DocgenDocument {
         kind: "reference".to_string(),
-        title: format!("Sley Reference: {}", query.entry_module),
+        title: format!("Sley Reference: {title_module}"),
         path: None,
         section_count: 5,
     }];
@@ -482,9 +483,11 @@ fn print_json(report: &DocgenReport) -> Result<()> {
 
 fn print_human(report: &DocgenReport) {
     println!(
-        "sley-docgen status={} target={} modules={} tasks={} effects={} capabilities={} documents={} issues={}",
+        "sley-docgen status={} target={} module={} exported_only={} modules={} tasks={} effects={} capabilities={} documents={} issues={}",
         report.status,
         report.target,
+        report.filters.module.as_deref().unwrap_or("*"),
+        report.filters.exported_only,
         report.summary.module_count,
         report.summary.task_count,
         report.summary.effect_count,
