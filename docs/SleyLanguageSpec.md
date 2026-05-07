@@ -793,8 +793,9 @@ to the selected `sley` binary and never calls external providers.
 The local migration report loop is backed by the in-tree `sley-migrate`
 bootstrap. `sley-migrate report --json <target>` shells out to no providers
 and uses the checked edit-plan template surface to report module declaration,
-raw host adapter, imported-call naming, and unchecked-result propagation
-migration candidates. With `--schemas <dir> --fixtures <dir>`, it also reports
+raw host adapter, imported-call naming, and unchecked-result expression and
+binding propagation migration candidates. With `--schemas <dir>` and
+`--fixtures <dir>`, it also reports
 schema IDs without fixture instances and fixture instances without matching
 schema files. The report is advisory and does not write source files.
 
@@ -923,12 +924,14 @@ still passes.
 `unchecked_result` lint findings become checked
 `propagate_unchecked_result` graft templates when the discarded `Result`
 expression can be rewritten with `?` and the checked candidate still passes.
-`unchecked_result_binding` lint findings are warning-only and flag fallible
-host or user-task `Result` values that are bound and then never read; agents
-must choose whether to propagate, return, or handle the value explicitly.
-`unused_effectful_binding` lint findings are warning-only and flag fallible
-host or user-task `Result` values that have already been checked with `?` but
-whose bound value is never read.
+`unchecked_result_binding` lint findings become checked
+`propagate_unchecked_result_binding` `ReplaceStatement` templates when the
+unread fallible `Result` binding can be rewritten as a `?` expression statement
+and the checked candidate still passes.
+`unused_effectful_binding` lint findings become checked
+`drop_unused_effectful_binding_value` `ReplaceStatement` templates when the
+already-checked fallible call can keep `?` propagation while dropping the unread
+binding value and the checked candidate still passes.
 `unqualified_imported_call` lint findings become checked
 `qualify_imported_call` graft templates when a simple imported task call can be
 rewritten through its import alias or module segment and the checked candidate
@@ -1169,9 +1172,11 @@ diagnostic-failing host calls that should move to fallible `try_` adapters;
 implicit `main` module instead of declaring a stable module name;
 `unchecked_result`, which warns when an expression statement discards a
 fallible host or user-task `Result` instead of propagating, returning, or
-binding it; `unchecked_result_binding`, which warns when a local `bind`
-captures a fallible host or user-task `Result` and the task never reads that
-binding; `unused_effectful_binding`, which warns when a local `bind` unwraps a
+binding it; `unchecked_result_binding`, which warns and can produce a checked
+`propagate_unchecked_result_binding` repair when a local `bind` captures a
+fallible host or user-task `Result` and the task never reads that binding;
+`unused_effectful_binding`, which warns and can produce a checked
+`drop_unused_effectful_binding_value` repair when a local `bind` unwraps a
 fallible host or user-task `Result` with `?` and then never reads the recovered
 value; and `unqualified_imported_call`, which warns when a resolved call
 uses a simple imported task name instead of an alias- or module-qualified
@@ -1399,7 +1404,8 @@ refuse generic data disguised as Sley artifacts before compression begins.
 - `sley lint` currently ships warning-grade private-task graph rules, authority
   hygiene for unused declared effects, private declaration/import/API hygiene,
   raw-host-adapter and unchecked-result migration warnings with checked
-  propagation templates, unqualified imported-call qualification templates,
+  expression and binding propagation templates, unqualified imported-call
+  qualification templates,
   unused pure binding cleanup templates, unused pure expression statement
   cleanup templates, self-assignment statement cleanup templates, overwritten
   set statement cleanup templates,

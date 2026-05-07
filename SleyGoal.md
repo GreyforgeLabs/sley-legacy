@@ -124,7 +124,8 @@ Current verified surface:
 - `sley-migrate` is available as an in-tree checked migration report utility
   with `schema: "sley.migrate.report.v0"` over module declaration insertion,
   raw host adapter migration, imported-call naming cleanup,
-  unchecked-result propagation candidates, and optional schema/fixture drift
+  unchecked-result expression and binding propagation candidates, and optional
+  schema/fixture drift
   reports; checked migration operations reuse the strict edit-plan graft
   operation schema.
 - `sley-sandbox-runner` is available as an in-tree deterministic replay
@@ -266,10 +267,11 @@ Current verified surface:
   removal transaction, explicit deploy artifact manifest handoff writes plus
   digest/schema reinspection for dry-run packages, and checked
   `unchecked_result` migration templates that turn discarded `Result`
-  expression statements into explicit `?` propagation when valid, plus
-  `unchecked_result_binding` warnings for fallible `Result` values that are
-  bound and then never read, plus `unused_effectful_binding` warnings for
-  checked fallible-call values that are bound and then never read, plus checked
+  expression statements into explicit `?` propagation when valid, plus checked
+  `propagate_unchecked_result_binding` templates that rewrite unread fallible
+  `Result` bindings as `?` expression statements, and checked
+  `drop_unused_effectful_binding_value` templates that drop unread already
+  checked fallible-call bindings, plus checked
   `unqualified_imported_call` style templates that qualify imported task calls
   through their import alias or module segment, including a write/query/verify
   smoke that proves the repair clears strict lint, plus checked `unused_import`
