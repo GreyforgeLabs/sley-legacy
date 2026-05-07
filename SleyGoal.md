@@ -110,9 +110,10 @@ Current verified surface:
   with open-buffer overlays, formatting, document symbols, declaration
   metadata hover, workspace symbols, project completions, import/call
   definition jumps, project task signature help, exact-range task references,
-  document highlights, prepared cursor-aware project task rename edits, checked
-  edit-plan code actions, and a non-mutating `sley.fix.preview` command whose
-  preview operations and transactions reuse the strict edit-plan graft
+  document highlights, import document links, prepared cursor-aware project
+  task rename edits, checked edit-plan code actions, and a non-mutating
+  `sley.fix.preview` command whose preview operations and transactions reuse
+  the strict edit-plan graft
   contracts.
 - `sley-workbench` is available as an in-tree local inspection bootstrap with
   JSON and optional static HTML panels over doctor, query, lint, edit-plan, and

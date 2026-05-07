@@ -156,6 +156,11 @@ fn handle_message<W: Write>(
                 send_response(writer, id, handle_definition(params, state))?;
             }
         }
+        "textDocument/documentLink" => {
+            if let Some(id) = id {
+                send_response(writer, id, handle_document_links(params, state))?;
+            }
+        }
         "textDocument/completion" => {
             if let Some(id) = id {
                 send_response(writer, id, handle_completion(params, state))?;
@@ -228,6 +233,9 @@ fn initialize_result() -> JsonValue {
             "documentSymbolProvider": true,
             "hoverProvider": true,
             "definitionProvider": true,
+            "documentLinkProvider": {
+                "resolveProvider": false
+            },
             "completionProvider": {
                 "resolveProvider": false,
                 "triggerCharacters": [".", " ", ":", ">"]
@@ -424,6 +432,26 @@ fn handle_definition(params: JsonValue, state: &ServerState) -> JsonValue {
             JsonValue::Null
         }
     }
+}
+
+fn handle_document_links(params: JsonValue, state: &ServerState) -> JsonValue {
+    let Some(uri) = text_document_uri(&params) else {
+        return json!([]);
+    };
+    let Some(document) = state.documents.get(&uri) else {
+        return json!([]);
+    };
+    let Ok(current_program) = parse_program(&document.text) else {
+        return json!([]);
+    };
+    let Some(project) = project_graph_for_document(&uri, &current_program, state) else {
+        return json!([]);
+    };
+    json!(document_links_for_imports(
+        &document.text,
+        &current_program,
+        &project
+    ))
 }
 
 fn handle_completion(params: JsonValue, state: &ServerState) -> JsonValue {
@@ -940,6 +968,29 @@ fn document_symbols(program: &Program, text: &str) -> Vec<JsonValue> {
         ));
     }
     symbols
+}
+
+fn document_links_for_imports(
+    source: &str,
+    program: &Program,
+    project: &ProjectGraph,
+) -> Vec<JsonValue> {
+    program
+        .imports
+        .iter()
+        .filter_map(|import| {
+            let module = project
+                .modules
+                .iter()
+                .find(|module| module.module == import.module)?;
+            let range = range_for_import_module(source, import)?;
+            Some(json!({
+                "range": range,
+                "target": file_uri_for_path(&module.path),
+                "tooltip": format!("Open module {}", import.module)
+            }))
+        })
+        .collect()
 }
 
 fn symbol_json(
@@ -2391,6 +2442,11 @@ fn collect_task_rename_edits_from_expr(
 fn range_for_task_name(source: &str, task: &TaskDecl) -> Option<JsonValue> {
     let line = task.span.as_ref()?.line.saturating_sub(1);
     range_for_text_on_line(source, line, &task.name)
+}
+
+fn range_for_import_module(source: &str, import: &ImportDecl) -> Option<JsonValue> {
+    let line = import.span.as_ref()?.line.saturating_sub(1);
+    range_for_text_on_line(source, line, &import.module)
 }
 
 fn range_for_callee_leaf(
