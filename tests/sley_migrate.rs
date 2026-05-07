@@ -171,6 +171,47 @@ task main -> Result<Text, Error> uses FileRead {
 }
 
 #[test]
+fn migrate_reports_imported_call_naming_cleanup() {
+    let source_path =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("examples/unqualified_import_call_project");
+    let output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-migrate"))
+        .args(["report", "--json", path_str(&source_path).as_str()])
+        .output()
+        .expect("run sley-migrate");
+    assert!(
+        output.status.success(),
+        "sley-migrate failed\nstdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    support::validate_report_schema("sley.migrate.report.v0", &output.stdout);
+    let report: JsonValue = serde_json::from_slice(&output.stdout).expect("parse migrate JSON");
+    assert_eq!(report.pointer("/status"), Some(&json!("migrations")));
+    assert_eq!(report.pointer("/summary/migration_count"), Some(&json!(1)));
+    assert_eq!(
+        report.pointer("/summary/naming_cleanup_count"),
+        Some(&json!(1))
+    );
+    assert_eq!(
+        report.pointer("/migrations/0/kind"),
+        Some(&json!("qualify_imported_call"))
+    );
+    assert_eq!(
+        report.pointer("/migrations/0/category"),
+        Some(&json!("naming_cleanup"))
+    );
+    assert_eq!(
+        report.pointer("/migrations/0/operation/op"),
+        Some(&json!("ReplaceExpression"))
+    );
+    assert_eq!(
+        report.pointer("/migrations/0/operation/payload/source"),
+        Some(&json!("call math.double(21)"))
+    );
+}
+
+#[test]
 fn migrate_reports_unchecked_result_expression_propagation() {
     let source_path =
         PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("examples/unchecked_result.sley");

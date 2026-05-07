@@ -109,6 +109,30 @@
       }
     },
     {
+      "name": "migrate_imported_call_naming_cleanup_report_json",
+      "bin": "sley-migrate",
+      "args": ["report", "--json", "examples/unqualified_import_call_project"],
+      "covers": [
+        "cli:sley-migrate",
+        "migrate:naming-cleanup",
+        "graft:templates:qualified-import-call",
+        "json:sley.migrate.report.v0",
+        "readiness:migrate-report"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.migrate.report.v0" },
+          { "pointer": "/status", "value": "migrations" },
+          { "pointer": "/summary/migration_count", "value": 1 },
+          { "pointer": "/summary/naming_cleanup_count", "value": 1 },
+          { "pointer": "/migrations/0/kind", "value": "qualify_imported_call" },
+          { "pointer": "/migrations/0/category", "value": "naming_cleanup" },
+          { "pointer": "/migrations/0/operation/op", "value": "ReplaceExpression" }
+        ]
+      }
+    },
+    {
       "name": "migrate_unchecked_result_report_json",
       "bin": "sley-migrate",
       "args": ["report", "--json", "examples/unchecked_result.sley"],
