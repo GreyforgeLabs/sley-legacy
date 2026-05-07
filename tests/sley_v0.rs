@@ -9618,11 +9618,11 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/integration_test_count"),
-        Some(&serde_json::json!(311))
+        Some(&serde_json::json!(312))
     );
     assert_eq!(
         report_json.pointer("/summary/declared_integration_test_count"),
-        Some(&serde_json::json!(311))
+        Some(&serde_json::json!(312))
     );
     assert_eq!(
         report_json.pointer("/summary/test_count_matches_declared"),
@@ -9634,7 +9634,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/tests/integration_test_count"),
-        Some(&serde_json::json!(311))
+        Some(&serde_json::json!(312))
     );
     assert_eq!(
         report_json.pointer("/tests/declared_matches_actual"),
@@ -12189,6 +12189,40 @@ task main -> User {
     assert!(
         !has_errors(&check_program(&grafted)),
         "record repair graft should check cleanly"
+    );
+}
+
+#[test]
+fn checker_recursive_record_shape_hints_avoid_unchecked_todo_grafts() {
+    let source = r#"
+type Node = {
+  slot label: Text
+  slot next: Node
+}
+
+task main -> Node {
+  return Node { label: "root" }
+}
+"#;
+    let program = parse_program(source).expect("parse recursive record repair source");
+    let diagnostics = check_program(&program);
+    let missing = diagnostics
+        .iter()
+        .find(|diagnostic| diagnostic.id == "RECORD_FIELD_MISSING")
+        .unwrap_or_else(|| panic!("missing RECORD_FIELD_MISSING diagnostic: {diagnostics:#?}"));
+    assert!(
+        missing.repair_hints.iter().all(|hint| hint
+            .replacement
+            .as_deref()
+            .is_none_or(|value| !value.contains("TODO_VALUE"))),
+        "recursive record repair should not emit TODO_VALUE hints: {missing:#?}"
+    );
+    assert!(
+        !missing
+            .repair_hints
+            .iter()
+            .any(|hint| hint.kind == "replace_expression"),
+        "recursive record repair should omit unchecked structural grafts: {missing:#?}"
     );
 }
 
