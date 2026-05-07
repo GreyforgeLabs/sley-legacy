@@ -813,10 +813,12 @@ Known v0 limits:
   deterministic seeded prompt-completion adapter. `SecretRead` has a
   deterministic seeded secret-value adapter. The `Deploy` adapter returns
   deterministic seeded stage results, and the `Spend` adapter returns
-  deterministic seeded authorization results. Non-file adapters can be scoped
-  by resource-key prefix with `--cap EFFECT=SCOPE`, and scope mismatches remain
-  authority diagnostics. None of the seeded host adapters perform live network,
-  shell, model, secret, deploy, or spend actions.
+  deterministic seeded authorization results. Database adapters use exact table
+  scopes, URL adapters use exact or path-boundary scopes, and the remaining
+  non-file adapters can be scoped by resource-key prefix with
+  `--cap EFFECT=SCOPE`. Scope mismatches remain authority diagnostics. None of
+  the seeded host adapters perform live network, shell, model, secret, deploy,
+  or spend actions.
 - Sley-level `Result` values and `?` propagation execute, and fallible
   filesystem, database, network, shell, model, secret, deploy, and spend host
   variants return typed `Error` records.
