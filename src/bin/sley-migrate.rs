@@ -206,6 +206,7 @@ fn migration_category(kind: &str) -> Option<&'static str> {
         "migrate_raw_host_adapter" => Some("raw_host_adapter"),
         "qualify_imported_call" => Some("naming_cleanup"),
         "propagate_unchecked_result" => Some("result_propagation"),
+        "propagate_unchecked_result_binding" => Some("result_propagation"),
         _ => None,
     }
 }
