@@ -9655,11 +9655,11 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/integration_test_count"),
-        Some(&serde_json::json!(315))
+        Some(&serde_json::json!(316))
     );
     assert_eq!(
         report_json.pointer("/summary/declared_integration_test_count"),
-        Some(&serde_json::json!(315))
+        Some(&serde_json::json!(316))
     );
     assert_eq!(
         report_json.pointer("/summary/test_count_matches_declared"),
@@ -9671,7 +9671,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/tests/integration_test_count"),
-        Some(&serde_json::json!(315))
+        Some(&serde_json::json!(316))
     );
     assert_eq!(
         report_json.pointer("/tests/declared_matches_actual"),
@@ -13635,6 +13635,54 @@ task main -> Result<Text, Error> uses Network {
 }
 
 #[test]
+fn runtime_scoped_network_capability_accepts_url_boundaries() {
+    fn assert_scoped_url_ok(scope: &str, resource: &str, value: &str) {
+        let source = format!(
+            r#"
+task main -> Result<Text, Error> uses Network {{
+  return call http.try_get_text("{resource}")
+}}
+"#
+        );
+        let program = parse_program(&source).expect("parse source");
+        let diagnostics = check_program(&program);
+        assert!(
+            !has_errors(&diagnostics),
+            "unexpected diagnostics: {diagnostics:#?}"
+        );
+        let mut gates = RuntimeGates::new();
+        gates.grant_effect_scope("Network", scope);
+        gates.grant_http_text(resource, value);
+        assert_eq!(
+            run_main_with_gates(&program, &gates),
+            Ok(Value::Ok(Box::new(Value::Text(value.to_string()))))
+        );
+    }
+
+    assert_scoped_url_ok("https://example.test", "https://example.test", "root");
+    assert_scoped_url_ok(
+        "https://example.test/app",
+        "https://example.test/app/profile",
+        "path",
+    );
+    assert_scoped_url_ok(
+        "https://example.test/app",
+        "https://example.test/app?view=1",
+        "query",
+    );
+    assert_scoped_url_ok(
+        "https://example.test/app",
+        "https://example.test/app#top",
+        "fragment",
+    );
+    assert_scoped_url_ok(
+        "https://example.test/app/",
+        "https://example.test/app/profile",
+        "slash",
+    );
+}
+
+#[test]
 fn runtime_scoped_network_capability_rejects_nonmatching_url() {
     let source = r#"
 task main -> Result<Text, Error> uses Network {
@@ -13659,6 +13707,21 @@ task main -> Result<Text, Error> uses Network {
         sibling_host,
         "Network",
         "https://example.test.evil/profile",
+    );
+
+    let sibling_path_source = r#"
+task main -> Result<Text, Error> uses Network {
+  return call http.try_get_text("https://example.test/application/profile")
+}
+"#;
+    let mut sibling_path = RuntimeGates::new();
+    sibling_path.grant_effect_scope("Network", "https://example.test/app");
+    sibling_path.grant_http_text("https://example.test/application/profile", "blocked");
+    assert_scope_denied(
+        sibling_path_source,
+        sibling_path,
+        "Network",
+        "https://example.test/application/profile",
     );
 }
 
