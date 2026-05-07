@@ -2362,6 +2362,52 @@ task main -> Int {
         "entry task deletion should not be advertised from module surface: {:#?}",
         empty_report.graft_templates
     );
+
+    let used_type_module = parse_program(
+        r#"
+module app.type_surface
+
+type User = {
+  slot name: Text
+}
+
+task main -> User {
+  return User { name: "Ada" }
+}
+"#,
+    )
+    .expect("parse direct type surface fixture");
+    let type_report = build_edit_plan_report_with_options(
+        "app.type_surface",
+        Ok(used_type_module.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("type:app.type_surface.User".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(type_report.status, "ready");
+    assert_eq!(type_report.graft_templates.len(), 1);
+    let type_template = &type_report.graft_templates[0];
+    assert_eq!(type_template.kind, "move_type");
+    assert_eq!(type_template.surface, "type:app.type_surface.User");
+    assert_eq!(
+        type_template.operation.pointer("/target"),
+        Some(&serde_json::json!("type:app.type_surface.User"))
+    );
+    let type_graft: GraftInput = serde_json::from_value(type_template.operation.clone())
+        .expect("direct type surface template should parse");
+    let type_outcome = apply_graft_input(
+        &used_type_module,
+        type_graft,
+        Some("agent:type-surface-template-test".to_string()),
+    );
+    assert_eq!(
+        type_outcome.status, "accepted",
+        "{:#?}",
+        type_outcome.diagnostics
+    );
 }
 
 #[test]
