@@ -390,6 +390,32 @@
       }
     },
     {
+      "name": "workbench_lint_plan_command_json",
+      "bin": "sley-workbench",
+      "args": [
+        "--json",
+        "examples/unused_private_task.sley"
+      ],
+      "covers": [
+        "cli:sley-workbench",
+        "workbench:lint-plan-command",
+        "json:sley.workbench.report.v0",
+        "readiness:workbench-inspection"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.workbench.report.v0" },
+          { "pointer": "/status", "value": "warnings" },
+          { "pointer": "/lint/status", "value": "findings" },
+          { "pointer": "/lint/findings/0/id", "value": "UNUSED_PRIVATE_TASK" },
+          { "pointer": "/lint/findings/0/plan_command/1", "value": "plan" },
+          { "pointer": "/lint/findings/0/plan_command/5", "value": "task:app.tasks.orphan" },
+          { "pointer": "/lint/findings/0/plan_command/6", "value": "examples/unused_private_task.sley" }
+        ]
+      }
+    },
+    {
       "name": "sandbox_runner_agent_pipeline_report_json",
       "bin": "sley-sandbox-runner",
       "args": ["run", "--json", "fixtures/contracts/sandbox_manifest_agent_pipeline.json"],
