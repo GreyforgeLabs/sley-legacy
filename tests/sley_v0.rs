@@ -2203,7 +2203,7 @@ task threshold -> Int {
     );
     assert_eq!(
         template.operation.pointer("/payload/position"),
-        Some(&serde_json::json!(0))
+        Some(&serde_json::json!(1))
     );
     assert_eq!(
         template.editable_json_pointers,
@@ -2241,6 +2241,12 @@ task threshold -> Int {
             .operation
             .pointer("/target"),
         Some(&serde_json::json!(nested_block))
+    );
+    assert_eq!(
+        nested_report.graft_templates[0]
+            .operation
+            .pointer("/payload/position"),
+        Some(&serde_json::json!(1))
     );
 }
 
