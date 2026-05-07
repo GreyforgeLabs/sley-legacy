@@ -172,6 +172,8 @@ const DEFAULT_SMOKE_TAGS: &[&str] = &[
     "readiness:verify-deploy-package",
     "readiness:verify-ci-deploy-package",
     "readiness:doctor-verify-gate",
+    "readiness:doctor-ci-verify-gate",
+    "readiness:doctor-ci-run-gate",
     "readiness:docgen-reference",
     "readiness:lsp-stdio-startup",
     "readiness:migrate-report",

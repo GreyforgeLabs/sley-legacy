@@ -1409,8 +1409,48 @@ fn doctor_ready_actions_seed_reachable_agent_host_calls() {
         Some(&serde_json::json!("profile ready | plan approved | staged"))
     );
 
-    let run_command = doctor_json
+    let ci_verify_command = doctor_json
         .pointer("/next_actions/4/command")
+        .and_then(serde_json::Value::as_array)
+        .expect("ci verify action command")
+        .iter()
+        .map(|value| value.as_str().expect("string command segment").to_string())
+        .collect::<Vec<_>>();
+    let mut expected_ci_verify_command = verify_command.clone();
+    expected_ci_verify_command[0] = "sley-ci".to_string();
+    assert_eq!(
+        doctor_json.pointer("/next_actions/4/kind"),
+        Some(&serde_json::json!("ci_verify_gate"))
+    );
+    assert_eq!(ci_verify_command, expected_ci_verify_command);
+    let ci_verify = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
+        .current_dir(&repo_root)
+        .args(&ci_verify_command[1..])
+        .output()
+        .expect("run seeded doctor ci verify action");
+    let ci_verify_stdout = String::from_utf8(ci_verify.stdout).expect("ci verify stdout utf8");
+    let ci_verify_stderr = String::from_utf8(ci_verify.stderr).expect("ci verify stderr utf8");
+    assert!(
+        ci_verify.status.success(),
+        "stdout: {ci_verify_stdout}\nstderr: {ci_verify_stderr}"
+    );
+    let ci_verify_json: serde_json::Value =
+        serde_json::from_str(&ci_verify_stdout).expect("parse sley-ci verify JSON");
+    assert_eq!(
+        ci_verify_json.pointer("/schema"),
+        Some(&serde_json::json!("sley.ci.report.v0"))
+    );
+    assert_eq!(
+        ci_verify_json.pointer("/command"),
+        Some(&serde_json::json!("verify"))
+    );
+    assert_eq!(
+        ci_verify_json.pointer("/steps/0/stdout_schema"),
+        Some(&serde_json::json!(VERIFY_REPORT_SCHEMA))
+    );
+
+    let run_command = doctor_json
+        .pointer("/next_actions/5/command")
         .and_then(serde_json::Value::as_array)
         .expect("run action command")
         .iter()
@@ -1433,10 +1473,50 @@ fn doctor_ready_actions_seed_reachable_agent_host_calls() {
         Some(&serde_json::json!("profile ready | plan approved | staged"))
     );
 
+    let ci_run_command = doctor_json
+        .pointer("/next_actions/6/command")
+        .and_then(serde_json::Value::as_array)
+        .expect("ci run action command")
+        .iter()
+        .map(|value| value.as_str().expect("string command segment").to_string())
+        .collect::<Vec<_>>();
+    let mut expected_ci_run_command = run_command.clone();
+    expected_ci_run_command[0] = "sley-ci".to_string();
+    assert_eq!(
+        doctor_json.pointer("/next_actions/6/kind"),
+        Some(&serde_json::json!("ci_run_entrypoint_with_gates"))
+    );
+    assert_eq!(ci_run_command, expected_ci_run_command);
+    let ci_run = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
+        .current_dir(&repo_root)
+        .args(&ci_run_command[1..])
+        .output()
+        .expect("run seeded doctor ci run action");
+    let ci_run_stdout = String::from_utf8(ci_run.stdout).expect("ci run stdout utf8");
+    let ci_run_stderr = String::from_utf8(ci_run.stderr).expect("ci run stderr utf8");
+    assert!(
+        ci_run.status.success(),
+        "stdout: {ci_run_stdout}\nstderr: {ci_run_stderr}"
+    );
+    let ci_run_json: serde_json::Value =
+        serde_json::from_str(&ci_run_stdout).expect("parse sley-ci run JSON");
+    assert_eq!(
+        ci_run_json.pointer("/schema"),
+        Some(&serde_json::json!("sley.ci.report.v0"))
+    );
+    assert_eq!(
+        ci_run_json.pointer("/command"),
+        Some(&serde_json::json!("run"))
+    );
+    assert_eq!(
+        ci_run_json.pointer("/steps/0/stdout_schema"),
+        Some(&serde_json::json!(RUN_REPORT_SCHEMA))
+    );
+
     let deploy_root = temp_project_dir("doctor-agent-deploy");
     let deploy_root_arg = sley_string(&deploy_root);
     let deploy_command = doctor_json
-        .pointer("/next_actions/5/command")
+        .pointer("/next_actions/7/command")
         .and_then(serde_json::Value::as_array)
         .expect("deploy action command")
         .iter()
@@ -1450,11 +1530,11 @@ fn doctor_ready_actions_seed_reachable_agent_host_calls() {
         })
         .collect::<Vec<_>>();
     assert_eq!(
-        doctor_json.pointer("/next_actions/5/kind"),
+        doctor_json.pointer("/next_actions/7/kind"),
         Some(&serde_json::json!("prepare_deploy_package"))
     );
     assert_eq!(
-        doctor_json.pointer("/next_actions/5/command/5"),
+        doctor_json.pointer("/next_actions/7/command/5"),
         Some(&serde_json::json!(".sley/deploy"))
     );
     let deploy = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
@@ -1490,7 +1570,7 @@ fn doctor_ready_actions_seed_reachable_agent_host_calls() {
     let ci_deploy_root = temp_project_dir("doctor-agent-ci-deploy");
     let ci_deploy_root_arg = sley_string(&ci_deploy_root);
     let ci_deploy_command = doctor_json
-        .pointer("/next_actions/6/command")
+        .pointer("/next_actions/8/command")
         .and_then(serde_json::Value::as_array)
         .expect("ci deploy action command")
         .iter()
@@ -1504,15 +1584,15 @@ fn doctor_ready_actions_seed_reachable_agent_host_calls() {
         })
         .collect::<Vec<_>>();
     assert_eq!(
-        doctor_json.pointer("/next_actions/6/kind"),
+        doctor_json.pointer("/next_actions/8/kind"),
         Some(&serde_json::json!("ci_deploy_package"))
     );
     assert_eq!(
-        doctor_json.pointer("/next_actions/6/command/0"),
+        doctor_json.pointer("/next_actions/8/command/0"),
         Some(&serde_json::json!("sley-ci"))
     );
     assert_eq!(
-        doctor_json.pointer("/next_actions/6/command/5"),
+        doctor_json.pointer("/next_actions/8/command/5"),
         Some(&serde_json::json!(".sley/ci-deploy"))
     );
     let ci_deploy = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
@@ -24579,6 +24659,8 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:deploy-package-dry-run",
         "readiness:doctor-deploy-package",
         "readiness:doctor-ci-deploy-package",
+        "readiness:doctor-ci-verify-gate",
+        "readiness:doctor-ci-run-gate",
         "readiness:docgen-reference",
         "readiness:lsp-stdio-startup",
         "readiness:migrate-report",

@@ -315,7 +315,18 @@ fn ready_actions(target: &str, query: &QueryReport, program: &Program) -> Vec<Do
             "--json".to_string(),
             "--deny-warnings".to_string(),
         ];
+        let mut ci_verify_command = vec![
+            "sley-ci".to_string(),
+            "verify".to_string(),
+            "--json".to_string(),
+            "--deny-warnings".to_string(),
+        ];
         let mut run_command = vec!["sley".to_string(), "run".to_string(), "--json".to_string()];
+        let mut ci_run_command = vec![
+            "sley-ci".to_string(),
+            "run".to_string(),
+            "--json".to_string(),
+        ];
         let mut deploy_command = vec![
             "sley".to_string(),
             "deploy".to_string(),
@@ -334,16 +345,22 @@ fn ready_actions(target: &str, query: &QueryReport, program: &Program) -> Vec<Do
         ];
         let authority_args = cap_args(&task.effects);
         verify_command.extend(authority_args.iter().cloned());
+        ci_verify_command.extend(authority_args.iter().cloned());
         run_command.extend(authority_args.iter().cloned());
+        ci_run_command.extend(authority_args.iter().cloned());
         deploy_command.extend(authority_args.iter().cloned());
         ci_deploy_command.extend(authority_args);
         let seed_args = inferred_runtime_seed_args(program, &entry_task);
         verify_command.extend(seed_args.iter().cloned());
+        ci_verify_command.extend(seed_args.iter().cloned());
         run_command.extend(seed_args.iter().cloned());
+        ci_run_command.extend(seed_args.iter().cloned());
         deploy_command.extend(seed_args.iter().cloned());
         ci_deploy_command.extend(seed_args);
         verify_command.push(target.to_string());
+        ci_verify_command.push(target.to_string());
         run_command.push(target.to_string());
+        ci_run_command.push(target.to_string());
         deploy_command.push(target.to_string());
         ci_deploy_command.push(target.to_string());
         actions.push(DoctorAction {
@@ -358,6 +375,14 @@ fn ready_actions(target: &str, query: &QueryReport, program: &Program) -> Vec<Do
             command: verify_command,
             write_command: None,
         });
+        if !task.effects.is_empty() {
+            actions.push(DoctorAction {
+                kind: "ci_verify_gate".to_string(),
+                reason: "run the same strict verification gate through the CI wrapper".to_string(),
+                command: ci_verify_command,
+                write_command: None,
+            });
+        }
         actions.push(DoctorAction {
             kind: if task.effects.is_empty() {
                 "run_entrypoint".to_string()
@@ -372,6 +397,15 @@ fn ready_actions(target: &str, query: &QueryReport, program: &Program) -> Vec<Do
             command: run_command,
             write_command: None,
         });
+        if !task.effects.is_empty() {
+            actions.push(DoctorAction {
+                kind: "ci_run_entrypoint_with_gates".to_string(),
+                reason: "run the same gated entrypoint execution through the CI wrapper"
+                    .to_string(),
+                command: ci_run_command,
+                write_command: None,
+            });
+        }
         if task.effects.iter().any(|effect| effect == "Deploy") {
             actions.push(DoctorAction {
                 kind: "prepare_deploy_package".to_string(),
