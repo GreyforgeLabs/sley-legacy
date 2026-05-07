@@ -1335,11 +1335,11 @@ structural `replace_expression` hints for the initializer or assigned
 expression, alongside the older type-change or source-level replacement hints.
 Missing return paths in non-`Unit` tasks produce `MISSING_RETURN` with
 `insert_return` and `replace_task_body` repair hints, including valid anonymous
-record-literal starter returns when the task return type is an inline record.
+and named record-literal starter returns when the task return type is a record.
 Condition, collection element, map key/value, index key, and record-field
 expression mismatches include structural `replace_expression` hints when the
 checker has a clear expected replacement type for the offending expression,
-including anonymous record literals for inline record targets.
+including anonymous and named record literals for record targets.
 Record literal missing/unknown field diagnostics include a whole-record
 `replace_expression` hint that preserves known expected fields, fills missing
 fields with default starter expressions, and omits unknown fields.
