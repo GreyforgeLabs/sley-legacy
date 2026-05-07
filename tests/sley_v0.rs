@@ -10733,7 +10733,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/smoke_case_count"),
-        Some(&serde_json::json!(459))
+        Some(&serde_json::json!(460))
     );
     assert_eq!(
         report_json.pointer("/summary/onboarding_path_count"),
@@ -22988,6 +22988,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "lsp:help",
         "sandbox:replay",
         "workbench:graph-slice",
+        "workbench:lint-plan-command",
         "zjx-tool:inspect",
         "fix:call-transaction-write",
         "fix:lint-cleanup-write",
