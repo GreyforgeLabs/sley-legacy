@@ -996,8 +996,14 @@ fn check_expr_structure(
                                 .with_repair_hint(
                                     RepairHint::new("declare_or_import_task")
                                         .with_target(callee.id.clone())
-                                        .with_replacement(format!(
-                                            "import <module-with-{raw_callee}>"
+                                        .with_replacement(declare_task_hint_source(
+                                            raw_callee,
+                                            args,
+                                            program,
+                                            task,
+                                            locals,
+                                            known_tasks,
+                                            record_types,
                                         )),
                                 ),
                             ),
@@ -2244,6 +2250,34 @@ fn declare_binding_hint(task: &TaskDecl, name: &str, binding_kind: BindingKind) 
     RepairHint::new(kind)
         .with_target(task.id.clone())
         .with_replacement(format!("{} {name} = 0", binding_kind.as_source_keyword()))
+}
+
+fn declare_task_hint_source(
+    name: &str,
+    args: &[Expr],
+    program: &Program,
+    task: &TaskDecl,
+    locals: &HashMap<String, TypeExpr>,
+    known_tasks: &TaskSignatures,
+    record_types: &HashMap<String, Vec<RecordField>>,
+) -> String {
+    let task_name = short_name(name);
+    if args.is_empty() {
+        return format!("task {task_name} -> Unit {{\n}}");
+    }
+
+    let takes = args
+        .iter()
+        .enumerate()
+        .map(|(index, arg)| {
+            let ty = infer_expr_type(program, task, arg, locals, known_tasks, record_types)
+                .map(|ty| ty.display())
+                .unwrap_or_else(|| "Text".to_string());
+            format!("  take arg{index}: {ty}")
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
+    format!("task {task_name} -> Unit {{\n{takes}\n}}")
 }
 
 fn declare_type_hint_source(name: &str) -> String {

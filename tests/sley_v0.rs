@@ -9409,11 +9409,11 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/integration_test_count"),
-        Some(&serde_json::json!(308))
+        Some(&serde_json::json!(309))
     );
     assert_eq!(
         report_json.pointer("/summary/declared_integration_test_count"),
-        Some(&serde_json::json!(308))
+        Some(&serde_json::json!(309))
     );
     assert_eq!(
         report_json.pointer("/summary/test_count_matches_declared"),
@@ -9425,7 +9425,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/tests/integration_test_count"),
-        Some(&serde_json::json!(308))
+        Some(&serde_json::json!(309))
     );
     assert_eq!(
         report_json.pointer("/tests/declared_matches_actual"),
@@ -11210,6 +11210,44 @@ task main -> Int {
         parse_program("task main -> Int {\n  return call missing()\n}\n").expect("parse source");
     let diagnostics = check_program(&unknown_task);
     assert_has_repair_hint(&diagnostics, "UNKNOWN_TASK", "declare_or_import_task");
+    let declare_task_hint =
+        find_repair_hint(&diagnostics, "UNKNOWN_TASK", "declare_or_import_task");
+    assert_eq!(
+        declare_task_hint.replacement.as_deref(),
+        Some("task missing -> Unit {\n}")
+    );
+    parse_program(
+        declare_task_hint
+            .replacement
+            .as_deref()
+            .expect("task starter"),
+    )
+    .expect("unknown task starter should parse");
+}
+
+#[test]
+fn checker_unknown_task_hints_include_inferred_take_starters() {
+    let source = r#"
+task main -> Unit {
+  bind label = "ready"
+  call missing(1, label)
+}
+"#;
+    let program = parse_program(source).expect("parse unknown task hint source");
+    let diagnostics = check_program(&program);
+    let declare_task_hint =
+        find_repair_hint(&diagnostics, "UNKNOWN_TASK", "declare_or_import_task");
+    assert_eq!(
+        declare_task_hint.replacement.as_deref(),
+        Some("task missing -> Unit {\n  take arg0: Int\n  take arg1: Text\n}")
+    );
+    parse_program(
+        declare_task_hint
+            .replacement
+            .as_deref()
+            .expect("task starter"),
+    )
+    .expect("unknown task starter with takes should parse");
 }
 
 #[test]
