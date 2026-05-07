@@ -156,6 +156,11 @@ fn handle_message<W: Write>(
                 send_response(writer, id, handle_workspace_symbol(params, state))?;
             }
         }
+        "textDocument/references" => {
+            if let Some(id) = id {
+                send_response(writer, id, handle_references(params, state))?;
+            }
+        }
         "textDocument/codeAction" => {
             if let Some(id) = id {
                 send_response(writer, id, handle_code_actions(params, state))?;
@@ -198,6 +203,7 @@ fn initialize_result() -> JsonValue {
                 "triggerCharacters": [".", " ", ":", ">"]
             },
             "workspaceSymbolProvider": true,
+            "referencesProvider": true,
             "codeActionProvider": {
                 "resolveProvider": false,
                 "codeActionKinds": ["quickfix", "refactor.rewrite"]
@@ -442,6 +448,49 @@ fn handle_workspace_symbol(params: JsonValue, state: &ServerState) -> JsonValue 
             .to_string()
     });
     json!(symbols)
+}
+
+fn handle_references(params: JsonValue, state: &ServerState) -> JsonValue {
+    let Some(uri) = text_document_uri(&params) else {
+        return json!([]);
+    };
+    let Some(document) = state.documents.get(&uri) else {
+        return json!([]);
+    };
+    let Some(position) = params.get("position") else {
+        return json!([]);
+    };
+    let line = position
+        .get("line")
+        .and_then(JsonValue::as_u64)
+        .unwrap_or_default() as usize;
+    let include_declaration = params
+        .pointer("/context/includeDeclaration")
+        .and_then(JsonValue::as_bool)
+        .unwrap_or(true);
+    let Ok(current_program) = parse_program(&document.text) else {
+        return json!([]);
+    };
+    let project = project_graph_for_document(&uri, &current_program, state);
+    let analysis_program = project
+        .as_ref()
+        .map(|project| &project.program)
+        .unwrap_or(&current_program);
+    let Some(target_task_id) =
+        task_reference_target_at_line(&current_program, analysis_program, line)
+    else {
+        return json!([]);
+    };
+    json!(reference_locations_for_task(
+        &target_task_id,
+        analysis_program,
+        project.as_ref(),
+        &uri,
+        &document.text,
+        &current_program,
+        include_declaration,
+        state,
+    ))
 }
 
 fn handle_code_actions(params: JsonValue, state: &ServerState) -> JsonValue {
@@ -1144,6 +1193,480 @@ fn workspace_symbol_key(symbol: &JsonValue) -> Option<String> {
 
 fn symbol_matches(query: &str, name: &str) -> bool {
     query.trim().is_empty() || name.to_lowercase().contains(&query.to_lowercase())
+}
+
+fn task_reference_target_at_line(
+    current_program: &Program,
+    analysis_program: &Program,
+    line: usize,
+) -> Option<String> {
+    if let Some(task) = current_program
+        .tasks
+        .iter()
+        .find(|task| span_line_matches(task.span.as_ref(), line))
+    {
+        return Some(task.id.clone());
+    }
+    let (caller_module, callee_name) = call_at_line(current_program, line)?;
+    match resolve_task(analysis_program, &caller_module, &callee_name) {
+        TaskResolution::Resolved { index, .. } => Some(analysis_program.tasks[index].id.clone()),
+        TaskResolution::Unknown | TaskResolution::Ambiguous(_) | TaskResolution::Private(_) => None,
+    }
+}
+
+fn reference_locations_for_task(
+    target_task_id: &str,
+    analysis_program: &Program,
+    project: Option<&ProjectGraph>,
+    current_uri: &str,
+    current_source: &str,
+    current_program: &Program,
+    include_declaration: bool,
+    state: &ServerState,
+) -> Vec<JsonValue> {
+    let mut locations = Vec::new();
+    let mut seen = BTreeSet::new();
+    if let Some(project) = project {
+        for module in &project.modules {
+            let uri = file_uri_for_path(&module.path);
+            let source = source_text_for_path(&module.path, state);
+            collect_task_references_for_program(
+                target_task_id,
+                analysis_program,
+                &uri,
+                &source,
+                &module.program,
+                include_declaration,
+                &mut locations,
+                &mut seen,
+            );
+        }
+    } else {
+        collect_task_references_for_program(
+            target_task_id,
+            analysis_program,
+            current_uri,
+            current_source,
+            current_program,
+            include_declaration,
+            &mut locations,
+            &mut seen,
+        );
+    }
+    locations.sort_by_key(location_sort_key);
+    locations
+}
+
+fn collect_task_references_for_program(
+    target_task_id: &str,
+    analysis_program: &Program,
+    uri: &str,
+    source: &str,
+    program: &Program,
+    include_declaration: bool,
+    locations: &mut Vec<JsonValue>,
+    seen: &mut BTreeSet<String>,
+) {
+    if include_declaration {
+        if let Some(task) = program.tasks.iter().find(|task| task.id == target_task_id) {
+            let range = task
+                .span
+                .as_ref()
+                .map(|span| range_for_span(source, span))
+                .unwrap_or_else(|| first_line_range(source));
+            push_reference_location(locations, seen, uri, range);
+        }
+    }
+    for task in &program.tasks {
+        let caller_module = task
+            .module
+            .clone()
+            .unwrap_or_else(|| program.module_name().to_string());
+        collect_task_reference_calls_from_statements(
+            target_task_id,
+            analysis_program,
+            &caller_module,
+            &task.body.statements,
+            uri,
+            source,
+            locations,
+            seen,
+        );
+    }
+}
+
+fn collect_task_reference_calls_from_statements(
+    target_task_id: &str,
+    analysis_program: &Program,
+    caller_module: &str,
+    statements: &[Statement],
+    uri: &str,
+    source: &str,
+    locations: &mut Vec<JsonValue>,
+    seen: &mut BTreeSet<String>,
+) {
+    for statement in statements {
+        match &statement.kind {
+            StatementKind::Binding { expr, .. }
+            | StatementKind::Set { expr, .. }
+            | StatementKind::Return { expr }
+            | StatementKind::Expr { expr } => collect_task_reference_calls_from_expr(
+                target_task_id,
+                analysis_program,
+                caller_module,
+                expr,
+                uri,
+                source,
+                locations,
+                seen,
+            ),
+            StatementKind::If {
+                condition,
+                then_block,
+                else_block,
+            } => {
+                collect_task_reference_calls_from_expr(
+                    target_task_id,
+                    analysis_program,
+                    caller_module,
+                    condition,
+                    uri,
+                    source,
+                    locations,
+                    seen,
+                );
+                collect_task_reference_calls_from_statements(
+                    target_task_id,
+                    analysis_program,
+                    caller_module,
+                    &then_block.statements,
+                    uri,
+                    source,
+                    locations,
+                    seen,
+                );
+                if let Some(else_block) = else_block {
+                    collect_task_reference_calls_from_statements(
+                        target_task_id,
+                        analysis_program,
+                        caller_module,
+                        &else_block.statements,
+                        uri,
+                        source,
+                        locations,
+                        seen,
+                    );
+                }
+            }
+            StatementKind::While { condition, body } => {
+                collect_task_reference_calls_from_expr(
+                    target_task_id,
+                    analysis_program,
+                    caller_module,
+                    condition,
+                    uri,
+                    source,
+                    locations,
+                    seen,
+                );
+                collect_task_reference_calls_from_statements(
+                    target_task_id,
+                    analysis_program,
+                    caller_module,
+                    &body.statements,
+                    uri,
+                    source,
+                    locations,
+                    seen,
+                );
+            }
+            StatementKind::For {
+                collection, body, ..
+            } => {
+                collect_task_reference_calls_from_expr(
+                    target_task_id,
+                    analysis_program,
+                    caller_module,
+                    collection,
+                    uri,
+                    source,
+                    locations,
+                    seen,
+                );
+                collect_task_reference_calls_from_statements(
+                    target_task_id,
+                    analysis_program,
+                    caller_module,
+                    &body.statements,
+                    uri,
+                    source,
+                    locations,
+                    seen,
+                );
+            }
+            StatementKind::Forge { body } => collect_task_reference_calls_from_statements(
+                target_task_id,
+                analysis_program,
+                caller_module,
+                &body.statements,
+                uri,
+                source,
+                locations,
+                seen,
+            ),
+        }
+    }
+}
+
+fn collect_task_reference_calls_from_expr(
+    target_task_id: &str,
+    analysis_program: &Program,
+    caller_module: &str,
+    expr: &Expr,
+    uri: &str,
+    source: &str,
+    locations: &mut Vec<JsonValue>,
+    seen: &mut BTreeSet<String>,
+) {
+    match &expr.kind {
+        ExprKind::Call { callee, args } => {
+            if let Some(callee_name) = callee_path(callee)
+                && let TaskResolution::Resolved { index, .. } =
+                    resolve_task(analysis_program, caller_module, &callee_name)
+                && analysis_program.tasks[index].id == target_task_id
+            {
+                let range = expr
+                    .span
+                    .as_ref()
+                    .map(|span| range_for_span(source, span))
+                    .unwrap_or_else(|| first_line_range(source));
+                push_reference_location(locations, seen, uri, range);
+            }
+            collect_task_reference_calls_from_expr(
+                target_task_id,
+                analysis_program,
+                caller_module,
+                callee,
+                uri,
+                source,
+                locations,
+                seen,
+            );
+            for arg in args {
+                collect_task_reference_calls_from_expr(
+                    target_task_id,
+                    analysis_program,
+                    caller_module,
+                    arg,
+                    uri,
+                    source,
+                    locations,
+                    seen,
+                );
+            }
+        }
+        ExprKind::Unary { expr, .. } | ExprKind::Try { expr } => {
+            collect_task_reference_calls_from_expr(
+                target_task_id,
+                analysis_program,
+                caller_module,
+                expr,
+                uri,
+                source,
+                locations,
+                seen,
+            );
+        }
+        ExprKind::Binary { left, right, .. } => {
+            collect_task_reference_calls_from_expr(
+                target_task_id,
+                analysis_program,
+                caller_module,
+                left,
+                uri,
+                source,
+                locations,
+                seen,
+            );
+            collect_task_reference_calls_from_expr(
+                target_task_id,
+                analysis_program,
+                caller_module,
+                right,
+                uri,
+                source,
+                locations,
+                seen,
+            );
+        }
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
+            collect_task_reference_calls_from_expr(
+                target_task_id,
+                analysis_program,
+                caller_module,
+                condition,
+                uri,
+                source,
+                locations,
+                seen,
+            );
+            collect_task_reference_calls_from_expr(
+                target_task_id,
+                analysis_program,
+                caller_module,
+                then_branch,
+                uri,
+                source,
+                locations,
+                seen,
+            );
+            collect_task_reference_calls_from_expr(
+                target_task_id,
+                analysis_program,
+                caller_module,
+                else_branch,
+                uri,
+                source,
+                locations,
+                seen,
+            );
+        }
+        ExprKind::ListLiteral { items } => {
+            for item in items {
+                collect_task_reference_calls_from_expr(
+                    target_task_id,
+                    analysis_program,
+                    caller_module,
+                    item,
+                    uri,
+                    source,
+                    locations,
+                    seen,
+                );
+            }
+        }
+        ExprKind::MapLiteral { entries } => {
+            for entry in entries {
+                collect_task_reference_calls_from_expr(
+                    target_task_id,
+                    analysis_program,
+                    caller_module,
+                    &entry.key,
+                    uri,
+                    source,
+                    locations,
+                    seen,
+                );
+                collect_task_reference_calls_from_expr(
+                    target_task_id,
+                    analysis_program,
+                    caller_module,
+                    &entry.value,
+                    uri,
+                    source,
+                    locations,
+                    seen,
+                );
+            }
+        }
+        ExprKind::Index { collection, index } => {
+            collect_task_reference_calls_from_expr(
+                target_task_id,
+                analysis_program,
+                caller_module,
+                collection,
+                uri,
+                source,
+                locations,
+                seen,
+            );
+            collect_task_reference_calls_from_expr(
+                target_task_id,
+                analysis_program,
+                caller_module,
+                index,
+                uri,
+                source,
+                locations,
+                seen,
+            );
+        }
+        ExprKind::FieldAccess { receiver, .. } => collect_task_reference_calls_from_expr(
+            target_task_id,
+            analysis_program,
+            caller_module,
+            receiver,
+            uri,
+            source,
+            locations,
+            seen,
+        ),
+        ExprKind::RecordLiteral { fields, .. } => {
+            for field in fields {
+                collect_task_reference_calls_from_expr(
+                    target_task_id,
+                    analysis_program,
+                    caller_module,
+                    &field.expr,
+                    uri,
+                    source,
+                    locations,
+                    seen,
+                );
+            }
+        }
+        ExprKind::Raw { .. }
+        | ExprKind::StringLiteral { .. }
+        | ExprKind::IntLiteral { .. }
+        | ExprKind::FloatLiteral { .. }
+        | ExprKind::BoolLiteral { .. }
+        | ExprKind::Identifier { .. } => {}
+    }
+}
+
+fn push_reference_location(
+    locations: &mut Vec<JsonValue>,
+    seen: &mut BTreeSet<String>,
+    uri: &str,
+    range: JsonValue,
+) {
+    let location = location_json(uri, range);
+    if let Some(key) = location_key(&location)
+        && seen.insert(key)
+    {
+        locations.push(location);
+    }
+}
+
+fn location_key(location: &JsonValue) -> Option<String> {
+    Some(format!(
+        "{}:{}:{}",
+        location.get("uri")?.as_str()?,
+        location.pointer("/range/start/line")?.as_u64()?,
+        location.pointer("/range/start/character")?.as_u64()?
+    ))
+}
+
+fn location_sort_key(location: &JsonValue) -> String {
+    format!(
+        "{}:{:08}:{:08}",
+        location
+            .get("uri")
+            .and_then(JsonValue::as_str)
+            .unwrap_or_default(),
+        location
+            .pointer("/range/start/line")
+            .and_then(JsonValue::as_u64)
+            .unwrap_or_default(),
+        location
+            .pointer("/range/start/character")
+            .and_then(JsonValue::as_u64)
+            .unwrap_or_default()
+    )
 }
 
 fn hover_json(value: &str, range: JsonValue) -> JsonValue {
