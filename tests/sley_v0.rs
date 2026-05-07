@@ -9618,11 +9618,11 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/integration_test_count"),
-        Some(&serde_json::json!(314))
+        Some(&serde_json::json!(315))
     );
     assert_eq!(
         report_json.pointer("/summary/declared_integration_test_count"),
-        Some(&serde_json::json!(314))
+        Some(&serde_json::json!(315))
     );
     assert_eq!(
         report_json.pointer("/summary/test_count_matches_declared"),
@@ -9634,7 +9634,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/tests/integration_test_count"),
-        Some(&serde_json::json!(314))
+        Some(&serde_json::json!(315))
     );
     assert_eq!(
         report_json.pointer("/tests/declared_matches_actual"),
@@ -13089,6 +13089,63 @@ task main -> Text uses DatabaseRead {
     assert_eq!(
         run_main_with_gates(&program, &gates),
         Ok(Value::Text("Ada".to_string()))
+    );
+}
+
+#[test]
+fn runtime_database_alias_gates_satisfy_canonical_effects_and_gate_takes() {
+    let read_source = r#"
+task get_name -> Text uses DatabaseRead {
+  take gate db: Gate<DatabaseRead>
+  take id: Text
+
+  bind row = call db.query_one("select * from users where id = ?", id)
+  return row.text("name")
+}
+
+task main -> Text uses DatabaseRead {
+  return call get_name("u1")
+}
+"#;
+    let read_program = parse_program(read_source).expect("parse read source");
+    let read_diagnostics = check_program(&read_program);
+    assert!(
+        !has_errors(&read_diagnostics),
+        "unexpected diagnostics: {read_diagnostics:#?}"
+    );
+    let mut read_gates = RuntimeGates::new();
+    read_gates.grant_effect_scope("DbRead", "user");
+    read_gates.grant_db_rows(
+        "users",
+        vec![db_row([
+            ("id", Value::Text("u1".to_string())),
+            ("name", Value::Text("Ada".to_string())),
+        ])],
+    );
+    assert_eq!(
+        run_main_with_gates(&read_program, &read_gates),
+        Ok(Value::Text("Ada".to_string()))
+    );
+
+    let write_source = r#"
+task main -> Result<DbRow, Error> uses DatabaseWrite {
+  return call db.try_insert("users", { id: "u1" })
+}
+"#;
+    let write_program = parse_program(write_source).expect("parse write source");
+    let write_diagnostics = check_program(&write_program);
+    assert!(
+        !has_errors(&write_diagnostics),
+        "unexpected diagnostics: {write_diagnostics:#?}"
+    );
+    let mut write_gates = RuntimeGates::new();
+    write_gates.grant_effect_scope("DbWrite", "user");
+    assert_eq!(
+        run_main_with_gates(&write_program, &write_gates),
+        Ok(Value::Ok(Box::new(Value::Record(db_row([(
+            "id",
+            Value::Text("u1".to_string())
+        )])))))
     );
 }
 
