@@ -166,7 +166,7 @@ pub fn build_verify_report_with_runtime_args(
             diagnostics: Vec::new(),
         },
         Err(diagnostics) => {
-            let actions = runtime_actions(&target);
+            let actions = runtime_actions(&target, &query_report, &program, &runtime_args);
             return blocked_report(
                 target,
                 Some(program.module_name().to_string()),
@@ -370,7 +370,53 @@ fn fix_command(target: &str, repair: &CheckedLintRepair, write: bool) -> Vec<Str
     ]
 }
 
-fn runtime_actions(target: &str) -> Vec<VerifyAction> {
+fn runtime_actions(
+    target: &str,
+    query: &QueryReport,
+    program: &Program,
+    runtime_args: &[String],
+) -> Vec<VerifyAction> {
+    let entry_task = format!("{}.main", query.entry_module);
+    if let Some(task) = query
+        .tasks
+        .iter()
+        .find(|task| task.qualified_name == entry_task)
+    {
+        let mut action_args = cap_args(&task.effects);
+        action_args.extend(inferred_runtime_seed_args(program, &entry_task));
+        if action_args.is_empty() && !runtime_args.is_empty() {
+            action_args.extend(runtime_args.iter().cloned());
+        }
+        if !action_args.is_empty() {
+            let mut verify_command = vec![
+                "sley".to_string(),
+                "verify".to_string(),
+                "--json".to_string(),
+                "--deny-warnings".to_string(),
+            ];
+            let mut run_command = vec!["sley".to_string(), "run".to_string(), "--json".to_string()];
+            verify_command.extend(action_args.iter().cloned());
+            run_command.extend(action_args);
+            verify_command.push(target.to_string());
+            run_command.push(target.to_string());
+            return vec![
+                VerifyAction {
+                    kind: "verify_runtime_with_gates".to_string(),
+                    reason: "runtime failed; rerun strict verification with deterministic gates and seeds"
+                        .to_string(),
+                    command: verify_command,
+                    write_command: None,
+                },
+                VerifyAction {
+                    kind: "run_runtime_with_gates".to_string(),
+                    reason: "runtime failed; rerun the entrypoint with deterministic gates and seeds"
+                        .to_string(),
+                    command: run_command,
+                    write_command: None,
+                },
+            ];
+        }
+    }
     vec![VerifyAction {
         kind: "repair_runtime_gate".to_string(),
         reason: "rerun with the required deterministic runtime gates and seeds".to_string(),
