@@ -796,6 +796,320 @@
       }
     },
     {
+      "name": "quickstart_check_agent_project_json",
+      "args": ["check", "--json", "{tmp}/agent-workspace"],
+      "covers": [
+        "cli:check",
+        "json:sley.diagnostics.report.v0",
+        "readiness:agent-quickstart-path",
+        "scaffold:agent-project-quickstart"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.diagnostics.report.v0" },
+          { "pointer": "/status", "value": "ok" }
+        ]
+      }
+    },
+    {
+      "name": "quickstart_doctor_agent_project_json",
+      "args": ["doctor", "--json", "{tmp}/agent-workspace"],
+      "covers": [
+        "cli:doctor",
+        "json:sley.doctor.report.v0",
+        "readiness:agent-quickstart-path",
+        "scaffold:agent-project-quickstart"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.doctor.report.v0" },
+          { "pointer": "/status", "value": "ready" },
+          { "pointer": "/entry_module", "value": "agent.main" },
+          { "pointer": "/summary/module_count", "value": 2 },
+          { "pointer": "/summary/task_count", "value": 4 },
+          { "pointer": "/summary/call_count", "value": 11 },
+          { "pointer": "/next_actions/1/kind", "value": "inspect_calls" }
+        ]
+      }
+    },
+    {
+      "name": "quickstart_query_agent_project_tasks_json",
+      "args": ["query", "--json", "--kind", "tasks", "{tmp}/agent-workspace"],
+      "covers": [
+        "cli:query",
+        "json:sley.query.report.v0",
+        "query:tasks",
+        "readiness:agent-quickstart-path",
+        "scaffold:agent-project-quickstart"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.query.report.v0" },
+          { "pointer": "/kind", "value": "tasks" },
+          { "pointer": "/entry_module", "value": "agent.main" },
+          { "pointer": "/tasks/0/qualified_name", "value": "agent.main.main" },
+          { "pointer": "/tasks/1/qualified_name", "value": "agent.pipeline.collect_profile" },
+          { "pointer": "/tasks/2/qualified_name", "value": "agent.pipeline.draft_plan" },
+          { "pointer": "/tasks/3/qualified_name", "value": "agent.pipeline.stage_release" }
+        ]
+      }
+    },
+    {
+      "name": "quickstart_query_agent_project_calls_json",
+      "args": ["query", "--json", "--kind", "calls", "{tmp}/agent-workspace"],
+      "covers": [
+        "cli:query",
+        "json:sley.query.report.v0",
+        "query:calls",
+        "readiness:agent-quickstart-path",
+        "scaffold:agent-project-quickstart"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.query.report.v0" },
+          { "pointer": "/kind", "value": "calls" },
+          { "pointer": "/entry_module", "value": "agent.main" },
+          { "pointer": "/calls/0/callee", "value": "pipe.collect_profile" },
+          { "pointer": "/calls/0/target", "value": "agent.pipeline.collect_profile" },
+          { "pointer": "/calls/1/callee", "value": "pipe.draft_plan" },
+          { "pointer": "/calls/1/target", "value": "agent.pipeline.draft_plan" },
+          { "pointer": "/calls/2/callee", "value": "pipe.stage_release" },
+          { "pointer": "/calls/2/target", "value": "agent.pipeline.stage_release" }
+        ]
+      }
+    },
+    {
+      "name": "quickstart_plan_agent_project_json",
+      "args": ["plan", "--json", "--graft-templates", "{tmp}/agent-workspace"],
+      "covers": [
+        "cli:plan",
+        "json:sley.edit_plan.report.v0",
+        "readiness:agent-quickstart-path",
+        "scaffold:agent-project-quickstart"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.edit_plan.report.v0" },
+          { "pointer": "/status", "value": "ready" },
+          { "pointer": "/entry_module", "value": "agent.main" },
+          { "pointer": "/summary/module_count", "value": 2 },
+          { "pointer": "/summary/task_count", "value": 4 },
+          { "pointer": "/summary/task_surface_count", "value": 4 },
+          { "pointer": "/task_surfaces/0/qualified_name", "value": "agent.main.main" },
+          { "pointer": "/graft_templates/0/kind", "value": "replace_task_body" },
+          { "pointer": "/next_actions/0/kind", "value": "inspect_primary_surface" }
+        ]
+      }
+    },
+    {
+      "name": "quickstart_lint_agent_project_json",
+      "args": ["lint", "--json", "--deny-warnings", "{tmp}/agent-workspace"],
+      "covers": [
+        "cli:lint",
+        "json:sley.lint.report.v0",
+        "readiness:agent-quickstart-path",
+        "scaffold:agent-project-quickstart"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.lint.report.v0" },
+          { "pointer": "/status", "value": "ok" },
+          { "pointer": "/entry_module", "value": "agent.main" }
+        ]
+      }
+    },
+    {
+      "name": "quickstart_run_agent_project_json",
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "SecretRead",
+        "--secret",
+        "api_key",
+        "redacted",
+        "--cap",
+        "Network",
+        "--http-text",
+        "https://example.test/profile",
+        "profile ready",
+        "--cap",
+        "ModelCall",
+        "--model-output",
+        "deploy-plan",
+        "plan approved",
+        "--cap",
+        "Deploy",
+        "--deploy-result",
+        "staging",
+        "staged",
+        "{tmp}/agent-workspace"
+      ],
+      "covers": [
+        "cli:run",
+        "json:sley.run.report.v0",
+        "readiness:agent-quickstart-path",
+        "scaffold:agent-project-quickstart",
+        "host:SecretRead",
+        "host:Network",
+        "host:ModelCall",
+        "host:Deploy"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.run.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/value/kind", "value": "Ok" },
+          { "pointer": "/value/value/kind", "value": "Text" },
+          { "pointer": "/value/value/value", "value": "profile ready | plan approved | staged" }
+        ]
+      }
+    },
+    {
+      "name": "quickstart_verify_agent_project_json",
+      "args": [
+        "verify",
+        "--json",
+        "--deny-warnings",
+        "--cap",
+        "SecretRead",
+        "--secret",
+        "api_key",
+        "redacted",
+        "--cap",
+        "Network",
+        "--http-text",
+        "https://example.test/profile",
+        "profile ready",
+        "--cap",
+        "ModelCall",
+        "--model-output",
+        "deploy-plan",
+        "plan approved",
+        "--cap",
+        "Deploy",
+        "--deploy-result",
+        "staging",
+        "staged",
+        "{tmp}/agent-workspace"
+      ],
+      "covers": [
+        "cli:verify",
+        "json:sley.verify.report.v0",
+        "readiness:agent-quickstart-path",
+        "scaffold:agent-project-quickstart",
+        "host:SecretRead",
+        "host:Network",
+        "host:ModelCall",
+        "host:Deploy"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.verify.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/entry_module", "value": "agent.main" },
+          { "pointer": "/summary/module_count", "value": 2 },
+          { "pointer": "/summary/task_count", "value": 4 },
+          { "pointer": "/summary/call_count", "value": 11 },
+          { "pointer": "/summary/runtime_status", "value": "passed" },
+          { "pointer": "/runtime/value/value/value", "value": "profile ready | plan approved | staged" }
+        ]
+      }
+    },
+    {
+      "name": "quickstart_deploy_agent_project_artifacts_json",
+      "args": [
+        "deploy",
+        "--json",
+        "--dry-run",
+        "--artifacts-dir",
+        "{tmp}/agent-workspace/.sley/deploy",
+        "--cap",
+        "SecretRead",
+        "--secret",
+        "api_key",
+        "redacted",
+        "--cap",
+        "Network",
+        "--http-text",
+        "https://example.test/profile",
+        "profile ready",
+        "--cap",
+        "ModelCall",
+        "--model-output",
+        "deploy-plan",
+        "plan approved",
+        "--cap",
+        "Deploy",
+        "--deploy-result",
+        "staging",
+        "staged",
+        "{tmp}/agent-workspace"
+      ],
+      "covers": [
+        "cli:deploy",
+        "json:sley.deploy.report.v0",
+        "readiness:agent-quickstart-path",
+        "readiness:deploy-package-artifacts",
+        "readiness:deploy-package-dry-run",
+        "scaffold:agent-project-quickstart",
+        "host:SecretRead",
+        "host:Network",
+        "host:ModelCall",
+        "host:Deploy"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_contains": [
+          "deploy-report.json",
+          "seal.json",
+          "zjx-envelope.json",
+          "manifest.json"
+        ],
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.deploy.report.v0" },
+          { "pointer": "/status", "value": "ready" },
+          { "pointer": "/summary/verify_status", "value": "passed" },
+          { "pointer": "/summary/module_count", "value": 2 },
+          { "pointer": "/summary/task_count", "value": 4 },
+          { "pointer": "/verify/runtime/value/value/value", "value": "profile ready | plan approved | staged" },
+          { "pointer": "/policy/live_deploy_allowed", "value": false },
+          { "pointer": "/policy/provider_calls", "value": false }
+        ]
+      }
+    },
+    {
+      "name": "quickstart_contract_inspect_agent_project_artifacts_json",
+      "bin": "sley-contract",
+      "args": ["inspect-deploy-artifacts", "{tmp}/agent-workspace/.sley/deploy", "--json"],
+      "covers": [
+        "cli:sley-contract",
+        "contract:inspect-deploy-artifacts",
+        "json:sley.deploy.artifact_check.v0",
+        "readiness:agent-quickstart-path",
+        "readiness:deploy-package-artifact-inspection",
+        "scaffold:agent-project-quickstart"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.deploy.artifact_check.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/summary/file_count", "value": 3 },
+          { "pointer": "/summary/passed_count", "value": 3 },
+          { "pointer": "/summary/failed_count", "value": 0 }
+        ]
+      }
+    },
+    {
       "name": "verify_new_agent_project_json",
       "args": [
         "verify",

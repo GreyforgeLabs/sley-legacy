@@ -32,6 +32,9 @@ here. Dates use UTC-independent calendar dates from the local repo history.
   artifacts, and artifact contract inspection.
 - CLI smoke coverage for the packaged agent project across check, lint, call
   query, doctor, seeded run, seeded verify, and deploy artifact packaging.
+- Required CLI smoke coverage for the generated multi-module agent quickstart
+  path from scaffold through inspection, strict lint, seeded run, verify,
+  dry-run deploy artifacts, and artifact contract inspection.
 - CLI smoke coverage for scoped host authority crossing imported agent-project
   task boundaries, including a deterministic imported-module scope-denial case.
 - Integration coverage for the `agent-project` scaffold when the requested

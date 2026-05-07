@@ -121,6 +121,7 @@ const DEFAULT_SMOKE_TAGS: &[&str] = &[
     "migrate:raw-host-adapter",
     "migrate:unchecked-result",
     "readiness:agent-bench-repair-loop",
+    "readiness:agent-quickstart-path",
     "readiness:ci-corpus-gate",
     "readiness:conformance-coverage",
     "readiness:contract-schema-defaults",
