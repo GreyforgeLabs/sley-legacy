@@ -68,6 +68,8 @@ here. Dates use UTC-independent calendar dates from the local repo history.
   tasks, types, and effects.
 - `sley-lsp` now exposes folding ranges for braced tasks, record type
   declarations, and statement blocks.
+- `sley-lsp` now exposes selection ranges for import modules, task names, and
+  task call expressions.
 - `sley-lsp` now exposes exact-range project-aware task references and
   same-document task highlights for declarations and resolved call sites.
 - `sley-lsp` now returns project-aware task signature help for local and
