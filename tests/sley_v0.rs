@@ -1623,6 +1623,101 @@ task main -> User {
 }
 
 #[test]
+fn edit_plan_replace_task_body_template_falls_back_to_existing_checked_body() {
+    let unit_source = r#"
+module app.plan
+
+task main -> Unit {
+}
+"#;
+    let unit_program = parse_program(unit_source).expect("parse unit template plan fixture");
+    let unit_report = build_edit_plan_report_with_options(
+        "app.plan",
+        Ok(unit_program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("task:app.plan.main".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(unit_report.status, "ready");
+    let unit_template = unit_report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "replace_task_body")
+        .expect("unit replace task body template");
+    assert_eq!(
+        unit_template.operation.pointer("/payload/statements"),
+        Some(&serde_json::json!([]))
+    );
+    let unit_graft: GraftInput = serde_json::from_value(unit_template.operation.clone())
+        .expect("parse unit replace template");
+    let unit_outcome = apply_graft_input(
+        &unit_program,
+        unit_graft,
+        Some("agent:unit-replace-task-body-template-test".to_string()),
+    );
+    assert_eq!(
+        unit_outcome.status, "accepted",
+        "{:#?}",
+        unit_outcome.diagnostics
+    );
+
+    let result_unit_source = r#"
+module app.plan
+
+task main -> Result<Unit, Error> uses FileWrite {
+  return fs.try_write_text("build/out.txt", "ok")
+}
+"#;
+    let result_unit_program =
+        parse_program(result_unit_source).expect("parse result unit template plan fixture");
+    let result_unit_report = build_edit_plan_report_with_options(
+        "app.plan",
+        Ok(result_unit_program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("task:app.plan.main".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(result_unit_report.status, "ready");
+    let result_unit_template = result_unit_report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "replace_task_body")
+        .expect("result unit replace task body template");
+    assert_eq!(
+        result_unit_template
+            .operation
+            .pointer("/payload/statements/0"),
+        Some(&serde_json::json!(
+            "return fs.try_write_text(\"build/out.txt\", \"ok\")"
+        ))
+    );
+    assert!(
+        !serde_json::to_string(&result_unit_template.operation)
+            .expect("serialize result unit replace template")
+            .contains("TODO_VALUE")
+    );
+    let result_unit_graft: GraftInput =
+        serde_json::from_value(result_unit_template.operation.clone())
+            .expect("parse result unit replace template");
+    let result_unit_outcome = apply_graft_input(
+        &result_unit_program,
+        result_unit_graft,
+        Some("agent:result-unit-replace-task-body-template-test".to_string()),
+    );
+    assert_eq!(
+        result_unit_outcome.status, "accepted",
+        "{:#?}",
+        result_unit_outcome.diagnostics
+    );
+}
+
+#[test]
 fn edit_plan_graft_templates_can_target_program_declaration_surface() {
     let source = r#"
 module app.plan
@@ -9525,11 +9620,11 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/integration_test_count"),
-        Some(&serde_json::json!(309))
+        Some(&serde_json::json!(310))
     );
     assert_eq!(
         report_json.pointer("/summary/declared_integration_test_count"),
-        Some(&serde_json::json!(309))
+        Some(&serde_json::json!(310))
     );
     assert_eq!(
         report_json.pointer("/summary/test_count_matches_declared"),
@@ -9541,7 +9636,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/tests/integration_test_count"),
-        Some(&serde_json::json!(309))
+        Some(&serde_json::json!(310))
     );
     assert_eq!(
         report_json.pointer("/tests/declared_matches_actual"),

@@ -10,6 +10,7 @@ use crate::ast::{
 };
 use crate::checker::{check_program, has_errors};
 use crate::diagnostics::{Diagnostic, RepairHint};
+use crate::formatter::format_statement_source;
 use crate::graft::{GraftInput, apply_graft_input};
 use crate::lint::{
     LintOptions, LintReport, absorbing_arithmetic_expression_replacement_source,
@@ -2660,24 +2661,50 @@ fn replace_task_body_template(
     program: &Program,
     surface: &EditPlanTaskSurface,
 ) -> EditPlanGraftTemplate {
+    let mut statements = vec![default_return_statement(
+        program,
+        &surface.module,
+        &surface.return_type,
+    )];
+    let mut operation = replace_task_body_operation(&surface.id, statements.clone());
+    if !graft_operation_checks(program, &operation, Some("agent:plan-replace-task-body")) {
+        if let Some(existing_statements) = existing_task_body_statements(program, &surface.id) {
+            statements = existing_statements;
+            operation = replace_task_body_operation(&surface.id, statements);
+        }
+    }
     EditPlanGraftTemplate {
         kind: "replace_task_body".to_string(),
         reason: "replace the checked task body when the planned edit changes task logic"
             .to_string(),
         surface: surface.id.clone(),
-        operation: json!({
-            "op": "ReplaceTaskBody",
-            "target": surface.id,
-            "payload": {
-                "statements": [default_return_statement(
-                    program,
-                    &surface.module,
-                    &surface.return_type
-                )]
-            }
-        }),
+        operation,
         editable_json_pointers: vec!["/payload/statements".to_string()],
     }
+}
+
+fn replace_task_body_operation(target: &str, statements: Vec<String>) -> JsonValue {
+    json!({
+        "op": "ReplaceTaskBody",
+        "target": target,
+        "payload": {
+            "statements": statements
+        }
+    })
+}
+
+fn existing_task_body_statements(program: &Program, target: &str) -> Option<Vec<String>> {
+    program
+        .tasks
+        .iter()
+        .find(|task| task.id == target)
+        .map(|task| {
+            task.body
+                .statements
+                .iter()
+                .map(format_statement_source)
+                .collect()
+        })
 }
 
 fn rename_declaration_template(surface: &EditPlanTaskSurface) -> EditPlanGraftTemplate {
