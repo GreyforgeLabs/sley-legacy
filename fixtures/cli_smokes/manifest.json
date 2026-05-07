@@ -3220,6 +3220,32 @@
       }
     },
     {
+      "name": "fix_unchecked_result_dry_run_json",
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "propagate_unchecked_result",
+        "--dry-run",
+        "examples/unchecked_result.sley"
+      ],
+      "covers": [
+        "cli:fix",
+        "graft:templates:unchecked-result",
+        "lint:unchecked_result",
+        "json:sley.graft.outcome.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/operation", "value": "ReplaceExpression" },
+          { "pointer": "/provenance/0/targets/0", "value": "block:task:app.unchecked.main:stmt:0:expr" }
+        ]
+      }
+    },
+    {
       "name": "lint_unqualified_imported_call_rule_json",
       "args": [
         "lint",
