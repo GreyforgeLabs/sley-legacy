@@ -521,6 +521,22 @@
       ]
     },
     {
+      "path": "rejected/gate_take_type_mismatch.sley",
+      "covers": [
+        "authority:gate-take",
+        "rejected:gate-take-type",
+        "diagnostic:GATE_TAKE_TYPE_MISMATCH"
+      ]
+    },
+    {
+      "path": "rejected/gate_effect_undeclared.sley",
+      "covers": [
+        "authority:gate-take",
+        "rejected:gate-effect-undeclared",
+        "diagnostic:GATE_EFFECT_UNDECLARED"
+      ]
+    },
+    {
       "path": "rejected/type_mismatch.sley",
       "covers": [
         "language:type-mismatch",

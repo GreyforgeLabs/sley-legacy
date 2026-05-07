@@ -1,0 +1,7 @@
+module corpus.rejected.gate_take_type_mismatch
+
+task main -> Int uses FileRead {
+  take gate files: Int
+
+  return 1
+}

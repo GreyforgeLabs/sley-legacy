@@ -1,0 +1,7 @@
+module corpus.rejected.gate_effect_undeclared
+
+task main -> Int {
+  take gate files: Gate<FileRead>
+
+  return 1
+}
