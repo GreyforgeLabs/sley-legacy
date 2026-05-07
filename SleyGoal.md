@@ -94,9 +94,10 @@ Current verified surface:
   `schema: "sley.conformance.report.v0"` and
   `schema: "sley.conformance.coverage.v0"` over schema/fixture instances,
   contract validation status, release manifests, corpus tags, smoke tags, and
-  packaged example counts, plus a check that the declared integration coverage
-  count matches the test file. `report` now fails when required corpus or
-  smoke release tags disappear. `report --require-public-release-ready` turns
+  packaged example counts, plus editor-shim package validation and a check
+  that the declared integration coverage count matches the test file. `report`
+  now fails when required corpus or smoke release tags disappear.
+  `report --require-public-release-ready` turns
   unresolved public-release packaging blockers into an explicit nonzero gate
   for final release cuts. `--corpus-manifest` and repeated `--smoke-manifest`
   arguments accept either explicit manifest files or directories containing
@@ -120,8 +121,8 @@ Current verified surface:
 - `editors/vscode-sley` is available as a private local VS Code shim that
   contributes `.sley` language metadata, basic TextMate highlighting, and a
   `vscode-languageclient` bridge to the current `sley-lsp` server. It is
-  validation-gated locally but remains unpublished until public release
-  metadata is approved.
+  validation-gated locally and inventoried by `sley-conformance report`, but
+  remains unpublished until public release metadata is approved.
 - `sley-workbench` is available as an in-tree local inspection bootstrap with
   JSON and optional static HTML panels over doctor, query, lint, edit-plan, and
   graph and graph-slice data; its report schema links embedded doctor, query,

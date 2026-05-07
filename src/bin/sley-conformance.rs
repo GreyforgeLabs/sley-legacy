@@ -165,6 +165,8 @@ enum Command {
         integration_tests: PathBuf,
         #[arg(long, default_value = "SleyGoal.md")]
         goal_doc: PathBuf,
+        #[arg(long, default_value = "editors/vscode-sley")]
+        editor_shim_root: PathBuf,
         #[arg(long, default_value = "Cargo.toml")]
         cargo_manifest: PathBuf,
         #[arg(long, default_value = "LICENSE")]
@@ -206,6 +208,7 @@ struct ConformanceReport {
     smoke: SmokeSection,
     examples: ExamplesSection,
     tests: TestSection,
+    editor_shims: EditorShimsSection,
     release: ReleaseSection,
     issues: Vec<ConformanceIssue>,
 }
@@ -225,6 +228,7 @@ struct ConformanceSummary {
     integration_test_count: usize,
     declared_integration_test_count: Option<usize>,
     test_count_matches_declared: bool,
+    editor_shim_count: usize,
     public_release_blocker_count: usize,
     issue_count: usize,
 }
@@ -316,6 +320,29 @@ struct TestSection {
     goal_doc: String,
     declared_integration_test_count: Option<usize>,
     declared_matches_actual: bool,
+}
+
+#[derive(Debug, Serialize)]
+struct EditorShimsSection {
+    root: String,
+    package_count: usize,
+    packages: Vec<EditorShimPackage>,
+    validation: ValidationRun,
+    issue_count: usize,
+    issues: Vec<ConformanceIssue>,
+}
+
+#[derive(Debug, Serialize)]
+struct EditorShimPackage {
+    path: String,
+    name: Option<String>,
+    display_name: Option<String>,
+    version: Option<String>,
+    private: Option<bool>,
+    language_ids: Vec<String>,
+    grammar_count: usize,
+    command_count: usize,
+    dependency_count: usize,
 }
 
 #[derive(Debug, Serialize)]
@@ -426,6 +453,7 @@ fn main() -> Result<()> {
             examples_root,
             integration_tests,
             goal_doc,
+            editor_shim_root,
             cargo_manifest,
             license_file,
             tree_sitter_package,
@@ -445,6 +473,7 @@ fn main() -> Result<()> {
                 &examples_root,
                 &integration_tests,
                 &goal_doc,
+                &editor_shim_root,
                 &cargo_manifest,
                 &license_file,
                 &tree_sitter_package,
@@ -508,6 +537,7 @@ fn build_report(
     examples_root: &Path,
     integration_tests: &Path,
     goal_doc: &Path,
+    editor_shim_root: &Path,
     cargo_manifest: &Path,
     license_file: &Path,
     tree_sitter_package: &Path,
@@ -590,6 +620,8 @@ fn build_report(
     }
     let examples = build_examples_section(examples_root, &mut issues);
     let tests = build_test_section(integration_tests, goal_doc, &mut issues);
+    let editor_shims = build_editor_shims_section(editor_shim_root);
+    collect_editor_shim_issues(&editor_shims, &mut issues);
     let release = build_release_section(
         cargo_manifest,
         license_file,
@@ -623,6 +655,7 @@ fn build_report(
         integration_test_count: tests.integration_test_count,
         declared_integration_test_count: tests.declared_integration_test_count,
         test_count_matches_declared: tests.declared_matches_actual,
+        editor_shim_count: editor_shims.package_count,
         public_release_blocker_count: release.blocker_count,
         issue_count,
     };
@@ -652,6 +685,7 @@ fn build_report(
         smoke,
         examples,
         tests,
+        editor_shims,
         release,
         issues,
     }
@@ -920,6 +954,24 @@ fn collect_validation_issues(validation: &ValidationSection, issues: &mut Vec<Co
     }
 }
 
+fn collect_editor_shim_issues(
+    editor_shims: &EditorShimsSection,
+    issues: &mut Vec<ConformanceIssue>,
+) {
+    if editor_shims.validation.status != "passed" {
+        issues.push(issue(
+            "editor_shims_failed",
+            "editor shim validation did not pass",
+        ));
+    }
+    for issue in &editor_shims.validation.issues {
+        issues.push(issue.clone());
+    }
+    for issue in &editor_shims.issues {
+        issues.push(issue.clone());
+    }
+}
+
 fn build_corpus_section(path: &Path, issues: &mut Vec<ConformanceIssue>) -> CorpusSection {
     let required_tags = DEFAULT_CORPUS_TAGS
         .iter()
@@ -1079,6 +1131,144 @@ fn build_test_section(
         goal_doc: path_string(goal_doc),
         declared_integration_test_count,
         declared_matches_actual,
+    }
+}
+
+fn build_editor_shims_section(root: &Path) -> EditorShimsSection {
+    let mut issues = Vec::new();
+    let mut packages = Vec::new();
+    let package_json = root.join("package.json");
+    if !root.is_dir() {
+        issues.push(issue(
+            "editor_shim_root_missing",
+            format!("{} is not an editor shim directory", root.display()),
+        ));
+    } else if !package_json.is_file() {
+        issues.push(issue(
+            "editor_shim_package_missing",
+            format!("{} is not present", package_json.display()),
+        ));
+    } else if let Some(package) = build_editor_shim_package(&package_json, &mut issues) {
+        packages.push(package);
+    }
+    let validation = run_editor_shim_validation(root);
+    let issue_count = issues.len();
+    EditorShimsSection {
+        root: path_string(root),
+        package_count: packages.len(),
+        packages,
+        validation,
+        issue_count,
+        issues,
+    }
+}
+
+fn build_editor_shim_package(
+    package_json: &Path,
+    issues: &mut Vec<ConformanceIssue>,
+) -> Option<EditorShimPackage> {
+    let value = match read_json_value(package_json) {
+        Ok(value) => value,
+        Err(error) => {
+            issues.push(issue(
+                "editor_shim_package_read_failed",
+                format!("failed to read {}: {error}", package_json.display()),
+            ));
+            return None;
+        }
+    };
+    let contributes = value.get("contributes");
+    let language_ids = contributes
+        .and_then(|value| value.get("languages"))
+        .and_then(JsonValue::as_array)
+        .map(|languages| {
+            languages
+                .iter()
+                .filter_map(|language| string_field(language, "id"))
+                .collect()
+        })
+        .unwrap_or_default();
+    let grammar_count = contributes
+        .and_then(|value| value.get("grammars"))
+        .and_then(JsonValue::as_array)
+        .map(Vec::len)
+        .unwrap_or(0);
+    let command_count = contributes
+        .and_then(|value| value.get("commands"))
+        .and_then(JsonValue::as_array)
+        .map(Vec::len)
+        .unwrap_or(0);
+    let dependency_count = value
+        .get("dependencies")
+        .and_then(JsonValue::as_object)
+        .map(serde_json::Map::len)
+        .unwrap_or(0);
+    Some(EditorShimPackage {
+        path: path_string(package_json),
+        name: string_field(&value, "name"),
+        display_name: string_field(&value, "displayName"),
+        version: string_field(&value, "version"),
+        private: value.get("private").and_then(JsonValue::as_bool),
+        language_ids,
+        grammar_count,
+        command_count,
+        dependency_count,
+    })
+}
+
+fn run_editor_shim_validation(root: &Path) -> ValidationRun {
+    let root_arg = path_string(root);
+    let command = vec![
+        "node".to_string(),
+        "scripts/validate-editor-shims.mjs".to_string(),
+        root_arg,
+    ];
+    match ProcessCommand::new(&command[0])
+        .args(&command[1..])
+        .output()
+    {
+        Ok(output) => {
+            let mut issues = Vec::new();
+            if !output.status.success() {
+                issues.push(issue(
+                    "editor_shim_validation_failed",
+                    format!(
+                        "editor shim validator exited unsuccessfully; stderr={:?}",
+                        String::from_utf8_lossy(&output.stderr)
+                    ),
+                ));
+            }
+            ValidationRun {
+                name: "editor_shims".to_string(),
+                status: if output.status.success() {
+                    "passed"
+                } else {
+                    "failed"
+                }
+                .to_string(),
+                command,
+                report_schema: None,
+                fixture_count: None,
+                passed_count: None,
+                failed_count: None,
+                issue_count: issues.len(),
+                issues,
+            }
+        }
+        Err(error) => ValidationRun {
+            name: "editor_shims".to_string(),
+            status: "failed".to_string(),
+            command,
+            report_schema: None,
+            fixture_count: None,
+            passed_count: None,
+            failed_count: None,
+            issue_count: 1,
+            issues: vec![issue(
+                "editor_shim_validation_spawn_failed",
+                format!("failed to run editor shim validator: {error}"),
+            )],
+        },
     }
 }
 
@@ -1527,7 +1717,7 @@ fn emit_report(report: &ConformanceReport, json: bool) -> Result<()> {
         return Ok(());
     }
     println!(
-        "sley-conformance report status={} schemas={} fixtures={} corpus={}/{} smoke={} examples={} tests={} corpus_required={} corpus_missing={} smoke_required={} smoke_missing={} public_release_blockers={}",
+        "sley-conformance report status={} schemas={} fixtures={} corpus={}/{} smoke={} examples={} tests={} editor_shims={} corpus_required={} corpus_missing={} smoke_required={} smoke_missing={} public_release_blockers={}",
         report.status,
         report.summary.schema_count,
         report.summary.contract_fixture_count,
@@ -1536,6 +1726,7 @@ fn emit_report(report: &ConformanceReport, json: bool) -> Result<()> {
         report.summary.smoke_case_count,
         report.summary.example_source_count,
         report.summary.integration_test_count,
+        report.summary.editor_shim_count,
         report.corpus.required_tags.len(),
         report.corpus.missing_required_tags.len(),
         report.smoke.required_tags.len(),
@@ -1612,6 +1803,10 @@ fn render_markdown(report: &ConformanceReport) -> String {
             .map(|count| count.to_string())
             .unwrap_or_else(|| "none".to_string()),
         report.tests.integration_test_count
+    ));
+    output.push_str(&format!(
+        "- Editor shims: `{}` packages, validation `{}`\n",
+        report.summary.editor_shim_count, report.editor_shims.validation.status
     ));
     output.push_str(&format!(
         "- Public release ready: `{}` with `{}` blockers\n",

@@ -108,7 +108,7 @@ sley-ci plan --json [--deny-warnings] [--graft-templates] [--template-surface <s
 sley-ci run --json [runtime gates/seeds] <target>
 sley-ci corpus --json <fixtures/corpus|fixtures/corpus/manifest.json>
 sley-ci examples --json examples
-sley-conformance report --json [--corpus-manifest <fixtures/corpus|fixtures/corpus/manifest.json>] [--smoke-manifest <fixtures/cli_smokes|fixtures/cli_smokes/manifest.json>]
+sley-conformance report --json [--corpus-manifest <fixtures/corpus|fixtures/corpus/manifest.json>] [--smoke-manifest <fixtures/cli_smokes|fixtures/cli_smokes/manifest.json>] [--editor-shim-root <editors/vscode-sley>]
 sley-conformance report --json --require-public-release-ready
 sley-conformance coverage --json --require-tag <tag>
 sley-contract inventory [docs/schemas] --json
@@ -184,7 +184,8 @@ Rules:
   agent-bench, raw-host and unchecked-result migration, docgen,
   sandbox-runner, and ZJX tool replays.
 - `sley-conformance report` carries explicit required corpus and smoke release
-  tags, and fails if either manifest drops required evidence.
+  tags, inventories editor-shim package validation, and fails if either
+  manifest drops required evidence.
 - `sley-conformance report --require-public-release-ready` is the explicit
   public-cut gate for license and repository metadata; ordinary executable v1
   conformance remains advisory on those operator decisions.
@@ -206,7 +207,8 @@ Rules:
 - `editors/vscode-sley` exposes a private local VS Code shim with `.sley`
   language metadata, basic TextMate highlighting, and a `vscode-languageclient`
   bridge to the current `sley-lsp` binary. It is validation-gated through
-  `make v1` but remains unpublished until release metadata is approved.
+  `make v1` and `sley-conformance report` but remains unpublished until release
+  metadata is approved.
 - `sley-workbench` exposes a local read-only inspection report and optional
   static HTML page over doctor/query/lint/plan/graph/graph-slice panels. Its
   report schema links embedded panel rows back to the source doctor, query,

@@ -10213,6 +10213,10 @@ fn conformance_report_summarizes_release_surface() {
         Some(&serde_json::json!(true))
     );
     assert_eq!(
+        report_json.pointer("/summary/editor_shim_count"),
+        Some(&serde_json::json!(1))
+    );
+    assert_eq!(
         report_json.pointer("/summary/public_release_blocker_count"),
         Some(&serde_json::json!(5))
     );
@@ -10223,6 +10227,22 @@ fn conformance_report_summarizes_release_surface() {
     assert_eq!(
         report_json.pointer("/tests/declared_matches_actual"),
         Some(&serde_json::json!(true))
+    );
+    assert_eq!(
+        report_json.pointer("/editor_shims/package_count"),
+        Some(&serde_json::json!(1))
+    );
+    assert_eq!(
+        report_json.pointer("/editor_shims/packages/0/name"),
+        Some(&serde_json::json!("sley-vscode"))
+    );
+    assert_eq!(
+        report_json.pointer("/editor_shims/packages/0/language_ids/0"),
+        Some(&serde_json::json!("sley"))
+    );
+    assert_eq!(
+        report_json.pointer("/editor_shims/validation/status"),
+        Some(&serde_json::json!("passed"))
     );
     assert_eq!(
         report_json.pointer("/release/public_release_ready"),
@@ -10267,6 +10287,7 @@ fn conformance_report_summarizes_release_surface() {
     let text_stdout = String::from_utf8(text_report.stdout).expect("text report stdout is utf8");
     assert!(text_stdout.contains("corpus_missing=0"));
     assert!(text_stdout.contains("smoke_missing=0"));
+    assert!(text_stdout.contains("editor_shims=1"));
     assert!(text_stdout.contains("public_release_blockers=5"));
     assert!(text_stdout.contains("release:missing_license_file"));
 
@@ -10296,9 +10317,11 @@ fn conformance_report_summarizes_release_surface() {
     );
     let rendered_markdown = fs::read_to_string(&markdown_path).expect("read rendered markdown");
     assert!(rendered_markdown.contains("Required corpus tags"));
+    assert!(rendered_markdown.contains("Editor shims"));
     assert!(rendered_markdown.contains("`0` missing"));
     let rendered_html = fs::read_to_string(&html_path).expect("read rendered html");
     assert!(rendered_html.contains("Required corpus tags"));
+    assert!(rendered_html.contains("Editor shims"));
     assert!(rendered_html.contains("Required smoke tags"));
 
     let gated_report = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-conformance"))

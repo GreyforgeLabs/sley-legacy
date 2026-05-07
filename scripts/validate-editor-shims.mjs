@@ -3,7 +3,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const extensionRoot = path.join(repoRoot, "editors", "vscode-sley");
+const shimRoot = process.argv[2] ?? "editors/vscode-sley";
+const extensionRoot = path.join(repoRoot, shimRoot);
 
 function readJson(relativePath) {
   const fullPath = path.join(repoRoot, relativePath);
@@ -22,7 +23,7 @@ function assertFile(relativePath) {
   return fullPath;
 }
 
-const manifest = readJson("editors/vscode-sley/package.json");
+const manifest = readJson(path.join(shimRoot, "package.json"));
 assert(manifest.name === "sley-vscode", "VS Code package name should be sley-vscode");
 assert(manifest.private === true, "VS Code shim must stay private");
 assert(manifest.main === "./extension.js", "VS Code shim main should be ./extension.js");
@@ -42,21 +43,21 @@ assert(
 const language = manifest.contributes.languages.find((entry) => entry.id === "sley");
 assert(language, "VS Code shim should contribute the sley language");
 assert(language.extensions.includes(".sley"), "VS Code shim should claim .sley files");
-assertFile(path.join("editors", "vscode-sley", language.configuration));
+assertFile(path.join(shimRoot, language.configuration));
 
 const grammar = manifest.contributes.grammars.find((entry) => entry.language === "sley");
 assert(grammar, "VS Code shim should contribute a Sley grammar");
 assert(grammar.scopeName === "source.sley", "Sley grammar scope should be source.sley");
-assertFile(path.join("editors", "vscode-sley", grammar.path));
+assertFile(path.join(shimRoot, grammar.path));
 
-const configuration = readJson("editors/vscode-sley/language-configuration.json");
+const configuration = readJson(path.join(shimRoot, "language-configuration.json"));
 assert(configuration.comments.lineComment === "//", "Sley line comment should be //");
 assert(
   configuration.brackets.some(([open, close]) => open === "{" && close === "}"),
   "Sley language configuration should include braces",
 );
 
-const tmLanguage = readJson("editors/vscode-sley/syntaxes/sley.tmLanguage.json");
+const tmLanguage = readJson(path.join(shimRoot, "syntaxes/sley.tmLanguage.json"));
 assert(tmLanguage.scopeName === "source.sley", "TextMate grammar scope should be source.sley");
 assert(tmLanguage.repository.keywords, "TextMate grammar should include keywords");
 assert(tmLanguage.repository.hostCalls, "TextMate grammar should include host calls");

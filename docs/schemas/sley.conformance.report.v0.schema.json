@@ -13,6 +13,7 @@
     "smoke",
     "examples",
     "tests",
+    "editor_shims",
     "release",
     "issues"
   ],
@@ -26,6 +27,7 @@
     "smoke": { "$ref": "#/$defs/smoke" },
     "examples": { "$ref": "#/$defs/examples" },
     "tests": { "$ref": "#/$defs/tests" },
+    "editor_shims": { "$ref": "#/$defs/editorShims" },
     "release": { "$ref": "#/$defs/release" },
     "issues": {
       "type": "array",
@@ -49,6 +51,7 @@
         "integration_test_count",
         "declared_integration_test_count",
         "test_count_matches_declared",
+        "editor_shim_count",
         "public_release_blocker_count",
         "issue_count"
       ],
@@ -69,6 +72,7 @@
           "minimum": 0
         },
         "test_count_matches_declared": { "type": "boolean" },
+        "editor_shim_count": { "type": "integer", "minimum": 0 },
         "public_release_blocker_count": { "type": "integer", "minimum": 0 },
         "issue_count": { "type": "integer", "minimum": 0 }
       },
@@ -261,6 +265,61 @@
           "minimum": 0
         },
         "declared_matches_actual": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "editorShims": {
+      "type": "object",
+      "required": [
+        "root",
+        "package_count",
+        "packages",
+        "validation",
+        "issue_count",
+        "issues"
+      ],
+      "properties": {
+        "root": { "type": "string", "minLength": 1 },
+        "package_count": { "type": "integer", "minimum": 0 },
+        "packages": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/editorShimPackage" }
+        },
+        "validation": { "$ref": "#/$defs/validationRun" },
+        "issue_count": { "type": "integer", "minimum": 0 },
+        "issues": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/issue" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "editorShimPackage": {
+      "type": "object",
+      "required": [
+        "path",
+        "name",
+        "display_name",
+        "version",
+        "private",
+        "language_ids",
+        "grammar_count",
+        "command_count",
+        "dependency_count"
+      ],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "name": { "type": ["string", "null"], "minLength": 1 },
+        "display_name": { "type": ["string", "null"], "minLength": 1 },
+        "version": { "type": ["string", "null"], "minLength": 1 },
+        "private": { "type": ["boolean", "null"] },
+        "language_ids": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "grammar_count": { "type": "integer", "minimum": 0 },
+        "command_count": { "type": "integer", "minimum": 0 },
+        "dependency_count": { "type": "integer", "minimum": 0 }
       },
       "additionalProperties": false
     },

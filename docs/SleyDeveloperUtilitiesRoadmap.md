@@ -173,7 +173,8 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
      for repair and command handoff.
      `editors/vscode-sley` contributes a private local VS Code shim with
      `.sley` language metadata, basic TextMate highlighting, and a
-     `vscode-languageclient` bridge to this server.
+     `vscode-languageclient` bridge to this server, with package validation
+     surfaced through `sley-conformance report`.
      `tests/sley_lsp.rs` drives the server over real JSON-RPC frames.
    - Done when an example project receives diagnostics and at least one checked
      lint repair code action without the server writing files directly.
@@ -218,8 +219,9 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
      `sley.conformance.report.v0` and `sley.conformance.coverage.v0`, validates
      contract fixtures and release manifests through `sley-contract`, and
      inventories schema instances, corpus tags, smoke tags, packaged examples,
-     declared integration-test count drift, and public-release metadata
-     blockers. The repo-level `make v1` gate runs the JSON report, while
+     editor-shim package validation, declared integration-test count drift, and
+     public-release metadata blockers. The repo-level `make v1` gate runs the
+     JSON report, while
      `make public-release-check` turns unresolved public blockers into the
      explicit nonzero release-cut gate.
    - Done when release-readiness gaps become visible without reading the whole
