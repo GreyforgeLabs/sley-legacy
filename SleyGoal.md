@@ -157,6 +157,10 @@ Current verified surface:
   seeded single-module and multi-module agent quickstarts that compose SecretRead, Network,
   ModelCall, and Deploy authority without
   real providers.
+- The generated multi-module `agent-project` quickstart path is smoke-pinned
+  from scaffold through check, doctor, query, plan, lint, seeded run,
+  warning-denying verify, dry-run deploy artifact packaging, and artifact
+  contract inspection.
 - `sley lint --json` emits `schema: "sley.lint.report.v0"` and supports
   `--module <module>`, `--rule unused-private-task`,
   `--rule unreachable-private-task`, `--rule unused-declared-effect`,

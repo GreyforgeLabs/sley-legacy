@@ -248,6 +248,9 @@ Rules:
   verify, local dry-run deploy artifacts, and artifact contract inspection, so
   agents can start writing and packaging Sley code without reading the full
   release surface inventory first.
+- The generated multi-module quickstart path is now a required smoke coverage
+  tag, which keeps the documented first-run workflow tied to the executable
+  v1 gate.
 - The accepted/rejected synthetic gold corpus now includes split-task agent
   authority fixtures for transitive deploy, spend, and data mutation effect
   propagation, so helper-task authority drift is covered outside the large CLI
