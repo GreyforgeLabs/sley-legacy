@@ -1,0 +1,10 @@
+module corpus.rejected.duplicate_record_field
+
+type User = {
+  slot name: Text
+  slot name: Int
+}
+
+task main -> Int {
+  return 0
+}

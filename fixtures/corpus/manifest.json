@@ -441,6 +441,30 @@
       ]
     },
     {
+      "path": "rejected/duplicate_take.sley",
+      "covers": [
+        "language:task-takes",
+        "rejected:duplicate-take",
+        "diagnostic:DUPLICATE_TAKE"
+      ]
+    },
+    {
+      "path": "rejected/duplicate_record_field.sley",
+      "covers": [
+        "language:record-type",
+        "rejected:duplicate-record-field",
+        "diagnostic:DUPLICATE_FIELD"
+      ]
+    },
+    {
+      "path": "rejected/duplicate_record_literal_field.sley",
+      "covers": [
+        "language:record-literal",
+        "rejected:duplicate-record-literal-field",
+        "diagnostic:DUPLICATE_RECORD_LITERAL_FIELD"
+      ]
+    },
+    {
       "path": "rejected/type_mismatch.sley",
       "covers": [
         "language:type-mismatch",
