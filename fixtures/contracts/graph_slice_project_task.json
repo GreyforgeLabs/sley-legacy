@@ -88,6 +88,60 @@
       "column": 1
     }
   },
+  "add_affordances": [
+    {
+      "target": "module:app.main:imports",
+      "target_kind": "import",
+      "operation": {
+        "op": "AddImport",
+        "payload": {
+          "module": "app.new_module"
+        }
+      },
+      "editable_json_pointers": [
+        "/payload/module"
+      ]
+    },
+    {
+      "target": "module:app.main:types",
+      "target_kind": "type",
+      "operation": {
+        "op": "AddTypeDeclaration",
+        "payload": {
+          "source": "module app.main\n\ntype NewRecord = {\n  slot value: Text\n}"
+        }
+      },
+      "editable_json_pointers": [
+        "/payload/source"
+      ]
+    },
+    {
+      "target": "module:app.main:effects",
+      "target_kind": "effect",
+      "operation": {
+        "op": "AddEffectDeclaration",
+        "payload": {
+          "name": "NewEffect"
+        }
+      },
+      "editable_json_pointers": [
+        "/payload/name"
+      ]
+    },
+    {
+      "target": "module:app.main:tasks",
+      "target_kind": "task",
+      "operation": {
+        "op": "AddTask",
+        "payload": {
+          "source": "module app.main\n\ntask new_task -> Int {\n  return 0\n}"
+        }
+      },
+      "editable_json_pointers": [
+        "/payload/source"
+      ]
+    }
+  ],
   "insert_affordances": [
     {
       "target": "block:task:app.main.main",

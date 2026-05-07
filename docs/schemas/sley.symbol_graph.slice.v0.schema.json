@@ -12,6 +12,7 @@
     "types",
     "effects",
     "tasks",
+    "add_affordances",
     "insert_affordances",
     "move_affordances",
     "delete_affordances",
@@ -29,6 +30,7 @@
     "effects": { "type": "array", "items": { "$ref": "#/$defs/declarationSummary" } },
     "tasks": { "type": "array", "items": { "$ref": "#/$defs/declarationSummary" } },
     "task": { "$ref": "sley.ast.program.v0#/$defs/taskDecl" },
+    "add_affordances": { "type": "array", "items": { "$ref": "#/$defs/addAffordance" } },
     "insert_affordances": { "type": "array", "items": { "$ref": "#/$defs/insertAffordance" } },
     "move_affordances": { "type": "array", "items": { "$ref": "#/$defs/moveAffordance" } },
     "delete_affordances": { "type": "array", "items": { "$ref": "#/$defs/deleteAffordance" } },
@@ -71,6 +73,25 @@
         "name": { "type": "string", "minLength": 1 },
         "id": { "type": "string", "minLength": 1 },
         "exported": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "addAffordance": {
+      "type": "object",
+      "required": [
+        "target",
+        "target_kind",
+        "operation",
+        "editable_json_pointers"
+      ],
+      "properties": {
+        "target": { "type": "string", "minLength": 1 },
+        "target_kind": { "enum": ["import", "type", "effect", "task"] },
+        "operation": { "$ref": "sley.edit_plan.report.v0#/$defs/graftOperation" },
+        "editable_json_pointers": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
       },
       "additionalProperties": false
     },

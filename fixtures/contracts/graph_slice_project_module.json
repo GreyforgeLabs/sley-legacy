@@ -18,6 +18,7 @@
       "exported": true
     }
   ],
+  "add_affordances": [],
   "insert_affordances": [
     {
       "target": "block:task:app.math.double",

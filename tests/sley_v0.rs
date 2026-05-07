@@ -12143,6 +12143,7 @@ fn graph_slice_schema_reuses_strict_graft_operation_affordances() {
     .expect("parse graph slice schema");
     let operation_ref = serde_json::json!("sley.edit_plan.report.v0#/$defs/graftOperation");
     for pointer in [
+        "/$defs/addAffordance/properties/operation/$ref",
         "/$defs/insertAffordance/properties/operation/$ref",
         "/$defs/moveAffordance/properties/operation/$ref",
         "/$defs/moveDestination/properties/operation/$ref",
@@ -12166,6 +12167,14 @@ fn graph_slice_schema_covers_focus_task_and_call_summaries() {
     assert_eq!(
         schema.pointer("/properties/focus/$ref"),
         Some(&serde_json::json!("#/$defs/sliceFocus"))
+    );
+    assert_eq!(
+        schema.pointer("/properties/add_affordances/items/$ref"),
+        Some(&serde_json::json!("#/$defs/addAffordance"))
+    );
+    assert_eq!(
+        schema.pointer("/$defs/addAffordance/properties/target_kind/enum"),
+        Some(&serde_json::json!(["import", "type", "effect", "task"]))
     );
     assert_eq!(
         schema.pointer("/properties/insert_affordances/items/$ref"),
@@ -16881,6 +16890,104 @@ task main -> Int {
 "#;
     let program = parse_program(source).expect("parse source");
     let slice = slice_symbol_graph(&program, "module:app.main").expect("slice module");
+
+    assert_eq!(slice.add_affordances.len(), 4);
+    let add_import = slice
+        .add_affordances
+        .iter()
+        .find(|affordance| affordance.target_kind == "import")
+        .expect("import add affordance");
+    assert_eq!(add_import.target, "module:app.main:imports");
+    assert_eq!(
+        add_import.operation.pointer("/op"),
+        Some(&serde_json::json!("AddImport"))
+    );
+    assert_eq!(
+        add_import.operation.pointer("/payload/module"),
+        Some(&serde_json::json!("app.new_module"))
+    );
+    assert_eq!(
+        add_import.editable_json_pointers,
+        vec!["/payload/module".to_string()]
+    );
+
+    let add_type = slice
+        .add_affordances
+        .iter()
+        .find(|affordance| affordance.target_kind == "type")
+        .expect("type add affordance");
+    assert_eq!(add_type.target, "module:app.main:types");
+    assert_eq!(
+        add_type.operation.pointer("/op"),
+        Some(&serde_json::json!("AddTypeDeclaration"))
+    );
+    assert_eq!(
+        add_type.operation.pointer("/payload/source"),
+        Some(&serde_json::json!(
+            "module app.main\n\ntype NewRecord = {\n  slot value: Text\n}"
+        ))
+    );
+    assert_eq!(
+        add_type.editable_json_pointers,
+        vec!["/payload/source".to_string()]
+    );
+
+    let add_effect = slice
+        .add_affordances
+        .iter()
+        .find(|affordance| affordance.target_kind == "effect")
+        .expect("effect add affordance");
+    assert_eq!(add_effect.target, "module:app.main:effects");
+    assert_eq!(
+        add_effect.operation.pointer("/op"),
+        Some(&serde_json::json!("AddEffectDeclaration"))
+    );
+    assert_eq!(
+        add_effect.operation.pointer("/payload/name"),
+        Some(&serde_json::json!("NewEffect"))
+    );
+    assert_eq!(
+        add_effect.editable_json_pointers,
+        vec!["/payload/name".to_string()]
+    );
+
+    let add_task = slice
+        .add_affordances
+        .iter()
+        .find(|affordance| affordance.target_kind == "task")
+        .expect("task add affordance");
+    assert_eq!(add_task.target, "module:app.main:tasks");
+    assert_eq!(
+        add_task.operation.pointer("/op"),
+        Some(&serde_json::json!("AddTask"))
+    );
+    assert_eq!(
+        add_task.operation.pointer("/payload/source"),
+        Some(&serde_json::json!(
+            "module app.main\n\ntask new_task -> Int {\n  return 0\n}"
+        ))
+    );
+    assert_eq!(
+        add_task.editable_json_pointers,
+        vec!["/payload/source".to_string()]
+    );
+    for affordance in &slice.add_affordances {
+        let graft: GraftInput =
+            serde_json::from_value(affordance.operation.clone()).expect("parse add affordance");
+        let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
+        assert_eq!(
+            outcome.status, "accepted",
+            "expected add affordance {affordance:#?} to apply, got {:#?}",
+            outcome.diagnostics
+        );
+    }
+
+    let imported_module_slice =
+        slice_symbol_graph(&program, "module:app.extra").expect("slice imported module");
+    assert!(
+        imported_module_slice.add_affordances.is_empty(),
+        "add affordances should stay on entry-module slices until add grafts carry explicit module targets"
+    );
 
     let import = slice
         .move_affordances
@@ -22473,6 +22580,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:project-existing-import-write",
         "graph-slice:delete-affordances",
         "graph-slice:inbound-calls",
+        "graph-slice:add-affordances",
         "graph-slice:insert-affordances",
         "graph-slice:module-focus",
         "graph-slice:move-affordances",

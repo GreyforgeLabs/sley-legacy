@@ -455,7 +455,7 @@ Current verified surface:
   graft operation and transaction template envelopes,
   the query schema now exposes strict task/take/type/effect/call row
   definitions,
-  graph-slice insert/move/delete/replace affordance operations reuse that
+  graph-slice add/insert/move/delete/replace affordance operations reuse that
   strict graft operation schema,
   symbol graph, graph-slice, and graft outcome handoff roots have locked
   contract fixtures,
