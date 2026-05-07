@@ -12194,7 +12194,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/readiness/public_v1/blocker_count"),
-        Some(&serde_json::json!(5))
+        Some(&serde_json::json!(0))
     );
     assert_eq!(
         report_json.pointer("/readiness/public_v1/command/1"),
@@ -12202,11 +12202,11 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/release/public_release_ready"),
-        Some(&serde_json::json!(false))
+        Some(&serde_json::json!(true))
     );
     assert_eq!(
         report_json.pointer("/release/blocker_count"),
-        Some(&serde_json::json!(5))
+        Some(&serde_json::json!(0))
     );
     assert_eq!(
         report_json.pointer("/release/cargo_package/rust_version"),
@@ -12218,31 +12218,11 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/release/license/operator_decision_required"),
-        Some(&serde_json::json!(true))
+        Some(&serde_json::json!(false))
     );
     assert_eq!(
-        report_json.pointer("/release/blockers/0/code"),
-        Some(&serde_json::json!("missing_license_file"))
-    );
-    assert_eq!(
-        report_json.pointer("/release/next_actions/0/blocker_code"),
-        Some(&serde_json::json!("missing_license_file"))
-    );
-    assert_eq!(
-        report_json.pointer("/release/next_actions/0/owner"),
-        Some(&serde_json::json!("operator"))
-    );
-    assert_eq!(
-        report_json.pointer("/release/next_actions/0/approval_required"),
-        Some(&serde_json::json!(true))
-    );
-    assert_eq!(
-        report_json.pointer("/release/next_actions/0/paths/0"),
-        Some(&serde_json::json!("LICENSE"))
-    );
-    assert_eq!(
-        report_json.pointer("/release/next_actions/2/blocker_code"),
-        Some(&serde_json::json!("cargo_repository_unset"))
+        report_json.pointer("/release/next_actions"),
+        Some(&serde_json::json!([]))
     );
     assert_eq!(report_json.pointer("/issues"), Some(&serde_json::json!([])));
 
@@ -12271,10 +12251,9 @@ fn conformance_report_summarizes_release_surface() {
     assert!(text_stdout.contains("v1_gate_missing=0"));
     assert!(text_stdout.contains("local_v1=ready"));
     assert!(text_stdout.contains("local_v1_percent=100"));
-    assert!(text_stdout.contains("public_v1=blocked"));
-    assert!(text_stdout.contains("public_v1_percent=69"));
-    assert!(text_stdout.contains("public_release_blockers=5"));
-    assert!(text_stdout.contains("release:missing_license_file"));
+    assert!(text_stdout.contains("public_v1=ready"));
+    assert!(text_stdout.contains("public_v1_percent=100"));
+    assert!(text_stdout.contains("public_release_blockers=0"));
 
     let render_root = temp_project_dir("conformance-render");
     fs::create_dir_all(&render_root).expect("create conformance render temp dir");
@@ -12307,8 +12286,8 @@ fn conformance_report_summarizes_release_surface() {
     assert!(rendered_markdown.contains("`make v1` gate"));
     assert!(rendered_markdown.contains("Local v1 readiness"));
     assert!(rendered_markdown.contains("Public v1 readiness"));
-    assert!(rendered_markdown.contains("Public Release Next Actions"));
-    assert!(rendered_markdown.contains("`0` missing"));
+    assert!(rendered_markdown.contains("Public release ready"));
+    assert!(rendered_markdown.contains("`0` blockers"));
     let rendered_html = fs::read_to_string(&html_path).expect("read rendered html");
     assert!(rendered_html.contains("Required corpus tags"));
     assert!(rendered_html.contains("Onboarding pack"));
@@ -12316,8 +12295,8 @@ fn conformance_report_summarizes_release_surface() {
     assert!(rendered_html.contains("make v1"));
     assert!(rendered_html.contains("Local v1 readiness"));
     assert!(rendered_html.contains("Public v1 readiness"));
-    assert!(rendered_html.contains("Public Release Next Actions"));
-    assert!(rendered_html.contains("Required smoke tags"));
+    assert!(rendered_html.contains("Public release ready"));
+    assert!(rendered_html.contains("`0` blockers"));
 
     let gated_report = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-conformance"))
         .current_dir(&repo_root)
@@ -12331,26 +12310,22 @@ fn conformance_report_summarizes_release_surface() {
         .output()
         .expect("run gated sley-conformance report");
     assert!(
-        !gated_report.status.success(),
-        "gated sley-conformance report should fail while public release blockers remain"
+        gated_report.status.success(),
+        "gated sley-conformance report should pass once public release blockers are cleared"
     );
     let gated_json: serde_json::Value =
         serde_json::from_slice(&gated_report.stdout).expect("parse gated conformance report JSON");
     assert_eq!(
         gated_json.pointer("/status"),
-        Some(&serde_json::json!("failed"))
-    );
-    assert_eq!(
-        gated_json.pointer("/issues/0/code"),
-        Some(&serde_json::json!("public_release_not_ready"))
-    );
-    assert_eq!(
-        gated_json.pointer("/summary/issue_count"),
-        Some(&serde_json::json!(1))
+        Some(&serde_json::json!("passed"))
     );
     assert_eq!(
         gated_json.pointer("/summary/public_release_blocker_count"),
-        Some(&serde_json::json!(5))
+        Some(&serde_json::json!(0))
+    );
+    assert_eq!(
+        gated_json.pointer("/issues"),
+        Some(&serde_json::json!([]))
     );
     assert_eq!(
         gated_json.pointer("/readiness/local_v1/status"),
@@ -12358,7 +12333,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         gated_json.pointer("/readiness/public_v1/status"),
-        Some(&serde_json::json!("blocked"))
+        Some(&serde_json::json!("ready"))
     );
 
     let coverage = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-conformance"))
