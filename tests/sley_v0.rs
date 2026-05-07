@@ -1169,6 +1169,14 @@ task orphan -> Int {
         Some(&serde_json::json!(1))
     );
     assert_eq!(
+        warnings_json.pointer("/lint/findings/0/id"),
+        Some(&serde_json::json!("UNUSED_PRIVATE_TASK"))
+    );
+    assert_eq!(
+        warnings_json.pointer("/lint/findings/0/rule"),
+        Some(&serde_json::json!("unused_private_task"))
+    );
+    assert_eq!(
         warnings_json.pointer("/next_actions/1/kind"),
         Some(&serde_json::json!("plan_lint_repairs"))
     );
@@ -1239,6 +1247,10 @@ task orphan -> Int {
     assert_eq!(
         denied_json.pointer("/status"),
         Some(&serde_json::json!("blocked"))
+    );
+    assert_eq!(
+        denied_json.pointer("/lint/findings/0/id"),
+        Some(&serde_json::json!("UNUSED_PRIVATE_TASK"))
     );
     assert_eq!(
         denied_json.pointer("/next_actions/1/kind"),
@@ -10969,6 +10981,10 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     assert_eq!(
         denied_doctor_json.pointer("/steps/0/issues/0/code"),
         Some(&serde_json::json!("exit_status_mismatch"))
+    );
+    assert_eq!(
+        denied_doctor_json.pointer("/steps/0/findings/0/id"),
+        Some(&serde_json::json!("EMPTY_FOR_STATEMENT"))
     );
     assert_json_snapshot(
         &denied_doctor_json,

@@ -329,7 +329,8 @@ Current development phase:
   applicable, seal, and ZJX handoff packaging; scaffold JSON includes typed
   `next_actions` plus legacy `next_commands`
 - `sley doctor --json` emits `sley.doctor.report.v0` and consumes strict
-  diagnostics plus checked query/lint summaries into one agent readiness report;
+  diagnostics plus checked query summaries and non-empty lint findings into one
+  agent readiness report;
   call-bearing reports include `inspect_calls` next-actions for strict
   `sley query --kind calls` rows; warning reports include
   `plan_lint_repairs` next-actions that call
