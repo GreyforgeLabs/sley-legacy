@@ -72,6 +72,8 @@ struct CliSmokeManifest {
 struct CliSmokeCase {
     name: String,
     #[serde(default)]
+    bin: Option<String>,
+    #[serde(default)]
     cwd: CliSmokeCwd,
     #[serde(default)]
     setup_files: Vec<CliSmokeSetupFile>,
@@ -403,7 +405,8 @@ fn cli_smoke_manifest_commands_match_stable_release_surface() {
             CliSmokeCwd::Repo => &repo_root,
             CliSmokeCwd::Tmp => &tmp_root,
         };
-        let output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        let bin = case.bin.as_deref().unwrap_or("sley");
+        let output = ProcessCommand::new(cli_smoke_test_binary(bin))
             .current_dir(cwd)
             .args(&args)
             .output()
@@ -10176,7 +10179,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/smoke_case_count"),
-        Some(&serde_json::json!(410))
+        Some(&serde_json::json!(414))
     );
     assert_eq!(
         report_json.pointer("/summary/example_source_count"),
@@ -21765,6 +21768,14 @@ fn assert_cli_smoke_manifest_is_well_formed(manifest: &CliSmokeManifest) {
             "CLI smoke {} must declare command arguments",
             case.name
         );
+        if let Some(binary) = &case.bin {
+            assert!(
+                allowed_cli_smoke_test_binary(binary),
+                "CLI smoke {} uses unsupported binary {}",
+                case.name,
+                binary
+            );
+        }
         assert!(
             !case.covers.is_empty(),
             "CLI smoke {} must declare coverage tags",
@@ -21813,6 +21824,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "cli:check",
         "cli:run",
         "cli:deploy",
+        "cli:sley-contract",
         "cli:ast",
         "cli:graph",
         "cli:graph-slice",
@@ -21831,6 +21843,10 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "diagnostic:MISSING_RETURN",
         "diagnostic:RETURN_TYPE_MISMATCH",
         "diagnostic:RUNTIME_CAPABILITY_SCOPE_DENIED",
+        "contract:inventory",
+        "contract:validate",
+        "contract:check-fixtures",
+        "contract:inspect-deploy-artifacts",
         "fix:call-transaction-write",
         "fix:lint-cleanup-write",
         "fix:remove-take-transaction-write",
@@ -21967,6 +21983,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "query:effects",
         "query:calls",
         "readiness:call-transaction-write-verify",
+        "readiness:contract-schema-defaults",
         "readiness:constant-if-repair-write-verify",
         "readiness:constant-if-statement-repair-write-verify",
         "readiness:constant-false-if-repair-write-verify",
@@ -21984,6 +22001,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:empty-for-repair-write-verify",
         "readiness:empty-forge-repair-write-verify",
         "readiness:deploy-package-artifacts",
+        "readiness:deploy-package-artifact-inspection",
         "readiness:deploy-package-dry-run",
         "readiness:inspect-calls",
         "readiness:deploy-lint-repair-write-verify",
@@ -22044,10 +22062,14 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "json:sley.lint.report.v0",
         "json:sley.run.report.v0",
         "json:sley.project.scaffold.v0",
+        "json:sley.contract.fixture_check.v0",
+        "json:sley.contract.inventory.v0",
+        "json:sley.contract.validate.v0",
         "json:sley.doctor.report.v0",
         "json:sley.edit_plan.report.v0",
         "json:sley.verify.report.v0",
         "json:sley.deploy.report.v0",
+        "json:sley.deploy.artifact_check.v0",
         "json:sley.trace.receipt.v0",
         "json:sley.trace.report.v0",
         "json:sley.trace.seal.v0",
@@ -22101,6 +22123,18 @@ fn expand_cli_smoke_text(text: &str, repo_root: &Path, tmp_root: &Path) -> Strin
     let repo = repo_root.to_string_lossy();
     let tmp = tmp_root.to_string_lossy();
     text.replace("{repo}", &repo).replace("{tmp}", &tmp)
+}
+
+fn cli_smoke_test_binary(binary: &str) -> &'static str {
+    match binary {
+        "sley" => env!("CARGO_BIN_EXE_sley"),
+        "sley-contract" => env!("CARGO_BIN_EXE_sley-contract"),
+        other => panic!("unsupported CLI smoke binary {other}"),
+    }
+}
+
+fn allowed_cli_smoke_test_binary(binary: &str) -> bool {
+    matches!(binary, "sley" | "sley-contract")
 }
 
 fn temp_project_dir(name: &str) -> PathBuf {

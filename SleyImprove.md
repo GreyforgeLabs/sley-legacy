@@ -111,6 +111,10 @@ sley-ci examples --json examples
 sley-conformance report --json [--corpus-manifest <fixtures/corpus|fixtures/corpus/manifest.json>] [--smoke-manifest <fixtures/cli_smokes|fixtures/cli_smokes/manifest.json>]
 sley-conformance report --json --require-public-release-ready
 sley-conformance coverage --json --require-tag <tag>
+sley-contract inventory [docs/schemas] --json
+sley-contract check-fixtures <fixtures-dir> [--schemas <dir>] --json
+sley-contract validate --schema <schema-id> <report.json> [--schemas <dir>] --json
+sley-contract inspect-deploy-artifacts <artifacts-dir> [--schemas <dir>] --json
 make smoke
 make public-release-check
 make v1
@@ -632,14 +636,16 @@ can operate Sley reliably."
 
 The executable CLI smoke suite lives under `fixtures/cli_smokes/`. Its
 `manifest.json` lists stable command lines, optional temp-directory execution,
-optional temp setup files, coverage tags, stdout substrings, JSON
-pointer/value expectations, and JSON pointer absence expectations.
+optional allowlisted Sley utility binaries, optional temp setup files, coverage
+tags, stdout substrings, JSON pointer/value expectations, and JSON pointer
+absence expectations.
 `sley-ci smoke --json --repo-root .
 fixtures/cli_smokes` accepts the suite directory, and the Rust integration
-suite runs those cases against the built `sley` binary. The lightweight
+suite runs those cases against the built `sley` binary plus selected sibling
+utility binaries such as `sley-contract`. The lightweight
 `fixtures/ci_smoke_probe` manifest now separately locks the `sley-ci smoke`
-wrapper contract across parse, query, graft dry-run, and seeded multi-capability
-agent runtime authority cases.
+wrapper contract across parse, query, graft dry-run, and seeded
+multi-capability agent runtime authority cases.
 
 The current smoke manifest covers:
 

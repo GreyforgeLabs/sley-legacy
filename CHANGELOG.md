@@ -91,6 +91,9 @@ here. Dates use UTC-independent calendar dates from the local repo history.
 - `sley-contract` validation commands now default to repo-local or bundled
   source schemas while preserving explicit schema overrides for pinned
   validation.
+- `sley-ci smoke` manifests can now select allowlisted sibling Sley utility
+  binaries, and the broad smoke suite covers `sley-contract` inventory,
+  validate, fixture-check, and deploy-artifact inspection flows.
 - `sley lint --rule empty-else-statement` now flags no-op empty `else`
   branches and `sley plan --graft-templates` emits a checked
   `remove_empty_else_statement` repair.

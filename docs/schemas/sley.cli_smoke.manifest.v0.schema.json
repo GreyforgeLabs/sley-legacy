@@ -19,6 +19,21 @@
       "required": ["name", "args", "covers", "expect"],
       "properties": {
         "name": { "type": "string", "minLength": 1 },
+        "bin": {
+          "enum": [
+            "sley",
+            "sley-agent-bench",
+            "sley-ci",
+            "sley-conformance",
+            "sley-contract",
+            "sley-docgen",
+            "sley-lsp",
+            "sley-migrate",
+            "sley-sandbox-runner",
+            "sley-workbench",
+            "sley-zjx"
+          ]
+        },
         "cwd": { "enum": ["repo", "tmp"] },
         "setup_files": {
           "type": "array",

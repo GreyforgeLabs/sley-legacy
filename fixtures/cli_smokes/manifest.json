@@ -15,6 +15,77 @@
       }
     },
     {
+      "name": "contract_inventory_default_schema_json",
+      "bin": "sley-contract",
+      "cwd": "tmp",
+      "args": ["inventory", "--json"],
+      "covers": [
+        "cli:sley-contract",
+        "contract:inventory",
+        "json:sley.contract.inventory.v0",
+        "readiness:contract-schema-defaults"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.contract.inventory.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/schema_count", "value": 36 }
+        ]
+      }
+    },
+    {
+      "name": "contract_validate_default_schema_json",
+      "bin": "sley-contract",
+      "cwd": "tmp",
+      "args": [
+        "validate",
+        "--schema",
+        "sley.query.report.v0",
+        "{repo}/fixtures/contracts/query_project_tasks.json",
+        "--json"
+      ],
+      "covers": [
+        "cli:sley-contract",
+        "contract:validate",
+        "json:sley.contract.validate.v0",
+        "readiness:contract-schema-defaults"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.contract.validate.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/requested_schema", "value": "sley.query.report.v0" }
+        ]
+      }
+    },
+    {
+      "name": "contract_check_fixtures_default_schema_json",
+      "bin": "sley-contract",
+      "cwd": "tmp",
+      "args": [
+        "check-fixtures",
+        "{repo}/fixtures/contract_probe",
+        "--json"
+      ],
+      "covers": [
+        "cli:sley-contract",
+        "contract:check-fixtures",
+        "json:sley.contract.fixture_check.v0",
+        "readiness:contract-schema-defaults"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.contract.fixture_check.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/fixture_count", "value": 1 },
+          { "pointer": "/failed_count", "value": 0 }
+        ]
+      }
+    },
+    {
       "name": "new_deploy_project_json",
       "cwd": "tmp",
       "args": [
@@ -268,6 +339,31 @@
           { "pointer": "/next_actions/2/command/3", "value": "--json" }
         ],
         "stdout_json_absent": ["/next_actions/2/command/4"]
+      }
+    },
+    {
+      "name": "contract_inspect_new_deploy_project_artifacts_json",
+      "bin": "sley-contract",
+      "cwd": "tmp",
+      "args": [
+        "inspect-deploy-artifacts",
+        "{tmp}/deploy-artifacts/agent-app",
+        "--json"
+      ],
+      "covers": [
+        "cli:sley-contract",
+        "contract:inspect-deploy-artifacts",
+        "json:sley.deploy.artifact_check.v0",
+        "readiness:deploy-package-artifact-inspection"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.deploy.artifact_check.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/summary/file_count", "value": 3 },
+          { "pointer": "/summary/issue_count", "value": 0 }
+        ]
       }
     },
     {
