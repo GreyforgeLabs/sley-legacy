@@ -23,12 +23,12 @@ Current evidence base:
 - CLI smoke coverage is manifest-backed under `fixtures/cli_smokes/`, including
   allowlisted sibling utility binary cases for `sley-ci`, `sley-conformance`,
   `sley-contract`, `sley-migrate`, `sley-docgen`, `sley-workbench`,
-  `sley-sandbox-runner`, `sley-agent-bench`, `sley-zjx`, and `sley-lsp`.
+  `sley-sandbox-runner`, `sley-shadow`, `sley-agent-bench`, `sley-zjx`, and `sley-lsp`.
 - `sley new --json` already exposes typed next actions for first-run projects.
 - `sley plan --json --graft-templates` and `sley fix --dry-run` already expose
   non-mutating repair surfaces that editor and workbench tools can call.
 - `make v1` now runs the focused LSP integration tests plus deterministic
-  workbench, agent-bench, migration, docgen, sandbox-runner, and ZJX tool
+  workbench, agent-bench, migration, docgen, sandbox-runner, shadow, and ZJX tool
   replays in addition to contracts, conformance, corpus, examples, smoke, and
   syntax gates.
 - `make public-release-check` is the explicit public-cut metadata gate and is
@@ -284,9 +284,18 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
       `sley.query.report.v0` module/task/type/effect summaries plus the
       canonical host capability contract table, including seeded `--cap`
       argument fragments. It is covered by an integration test and a locked
-      contract fixture.
+     contract fixture.
 
-12. `sley-sandbox-runner`
+12. `sley-shadow`
+    - Non-authoritative helper replay over checked query and lint reports.
+    - MVP: link lint findings to query rows and surface seeded authority args
+      for effectful tasks.
+    - Current bootstrap: in-tree `src/bin/sley-shadow.rs` emits
+      `schema: "sley.shadow.report.v0"` from checked `sley.query.report.v0`
+      and `sley.lint.report.v0` data, is covered by integration tests, and has
+      a locked contract fixture plus CLI smoke coverage.
+
+13. `sley-sandbox-runner`
     - A deterministic replay wrapper around seeded host adapters.
     - MVP: one manifest describing seeded files, tables, secrets, network text,
       shell output, model output, deploy results, and spend results.
@@ -299,11 +308,11 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
 
 ### P2: Useful Later, Not First
 
-13. `sley-playground`
+14. `sley-playground`
     - Browser playground backed by the compiler and workbench components.
     - Delay until LSP, contract kit, and workbench command contracts settle.
 
-14. `sley-package-index`
+15. `sley-package-index`
     - Package registry metadata and discovery.
     - Delay until there are real external packages and a stable module/package
       story.

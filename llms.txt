@@ -144,6 +144,7 @@ Stable v0 JSON roots:
 - `sley.deploy.artifacts.v0`
 - `sley.deploy.artifact_check.v0`
 - `sley.docgen.report.v0`
+- `sley.shadow.report.v0`
 - `sley.agent_bench.report.v0`
 - `sley.migrate.report.v0`
 - `sley.sandbox.manifest.v0`
@@ -199,6 +200,9 @@ for focused slice handoff.
 The `sley-docgen` binary exposes `schema: "sley.docgen.report.v0"` and
 optional Markdown over checked module, task, type, effect, and capability
 reference data, including seeded `--cap` args for deterministic host setup.
+The `sley-shadow` binary exposes `schema: "sley.shadow.report.v0"` and
+non-authoritatively consumes checked query/lint reports to link lint findings
+to query rows and derive seeded `--cap` args for effectful tasks.
 The `sley-agent-bench` binary exposes
 `schema: "sley.agent_bench.report.v0"` for deterministic local repair-loop
 benchmarks over JSON inspection, checked fixes, post-fix gates, trace receipts,
@@ -256,8 +260,8 @@ Current development phase:
   and transaction template schema envelopes, direct graft writes, temp setup
   files for write-mode smokes, explicit graft/fix trace receipts, non-empty
   trace receipt seals, ZJX envelopes carrying schema-backed trace receipts,
-  ZJX tool reports, lint-driven fix writes that clear warnings before verify,
-  editor-shim validation, `make v1` target inventory, conformance-inventoried
+  ZJX tool reports, shadow query/lint replay reports, lint-driven fix writes
+  that clear warnings before verify, editor-shim validation, `make v1` target inventory, conformance-inventoried
   onboarding paths, and seeded host-adapter execution while preserving typed
   recoverable failure records and keeping authority failures as diagnostics
 - checked graph query reports are available through `sley query --json` with

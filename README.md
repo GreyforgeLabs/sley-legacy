@@ -210,6 +210,11 @@ Implemented now:
   `schema: "sley.docgen.report.v0"` and optional Markdown over checked
   module, task, type, effect, and host capability reference data, including
   seeded `--cap` args for deterministic host setup
+- in-tree `sley-shadow` helper replay that emits
+  `schema: "sley.shadow.report.v0"` from checked `sley.query.report.v0` and
+  `sley.lint.report.v0` data, linking lint findings back to query rows and
+  deriving seeded `--cap` args for effectful tasks without becoming a semantic
+  authority
 - in-tree `sley-agent-bench` deterministic repair-loop benchmark that emits
   `schema: "sley.agent_bench.report.v0"` after proving a JSON inspect, lint,
   plan, checked fix, verify, seal, and ZJX handoff path
@@ -410,8 +415,8 @@ Implemented now:
   symbol graphs, graft outcomes, ZJX envelopes, ZJX tool reports, checked run,
   query, lint, doctor, edit-plan, verify, deploy dry-run, deploy artifact
   check, CI, and project scaffold reports, LSP fix-preview and command-preview
-  payloads, workbench reports, docgen reports, agent-bench reports, migrate
-  reports, sandbox manifests and sandbox-runner reports, plus contract
+  payloads, workbench reports, docgen reports, shadow reports, agent-bench
+  reports, migrate reports, sandbox manifests and sandbox-runner reports, plus contract
   inventory, fixture-check, validate reports, and conformance readiness tracks
 - external v0 JSON Schema files under `docs/schemas/`, including strict
   query task/take/type/effect/call row definitions,
@@ -421,6 +426,7 @@ Implemented now:
   `sley.lsp.command_preview.v0` editor command handoff payloads,
   `sley.workbench.report.v0` local inspection reports,
   `sley.docgen.report.v0` generated reference reports,
+  `sley.shadow.report.v0` query/lint shadow replay reports,
   `sley.agent_bench.report.v0` deterministic agent-loop benchmark reports,
   `sley.migrate.report.v0` checked migration reports,
   `sley.sandbox.manifest.v0` deterministic replay manifests,
@@ -448,8 +454,8 @@ Implemented now:
   receipts, ZJX tool reports, `sley-contract` inventory/validate/fixture-check
   and deploy-artifact inspection, `sley-migrate` raw-host and unchecked-result
   reports, `sley-ci`, `sley-conformance`, `sley-docgen`, `sley-workbench`,
-  `sley-sandbox-runner`, `sley-agent-bench`, `sley-zjx` utility reports, and
-  `sley-lsp` help/startup, passed-verify next-actions for seal and ZJX handoff
+  `sley-sandbox-runner`, `sley-shadow`, `sley-agent-bench`, `sley-zjx` utility
+  reports, and `sley-lsp` help/startup, passed-verify next-actions for seal and ZJX handoff
   artifacts,
   doctor/verify warning next-actions that route to lint repair plans and
   unambiguous dry-run fix previews with explicit
@@ -474,7 +480,7 @@ Implemented now:
   conformance, CLI smoke conformance, the focused LSP integration tests,
   VS Code editor-shim validation, deterministic utility replays for workbench,
   agent-bench, raw-host and unchecked-result migration, docgen,
-  sandbox-runner, and ZJX tools, plus Tree-sitter syntax parsing
+  sandbox-runner, shadow replay, and ZJX tools, plus Tree-sitter syntax parsing
 - GitHub Actions and pre-commit entry points that run the same `make v1` gate
   through `.github/actions/sley-v1/action.yml`, `.github/workflows/v1.yml`,
   and `.pre-commit-config.yaml`; the action installs Rust and Node tooling

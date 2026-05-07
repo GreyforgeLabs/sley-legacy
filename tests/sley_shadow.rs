@@ -1,0 +1,110 @@
+use std::path::PathBuf;
+use std::process::Command as ProcessCommand;
+
+use serde_json::{Value as JsonValue, json};
+
+mod support;
+
+#[test]
+fn shadow_reports_query_lint_links_and_authority_seeds() {
+    let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-shadow"))
+        .current_dir(&repo_root)
+        .args(["report", "--json", "examples/agent_deploy_pipeline.sley"])
+        .output()
+        .expect("run sley-shadow");
+    assert!(
+        output.status.success(),
+        "shadow failed\nstdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    support::validate_report_schema("sley.shadow.report.v0", &output.stdout);
+    let report: JsonValue = serde_json::from_slice(&output.stdout).expect("parse shadow report");
+    assert_eq!(
+        report.pointer("/schema"),
+        Some(&json!("sley.shadow.report.v0"))
+    );
+    assert_eq!(report.pointer("/status"), Some(&json!("clean")));
+    assert_eq!(
+        report.pointer("/source_schemas/query"),
+        Some(&json!("sley.query.report.v0"))
+    );
+    assert_eq!(
+        report.pointer("/source_schemas/lint"),
+        Some(&json!("sley.lint.report.v0"))
+    );
+    assert_eq!(report.pointer("/summary/module_count"), Some(&json!(1)));
+    assert_eq!(report.pointer("/summary/task_count"), Some(&json!(1)));
+    assert_eq!(
+        report.pointer("/summary/effectful_task_count"),
+        Some(&json!(1))
+    );
+    assert_eq!(
+        report.pointer("/summary/authority_seed_count"),
+        Some(&json!(1))
+    );
+    assert_eq!(
+        report.pointer("/authority_seeds/0/task_id"),
+        Some(&json!("task:app.agent_deploy_pipeline.main"))
+    );
+    assert_eq!(
+        report.pointer("/authority_seeds/0/command_args"),
+        Some(&json!([
+            "--cap",
+            "SecretRead",
+            "--cap",
+            "Network",
+            "--cap",
+            "ModelCall",
+            "--cap",
+            "Deploy"
+        ]))
+    );
+}
+
+#[test]
+fn shadow_links_lint_findings_to_query_rows() {
+    let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-shadow"))
+        .current_dir(&repo_root)
+        .args(["report", "--json", "examples/unused_private_task.sley"])
+        .output()
+        .expect("run sley-shadow");
+    assert!(
+        output.status.success(),
+        "shadow failed\nstdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    support::validate_report_schema("sley.shadow.report.v0", &output.stdout);
+    let report: JsonValue = serde_json::from_slice(&output.stdout).expect("parse shadow report");
+    assert_eq!(report.pointer("/status"), Some(&json!("findings")));
+    assert_eq!(
+        report.pointer("/summary/lint_finding_count"),
+        Some(&json!(1))
+    );
+    assert_eq!(
+        report.pointer("/summary/linked_lint_finding_count"),
+        Some(&json!(1))
+    );
+    assert_eq!(
+        report.pointer("/summary/unlinked_lint_finding_count"),
+        Some(&json!(0))
+    );
+    assert_eq!(report.pointer("/lint_links/0/linked"), Some(&json!(true)));
+    assert_eq!(
+        report.pointer("/lint_links/0/target_kind"),
+        Some(&json!("task"))
+    );
+    assert_eq!(
+        report.pointer("/lint_links/0/qualified_name"),
+        Some(&json!("app.tasks.orphan"))
+    );
+    assert_eq!(
+        report.pointer("/lint_links/0/node"),
+        Some(&json!("task:app.tasks.orphan"))
+    );
+}

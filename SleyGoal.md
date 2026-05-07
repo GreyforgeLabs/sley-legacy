@@ -140,6 +140,11 @@ Current verified surface:
   type, effect, and host capability docs from `sley.query.report.v0`,
   including seeded `--cap` args for deterministic host setup; its schema links
   generated task/type/effect rows back to the strict query row definitions.
+- `sley-shadow` is available as an in-tree non-authoritative helper replay with
+  `schema: "sley.shadow.report.v0"` over checked `sley.query.report.v0` and
+  `sley.lint.report.v0` data; it links lint findings to query rows and derives
+  seeded `--cap` args for effectful tasks while leaving Rust Loom as the
+  semantic oracle.
 - `sley-agent-bench` is available as an in-tree deterministic repair-loop
   benchmark with `schema: "sley.agent_bench.report.v0"` over JSON inspection,
   lint failure, checked edit-plan repair selection, `sley fix --write`, strict
@@ -264,8 +269,8 @@ Current verified surface:
   binaries and now smokes `sley-contract` inventory, validate, fixture-check,
   deploy-artifact inspection flows, plus `sley-migrate` raw-host and
   unchecked-result migration reports, plus `sley-ci`, `sley-conformance`,
-  `sley-docgen`, `sley-workbench`, `sley-sandbox-runner`, `sley-agent-bench`,
-  `sley-zjx` utility reports, and `sley-lsp` help/startup. It also includes
+  `sley-docgen`, `sley-workbench`, `sley-sandbox-runner`, `sley-shadow`,
+  `sley-agent-bench`, `sley-zjx` utility reports, and `sley-lsp` help/startup. It also includes
   graph-slice insert and replace affordances, checked `insert_statement`,
   `replace_statement`, and `replace_expression` graft templates, task-body
   insert graft emission, direct block, statement, take, and expression node
@@ -427,7 +432,7 @@ Current verified surface:
   reports, project scaffold reports, `sley-ci` reports including corpus and
   examples gates, `sley-conformance` report/coverage roots, `sley-contract`
   utility reports with locked inventory/fixture-check/validate fixtures, and
-  docgen reports, agent-bench reports, migrate reports, sandbox manifests,
+  docgen reports, shadow reports, agent-bench reports, migrate reports, sandbox manifests,
   sandbox-runner reports, and the CLI smoke manifest in addition to AST
   program, diagnostics, graph, graph slice, trace report, trace receipt, trace
   seal, graft outcome, and ZJX envelope roots. The edit-plan schema now pins strict
@@ -531,8 +536,9 @@ High-leverage work lanes:
    - keep `query` and `lint` suitable for tool-facing helper passes.
 
 2. Query and lint consumption:
-   - start consuming `sley.query.report.v0` and `sley.lint.report.v0` from
-     Sley helper passes or deterministic helper tooling;
+   - keep expanding `sley-shadow` and other deterministic helper tooling that
+     consumes `sley.query.report.v0` and `sley.lint.report.v0` without becoming
+     semantic authority;
    - broaden authority, style, migration, and reachability lints only when the
      output contract is clear;
    - preserve `--deny-warnings` as the CI gate for warning-grade lint output.

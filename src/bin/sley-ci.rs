@@ -1494,6 +1494,7 @@ fn allowed_smoke_binary(binary: &str) -> bool {
             | "sley-lsp"
             | "sley-migrate"
             | "sley-sandbox-runner"
+            | "sley-shadow"
             | "sley-workbench"
             | "sley-zjx"
     )

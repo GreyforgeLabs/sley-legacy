@@ -585,6 +585,7 @@ sley query --json --kind tasks --module app.main <target>
 sley query --json --kind types --module app.main <target>
 sley query --json --kind effects --module app.main <target>
 sley lint --json <target>
+sley-shadow report --json <target>
 sley deploy --json --dry-run [--artifacts-dir <dir>] <target>
 sley trace --json <target>
 sley seal --json <target>
@@ -613,7 +614,8 @@ reports carry `schema: "sley.agent_bench.report.v0"`. Checked migration
 reports carry `schema: "sley.migrate.report.v0"`. Deterministic sandbox
 manifests carry `schema: "sley.sandbox.manifest.v0"`; sandbox replay reports
 carry `schema: "sley.sandbox.report.v0"`. Generated reference reports carry
-`schema: "sley.docgen.report.v0"`.
+`schema: "sley.docgen.report.v0"`. Shadow helper replay reports carry
+`schema: "sley.shadow.report.v0"`.
 The CLI smoke manifest carries
 `schema: "sley.cli_smoke.manifest.v0"` and can select an allowlisted Sley
 utility binary per case, defaulting to `sley`. The accepted/rejected compiler corpus
@@ -804,6 +806,14 @@ writes a single reference page with module, task, type, effect, and capability
 sections.
 The target may be one `.sley` file or a project root; the command is read-only
 for source code.
+
+The local helper-pass replay loop is backed by the in-tree `sley-shadow`
+bootstrap. `sley-shadow report --json <target>` emits
+`schema: "sley.shadow.report.v0"` after parsing and checking the target, then
+consumes checked `sley.query.report.v0` and `sley.lint.report.v0` data. The
+report links lint findings back to task/type/effect/module rows when possible
+and derives seeded `--cap` argument fragments for effectful tasks. It is
+non-authoritative; Rust Loom remains the semantic oracle.
 
 The local agent-loop benchmark is backed by the in-tree `sley-agent-bench`
 bootstrap. `sley-agent-bench run --json` emits
