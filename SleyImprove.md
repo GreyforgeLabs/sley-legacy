@@ -623,8 +623,9 @@ can operate Sley reliably."
 
 The executable CLI smoke suite lives under `fixtures/cli_smokes/`. Its
 `manifest.json` lists stable command lines, optional temp-directory execution,
-optional temp setup files, coverage tags, stdout substrings, and JSON
-pointer/value expectations. `sley-ci smoke --json --repo-root .
+optional temp setup files, coverage tags, stdout substrings, JSON
+pointer/value expectations, and JSON pointer absence expectations.
+`sley-ci smoke --json --repo-root .
 fixtures/cli_smokes` accepts the suite directory, and the Rust integration
 suite runs those cases against the built `sley` binary. The lightweight
 `fixtures/ci_smoke_probe` manifest now separately locks the `sley-ci smoke`

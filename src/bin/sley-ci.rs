@@ -252,6 +252,8 @@ struct SmokeExpectation {
     stderr_contains: Vec<String>,
     #[serde(default)]
     stdout_json: Vec<JsonExpectation>,
+    #[serde(default)]
+    stdout_json_absent: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -1089,7 +1091,7 @@ fn apply_smoke_expectations(run: &mut StepRun, expect: &SmokeExpectation) {
             ));
         }
     }
-    if expect.stdout_json.is_empty() {
+    if expect.stdout_json.is_empty() && expect.stdout_json_absent.is_empty() {
         return;
     }
     let json = match serde_json::from_str::<JsonValue>(&run.stdout) {
@@ -1116,6 +1118,14 @@ fn apply_smoke_expectations(run: &mut StepRun, expect: &SmokeExpectation) {
                 "stdout_json_pointer_missing",
                 format!("stdout JSON was missing pointer {}", expectation.pointer),
             )),
+        }
+    }
+    for pointer in &expect.stdout_json_absent {
+        if json.pointer(pointer).is_some() {
+            run.step.issues.push(issue(
+                "stdout_json_pointer_present",
+                format!("stdout JSON unexpectedly contained pointer {pointer}"),
+            ));
         }
     }
 }

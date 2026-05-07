@@ -1379,6 +1379,47 @@
       }
     },
     {
+      "name": "plan_move_template_filters_unchecked_destination_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/move-template-filter/main.sley",
+          "content": "module app.plan\n\ntask main -> Int {\n  if true {\n    bind scratch = 1\n  }\n  return 1\n}\n"
+        }
+      ],
+      "args": [
+        "plan",
+        "--json",
+        "--graft-templates",
+        "--template-surface",
+        "task:app.plan.main",
+        "{tmp}/move-template-filter/main.sley"
+      ],
+      "covers": [
+        "cli:plan",
+        "cli:smoke-setup-files",
+        "graft:templates",
+        "graft:templates:move-destination",
+        "graph-slice:move-affordances",
+        "json:sley.edit_plan.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.edit_plan.report.v0" },
+          { "pointer": "/status", "value": "warnings" },
+          { "pointer": "/graft_templates/6/kind", "value": "move_statement_destination" },
+          { "pointer": "/graft_templates/6/operation/target", "value": "block:task:app.plan.main:stmt:0:then:stmt:0" },
+          { "pointer": "/graft_templates/6/operation/payload/destination", "value": "block:task:app.plan.main" },
+          { "pointer": "/graft_templates/7/kind", "value": "move_statement" },
+          { "pointer": "/graft_templates/7/operation/target", "value": "block:task:app.plan.main:stmt:1" },
+          { "pointer": "/graft_templates/8/kind", "value": "delete_statement" }
+        ],
+        "stdout_json_absent": [
+          "/graft_templates/7/operation/payload/destination"
+        ]
+      }
+    },
+    {
       "name": "plan_result_unit_replace_task_body_template_json",
       "setup_files": [
         {
