@@ -192,7 +192,9 @@ Implemented now:
   non-mutating preview commands for editor repair and command handoff
 - in-tree `sley-workbench` local inspection bootstrap that emits
   `schema: "sley.workbench.report.v0"` and optional static HTML over
-  doctor/query/lint/plan/graph/graph-slice panels without writing source files
+  doctor/query/lint/plan/graph/graph-slice panels without writing source
+  files; edit-plan template rows include non-mutating preview commands,
+  explicit write commands, and post-fix check/lint/verify gates
 - in-tree `sley-docgen` reference generator that emits
   `schema: "sley.docgen.report.v0"` and optional Markdown over checked
   module, task, type, effect, and host capability reference data

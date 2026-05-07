@@ -9701,6 +9701,13 @@ fn report_command_schemas_pin_nonempty_argv_segments() {
             .expect("parse LSP command preview schema"),
             vec!["/$defs/command_preview/properties/args/items/minLength"],
         ),
+        (
+            serde_json::from_str::<serde_json::Value>(include_str!(
+                "../docs/schemas/sley.workbench.report.v0.schema.json"
+            ))
+            .expect("parse workbench schema"),
+            vec!["/$defs/command/items/minLength"],
+        ),
     ];
 
     for (schema, pointers) in schemas {
