@@ -17,7 +17,7 @@ here. Dates use UTC-independent calendar dates from the local repo history.
   query, lint, plan, fix, verify, seal, and ZJX evidence.
 - `sley-zjx`, a read-only inspection utility for preview ZJX envelopes.
 - `sley-shadow report`, a non-authoritative helper replay over checked query
-  and lint reports with lint-link evidence, module filters, and seeded
+  and lint reports with lint-link evidence, module/rule filters, and seeded
   authority args.
 - Expanded `sley new` templates for library, CLI, service-gate, data-pipeline,
   deploy, agent, agent-task-pack, and multi-module agent-project starters.
@@ -179,7 +179,7 @@ here. Dates use UTC-independent calendar dates from the local repo history.
 - `sley lint --rule empty-else-statement` now flags no-op empty `else`
   branches and `sley plan --graft-templates` emits a checked
   `remove_empty_else_statement` repair.
-- Contract inventory now tracks 38 schemas, 108 contract fixtures, and 111 schema
+- Contract inventory now tracks 38 schemas, 109 contract fixtures, and 112 schema
   instances through the conformance report.
 - The Rust package metadata now declares its supported Rust floor, description,
   README, keywords, categories, and `publish = false` until publication

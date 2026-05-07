@@ -1,4 +1,5 @@
 use std::collections::{BTreeMap, BTreeSet};
+use std::str::FromStr;
 
 use serde::Serialize;
 
@@ -174,6 +175,17 @@ impl LintRule {
             Self::OverwrittenSetStatement => "overwritten_set_statement",
             Self::RedundantInitialSetStatement => "redundant_initial_set_statement",
         }
+    }
+}
+
+impl FromStr for LintRule {
+    type Err = String;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        Self::all()
+            .into_iter()
+            .find(|rule| rule.as_str() == value)
+            .ok_or_else(|| format!("unknown lint rule {value}"))
     }
 }
 

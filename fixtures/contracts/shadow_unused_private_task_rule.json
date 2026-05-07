@@ -1,0 +1,42 @@
+{
+  "schema": "sley.shadow.report.v0",
+  "status": "findings",
+  "target": "examples/unused_private_task.sley",
+  "source_schemas": {
+    "query": "sley.query.report.v0",
+    "lint": "sley.lint.report.v0"
+  },
+  "filters": {
+    "module": null,
+    "rules": [
+      "unused_private_task"
+    ]
+  },
+  "summary": {
+    "module_count": 1,
+    "task_count": 3,
+    "effectful_task_count": 0,
+    "call_count": 1,
+    "lint_finding_count": 1,
+    "linked_lint_finding_count": 1,
+    "unlinked_lint_finding_count": 0,
+    "authority_seed_count": 0,
+    "diagnostic_count": 0,
+    "issue_count": 0
+  },
+  "authority_seeds": [],
+  "lint_links": [
+    {
+      "finding_id": "UNUSED_PRIVATE_TASK",
+      "rule": "unused_private_task",
+      "node": "task:app.tasks.orphan",
+      "module": "app.tasks",
+      "linked": true,
+      "target_kind": "task",
+      "qualified_name": "app.tasks.orphan",
+      "hint": "call it, export it, or delete it"
+    }
+  ],
+  "diagnostics": [],
+  "issues": []
+}

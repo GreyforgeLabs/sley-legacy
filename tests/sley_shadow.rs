@@ -28,6 +28,7 @@ fn shadow_reports_query_lint_links_and_authority_seeds() {
     );
     assert_eq!(report.pointer("/status"), Some(&json!("clean")));
     assert_eq!(report.pointer("/filters/module"), Some(&json!(null)));
+    assert_eq!(report.pointer("/filters/rules"), Some(&json!([])));
     assert_eq!(
         report.pointer("/source_schemas/query"),
         Some(&json!("sley.query.report.v0"))
@@ -88,6 +89,7 @@ fn shadow_reports_multi_module_project_authority_seeds() {
         Some(&json!("examples/agent_project"))
     );
     assert_eq!(report.pointer("/filters/module"), Some(&json!(null)));
+    assert_eq!(report.pointer("/filters/rules"), Some(&json!([])));
     assert_eq!(report.pointer("/summary/module_count"), Some(&json!(2)));
     assert_eq!(report.pointer("/summary/task_count"), Some(&json!(4)));
     assert_eq!(
@@ -141,6 +143,7 @@ fn shadow_module_filter_reports_project_slice() {
         report.pointer("/filters/module"),
         Some(&json!("agent.pipeline"))
     );
+    assert_eq!(report.pointer("/filters/rules"), Some(&json!([])));
     assert_eq!(report.pointer("/summary/module_count"), Some(&json!(1)));
     assert_eq!(report.pointer("/summary/task_count"), Some(&json!(3)));
     assert_eq!(
@@ -167,7 +170,13 @@ fn shadow_links_lint_findings_to_query_rows() {
     let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-shadow"))
         .current_dir(&repo_root)
-        .args(["report", "--json", "examples/unused_private_task.sley"])
+        .args([
+            "report",
+            "--json",
+            "--rule",
+            "unused_private_task",
+            "examples/unused_private_task.sley",
+        ])
         .output()
         .expect("run sley-shadow");
     assert!(
@@ -181,6 +190,10 @@ fn shadow_links_lint_findings_to_query_rows() {
     let report: JsonValue = serde_json::from_slice(&output.stdout).expect("parse shadow report");
     assert_eq!(report.pointer("/status"), Some(&json!("findings")));
     assert_eq!(report.pointer("/filters/module"), Some(&json!(null)));
+    assert_eq!(
+        report.pointer("/filters/rules"),
+        Some(&json!(["unused_private_task"]))
+    );
     assert_eq!(
         report.pointer("/summary/lint_finding_count"),
         Some(&json!(1))
