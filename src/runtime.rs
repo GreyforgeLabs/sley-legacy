@@ -759,7 +759,10 @@ fn missing_task_effects(program: &Program, task: &TaskDecl, gates: &RuntimeGates
         .iter()
         .filter_map(|effect| {
             let normalized = normalize_effect_name(program, &task_module(task), effect);
-            (!gates.allows(&normalized) && !gates.allows(effect)).then_some(normalized)
+            (gate_for_effect(gates, &normalized)
+                .or_else(|| gate_for_effect(gates, effect))
+                .is_none())
+            .then_some(normalized)
         })
         .collect()
 }
@@ -783,7 +786,7 @@ fn gate_take_value(
             .with_node(take.id.clone()),
         ]);
     };
-    let Some(gate) = gates.get(&effect) else {
+    let Some(gate) = gate_for_effect(gates, &effect) else {
         return Err(vec![
             Diagnostic::error(
                 "RUNTIME_GATE_REQUIRED",
@@ -796,6 +799,14 @@ fn gate_take_value(
         ]);
     };
     Ok(Value::Gate(gate.clone()))
+}
+
+fn gate_for_effect<'a>(gates: &'a RuntimeGates, effect: &str) -> Option<&'a RuntimeGate> {
+    match effect {
+        "DatabaseRead" | "DbRead" => gates.get_any(&["DatabaseRead", "DbRead"]),
+        "DatabaseWrite" | "DbWrite" => gates.get_any(&["DatabaseWrite", "DbWrite"]),
+        _ => gates.get(effect),
+    }
 }
 
 fn gate_effect_from_type(program: &Program, module: &str, ty: &TypeExpr) -> Option<String> {
