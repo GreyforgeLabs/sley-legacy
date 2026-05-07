@@ -1682,7 +1682,21 @@ fn scope_matches_resource(resource_kind: &str, scope: &str, resource: &str) -> b
     if resource_kind == "database table" {
         return normalize_db_table(scope) == resource;
     }
+    if resource_kind == "URL" {
+        return url_scope_matches(scope, resource);
+    }
     resource.starts_with(scope)
+}
+
+fn url_scope_matches(scope: &str, resource: &str) -> bool {
+    if resource == scope || scope.ends_with('/') {
+        return resource.starts_with(scope);
+    }
+    resource.starts_with(scope)
+        && resource
+            .as_bytes()
+            .get(scope.len())
+            .is_some_and(|byte| matches!(byte, b'/' | b'?' | b'#'))
 }
 
 fn absolute_normalized_path(path: &Path) -> PathBuf {

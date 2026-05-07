@@ -13645,6 +13645,21 @@ task main -> Result<Text, Error> uses Network {
     gates.grant_effect_scope("Network", "https://example.test/");
     gates.grant_http_text("https://other.test/profile", "blocked");
     assert_scope_denied(source, gates, "Network", "https://other.test/profile");
+
+    let sibling_host_source = r#"
+task main -> Result<Text, Error> uses Network {
+  return call http.try_get_text("https://example.test.evil/profile")
+}
+"#;
+    let mut sibling_host = RuntimeGates::new();
+    sibling_host.grant_effect_scope("Network", "https://example.test");
+    sibling_host.grant_http_text("https://example.test.evil/profile", "blocked");
+    assert_scope_denied(
+        sibling_host_source,
+        sibling_host,
+        "Network",
+        "https://example.test.evil/profile",
+    );
 }
 
 #[test]
