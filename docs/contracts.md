@@ -72,7 +72,7 @@ Current counts:
 | `sley.lsp.fix_preview.v0` | `sley-lsp` | Non-mutating editor repair preview payload. |
 | `sley.lsp.command_preview.v0` | `sley-lsp` | Non-mutating editor command handoff preview payload. |
 | `sley.workbench.report.v0` | `sley-workbench` | Local inspection report and optional HTML panels. |
-| `sley.docgen.report.v0` | `sley-docgen` | Generated reference summary and optional Markdown handoff. |
+| `sley.docgen.report.v0` | `sley-docgen` | Generated reference summary, host capability seed args, and optional Markdown handoff. |
 | `sley.agent_bench.report.v0` | `sley-agent-bench` | Deterministic agent repair-loop benchmark. |
 | `sley.migrate.report.v0` | `sley-migrate` | Checked migration and schema-drift report. |
 | `sley.sandbox.manifest.v0` | sandbox manifests | Deterministic seeded runtime replay input. |

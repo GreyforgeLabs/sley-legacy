@@ -125,11 +125,22 @@
     },
     "capability": {
       "type": "object",
-      "required": ["effect", "aliases", "host_calls", "source_needles"],
+      "required": [
+        "effect",
+        "aliases",
+        "seed_capability_args",
+        "host_calls",
+        "source_needles"
+      ],
       "properties": {
         "effect": { "type": "string", "minLength": 1 },
         "aliases": {
           "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "seed_capability_args": {
+          "type": "array",
+          "minItems": 2,
           "items": { "type": "string", "minLength": 1 }
         },
         "host_calls": {
