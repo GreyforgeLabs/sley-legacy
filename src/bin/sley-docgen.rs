@@ -187,6 +187,18 @@ fn build_reference_report(args: ReferenceArgs) -> DocgenReport {
         },
     );
     let modules = summarize_modules(&query);
+    if let Some(module) = filters.module.clone().filter(|_| modules.is_empty()) {
+        return blocked_report(
+            target,
+            filters,
+            capabilities,
+            diagnostics,
+            vec![issue(
+                "DOCGEN_MODULE_FILTER_NOT_FOUND",
+                format!("module filter `{module}` did not match any checked module"),
+            )],
+        );
+    }
     let title_module = filters.module.as_deref().unwrap_or(&query.entry_module);
     let documents = vec![DocgenDocument {
         kind: "reference".to_string(),

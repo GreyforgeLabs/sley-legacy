@@ -166,6 +166,47 @@ fn shadow_module_filter_reports_project_slice() {
 }
 
 #[test]
+fn shadow_blocks_unknown_project_module_filter() {
+    let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-shadow"))
+        .current_dir(&repo_root)
+        .args([
+            "report",
+            "--json",
+            "--module",
+            "agent.typo",
+            "examples/agent_project",
+        ])
+        .output()
+        .expect("run sley-shadow");
+    assert!(
+        !output.status.success(),
+        "shadow unexpectedly passed\nstdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    support::validate_report_schema("sley.shadow.report.v0", &output.stdout);
+    let report: JsonValue = serde_json::from_slice(&output.stdout).expect("parse shadow report");
+    assert_eq!(report.pointer("/status"), Some(&json!("blocked")));
+    assert_eq!(
+        report.pointer("/filters/module"),
+        Some(&json!("agent.typo"))
+    );
+    assert_eq!(report.pointer("/summary/module_count"), Some(&json!(0)));
+    assert_eq!(report.pointer("/summary/task_count"), Some(&json!(0)));
+    assert_eq!(
+        report.pointer("/summary/lint_finding_count"),
+        Some(&json!(0))
+    );
+    assert_eq!(report.pointer("/summary/issue_count"), Some(&json!(1)));
+    assert_eq!(
+        report.pointer("/issues/0/code"),
+        Some(&json!("SHADOW_MODULE_FILTER_NOT_FOUND"))
+    );
+}
+
+#[test]
 fn shadow_links_lint_findings_to_query_rows() {
     let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-shadow"))

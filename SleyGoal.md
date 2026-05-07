@@ -140,13 +140,14 @@ Current verified surface:
   type, effect, and host capability docs from `sley.query.report.v0`,
   including seeded `--cap` args for deterministic host setup; its schema links
   generated task/type/effect rows back to the strict query row definitions, and
-  project-root references can be narrowed with checked module/export filters.
+  project-root references can be narrowed with checked module/export filters
+  that block unknown modules explicitly.
 - `sley-shadow` is available as an in-tree non-authoritative helper replay with
   `schema: "sley.shadow.report.v0"` over checked `sley.query.report.v0` and
   `sley.lint.report.v0` data for single-file and project-root targets; it
   supports module- and rule-scoped replay, links lint findings to query rows,
-  and derives seeded `--cap` args for effectful tasks while leaving Rust Loom as the
-  semantic oracle.
+  blocks unknown modules explicitly, and derives seeded `--cap` args for
+  effectful tasks while leaving Rust Loom as the semantic oracle.
 - `sley-agent-bench` is available as an in-tree deterministic repair-loop
   benchmark with `schema: "sley.agent_bench.report.v0"` over JSON inspection,
   lint failure, checked edit-plan repair selection, `sley fix --write`, strict
