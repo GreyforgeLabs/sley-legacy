@@ -62,6 +62,7 @@ const DEFAULT_CORPUS_TAGS: &[&str] = &[
 const DEFAULT_SMOKE_TAGS: &[&str] = &[
     "agent-bench:unused-private-task-repair",
     "ci:corpus",
+    "ci:deploy-lint-findings",
     "ci:deploy-next-actions",
     "ci:deploy-runtime-diagnostics",
     "ci:lint",

@@ -11341,6 +11341,13 @@ fn conformance_report_summarizes_release_surface() {
         report_json
             .pointer("/smoke/required_tags")
             .and_then(|value| value.as_array())
+            .is_some_and(|tags| tags.iter().any(|tag| tag == "ci:deploy-lint-findings")),
+        "conformance report should require sley-ci deploy lint finding coverage"
+    );
+    assert!(
+        report_json
+            .pointer("/smoke/required_tags")
+            .and_then(|value| value.as_array())
             .is_some_and(|tags| tags
                 .iter()
                 .any(|tag| tag == "ci:deploy-runtime-diagnostics")),
@@ -11412,7 +11419,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/smoke_case_count"),
-        Some(&serde_json::json!(473))
+        Some(&serde_json::json!(474))
     );
     assert_eq!(
         report_json.pointer("/summary/onboarding_path_count"),
@@ -12269,6 +12276,44 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     assert_eq!(
         blocked_runtime_deploy_json.pointer("/steps/0/next_actions/3/kind"),
         Some(&serde_json::json!("inspect_readiness"))
+    );
+
+    let blocked_lint_deploy = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
+        .current_dir(&repo_root)
+        .args([
+            "deploy",
+            "--json",
+            "--dry-run",
+            "examples/empty_for_statement.sley",
+        ])
+        .output()
+        .expect("run blocked lint sley-ci deploy");
+    assert!(
+        !blocked_lint_deploy.status.success(),
+        "sley-ci deploy with strict verify findings should fail"
+    );
+    let blocked_lint_deploy_json: serde_json::Value =
+        serde_json::from_slice(&blocked_lint_deploy.stdout)
+            .expect("parse blocked lint sley-ci deploy JSON");
+    assert_eq!(
+        blocked_lint_deploy_json.pointer("/steps/0/stdout_schema"),
+        Some(&serde_json::json!("sley.deploy.report.v0"))
+    );
+    assert_eq!(
+        blocked_lint_deploy_json.pointer("/steps/0/findings/0/id"),
+        Some(&serde_json::json!("EMPTY_FOR_STATEMENT"))
+    );
+    assert_eq!(
+        blocked_lint_deploy_json.pointer("/steps/0/next_actions/0/kind"),
+        Some(&serde_json::json!("repair_lint_findings"))
+    );
+    assert_eq!(
+        blocked_lint_deploy_json.pointer("/steps/0/next_actions/2/kind"),
+        Some(&serde_json::json!("preview_lint_repair"))
+    );
+    assert_eq!(
+        blocked_lint_deploy_json.pointer("/steps/0/next_actions/4/kind"),
+        Some(&serde_json::json!("repair_verify_gate"))
     );
 
     let stable_deploy = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
@@ -24077,6 +24122,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "agent-bench:unused-private-task-repair",
         "ci:corpus",
         "ci:lint",
+        "ci:deploy-lint-findings",
         "ci:deploy-next-actions",
         "ci:deploy-runtime-diagnostics",
         "ci:verify-next-actions",

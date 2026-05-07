@@ -1407,6 +1407,7 @@ fn extract_step_findings(json: &JsonValue, stdout_schema: Option<&str>) -> Vec<C
         Some("sley.doctor.report.v0" | "sley.edit_plan.report.v0" | "sley.verify.report.v0") => {
             "/lint/findings"
         }
+        Some("sley.deploy.report.v0") => "/verify/lint/findings",
         _ => return Vec::new(),
     };
     json.pointer(pointer)

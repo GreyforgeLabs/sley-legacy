@@ -100,8 +100,8 @@ Current verified surface:
   from lint, doctor, plan, and verify surfaces also expose their finding IDs
   inside the step, while run/verify runtime diagnostics are summarized for
   missing authority gates, failed verify next-actions are copied into the
-  wrapper step, and failed deploy dry-runs copy nested verify diagnostics and
-  retry actions before deploy-level repair actions.
+  wrapper step, and failed deploy dry-runs copy nested verify lint findings,
+  diagnostics, and retry actions before deploy-level repair actions.
 - `sley-conformance` is available as an in-tree conformance visibility helper
   with `report` and `coverage` commands that emit
   `schema: "sley.conformance.report.v0"` and
