@@ -1476,7 +1476,7 @@ fn emit_report(report: &ConformanceReport, json: bool) -> Result<()> {
         return Ok(());
     }
     println!(
-        "sley-conformance report status={} schemas={} fixtures={} corpus={}/{} smoke={} examples={} tests={} public_release_blockers={}",
+        "sley-conformance report status={} schemas={} fixtures={} corpus={}/{} smoke={} examples={} tests={} corpus_required={} corpus_missing={} smoke_required={} smoke_missing={} public_release_blockers={}",
         report.status,
         report.summary.schema_count,
         report.summary.contract_fixture_count,
@@ -1485,6 +1485,10 @@ fn emit_report(report: &ConformanceReport, json: bool) -> Result<()> {
         report.summary.smoke_case_count,
         report.summary.example_source_count,
         report.summary.integration_test_count,
+        report.corpus.required_tags.len(),
+        report.corpus.missing_required_tags.len(),
+        report.smoke.required_tags.len(),
+        report.smoke.missing_required_tags.len(),
         report.summary.public_release_blocker_count
     );
     for issue in &report.issues {
@@ -1532,8 +1536,18 @@ fn render_markdown(report: &ConformanceReport) -> String {
         report.summary.corpus_accepted_count, report.summary.corpus_rejected_count
     ));
     output.push_str(&format!(
+        "- Required corpus tags: `{}` required, `{}` missing\n",
+        report.corpus.required_tags.len(),
+        report.corpus.missing_required_tags.len()
+    ));
+    output.push_str(&format!(
         "- Smoke cases: `{}`\n",
         report.summary.smoke_case_count
+    ));
+    output.push_str(&format!(
+        "- Required smoke tags: `{}` required, `{}` missing\n",
+        report.smoke.required_tags.len(),
+        report.smoke.missing_required_tags.len()
     ));
     output.push_str(&format!(
         "- Examples: `{}` projects, `{}` sources\n",

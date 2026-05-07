@@ -9588,8 +9588,41 @@ fn conformance_report_summarizes_release_surface() {
         String::from_utf8_lossy(&text_report.stderr)
     );
     let text_stdout = String::from_utf8(text_report.stdout).expect("text report stdout is utf8");
+    assert!(text_stdout.contains("corpus_missing=0"));
+    assert!(text_stdout.contains("smoke_missing=0"));
     assert!(text_stdout.contains("public_release_blockers=5"));
     assert!(text_stdout.contains("release:missing_license_file"));
+
+    let render_root = temp_project_dir("conformance-render");
+    fs::create_dir_all(&render_root).expect("create conformance render temp dir");
+    let markdown_path = render_root.join("report.md");
+    let html_path = render_root.join("report.html");
+    let markdown_path_arg = sley_string(&markdown_path);
+    let html_path_arg = sley_string(&html_path);
+    let rendered_report = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-conformance"))
+        .current_dir(&repo_root)
+        .args([
+            "report",
+            "--markdown",
+            &markdown_path_arg,
+            "--html",
+            &html_path_arg,
+            "--sley-contract-bin",
+            env!("CARGO_BIN_EXE_sley-contract"),
+        ])
+        .output()
+        .expect("run rendered sley-conformance report");
+    assert!(
+        rendered_report.status.success(),
+        "rendered conformance report failed: {}",
+        String::from_utf8_lossy(&rendered_report.stderr)
+    );
+    let rendered_markdown = fs::read_to_string(&markdown_path).expect("read rendered markdown");
+    assert!(rendered_markdown.contains("Required corpus tags"));
+    assert!(rendered_markdown.contains("`0` missing"));
+    let rendered_html = fs::read_to_string(&html_path).expect("read rendered html");
+    assert!(rendered_html.contains("Required corpus tags"));
+    assert!(rendered_html.contains("Required smoke tags"));
 
     let gated_report = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-conformance"))
         .current_dir(&repo_root)
