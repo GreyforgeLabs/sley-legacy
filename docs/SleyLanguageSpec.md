@@ -1307,7 +1307,8 @@ available, `effect` names required authority when relevant, and `replacement`
 carries compact source, type, graft JSON, or retry guidance. For example,
 parse expected-token failures carry `insert_expected_token` hints; missing
 names carry `provide_identifier`; empty expression sites carry
-`provide_expression`; and top-level/export item mismatches carry
+`provide_expression` with a minimal parse-valid scalar starter; and
+top-level/export item mismatches carry
 `choose_expected_item`.
 unsupported expression `MoveNode` targets carry a `replace_expression` hint so
 agents can switch to `ReplaceExpression` instead of retrying an unsupported

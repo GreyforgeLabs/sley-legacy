@@ -225,7 +225,7 @@ fn parser_expected_token_errors_include_repair_hints() {
         "PARSE_EXPECTED_EXPRESSION",
         "provide_expression",
     );
-    assert_eq!(hint.replacement.as_deref(), Some("TODO_VALUE"));
+    assert_eq!(hint.replacement.as_deref(), Some("0"));
 }
 
 #[test]
