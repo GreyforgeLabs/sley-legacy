@@ -253,7 +253,7 @@ Implemented now:
   add-take-plus-call-arg transaction templates for targeted caller surfaces,
   direct module-surface, module declaration-list, and declaration-id
   graph-slice templates for checked top-level import/type/effect/task moves
-  and deletes, plus graph-slice add affordance parity for supported
+  and deletes, plus graph-slice add affordance parity for module-scoped
   import/type/effect/task starters,
   safe remove-take-plus-call-arg transaction templates for unused takes,
   lint-driven delete templates and cleanup

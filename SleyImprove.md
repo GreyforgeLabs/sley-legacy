@@ -506,13 +506,14 @@ import node ids so agents can copy import graft targets directly from the
 machine contract instead of reconstructing them.
 Graph slices now expose checked add affordances for top-level declarations,
 reusing the strict graft operation schema and pinning editable payload
-pointers. Non-entry module slices expose source-module-backed type and task
-starters; import/effect add affordances stay entry-module-only until those graft
-ops carry explicit owner-module targets.
+pointers. AddImport grafts now carry `payload.owner_module` and
+AddEffectDeclaration grafts carry `payload.module`, so non-entry module slices
+can expose the same checked import/type/effect/task starters as entry-module
+slices.
 `sley plan --graft-templates --template-surface module:<name>` and declaration
 list parents such as `module:<name>:tasks` now consume the module graph-slice
 affordances directly, exposing checked top-level import/type/effect/task move
-and delete templates at module granularity, plus checked entry-module add
+and delete templates at module granularity, plus checked module-scoped add
 starters where the graph slice exposes `add_affordances`. Direct declaration
 ids such as `type:app.module.Name`, `effect:app.module.Audit`, and
 `import:app.module:app.shared` use the same graph-slice move/delete
@@ -1236,8 +1237,8 @@ Near-term:
 3. Extend `sley-shadow` and other deterministic helpers that consume
    `sley.query.report.v0` and `sley.lint.report.v0`, then broaden authority,
    style, and migration lints.
-4. Extend graph-slice grafts beyond entry-module add, insert, move, delete,
-   and replace planning.
+4. Extend graph-slice grafts beyond current add, insert, move, delete, and
+   replace planning.
 5. Harden graph-slice grafts for broader graph-contract checks.
 
 Medium-term:

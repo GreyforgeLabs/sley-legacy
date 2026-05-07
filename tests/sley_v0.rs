@@ -34,7 +34,8 @@ use sley::scaffold::{
     ScaffoldNextAction, ScaffoldOptions, ScaffoldTemplate, scaffold_project,
 };
 use sley::symbols::{
-    SYMBOL_GRAPH_SCHEMA, SYMBOL_GRAPH_SLICE_SCHEMA, build_symbol_graph, slice_symbol_graph,
+    SYMBOL_GRAPH_SCHEMA, SYMBOL_GRAPH_SLICE_SCHEMA, build_symbol_graph, effect_module,
+    import_owner_module, slice_symbol_graph,
 };
 use sley::trace::{
     TRACE_RECEIPT_SCHEMA, TRACE_REPORT_SCHEMA, TRACE_SEAL_SCHEMA, TraceReceipt,
@@ -1887,8 +1888,12 @@ task main -> Int {
         Some(&serde_json::json!("NewEffect"))
     );
     assert_eq!(
+        add_effect.operation.pointer("/payload/module"),
+        Some(&serde_json::json!("app.plan"))
+    );
+    assert_eq!(
         add_effect.editable_json_pointers,
-        vec!["/payload/name".to_string()]
+        vec!["/payload/name".to_string(), "/payload/module".to_string()]
     );
 
     let add_import = &report.graft_templates[3];
@@ -1900,6 +1905,10 @@ task main -> Int {
     assert_eq!(
         add_import.operation.pointer("/payload/module"),
         Some(&serde_json::json!("app.new_module"))
+    );
+    assert_eq!(
+        add_import.operation.pointer("/payload/owner_module"),
+        Some(&serde_json::json!("app.plan"))
     );
     assert_eq!(
         add_import.editable_json_pointers,
@@ -2593,7 +2602,32 @@ task main -> Int {
             .iter()
             .map(|template| template.kind.as_str())
             .collect::<Vec<_>>(),
-        vec!["add_type_declaration", "add_task"]
+        vec![
+            "add_import",
+            "add_type_declaration",
+            "add_effect_declaration",
+            "add_task"
+        ]
+    );
+    let imported_add_import = imported_module_report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "add_import")
+        .expect("imported module add import template");
+    assert_eq!(
+        imported_add_import
+            .operation
+            .pointer("/payload/owner_module"),
+        Some(&serde_json::json!("app.extra"))
+    );
+    let imported_add_effect = imported_module_report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "add_effect_declaration")
+        .expect("imported module add effect template");
+    assert_eq!(
+        imported_add_effect.operation.pointer("/payload/module"),
+        Some(&serde_json::json!("app.extra"))
     );
     for template in &imported_module_report.graft_templates {
         let graft: GraftInput = serde_json::from_value(template.operation.clone())
@@ -7203,6 +7237,130 @@ task main -> Int {
 }
 
 #[test]
+fn add_import_and_effect_grafts_use_explicit_owner_modules() {
+    let source = r#"
+module app.main
+
+import app.extra
+
+effect Audit
+
+task main -> Int {
+  return 1
+}
+"#;
+    let program = parse_program(source).expect("parse explicit owner fixture");
+
+    let import_graft: GraftInput = serde_json::from_value(serde_json::json!({
+        "op": "AddImport",
+        "payload": {
+            "owner_module": "app.extra",
+            "module": "app.shared"
+        }
+    }))
+    .expect("parse explicit owner import graft");
+    let imported = apply_graft_program(
+        &program,
+        import_graft,
+        Some("agent:explicit-owner-test".to_string()),
+    );
+    assert_eq!(imported.outcome.status, "accepted");
+    let imported_program = imported.program.expect("accepted import program");
+    assert!(
+        imported_program
+            .imports
+            .iter()
+            .any(|import| import_owner_module(import) == "app.extra"
+                && import.module == "app.shared"),
+        "{imported_program:#?}"
+    );
+
+    let duplicate_import: GraftInput = serde_json::from_value(serde_json::json!({
+        "op": "AddImport",
+        "payload": {
+            "owner_module": "app.extra",
+            "module": "app.shared"
+        }
+    }))
+    .expect("parse duplicate explicit owner import graft");
+    let duplicate_import_outcome = apply_graft_input(
+        &imported_program,
+        duplicate_import,
+        Some("agent:explicit-owner-test".to_string()),
+    );
+    assert_eq!(duplicate_import_outcome.status, "rejected");
+    assert_eq!(
+        duplicate_import_outcome.diagnostics[0].id,
+        "GRAFT_IMPORT_EXISTS"
+    );
+
+    let main_import: GraftInput = serde_json::from_value(serde_json::json!({
+        "op": "AddImport",
+        "payload": {
+            "owner_module": "app.main",
+            "module": "app.shared"
+        }
+    }))
+    .expect("parse same imported module under different owner graft");
+    let main_import_outcome = apply_graft_input(
+        &imported_program,
+        main_import,
+        Some("agent:explicit-owner-test".to_string()),
+    );
+    assert_eq!(
+        main_import_outcome.status, "accepted",
+        "{:#?}",
+        main_import_outcome.diagnostics
+    );
+
+    let effect_graft: GraftInput = serde_json::from_value(serde_json::json!({
+        "op": "AddEffectDeclaration",
+        "payload": {
+            "module": "app.extra",
+            "name": "Audit"
+        }
+    }))
+    .expect("parse explicit module effect graft");
+    let effected = apply_graft_program(
+        &program,
+        effect_graft,
+        Some("agent:explicit-owner-test".to_string()),
+    );
+    assert_eq!(
+        effected.outcome.status, "accepted",
+        "{:#?}",
+        effected.outcome.diagnostics
+    );
+    let effected_program = effected.program.expect("accepted effect program");
+    assert!(
+        effected_program
+            .effects
+            .iter()
+            .any(|effect| effect_module(effect) == "app.extra" && effect.name == "Audit"),
+        "{effected_program:#?}"
+    );
+
+    let duplicate_effect: GraftInput = serde_json::from_value(serde_json::json!({
+        "op": "AddEffectDeclaration",
+        "payload": {
+            "module": "app.extra",
+            "name": "Audit"
+        }
+    }))
+    .expect("parse duplicate explicit module effect graft");
+    let duplicate_effect_outcome = apply_graft_input(
+        &effected_program,
+        duplicate_effect,
+        Some("agent:explicit-owner-test".to_string()),
+    );
+    assert_eq!(duplicate_effect_outcome.status, "rejected");
+    assert_eq!(
+        duplicate_effect_outcome.diagnostics[0].id,
+        "GRAFT_EFFECT_EXISTS"
+    );
+}
+
+#[test]
 fn update_call_sites_graft_rewrites_renamed_task_calls() {
     let source = r#"
 task double -> Int {
@@ -10510,11 +10668,11 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/integration_test_count"),
-        Some(&serde_json::json!(322))
+        Some(&serde_json::json!(323))
     );
     assert_eq!(
         report_json.pointer("/summary/declared_integration_test_count"),
-        Some(&serde_json::json!(322))
+        Some(&serde_json::json!(323))
     );
     assert_eq!(
         report_json.pointer("/summary/test_count_matches_declared"),
@@ -10538,7 +10696,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/tests/integration_test_count"),
-        Some(&serde_json::json!(322))
+        Some(&serde_json::json!(323))
     );
     assert_eq!(
         report_json.pointer("/tests/declared_matches_actual"),
@@ -17023,8 +17181,12 @@ task main -> Int {
         Some(&serde_json::json!("NewEffect"))
     );
     assert_eq!(
+        add_effect.operation.pointer("/payload/module"),
+        Some(&serde_json::json!("app.main"))
+    );
+    assert_eq!(
         add_effect.editable_json_pointers,
-        vec!["/payload/name".to_string()]
+        vec!["/payload/name".to_string(), "/payload/module".to_string()]
     );
 
     let add_task = slice
@@ -17066,14 +17228,27 @@ task main -> Int {
             .iter()
             .map(|affordance| affordance.target_kind.as_str())
             .collect::<Vec<_>>(),
-        vec!["type", "task"]
+        vec!["import", "type", "effect", "task"]
     );
-    assert!(
-        !imported_module_slice
-            .add_affordances
-            .iter()
-            .any(|affordance| matches!(affordance.target_kind.as_str(), "import" | "effect")),
-        "non-entry add affordances should stay limited to source-module-backed AddTask/AddTypeDeclaration operations"
+    let imported_add_import = imported_module_slice
+        .add_affordances
+        .iter()
+        .find(|affordance| affordance.target_kind == "import")
+        .expect("imported module import add affordance");
+    assert_eq!(
+        imported_add_import
+            .operation
+            .pointer("/payload/owner_module"),
+        Some(&serde_json::json!("app.extra"))
+    );
+    let imported_add_effect = imported_module_slice
+        .add_affordances
+        .iter()
+        .find(|affordance| affordance.target_kind == "effect")
+        .expect("imported module effect add affordance");
+    assert_eq!(
+        imported_add_effect.operation.pointer("/payload/module"),
+        Some(&serde_json::json!("app.extra"))
     );
     for affordance in &imported_module_slice.add_affordances {
         let graft: GraftInput = serde_json::from_value(affordance.operation.clone())

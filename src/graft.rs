@@ -82,7 +82,7 @@ pub enum GraftOperation {
     AddEffectDeclaration {
         #[serde(default)]
         precondition: Option<JsonValue>,
-        payload: NamedPayload,
+        payload: AddEffectDeclarationPayload,
     },
     RemoveTaskEffect {
         target: String,
@@ -184,6 +184,14 @@ pub struct NamedPayload {
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
+pub struct AddEffectDeclarationPayload {
+    pub name: String,
+    #[serde(default)]
+    pub module: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct RenamePayload {
     pub name: String,
 }
@@ -192,6 +200,8 @@ pub struct RenamePayload {
 #[serde(deny_unknown_fields)]
 pub struct ImportPayload {
     pub module: String,
+    #[serde(default)]
+    pub owner_module: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -467,15 +477,25 @@ fn apply_one(
             payload,
         } => {
             check_preconditions(program, None, precondition.as_ref())?;
+            let module = payload
+                .module
+                .clone()
+                .unwrap_or_else(|| program.module_name().to_string());
+            if let Some(diagnostic) = validate_module_name(&module) {
+                return Err(vec![diagnostic]);
+            }
             if let Some(existing) = program
                 .effects
                 .iter()
-                .find(|effect| effect.name == payload.name)
+                .find(|effect| effect.name == payload.name && effect_module(effect) == module)
             {
                 return Err(vec![
                     Diagnostic::error(
                         "GRAFT_EFFECT_EXISTS",
-                        format!("effect `{}` already exists", payload.name),
+                        format!(
+                            "effect `{}` already exists in module `{module}`",
+                            payload.name
+                        ),
                     )
                     .with_node(existing.id.clone())
                     .with_repair_hint(namespace_conflict_hint(
@@ -488,7 +508,7 @@ fn apply_one(
             }
             program.effects.push(EffectDecl {
                 id: String::new(),
-                module: None,
+                module: Some(module.clone()),
                 exported: false,
                 name: payload.name.clone(),
                 span: None,
@@ -498,7 +518,7 @@ fn apply_one(
                 graft_id,
                 actor,
                 "AddEffectDeclaration",
-                vec![format!("effect:{}", payload.name)],
+                vec![format!("effect:{module}.{}", payload.name)],
             ))
         }
         GraftOperation::RemoveTaskEffect {
@@ -537,15 +557,23 @@ fn apply_one(
             payload,
         } => {
             check_preconditions(program, None, precondition.as_ref())?;
-            if let Some(existing) = program
-                .imports
-                .iter()
-                .find(|import| import.module == payload.module)
-            {
+            let owner_module = payload
+                .owner_module
+                .clone()
+                .unwrap_or_else(|| program.module_name().to_string());
+            if let Some(diagnostic) = validate_module_name(&owner_module) {
+                return Err(vec![diagnostic]);
+            }
+            if let Some(existing) = program.imports.iter().find(|import| {
+                import.module == payload.module && import_owner_module(import) == owner_module
+            }) {
                 return Err(vec![
                     Diagnostic::error(
                         "GRAFT_IMPORT_EXISTS",
-                        format!("import `{}` already exists", payload.module),
+                        format!(
+                            "import `{}` already exists in module `{owner_module}`",
+                            payload.module
+                        ),
                     )
                     .with_node(existing.id.clone())
                     .with_repair_hint(
@@ -560,7 +588,7 @@ fn apply_one(
             }
             program.imports.push(ImportDecl {
                 id: String::new(),
-                owner_module: None,
+                owner_module: Some(owner_module.clone()),
                 module: payload.module.clone(),
                 alias: None,
                 span: None,
@@ -570,7 +598,7 @@ fn apply_one(
                 graft_id,
                 actor,
                 "AddImport",
-                vec![format!("import:{}", payload.module)],
+                vec![format!("import:{owner_module}:{}", payload.module)],
             ))
         }
         GraftOperation::AddTask {

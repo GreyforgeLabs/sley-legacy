@@ -691,30 +691,25 @@ fn build_slice(
 }
 
 fn build_add_affordances(program: &Program, focus_module: &str) -> Vec<AddDeclarationAffordance> {
-    let is_entry_module = focus_module == program.module_name();
     let mut affordances = Vec::new();
-    if is_entry_module {
-        affordances.push(add_declaration_affordance(
-            "import",
-            focus_module,
-            add_import_operation(program),
-            vec!["/payload/module".to_string()],
-        ));
-    }
+    affordances.push(add_declaration_affordance(
+        "import",
+        focus_module,
+        add_import_operation(program, focus_module),
+        vec!["/payload/module".to_string()],
+    ));
     affordances.push(add_declaration_affordance(
         "type",
         focus_module,
         add_type_declaration_operation(program, focus_module),
         vec!["/payload/source".to_string()],
     ));
-    if is_entry_module {
-        affordances.push(add_declaration_affordance(
-            "effect",
-            focus_module,
-            add_effect_declaration_operation(program),
-            vec!["/payload/name".to_string()],
-        ));
-    }
+    affordances.push(add_declaration_affordance(
+        "effect",
+        focus_module,
+        add_effect_declaration_operation(program, focus_module),
+        vec!["/payload/name".to_string(), "/payload/module".to_string()],
+    ));
     affordances.push(add_declaration_affordance(
         "task",
         focus_module,
@@ -738,15 +733,21 @@ fn add_declaration_affordance(
     }
 }
 
-fn add_import_operation(program: &Program) -> JsonValue {
-    let module = unique_name(
+fn add_import_operation(program: &Program, owner_module: &str) -> JsonValue {
+    let imported_module = unique_name(
         "app.new_module",
-        program.imports.iter().map(|import| import.module.as_str()),
+        program
+            .imports
+            .iter()
+            .filter(|import| import_owner_module(import) == owner_module)
+            .map(|import| import.module.as_str())
+            .chain(std::iter::once(owner_module)),
     );
     json!({
         "op": "AddImport",
         "payload": {
-            "module": module
+            "owner_module": owner_module,
+            "module": imported_module
         }
     })
 }
@@ -769,14 +770,19 @@ fn add_type_declaration_operation(program: &Program, module: &str) -> JsonValue 
     })
 }
 
-fn add_effect_declaration_operation(program: &Program) -> JsonValue {
+fn add_effect_declaration_operation(program: &Program, module: &str) -> JsonValue {
     let name = unique_name(
         "NewEffect",
-        program.effects.iter().map(|effect| effect.name.as_str()),
+        program
+            .effects
+            .iter()
+            .filter(|effect| effect_module(effect) == module)
+            .map(|effect| effect.name.as_str()),
     );
     json!({
         "op": "AddEffectDeclaration",
         "payload": {
+            "module": module,
             "name": name
         }
     })
