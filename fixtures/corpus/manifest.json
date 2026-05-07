@@ -166,6 +166,17 @@
         "language:pure-task-call",
         "formatter:round-trip"
       ]
+    },
+    {
+      "path": "accepted/authority/database_aliases.sley",
+      "covers": [
+        "accepted:DatabaseAlias",
+        "host:db.query_one",
+        "host:db.try_insert",
+        "authority:declared-effect",
+        "authority:effect-alias",
+        "formatter:round-trip"
+      ]
     }
   ],
   "rejected": [

@@ -56,7 +56,7 @@ Current verified surface:
   integration test, deterministic utility replays for workbench, agent-bench,
   raw-host and unchecked-result migration, docgen, sandbox-runner, and ZJX
   tools, and Tree-sitter syntax parsing.
-- The synthetic gold corpus currently has 18 accepted fixtures and 20 rejected
+- The synthetic gold corpus currently has 19 accepted fixtures and 20 rejected
   fixtures, including accepted/rejected split-task agent authority cases that
   lock transitive effect propagation for deploy, spend, and data mutation, plus
   module namespace fixtures that lock exported declaration success, transparent
