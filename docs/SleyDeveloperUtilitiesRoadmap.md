@@ -163,9 +163,9 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
      lint warnings with `sley.toml` project context and unsaved open-buffer
      overlays, returns formatting edits, document symbols, declaration metadata
      hover, workspace symbols, project completions, import/call definition
-     jumps, task references, prepared cursor-aware project task rename edits,
-     edit-plan code actions, and exposes `sley.fix.preview` as a non-mutating
-     preview command.
+     jumps, exact-range task references, document highlights, prepared
+     cursor-aware project task rename edits, edit-plan code actions, and
+     exposes `sley.fix.preview` as a non-mutating preview command.
      `tests/sley_lsp.rs` drives the server over real JSON-RPC frames.
    - Done when an example project receives diagnostics and at least one checked
      lint repair code action without the server writing files directly.

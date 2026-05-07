@@ -63,6 +63,10 @@ fn lsp_publishes_diagnostics_formats_symbols_and_previews_code_actions() {
         Some(&json!(true))
     );
     assert_eq!(
+        initialized.pointer("/result/capabilities/documentHighlightProvider"),
+        Some(&json!(true))
+    );
+    assert_eq!(
         initialized.pointer("/result/capabilities/renameProvider/prepareProvider"),
         Some(&json!(true))
     );
@@ -476,12 +480,65 @@ export task other -> Text {
         reference_locations.contains(&(main_uri.as_str(), 6)),
         "references should include project call site, got {reference_locations:?}"
     );
+    let reference_ranges = location_uri_lines_and_chars(&references);
+    assert!(
+        reference_ranges.contains(&(pipeline_uri.as_str(), 2, 12)),
+        "references should use exact imported task declaration range, got {reference_ranges:?}"
+    );
+    assert!(
+        reference_ranges.contains(&(main_uri.as_str(), 6, 19)),
+        "references should use exact call-keyword leaf range, got {reference_ranges:?}"
+    );
 
     write_lsp(
         &mut stdin,
         json!({
             "jsonrpc": "2.0",
             "id": 5,
+            "method": "textDocument/documentHighlight",
+            "params": {
+                "textDocument": {
+                    "uri": main_uri
+                },
+                "position": {
+                    "line": 6,
+                    "character": 20
+                }
+            }
+        }),
+    );
+    let highlights = read_response(&mut reader, 5);
+    let highlight_ranges = document_highlight_lines_and_chars(&highlights);
+    assert!(
+        highlight_ranges.contains(&(5, 21)),
+        "document highlights should include bare project call site, got {highlight_ranges:?}"
+    );
+    assert!(
+        highlight_ranges.contains(&(6, 19)),
+        "document highlights should include call-keyword project call site, got {highlight_ranges:?}"
+    );
+    assert!(
+        highlight_ranges.contains(&(10, 14)),
+        "document highlights should include first same-line project call site, got {highlight_ranges:?}"
+    );
+    assert!(
+        highlight_ranges.contains(&(10, 31)),
+        "document highlights should include second same-line project call site, got {highlight_ranges:?}"
+    );
+    assert!(
+        highlight_ranges.contains(&(14, 14)),
+        "document highlights should include mixed-line matching call site, got {highlight_ranges:?}"
+    );
+    assert!(
+        !highlight_ranges.contains(&(14, 31)),
+        "document highlights should not include a different task on the same line, got {highlight_ranges:?}"
+    );
+
+    write_lsp(
+        &mut stdin,
+        json!({
+            "jsonrpc": "2.0",
+            "id": 6,
             "method": "textDocument/prepareRename",
             "params": {
                 "textDocument": {
@@ -494,7 +551,7 @@ export task other -> Text {
             }
         }),
     );
-    let prepare_rename = read_response(&mut reader, 5);
+    let prepare_rename = read_response(&mut reader, 6);
     assert_eq!(
         prepare_rename.pointer("/result/placeholder"),
         Some(&json!("message"))
@@ -516,7 +573,7 @@ export task other -> Text {
         &mut stdin,
         json!({
             "jsonrpc": "2.0",
-            "id": 6,
+            "id": 7,
             "method": "textDocument/rename",
             "params": {
                 "textDocument": {
@@ -530,7 +587,7 @@ export task other -> Text {
             }
         }),
     );
-    let rename = read_response(&mut reader, 6);
+    let rename = read_response(&mut reader, 7);
     let edits = workspace_edit_uri_lines_and_text(&rename);
     assert!(
         edits.contains(&(pipeline_uri.as_str(), 2, 12, "compose")),
@@ -565,7 +622,7 @@ export task other -> Text {
         &mut stdin,
         json!({
             "jsonrpc": "2.0",
-            "id": 7,
+            "id": 8,
             "method": "textDocument/prepareRename",
             "params": {
                 "textDocument": {
@@ -578,7 +635,7 @@ export task other -> Text {
             }
         }),
     );
-    let prepare_other_rename = read_response(&mut reader, 7);
+    let prepare_other_rename = read_response(&mut reader, 8);
     assert_eq!(
         prepare_other_rename.pointer("/result/placeholder"),
         Some(&json!("other"))
@@ -596,7 +653,7 @@ export task other -> Text {
         &mut stdin,
         json!({
             "jsonrpc": "2.0",
-            "id": 8,
+            "id": 9,
             "method": "textDocument/definition",
             "params": {
                 "textDocument": {
@@ -609,7 +666,7 @@ export task other -> Text {
             }
         }),
     );
-    let definition = read_response(&mut reader, 8);
+    let definition = read_response(&mut reader, 9);
     assert_eq!(
         definition.pointer("/result/0/uri"),
         Some(&json!(pipeline_uri))
@@ -623,7 +680,7 @@ export task other -> Text {
         &mut stdin,
         json!({
             "jsonrpc": "2.0",
-            "id": 9,
+            "id": 10,
             "method": "textDocument/definition",
             "params": {
                 "textDocument": {
@@ -636,7 +693,7 @@ export task other -> Text {
             }
         }),
     );
-    let import_definition = read_response(&mut reader, 9);
+    let import_definition = read_response(&mut reader, 10);
     assert_eq!(
         import_definition.pointer("/result/0/uri"),
         Some(&json!(pipeline_uri))
@@ -673,12 +730,12 @@ export task other -> Text {
         &mut stdin,
         json!({
             "jsonrpc": "2.0",
-            "id": 10,
+            "id": 11,
             "method": "shutdown",
             "params": null
         }),
     );
-    let shutdown = read_response(&mut reader, 10);
+    let shutdown = read_response(&mut reader, 11);
     assert!(shutdown.get("result").is_some());
     write_lsp(
         &mut stdin,
@@ -738,6 +795,37 @@ fn location_uris_and_lines(message: &JsonValue) -> Vec<(&str, u64)> {
             Some((
                 location.get("uri")?.as_str()?,
                 location.pointer("/range/start/line")?.as_u64()?,
+            ))
+        })
+        .collect()
+}
+
+fn location_uri_lines_and_chars(message: &JsonValue) -> Vec<(&str, u64, u64)> {
+    message
+        .get("result")
+        .and_then(JsonValue::as_array)
+        .expect("location array")
+        .iter()
+        .filter_map(|location| {
+            Some((
+                location.get("uri")?.as_str()?,
+                location.pointer("/range/start/line")?.as_u64()?,
+                location.pointer("/range/start/character")?.as_u64()?,
+            ))
+        })
+        .collect()
+}
+
+fn document_highlight_lines_and_chars(message: &JsonValue) -> Vec<(u64, u64)> {
+    message
+        .get("result")
+        .and_then(JsonValue::as_array)
+        .expect("document highlight array")
+        .iter()
+        .filter_map(|highlight| {
+            Some((
+                highlight.pointer("/range/start/line")?.as_u64()?,
+                highlight.pointer("/range/start/character")?.as_u64()?,
             ))
         })
         .collect()

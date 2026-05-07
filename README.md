@@ -183,8 +183,8 @@ Implemented now:
   project-aware compiler diagnostics plus lint warnings over `sley.toml`
   workspaces and open-buffer overlays, formatting edits, document symbols,
   workspace symbols, declaration metadata hover, project completions,
-  task references, prepared cursor-aware project task rename edits,
-  import/call definition jumps,
+  exact-range task references, document highlights, prepared cursor-aware
+  project task rename edits, import/call definition jumps,
   checked edit-plan code actions, and a non-mutating `sley.fix.preview` command
   for editor repair previews
 - in-tree `sley-workbench` local inspection bootstrap that emits
