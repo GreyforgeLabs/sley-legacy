@@ -81,6 +81,7 @@ pub struct SymbolGraphSlice {
     pub tasks: Vec<DeclarationSymbolSummary>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub task: Option<TaskDecl>,
+    pub add_affordances: Vec<AddDeclarationAffordance>,
     pub insert_affordances: Vec<InsertStatementAffordance>,
     pub move_affordances: Vec<MoveNodeAffordance>,
     pub delete_affordances: Vec<DeleteNodeAffordance>,
@@ -109,6 +110,14 @@ pub struct TaskCallSummary {
     pub target: Option<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub candidates: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct AddDeclarationAffordance {
+    pub target: String,
+    pub target_kind: String,
+    pub operation: JsonValue,
+    pub editable_json_pointers: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
@@ -653,6 +662,7 @@ fn build_slice(
         effects: module.effects,
         tasks: module.tasks,
         task: focus_task_index.map(|index| program.tasks[index].clone()),
+        add_affordances: build_add_affordances(program, &focus_module),
         insert_affordances: build_insert_affordances(
             focus_task_index,
             &module_task_indexes,
@@ -678,6 +688,129 @@ fn build_slice(
         outbound_calls,
         inbound_calls,
     }
+}
+
+fn build_add_affordances(program: &Program, focus_module: &str) -> Vec<AddDeclarationAffordance> {
+    if focus_module != program.module_name() {
+        return Vec::new();
+    }
+
+    vec![
+        add_declaration_affordance(
+            "import",
+            focus_module,
+            add_import_operation(program),
+            vec!["/payload/module".to_string()],
+        ),
+        add_declaration_affordance(
+            "type",
+            focus_module,
+            add_type_declaration_operation(program, focus_module),
+            vec!["/payload/source".to_string()],
+        ),
+        add_declaration_affordance(
+            "effect",
+            focus_module,
+            add_effect_declaration_operation(program),
+            vec!["/payload/name".to_string()],
+        ),
+        add_declaration_affordance(
+            "task",
+            focus_module,
+            add_task_operation(program, focus_module),
+            vec!["/payload/source".to_string()],
+        ),
+    ]
+}
+
+fn add_declaration_affordance(
+    kind: &str,
+    module: &str,
+    operation: JsonValue,
+    editable_json_pointers: Vec<String>,
+) -> AddDeclarationAffordance {
+    AddDeclarationAffordance {
+        target: format!("module:{module}:{kind}s"),
+        target_kind: kind.to_string(),
+        operation,
+        editable_json_pointers,
+    }
+}
+
+fn add_import_operation(program: &Program) -> JsonValue {
+    let module = unique_name(
+        "app.new_module",
+        program.imports.iter().map(|import| import.module.as_str()),
+    );
+    json!({
+        "op": "AddImport",
+        "payload": {
+            "module": module
+        }
+    })
+}
+
+fn add_type_declaration_operation(program: &Program, module: &str) -> JsonValue {
+    let name = unique_name(
+        "NewRecord",
+        program
+            .types
+            .iter()
+            .filter(|ty| type_module(ty) == module)
+            .map(|ty| ty.name.as_str()),
+    );
+    let source = format!("module {module}\n\ntype {name} = {{\n  slot value: Text\n}}");
+    json!({
+        "op": "AddTypeDeclaration",
+        "payload": {
+            "source": source
+        }
+    })
+}
+
+fn add_effect_declaration_operation(program: &Program) -> JsonValue {
+    let name = unique_name(
+        "NewEffect",
+        program.effects.iter().map(|effect| effect.name.as_str()),
+    );
+    json!({
+        "op": "AddEffectDeclaration",
+        "payload": {
+            "name": name
+        }
+    })
+}
+
+fn add_task_operation(program: &Program, module: &str) -> JsonValue {
+    let name = unique_name(
+        "new_task",
+        program
+            .tasks
+            .iter()
+            .filter(|task| task_module(task) == module)
+            .map(|task| task.name.as_str()),
+    );
+    let source = format!("module {module}\n\ntask {name} -> Int {{\n  return 0\n}}");
+    json!({
+        "op": "AddTask",
+        "payload": {
+            "source": source
+        }
+    })
+}
+
+fn unique_name<'a>(base: &str, existing: impl Iterator<Item = &'a str>) -> String {
+    let existing = existing.collect::<Vec<_>>();
+    if !existing.contains(&base) {
+        return base.to_string();
+    }
+    for index in 2.. {
+        let candidate = format!("{base}{index}");
+        if !existing.iter().any(|name| *name == candidate) {
+            return candidate;
+        }
+    }
+    unreachable!("unbounded unique name search should return")
 }
 
 fn build_insert_affordances(

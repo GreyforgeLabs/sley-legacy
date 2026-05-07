@@ -106,6 +106,7 @@ const DEFAULT_SMOKE_TAGS: &[&str] = &[
     "graft:templates:module-parent-surface",
     "graft:templates:module-surface",
     "graft:templates:replace-task-body",
+    "graph-slice:add-affordances",
     "graph-slice:delete-affordances",
     "graph-slice:inbound-calls",
     "graph-slice:insert-affordances",

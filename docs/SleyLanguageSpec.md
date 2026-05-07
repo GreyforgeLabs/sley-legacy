@@ -1174,8 +1174,13 @@ outbound calls, and inbound calls from other tasks that resolve to the selected
 task. This is the first stable agent-facing query surface for graft planning.
 Import summaries expose canonical import node ids such as
 `import:app.main:app.shared`, so import `MoveNode` and `DeleteNode` grafts can
-copy targets directly from graph, graph-slice, or query JSON. Graph slices also
-include `insert_affordances` for task-local block insertion planning: each
+copy targets directly from graph, graph-slice, or query JSON. Entry-module
+graph slices also include `add_affordances` for top-level import, type, effect,
+and task planning: each affordance exposes the declaration-list target, strict
+starter graft JSON, and editable pointer for the starter payload. Non-entry
+module slices leave this list empty until add grafts carry explicit destination
+modules. Graph slices also include `insert_affordances` for task-local block
+insertion planning: each
 affordance exposes the exact block target, maximum insertion position, starter
 `InsertStatement` operation JSON, and editable `/payload/source` plus
 `/payload/position` pointers. Graph slices also include `move_affordances` for
