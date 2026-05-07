@@ -1371,6 +1371,24 @@ task orphan -> Int {
         denied.lint.as_ref().expect("denied lint").findings[0].id,
         "UNUSED_PRIVATE_TASK"
     );
+
+    let human_plan = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args(["plan", "examples/unused_private_task.sley"])
+        .output()
+        .expect("run warning plan text");
+    let human_plan_stdout = String::from_utf8(human_plan.stdout).expect("plan stdout utf8");
+    assert!(
+        human_plan.status.success(),
+        "plan text warnings should be non-blocking by default"
+    );
+    assert!(
+        human_plan_stdout.contains("lint warning UNUSED_PRIVATE_TASK"),
+        "plan text should include stable lint finding id: {human_plan_stdout}"
+    );
+    assert!(
+        human_plan_stdout.contains("node=task:app.tasks.orphan"),
+        "plan text should include stable lint finding node: {human_plan_stdout}"
+    );
 }
 
 #[test]
@@ -11792,6 +11810,24 @@ task main -> Text uses Network, Shell {
             .iter()
             .any(|action| action.kind == "preview_lint_repair"),
         "ambiguous verify lint repair reports should require planning first"
+    );
+
+    let human_verify = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args(["verify", "examples/empty_for_statement.sley"])
+        .output()
+        .expect("run warning verify text");
+    let human_verify_stdout = String::from_utf8(human_verify.stdout).expect("verify stdout utf8");
+    assert!(
+        human_verify.status.success(),
+        "verify text warnings should be non-blocking by default"
+    );
+    assert!(
+        human_verify_stdout.contains("lint warning EMPTY_FOR_STATEMENT"),
+        "verify text should include stable lint finding id: {human_verify_stdout}"
+    );
+    assert!(
+        human_verify_stdout.contains("node=block:task:app.empty_for.main:stmt:1"),
+        "verify text should include stable lint finding node: {human_verify_stdout}"
     );
 }
 

@@ -2340,6 +2340,19 @@ fn print_human_edit_plan_report(report: &EditPlanReport) {
     for diagnostic in &report.diagnostics {
         println!("diagnostic {} {}", diagnostic.id, diagnostic.message);
     }
+    if let Some(lint) = &report.lint {
+        for finding in &lint.findings {
+            println!(
+                "lint {} {}: {} node={} module={} hint={}",
+                finding.severity,
+                finding.id,
+                finding.message,
+                finding.node,
+                finding.module,
+                finding.hint
+            );
+        }
+    }
     for action in &report.next_actions {
         println!(
             "next {}: {} -> {}",
@@ -2372,6 +2385,19 @@ fn print_human_verify_report(report: &VerifyReport) {
     }
     for diagnostic in &report.diagnostics {
         println!("diagnostic {} {}", diagnostic.id, diagnostic.message);
+    }
+    if let Some(lint) = &report.lint {
+        for finding in &lint.findings {
+            println!(
+                "lint {} {}: {} node={} module={} hint={}",
+                finding.severity,
+                finding.id,
+                finding.message,
+                finding.node,
+                finding.module,
+                finding.hint
+            );
+        }
     }
     for action in &report.next_actions {
         println!(

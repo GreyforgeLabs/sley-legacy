@@ -937,8 +937,9 @@ graft target ids, and planning notes; and gives next-command vectors for graph
 slice inspection, strict call-row inspection when checked calls exist, plus
 post-edit doctor and verify gates. `--deny-warnings` treats lint findings as
 blocked while still printing
-`schema: "sley.edit_plan.report.v0"`. `--graft-templates` adds starter strict
-graft operation payloads for the highest-ranked task surface, plus JSON
+`schema: "sley.edit_plan.report.v0"`. Non-JSON plan output prints stable lint
+finding IDs and nodes before next actions. `--graft-templates` adds starter
+strict graft operation payloads for the highest-ranked task surface, plus JSON
 pointers naming the fields an agent should edit before running
 `sley graft --json --dry-run`; it also consumes the selected task graph slice
 and adds `move_statement`/`move_take` templates plus destination variants from
@@ -1510,6 +1511,8 @@ refuse generic data disguised as Sley artifacts before compression begins.
   reports route agents to checked lint repair planning and dry-run fix previews
   before deployment review when the repair is unambiguous; preview actions keep
   `command` dry-run and add optional `write_command` for the mutating command.
+  Non-JSON verify output prints stable lint finding IDs and nodes before next
+  actions.
   The CLI smoke suite locks previewed lint-repair writes followed by strict
   verify for file and project targets, including unused pure binding cleanup,
   unused pure expression statement cleanup, constant-false while statement
