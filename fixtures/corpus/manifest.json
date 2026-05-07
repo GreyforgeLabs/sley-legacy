@@ -409,6 +409,38 @@
       ]
     },
     {
+      "path": "rejected/list_element_type_mismatch.sley",
+      "covers": [
+        "language:list-literal",
+        "rejected:list-element-type",
+        "diagnostic:LIST_ELEMENT_TYPE_MISMATCH"
+      ]
+    },
+    {
+      "path": "rejected/map_key_type_mismatch.sley",
+      "covers": [
+        "language:map-literal",
+        "rejected:map-key-type",
+        "diagnostic:MAP_KEY_TYPE_MISMATCH"
+      ]
+    },
+    {
+      "path": "rejected/map_value_type_mismatch.sley",
+      "covers": [
+        "language:map-literal",
+        "rejected:map-value-type",
+        "diagnostic:MAP_VALUE_TYPE_MISMATCH"
+      ]
+    },
+    {
+      "path": "rejected/duplicate_map_key.sley",
+      "covers": [
+        "language:map-literal",
+        "rejected:duplicate-map-key",
+        "diagnostic:DUPLICATE_MAP_KEY"
+      ]
+    },
+    {
       "path": "rejected/type_mismatch.sley",
       "covers": [
         "language:type-mismatch",

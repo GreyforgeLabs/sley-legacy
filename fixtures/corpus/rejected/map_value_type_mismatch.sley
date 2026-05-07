@@ -1,0 +1,9 @@
+module corpus.rejected.map_value_type_mismatch
+
+task main -> Int {
+  bind scores = map {
+    1: 2,
+    "two": "bad",
+  }
+  return 0
+}

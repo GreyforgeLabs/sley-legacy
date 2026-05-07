@@ -1,0 +1,6 @@
+module corpus.rejected.list_element_type_mismatch
+
+task main -> Int {
+  bind values: List<Int> = [1, "two"]
+  return values[0]
+}
