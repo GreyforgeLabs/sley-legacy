@@ -1,0 +1,8 @@
+module corpus.rejected.record_literal_non_record_type
+
+type UserId = Text
+
+task main -> Text {
+  bind user = UserId { value: "ada" }
+  return "done"
+}

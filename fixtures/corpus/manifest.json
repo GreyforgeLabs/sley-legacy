@@ -465,6 +465,62 @@
       ]
     },
     {
+      "path": "rejected/call_arity_mismatch.sley",
+      "covers": [
+        "language:task-call",
+        "rejected:call-arity",
+        "diagnostic:CALL_ARITY_MISMATCH"
+      ]
+    },
+    {
+      "path": "rejected/call_argument_type_mismatch.sley",
+      "covers": [
+        "language:task-call",
+        "rejected:call-argument-type",
+        "diagnostic:CALL_ARGUMENT_TYPE_MISMATCH"
+      ]
+    },
+    {
+      "path": "rejected/record_field_missing.sley",
+      "covers": [
+        "language:record-literal",
+        "rejected:record-field-missing",
+        "diagnostic:RECORD_FIELD_MISSING"
+      ]
+    },
+    {
+      "path": "rejected/record_field_unknown.sley",
+      "covers": [
+        "language:record-literal",
+        "rejected:record-field-unknown",
+        "diagnostic:RECORD_FIELD_UNKNOWN"
+      ]
+    },
+    {
+      "path": "rejected/record_field_type_mismatch.sley",
+      "covers": [
+        "language:record-literal",
+        "rejected:record-field-type",
+        "diagnostic:RECORD_FIELD_TYPE_MISMATCH"
+      ]
+    },
+    {
+      "path": "rejected/unknown_record_field.sley",
+      "covers": [
+        "language:record-field-access",
+        "rejected:unknown-record-field",
+        "diagnostic:UNKNOWN_RECORD_FIELD"
+      ]
+    },
+    {
+      "path": "rejected/record_literal_non_record_type.sley",
+      "covers": [
+        "language:record-literal",
+        "rejected:record-literal-non-record-type",
+        "diagnostic:RECORD_LITERAL_NON_RECORD_TYPE"
+      ]
+    },
+    {
       "path": "rejected/type_mismatch.sley",
       "covers": [
         "language:type-mismatch",

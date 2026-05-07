@@ -11738,7 +11738,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/corpus_rejected_count"),
-        Some(&serde_json::json!(34))
+        Some(&serde_json::json!(41))
     );
     assert_eq!(
         report_json.pointer("/corpus/missing_required_tags"),
@@ -13270,7 +13270,7 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     );
     assert_eq!(
         corpus_json.pointer("/summary/step_count"),
-        Some(&serde_json::json!(78))
+        Some(&serde_json::json!(85))
     );
     assert_eq!(
         corpus_json.pointer("/steps/0/name"),
@@ -13321,7 +13321,7 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     );
     assert_eq!(
         corpus_dir_json.pointer("/summary/step_count"),
-        Some(&serde_json::json!(78))
+        Some(&serde_json::json!(85))
     );
 
     let examples = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
@@ -24532,6 +24532,8 @@ fn assert_corpus_manifest_has_release_coverage(manifest: &CorpusManifest) {
         "rejected:Shell",
         "rejected:Spend",
         "rejected:agent-transitive-effect",
+        "rejected:call-argument-type",
+        "rejected:call-arity",
         "rejected:data-write-transitive-effect",
         "rejected:duplicate-map-key",
         "rejected:duplicate-record-field",
@@ -24542,8 +24544,15 @@ fn assert_corpus_manifest_has_release_coverage(manifest: &CorpusManifest) {
         "rejected:map-index-key",
         "rejected:map-key-type",
         "rejected:map-value-type",
+        "rejected:record-field-missing",
+        "rejected:record-field-type",
+        "rejected:record-field-unknown",
+        "rejected:record-literal-non-record-type",
         "rejected:spend-transitive-effect",
+        "rejected:unknown-record-field",
         "diagnostic:EFFECT_UNAUTHORIZED",
+        "diagnostic:CALL_ARGUMENT_TYPE_MISMATCH",
+        "diagnostic:CALL_ARITY_MISMATCH",
         "diagnostic:DUPLICATE_TASK",
         "diagnostic:DUPLICATE_TYPE",
         "diagnostic:DUPLICATE_EFFECT",
@@ -24558,9 +24567,14 @@ fn assert_corpus_manifest_has_release_coverage(manifest: &CorpusManifest) {
         "diagnostic:MAP_VALUE_TYPE_MISMATCH",
         "diagnostic:MISSING_RETURN",
         "diagnostic:QUESTION_REQUIRES_RESULT",
+        "diagnostic:RECORD_FIELD_MISSING",
+        "diagnostic:RECORD_FIELD_TYPE_MISMATCH",
+        "diagnostic:RECORD_FIELD_UNKNOWN",
+        "diagnostic:RECORD_LITERAL_NON_RECORD_TYPE",
         "diagnostic:TYPE_MISMATCH",
         "diagnostic:UNKNOWN_EFFECT",
         "diagnostic:UNKNOWN_IDENTIFIER",
+        "diagnostic:UNKNOWN_RECORD_FIELD",
         "diagnostic:UNKNOWN_TYPE",
         "authority:transitive-effects",
         "authority:gate-take",
@@ -24571,9 +24585,11 @@ fn assert_corpus_manifest_has_release_coverage(manifest: &CorpusManifest) {
         "language:map-index",
         "language:map-literal",
         "language:module-namespace",
+        "language:record-field-access",
         "language:record-literal",
         "language:record-type",
         "language:result-flow",
+        "language:task-call",
         "language:task-takes",
         "language:type-alias",
         "language:type-alias-transparent",
