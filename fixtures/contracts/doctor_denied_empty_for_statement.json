@@ -1,0 +1,153 @@
+{
+  "schema": "sley.doctor.report.v0",
+  "status": "blocked",
+  "target": "examples/empty_for_statement.sley",
+  "entry_module": "app.empty_for",
+  "summary": {
+    "error_count": 0,
+    "warning_count": 1,
+    "module_count": 1,
+    "task_count": 1,
+    "call_count": 0,
+    "lint_finding_count": 1
+  },
+  "diagnostics": [],
+  "query": {
+    "source_schema": "sley.query.report.v0",
+    "kind": "all",
+    "module_count": 1,
+    "task_count": 1,
+    "call_count": 0,
+    "entrypoints": [
+      "app.empty_for.main"
+    ],
+    "effectful_tasks": []
+  },
+  "lint": {
+    "source_schema": "sley.lint.report.v0",
+    "status": "findings",
+    "rules": [
+      "unused_private_task",
+      "unreachable_private_task",
+      "unused_declared_effect",
+      "unused_import",
+      "unused_take",
+      "unused_private_type",
+      "unused_private_effect",
+      "raw_host_adapter",
+      "missing_module_declaration",
+      "unchecked_result",
+      "unchecked_result_binding",
+      "unused_effectful_binding",
+      "unqualified_imported_call",
+      "unused_pure_binding",
+      "unused_pure_expression_statement",
+      "mutable_binding_never_set",
+      "constant_if_expression",
+      "constant_if_statement",
+      "constant_false_if_statement",
+      "constant_false_while_statement",
+      "constant_comparison_expression",
+      "constant_arithmetic_expression",
+      "constant_text_concatenation_expression",
+      "constant_list_index_expression",
+      "constant_map_index_expression",
+      "constant_record_field_access_expression",
+      "constant_len_expression",
+      "constant_not_expression",
+      "empty_if_statement",
+      "empty_else_statement",
+      "empty_for_statement",
+      "empty_forge_statement",
+      "identity_binary_expression",
+      "redundant_boolean_comparison",
+      "absorbing_boolean_expression",
+      "idempotent_boolean_expression",
+      "self_comparison_expression",
+      "double_negation_expression",
+      "negated_comparison_expression",
+      "redundant_boolean_if_expression",
+      "redundant_boolean_if_statement",
+      "same_branch_if_expression",
+      "same_branch_if_statement",
+      "unreachable_statement",
+      "absorbing_arithmetic_expression",
+      "self_assignment_statement",
+      "overwritten_set_statement",
+      "redundant_initial_set_statement"
+    ],
+    "finding_count": 1,
+    "findings": [
+      {
+        "id": "EMPTY_FOR_STATEMENT",
+        "rule": "empty_for_statement",
+        "severity": "warning",
+        "message": "task `app.empty_for.main` has a for statement over an empty list",
+        "node": "block:task:app.empty_for.main:stmt:1",
+        "module": "app.empty_for",
+        "hint": "delete this never-executed for statement"
+      }
+    ]
+  },
+  "next_actions": [
+    {
+      "kind": "repair_lint_findings",
+      "reason": "warning-grade hygiene findings should be resolved or deliberately accepted",
+      "command": [
+        "sley",
+        "lint",
+        "--json",
+        "examples/empty_for_statement.sley"
+      ]
+    },
+    {
+      "kind": "plan_lint_repairs",
+      "reason": "checked graft templates show which lint findings can be repaired structurally",
+      "command": [
+        "sley",
+        "plan",
+        "--json",
+        "--graft-templates",
+        "examples/empty_for_statement.sley"
+      ]
+    },
+    {
+      "kind": "preview_lint_repair",
+      "reason": "exactly one checked lint repair is available; preview it before writing",
+      "command": [
+        "sley",
+        "fix",
+        "--json",
+        "--kind",
+        "delete_empty_for_statement",
+        "--template-surface",
+        "block:task:app.empty_for.main:stmt:1",
+        "--dry-run",
+        "examples/empty_for_statement.sley"
+      ],
+      "write_command": [
+        "sley",
+        "fix",
+        "--json",
+        "--kind",
+        "delete_empty_for_statement",
+        "--template-surface",
+        "block:task:app.empty_for.main:stmt:1",
+        "--write",
+        "examples/empty_for_statement.sley"
+      ]
+    },
+    {
+      "kind": "inspect_tasks",
+      "reason": "task and call facts usually identify the narrowest edit surface",
+      "command": [
+        "sley",
+        "query",
+        "--json",
+        "--kind",
+        "tasks",
+        "examples/empty_for_statement.sley"
+      ]
+    }
+  ]
+}
