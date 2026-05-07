@@ -3849,7 +3849,7 @@ fn default_expression_source_inner(
         _ => default_record_expression(program, module, trimmed, visited)
             .or_else(|| {
                 program.and_then(|program| {
-                    default_named_record_expression(program, module, trimmed, visited)
+                    default_named_type_expression(program, module, trimmed, visited)
                 })
             })
             .unwrap_or_else(|| "TODO_VALUE".to_string()),
@@ -3896,7 +3896,7 @@ fn default_record_expression(
     Some(format!("{{ {} }}", field_sources.join(", ")))
 }
 
-fn default_named_record_expression(
+fn default_named_type_expression(
     program: &Program,
     module: &str,
     ty: &str,
@@ -3905,15 +3905,18 @@ fn default_named_record_expression(
     let TypeResolution::Resolved { index, fq_name } = resolve_type(program, module, ty) else {
         return None;
     };
-    let TypeExpr::Record { fields } = &program.types[index].value else {
-        return None;
-    };
     if !visited.insert(fq_name.clone()) {
         return Some("TODO_VALUE".to_string());
     }
     let decl_module = type_module(&program.types[index]);
-    let source =
-        default_record_fields_expression(program, &decl_module, ty.trim(), fields, visited);
+    let source = match &program.types[index].value {
+        TypeExpr::Record { fields } => {
+            default_record_fields_expression(program, &decl_module, ty.trim(), fields, visited)
+        }
+        value => {
+            default_expression_source_inner(Some(program), &decl_module, &value.display(), visited)
+        }
+    };
     visited.remove(&fq_name);
     Some(source)
 }

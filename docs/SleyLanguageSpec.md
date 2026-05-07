@@ -197,7 +197,9 @@ The checker normalizes resolved type/effect names to fully qualified semantic
 identity before comparing task signatures, local annotations, record literals,
 record fields, and called-task effects. This means `math.User` and
 `app.math.User` resolve to the same type when they name the same exported
-declaration.
+declaration. Record type declarations keep their named record-literal
+constructor, while non-record type declarations are transparent aliases during
+type checking and default repair-template generation.
 
 ## Runtime Gate Semantics
 

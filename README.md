@@ -599,7 +599,9 @@ Types and custom effects follow the same namespace boundary. Same-module
 type/effect names are visible by simple name. Imported type/effect declarations
 must use `export type` or `export effect`. Imported references may use an
 unambiguous simple name, an import alias such as `math.User` or `math.Read`, or
-the full module path such as `app.math.User`.
+the full module path such as `app.math.User`. Record type declarations keep
+their named record-literal constructor; non-record type declarations are
+transparent aliases during type checking and default repair-template generation.
 
 Seeded database runtime:
 
