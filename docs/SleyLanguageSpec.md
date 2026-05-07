@@ -728,6 +728,9 @@ with the expected diagnostic ids from their sidecars.
 When a wrapped step emits `schema: "sley.diagnostics.report.v0"`, non-empty
 diagnostics are summarized directly on the CI step by ID, severity, message,
 and optional node.
+When a wrapped run or verify step emits runtime diagnostics, the CI step
+summarizes those diagnostics directly as well, so missing authority gates remain
+visible in wrapper output.
 When a wrapped step emits `schema: "sley.lint.report.v0"` or a report with
 nested lint findings such as doctor, edit-plan, or verify, non-empty lint findings are
 summarized directly on the CI step by ID, rule, severity, message, node,

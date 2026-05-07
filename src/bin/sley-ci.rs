@@ -1344,10 +1344,19 @@ fn run_binary_step(
 }
 
 fn extract_step_diagnostics(json: &JsonValue, stdout_schema: Option<&str>) -> Vec<CiDiagnostic> {
-    if stdout_schema != Some("sley.diagnostics.report.v0") {
-        return Vec::new();
-    }
-    json.pointer("/diagnostics")
+    let pointers: &[&str] = match stdout_schema {
+        Some("sley.diagnostics.report.v0" | "sley.run.report.v0") => &["/diagnostics"],
+        Some("sley.verify.report.v0") => &["/diagnostics", "/runtime/diagnostics"],
+        _ => return Vec::new(),
+    };
+    pointers
+        .iter()
+        .flat_map(|pointer| extract_diagnostics_at(json, pointer))
+        .collect()
+}
+
+fn extract_diagnostics_at(json: &JsonValue, pointer: &str) -> Vec<CiDiagnostic> {
+    json.pointer(pointer)
         .and_then(JsonValue::as_array)
         .map(|diagnostics| {
             diagnostics

@@ -11343,6 +11343,15 @@ fn conformance_report_summarizes_release_surface() {
             .and_then(|value| value.as_array())
             .is_some_and(|tags| tags
                 .iter()
+                .any(|tag| tag == "ci:verify-runtime-diagnostics")),
+        "conformance report should require sley-ci verify runtime diagnostic coverage"
+    );
+    assert!(
+        report_json
+            .pointer("/smoke/required_tags")
+            .and_then(|value| value.as_array())
+            .is_some_and(|tags| tags
+                .iter()
                 .any(|tag| tag == "migrate:unchecked-result-binding")),
         "conformance report should require unchecked result binding migration smoke coverage"
     );
@@ -11371,7 +11380,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/smoke_case_count"),
-        Some(&serde_json::json!(471))
+        Some(&serde_json::json!(472))
     );
     assert_eq!(
         report_json.pointer("/summary/onboarding_path_count"),
@@ -12148,6 +12157,36 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     assert_json_snapshot(
         &denied_verify_json,
         include_str!("../fixtures/contracts/ci_verify_denied_empty_for_statement.json"),
+    );
+
+    let blocked_runtime_verify = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
+        .current_dir(&repo_root)
+        .args([
+            "verify",
+            "--json",
+            "--deny-warnings",
+            "examples/agent_deploy_pipeline.sley",
+        ])
+        .output()
+        .expect("run blocked runtime sley-ci verify");
+    assert!(
+        !blocked_runtime_verify.status.success(),
+        "sley-ci verify without runtime gates should fail"
+    );
+    let blocked_runtime_verify_json: serde_json::Value =
+        serde_json::from_slice(&blocked_runtime_verify.stdout)
+            .expect("parse blocked runtime sley-ci verify JSON");
+    assert_eq!(
+        blocked_runtime_verify_json.pointer("/steps/0/stdout_schema"),
+        Some(&serde_json::json!("sley.verify.report.v0"))
+    );
+    assert_eq!(
+        blocked_runtime_verify_json.pointer("/steps/0/diagnostics/0/id"),
+        Some(&serde_json::json!("RUNTIME_CAPABILITY_REQUIRED"))
+    );
+    assert_eq!(
+        blocked_runtime_verify_json.pointer("/steps/0/diagnostics/0/severity"),
+        Some(&serde_json::json!("error"))
     );
 
     let stable_deploy = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
@@ -23956,6 +23995,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "agent-bench:unused-private-task-repair",
         "ci:corpus",
         "ci:lint",
+        "ci:verify-runtime-diagnostics",
         "conformance:coverage",
         "docgen:reference",
         "lsp:help",

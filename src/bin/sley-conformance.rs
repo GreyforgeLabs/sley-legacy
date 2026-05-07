@@ -63,6 +63,7 @@ const DEFAULT_SMOKE_TAGS: &[&str] = &[
     "agent-bench:unused-private-task-repair",
     "ci:corpus",
     "ci:lint",
+    "ci:verify-runtime-diagnostics",
     "cli:sley-ci",
     "cli:sley-agent-bench",
     "cli:ast",
