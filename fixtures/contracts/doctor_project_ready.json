@@ -116,6 +116,17 @@
       ]
     },
     {
+      "kind": "verify_gate",
+      "reason": "strict verification should pass before deploy, seal, or package handoff",
+      "command": [
+        "sley",
+        "verify",
+        "--json",
+        "--deny-warnings",
+        "examples/project"
+      ]
+    },
+    {
       "kind": "run_entrypoint",
       "reason": "main is pure and can run without runtime gates",
       "command": [

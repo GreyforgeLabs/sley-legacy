@@ -328,7 +328,9 @@ Current development phase:
   prove the previewed repair can be written and followed by clean
   `sley verify --json --deny-warnings` for both single-file and multi-file
   project targets, including generated deploy and agent scaffold quickstarts
-  re-verified with seeded authority
+  re-verified with seeded authority. Ready doctor reports include
+  `verify_gate` next-actions before entrypoint runs, with seeded `--cap` args
+  when the entrypoint declares effects
 - `sley plan --json` emits `sley.edit_plan.report.v0` and consumes strict
   diagnostics plus checked query/lint findings into ranked task edit surfaces,
   graft targets, call-row inspection next-actions, and post-edit gate commands;

@@ -293,7 +293,8 @@ Current verified surface:
   `sley fix --dry-run` previews carrying explicit `write_command` vectors with
   a staged write-and-verify smoke for a previewed repair plus a project-level
   previewed unused-import write-and-verify smoke and generated scaffold
-  quickstarts re-verified with local or seeded authority, plus
+  quickstarts re-verified with local or seeded authority, plus ready-state
+  doctor `verify_gate` next-actions with seeded caps before entrypoint runs, plus
   scaffold-level and passed-verify seal/ZJX handoff next-actions, doctor/plan
   call-bearing reports that route agents to strict call-row inspection, a
   write/query/verify smoke for the call-row-driven rename-and-update-call-sites

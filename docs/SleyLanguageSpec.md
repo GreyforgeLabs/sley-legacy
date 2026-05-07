@@ -898,6 +898,9 @@ gates, checked `sley plan --json --graft-templates` repair planning when lint
 findings exist, non-mutating `sley fix --dry-run` previews when exactly one
 checked lint repair exists, explicit optional `write_command` vectors for the
 matching `sley fix --write`, and entrypoint runs.
+Ready reports include a `verify_gate` next action before entrypoint runs; if
+the entrypoint declares effects, the command includes the same seeded `--cap`
+arguments needed by runtime execution.
 `--deny-warnings` treats lint findings as blocked while still printing the
 versioned report.
 
