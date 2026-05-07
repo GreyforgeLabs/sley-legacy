@@ -18,7 +18,34 @@
       "exported": true
     }
   ],
-  "add_affordances": [],
+  "add_affordances": [
+    {
+      "target": "module:app.math:types",
+      "target_kind": "type",
+      "operation": {
+        "op": "AddTypeDeclaration",
+        "payload": {
+          "source": "module app.math\n\ntype NewRecord = {\n  slot value: Text\n}"
+        }
+      },
+      "editable_json_pointers": [
+        "/payload/source"
+      ]
+    },
+    {
+      "target": "module:app.math:tasks",
+      "target_kind": "task",
+      "operation": {
+        "op": "AddTask",
+        "payload": {
+          "source": "module app.math\n\ntask new_task -> Int {\n  return 0\n}"
+        }
+      },
+      "editable_json_pointers": [
+        "/payload/source"
+      ]
+    }
+  ],
   "insert_affordances": [
     {
       "target": "block:task:app.math.double",

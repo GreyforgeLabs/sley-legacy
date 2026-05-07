@@ -504,10 +504,11 @@ agents can plan the supported structural edit.
 Graph, graph-slice, and query module import summaries now expose canonical
 import node ids so agents can copy import graft targets directly from the
 machine contract instead of reconstructing them.
-Entry-module graph slices now expose checked add affordances for top-level
-import, type, effect, and task starters, reusing the strict graft operation
-schema and pinning editable payload pointers. Non-entry module slices keep the
-add list empty until add grafts carry explicit destination-module targets.
+Graph slices now expose checked add affordances for top-level declarations,
+reusing the strict graft operation schema and pinning editable payload
+pointers. Non-entry module slices expose source-module-backed type and task
+starters; import/effect add affordances stay entry-module-only until those graft
+ops carry explicit owner-module targets.
 `sley plan --graft-templates --template-surface module:<name>` and declaration
 list parents such as `module:<name>:tasks` now consume the module graph-slice
 affordances directly, exposing checked top-level import/type/effect/task move

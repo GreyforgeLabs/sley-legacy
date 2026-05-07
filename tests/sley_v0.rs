@@ -2564,6 +2564,48 @@ task main -> Int {
         empty_report.graft_templates
     );
 
+    let imported_module_plan = parse_program(
+        r#"
+module app.main
+
+import app.extra
+
+task main -> Int {
+  return 1
+}
+"#,
+    )
+    .expect("parse imported module add surface fixture");
+    let imported_module_report = build_edit_plan_report_with_options(
+        "app.main",
+        Ok(imported_module_plan.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("module:app.extra".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(imported_module_report.status, "warnings");
+    assert_eq!(
+        imported_module_report
+            .graft_templates
+            .iter()
+            .map(|template| template.kind.as_str())
+            .collect::<Vec<_>>(),
+        vec!["add_type_declaration", "add_task"]
+    );
+    for template in &imported_module_report.graft_templates {
+        let graft: GraftInput = serde_json::from_value(template.operation.clone())
+            .expect("imported module add template should parse");
+        let outcome = apply_graft_input(
+            &imported_module_plan,
+            graft,
+            Some("agent:imported-module-add-template-test".to_string()),
+        );
+        assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    }
+
     let used_type_module = parse_program(
         r#"
 module app.type_surface
@@ -17018,10 +17060,31 @@ task main -> Int {
 
     let imported_module_slice =
         slice_symbol_graph(&program, "module:app.extra").expect("slice imported module");
-    assert!(
-        imported_module_slice.add_affordances.is_empty(),
-        "add affordances should stay on entry-module slices until add grafts carry explicit module targets"
+    assert_eq!(
+        imported_module_slice
+            .add_affordances
+            .iter()
+            .map(|affordance| affordance.target_kind.as_str())
+            .collect::<Vec<_>>(),
+        vec!["type", "task"]
     );
+    assert!(
+        !imported_module_slice
+            .add_affordances
+            .iter()
+            .any(|affordance| matches!(affordance.target_kind.as_str(), "import" | "effect")),
+        "non-entry add affordances should stay limited to source-module-backed AddTask/AddTypeDeclaration operations"
+    );
+    for affordance in &imported_module_slice.add_affordances {
+        let graft: GraftInput = serde_json::from_value(affordance.operation.clone())
+            .expect("parse imported module add affordance");
+        let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
+        assert_eq!(
+            outcome.status, "accepted",
+            "expected imported module add affordance {affordance:#?} to apply, got {:#?}",
+            outcome.diagnostics
+        );
+    }
 
     let import = slice
         .move_affordances

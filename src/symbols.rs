@@ -691,36 +691,37 @@ fn build_slice(
 }
 
 fn build_add_affordances(program: &Program, focus_module: &str) -> Vec<AddDeclarationAffordance> {
-    if focus_module != program.module_name() {
-        return Vec::new();
-    }
-
-    vec![
-        add_declaration_affordance(
+    let is_entry_module = focus_module == program.module_name();
+    let mut affordances = Vec::new();
+    if is_entry_module {
+        affordances.push(add_declaration_affordance(
             "import",
             focus_module,
             add_import_operation(program),
             vec!["/payload/module".to_string()],
-        ),
-        add_declaration_affordance(
-            "type",
-            focus_module,
-            add_type_declaration_operation(program, focus_module),
-            vec!["/payload/source".to_string()],
-        ),
-        add_declaration_affordance(
+        ));
+    }
+    affordances.push(add_declaration_affordance(
+        "type",
+        focus_module,
+        add_type_declaration_operation(program, focus_module),
+        vec!["/payload/source".to_string()],
+    ));
+    if is_entry_module {
+        affordances.push(add_declaration_affordance(
             "effect",
             focus_module,
             add_effect_declaration_operation(program),
             vec!["/payload/name".to_string()],
-        ),
-        add_declaration_affordance(
-            "task",
-            focus_module,
-            add_task_operation(program, focus_module),
-            vec!["/payload/source".to_string()],
-        ),
-    ]
+        ));
+    }
+    affordances.push(add_declaration_affordance(
+        "task",
+        focus_module,
+        add_task_operation(program, focus_module),
+        vec!["/payload/source".to_string()],
+    ));
+    affordances
 }
 
 fn add_declaration_affordance(
