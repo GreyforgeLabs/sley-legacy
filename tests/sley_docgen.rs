@@ -133,6 +133,43 @@ fn docgen_filters_project_module_reference() {
     );
 }
 
+#[test]
+fn docgen_blocks_unknown_project_module_filter() {
+    let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-docgen"))
+        .current_dir(&repo_root)
+        .args([
+            "reference",
+            "--json",
+            "--module",
+            "agent.typo",
+            "examples/agent_project",
+        ])
+        .output()
+        .expect("run sley-docgen");
+    assert!(
+        !output.status.success(),
+        "docgen unexpectedly passed\nstdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    support::validate_report_schema("sley.docgen.report.v0", &output.stdout);
+    let report: JsonValue = serde_json::from_slice(&output.stdout).expect("parse docgen report");
+    assert_eq!(report.pointer("/status"), Some(&json!("blocked")));
+    assert_eq!(
+        report.pointer("/filters/module"),
+        Some(&json!("agent.typo"))
+    );
+    assert_eq!(report.pointer("/summary/module_count"), Some(&json!(0)));
+    assert_eq!(report.pointer("/summary/task_count"), Some(&json!(0)));
+    assert_eq!(report.pointer("/summary/issue_count"), Some(&json!(1)));
+    assert_eq!(
+        report.pointer("/issues/0/code"),
+        Some(&json!("DOCGEN_MODULE_FILTER_NOT_FOUND"))
+    );
+}
+
 fn path_str(path: &Path) -> String {
     path.to_string_lossy().to_string()
 }

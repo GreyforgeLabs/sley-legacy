@@ -196,6 +196,41 @@
       }
     },
     {
+      "name": "docgen_unknown_project_module_json",
+      "bin": "sley-docgen",
+      "args": [
+        "reference",
+        "--json",
+        "--module",
+        "agent.typo",
+        "examples/agent_project"
+      ],
+      "covers": [
+        "cli:sley-docgen",
+        "diagnostic:DOCGEN_MODULE_FILTER_NOT_FOUND",
+        "docgen:reference",
+        "dogfood:agent-project",
+        "examples:project",
+        "json:sley.docgen.report.v0",
+        "readiness:docgen-reference"
+      ],
+      "expect": {
+        "success": false,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.docgen.report.v0" },
+          { "pointer": "/status", "value": "blocked" },
+          { "pointer": "/filters/module", "value": "agent.typo" },
+          { "pointer": "/summary/module_count", "value": 0 },
+          { "pointer": "/summary/task_count", "value": 0 },
+          { "pointer": "/summary/issue_count", "value": 1 },
+          {
+            "pointer": "/issues/0/code",
+            "value": "DOCGEN_MODULE_FILTER_NOT_FOUND"
+          }
+        ]
+      }
+    },
+    {
       "name": "workbench_graph_slice_report_json",
       "bin": "sley-workbench",
       "args": [
@@ -12646,6 +12681,37 @@
           { "pointer": "/authority_seeds/0/qualified_name", "value": "agent.pipeline.collect_profile" },
           { "pointer": "/authority_seeds/1/command_args/1", "value": "ModelCall" },
           { "pointer": "/authority_seeds/2/command_args/1", "value": "Deploy" }
+        ]
+      }
+    },
+    {
+      "name": "shadow_unknown_project_module_json",
+      "bin": "sley-shadow",
+      "args": ["report", "--json", "--module", "agent.typo", "examples/agent_project"],
+      "covers": [
+        "cli:sley-shadow",
+        "diagnostic:SHADOW_MODULE_FILTER_NOT_FOUND",
+        "dogfood:agent-project",
+        "examples:project",
+        "json:sley.shadow.report.v0",
+        "readiness:shadow-helper"
+      ],
+      "expect": {
+        "success": false,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.shadow.report.v0" },
+          { "pointer": "/status", "value": "blocked" },
+          { "pointer": "/target", "value": "examples/agent_project" },
+          { "pointer": "/filters/module", "value": "agent.typo" },
+          { "pointer": "/filters/rules", "value": [] },
+          { "pointer": "/summary/module_count", "value": 0 },
+          { "pointer": "/summary/task_count", "value": 0 },
+          { "pointer": "/summary/lint_finding_count", "value": 0 },
+          { "pointer": "/summary/issue_count", "value": 1 },
+          {
+            "pointer": "/issues/0/code",
+            "value": "SHADOW_MODULE_FILTER_NOT_FOUND"
+          }
         ]
       }
     },

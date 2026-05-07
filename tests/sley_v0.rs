@@ -10294,7 +10294,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/smoke_case_count"),
-        Some(&serde_json::json!(439))
+        Some(&serde_json::json!(441))
     );
     assert_eq!(
         report_json.pointer("/summary/onboarding_path_count"),

@@ -182,6 +182,8 @@ here. Dates use UTC-independent calendar dates from the local repo history.
 - `sley-docgen reference --module <module>` now titles filtered project-root
   references by the selected module and is pinned by contract plus smoke
   coverage.
+- `sley-docgen` and `sley-shadow` now block unknown module filters with explicit
+  machine-readable issue codes instead of returning empty successful reports.
 - Contract inventory now tracks 38 schemas, 110 contract fixtures, and 113 schema
   instances through the conformance report.
 - The Rust package metadata now declares its supported Rust floor, description,

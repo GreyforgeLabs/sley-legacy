@@ -200,12 +200,13 @@ for focused slice handoff.
 The `sley-docgen` binary exposes `schema: "sley.docgen.report.v0"` and
 optional Markdown over checked module, task, type, effect, and capability
 reference data, including seeded `--cap` args for deterministic host setup; use
-`--module <module>` or `--exported-only` to narrow project-root references.
+`--module <module>` or `--exported-only` to narrow project-root references;
+unknown module filters block explicitly.
 The `sley-shadow` binary exposes `schema: "sley.shadow.report.v0"` and
 non-authoritatively consumes checked query/lint reports to link lint findings
 to query rows and derive seeded `--cap` args for effectful tasks on single-file
 or project-root targets; pass `--module <module>` or repeated `--rule <rule>`
-to narrow a replay.
+to narrow a replay; unknown module filters block explicitly.
 The `sley-agent-bench` binary exposes
 `schema: "sley.agent_bench.report.v0"` for deterministic local repair-loop
 benchmarks over JSON inspection, checked fixes, post-fix gates, trace receipts,

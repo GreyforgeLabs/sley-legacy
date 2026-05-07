@@ -284,8 +284,8 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
       `sley.query.report.v0` module/task/type/effect summaries plus the
       canonical host capability contract table, including seeded `--cap`
       argument fragments. It supports checked module/export filters over files
-      and project roots and is covered by integration tests plus locked
-      contract fixtures.
+      and project roots, blocks unknown module filters explicitly, and is
+      covered by integration tests plus locked contract fixtures.
 
 12. `sley-shadow`
     - Non-authoritative helper replay over checked query and lint reports.
@@ -294,9 +294,9 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
     - Current bootstrap: in-tree `src/bin/sley-shadow.rs` emits
       `schema: "sley.shadow.report.v0"` from checked `sley.query.report.v0`
       and `sley.lint.report.v0` data, supports module- and rule-scoped
-      replay, is covered by integration tests, and has locked contract fixtures
-      plus single-file, project-root, module-filtered, and rule-filtered CLI
-      smoke coverage.
+      replay, blocks unknown module filters explicitly, is covered by
+      integration tests, and has locked contract fixtures plus single-file,
+      project-root, module-filtered, and rule-filtered CLI smoke coverage.
 
 13. `sley-sandbox-runner`
     - A deterministic replay wrapper around seeded host adapters.

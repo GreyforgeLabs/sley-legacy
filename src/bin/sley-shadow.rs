@@ -170,6 +170,17 @@ fn build_shadow_report(args: ReportArgs) -> ShadowReport {
             exported_only: false,
         },
     );
+    if let Some(module) = filters.module.clone().filter(|_| query.modules.is_empty()) {
+        return blocked_report(
+            target,
+            filters,
+            diagnostics,
+            vec![ShadowIssue {
+                code: "SHADOW_MODULE_FILTER_NOT_FOUND".to_string(),
+                message: format!("module filter `{module}` did not match any checked module"),
+            }],
+        );
+    }
     let lint = build_lint_report(
         &program,
         LintOptions {

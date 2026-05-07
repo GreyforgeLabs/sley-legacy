@@ -805,7 +805,8 @@ the canonical host capability contract table. Capability rows include seeded
 writes a single reference page with module, task, type, effect, and capability
 sections. `--module <module>` and `--exported-only` reuse the checked query
 filters so agents can emit focused references for one project module or public
-surface.
+surface. Unknown module filters block with `DOCGEN_MODULE_FILTER_NOT_FOUND`
+instead of producing empty successful references.
 The target may be one `.sley` file or a project root; the command is read-only
 for source code.
 
@@ -817,7 +818,8 @@ report links lint findings back to task/type/effect/module rows when possible
 and derives seeded `--cap` argument fragments for effectful tasks. The target
 may be one `.sley` file or a project root loaded through `sley.toml`; `--module
 <module>` and repeated `--rule <rule>` narrow the lint/query replay. It is
-non-authoritative; Rust Loom remains the semantic oracle.
+non-authoritative; unknown module filters block with
+`SHADOW_MODULE_FILTER_NOT_FOUND`; Rust Loom remains the semantic oracle.
 
 The local agent-loop benchmark is backed by the in-tree `sley-agent-bench`
 bootstrap. `sley-agent-bench run --json` emits
