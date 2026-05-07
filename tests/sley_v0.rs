@@ -2251,6 +2251,84 @@ task threshold -> Int {
 }
 
 #[test]
+fn edit_plan_graft_templates_can_target_module_surfaces() {
+    let source = r#"
+module app.plan
+
+effect Audit
+
+type User = {
+  slot name: Text
+}
+
+task helper -> Int {
+  return 2
+}
+
+task main -> Int {
+  return 1
+}
+"#;
+    let program = parse_program(source).expect("parse module surface plan fixture");
+    let report = build_edit_plan_report_with_options(
+        "app.plan",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("module:app.plan".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "warnings");
+    assert!(!report.graft_templates.is_empty());
+    assert!(
+        report.graft_templates.iter().all(|template| {
+            template.surface == "module:app.plan"
+                && !template
+                    .operation
+                    .pointer("/target")
+                    .and_then(serde_json::Value::as_str)
+                    .is_some_and(|target| {
+                        target.starts_with("block:") || target.starts_with("take:")
+                    })
+        }),
+        "module surface templates should stay at declaration/import granularity: {:#?}",
+        report.graft_templates
+    );
+    assert!(report.graft_templates.iter().any(|template| {
+        template.kind == "move_type"
+            && template.operation.pointer("/target")
+                == Some(&serde_json::json!("type:app.plan.User"))
+    }));
+    assert!(report.graft_templates.iter().any(|template| {
+        template.kind == "move_effect"
+            && template.operation.pointer("/target")
+                == Some(&serde_json::json!("effect:app.plan.Audit"))
+    }));
+    assert!(report.graft_templates.iter().any(|template| {
+        template.kind == "move_task"
+            && template.operation.pointer("/target")
+                == Some(&serde_json::json!("task:app.plan.helper"))
+    }));
+    assert!(report.graft_templates.iter().any(|template| {
+        template.kind == "delete_type"
+            && template.operation.pointer("/target")
+                == Some(&serde_json::json!("type:app.plan.User"))
+    }));
+    for template in &report.graft_templates {
+        let graft: GraftInput = serde_json::from_value(template.operation.clone())
+            .expect("module surface template should parse");
+        let outcome = apply_graft_input(
+            &program,
+            graft,
+            Some("agent:module-surface-template-test".to_string()),
+        );
+        assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    }
+}
+
+#[test]
 fn edit_plan_graft_templates_include_move_destinations() {
     let source = r#"
 module app.plan
@@ -9711,7 +9789,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/smoke_case_count"),
-        Some(&serde_json::json!(405))
+        Some(&serde_json::json!(406))
     );
     assert_eq!(
         report_json.pointer("/summary/example_source_count"),
@@ -9719,11 +9797,11 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/integration_test_count"),
-        Some(&serde_json::json!(318))
+        Some(&serde_json::json!(319))
     );
     assert_eq!(
         report_json.pointer("/summary/declared_integration_test_count"),
-        Some(&serde_json::json!(318))
+        Some(&serde_json::json!(319))
     );
     assert_eq!(
         report_json.pointer("/summary/test_count_matches_declared"),
@@ -9735,7 +9813,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/tests/integration_test_count"),
-        Some(&serde_json::json!(318))
+        Some(&serde_json::json!(319))
     );
     assert_eq!(
         report_json.pointer("/tests/declared_matches_actual"),
