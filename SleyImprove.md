@@ -740,7 +740,8 @@ The current smoke manifest covers:
   call-argument affordances, plus checked `insert_statement`,
   `replace_statement`, `replace_expression`, `update_call_sites`, and
   `replace_call_arg` graft templates in edit-plan
-  reports, including direct `--emit-graft replace_call_arg` smoke coverage
+  reports, including direct `--emit-graft replace_call_arg` and
+  `sley fix --kind replace_call_arg --dry-run` smoke coverage
 - program-surface declaration/import templates for checked `add_task`,
   `add_type_declaration`, `add_effect_declaration`, and `add_import` starters,
   plus `add_task` emission and dry-run fix execution with source, name, and

@@ -2420,6 +2420,40 @@
       }
     },
     {
+      "name": "fix_project_replace_call_arg_dry_run_json",
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "replace_call_arg",
+        "--template-surface",
+        "task:app.main.main",
+        "--dry-run",
+        "--actor",
+        "agent:cli-smoke",
+        "examples/project"
+      ],
+      "covers": [
+        "cli:fix",
+        "cli:graft-dry-run",
+        "fix:replace-call-arg-dry-run",
+        "graft:templates:replace-call-arg",
+        "json:sley.graft.outcome.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_contains": ["math.double(21)"],
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/actor", "value": "agent:cli-smoke" },
+          { "pointer": "/provenance/0/operation", "value": "ReplaceCallArg" },
+          { "pointer": "/provenance/0/targets/0", "value": "task:app.math.double" },
+          { "pointer": "/provenance/0/targets/1", "value": "calls:1" }
+        ]
+      }
+    },
+    {
       "name": "plan_move_template_filters_unchecked_destination_json",
       "setup_files": [
         {
