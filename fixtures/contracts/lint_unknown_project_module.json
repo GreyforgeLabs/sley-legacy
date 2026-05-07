@@ -1,0 +1,11 @@
+{
+  "schema": "sley.diagnostics.report.v0",
+  "status": "error",
+  "diagnostics": [
+    {
+      "id": "LINT_MODULE_FILTER_NOT_FOUND",
+      "severity": "error",
+      "message": "module filter `app.typo` did not match any checked module"
+    }
+  ]
+}
