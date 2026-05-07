@@ -13,6 +13,48 @@ use serde_json::Value as JsonValue;
 const CONFORMANCE_REPORT_SCHEMA: &str = "sley.conformance.report.v0";
 const CONFORMANCE_COVERAGE_SCHEMA: &str = "sley.conformance.coverage.v0";
 
+const DEFAULT_CORPUS_TAGS: &[&str] = &[
+    "accepted:DatabaseRead",
+    "accepted:DatabaseWrite",
+    "accepted:Deploy",
+    "accepted:FileRead",
+    "accepted:FileWrite",
+    "accepted:ModelCall",
+    "accepted:Network",
+    "accepted:SecretRead",
+    "accepted:Shell",
+    "accepted:Spend",
+    "accepted:agent-data-authority",
+    "accepted:agent-deploy-pipeline",
+    "accepted:agent-spend-authority",
+    "accepted:agent-split-authority",
+    "authority:transitive-effects",
+    "diagnostic:DUPLICATE_EFFECT",
+    "diagnostic:DUPLICATE_TASK",
+    "diagnostic:DUPLICATE_TYPE",
+    "diagnostic:EFFECT_UNAUTHORIZED",
+    "diagnostic:MISSING_RETURN",
+    "diagnostic:TYPE_MISMATCH",
+    "diagnostic:UNKNOWN_IDENTIFIER",
+    "formatter:round-trip",
+    "language:module-namespace",
+    "language:type-alias",
+    "language:type-alias-transparent",
+    "rejected:DatabaseRead",
+    "rejected:DatabaseWrite",
+    "rejected:Deploy",
+    "rejected:FileRead",
+    "rejected:FileWrite",
+    "rejected:ModelCall",
+    "rejected:Network",
+    "rejected:SecretRead",
+    "rejected:Shell",
+    "rejected:Spend",
+    "rejected:agent-transitive-effect",
+    "rejected:data-write-transitive-effect",
+    "rejected:spend-transitive-effect",
+];
+
 const DEFAULT_SMOKE_TAGS: &[&str] = &[
     "cli:ast",
     "cli:check",
@@ -190,6 +232,8 @@ struct CorpusSection {
     rejected_count: usize,
     tag_inventory: Vec<TagCount>,
     feature_counts: Vec<TagCount>,
+    required_tags: Vec<String>,
+    missing_required_tags: Vec<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -481,6 +525,12 @@ fn build_report(
 
     let corpus = build_corpus_section(corpus_manifest, &mut issues);
     let smoke = build_smoke_section(smoke_manifests, &mut issues);
+    for tag in &corpus.missing_required_tags {
+        issues.push(issue(
+            "missing_corpus_tag",
+            format!("corpus manifest does not cover required tag {tag:?}"),
+        ));
+    }
     for tag in &smoke.missing_required_tags {
         issues.push(issue(
             "missing_smoke_tag",
@@ -820,18 +870,30 @@ fn collect_validation_issues(validation: &ValidationSection, issues: &mut Vec<Co
 }
 
 fn build_corpus_section(path: &Path, issues: &mut Vec<ConformanceIssue>) -> CorpusSection {
+    let required_tags = DEFAULT_CORPUS_TAGS
+        .iter()
+        .map(|tag| (*tag).to_string())
+        .collect::<Vec<_>>();
     match read_json_file::<CorpusManifest>(path) {
         Ok(manifest) => {
             let mut tags = Vec::new();
             for case in manifest.accepted.iter().chain(manifest.rejected.iter()) {
                 tags.extend(case.covers.clone());
             }
+            let tag_set = tags.iter().cloned().collect::<BTreeSet<_>>();
+            let missing_required_tags = required_tags
+                .iter()
+                .filter(|tag| !tag_set.contains(*tag))
+                .cloned()
+                .collect::<Vec<_>>();
             CorpusSection {
                 manifest: path_string(path),
                 accepted_count: manifest.accepted.len(),
                 rejected_count: manifest.rejected.len(),
                 feature_counts: tag_counts(tags.iter().map(|tag| feature_prefix(tag))),
                 tag_inventory: tag_counts(tags.into_iter()),
+                required_tags,
+                missing_required_tags,
             }
         }
         Err(error) => {
@@ -845,6 +907,8 @@ fn build_corpus_section(path: &Path, issues: &mut Vec<ConformanceIssue>) -> Corp
                 rejected_count: 0,
                 tag_inventory: Vec::new(),
                 feature_counts: Vec::new(),
+                required_tags,
+                missing_required_tags: Vec::new(),
             }
         }
     }

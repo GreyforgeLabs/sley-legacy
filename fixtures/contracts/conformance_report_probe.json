@@ -73,7 +73,11 @@
         "tag": "language",
         "count": 1
       }
-    ]
+    ],
+    "required_tags": [
+      "language:pure-task-call"
+    ],
+    "missing_required_tags": []
   },
   "smoke": {
     "manifests": [

@@ -167,7 +167,8 @@ Implemented now:
 - in-tree `sley-conformance` utility with `report` and `coverage` commands for
   schema/fixture instance coverage, contract validation status, corpus coverage
   tags, smoke coverage tags, packaged example counts, and the declared
-  integration-test count, plus non-gating public-release packaging blockers,
+  integration-test count, including required corpus and smoke release tags,
+  plus non-gating public-release packaging blockers,
   with `--require-public-release-ready` available as the explicit public-cut
   gate once license and repository metadata are settled,
   emitting
