@@ -393,6 +393,22 @@
       ]
     },
     {
+      "path": "rejected/list_index_non_int.sley",
+      "covers": [
+        "language:list-index",
+        "rejected:list-index-type",
+        "diagnostic:INDEX_NOT_INT"
+      ]
+    },
+    {
+      "path": "rejected/map_index_non_text.sley",
+      "covers": [
+        "language:map-index",
+        "rejected:map-index-key",
+        "diagnostic:INDEX_KEY_TYPE_MISMATCH"
+      ]
+    },
+    {
       "path": "rejected/type_mismatch.sley",
       "covers": [
         "language:type-mismatch",

@@ -1,0 +1,6 @@
+module corpus.rejected.list_index_non_int
+
+task main -> Int {
+  bind values = [1, 2, 3]
+  return values["one"]
+}
