@@ -575,8 +575,7 @@ Implemented now:
   and `.pre-commit-config.yaml`; the action installs Rust and Node tooling
   before the gate
 - conformance-inventoried compact agent onboarding pack in `llms.txt`,
-  `docs/AgentQuickstart.md`, `docs/SleyLanguageSpec.md`, examples, graft
-  fixtures, and tests
+  `docs/SleyLanguageSpec.md`, examples, graft fixtures, and tests
 - release-facing `CHANGELOG.md` and `docs/contracts.md` files covering the
   current contract roots, validation commands, and release-candidate deltas
 
@@ -596,8 +595,8 @@ chosen license and repository values:
 make public-release-check
 ```
 
-The exact public metadata decisions and cut checklist live in
-`docs/PublicReleaseChecklist.md`.
+The exact public metadata decisions and cut checklist are tracked in the private
+release workflow.
 
 Only the public Git branch is `main`; the local `private` branch is retained for
 private development workflow. The `public` remote branch is intentionally absent
@@ -615,9 +614,8 @@ Do not keep the old public tag in place.
 
 Fast agent path:
 
-- `docs/AgentQuickstart.md` is the concise local path from `sley new` to
-  checked run, warning-denying verify, dry-run deploy artifacts, and artifact
-  contract inspection.
+- Generated scaffold quickstarts and seeded verify flows are available in the
+  private workflow notes.
 
 Project form:
 
