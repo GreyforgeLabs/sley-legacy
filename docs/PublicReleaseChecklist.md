@@ -80,8 +80,9 @@ After the operator supplies the metadata decisions:
 10. Remove old public release tag(s) if replacing a prior tag:
 
 ```bash
-git tag -d v1.0.0
-git push origin :refs/tags/v1.0.0
+OLD_TAG=<previous_public_tag>
+git tag -d "$OLD_TAG"
+git push origin :refs/tags/"$OLD_TAG"
 ```
 
 11. Tag the release from `main` and push:
