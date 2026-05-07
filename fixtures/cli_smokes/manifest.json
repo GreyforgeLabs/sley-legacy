@@ -12543,6 +12543,36 @@
       }
     },
     {
+      "name": "shadow_agent_project_json",
+      "bin": "sley-shadow",
+      "args": ["report", "--json", "examples/agent_project"],
+      "covers": [
+        "cli:sley-shadow",
+        "dogfood:agent-project",
+        "examples:project",
+        "json:sley.shadow.report.v0",
+        "project:imported-host-authority",
+        "readiness:shadow-helper"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.shadow.report.v0" },
+          { "pointer": "/status", "value": "clean" },
+          { "pointer": "/target", "value": "examples/agent_project" },
+          { "pointer": "/summary/module_count", "value": 2 },
+          { "pointer": "/summary/task_count", "value": 4 },
+          { "pointer": "/summary/effectful_task_count", "value": 4 },
+          { "pointer": "/summary/call_count", "value": 11 },
+          { "pointer": "/summary/authority_seed_count", "value": 4 },
+          { "pointer": "/authority_seeds/0/qualified_name", "value": "agent.main.main" },
+          { "pointer": "/authority_seeds/1/qualified_name", "value": "agent.pipeline.collect_profile" },
+          { "pointer": "/authority_seeds/2/command_args/1", "value": "ModelCall" },
+          { "pointer": "/authority_seeds/3/command_args/1", "value": "Deploy" }
+        ]
+      }
+    },
+    {
       "name": "doctor_agent_project_json",
       "args": ["doctor", "--json", "examples/agent_project"],
       "covers": [

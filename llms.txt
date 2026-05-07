@@ -202,7 +202,8 @@ optional Markdown over checked module, task, type, effect, and capability
 reference data, including seeded `--cap` args for deterministic host setup.
 The `sley-shadow` binary exposes `schema: "sley.shadow.report.v0"` and
 non-authoritatively consumes checked query/lint reports to link lint findings
-to query rows and derive seeded `--cap` args for effectful tasks.
+to query rows and derive seeded `--cap` args for effectful tasks on single-file
+or project-root targets.
 The `sley-agent-bench` binary exposes
 `schema: "sley.agent_bench.report.v0"` for deterministic local repair-loop
 benchmarks over JSON inspection, checked fixes, post-fix gates, trace receipts,
