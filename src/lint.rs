@@ -29,6 +29,7 @@ pub enum LintRule {
     RawHostAdapter,
     MissingModuleDeclaration,
     UncheckedResult,
+    UncheckedResultBinding,
     UnqualifiedImportedCall,
     UnusedPureBinding,
     UnusedPureExpressionStatement,
@@ -80,6 +81,7 @@ impl LintRule {
             Self::RawHostAdapter,
             Self::MissingModuleDeclaration,
             Self::UncheckedResult,
+            Self::UncheckedResultBinding,
             Self::UnqualifiedImportedCall,
             Self::UnusedPureBinding,
             Self::UnusedPureExpressionStatement,
@@ -131,6 +133,7 @@ impl LintRule {
             Self::RawHostAdapter => "raw_host_adapter",
             Self::MissingModuleDeclaration => "missing_module_declaration",
             Self::UncheckedResult => "unchecked_result",
+            Self::UncheckedResultBinding => "unchecked_result_binding",
             Self::UnqualifiedImportedCall => "unqualified_imported_call",
             Self::UnusedPureBinding => "unused_pure_binding",
             Self::UnusedPureExpressionStatement => "unused_pure_expression_statement",
@@ -254,6 +257,12 @@ pub fn build_lint_report(program: &Program, options: LintOptions) -> LintReport 
     }
     if rules.contains(&LintRule::UncheckedResult) {
         findings.extend(lint_unchecked_results(program, options.module.as_deref()));
+    }
+    if rules.contains(&LintRule::UncheckedResultBinding) {
+        findings.extend(lint_unchecked_result_bindings(
+            program,
+            options.module.as_deref(),
+        ));
     }
     if rules.contains(&LintRule::UnqualifiedImportedCall) {
         findings.extend(lint_unqualified_imported_calls(
@@ -5738,6 +5747,87 @@ fn lint_unchecked_results(program: &Program, module: Option<&str>) -> Vec<LintFi
         .filter(|task| module_matches(module, &task_module(task)))
         .flat_map(|task| lint_unchecked_result_block(program, task, &task.body))
         .collect()
+}
+
+fn lint_unchecked_result_bindings(program: &Program, module: Option<&str>) -> Vec<LintFinding> {
+    let mut findings = Vec::new();
+    for task in program
+        .tasks
+        .iter()
+        .filter(|task| module_matches(module, &task_module(task)))
+    {
+        collect_unchecked_result_bindings_in_block(
+            program,
+            task,
+            &task.body,
+            &task.body,
+            &mut findings,
+        );
+    }
+    findings
+}
+
+fn collect_unchecked_result_bindings_in_block(
+    program: &Program,
+    task: &TaskDecl,
+    task_body: &Block,
+    block: &Block,
+    findings: &mut Vec<LintFinding>,
+) {
+    for statement in &block.statements {
+        match &statement.kind {
+            StatementKind::Binding {
+                binding_kind,
+                name,
+                expr,
+                ..
+            } => {
+                if binding_kind == &BindingKind::Bind
+                    && !block_uses_identifier_except_statement(task_body, name, &statement.id)
+                    && let Some(source) = unchecked_result_source(program, task, expr)
+                {
+                    let task_name = task_fq_name(task);
+                    findings.push(LintFinding {
+                        id: "UNCHECKED_RESULT_BINDING".to_string(),
+                        rule: LintRule::UncheckedResultBinding.as_str().to_string(),
+                        severity: "warning".to_string(),
+                        message: format!(
+                            "task `{task_name}` binds Result from `{source}` to `{name}` but never reads it"
+                        ),
+                        node: statement.id.clone(),
+                        module: task_module(task),
+                        hint: format!(
+                            "use `?` to propagate failure, return the Result, or read `{name}` for explicit handling"
+                        ),
+                    });
+                }
+            }
+            StatementKind::If {
+                then_block,
+                else_block,
+                ..
+            } => {
+                collect_unchecked_result_bindings_in_block(
+                    program, task, task_body, then_block, findings,
+                );
+                if let Some(else_block) = else_block {
+                    collect_unchecked_result_bindings_in_block(
+                        program, task, task_body, else_block, findings,
+                    );
+                }
+            }
+            StatementKind::While { body, .. }
+            | StatementKind::For { body, .. }
+            | StatementKind::Forge { body } => {
+                collect_unchecked_result_bindings_in_block(
+                    program, task, task_body, body, findings,
+                );
+            }
+            StatementKind::Set { .. }
+            | StatementKind::Return { .. }
+            | StatementKind::Expr { .. } => {}
+        }
+    }
 }
 
 fn lint_unchecked_result_block(
