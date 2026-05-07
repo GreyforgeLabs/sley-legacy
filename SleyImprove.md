@@ -101,7 +101,7 @@ sley fix --json --kind <kind> [--template-surface <surface>] [--name <name>] [--
 sley verify --json [--deny-warnings] [runtime gates/seeds] <target>
 sley deploy --json --dry-run [--artifacts-dir <dir>] [runtime gates/seeds] <target>
 sley query --json [--kind all|modules|tasks|types|effects|calls] [--module <module>] <target>
-sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter|missing-module-declaration|unchecked-result|unchecked-result-binding|unqualified-imported-call|unused-pure-binding|unused-pure-expression-statement|mutable-binding-never-set|self-assignment-statement|overwritten-set-statement|redundant-initial-set-statement|constant-if-expression|constant-if-statement|constant-false-if-statement|constant-false-while-statement|constant-comparison-expression|constant-arithmetic-expression|constant-text-concatenation-expression|constant-list-index-expression|constant-map-index-expression|constant-record-field-access-expression|constant-len-expression|constant-not-expression|empty-if-statement|empty-else-statement|empty-for-statement|empty-forge-statement|identity-binary-expression|redundant-boolean-comparison|absorbing-boolean-expression|idempotent-boolean-expression|self-comparison-expression|double-negation-expression|negated-comparison-expression|redundant-boolean-if-expression|redundant-boolean-if-statement|same-branch-if-expression|same-branch-if-statement|unreachable-statement|absorbing-arithmetic-expression] [--module <module>] <target>
+sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter|missing-module-declaration|unchecked-result|unchecked-result-binding|unused-effectful-binding|unqualified-imported-call|unused-pure-binding|unused-pure-expression-statement|mutable-binding-never-set|self-assignment-statement|overwritten-set-statement|redundant-initial-set-statement|constant-if-expression|constant-if-statement|constant-false-if-statement|constant-false-while-statement|constant-comparison-expression|constant-arithmetic-expression|constant-text-concatenation-expression|constant-list-index-expression|constant-map-index-expression|constant-record-field-access-expression|constant-len-expression|constant-not-expression|empty-if-statement|empty-else-statement|empty-for-statement|empty-forge-statement|identity-binary-expression|redundant-boolean-comparison|absorbing-boolean-expression|idempotent-boolean-expression|self-comparison-expression|double-negation-expression|negated-comparison-expression|redundant-boolean-if-expression|redundant-boolean-if-statement|same-branch-if-expression|same-branch-if-statement|unreachable-statement|absorbing-arithmetic-expression] [--module <module>] <target>
 sley-ci lint --json [--deny-warnings] [--rule <rule>] [--module <module>] <target>
 sley-ci doctor --json [--deny-warnings] <target>
 sley-ci plan --json [--deny-warnings] [--graft-templates] [--template-surface <surface>] <target>
@@ -927,6 +927,9 @@ The v0 lint rules are:
 - `unchecked_result_binding`: a local `bind` that captures a fallible host or
   user-task `Result` and is never read is reported so agents do not silently
   park a recoverable failure path.
+- `unused_effectful_binding`: a local `bind` that unwraps a fallible host or
+  user-task `Result` with `?` but never reads the bound value is reported so
+  agents can keep the effect explicit without leaving dead recovered values.
 - `unqualified_imported_call`: a resolved call to an imported task through a
   simple name is reported so agents qualify it through the import alias or
   module segment before future imports can change name resolution.
@@ -1048,6 +1051,7 @@ The command supports `--module <module>`, `--rule unused-private-task`,
 `--rule unused-private-effect`, `--rule raw-host-adapter`,
 `--rule missing-module-declaration`, `--rule unchecked-result`,
 `--rule unchecked-result-binding`,
+`--rule unused-effectful-binding`,
 `--rule unqualified-imported-call`, `--rule unused-pure-binding`,
 `--rule unused-pure-expression-statement`,
 `--rule mutable-binding-never-set`, `--rule self-assignment-statement`,
