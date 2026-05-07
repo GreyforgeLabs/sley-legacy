@@ -599,6 +599,20 @@ make public-release-check
 The exact public metadata decisions and cut checklist live in
 `docs/PublicReleaseChecklist.md`.
 
+Only the public Git branch is `main`; the local `private` branch is retained for
+private development workflow. The `public` remote branch is intentionally absent
+from the public Git graph.
+
+After gate and metadata approval, create and push a single release tag from
+`main`:
+
+```bash
+git tag -a v1.0.1 -m "Release v1.0.1"
+git push origin v1.0.1
+```
+
+Do not keep the old public tag in place.
+
 Fast agent path:
 
 - `docs/AgentQuickstart.md` is the concise local path from `sley new` to

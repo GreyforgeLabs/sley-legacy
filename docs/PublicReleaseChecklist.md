@@ -17,6 +17,13 @@ make public-release-check
 
 `make public-release-check` is expected to fail until the operator chooses the
 public license and repository metadata.
+
+Only the public branch is `main`; remote `public` must not be pushed.
+
+Use local `private` for private development and publish only from `main`.
+
+The current release tag target is expected to be `v1.0.1`; remove older public
+tags during cut so one public tag remains per release line.
 `sley-conformance report --json` includes `release.next_actions` entries that
 map each blocker to the approval owner and file paths to update after approval.
 The same command can render a review packet for the release decision:
@@ -70,6 +77,25 @@ After the operator supplies the metadata decisions:
 9. Review `CHANGELOG.md`, `README.md`, `docs/contracts.md`, and generated
    package artifacts before any public tag, push, crate publish, npm publish,
    release upload, or announcement.
+10. Remove old public release tag(s) if replacing a prior tag:
+
+```bash
+git tag -d v1.0.0
+git push origin :refs/tags/v1.0.0
+```
+
+11. Tag the release from `main` and push:
+
+```bash
+git tag -a v1.0.1 -m "Release v1.0.1"
+git push origin v1.0.1
+```
+
+12. Push the updated public branch:
+
+```bash
+git push origin main
+```
 
 Public posting, provider calls, live deployment, external mutation, crate/npm
 publication, and release tagging remain explicit operator-approved actions.
