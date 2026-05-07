@@ -1533,6 +1533,52 @@
       }
     },
     {
+      "name": "plan_module_task_parent_surface_graft_templates_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/module-task-parent/main.sley",
+          "content": "module app.plan\n\neffect Audit\n\ntype User = {\n  slot name: Text\n}\n\ntask helper -> Int {\n  return 2\n}\n\ntask main -> Int {\n  return 1\n}\n"
+        }
+      ],
+      "args": [
+        "plan",
+        "--json",
+        "--graft-templates",
+        "--template-surface",
+        "module:app.plan:tasks",
+        "{tmp}/module-task-parent/main.sley"
+      ],
+      "covers": [
+        "cli:plan",
+        "cli:smoke-setup-files",
+        "graft:templates",
+        "graft:templates:module-parent-surface",
+        "graph-slice:delete-affordances",
+        "graph-slice:move-affordances",
+        "json:sley.edit_plan.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.edit_plan.report.v0" },
+          { "pointer": "/status", "value": "warnings" },
+          { "pointer": "/graft_templates/0/kind", "value": "move_task" },
+          { "pointer": "/graft_templates/0/surface", "value": "module:app.plan:tasks" },
+          { "pointer": "/graft_templates/0/operation/op", "value": "MoveNode" },
+          { "pointer": "/graft_templates/0/operation/target", "value": "task:app.plan.helper" },
+          { "pointer": "/graft_templates/0/operation/payload/parent", "value": "module:app.plan:tasks" },
+          { "pointer": "/graft_templates/1/kind", "value": "move_task" },
+          { "pointer": "/graft_templates/1/operation/target", "value": "task:app.plan.main" },
+          { "pointer": "/graft_templates/2/kind", "value": "delete_task" },
+          { "pointer": "/graft_templates/2/operation/op", "value": "DeleteNode" },
+          { "pointer": "/graft_templates/2/operation/target", "value": "task:app.plan.helper" }
+        ],
+        "stdout_json_absent": [
+          "/graft_templates/3"
+        ]
+      }
+    },
+    {
       "name": "plan_program_surface_declaration_templates_json",
       "args": [
         "plan",
