@@ -11734,7 +11734,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/corpus_accepted_count"),
-        Some(&serde_json::json!(22))
+        Some(&serde_json::json!(23))
     );
     assert_eq!(
         report_json.pointer("/summary/corpus_rejected_count"),
@@ -13270,7 +13270,7 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     );
     assert_eq!(
         corpus_json.pointer("/summary/step_count"),
-        Some(&serde_json::json!(87))
+        Some(&serde_json::json!(89))
     );
     assert_eq!(
         corpus_json.pointer("/steps/0/name"),
@@ -13289,13 +13289,13 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
         ))
     );
     assert_eq!(
-        corpus_json.pointer("/steps/44/name"),
+        corpus_json.pointer("/steps/46/name"),
         Some(&serde_json::json!(
             "rejected_check:rejected/authority/missing_database_read_effect.sley"
         ))
     );
     assert_eq!(
-        corpus_json.pointer("/steps/44/stdout_schema"),
+        corpus_json.pointer("/steps/46/stdout_schema"),
         Some(&serde_json::json!("sley.diagnostics.report.v0"))
     );
 
@@ -13321,7 +13321,7 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     );
     assert_eq!(
         corpus_dir_json.pointer("/summary/step_count"),
-        Some(&serde_json::json!(87))
+        Some(&serde_json::json!(89))
     );
 
     let examples = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
@@ -24519,6 +24519,7 @@ fn assert_corpus_manifest_has_release_coverage(manifest: &CorpusManifest) {
         "accepted:agent-deploy-pipeline",
         "accepted:agent-spend-authority",
         "accepted:agent-split-authority",
+        "accepted:records-and-calls",
         "rejected:DatabaseAlias",
         "rejected:DatabaseRead",
         "rejected:DatabaseWrite",

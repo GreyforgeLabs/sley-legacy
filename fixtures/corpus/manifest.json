@@ -183,6 +183,18 @@
       ]
     },
     {
+      "path": "accepted/records_and_calls.sley",
+      "covers": [
+        "accepted:records-and-calls",
+        "language:record-type",
+        "language:record-literal",
+        "language:record-field-access",
+        "language:task-call",
+        "language:task-takes",
+        "formatter:round-trip"
+      ]
+    },
+    {
       "path": "accepted/pure_main.sley",
       "covers": [
         "language:pure-task-call",

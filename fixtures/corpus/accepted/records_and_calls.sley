@@ -1,0 +1,17 @@
+module corpus.accepted.records_and_calls
+
+type User = {
+  slot name: Text
+  slot age: Int
+}
+
+task display_name -> Text {
+  take user: User
+
+  return user.name
+}
+
+task main -> Text {
+  bind user = User { name: "Ada", age: 36 }
+  return call display_name(user)
+}
