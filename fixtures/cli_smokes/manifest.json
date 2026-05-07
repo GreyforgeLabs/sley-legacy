@@ -155,6 +155,53 @@
       }
     },
     {
+      "name": "migrate_schema_drift_report_json",
+      "bin": "sley-migrate",
+      "setup_files": [
+        {
+          "path": "{tmp}/migrate-drift/legacy_file.sley",
+          "content": "task main -> Result<Text, Error> uses FileRead {\n  take gate files: Gate<FileRead>\n  bind text = fs.read_text(\"examples/hello.sley\")\n\n  return Ok(text)\n}\n"
+        },
+        {
+          "path": "{tmp}/migrate-drift/schemas/sley.present.report.v0.schema.json",
+          "content": "{\n  \"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\n  \"$id\": \"sley.present.report.v0\",\n  \"type\": \"object\"\n}\n"
+        },
+        {
+          "path": "{tmp}/migrate-drift/fixtures/missing-schema.json",
+          "content": "{\n  \"schema\": \"sley.missing.report.v0\"\n}\n"
+        }
+      ],
+      "args": [
+        "report",
+        "--json",
+        "--schemas",
+        "{tmp}/migrate-drift/schemas",
+        "--fixtures",
+        "{tmp}/migrate-drift/fixtures",
+        "{tmp}/migrate-drift/legacy_file.sley"
+      ],
+      "covers": [
+        "cli:sley-migrate",
+        "cli:smoke-setup-files",
+        "migrate:schema-drift",
+        "json:sley.migrate.report.v0",
+        "readiness:migrate-report"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.migrate.report.v0" },
+          { "pointer": "/status", "value": "migrations" },
+          { "pointer": "/summary/migration_count", "value": 2 },
+          { "pointer": "/summary/raw_host_adapter_count", "value": 1 },
+          { "pointer": "/summary/module_declaration_count", "value": 1 },
+          { "pointer": "/summary/schema_drift_count", "value": 2 },
+          { "pointer": "/schema_drift/0/kind", "value": "fixture_without_schema" },
+          { "pointer": "/schema_drift/1/kind", "value": "schema_without_fixture" }
+        ]
+      }
+    },
+    {
       "name": "docgen_reference_report_json",
       "bin": "sley-docgen",
       "args": ["reference", "--json", "examples/agent_deploy_pipeline.sley"],
