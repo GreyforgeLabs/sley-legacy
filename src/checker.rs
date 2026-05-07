@@ -2002,19 +2002,14 @@ fn check_record_literal_fields(
                     );
                 }
             }
-            None => diagnostics.push(
+            None => diagnostics.push(diagnostic_with_optional_hint(
                 Diagnostic::error(
                     "RECORD_FIELD_MISSING",
                     format!("record literal is missing field `{}`", expected.name),
                 )
-                .with_node(expr.id.clone())
-                .with_repair_hint(record_literal_shape_graft_hint(
-                    expr,
-                    fields,
-                    expected_fields,
-                    record_types,
-                )),
-            ),
+                .with_node(expr.id.clone()),
+                record_literal_shape_graft_hint(expr, fields, expected_fields, record_types),
+            )),
         }
     }
 
@@ -2023,19 +2018,14 @@ fn check_record_literal_fields(
             .iter()
             .any(|expected| expected.name == field.name)
         {
-            diagnostics.push(
+            diagnostics.push(diagnostic_with_optional_hint(
                 Diagnostic::error(
                     "RECORD_FIELD_UNKNOWN",
                     format!("record literal has unknown field `{}`", field.name),
                 )
-                .with_node(field.expr.id.clone())
-                .with_repair_hint(record_literal_shape_graft_hint(
-                    expr,
-                    fields,
-                    expected_fields,
-                    record_types,
-                )),
-            );
+                .with_node(field.expr.id.clone()),
+                record_literal_shape_graft_hint(expr, fields, expected_fields, record_types),
+            ));
         }
     }
 }
@@ -2045,7 +2035,7 @@ fn record_literal_shape_graft_hint(
     fields: &[ExprField],
     expected_fields: &[RecordField],
     record_types: &HashMap<String, Vec<RecordField>>,
-) -> RepairHint {
+) -> Option<RepairHint> {
     let field_source = expected_fields
         .iter()
         .map(|expected| {
@@ -2065,7 +2055,19 @@ fn record_literal_shape_graft_hint(
         } => format!("{type_name} {{ {field_source} }}"),
         _ => format!("{{ {field_source} }}"),
     };
-    replace_expression_source_graft_hint(expr, &source)
+    if default_source_needs_manual_value(&source) {
+        None
+    } else {
+        Some(replace_expression_source_graft_hint(expr, &source))
+    }
+}
+
+fn diagnostic_with_optional_hint(diagnostic: Diagnostic, hint: Option<RepairHint>) -> Diagnostic {
+    if let Some(hint) = hint {
+        diagnostic.with_repair_hint(hint)
+    } else {
+        diagnostic
+    }
 }
 
 fn validate_type_expr(
