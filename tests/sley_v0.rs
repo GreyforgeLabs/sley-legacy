@@ -10179,7 +10179,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/smoke_case_count"),
-        Some(&serde_json::json!(423))
+        Some(&serde_json::json!(424))
     );
     assert_eq!(
         report_json.pointer("/summary/example_source_count"),
@@ -21829,6 +21829,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "cli:sley-conformance",
         "cli:sley-contract",
         "cli:sley-docgen",
+        "cli:sley-lsp",
         "cli:sley-migrate",
         "cli:sley-sandbox-runner",
         "cli:sley-workbench",
@@ -21861,6 +21862,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "ci:corpus",
         "conformance:coverage",
         "docgen:reference",
+        "lsp:help",
         "sandbox:replay",
         "workbench:graph-slice",
         "zjx-tool:inspect",
@@ -22024,6 +22026,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:deploy-package-artifact-inspection",
         "readiness:deploy-package-dry-run",
         "readiness:docgen-reference",
+        "readiness:lsp-stdio-startup",
         "readiness:migrate-report",
         "readiness:sandbox-replay",
         "readiness:workbench-inspection",

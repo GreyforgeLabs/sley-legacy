@@ -644,10 +644,10 @@ fixtures/cli_smokes` accepts the suite directory, and the Rust integration
 suite runs those cases against the built `sley` binary plus selected sibling
 utility binaries such as `sley-ci`, `sley-conformance`, `sley-contract`,
 `sley-migrate`, `sley-docgen`, `sley-workbench`, `sley-sandbox-runner`,
-`sley-agent-bench`, and `sley-zjx`. The lightweight `fixtures/ci_smoke_probe`
-manifest now separately locks the `sley-ci smoke` wrapper contract across
-parse, query, graft dry-run, and seeded multi-capability agent runtime
-authority cases.
+`sley-agent-bench`, `sley-zjx`, and `sley-lsp`. The lightweight
+`fixtures/ci_smoke_probe` manifest now separately locks the `sley-ci smoke`
+wrapper contract across parse, query, graft dry-run, and seeded
+multi-capability agent runtime authority cases.
 
 The current smoke manifest covers:
 
@@ -661,8 +661,8 @@ The current smoke manifest covers:
   `sley-ci` reports, `sley-conformance` coverage reports, `sley-contract` JSON
   Schema validation reports, `sley-migrate` checked migration reports,
   `sley-docgen`, `sley-workbench`, `sley-sandbox-runner`, `sley-agent-bench`,
-  and `sley-zjx` utility reports, deploy artifact checks, and ZJX preview
-  envelopes with graph digest and nested handoff refs
+  `sley-zjx` utility reports, `sley-lsp` help/startup, deploy artifact checks,
+  and ZJX preview envelopes with graph digest and nested handoff refs
 - query report direct task/take/type/effect/call row definitions
 - doctor/plan call-bearing reports route agents to strict
   `sley query --kind calls` next-actions

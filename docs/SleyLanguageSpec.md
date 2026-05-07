@@ -735,7 +735,7 @@ authority cases. The
 smoke gate locks stable command exits, selected stdout substrings, JSON root
 schemas, graph slices, checked query reports, checked lint reports, run
 reports, doctor readiness reports, edit-plan reports, project scaffolds, ZJX
-preview envelopes, graft dry runs
+preview envelopes, LSP help/startup, graft dry runs
 and direct graft writes, write-mode fix trace receipts, non-empty trace
 receipt seals, ZJX envelopes carrying graph digests and schema-backed trace
 receipts, ZJX tool reports, graph-slice insert and replace affordances, checked

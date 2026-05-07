@@ -290,6 +290,23 @@
       }
     },
     {
+      "name": "lsp_help_startup_text",
+      "bin": "sley-lsp",
+      "args": ["--help"],
+      "covers": [
+        "cli:sley-lsp",
+        "lsp:help",
+        "readiness:lsp-stdio-startup"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_contains": [
+          "Run the Sley stdio language server",
+          "Usage: sley-lsp"
+        ]
+      }
+    },
+    {
       "name": "new_deploy_project_json",
       "cwd": "tmp",
       "args": [
