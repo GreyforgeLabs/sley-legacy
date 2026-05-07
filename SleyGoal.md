@@ -44,7 +44,7 @@ Current verified surface:
 
 - `cargo fmt -- --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 324 tests in the core `tests/sley_v0.rs`
+- Current integration coverage is 325 tests in the core `tests/sley_v0.rs`
   conformance file, with additional focused integration tests for LSP,
   workbench, agent bench, docgen, migration reports, sandbox replay, project
   templates, and ZJX envelope tools. The focused utility tests validate live
@@ -86,7 +86,7 @@ Current verified surface:
   `inventory`, `check-fixtures`, `validate`, and `inspect-deploy-artifacts`
   JSON Schema validation commands over `docs/schemas/`, `fixtures/contracts/`,
   release manifests, and local deploy artifact directories. Contract inventory
-  currently tracks 38 schemas, 116 contract fixtures, and 119 schema instances.
+  currently tracks 38 schemas, 118 contract fixtures, and 121 schema instances.
 - `sley-ci` is available as an in-tree CI wrapper with `check`, `lint`,
   `doctor`, `plan`, `run`, `verify`, `deploy`, `smoke`, `corpus`, and
   `examples` commands that emit
@@ -395,8 +395,9 @@ Current verified surface:
   `delete_empty_for_statement` templates with lint/plan/fix-write/verify
   smoke coverage, plus checked `empty_forge_statement` no-op block findings and
   `delete_empty_forge_statement` templates with lint/plan/fix-write/verify
-  smoke coverage, plus checked `empty_while_statement` warning coverage for
-  empty loops with delete-safe pure conditions, plus checked
+  smoke coverage, plus checked `empty_while_statement` warning coverage and
+  `delete_empty_while_statement` templates with lint/plan/fix-write/verify
+  smoke coverage for empty loops with delete-safe pure conditions, plus checked
   `identity_binary_expression` style findings and
   `simplify_identity_binary_expression` templates with lint/plan/fix-write/verify
   smoke coverage, including empty-text concatenation cleanup, plus checked

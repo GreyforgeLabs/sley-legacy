@@ -7727,6 +7727,156 @@
       }
     },
     {
+      "name": "plan_empty_while_statement_template_json",
+      "args": [
+        "plan",
+        "--json",
+        "--graft-templates",
+        "--template-surface",
+        "block:task:app.empty_while.main:stmt:2",
+        "examples/empty_while_statement.sley"
+      ],
+      "covers": [
+        "cli:plan",
+        "graft:templates:empty-while-statement-delete",
+        "lint:empty_while_statement",
+        "json:sley.edit_plan.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.edit_plan.report.v0" },
+          { "pointer": "/status", "value": "warnings" },
+          { "pointer": "/lint/findings/0/id", "value": "EMPTY_WHILE_STATEMENT" },
+          { "pointer": "/graft_templates/0/kind", "value": "delete_empty_while_statement" },
+          { "pointer": "/graft_templates/0/surface", "value": "block:task:app.empty_while.main:stmt:2" },
+          { "pointer": "/graft_templates/0/operation/op", "value": "DeleteNode" },
+          { "pointer": "/graft_templates/0/operation/target", "value": "block:task:app.empty_while.main:stmt:2" }
+        ]
+      }
+    },
+    {
+      "name": "fix_empty_while_statement_dry_run_json",
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "delete_empty_while_statement",
+        "--dry-run",
+        "examples/empty_while_statement.sley"
+      ],
+      "covers": [
+        "cli:fix",
+        "graft:templates:empty-while-statement-delete",
+        "lint:empty_while_statement",
+        "json:sley.graft.outcome.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/operation", "value": "DeleteNode" },
+          { "pointer": "/provenance/0/targets/0", "value": "block:task:app.empty_while.main:stmt:2" }
+        ]
+      }
+    },
+    {
+      "name": "fix_empty_while_statement_write_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/fix-empty-while/main.sley",
+          "content": "module app.empty_while_fix\n\ntask main -> Int {\n  bind ready = true\n  bind value = 42\n\n  while ready {\n  }\n\n  if ready {\n    return value\n  }\n\n  return 0\n}\n"
+        }
+      ],
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "delete_empty_while_statement",
+        "--template-surface",
+        "block:task:app.empty_while_fix.main:stmt:2",
+        "--write",
+        "--actor",
+        "agent:cli-smoke",
+        "{tmp}/fix-empty-while/main.sley"
+      ],
+      "covers": [
+        "cli:fix",
+        "cli:fix-write",
+        "cli:smoke-setup-files",
+        "fix:lint-cleanup-write",
+        "fix:write-source",
+        "graft:templates:empty-while-statement-delete",
+        "json:sley.graft.outcome.v0",
+        "lint:empty_while_statement",
+        "readiness:empty-while-repair-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/actor", "value": "agent:cli-smoke" },
+          { "pointer": "/provenance/0/operation", "value": "DeleteNode" },
+          { "pointer": "/provenance/0/targets/0", "value": "block:task:app.empty_while_fix.main:stmt:2" }
+        ]
+      }
+    },
+    {
+      "name": "lint_fix_empty_while_statement_write_json",
+      "args": [
+        "lint",
+        "--json",
+        "--rule",
+        "empty-while-statement",
+        "{tmp}/fix-empty-while/main.sley"
+      ],
+      "covers": [
+        "cli:lint",
+        "fix:lint-cleanup-write",
+        "lint:empty_while_statement",
+        "json:sley.lint.report.v0",
+        "readiness:empty-while-repair-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.lint.report.v0" },
+          { "pointer": "/status", "value": "ok" }
+        ]
+      }
+    },
+    {
+      "name": "verify_fix_empty_while_statement_write_json",
+      "args": [
+        "verify",
+        "--json",
+        "--deny-warnings",
+        "{tmp}/fix-empty-while/main.sley"
+      ],
+      "covers": [
+        "cli:verify",
+        "fix:lint-cleanup-write",
+        "json:sley.verify.report.v0",
+        "json:sley.lint.report.v0",
+        "lint:empty_while_statement",
+        "readiness:empty-while-repair-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.verify.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/summary/warning_count", "value": 0 },
+          { "pointer": "/summary/lint_finding_count", "value": 0 },
+          { "pointer": "/runtime/value/kind", "value": "Int" },
+          { "pointer": "/runtime/value/value", "value": 42 },
+          { "pointer": "/lint/status", "value": "ok" }
+        ]
+      }
+    },
+    {
       "name": "lint_empty_else_statement_rule_json",
       "args": [
         "lint",
