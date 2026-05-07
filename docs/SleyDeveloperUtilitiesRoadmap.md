@@ -192,8 +192,9 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
      `schema: "sley.workbench.report.v0"` plus optional static HTML over
      doctor/query/lint/plan/graph/graph-slice panels. Edit-plan template rows
      carry non-mutating preview commands, explicit write commands, and post-fix
-     check/lint/verify gates. It reads compiler data directly and writes only
-     the requested HTML report path, never source files.
+     check/lint/verify gates, and static HTML includes a local repair-focus
+     selector for lint findings. It reads compiler data directly and writes
+     only the requested HTML report path, never source files.
    - Done when a developer can open `examples/project`, select a lint finding,
      preview the checked fix, and inspect the post-fix gate commands.
 

@@ -96,6 +96,8 @@ here. Dates use UTC-independent calendar dates from the local repo history.
 - `sley-workbench` edit-plan template rows now carry explicit non-mutating
   preview commands, write commands, and post-fix check/lint/verify gate
   commands for repair handoff.
+- `sley-workbench` static HTML now includes a local repair-focus selector that
+  highlights the selected lint finding and filters matching repair templates.
 - Added `make public-release-check` as the explicit failing gate for public
   release cuts until license and repository metadata blockers are resolved.
 - Utility integration tests now validate live docgen, migrate, agent-bench,
