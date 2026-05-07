@@ -168,8 +168,9 @@ Implemented now:
   `schema: "sley.ci.report.v0"` for CI and pre-commit integration
 - in-tree `sley-conformance` utility with `report` and `coverage` commands for
   schema/fixture instance coverage, contract validation status, corpus coverage
-  tags, smoke coverage tags, packaged example counts, and the declared
-  integration-test count, plus editor-shim package validation, including
+  tags, smoke coverage tags, the compact agent onboarding pack, packaged
+  example counts, and the declared integration-test count, plus editor-shim
+  package validation, including
   required corpus and smoke release tags for seeded and scoped runtime
   authority, `make v1` target inventory, plus non-gating public-release
   packaging blockers,
@@ -472,7 +473,9 @@ Implemented now:
   through `.github/actions/sley-v1/action.yml`, `.github/workflows/v1.yml`,
   and `.pre-commit-config.yaml`; the action installs Rust and Node tooling
   before the gate
-- compact agent onboarding pack in `llms.txt`
+- conformance-inventoried compact agent onboarding pack in `llms.txt`,
+  `docs/AgentQuickstart.md`, `docs/SleyLanguageSpec.md`, examples, graft
+  fixtures, and tests
 - release-facing `CHANGELOG.md` and `docs/contracts.md` files covering the
   current contract roots, validation commands, and release-candidate deltas
 

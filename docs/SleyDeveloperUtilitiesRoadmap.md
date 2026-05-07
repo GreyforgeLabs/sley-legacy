@@ -219,8 +219,9 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
      `sley.conformance.report.v0` and `sley.conformance.coverage.v0`, validates
      contract fixtures and release manifests through `sley-contract`, and
      inventories schema instances, corpus tags, smoke tags, packaged examples,
-     editor-shim package validation, the `make v1` target set, declared
-     integration-test count drift, and public-release metadata blockers. The
+     the compact agent onboarding pack, editor-shim package validation, the
+     `make v1` target set, declared integration-test count drift, and
+     public-release metadata blockers. The
      repo-level `make v1` gate runs the JSON report, while
      `make public-release-check` turns unresolved public blockers into the
      explicit nonzero release-cut gate.

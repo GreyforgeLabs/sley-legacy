@@ -11,6 +11,7 @@
     "schemas",
     "corpus",
     "smoke",
+    "onboarding",
     "examples",
     "tests",
     "editor_shims",
@@ -26,6 +27,7 @@
     "schemas": { "$ref": "#/$defs/schemaSection" },
     "corpus": { "$ref": "#/$defs/corpus" },
     "smoke": { "$ref": "#/$defs/smoke" },
+    "onboarding": { "$ref": "#/$defs/onboarding" },
     "examples": { "$ref": "#/$defs/examples" },
     "tests": { "$ref": "#/$defs/tests" },
     "editor_shims": { "$ref": "#/$defs/editorShims" },
@@ -48,6 +50,8 @@
         "corpus_accepted_count",
         "corpus_rejected_count",
         "smoke_case_count",
+        "onboarding_path_count",
+        "missing_onboarding_path_count",
         "example_project_count",
         "example_source_count",
         "integration_test_count",
@@ -68,6 +72,8 @@
         "corpus_accepted_count": { "type": "integer", "minimum": 0 },
         "corpus_rejected_count": { "type": "integer", "minimum": 0 },
         "smoke_case_count": { "type": "integer", "minimum": 0 },
+        "onboarding_path_count": { "type": "integer", "minimum": 0 },
+        "missing_onboarding_path_count": { "type": "integer", "minimum": 0 },
         "example_project_count": { "type": "integer", "minimum": 0 },
         "example_source_count": { "type": "integer", "minimum": 0 },
         "integration_test_count": { "type": "integer", "minimum": 0 },
@@ -240,6 +246,51 @@
       "properties": {
         "path": { "type": "string", "minLength": 1 },
         "case_count": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "onboarding": {
+      "type": "object",
+      "required": [
+        "required_paths",
+        "missing_required_paths",
+        "issue_count",
+        "issues"
+      ],
+      "properties": {
+        "required_paths": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/onboardingPath" }
+        },
+        "missing_required_paths": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "issue_count": { "type": "integer", "minimum": 0 },
+        "issues": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/issue" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "onboardingPath": {
+      "type": "object",
+      "required": [
+        "path",
+        "kind",
+        "present",
+        "byte_count",
+        "line_count",
+        "entry_count"
+      ],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "kind": { "enum": ["file", "directory", "missing"] },
+        "present": { "type": "boolean" },
+        "byte_count": { "type": "integer", "minimum": 0 },
+        "line_count": { "type": "integer", "minimum": 0 },
+        "entry_count": { "type": "integer", "minimum": 0 }
       },
       "additionalProperties": false
     },

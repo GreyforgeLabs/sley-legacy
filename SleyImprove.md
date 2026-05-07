@@ -607,6 +607,10 @@ Do not add effects to silence errors unless the authority is semantically real.
 Keep source formatting controlled by `sley format`.
 ```
 
+The current repo-level pack is inventoried by `sley-conformance report` so
+missing agent bootstrap files fail the release-readiness surface instead of
+remaining an undocumented handoff risk.
+
 ## Improvement 7: Synthetic Gold Corpus
 
 The synthetic corpus lives under `fixtures/corpus/`. It has a
