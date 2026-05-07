@@ -129,6 +129,7 @@ Implemented now:
   `--rule constant-false-if-statement`,
   `--rule constant-false-while-statement`,
   `--rule constant-comparison-expression`,
+  `--rule constant-boolean-comparison-expression`,
   `--rule constant-arithmetic-expression`,
   `--rule constant-text-concatenation-expression`,
   `--rule constant-list-index-expression`,
@@ -310,6 +311,8 @@ Implemented now:
   `while false` statements,
   `simplify_constant_comparison_expression` templates for literal comparisons
   that can be replaced by their boolean result,
+  `simplify_constant_boolean_comparison_expression` templates for boolean
+  literal comparisons that can be replaced by their boolean result,
   `simplify_constant_arithmetic_expression` templates for numeric literal
   arithmetic that can be replaced by its result,
   `simplify_absorbing_arithmetic_expression` templates for delete-safe

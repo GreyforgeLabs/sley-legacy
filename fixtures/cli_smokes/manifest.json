@@ -4777,6 +4777,7 @@
           { "pointer": "/filters/rules/47", "value": "overwritten_set_statement" },
           { "pointer": "/filters/rules/48", "value": "redundant_initial_set_statement" },
           { "pointer": "/filters/rules/49", "value": "empty_while_statement" },
+          { "pointer": "/filters/rules/50", "value": "constant_boolean_comparison_expression" },
           { "pointer": "/findings", "value": [] }
         ]
       }
@@ -6992,6 +6993,155 @@
         "json:sley.lint.report.v0",
         "lint:constant_comparison_expression",
         "readiness:constant-comparison-repair-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.verify.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/summary/warning_count", "value": 0 },
+          { "pointer": "/summary/lint_finding_count", "value": 0 },
+          { "pointer": "/runtime/value/kind", "value": "Bool" },
+          { "pointer": "/runtime/value/value", "value": false },
+          { "pointer": "/lint/status", "value": "ok" }
+        ]
+      }
+    },
+    {
+      "name": "lint_constant_boolean_comparison_expression_rule_json",
+      "args": [
+        "lint",
+        "--json",
+        "--rule",
+        "constant-boolean-comparison-expression",
+        "examples/constant_boolean_comparison_expression.sley"
+      ],
+      "covers": [
+        "cli:lint",
+        "lint:constant_boolean_comparison_expression",
+        "json:sley.lint.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.lint.report.v0" },
+          { "pointer": "/status", "value": "findings" },
+          { "pointer": "/filters/rules/0", "value": "constant_boolean_comparison_expression" },
+          { "pointer": "/findings/0/id", "value": "CONSTANT_BOOLEAN_COMPARISON_EXPRESSION" },
+          { "pointer": "/findings/0/node", "value": "block:task:app.constant_bool_compare.main:stmt:0:expr" }
+        ]
+      }
+    },
+    {
+      "name": "plan_constant_boolean_comparison_expression_template_json",
+      "args": [
+        "plan",
+        "--json",
+        "--graft-templates",
+        "--template-surface",
+        "block:task:app.constant_bool_compare.main:stmt:0:expr",
+        "examples/constant_boolean_comparison_expression.sley"
+      ],
+      "covers": [
+        "cli:plan",
+        "graft:templates:constant-boolean-comparison-expression",
+        "lint:constant_boolean_comparison_expression",
+        "json:sley.edit_plan.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.edit_plan.report.v0" },
+          { "pointer": "/status", "value": "warnings" },
+          { "pointer": "/lint/findings/0/id", "value": "CONSTANT_BOOLEAN_COMPARISON_EXPRESSION" },
+          { "pointer": "/graft_templates/0/kind", "value": "simplify_constant_boolean_comparison_expression" },
+          { "pointer": "/graft_templates/0/surface", "value": "block:task:app.constant_bool_compare.main:stmt:0:expr" },
+          { "pointer": "/graft_templates/0/operation/op", "value": "ReplaceExpression" },
+          { "pointer": "/graft_templates/0/operation/payload/source", "value": "false" }
+        ]
+      }
+    },
+    {
+      "name": "fix_constant_boolean_comparison_expression_write_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/fix-constant-boolean-comparison/main.sley",
+          "content": "module app.constant_bool_compare_fix\n\ntask main -> Bool {\n  return true == false\n}\n"
+        }
+      ],
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "simplify_constant_boolean_comparison_expression",
+        "--template-surface",
+        "block:task:app.constant_bool_compare_fix.main:stmt:0:expr",
+        "--write",
+        "--actor",
+        "agent:cli-smoke",
+        "{tmp}/fix-constant-boolean-comparison/main.sley"
+      ],
+      "covers": [
+        "cli:fix",
+        "cli:fix-write",
+        "cli:smoke-setup-files",
+        "fix:lint-cleanup-write",
+        "fix:write-source",
+        "graft:templates:constant-boolean-comparison-expression",
+        "json:sley.graft.outcome.v0",
+        "lint:constant_boolean_comparison_expression",
+        "readiness:constant-boolean-comparison-repair-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/actor", "value": "agent:cli-smoke" },
+          { "pointer": "/provenance/0/operation", "value": "ReplaceExpression" },
+          { "pointer": "/provenance/0/targets/0", "value": "block:task:app.constant_bool_compare_fix.main:stmt:0:expr" }
+        ]
+      }
+    },
+    {
+      "name": "lint_fix_constant_boolean_comparison_expression_write_json",
+      "args": [
+        "lint",
+        "--json",
+        "--rule",
+        "constant-boolean-comparison-expression",
+        "{tmp}/fix-constant-boolean-comparison/main.sley"
+      ],
+      "covers": [
+        "cli:lint",
+        "fix:lint-cleanup-write",
+        "lint:constant_boolean_comparison_expression",
+        "json:sley.lint.report.v0",
+        "readiness:constant-boolean-comparison-repair-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.lint.report.v0" },
+          { "pointer": "/status", "value": "ok" }
+        ]
+      }
+    },
+    {
+      "name": "verify_fix_constant_boolean_comparison_expression_write_json",
+      "args": [
+        "verify",
+        "--json",
+        "--deny-warnings",
+        "{tmp}/fix-constant-boolean-comparison/main.sley"
+      ],
+      "covers": [
+        "cli:verify",
+        "fix:lint-cleanup-write",
+        "json:sley.verify.report.v0",
+        "json:sley.lint.report.v0",
+        "lint:constant_boolean_comparison_expression",
+        "readiness:constant-boolean-comparison-repair-write-verify"
       ],
       "expect": {
         "success": true,

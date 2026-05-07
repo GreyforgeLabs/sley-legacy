@@ -70,6 +70,7 @@ pub enum LintRule {
     OverwrittenSetStatement,
     RedundantInitialSetStatement,
     EmptyWhileStatement,
+    ConstantBooleanComparisonExpression,
 }
 
 impl LintRule {
@@ -125,6 +126,7 @@ impl LintRule {
             Self::OverwrittenSetStatement,
             Self::RedundantInitialSetStatement,
             Self::EmptyWhileStatement,
+            Self::ConstantBooleanComparisonExpression,
         ]
     }
 
@@ -180,6 +182,7 @@ impl LintRule {
             Self::OverwrittenSetStatement => "overwritten_set_statement",
             Self::RedundantInitialSetStatement => "redundant_initial_set_statement",
             Self::EmptyWhileStatement => "empty_while_statement",
+            Self::ConstantBooleanComparisonExpression => "constant_boolean_comparison_expression",
         }
     }
 }
@@ -509,6 +512,12 @@ pub fn build_lint_report(program: &Program, options: LintOptions) -> LintReport 
     }
     if rules.contains(&LintRule::EmptyWhileStatement) {
         findings.extend(lint_empty_while_statements(
+            program,
+            options.module.as_deref(),
+        ));
+    }
+    if rules.contains(&LintRule::ConstantBooleanComparisonExpression) {
+        findings.extend(lint_constant_boolean_comparison_expressions(
             program,
             options.module.as_deref(),
         ));
@@ -2478,6 +2487,169 @@ fn constant_comparison_expression_replacement(expr: &Expr) -> Option<String> {
         BinaryOp::LessEqual => numeric_literal_value(left)? <= numeric_literal_value(right)?,
         BinaryOp::Greater => numeric_literal_value(left)? > numeric_literal_value(right)?,
         BinaryOp::GreaterEqual => numeric_literal_value(left)? >= numeric_literal_value(right)?,
+        _ => return None,
+    };
+    Some(value.to_string())
+}
+
+fn lint_constant_boolean_comparison_expressions(
+    program: &Program,
+    module: Option<&str>,
+) -> Vec<LintFinding> {
+    let mut findings = Vec::new();
+    for task in program
+        .tasks
+        .iter()
+        .filter(|task| module_matches(module, &task_module(task)))
+    {
+        collect_constant_boolean_comparison_expressions_in_block(task, &task.body, &mut findings);
+    }
+    findings
+}
+
+fn collect_constant_boolean_comparison_expressions_in_block(
+    task: &TaskDecl,
+    block: &Block,
+    findings: &mut Vec<LintFinding>,
+) {
+    for statement in &block.statements {
+        match &statement.kind {
+            StatementKind::Binding { expr, .. }
+            | StatementKind::Set { expr, .. }
+            | StatementKind::Return { expr }
+            | StatementKind::Expr { expr } => {
+                collect_constant_boolean_comparison_expressions_in_expr(task, expr, findings);
+            }
+            StatementKind::If {
+                condition,
+                then_block,
+                else_block,
+            } => {
+                collect_constant_boolean_comparison_expressions_in_expr(task, condition, findings);
+                collect_constant_boolean_comparison_expressions_in_block(
+                    task, then_block, findings,
+                );
+                if let Some(else_block) = else_block {
+                    collect_constant_boolean_comparison_expressions_in_block(
+                        task, else_block, findings,
+                    );
+                }
+            }
+            StatementKind::While { condition, body } => {
+                collect_constant_boolean_comparison_expressions_in_expr(task, condition, findings);
+                collect_constant_boolean_comparison_expressions_in_block(task, body, findings);
+            }
+            StatementKind::For {
+                collection, body, ..
+            } => {
+                collect_constant_boolean_comparison_expressions_in_expr(task, collection, findings);
+                collect_constant_boolean_comparison_expressions_in_block(task, body, findings);
+            }
+            StatementKind::Forge { body } => {
+                collect_constant_boolean_comparison_expressions_in_block(task, body, findings);
+            }
+        }
+    }
+}
+
+fn collect_constant_boolean_comparison_expressions_in_expr(
+    task: &TaskDecl,
+    expr: &Expr,
+    findings: &mut Vec<LintFinding>,
+) {
+    if let Some(replacement) = constant_boolean_comparison_expression_replacement(expr) {
+        let task_name = task_fq_name(task);
+        findings.push(LintFinding {
+            id: "CONSTANT_BOOLEAN_COMPARISON_EXPRESSION".to_string(),
+            rule: LintRule::ConstantBooleanComparisonExpression
+                .as_str()
+                .to_string(),
+            severity: "warning".to_string(),
+            message: format!(
+                "task `{task_name}` has a constant boolean comparison expression `{}`",
+                expr.source
+            ),
+            node: expr.id.clone(),
+            module: task_module(task),
+            hint: format!("replace the constant boolean comparison with `{replacement}`"),
+        });
+    }
+
+    match &expr.kind {
+        ExprKind::Unary { expr, .. } | ExprKind::Try { expr } => {
+            collect_constant_boolean_comparison_expressions_in_expr(task, expr, findings);
+        }
+        ExprKind::Binary { left, right, .. } => {
+            collect_constant_boolean_comparison_expressions_in_expr(task, left, findings);
+            collect_constant_boolean_comparison_expressions_in_expr(task, right, findings);
+        }
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
+            collect_constant_boolean_comparison_expressions_in_expr(task, condition, findings);
+            collect_constant_boolean_comparison_expressions_in_expr(task, then_branch, findings);
+            collect_constant_boolean_comparison_expressions_in_expr(task, else_branch, findings);
+        }
+        ExprKind::Call { callee, args } => {
+            collect_constant_boolean_comparison_expressions_in_expr(task, callee, findings);
+            for arg in args {
+                collect_constant_boolean_comparison_expressions_in_expr(task, arg, findings);
+            }
+        }
+        ExprKind::ListLiteral { items } => {
+            for item in items {
+                collect_constant_boolean_comparison_expressions_in_expr(task, item, findings);
+            }
+        }
+        ExprKind::MapLiteral { entries } => {
+            for entry in entries {
+                collect_constant_boolean_comparison_expressions_in_expr(task, &entry.key, findings);
+                collect_constant_boolean_comparison_expressions_in_expr(
+                    task,
+                    &entry.value,
+                    findings,
+                );
+            }
+        }
+        ExprKind::Index { collection, index } => {
+            collect_constant_boolean_comparison_expressions_in_expr(task, collection, findings);
+            collect_constant_boolean_comparison_expressions_in_expr(task, index, findings);
+        }
+        ExprKind::FieldAccess { receiver, .. } => {
+            collect_constant_boolean_comparison_expressions_in_expr(task, receiver, findings);
+        }
+        ExprKind::RecordLiteral { fields, .. } => {
+            for field in fields {
+                collect_constant_boolean_comparison_expressions_in_expr(
+                    task,
+                    &field.expr,
+                    findings,
+                );
+            }
+        }
+        ExprKind::Raw { .. }
+        | ExprKind::StringLiteral { .. }
+        | ExprKind::IntLiteral { .. }
+        | ExprKind::FloatLiteral { .. }
+        | ExprKind::BoolLiteral { .. }
+        | ExprKind::Identifier { .. } => {}
+    }
+}
+
+fn constant_boolean_comparison_expression_replacement(expr: &Expr) -> Option<String> {
+    let ExprKind::Binary { op, left, right } = &expr.kind else {
+        return None;
+    };
+    if left.source == right.source {
+        return None;
+    }
+    let left = bool_literal_value(left)?;
+    let right = bool_literal_value(right)?;
+    let value = match op {
+        BinaryOp::Equal => left == right,
+        BinaryOp::NotEqual => left != right,
         _ => return None,
     };
     Some(value.to_string())
@@ -6650,6 +6822,124 @@ fn constant_comparison_expression_replacement_in_expr(expr: &Expr, target: &str)
         }
         ExprKind::RecordLiteral { fields, .. } => fields.iter().find_map(|field| {
             constant_comparison_expression_replacement_in_expr(&field.expr, target)
+        }),
+        ExprKind::Raw { .. }
+        | ExprKind::StringLiteral { .. }
+        | ExprKind::IntLiteral { .. }
+        | ExprKind::FloatLiteral { .. }
+        | ExprKind::BoolLiteral { .. }
+        | ExprKind::Identifier { .. } => None,
+    }
+}
+
+pub fn constant_boolean_comparison_expression_replacement_source(
+    program: &Program,
+    target: &str,
+) -> Option<String> {
+    program.tasks.iter().find_map(|task| {
+        constant_boolean_comparison_expression_replacement_in_block(&task.body, target)
+    })
+}
+
+fn constant_boolean_comparison_expression_replacement_in_block(
+    block: &Block,
+    target: &str,
+) -> Option<String> {
+    block
+        .statements
+        .iter()
+        .find_map(|statement| match &statement.kind {
+            StatementKind::Binding { expr, .. }
+            | StatementKind::Set { expr, .. }
+            | StatementKind::Return { expr }
+            | StatementKind::Expr { expr } => {
+                constant_boolean_comparison_expression_replacement_in_expr(expr, target)
+            }
+            StatementKind::If {
+                condition,
+                then_block,
+                else_block,
+            } => constant_boolean_comparison_expression_replacement_in_expr(condition, target)
+                .or_else(|| {
+                    constant_boolean_comparison_expression_replacement_in_block(then_block, target)
+                })
+                .or_else(|| {
+                    else_block.as_ref().and_then(|block| {
+                        constant_boolean_comparison_expression_replacement_in_block(block, target)
+                    })
+                }),
+            StatementKind::While { condition, body } => {
+                constant_boolean_comparison_expression_replacement_in_expr(condition, target)
+                    .or_else(|| {
+                        constant_boolean_comparison_expression_replacement_in_block(body, target)
+                    })
+            }
+            StatementKind::For {
+                collection, body, ..
+            } => constant_boolean_comparison_expression_replacement_in_expr(collection, target)
+                .or_else(|| {
+                    constant_boolean_comparison_expression_replacement_in_block(body, target)
+                }),
+            StatementKind::Forge { body } => {
+                constant_boolean_comparison_expression_replacement_in_block(body, target)
+            }
+        })
+}
+
+fn constant_boolean_comparison_expression_replacement_in_expr(
+    expr: &Expr,
+    target: &str,
+) -> Option<String> {
+    if expr.id == target {
+        return constant_boolean_comparison_expression_replacement(expr);
+    }
+    match &expr.kind {
+        ExprKind::Unary { expr, .. } | ExprKind::Try { expr } => {
+            constant_boolean_comparison_expression_replacement_in_expr(expr, target)
+        }
+        ExprKind::Binary { left, right, .. } => {
+            constant_boolean_comparison_expression_replacement_in_expr(left, target).or_else(|| {
+                constant_boolean_comparison_expression_replacement_in_expr(right, target)
+            })
+        }
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => constant_boolean_comparison_expression_replacement_in_expr(condition, target)
+            .or_else(|| {
+                constant_boolean_comparison_expression_replacement_in_expr(then_branch, target)
+            })
+            .or_else(|| {
+                constant_boolean_comparison_expression_replacement_in_expr(else_branch, target)
+            }),
+        ExprKind::Call { callee, args } => {
+            constant_boolean_comparison_expression_replacement_in_expr(callee, target).or_else(
+                || {
+                    args.iter().find_map(|arg| {
+                        constant_boolean_comparison_expression_replacement_in_expr(arg, target)
+                    })
+                },
+            )
+        }
+        ExprKind::ListLiteral { items } => items.iter().find_map(|item| {
+            constant_boolean_comparison_expression_replacement_in_expr(item, target)
+        }),
+        ExprKind::MapLiteral { entries } => entries.iter().find_map(|entry| {
+            constant_boolean_comparison_expression_replacement_in_expr(&entry.key, target).or_else(
+                || constant_boolean_comparison_expression_replacement_in_expr(&entry.value, target),
+            )
+        }),
+        ExprKind::Index { collection, index } => {
+            constant_boolean_comparison_expression_replacement_in_expr(collection, target).or_else(
+                || constant_boolean_comparison_expression_replacement_in_expr(index, target),
+            )
+        }
+        ExprKind::FieldAccess { receiver, .. } => {
+            constant_boolean_comparison_expression_replacement_in_expr(receiver, target)
+        }
+        ExprKind::RecordLiteral { fields, .. } => fields.iter().find_map(|field| {
+            constant_boolean_comparison_expression_replacement_in_expr(&field.expr, target)
         }),
         ExprKind::Raw { .. }
         | ExprKind::StringLiteral { .. }

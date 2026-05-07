@@ -77,7 +77,8 @@
       "self_assignment_statement",
       "overwritten_set_statement",
       "redundant_initial_set_statement",
-      "empty_while_statement"
+      "empty_while_statement",
+      "constant_boolean_comparison_expression"
     ],
     "finding_count": 0
   },

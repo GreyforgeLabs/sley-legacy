@@ -1038,6 +1038,7 @@ enum CliLintRule {
     OverwrittenSetStatement,
     RedundantInitialSetStatement,
     EmptyWhileStatement,
+    ConstantBooleanComparisonExpression,
 }
 
 impl From<CliLintRule> for LintRule {
@@ -1097,6 +1098,9 @@ impl From<CliLintRule> for LintRule {
             CliLintRule::OverwrittenSetStatement => Self::OverwrittenSetStatement,
             CliLintRule::RedundantInitialSetStatement => Self::RedundantInitialSetStatement,
             CliLintRule::EmptyWhileStatement => Self::EmptyWhileStatement,
+            CliLintRule::ConstantBooleanComparisonExpression => {
+                Self::ConstantBooleanComparisonExpression
+            }
         }
     }
 }
