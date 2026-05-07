@@ -530,6 +530,83 @@
       }
     },
     {
+      "name": "ci_doctor_project_next_actions_json",
+      "bin": "sley-ci",
+      "args": ["doctor", "--json", "--deny-warnings", "examples/project"],
+      "covers": [
+        "cli:sley-ci",
+        "ci:doctor-next-actions",
+        "json:sley.ci.report.v0",
+        "json:sley.doctor.report.v0",
+        "readiness:ci-doctor-next-actions"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.ci.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/command", "value": "doctor" },
+          { "pointer": "/steps/0/stdout_schema", "value": "sley.doctor.report.v0" },
+          { "pointer": "/steps/0/next_actions/0/kind", "value": "inspect_tasks" },
+          { "pointer": "/steps/0/next_actions/1/kind", "value": "inspect_calls" },
+          { "pointer": "/steps/0/next_actions/3/kind", "value": "verify_gate" },
+          { "pointer": "/steps/0/next_actions/3/command/1", "value": "verify" },
+          { "pointer": "/steps/0/next_actions/4/kind", "value": "run_entrypoint" }
+        ]
+      }
+    },
+    {
+      "name": "ci_verify_project_next_actions_json",
+      "bin": "sley-ci",
+      "args": ["verify", "--json", "--deny-warnings", "examples/project"],
+      "covers": [
+        "cli:sley-ci",
+        "ci:verify-next-actions",
+        "json:sley.ci.report.v0",
+        "json:sley.verify.report.v0",
+        "readiness:ci-verify-next-actions"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.ci.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/command", "value": "verify" },
+          { "pointer": "/steps/0/stdout_schema", "value": "sley.verify.report.v0" },
+          { "pointer": "/steps/0/next_actions/0/kind", "value": "seal_verified_target" },
+          { "pointer": "/steps/0/next_actions/0/command/1", "value": "seal" },
+          { "pointer": "/steps/0/next_actions/1/kind", "value": "package_verified_target" },
+          { "pointer": "/steps/0/next_actions/1/command/1", "value": "zjx" }
+        ]
+      }
+    },
+    {
+      "name": "ci_deploy_project_next_actions_json",
+      "bin": "sley-ci",
+      "args": ["deploy", "--json", "--dry-run", "examples/project"],
+      "covers": [
+        "cli:sley-ci",
+        "ci:deploy-next-actions",
+        "json:sley.ci.report.v0",
+        "json:sley.deploy.report.v0",
+        "readiness:ci-deploy-next-actions"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.ci.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/command", "value": "deploy" },
+          { "pointer": "/steps/0/stdout_schema", "value": "sley.deploy.report.v0" },
+          { "pointer": "/steps/0/next_actions/0/kind", "value": "seal_verified_target" },
+          { "pointer": "/steps/0/next_actions/1/kind", "value": "package_verified_target" },
+          { "pointer": "/steps/0/next_actions/2/kind", "value": "review_seal" },
+          { "pointer": "/steps/0/next_actions/2/command/1", "value": "seal" },
+          { "pointer": "/steps/0/next_actions/3/kind", "value": "review_package" }
+        ]
+      }
+    },
+    {
       "name": "ci_lint_unknown_project_module_json",
       "bin": "sley-ci",
       "args": ["lint", "--json", "--module", "app.typo", "examples/project"],
