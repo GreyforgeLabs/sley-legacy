@@ -164,7 +164,7 @@ Rules:
   shared diagnostic record, the edit-plan schema pins strict graft operation
   and transaction template envelopes reused by graph-slice affordances,
   the graph-slice schema links
-  focus, task, call-summary, inbound-call, and insert/move/delete/replace
+  focus, task, call-summary, inbound-call, and add/insert/move/delete/replace
   affordance payloads to shared contracts, `sley-ci`
   check/lint/doctor/plan/run/verify/deploy/smoke/corpus/examples reports,
   LSP fix-preview and command-preview payloads, workbench reports, docgen
@@ -519,15 +519,16 @@ starters where the graph slice exposes `add_affordances`. Direct declaration
 ids such as `type:app.module.Name`, `effect:app.module.Audit`, and
 `import:app.module:app.shared` use the same graph-slice move/delete
 affordance path scoped to the selected declaration.
-Graph slices also expose bounded `InsertStatement` affordances for task-local
-block insertion, plus checker-filtered `MoveNode` affordances for import, type,
-effect, task, statement, and take movement planning, including exact parent ids
-and checked destination insertion limits, starter operation JSON, and editable
-JSON pointers. Entry-module `main` task cross-module movement is not
-advertised. They also expose checker-filtered `DeleteNode` affordances for
-import, type, effect, task, statement, and take deletion planning, omitting
-entry-module `main` task deletion and any starter rejected by the graft oracle,
-plus checker-filtered `ReplaceStatement` affordances for whole task-local
+Graph slices also expose checker-filtered bounded `InsertStatement`
+affordances for task-local block insertion, plus checker-filtered `MoveNode`
+affordances for import, type, effect, task, statement, and take movement
+planning, including exact parent ids and checked destination insertion limits,
+starter operation JSON, and editable JSON pointers. Entry-module `main` task
+cross-module movement is not advertised. They also expose checker-filtered
+`DeleteNode` affordances for import, type, effect, task, statement, and take
+deletion planning, omitting entry-module `main` task deletion and any starter
+rejected by the graft oracle, plus checker-filtered `ReplaceStatement`
+affordances for whole task-local
 statement replacement and `ReplaceExpression` affordances for task-local
 expression replacement.
 `sley plan --graft-templates --template-surface program` now emits checked
@@ -726,8 +727,8 @@ The current smoke manifest covers:
   `rename_and_update_call_sites` transaction through `sley fix --write`
 - a write/query/verify smoke for `remove_take_and_remove_call_arg`, proving
   unused-take cleanup can also update resolved callers
-- graph-slice add, insert, move, delete, and replace affordances plus checked
-  `insert_statement`, `replace_statement`, and `replace_expression` graft
+- checked graph-slice add, insert, move, delete, and replace affordances, plus
+  checked `insert_statement`, `replace_statement`, and `replace_expression` graft
   templates in edit-plan reports
 - program-surface declaration/import templates for checked `add_task`,
   `add_type_declaration`, `add_effect_declaration`, and `add_import` starters,

@@ -663,11 +663,13 @@ fn build_slice(
         effects: module.effects,
         tasks: module.tasks,
         task: focus_task_index.map(|index| program.tasks[index].clone()),
-        add_affordances: build_add_affordances(program, &focus_module),
-        insert_affordances: build_insert_affordances(
-            focus_task_index,
-            &module_task_indexes,
+        add_affordances: checked_add_affordances(
             program,
+            build_add_affordances(program, &focus_module),
+        ),
+        insert_affordances: checked_insert_affordances(
+            program,
+            build_insert_affordances(focus_task_index, &module_task_indexes, program),
         ),
         move_affordances: checked_move_affordances(
             program,
@@ -723,6 +725,22 @@ fn build_add_affordances(program: &Program, focus_module: &str) -> Vec<AddDeclar
         vec!["/payload/source".to_string()],
     ));
     affordances
+}
+
+fn checked_add_affordances(
+    program: &Program,
+    affordances: Vec<AddDeclarationAffordance>,
+) -> Vec<AddDeclarationAffordance> {
+    affordances
+        .into_iter()
+        .filter(|affordance| {
+            graph_slice_operation_checks(
+                program,
+                &affordance.operation,
+                Some("agent:graph-slice-add-affordance"),
+            )
+        })
+        .collect()
 }
 
 fn add_declaration_affordance(
@@ -844,6 +862,22 @@ fn build_insert_affordances(
         );
     }
     affordances
+}
+
+fn checked_insert_affordances(
+    program: &Program,
+    affordances: Vec<InsertStatementAffordance>,
+) -> Vec<InsertStatementAffordance> {
+    affordances
+        .into_iter()
+        .filter(|affordance| {
+            graph_slice_operation_checks(
+                program,
+                &affordance.operation,
+                Some("agent:graph-slice-insert-affordance"),
+            )
+        })
+        .collect()
 }
 
 fn collect_insert_affordances_in_block(

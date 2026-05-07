@@ -291,7 +291,7 @@ Current verified surface:
   unchecked-result binding migration reports, plus `sley-ci`, `sley-conformance`,
   `sley-docgen`, `sley-workbench`, `sley-sandbox-runner`, `sley-shadow`,
   `sley-agent-bench`, `sley-zjx` utility reports, and `sley-lsp` help/startup. It also includes
-  graph-slice checked insert/move/delete/replace affordances, checked `insert_statement`,
+  graph-slice checked add/insert/move/delete/replace affordances, checked `insert_statement`,
   `replace_statement`, and `replace_expression` graft templates, task-body
   insert graft emission, direct block, statement, take, and expression node
   surface targeting with expression and statement `--emit-graft`, direct
@@ -463,9 +463,9 @@ Current verified surface:
   the query schema now exposes strict task/take/type/effect/call row
   definitions,
   graph-slice add/insert/move/delete/replace affordance operations reuse that
-  strict graft operation schema, and graph-slice move destinations,
-  replace affordances, and delete affordances are filtered through the graft
-  checker before being advertised,
+  strict graft operation schema, and graph-slice add, insert, move, replace,
+  and delete affordances are filtered through the graft checker before being
+  advertised,
   symbol graph, graph-slice, and graft outcome handoff roots have locked
   contract fixtures,
   graph-slice focus, task, and call summary payloads are schema-linked,

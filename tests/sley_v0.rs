@@ -16991,6 +16991,16 @@ task main -> Int {
         insert_nested.operation.pointer("/target"),
         Some(&serde_json::json!("block:task:main.main:stmt:1:then"))
     );
+    for affordance in &slice.insert_affordances {
+        let graft: GraftInput = serde_json::from_value(affordance.operation.clone())
+            .expect("parse checked insert affordance");
+        let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
+        assert_eq!(
+            outcome.status, "accepted",
+            "expected insert affordance {affordance:#?} to apply, got {:#?}",
+            outcome.diagnostics
+        );
+    }
 
     let nested_statement = slice
         .move_affordances
@@ -23063,7 +23073,9 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:operations:add-take",
         "graft:operations:remove-task-effect",
         "graft:project-existing-import-write",
+        "graph-slice:checked-add-affordances",
         "graph-slice:checked-delete-affordances",
+        "graph-slice:checked-insert-affordances",
         "graph-slice:checked-move-affordances",
         "graph-slice:checked-replace-affordances",
         "graph-slice:delete-affordances",

@@ -694,7 +694,7 @@ schemas pin inventory, fixture root-check, and single-report root-match
 results. Symbol graph, graph slice, and query schemas also pin module
 import/declaration summary shapes so agents can rely on stable import node ids
 for graft targets. The edit-plan schema pins strict graft operation and
-transaction template envelopes, and graph-slice insert/move/delete/replace
+transaction template envelopes, and graph-slice add/insert/move/delete/replace
 affordance operations reuse that strict graft operation schema. Graph-slice
 focus, optional task, and inbound/outbound call summaries reuse AST and query report
 contracts. The graft outcome schema pins strict accepted provenance records.
@@ -748,7 +748,7 @@ reports, doctor readiness reports, edit-plan reports, project scaffolds, ZJX
 preview envelopes, LSP help/startup, graft dry runs
 and direct graft writes, write-mode fix trace receipts, non-empty trace
 receipt seals, ZJX envelopes carrying graph digests and schema-backed trace
-receipts, ZJX tool reports, graph-slice checked delete, insert, move, and
+receipts, ZJX tool reports, graph-slice checked add, insert, delete, move, and
 replace affordances, checked `insert_statement`, `replace_statement`, and
 `replace_expression` graft templates, lint-driven fix
 writes that clear warnings before verify, program-surface declaration/import
@@ -1184,16 +1184,17 @@ Import summaries expose canonical import node ids such as
 `import:app.main:app.shared`, so import `MoveNode` and `DeleteNode` grafts can
 copy targets directly from graph, graph-slice, or query JSON. Graph slices also
 include `add_affordances` for declaration planning: every module slice can
-expose checked import, type, effect, and task starters. Import starters carry
+expose checked import, type, effect, and task starters only when the graft
+checker accepts the starter operation. Import starters carry
 `payload.owner_module` and effect starters carry `payload.module`, so their
 strict graft JSON remains self-contained when the focused module is not the
 entry module. Each affordance exposes the declaration-list target, strict
 starter graft JSON, and editable pointer for the starter payload. Graph
 slices also include `insert_affordances` for task-local block insertion
-planning: each
-affordance exposes the exact block target, maximum insertion position, starter
-`InsertStatement` operation JSON, and editable `/payload/source` plus
-`/payload/position` pointers. Graph slices also include checked
+planning: each checked affordance exposes the exact block target, maximum
+insertion position, starter `InsertStatement` operation JSON, and editable
+`/payload/source` plus `/payload/position` pointers only when the graft checker
+accepts the starter operation. Graph slices also include checked
 `move_affordances` for bounded import, type, effect, task, statement, and take
 movement planning: each affordance exposes the exact `MoveNode`
 target, current parent, current position, in-parent maximum position, and
