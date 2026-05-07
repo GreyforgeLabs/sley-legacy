@@ -1474,6 +1474,63 @@ task main -> Score {
     let alias_grafted =
         parse_program(&alias_outcome.source.expect("grafted source")).expect("parse grafted");
     assert!(!has_errors(&check_program(&alias_grafted)));
+
+    let project_root = temp_project_dir("imported-alias-template-plan");
+    fs::create_dir_all(project_root.join("src/app")).expect("create alias project dirs");
+    fs::write(
+        project_root.join("sley.toml"),
+        r#"
+[project]
+entry = "app.main"
+"#,
+    )
+    .expect("write alias project manifest");
+    fs::write(
+        project_root.join("src/app/main.sley"),
+        r#"
+module app.main
+
+import app.types as t
+
+task main -> t.Score {
+  return 7
+}
+"#,
+    )
+    .expect("write alias project main");
+    fs::write(
+        project_root.join("src/app/types.sley"),
+        r#"
+module app.types
+
+export type Score = Int
+"#,
+    )
+    .expect("write alias project types");
+    let alias_project = load_project(&project_root).expect("load imported alias project");
+    let imported_alias_report = build_edit_plan_report_with_options(
+        "app.main",
+        Ok(alias_project.program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("task:app.main.main".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(imported_alias_report.status, "ready");
+    let imported_alias_template = imported_alias_report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "replace_task_body")
+        .expect("imported alias replace task body template");
+    assert_eq!(
+        imported_alias_template
+            .operation
+            .pointer("/payload/statements/0"),
+        Some(&serde_json::json!("return 0"))
+    );
+    let _ = fs::remove_dir_all(project_root);
 }
 
 #[test]
