@@ -98,7 +98,7 @@ Current verified surface:
   that the declared integration coverage count matches the test file. It also
   inventories the `make v1` target set and fails when required local gate
   targets disappear. `report` now fails when required corpus or smoke release
-  tags disappear.
+  tags disappear, including seeded and scoped runtime authority smoke tags.
   `report --require-public-release-ready` turns
   unresolved public-release packaging blockers into an explicit nonzero gate
   for final release cuts. `--corpus-manifest` and repeated `--smoke-manifest`
