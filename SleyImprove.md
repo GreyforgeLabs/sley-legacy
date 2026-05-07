@@ -354,7 +354,8 @@ Priority diagnostic families:
 
 - parse errors with expected tokens: implemented with `insert_expected_token`,
   `provide_identifier`, `provide_expression`, and expected-item hints
-- unknown identifiers: implemented with `declare_binding`
+- unknown identifiers: implemented with parse-valid `declare_binding` and
+  `declare_mutable_binding` starter declarations
 - unknown tasks: implemented with `declare_or_import_task`
 - unknown types: implemented with `declare_or_import_type`
 - binding and assignment type mismatch: implemented with type-change hints and
@@ -382,7 +383,8 @@ Priority diagnostic families:
   `replace_return_expression`, and structural `ReplaceExpression`
 - missing return paths in non-`Unit` tasks: implemented with `MISSING_RETURN`,
   `insert_return`, and `replace_task_body`
-- immutable binding mutation: implemented with `use_mutable_binding_kind`
+- immutable binding mutation: implemented with typed parse-valid
+  `use_mutable_binding_kind` starter declarations
 - undeclared effects: implemented with `declare_or_import_effect`
 - unauthorized host authority: implemented with `add_required_effect`
 - private imported task/type/effect: implemented with export hints

@@ -9409,11 +9409,11 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/integration_test_count"),
-        Some(&serde_json::json!(306))
+        Some(&serde_json::json!(307))
     );
     assert_eq!(
         report_json.pointer("/summary/declared_integration_test_count"),
-        Some(&serde_json::json!(306))
+        Some(&serde_json::json!(307))
     );
     assert_eq!(
         report_json.pointer("/summary/test_count_matches_declared"),
@@ -9425,7 +9425,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/tests/integration_test_count"),
-        Some(&serde_json::json!(306))
+        Some(&serde_json::json!(307))
     );
     assert_eq!(
         report_json.pointer("/tests/declared_matches_actual"),
@@ -11199,6 +11199,12 @@ task main -> Int {
         Some(&serde_json::json!("0"))
     );
     assert_has_repair_hint(&diagnostics, "UNKNOWN_IDENTIFIER", "declare_binding");
+    let declare_binding_hint =
+        find_repair_hint(&diagnostics, "UNKNOWN_IDENTIFIER", "declare_binding");
+    assert_eq!(
+        declare_binding_hint.replacement.as_deref(),
+        Some("bind missing = 0")
+    );
 
     let unknown_task =
         parse_program("task main -> Int {\n  return call missing()\n}\n").expect("parse source");
@@ -11279,6 +11285,40 @@ task side_effect_only -> Unit {
     );
     assert_has_repair_hint(&diagnostics, "MISSING_RETURN", "insert_return");
     assert_has_repair_hint(&diagnostics, "MISSING_RETURN", "replace_task_body");
+}
+
+#[test]
+fn checker_declaration_hints_use_parse_valid_starters() {
+    let source = r#"
+task main -> Int {
+  bind label: Text = "start"
+  set label = "done"
+  set missing = 1
+  return 1
+}
+"#;
+    let program = parse_program(source).expect("parse declaration repair hint source");
+    let diagnostics = check_program(&program);
+
+    let mutable_hint = find_repair_hint(
+        &diagnostics,
+        "BINDING_NOT_MUTABLE",
+        "use_mutable_binding_kind",
+    );
+    assert_eq!(
+        mutable_hint.replacement.as_deref(),
+        Some("state label = \"\"")
+    );
+
+    let declare_hint = find_repair_hint(
+        &diagnostics,
+        "UNKNOWN_IDENTIFIER",
+        "declare_mutable_binding",
+    );
+    assert_eq!(
+        declare_hint.replacement.as_deref(),
+        Some("state missing = 0")
+    );
 }
 
 #[test]

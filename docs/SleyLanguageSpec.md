@@ -1333,6 +1333,10 @@ starter graft. Return type mismatches carry both the declaration-level
 the returned expression. Binding and assignment type mismatches likewise include
 structural `replace_expression` hints for the initializer or assigned
 expression, alongside the older type-change or source-level replacement hints.
+Unknown identifier diagnostics carry `declare_binding` or
+`declare_mutable_binding` hints with parse-valid starter declarations, and
+immutable binding mutation diagnostics carry `use_mutable_binding_kind` hints
+with typed mutable starter declarations.
 Missing return paths in non-`Unit` tasks produce `MISSING_RETURN` with
 `insert_return` and `replace_task_body` repair hints, including valid anonymous
 and named record-literal starter returns when the task return type is a record.

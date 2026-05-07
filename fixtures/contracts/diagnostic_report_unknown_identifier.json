@@ -11,7 +11,7 @@
         {
           "kind": "declare_binding",
           "target": "task:main.main",
-          "replacement": "bind missing = <value>"
+          "replacement": "bind missing = 0"
         }
       ]
     }
