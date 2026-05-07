@@ -186,8 +186,9 @@ Rules:
   unchecked-result binding migration, docgen,
   sandbox-runner, shadow, and ZJX tool replays.
 - `sley-conformance report` carries explicit required corpus and smoke release
-  tags, inventories editor-shim package validation and the `make v1` target
-  set, and fails if either manifest or the local gate drops required evidence,
+  tags, inventories checked migration fixture counts, editor-shim package
+  validation and the `make v1` target set, and fails if either manifest or the
+  local gate drops required evidence,
   including seeded and scoped runtime authority smoke evidence.
 - `sley-conformance report` carries local/public v1 readiness tracks so agents
   can distinguish passed executable gates from operator-controlled public

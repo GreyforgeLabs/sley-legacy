@@ -10305,6 +10305,10 @@ fn conformance_report_summarizes_release_surface() {
         Some(&serde_json::json!(116))
     );
     assert_eq!(
+        report_json.pointer("/summary/migration_fixture_count"),
+        Some(&serde_json::json!(4))
+    );
+    assert_eq!(
         report_json.pointer("/summary/corpus_accepted_count"),
         Some(&serde_json::json!(20))
     );
@@ -10532,11 +10536,11 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/readiness/local_v1/passed_check_count"),
-        Some(&serde_json::json!(10))
+        Some(&serde_json::json!(11))
     );
     assert_eq!(
         report_json.pointer("/readiness/local_v1/total_check_count"),
-        Some(&serde_json::json!(10))
+        Some(&serde_json::json!(11))
     );
     assert_eq!(
         report_json.pointer("/readiness/local_v1/blocker_count"),
@@ -10560,15 +10564,15 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/readiness/public_v1/gate_completion_percent"),
-        Some(&serde_json::json!(67))
+        Some(&serde_json::json!(69))
     );
     assert_eq!(
         report_json.pointer("/readiness/public_v1/passed_check_count"),
-        Some(&serde_json::json!(10))
+        Some(&serde_json::json!(11))
     );
     assert_eq!(
         report_json.pointer("/readiness/public_v1/total_check_count"),
-        Some(&serde_json::json!(15))
+        Some(&serde_json::json!(16))
     );
     assert_eq!(
         report_json.pointer("/readiness/public_v1/blocker_count"),
@@ -10640,6 +10644,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     let text_stdout = String::from_utf8(text_report.stdout).expect("text report stdout is utf8");
     assert!(text_stdout.contains("corpus_missing=0"));
+    assert!(text_stdout.contains("migration_fixtures=4"));
     assert!(text_stdout.contains("smoke_missing=0"));
     assert!(text_stdout.contains("onboarding=7"));
     assert!(text_stdout.contains("onboarding_missing=0"));
@@ -10649,7 +10654,7 @@ fn conformance_report_summarizes_release_surface() {
     assert!(text_stdout.contains("local_v1=ready"));
     assert!(text_stdout.contains("local_v1_percent=100"));
     assert!(text_stdout.contains("public_v1=blocked"));
-    assert!(text_stdout.contains("public_v1_percent=67"));
+    assert!(text_stdout.contains("public_v1_percent=69"));
     assert!(text_stdout.contains("public_release_blockers=5"));
     assert!(text_stdout.contains("release:missing_license_file"));
 

@@ -170,9 +170,9 @@ Implemented now:
   wrapped diagnostic IDs and lint finding IDs summarized on CI steps
 - in-tree `sley-conformance` utility with `report` and `coverage` commands for
   schema/fixture instance coverage, contract validation status, corpus coverage
-  tags, smoke coverage tags, the compact agent onboarding pack, packaged
-  example counts, and the declared integration-test count, plus editor-shim
-  package validation, including
+  tags, checked migration fixture counts, smoke coverage tags, the compact
+  agent onboarding pack, packaged example counts, and the declared
+  integration-test count, plus editor-shim package validation, including
   required corpus and smoke release tags for seeded and scoped runtime
   authority, `make v1` target inventory, machine-readable local/public v1
   readiness tracks, plus non-gating public-release packaging blockers and
