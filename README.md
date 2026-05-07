@@ -168,9 +168,9 @@ Implemented now:
   the accepted/rejected compiler conformance corpus, and packaged examples,
   emitting
   `schema: "sley.ci.report.v0"` for CI and pre-commit integration, with
-  wrapped diagnostic IDs and lint finding IDs summarized on CI steps, explicit
-  `--dry-run` required for the deploy wrapper, and failed verify/deploy
-  next-actions copied into CI output for agent repair handoff
+  wrapped diagnostic IDs and lint finding IDs summarized on CI steps, direct
+  nested doctor/plan/verify/deploy next-actions preserved for agent handoff,
+  and explicit `--dry-run` required for the deploy wrapper
 - in-tree `sley-conformance` utility with `report` and `coverage` commands for
   schema/fixture instance coverage, contract validation status, corpus coverage
   tags, checked migration fixture counts, smoke coverage tags, the compact

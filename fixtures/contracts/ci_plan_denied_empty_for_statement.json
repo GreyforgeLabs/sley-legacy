@@ -35,6 +35,42 @@
           "hint": "delete this never-executed for statement"
         }
       ],
+      "next_actions": [
+        {
+          "kind": "repair_lint_findings",
+          "reason": "lint findings should be resolved or deliberately accepted before grafting",
+          "command": [
+            "sley",
+            "lint",
+            "--json",
+            "examples/empty_for_statement.sley"
+          ]
+        },
+        {
+          "kind": "inspect_tasks",
+          "reason": "query task facts identify the narrowest edit surface",
+          "command": [
+            "sley",
+            "query",
+            "--json",
+            "--kind",
+            "tasks",
+            "examples/empty_for_statement.sley"
+          ]
+        },
+        {
+          "kind": "inspect_primary_surface",
+          "reason": "graph slice gives bounded AST and call context for the highest-ranked edit surface",
+          "command": [
+            "sley",
+            "graph",
+            "--json",
+            "--slice",
+            "task:app.empty_for.main",
+            "examples/empty_for_statement.sley"
+          ]
+        }
+      ],
       "issues": [
         {
           "code": "exit_status_mismatch",

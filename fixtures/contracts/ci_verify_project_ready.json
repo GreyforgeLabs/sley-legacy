@@ -23,6 +23,28 @@
       "actual_success": true,
       "exit_code": 0,
       "stdout_schema": "sley.verify.report.v0",
+      "next_actions": [
+        {
+          "kind": "seal_verified_target",
+          "reason": "create a content-addressed review artifact after verification",
+          "command": [
+            "sley",
+            "seal",
+            "--json",
+            "examples/project"
+          ]
+        },
+        {
+          "kind": "package_verified_target",
+          "reason": "create a ZJX preview envelope for agent handoff after verification",
+          "command": [
+            "sley",
+            "zjx",
+            "--json",
+            "examples/project"
+          ]
+        }
+      ],
       "issues": []
     }
   ],

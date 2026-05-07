@@ -100,10 +100,10 @@ Current verified surface:
   wrapped diagnostic ID summarized inside the CI step; denied lint findings
   from lint, doctor, plan, and verify surfaces also expose their finding IDs
   inside the step, while run/verify runtime diagnostics are summarized for
-  missing authority gates, failed verify next-actions are copied into the
-  wrapper step, `sley-ci deploy` requires explicit `--dry-run`, and failed
-  deploy dry-runs copy nested verify lint findings, diagnostics, and retry
-  actions before deploy-level repair actions.
+  missing authority gates, nested doctor/plan/verify/deploy next-actions are
+  preserved in wrapper steps, `sley-ci deploy` requires explicit `--dry-run`,
+  and failed deploy dry-runs copy nested verify lint findings, diagnostics,
+  and retry actions before deploy-level repair actions.
 - `sley-conformance` is available as an in-tree conformance visibility helper
   with `report` and `coverage` commands that emit
   `schema: "sley.conformance.report.v0"` and

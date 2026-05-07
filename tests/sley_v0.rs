@@ -12556,6 +12556,10 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
         doctor_json.pointer("/steps/0/stdout_schema"),
         Some(&serde_json::json!("sley.doctor.report.v0"))
     );
+    assert_eq!(
+        doctor_json.pointer("/steps/0/next_actions/3/kind"),
+        Some(&serde_json::json!("verify_gate"))
+    );
     assert_json_snapshot(
         &doctor_json,
         include_str!("../fixtures/contracts/ci_doctor_project_ready.json"),
@@ -12601,6 +12605,10 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
         denied_doctor_json.pointer("/steps/0/findings/0/id"),
         Some(&serde_json::json!("EMPTY_FOR_STATEMENT"))
     );
+    assert_eq!(
+        denied_doctor_json.pointer("/steps/0/next_actions/2/kind"),
+        Some(&serde_json::json!("preview_lint_repair"))
+    );
     assert_json_snapshot(
         &denied_doctor_json,
         include_str!("../fixtures/contracts/ci_doctor_denied_empty_for_statement.json"),
@@ -12633,6 +12641,10 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     assert_eq!(
         plan_json.pointer("/steps/0/stdout_schema"),
         Some(&serde_json::json!("sley.edit_plan.report.v0"))
+    );
+    assert_eq!(
+        plan_json.pointer("/steps/0/next_actions/3/kind"),
+        Some(&serde_json::json!("post_edit_ci_doctor"))
     );
     assert_json_snapshot(
         &plan_json,
@@ -12684,6 +12696,10 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     );
     let stable_verify_json: serde_json::Value =
         serde_json::from_slice(&stable_verify.stdout).expect("parse stable sley-ci verify JSON");
+    assert_eq!(
+        stable_verify_json.pointer("/steps/0/next_actions/0/kind"),
+        Some(&serde_json::json!("seal_verified_target"))
+    );
     assert_json_snapshot(
         &stable_verify_json,
         include_str!("../fixtures/contracts/ci_verify_project_ready.json"),
@@ -12887,6 +12903,10 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     );
     let stable_deploy_json: serde_json::Value =
         serde_json::from_slice(&stable_deploy.stdout).expect("parse stable sley-ci deploy JSON");
+    assert_eq!(
+        stable_deploy_json.pointer("/steps/0/next_actions/2/kind"),
+        Some(&serde_json::json!("review_seal"))
+    );
     assert_json_snapshot(
         &stable_deploy_json,
         include_str!("../fixtures/contracts/ci_deploy_project_ready.json"),
@@ -12932,6 +12952,10 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     assert_eq!(
         denied_plan_json.pointer("/steps/0/issues/0/code"),
         Some(&serde_json::json!("exit_status_mismatch"))
+    );
+    assert_eq!(
+        denied_plan_json.pointer("/steps/0/next_actions/2/kind"),
+        Some(&serde_json::json!("inspect_primary_surface"))
     );
     assert_json_snapshot(
         &denied_plan_json,

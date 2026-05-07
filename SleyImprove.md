@@ -371,11 +371,12 @@ Rules:
   package is ready;
   artifact manifests pin report, seal, and package roles to their expected
   schemas. `sley-ci run` wraps deterministic runtime execution under
-  `sley.ci.report.v0`, `sley-ci deploy` requires explicit `--dry-run` and
-  passes the same flag through to the wrapped deploy command, failed deploy
-  wrappers summarize nested verify lint findings and runtime diagnostics while
-  preserving repair/retry
-  `next_actions`, and `sley-contract inspect-deploy-artifacts`
+  `sley.ci.report.v0`, `sley-ci` preserves nested doctor/plan/verify/deploy
+  `next_actions` on wrapper steps, `sley-ci deploy` requires explicit
+  `--dry-run` and passes the same flag through to the wrapped deploy command,
+  failed deploy wrappers summarize nested verify lint findings and runtime
+  diagnostics while preserving repair/retry `next_actions`, and
+  `sley-contract inspect-deploy-artifacts`
   revalidates the handoff
   manifest, schemas, and digests. `sley-contract` validation commands default
   to repo-local or bundled source schemas while keeping explicit schema
