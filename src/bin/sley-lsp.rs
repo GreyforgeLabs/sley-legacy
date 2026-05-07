@@ -191,6 +191,11 @@ fn handle_message<W: Write>(
                 send_response(writer, id, handle_inlay_hints(params, state))?;
             }
         }
+        "textDocument/semanticTokens/full" => {
+            if let Some(id) = id {
+                send_response(writer, id, handle_semantic_tokens(params, state))?;
+            }
+        }
         "workspace/symbol" => {
             if let Some(id) = id {
                 send_response(writer, id, handle_workspace_symbol(params, state))?;
@@ -267,6 +272,28 @@ fn initialize_result() -> JsonValue {
             },
             "inlayHintProvider": {
                 "resolveProvider": false
+            },
+            "semanticTokensProvider": {
+                "legend": {
+                    "tokenTypes": [
+                        "namespace",
+                        "type",
+                        "function",
+                        "parameter",
+                        "variable",
+                        "keyword",
+                        "string",
+                        "number",
+                        "comment",
+                        "operator"
+                    ],
+                    "tokenModifiers": [
+                        "declaration",
+                        "defaultLibrary"
+                    ]
+                },
+                "full": true,
+                "range": false
             },
             "workspaceSymbolProvider": true,
             "referencesProvider": true,
@@ -641,6 +668,18 @@ fn handle_inlay_hints(params: JsonValue, state: &ServerState) -> JsonValue {
         &document.text,
         range,
     ))
+}
+
+fn handle_semantic_tokens(params: JsonValue, state: &ServerState) -> JsonValue {
+    let Some(uri) = text_document_uri(&params) else {
+        return json!({ "data": [] });
+    };
+    let Some(document) = state.documents.get(&uri) else {
+        return json!({ "data": [] });
+    };
+    json!({
+        "data": semantic_tokens_data(&document.text)
+    })
 }
 
 fn handle_workspace_symbol(params: JsonValue, state: &ServerState) -> JsonValue {
@@ -2068,6 +2107,372 @@ fn inlay_hint_sort_key(hint: &JsonValue) -> (u64, u64, String) {
             .and_then(JsonValue::as_str)
             .unwrap_or_default()
             .to_string(),
+    )
+}
+
+const SEMANTIC_NAMESPACE: u32 = 0;
+const SEMANTIC_TYPE: u32 = 1;
+const SEMANTIC_FUNCTION: u32 = 2;
+const SEMANTIC_PARAMETER: u32 = 3;
+const SEMANTIC_VARIABLE: u32 = 4;
+const SEMANTIC_KEYWORD: u32 = 5;
+const SEMANTIC_STRING: u32 = 6;
+const SEMANTIC_NUMBER: u32 = 7;
+const SEMANTIC_COMMENT: u32 = 8;
+const SEMANTIC_OPERATOR: u32 = 9;
+
+const SEMANTIC_MOD_DECLARATION: u32 = 1 << 0;
+const SEMANTIC_MOD_DEFAULT_LIBRARY: u32 = 1 << 1;
+
+#[derive(Debug, Clone)]
+struct SemanticToken {
+    line: u32,
+    character: u32,
+    length: u32,
+    token_type: u32,
+    modifiers: u32,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum SemanticContext {
+    NamespaceLine,
+    FunctionDeclaration,
+    TypeDeclaration,
+    EffectDeclaration,
+    ParameterDeclaration,
+    VariableDeclaration,
+    ForItem,
+}
+
+fn semantic_tokens_data(source: &str) -> Vec<u32> {
+    let mut tokens = semantic_tokens_for_source(source);
+    tokens.sort_by_key(|token| (token.line, token.character));
+    let mut data = Vec::with_capacity(tokens.len() * 5);
+    let mut previous_line = 0u32;
+    let mut previous_character = 0u32;
+    for token in tokens {
+        let delta_line = token.line.saturating_sub(previous_line);
+        let delta_character = if delta_line == 0 {
+            token.character.saturating_sub(previous_character)
+        } else {
+            token.character
+        };
+        data.extend([
+            delta_line,
+            delta_character,
+            token.length,
+            token.token_type,
+            token.modifiers,
+        ]);
+        previous_line = token.line;
+        previous_character = token.character;
+    }
+    data
+}
+
+fn semantic_tokens_for_source(source: &str) -> Vec<SemanticToken> {
+    let mut tokens = Vec::new();
+    for (line_index, line) in source.lines().enumerate() {
+        collect_semantic_tokens_for_line(line, line_index as u32, &mut tokens);
+    }
+    tokens
+}
+
+fn collect_semantic_tokens_for_line(line: &str, line_index: u32, tokens: &mut Vec<SemanticToken>) {
+    let mut byte = 0usize;
+    let mut context: Option<SemanticContext> = None;
+    let mut namespace_context = false;
+
+    while byte < line.len() {
+        let Some(ch) = line.get(byte..).and_then(|text| text.chars().next()) else {
+            break;
+        };
+        if ch.is_whitespace() {
+            byte += ch.len_utf8();
+            continue;
+        }
+        if line.get(byte..).is_some_and(|text| text.starts_with("//")) || ch == '#' {
+            push_semantic_token(
+                tokens,
+                line,
+                line_index,
+                byte,
+                line.len(),
+                SEMANTIC_COMMENT,
+                0,
+            );
+            break;
+        }
+        if ch == '"' {
+            let end = semantic_string_end(line, byte);
+            push_semantic_token(tokens, line, line_index, byte, end, SEMANTIC_STRING, 0);
+            byte = end;
+            continue;
+        }
+        if ch.is_ascii_digit() {
+            let end = semantic_number_end(line, byte);
+            push_semantic_token(tokens, line, line_index, byte, end, SEMANTIC_NUMBER, 0);
+            byte = end;
+            continue;
+        }
+        if is_identifier_start(ch) {
+            let end = semantic_identifier_end(line, byte);
+            let identifier = &line[byte..end];
+            let next_byte = next_non_whitespace_byte(line, end);
+            let previous_byte = previous_non_whitespace_byte(line, byte);
+            let (token_type, modifiers) = semantic_identifier_kind(
+                identifier,
+                context,
+                namespace_context,
+                previous_byte
+                    .and_then(|previous| line.get(previous..).and_then(|text| text.chars().next())),
+                next_byte.and_then(|next| line.get(next..).and_then(|text| text.chars().next())),
+            );
+            push_semantic_token(tokens, line, line_index, byte, end, token_type, modifiers);
+
+            if is_semantic_keyword(identifier) {
+                context = semantic_context_after_keyword(identifier);
+                namespace_context = matches!(
+                    context,
+                    Some(SemanticContext::NamespaceLine) | Some(SemanticContext::EffectDeclaration)
+                );
+            } else if !namespace_context {
+                context = None;
+            } else if next_byte
+                .and_then(|next| line.get(next..).and_then(|text| text.chars().next()))
+                != Some('.')
+            {
+                context = None;
+                namespace_context = false;
+            }
+            byte = end;
+            continue;
+        }
+        let end = byte + ch.len_utf8();
+        if is_semantic_operator(ch)
+            || ch == '-' && line.get(end..).is_some_and(|text| text.starts_with('>'))
+        {
+            let token_end =
+                if ch == '-' && line.get(end..).is_some_and(|text| text.starts_with('>')) {
+                    end + 1
+                } else {
+                    end
+                };
+            push_semantic_token(
+                tokens,
+                line,
+                line_index,
+                byte,
+                token_end,
+                SEMANTIC_OPERATOR,
+                0,
+            );
+            byte = token_end;
+            continue;
+        }
+        if ch == ',' || ch == '{' || ch == '}' || ch == '(' || ch == ')' || ch == ':' {
+            context = None;
+            namespace_context = false;
+        }
+        byte = end;
+    }
+}
+
+fn semantic_identifier_kind(
+    identifier: &str,
+    context: Option<SemanticContext>,
+    namespace_context: bool,
+    previous_char: Option<char>,
+    next_char: Option<char>,
+) -> (u32, u32) {
+    if is_semantic_keyword(identifier) {
+        return (SEMANTIC_KEYWORD, 0);
+    }
+    match context {
+        Some(SemanticContext::NamespaceLine) if namespace_context => {
+            (SEMANTIC_NAMESPACE, SEMANTIC_MOD_DECLARATION)
+        }
+        Some(SemanticContext::FunctionDeclaration) => (SEMANTIC_FUNCTION, SEMANTIC_MOD_DECLARATION),
+        Some(SemanticContext::TypeDeclaration) => (SEMANTIC_TYPE, SEMANTIC_MOD_DECLARATION),
+        Some(SemanticContext::EffectDeclaration) => (
+            SEMANTIC_TYPE,
+            SEMANTIC_MOD_DECLARATION | SEMANTIC_MOD_DEFAULT_LIBRARY,
+        ),
+        Some(SemanticContext::ParameterDeclaration) => {
+            (SEMANTIC_PARAMETER, SEMANTIC_MOD_DECLARATION)
+        }
+        Some(SemanticContext::VariableDeclaration) | Some(SemanticContext::ForItem) => {
+            (SEMANTIC_VARIABLE, SEMANTIC_MOD_DECLARATION)
+        }
+        None if previous_char == Some('.') && next_char == Some('(') => (SEMANTIC_FUNCTION, 0),
+        None if next_char == Some('(') => (SEMANTIC_FUNCTION, 0),
+        None if identifier
+            .chars()
+            .next()
+            .is_some_and(|ch| ch.is_ascii_uppercase()) =>
+        {
+            (SEMANTIC_TYPE, SEMANTIC_MOD_DEFAULT_LIBRARY)
+        }
+        _ => (SEMANTIC_VARIABLE, 0),
+    }
+}
+
+fn semantic_context_after_keyword(keyword: &str) -> Option<SemanticContext> {
+    match keyword {
+        "module" | "import" | "as" => Some(SemanticContext::NamespaceLine),
+        "task" => Some(SemanticContext::FunctionDeclaration),
+        "type" => Some(SemanticContext::TypeDeclaration),
+        "effect" => Some(SemanticContext::EffectDeclaration),
+        "take" => Some(SemanticContext::ParameterDeclaration),
+        "bind" | "state" | "cell" | "knot" | "slot" | "gate" | "lease" | "veil" | "dial"
+        | "flag" | "memo" | "cache" | "derive" | "flow" | "port" | "tally" | "hole" | "draft"
+        | "taint" | "witness" | "seal" | "anchor" | "view" | "cursor" => {
+            Some(SemanticContext::VariableDeclaration)
+        }
+        "for" => Some(SemanticContext::ForItem),
+        _ => None,
+    }
+}
+
+fn push_semantic_token(
+    tokens: &mut Vec<SemanticToken>,
+    line: &str,
+    line_index: u32,
+    start_byte: usize,
+    end_byte: usize,
+    token_type: u32,
+    modifiers: u32,
+) {
+    if end_byte <= start_byte {
+        return;
+    }
+    tokens.push(SemanticToken {
+        line: line_index,
+        character: line[..start_byte].chars().count() as u32,
+        length: line[start_byte..end_byte].chars().count() as u32,
+        token_type,
+        modifiers,
+    });
+}
+
+fn semantic_string_end(line: &str, start_byte: usize) -> usize {
+    let mut escaped = false;
+    for (offset, ch) in line[start_byte + 1..].char_indices() {
+        let byte = start_byte + 1 + offset + ch.len_utf8();
+        if escaped {
+            escaped = false;
+        } else if ch == '\\' {
+            escaped = true;
+        } else if ch == '"' {
+            return byte;
+        }
+    }
+    line.len()
+}
+
+fn semantic_number_end(line: &str, start_byte: usize) -> usize {
+    let mut seen_dot = false;
+    let mut end = start_byte;
+    for (offset, ch) in line[start_byte..].char_indices() {
+        if ch.is_ascii_digit() {
+            end = start_byte + offset + ch.len_utf8();
+        } else if ch == '.' && !seen_dot {
+            seen_dot = true;
+            end = start_byte + offset + ch.len_utf8();
+        } else {
+            break;
+        }
+    }
+    end
+}
+
+fn semantic_identifier_end(line: &str, start_byte: usize) -> usize {
+    let mut end = start_byte;
+    for (offset, ch) in line[start_byte..].char_indices() {
+        if is_identifier_part(ch) {
+            end = start_byte + offset + ch.len_utf8();
+        } else {
+            break;
+        }
+    }
+    end
+}
+
+fn next_non_whitespace_byte(line: &str, start_byte: usize) -> Option<usize> {
+    line.get(start_byte..)?
+        .char_indices()
+        .find_map(|(offset, ch)| (!ch.is_whitespace()).then_some(start_byte + offset))
+}
+
+fn previous_non_whitespace_byte(line: &str, start_byte: usize) -> Option<usize> {
+    line.get(..start_byte)?
+        .char_indices()
+        .rev()
+        .find_map(|(byte, ch)| (!ch.is_whitespace()).then_some(byte))
+}
+
+fn is_identifier_start(ch: char) -> bool {
+    ch.is_ascii_alphabetic() || ch == '_'
+}
+
+fn is_identifier_part(ch: char) -> bool {
+    ch.is_ascii_alphanumeric() || ch == '_'
+}
+
+fn is_semantic_keyword(value: &str) -> bool {
+    matches!(
+        value,
+        "module"
+            | "import"
+            | "as"
+            | "export"
+            | "type"
+            | "effect"
+            | "task"
+            | "take"
+            | "uses"
+            | "bind"
+            | "state"
+            | "cell"
+            | "knot"
+            | "slot"
+            | "gate"
+            | "lease"
+            | "veil"
+            | "dial"
+            | "flag"
+            | "memo"
+            | "cache"
+            | "derive"
+            | "flow"
+            | "port"
+            | "tally"
+            | "hole"
+            | "draft"
+            | "taint"
+            | "witness"
+            | "seal"
+            | "anchor"
+            | "view"
+            | "cursor"
+            | "return"
+            | "call"
+            | "if"
+            | "else"
+            | "while"
+            | "for"
+            | "in"
+            | "forge"
+            | "set"
+            | "true"
+            | "false"
+    )
+}
+
+fn is_semantic_operator(ch: char) -> bool {
+    matches!(
+        ch,
+        '=' | '+' | '-' | '*' | '/' | '%' | '<' | '>' | '!' | '&' | '|' | '?' | '.'
     )
 }
 

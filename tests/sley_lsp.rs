@@ -75,6 +75,14 @@ fn lsp_publishes_diagnostics_formats_symbols_and_previews_code_actions() {
         Some(&json!(false))
     );
     assert_eq!(
+        initialized.pointer("/result/capabilities/semanticTokensProvider/full"),
+        Some(&json!(true))
+    );
+    assert_eq!(
+        initialized.pointer("/result/capabilities/semanticTokensProvider/legend/tokenTypes/2"),
+        Some(&json!("function"))
+    );
+    assert_eq!(
         initialized.pointer("/result/capabilities/workspaceSymbolProvider"),
         Some(&json!(true))
     );
@@ -991,6 +999,46 @@ export task other -> Text {
         json!({
             "jsonrpc": "2.0",
             "id": 15,
+            "method": "textDocument/semanticTokens/full",
+            "params": {
+                "textDocument": {
+                    "uri": main_uri
+                }
+            }
+        }),
+    );
+    let semantic_tokens = read_response(&mut reader, 15);
+    let semantic_rows = semantic_token_rows(&semantic_tokens);
+    let signature_decl_line = main_source
+        .lines()
+        .position(|line| line.starts_with("task signature"))
+        .expect("signature declaration line");
+    assert!(
+        semantic_rows.contains(&(0, 0, 6, 5, 0)),
+        "semantic tokens should mark `module` as a keyword, got {semantic_rows:?}"
+    );
+    assert!(
+        semantic_rows.contains(&(0, 7, 3, 0, 1)),
+        "semantic tokens should mark module path segments as declaration namespaces, got {semantic_rows:?}"
+    );
+    assert!(
+        semantic_rows.contains(&(signature_decl_line as u64, 5, 9, 2, 1)),
+        "semantic tokens should mark task declarations as functions, got {semantic_rows:?}"
+    );
+    assert!(
+        semantic_rows.contains(&(signature_line as u64, 14, 4, 2, 0)),
+        "semantic tokens should mark project call leaves as functions, got {semantic_rows:?}"
+    );
+    assert!(
+        semantic_rows.contains(&(signature_line as u64, 19, 3, 6, 0)),
+        "semantic tokens should mark string literals, got {semantic_rows:?}"
+    );
+
+    write_lsp(
+        &mut stdin,
+        json!({
+            "jsonrpc": "2.0",
+            "id": 16,
             "method": "textDocument/selectionRange",
             "params": {
                 "textDocument": {
@@ -1003,7 +1051,7 @@ export task other -> Text {
             }
         }),
     );
-    let selection_range = read_response(&mut reader, 15);
+    let selection_range = read_response(&mut reader, 16);
     assert_eq!(
         selection_range.pointer("/result/0/range/start/line"),
         Some(&json!(6))
@@ -1072,12 +1120,12 @@ export task other -> Text {
         &mut stdin,
         json!({
             "jsonrpc": "2.0",
-            "id": 16,
+            "id": 17,
             "method": "shutdown",
             "params": null
         }),
     );
-    let shutdown = read_response(&mut reader, 16);
+    let shutdown = read_response(&mut reader, 17);
     assert!(shutdown.get("result").is_some());
     write_lsp(
         &mut stdin,
@@ -1203,6 +1251,34 @@ fn inlay_hint_labels_lines_and_chars(message: &JsonValue) -> Vec<(&str, u64, u64
             ))
         })
         .collect()
+}
+
+fn semantic_token_rows(message: &JsonValue) -> Vec<(u64, u64, u64, u64, u64)> {
+    let data = message
+        .pointer("/result/data")
+        .and_then(JsonValue::as_array)
+        .expect("semantic token data");
+    let mut rows = Vec::new();
+    let mut line = 0u64;
+    let mut character = 0u64;
+    for chunk in data.chunks(5) {
+        if chunk.len() != 5 {
+            continue;
+        }
+        let delta_line = chunk[0].as_u64().expect("delta line");
+        let delta_character = chunk[1].as_u64().expect("delta character");
+        let length = chunk[2].as_u64().expect("length");
+        let token_type = chunk[3].as_u64().expect("token type");
+        let modifiers = chunk[4].as_u64().expect("modifiers");
+        line += delta_line;
+        if delta_line == 0 {
+            character += delta_character;
+        } else {
+            character = delta_character;
+        }
+        rows.push((line, character, length, token_type, modifiers));
+    }
+    rows
 }
 
 fn workspace_edit_uri_lines_and_text(message: &JsonValue) -> Vec<(&str, u64, u64, &str)> {

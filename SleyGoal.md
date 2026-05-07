@@ -109,10 +109,10 @@ Current verified surface:
   full-document sync, project-aware diagnostics over `sley.toml` workspaces
   with open-buffer overlays, all-open-buffer and watched project-file
   diagnostic refresh, formatting, document symbols, declaration metadata and
-  resolved project task-call hover, folding ranges, workspace symbols,
-  selection ranges, project completions, import/call definition jumps,
-  project task signature help, project task
-  parameter inlay hints, exact-range task references, document highlights,
+  resolved project task-call hover, folding ranges, semantic tokens,
+  workspace symbols, selection ranges, project completions, import/call
+  definition jumps, project task signature help, project task parameter inlay
+  hints, exact-range task references, document highlights,
   import document links, prepared cursor-aware project task rename edits,
   checked edit-plan code
   actions, and a non-mutating `sley.fix.preview` command whose preview
