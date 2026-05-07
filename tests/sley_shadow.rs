@@ -261,3 +261,57 @@ fn shadow_links_lint_findings_to_query_rows() {
         Some(&json!("task:app.tasks.orphan"))
     );
 }
+
+#[test]
+fn shadow_links_statement_lint_findings_to_owner_task() {
+    let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-shadow"))
+        .current_dir(&repo_root)
+        .args([
+            "report",
+            "--json",
+            "--rule",
+            "empty_while_statement",
+            "examples/empty_while_statement.sley",
+        ])
+        .output()
+        .expect("run sley-shadow");
+    assert!(
+        output.status.success(),
+        "shadow failed\nstdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    support::validate_report_schema("sley.shadow.report.v0", &output.stdout);
+    let report: JsonValue = serde_json::from_slice(&output.stdout).expect("parse shadow report");
+    assert_eq!(report.pointer("/status"), Some(&json!("findings")));
+    assert_eq!(
+        report.pointer("/filters/rules"),
+        Some(&json!(["empty_while_statement"]))
+    );
+    assert_eq!(
+        report.pointer("/summary/linked_lint_finding_count"),
+        Some(&json!(1))
+    );
+    assert_eq!(
+        report.pointer("/summary/unlinked_lint_finding_count"),
+        Some(&json!(0))
+    );
+    assert_eq!(
+        report.pointer("/lint_links/0/finding_id"),
+        Some(&json!("EMPTY_WHILE_STATEMENT"))
+    );
+    assert_eq!(
+        report.pointer("/lint_links/0/target_kind"),
+        Some(&json!("task"))
+    );
+    assert_eq!(
+        report.pointer("/lint_links/0/qualified_name"),
+        Some(&json!("app.empty_while.main"))
+    );
+    assert_eq!(
+        report.pointer("/lint_links/0/node"),
+        Some(&json!("block:task:app.empty_while.main:stmt:2"))
+    );
+}
