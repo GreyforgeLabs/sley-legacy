@@ -132,7 +132,8 @@ task main -> Text {
 if true {
 return "hello"
 }
-return "fallback"
+bind selected = if true { "selected" } else { "unused" }
+return selected
 }
 
 task orphan -> Text {
@@ -188,7 +189,7 @@ return "unused"
         "folding ranges should include fetch task body, got {fold_lines:?}"
     );
     assert!(
-        fold_lines.contains(&(7, 12, "region")),
+        fold_lines.contains(&(7, 13, "region")),
         "folding ranges should include main task body, got {fold_lines:?}"
     );
     assert!(
@@ -196,7 +197,7 @@ return "unused"
         "folding ranges should include nested if block, got {fold_lines:?}"
     );
     assert!(
-        fold_lines.contains(&(14, 16, "region")),
+        fold_lines.contains(&(15, 17, "region")),
         "folding ranges should include orphan task body, got {fold_lines:?}"
     );
 
@@ -404,7 +405,7 @@ return "unused"
                 },
                 "range": {
                     "start": { "line": 0, "character": 0 },
-                    "end": { "line": 17, "character": 0 }
+                    "end": { "line": 30, "character": 0 }
                 },
                 "context": {
                     "diagnostics": []
@@ -448,6 +449,42 @@ return "unused"
     assert!(
         !scoped_action_kinds.contains(&"delete_unused_private_task"),
         "scoped code action should exclude unrelated private-task repair, got {scoped_action_kinds:?}"
+    );
+    write_lsp(
+        &mut stdin,
+        json!({
+            "jsonrpc": "2.0",
+            "id": 23,
+            "method": "textDocument/codeAction",
+            "params": {
+                "textDocument": {
+                    "uri": uri
+                },
+                "range": {
+                    "start": { "line": 11, "character": 20 },
+                    "end": { "line": 11, "character": 20 }
+                },
+                "context": {
+                    "diagnostics": []
+                }
+            }
+        }),
+    );
+    let expression_scoped_actions = read_response(&mut reader, 23);
+    let expression_action_kinds = expression_scoped_actions
+        .get("result")
+        .and_then(JsonValue::as_array)
+        .expect("expression-scoped code actions")
+        .iter()
+        .filter_map(|action| action.pointer("/data/kind").and_then(JsonValue::as_str))
+        .collect::<Vec<_>>();
+    assert!(
+        expression_action_kinds.contains(&"simplify_constant_if_expression"),
+        "expression-scoped code action should include the constant-if expression repair, got {expression_action_kinds:?}"
+    );
+    assert!(
+        !expression_action_kinds.contains(&"delete_unused_private_task"),
+        "expression-scoped code action should exclude unrelated private-task repair, got {expression_action_kinds:?}"
     );
     let delete_action = actions
         .get("result")
