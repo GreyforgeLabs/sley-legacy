@@ -8120,6 +8120,7 @@ fn move_node_rejects_expression_targets() {
         "GRAFT_MOVE_UNSUPPORTED",
         "replace_expression",
     );
+    assert_replace_expression_hint_source(&outcome.diagnostics, "GRAFT_MOVE_UNSUPPORTED", "1");
     assert_has_repair_hint(
         &outcome.diagnostics,
         "GRAFT_MOVE_UNSUPPORTED",
@@ -8270,6 +8271,7 @@ fn delete_node_rejects_expression_targets_without_replacement() {
         "GRAFT_DELETE_UNSUPPORTED",
         "replace_expression",
     );
+    assert_replace_expression_hint_source(&outcome.diagnostics, "GRAFT_DELETE_UNSUPPORTED", "1");
     assert_has_repair_hint(
         &outcome.diagnostics,
         "GRAFT_DELETE_UNSUPPORTED",

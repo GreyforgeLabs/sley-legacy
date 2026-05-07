@@ -443,7 +443,8 @@ Priority diagnostic families:
 - stale graft preconditions: implemented with `refresh_graft_precondition`
   hints that tell agents to re-read current target state before retrying
 - unsupported graft operation: implemented with `use_supported_graft_operation`
-  hints, plus `replace_expression` guidance for expression move/delete attempts
+  hints, plus `replace_expression` starter graft guidance for expression
+  move/delete attempts
 - module namespace conflicts: implemented with `resolve_namespace_conflict`
   hints for duplicate checker declarations and graft add/rename collisions
 
@@ -499,9 +500,10 @@ the destination module file from the moved item. Cross-parent statement
 movement between existing block parents is implemented with
 `payload.destination`. Take reordering within the owning task and checked
 cross-task take movement into another task's take list are implemented.
-Expression movement and broader graph-contract hardening remain open.
-Unsupported expression movement returns a `replace_expression` repair hint so
-agents can plan the supported structural edit.
+Expression movement remains intentionally unsupported. Unsupported expression
+movement and deletion return `replace_expression` repair hints with starter
+`ReplaceExpression` graft JSON so agents can plan the supported structural
+edit.
 Graph, graph-slice, and query module import summaries now expose canonical
 import node ids so agents can copy import graft targets directly from the
 machine contract instead of reconstructing them.

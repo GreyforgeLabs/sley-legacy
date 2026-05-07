@@ -1398,12 +1398,13 @@ names carry `provide_identifier`; empty expression sites carry
 `provide_expression` with a minimal parse-valid scalar starter; and
 top-level/export item mismatches carry
 `choose_expected_item`.
-unsupported expression `MoveNode` targets carry a `replace_expression` hint so
-agents can switch to `ReplaceExpression` instead of retrying an unsupported
-move. Unsupported graft shapes also carry `use_supported_graft_operation`
-guidance that points agents toward the supported parent, destination, or
-operation shape; expression `DeleteNode` targets additionally carry
-`replace_expression` because expressions require replacement, not deletion.
+unsupported expression `MoveNode` targets carry a `replace_expression` hint
+with starter `ReplaceExpression` graft JSON so agents can switch operations
+instead of retrying an unsupported move. Unsupported graft shapes also carry
+`use_supported_graft_operation` guidance that points agents toward the
+supported parent, destination, or operation shape; expression `DeleteNode`
+targets additionally carry `replace_expression` starter graft JSON because
+expressions require replacement, not deletion.
 Duplicate task/type/effect checker diagnostics and graft namespace collisions
 carry `resolve_namespace_conflict` hints so agents rename, remove, or reuse the
 existing declaration instead of retrying the same colliding name.
