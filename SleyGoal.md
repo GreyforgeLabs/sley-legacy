@@ -54,8 +54,8 @@ Current verified surface:
   corpus conformance, packaged example conformance, broad CLI smoke
   conformance, the lightweight `sley-ci smoke` wrapper probe, the focused LSP
   integration test, deterministic utility replays for workbench, agent-bench,
-  migration, docgen, sandbox-runner, and ZJX tools, and Tree-sitter syntax
-  parsing.
+  raw-host and unchecked-result migration, docgen, sandbox-runner, and ZJX
+  tools, and Tree-sitter syntax parsing.
 - The synthetic gold corpus currently has 17 accepted fixtures and 19 rejected
   fixtures, including accepted/rejected split-task agent authority cases that
   lock transitive effect propagation for deploy, spend, and data mutation, plus
