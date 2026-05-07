@@ -454,6 +454,36 @@ return "unused"
         &mut stdin,
         json!({
             "jsonrpc": "2.0",
+            "id": 24,
+            "method": "textDocument/codeAction",
+            "params": {
+                "textDocument": {
+                    "uri": uri
+                },
+                "range": {
+                    "start": { "line": 8, "character": 4 },
+                    "end": { "line": 8, "character": 4 }
+                },
+                "context": {
+                    "diagnostics": [],
+                    "only": ["refactor.rewrite"]
+                }
+            }
+        }),
+    );
+    let refactor_only_actions = read_response(&mut reader, 24);
+    assert_eq!(
+        refactor_only_actions
+            .get("result")
+            .and_then(JsonValue::as_array)
+            .map(Vec::len),
+        Some(0),
+        "refactor-only request should exclude quick fixes: {refactor_only_actions:#}"
+    );
+    write_lsp(
+        &mut stdin,
+        json!({
+            "jsonrpc": "2.0",
             "id": 23,
             "method": "textDocument/codeAction",
             "params": {

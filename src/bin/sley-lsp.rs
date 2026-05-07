@@ -975,6 +975,7 @@ fn handle_code_actions(params: JsonValue, state: &ServerState) -> JsonValue {
         return json!([]);
     };
     let requested_range = request_range(&params, &document.text);
+    let requested_kinds = requested_code_action_kinds(&params);
     let program_for_range_filter = parse_program(&document.text).ok();
     let report = build_edit_plan_report_with_options(
         target_for_uri(&uri),
@@ -999,6 +1000,9 @@ fn handle_code_actions(params: JsonValue, state: &ServerState) -> JsonValue {
                     &template.surface,
                 )
             })
+            .filter(|template| {
+                code_action_kind_allowed(&requested_kinds, code_action_kind(&template.kind))
+            })
             .map(|template| code_action_for_graft_template(&uri, &report.target, template)),
     );
     actions.extend(
@@ -1013,10 +1017,34 @@ fn handle_code_actions(params: JsonValue, state: &ServerState) -> JsonValue {
                     &template.surface,
                 )
             })
+            .filter(|template| {
+                code_action_kind_allowed(&requested_kinds, code_action_kind(&template.kind))
+            })
             .map(|template| code_action_for_transaction_template(&uri, &report.target, template)),
     );
     actions.truncate(50);
     json!(actions)
+}
+
+fn requested_code_action_kinds(params: &JsonValue) -> Vec<String> {
+    params
+        .pointer("/context/only")
+        .and_then(JsonValue::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(JsonValue::as_str)
+        .map(str::to_string)
+        .collect()
+}
+
+fn code_action_kind_allowed(requested: &[String], actual: &str) -> bool {
+    requested.is_empty()
+        || requested.iter().any(|kind| {
+            actual == kind
+                || actual
+                    .strip_prefix(kind)
+                    .is_some_and(|tail| tail.starts_with('.'))
+        })
 }
 
 fn code_action_surface_in_range(

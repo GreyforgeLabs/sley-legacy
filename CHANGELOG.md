@@ -126,6 +126,8 @@ here. Dates use UTC-independent calendar dates from the local repo history.
   enclosing repair and exclude unrelated document repairs.
 - `sley-lsp` fix-preview commands now include `--template-surface` so repeated
   same-kind repairs stay pinned to the selected edit-plan template.
+- `sley-lsp` code actions now honor `context.only` requests, including
+  hierarchical LSP kind matching for quick-fix and refactor subsets.
 - `sley-lsp` declaration hover now includes module, return type, takes,
   effects, export status, and node IDs for editor-side inspection.
 - `sley-workbench` static HTML now renders focused graph-slice summaries,
