@@ -257,8 +257,8 @@ Implemented now:
 - checked JSON edit-plan reports with `sley plan`, consuming strict
   diagnostics plus query and lint findings into ranked task edit surfaces,
   graft target ids, call-row inspection next-actions, direct and `sley-ci`
-  seeded post-edit verify commands when reachable host calls can be inferred
-  safely, optional
+  post-edit doctor gates plus direct and `sley-ci` seeded post-edit verify
+  gates when reachable host calls can be inferred safely, optional
   `--graft-templates` starter operation payloads, rename-plus-call-site and
   add-take-plus-call-arg transaction templates for targeted caller surfaces,
   direct module-surface, module declaration-list, and declaration-id

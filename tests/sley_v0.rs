@@ -2091,11 +2091,102 @@ fn edit_plan_ready_actions_seed_reachable_agent_host_calls() {
     let plan_json: serde_json::Value =
         serde_json::from_str(&plan_stdout).expect("parse agent plan JSON");
     assert_eq!(
+        plan_json.pointer("/next_actions/2/kind"),
+        Some(&serde_json::json!("post_edit_doctor"))
+    );
+    let doctor_command = plan_json
+        .pointer("/next_actions/2/command")
+        .and_then(serde_json::Value::as_array)
+        .expect("post-edit doctor command")
+        .iter()
+        .map(|value| value.as_str().expect("string command segment").to_string())
+        .collect::<Vec<_>>();
+    assert_eq!(
+        doctor_command,
+        vec![
+            "sley",
+            "doctor",
+            "--json",
+            "--deny-warnings",
+            "examples/agent_project",
+        ]
+    );
+    let doctor = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .current_dir(&repo_root)
+        .args(&doctor_command[1..])
+        .output()
+        .expect("run plan post-edit doctor action");
+    let doctor_stdout = String::from_utf8(doctor.stdout).expect("doctor stdout utf8");
+    let doctor_stderr = String::from_utf8(doctor.stderr).expect("doctor stderr utf8");
+    assert!(
+        doctor.status.success(),
+        "stdout: {doctor_stdout}\nstderr: {doctor_stderr}"
+    );
+    let doctor_json: serde_json::Value =
+        serde_json::from_str(&doctor_stdout).expect("parse doctor JSON");
+    assert_eq!(
+        doctor_json.pointer("/schema"),
+        Some(&serde_json::json!(DOCTOR_REPORT_SCHEMA))
+    );
+    assert_eq!(
+        doctor_json.pointer("/status"),
+        Some(&serde_json::json!("ready"))
+    );
+
+    assert_eq!(
         plan_json.pointer("/next_actions/3/kind"),
+        Some(&serde_json::json!("post_edit_ci_doctor"))
+    );
+    let ci_doctor_command = plan_json
+        .pointer("/next_actions/3/command")
+        .and_then(serde_json::Value::as_array)
+        .expect("post-edit ci doctor command")
+        .iter()
+        .map(|value| value.as_str().expect("string command segment").to_string())
+        .collect::<Vec<_>>();
+    let mut expected_ci_doctor_command = doctor_command.clone();
+    expected_ci_doctor_command[0] = "sley-ci".to_string();
+    assert_eq!(ci_doctor_command, expected_ci_doctor_command);
+    let ci_doctor = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
+        .current_dir(&repo_root)
+        .args(&ci_doctor_command[1..])
+        .output()
+        .expect("run plan post-edit ci doctor action");
+    let ci_doctor_stdout = String::from_utf8(ci_doctor.stdout).expect("ci doctor stdout utf8");
+    let ci_doctor_stderr = String::from_utf8(ci_doctor.stderr).expect("ci doctor stderr utf8");
+    assert!(
+        ci_doctor.status.success(),
+        "stdout: {ci_doctor_stdout}\nstderr: {ci_doctor_stderr}"
+    );
+    let ci_doctor_json: serde_json::Value =
+        serde_json::from_str(&ci_doctor_stdout).expect("parse sley-ci doctor JSON");
+    assert_eq!(
+        ci_doctor_json.pointer("/schema"),
+        Some(&serde_json::json!("sley.ci.report.v0"))
+    );
+    assert_eq!(
+        ci_doctor_json.pointer("/status"),
+        Some(&serde_json::json!("passed"))
+    );
+    assert_eq!(
+        ci_doctor_json.pointer("/command"),
+        Some(&serde_json::json!("doctor"))
+    );
+    assert_eq!(
+        ci_doctor_json.pointer("/steps/0/status"),
+        Some(&serde_json::json!("passed"))
+    );
+    assert_eq!(
+        ci_doctor_json.pointer("/steps/0/stdout_schema"),
+        Some(&serde_json::json!(DOCTOR_REPORT_SCHEMA))
+    );
+
+    assert_eq!(
+        plan_json.pointer("/next_actions/4/kind"),
         Some(&serde_json::json!("post_edit_verify"))
     );
     let verify_command = plan_json
-        .pointer("/next_actions/3/command")
+        .pointer("/next_actions/4/command")
         .and_then(serde_json::Value::as_array)
         .expect("post-edit verify command")
         .iter()
@@ -2154,11 +2245,11 @@ fn edit_plan_ready_actions_seed_reachable_agent_host_calls() {
     );
 
     assert_eq!(
-        plan_json.pointer("/next_actions/4/kind"),
+        plan_json.pointer("/next_actions/5/kind"),
         Some(&serde_json::json!("post_edit_ci_verify"))
     );
     let ci_verify_command = plan_json
-        .pointer("/next_actions/4/command")
+        .pointer("/next_actions/5/command")
         .and_then(serde_json::Value::as_array)
         .expect("post-edit ci verify command")
         .iter()
@@ -24822,6 +24913,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:lint-repair-preview",
         "readiness:lint-repair-write-command",
         "readiness:lint-repair-write-verify",
+        "readiness:plan-ci-post-edit-doctor",
         "readiness:plan-ci-post-edit-verify",
         "readiness:plan-seeded-post-edit-verify",
         "readiness:mutable-binding-repair-write-verify",
