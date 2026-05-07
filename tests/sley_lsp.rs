@@ -71,6 +71,10 @@ fn lsp_publishes_diagnostics_formats_symbols_and_previews_code_actions() {
         Some(&json!("("))
     );
     assert_eq!(
+        initialized.pointer("/result/capabilities/inlayHintProvider/resolveProvider"),
+        Some(&json!(false))
+    );
+    assert_eq!(
         initialized.pointer("/result/capabilities/workspaceSymbolProvider"),
         Some(&json!(true))
     );
@@ -865,6 +869,35 @@ export task other -> Text {
         json!({
             "jsonrpc": "2.0",
             "id": 13,
+            "method": "textDocument/inlayHint",
+            "params": {
+                "textDocument": {
+                    "uri": main_uri
+                },
+                "range": {
+                    "start": { "line": 0, "character": 0 },
+                    "end": { "line": 100, "character": 0 }
+                }
+            }
+        }),
+    );
+    let inlay_hints = read_response(&mut reader, 13);
+    let inlay_hint_rows = inlay_hint_labels_lines_and_chars(&inlay_hints);
+    assert!(
+        inlay_hint_rows.contains(&("left:", signature_line as u64, 19)),
+        "inlay hints should include first imported task parameter, got {inlay_hint_rows:?}"
+    );
+    assert!(
+        inlay_hint_rows.contains(&("right:", signature_line as u64, 24)),
+        "inlay hints should include second imported task parameter, got {inlay_hint_rows:?}"
+    );
+    assert_eq!(inlay_hints.pointer("/result/0/kind"), Some(&json!(2)));
+
+    write_lsp(
+        &mut stdin,
+        json!({
+            "jsonrpc": "2.0",
+            "id": 14,
             "method": "textDocument/selectionRange",
             "params": {
                 "textDocument": {
@@ -877,7 +910,7 @@ export task other -> Text {
             }
         }),
     );
-    let selection_range = read_response(&mut reader, 13);
+    let selection_range = read_response(&mut reader, 14);
     assert_eq!(
         selection_range.pointer("/result/0/range/start/line"),
         Some(&json!(6))
@@ -946,12 +979,12 @@ export task other -> Text {
         &mut stdin,
         json!({
             "jsonrpc": "2.0",
-            "id": 14,
+            "id": 15,
             "method": "shutdown",
             "params": null
         }),
     );
-    let shutdown = read_response(&mut reader, 14);
+    let shutdown = read_response(&mut reader, 15);
     assert!(shutdown.get("result").is_some());
     write_lsp(
         &mut stdin,
@@ -1058,6 +1091,22 @@ fn folding_range_lines_and_kinds(message: &JsonValue) -> Vec<(u64, u64, &str)> {
                 range.get("startLine")?.as_u64()?,
                 range.get("endLine")?.as_u64()?,
                 range.get("kind")?.as_str()?,
+            ))
+        })
+        .collect()
+}
+
+fn inlay_hint_labels_lines_and_chars(message: &JsonValue) -> Vec<(&str, u64, u64)> {
+    message
+        .get("result")
+        .and_then(JsonValue::as_array)
+        .expect("inlay hint array")
+        .iter()
+        .filter_map(|hint| {
+            Some((
+                hint.get("label")?.as_str()?,
+                hint.pointer("/position/line")?.as_u64()?,
+                hint.pointer("/position/character")?.as_u64()?,
             ))
         })
         .collect()
