@@ -403,6 +403,8 @@
           { "pointer": "/command", "value": "lint" },
           { "pointer": "/summary/failed_count", "value": 1 },
           { "pointer": "/steps/0/stdout_schema", "value": "sley.diagnostics.report.v0" },
+          { "pointer": "/steps/0/diagnostics/0/id", "value": "LINT_MODULE_FILTER_NOT_FOUND" },
+          { "pointer": "/steps/0/diagnostics/0/severity", "value": "error" },
           { "pointer": "/steps/0/issues/0/code", "value": "exit_status_mismatch" }
         ]
       }

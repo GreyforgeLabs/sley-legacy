@@ -190,8 +190,19 @@ struct CiStep {
     #[serde(skip_serializing_if = "Option::is_none")]
     stdout_schema: Option<String>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
+    diagnostics: Vec<CiDiagnostic>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     covers: Vec<String>,
     issues: Vec<CiIssue>,
+}
+
+#[derive(Debug, Serialize)]
+struct CiDiagnostic {
+    id: String,
+    severity: String,
+    message: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    node: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -964,6 +975,7 @@ fn run_format_round_trip_step(
         actual_success,
         exit_code,
         stdout_schema: None,
+        diagnostics: Vec::new(),
         covers,
         issues,
     }
@@ -1052,6 +1064,7 @@ fn run_smoke_case(sley_bin: &Path, repo_root: &Path, tmp_root: &Path, case: &Smo
                 actual_success: false,
                 exit_code: None,
                 stdout_schema: None,
+                diagnostics: Vec::new(),
                 covers: case.covers.clone(),
                 issues: setup_issues,
             },
@@ -1073,6 +1086,7 @@ fn run_smoke_case(sley_bin: &Path, repo_root: &Path, tmp_root: &Path, case: &Smo
                     actual_success: false,
                     exit_code: None,
                     stdout_schema: None,
+                    diagnostics: Vec::new(),
                     covers: case.covers.clone(),
                     issues: vec![issue("unsupported_smoke_binary", message)],
                 },
@@ -1192,6 +1206,7 @@ fn run_binary_step(
                     actual_success: false,
                     exit_code: None,
                     stdout_schema: None,
+                    diagnostics: Vec::new(),
                     covers,
                     issues: vec![issue(
                         "command_spawn_failed",
@@ -1207,14 +1222,17 @@ fn run_binary_step(
     let actual_success = output.status.success();
     let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
     let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
-    let stdout_schema = serde_json::from_str::<JsonValue>(&stdout)
-        .ok()
-        .and_then(|value| {
-            value
-                .get("schema")
-                .and_then(JsonValue::as_str)
-                .map(str::to_string)
-        });
+    let stdout_json = serde_json::from_str::<JsonValue>(&stdout).ok();
+    let stdout_schema = stdout_json.as_ref().and_then(|value| {
+        value
+            .get("schema")
+            .and_then(JsonValue::as_str)
+            .map(str::to_string)
+    });
+    let diagnostics = stdout_json
+        .as_ref()
+        .map(|json| extract_step_diagnostics(json, stdout_schema.as_deref()))
+        .unwrap_or_default();
     let mut issues = Vec::new();
     if actual_success != expected_success {
         issues.push(issue(
@@ -1238,12 +1256,41 @@ fn run_binary_step(
             actual_success,
             exit_code: output.status.code(),
             stdout_schema,
+            diagnostics,
             covers,
             issues,
         },
         stdout,
         stderr,
     }
+}
+
+fn extract_step_diagnostics(json: &JsonValue, stdout_schema: Option<&str>) -> Vec<CiDiagnostic> {
+    if stdout_schema != Some("sley.diagnostics.report.v0") {
+        return Vec::new();
+    }
+    json.pointer("/diagnostics")
+        .and_then(JsonValue::as_array)
+        .map(|diagnostics| {
+            diagnostics
+                .iter()
+                .filter_map(|diagnostic| {
+                    let id = diagnostic.get("id").and_then(JsonValue::as_str)?;
+                    let severity = diagnostic.get("severity").and_then(JsonValue::as_str)?;
+                    let message = diagnostic.get("message").and_then(JsonValue::as_str)?;
+                    Some(CiDiagnostic {
+                        id: id.into(),
+                        severity: severity.into(),
+                        message: message.into(),
+                        node: diagnostic
+                            .get("node")
+                            .and_then(JsonValue::as_str)
+                            .map(str::to_string),
+                    })
+                })
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 fn finalize_report(

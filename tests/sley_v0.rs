@@ -9969,7 +9969,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(112))
+        Some(&serde_json::json!(113))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -10245,7 +10245,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/contract_fixture_count"),
-        Some(&serde_json::json!(112))
+        Some(&serde_json::json!(113))
     );
     assert_eq!(
         report_json.pointer("/summary/corpus_accepted_count"),
@@ -10854,6 +10854,43 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     assert_json_snapshot(
         &denied_lint_json,
         include_str!("../fixtures/contracts/ci_lint_denied_empty_for_statement.json"),
+    );
+
+    let unknown_module_lint = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
+        .current_dir(&repo_root)
+        .args(["lint", "--json", "--module", "app.typo", "examples/project"])
+        .output()
+        .expect("run unknown-module sley-ci lint");
+    assert!(
+        !unknown_module_lint.status.success(),
+        "sley-ci lint with unknown module filter should fail"
+    );
+    let unknown_module_lint_json: serde_json::Value =
+        serde_json::from_slice(&unknown_module_lint.stdout)
+            .expect("parse unknown-module sley-ci lint JSON");
+    assert_eq!(
+        unknown_module_lint_json.pointer("/schema"),
+        Some(&serde_json::json!("sley.ci.report.v0"))
+    );
+    assert_eq!(
+        unknown_module_lint_json.pointer("/status"),
+        Some(&serde_json::json!("failed"))
+    );
+    assert_eq!(
+        unknown_module_lint_json.pointer("/steps/0/stdout_schema"),
+        Some(&serde_json::json!("sley.diagnostics.report.v0"))
+    );
+    assert_eq!(
+        unknown_module_lint_json.pointer("/steps/0/diagnostics/0/id"),
+        Some(&serde_json::json!("LINT_MODULE_FILTER_NOT_FOUND"))
+    );
+    assert_eq!(
+        unknown_module_lint_json.pointer("/steps/0/diagnostics/0/severity"),
+        Some(&serde_json::json!("error"))
+    );
+    assert_json_snapshot(
+        &unknown_module_lint_json,
+        include_str!("../fixtures/contracts/ci_lint_unknown_project_module.json"),
     );
 
     let doctor = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))

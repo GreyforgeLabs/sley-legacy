@@ -179,7 +179,8 @@ and `inspect-deploy-artifacts` JSON Schema validation reports for
 schema/fixture/manifest/deploy-handoff contract-kit work; inventory,
 fixture-check, and validate reports have locked fixtures.
 The `sley-ci` binary exposes `check`, `lint`, `doctor`, `plan`, `run`, `verify`, `deploy`, `smoke`, `corpus`, and `examples` reports
-for local CI and pre-commit gates over existing Sley commands.
+for local CI and pre-commit gates over existing Sley commands; wrapped
+diagnostic-report steps summarize diagnostic IDs directly on the CI step.
 The `sley-conformance` binary exposes `report` and `coverage` JSON roots for
 schema/fixture instance coverage, contract validation status, corpus tags,
 smoke tags, the compact agent onboarding pack, packaged example counts,

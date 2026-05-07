@@ -66,6 +66,10 @@
         "actual_success": { "type": "boolean" },
         "exit_code": { "type": "integer" },
         "stdout_schema": { "type": "string", "minLength": 1 },
+        "diagnostics": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/diagnostic" }
+        },
         "covers": {
           "type": "array",
           "items": { "type": "string", "minLength": 1 }
@@ -74,6 +78,17 @@
           "type": "array",
           "items": { "$ref": "#/$defs/issue" }
         }
+      },
+      "additionalProperties": false
+    },
+    "diagnostic": {
+      "type": "object",
+      "required": ["id", "severity", "message"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "severity": { "enum": ["error", "warning", "info"] },
+        "message": { "type": "string", "minLength": 1 },
+        "node": { "type": "string", "minLength": 1 }
       },
       "additionalProperties": false
     },

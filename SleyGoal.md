@@ -83,7 +83,7 @@ Current verified surface:
   `inventory`, `check-fixtures`, `validate`, and `inspect-deploy-artifacts`
   JSON Schema validation commands over `docs/schemas/`, `fixtures/contracts/`,
   release manifests, and local deploy artifact directories. Contract inventory
-  currently tracks 38 schemas, 112 contract fixtures, and 115 schema instances.
+  currently tracks 38 schemas, 113 contract fixtures, and 116 schema instances.
 - `sley-ci` is available as an in-tree CI wrapper with `check`, `lint`,
   `doctor`, `plan`, `run`, `verify`, `deploy`, `smoke`, `corpus`, and
   `examples` commands that emit
@@ -92,7 +92,8 @@ Current verified surface:
   accepted/rejected corpus, and packaged example gates, including deploy
   artifact directory pass-through. `sley-ci smoke` and `sley-ci corpus` accept
   either explicit `manifest.json` files or manifest directories, and
-  `sley-ci lint` is smoke-pinned for strict module-filter failures.
+  `sley-ci lint` is smoke-pinned for strict module-filter failures with the
+  wrapped diagnostic ID summarized inside the CI step.
 - `sley-conformance` is available as an in-tree conformance visibility helper
   with `report` and `coverage` commands that emit
   `schema: "sley.conformance.report.v0"` and
