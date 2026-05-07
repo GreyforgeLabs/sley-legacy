@@ -2392,6 +2392,34 @@
       }
     },
     {
+      "name": "plan_project_emit_replace_call_arg_graft_json",
+      "args": [
+        "plan",
+        "--json",
+        "--graft-templates",
+        "--emit-graft",
+        "replace_call_arg",
+        "examples/project"
+      ],
+      "covers": [
+        "cli:plan",
+        "cli:plan-emit-graft",
+        "graft:emit:replace-call-arg",
+        "graft:templates:replace-call-arg"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/op", "value": "ReplaceCallArg" },
+          { "pointer": "/target", "value": "task:app.math.double" },
+          { "pointer": "/payload/from", "value": "math.double" },
+          { "pointer": "/payload/scope", "value": "task:app.main.main" },
+          { "pointer": "/payload/source", "value": "21" },
+          { "pointer": "/payload/position", "value": 0 }
+        ]
+      }
+    },
+    {
       "name": "plan_move_template_filters_unchecked_destination_json",
       "setup_files": [
         {
