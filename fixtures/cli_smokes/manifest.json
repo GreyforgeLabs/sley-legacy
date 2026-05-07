@@ -1319,6 +1319,42 @@
       }
     },
     {
+      "name": "plan_result_unit_replace_task_body_template_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/result-unit-template/main.sley",
+          "content": "module app.result_unit\n\ntask main -> Result<Unit, Error> uses FileWrite {\n  return fs.try_write_text(\"build/out.txt\", \"ok\")\n}\n"
+        }
+      ],
+      "args": [
+        "plan",
+        "--json",
+        "--graft-templates",
+        "--template-surface",
+        "task:app.result_unit.main",
+        "{tmp}/result-unit-template/main.sley"
+      ],
+      "covers": [
+        "cli:plan",
+        "cli:smoke-setup-files",
+        "graft:templates",
+        "graft:templates:replace-task-body",
+        "json:sley.edit_plan.report.v0",
+        "readiness:replace-task-body-unit-result-template"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.edit_plan.report.v0" },
+          { "pointer": "/status", "value": "ready" },
+          { "pointer": "/graft_templates/0/kind", "value": "replace_task_body" },
+          { "pointer": "/graft_templates/0/operation/op", "value": "ReplaceTaskBody" },
+          { "pointer": "/graft_templates/0/operation/payload/statements/0", "value": "return fs.try_write_text(\"build/out.txt\", \"ok\")" },
+          { "pointer": "/graft_templates/0/editable_json_pointers/0", "value": "/payload/statements" }
+        ]
+      }
+    },
+    {
       "name": "plan_project_emit_insert_statement_graft_json",
       "args": [
         "plan",
