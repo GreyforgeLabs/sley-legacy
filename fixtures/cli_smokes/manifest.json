@@ -13212,7 +13212,11 @@
           { "pointer": "/source_schemas/lint", "value": "sley.lint.report.v0" },
           { "pointer": "/summary/authority_seed_count", "value": 1 },
           { "pointer": "/authority_seeds/0/command_args/1", "value": "SecretRead" },
-          { "pointer": "/authority_seeds/0/command_args/7", "value": "Deploy" }
+          { "pointer": "/authority_seeds/0/command_args/7", "value": "Deploy" },
+          { "pointer": "/authority_seeds/0/command_args/8", "value": "--secret" },
+          { "pointer": "/authority_seeds/0/command_args/13", "value": "profile ready" },
+          { "pointer": "/authority_seeds/0/command_args/16", "value": "plan approved" },
+          { "pointer": "/authority_seeds/0/command_args/19", "value": "staged" }
         ]
       }
     },
@@ -13550,6 +13554,10 @@
           { "pointer": "/summary/authority_seed_count", "value": 4 },
           { "pointer": "/authority_seeds/0/qualified_name", "value": "agent.main.main" },
           { "pointer": "/authority_seeds/1/qualified_name", "value": "agent.pipeline.collect_profile" },
+          { "pointer": "/authority_seeds/0/command_args/8", "value": "--secret" },
+          { "pointer": "/authority_seeds/0/command_args/13", "value": "profile ready" },
+          { "pointer": "/authority_seeds/0/command_args/16", "value": "plan approved" },
+          { "pointer": "/authority_seeds/0/command_args/19", "value": "staged" },
           { "pointer": "/authority_seeds/2/command_args/1", "value": "ModelCall" },
           { "pointer": "/authority_seeds/3/command_args/1", "value": "Deploy" }
         ]

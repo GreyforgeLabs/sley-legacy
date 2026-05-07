@@ -827,8 +827,9 @@ bootstrap. `sley-shadow report --json <target>` emits
 `schema: "sley.shadow.report.v0"` after parsing and checking the target, then
 consumes checked `sley.query.report.v0` and `sley.lint.report.v0` data. The
 report links lint findings back to task/type/effect/module rows when possible
-and derives seeded `--cap` argument fragments for effectful tasks. The target
-may be one `.sley` file or a project root loaded through `sley.toml`; `--module
+and derives `--cap` gates plus deterministic seed arguments for effectful tasks
+when reachable literal host calls make that safe. The target may be one `.sley`
+file or a project root loaded through `sley.toml`; `--module
 <module>` and repeated `--rule <rule>` narrow the lint/query replay. It is
 non-authoritative; unknown module filters block with
 `SHADOW_MODULE_FILTER_NOT_FOUND`; Rust Loom remains the semantic oracle.

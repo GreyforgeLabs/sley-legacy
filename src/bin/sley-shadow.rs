@@ -12,6 +12,7 @@ use sley::lint::{LINT_REPORT_SCHEMA, LintFinding, LintOptions, LintRule, build_l
 use sley::parser::parse_program;
 use sley::project::load_project;
 use sley::query::{QUERY_REPORT_SCHEMA, QueryKind, QueryOptions, QueryReport, build_query_report};
+use sley::runtime_seed_plan::{cap_args, inferred_runtime_seed_args};
 
 const SHADOW_REPORT_SCHEMA: &str = "sley.shadow.report.v0";
 
@@ -189,7 +190,7 @@ fn build_shadow_report(args: ReportArgs) -> ShadowReport {
             module: args.module,
         },
     );
-    let authority_seeds = build_authority_seeds(&query);
+    let authority_seeds = build_authority_seeds(&program, &query);
     let index = build_link_index(&query);
     let lint_links = lint
         .findings
@@ -272,17 +273,14 @@ fn blocked_report(
     }
 }
 
-fn build_authority_seeds(query: &QueryReport) -> Vec<AuthoritySeed> {
+fn build_authority_seeds(program: &Program, query: &QueryReport) -> Vec<AuthoritySeed> {
     query
         .tasks
         .iter()
         .filter(|task| !task.effects.is_empty())
         .map(|task| {
-            let mut command_args = Vec::with_capacity(task.effects.len() * 2);
-            for effect in &task.effects {
-                command_args.push("--cap".to_string());
-                command_args.push(effect.clone());
-            }
+            let mut command_args = cap_args(&task.effects);
+            command_args.extend(inferred_runtime_seed_args(program, &task.qualified_name));
             AuthoritySeed {
                 task_id: task.id.clone(),
                 qualified_name: task.qualified_name.clone(),

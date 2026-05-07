@@ -12,6 +12,7 @@ pub mod plan;
 pub mod project;
 pub mod query;
 pub mod runtime;
+pub mod runtime_seed_plan;
 pub mod scaffold;
 pub mod symbols;
 pub mod trace;
