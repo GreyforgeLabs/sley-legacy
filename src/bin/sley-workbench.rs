@@ -119,6 +119,9 @@ struct WorkbenchTemplatePreview {
     reason: String,
     editable_json_pointers: Vec<String>,
     payload: JsonValue,
+    preview_command: Vec<String>,
+    write_command: Vec<String>,
+    post_fix_gate_commands: Vec<Vec<String>>,
 }
 
 #[derive(Debug, Serialize)]
@@ -315,6 +318,19 @@ fn build_workbench_report(
             .graft_templates
             .into_iter()
             .map(|template| WorkbenchTemplatePreview {
+                preview_command: fix_template_command(
+                    &target,
+                    &template.kind,
+                    &template.surface,
+                    "--dry-run",
+                ),
+                write_command: fix_template_command(
+                    &target,
+                    &template.kind,
+                    &template.surface,
+                    "--write",
+                ),
+                post_fix_gate_commands: post_fix_gate_commands(&target),
                 kind: template.kind,
                 surface: template.surface,
                 reason: template.reason,
@@ -326,6 +342,19 @@ fn build_workbench_report(
             .transaction_templates
             .into_iter()
             .map(|template| WorkbenchTemplatePreview {
+                preview_command: fix_template_command(
+                    &target,
+                    &template.kind,
+                    &template.surface,
+                    "--dry-run",
+                ),
+                write_command: fix_template_command(
+                    &target,
+                    &template.kind,
+                    &template.surface,
+                    "--write",
+                ),
+                post_fix_gate_commands: post_fix_gate_commands(&target),
                 kind: template.kind,
                 surface: template.surface,
                 reason: template.reason,
@@ -357,6 +386,45 @@ fn build_workbench_report(
         graph_slice,
         issues,
     }
+}
+
+fn fix_template_command(target: &str, kind: &str, surface: &str, mode: &str) -> Vec<String> {
+    vec![
+        "sley".to_string(),
+        "fix".to_string(),
+        "--json".to_string(),
+        "--kind".to_string(),
+        kind.to_string(),
+        "--template-surface".to_string(),
+        surface.to_string(),
+        mode.to_string(),
+        target.to_string(),
+    ]
+}
+
+fn post_fix_gate_commands(target: &str) -> Vec<Vec<String>> {
+    vec![
+        vec![
+            "sley".to_string(),
+            "check".to_string(),
+            "--json".to_string(),
+            target.to_string(),
+        ],
+        vec![
+            "sley".to_string(),
+            "lint".to_string(),
+            "--json".to_string(),
+            "--deny-warnings".to_string(),
+            target.to_string(),
+        ],
+        vec![
+            "sley".to_string(),
+            "verify".to_string(),
+            "--json".to_string(),
+            "--deny-warnings".to_string(),
+            target.to_string(),
+        ],
+    ]
 }
 
 fn render_html(report: &WorkbenchReport) -> Result<String> {
@@ -607,15 +675,18 @@ fn render_templates_panel(plan: &WorkbenchPlanPanel) -> String {
         .chain(plan.transaction_templates.iter())
         .map(|template| {
             format!(
-                "<tr><td>{}</td><td><code>{}</code></td><td>{}</td></tr>",
+                "<tr><td>{}</td><td><code>{}</code></td><td>{}</td><td><code>{}</code></td><td><code>{}</code></td><td>{}</td></tr>",
                 escape_html(&template.kind),
                 escape_html(&template.surface),
-                escape_html(&template.reason)
+                escape_html(&template.reason),
+                escape_html(&command_text(&template.preview_command)),
+                escape_html(&command_text(&template.write_command)),
+                command_list_html(&template.post_fix_gate_commands)
             )
         })
         .collect::<String>();
     format!(
-        "<table><thead><tr><th>Template</th><th>Surface</th><th>Reason</th></tr></thead><tbody>{rows}</tbody></table>"
+        "<table><thead><tr><th>Template</th><th>Surface</th><th>Reason</th><th>Preview Command</th><th>Write Command</th><th>Post-Fix Gates</th></tr></thead><tbody>{rows}</tbody></table>"
     )
 }
 
@@ -791,6 +862,26 @@ fn module_name_hint_for_target(path: &Path) -> Option<String> {
 fn print_json<T: Serialize>(value: &T) -> Result<()> {
     println!("{}", serde_json::to_string_pretty(value)?);
     Ok(())
+}
+
+fn command_text(command: &[String]) -> String {
+    command.join(" ")
+}
+
+fn command_list_html(commands: &[Vec<String>]) -> String {
+    if commands.is_empty() {
+        return "<span class=\"muted\">none</span>".to_string();
+    }
+    let items = commands
+        .iter()
+        .map(|command| {
+            format!(
+                "<li><code>{}</code></li>",
+                escape_html(&command_text(command))
+            )
+        })
+        .collect::<String>();
+    format!("<ol>{items}</ol>")
 }
 
 fn escape_html(value: &str) -> String {

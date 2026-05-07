@@ -78,6 +78,33 @@ task orphan -> Text {
         template_kinds.contains(&"delete_unused_private_task"),
         "expected unused private task template, got {template_kinds:?}"
     );
+    let repair_template = report
+        .pointer("/plan/graft_templates")
+        .and_then(JsonValue::as_array)
+        .expect("graft templates")
+        .iter()
+        .find(|template| template.pointer("/kind") == Some(&json!("delete_unused_private_task")))
+        .expect("delete unused private task template");
+    assert_eq!(
+        repair_template.pointer("/preview_command/0"),
+        Some(&json!("sley"))
+    );
+    assert_eq!(
+        repair_template.pointer("/preview_command/1"),
+        Some(&json!("fix"))
+    );
+    assert_eq!(
+        repair_template.pointer("/preview_command/7"),
+        Some(&json!("--dry-run"))
+    );
+    assert_eq!(
+        repair_template.pointer("/write_command/7"),
+        Some(&json!("--write"))
+    );
+    assert_eq!(
+        repair_template.pointer("/post_fix_gate_commands/2/1"),
+        Some(&json!("verify"))
+    );
     assert_eq!(
         report.pointer("/html_path"),
         Some(&json!(html_path.to_string_lossy()))
@@ -89,6 +116,9 @@ task orphan -> Text {
     assert!(html.contains("app.workbench.orphan"));
     assert!(html.contains("Delete Affordances"));
     assert!(html.contains("delete_unused_private_task"));
+    assert!(html.contains("Preview Command"));
+    assert!(html.contains("sley fix --json --kind delete_unused_private_task"));
+    assert!(html.contains("Post-Fix Gates"));
 }
 
 fn temp_project_dir(name: &str) -> PathBuf {

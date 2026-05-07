@@ -93,6 +93,9 @@ here. Dates use UTC-independent calendar dates from the local repo history.
   effects, export status, and node IDs for editor-side inspection.
 - `sley-workbench` static HTML now renders focused graph-slice summaries,
   call edges, and graft affordance tables when `--slice <node-id>` is used.
+- `sley-workbench` edit-plan template rows now carry explicit non-mutating
+  preview commands, write commands, and post-fix check/lint/verify gate
+  commands for repair handoff.
 - Added `make public-release-check` as the explicit failing gate for public
   release cuts until license and repository metadata blockers are resolved.
 - Utility integration tests now validate live docgen, migrate, agent-bench,

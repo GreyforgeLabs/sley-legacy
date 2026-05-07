@@ -82,7 +82,46 @@
         "payload": {
           "op": "DeleteNode",
           "target": "task:app.workbench.orphan"
-        }
+        },
+        "preview_command": [
+          "sley",
+          "fix",
+          "--json",
+          "--kind",
+          "delete_unused_private_task",
+          "--template-surface",
+          "task:app.workbench.orphan",
+          "--dry-run",
+          "examples/workbench_unused.sley"
+        ],
+        "write_command": [
+          "sley",
+          "fix",
+          "--json",
+          "--kind",
+          "delete_unused_private_task",
+          "--template-surface",
+          "task:app.workbench.orphan",
+          "--write",
+          "examples/workbench_unused.sley"
+        ],
+        "post_fix_gate_commands": [
+          ["sley", "check", "--json", "examples/workbench_unused.sley"],
+          [
+            "sley",
+            "lint",
+            "--json",
+            "--deny-warnings",
+            "examples/workbench_unused.sley"
+          ],
+          [
+            "sley",
+            "verify",
+            "--json",
+            "--deny-warnings",
+            "examples/workbench_unused.sley"
+          ]
+        ]
       }
     ],
     "transaction_templates": [],
