@@ -229,10 +229,10 @@ Implemented now:
   move to fallible `try_` adapters with `?`,
   `propagate_unchecked_result` templates for discarded `Result` expression
   statements that can be safely rewritten with `?`,
-  `unchecked_result_binding` warnings for fallible `Result` values that are
-  bound and then never read,
-  `unused_effectful_binding` warnings for checked fallible-call values that are
-  bound and then never read,
+  `propagate_unchecked_result_binding` templates for unread fallible `Result`
+  bindings that can be rewritten as `?` expression statements,
+  `drop_unused_effectful_binding_value` templates for checked fallible-call
+  values that are bound and then never read,
   `qualify_imported_call` templates for simple imported task calls that should
   be alias- or module-qualified,
   `delete_unused_pure_expression_statement` templates for no-op pure
@@ -868,7 +868,8 @@ lint-driven unused-import delete templates,
 lint-driven module declaration fixes with inferred module names,
 write-mode unused-import cleanup through `sley fix --write` plus post-fix
 verify,
-raw-host adapter migration templates, unchecked-result propagation templates,
+raw-host adapter migration templates, unchecked-result expression and binding
+propagation templates,
 unqualified imported-call qualification templates with write/query/verify
 coverage, unused pure binding delete templates with write/verify coverage,
 unused pure expression statement delete templates with write/verify coverage,
