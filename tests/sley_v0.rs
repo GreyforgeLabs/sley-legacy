@@ -10848,6 +10848,14 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
         Some(&serde_json::json!("sley.lint.report.v0"))
     );
     assert_eq!(
+        denied_lint_json.pointer("/steps/0/findings/0/id"),
+        Some(&serde_json::json!("EMPTY_FOR_STATEMENT"))
+    );
+    assert_eq!(
+        denied_lint_json.pointer("/steps/0/findings/0/rule"),
+        Some(&serde_json::json!("empty_for_statement"))
+    );
+    assert_eq!(
         denied_lint_json.pointer("/steps/0/issues/0/code"),
         Some(&serde_json::json!("exit_status_mismatch"))
     );

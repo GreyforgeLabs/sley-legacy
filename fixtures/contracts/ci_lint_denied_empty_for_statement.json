@@ -25,6 +25,17 @@
       "actual_success": false,
       "exit_code": 1,
       "stdout_schema": "sley.lint.report.v0",
+      "findings": [
+        {
+          "id": "EMPTY_FOR_STATEMENT",
+          "rule": "empty_for_statement",
+          "severity": "warning",
+          "message": "task `app.empty_for.main` has a for statement over an empty list",
+          "node": "block:task:app.empty_for.main:stmt:1",
+          "module": "app.empty_for",
+          "hint": "delete this never-executed for statement"
+        }
+      ],
       "issues": [
         {
           "code": "exit_status_mismatch",
