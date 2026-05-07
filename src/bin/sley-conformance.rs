@@ -421,9 +421,19 @@ struct ReleaseSection {
     public_release_ready: bool,
     blocker_count: usize,
     blockers: Vec<ConformanceIssue>,
+    next_actions: Vec<ReleaseNextAction>,
     cargo_package: CargoPackageSection,
     tree_sitter_package: TreeSitterPackageSection,
     license: LicenseSection,
+}
+
+#[derive(Debug, Serialize)]
+struct ReleaseNextAction {
+    blocker_code: String,
+    owner: String,
+    approval_required: bool,
+    action: String,
+    paths: Vec<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -1641,11 +1651,19 @@ fn build_release_section(
     let operator_decision_required = blockers
         .iter()
         .any(|blocker| blocker.code.contains("license"));
+    let next_actions = release_next_actions(
+        &blockers,
+        cargo_manifest,
+        license_file,
+        Path::new(&tree_sitter_package.package_json),
+        Path::new(&tree_sitter_package.config),
+    );
     let blocker_count = blockers.len();
     ReleaseSection {
         public_release_ready: blocker_count == 0,
         blocker_count,
         blockers,
+        next_actions,
         cargo_package,
         tree_sitter_package,
         license: LicenseSection {
@@ -1653,6 +1671,81 @@ fn build_release_section(
             present: license_present,
             operator_decision_required,
         },
+    }
+}
+
+fn release_next_actions(
+    blockers: &[ConformanceIssue],
+    cargo_manifest: &Path,
+    license_file: &Path,
+    tree_sitter_package: &Path,
+    tree_sitter_config: &Path,
+) -> Vec<ReleaseNextAction> {
+    blockers
+        .iter()
+        .map(|blocker| {
+            release_next_action(
+                blocker,
+                cargo_manifest,
+                license_file,
+                tree_sitter_package,
+                tree_sitter_config,
+            )
+        })
+        .collect()
+}
+
+fn release_next_action(
+    blocker: &ConformanceIssue,
+    cargo_manifest: &Path,
+    license_file: &Path,
+    tree_sitter_package: &Path,
+    tree_sitter_config: &Path,
+) -> ReleaseNextAction {
+    let (owner, approval_required, action, paths) = match blocker.code.as_str() {
+        "missing_license_file" => (
+            "operator",
+            true,
+            "choose repository license text or an approved license-file path before adding LICENSE",
+            vec![path_string(license_file)],
+        ),
+        "cargo_license_unresolved" => (
+            "operator",
+            true,
+            "approve Cargo package license metadata before setting package.license or package.license-file",
+            vec![path_string(cargo_manifest)],
+        ),
+        "cargo_repository_unset" => (
+            "operator",
+            true,
+            "approve the public repository URL before setting package.repository",
+            vec![path_string(cargo_manifest)],
+        ),
+        "tree_sitter_package_license_unresolved" => (
+            "operator",
+            true,
+            "approve Tree-sitter package license metadata before updating package.json",
+            vec![path_string(tree_sitter_package)],
+        ),
+        "tree_sitter_config_license_unresolved" => (
+            "operator",
+            true,
+            "approve Tree-sitter config license metadata before updating tree-sitter.json",
+            vec![path_string(tree_sitter_config)],
+        ),
+        _ => (
+            "maintainer",
+            false,
+            "resolve the release blocker and rerun make public-release-check",
+            Vec::new(),
+        ),
+    };
+    ReleaseNextAction {
+        blocker_code: blocker.code.clone(),
+        owner: owner.to_string(),
+        approval_required,
+        action: action.to_string(),
+        paths,
     }
 }
 
@@ -2126,6 +2219,25 @@ fn render_markdown(report: &ConformanceReport) -> String {
         output.push_str("\n## Public Release Blockers\n\n");
         for blocker in &report.release.blockers {
             output.push_str(&format!("- `{}`: {}\n", blocker.code, blocker.message));
+        }
+    }
+    if !report.release.next_actions.is_empty() {
+        output.push_str("\n## Public Release Next Actions\n\n");
+        for action in &report.release.next_actions {
+            let paths = if action.paths.is_empty() {
+                "none".to_string()
+            } else {
+                action
+                    .paths
+                    .iter()
+                    .map(|path| format!("`{path}`"))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            };
+            output.push_str(&format!(
+                "- `{}`: {} (owner: `{}`, approval_required: `{}`, paths: {})\n",
+                action.blocker_code, action.action, action.owner, action.approval_required, paths
+            ));
         }
     }
     if !report.issues.is_empty() {

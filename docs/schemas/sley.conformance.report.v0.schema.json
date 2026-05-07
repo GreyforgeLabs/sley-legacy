@@ -425,6 +425,7 @@
         "public_release_ready",
         "blocker_count",
         "blockers",
+        "next_actions",
         "cargo_package",
         "tree_sitter_package",
         "license"
@@ -436,9 +437,34 @@
           "type": "array",
           "items": { "$ref": "#/$defs/issue" }
         },
+        "next_actions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/releaseAction" }
+        },
         "cargo_package": { "$ref": "#/$defs/cargoPackage" },
         "tree_sitter_package": { "$ref": "#/$defs/treeSitterPackage" },
         "license": { "$ref": "#/$defs/license" }
+      },
+      "additionalProperties": false
+    },
+    "releaseAction": {
+      "type": "object",
+      "required": [
+        "blocker_code",
+        "owner",
+        "approval_required",
+        "action",
+        "paths"
+      ],
+      "properties": {
+        "blocker_code": { "type": "string", "minLength": 1 },
+        "owner": { "type": "string", "minLength": 1 },
+        "approval_required": { "type": "boolean" },
+        "action": { "type": "string", "minLength": 1 },
+        "paths": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
       },
       "additionalProperties": false
     },

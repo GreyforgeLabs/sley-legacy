@@ -17,6 +17,8 @@ make public-release-check
 
 `make public-release-check` is expected to fail until the operator chooses the
 public license and repository metadata.
+`sley-conformance report --json` includes `release.next_actions` entries that
+map each blocker to the approval owner and file paths to update after approval.
 
 ## Operator Decisions
 

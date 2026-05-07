@@ -279,6 +279,43 @@
         "message": "tree-sitter-sley/tree-sitter.json has no public release license"
       }
     ],
+    "next_actions": [
+      {
+        "blocker_code": "missing_license_file",
+        "owner": "operator",
+        "approval_required": true,
+        "action": "choose repository license text or an approved license-file path before adding LICENSE",
+        "paths": ["LICENSE"]
+      },
+      {
+        "blocker_code": "cargo_license_unresolved",
+        "owner": "operator",
+        "approval_required": true,
+        "action": "approve Cargo package license metadata before setting package.license or package.license-file",
+        "paths": ["Cargo.toml"]
+      },
+      {
+        "blocker_code": "cargo_repository_unset",
+        "owner": "operator",
+        "approval_required": true,
+        "action": "approve the public repository URL before setting package.repository",
+        "paths": ["Cargo.toml"]
+      },
+      {
+        "blocker_code": "tree_sitter_package_license_unresolved",
+        "owner": "operator",
+        "approval_required": true,
+        "action": "approve Tree-sitter package license metadata before updating package.json",
+        "paths": ["tree-sitter-sley/package.json"]
+      },
+      {
+        "blocker_code": "tree_sitter_config_license_unresolved",
+        "owner": "operator",
+        "approval_required": true,
+        "action": "approve Tree-sitter config license metadata before updating tree-sitter.json",
+        "paths": ["tree-sitter-sley/tree-sitter.json"]
+      }
+    ],
     "cargo_package": {
       "manifest": "Cargo.toml",
       "name": "sley",

@@ -173,7 +173,7 @@ Implemented now:
   package validation, including
   required corpus and smoke release tags for seeded and scoped runtime
   authority, `make v1` target inventory, plus non-gating public-release
-  packaging blockers,
+  packaging blockers and machine-readable next actions,
   with `--require-public-release-ready` available as the explicit public-cut
   gate once license and repository metadata are settled,
   emitting

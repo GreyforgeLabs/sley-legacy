@@ -10381,6 +10381,26 @@ fn conformance_report_summarizes_release_surface() {
         report_json.pointer("/release/blockers/0/code"),
         Some(&serde_json::json!("missing_license_file"))
     );
+    assert_eq!(
+        report_json.pointer("/release/next_actions/0/blocker_code"),
+        Some(&serde_json::json!("missing_license_file"))
+    );
+    assert_eq!(
+        report_json.pointer("/release/next_actions/0/owner"),
+        Some(&serde_json::json!("operator"))
+    );
+    assert_eq!(
+        report_json.pointer("/release/next_actions/0/approval_required"),
+        Some(&serde_json::json!(true))
+    );
+    assert_eq!(
+        report_json.pointer("/release/next_actions/0/paths/0"),
+        Some(&serde_json::json!("LICENSE"))
+    );
+    assert_eq!(
+        report_json.pointer("/release/next_actions/2/blocker_code"),
+        Some(&serde_json::json!("cargo_repository_unset"))
+    );
     assert_eq!(report_json.pointer("/issues"), Some(&serde_json::json!([])));
 
     let text_report = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-conformance"))
@@ -10437,12 +10457,14 @@ fn conformance_report_summarizes_release_surface() {
     assert!(rendered_markdown.contains("Onboarding pack"));
     assert!(rendered_markdown.contains("Editor shims"));
     assert!(rendered_markdown.contains("`make v1` gate"));
+    assert!(rendered_markdown.contains("Public Release Next Actions"));
     assert!(rendered_markdown.contains("`0` missing"));
     let rendered_html = fs::read_to_string(&html_path).expect("read rendered html");
     assert!(rendered_html.contains("Required corpus tags"));
     assert!(rendered_html.contains("Onboarding pack"));
     assert!(rendered_html.contains("Editor shims"));
     assert!(rendered_html.contains("make v1"));
+    assert!(rendered_html.contains("Public Release Next Actions"));
     assert!(rendered_html.contains("Required smoke tags"));
 
     let gated_report = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-conformance"))
