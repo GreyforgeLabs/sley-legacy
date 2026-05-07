@@ -527,11 +527,9 @@ JSON pointers. Entry-module `main` task cross-module movement is not
 advertised. They also expose checker-filtered `DeleteNode` affordances for
 import, type, effect, task, statement, and take deletion planning, omitting
 entry-module `main` task deletion and any starter rejected by the graft oracle,
-plus `ReplaceStatement` affordances for whole task-local statement replacement
-and `ReplaceExpression` affordances for task-local expression replacement;
-`sley plan --graft-templates` filters selected task-internal delete, statement
-replace, and expression replace templates through the checker before surfacing
-them.
+plus checker-filtered `ReplaceStatement` affordances for whole task-local
+statement replacement and `ReplaceExpression` affordances for task-local
+expression replacement.
 `sley plan --graft-templates --template-surface program` now emits checked
 `add_task`, `add_type_declaration`, `add_effect_declaration`, and `add_import`
 starters so agents can add new declarations and imports without hand-authoring
@@ -728,7 +726,7 @@ The current smoke manifest covers:
   `rename_and_update_call_sites` transaction through `sley fix --write`
 - a write/query/verify smoke for `remove_take_and_remove_call_arg`, proving
   unused-take cleanup can also update resolved callers
-- graph-slice add, insert, and replace affordances plus checked
+- graph-slice add, insert, move, delete, and replace affordances plus checked
   `insert_statement`, `replace_statement`, and `replace_expression` graft
   templates in edit-plan reports
 - program-surface declaration/import templates for checked `add_task`,

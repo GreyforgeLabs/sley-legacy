@@ -1809,6 +1809,7 @@
         "graph-slice:insert-affordances",
         "graph-slice:move-affordances",
         "graph-slice:replace-affordances",
+        "graph-slice:checked-replace-affordances",
         "json:sley.symbol_graph.slice.v0"
       ],
       "expect": {
