@@ -471,9 +471,11 @@ Current development phase:
   strict verify, trace seal, and ZJX package summaries into one local deploy
   package report; it records `live_deploy_allowed=false`, makes no external
   mutations or provider calls, and keeps live deployment behind explicit
-  operator approval. Add `--artifacts-dir <dir>` to write local
-  `deploy-report.json`, `seal.json`, `zjx-envelope.json`, and digest-bearing
-  `manifest.json` handoff files after the dry-run package is ready;
+  operator approval. Omitting `--dry-run` in JSON mode emits
+  `DRY_RUN_REQUIRED` with a rerun repair hint. Add `--artifacts-dir <dir>` to
+  write local `deploy-report.json`, `seal.json`, `zjx-envelope.json`, and
+  digest-bearing `manifest.json` handoff files after the dry-run package is
+  ready;
   `sley-ci deploy` requires explicit `--dry-run`, passes the same flag through
   to the wrapped deploy command, and exposes nested verify lint findings,
   runtime diagnostics, and repair `next_actions` on failed CI steps.

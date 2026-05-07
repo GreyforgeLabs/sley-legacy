@@ -930,6 +930,31 @@
       }
     },
     {
+      "name": "deploy_requires_explicit_dry_run_json",
+      "args": [
+        "deploy",
+        "--json",
+        "examples/hello.sley"
+      ],
+      "covers": [
+        "cli:deploy",
+        "deploy:dry-run-required",
+        "diagnostic:DRY_RUN_REQUIRED",
+        "json:sley.diagnostics.report.v0",
+        "readiness:deploy-dry-run-only"
+      ],
+      "expect": {
+        "success": false,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.diagnostics.report.v0" },
+          { "pointer": "/status", "value": "error" },
+          { "pointer": "/diagnostics/0/id", "value": "DRY_RUN_REQUIRED" },
+          { "pointer": "/diagnostics/0/repair_hints/0/kind", "value": "rerun_deploy_dry_run" },
+          { "pointer": "/diagnostics/0/repair_hints/0/replacement", "value": "sley deploy --json --dry-run examples/hello.sley" }
+        ]
+      }
+    },
+    {
       "name": "deploy_new_deploy_project_dry_run_json",
       "args": [
         "deploy",

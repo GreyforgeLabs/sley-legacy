@@ -767,7 +767,7 @@ fn run(cli: Cli) -> Result<()> {
             file,
         } => {
             if !dry_run {
-                anyhow::bail!("sley deploy is report-only in v0; rerun with --dry-run");
+                return emit_diagnostics_and_fail(deploy_dry_run_required_diagnostics(&file), json);
             }
             let runtime_gates = build_runtime_gates(
                 &cap,
@@ -2211,6 +2211,21 @@ fn emit_diagnostics_and_fail(diagnostics: Vec<Diagnostic>, json: bool) -> Result
         print_human_diagnostics(&diagnostics);
     }
     anyhow::bail!("operation failed")
+}
+
+fn deploy_dry_run_required_diagnostics(target: &Path) -> Vec<Diagnostic> {
+    let target = normalized_path(target);
+    vec![
+        Diagnostic::error(
+            "DRY_RUN_REQUIRED",
+            "sley deploy is report-only in v0; rerun with --dry-run",
+        )
+        .with_repair_hint(
+            RepairHint::new("rerun_deploy_dry_run")
+                .with_target(target.clone())
+                .with_replacement(format!("sley deploy --json --dry-run {target}")),
+        ),
+    ]
 }
 
 fn module_filter_diagnostic(

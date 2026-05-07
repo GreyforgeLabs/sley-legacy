@@ -86,7 +86,7 @@ Current verified surface:
   `inventory`, `check-fixtures`, `validate`, and `inspect-deploy-artifacts`
   JSON Schema validation commands over `docs/schemas/`, `fixtures/contracts/`,
   release manifests, and local deploy artifact directories. Contract inventory
-  currently tracks 38 schemas, 122 contract fixtures, and 125 schema instances.
+  currently tracks 38 schemas, 123 contract fixtures, and 126 schema instances.
 - `sley-ci` is available as an in-tree CI wrapper with `check`, `lint`,
   `doctor`, `plan`, `run`, `verify`, `deploy`, `smoke`, `corpus`, and
   `examples` commands that emit
@@ -193,6 +193,8 @@ Current verified surface:
   composes strict verify, trace seal, and ZJX package summaries into a
   local-only deploy package report that forbids live deployment, provider
   calls, external mutation, and spend without explicit operator approval.
+  Omitted `--dry-run` in JSON mode emits a `DRY_RUN_REQUIRED` diagnostics
+  report with a rerun repair hint.
   `--artifacts-dir <dir>` writes local `deploy-report.json`, `seal.json`,
   `zjx-envelope.json`, and digest-bearing `manifest.json` handoff files after
   the dry-run package is ready; artifact manifests pin report, seal, and

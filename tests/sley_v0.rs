@@ -773,9 +773,24 @@ fn deploy_dry_run_reports_verified_package_without_live_mutation() {
         !missing_dry_run.status.success(),
         "deploy should require --dry-run in v0"
     );
-    assert!(
-        String::from_utf8_lossy(&missing_dry_run.stderr).contains("--dry-run"),
-        "missing dry-run stderr should explain the required flag"
+    let missing_stdout = String::from_utf8(missing_dry_run.stdout).expect("deploy stdout utf8");
+    let missing_json: serde_json::Value =
+        serde_json::from_str(&missing_stdout).expect("parse missing dry-run diagnostics JSON");
+    assert_eq!(
+        missing_json.pointer("/schema"),
+        Some(&serde_json::json!(DIAGNOSTIC_REPORT_SCHEMA))
+    );
+    assert_eq!(
+        missing_json.pointer("/diagnostics/0/id"),
+        Some(&serde_json::json!("DRY_RUN_REQUIRED"))
+    );
+    assert_eq!(
+        missing_json.pointer("/diagnostics/0/repair_hints/0/kind"),
+        Some(&serde_json::json!("rerun_deploy_dry_run"))
+    );
+    assert_json_snapshot(
+        &missing_json,
+        include_str!("../fixtures/contracts/diagnostic_report_deploy_requires_dry_run.json"),
     );
 
     let output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
@@ -10958,7 +10973,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(122))
+        Some(&serde_json::json!(123))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -11234,7 +11249,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/contract_fixture_count"),
-        Some(&serde_json::json!(122))
+        Some(&serde_json::json!(123))
     );
     assert_eq!(
         report_json.pointer("/summary/migration_fixture_count"),
@@ -11371,6 +11386,13 @@ fn conformance_report_summarizes_release_surface() {
         report_json
             .pointer("/smoke/required_tags")
             .and_then(|value| value.as_array())
+            .is_some_and(|tags| tags.iter().any(|tag| tag == "deploy:dry-run-required")),
+        "conformance report should require deploy dry-run boundary coverage"
+    );
+    assert!(
+        report_json
+            .pointer("/smoke/required_tags")
+            .and_then(|value| value.as_array())
             .is_some_and(|tags| tags
                 .iter()
                 .any(|tag| tag == "ci:verify-runtime-diagnostics")),
@@ -11426,7 +11448,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/smoke_case_count"),
-        Some(&serde_json::json!(475))
+        Some(&serde_json::json!(476))
     );
     assert_eq!(
         report_json.pointer("/summary/onboarding_path_count"),
@@ -24158,6 +24180,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "diagnostic:QUERY_MODULE_FILTER_NOT_FOUND",
         "diagnostic:RETURN_TYPE_MISMATCH",
         "diagnostic:RUNTIME_CAPABILITY_SCOPE_DENIED",
+        "deploy:dry-run-required",
         "contract:inventory",
         "contract:validate",
         "contract:check-fixtures",

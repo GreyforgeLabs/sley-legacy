@@ -908,10 +908,12 @@ to use the diagnostics report path.
 `sley.ci.report.v0` for local CI and pre-commit gates.
 
 `sley deploy --dry-run` is the v0 local deploy package command. It refuses to
-run unless `--dry-run` is present. It consumes the same deterministic runtime
-gates and seed flags as `sley run` and `sley verify`, runs strict verification
-with denied warnings, and only when verification passes builds a trace seal and
-ZJX package summary. Its JSON root is `sley.deploy.report.v0`. The report
+run unless `--dry-run` is present and, in JSON mode, emits a
+`DRY_RUN_REQUIRED` diagnostics report with a rerun repair hint. It consumes the
+same deterministic runtime gates and seed flags as `sley run` and
+`sley verify`, runs strict verification with denied warnings, and only when
+verification passes builds a trace seal and ZJX package summary. Its JSON root
+is `sley.deploy.report.v0`. The report
 records `live_deploy_allowed=false`, `external_mutations=false`,
 `provider_calls=false`, and `requires_operator_approval=true`; it does not
 upload artifacts, start services, push branches, call providers, spend money,

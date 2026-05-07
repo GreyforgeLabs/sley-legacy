@@ -1,0 +1,18 @@
+{
+  "schema": "sley.diagnostics.report.v0",
+  "status": "error",
+  "diagnostics": [
+    {
+      "id": "DRY_RUN_REQUIRED",
+      "severity": "error",
+      "message": "sley deploy is report-only in v0; rerun with --dry-run",
+      "repair_hints": [
+        {
+          "kind": "rerun_deploy_dry_run",
+          "target": "examples/hello.sley",
+          "replacement": "sley deploy --json --dry-run examples/hello.sley"
+        }
+      ]
+    }
+  ]
+}
