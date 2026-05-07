@@ -62,7 +62,7 @@ Current counts:
 | Schema ID | Producer | Purpose |
 |---|---|---|
 | `sley.ci.report.v0` | `sley-ci` | CI wrapper reports for check, lint, doctor, plan, run, verify, deploy, smoke, corpus, and examples. |
-| `sley.conformance.report.v0` | `sley-conformance report --json` | Release-readiness summary, including onboarding pack inventory, editor-shim validation, `make v1` target inventory, local/public v1 readiness tracks, public-release blockers, and public-release next actions. |
+| `sley.conformance.report.v0` | `sley-conformance report --json` | Release-readiness summary, including migration fixture counts, onboarding pack inventory, editor-shim validation, `make v1` target inventory, local/public v1 readiness tracks, public-release blockers, and public-release next actions. |
 | `sley.conformance.coverage.v0` | `sley-conformance coverage --json` | Required tag coverage result. |
 | `sley.conformance.manifest.v0` | `fixtures/corpus/manifest.json` | Accepted/rejected corpus manifest. |
 | `sley.cli_smoke.manifest.v0` | smoke manifests | CLI smoke manifest. |

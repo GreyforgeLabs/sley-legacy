@@ -103,13 +103,13 @@ Current verified surface:
   with `report` and `coverage` commands that emit
   `schema: "sley.conformance.report.v0"` and
   `schema: "sley.conformance.coverage.v0"` over schema/fixture instances,
-  contract validation status, release manifests, corpus tags, smoke tags, the
-  compact agent onboarding pack, and packaged example counts, plus editor-shim
-  package validation and a check that the declared integration coverage count
-  matches the test file. It also inventories the `make v1` target set and
-  emits local/public v1 readiness tracks with gated-check completion
-  percentages. It fails when required local gate targets disappear. `report`
-  now fails when
+  contract validation status, checked migration fixture counts, release
+  manifests, corpus tags, smoke tags, the compact agent onboarding pack, and
+  packaged example counts, plus editor-shim package validation and a check that
+  the declared integration coverage count matches the test file. It also
+  inventories the `make v1` target set and emits local/public v1 readiness
+  tracks with gated-check completion percentages. It fails when required local
+  gate targets disappear. `report` now fails when
   required corpus or smoke release tags disappear, including seeded and scoped
   runtime authority smoke tags, strict module-filter diagnostic tags, and
   `ci:lint` wrapper coverage.

@@ -273,6 +273,7 @@ struct ConformanceSummary {
     schema_without_instance_count: usize,
     contract_fixture_count: usize,
     contract_fixture_failed_count: usize,
+    migration_fixture_count: usize,
     corpus_accepted_count: usize,
     corpus_rejected_count: usize,
     smoke_case_count: usize,
@@ -762,6 +763,7 @@ fn build_report(
         &schemas_without_instances,
         &unknown_instance_schemas,
         &validation,
+        &instance_counts,
         &corpus,
         &smoke,
         &onboarding,
@@ -773,6 +775,10 @@ fn build_report(
     );
 
     let schema_instance_count = instance_counts.values().sum::<usize>();
+    let migration_fixture_count = instance_counts
+        .get("sley.migrate.report.v0")
+        .copied()
+        .unwrap_or(0);
     let contract_fixture_count = validation.contract_fixtures.fixture_count.unwrap_or(0);
     let contract_fixture_failed_count = validation.contract_fixtures.failed_count.unwrap_or(0);
     let issue_count = issues.len();
@@ -782,6 +788,7 @@ fn build_report(
         schema_without_instance_count: schemas_without_instances.len(),
         contract_fixture_count,
         contract_fixture_failed_count,
+        migration_fixture_count,
         corpus_accepted_count: corpus.accepted_count,
         corpus_rejected_count: corpus.rejected_count,
         smoke_case_count: smoke.case_count,
@@ -837,6 +844,7 @@ fn build_readiness_section(
     schemas_without_instances: &[String],
     unknown_instance_schemas: &[String],
     validation: &ValidationSection,
+    instance_counts: &BTreeMap<String, usize>,
     corpus: &CorpusSection,
     smoke: &SmokeSection,
     onboarding: &OnboardingSection,
@@ -850,6 +858,7 @@ fn build_readiness_section(
         schemas_without_instances,
         unknown_instance_schemas,
         validation,
+        instance_counts,
         corpus,
         smoke,
         onboarding,
@@ -858,7 +867,7 @@ fn build_readiness_section(
         editor_shims,
         v1_gate,
     );
-    let local_total: usize = 10;
+    let local_total: usize = 11;
     let local_passed = local_total.saturating_sub(local_blockers.len());
     let local_v1 = readiness_track(local_blockers, ["make", "v1"], local_passed, local_total);
 
@@ -883,6 +892,7 @@ fn local_v1_readiness_blockers(
     schemas_without_instances: &[String],
     unknown_instance_schemas: &[String],
     validation: &ValidationSection,
+    instance_counts: &BTreeMap<String, usize>,
     corpus: &CorpusSection,
     smoke: &SmokeSection,
     onboarding: &OnboardingSection,
@@ -902,6 +912,12 @@ fn local_v1_readiness_blockers(
         blockers.push(issue(
             "readiness_contract_fixtures_failed",
             "contract fixtures must validate before the local v1 gate is ready",
+        ));
+    }
+    if !instance_counts.contains_key("sley.migrate.report.v0") {
+        blockers.push(issue(
+            "readiness_migration_fixtures_missing",
+            "checked migration report fixtures must be present before the local v1 gate is ready",
         ));
     }
     if validation
@@ -2308,10 +2324,11 @@ fn emit_report(report: &ConformanceReport, json: bool) -> Result<()> {
         return Ok(());
     }
     println!(
-        "sley-conformance report status={} schemas={} fixtures={} corpus={}/{} smoke={} onboarding={} onboarding_missing={} examples={} tests={} editor_shims={} v1_gate={} v1_gate_missing={} local_v1={} local_v1_percent={} public_v1={} public_v1_percent={} corpus_required={} corpus_missing={} smoke_required={} smoke_missing={} public_release_blockers={}",
+        "sley-conformance report status={} schemas={} fixtures={} migration_fixtures={} corpus={}/{} smoke={} onboarding={} onboarding_missing={} examples={} tests={} editor_shims={} v1_gate={} v1_gate_missing={} local_v1={} local_v1_percent={} public_v1={} public_v1_percent={} corpus_required={} corpus_missing={} smoke_required={} smoke_missing={} public_release_blockers={}",
         report.status,
         report.summary.schema_count,
         report.summary.contract_fixture_count,
+        report.summary.migration_fixture_count,
         report.summary.corpus_accepted_count,
         report.summary.corpus_rejected_count,
         report.summary.smoke_case_count,
@@ -2371,6 +2388,10 @@ fn render_markdown(report: &ConformanceReport) -> String {
             .passed_count
             .unwrap_or_default(),
         report.summary.contract_fixture_failed_count
+    ));
+    output.push_str(&format!(
+        "- Migration fixtures: `{}` checked report fixtures\n",
+        report.summary.migration_fixture_count
     ));
     output.push_str(&format!(
         "- Corpus: `{}` accepted, `{}` rejected\n",

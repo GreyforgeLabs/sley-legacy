@@ -765,9 +765,10 @@ standalone `.sley` examples directly, and formatter-round-trips every shipped
 The release-readiness view is exposed through `sley-conformance report
 --json`. It inventories schema IDs, fixture and manifest schema instances,
 contract fixture validation status, release manifest validation status, corpus
-tags, smoke tags, packaged example counts, and declared integration-test count
-drift under one stable conformance root. The JSON report includes local/public
-v1 readiness tracks with gated-check completion percentages and exact gate
+tags, checked migration fixture counts, smoke tags, packaged example counts,
+and declared integration-test count drift under one stable conformance root. The
+JSON report includes local/public v1 readiness tracks with gated-check
+completion percentages and exact gate
 commands. `--corpus-manifest` and repeated `--smoke-manifest` arguments accept
 either explicit manifest files or directories containing `manifest.json`. It
 also reports non-gating
