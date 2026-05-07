@@ -10895,7 +10895,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/smoke_case_count"),
-        Some(&serde_json::json!(462))
+        Some(&serde_json::json!(463))
     );
     assert_eq!(
         report_json.pointer("/summary/onboarding_path_count"),
@@ -23456,6 +23456,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:templates:program-surface-declarations",
         "graft:templates:raw-host-migration",
         "graft:templates:qualified-import-call",
+        "graft:emit:replace-call-arg",
         "graft:templates:replace-task-body",
         "graft:templates:replace-expression",
         "graft:templates:replace-call-arg",
