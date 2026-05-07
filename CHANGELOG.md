@@ -62,8 +62,8 @@ here. Dates use UTC-independent calendar dates from the local repo history.
   calls, project modules, local tasks, and visible imported tasks.
 - `sley-lsp` now exposes project-aware `workspace/symbol` results for modules,
   tasks, types, and effects.
-- `sley-lsp` now exposes project-aware task references, including declarations
-  and resolved call sites.
+- `sley-lsp` now exposes exact-range project-aware task references and
+  same-document task highlights for declarations and resolved call sites.
 - `sley-lsp` now prepares cursor-aware project task rename ranges and returns
   workspace edits for declarations and resolved call sites.
 - `sley-lsp` declaration hover now includes module, return type, takes,

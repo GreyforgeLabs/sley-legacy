@@ -40,7 +40,7 @@ struct DocumentState {
     text: String,
 }
 
-struct RenameContext {
+struct TaskSymbolContext {
     uri: String,
     source: String,
     current_program: Program,
@@ -171,6 +171,11 @@ fn handle_message<W: Write>(
                 send_response(writer, id, handle_references(params, state))?;
             }
         }
+        "textDocument/documentHighlight" => {
+            if let Some(id) = id {
+                send_response(writer, id, handle_document_highlight(params, state))?;
+            }
+        }
         "textDocument/prepareRename" => {
             if let Some(id) = id {
                 send_response(writer, id, handle_prepare_rename(params, state))?;
@@ -224,6 +229,7 @@ fn initialize_result() -> JsonValue {
             },
             "workspaceSymbolProvider": true,
             "referencesProvider": true,
+            "documentHighlightProvider": true,
             "renameProvider": {
                 "prepareProvider": true
             },
@@ -474,50 +480,67 @@ fn handle_workspace_symbol(params: JsonValue, state: &ServerState) -> JsonValue 
 }
 
 fn handle_references(params: JsonValue, state: &ServerState) -> JsonValue {
-    let Some(uri) = text_document_uri(&params) else {
-        return json!([]);
-    };
-    let Some(document) = state.documents.get(&uri) else {
-        return json!([]);
-    };
-    let Some(position) = params.get("position") else {
-        return json!([]);
-    };
-    let line = position
-        .get("line")
-        .and_then(JsonValue::as_u64)
-        .unwrap_or_default() as usize;
     let include_declaration = params
         .pointer("/context/includeDeclaration")
         .and_then(JsonValue::as_bool)
         .unwrap_or(true);
-    let Ok(current_program) = parse_program(&document.text) else {
+    let Some(context) = task_symbol_context_for_request(&params, state) else {
         return json!([]);
     };
-    let project = project_graph_for_document(&uri, &current_program, state);
-    let analysis_program = project
+    let analysis_program = context
+        .project
         .as_ref()
         .map(|project| &project.program)
-        .unwrap_or(&current_program);
-    let Some(target_task_id) =
-        task_reference_target_at_line(&current_program, analysis_program, line)
-    else {
-        return json!([]);
-    };
+        .unwrap_or(&context.current_program);
     json!(reference_locations_for_task(
-        &target_task_id,
+        &context.target_task_id,
         analysis_program,
-        project.as_ref(),
-        &uri,
-        &document.text,
-        &current_program,
+        context.project.as_ref(),
+        &context.uri,
+        &context.source,
+        &context.current_program,
         include_declaration,
         state,
     ))
 }
 
+fn handle_document_highlight(params: JsonValue, state: &ServerState) -> JsonValue {
+    let Some(context) = task_symbol_context_for_request(&params, state) else {
+        return json!([]);
+    };
+    let analysis_program = context
+        .project
+        .as_ref()
+        .map(|project| &project.program)
+        .unwrap_or(&context.current_program);
+    let changes = rename_edits_for_task(
+        &context.target_task_id,
+        &context.old_name,
+        &context.old_name,
+        analysis_program,
+        context.project.as_ref(),
+        &context.uri,
+        &context.source,
+        &context.current_program,
+        state,
+    );
+    let highlights = changes
+        .get(&context.uri)
+        .into_iter()
+        .flat_map(|edits| edits.iter())
+        .filter_map(|edit| edit.get("range").cloned())
+        .map(|range| {
+            json!({
+                "range": range,
+                "kind": 1
+            })
+        })
+        .collect::<Vec<_>>();
+    json!(highlights)
+}
+
 fn handle_prepare_rename(params: JsonValue, state: &ServerState) -> JsonValue {
-    let Some(context) = rename_context_for_request(&params, state) else {
+    let Some(context) = task_symbol_context_for_request(&params, state) else {
         return JsonValue::Null;
     };
     json!({
@@ -534,7 +557,7 @@ fn handle_rename(params: JsonValue, state: &ServerState) -> JsonValue {
     if !is_sley_identifier(new_name) {
         return JsonValue::Null;
     }
-    let Some(context) = rename_context_for_request(&params, state) else {
+    let Some(context) = task_symbol_context_for_request(&params, state) else {
         return JsonValue::Null;
     };
     let analysis_program = context
@@ -560,7 +583,10 @@ fn handle_rename(params: JsonValue, state: &ServerState) -> JsonValue {
     }
 }
 
-fn rename_context_for_request(params: &JsonValue, state: &ServerState) -> Option<RenameContext> {
+fn task_symbol_context_for_request(
+    params: &JsonValue,
+    state: &ServerState,
+) -> Option<TaskSymbolContext> {
     let uri = text_document_uri(params)?;
     let document = state.documents.get(&uri)?;
     let (line, character) = position_line_and_character(params.get("position")?)?;
@@ -579,7 +605,7 @@ fn rename_context_for_request(params: &JsonValue, state: &ServerState) -> Option
             character,
         )?
     };
-    Some(RenameContext {
+    Some(TaskSymbolContext {
         uri,
         source: document.text.clone(),
         current_program,
@@ -1299,25 +1325,6 @@ fn symbol_matches(query: &str, name: &str) -> bool {
     query.trim().is_empty() || name.to_lowercase().contains(&query.to_lowercase())
 }
 
-fn task_reference_target_at_line(
-    current_program: &Program,
-    analysis_program: &Program,
-    line: usize,
-) -> Option<String> {
-    if let Some(task) = current_program
-        .tasks
-        .iter()
-        .find(|task| span_line_matches(task.span.as_ref(), line))
-    {
-        return Some(task.id.clone());
-    }
-    let (caller_module, callee_name) = call_at_line(current_program, line)?;
-    match resolve_task(analysis_program, &caller_module, &callee_name) {
-        TaskResolution::Resolved { index, .. } => Some(analysis_program.tasks[index].id.clone()),
-        TaskResolution::Unknown | TaskResolution::Ambiguous(_) | TaskResolution::Private(_) => None,
-    }
-}
-
 fn task_rename_target_at_position(
     current_program: &Program,
     analysis_program: &Program,
@@ -1398,10 +1405,8 @@ fn collect_task_references_for_program(
 ) {
     if include_declaration {
         if let Some(task) = program.tasks.iter().find(|task| task.id == target_task_id) {
-            let range = task
-                .span
-                .as_ref()
-                .map(|span| range_for_span(source, span))
+            let range = range_for_task_name(source, task)
+                .or_else(|| task.span.as_ref().map(|span| range_for_span(source, span)))
                 .unwrap_or_else(|| first_line_range(source));
             push_reference_location(locations, seen, uri, range);
         }
@@ -1564,11 +1569,15 @@ fn collect_task_reference_calls_from_expr(
                     resolve_task(analysis_program, caller_module, &callee_name)
                 && analysis_program.tasks[index].id == target_task_id
             {
-                let range = expr
-                    .span
-                    .as_ref()
-                    .map(|span| range_for_span(source, span))
-                    .unwrap_or_else(|| first_line_range(source));
+                let range = range_for_callee_leaf(
+                    source,
+                    expr,
+                    callee,
+                    &callee_name,
+                    callee_leaf_name(&callee_name),
+                )
+                .or_else(|| expr.span.as_ref().map(|span| range_for_span(source, span)))
+                .unwrap_or_else(|| first_line_range(source));
                 push_reference_location(locations, seen, uri, range);
             }
             collect_task_reference_calls_from_expr(
