@@ -156,6 +156,17 @@
       ]
     },
     {
+      "path": "accepted/collections_indexing.sley",
+      "covers": [
+        "accepted:collections-indexing",
+        "language:list-index",
+        "language:map-index",
+        "language:map-literal",
+        "language:len",
+        "formatter:round-trip"
+      ]
+    },
+    {
       "path": "accepted/module_namespace.sley",
       "covers": [
         "language:module-namespace",
