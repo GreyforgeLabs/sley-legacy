@@ -70,6 +70,10 @@
           "type": "array",
           "items": { "$ref": "#/$defs/diagnostic" }
         },
+        "findings": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/finding" }
+        },
         "covers": {
           "type": "array",
           "items": { "type": "string", "minLength": 1 }
@@ -78,6 +82,20 @@
           "type": "array",
           "items": { "$ref": "#/$defs/issue" }
         }
+      },
+      "additionalProperties": false
+    },
+    "finding": {
+      "type": "object",
+      "required": ["id", "rule", "severity", "message", "node", "module", "hint"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "rule": { "type": "string", "minLength": 1 },
+        "severity": { "enum": ["warning"] },
+        "message": { "type": "string", "minLength": 1 },
+        "node": { "type": "string", "minLength": 1 },
+        "module": { "type": "string", "minLength": 1 },
+        "hint": { "type": "string", "minLength": 1 }
       },
       "additionalProperties": false
     },

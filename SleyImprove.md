@@ -687,7 +687,8 @@ wrapper contract across parse, query, graft dry-run, and seeded
 multi-capability agent runtime authority cases.
 The broad smoke surface also pins direct and `sley-ci lint` module-filter
 failure paths so typo filters remain visible to both command surfaces, with
-the wrapped diagnostic ID exposed on the CI step.
+the wrapped diagnostic ID exposed on the CI step. Denied lint CI failures also
+expose the wrapped lint finding ID on the step.
 
 The current smoke manifest covers:
 

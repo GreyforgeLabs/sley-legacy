@@ -192,6 +192,8 @@ struct CiStep {
     #[serde(skip_serializing_if = "Vec::is_empty")]
     diagnostics: Vec<CiDiagnostic>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
+    findings: Vec<CiLintFinding>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     covers: Vec<String>,
     issues: Vec<CiIssue>,
 }
@@ -203,6 +205,17 @@ struct CiDiagnostic {
     message: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     node: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+struct CiLintFinding {
+    id: String,
+    rule: String,
+    severity: String,
+    message: String,
+    node: String,
+    module: String,
+    hint: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -976,6 +989,7 @@ fn run_format_round_trip_step(
         exit_code,
         stdout_schema: None,
         diagnostics: Vec::new(),
+        findings: Vec::new(),
         covers,
         issues,
     }
@@ -1065,6 +1079,7 @@ fn run_smoke_case(sley_bin: &Path, repo_root: &Path, tmp_root: &Path, case: &Smo
                 exit_code: None,
                 stdout_schema: None,
                 diagnostics: Vec::new(),
+                findings: Vec::new(),
                 covers: case.covers.clone(),
                 issues: setup_issues,
             },
@@ -1087,6 +1102,7 @@ fn run_smoke_case(sley_bin: &Path, repo_root: &Path, tmp_root: &Path, case: &Smo
                     exit_code: None,
                     stdout_schema: None,
                     diagnostics: Vec::new(),
+                    findings: Vec::new(),
                     covers: case.covers.clone(),
                     issues: vec![issue("unsupported_smoke_binary", message)],
                 },
@@ -1207,6 +1223,7 @@ fn run_binary_step(
                     exit_code: None,
                     stdout_schema: None,
                     diagnostics: Vec::new(),
+                    findings: Vec::new(),
                     covers,
                     issues: vec![issue(
                         "command_spawn_failed",
@@ -1233,6 +1250,10 @@ fn run_binary_step(
         .as_ref()
         .map(|json| extract_step_diagnostics(json, stdout_schema.as_deref()))
         .unwrap_or_default();
+    let findings = stdout_json
+        .as_ref()
+        .map(|json| extract_step_findings(json, stdout_schema.as_deref()))
+        .unwrap_or_default();
     let mut issues = Vec::new();
     if actual_success != expected_success {
         issues.push(issue(
@@ -1257,6 +1278,7 @@ fn run_binary_step(
             exit_code: output.status.code(),
             stdout_schema,
             diagnostics,
+            findings,
             covers,
             issues,
         },
@@ -1286,6 +1308,31 @@ fn extract_step_diagnostics(json: &JsonValue, stdout_schema: Option<&str>) -> Ve
                             .get("node")
                             .and_then(JsonValue::as_str)
                             .map(str::to_string),
+                    })
+                })
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+fn extract_step_findings(json: &JsonValue, stdout_schema: Option<&str>) -> Vec<CiLintFinding> {
+    if stdout_schema != Some("sley.lint.report.v0") {
+        return Vec::new();
+    }
+    json.pointer("/findings")
+        .and_then(JsonValue::as_array)
+        .map(|findings| {
+            findings
+                .iter()
+                .filter_map(|finding| {
+                    Some(CiLintFinding {
+                        id: finding.get("id").and_then(JsonValue::as_str)?.into(),
+                        rule: finding.get("rule").and_then(JsonValue::as_str)?.into(),
+                        severity: finding.get("severity").and_then(JsonValue::as_str)?.into(),
+                        message: finding.get("message").and_then(JsonValue::as_str)?.into(),
+                        node: finding.get("node").and_then(JsonValue::as_str)?.into(),
+                        module: finding.get("module").and_then(JsonValue::as_str)?.into(),
+                        hint: finding.get("hint").and_then(JsonValue::as_str)?.into(),
                     })
                 })
                 .collect()

@@ -93,7 +93,8 @@ Current verified surface:
   artifact directory pass-through. `sley-ci smoke` and `sley-ci corpus` accept
   either explicit `manifest.json` files or manifest directories, and
   `sley-ci lint` is smoke-pinned for strict module-filter failures with the
-  wrapped diagnostic ID summarized inside the CI step.
+  wrapped diagnostic ID summarized inside the CI step; denied lint findings
+  also surface their finding IDs inside the step.
 - `sley-conformance` is available as an in-tree conformance visibility helper
   with `report` and `coverage` commands that emit
   `schema: "sley.conformance.report.v0"` and

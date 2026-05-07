@@ -167,7 +167,7 @@ Implemented now:
   the accepted/rejected compiler conformance corpus, and packaged examples,
   emitting
   `schema: "sley.ci.report.v0"` for CI and pre-commit integration, with
-  wrapped diagnostic IDs summarized on diagnostic-report steps
+  wrapped diagnostic IDs and lint finding IDs summarized on CI steps
 - in-tree `sley-conformance` utility with `report` and `coverage` commands for
   schema/fixture instance coverage, contract validation status, corpus coverage
   tags, smoke coverage tags, the compact agent onboarding pack, packaged
