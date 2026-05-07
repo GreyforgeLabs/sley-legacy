@@ -1561,6 +1561,9 @@ refuse generic data disguised as Sley artifacts before compression begins.
   reports route agents to checked lint repair planning and dry-run fix previews
   before deployment review when the repair is unambiguous; preview actions keep
   `command` dry-run and add optional `write_command` for the mutating command.
+  Runtime-failed reports for effectful entrypoints emit seeded verify/run retry
+  actions when deterministic gates and host seeds can be inferred from literal
+  reachable host calls.
   Passed reports for Deploy entrypoints append a local `prepare_deploy_package`
   dry-run action that preserves the exact runtime gates and seeds supplied to
   the verified CLI run, or falls back to inferred deterministic caps and host

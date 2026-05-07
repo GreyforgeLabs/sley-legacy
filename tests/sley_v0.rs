@@ -12670,10 +12670,10 @@ fn trace_receipt_schema_covers_strict_provenance_records() {
 
 #[test]
 fn verify_report_blocks_on_missing_runtime_gate() {
-    let source = include_str!("../examples/deploy_gate.sley");
-    let program = parse_program(source).expect("parse deploy gate fixture");
+    let source = include_str!("../examples/agent_deploy_pipeline.sley");
+    let program = parse_program(source).expect("parse agent deploy pipeline fixture");
     let report = build_verify_report(
-        "examples/deploy_gate.sley",
+        "examples/agent_deploy_pipeline.sley",
         Ok(program),
         RuntimeGates::new(),
         false,
@@ -12689,6 +12689,41 @@ fn verify_report_blocks_on_missing_runtime_gate() {
             .any(|diagnostic| diagnostic.id == "RUNTIME_CAPABILITY_REQUIRED"),
         "expected missing capability diagnostic, got {report:#?}"
     );
+    assert_eq!(report.next_actions[0].kind, "verify_runtime_with_gates");
+    assert_eq!(
+        report.next_actions[0].command,
+        vec![
+            "sley",
+            "verify",
+            "--json",
+            "--deny-warnings",
+            "--cap",
+            "SecretRead",
+            "--cap",
+            "Network",
+            "--cap",
+            "ModelCall",
+            "--cap",
+            "Deploy",
+            "--secret",
+            "api_key",
+            "redacted",
+            "--http-text",
+            "https://example.test/profile",
+            "profile ready",
+            "--model-output",
+            "deploy-plan",
+            "plan approved",
+            "--deploy-result",
+            "staging",
+            "staged",
+            "examples/agent_deploy_pipeline.sley",
+        ]
+        .into_iter()
+        .map(str::to_string)
+        .collect::<Vec<_>>()
+    );
+    assert_eq!(report.next_actions[1].kind, "run_runtime_with_gates");
 }
 
 #[test]

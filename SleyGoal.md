@@ -326,7 +326,8 @@ Current verified surface:
   doctor `verify_gate` next-actions with explicit caps and deterministic host
   seeds before entrypoint runs and deploy-capable doctor
   and passed-verify `prepare_deploy_package` dry-run handoffs that preserve
-  exact verified runtime args when supplied, plus
+  exact verified runtime args when supplied, plus runtime-failed verify retry
+  actions with deterministic inferred gates and host seeds, plus
   scaffold-level and passed-verify seal/ZJX handoff next-actions, doctor/plan
   call-bearing reports that route agents to strict call-row inspection, a
   write/query/verify smoke for the call-row-driven rename-and-update-call-sites
