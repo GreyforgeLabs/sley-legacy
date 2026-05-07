@@ -263,8 +263,8 @@
       "ready": true,
       "command": ["make", "v1"],
       "gate_completion_percent": 100,
-      "passed_check_count": 10,
-      "total_check_count": 10,
+      "passed_check_count": 11,
+      "total_check_count": 11,
       "blocker_count": 0,
       "blockers": []
     },
@@ -272,9 +272,9 @@
       "status": "blocked",
       "ready": false,
       "command": ["make", "public-release-check"],
-      "gate_completion_percent": 67,
-      "passed_check_count": 10,
-      "total_check_count": 15,
+      "gate_completion_percent": 69,
+      "passed_check_count": 11,
+      "total_check_count": 16,
       "blocker_count": 5,
       "blockers": [
         {
