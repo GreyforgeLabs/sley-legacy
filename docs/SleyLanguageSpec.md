@@ -1192,6 +1192,8 @@ diagnostic report instead of a partial query.
 `--kind all|modules|tasks|types|effects|calls` selects the report body.
 `--module <module>` filters module summaries, task/type/effect summaries, and
 calls that originate from or resolve into that module.
+If the filter names no checked module, the command fails with
+`QUERY_MODULE_FILTER_NOT_FOUND` in a diagnostics report.
 `--exported` restricts declaration and task summaries to exported declarations.
 Task query rows include stable ids, qualified names, takes, return type text,
 declared effects, and inbound/outbound call counts. Type query rows include
@@ -1308,7 +1310,9 @@ has identical branches and a delete-safe condition.
 has identical single-statement branches and a delete-safe condition.
 `unreachable_statement`, which warns when a statement appears after a
 guaranteed `return` in the same block.
-`--module <module>` scopes the lint to one module. `--rule unused-private-task`,
+`--module <module>` scopes the lint to one module. If the filter names no
+checked module, the command fails with `LINT_MODULE_FILTER_NOT_FOUND` in a
+diagnostics report. `--rule unused-private-task`,
 `--rule unreachable-private-task`, `--rule unused-declared-effect`,
 `--rule unused-import`, `--rule unused-take`, `--rule unused-private-type`,
 `--rule unused-private-effect`, `--rule raw-host-adapter`,

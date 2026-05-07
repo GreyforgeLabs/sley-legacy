@@ -171,7 +171,9 @@ targets and `result: "accepted"` and has a locked accepted-operation fixture.
 The diagnostics schema exposes a shared diagnostic record used by graft,
 doctor, plan, and verify report schemas.
 The query schema exposes strict task, take, type, effect, and call summary row
-definitions for downstream bindings.
+definitions for downstream bindings. Direct `sley query --module <module>` and
+`sley lint --module <module>` reject unknown checked modules with
+diagnostic reports, not empty successful reports.
 The `sley-contract` binary exposes `inventory`, `check-fixtures`, `validate`,
 and `inspect-deploy-artifacts` JSON Schema validation reports for
 schema/fixture/manifest/deploy-handoff contract-kit work; inventory,

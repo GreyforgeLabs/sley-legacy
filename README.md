@@ -112,7 +112,7 @@ Implemented now:
   `sley query --kind all|modules|tasks|types|effects|calls`, optional
   `--module` and `--exported` filters, strict task/take/type/effect/call row
   definitions, and `schema: "sley.query.report.v0"` for tool-facing graph
-  inspection
+  inspection; unknown module filters fail with `QUERY_MODULE_FILTER_NOT_FOUND`
 - checked JSON lint reports with `sley lint`, optional `--module` and
   `--rule unused-private-task`, `--rule unreachable-private-task`,
   `--rule unused-declared-effect`, `--rule unused-import`,
@@ -154,7 +154,8 @@ Implemented now:
   `--rule unreachable-statement`, or
   `--rule absorbing-arithmetic-expression`
   filters, and
-  `schema: "sley.lint.report.v0"` for warning-grade graph and authority lints
+  `schema: "sley.lint.report.v0"` for warning-grade graph and authority lints;
+  unknown module filters fail with `LINT_MODULE_FILTER_NOT_FOUND`
 - in-tree `sley-contract` utility scaffold with `inventory`, `check-fixtures`,
   `validate`, and `inspect-deploy-artifacts` JSON validation commands over
   `docs/schemas/`, `fixtures/contracts/`, release manifests, and local deploy artifact
