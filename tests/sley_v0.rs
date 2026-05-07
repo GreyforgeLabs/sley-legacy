@@ -1431,6 +1431,48 @@ task main -> Float {
 }
 
 #[test]
+fn edit_plan_replace_task_body_template_uses_record_default_return() {
+    let source = r#"
+module app.plan
+
+task main -> { name: Text, age: Int } {
+  return { name: "Ada", age: 37 }
+}
+"#;
+    let program = parse_program(source).expect("parse record template plan fixture");
+    let report = build_edit_plan_report_with_options(
+        "app.plan",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("task:app.plan.main".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "ready");
+    let template = report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "replace_task_body")
+        .expect("replace task body template");
+    assert_eq!(
+        template.operation.pointer("/payload/statements/0"),
+        Some(&serde_json::json!("return { name: \"\", age: 0 }"))
+    );
+    let graft: GraftInput =
+        serde_json::from_value(template.operation.clone()).expect("parse record replace template");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:record-replace-task-body-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted = parse_program(&outcome.source.expect("grafted source")).expect("parse grafted");
+    assert!(!has_errors(&check_program(&grafted)));
+}
+
+#[test]
 fn edit_plan_graft_templates_can_target_program_declaration_surface() {
     let source = r#"
 module app.plan
@@ -9320,11 +9362,11 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/integration_test_count"),
-        Some(&serde_json::json!(302))
+        Some(&serde_json::json!(304))
     );
     assert_eq!(
         report_json.pointer("/summary/declared_integration_test_count"),
-        Some(&serde_json::json!(302))
+        Some(&serde_json::json!(304))
     );
     assert_eq!(
         report_json.pointer("/summary/test_count_matches_declared"),
@@ -9336,7 +9378,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/tests/integration_test_count"),
-        Some(&serde_json::json!(302))
+        Some(&serde_json::json!(304))
     );
     assert_eq!(
         report_json.pointer("/tests/declared_matches_actual"),
@@ -11190,6 +11232,55 @@ task side_effect_only -> Unit {
     );
     assert_has_repair_hint(&diagnostics, "MISSING_RETURN", "insert_return");
     assert_has_repair_hint(&diagnostics, "MISSING_RETURN", "replace_task_body");
+}
+
+#[test]
+fn checker_record_return_hints_use_record_literal_defaults() {
+    let source = r#"
+task missing_record -> { name: Text, age: Int } {
+  bind value = 1
+}
+
+task wrong_record -> { name: Text, age: Int } {
+  return 1
+}
+"#;
+    let program = parse_program(source).expect("parse record return hint source");
+    let diagnostics = check_program(&program);
+    let missing_return = diagnostics
+        .iter()
+        .find(|diagnostic| diagnostic.id == "MISSING_RETURN")
+        .unwrap_or_else(|| panic!("missing MISSING_RETURN diagnostic: {diagnostics:#?}"));
+    let insert_hint = missing_return
+        .repair_hints
+        .iter()
+        .find(|hint| hint.kind == "insert_return")
+        .expect("insert_return hint");
+    assert_eq!(
+        insert_hint.replacement.as_deref(),
+        Some("return { name: \"\", age: 0 }")
+    );
+    let replace_body_hint = missing_return
+        .repair_hints
+        .iter()
+        .find(|hint| hint.kind == "replace_task_body")
+        .expect("replace_task_body hint");
+    let replacement: serde_json::Value = serde_json::from_str(
+        replace_body_hint
+            .replacement
+            .as_deref()
+            .expect("replace task body replacement"),
+    )
+    .expect("replace task body replacement JSON");
+    assert_eq!(
+        replacement.pointer("/payload/statements/0"),
+        Some(&serde_json::json!("return { name: \"\", age: 0 }"))
+    );
+    assert_replace_expression_hint_source(
+        &diagnostics,
+        "RETURN_TYPE_MISMATCH",
+        "{ name: \"\", age: 0 }",
+    );
 }
 
 #[test]
