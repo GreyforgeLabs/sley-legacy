@@ -94,7 +94,8 @@ here. Dates use UTC-independent calendar dates from the local repo history.
 - `sley-ci smoke` manifests can now select allowlisted sibling Sley utility
   binaries, and the broad smoke suite covers `sley-contract` inventory,
   validate, fixture-check, deploy-artifact inspection flows, and `sley-migrate`
-  raw-host and unchecked-result reports.
+  raw-host and unchecked-result reports, plus `sley-docgen`, `sley-workbench`,
+  `sley-sandbox-runner`, `sley-agent-bench`, and `sley-zjx` utility reports.
 - `sley lint --rule empty-else-statement` now flags no-op empty `else`
   branches and `sley plan --graft-templates` emits a checked
   `remove_empty_else_statement` repair.
