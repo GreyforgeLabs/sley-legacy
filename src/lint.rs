@@ -5990,6 +5990,66 @@ fn unwrapped_result_source(program: &Program, task: &TaskDecl, expr: &Expr) -> O
     unchecked_result_source(program, task, expr)
 }
 
+pub fn unused_effectful_binding_statement_replacement_source(
+    program: &Program,
+    target: &str,
+) -> Option<String> {
+    program.tasks.iter().find_map(|task| {
+        unused_effectful_binding_statement_replacement_in_block(program, task, &task.body, target)
+    })
+}
+
+fn unused_effectful_binding_statement_replacement_in_block(
+    program: &Program,
+    task: &TaskDecl,
+    block: &Block,
+    target: &str,
+) -> Option<String> {
+    for statement in &block.statements {
+        if statement.id == target
+            && let StatementKind::Binding {
+                binding_kind, expr, ..
+            } = &statement.kind
+            && binding_kind == &BindingKind::Bind
+            && unwrapped_result_source(program, task, expr).is_some()
+            && let ExprKind::Try { expr } = &expr.kind
+        {
+            return Some(format!("{}?", expr.source.trim()));
+        }
+
+        let replacement = match &statement.kind {
+            StatementKind::If {
+                then_block,
+                else_block,
+                ..
+            } => unused_effectful_binding_statement_replacement_in_block(
+                program, task, then_block, target,
+            )
+            .or_else(|| {
+                else_block.as_ref().and_then(|else_block| {
+                    unused_effectful_binding_statement_replacement_in_block(
+                        program, task, else_block, target,
+                    )
+                })
+            }),
+            StatementKind::While { body, .. } | StatementKind::For { body, .. } => {
+                unused_effectful_binding_statement_replacement_in_block(program, task, body, target)
+            }
+            StatementKind::Forge { body } => {
+                unused_effectful_binding_statement_replacement_in_block(program, task, body, target)
+            }
+            StatementKind::Binding { .. }
+            | StatementKind::Set { .. }
+            | StatementKind::Return { .. }
+            | StatementKind::Expr { .. } => None,
+        };
+        if replacement.is_some() {
+            return replacement;
+        }
+    }
+    None
+}
+
 fn user_task_returns_result(program: &Program, task: &TaskDecl, callee_name: &str) -> bool {
     let TaskResolution::Resolved { index, .. } =
         resolve_task(program, &task_module(task), callee_name)
