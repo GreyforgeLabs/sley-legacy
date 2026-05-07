@@ -236,13 +236,14 @@ Implemented now:
   `verify-digest`, `extract-graph`, and `diff-envelope` commands over preview
   ZJX JSON envelopes, emitting `schema: "sley.zjx.tool.report.v0"`
 - checked JSON readiness reports with `sley doctor`, consuming strict
-  diagnostics plus query and lint summaries, with call-bearing reports routing
-  agents to strict `sley query --kind calls` inspection, warning next-actions
-  that route agents to `sley plan --json --graft-templates`, and, when exactly
-  one checked lint repair exists, a non-mutating `sley fix --dry-run` preview
-  plus an explicit `write_command` for the matching `sley fix --write`, and
-  ready reports now include `verify_gate` commands before entrypoint runs, with
-  seeded `--cap` args when the entrypoint declares effects, and
+  diagnostics plus query summaries and non-empty lint findings, with
+  call-bearing reports routing agents to strict `sley query --kind calls`
+  inspection, warning next-actions that route agents to
+  `sley plan --json --graft-templates`, and, when exactly one checked lint
+  repair exists, a non-mutating `sley fix --dry-run` preview plus an explicit
+  `write_command` for the matching `sley fix --write`, and ready reports now
+  include `verify_gate` commands before entrypoint runs, with seeded `--cap`
+  args when the entrypoint declares effects, and
   `schema: "sley.doctor.report.v0"` for agent pre-edit gates
 - checked JSON edit-plan reports with `sley plan`, consuming strict
   diagnostics plus query and lint findings into ranked task edit surfaces,

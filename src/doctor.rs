@@ -3,7 +3,7 @@ use serde::Serialize;
 use crate::Program;
 use crate::checker::{check_program, has_errors};
 use crate::diagnostics::Diagnostic;
-use crate::lint::{LintOptions, LintReport, build_lint_report};
+use crate::lint::{LintFinding, LintOptions, LintReport, build_lint_report};
 use crate::plan::{CheckedLintRepair, single_checked_lint_repair};
 use crate::query::{QueryKind, QueryOptions, QueryReport, build_query_report};
 
@@ -58,6 +58,8 @@ pub struct DoctorLintSummary {
     pub status: String,
     pub rules: Vec<String>,
     pub finding_count: usize,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub findings: Vec<LintFinding>,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -213,6 +215,7 @@ fn summarize_lint(report: &LintReport) -> DoctorLintSummary {
         status: report.status.clone(),
         rules: report.filters.rules.clone(),
         finding_count: report.findings.len(),
+        findings: report.findings.clone(),
     }
 }
 

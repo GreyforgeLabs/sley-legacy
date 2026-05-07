@@ -727,7 +727,7 @@ When a wrapped step emits `schema: "sley.diagnostics.report.v0"`, non-empty
 diagnostics are summarized directly on the CI step by ID, severity, message,
 and optional node.
 When a wrapped step emits `schema: "sley.lint.report.v0"` or a report with
-nested lint findings such as edit-plan or verify, non-empty lint findings are
+nested lint findings such as doctor, edit-plan, or verify, non-empty lint findings are
 summarized directly on the CI step by ID, rule, severity, message, node,
 module, and hint.
 
@@ -915,8 +915,9 @@ projects outside the Sley repo.
 `sley doctor` is the first deterministic helper that consumes the strict
 checker plus checked query and lint reports into one agent readiness report.
 It reports `ready`, `warnings`, or `blocked`; includes source schema references
-for the consumed query and lint surfaces; and gives next-command vectors for
-task inspection, strict call-row inspection when checked calls exist, lint
+for the consumed query and lint surfaces; carries non-empty lint findings; and
+gives next-command vectors for task inspection, strict call-row inspection when
+checked calls exist, lint
 gates, checked `sley plan --json --graft-templates` repair planning when lint
 findings exist, non-mutating `sley fix --dry-run` previews when exactly one
 checked lint repair exists, explicit optional `write_command` vectors for the
