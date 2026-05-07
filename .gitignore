@@ -6,3 +6,7 @@ tree-sitter-sley/.tree-sitter/
 SleyCompiler.md
 SleyGoal.md
 SleyImprove.md
+
+# Branding review candidates should stay out of version control
+assets/branding/held/
+assets/branding/rejected/
