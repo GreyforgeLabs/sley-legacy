@@ -182,9 +182,9 @@ fixture-check, and validate reports have locked fixtures.
 The `sley-ci` binary exposes `check`, `lint`, `doctor`, `plan`, `run`, `verify`, `deploy`, `smoke`, `corpus`, and `examples` reports
 for local CI and pre-commit gates over existing Sley commands; wrapped
 diagnostic-report steps and reports carrying lint findings summarize diagnostic
-or finding IDs directly on the CI step. Failed verify and deploy wrappers also
-copy structured `next_actions` into the step; deploy wrappers preserve nested
-verify repair/retry actions before deploy-level fallback actions.
+or finding IDs directly on the CI step. Doctor, plan, verify, and deploy
+wrappers copy structured `next_actions` into the step; deploy wrappers preserve
+nested verify repair/retry actions before deploy-level fallback actions.
 The `sley-conformance` binary exposes `report` and `coverage` JSON roots for
 schema/fixture instance coverage, contract validation status, corpus tags,
 smoke tags, the compact agent onboarding pack, packaged example counts,

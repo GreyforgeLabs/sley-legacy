@@ -23,6 +23,64 @@
       "actual_success": true,
       "exit_code": 0,
       "stdout_schema": "sley.edit_plan.report.v0",
+      "next_actions": [
+        {
+          "kind": "inspect_primary_surface",
+          "reason": "graph slice gives bounded AST and call context for the highest-ranked edit surface",
+          "command": [
+            "sley",
+            "graph",
+            "--json",
+            "--slice",
+            "task:app.main.main",
+            "examples/project"
+          ]
+        },
+        {
+          "kind": "inspect_calls",
+          "reason": "strict call rows show caller/callee edges before rename, arity, or authority edits",
+          "command": [
+            "sley",
+            "query",
+            "--json",
+            "--kind",
+            "calls",
+            "examples/project"
+          ]
+        },
+        {
+          "kind": "post_edit_doctor",
+          "reason": "preserve strict diagnostics and lint readiness after structural edits",
+          "command": [
+            "sley",
+            "doctor",
+            "--json",
+            "--deny-warnings",
+            "examples/project"
+          ]
+        },
+        {
+          "kind": "post_edit_ci_doctor",
+          "reason": "run the same strict post-edit readiness check through the CI wrapper",
+          "command": [
+            "sley-ci",
+            "doctor",
+            "--json",
+            "--deny-warnings",
+            "examples/project"
+          ]
+        },
+        {
+          "kind": "post_edit_verify",
+          "reason": "run deterministic verification after the planned graft is applied",
+          "command": [
+            "sley",
+            "verify",
+            "--json",
+            "examples/project"
+          ]
+        }
+      ],
       "issues": []
     }
   ],

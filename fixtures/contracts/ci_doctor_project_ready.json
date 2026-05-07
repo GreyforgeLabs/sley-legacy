@@ -23,6 +23,64 @@
       "actual_success": true,
       "exit_code": 0,
       "stdout_schema": "sley.doctor.report.v0",
+      "next_actions": [
+        {
+          "kind": "inspect_tasks",
+          "reason": "query task facts before planning edits",
+          "command": [
+            "sley",
+            "query",
+            "--json",
+            "--kind",
+            "tasks",
+            "examples/project"
+          ]
+        },
+        {
+          "kind": "inspect_calls",
+          "reason": "strict call rows show caller/callee edges before rename, arity, or authority edits",
+          "command": [
+            "sley",
+            "query",
+            "--json",
+            "--kind",
+            "calls",
+            "examples/project"
+          ]
+        },
+        {
+          "kind": "lint_gate",
+          "reason": "preserve the warning-grade lint gate after edits",
+          "command": [
+            "sley",
+            "lint",
+            "--json",
+            "--deny-warnings",
+            "examples/project"
+          ]
+        },
+        {
+          "kind": "verify_gate",
+          "reason": "strict verification should pass before deploy, seal, or package handoff",
+          "command": [
+            "sley",
+            "verify",
+            "--json",
+            "--deny-warnings",
+            "examples/project"
+          ]
+        },
+        {
+          "kind": "run_entrypoint",
+          "reason": "main is pure and can run without runtime gates",
+          "command": [
+            "sley",
+            "run",
+            "--json",
+            "examples/project"
+          ]
+        }
+      ],
       "issues": []
     }
   ],
