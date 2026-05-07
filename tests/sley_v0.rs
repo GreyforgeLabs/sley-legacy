@@ -13186,7 +13186,7 @@ task main -> Text uses DatabaseRead {
         "unexpected diagnostics: {read_diagnostics:#?}"
     );
     let mut read_gates = RuntimeGates::new();
-    read_gates.grant_effect_scope("DbRead", "user");
+    read_gates.grant_effect_scope("DbRead", "users");
     read_gates.grant_db_rows(
         "users",
         vec![db_row([
@@ -13211,7 +13211,7 @@ task main -> Result<DbRow, Error> uses DatabaseWrite {
         "unexpected diagnostics: {write_diagnostics:#?}"
     );
     let mut write_gates = RuntimeGates::new();
-    write_gates.grant_effect_scope("DbWrite", "user");
+    write_gates.grant_effect_scope("DbWrite", "users");
     assert_eq!(
         run_main_with_gates(&write_program, &write_gates),
         Ok(Value::Ok(Box::new(Value::Record(db_row([(
@@ -14570,6 +14570,27 @@ task main -> Result<Text, Error> uses DatabaseRead {
 }
 "#,
         database,
+        "DatabaseRead",
+        "users",
+    );
+
+    let mut database_prefix = RuntimeGates::new();
+    database_prefix.grant_effect_scope("DatabaseRead", "user");
+    database_prefix.grant_db_rows(
+        "users",
+        vec![db_row([
+            ("id", Value::Text("u1".to_string())),
+            ("name", Value::Text("Ada".to_string())),
+        ])],
+    );
+    assert_scope_denied(
+        r#"
+task main -> Result<Text, Error> uses DatabaseRead {
+  bind row = call db.try_query_one("select * from users where id = ?", "u1")?
+  return Ok(row.text("name"))
+}
+"#,
+        database_prefix,
         "DatabaseRead",
         "users",
     );

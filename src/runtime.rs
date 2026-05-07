@@ -1663,7 +1663,7 @@ fn enforce_gate_scope(
     let Some(scope) = gate.scope.as_deref() else {
         return Ok(());
     };
-    if resource.starts_with(scope) {
+    if scope_matches_resource(resource_kind, scope, resource) {
         return Ok(());
     }
     Err(vec![
@@ -1676,6 +1676,13 @@ fn enforce_gate_scope(
         )
         .with_node(expr.id.clone()),
     ])
+}
+
+fn scope_matches_resource(resource_kind: &str, scope: &str, resource: &str) -> bool {
+    if resource_kind == "database table" {
+        return normalize_db_table(scope) == resource;
+    }
+    resource.starts_with(scope)
 }
 
 fn absolute_normalized_path(path: &Path) -> PathBuf {
