@@ -37,6 +37,10 @@ here. Dates use UTC-independent calendar dates from the local repo history.
   artifacts, and artifact contract inspection.
 - CLI smoke coverage for the packaged agent project across check, lint, call
   query, doctor, seeded run, seeded verify, and deploy artifact packaging.
+- `sley lint --rule constant-boolean-comparison-expression` and checked
+  `simplify_constant_boolean_comparison_expression` repair templates for
+  boolean literal equality/inequality expressions, including contract and CLI
+  smoke coverage.
 - Required CLI smoke coverage for the generated multi-module agent quickstart
   path from scaffold through inspection, strict lint, seeded run, verify,
   dry-run deploy artifacts, and artifact contract inspection.
@@ -190,7 +194,7 @@ here. Dates use UTC-independent calendar dates from the local repo history.
 - `sley lint --module <module>` now rejects unknown checked project modules
   with `LINT_MODULE_FILTER_NOT_FOUND` instead of returning a clean lint report
   for an empty slice.
-- Contract inventory now tracks 38 schemas, 112 contract fixtures, and 115 schema
+- Contract inventory now tracks 38 schemas, 124 contract fixtures, and 127 schema
   instances through the conformance report.
 - The Rust package metadata now declares its supported Rust floor, description,
   README, keywords, categories, and `publish = false` until publication
