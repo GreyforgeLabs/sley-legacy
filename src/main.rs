@@ -39,7 +39,7 @@ use sley::zjx::build_zjx_envelope;
 
 #[derive(Debug, Parser)]
 #[command(name = "sley")]
-#[command(about = "Sley Loom v0 compiler, runtime, and graft tool")]
+#[command(about = "Sley Loom compiler, runtime, and graft tool")]
 struct Cli {
     #[command(subcommand)]
     command: Command,
@@ -2222,7 +2222,7 @@ fn deploy_dry_run_required_diagnostics(target: &Path) -> Vec<Diagnostic> {
     vec![
         Diagnostic::error(
             "DRY_RUN_REQUIRED",
-            "sley deploy is report-only in v0; rerun with --dry-run",
+            "sley deploy is report-only in v1; rerun with --dry-run",
         )
         .with_repair_hint(
             RepairHint::new("rerun_deploy_dry_run")

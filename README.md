@@ -19,6 +19,24 @@
 </p>
 
 <!-- SEO / discoverability metadata -->
+<meta name="description" content="Sley is a deterministic, schema-backed language for graph-checked automation and agentic tooling, maintained by Greyforge Labs." />
+<meta name="keywords" content="Sley, deterministic language, schema-backed reports, graph compiler, agent tooling, Greyforge Labs" />
+<link rel="canonical" href="https://sley.greyforge.tech/" />
+<meta property="og:title" content="Sley" />
+<meta property="og:description" content="Deterministic, graph-backed structural language and release toolchain from Greyforge Labs." />
+<meta property="og:url" content="https://sley.greyforge.tech/" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Greyforge Labs" />
+<meta property="og:image" content="https://raw.githubusercontent.com/GreyforgeLabs/sley/main/assets/branding/canonical/sley_loom_graph_board.png" />
+<meta property="og:image:alt" content="Sley Loom logo and graph banner" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Sley by Greyforge Labs" />
+<meta name="twitter:site" content="@GreyforgeLabs" />
+<meta name="twitter:creator" content="@GreyforgeLabs" />
+<meta name="twitter:image" content="https://raw.githubusercontent.com/GreyforgeLabs/sley/main/assets/branding/canonical/sley_loom_graph_board.png" />
+<meta name="twitter:image:alt" content="Sley Loom logo and graph banner" />
+<meta name="geo.region" content="US" />
+<meta name="geo.placename" content="United States" />
 <p align="center">
   <strong>Canonical:</strong>
   <a href="https://sley.greyforge.tech/">sley.greyforge.tech</a> ·
@@ -458,8 +476,9 @@ Implemented now:
   when needed
 - a first ZJX-ready JSON envelope command for graph snapshots, recomputable
   graph digests, optional graph slices, and trace receipts
-- a future-runtime lock spec at `docs/SleyZjxRuntimeLockSpec.md`, requiring
-  `zjx-sley` to validate Sley structure before compressing Sley artifacts
+- a future runtime lock policy for `zjx-sley` that reconstructs and validates Sley
+  graph structure before archive handoff, enforcing strict field and schema checks
+  while rejecting unknown or opaque formats
 - structural graft operations for adding explicit module declarations,
   adding/removing takes, removing task-declared effects, replacing task bodies, adding
   imports/effects/types/tasks, renaming declarations, updating call-sites,
@@ -919,10 +938,9 @@ Known current limits:
   digest, extract the symbol graph, and diff two envelopes without writing
   source files.
 - The future compressed `zjx-sley` runtime must not trust envelope metadata as
-  the file lock. It must follow `docs/SleyZjxRuntimeLockSpec.md`: reconstruct
-  and validate Sley graph structure, recompute the graph hash, reject unknown
-  or opaque fields, and refuse generic CSV, JSONL, checkpoint, backup, or blob
-  payloads disguised as Sley artifacts.
+  the file lock. It must reconstruct and validate Sley graph structure, recompute
+  the graph hash, reject unknown or opaque fields, and refuse generic CSV,
+  JSONL, checkpoint, backup, or blob payloads disguised as Sley artifacts.
 - Runtime host support is intentionally narrow: `FileRead`/`FileWrite` have
   root-scoped filesystem handlers, `DatabaseRead` has a deterministic
   seeded-table adapter, and `DatabaseWrite` has a deterministic per-run insert

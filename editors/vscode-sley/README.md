@@ -1,7 +1,6 @@
 # Sley VS Code Shim
 
-Status: local development shim for the in-tree `sley-lsp` server. This package
-is private and unpublished until public release metadata is approved.
+Status: local development shim for the in-tree `sley-lsp` server.
 
 ## Use Locally
 
@@ -22,14 +21,14 @@ Launch VS Code with this extension folder, then set `sley.languageServer.path`
 to the built server path if `sley-lsp` is not already on `PATH`:
 
 ```bash
-code --extensionDevelopmentPath="$PWD" /home/greyforge/sley
+code --extensionDevelopmentPath="$PWD" /path/to/sley
 ```
 
 Example setting:
 
 ```json
 {
-  "sley.languageServer.path": "/home/greyforge/sley/target/debug/sley-lsp"
+  "sley.languageServer.path": "/path/to/sley/target/debug/sley-lsp"
 }
 ```
 
