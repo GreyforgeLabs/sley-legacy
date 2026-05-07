@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::fs;
 use std::io::{self, BufRead, BufReader, BufWriter, Read, Write};
 use std::path::{Path, PathBuf};
@@ -9,6 +9,7 @@ use serde_json::{Value as JsonValue, json};
 use sley::ast::{
     EffectDecl, Expr, ExprKind, ImportDecl, Program, Statement, StatementKind, TaskDecl, TypeDecl,
 };
+use sley::authority::host_effect_contracts;
 use sley::checker::{check_program, has_errors};
 use sley::diagnostics::{Diagnostic, Severity, SourceSpan};
 use sley::formatter::format_program;
@@ -145,6 +146,11 @@ fn handle_message<W: Write>(
                 send_response(writer, id, handle_definition(params, state))?;
             }
         }
+        "textDocument/completion" => {
+            if let Some(id) = id {
+                send_response(writer, id, handle_completion(params, state))?;
+            }
+        }
         "textDocument/codeAction" => {
             if let Some(id) = id {
                 send_response(writer, id, handle_code_actions(params, state))?;
@@ -182,6 +188,10 @@ fn initialize_result() -> JsonValue {
             "documentSymbolProvider": true,
             "hoverProvider": true,
             "definitionProvider": true,
+            "completionProvider": {
+                "resolveProvider": false,
+                "triggerCharacters": [".", " ", ":", ">"]
+            },
             "codeActionProvider": {
                 "resolveProvider": false,
                 "codeActionKinds": ["quickfix", "refactor.rewrite"]
@@ -365,6 +375,28 @@ fn handle_definition(params: JsonValue, state: &ServerState) -> JsonValue {
             JsonValue::Null
         }
     }
+}
+
+fn handle_completion(params: JsonValue, state: &ServerState) -> JsonValue {
+    let Some(uri) = text_document_uri(&params) else {
+        return completion_list(core_completion_items());
+    };
+    let Some(document) = state.documents.get(&uri) else {
+        return completion_list(core_completion_items());
+    };
+    let Ok(current_program) = parse_program(&document.text) else {
+        return completion_list(core_completion_items());
+    };
+    let project = project_graph_for_document(&uri, &current_program, state);
+    let analysis_program = project
+        .as_ref()
+        .map(|project| &project.program)
+        .unwrap_or(&current_program);
+    completion_list(completion_items_for_program(
+        &current_program,
+        analysis_program,
+        project.as_ref(),
+    ))
 }
 
 fn handle_code_actions(params: JsonValue, state: &ServerState) -> JsonValue {
@@ -766,6 +798,168 @@ fn task_hover(task: &TaskDecl, default_module: &str) -> String {
         task.return_type.display(),
         task.id
     )
+}
+
+fn completion_items_for_program(
+    current_program: &Program,
+    analysis_program: &Program,
+    project: Option<&ProjectGraph>,
+) -> Vec<JsonValue> {
+    let mut items = BTreeMap::new();
+    for item in core_completion_items() {
+        if let Some(label) = item.get("label").and_then(JsonValue::as_str) {
+            items.insert(label.to_string(), item);
+        }
+    }
+    for contract in host_effect_contracts() {
+        push_completion_item(
+            &mut items,
+            completion_item(
+                contract.callee,
+                3,
+                &format!("host call uses {}", contract.effects.join(", ")),
+                contract.callee,
+            ),
+        );
+    }
+    if let Some(project) = project {
+        for module in &project.modules {
+            push_completion_item(
+                &mut items,
+                completion_item(&module.module, 9, "project module", &module.module),
+            );
+        }
+    }
+    for task in &analysis_program.tasks {
+        if let Some((label, detail)) = task_completion(current_program, task, analysis_program) {
+            push_completion_item(&mut items, completion_item(&label, 3, &detail, &label));
+        }
+    }
+    for ty in &analysis_program.types {
+        if let Some((label, detail)) =
+            declaration_completion(current_program, ty.module.as_deref(), &ty.name, ty.exported)
+        {
+            push_completion_item(&mut items, completion_item(&label, 7, &detail, &label));
+        }
+    }
+    for effect in &analysis_program.effects {
+        if let Some((label, detail)) = declaration_completion(
+            current_program,
+            effect.module.as_deref(),
+            &effect.name,
+            effect.exported,
+        ) {
+            push_completion_item(&mut items, completion_item(&label, 14, &detail, &label));
+        }
+    }
+    items.into_values().collect()
+}
+
+fn core_completion_items() -> Vec<JsonValue> {
+    [
+        "module", "import", "as", "export", "type", "effect", "task", "take", "uses", "bind",
+        "set", "return", "call", "if", "else", "while", "for", "each", "forge", "true", "false",
+        "Ok", "Err", "Result", "Text", "Int", "Float", "Bool", "Error", "Unit",
+    ]
+    .into_iter()
+    .map(|label| completion_item(label, 14, "Sley keyword or built-in", label))
+    .collect()
+}
+
+fn task_completion(
+    current_program: &Program,
+    task: &TaskDecl,
+    analysis_program: &Program,
+) -> Option<(String, String)> {
+    let current_module = current_program.module_name();
+    let task_module = task
+        .module
+        .as_deref()
+        .unwrap_or_else(|| analysis_program.module_name());
+    if task_module == current_module {
+        return Some((
+            task.name.clone(),
+            format!(
+                "task {task_module}.{} -> {}",
+                task.name,
+                task.return_type.display()
+            ),
+        ));
+    }
+    let import = visible_import_for_module(current_program, task_module)?;
+    if !task.exported {
+        return None;
+    }
+    let qualifier = import_qualifier(import);
+    Some((
+        format!("{qualifier}.{}", task.name),
+        format!(
+            "imported task {task_module}.{} -> {}",
+            task.name,
+            task.return_type.display()
+        ),
+    ))
+}
+
+fn declaration_completion(
+    current_program: &Program,
+    declaration_module: Option<&str>,
+    name: &str,
+    exported: bool,
+) -> Option<(String, String)> {
+    let module = declaration_module.unwrap_or_else(|| current_program.module_name());
+    if module == current_program.module_name() {
+        return Some((name.to_string(), format!("declaration {module}.{name}")));
+    }
+    let import = visible_import_for_module(current_program, module)?;
+    if !exported {
+        return None;
+    }
+    let qualifier = import_qualifier(import);
+    Some((
+        format!("{qualifier}.{name}"),
+        format!("imported declaration {module}.{name}"),
+    ))
+}
+
+fn visible_import_for_module<'a>(
+    current_program: &'a Program,
+    module: &str,
+) -> Option<&'a ImportDecl> {
+    current_program
+        .imports
+        .iter()
+        .find(|import| import.module == module)
+}
+
+fn import_qualifier(import: &ImportDecl) -> String {
+    import
+        .alias
+        .clone()
+        .or_else(|| import.module.rsplit('.').next().map(str::to_string))
+        .unwrap_or_else(|| import.module.clone())
+}
+
+fn completion_item(label: &str, kind: u8, detail: &str, insert_text: &str) -> JsonValue {
+    json!({
+        "label": label,
+        "kind": kind,
+        "detail": detail,
+        "insertText": insert_text
+    })
+}
+
+fn push_completion_item(items: &mut BTreeMap<String, JsonValue>, item: JsonValue) {
+    if let Some(label) = item.get("label").and_then(JsonValue::as_str) {
+        items.entry(label.to_string()).or_insert(item);
+    }
+}
+
+fn completion_list(items: Vec<JsonValue>) -> JsonValue {
+    json!({
+        "isIncomplete": false,
+        "items": items
+    })
 }
 
 fn hover_json(value: &str, range: JsonValue) -> JsonValue {

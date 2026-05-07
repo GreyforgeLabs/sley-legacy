@@ -50,6 +50,10 @@ fn lsp_publishes_diagnostics_formats_symbols_and_previews_code_actions() {
         initialized.pointer("/result/capabilities/definitionProvider"),
         Some(&json!(true))
     );
+    assert_eq!(
+        initialized.pointer("/result/capabilities/completionProvider/resolveProvider"),
+        Some(&json!(false))
+    );
 
     write_lsp(
         &mut stdin,
@@ -368,26 +372,35 @@ export task message -> Text {
         json!({
             "jsonrpc": "2.0",
             "id": 2,
-            "method": "textDocument/definition",
+            "method": "textDocument/completion",
             "params": {
                 "textDocument": {
                     "uri": main_uri
                 },
                 "position": {
                     "line": 5,
-                    "character": 20
+                    "character": 14
                 }
             }
         }),
     );
-    let definition = read_response(&mut reader, 2);
-    assert_eq!(
-        definition.pointer("/result/0/uri"),
-        Some(&json!(pipeline_uri))
+    let completion = read_response(&mut reader, 2);
+    let labels = completion_labels(&completion);
+    assert!(
+        labels.contains(&"pipe.message"),
+        "project completions should include imported task label, got {labels:?}"
     );
-    assert_eq!(
-        definition.pointer("/result/0/range/start/line"),
-        Some(&json!(2))
+    assert!(
+        labels.contains(&"http.try_get_text"),
+        "project completions should include host call labels, got {labels:?}"
+    );
+    assert!(
+        labels.contains(&"task"),
+        "project completions should include Sley keywords, got {labels:?}"
+    );
+    assert!(
+        labels.contains(&"app.pipeline"),
+        "project completions should include project modules, got {labels:?}"
     );
 
     write_lsp(
@@ -401,13 +414,40 @@ export task message -> Text {
                     "uri": main_uri
                 },
                 "position": {
+                    "line": 5,
+                    "character": 20
+                }
+            }
+        }),
+    );
+    let definition = read_response(&mut reader, 3);
+    assert_eq!(
+        definition.pointer("/result/0/uri"),
+        Some(&json!(pipeline_uri))
+    );
+    assert_eq!(
+        definition.pointer("/result/0/range/start/line"),
+        Some(&json!(2))
+    );
+
+    write_lsp(
+        &mut stdin,
+        json!({
+            "jsonrpc": "2.0",
+            "id": 4,
+            "method": "textDocument/definition",
+            "params": {
+                "textDocument": {
+                    "uri": main_uri
+                },
+                "position": {
                     "line": 2,
                     "character": 8
                 }
             }
         }),
     );
-    let import_definition = read_response(&mut reader, 3);
+    let import_definition = read_response(&mut reader, 4);
     assert_eq!(
         import_definition.pointer("/result/0/uri"),
         Some(&json!(pipeline_uri))
@@ -444,12 +484,12 @@ export task message -> Text {
         &mut stdin,
         json!({
             "jsonrpc": "2.0",
-            "id": 4,
+            "id": 5,
             "method": "shutdown",
             "params": null
         }),
     );
-    let shutdown = read_response(&mut reader, 4);
+    let shutdown = read_response(&mut reader, 5);
     assert!(shutdown.get("result").is_some());
     write_lsp(
         &mut stdin,
@@ -471,6 +511,16 @@ fn diagnostic_codes(message: &JsonValue) -> Vec<&str> {
         .expect("diagnostic array")
         .iter()
         .filter_map(|diagnostic| diagnostic.get("code").and_then(JsonValue::as_str))
+        .collect()
+}
+
+fn completion_labels(message: &JsonValue) -> Vec<&str> {
+    message
+        .pointer("/result/items")
+        .and_then(JsonValue::as_array)
+        .expect("completion item array")
+        .iter()
+        .filter_map(|item| item.get("label").and_then(JsonValue::as_str))
         .collect()
 }
 

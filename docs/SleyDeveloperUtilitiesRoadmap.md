@@ -162,9 +162,9 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
      framing, tracks full-document buffers, publishes compiler diagnostics plus
      lint warnings with `sley.toml` project context and unsaved open-buffer
      overlays, returns formatting edits, document symbols, declaration metadata
-     hover, import/call definition jumps, edit-plan code actions, and exposes
-     `sley.fix.preview` as a non-mutating preview command. `tests/sley_lsp.rs`
-     drives the server over real JSON-RPC frames.
+     hover, project completions, import/call definition jumps, edit-plan code
+     actions, and exposes `sley.fix.preview` as a non-mutating preview command.
+     `tests/sley_lsp.rs` drives the server over real JSON-RPC frames.
    - Done when an example project receives diagnostics and at least one checked
      lint repair code action without the server writing files directly.
 
