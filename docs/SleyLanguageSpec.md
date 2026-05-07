@@ -798,8 +798,10 @@ output requires `--html <path>`.
 The local documentation loop is backed by the in-tree `sley-docgen` bootstrap.
 `sley-docgen reference --json <target>` emits
 `schema: "sley.docgen.report.v0"` from checked `sley.query.report.v0` data and
-the canonical host capability contract table. `--markdown <path>` writes a
-single reference page with module, task, type, effect, and capability sections.
+the canonical host capability contract table. Capability rows include seeded
+`--cap` argument fragments for deterministic host setup. `--markdown <path>`
+writes a single reference page with module, task, type, effect, and capability
+sections.
 The target may be one `.sley` file or a project root; the command is read-only
 for source code.
 

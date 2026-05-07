@@ -208,7 +208,8 @@ Implemented now:
   builds focused `--slice` commands
 - in-tree `sley-docgen` reference generator that emits
   `schema: "sley.docgen.report.v0"` and optional Markdown over checked
-  module, task, type, effect, and host capability reference data
+  module, task, type, effect, and host capability reference data, including
+  seeded `--cap` args for deterministic host setup
 - in-tree `sley-agent-bench` deterministic repair-loop benchmark that emits
   `schema: "sley.agent_bench.report.v0"` after proving a JSON inspect, lint,
   plan, checked fix, verify, seal, and ZJX handoff path

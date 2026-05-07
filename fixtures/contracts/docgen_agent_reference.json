@@ -42,7 +42,12 @@
       "exported": false,
       "takes": [],
       "return_type": "Result<Text, Error>",
-      "effects": ["SecretRead", "Network", "ModelCall", "Deploy"],
+      "effects": [
+        "SecretRead",
+        "Network",
+        "ModelCall",
+        "Deploy"
+      ],
       "outbound_call_count": 7,
       "inbound_call_count": 0
     }
@@ -52,7 +57,13 @@
   "capabilities": [
     {
       "effect": "DatabaseRead",
-      "aliases": ["DbRead"],
+      "aliases": [
+        "DbRead"
+      ],
+      "seed_capability_args": [
+        "--cap",
+        "DatabaseRead"
+      ],
       "host_calls": [
         "db.query",
         "db.query_one",
@@ -68,57 +79,135 @@
     },
     {
       "effect": "DatabaseWrite",
-      "aliases": ["DbWrite"],
-      "host_calls": ["db.try_insert"],
-      "source_needles": ["db.try_insert("]
+      "aliases": [
+        "DbWrite"
+      ],
+      "seed_capability_args": [
+        "--cap",
+        "DatabaseWrite"
+      ],
+      "host_calls": [
+        "db.try_insert"
+      ],
+      "source_needles": [
+        "db.try_insert("
+      ]
     },
     {
       "effect": "Deploy",
       "aliases": [],
-      "host_calls": ["deploy.try_stage"],
-      "source_needles": ["deploy.try_stage("]
+      "seed_capability_args": [
+        "--cap",
+        "Deploy"
+      ],
+      "host_calls": [
+        "deploy.try_stage"
+      ],
+      "source_needles": [
+        "deploy.try_stage("
+      ]
     },
     {
       "effect": "FileRead",
       "aliases": [],
-      "host_calls": ["fs.read_text", "fs.try_read_text"],
-      "source_needles": ["fs.read_text(", "fs.try_read_text("]
+      "seed_capability_args": [
+        "--cap",
+        "FileRead"
+      ],
+      "host_calls": [
+        "fs.read_text",
+        "fs.try_read_text"
+      ],
+      "source_needles": [
+        "fs.read_text(",
+        "fs.try_read_text("
+      ]
     },
     {
       "effect": "FileWrite",
       "aliases": [],
-      "host_calls": ["fs.try_write_text", "fs.write_text"],
-      "source_needles": ["fs.try_write_text(", "fs.write_text("]
+      "seed_capability_args": [
+        "--cap",
+        "FileWrite"
+      ],
+      "host_calls": [
+        "fs.try_write_text",
+        "fs.write_text"
+      ],
+      "source_needles": [
+        "fs.try_write_text(",
+        "fs.write_text("
+      ]
     },
     {
       "effect": "ModelCall",
       "aliases": [],
-      "host_calls": ["model.try_complete"],
-      "source_needles": ["model.try_complete("]
+      "seed_capability_args": [
+        "--cap",
+        "ModelCall"
+      ],
+      "host_calls": [
+        "model.try_complete"
+      ],
+      "source_needles": [
+        "model.try_complete("
+      ]
     },
     {
       "effect": "Network",
       "aliases": [],
-      "host_calls": ["http.try_get_text"],
-      "source_needles": ["http.try_get_text("]
+      "seed_capability_args": [
+        "--cap",
+        "Network"
+      ],
+      "host_calls": [
+        "http.try_get_text"
+      ],
+      "source_needles": [
+        "http.try_get_text("
+      ]
     },
     {
       "effect": "SecretRead",
       "aliases": [],
-      "host_calls": ["secrets.try_get"],
-      "source_needles": ["secrets.try_get("]
+      "seed_capability_args": [
+        "--cap",
+        "SecretRead"
+      ],
+      "host_calls": [
+        "secrets.try_get"
+      ],
+      "source_needles": [
+        "secrets.try_get("
+      ]
     },
     {
       "effect": "Shell",
       "aliases": [],
-      "host_calls": ["shell.try_run"],
-      "source_needles": ["shell.try_run("]
+      "seed_capability_args": [
+        "--cap",
+        "Shell"
+      ],
+      "host_calls": [
+        "shell.try_run"
+      ],
+      "source_needles": [
+        "shell.try_run("
+      ]
     },
     {
       "effect": "Spend",
       "aliases": [],
-      "host_calls": ["spend.try_authorize"],
-      "source_needles": ["spend.try_authorize("]
+      "seed_capability_args": [
+        "--cap",
+        "Spend"
+      ],
+      "host_calls": [
+        "spend.try_authorize"
+      ],
+      "source_needles": [
+        "spend.try_authorize("
+      ]
     }
   ],
   "diagnostics": [],

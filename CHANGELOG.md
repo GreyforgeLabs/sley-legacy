@@ -74,6 +74,8 @@ here. Dates use UTC-independent calendar dates from the local repo history.
   rerendering a focused graph slice.
 - `sley-lsp` hover now shows required capabilities and seeded `--cap` hints
   when the cursor is on a known host call.
+- `sley-docgen` capability rows now include seeded `--cap` argument fragments
+  in JSON and generated Markdown.
 - `sley-lsp` diagnostics now load `sley.toml` project context with unsaved
   open-buffer overlays, so valid imported calls resolve in editor buffers and
   missing imported tasks are diagnosed without requiring a save.

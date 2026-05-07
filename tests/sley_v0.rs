@@ -9692,6 +9692,13 @@ fn report_command_schemas_pin_nonempty_argv_segments() {
         ),
         (
             serde_json::from_str::<serde_json::Value>(include_str!(
+                "../docs/schemas/sley.docgen.report.v0.schema.json"
+            ))
+            .expect("parse docgen report schema"),
+            vec!["/$defs/capability/properties/seed_capability_args/items/minLength"],
+        ),
+        (
+            serde_json::from_str::<serde_json::Value>(include_str!(
                 "../docs/schemas/sley.lsp.fix_preview.v0.schema.json"
             ))
             .expect("parse LSP fix preview schema"),

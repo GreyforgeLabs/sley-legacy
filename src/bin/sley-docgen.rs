@@ -105,6 +105,7 @@ struct DocgenModule {
 struct DocgenCapability {
     effect: String,
     aliases: Vec<String>,
+    seed_capability_args: Vec<String>,
     host_calls: Vec<String>,
     source_needles: Vec<String>,
 }
@@ -296,6 +297,7 @@ fn build_capability_docs() -> Vec<DocgenCapability> {
     capabilities
         .into_iter()
         .map(|(effect, builder)| DocgenCapability {
+            seed_capability_args: vec!["--cap".to_string(), effect.clone()],
             effect,
             aliases: builder.aliases.into_iter().collect(),
             host_calls: builder.host_calls.into_iter().collect(),
@@ -424,6 +426,10 @@ fn render_markdown(report: &DocgenReport) -> String {
     output.push_str("## Capabilities\n\n");
     for capability in &report.capabilities {
         output.push_str(&format!("### `{}`\n\n", code_text(&capability.effect)));
+        output.push_str(&format!(
+            "- Seed capability args: `{}`\n",
+            code_text(&capability.seed_capability_args.join(" "))
+        ));
         output.push_str(&format!(
             "- Aliases: `{}`\n",
             code_text(&join_or_none(&capability.aliases))

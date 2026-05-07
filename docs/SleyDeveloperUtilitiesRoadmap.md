@@ -282,8 +282,9 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
     - Current bootstrap: in-tree `src/bin/sley-docgen.rs` emits
       `schema: "sley.docgen.report.v0"` and optional Markdown from checked
       `sley.query.report.v0` module/task/type/effect summaries plus the
-      canonical host capability contract table. It is covered by an
-      integration test and a locked contract fixture.
+      canonical host capability contract table, including seeded `--cap`
+      argument fragments. It is covered by an integration test and a locked
+      contract fixture.
 
 12. `sley-sandbox-runner`
     - A deterministic replay wrapper around seeded host adapters.

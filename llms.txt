@@ -198,7 +198,7 @@ file writes; HTML includes local lint repair focus and graph target selectors
 for focused slice handoff.
 The `sley-docgen` binary exposes `schema: "sley.docgen.report.v0"` and
 optional Markdown over checked module, task, type, effect, and capability
-reference data.
+reference data, including seeded `--cap` args for deterministic host setup.
 The `sley-agent-bench` binary exposes
 `schema: "sley.agent_bench.report.v0"` for deterministic local repair-loop
 benchmarks over JSON inspection, checked fixes, post-fix gates, trace receipts,

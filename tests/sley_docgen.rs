@@ -57,12 +57,21 @@ fn docgen_generates_reference_report_and_markdown() {
         report.pointer("/tasks/0/qualified_name"),
         Some(&json!("app.agent_deploy_pipeline.main"))
     );
+    assert_eq!(
+        report.pointer("/capabilities/0/seed_capability_args"),
+        Some(&json!(["--cap", "DatabaseRead"]))
+    );
+    assert_eq!(
+        report.pointer("/capabilities/2/seed_capability_args"),
+        Some(&json!(["--cap", "Deploy"]))
+    );
 
     let markdown = fs::read_to_string(&markdown_path).expect("read generated markdown");
     assert!(markdown.contains("# Sley Reference: app.agent_deploy_pipeline"));
     assert!(markdown.contains("## Tasks"));
     assert!(markdown.contains("`SecretRead, Network, ModelCall, Deploy`"));
     assert!(markdown.contains("## Capabilities"));
+    assert!(markdown.contains("Seed capability args: `--cap Deploy`"));
     assert!(markdown.contains("`http.try_get_text`"));
 
     let _ = fs::remove_dir_all(root);

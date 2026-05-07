@@ -221,7 +221,8 @@ Rules:
   repair-focus selector for repair handoff.
 - `sley-docgen` exposes checked Markdown reference generation over
   query-derived module, task, type, effect, and host capability docs. Its
-  report schema reuses the strict query task/type/effect row definitions.
+  report schema reuses the strict query task/type/effect row definitions and
+  carries seeded `--cap` args for deterministic host setup.
 - `sley-agent-bench` exposes a deterministic local benchmark for the
   agent-facing edit loop, including JSON inspection, checked repair selection,
   write-mode fix, post-fix gates, trace receipt, seal, and ZJX evidence.
