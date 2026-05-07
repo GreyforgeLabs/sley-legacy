@@ -1,6 +1,7 @@
 use std::collections::HashMap;
+use std::fs;
 use std::io::{self, BufRead, BufReader, BufWriter, Read, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 use clap::Parser;
@@ -17,7 +18,8 @@ use sley::plan::{
     EditPlanGraftTemplate, EditPlanOptions, EditPlanTransactionTemplate,
     build_edit_plan_report_with_options, module_name_from_sley_path,
 };
-use sley::project::load_project_with_source_overlays;
+use sley::project::{ProjectGraph, load_project_with_source_overlays};
+use sley::symbols::{TaskResolution, callee_path, resolve_task};
 
 const FIX_PREVIEW_COMMAND: &str = "sley.fix.preview";
 const FIX_PREVIEW_SCHEMA: &str = "sley.lsp.fix_preview.v0";
@@ -138,6 +140,11 @@ fn handle_message<W: Write>(
                 send_response(writer, id, handle_hover(params, state))?;
             }
         }
+        "textDocument/definition" => {
+            if let Some(id) = id {
+                send_response(writer, id, handle_definition(params, state))?;
+            }
+        }
         "textDocument/codeAction" => {
             if let Some(id) = id {
                 send_response(writer, id, handle_code_actions(params, state))?;
@@ -174,6 +181,7 @@ fn initialize_result() -> JsonValue {
             "documentFormattingProvider": true,
             "documentSymbolProvider": true,
             "hoverProvider": true,
+            "definitionProvider": true,
             "codeActionProvider": {
                 "resolveProvider": false,
                 "codeActionKinds": ["quickfix", "refactor.rewrite"]
@@ -310,6 +318,55 @@ fn handle_hover(params: JsonValue, state: &ServerState) -> JsonValue {
     hover_for_line(&program, &document.text, line).unwrap_or(JsonValue::Null)
 }
 
+fn handle_definition(params: JsonValue, state: &ServerState) -> JsonValue {
+    let Some(uri) = text_document_uri(&params) else {
+        return JsonValue::Null;
+    };
+    let Some(document) = state.documents.get(&uri) else {
+        return JsonValue::Null;
+    };
+    let Some(position) = params.get("position") else {
+        return JsonValue::Null;
+    };
+    let line = position
+        .get("line")
+        .and_then(JsonValue::as_u64)
+        .unwrap_or_default() as usize;
+    let Ok(current_program) = parse_program(&document.text) else {
+        return JsonValue::Null;
+    };
+    let project = project_graph_for_document(&uri, &current_program, state);
+
+    if let Some(project) = project.as_ref()
+        && let Some(location) = import_definition_at_line(&current_program, line, project, state)
+    {
+        return json!([location]);
+    }
+
+    let analysis_program = project
+        .as_ref()
+        .map(|project| &project.program)
+        .unwrap_or(&current_program);
+    let Some((caller_module, callee_name)) = call_at_line(&current_program, line) else {
+        return JsonValue::Null;
+    };
+    match resolve_task(analysis_program, &caller_module, &callee_name) {
+        TaskResolution::Resolved { index, .. } => definition_location_for_task(
+            &uri,
+            &document.text,
+            &current_program,
+            project.as_ref(),
+            &analysis_program.tasks[index],
+            state,
+        )
+        .map(|location| json!([location]))
+        .unwrap_or(JsonValue::Null),
+        TaskResolution::Unknown | TaskResolution::Ambiguous(_) | TaskResolution::Private(_) => {
+            JsonValue::Null
+        }
+    }
+}
+
 fn handle_code_actions(params: JsonValue, state: &ServerState) -> JsonValue {
     let Some(uri) = text_document_uri(&params) else {
         return json!([]);
@@ -430,22 +487,39 @@ fn analysis_program_for_document(
     current_program: &Program,
     state: &ServerState,
 ) -> (Program, Vec<Diagnostic>) {
-    let Some(project_root) = project_root_for_uri(uri) else {
-        return (current_program.clone(), Vec::new());
-    };
-    let source_overlays = state.source_overlays();
-    match load_project_with_source_overlays(project_root, &source_overlays) {
-        Ok(project)
-            if project
-                .modules
-                .iter()
-                .any(|module| module.module == current_program.module_name()) =>
-        {
-            (project.program, Vec::new())
-        }
-        Ok(_) => (current_program.clone(), Vec::new()),
+    match load_project_graph_for_document(uri, current_program, state) {
+        Ok(Some(project)) => (project.program, Vec::new()),
+        Ok(None) => (current_program.clone(), Vec::new()),
         Err(diagnostics) => (current_program.clone(), diagnostics),
     }
+}
+
+fn project_graph_for_document(
+    uri: &str,
+    current_program: &Program,
+    state: &ServerState,
+) -> Option<ProjectGraph> {
+    load_project_graph_for_document(uri, current_program, state)
+        .ok()
+        .flatten()
+}
+
+fn load_project_graph_for_document(
+    uri: &str,
+    current_program: &Program,
+    state: &ServerState,
+) -> Result<Option<ProjectGraph>, Vec<Diagnostic>> {
+    let Some(project_root) = project_root_for_uri(uri) else {
+        return Ok(None);
+    };
+    let source_overlays = state.source_overlays();
+    load_project_with_source_overlays(project_root, &source_overlays).map(|project| {
+        project
+            .modules
+            .iter()
+            .any(|module| module.module == current_program.module_name())
+            .then_some(project)
+    })
 }
 
 fn project_diagnostic_belongs_to_document(program: &Program, diagnostic: &Diagnostic) -> bool {
@@ -700,6 +774,233 @@ fn hover_json(value: &str, range: JsonValue) -> JsonValue {
             "kind": "markdown",
             "value": value
         },
+        "range": range
+    })
+}
+
+fn import_definition_at_line(
+    program: &Program,
+    line: usize,
+    project: &ProjectGraph,
+    state: &ServerState,
+) -> Option<JsonValue> {
+    let import = program
+        .imports
+        .iter()
+        .find(|import| span_line_matches(import.span.as_ref(), line))?;
+    let module = project
+        .modules
+        .iter()
+        .find(|module| module.module == import.module)?;
+    let source = source_text_for_path(&module.path, state);
+    Some(location_json(
+        &file_uri_for_path(&module.path),
+        first_line_range(&source),
+    ))
+}
+
+fn definition_location_for_task(
+    uri: &str,
+    current_text: &str,
+    current_program: &Program,
+    project: Option<&ProjectGraph>,
+    task: &TaskDecl,
+    state: &ServerState,
+) -> Option<JsonValue> {
+    if let Some(project) = project {
+        for module in &project.modules {
+            if let Some(target) = module
+                .program
+                .tasks
+                .iter()
+                .find(|candidate| candidate.id == task.id)
+            {
+                let source = source_text_for_path(&module.path, state);
+                let range = target
+                    .span
+                    .as_ref()
+                    .map(|span| range_for_span(&source, span))
+                    .unwrap_or_else(|| first_line_range(&source));
+                return Some(location_json(&file_uri_for_path(&module.path), range));
+            }
+        }
+    }
+    current_program
+        .tasks
+        .iter()
+        .find(|candidate| candidate.id == task.id)
+        .map(|target| {
+            let range = target
+                .span
+                .as_ref()
+                .map(|span| range_for_span(current_text, span))
+                .unwrap_or_else(|| first_line_range(current_text));
+            location_json(uri, range)
+        })
+}
+
+fn call_at_line(program: &Program, line: usize) -> Option<(String, String)> {
+    for task in &program.tasks {
+        if let Some(callee_name) = call_in_statements_at_line(&task.body.statements, line) {
+            let caller_module = task
+                .module
+                .clone()
+                .unwrap_or_else(|| program.module_name().to_string());
+            return Some((caller_module, callee_name));
+        }
+    }
+    None
+}
+
+fn call_in_statements_at_line(statements: &[Statement], line: usize) -> Option<String> {
+    for statement in statements {
+        match &statement.kind {
+            StatementKind::Binding { expr, .. }
+            | StatementKind::Set { expr, .. }
+            | StatementKind::Return { expr }
+            | StatementKind::Expr { expr } => {
+                if let Some(callee_name) = call_in_expr_at_line(expr, line) {
+                    return Some(callee_name);
+                }
+            }
+            StatementKind::If {
+                condition,
+                then_block,
+                else_block,
+            } => {
+                if let Some(callee_name) = call_in_expr_at_line(condition, line) {
+                    return Some(callee_name);
+                }
+                if let Some(callee_name) = call_in_statements_at_line(&then_block.statements, line)
+                {
+                    return Some(callee_name);
+                }
+                if let Some(else_block) = else_block
+                    && let Some(callee_name) =
+                        call_in_statements_at_line(&else_block.statements, line)
+                {
+                    return Some(callee_name);
+                }
+            }
+            StatementKind::While { condition, body } => {
+                if let Some(callee_name) = call_in_expr_at_line(condition, line) {
+                    return Some(callee_name);
+                }
+                if let Some(callee_name) = call_in_statements_at_line(&body.statements, line) {
+                    return Some(callee_name);
+                }
+            }
+            StatementKind::For {
+                collection, body, ..
+            } => {
+                if let Some(callee_name) = call_in_expr_at_line(collection, line) {
+                    return Some(callee_name);
+                }
+                if let Some(callee_name) = call_in_statements_at_line(&body.statements, line) {
+                    return Some(callee_name);
+                }
+            }
+            StatementKind::Forge { body } => {
+                if let Some(callee_name) = call_in_statements_at_line(&body.statements, line) {
+                    return Some(callee_name);
+                }
+            }
+        }
+    }
+    None
+}
+
+fn call_in_expr_at_line(expr: &Expr, line: usize) -> Option<String> {
+    match &expr.kind {
+        ExprKind::Call { callee, args } => {
+            if expr_contains_line(expr, line)
+                && let Some(callee_name) = callee_path(callee)
+            {
+                return Some(callee_name);
+            }
+            args.iter()
+                .find_map(|arg| call_in_expr_at_line(arg, line))
+                .or_else(|| call_in_expr_at_line(callee, line))
+        }
+        ExprKind::Unary { expr, .. } | ExprKind::Try { expr } => call_in_expr_at_line(expr, line),
+        ExprKind::Binary { left, right, .. } => {
+            call_in_expr_at_line(left, line).or_else(|| call_in_expr_at_line(right, line))
+        }
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => call_in_expr_at_line(condition, line)
+            .or_else(|| call_in_expr_at_line(then_branch, line))
+            .or_else(|| call_in_expr_at_line(else_branch, line)),
+        ExprKind::ListLiteral { items } => items
+            .iter()
+            .find_map(|item| call_in_expr_at_line(item, line)),
+        ExprKind::MapLiteral { entries } => entries.iter().find_map(|entry| {
+            call_in_expr_at_line(&entry.key, line)
+                .or_else(|| call_in_expr_at_line(&entry.value, line))
+        }),
+        ExprKind::Index { collection, index } => {
+            call_in_expr_at_line(collection, line).or_else(|| call_in_expr_at_line(index, line))
+        }
+        ExprKind::FieldAccess { receiver, .. } => call_in_expr_at_line(receiver, line),
+        ExprKind::RecordLiteral { fields, .. } => fields
+            .iter()
+            .find_map(|field| call_in_expr_at_line(&field.expr, line)),
+        ExprKind::Raw { .. }
+        | ExprKind::StringLiteral { .. }
+        | ExprKind::IntLiteral { .. }
+        | ExprKind::FloatLiteral { .. }
+        | ExprKind::BoolLiteral { .. }
+        | ExprKind::Identifier { .. } => None,
+    }
+}
+
+fn expr_contains_line(expr: &Expr, line: usize) -> bool {
+    span_line_matches(expr.span.as_ref(), line)
+        || match &expr.kind {
+            ExprKind::Unary { expr, .. } | ExprKind::Try { expr } => expr_contains_line(expr, line),
+            ExprKind::Binary { left, right, .. } => {
+                expr_contains_line(left, line) || expr_contains_line(right, line)
+            }
+            ExprKind::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => {
+                expr_contains_line(condition, line)
+                    || expr_contains_line(then_branch, line)
+                    || expr_contains_line(else_branch, line)
+            }
+            ExprKind::Call { callee, args } => {
+                expr_contains_line(callee, line)
+                    || args.iter().any(|arg| expr_contains_line(arg, line))
+            }
+            ExprKind::ListLiteral { items } => {
+                items.iter().any(|item| expr_contains_line(item, line))
+            }
+            ExprKind::MapLiteral { entries } => entries.iter().any(|entry| {
+                expr_contains_line(&entry.key, line) || expr_contains_line(&entry.value, line)
+            }),
+            ExprKind::Index { collection, index } => {
+                expr_contains_line(collection, line) || expr_contains_line(index, line)
+            }
+            ExprKind::FieldAccess { receiver, .. } => expr_contains_line(receiver, line),
+            ExprKind::RecordLiteral { fields, .. } => fields
+                .iter()
+                .any(|field| expr_contains_line(&field.expr, line)),
+            ExprKind::Raw { .. }
+            | ExprKind::StringLiteral { .. }
+            | ExprKind::IntLiteral { .. }
+            | ExprKind::FloatLiteral { .. }
+            | ExprKind::BoolLiteral { .. }
+            | ExprKind::Identifier { .. } => false,
+        }
+}
+
+fn location_json(uri: &str, range: JsonValue) -> JsonValue {
+    json!({
+        "uri": uri,
         "range": range
     })
 }
@@ -1001,6 +1302,23 @@ fn project_root_for_uri(uri: &str) -> Option<PathBuf> {
         directory = current.parent();
     }
     None
+}
+
+fn source_text_for_path(path: &Path, state: &ServerState) -> String {
+    state
+        .documents
+        .iter()
+        .find_map(|(uri, document)| {
+            uri_to_path(uri)
+                .filter(|candidate| candidate == path)
+                .map(|_| document.text.clone())
+        })
+        .or_else(|| fs::read_to_string(path).ok())
+        .unwrap_or_default()
+}
+
+fn file_uri_for_path(path: &Path) -> String {
+    format!("file://{}", path.display())
 }
 
 fn uri_to_path(uri: &str) -> Option<PathBuf> {

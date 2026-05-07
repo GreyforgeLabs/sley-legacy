@@ -108,9 +108,9 @@ Current verified surface:
 - `sley-lsp` is available as an in-tree stdio language-server bootstrap with
   full-document sync, project-aware diagnostics over `sley.toml` workspaces
   with open-buffer overlays, formatting, document symbols, declaration
-  metadata hover, checked edit-plan code actions, and a non-mutating
-  `sley.fix.preview` command whose preview operations and transactions reuse
-  the strict edit-plan graft contracts.
+  metadata hover, import/call definition jumps, checked edit-plan code actions,
+  and a non-mutating `sley.fix.preview` command whose preview operations and
+  transactions reuse the strict edit-plan graft contracts.
 - `sley-workbench` is available as an in-tree local inspection bootstrap with
   JSON and optional static HTML panels over doctor, query, lint, edit-plan, and
   graph data; its report schema links embedded doctor, query, lint, edit-plan,
