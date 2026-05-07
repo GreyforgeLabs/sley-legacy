@@ -3951,6 +3951,24 @@
       }
     },
     {
+      "name": "lint_unknown_project_module_json",
+      "args": ["lint", "--json", "--module", "app.typo", "examples/project"],
+      "covers": [
+        "cli:lint",
+        "diagnostic:LINT_MODULE_FILTER_NOT_FOUND",
+        "json:sley.diagnostics.report.v0"
+      ],
+      "expect": {
+        "success": false,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.diagnostics.report.v0" },
+          { "pointer": "/status", "value": "error" },
+          { "pointer": "/diagnostics/0/id", "value": "LINT_MODULE_FILTER_NOT_FOUND" },
+          { "pointer": "/diagnostics/0/severity", "value": "error" }
+        ]
+      }
+    },
+    {
       "name": "lint_unused_declared_effect_rule_json",
       "args": ["lint", "--json", "--rule", "unused-declared-effect", "examples/deploy_gate.sley"],
       "covers": ["cli:lint", "lint:unused_declared_effect", "json:sley.lint.report.v0"],
