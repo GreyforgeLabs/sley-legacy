@@ -1111,6 +1111,7 @@
         "cli:doctor",
         "json:sley.doctor.report.v0",
         "readiness:agent-quickstart-path",
+        "readiness:doctor-deploy-package",
         "scaffold:agent-project-quickstart"
       ],
       "expect": {
@@ -1122,7 +1123,9 @@
           { "pointer": "/summary/module_count", "value": 2 },
           { "pointer": "/summary/task_count", "value": 4 },
           { "pointer": "/summary/call_count", "value": 11 },
-          { "pointer": "/next_actions/1/kind", "value": "inspect_calls" }
+          { "pointer": "/next_actions/1/kind", "value": "inspect_calls" },
+          { "pointer": "/next_actions/5/kind", "value": "prepare_deploy_package" },
+          { "pointer": "/next_actions/5/command/5", "value": ".sley/deploy" }
         ]
       }
     },
@@ -13227,6 +13230,7 @@
         "cli:doctor",
         "dogfood:agent-deploy-pipeline",
         "json:sley.doctor.report.v0",
+        "readiness:doctor-deploy-package",
         "readiness:doctor-verify-gate",
         "readiness:inspect-calls"
       ],
@@ -13251,7 +13255,14 @@
           { "pointer": "/next_actions/4/command/11", "value": "--secret" },
           { "pointer": "/next_actions/4/command/16", "value": "profile ready" },
           { "pointer": "/next_actions/4/command/19", "value": "plan approved" },
-          { "pointer": "/next_actions/4/command/22", "value": "staged" }
+          { "pointer": "/next_actions/4/command/22", "value": "staged" },
+          { "pointer": "/next_actions/5/kind", "value": "prepare_deploy_package" },
+          { "pointer": "/next_actions/5/command/1", "value": "deploy" },
+          { "pointer": "/next_actions/5/command/5", "value": ".sley/deploy" },
+          { "pointer": "/next_actions/5/command/14", "value": "--secret" },
+          { "pointer": "/next_actions/5/command/19", "value": "profile ready" },
+          { "pointer": "/next_actions/5/command/22", "value": "plan approved" },
+          { "pointer": "/next_actions/5/command/25", "value": "staged" }
         ]
       }
     },
@@ -13697,6 +13708,7 @@
         "dogfood:agent-project",
         "examples:project",
         "json:sley.doctor.report.v0",
+        "readiness:doctor-deploy-package",
         "readiness:doctor-verify-gate",
         "readiness:inspect-calls"
       ],
@@ -13723,7 +13735,14 @@
           { "pointer": "/next_actions/4/command/11", "value": "--secret" },
           { "pointer": "/next_actions/4/command/16", "value": "profile ready" },
           { "pointer": "/next_actions/4/command/19", "value": "plan approved" },
-          { "pointer": "/next_actions/4/command/22", "value": "staged" }
+          { "pointer": "/next_actions/4/command/22", "value": "staged" },
+          { "pointer": "/next_actions/5/kind", "value": "prepare_deploy_package" },
+          { "pointer": "/next_actions/5/command/1", "value": "deploy" },
+          { "pointer": "/next_actions/5/command/5", "value": ".sley/deploy" },
+          { "pointer": "/next_actions/5/command/14", "value": "--secret" },
+          { "pointer": "/next_actions/5/command/19", "value": "profile ready" },
+          { "pointer": "/next_actions/5/command/22", "value": "plan approved" },
+          { "pointer": "/next_actions/5/command/25", "value": "staged" }
         ]
       }
     },

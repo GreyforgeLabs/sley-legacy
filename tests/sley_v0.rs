@@ -1417,6 +1417,60 @@ fn doctor_ready_actions_seed_reachable_agent_host_calls() {
         run_json.pointer("/value/value/value"),
         Some(&serde_json::json!("profile ready | plan approved | staged"))
     );
+
+    let deploy_root = temp_project_dir("doctor-agent-deploy");
+    let deploy_root_arg = sley_string(&deploy_root);
+    let deploy_command = doctor_json
+        .pointer("/next_actions/5/command")
+        .and_then(serde_json::Value::as_array)
+        .expect("deploy action command")
+        .iter()
+        .map(|value| {
+            let segment = value.as_str().expect("string command segment");
+            if segment == ".sley/deploy" {
+                deploy_root_arg.clone()
+            } else {
+                segment.to_string()
+            }
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        doctor_json.pointer("/next_actions/5/kind"),
+        Some(&serde_json::json!("prepare_deploy_package"))
+    );
+    assert_eq!(
+        doctor_json.pointer("/next_actions/5/command/5"),
+        Some(&serde_json::json!(".sley/deploy"))
+    );
+    let deploy = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .current_dir(&repo_root)
+        .args(&deploy_command[1..])
+        .output()
+        .expect("run seeded doctor deploy action");
+    let deploy_stdout = String::from_utf8(deploy.stdout).expect("deploy stdout utf8");
+    let deploy_stderr = String::from_utf8(deploy.stderr).expect("deploy stderr utf8");
+    assert!(
+        deploy.status.success(),
+        "stdout: {deploy_stdout}\nstderr: {deploy_stderr}"
+    );
+    let deploy_json: serde_json::Value =
+        serde_json::from_str(&deploy_stdout).expect("parse deploy JSON");
+    assert_eq!(
+        deploy_json.pointer("/schema"),
+        Some(&serde_json::json!(DEPLOY_REPORT_SCHEMA))
+    );
+    assert_eq!(
+        deploy_json.pointer("/status"),
+        Some(&serde_json::json!("ready"))
+    );
+    assert_eq!(
+        deploy_json.pointer("/verify/runtime/value/value/value"),
+        Some(&serde_json::json!("profile ready | plan approved | staged"))
+    );
+    assert!(deploy_root.join("deploy-report.json").exists());
+    assert!(deploy_root.join("seal.json").exists());
+    assert!(deploy_root.join("zjx-envelope.json").exists());
+    let _ = fs::remove_dir_all(deploy_root);
 }
 
 #[test]

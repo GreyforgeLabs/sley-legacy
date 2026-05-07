@@ -159,6 +159,7 @@ const DEFAULT_SMOKE_TAGS: &[&str] = &[
     "readiness:deploy-package-artifact-inspection",
     "readiness:duplicate-import-repair-write-verify",
     "readiness:public-release-decision-packet",
+    "readiness:doctor-deploy-package",
     "readiness:doctor-verify-gate",
     "readiness:docgen-reference",
     "readiness:lsp-stdio-startup",

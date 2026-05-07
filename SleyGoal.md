@@ -324,7 +324,8 @@ Current verified surface:
   previewed unused-import write-and-verify smoke and generated scaffold
   quickstarts re-verified with local or seeded authority, plus ready-state
   doctor `verify_gate` next-actions with explicit caps and deterministic host
-  seeds before entrypoint runs, plus
+  seeds before entrypoint runs and deploy-capable doctor
+  `prepare_deploy_package` dry-run handoffs, plus
   scaffold-level and passed-verify seal/ZJX handoff next-actions, doctor/plan
   call-bearing reports that route agents to strict call-row inspection, a
   write/query/verify smoke for the call-row-driven rename-and-update-call-sites

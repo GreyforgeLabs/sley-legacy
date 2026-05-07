@@ -316,14 +316,25 @@ fn ready_actions(target: &str, query: &QueryReport, program: &Program) -> Vec<Do
             "--deny-warnings".to_string(),
         ];
         let mut run_command = vec!["sley".to_string(), "run".to_string(), "--json".to_string()];
+        let mut deploy_command = vec![
+            "sley".to_string(),
+            "deploy".to_string(),
+            "--json".to_string(),
+            "--dry-run".to_string(),
+            "--artifacts-dir".to_string(),
+            ".sley/deploy".to_string(),
+        ];
         let authority_args = cap_args(&task.effects);
         verify_command.extend(authority_args.iter().cloned());
-        run_command.extend(authority_args);
+        run_command.extend(authority_args.iter().cloned());
+        deploy_command.extend(authority_args);
         let seed_args = inferred_runtime_seed_args(program, &entry_task);
         verify_command.extend(seed_args.iter().cloned());
-        run_command.extend(seed_args);
+        run_command.extend(seed_args.iter().cloned());
+        deploy_command.extend(seed_args);
         verify_command.push(target.to_string());
         run_command.push(target.to_string());
+        deploy_command.push(target.to_string());
         actions.push(DoctorAction {
             kind: "verify_gate".to_string(),
             reason: if task.effects.is_empty() {
@@ -350,6 +361,16 @@ fn ready_actions(target: &str, query: &QueryReport, program: &Program) -> Vec<Do
             command: run_command,
             write_command: None,
         });
+        if task.effects.iter().any(|effect| effect == "Deploy") {
+            actions.push(DoctorAction {
+                kind: "prepare_deploy_package".to_string(),
+                reason:
+                    "entrypoint has Deploy authority, so prepare a local dry-run deploy package"
+                        .to_string(),
+                command: deploy_command,
+                write_command: None,
+            });
+        }
     }
 
     actions
