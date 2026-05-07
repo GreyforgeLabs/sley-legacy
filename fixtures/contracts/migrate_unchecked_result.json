@@ -1,0 +1,57 @@
+{
+  "schema": "sley.migrate.report.v0",
+  "status": "migrations",
+  "target": "examples/unchecked_result.sley",
+  "source_schema": "sley.edit_plan.report.v0",
+  "summary": {
+    "diagnostic_count": 0,
+    "migration_count": 1,
+    "raw_host_adapter_count": 0,
+    "module_declaration_count": 0,
+    "naming_cleanup_count": 0,
+    "result_propagation_count": 1,
+    "schema_drift_count": 0,
+    "issue_count": 0
+  },
+  "migrations": [
+    {
+      "kind": "propagate_unchecked_result",
+      "category": "result_propagation",
+      "surface": "block:task:app.unchecked.main:stmt:0:expr",
+      "reason": "propagate the discarded Result with `?` when the owning task can return Result",
+      "dry_run_command": [
+        "sley",
+        "fix",
+        "--json",
+        "--kind",
+        "propagate_unchecked_result",
+        "--template-surface",
+        "block:task:app.unchecked.main:stmt:0:expr",
+        "--dry-run",
+        "examples/unchecked_result.sley"
+      ],
+      "write_command": [
+        "sley",
+        "fix",
+        "--json",
+        "--kind",
+        "propagate_unchecked_result",
+        "--template-surface",
+        "block:task:app.unchecked.main:stmt:0:expr",
+        "--write",
+        "examples/unchecked_result.sley"
+      ],
+      "editable_json_pointers": ["/payload/source"],
+      "operation": {
+        "op": "ReplaceExpression",
+        "payload": {
+          "source": "fs.try_write_text(\"sley_cli_smoke.txt\", \"written\")?"
+        },
+        "target": "block:task:app.unchecked.main:stmt:0:expr"
+      }
+    }
+  ],
+  "schema_drift": [],
+  "diagnostics": [],
+  "issues": []
+}
