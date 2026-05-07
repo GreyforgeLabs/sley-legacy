@@ -1562,8 +1562,9 @@ refuse generic data disguised as Sley artifacts before compression begins.
   before deployment review when the repair is unambiguous; preview actions keep
   `command` dry-run and add optional `write_command` for the mutating command.
   Passed reports for Deploy entrypoints append a local `prepare_deploy_package`
-  dry-run action with inferred deterministic caps and host seeds when Sley can
-  derive them safely.
+  dry-run action that preserves the exact runtime gates and seeds supplied to
+  the verified CLI run, or falls back to inferred deterministic caps and host
+  seeds when building reports without CLI args.
   Non-JSON verify output prints stable lint finding IDs and nodes before next
   actions.
   The CLI smoke suite locks previewed lint-repair writes followed by strict

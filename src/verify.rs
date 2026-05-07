@@ -91,6 +91,16 @@ pub fn build_verify_report(
     gates: RuntimeGates,
     deny_warnings: bool,
 ) -> VerifyReport {
+    build_verify_report_with_runtime_args(target, program_result, gates, deny_warnings, Vec::new())
+}
+
+pub fn build_verify_report_with_runtime_args(
+    target: impl Into<String>,
+    program_result: Result<Program, Vec<Diagnostic>>,
+    gates: RuntimeGates,
+    deny_warnings: bool,
+    runtime_args: Vec<String>,
+) -> VerifyReport {
     let target = target.into();
     let program = match program_result {
         Ok(program) => program,
@@ -181,7 +191,7 @@ pub fn build_verify_report(
     let actions = if lint_finding_count > 0 {
         lint_actions(&target, checked_lint_repair.as_ref(), &query_report)
     } else {
-        passed_actions(&target, &query_report, &program)
+        passed_actions(&target, &query_report, &program, &runtime_args)
     };
     let summary = build_summary(&[], Some(&query), Some(&lint), &runtime);
 
@@ -378,7 +388,12 @@ fn inspect_calls_action(target: &str) -> VerifyAction {
     }
 }
 
-fn passed_actions(target: &str, query: &QueryReport, program: &Program) -> Vec<VerifyAction> {
+fn passed_actions(
+    target: &str,
+    query: &QueryReport,
+    program: &Program,
+    runtime_args: &[String],
+) -> Vec<VerifyAction> {
     let mut actions = vec![
         VerifyAction {
             kind: "seal_verified_target".to_string(),
@@ -410,8 +425,12 @@ fn passed_actions(target: &str, query: &QueryReport, program: &Program) -> Vec<V
                 "--artifacts-dir".to_string(),
                 ".sley/deploy".to_string(),
             ];
-            deploy_command.extend(cap_args(&task.effects));
-            deploy_command.extend(inferred_runtime_seed_args(program, &entry_task));
+            if runtime_args.is_empty() {
+                deploy_command.extend(cap_args(&task.effects));
+                deploy_command.extend(inferred_runtime_seed_args(program, &entry_task));
+            } else {
+                deploy_command.extend(runtime_args.iter().cloned());
+            }
             deploy_command.push(target.to_string());
             actions.push(VerifyAction {
                 kind: "prepare_deploy_package".to_string(),
