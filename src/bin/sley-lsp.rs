@@ -7,7 +7,8 @@ use anyhow::{Context, Result};
 use clap::Parser;
 use serde_json::{Value as JsonValue, json};
 use sley::ast::{
-    EffectDecl, Expr, ExprKind, ImportDecl, Program, Statement, StatementKind, TaskDecl, TypeDecl,
+    BindingKind, EffectDecl, Expr, ExprKind, ImportDecl, Program, Statement, StatementKind,
+    TaskDecl, TypeDecl,
 };
 use sley::authority::host_effect_contracts;
 use sley::checker::{check_program, has_errors};
@@ -182,6 +183,11 @@ fn handle_message<W: Write>(
                 send_response(writer, id, handle_signature_help(params, state))?;
             }
         }
+        "textDocument/inlayHint" => {
+            if let Some(id) = id {
+                send_response(writer, id, handle_inlay_hints(params, state))?;
+            }
+        }
         "workspace/symbol" => {
             if let Some(id) = id {
                 send_response(writer, id, handle_workspace_symbol(params, state))?;
@@ -255,6 +261,9 @@ fn initialize_result() -> JsonValue {
             },
             "signatureHelpProvider": {
                 "triggerCharacters": ["(", ","]
+            },
+            "inlayHintProvider": {
+                "resolveProvider": false
             },
             "workspaceSymbolProvider": true,
             "referencesProvider": true,
@@ -569,6 +578,32 @@ fn handle_signature_help(params: JsonValue, state: &ServerState) -> JsonValue {
     }
 }
 
+fn handle_inlay_hints(params: JsonValue, state: &ServerState) -> JsonValue {
+    let Some(uri) = text_document_uri(&params) else {
+        return json!([]);
+    };
+    let Some(document) = state.documents.get(&uri) else {
+        return json!([]);
+    };
+    let Ok(current_program) = parse_program(&document.text) else {
+        return json!([]);
+    };
+    let Some(range) = request_range(&params, &document.text) else {
+        return json!([]);
+    };
+    let project = project_graph_for_document(&uri, &current_program, state);
+    let analysis_program = project
+        .as_ref()
+        .map(|project| &project.program)
+        .unwrap_or(&current_program);
+    json!(inlay_hints_for_program(
+        &current_program,
+        analysis_program,
+        &document.text,
+        range,
+    ))
+}
+
 fn handle_workspace_symbol(params: JsonValue, state: &ServerState) -> JsonValue {
     let query = params
         .get("query")
@@ -750,6 +785,39 @@ fn position_line_and_character(position: &JsonValue) -> Option<(usize, usize)> {
         position.get("line")?.as_u64()? as usize,
         position.get("character")?.as_u64()? as usize,
     ))
+}
+
+fn request_range(params: &JsonValue, source: &str) -> Option<(usize, usize, usize, usize)> {
+    if let Some(range) = params.get("range") {
+        let (start_line, start_character) = position_line_and_character(range.get("start")?)?;
+        let (end_line, end_character) = position_line_and_character(range.get("end")?)?;
+        return Some((start_line, start_character, end_line, end_character));
+    }
+    let full_range = full_document_range(source);
+    Some((
+        full_range.pointer("/start/line")?.as_u64()? as usize,
+        full_range.pointer("/start/character")?.as_u64()? as usize,
+        full_range.pointer("/end/line")?.as_u64()? as usize,
+        full_range.pointer("/end/character")?.as_u64()? as usize,
+    ))
+}
+
+fn position_in_request_range(
+    range: (usize, usize, usize, usize),
+    line: usize,
+    character: usize,
+) -> bool {
+    let (start_line, start_character, end_line, end_character) = range;
+    if line < start_line || line > end_line {
+        return false;
+    }
+    if line == start_line && character < start_character {
+        return false;
+    }
+    if line == end_line && character > end_character {
+        return false;
+    }
+    true
 }
 
 fn handle_code_actions(params: JsonValue, state: &ServerState) -> JsonValue {
@@ -1581,6 +1649,359 @@ fn task_signature_help(
         "activeSignature": 0,
         "activeParameter": bounded_active_parameter
     })
+}
+
+fn inlay_hints_for_program(
+    current_program: &Program,
+    analysis_program: &Program,
+    source: &str,
+    range: (usize, usize, usize, usize),
+) -> Vec<JsonValue> {
+    let mut hints = Vec::new();
+    for task in &current_program.tasks {
+        let caller_module = task
+            .module
+            .clone()
+            .unwrap_or_else(|| current_program.module_name().to_string());
+        collect_inlay_hints_from_statements(
+            analysis_program,
+            &caller_module,
+            source,
+            &task.body.statements,
+            range,
+            &mut hints,
+        );
+    }
+    hints.sort_by_key(inlay_hint_sort_key);
+    hints
+}
+
+fn collect_inlay_hints_from_statements(
+    analysis_program: &Program,
+    caller_module: &str,
+    source: &str,
+    statements: &[Statement],
+    range: (usize, usize, usize, usize),
+    hints: &mut Vec<JsonValue>,
+) {
+    for statement in statements {
+        match &statement.kind {
+            StatementKind::Binding { expr, .. }
+            | StatementKind::Set { expr, .. }
+            | StatementKind::Return { expr }
+            | StatementKind::Expr { expr } => collect_inlay_hints_from_expr(
+                analysis_program,
+                caller_module,
+                source,
+                expr,
+                range,
+                hints,
+            ),
+            StatementKind::If {
+                condition,
+                then_block,
+                else_block,
+            } => {
+                collect_inlay_hints_from_expr(
+                    analysis_program,
+                    caller_module,
+                    source,
+                    condition,
+                    range,
+                    hints,
+                );
+                collect_inlay_hints_from_statements(
+                    analysis_program,
+                    caller_module,
+                    source,
+                    &then_block.statements,
+                    range,
+                    hints,
+                );
+                if let Some(else_block) = else_block {
+                    collect_inlay_hints_from_statements(
+                        analysis_program,
+                        caller_module,
+                        source,
+                        &else_block.statements,
+                        range,
+                        hints,
+                    );
+                }
+            }
+            StatementKind::While { condition, body } => {
+                collect_inlay_hints_from_expr(
+                    analysis_program,
+                    caller_module,
+                    source,
+                    condition,
+                    range,
+                    hints,
+                );
+                collect_inlay_hints_from_statements(
+                    analysis_program,
+                    caller_module,
+                    source,
+                    &body.statements,
+                    range,
+                    hints,
+                );
+            }
+            StatementKind::For {
+                collection, body, ..
+            } => {
+                collect_inlay_hints_from_expr(
+                    analysis_program,
+                    caller_module,
+                    source,
+                    collection,
+                    range,
+                    hints,
+                );
+                collect_inlay_hints_from_statements(
+                    analysis_program,
+                    caller_module,
+                    source,
+                    &body.statements,
+                    range,
+                    hints,
+                );
+            }
+            StatementKind::Forge { body } => collect_inlay_hints_from_statements(
+                analysis_program,
+                caller_module,
+                source,
+                &body.statements,
+                range,
+                hints,
+            ),
+        }
+    }
+}
+
+fn collect_inlay_hints_from_expr(
+    analysis_program: &Program,
+    caller_module: &str,
+    source: &str,
+    expr: &Expr,
+    range: (usize, usize, usize, usize),
+    hints: &mut Vec<JsonValue>,
+) {
+    match &expr.kind {
+        ExprKind::Call { callee, args } => {
+            if let Some(callee_name) = callee_path(callee)
+                && let TaskResolution::Resolved { index, .. } =
+                    resolve_task(analysis_program, caller_module, &callee_name)
+            {
+                let task = &analysis_program.tasks[index];
+                let parameter_takes = task
+                    .takes
+                    .iter()
+                    .filter(|take| take.binding_kind != BindingKind::Gate)
+                    .collect::<Vec<_>>();
+                for (arg, take) in args.iter().zip(parameter_takes) {
+                    if let Some(hint) = inlay_hint_for_arg(source, arg, take, range) {
+                        hints.push(hint);
+                    }
+                }
+            }
+            collect_inlay_hints_from_expr(
+                analysis_program,
+                caller_module,
+                source,
+                callee,
+                range,
+                hints,
+            );
+            for arg in args {
+                collect_inlay_hints_from_expr(
+                    analysis_program,
+                    caller_module,
+                    source,
+                    arg,
+                    range,
+                    hints,
+                );
+            }
+        }
+        ExprKind::Unary { expr, .. } | ExprKind::Try { expr } => {
+            collect_inlay_hints_from_expr(
+                analysis_program,
+                caller_module,
+                source,
+                expr,
+                range,
+                hints,
+            );
+        }
+        ExprKind::Binary { left, right, .. } => {
+            collect_inlay_hints_from_expr(
+                analysis_program,
+                caller_module,
+                source,
+                left,
+                range,
+                hints,
+            );
+            collect_inlay_hints_from_expr(
+                analysis_program,
+                caller_module,
+                source,
+                right,
+                range,
+                hints,
+            );
+        }
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
+            collect_inlay_hints_from_expr(
+                analysis_program,
+                caller_module,
+                source,
+                condition,
+                range,
+                hints,
+            );
+            collect_inlay_hints_from_expr(
+                analysis_program,
+                caller_module,
+                source,
+                then_branch,
+                range,
+                hints,
+            );
+            collect_inlay_hints_from_expr(
+                analysis_program,
+                caller_module,
+                source,
+                else_branch,
+                range,
+                hints,
+            );
+        }
+        ExprKind::ListLiteral { items } => {
+            for item in items {
+                collect_inlay_hints_from_expr(
+                    analysis_program,
+                    caller_module,
+                    source,
+                    item,
+                    range,
+                    hints,
+                );
+            }
+        }
+        ExprKind::MapLiteral { entries } => {
+            for entry in entries {
+                collect_inlay_hints_from_expr(
+                    analysis_program,
+                    caller_module,
+                    source,
+                    &entry.key,
+                    range,
+                    hints,
+                );
+                collect_inlay_hints_from_expr(
+                    analysis_program,
+                    caller_module,
+                    source,
+                    &entry.value,
+                    range,
+                    hints,
+                );
+            }
+        }
+        ExprKind::Index { collection, index } => {
+            collect_inlay_hints_from_expr(
+                analysis_program,
+                caller_module,
+                source,
+                collection,
+                range,
+                hints,
+            );
+            collect_inlay_hints_from_expr(
+                analysis_program,
+                caller_module,
+                source,
+                index,
+                range,
+                hints,
+            );
+        }
+        ExprKind::FieldAccess { receiver, .. } => collect_inlay_hints_from_expr(
+            analysis_program,
+            caller_module,
+            source,
+            receiver,
+            range,
+            hints,
+        ),
+        ExprKind::RecordLiteral { fields, .. } => {
+            for field in fields {
+                collect_inlay_hints_from_expr(
+                    analysis_program,
+                    caller_module,
+                    source,
+                    &field.expr,
+                    range,
+                    hints,
+                );
+            }
+        }
+        ExprKind::Raw { .. }
+        | ExprKind::StringLiteral { .. }
+        | ExprKind::IntLiteral { .. }
+        | ExprKind::FloatLiteral { .. }
+        | ExprKind::BoolLiteral { .. }
+        | ExprKind::Identifier { .. } => {}
+    }
+}
+
+fn inlay_hint_for_arg(
+    source: &str,
+    arg: &Expr,
+    take: &sley::ast::TakeDecl,
+    range: (usize, usize, usize, usize),
+) -> Option<JsonValue> {
+    let span = arg.span.as_ref()?;
+    let line = span.line.saturating_sub(1);
+    let character = span.column.saturating_sub(1);
+    if !position_in_request_range(range, line, character) {
+        return None;
+    }
+    let line_width = source_line_width(source, line);
+    if character > line_width {
+        return None;
+    }
+    Some(json!({
+        "position": {
+            "line": line,
+            "character": character
+        },
+        "label": format!("{}:", take.name),
+        "kind": 2,
+        "tooltip": format!("{}: {}", take.name, take.ty.display()),
+        "paddingRight": true
+    }))
+}
+
+fn inlay_hint_sort_key(hint: &JsonValue) -> (u64, u64, String) {
+    (
+        hint.pointer("/position/line")
+            .and_then(JsonValue::as_u64)
+            .unwrap_or_default(),
+        hint.pointer("/position/character")
+            .and_then(JsonValue::as_u64)
+            .unwrap_or_default(),
+        hint.get("label")
+            .and_then(JsonValue::as_str)
+            .unwrap_or_default()
+            .to_string(),
+    )
 }
 
 fn completion_items_for_program(

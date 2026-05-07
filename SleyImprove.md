@@ -196,9 +196,9 @@ Rules:
   open-buffer overlays, all-open-buffer diagnostic refresh, formatting,
   document symbols, folding ranges, declaration metadata hover, workspace
   symbols, selection ranges, project completions, import/call definition
-  jumps, project task signature help, exact-range task references, document
-  highlights, import document links, prepared cursor-aware project task rename
-  edits, edit-plan code actions, and
+  jumps, project task signature help, project task parameter inlay hints,
+  exact-range task references, document highlights, import document links,
+  prepared cursor-aware project task rename edits, edit-plan code actions, and
   non-mutating `sley.fix.preview` payloads whose editor preview operations and
   transactions reuse the strict edit-plan graft contracts.
 - `sley-workbench` exposes a local read-only inspection report and optional
