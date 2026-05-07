@@ -33,6 +33,8 @@ task orphan -> Text {
             "--json",
             "--html",
             html_path.to_str().expect("html path"),
+            "--slice",
+            "task:app.workbench.orphan",
             source_path.to_str().expect("source path"),
         ])
         .output()
@@ -57,6 +59,14 @@ task orphan -> Text {
         report.pointer("/summary/lint_finding_count"),
         Some(&json!(1))
     );
+    assert_eq!(
+        report.pointer("/graph_slice/focus/id"),
+        Some(&json!("task:app.workbench.orphan"))
+    );
+    assert_eq!(
+        report.pointer("/graph_slice/focus/kind"),
+        Some(&json!("task"))
+    );
     let template_kinds = report
         .pointer("/plan/graft_templates")
         .and_then(JsonValue::as_array)
@@ -75,7 +85,9 @@ task orphan -> Text {
 
     let html = fs::read_to_string(&html_path).expect("read workbench HTML");
     assert!(html.contains("Sley Workbench"));
+    assert!(html.contains("Graph Slice"));
     assert!(html.contains("app.workbench.orphan"));
+    assert!(html.contains("Delete Affordances"));
     assert!(html.contains("delete_unused_private_task"));
 }
 

@@ -400,6 +400,11 @@ fn render_html(report: &WorkbenchReport) -> Result<String> {
         .as_ref()
         .map(render_graph_panel)
         .unwrap_or_else(|| "<p class=\"muted\">Graph is unavailable.</p>".to_string());
+    let graph_slice = report
+        .graph_slice
+        .as_ref()
+        .map(render_graph_slice_panel)
+        .unwrap_or_else(|| "<p class=\"muted\">Run with <code>--slice &lt;node-id&gt;</code> to inspect a focused graph slice.</p>".to_string());
 
     Ok(format!(
         r#"<!doctype html>
@@ -465,6 +470,8 @@ th {{ background: var(--surface); font-size: 12px; text-transform: uppercase; co
 td {{ font-size: 14px; }}
 code, pre {{ font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }}
 pre {{ overflow: auto; padding: 12px; border: 1px solid var(--line); background: var(--surface); }}
+.slice-focus {{ margin-bottom: 12px; }}
+.slice-focus code {{ font-weight: 700; }}
 .muted {{ color: var(--muted); }}
 </style>
 </head>
@@ -495,6 +502,10 @@ pre {{ overflow: auto; padding: 12px; border: 1px solid var(--line); background:
     {diagnostics}
   </section>
   <section>
+    <h2>Graph Slice</h2>
+    {graph_slice}
+  </section>
+  <section>
     <h2>Graph</h2>
     {graph}
   </section>
@@ -514,6 +525,7 @@ pre {{ overflow: auto; padding: 12px; border: 1px solid var(--line); background:
         lint = lint,
         templates = templates,
         diagnostics = diagnostics,
+        graph_slice = graph_slice,
         graph = graph,
         summary_json = escape_html(&summary_json)
     ))
@@ -627,6 +639,110 @@ fn render_graph_panel(graph: &WorkbenchGraphPanel) -> String {
         .collect::<String>();
     format!(
         "<table><thead><tr><th>Module</th><th>Imports</th><th>Types</th><th>Effects</th><th>Tasks</th></tr></thead><tbody>{rows}</tbody></table>"
+    )
+}
+
+fn render_graph_slice_panel(slice: &SymbolGraphSlice) -> String {
+    let focus = format!(
+        "<p class=\"slice-focus\"><span class=\"muted\">Focused {}</span> <code>{}</code> in <code>{}</code></p>",
+        escape_html(&slice.focus.kind),
+        escape_html(&slice.focus.id),
+        escape_html(&slice.focus.module)
+    );
+    let metrics = [
+        ("Imports", slice.imports.len()),
+        ("Types", slice.types.len()),
+        ("Effects", slice.effects.len()),
+        ("Tasks", slice.tasks.len()),
+        ("Outbound Calls", slice.outbound_calls.len()),
+        ("Inbound Calls", slice.inbound_calls.len()),
+        ("Insert Affordances", slice.insert_affordances.len()),
+        ("Move Affordances", slice.move_affordances.len()),
+        ("Delete Affordances", slice.delete_affordances.len()),
+        ("Replace Affordances", slice.replace_affordances.len()),
+    ]
+    .into_iter()
+    .map(|(label, value)| {
+        format!(
+            "<div class=\"metric\"><strong>{value}</strong><span>{}</span></div>",
+            escape_html(label)
+        )
+    })
+    .collect::<String>();
+    let calls = render_slice_calls(slice);
+    let affordances = render_slice_affordances(slice);
+    format!(
+        "{focus}<section class=\"metrics\">{metrics}</section><h3>Calls</h3>{calls}<h3>Affordances</h3>{affordances}"
+    )
+}
+
+fn render_slice_calls(slice: &SymbolGraphSlice) -> String {
+    if slice.outbound_calls.is_empty() && slice.inbound_calls.is_empty() {
+        return "<p class=\"muted\">No task calls in this slice.</p>".to_string();
+    }
+    let rows = slice
+        .outbound_calls
+        .iter()
+        .map(|call| ("outbound", call))
+        .chain(slice.inbound_calls.iter().map(|call| ("inbound", call)))
+        .map(|(direction, call)| {
+            format!(
+                "<tr><td>{}</td><td><code>{}</code></td><td><code>{}</code></td><td>{}</td><td><code>{}</code></td></tr>",
+                escape_html(direction),
+                escape_html(&call.from),
+                escape_html(&call.callee),
+                escape_html(&call.status),
+                escape_html(call.target.as_deref().unwrap_or(""))
+            )
+        })
+        .collect::<String>();
+    format!(
+        "<table><thead><tr><th>Direction</th><th>From</th><th>Callee</th><th>Status</th><th>Target</th></tr></thead><tbody>{rows}</tbody></table>"
+    )
+}
+
+fn render_slice_affordances(slice: &SymbolGraphSlice) -> String {
+    let mut rows = Vec::new();
+    rows.extend(slice.insert_affordances.iter().map(|affordance| {
+        format!(
+            "<tr><td>insert</td><td>{}</td><td><code>{}</code></td><td>max position {}</td></tr>",
+            escape_html(&affordance.target_kind),
+            escape_html(&affordance.target),
+            affordance.max_position
+        )
+    }));
+    rows.extend(slice.move_affordances.iter().map(|affordance| {
+        format!(
+            "<tr><td>move</td><td>{}</td><td><code>{}</code></td><td>parent <code>{}</code>, {} destinations</td></tr>",
+            escape_html(&affordance.target_kind),
+            escape_html(&affordance.target),
+            escape_html(&affordance.parent),
+            affordance.destinations.len()
+        )
+    }));
+    rows.extend(slice.delete_affordances.iter().map(|affordance| {
+        format!(
+            "<tr><td>delete</td><td>{}</td><td><code>{}</code></td><td>parent <code>{}</code>, position {}</td></tr>",
+            escape_html(&affordance.target_kind),
+            escape_html(&affordance.target),
+            escape_html(&affordance.parent),
+            affordance.position
+        )
+    }));
+    rows.extend(slice.replace_affordances.iter().map(|affordance| {
+        format!(
+            "<tr><td>replace</td><td>{}</td><td><code>{}</code></td><td>parent <code>{}</code></td></tr>",
+            escape_html(&affordance.target_kind),
+            escape_html(&affordance.target),
+            escape_html(&affordance.parent)
+        )
+    }));
+    if rows.is_empty() {
+        return "<p class=\"muted\">No graft affordances in this slice.</p>".to_string();
+    }
+    format!(
+        "<table><thead><tr><th>Kind</th><th>Target Kind</th><th>Target</th><th>Detail</th></tr></thead><tbody>{}</tbody></table>",
+        rows.join("")
     )
 }
 
