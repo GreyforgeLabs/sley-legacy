@@ -14518,6 +14518,11 @@ task main -> Text {
   bind user: t.User = t.User { name: "Ada" }
   return user.name
 }
+
+task total -> t.Score {
+  bind scores: t.Scores = [40, 2]
+  return scores[0] + scores[1]
+}
 "#,
     )
     .expect("write main module");
@@ -14529,6 +14534,9 @@ module app.types
 export type User = {
   slot name: Text
 }
+
+export type Score = Int
+export type Scores = List<Score>
 "#,
     )
     .expect("write types module");
