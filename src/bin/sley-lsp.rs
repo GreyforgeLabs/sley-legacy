@@ -152,6 +152,11 @@ fn handle_message<W: Write>(
                 send_response(writer, id, handle_folding_ranges(params, state))?;
             }
         }
+        "textDocument/selectionRange" => {
+            if let Some(id) = id {
+                send_response(writer, id, handle_selection_ranges(params, state))?;
+            }
+        }
         "textDocument/hover" => {
             if let Some(id) = id {
                 send_response(writer, id, handle_hover(params, state))?;
@@ -238,6 +243,7 @@ fn initialize_result() -> JsonValue {
             "documentFormattingProvider": true,
             "documentSymbolProvider": true,
             "foldingRangeProvider": true,
+            "selectionRangeProvider": true,
             "hoverProvider": true,
             "definitionProvider": true,
             "documentLinkProvider": {
@@ -385,6 +391,32 @@ fn handle_folding_ranges(params: JsonValue, state: &ServerState) -> JsonValue {
         return json!([]);
     };
     json!(folding_ranges_for_program(&document.text, &program))
+}
+
+fn handle_selection_ranges(params: JsonValue, state: &ServerState) -> JsonValue {
+    let Some(uri) = text_document_uri(&params) else {
+        return json!([]);
+    };
+    let Some(document) = state.documents.get(&uri) else {
+        return json!([]);
+    };
+    let Ok(program) = parse_program(&document.text) else {
+        return json!([]);
+    };
+    let positions = params
+        .get("positions")
+        .and_then(JsonValue::as_array)
+        .cloned()
+        .unwrap_or_default();
+    let selection_ranges = positions
+        .iter()
+        .filter_map(position_line_and_character)
+        .map(|(line, character)| {
+            selection_range_at_position(&program, &document.text, line, character)
+                .unwrap_or_else(|| selection_range_json(full_document_range(&document.text), None))
+        })
+        .collect::<Vec<_>>();
+    json!(selection_ranges)
 }
 
 fn handle_hover(params: JsonValue, state: &ServerState) -> JsonValue {
@@ -1105,6 +1137,250 @@ fn folding_range_sort_key(range: &JsonValue) -> (u64, u64) {
             .and_then(JsonValue::as_u64)
             .unwrap_or_default(),
     )
+}
+
+fn selection_range_at_position(
+    program: &Program,
+    source: &str,
+    line: usize,
+    character: usize,
+) -> Option<JsonValue> {
+    let task_parent = enclosing_task_selection_range(program, source, line, character);
+    if let Some((leaf_range, expression_range)) =
+        call_selection_ranges_at_position(program, source, line, character)
+    {
+        let parent = expression_range
+            .filter(|range| range != &leaf_range)
+            .map(|range| selection_range_json(range, task_parent.clone()))
+            .or(task_parent);
+        return Some(selection_range_json(leaf_range, parent));
+    }
+    for task in &program.tasks {
+        if let Some(name_range) = range_for_task_name(source, task)
+            && position_in_range(&name_range, line, character)
+        {
+            let parent = task
+                .span
+                .as_ref()
+                .and_then(|span| range_for_braced_span(source, span))
+                .map(|range| selection_range_json(range, None));
+            return Some(selection_range_json(name_range, parent));
+        }
+    }
+    for import in &program.imports {
+        if let Some(module_range) = range_for_import_module(source, import)
+            && position_in_range(&module_range, line, character)
+        {
+            let parent = import
+                .span
+                .as_ref()
+                .map(|span| line_range_for_span(source, span))
+                .map(|range| selection_range_json(range, None));
+            return Some(selection_range_json(module_range, parent));
+        }
+    }
+    task_parent
+}
+
+fn enclosing_task_selection_range(
+    program: &Program,
+    source: &str,
+    line: usize,
+    character: usize,
+) -> Option<JsonValue> {
+    for task in &program.tasks {
+        let Some(range) = task
+            .span
+            .as_ref()
+            .and_then(|span| range_for_braced_span(source, span))
+        else {
+            continue;
+        };
+        if position_in_range(&range, line, character) {
+            return Some(selection_range_json(range, None));
+        }
+    }
+    None
+}
+
+fn call_selection_ranges_at_position(
+    program: &Program,
+    source: &str,
+    line: usize,
+    character: usize,
+) -> Option<(JsonValue, Option<JsonValue>)> {
+    for task in &program.tasks {
+        if let Some(selection) =
+            call_selection_ranges_in_statements(&task.body.statements, source, line, character)
+        {
+            return Some(selection);
+        }
+    }
+    None
+}
+
+fn call_selection_ranges_in_statements(
+    statements: &[Statement],
+    source: &str,
+    line: usize,
+    character: usize,
+) -> Option<(JsonValue, Option<JsonValue>)> {
+    for statement in statements {
+        match &statement.kind {
+            StatementKind::Binding { expr, .. }
+            | StatementKind::Set { expr, .. }
+            | StatementKind::Return { expr }
+            | StatementKind::Expr { expr } => {
+                if let Some(selection) =
+                    call_selection_ranges_in_expr(expr, source, line, character)
+                {
+                    return Some(selection);
+                }
+            }
+            StatementKind::If {
+                condition,
+                then_block,
+                else_block,
+            } => {
+                if let Some(selection) =
+                    call_selection_ranges_in_expr(condition, source, line, character)
+                {
+                    return Some(selection);
+                }
+                if let Some(selection) = call_selection_ranges_in_statements(
+                    &then_block.statements,
+                    source,
+                    line,
+                    character,
+                ) {
+                    return Some(selection);
+                }
+                if let Some(else_block) = else_block
+                    && let Some(selection) = call_selection_ranges_in_statements(
+                        &else_block.statements,
+                        source,
+                        line,
+                        character,
+                    )
+                {
+                    return Some(selection);
+                }
+            }
+            StatementKind::While { condition, body } => {
+                if let Some(selection) =
+                    call_selection_ranges_in_expr(condition, source, line, character)
+                {
+                    return Some(selection);
+                }
+                if let Some(selection) =
+                    call_selection_ranges_in_statements(&body.statements, source, line, character)
+                {
+                    return Some(selection);
+                }
+            }
+            StatementKind::For {
+                collection, body, ..
+            } => {
+                if let Some(selection) =
+                    call_selection_ranges_in_expr(collection, source, line, character)
+                {
+                    return Some(selection);
+                }
+                if let Some(selection) =
+                    call_selection_ranges_in_statements(&body.statements, source, line, character)
+                {
+                    return Some(selection);
+                }
+            }
+            StatementKind::Forge { body } => {
+                if let Some(selection) =
+                    call_selection_ranges_in_statements(&body.statements, source, line, character)
+                {
+                    return Some(selection);
+                }
+            }
+        }
+    }
+    None
+}
+
+fn call_selection_ranges_in_expr(
+    expr: &Expr,
+    source: &str,
+    line: usize,
+    character: usize,
+) -> Option<(JsonValue, Option<JsonValue>)> {
+    match &expr.kind {
+        ExprKind::Call { callee, args } => {
+            if let Some(selection) = call_selection_ranges_in_expr(callee, source, line, character)
+            {
+                return Some(selection);
+            }
+            for arg in args {
+                if let Some(selection) = call_selection_ranges_in_expr(arg, source, line, character)
+                {
+                    return Some(selection);
+                }
+            }
+            let expression_range =
+                range_for_expr_source_at_position(source, expr, line, character)?;
+            if let Some(callee_name) = callee_path(callee) {
+                let leaf_name = callee_leaf_name(&callee_name);
+                if let Some(leaf_range) =
+                    range_for_callee_leaf(source, expr, callee, &callee_name, leaf_name)
+                    && position_in_range(&leaf_range, line, character)
+                {
+                    return Some((leaf_range, Some(expression_range)));
+                }
+            }
+            Some((expression_range, None))
+        }
+        ExprKind::Unary { expr, .. } | ExprKind::Try { expr } => {
+            call_selection_ranges_in_expr(expr, source, line, character)
+        }
+        ExprKind::Binary { left, right, .. } => {
+            call_selection_ranges_in_expr(left, source, line, character)
+                .or_else(|| call_selection_ranges_in_expr(right, source, line, character))
+        }
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => call_selection_ranges_in_expr(condition, source, line, character)
+            .or_else(|| call_selection_ranges_in_expr(then_branch, source, line, character))
+            .or_else(|| call_selection_ranges_in_expr(else_branch, source, line, character)),
+        ExprKind::ListLiteral { items } => items
+            .iter()
+            .find_map(|item| call_selection_ranges_in_expr(item, source, line, character)),
+        ExprKind::MapLiteral { entries } => entries.iter().find_map(|entry| {
+            call_selection_ranges_in_expr(&entry.key, source, line, character)
+                .or_else(|| call_selection_ranges_in_expr(&entry.value, source, line, character))
+        }),
+        ExprKind::Index { collection, index } => {
+            call_selection_ranges_in_expr(collection, source, line, character)
+                .or_else(|| call_selection_ranges_in_expr(index, source, line, character))
+        }
+        ExprKind::FieldAccess { receiver, .. } => {
+            call_selection_ranges_in_expr(receiver, source, line, character)
+        }
+        ExprKind::RecordLiteral { fields, .. } => fields
+            .iter()
+            .find_map(|field| call_selection_ranges_in_expr(&field.expr, source, line, character)),
+        ExprKind::Raw { .. }
+        | ExprKind::StringLiteral { .. }
+        | ExprKind::IntLiteral { .. }
+        | ExprKind::FloatLiteral { .. }
+        | ExprKind::BoolLiteral { .. }
+        | ExprKind::Identifier { .. } => None,
+    }
+}
+
+fn selection_range_json(range: JsonValue, parent: Option<JsonValue>) -> JsonValue {
+    let mut selection = json!({ "range": range });
+    if let Some(parent) = parent {
+        selection["parent"] = parent;
+    }
+    selection
 }
 
 fn symbol_json(
@@ -2616,6 +2892,38 @@ fn folding_range_for_braced_region(source: &str, span: &SourceSpan) -> Option<Js
     None
 }
 
+fn range_for_braced_span(source: &str, span: &SourceSpan) -> Option<JsonValue> {
+    let folding_range = folding_range_for_braced_region(source, span)?;
+    let end_line = folding_range
+        .get("endLine")
+        .and_then(JsonValue::as_u64)
+        .map(|line| line as usize)?;
+    Some(json!({
+        "start": {
+            "line": span.line.saturating_sub(1),
+            "character": span.column.saturating_sub(1)
+        },
+        "end": {
+            "line": end_line,
+            "character": source_line_width(source, end_line)
+        }
+    }))
+}
+
+fn line_range_for_span(source: &str, span: &SourceSpan) -> JsonValue {
+    let line = span.line.saturating_sub(1);
+    json!({
+        "start": {
+            "line": line,
+            "character": span.column.saturating_sub(1)
+        },
+        "end": {
+            "line": line,
+            "character": source_line_width(source, line)
+        }
+    })
+}
+
 fn range_for_callee_leaf(
     source: &str,
     expr: &Expr,
@@ -2776,6 +3084,14 @@ fn source_line_start_byte(source: &str, target_line: usize) -> Option<usize> {
         }
     }
     None
+}
+
+fn source_line_width(source: &str, line: usize) -> usize {
+    source
+        .lines()
+        .nth(line)
+        .map(|line| line.chars().count())
+        .unwrap_or_default()
 }
 
 fn leading_span_for_expr(expr: &Expr) -> Option<&SourceSpan> {
@@ -3387,6 +3703,34 @@ fn active_parameter_for_call_at_position(
     line: usize,
     character: usize,
 ) -> Option<usize> {
+    let (line_text, expression_start_byte, _) =
+        expr_source_offsets_at_position(source, expr, line, character)?;
+    let cursor_byte = byte_offset_for_character(line_text, character);
+    active_parameter_for_call_source(&expr.source, cursor_byte - expression_start_byte)
+}
+
+fn range_for_expr_source_at_position(
+    source: &str,
+    expr: &Expr,
+    line: usize,
+    character: usize,
+) -> Option<JsonValue> {
+    let (line_text, expression_start_byte, expression_end_byte) =
+        expr_source_offsets_at_position(source, expr, line, character)?;
+    Some(range_for_byte_offsets(
+        line_text,
+        line,
+        expression_start_byte,
+        expression_end_byte,
+    ))
+}
+
+fn expr_source_offsets_at_position<'a>(
+    source: &'a str,
+    expr: &Expr,
+    line: usize,
+    character: usize,
+) -> Option<(&'a str, usize, usize)> {
     if expr.source.contains('\n') {
         return None;
     }
@@ -3407,10 +3751,7 @@ fn active_parameter_for_call_at_position(
         let expression_start_byte = search_start_byte + relative_start_byte;
         let expression_end_byte = expression_start_byte + expr.source.len();
         if cursor_byte >= expression_start_byte && cursor_byte <= expression_end_byte {
-            return active_parameter_for_call_source(
-                &expr.source,
-                cursor_byte - expression_start_byte,
-            );
+            return Some((line_text, expression_start_byte, expression_end_byte));
         }
         search_start_byte = expression_end_byte.max(expression_start_byte + 1);
     }

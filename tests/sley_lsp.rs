@@ -47,6 +47,10 @@ fn lsp_publishes_diagnostics_formats_symbols_and_previews_code_actions() {
         Some(&json!(true))
     );
     assert_eq!(
+        initialized.pointer("/result/capabilities/selectionRangeProvider"),
+        Some(&json!(true))
+    );
+    assert_eq!(
         initialized.pointer("/result/capabilities/executeCommandProvider/commands/0"),
         Some(&json!("sley.fix.preview"))
     );
@@ -856,6 +860,41 @@ export task other -> Text {
         Some(&json!(1))
     );
 
+    write_lsp(
+        &mut stdin,
+        json!({
+            "jsonrpc": "2.0",
+            "id": 13,
+            "method": "textDocument/selectionRange",
+            "params": {
+                "textDocument": {
+                    "uri": main_uri
+                },
+                "positions": [{
+                    "line": 6,
+                    "character": 20
+                }]
+            }
+        }),
+    );
+    let selection_range = read_response(&mut reader, 13);
+    assert_eq!(
+        selection_range.pointer("/result/0/range/start/line"),
+        Some(&json!(6))
+    );
+    assert_eq!(
+        selection_range.pointer("/result/0/range/start/character"),
+        Some(&json!(19))
+    );
+    assert_eq!(
+        selection_range.pointer("/result/0/parent/range/start/character"),
+        Some(&json!(9))
+    );
+    assert_eq!(
+        selection_range.pointer("/result/0/parent/parent/range/start/line"),
+        Some(&json!(4))
+    );
+
     let changed_pipeline_source =
         pipeline_source.replace("export task message", "export task absent");
     write_lsp(
@@ -907,12 +946,12 @@ export task other -> Text {
         &mut stdin,
         json!({
             "jsonrpc": "2.0",
-            "id": 13,
+            "id": 14,
             "method": "shutdown",
             "params": null
         }),
     );
-    let shutdown = read_response(&mut reader, 13);
+    let shutdown = read_response(&mut reader, 14);
     assert!(shutdown.get("result").is_some());
     write_lsp(
         &mut stdin,
