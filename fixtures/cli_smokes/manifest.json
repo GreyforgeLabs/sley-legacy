@@ -1621,6 +1621,98 @@
       }
     },
     {
+      "name": "plan_effect_surface_graft_templates_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/effect-surface/main.sley",
+          "content": "module app.effect_surface\n\neffect Audit\n\ntask main -> Int uses Audit {\n  return 1\n}\n"
+        }
+      ],
+      "args": [
+        "plan",
+        "--json",
+        "--graft-templates",
+        "--template-surface",
+        "effect:app.effect_surface.Audit",
+        "{tmp}/effect-surface/main.sley"
+      ],
+      "covers": [
+        "cli:plan",
+        "cli:smoke-setup-files",
+        "graft:templates",
+        "graft:templates:declaration-surface",
+        "graph-slice:move-affordances",
+        "json:sley.edit_plan.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.edit_plan.report.v0" },
+          { "pointer": "/status", "value": "warnings" },
+          { "pointer": "/graft_templates/0/kind", "value": "move_effect" },
+          { "pointer": "/graft_templates/0/surface", "value": "effect:app.effect_surface.Audit" },
+          { "pointer": "/graft_templates/0/operation/op", "value": "MoveNode" },
+          { "pointer": "/graft_templates/0/operation/target", "value": "effect:app.effect_surface.Audit" },
+          { "pointer": "/graft_templates/0/operation/payload/parent", "value": "module:app.effect_surface:effects" },
+          { "pointer": "/graft_templates/0/operation/payload/position", "value": 0 },
+          { "pointer": "/graft_templates/0/editable_json_pointers/0", "value": "/payload/position" }
+        ],
+        "stdout_json_absent": [
+          "/graft_templates/1"
+        ]
+      }
+    },
+    {
+      "name": "plan_import_surface_graft_templates_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/import-surface/sley.toml",
+          "content": "[project]\nname = \"import-surface\"\nroot = \"src\"\nentry = \"app.main\"\n"
+        },
+        {
+          "path": "{tmp}/import-surface/src/app/main.sley",
+          "content": "module app.main\n\nimport app.shared as shared\n\ntask main -> Int {\n  return shared.helper()\n}\n"
+        },
+        {
+          "path": "{tmp}/import-surface/src/app/shared.sley",
+          "content": "module app.shared\n\nexport task helper -> Int {\n  return 7\n}\n"
+        }
+      ],
+      "args": [
+        "plan",
+        "--json",
+        "--graft-templates",
+        "--template-surface",
+        "import:app.main:app.shared",
+        "{tmp}/import-surface"
+      ],
+      "covers": [
+        "cli:plan",
+        "cli:smoke-setup-files",
+        "graft:templates",
+        "graft:templates:declaration-surface",
+        "graph-slice:move-affordances",
+        "json:sley.edit_plan.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.edit_plan.report.v0" },
+          { "pointer": "/status", "value": "ready" },
+          { "pointer": "/graft_templates/0/kind", "value": "move_import" },
+          { "pointer": "/graft_templates/0/surface", "value": "import:app.main:app.shared" },
+          { "pointer": "/graft_templates/0/operation/op", "value": "MoveNode" },
+          { "pointer": "/graft_templates/0/operation/target", "value": "import:app.main:app.shared" },
+          { "pointer": "/graft_templates/0/operation/payload/parent", "value": "module:app.main:imports" },
+          { "pointer": "/graft_templates/0/operation/payload/position", "value": 0 },
+          { "pointer": "/graft_templates/0/editable_json_pointers/0", "value": "/payload/position" }
+        ],
+        "stdout_json_absent": [
+          "/graft_templates/1"
+        ]
+      }
+    },
+    {
       "name": "plan_program_surface_declaration_templates_json",
       "args": [
         "plan",
