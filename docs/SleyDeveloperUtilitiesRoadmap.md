@@ -27,7 +27,7 @@ Current evidence base:
 - `sley new --json` already exposes typed next actions for first-run projects.
 - `sley plan --json --graft-templates` and `sley fix --dry-run` already expose
   non-mutating repair surfaces that editor and workbench tools can call.
-- `make v1` now runs the focused LSP integration test plus deterministic
+- `make v1` now runs the focused LSP integration tests plus deterministic
   workbench, agent-bench, migration, docgen, sandbox-runner, and ZJX tool
   replays in addition to contracts, conformance, corpus, examples, smoke, and
   syntax gates.
@@ -160,9 +160,10 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
      - editor extension shim only after the server protocol is stable.
    - Current bootstrap: in-tree `src/bin/sley-lsp.rs` speaks stdio LSP
      framing, tracks full-document buffers, publishes compiler diagnostics plus
-     lint warnings, returns formatting edits, document symbols, declaration
-     metadata hover, edit-plan code actions, and exposes `sley.fix.preview` as
-     a non-mutating preview command. `tests/sley_lsp.rs` drives the server over
+     lint warnings with `sley.toml` project context and unsaved open-buffer
+     overlays, returns formatting edits, document symbols, declaration metadata
+     hover, edit-plan code actions, and exposes `sley.fix.preview` as a
+     non-mutating preview command. `tests/sley_lsp.rs` drives the server over
      real JSON-RPC frames.
    - Done when an example project receives diagnostics and at least one checked
      lint repair code action without the server writing files directly.

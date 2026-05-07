@@ -1,5 +1,8 @@
+use std::fs;
 use std::io::{BufRead, BufReader, Read, Write};
+use std::path::{Path, PathBuf};
 use std::process::{ChildStdout, Command as ProcessCommand, Stdio};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde_json::{Value as JsonValue, json};
 
@@ -258,6 +261,171 @@ return "unused"
     );
     let status = child.wait().expect("wait for sley-lsp");
     assert!(status.success());
+}
+
+#[test]
+fn lsp_uses_project_context_for_imported_tasks() {
+    let root = temp_lsp_project_dir("project-context");
+    fs::create_dir_all(root.join("src/app")).expect("create LSP project dirs");
+    fs::write(
+        root.join("sley.toml"),
+        r#"[project]
+name = "lsp-project"
+root = "src"
+entry = "app.main"
+"#,
+    )
+    .expect("write LSP project manifest");
+    let main_path = root.join("src/app/main.sley");
+    let main_uri = file_uri(&main_path);
+    let main_source = r#"module app.main
+
+import app.pipeline as pipe
+
+task main -> Text {
+  return call pipe.message()
+}
+"#;
+    fs::write(&main_path, main_source).expect("write LSP main module");
+    fs::write(
+        root.join("src/app/pipeline.sley"),
+        r#"module app.pipeline
+
+export task message -> Text {
+  return "ready"
+}
+"#,
+    )
+    .expect("write LSP pipeline module");
+
+    let mut child = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-lsp"))
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("spawn sley-lsp");
+    let mut stdin = child.stdin.take().expect("lsp stdin");
+    let stdout = child.stdout.take().expect("lsp stdout");
+    let mut reader = BufReader::new(stdout);
+
+    write_lsp(
+        &mut stdin,
+        json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {
+                "processId": null,
+                "rootUri": file_uri(&root),
+                "capabilities": {}
+            }
+        }),
+    );
+    let initialized = read_response(&mut reader, 1);
+    assert_eq!(
+        initialized.pointer("/result/serverInfo/name"),
+        Some(&json!("sley-lsp"))
+    );
+    write_lsp(
+        &mut stdin,
+        json!({
+            "jsonrpc": "2.0",
+            "method": "initialized",
+            "params": {}
+        }),
+    );
+
+    write_lsp(
+        &mut stdin,
+        json!({
+            "jsonrpc": "2.0",
+            "method": "textDocument/didOpen",
+            "params": {
+                "textDocument": {
+                    "uri": main_uri,
+                    "languageId": "sley",
+                    "version": 1,
+                    "text": main_source
+                }
+            }
+        }),
+    );
+    let diagnostics = read_notification(&mut reader, "textDocument/publishDiagnostics");
+    assert_eq!(diagnostics.pointer("/params/uri"), Some(&json!(main_uri)));
+    assert!(
+        !diagnostic_codes(&diagnostics).contains(&"UNKNOWN_TASK"),
+        "valid imported task should resolve with project context: {diagnostics:#}"
+    );
+
+    let changed_source = main_source.replace("pipe.message()", "pipe.missing()");
+    write_lsp(
+        &mut stdin,
+        json!({
+            "jsonrpc": "2.0",
+            "method": "textDocument/didChange",
+            "params": {
+                "textDocument": {
+                    "uri": main_uri,
+                    "version": 2
+                },
+                "contentChanges": [{
+                    "text": changed_source
+                }]
+            }
+        }),
+    );
+    let diagnostics = read_notification(&mut reader, "textDocument/publishDiagnostics");
+    assert!(
+        diagnostic_codes(&diagnostics).contains(&"UNKNOWN_TASK"),
+        "unsaved missing imported task should be diagnosed: {diagnostics:#}"
+    );
+
+    write_lsp(
+        &mut stdin,
+        json!({
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "shutdown",
+            "params": null
+        }),
+    );
+    let shutdown = read_response(&mut reader, 2);
+    assert!(shutdown.get("result").is_some());
+    write_lsp(
+        &mut stdin,
+        json!({
+            "jsonrpc": "2.0",
+            "method": "exit",
+            "params": null
+        }),
+    );
+    let status = child.wait().expect("wait for sley-lsp");
+    assert!(status.success());
+    let _ = fs::remove_dir_all(root);
+}
+
+fn diagnostic_codes(message: &JsonValue) -> Vec<&str> {
+    message
+        .pointer("/params/diagnostics")
+        .and_then(JsonValue::as_array)
+        .expect("diagnostic array")
+        .iter()
+        .filter_map(|diagnostic| diagnostic.get("code").and_then(JsonValue::as_str))
+        .collect()
+}
+
+fn temp_lsp_project_dir(name: &str) -> PathBuf {
+    let mut root = std::env::temp_dir();
+    let nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system clock before Unix epoch")
+        .as_nanos();
+    root.push(format!("sley-lsp-{name}-{}-{nanos}", std::process::id()));
+    root
+}
+
+fn file_uri(path: &Path) -> String {
+    format!("file://{}", path.display())
 }
 
 fn write_lsp(stdin: &mut impl Write, message: JsonValue) {

@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Component, Path, PathBuf};
 
@@ -42,6 +42,14 @@ pub struct ProjectModule {
 }
 
 pub fn load_project(target: impl AsRef<Path>) -> Result<ProjectGraph, Vec<Diagnostic>> {
+    let overlays = HashMap::new();
+    load_project_with_source_overlays(target, &overlays)
+}
+
+pub fn load_project_with_source_overlays(
+    target: impl AsRef<Path>,
+    source_overlays: &HashMap<PathBuf, String>,
+) -> Result<ProjectGraph, Vec<Diagnostic>> {
     let target = target.as_ref();
     let manifest_path = manifest_path_for(target);
     let root = manifest_path
@@ -90,6 +98,7 @@ pub fn load_project(target: impl AsRef<Path>) -> Result<ProjectGraph, Vec<Diagno
     let module_root = root.join(&manifest.project.root);
     let mut loader = ModuleLoader {
         module_root: module_root.clone(),
+        source_overlays,
         loading: Vec::new(),
         loaded: HashSet::new(),
         modules: Vec::new(),
@@ -126,15 +135,16 @@ fn manifest_path_for(target: &Path) -> PathBuf {
     }
 }
 
-struct ModuleLoader {
+struct ModuleLoader<'a> {
     module_root: PathBuf,
+    source_overlays: &'a HashMap<PathBuf, String>,
     loading: Vec<String>,
     loaded: HashSet<String>,
     modules: Vec<ProjectModule>,
     diagnostics: Vec<Diagnostic>,
 }
 
-impl ModuleLoader {
+impl ModuleLoader<'_> {
     fn load_module(&mut self, module: &str) {
         if self.loaded.contains(module) {
             return;
@@ -158,6 +168,10 @@ impl ModuleLoader {
         let mut loaded_source = None;
         let mut last_error = None;
         for path in &candidates {
+            if let Some(source) = self.source_overlays.get(path) {
+                loaded_source = Some((path.clone(), source.clone()));
+                break;
+            }
             match fs::read_to_string(path) {
                 Ok(source) => {
                     loaded_source = Some((path.clone(), source));

@@ -50,9 +50,12 @@ here. Dates use UTC-independent calendar dates from the local repo history.
 ### Changed
 
 - `make v1` now runs deterministic workbench, agent-bench, migration, docgen,
-  sandbox-runner, and ZJX tool replays plus the focused LSP integration test,
+  sandbox-runner, and ZJX tool replays plus the focused LSP integration tests,
   contract fixtures, conformance, corpus, examples, CLI smokes, and
   Tree-sitter syntax parsing.
+- `sley-lsp` diagnostics now load `sley.toml` project context with unsaved
+  open-buffer overlays, so valid imported calls resolve in editor buffers and
+  missing imported tasks are diagnosed without requiring a save.
 - `sley-lsp` declaration hover now includes module, return type, takes,
   effects, export status, and node IDs for editor-side inspection.
 - Added `make public-release-check` as the explicit failing gate for public
