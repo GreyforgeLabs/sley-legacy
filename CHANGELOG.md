@@ -60,6 +60,8 @@ here. Dates use UTC-independent calendar dates from the local repo history.
   open-buffer change, so dependent files react to unsaved imported-module edits.
 - `sley-lsp` hover now resolves project task call sites to their target task
   signature, visibility, effect list, and node id.
+- `sley-lsp` now handles watched project-file change notifications by
+  refreshing diagnostics for all open buffers against the current project graph.
 - `sley-lsp` now exposes definition jumps for imported modules and resolved
   task calls across project files.
 - `sley-lsp` now exposes project-aware document links from import module names
