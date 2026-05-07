@@ -4904,7 +4904,16 @@ fn code_action_for_graft_template(
         "editableJsonPointers": template.editable_json_pointers,
         "dryRun": {
             "command": "sley",
-            "args": ["fix", "--json", "--dry-run", "--kind", template.kind, target]
+            "args": [
+                "fix",
+                "--json",
+                "--dry-run",
+                "--kind",
+                template.kind,
+                "--template-surface",
+                template.surface,
+                target
+            ]
         }
     });
     json!({
@@ -4934,7 +4943,16 @@ fn code_action_for_transaction_template(
         "editableJsonPointers": template.editable_json_pointers,
         "dryRun": {
             "command": "sley",
-            "args": ["fix", "--json", "--dry-run", "--kind", template.kind, target]
+            "args": [
+                "fix",
+                "--json",
+                "--dry-run",
+                "--kind",
+                template.kind,
+                "--template-surface",
+                template.surface,
+                target
+            ]
         }
     });
     json!({

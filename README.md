@@ -199,8 +199,9 @@ Implemented now:
   inlay hints, exact-range task references, document highlights, import
   document links,
   prepared cursor-aware project task rename edits, import/call definition jumps,
-  range-scoped checked edit-plan code actions, non-mutating command-preview
-  code lenses, and non-mutating preview commands for editor repair and command handoff
+  range-scoped checked edit-plan code actions, surface-pinned non-mutating fix
+  previews, command-preview code lenses, and non-mutating preview commands for
+  editor repair and command handoff
 - private local VS Code shim under `editors/vscode-sley/` that contributes
   `.sley` language metadata, basic TextMate highlighting, and a
   `vscode-languageclient` bridge to `sley-lsp`, with validation surfaced in
