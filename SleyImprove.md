@@ -357,7 +357,8 @@ Priority diagnostic families:
 - unknown identifiers: implemented with parse-valid `declare_binding` and
   `declare_mutable_binding` starter declarations
 - unknown tasks: implemented with `declare_or_import_task`
-- unknown types: implemented with `declare_or_import_type`
+- unknown types: implemented with parse-valid `declare_or_import_type`
+  starter declarations
 - binding and assignment type mismatch: implemented with type-change hints and
   structural `ReplaceExpression`
 - condition, collection, index, and record-field expression mismatches:
@@ -385,7 +386,8 @@ Priority diagnostic families:
   `insert_return`, and `replace_task_body`
 - immutable binding mutation: implemented with typed parse-valid
   `use_mutable_binding_kind` starter declarations
-- undeclared effects: implemented with `declare_or_import_effect`
+- undeclared effects: implemented with parse-valid `declare_or_import_effect`
+  starter declarations
 - unauthorized host authority: implemented with `add_required_effect`
 - private imported task/type/effect: implemented with export hints
 - ambiguous imported task/type/effect: implemented with qualification hints

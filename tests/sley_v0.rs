@@ -9409,11 +9409,11 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/integration_test_count"),
-        Some(&serde_json::json!(307))
+        Some(&serde_json::json!(308))
     );
     assert_eq!(
         report_json.pointer("/summary/declared_integration_test_count"),
-        Some(&serde_json::json!(307))
+        Some(&serde_json::json!(308))
     );
     assert_eq!(
         report_json.pointer("/summary/test_count_matches_declared"),
@@ -9425,7 +9425,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/tests/integration_test_count"),
-        Some(&serde_json::json!(307))
+        Some(&serde_json::json!(308))
     );
     assert_eq!(
         report_json.pointer("/tests/declared_matches_actual"),
@@ -11318,6 +11318,41 @@ task main -> Int {
     assert_eq!(
         declare_hint.replacement.as_deref(),
         Some("state missing = 0")
+    );
+}
+
+#[test]
+fn checker_type_and_effect_hints_use_parse_valid_starters() {
+    let source = r#"
+task main -> MissingRecord uses MissingEffect {
+  take value: MissingInput
+  take gate audit: Gate<MissingGate>
+
+  return value
+}
+"#;
+    let program = parse_program(source).expect("parse type and effect repair hint source");
+    let diagnostics = check_program(&program);
+    let type_replacements =
+        repair_hint_replacements(&diagnostics, "UNKNOWN_TYPE", "declare_or_import_type");
+    assert!(
+        type_replacements.contains(&"type MissingRecord = {\n  slot value: Text\n}".to_string()),
+        "missing return type starter, got {type_replacements:#?}"
+    );
+    assert!(
+        type_replacements.contains(&"type MissingInput = {\n  slot value: Text\n}".to_string()),
+        "missing take type starter, got {type_replacements:#?}"
+    );
+
+    let effect_replacements =
+        repair_hint_replacements(&diagnostics, "UNKNOWN_EFFECT", "declare_or_import_effect");
+    assert!(
+        effect_replacements.contains(&"effect MissingEffect".to_string()),
+        "missing task effect starter, got {effect_replacements:#?}"
+    );
+    assert!(
+        effect_replacements.contains(&"effect MissingGate".to_string()),
+        "missing gate effect starter, got {effect_replacements:#?}"
     );
 }
 
@@ -20843,6 +20878,20 @@ fn find_repair_hint<'a>(
         .iter()
         .find(|hint| hint.kind == kind)
         .unwrap_or_else(|| panic!("missing repair hint {kind} on {id}; got {diagnostic:#?}"))
+}
+
+fn repair_hint_replacements(
+    diagnostics: &[sley::diagnostics::Diagnostic],
+    id: &str,
+    kind: &str,
+) -> Vec<String> {
+    diagnostics
+        .iter()
+        .filter(|diagnostic| diagnostic.id == id)
+        .flat_map(|diagnostic| diagnostic.repair_hints.iter())
+        .filter(|hint| hint.kind == kind)
+        .filter_map(|hint| hint.replacement.clone())
+        .collect()
 }
 
 fn assert_replace_expression_hint_source(

@@ -2204,7 +2204,7 @@ fn validate_effect_reference(
                     RepairHint::new("declare_or_import_effect")
                         .with_target(node.to_string())
                         .with_effect(name.to_string())
-                        .with_replacement(format!("effect {name}")),
+                        .with_replacement(declare_effect_hint_source(name)),
                 ),
         ),
         EffectResolution::Ambiguous(matches) => diagnostics.push(
@@ -2244,6 +2244,14 @@ fn declare_binding_hint(task: &TaskDecl, name: &str, binding_kind: BindingKind) 
     RepairHint::new(kind)
         .with_target(task.id.clone())
         .with_replacement(format!("{} {name} = 0", binding_kind.as_source_keyword()))
+}
+
+fn declare_type_hint_source(name: &str) -> String {
+    format!("type {} = {{\n  slot value: Text\n}}", short_name(name))
+}
+
+fn declare_effect_hint_source(name: &str) -> String {
+    format!("effect {}", short_name(name))
 }
 
 fn add_required_effect_hint(task: &TaskDecl, effect: &str) -> RepairHint {
@@ -2473,7 +2481,7 @@ fn validate_type_name(
                 .with_repair_hint(
                     RepairHint::new("declare_or_import_type")
                         .with_target(node.to_string())
-                        .with_replacement(format!("type {name} = <definition>")),
+                        .with_replacement(declare_type_hint_source(name)),
                 ),
         ),
         TypeResolution::Ambiguous(matches) => diagnostics.push(
@@ -2522,7 +2530,7 @@ fn validate_effect_name(
                 RepairHint::new("declare_or_import_effect")
                     .with_target(task.id.clone())
                     .with_effect(name.to_string())
-                    .with_replacement(format!("effect {name}")),
+                    .with_replacement(declare_effect_hint_source(name)),
             ),
         ),
         EffectResolution::Ambiguous(matches) => diagnostics.push(
