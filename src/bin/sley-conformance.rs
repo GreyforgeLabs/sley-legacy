@@ -308,7 +308,7 @@ enum Command {
         examples_root: PathBuf,
         #[arg(long, default_value = "tests/sley_v0.rs")]
         integration_tests: PathBuf,
-        #[arg(long, default_value = "SleyGoal.md")]
+        #[arg(long, default_value = "docs/contracts.md")]
         goal_doc: PathBuf,
         #[arg(long, default_value = "editors/vscode-sley")]
         editor_shim_root: PathBuf,
