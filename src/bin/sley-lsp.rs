@@ -911,6 +911,62 @@ fn position_in_request_range(
     true
 }
 
+fn request_range_intersects_lsp_range(
+    request: (usize, usize, usize, usize),
+    surface: &JsonValue,
+) -> bool {
+    let Some(surface_start_line) = surface
+        .pointer("/start/line")
+        .and_then(JsonValue::as_u64)
+        .map(|value| value as usize)
+    else {
+        return true;
+    };
+    let Some(surface_start_character) = surface
+        .pointer("/start/character")
+        .and_then(JsonValue::as_u64)
+        .map(|value| value as usize)
+    else {
+        return true;
+    };
+    let Some(surface_end_line) = surface
+        .pointer("/end/line")
+        .and_then(JsonValue::as_u64)
+        .map(|value| value as usize)
+    else {
+        return true;
+    };
+    let Some(surface_end_character) = surface
+        .pointer("/end/character")
+        .and_then(JsonValue::as_u64)
+        .map(|value| value as usize)
+    else {
+        return true;
+    };
+    let (request_start_line, request_start_character, request_end_line, request_end_character) =
+        request;
+    position_leq(
+        request_start_line,
+        request_start_character,
+        surface_end_line,
+        surface_end_character,
+    ) && position_leq(
+        surface_start_line,
+        surface_start_character,
+        request_end_line,
+        request_end_character,
+    )
+}
+
+fn position_leq(
+    left_line: usize,
+    left_character: usize,
+    right_line: usize,
+    right_character: usize,
+) -> bool {
+    left_line < right_line || (left_line == right_line && left_character <= right_character)
+}
+
 fn handle_code_actions(params: JsonValue, state: &ServerState) -> JsonValue {
     let Some(uri) = text_document_uri(&params) else {
         return json!([]);
@@ -938,6 +994,7 @@ fn handle_code_actions(params: JsonValue, state: &ServerState) -> JsonValue {
             .filter(|template| {
                 code_action_surface_in_range(
                     program_for_range_filter.as_ref(),
+                    &document.text,
                     requested_range,
                     &template.surface,
                 )
@@ -951,6 +1008,7 @@ fn handle_code_actions(params: JsonValue, state: &ServerState) -> JsonValue {
             .filter(|template| {
                 code_action_surface_in_range(
                     program_for_range_filter.as_ref(),
+                    &document.text,
                     requested_range,
                     &template.surface,
                 )
@@ -963,18 +1021,17 @@ fn handle_code_actions(params: JsonValue, state: &ServerState) -> JsonValue {
 
 fn code_action_surface_in_range(
     program: Option<&Program>,
+    source: &str,
     range: Option<(usize, usize, usize, usize)>,
     surface: &str,
 ) -> bool {
     let (Some(program), Some(range)) = (program, range) else {
         return true;
     };
-    let Some(span) = span_for_node(program, surface) else {
+    let Some(surface_range) = range_for_code_action_surface(program, source, surface) else {
         return true;
     };
-    let line = span.line.saturating_sub(1);
-    let character = span.column.saturating_sub(1);
-    position_in_request_range(range, line, character)
+    request_range_intersects_lsp_range(range, &surface_range)
 }
 
 fn handle_code_lens(params: JsonValue, state: &ServerState) -> JsonValue {
@@ -4984,6 +5041,175 @@ fn code_action_kind(kind: &str) -> &'static str {
     } else {
         "refactor.rewrite"
     }
+}
+
+fn range_for_code_action_surface(program: &Program, source: &str, node: &str) -> Option<JsonValue> {
+    if let Some(import) = program.imports.iter().find(|import| import.id == node) {
+        return import
+            .span
+            .as_ref()
+            .map(|span| line_range_for_span(source, span));
+    }
+    if let Some(ty) = program.types.iter().find(|ty| ty.id == node) {
+        return ty
+            .span
+            .as_ref()
+            .map(|span| line_range_for_span(source, span));
+    }
+    if let Some(effect) = program.effects.iter().find(|effect| effect.id == node) {
+        return effect
+            .span
+            .as_ref()
+            .map(|span| line_range_for_span(source, span));
+    }
+    for task in &program.tasks {
+        if task.id == node {
+            return task
+                .span
+                .as_ref()
+                .map(|span| line_range_for_span(source, span));
+        }
+        if let Some(take) = task.takes.iter().find(|take| take.id == node) {
+            return take
+                .span
+                .as_ref()
+                .map(|span| line_range_for_span(source, span));
+        }
+        if let Some(range) = range_for_statement_node(source, &task.body.statements, node) {
+            return Some(range);
+        }
+    }
+    None
+}
+
+fn range_for_statement_node(
+    source: &str,
+    statements: &[Statement],
+    node: &str,
+) -> Option<JsonValue> {
+    for statement in statements {
+        if statement.id == node {
+            return statement
+                .span
+                .as_ref()
+                .map(|span| line_range_for_span(source, span));
+        }
+        match &statement.kind {
+            StatementKind::Binding { expr, .. }
+            | StatementKind::Set { expr, .. }
+            | StatementKind::Return { expr }
+            | StatementKind::Expr { expr } => {
+                if let Some(range) = range_for_expr_node(source, expr, node) {
+                    return Some(range);
+                }
+            }
+            StatementKind::If {
+                condition,
+                then_block,
+                else_block,
+            } => {
+                if let Some(range) = range_for_expr_node(source, condition, node) {
+                    return Some(range);
+                }
+                if let Some(range) = range_for_statement_node(source, &then_block.statements, node)
+                {
+                    return Some(range);
+                }
+                if let Some(else_block) = else_block {
+                    if let Some(range) =
+                        range_for_statement_node(source, &else_block.statements, node)
+                    {
+                        return Some(range);
+                    }
+                }
+            }
+            StatementKind::While { condition, body } => {
+                if let Some(range) = range_for_expr_node(source, condition, node) {
+                    return Some(range);
+                }
+                if let Some(range) = range_for_statement_node(source, &body.statements, node) {
+                    return Some(range);
+                }
+            }
+            StatementKind::For {
+                collection, body, ..
+            } => {
+                if let Some(range) = range_for_expr_node(source, collection, node) {
+                    return Some(range);
+                }
+                if let Some(range) = range_for_statement_node(source, &body.statements, node) {
+                    return Some(range);
+                }
+            }
+            StatementKind::Forge { body } => {
+                if let Some(range) = range_for_statement_node(source, &body.statements, node) {
+                    return Some(range);
+                }
+            }
+        }
+    }
+    None
+}
+
+fn range_for_expr_node(source: &str, expr: &Expr, node: &str) -> Option<JsonValue> {
+    if expr.id == node {
+        return expr_source_range(source, expr).or_else(|| {
+            expr.span
+                .as_ref()
+                .map(|span| line_range_for_span(source, span))
+        });
+    }
+    match &expr.kind {
+        ExprKind::Unary { expr, .. } | ExprKind::Try { expr } => {
+            range_for_expr_node(source, expr, node)
+        }
+        ExprKind::Binary { left, right, .. } => range_for_expr_node(source, left, node)
+            .or_else(|| range_for_expr_node(source, right, node)),
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => range_for_expr_node(source, condition, node)
+            .or_else(|| range_for_expr_node(source, then_branch, node))
+            .or_else(|| range_for_expr_node(source, else_branch, node)),
+        ExprKind::Call { callee, args } => {
+            range_for_expr_node(source, callee, node).or_else(|| {
+                args.iter()
+                    .find_map(|arg| range_for_expr_node(source, arg, node))
+            })
+        }
+        ExprKind::ListLiteral { items } => items
+            .iter()
+            .find_map(|item| range_for_expr_node(source, item, node)),
+        ExprKind::MapLiteral { entries } => entries.iter().find_map(|entry| {
+            range_for_expr_node(source, &entry.key, node)
+                .or_else(|| range_for_expr_node(source, &entry.value, node))
+        }),
+        ExprKind::Index { collection, index } => range_for_expr_node(source, collection, node)
+            .or_else(|| range_for_expr_node(source, index, node)),
+        ExprKind::FieldAccess { receiver, .. } => range_for_expr_node(source, receiver, node),
+        ExprKind::RecordLiteral { fields, .. } => fields
+            .iter()
+            .find_map(|field| range_for_expr_node(source, &field.expr, node)),
+        ExprKind::Raw { .. }
+        | ExprKind::StringLiteral { .. }
+        | ExprKind::IntLiteral { .. }
+        | ExprKind::FloatLiteral { .. }
+        | ExprKind::BoolLiteral { .. }
+        | ExprKind::Identifier { .. } => None,
+    }
+}
+
+fn expr_source_range(source: &str, expr: &Expr) -> Option<JsonValue> {
+    if expr.source.contains('\n') {
+        return None;
+    }
+    let span = leading_span_for_expr(expr)?;
+    let line = span.line.saturating_sub(1);
+    let line_text = source.lines().nth(line)?;
+    let hint_start_byte = byte_offset_for_character(line_text, span.column.saturating_sub(1));
+    range_for_text_on_line_after(source, line, &expr.source, hint_start_byte)
+        .or_else(|| range_for_text_on_line(source, line, &expr.source))
 }
 
 fn span_for_node(program: &Program, node: &str) -> Option<SourceSpan> {

@@ -121,8 +121,9 @@ here. Dates use UTC-independent calendar dates from the local repo history.
   imported task calls, including active parameter tracking in call arguments.
 - `sley-lsp` now prepares cursor-aware project task rename ranges and returns
   workspace edits for declarations and resolved call sites.
-- `sley-lsp` edit-plan code actions now respect the requested editor range, so
-  cursor-local quick fixes exclude unrelated document repairs.
+- `sley-lsp` edit-plan code actions now intersect the requested editor range
+  with the selected repair surface, so cursor-local quick fixes include the
+  enclosing repair and exclude unrelated document repairs.
 - `sley-lsp` fix-preview commands now include `--template-surface` so repeated
   same-kind repairs stay pinned to the selected edit-plan template.
 - `sley-lsp` declaration hover now includes module, return type, takes,

@@ -424,8 +424,8 @@ return "unused"
                     "uri": uri
                 },
                 "range": {
-                    "start": { "line": 8, "character": 0 },
-                    "end": { "line": 8, "character": 8 }
+                    "start": { "line": 8, "character": 4 },
+                    "end": { "line": 8, "character": 4 }
                 },
                 "context": {
                     "diagnostics": []
