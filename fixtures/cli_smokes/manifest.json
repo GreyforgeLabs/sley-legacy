@@ -530,6 +530,37 @@
       }
     },
     {
+      "name": "ci_verify_agent_deploy_pipeline_missing_runtime_gates_json",
+      "bin": "sley-ci",
+      "args": [
+        "verify",
+        "--json",
+        "--deny-warnings",
+        "examples/agent_deploy_pipeline.sley"
+      ],
+      "covers": [
+        "cli:sley-ci",
+        "ci:verify-runtime-diagnostics",
+        "diagnostic:RUNTIME_CAPABILITY_REQUIRED",
+        "json:sley.ci.report.v0",
+        "json:sley.verify.report.v0",
+        "readiness:verify-runtime-retry"
+      ],
+      "expect": {
+        "success": false,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.ci.report.v0" },
+          { "pointer": "/status", "value": "failed" },
+          { "pointer": "/command", "value": "verify" },
+          { "pointer": "/summary/failed_count", "value": 1 },
+          { "pointer": "/steps/0/stdout_schema", "value": "sley.verify.report.v0" },
+          { "pointer": "/steps/0/diagnostics/0/id", "value": "RUNTIME_CAPABILITY_REQUIRED" },
+          { "pointer": "/steps/0/diagnostics/0/severity", "value": "error" },
+          { "pointer": "/steps/0/issues/0/code", "value": "exit_status_mismatch" }
+        ]
+      }
+    },
+    {
       "name": "conformance_required_utility_tag_coverage_json",
       "bin": "sley-conformance",
       "args": ["coverage", "--json", "--require-tag", "cli:sley-docgen"],
