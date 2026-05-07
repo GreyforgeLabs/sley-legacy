@@ -2925,7 +2925,7 @@ task main -> Int {
 }
 
 #[test]
-fn edit_plan_move_templates_omit_unchecked_destinations() {
+fn graph_slice_and_edit_plan_omit_unchecked_move_destinations() {
     let source = r#"
 module app.plan
 
@@ -2939,14 +2939,14 @@ task main -> Int {
     let program = parse_program(source).expect("parse move filter fixture");
     let raw_slice = slice_symbol_graph(&program, "task:app.plan.main").expect("slice task graph");
     assert!(
-        raw_slice.move_affordances.iter().any(|affordance| {
-            affordance.target == "block:task:app.plan.main:stmt:1"
-                && affordance
-                    .destinations
-                    .iter()
-                    .any(|destination| destination.parent == "block:task:app.plan.main:stmt:0:then")
+        raw_slice.move_affordances.iter().all(|affordance| {
+            !(affordance.target == "block:task:app.plan.main:stmt:1"
+                && affordance.destinations.iter().any(|destination| {
+                    destination.parent == "block:task:app.plan.main:stmt:0:then"
+                }))
         }),
-        "raw slice should expose the broad return move destination before plan filtering"
+        "graph slice should omit return move destinations that fail checked graft validation: {:#?}",
+        raw_slice.move_affordances
     );
 
     let report = build_edit_plan_report_with_options(
@@ -10733,7 +10733,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/smoke_case_count"),
-        Some(&serde_json::json!(461))
+        Some(&serde_json::json!(462))
     );
     assert_eq!(
         report_json.pointer("/summary/onboarding_path_count"),
@@ -17056,6 +17056,26 @@ task main -> Int {
                 .starts_with("block:task:main.main:stmt:1:then:stmt:0")),
         "statement move affordance should not allow moving into its own child"
     );
+    for affordance in &slice.move_affordances {
+        let graft: GraftInput = serde_json::from_value(affordance.operation.clone())
+            .expect("parse checked move affordance");
+        let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
+        assert_eq!(
+            outcome.status, "accepted",
+            "expected move affordance {affordance:#?} to apply, got {:#?}",
+            outcome.diagnostics
+        );
+        for destination in &affordance.destinations {
+            let graft: GraftInput = serde_json::from_value(destination.operation.clone())
+                .expect("parse checked move destination");
+            let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
+            assert_eq!(
+                outcome.status, "accepted",
+                "expected move destination {destination:#?} to apply, got {:#?}",
+                outcome.diagnostics
+            );
+        }
+    }
 
     let take = slice
         .move_affordances
@@ -17071,11 +17091,21 @@ task main -> Int {
         Some(&serde_json::json!("take:task:main.main:0:value"))
     );
     assert!(
-        take.destinations
+        take.destinations.is_empty(),
+        "used take move destinations should be checker-filtered, got {take:#?}"
+    );
+    let unused_take_move = slice
+        .move_affordances
+        .iter()
+        .find(|affordance| affordance.target == "take:task:main.main:1:unused")
+        .expect("unused take move affordance");
+    assert!(
+        unused_take_move
+            .destinations
             .iter()
             .any(|destination| destination.parent == "task:main.helper:takes"
                 && destination.max_position == 1),
-        "expected helper take destination, got {take:#?}"
+        "expected helper take destination for unused take, got {unused_take_move:#?}"
     );
 
     assert!(
@@ -23024,6 +23054,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:operations:remove-task-effect",
         "graft:project-existing-import-write",
         "graph-slice:checked-delete-affordances",
+        "graph-slice:checked-move-affordances",
         "graph-slice:delete-affordances",
         "graph-slice:inbound-calls",
         "graph-slice:add-affordances",

@@ -463,8 +463,8 @@ Current verified surface:
   the query schema now exposes strict task/take/type/effect/call row
   definitions,
   graph-slice add/insert/move/delete/replace affordance operations reuse that
-  strict graft operation schema, and graph-slice delete affordances are filtered
-  through the graft checker before being advertised,
+  strict graft operation schema, and graph-slice move destinations plus delete
+  affordances are filtered through the graft checker before being advertised,
   symbol graph, graph-slice, and graft outcome handoff roots have locked
   contract fixtures,
   graph-slice focus, task, and call summary payloads are schema-linked,

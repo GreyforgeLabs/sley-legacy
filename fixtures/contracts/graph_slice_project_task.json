@@ -201,23 +201,7 @@
       "editable_json_pointers": [
         "/payload/position"
       ],
-      "destinations": [
-        {
-          "parent": "module:app.math:imports",
-          "max_position": 0,
-          "operation": {
-            "op": "MoveNode",
-            "payload": {
-              "parent": "module:app.math:imports",
-              "position": 0
-            },
-            "target": "import:app.main:app.math"
-          },
-          "editable_json_pointers": [
-            "/payload/position"
-          ]
-        }
-      ]
+      "destinations": []
     },
     {
       "target": "task:app.main.main",
@@ -236,23 +220,7 @@
       "editable_json_pointers": [
         "/payload/position"
       ],
-      "destinations": [
-        {
-          "parent": "module:app.math:tasks",
-          "max_position": 1,
-          "operation": {
-            "op": "MoveNode",
-            "payload": {
-              "parent": "module:app.math:tasks",
-              "position": 1
-            },
-            "target": "task:app.main.main"
-          },
-          "editable_json_pointers": [
-            "/payload/position"
-          ]
-        }
-      ]
+      "destinations": []
     }
   ],
   "delete_affordances": [],

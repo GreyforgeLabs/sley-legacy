@@ -437,8 +437,8 @@ module parent such as `module:app.extra:tasks`.
 `sley plan --graft-templates --template-surface module:<name>` and declaration
 list parents such as `module:<name>:tasks` expose checked module-level
 graph-slice move/delete templates directly for top-level imports, types,
-effects, and tasks; graph-slice delete templates are emitted only after the
-starter `DeleteNode` graft validates.
+effects, and tasks; graph-slice move and delete templates are emitted only
+after the starter graft validates.
 Unsupported graph movement returns explicit diagnostics until implemented.
 
 Implemented graph-edit payloads:
@@ -1193,15 +1193,17 @@ slices also include `insert_affordances` for task-local block insertion
 planning: each
 affordance exposes the exact block target, maximum insertion position, starter
 `InsertStatement` operation JSON, and editable `/payload/source` plus
-`/payload/position` pointers. Graph slices also include `move_affordances` for
-bounded import, type, effect, task, statement, and take movement planning: each
-affordance exposes the exact `MoveNode`
+`/payload/position` pointers. Graph slices also include checked
+`move_affordances` for bounded import, type, effect, task, statement, and take
+movement planning: each affordance exposes the exact `MoveNode`
 target, current parent, current position, in-parent maximum position, and
-available destination parents with their insertion limits. Affordances and
-destination entries also carry strict starter `MoveNode` operation JSON plus
-editable JSON pointers so agents can copy a template, adjust
-`/payload/position`, and dry-run the graft. Graph slices also include checked
-`delete_affordances` for import, type, effect, task, non-return statement, and
+available destination parents with their insertion limits only when the starter
+graft validates. Entry-module `main` task cross-module movement is not
+advertised. Affordances and destination entries also carry strict starter
+`MoveNode` operation JSON plus editable JSON pointers so agents can copy a
+template, adjust `/payload/position`, and dry-run the graft. Graph slices also
+include checked `delete_affordances` for import, type, effect, task,
+non-return statement, and
 take `DeleteNode` planning; each delete affordance exposes the exact target,
 current parent, current position, starter operation JSON, and editable pointer
 list only when the graft checker accepts the starter. Entry-module `main` task

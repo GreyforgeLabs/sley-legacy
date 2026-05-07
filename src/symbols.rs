@@ -669,11 +669,14 @@ fn build_slice(
             &module_task_indexes,
             program,
         ),
-        move_affordances: build_move_affordances(
+        move_affordances: checked_move_affordances(
             program,
-            &focus_module,
-            focus_task_index,
-            &module_task_indexes,
+            build_move_affordances(
+                program,
+                &focus_module,
+                focus_task_index,
+                &module_task_indexes,
+            ),
         ),
         delete_affordances: build_delete_affordances(
             program,
@@ -1004,6 +1007,7 @@ fn collect_import_move_affordances(
             modules,
             focus_module,
             "imports",
+            true,
             |module| {
                 program
                     .imports
@@ -1038,6 +1042,7 @@ fn collect_type_move_affordances(
             modules,
             focus_module,
             "types",
+            true,
             |module| {
                 program
                     .types
@@ -1072,6 +1077,7 @@ fn collect_effect_move_affordances(
             modules,
             focus_module,
             "effects",
+            true,
             |module| {
                 program
                     .effects
@@ -1097,6 +1103,8 @@ fn collect_task_move_affordances(
     let max_position = tasks.len().saturating_sub(1);
     for (position, task) in tasks.into_iter().enumerate() {
         let parent = format!("module:{focus_module}:tasks");
+        let allow_destinations =
+            !(task.name == "main" && task_module(task) == program.module_name());
         affordances.push(module_move_affordance(
             &task.id,
             "task",
@@ -1106,6 +1114,7 @@ fn collect_task_move_affordances(
             modules,
             focus_module,
             "tasks",
+            allow_destinations,
             |module| {
                 program
                     .tasks
@@ -1126,22 +1135,27 @@ fn module_move_affordance(
     modules: &BTreeSet<String>,
     source_module: &str,
     parent_kind: &str,
+    allow_destinations: bool,
     destination_len: impl Fn(&str) -> usize,
 ) -> MoveNodeAffordance {
-    let destinations = modules
-        .iter()
-        .filter(|module| module.as_str() != source_module)
-        .map(|module| {
-            let destination_parent = format!("module:{module}:{parent_kind}");
-            let max_position = destination_len(module);
-            MoveNodeDestination {
-                parent: destination_parent.clone(),
-                max_position,
-                operation: move_node_operation(target, &destination_parent, None, max_position),
-                editable_json_pointers: move_node_editable_json_pointers(),
-            }
-        })
-        .collect();
+    let destinations = if allow_destinations {
+        modules
+            .iter()
+            .filter(|module| module.as_str() != source_module)
+            .map(|module| {
+                let destination_parent = format!("module:{module}:{parent_kind}");
+                let max_position = destination_len(module);
+                MoveNodeDestination {
+                    parent: destination_parent.clone(),
+                    max_position,
+                    operation: move_node_operation(target, &destination_parent, None, max_position),
+                    editable_json_pointers: move_node_editable_json_pointers(),
+                }
+            })
+            .collect()
+    } else {
+        Vec::new()
+    };
     MoveNodeAffordance {
         target: target.to_string(),
         target_kind: target_kind.to_string(),
@@ -1384,6 +1398,32 @@ fn move_node_operation(
 
 fn move_node_editable_json_pointers() -> Vec<String> {
     vec!["/payload/position".to_string()]
+}
+
+fn checked_move_affordances(
+    program: &Program,
+    affordances: Vec<MoveNodeAffordance>,
+) -> Vec<MoveNodeAffordance> {
+    affordances
+        .into_iter()
+        .filter_map(|mut affordance| {
+            if !graph_slice_operation_checks(
+                program,
+                &affordance.operation,
+                Some("agent:graph-slice-move-affordance"),
+            ) {
+                return None;
+            }
+            affordance.destinations.retain(|destination| {
+                graph_slice_operation_checks(
+                    program,
+                    &destination.operation,
+                    Some("agent:graph-slice-move-destination"),
+                )
+            });
+            Some(affordance)
+        })
+        .collect()
 }
 
 fn build_delete_affordances(
