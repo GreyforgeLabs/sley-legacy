@@ -98,13 +98,14 @@ Current verified surface:
   package validation and a check that the declared integration coverage count
   matches the test file. It also inventories the `make v1` target set and
   fails when required local gate targets disappear. `report` now fails when
-  required corpus or smoke release
-  tags disappear, including seeded and scoped runtime authority smoke tags.
+  required corpus or smoke release tags disappear, including seeded and scoped
+  runtime authority smoke tags.
   `report --require-public-release-ready` turns
   unresolved public-release packaging blockers into an explicit nonzero gate
-  for final release cuts. `--corpus-manifest` and repeated `--smoke-manifest`
-  arguments accept either explicit manifest files or directories containing
-  `manifest.json`.
+  for final release cuts, and the regular report carries next actions for the
+  operator-controlled metadata decisions. `--corpus-manifest` and repeated
+  `--smoke-manifest` arguments accept either explicit manifest files or
+  directories containing `manifest.json`.
 - `tree-sitter-sley` is available as an in-tree syntax grammar bootstrap with
   `npm test` coverage for Tree-sitter parser generation, exact syntax corpus
   trees, highlight query validation, and parsing of current `.sley` examples

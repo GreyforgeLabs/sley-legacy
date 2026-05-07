@@ -181,7 +181,8 @@ The `sley-conformance` binary exposes `report` and `coverage` JSON roots for
 schema/fixture instance coverage, contract validation status, corpus tags,
 smoke tags, the compact agent onboarding pack, packaged example counts,
 declared integration-test count drift, editor-shim validation, `make v1`
-target inventory, and public-release metadata blockers.
+target inventory, public-release metadata blockers, and public-release
+next-actions for operator-controlled metadata decisions.
 The in-tree `tree-sitter-sley` package exposes the current syntax grammar,
 highlight queries, generated parser artifacts, exact corpus tests, and fixture
 parsing smoke through `npm test` or `make syntax`.

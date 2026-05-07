@@ -222,7 +222,7 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
      inventories schema instances, corpus tags, smoke tags, packaged examples,
      the compact agent onboarding pack, editor-shim package validation, the
      `make v1` target set, declared integration-test count drift, and
-     public-release metadata blockers. The
+     public-release metadata blockers plus their next actions. The
      repo-level `make v1` gate runs the JSON report, while
      `make public-release-check` turns unresolved public blockers into the
      explicit nonzero release-cut gate.

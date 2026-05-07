@@ -64,6 +64,9 @@ here. Dates use UTC-independent calendar dates from the local repo history.
   authority, scoped host capabilities, and scope-denial diagnostics.
 - `sley-conformance report` now inventories the compact agent onboarding pack
   so missing bootstrap files are visible in release-readiness evidence.
+- `sley-conformance report` now emits machine-readable public-release
+  `next_actions` for operator-controlled license and repository metadata
+  blockers.
 - `sley-workbench` static HTML now includes a graph target selector that
   highlights focused graph rows and emits the exact `--slice` command for
   rerendering a focused graph slice.
