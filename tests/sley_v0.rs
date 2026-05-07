@@ -10294,7 +10294,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/smoke_case_count"),
-        Some(&serde_json::json!(442))
+        Some(&serde_json::json!(443))
     );
     assert_eq!(
         report_json.pointer("/summary/onboarding_path_count"),
@@ -10310,11 +10310,11 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/integration_test_count"),
-        Some(&serde_json::json!(320))
+        Some(&serde_json::json!(321))
     );
     assert_eq!(
         report_json.pointer("/summary/declared_integration_test_count"),
-        Some(&serde_json::json!(320))
+        Some(&serde_json::json!(321))
     );
     assert_eq!(
         report_json.pointer("/summary/test_count_matches_declared"),
@@ -10338,7 +10338,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/tests/integration_test_count"),
-        Some(&serde_json::json!(320))
+        Some(&serde_json::json!(321))
     );
     assert_eq!(
         report_json.pointer("/tests/declared_matches_actual"),
@@ -16884,6 +16884,46 @@ task main -> User {
     assert_eq!(calls.calls[0].callee, "math.double");
     assert_eq!(calls.calls[0].status, "resolved");
     assert_eq!(calls.calls[0].target.as_deref(), Some("app.math.double"));
+}
+
+#[test]
+fn query_cli_blocks_unknown_project_module_filter() {
+    let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .current_dir(&repo_root)
+        .args([
+            "query",
+            "--json",
+            "--kind",
+            "tasks",
+            "--module",
+            "app.typo",
+            "examples/project",
+        ])
+        .output()
+        .expect("run sley query");
+    assert!(
+        !output.status.success(),
+        "query unexpectedly passed\nstdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let report: serde_json::Value =
+        serde_json::from_slice(&output.stdout).expect("parse query diagnostics");
+    assert_eq!(
+        report.pointer("/schema"),
+        Some(&serde_json::json!(DIAGNOSTIC_REPORT_SCHEMA))
+    );
+    assert_eq!(report.pointer("/status"), Some(&serde_json::json!("error")));
+    assert_eq!(
+        report.pointer("/diagnostics/0/id"),
+        Some(&serde_json::json!("QUERY_MODULE_FILTER_NOT_FOUND"))
+    );
+    assert_eq!(
+        report.pointer("/diagnostics/0/severity"),
+        Some(&serde_json::json!("error"))
+    );
 }
 
 #[test]
