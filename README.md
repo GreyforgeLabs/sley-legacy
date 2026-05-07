@@ -1,4 +1,27 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/GreyforgeLabs/sley/main/assets/branding/canonical/sley_loom_graph_banner_1500x500.png" alt="Sley Loom banner" width="100%" />
+</p>
+
+<p align="center">
+  <strong>Sley v0</strong><br />
+  <a href="https://sley.greyforge.tech/">Official Sley site</a> •
+  <a href="https://greyforge.tech/">Greyforge Labs</a> •
+  <a href="https://x.com/GreyforgeLabs">X / Twitter</a> •
+  <a href="https://greyforge.tech/chronicles">Chronicles</a> •
+  <a href="https://greyforge.tech/openforge">OpenForge</a> •
+  <a href="https://github.com/GreyforgeLabs/sley/releases">Releases</a>
+</p>
+
+<p align="center">
+  <img alt="Sley v1 Gate" src="https://img.shields.io/github/actions/workflow/status/GreyforgeLabs/sley/v1.yml?label=Sley%20v1%20Gate" />
+  <img alt="License" src="https://img.shields.io/github/license/GreyforgeLabs/sley" />
+  <img alt="GitHub stars" src="https://img.shields.io/github/stars/GreyforgeLabs/sley?style=social" />
+</p>
+
 # Sley v0
+
+**SEO metadata:** Sley • structural programming • deterministic edits •
+auditable grafts • graph-aware agent tooling • `sley` • `Greyforge Labs`
 
 Sley is an agent-native structural programming language. The Loom compiler reads
 human-reviewable `.sley` source, exposes typed graph-shaped AST data, checks
