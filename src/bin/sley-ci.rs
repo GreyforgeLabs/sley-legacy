@@ -1367,6 +1367,7 @@ fn extract_step_diagnostics(json: &JsonValue, stdout_schema: Option<&str>) -> Ve
     let pointers: &[&str] = match stdout_schema {
         Some("sley.diagnostics.report.v0" | "sley.run.report.v0") => &["/diagnostics"],
         Some("sley.verify.report.v0") => &["/diagnostics", "/runtime/diagnostics"],
+        Some("sley.deploy.report.v0") => &["/verify/diagnostics", "/verify/runtime/diagnostics"],
         _ => return Vec::new(),
     };
     pointers
@@ -1430,13 +1431,30 @@ fn extract_step_findings(json: &JsonValue, stdout_schema: Option<&str>) -> Vec<C
 }
 
 fn extract_step_next_actions(json: &JsonValue, stdout_schema: Option<&str>) -> Vec<CiNextAction> {
-    if stdout_schema != Some("sley.verify.report.v0") {
+    let pointers: &[&str] = match stdout_schema {
+        Some("sley.verify.report.v0") => &["/next_actions"],
+        Some("sley.deploy.report.v0") => &["/verify/next_actions", "/next_actions"],
+        _ => return Vec::new(),
+    };
+    if json
+        .get("status")
+        .and_then(JsonValue::as_str)
+        .is_some_and(report_status_indicates_success)
+    {
         return Vec::new();
     }
-    if json.get("status").and_then(JsonValue::as_str) == Some("passed") {
-        return Vec::new();
-    }
-    json.pointer("/next_actions")
+    pointers
+        .iter()
+        .flat_map(|pointer| extract_next_actions_at(json, pointer))
+        .collect()
+}
+
+fn report_status_indicates_success(status: &str) -> bool {
+    matches!(status, "ok" | "passed" | "ready")
+}
+
+fn extract_next_actions_at(json: &JsonValue, pointer: &str) -> Vec<CiNextAction> {
+    json.pointer(pointer)
         .and_then(JsonValue::as_array)
         .map(|actions| {
             actions

@@ -567,6 +567,48 @@
       }
     },
     {
+      "name": "ci_deploy_agent_deploy_pipeline_missing_runtime_gates_json",
+      "bin": "sley-ci",
+      "args": [
+        "deploy",
+        "--json",
+        "--dry-run",
+        "examples/agent_deploy_pipeline.sley"
+      ],
+      "covers": [
+        "cli:sley-ci",
+        "ci:deploy-runtime-diagnostics",
+        "ci:deploy-next-actions",
+        "diagnostic:RUNTIME_CAPABILITY_REQUIRED",
+        "json:sley.ci.report.v0",
+        "json:sley.deploy.report.v0",
+        "json:sley.verify.report.v0",
+        "readiness:deploy-runtime-retry"
+      ],
+      "expect": {
+        "success": false,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.ci.report.v0" },
+          { "pointer": "/status", "value": "failed" },
+          { "pointer": "/command", "value": "deploy" },
+          { "pointer": "/summary/failed_count", "value": 1 },
+          { "pointer": "/steps/0/stdout_schema", "value": "sley.deploy.report.v0" },
+          { "pointer": "/steps/0/diagnostics/0/id", "value": "RUNTIME_CAPABILITY_REQUIRED" },
+          { "pointer": "/steps/0/diagnostics/0/severity", "value": "error" },
+          { "pointer": "/steps/0/next_actions/0/kind", "value": "verify_runtime_with_gates" },
+          { "pointer": "/steps/0/next_actions/0/command/1", "value": "verify" },
+          { "pointer": "/steps/0/next_actions/0/command/5", "value": "SecretRead" },
+          { "pointer": "/steps/0/next_actions/1/kind", "value": "run_runtime_with_gates" },
+          { "pointer": "/steps/0/next_actions/1/command/1", "value": "run" },
+          { "pointer": "/steps/0/next_actions/2/kind", "value": "repair_verify_gate" },
+          { "pointer": "/steps/0/next_actions/2/command/1", "value": "verify" },
+          { "pointer": "/steps/0/next_actions/3/kind", "value": "inspect_readiness" },
+          { "pointer": "/steps/0/next_actions/3/command/1", "value": "doctor" },
+          { "pointer": "/steps/0/issues/0/code", "value": "exit_status_mismatch" }
+        ]
+      }
+    },
+    {
       "name": "conformance_required_utility_tag_coverage_json",
       "bin": "sley-conformance",
       "args": ["coverage", "--json", "--require-tag", "cli:sley-docgen"],

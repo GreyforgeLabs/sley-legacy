@@ -62,6 +62,8 @@ const DEFAULT_CORPUS_TAGS: &[&str] = &[
 const DEFAULT_SMOKE_TAGS: &[&str] = &[
     "agent-bench:unused-private-task-repair",
     "ci:corpus",
+    "ci:deploy-next-actions",
+    "ci:deploy-runtime-diagnostics",
     "ci:lint",
     "ci:verify-next-actions",
     "ci:verify-runtime-diagnostics",
@@ -159,6 +161,7 @@ const DEFAULT_SMOKE_TAGS: &[&str] = &[
     "readiness:conformance-coverage",
     "readiness:contract-schema-defaults",
     "readiness:deploy-package-artifact-inspection",
+    "readiness:deploy-runtime-retry",
     "readiness:duplicate-import-repair-write-verify",
     "readiness:public-release-decision-packet",
     "readiness:doctor-deploy-package",
