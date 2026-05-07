@@ -308,6 +308,32 @@
       ]
     }
   ],
+  "call_arg_affordances": [
+    {
+      "target": "block:task:app.main.main:stmt:0:expr:arg:0",
+      "target_kind": "IntLiteral",
+      "call": "block:task:app.main.main:stmt:0:expr",
+      "task_target": "task:app.math.double",
+      "from": "app.main.main",
+      "callee": "math.double",
+      "position": 0,
+      "operation": {
+        "op": "ReplaceCallArg",
+        "payload": {
+          "from": "math.double",
+          "position": 0,
+          "scope": "task:app.main.main",
+          "source": "21"
+        },
+        "target": "task:app.math.double"
+      },
+      "editable_json_pointers": [
+        "/payload/source",
+        "/payload/position",
+        "/payload/scope"
+      ]
+    }
+  ],
   "outbound_calls": [
     {
       "from": "app.main.main",

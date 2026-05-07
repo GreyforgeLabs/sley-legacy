@@ -18,6 +18,7 @@
     "delete_affordances",
     "replace_affordances",
     "call_site_affordances",
+    "call_arg_affordances",
     "outbound_calls",
     "inbound_calls"
   ],
@@ -37,6 +38,7 @@
     "delete_affordances": { "type": "array", "items": { "$ref": "#/$defs/deleteAffordance" } },
     "replace_affordances": { "type": "array", "items": { "$ref": "#/$defs/replaceAffordance" } },
     "call_site_affordances": { "type": "array", "items": { "$ref": "#/$defs/callSiteAffordance" } },
+    "call_arg_affordances": { "type": "array", "items": { "$ref": "#/$defs/callArgAffordance" } },
     "outbound_calls": {
       "type": "array",
       "items": { "$ref": "sley.query.report.v0#/$defs/callSummary" }
@@ -248,6 +250,54 @@
         "task_target": { "type": "string", "minLength": 1 },
         "from": { "type": "string", "minLength": 1 },
         "callee": { "type": "string", "minLength": 1 },
+        "operation": { "$ref": "sley.edit_plan.report.v0#/$defs/graftOperation" },
+        "editable_json_pointers": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "callArgAffordance": {
+      "type": "object",
+      "required": [
+        "target",
+        "target_kind",
+        "call",
+        "task_target",
+        "from",
+        "callee",
+        "position",
+        "operation",
+        "editable_json_pointers"
+      ],
+      "properties": {
+        "target": { "type": "string", "minLength": 1 },
+        "target_kind": {
+          "enum": [
+            "Raw",
+            "StringLiteral",
+            "IntLiteral",
+            "FloatLiteral",
+            "BoolLiteral",
+            "Identifier",
+            "Unary",
+            "Binary",
+            "If",
+            "Call",
+            "ListLiteral",
+            "MapLiteral",
+            "Index",
+            "FieldAccess",
+            "RecordLiteral",
+            "Try"
+          ]
+        },
+        "call": { "type": "string", "minLength": 1 },
+        "task_target": { "type": "string", "minLength": 1 },
+        "from": { "type": "string", "minLength": 1 },
+        "callee": { "type": "string", "minLength": 1 },
+        "position": { "type": "integer", "minimum": 0 },
         "operation": { "$ref": "sley.edit_plan.report.v0#/$defs/graftOperation" },
         "editable_json_pointers": {
           "type": "array",

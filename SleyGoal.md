@@ -44,7 +44,7 @@ Current verified surface:
 
 - `cargo fmt -- --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 327 tests in the core `tests/sley_v0.rs`
+- Current integration coverage is 329 tests in the core `tests/sley_v0.rs`
   conformance file, with additional focused integration tests for LSP,
   workbench, agent bench, docgen, migration reports, sandbox replay, project
   templates, and ZJX envelope tools. The focused utility tests validate live
@@ -291,7 +291,7 @@ Current verified surface:
   unchecked-result binding migration reports, plus `sley-ci`, `sley-conformance`,
   `sley-docgen`, `sley-workbench`, `sley-sandbox-runner`, `sley-shadow`,
   `sley-agent-bench`, `sley-zjx` utility reports, and `sley-lsp` help/startup. It also includes
-  graph-slice checked add/insert/move/delete/replace/call-site affordances,
+  graph-slice checked add/insert/move/delete/replace/call-site/call-argument affordances,
   checked `insert_statement`, `replace_statement`, `replace_expression`, and
   `update_call_sites` graft templates, task-body
   insert graft emission, direct block, statement, take, and expression node
@@ -463,9 +463,9 @@ Current verified surface:
   graft operation and transaction template envelopes,
   the query schema now exposes strict task/take/type/effect/call row
   definitions,
-  graph-slice add/insert/move/delete/replace/call-site affordance operations
+  graph-slice add/insert/move/delete/replace/call-site/call-argument affordance operations
   reuse that strict graft operation schema, and graph-slice add, insert, move,
-  replace, delete, and call-site affordances are filtered through the graft
+  replace, delete, call-site, and call-argument affordances are filtered through the graft
   checker before being advertised,
   symbol graph, graph-slice, and graft outcome handoff roots have locked
   contract fixtures,

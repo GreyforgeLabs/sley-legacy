@@ -2107,6 +2107,80 @@ task helper -> Int {
 }
 
 #[test]
+fn edit_plan_graft_templates_include_checked_call_arg_affordances() {
+    let source = r#"
+module app.plan
+
+task main -> Int {
+  return call helper(21)
+}
+
+task helper -> Int {
+  take value: Int
+
+  return value * 2
+}
+"#;
+    let program = parse_program(source).expect("parse call-arg affordance plan fixture");
+    let report = build_edit_plan_report_with_options(
+        "app.plan",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("task:app.plan.main".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "ready");
+    let template = report
+        .graft_templates
+        .iter()
+        .find(|template| {
+            template.kind == "replace_call_arg"
+                && template.operation.pointer("/target")
+                    == Some(&serde_json::json!("task:app.plan.helper"))
+        })
+        .expect("checked call-arg replace template");
+    assert_eq!(
+        template.operation.pointer("/op"),
+        Some(&serde_json::json!("ReplaceCallArg"))
+    );
+    assert_eq!(
+        template.operation.pointer("/payload/from"),
+        Some(&serde_json::json!("helper"))
+    );
+    assert_eq!(
+        template.operation.pointer("/payload/source"),
+        Some(&serde_json::json!("21"))
+    );
+    assert_eq!(
+        template.operation.pointer("/payload/position"),
+        Some(&serde_json::json!(0))
+    );
+    assert_eq!(
+        template.operation.pointer("/payload/scope"),
+        Some(&serde_json::json!("task:app.plan.main"))
+    );
+    assert_eq!(
+        template.editable_json_pointers,
+        vec![
+            "/payload/source".to_string(),
+            "/payload/position".to_string(),
+            "/payload/scope".to_string()
+        ]
+    );
+    let graft: GraftInput =
+        serde_json::from_value(template.operation.clone()).expect("parse call-arg template");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:call-arg-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+}
+
+#[test]
 fn edit_plan_graft_templates_can_target_expression_surfaces() {
     let source = r#"
 module app.plan
@@ -10749,6 +10823,18 @@ fn conformance_report_summarizes_release_surface() {
         report_json
             .pointer("/smoke/required_tags")
             .and_then(|value| value.as_array())
+            .is_some_and(|tags| tags
+                .iter()
+                .any(|tag| tag == "graph-slice:checked-call-arg-affordances")
+                && tags
+                    .iter()
+                    .any(|tag| tag == "graft:templates:replace-call-arg")),
+        "conformance report should require checked call-argument affordance smoke coverage"
+    );
+    assert!(
+        report_json
+            .pointer("/smoke/required_tags")
+            .and_then(|value| value.as_array())
             .is_some_and(
                 |tags| tags.iter().any(|tag| tag == "host:scoped-capability")
                     && tags
@@ -10820,11 +10906,11 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/integration_test_count"),
-        Some(&serde_json::json!(327))
+        Some(&serde_json::json!(329))
     );
     assert_eq!(
         report_json.pointer("/summary/declared_integration_test_count"),
-        Some(&serde_json::json!(327))
+        Some(&serde_json::json!(329))
     );
     assert_eq!(
         report_json.pointer("/summary/test_count_matches_declared"),
@@ -10848,7 +10934,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/tests/integration_test_count"),
-        Some(&serde_json::json!(327))
+        Some(&serde_json::json!(329))
     );
     assert_eq!(
         report_json.pointer("/tests/declared_matches_actual"),
@@ -12536,6 +12622,7 @@ fn graph_slice_schema_reuses_strict_graft_operation_affordances() {
         "/$defs/deleteAffordance/properties/operation/$ref",
         "/$defs/replaceAffordance/properties/operation/$ref",
         "/$defs/callSiteAffordance/properties/operation/$ref",
+        "/$defs/callArgAffordance/properties/operation/$ref",
     ] {
         assert_eq!(
             schema.pointer(pointer),
@@ -12580,8 +12667,16 @@ fn graph_slice_schema_covers_focus_task_and_call_summaries() {
         Some(&serde_json::json!("#/$defs/callSiteAffordance"))
     );
     assert_eq!(
+        schema.pointer("/properties/call_arg_affordances/items/$ref"),
+        Some(&serde_json::json!("#/$defs/callArgAffordance"))
+    );
+    assert_eq!(
         schema.pointer("/$defs/callSiteAffordance/properties/target_kind/enum"),
         Some(&serde_json::json!(["call_site"]))
+    );
+    assert_eq!(
+        schema.pointer("/$defs/callArgAffordance/properties/target_kind/enum/2"),
+        Some(&serde_json::json!("IntLiteral"))
     );
     assert_eq!(
         schema.pointer("/$defs/sliceFocus/additionalProperties"),
@@ -17091,6 +17186,93 @@ fn graph_slice_reports_resolved_project_task_calls() {
         Some("agent:graph-slice-call-site-affordance-test".to_string()),
     );
     assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+
+    assert_eq!(slice.call_arg_affordances.len(), 1);
+    let call_arg = &slice.call_arg_affordances[0];
+    assert_eq!(
+        call_arg.target,
+        "block:task:app.main.main:stmt:0:expr:arg:0"
+    );
+    assert_eq!(call_arg.target_kind, "IntLiteral");
+    assert_eq!(call_arg.call, "block:task:app.main.main:stmt:0:expr");
+    assert_eq!(call_arg.task_target, "task:app.math.double");
+    assert_eq!(call_arg.from, "app.main.main");
+    assert_eq!(call_arg.callee, "math.double");
+    assert_eq!(call_arg.position, 0);
+    assert_eq!(
+        call_arg.operation.pointer("/op"),
+        Some(&serde_json::json!("ReplaceCallArg"))
+    );
+    assert_eq!(
+        call_arg.operation.pointer("/target"),
+        Some(&serde_json::json!("task:app.math.double"))
+    );
+    assert_eq!(
+        call_arg.operation.pointer("/payload/from"),
+        Some(&serde_json::json!("math.double"))
+    );
+    assert_eq!(
+        call_arg.operation.pointer("/payload/source"),
+        Some(&serde_json::json!("21"))
+    );
+    assert_eq!(
+        call_arg.operation.pointer("/payload/position"),
+        Some(&serde_json::json!(0))
+    );
+    assert_eq!(
+        call_arg.operation.pointer("/payload/scope"),
+        Some(&serde_json::json!("task:app.main.main"))
+    );
+    assert_eq!(
+        call_arg.editable_json_pointers,
+        vec![
+            "/payload/source".to_string(),
+            "/payload/position".to_string(),
+            "/payload/scope".to_string()
+        ]
+    );
+    let graft: GraftInput =
+        serde_json::from_value(call_arg.operation.clone()).expect("parse call arg affordance");
+    let outcome = apply_graft_input(
+        &project.program,
+        graft,
+        Some("agent:graph-slice-call-arg-affordance-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+}
+
+#[test]
+fn graph_slice_omits_call_arg_affordances_for_duplicate_same_callee_calls() {
+    let source = r#"
+module app.plan
+
+task main -> Int {
+  bind left = call helper(1)
+  bind right = call helper(2)
+  return left + right
+}
+
+task helper -> Int {
+  take value: Int
+
+  return value
+}
+"#;
+    let program = parse_program(source).expect("parse duplicate same-callee fixture");
+    let slice = slice_symbol_graph(&program, "task:app.plan.main").expect("slice main");
+
+    assert_eq!(slice.outbound_calls.len(), 2);
+    assert!(
+        slice
+            .outbound_calls
+            .iter()
+            .all(|call| call.status == "resolved" && call.callee == "helper")
+    );
+    assert!(
+        slice.call_arg_affordances.is_empty(),
+        "ReplaceCallArg affordances should stay hidden when task/callee scope would match multiple sibling call sites: {:#?}",
+        slice.call_arg_affordances
+    );
 }
 
 #[test]
@@ -23244,11 +23426,13 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:operations:remove-task-effect",
         "graft:project-existing-import-write",
         "graph-slice:checked-add-affordances",
+        "graph-slice:checked-call-arg-affordances",
         "graph-slice:checked-call-site-affordances",
         "graph-slice:checked-delete-affordances",
         "graph-slice:checked-insert-affordances",
         "graph-slice:checked-move-affordances",
         "graph-slice:checked-replace-affordances",
+        "graph-slice:call-arg-affordances",
         "graph-slice:call-site-affordances",
         "graph-slice:delete-affordances",
         "graph-slice:inbound-calls",
@@ -23269,6 +23453,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:templates:qualified-import-call",
         "graft:templates:replace-task-body",
         "graft:templates:replace-expression",
+        "graft:templates:replace-call-arg",
         "graft:templates:statement-surface-replace",
         "graft:templates:unchecked-result",
         "graft:templates:unchecked-result-binding",

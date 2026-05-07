@@ -88,6 +88,7 @@ pub struct SymbolGraphSlice {
     pub delete_affordances: Vec<DeleteNodeAffordance>,
     pub replace_affordances: Vec<ReplaceAffordance>,
     pub call_site_affordances: Vec<CallSiteAffordance>,
+    pub call_arg_affordances: Vec<CallArgAffordance>,
     pub outbound_calls: Vec<TaskCallSummary>,
     pub inbound_calls: Vec<TaskCallSummary>,
 }
@@ -177,6 +178,19 @@ pub struct CallSiteAffordance {
     pub task_target: String,
     pub from: String,
     pub callee: String,
+    pub operation: JsonValue,
+    pub editable_json_pointers: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct CallArgAffordance {
+    pub target: String,
+    pub target_kind: String,
+    pub call: String,
+    pub task_target: String,
+    pub from: String,
+    pub callee: String,
+    pub position: usize,
     pub operation: JsonValue,
     pub editable_json_pointers: Vec<String>,
 }
@@ -708,6 +722,15 @@ fn build_slice(
         call_site_affordances: checked_call_site_affordances(
             program,
             build_call_site_affordances(&outbound_calls, program),
+        ),
+        call_arg_affordances: checked_call_arg_affordances(
+            program,
+            build_call_arg_affordances(
+                focus_task_index,
+                &module_task_indexes,
+                program,
+                &outbound_calls,
+            ),
         ),
         outbound_calls,
         inbound_calls,
@@ -1948,6 +1971,402 @@ fn update_call_sites_operation(
 fn update_call_sites_editable_json_pointers() -> Vec<String> {
     vec![
         "/payload/replacement".to_string(),
+        "/payload/scope".to_string(),
+    ]
+}
+
+fn build_call_arg_affordances(
+    focus_task_index: Option<usize>,
+    module_task_indexes: &[usize],
+    program: &Program,
+    outbound_calls: &[TaskCallSummary],
+) -> Vec<CallArgAffordance> {
+    let task_indexes = focus_task_index
+        .map(|index| vec![index])
+        .unwrap_or_else(|| module_task_indexes.to_vec());
+    let call_scope_counts = outbound_call_scope_counts(outbound_calls);
+    let mut affordances = Vec::new();
+    for task_index in task_indexes {
+        collect_call_arg_affordances_in_block(
+            &program.tasks[task_index],
+            &program.tasks[task_index].body,
+            program,
+            &call_scope_counts,
+            &mut affordances,
+        );
+    }
+    affordances
+}
+
+fn outbound_call_scope_counts(calls: &[TaskCallSummary]) -> BTreeMap<(String, String), usize> {
+    let mut counts = BTreeMap::new();
+    for call in calls.iter().filter(|call| call.status == "resolved") {
+        *counts
+            .entry((call.from.clone(), call.callee.clone()))
+            .or_insert(0) += 1;
+    }
+    counts
+}
+
+fn checked_call_arg_affordances(
+    program: &Program,
+    affordances: Vec<CallArgAffordance>,
+) -> Vec<CallArgAffordance> {
+    affordances
+        .into_iter()
+        .filter(|affordance| {
+            graph_slice_operation_checks(
+                program,
+                &affordance.operation,
+                Some("agent:graph-slice-call-arg-affordance"),
+            )
+        })
+        .collect()
+}
+
+fn collect_call_arg_affordances_in_block(
+    task: &TaskDecl,
+    block: &Block,
+    program: &Program,
+    call_scope_counts: &BTreeMap<(String, String), usize>,
+    affordances: &mut Vec<CallArgAffordance>,
+) {
+    for statement in &block.statements {
+        collect_call_arg_affordances_in_statement(
+            task,
+            statement,
+            program,
+            call_scope_counts,
+            affordances,
+        );
+    }
+}
+
+fn collect_call_arg_affordances_in_statement(
+    task: &TaskDecl,
+    statement: &Statement,
+    program: &Program,
+    call_scope_counts: &BTreeMap<(String, String), usize>,
+    affordances: &mut Vec<CallArgAffordance>,
+) {
+    match &statement.kind {
+        StatementKind::Binding { expr, .. }
+        | StatementKind::Set { expr, .. }
+        | StatementKind::Return { expr }
+        | StatementKind::Expr { expr } => {
+            collect_call_arg_affordances_in_expr(
+                task,
+                expr,
+                program,
+                call_scope_counts,
+                affordances,
+            );
+        }
+        StatementKind::If {
+            condition,
+            then_block,
+            else_block,
+        } => {
+            collect_call_arg_affordances_in_expr(
+                task,
+                condition,
+                program,
+                call_scope_counts,
+                affordances,
+            );
+            collect_call_arg_affordances_in_block(
+                task,
+                then_block,
+                program,
+                call_scope_counts,
+                affordances,
+            );
+            if let Some(else_block) = else_block {
+                collect_call_arg_affordances_in_block(
+                    task,
+                    else_block,
+                    program,
+                    call_scope_counts,
+                    affordances,
+                );
+            }
+        }
+        StatementKind::While { condition, body } => {
+            collect_call_arg_affordances_in_expr(
+                task,
+                condition,
+                program,
+                call_scope_counts,
+                affordances,
+            );
+            collect_call_arg_affordances_in_block(
+                task,
+                body,
+                program,
+                call_scope_counts,
+                affordances,
+            );
+        }
+        StatementKind::For {
+            collection, body, ..
+        } => {
+            collect_call_arg_affordances_in_expr(
+                task,
+                collection,
+                program,
+                call_scope_counts,
+                affordances,
+            );
+            collect_call_arg_affordances_in_block(
+                task,
+                body,
+                program,
+                call_scope_counts,
+                affordances,
+            );
+        }
+        StatementKind::Forge { body } => {
+            collect_call_arg_affordances_in_block(
+                task,
+                body,
+                program,
+                call_scope_counts,
+                affordances,
+            );
+        }
+    }
+}
+
+fn collect_call_arg_affordances_in_expr(
+    task: &TaskDecl,
+    expr: &Expr,
+    program: &Program,
+    call_scope_counts: &BTreeMap<(String, String), usize>,
+    affordances: &mut Vec<CallArgAffordance>,
+) {
+    match &expr.kind {
+        ExprKind::Unary { expr, .. } | ExprKind::Try { expr } => {
+            collect_call_arg_affordances_in_expr(
+                task,
+                expr,
+                program,
+                call_scope_counts,
+                affordances,
+            );
+        }
+        ExprKind::Binary { left, right, .. } => {
+            collect_call_arg_affordances_in_expr(
+                task,
+                left,
+                program,
+                call_scope_counts,
+                affordances,
+            );
+            collect_call_arg_affordances_in_expr(
+                task,
+                right,
+                program,
+                call_scope_counts,
+                affordances,
+            );
+        }
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
+            collect_call_arg_affordances_in_expr(
+                task,
+                condition,
+                program,
+                call_scope_counts,
+                affordances,
+            );
+            collect_call_arg_affordances_in_expr(
+                task,
+                then_branch,
+                program,
+                call_scope_counts,
+                affordances,
+            );
+            collect_call_arg_affordances_in_expr(
+                task,
+                else_branch,
+                program,
+                call_scope_counts,
+                affordances,
+            );
+        }
+        ExprKind::Call { callee, args } => {
+            push_call_arg_affordances(
+                task,
+                expr,
+                callee,
+                args,
+                program,
+                call_scope_counts,
+                affordances,
+            );
+            collect_call_arg_affordances_in_expr(
+                task,
+                callee,
+                program,
+                call_scope_counts,
+                affordances,
+            );
+            for arg in args {
+                collect_call_arg_affordances_in_expr(
+                    task,
+                    arg,
+                    program,
+                    call_scope_counts,
+                    affordances,
+                );
+            }
+        }
+        ExprKind::ListLiteral { items } => {
+            for item in items {
+                collect_call_arg_affordances_in_expr(
+                    task,
+                    item,
+                    program,
+                    call_scope_counts,
+                    affordances,
+                );
+            }
+        }
+        ExprKind::MapLiteral { entries } => {
+            for entry in entries {
+                collect_call_arg_affordances_in_expr(
+                    task,
+                    &entry.key,
+                    program,
+                    call_scope_counts,
+                    affordances,
+                );
+                collect_call_arg_affordances_in_expr(
+                    task,
+                    &entry.value,
+                    program,
+                    call_scope_counts,
+                    affordances,
+                );
+            }
+        }
+        ExprKind::Index { collection, index } => {
+            collect_call_arg_affordances_in_expr(
+                task,
+                collection,
+                program,
+                call_scope_counts,
+                affordances,
+            );
+            collect_call_arg_affordances_in_expr(
+                task,
+                index,
+                program,
+                call_scope_counts,
+                affordances,
+            );
+        }
+        ExprKind::FieldAccess { receiver, .. } => {
+            collect_call_arg_affordances_in_expr(
+                task,
+                receiver,
+                program,
+                call_scope_counts,
+                affordances,
+            );
+        }
+        ExprKind::RecordLiteral { fields, .. } => {
+            for field in fields {
+                collect_call_arg_affordances_in_expr(
+                    task,
+                    &field.expr,
+                    program,
+                    call_scope_counts,
+                    affordances,
+                );
+            }
+        }
+        ExprKind::Raw { .. }
+        | ExprKind::StringLiteral { .. }
+        | ExprKind::IntLiteral { .. }
+        | ExprKind::FloatLiteral { .. }
+        | ExprKind::BoolLiteral { .. }
+        | ExprKind::Identifier { .. } => {}
+    }
+}
+
+fn push_call_arg_affordances(
+    task: &TaskDecl,
+    call: &Expr,
+    callee: &Expr,
+    args: &[Expr],
+    program: &Program,
+    call_scope_counts: &BTreeMap<(String, String), usize>,
+    affordances: &mut Vec<CallArgAffordance>,
+) {
+    let Some(path) = callee_path(callee) else {
+        return;
+    };
+    let from = task_fq_name(task);
+    if call_scope_counts
+        .get(&(from.clone(), path.clone()))
+        .copied()
+        != Some(1)
+    {
+        return;
+    }
+    let TaskResolution::Resolved { index, .. } = resolve_task(program, &task_module(task), &path)
+    else {
+        return;
+    };
+    let task_target = program.tasks[index].id.clone();
+    for (position, arg) in args.iter().enumerate() {
+        affordances.push(CallArgAffordance {
+            target: arg.id.clone(),
+            target_kind: expr_kind_name(&arg.kind).to_string(),
+            call: call.id.clone(),
+            task_target: task_target.clone(),
+            from: from.clone(),
+            callee: path.clone(),
+            position,
+            operation: replace_call_arg_operation(
+                &task_target,
+                &path,
+                &arg.source,
+                position,
+                &from,
+            ),
+            editable_json_pointers: replace_call_arg_editable_json_pointers(),
+        });
+    }
+}
+
+fn replace_call_arg_operation(
+    target: &str,
+    from: &str,
+    source: &str,
+    position: usize,
+    task_scope: &str,
+) -> JsonValue {
+    json!({
+        "op": "ReplaceCallArg",
+        "target": target,
+        "payload": {
+            "from": from,
+            "source": source,
+            "position": position,
+            "scope": format!("task:{task_scope}")
+        }
+    })
+}
+
+fn replace_call_arg_editable_json_pointers() -> Vec<String> {
+    vec![
+        "/payload/source".to_string(),
+        "/payload/position".to_string(),
         "/payload/scope".to_string(),
     ]
 }
