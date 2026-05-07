@@ -44,7 +44,7 @@ Current verified surface:
 
 - `cargo fmt -- --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 325 tests in the core `tests/sley_v0.rs`
+- Current integration coverage is 326 tests in the core `tests/sley_v0.rs`
   conformance file, with additional focused integration tests for LSP,
   workbench, agent bench, docgen, migration reports, sandbox replay, project
   templates, and ZJX envelope tools. The focused utility tests validate live
@@ -441,7 +441,7 @@ Current verified surface:
   `AddImport` writeback into an existing on-disk module file that was not yet
   loaded through the entry import graph through both direct graft JSON and
   `sley fix --write --kind add_import --module <module>` followed by strict
-  project checks, plus scoped seeded host capability acceptance and
+  project checks, plus normalized scoped seeded host capability acceptance and
   scope-denial diagnostics for DatabaseRead, DatabaseWrite, DbRead/DbWrite
   aliases, Network, Shell, ModelCall, SecretRead, Deploy, and Spend under the
   runtime smoke surface,

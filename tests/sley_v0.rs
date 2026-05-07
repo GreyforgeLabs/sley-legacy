@@ -10749,11 +10749,11 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/integration_test_count"),
-        Some(&serde_json::json!(325))
+        Some(&serde_json::json!(326))
     );
     assert_eq!(
         report_json.pointer("/summary/declared_integration_test_count"),
-        Some(&serde_json::json!(325))
+        Some(&serde_json::json!(326))
     );
     assert_eq!(
         report_json.pointer("/summary/test_count_matches_declared"),
@@ -10777,7 +10777,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/tests/integration_test_count"),
-        Some(&serde_json::json!(325))
+        Some(&serde_json::json!(326))
     );
     assert_eq!(
         report_json.pointer("/tests/declared_matches_actual"),
@@ -16290,6 +16290,54 @@ task main -> Result<DbRow, Error> uses DbWrite {
         write,
         "DbWrite",
         "users",
+    );
+}
+
+#[test]
+fn runtime_database_scopes_match_normalized_table_names() {
+    let mut read = RuntimeGates::new();
+    read.grant_effect_scope("DatabaseRead", "users");
+    read.grant_db_rows(
+        "users",
+        vec![db_row([
+            ("id", Value::Text("u1".to_string())),
+            ("name", Value::Text("Ada".to_string())),
+        ])],
+    );
+    let read_source = r#"
+task main -> Result<Text, Error> uses DatabaseRead {
+  bind row = call db.try_query_one("SELECT * FROM Users WHERE id = ?", "u1")?
+  return Ok(row.text("name"))
+}
+"#;
+    let read_program = parse_program(read_source).expect("parse normalized read scope");
+    let read_diagnostics = check_program(&read_program);
+    assert!(
+        !has_errors(&read_diagnostics),
+        "unexpected diagnostics: {read_diagnostics:#?}"
+    );
+    assert_eq!(
+        run_main_with_gates(&read_program, &read),
+        Ok(Value::Ok(Box::new(Value::Text("Ada".to_string()))))
+    );
+
+    let mut write = RuntimeGates::new();
+    write.grant_effect_scope("DbWrite", "users");
+    let write_source = r#"
+task main -> Result<DbRow, Error> uses DbWrite {
+  return call db.try_insert("Users", { id: "u2" })
+}
+"#;
+    let write_program = parse_program(write_source).expect("parse normalized write scope");
+    let write_diagnostics = check_program(&write_program);
+    assert!(
+        !has_errors(&write_diagnostics),
+        "unexpected diagnostics: {write_diagnostics:#?}"
+    );
+    let inserted = db_row([("id", Value::Text("u2".to_string()))]);
+    assert_eq!(
+        run_main_with_gates(&write_program, &write),
+        Ok(Value::Ok(Box::new(Value::Record(inserted))))
     );
 }
 

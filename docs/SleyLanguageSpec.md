@@ -241,12 +241,12 @@ calls return direct values and surface host I/O failures as diagnostics.
 failures as `Err({ code, message })`. When a gate has a root, filesystem host
 calls reject paths outside that root with `RUNTIME_CAPABILITY_SCOPE_DENIED`.
 For non-filesystem host effects, `=SCOPE` narrows the seeded resource key:
-database host adapters require an exact table scope, URL scopes match exact
-URLs or path boundaries, and secret name, shell command, model prompt, deploy
-target, and spend request adapters use deterministic exact-or-delimiter text
-scopes. A scoped host adapter that tries to touch a non-matching seeded resource
-fails with `RUNTIME_CAPABILITY_SCOPE_DENIED`; this remains an authority
-diagnostic, not a
+database host adapters require an exact normalized table scope, URL scopes
+match exact URLs or path boundaries, and secret name, shell command, model
+prompt, deploy target, and spend request adapters use deterministic
+exact-or-delimiter text scopes. A scoped host adapter that tries to touch a
+non-matching seeded resource fails with `RUNTIME_CAPABILITY_SCOPE_DENIED`; this
+remains an authority diagnostic, not a
 recoverable `Result` error.
 Text-scope delimiter boundaries are `/`, `:`, `.`, `-`, `_`, space, and tab.
 
