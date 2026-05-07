@@ -1474,6 +1474,111 @@ fn doctor_ready_actions_seed_reachable_agent_host_calls() {
 }
 
 #[test]
+fn verify_passed_deploy_actions_prepare_dry_run_package() {
+    let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let program = parse_program(include_str!("../examples/agent_deploy_pipeline.sley"))
+        .expect("parse agent deploy pipeline");
+    let mut gates = RuntimeGates::new();
+    gates.grant_effect("SecretRead");
+    gates.grant_secret("api_key", "redacted");
+    gates.grant_effect("Network");
+    gates.grant_http_text("https://example.test/profile", "profile ready");
+    gates.grant_effect("ModelCall");
+    gates.grant_model_output("deploy-plan", "plan approved");
+    gates.grant_effect("Deploy");
+    gates.grant_deploy_result("staging", "staged");
+
+    let report = build_verify_report(
+        "examples/agent_deploy_pipeline.sley",
+        Ok(program),
+        gates,
+        false,
+    );
+    assert_eq!(report.status, "passed");
+    assert_eq!(report.next_actions[0].kind, "seal_verified_target");
+    assert_eq!(report.next_actions[1].kind, "package_verified_target");
+    assert_eq!(report.next_actions[2].kind, "prepare_deploy_package");
+    assert_eq!(
+        report.next_actions[2].command,
+        vec![
+            "sley",
+            "deploy",
+            "--json",
+            "--dry-run",
+            "--artifacts-dir",
+            ".sley/deploy",
+            "--cap",
+            "SecretRead",
+            "--cap",
+            "Network",
+            "--cap",
+            "ModelCall",
+            "--cap",
+            "Deploy",
+            "--secret",
+            "api_key",
+            "redacted",
+            "--http-text",
+            "https://example.test/profile",
+            "profile ready",
+            "--model-output",
+            "deploy-plan",
+            "plan approved",
+            "--deploy-result",
+            "staging",
+            "staged",
+            "examples/agent_deploy_pipeline.sley",
+        ]
+        .into_iter()
+        .map(str::to_string)
+        .collect::<Vec<_>>()
+    );
+
+    let deploy_root = temp_project_dir("verify-agent-deploy");
+    let deploy_root_arg = sley_string(&deploy_root);
+    let deploy_command = report.next_actions[2]
+        .command
+        .iter()
+        .map(|segment| {
+            if segment == ".sley/deploy" {
+                deploy_root_arg.clone()
+            } else {
+                segment.clone()
+            }
+        })
+        .collect::<Vec<_>>();
+    let deploy = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .current_dir(&repo_root)
+        .args(&deploy_command[1..])
+        .output()
+        .expect("run verify deploy action");
+    let deploy_stdout = String::from_utf8(deploy.stdout).expect("deploy stdout utf8");
+    let deploy_stderr = String::from_utf8(deploy.stderr).expect("deploy stderr utf8");
+    assert!(
+        deploy.status.success(),
+        "stdout: {deploy_stdout}\nstderr: {deploy_stderr}"
+    );
+    let deploy_json: serde_json::Value =
+        serde_json::from_str(&deploy_stdout).expect("parse deploy JSON");
+    assert_eq!(
+        deploy_json.pointer("/schema"),
+        Some(&serde_json::json!(DEPLOY_REPORT_SCHEMA))
+    );
+    assert_eq!(
+        deploy_json.pointer("/status"),
+        Some(&serde_json::json!("ready"))
+    );
+    assert_eq!(
+        deploy_json.pointer("/verify/runtime/value/value/value"),
+        Some(&serde_json::json!("profile ready | plan approved | staged"))
+    );
+    assert!(deploy_root.join("deploy-report.json").exists());
+    assert!(deploy_root.join("seal.json").exists());
+    assert!(deploy_root.join("zjx-envelope.json").exists());
+    let _ = fs::remove_dir_all(deploy_root);
+}
+
+#[test]
 fn edit_plan_report_ranks_query_surfaces_and_carries_lint_findings() {
     let source = r#"
 module app.plan
@@ -11142,11 +11247,11 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/integration_test_count"),
-        Some(&serde_json::json!(332))
+        Some(&serde_json::json!(333))
     );
     assert_eq!(
         report_json.pointer("/summary/declared_integration_test_count"),
-        Some(&serde_json::json!(332))
+        Some(&serde_json::json!(333))
     );
     assert_eq!(
         report_json.pointer("/summary/test_count_matches_declared"),
@@ -11170,7 +11275,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/tests/integration_test_count"),
-        Some(&serde_json::json!(332))
+        Some(&serde_json::json!(333))
     );
     assert_eq!(
         report_json.pointer("/tests/declared_matches_actual"),
