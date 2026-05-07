@@ -6,6 +6,9 @@
     "query": "sley.query.report.v0",
     "lint": "sley.lint.report.v0"
   },
+  "filters": {
+    "module": null
+  },
   "summary": {
     "module_count": 1,
     "task_count": 1,

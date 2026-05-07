@@ -33,6 +33,8 @@ enum Command {
 struct ReportArgs {
     #[arg(long)]
     json: bool,
+    #[arg(long)]
+    module: Option<String>,
     target: PathBuf,
 }
 
@@ -42,6 +44,7 @@ struct ShadowReport {
     status: String,
     target: String,
     source_schemas: ShadowSourceSchemas,
+    filters: ShadowFilters,
     summary: ShadowSummary,
     authority_seeds: Vec<AuthoritySeed>,
     lint_links: Vec<LintLink>,
@@ -53,6 +56,11 @@ struct ShadowReport {
 struct ShadowSourceSchemas {
     query: String,
     lint: String,
+}
+
+#[derive(Debug, Serialize)]
+struct ShadowFilters {
+    module: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -133,25 +141,34 @@ fn main() -> Result<()> {
 
 fn build_shadow_report(args: ReportArgs) -> ShadowReport {
     let target = path_string(&args.target);
+    let filters = ShadowFilters {
+        module: args.module.clone(),
+    };
     let program = match load_target_program(&args.target) {
         Ok(program) => program,
-        Err(diagnostics) => return blocked_report(target, diagnostics, Vec::new()),
+        Err(diagnostics) => return blocked_report(target, filters, diagnostics, Vec::new()),
     };
 
     let diagnostics = check_program(&program);
     if has_errors(&diagnostics) {
-        return blocked_report(target, diagnostics, Vec::new());
+        return blocked_report(target, filters, diagnostics, Vec::new());
     }
 
     let query = build_query_report(
         &program,
         QueryOptions {
             kind: QueryKind::All,
-            module: None,
+            module: args.module.clone(),
             exported_only: false,
         },
     );
-    let lint = build_lint_report(&program, LintOptions::default());
+    let lint = build_lint_report(
+        &program,
+        LintOptions {
+            module: args.module,
+            ..LintOptions::default()
+        },
+    );
     let authority_seeds = build_authority_seeds(&query);
     let index = build_link_index(&query);
     let lint_links = lint
@@ -192,6 +209,7 @@ fn build_shadow_report(args: ReportArgs) -> ShadowReport {
             query: query.schema,
             lint: lint.schema,
         },
+        filters,
         summary,
         authority_seeds,
         lint_links,
@@ -202,6 +220,7 @@ fn build_shadow_report(args: ReportArgs) -> ShadowReport {
 
 fn blocked_report(
     target: String,
+    filters: ShadowFilters,
     diagnostics: Vec<Diagnostic>,
     issues: Vec<ShadowIssue>,
 ) -> ShadowReport {
@@ -213,6 +232,7 @@ fn blocked_report(
             query: QUERY_REPORT_SCHEMA.to_string(),
             lint: LINT_REPORT_SCHEMA.to_string(),
         },
+        filters,
         summary: ShadowSummary {
             module_count: 0,
             task_count: 0,
@@ -392,9 +412,10 @@ fn print_json(report: &ShadowReport) -> Result<()> {
 
 fn print_human(report: &ShadowReport) {
     println!(
-        "sley-shadow report status={} target={} modules={} tasks={} effectful_tasks={} calls={} lint_findings={} linked={} unlinked={} authority_seeds={} issues={}",
+        "sley-shadow report status={} target={} module={} modules={} tasks={} effectful_tasks={} calls={} lint_findings={} linked={} unlinked={} authority_seeds={} issues={}",
         report.status,
         report.target,
+        report.filters.module.as_deref().unwrap_or("*"),
         report.summary.module_count,
         report.summary.task_count,
         report.summary.effectful_task_count,

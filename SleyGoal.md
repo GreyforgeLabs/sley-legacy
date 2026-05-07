@@ -143,8 +143,8 @@ Current verified surface:
 - `sley-shadow` is available as an in-tree non-authoritative helper replay with
   `schema: "sley.shadow.report.v0"` over checked `sley.query.report.v0` and
   `sley.lint.report.v0` data for single-file and project-root targets; it
-  links lint findings to query rows and derives seeded `--cap` args for
-  effectful tasks while leaving Rust Loom as the
+  supports module-scoped replay, links lint findings to query rows, and derives
+  seeded `--cap` args for effectful tasks while leaving Rust Loom as the
   semantic oracle.
 - `sley-agent-bench` is available as an in-tree deterministic repair-loop
   benchmark with `schema: "sley.agent_bench.report.v0"` over JSON inspection,

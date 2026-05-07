@@ -62,6 +62,7 @@ sandbox-runner:
 shadow:
 	cargo run --bin sley-shadow -- report --json examples/agent_deploy_pipeline.sley
 	cargo run --bin sley-shadow -- report --json examples/agent_project
+	cargo run --bin sley-shadow -- report --json --module agent.pipeline examples/agent_project
 
 zjx-tools:
 	cargo run --bin sley-zjx -- inspect --json fixtures/contracts/zjx_hello_ready.json

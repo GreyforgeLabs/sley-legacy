@@ -122,7 +122,7 @@ make syntax
 sley-lsp
 sley-workbench --json [--html <path>] [--slice <node-id>] <target>
 sley-docgen reference --json [--markdown <path>] [--module <module>] [--exported-only] <target>
-sley-shadow report --json <target>
+sley-shadow report --json [--module <module>] <target>
 sley-agent-bench run --json [--case <name>] [--keep-workdir] [--sley-bin <path>]
 sley-migrate report --json [--schemas <dir> --fixtures <dir>] <target>
 sley-sandbox-runner run --json [--keep-workdir] <manifest.json>

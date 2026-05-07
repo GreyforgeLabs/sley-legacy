@@ -12235,6 +12235,7 @@
         "stdout_json": [
           { "pointer": "/schema", "value": "sley.shadow.report.v0" },
           { "pointer": "/status", "value": "clean" },
+          { "pointer": "/filters/module", "value": null },
           { "pointer": "/source_schemas/query", "value": "sley.query.report.v0" },
           { "pointer": "/source_schemas/lint", "value": "sley.lint.report.v0" },
           { "pointer": "/summary/authority_seed_count", "value": 1 },
@@ -12560,6 +12561,7 @@
           { "pointer": "/schema", "value": "sley.shadow.report.v0" },
           { "pointer": "/status", "value": "clean" },
           { "pointer": "/target", "value": "examples/agent_project" },
+          { "pointer": "/filters/module", "value": null },
           { "pointer": "/summary/module_count", "value": 2 },
           { "pointer": "/summary/task_count", "value": 4 },
           { "pointer": "/summary/effectful_task_count", "value": 4 },
@@ -12569,6 +12571,36 @@
           { "pointer": "/authority_seeds/1/qualified_name", "value": "agent.pipeline.collect_profile" },
           { "pointer": "/authority_seeds/2/command_args/1", "value": "ModelCall" },
           { "pointer": "/authority_seeds/3/command_args/1", "value": "Deploy" }
+        ]
+      }
+    },
+    {
+      "name": "shadow_agent_project_pipeline_module_json",
+      "bin": "sley-shadow",
+      "args": ["report", "--json", "--module", "agent.pipeline", "examples/agent_project"],
+      "covers": [
+        "cli:sley-shadow",
+        "dogfood:agent-project",
+        "examples:project",
+        "json:sley.shadow.report.v0",
+        "project:imported-host-authority",
+        "readiness:shadow-helper"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.shadow.report.v0" },
+          { "pointer": "/status", "value": "clean" },
+          { "pointer": "/target", "value": "examples/agent_project" },
+          { "pointer": "/filters/module", "value": "agent.pipeline" },
+          { "pointer": "/summary/module_count", "value": 1 },
+          { "pointer": "/summary/task_count", "value": 3 },
+          { "pointer": "/summary/effectful_task_count", "value": 3 },
+          { "pointer": "/summary/call_count", "value": 10 },
+          { "pointer": "/summary/authority_seed_count", "value": 3 },
+          { "pointer": "/authority_seeds/0/qualified_name", "value": "agent.pipeline.collect_profile" },
+          { "pointer": "/authority_seeds/1/command_args/1", "value": "ModelCall" },
+          { "pointer": "/authority_seeds/2/command_args/1", "value": "Deploy" }
         ]
       }
     },
