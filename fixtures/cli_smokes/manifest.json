@@ -10345,7 +10345,7 @@
         "run",
         "--json",
         "--cap",
-        "DatabaseRead=user",
+        "DatabaseRead=users",
         "--db-table",
         "users=examples/users.json",
         "examples/db_gate.sley"
@@ -10407,7 +10407,7 @@
         "run",
         "--json",
         "--cap",
-        "DbRead=user",
+        "DbRead=users",
         "--db-table",
         "users=examples/users.json",
         "{tmp}/db-read-alias/main.sley"
@@ -10472,9 +10472,9 @@
         "run",
         "--json",
         "--cap",
-        "DatabaseRead=user",
+        "DatabaseRead=users",
         "--cap",
-        "DatabaseWrite=user",
+        "DatabaseWrite=users",
         "--db-table",
         "users=examples/users.json",
         "examples/db_write_gate.sley"
@@ -10503,7 +10503,7 @@
         "run",
         "--json",
         "--cap",
-        "DatabaseRead=user",
+        "DatabaseRead=users",
         "--cap",
         "DatabaseWrite=orders",
         "--db-table",
@@ -10541,7 +10541,7 @@
         "run",
         "--json",
         "--cap",
-        "DbWrite=user",
+        "DbWrite=users",
         "{tmp}/db-write-alias/main.sley"
       ],
       "covers": [
@@ -11028,7 +11028,7 @@
         "run",
         "--json",
         "--cap",
-        "DatabaseRead=user",
+        "DatabaseRead=users",
         "--cap",
         "DatabaseWrite=orders",
         "fixtures/corpus/accepted/agent_data_authority.sley"

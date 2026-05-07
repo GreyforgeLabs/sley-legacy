@@ -1145,11 +1145,12 @@ Near-term:
 1. Harden capability-backed host adapters beyond root-scoped filesystem gates,
    deterministic seeded database surfaces, seeded network text, seeded shell
    command output, seeded model completions, seeded secret values, seeded
-   deployment stage results, and seeded spend authorizations. Non-file seeded
-   host adapters now support deterministic text-prefix capability scopes over
-   database tables, URLs, secret names, shell commands, model prompts, deploy
-   targets, and spend requests. Preserve `Result<T, Error>` surfaces for
-   recoverable host failures and keep authority failures as diagnostics.
+   deployment stage results, and seeded spend authorizations. Database host
+   adapters now require exact table capability scopes; the other non-file
+   seeded host adapters support deterministic text-prefix capability scopes
+   over URLs, secret names, shell commands, model prompts, deploy targets, and
+   spend requests. Preserve `Result<T, Error>` surfaces for recoverable host
+   failures and keep authority failures as diagnostics.
 2. Grow the accepted/rejected synthetic gold corpus and CLI smoke manifest with
    graft, module, and runtime authority cases.
 3. Start consuming `sley.query.report.v0` and `sley.lint.report.v0` from Sley

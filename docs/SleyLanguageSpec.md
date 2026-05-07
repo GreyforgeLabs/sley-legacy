@@ -240,10 +240,11 @@ calls return direct values and surface host I/O failures as diagnostics.
 `try_` filesystem calls return `Result<T, Error>` and surface recoverable I/O
 failures as `Err({ code, message })`. When a gate has a root, filesystem host
 calls reject paths outside that root with `RUNTIME_CAPABILITY_SCOPE_DENIED`.
-For non-filesystem host effects, `=SCOPE` is a deterministic text prefix over
-the seeded resource key: database table, URL, secret name, shell command, model
-prompt, deploy target, or spend request. A scoped host adapter that tries to
-touch a non-matching seeded resource fails with
+For non-filesystem host effects, `=SCOPE` narrows the seeded resource key:
+database host adapters require an exact table scope, while URL, secret name,
+shell command, model prompt, deploy target, and spend request adapters use a
+deterministic text-prefix scope. A scoped host adapter that tries to touch a
+non-matching seeded resource fails with
 `RUNTIME_CAPABILITY_SCOPE_DENIED`; this remains an authority diagnostic, not a
 recoverable `Result` error.
 
@@ -1407,8 +1408,9 @@ refuse generic data disguised as Sley artifacts before compression begins.
   seeded database reads, per-run deterministic database inserts, seeded secret
   values, seeded deployment stage results, seeded spend authorizations, seeded
   network text responses, seeded shell command outputs, and seeded model prompt
-  completions; non-file seeded adapters now support deterministic text-prefix
-  scopes over their seeded resource keys
+  completions; database host adapters now require exact table scopes, while
+  the other non-file seeded adapters support deterministic text-prefix scopes
+  over their seeded resource keys
 - Sley-level `Result` values, `?` propagation, and typed filesystem,
   database, secret, deploy, spend, network, shell, and model host fallibility
   execute

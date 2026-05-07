@@ -71,10 +71,11 @@ Current verified surface:
   recursive runtime value payload and empty diagnostics on successful
   deterministic execution. Verify reports reuse the same strict value contract
   when embedding runtime results. Runtime gates use `--cap EFFECT[=SCOPE]`;
-  file effects treat the scope as a filesystem root, while non-file seeded host
-  adapters enforce deterministic text-prefix scopes over database tables, URLs,
-  secret names, shell commands, model prompts, deploy targets, and spend
-  requests. Scope mismatches remain authority diagnostics.
+  file effects treat the scope as a filesystem root, database host adapters
+  require exact table scopes, and the other non-file seeded host adapters
+  enforce deterministic text-prefix scopes over URLs, secret names, shell
+  commands, model prompts, deploy targets, and spend requests. Scope mismatches
+  remain authority diagnostics.
 - `sley-contract` is available as an in-tree contract utility scaffold with
   `inventory`, `check-fixtures`, `validate`, and `inspect-deploy-artifacts`
   JSON Schema validation commands over `docs/schemas/`, `fixtures/contracts/`,

@@ -213,9 +213,10 @@ Current development phase:
   adapters plus seeded network text, seeded shell output, seeded model
   completions, seeded secret values, seeded deployment stage results, and
   seeded spend authorization results through explicit fallible calls returning
-  `Result<T, Error>`; non-file seeded adapters can be narrowed with
-  `--cap EFFECT=SCOPE`, where the scope is a deterministic text prefix over
-  the seeded resource key, and scope mismatches remain diagnostics
+  `Result<T, Error>`; database adapters can be narrowed with exact table
+  scopes, while other non-file seeded adapters can be narrowed with
+  `--cap EFFECT=SCOPE` deterministic text prefixes over the seeded resource
+  key, and scope mismatches remain diagnostics
 - release-readiness now includes manifest-backed CLI smokes for stable command
   output, JSON roots, graph/ZJX surfaces, run reports, edit-plan reports,
   deploy dry-run reports, graft/fix dry runs, strict edit-plan graft operation
