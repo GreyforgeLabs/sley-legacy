@@ -2152,6 +2152,42 @@ fn edit_plan_ready_actions_seed_reachable_agent_host_calls() {
         verify_json.pointer("/runtime/value/value/value"),
         Some(&serde_json::json!("profile ready | plan approved | staged"))
     );
+
+    assert_eq!(
+        plan_json.pointer("/next_actions/4/kind"),
+        Some(&serde_json::json!("post_edit_ci_verify"))
+    );
+    let ci_verify_command = plan_json
+        .pointer("/next_actions/4/command")
+        .and_then(serde_json::Value::as_array)
+        .expect("post-edit ci verify command")
+        .iter()
+        .map(|value| value.as_str().expect("string command segment").to_string())
+        .collect::<Vec<_>>();
+    let mut expected_ci_verify_command = verify_command.clone();
+    expected_ci_verify_command[0] = "sley-ci".to_string();
+    assert_eq!(ci_verify_command, expected_ci_verify_command);
+    let ci_verify = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
+        .current_dir(&repo_root)
+        .args(&ci_verify_command[1..])
+        .output()
+        .expect("run plan post-edit ci verify action");
+    let ci_verify_stdout = String::from_utf8(ci_verify.stdout).expect("ci verify stdout utf8");
+    let ci_verify_stderr = String::from_utf8(ci_verify.stderr).expect("ci verify stderr utf8");
+    assert!(
+        ci_verify.status.success(),
+        "stdout: {ci_verify_stdout}\nstderr: {ci_verify_stderr}"
+    );
+    let ci_verify_json: serde_json::Value =
+        serde_json::from_str(&ci_verify_stdout).expect("parse sley-ci verify JSON");
+    assert_eq!(
+        ci_verify_json.pointer("/schema"),
+        Some(&serde_json::json!("sley.ci.report.v0"))
+    );
+    assert_eq!(
+        ci_verify_json.pointer("/steps/0/stdout_schema"),
+        Some(&serde_json::json!(VERIFY_REPORT_SCHEMA))
+    );
 }
 
 #[test]
@@ -24786,6 +24822,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:lint-repair-preview",
         "readiness:lint-repair-write-command",
         "readiness:lint-repair-write-verify",
+        "readiness:plan-ci-post-edit-verify",
         "readiness:plan-seeded-post-edit-verify",
         "readiness:mutable-binding-repair-write-verify",
         "readiness:self-assignment-repair-write-verify",

@@ -1378,6 +1378,7 @@
         "cli:plan",
         "json:sley.edit_plan.report.v0",
         "readiness:agent-quickstart-path",
+        "readiness:plan-ci-post-edit-verify",
         "readiness:plan-seeded-post-edit-verify",
         "scaffold:agent-project-quickstart"
       ],
@@ -1400,7 +1401,16 @@
           { "pointer": "/next_actions/3/command/11", "value": "--secret" },
           { "pointer": "/next_actions/3/command/16", "value": "profile ready" },
           { "pointer": "/next_actions/3/command/19", "value": "plan approved" },
-          { "pointer": "/next_actions/3/command/22", "value": "staged" }
+          { "pointer": "/next_actions/3/command/22", "value": "staged" },
+          { "pointer": "/next_actions/4/kind", "value": "post_edit_ci_verify" },
+          { "pointer": "/next_actions/4/command/0", "value": "sley-ci" },
+          { "pointer": "/next_actions/4/command/1", "value": "verify" },
+          { "pointer": "/next_actions/4/command/4", "value": "SecretRead" },
+          { "pointer": "/next_actions/4/command/10", "value": "Deploy" },
+          { "pointer": "/next_actions/4/command/11", "value": "--secret" },
+          { "pointer": "/next_actions/4/command/16", "value": "profile ready" },
+          { "pointer": "/next_actions/4/command/19", "value": "plan approved" },
+          { "pointer": "/next_actions/4/command/22", "value": "staged" }
         ]
       }
     },
