@@ -931,7 +931,9 @@ matching `sley fix --write`, and entrypoint runs.
 Ready reports include a `verify_gate` next action before entrypoint runs; if
 the entrypoint declares effects, the command includes explicit runtime `--cap`
 gates plus deterministic seed arguments inferred from reachable literal host
-calls when Sley can do so safely.
+calls when Sley can do so safely. Deploy-capable entrypoints also include a
+`prepare_deploy_package` next action that builds a local dry-run deploy package
+under `.sley/deploy` without live provider calls.
 `--deny-warnings` treats lint findings as blocked while still printing the
 versioned report. Non-JSON doctor output prints stable lint finding IDs and
 nodes before next actions.
