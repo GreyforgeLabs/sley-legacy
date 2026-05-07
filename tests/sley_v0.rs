@@ -2936,6 +2936,87 @@ task main -> Result<Text, Error> uses FileWrite {
 }
 
 #[test]
+fn edit_plan_graft_templates_include_unchecked_result_binding_propagation() {
+    let source = r#"
+module app.unchecked_binding
+
+task main -> Result<Text, Error> uses FileRead {
+  bind discarded_file = fs.try_read_text("examples/hello.sley")
+  bind handled_file = fs.try_read_text("examples/hello.sley")?
+
+  return Ok(handled_file)
+}
+"#;
+    let program = parse_program(source).expect("parse unchecked result binding plan fixture");
+    let report = build_edit_plan_report_with_options(
+        "app.unchecked_binding",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: None,
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "warnings");
+    assert_eq!(report.summary.lint_finding_count, 1);
+    assert_eq!(
+        report.lint.as_ref().expect("lint summary").findings[0].id,
+        "UNCHECKED_RESULT_BINDING"
+    );
+    let template = report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "propagate_unchecked_result_binding")
+        .expect("unchecked result binding propagation template");
+    assert_eq!(
+        template.surface,
+        "block:task:app.unchecked_binding.main:stmt:0"
+    );
+    assert_eq!(
+        template.operation.pointer("/op"),
+        Some(&serde_json::json!("ReplaceStatement"))
+    );
+    assert_eq!(
+        template.operation.pointer("/payload/source"),
+        Some(&serde_json::json!(
+            "fs.try_read_text(\"examples/hello.sley\")?"
+        ))
+    );
+    assert_eq!(template.editable_json_pointers, vec!["/payload/source"]);
+    let graft: GraftInput = serde_json::from_value(template.operation.clone())
+        .expect("parse binding propagation template");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:unchecked-result-binding-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted_source = outcome.source.expect("grafted source");
+    assert!(!grafted_source.contains("bind discarded_file"));
+    assert!(grafted_source.contains("fs.try_read_text(\"examples/hello.sley\")?"));
+
+    let targeted_report = build_edit_plan_report_with_options(
+        "app.unchecked_binding",
+        Ok(program),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("block:task:app.unchecked_binding.main:stmt:0".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(targeted_report.status, "warnings");
+    assert!(targeted_report.diagnostics.is_empty());
+    assert_eq!(targeted_report.graft_templates.len(), 1);
+    assert_eq!(
+        targeted_report.graft_templates[0].kind,
+        "propagate_unchecked_result_binding"
+    );
+    assert!(targeted_report.transaction_templates.is_empty());
+}
+
+#[test]
 fn edit_plan_graft_templates_include_unused_effectful_binding_drop() {
     let source = r#"
 module app.effectful_binding
@@ -9231,7 +9312,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/smoke_case_count"),
-        Some(&serde_json::json!(385))
+        Some(&serde_json::json!(390))
     );
     assert_eq!(
         report_json.pointer("/summary/example_source_count"),
@@ -9239,11 +9320,11 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/integration_test_count"),
-        Some(&serde_json::json!(301))
+        Some(&serde_json::json!(302))
     );
     assert_eq!(
         report_json.pointer("/summary/declared_integration_test_count"),
-        Some(&serde_json::json!(301))
+        Some(&serde_json::json!(302))
     );
     assert_eq!(
         report_json.pointer("/summary/test_count_matches_declared"),
@@ -9255,7 +9336,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/tests/integration_test_count"),
-        Some(&serde_json::json!(301))
+        Some(&serde_json::json!(302))
     );
     assert_eq!(
         report_json.pointer("/tests/declared_matches_actual"),
@@ -20069,6 +20150,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:templates:replace-expression",
         "graft:templates:statement-surface-replace",
         "graft:templates:unchecked-result",
+        "graft:templates:unchecked-result-binding",
         "graft:templates:unused-effectful-binding-drop",
         "graft:templates:unused-pure-binding-delete",
         "graft:templates:unused-pure-expression-statement-delete",
@@ -20192,6 +20274,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:same-branch-if-repair-write-verify",
         "readiness:same-branch-if-statement-repair-write-verify",
         "readiness:unreachable-statement-repair-write-verify",
+        "readiness:unchecked-result-binding-repair-write-verify",
         "readiness:unused-effectful-binding-repair-write-verify",
         "readiness:lint-repair-plan",
         "readiness:lint-repair-preview",
