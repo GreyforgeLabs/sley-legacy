@@ -10,3 +10,7 @@ SleyImprove.md
 # Branding review candidates should stay out of version control
 assets/branding/held/
 assets/branding/rejected/
+
+# Keep canonical branding directory limited to image assets
+assets/branding/*.md
+assets/branding/*.json
