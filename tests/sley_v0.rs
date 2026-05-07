@@ -10329,6 +10329,20 @@ fn conformance_report_summarizes_release_surface() {
         report_json
             .pointer("/corpus/required_tags")
             .and_then(|value| value.as_array())
+            .is_some_and(|tags| tags.iter().any(|tag| tag == "accepted:DatabaseAlias")),
+        "conformance report should require accepted database alias corpus coverage"
+    );
+    assert!(
+        report_json
+            .pointer("/corpus/required_tags")
+            .and_then(|value| value.as_array())
+            .is_some_and(|tags| tags.iter().any(|tag| tag == "rejected:DatabaseAlias")),
+        "conformance report should require rejected database alias corpus coverage"
+    );
+    assert!(
+        report_json
+            .pointer("/corpus/required_tags")
+            .and_then(|value| value.as_array())
             .is_some_and(|tags| tags.iter().any(|tag| tag == "language:result-flow")),
         "conformance report should require Result flow corpus coverage"
     );
