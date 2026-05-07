@@ -385,6 +385,29 @@
       }
     },
     {
+      "name": "ci_lint_unknown_project_module_json",
+      "bin": "sley-ci",
+      "args": ["lint", "--json", "--module", "app.typo", "examples/project"],
+      "covers": [
+        "cli:sley-ci",
+        "ci:lint",
+        "diagnostic:LINT_MODULE_FILTER_NOT_FOUND",
+        "json:sley.ci.report.v0",
+        "json:sley.diagnostics.report.v0"
+      ],
+      "expect": {
+        "success": false,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.ci.report.v0" },
+          { "pointer": "/status", "value": "failed" },
+          { "pointer": "/command", "value": "lint" },
+          { "pointer": "/summary/failed_count", "value": 1 },
+          { "pointer": "/steps/0/stdout_schema", "value": "sley.diagnostics.report.v0" },
+          { "pointer": "/steps/0/issues/0/code", "value": "exit_status_mismatch" }
+        ]
+      }
+    },
+    {
       "name": "conformance_required_utility_tag_coverage_json",
       "bin": "sley-conformance",
       "args": ["coverage", "--json", "--require-tag", "cli:sley-docgen"],

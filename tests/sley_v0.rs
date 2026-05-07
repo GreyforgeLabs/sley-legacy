@@ -10304,9 +10304,16 @@ fn conformance_report_summarizes_release_surface() {
                     .any(|tag| tag == "diagnostic:LINT_MODULE_FILTER_NOT_FOUND")),
         "conformance report should require strict module-filter diagnostic coverage"
     );
+    assert!(
+        report_json
+            .pointer("/smoke/required_tags")
+            .and_then(|value| value.as_array())
+            .is_some_and(|tags| tags.iter().any(|tag| tag == "ci:lint")),
+        "conformance report should require sley-ci lint smoke coverage"
+    );
     assert_eq!(
         report_json.pointer("/summary/smoke_case_count"),
-        Some(&serde_json::json!(444))
+        Some(&serde_json::json!(445))
     );
     assert_eq!(
         report_json.pointer("/summary/onboarding_path_count"),
@@ -22245,6 +22252,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "migrate:unchecked-result",
         "agent-bench:unused-private-task-repair",
         "ci:corpus",
+        "ci:lint",
         "conformance:coverage",
         "docgen:reference",
         "lsp:help",
