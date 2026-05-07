@@ -181,7 +181,7 @@ here. Dates use UTC-independent calendar dates from the local repo history.
   `remove_empty_else_statement` repair.
 - `sley-docgen reference --module <module>` now titles filtered project-root
   references by the selected module and is pinned by contract plus smoke
-  coverage.
+  coverage; `--exported-only` project references are now smoke-pinned too.
 - `sley-docgen` and `sley-shadow` now block unknown module filters with explicit
   machine-readable issue codes instead of returning empty successful reports.
 - Contract inventory now tracks 38 schemas, 110 contract fixtures, and 113 schema
