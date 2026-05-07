@@ -187,6 +187,9 @@ Rules:
   tags, inventories editor-shim package validation and the `make v1` target
   set, and fails if either manifest or the local gate drops required evidence,
   including seeded and scoped runtime authority smoke evidence.
+- `sley-conformance report` carries local/public v1 readiness tracks so agents
+  can distinguish passed executable gates from operator-controlled public
+  release metadata blockers.
 - `sley-conformance report --require-public-release-ready` is the explicit
   public-cut gate for license and repository metadata; ordinary executable v1
   conformance remains advisory on those operator decisions.

@@ -172,8 +172,9 @@ Implemented now:
   example counts, and the declared integration-test count, plus editor-shim
   package validation, including
   required corpus and smoke release tags for seeded and scoped runtime
-  authority, `make v1` target inventory, plus non-gating public-release
-  packaging blockers and machine-readable next actions,
+  authority, `make v1` target inventory, machine-readable local/public v1
+  readiness tracks, plus non-gating public-release packaging blockers and
+  machine-readable next actions,
   with `--require-public-release-ready` available as the explicit public-cut
   gate once license and repository metadata are settled,
   emitting
@@ -408,7 +409,7 @@ Implemented now:
   check, CI, and project scaffold reports, LSP fix-preview and command-preview
   payloads, workbench reports, docgen reports, agent-bench reports, migrate
   reports, sandbox manifests and sandbox-runner reports, plus contract
-  inventory, fixture-check, and validate reports
+  inventory, fixture-check, validate reports, and conformance readiness tracks
 - external v0 JSON Schema files under `docs/schemas/`, including strict
   query task/take/type/effect/call row definitions,
   strict runtime value definitions for `sley.run.report.v0`,
@@ -897,6 +898,7 @@ write/query/verify, typed scaffold next-actions for starter, deploy, service,
 and agent quickstarts, strict seeded verify readiness for the generated gated
 starters, deploy dry-run package reports with optional local artifact
 manifests, scaffold-level seal/ZJX handoff actions,
+local/public v1 readiness tracks in conformance reports,
 temp setup files for write-mode CLI smokes, direct graft write smokes,
 the lightweight `sley-ci smoke` probe for parse, query, graft dry-run, and
 seeded multi-capability agent runtime authority,

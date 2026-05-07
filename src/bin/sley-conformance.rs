@@ -246,6 +246,7 @@ struct ConformanceReport {
     tests: TestSection,
     editor_shims: EditorShimsSection,
     v1_gate: V1GateSection,
+    readiness: ReadinessSection,
     release: ReleaseSection,
     issues: Vec<ConformanceIssue>,
 }
@@ -414,6 +415,24 @@ struct V1GateSection {
     undefined_targets: Vec<String>,
     issue_count: usize,
     issues: Vec<ConformanceIssue>,
+}
+
+#[derive(Debug, Serialize)]
+struct ReadinessSection {
+    local_v1: ReadinessTrack,
+    public_v1: ReadinessTrack,
+}
+
+#[derive(Debug, Serialize)]
+struct ReadinessTrack {
+    status: String,
+    ready: bool,
+    command: Vec<String>,
+    gate_completion_percent: u8,
+    passed_check_count: usize,
+    total_check_count: usize,
+    blocker_count: usize,
+    blockers: Vec<ConformanceIssue>,
 }
 
 #[derive(Debug, Serialize)]
@@ -724,6 +743,19 @@ fn build_report(
         smoke_manifests,
     );
     collect_validation_issues(&validation, &mut issues);
+    let readiness = build_readiness_section(
+        &schemas_without_instances,
+        &unknown_instance_schemas,
+        &validation,
+        &corpus,
+        &smoke,
+        &onboarding,
+        &examples,
+        &tests,
+        &editor_shims,
+        &v1_gate,
+        &release,
+    );
 
     let schema_instance_count = instance_counts.values().sum::<usize>();
     let contract_fixture_count = validation.contract_fixtures.fixture_count.unwrap_or(0);
@@ -780,9 +812,162 @@ fn build_report(
         tests,
         editor_shims,
         v1_gate,
+        readiness,
         release,
         issues,
     }
+}
+
+fn build_readiness_section(
+    schemas_without_instances: &[String],
+    unknown_instance_schemas: &[String],
+    validation: &ValidationSection,
+    corpus: &CorpusSection,
+    smoke: &SmokeSection,
+    onboarding: &OnboardingSection,
+    examples: &ExamplesSection,
+    tests: &TestSection,
+    editor_shims: &EditorShimsSection,
+    v1_gate: &V1GateSection,
+    release: &ReleaseSection,
+) -> ReadinessSection {
+    let local_blockers = local_v1_readiness_blockers(
+        schemas_without_instances,
+        unknown_instance_schemas,
+        validation,
+        corpus,
+        smoke,
+        onboarding,
+        examples,
+        tests,
+        editor_shims,
+        v1_gate,
+    );
+    let local_total: usize = 10;
+    let local_passed = local_total.saturating_sub(local_blockers.len());
+    let local_v1 = readiness_track(local_blockers, ["make", "v1"], local_passed, local_total);
+
+    let release_check_count = 5_usize.max(release.blockers.len());
+    let release_passed = release_check_count.saturating_sub(release.blockers.len());
+    let mut public_blockers = local_v1.blockers.clone();
+    public_blockers.extend(release.blockers.clone());
+    let public_v1 = readiness_track(
+        public_blockers,
+        ["make", "public-release-check"],
+        local_passed + release_passed,
+        local_total + release_check_count,
+    );
+
+    ReadinessSection {
+        local_v1,
+        public_v1,
+    }
+}
+
+fn local_v1_readiness_blockers(
+    schemas_without_instances: &[String],
+    unknown_instance_schemas: &[String],
+    validation: &ValidationSection,
+    corpus: &CorpusSection,
+    smoke: &SmokeSection,
+    onboarding: &OnboardingSection,
+    examples: &ExamplesSection,
+    tests: &TestSection,
+    editor_shims: &EditorShimsSection,
+    v1_gate: &V1GateSection,
+) -> Vec<ConformanceIssue> {
+    let mut blockers = Vec::new();
+    if !schemas_without_instances.is_empty() || !unknown_instance_schemas.is_empty() {
+        blockers.push(issue(
+            "readiness_schema_instance_drift",
+            "schema inventory has missing or unknown representative instances",
+        ));
+    }
+    if validation.contract_fixtures.status != "passed" {
+        blockers.push(issue(
+            "readiness_contract_fixtures_failed",
+            "contract fixtures must validate before the local v1 gate is ready",
+        ));
+    }
+    if validation
+        .manifests
+        .iter()
+        .any(|manifest| manifest.status != "passed")
+    {
+        blockers.push(issue(
+            "readiness_manifest_validation_failed",
+            "release manifests must validate before the local v1 gate is ready",
+        ));
+    }
+    if !corpus.missing_required_tags.is_empty() {
+        blockers.push(issue(
+            "readiness_corpus_tags_missing",
+            "required corpus coverage tags are missing",
+        ));
+    }
+    if !smoke.missing_required_tags.is_empty() {
+        blockers.push(issue(
+            "readiness_smoke_tags_missing",
+            "required smoke coverage tags are missing",
+        ));
+    }
+    if onboarding.issue_count != 0 {
+        blockers.push(issue(
+            "readiness_onboarding_incomplete",
+            "agent onboarding pack has missing or unreadable required paths",
+        ));
+    }
+    if examples.project_count == 0 || examples.source_count == 0 {
+        blockers.push(issue(
+            "readiness_examples_missing",
+            "packaged examples must be present before the local v1 gate is ready",
+        ));
+    }
+    if !tests.declared_matches_actual {
+        blockers.push(issue(
+            "readiness_test_count_drift",
+            "declared integration-test count must match the counted test file",
+        ));
+    }
+    if editor_shims.issue_count != 0 || editor_shims.validation.status != "passed" {
+        blockers.push(issue(
+            "readiness_editor_shims_failed",
+            "editor shim validation must pass before the local v1 gate is ready",
+        ));
+    }
+    if v1_gate.issue_count != 0 {
+        blockers.push(issue(
+            "readiness_make_v1_gate_incomplete",
+            "`make v1` must retain every required target before local v1 is ready",
+        ));
+    }
+    blockers
+}
+
+fn readiness_track<const N: usize>(
+    blockers: Vec<ConformanceIssue>,
+    command: [&str; N],
+    passed_check_count: usize,
+    total_check_count: usize,
+) -> ReadinessTrack {
+    let ready = blockers.is_empty() && passed_check_count == total_check_count;
+    ReadinessTrack {
+        status: if ready { "ready" } else { "blocked" }.to_string(),
+        ready,
+        command: command.into_iter().map(str::to_string).collect(),
+        gate_completion_percent: completion_percent(passed_check_count, total_check_count),
+        passed_check_count,
+        total_check_count,
+        blocker_count: blockers.len(),
+        blockers,
+    }
+}
+
+fn completion_percent(passed: usize, total: usize) -> u8 {
+    if total == 0 {
+        return 0;
+    }
+    (((passed * 100) + (total / 2)) / total).min(100) as u8
 }
 
 fn build_coverage_report(
@@ -2108,7 +2293,7 @@ fn emit_report(report: &ConformanceReport, json: bool) -> Result<()> {
         return Ok(());
     }
     println!(
-        "sley-conformance report status={} schemas={} fixtures={} corpus={}/{} smoke={} onboarding={} onboarding_missing={} examples={} tests={} editor_shims={} v1_gate={} v1_gate_missing={} corpus_required={} corpus_missing={} smoke_required={} smoke_missing={} public_release_blockers={}",
+        "sley-conformance report status={} schemas={} fixtures={} corpus={}/{} smoke={} onboarding={} onboarding_missing={} examples={} tests={} editor_shims={} v1_gate={} v1_gate_missing={} local_v1={} local_v1_percent={} public_v1={} public_v1_percent={} corpus_required={} corpus_missing={} smoke_required={} smoke_missing={} public_release_blockers={}",
         report.status,
         report.summary.schema_count,
         report.summary.contract_fixture_count,
@@ -2122,6 +2307,10 @@ fn emit_report(report: &ConformanceReport, json: bool) -> Result<()> {
         report.summary.editor_shim_count,
         report.summary.v1_gate_target_count,
         report.summary.missing_v1_gate_target_count,
+        report.readiness.local_v1.status,
+        report.readiness.local_v1.gate_completion_percent,
+        report.readiness.public_v1.status,
+        report.readiness.public_v1.gate_completion_percent,
         report.corpus.required_tags.len(),
         report.corpus.missing_required_tags.len(),
         report.smoke.required_tags.len(),
@@ -2210,6 +2399,22 @@ fn render_markdown(report: &ConformanceReport) -> String {
     output.push_str(&format!(
         "- `make v1` gate: `{}` targets, `{}` missing required targets\n",
         report.summary.v1_gate_target_count, report.summary.missing_v1_gate_target_count
+    ));
+    output.push_str(&format!(
+        "- Local v1 readiness: `{}` (`{}%`, `{}/{}` gated checks) via `{}`\n",
+        report.readiness.local_v1.status,
+        report.readiness.local_v1.gate_completion_percent,
+        report.readiness.local_v1.passed_check_count,
+        report.readiness.local_v1.total_check_count,
+        report.readiness.local_v1.command.join(" ")
+    ));
+    output.push_str(&format!(
+        "- Public v1 readiness: `{}` (`{}%`, `{}/{}` gated checks) via `{}`\n",
+        report.readiness.public_v1.status,
+        report.readiness.public_v1.gate_completion_percent,
+        report.readiness.public_v1.passed_check_count,
+        report.readiness.public_v1.total_check_count,
+        report.readiness.public_v1.command.join(" ")
     ));
     output.push_str(&format!(
         "- Public release ready: `{}` with `{}` blockers\n",

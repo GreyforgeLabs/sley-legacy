@@ -16,6 +16,7 @@
     "tests",
     "editor_shims",
     "v1_gate",
+    "readiness",
     "release",
     "issues"
   ],
@@ -32,6 +33,7 @@
     "tests": { "$ref": "#/$defs/tests" },
     "editor_shims": { "$ref": "#/$defs/editorShims" },
     "v1_gate": { "$ref": "#/$defs/v1Gate" },
+    "readiness": { "$ref": "#/$defs/readiness" },
     "release": { "$ref": "#/$defs/release" },
     "issues": {
       "type": "array",
@@ -413,6 +415,50 @@
         },
         "issue_count": { "type": "integer", "minimum": 0 },
         "issues": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/issue" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "readiness": {
+      "type": "object",
+      "required": ["local_v1", "public_v1"],
+      "properties": {
+        "local_v1": { "$ref": "#/$defs/readinessTrack" },
+        "public_v1": { "$ref": "#/$defs/readinessTrack" }
+      },
+      "additionalProperties": false
+    },
+    "readinessTrack": {
+      "type": "object",
+      "required": [
+        "status",
+        "ready",
+        "command",
+        "gate_completion_percent",
+        "passed_check_count",
+        "total_check_count",
+        "blocker_count",
+        "blockers"
+      ],
+      "properties": {
+        "status": { "enum": ["ready", "blocked"] },
+        "ready": { "type": "boolean" },
+        "command": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "gate_completion_percent": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "passed_check_count": { "type": "integer", "minimum": 0 },
+        "total_check_count": { "type": "integer", "minimum": 0 },
+        "blocker_count": { "type": "integer", "minimum": 0 },
+        "blockers": {
           "type": "array",
           "items": { "$ref": "#/$defs/issue" }
         }

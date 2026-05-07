@@ -67,6 +67,8 @@ here. Dates use UTC-independent calendar dates from the local repo history.
 - `sley-conformance report` now emits machine-readable public-release
   `next_actions` for operator-controlled license and repository metadata
   blockers.
+- `sley-conformance report` now emits local/public v1 readiness tracks with
+  gated-check completion percentages and exact gate commands.
 - `sley-workbench` static HTML now includes a graph target selector that
   highlights focused graph rows and emits the exact `--slice` command for
   rerendering a focused graph slice.

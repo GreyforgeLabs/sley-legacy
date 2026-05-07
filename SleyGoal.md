@@ -97,7 +97,9 @@ Current verified surface:
   compact agent onboarding pack, and packaged example counts, plus editor-shim
   package validation and a check that the declared integration coverage count
   matches the test file. It also inventories the `make v1` target set and
-  fails when required local gate targets disappear. `report` now fails when
+  emits local/public v1 readiness tracks with gated-check completion
+  percentages. It fails when required local gate targets disappear. `report`
+  now fails when
   required corpus or smoke release tags disappear, including seeded and scoped
   runtime authority smoke tags.
   `report --require-public-release-ready` turns

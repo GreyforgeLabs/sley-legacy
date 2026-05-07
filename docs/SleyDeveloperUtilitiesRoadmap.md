@@ -221,8 +221,9 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
      contract fixtures and release manifests through `sley-contract`, and
      inventories schema instances, corpus tags, smoke tags, packaged examples,
      the compact agent onboarding pack, editor-shim package validation, the
-     `make v1` target set, declared integration-test count drift, and
-     public-release metadata blockers plus their next actions. The
+     `make v1` target set, declared integration-test count drift,
+     local/public v1 readiness tracks, and public-release metadata blockers
+     plus their next actions. The
      repo-level `make v1` gate runs the JSON report, while
      `make public-release-check` turns unresolved public blockers into the
      explicit nonzero release-cut gate.
@@ -389,9 +390,10 @@ contracts, gates, syntax review, editor diagnostics, and graph/graft
 inspection.
 
 Current release packaging docs now include `CHANGELOG.md` and
-`docs/contracts.md`. `sley-conformance report --json` now surfaces non-gating
-public-release blockers for license and repository metadata. Repository license
-selection remains an explicit operator decision before public release.
+`docs/contracts.md`. `sley-conformance report --json` now surfaces
+local/public v1 readiness tracks plus non-gating public-release blockers for
+license and repository metadata. Repository license selection remains an
+explicit operator decision before public release.
 
 ## Completion Gates
 
