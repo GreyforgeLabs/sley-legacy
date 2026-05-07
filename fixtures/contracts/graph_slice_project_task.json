@@ -95,6 +95,7 @@
       "operation": {
         "op": "AddImport",
         "payload": {
+          "owner_module": "app.main",
           "module": "app.new_module"
         }
       },
@@ -121,11 +122,13 @@
       "operation": {
         "op": "AddEffectDeclaration",
         "payload": {
+          "module": "app.main",
           "name": "NewEffect"
         }
       },
       "editable_json_pointers": [
-        "/payload/name"
+        "/payload/name",
+        "/payload/module"
       ]
     },
     {

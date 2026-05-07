@@ -948,7 +948,7 @@ checked `move_affordances`, and checked `delete_statement`/`delete_take`
 templates from `delete_affordances` when the starter delete graft validates,
 plus checked `replace_statement` and `replace_expression` templates from
 `replace_affordances` when the starter replace graft validates. Module and
-module declaration-list surfaces also consume entry-module `add_affordances`
+module declaration-list surfaces also consume module-scoped `add_affordances`
 for checked `add_import`, `add_type_declaration`, `add_effect_declaration`,
 and `add_task` starters. Direct
 statement surfaces can still emit a checked no-op `ReplaceStatement` starter
@@ -1179,10 +1179,11 @@ Import summaries expose canonical import node ids such as
 `import:app.main:app.shared`, so import `MoveNode` and `DeleteNode` grafts can
 copy targets directly from graph, graph-slice, or query JSON. Graph slices also
 include `add_affordances` for declaration planning: every module slice can
-expose source-module-backed type and task starters, while entry-module slices
-also expose import and effect starters until those graft ops grow explicit
-owner-module targets. Each affordance exposes the declaration-list target,
-strict starter graft JSON, and editable pointer for the starter payload. Graph
+expose checked import, type, effect, and task starters. Import starters carry
+`payload.owner_module` and effect starters carry `payload.module`, so their
+strict graft JSON remains self-contained when the focused module is not the
+entry module. Each affordance exposes the declaration-list target, strict
+starter graft JSON, and editable pointer for the starter payload. Graph
 slices also include `insert_affordances` for task-local block insertion
 planning: each
 affordance exposes the exact block target, maximum insertion position, starter

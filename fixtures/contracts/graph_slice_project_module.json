@@ -20,6 +20,20 @@
   ],
   "add_affordances": [
     {
+      "target": "module:app.math:imports",
+      "target_kind": "import",
+      "operation": {
+        "op": "AddImport",
+        "payload": {
+          "owner_module": "app.math",
+          "module": "app.new_module"
+        }
+      },
+      "editable_json_pointers": [
+        "/payload/module"
+      ]
+    },
+    {
       "target": "module:app.math:types",
       "target_kind": "type",
       "operation": {
@@ -30,6 +44,21 @@
       },
       "editable_json_pointers": [
         "/payload/source"
+      ]
+    },
+    {
+      "target": "module:app.math:effects",
+      "target_kind": "effect",
+      "operation": {
+        "op": "AddEffectDeclaration",
+        "payload": {
+          "module": "app.math",
+          "name": "NewEffect"
+        }
+      },
+      "editable_json_pointers": [
+        "/payload/name",
+        "/payload/module"
       ]
     },
     {

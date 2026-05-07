@@ -36,7 +36,8 @@ use crate::lint::{
 };
 use crate::query::{QueryKind, QueryOptions, QueryReport, QueryTakeSummary, build_query_report};
 use crate::symbols::{
-    TypeResolution, resolve_type, slice_symbol_graph, task_fq_name, task_module, type_module,
+    TypeResolution, effect_module, import_owner_module, resolve_type, slice_symbol_graph,
+    task_fq_name, task_module, type_module,
 };
 
 pub const EDIT_PLAN_REPORT_SCHEMA: &str = "sley.edit_plan.report.v0";
@@ -2831,13 +2832,19 @@ fn add_type_declaration_template(program: &Program) -> Option<EditPlanGraftTempl
 }
 
 fn add_effect_declaration_template(program: &Program) -> Option<EditPlanGraftTemplate> {
+    let module = program.module_name();
     let name = unique_name(
         "NewEffect",
-        program.effects.iter().map(|effect| effect.name.as_str()),
+        program
+            .effects
+            .iter()
+            .filter(|effect| effect_module(effect) == module)
+            .map(|effect| effect.name.as_str()),
     );
     let operation = json!({
         "op": "AddEffectDeclaration",
         "payload": {
+            "module": module,
             "name": name
         }
     });
@@ -2853,18 +2860,25 @@ fn add_effect_declaration_template(program: &Program) -> Option<EditPlanGraftTem
         reason: "add a checked effect declaration to the current program module".to_string(),
         surface: "program".to_string(),
         operation,
-        editable_json_pointers: vec!["/payload/name".to_string()],
+        editable_json_pointers: vec!["/payload/name".to_string(), "/payload/module".to_string()],
     })
 }
 
 fn add_import_template(program: &Program) -> Option<EditPlanGraftTemplate> {
+    let owner_module = program.module_name();
     let module = unique_name(
         "app.new_module",
-        program.imports.iter().map(|import| import.module.as_str()),
+        program
+            .imports
+            .iter()
+            .filter(|import| import_owner_module(import) == owner_module)
+            .map(|import| import.module.as_str())
+            .chain(std::iter::once(owner_module)),
     );
     let operation = json!({
         "op": "AddImport",
         "payload": {
+            "owner_module": owner_module,
             "module": module
         }
     });

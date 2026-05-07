@@ -1795,7 +1795,9 @@
           { "pointer": "/imports/0/id", "value": "import:app.main:app.math" },
           { "pointer": "/add_affordances/0/target", "value": "module:app.main:imports" },
           { "pointer": "/add_affordances/0/operation/op", "value": "AddImport" },
+          { "pointer": "/add_affordances/0/operation/payload/owner_module", "value": "app.main" },
           { "pointer": "/add_affordances/0/editable_json_pointers/0", "value": "/payload/module" },
+          { "pointer": "/add_affordances/2/operation/payload/module", "value": "app.main" },
           { "pointer": "/add_affordances/3/target", "value": "module:app.main:tasks" },
           { "pointer": "/add_affordances/3/operation/op", "value": "AddTask" },
           { "pointer": "/insert_affordances/0/target", "value": "block:task:app.main.main" },
@@ -1839,10 +1841,16 @@
           { "pointer": "/tasks/0/id", "value": "task:app.math.double" },
           { "pointer": "/inbound_calls/0/from", "value": "app.main.main" },
           { "pointer": "/inbound_calls/0/target", "value": "app.math.double" },
-          { "pointer": "/add_affordances/0/target", "value": "module:app.math:types" },
-          { "pointer": "/add_affordances/0/operation/op", "value": "AddTypeDeclaration" },
-          { "pointer": "/add_affordances/1/target", "value": "module:app.math:tasks" },
-          { "pointer": "/add_affordances/1/operation/op", "value": "AddTask" },
+          { "pointer": "/add_affordances/0/target", "value": "module:app.math:imports" },
+          { "pointer": "/add_affordances/0/operation/op", "value": "AddImport" },
+          { "pointer": "/add_affordances/0/operation/payload/owner_module", "value": "app.math" },
+          { "pointer": "/add_affordances/1/target", "value": "module:app.math:types" },
+          { "pointer": "/add_affordances/1/operation/op", "value": "AddTypeDeclaration" },
+          { "pointer": "/add_affordances/2/target", "value": "module:app.math:effects" },
+          { "pointer": "/add_affordances/2/operation/op", "value": "AddEffectDeclaration" },
+          { "pointer": "/add_affordances/2/operation/payload/module", "value": "app.math" },
+          { "pointer": "/add_affordances/3/target", "value": "module:app.math:tasks" },
+          { "pointer": "/add_affordances/3/operation/op", "value": "AddTask" },
           { "pointer": "/move_affordances/2/destinations/0/operation/payload/parent", "value": "module:app.main:tasks" },
           { "pointer": "/delete_affordances/1/target", "value": "task:app.math.double" },
           { "pointer": "/replace_affordances/0/operation/op", "value": "ReplaceExpression" }
@@ -2431,7 +2439,10 @@
           { "pointer": "/graft_templates/6/operation/target", "value": "task:app.plan.helper" },
           { "pointer": "/graft_templates/7/kind", "value": "add_import" },
           { "pointer": "/graft_templates/7/operation/op", "value": "AddImport" },
+          { "pointer": "/graft_templates/7/operation/payload/owner_module", "value": "app.plan" },
           { "pointer": "/graft_templates/7/operation/payload/module", "value": "app.new_module" },
+          { "pointer": "/graft_templates/9/kind", "value": "add_effect_declaration" },
+          { "pointer": "/graft_templates/9/operation/payload/module", "value": "app.plan" },
           { "pointer": "/graft_templates/10/kind", "value": "add_task" },
           { "pointer": "/graft_templates/10/operation/op", "value": "AddTask" }
         ],
@@ -2656,10 +2667,13 @@
           { "pointer": "/graft_templates/1/operation/payload/source", "value": "module app.main\n\ntype NewRecord = {\n  slot value: Text\n}" },
           { "pointer": "/graft_templates/2/kind", "value": "add_effect_declaration" },
           { "pointer": "/graft_templates/2/operation/op", "value": "AddEffectDeclaration" },
+          { "pointer": "/graft_templates/2/operation/payload/module", "value": "app.main" },
           { "pointer": "/graft_templates/2/operation/payload/name", "value": "NewEffect" },
           { "pointer": "/graft_templates/2/editable_json_pointers/0", "value": "/payload/name" },
+          { "pointer": "/graft_templates/2/editable_json_pointers/1", "value": "/payload/module" },
           { "pointer": "/graft_templates/3/kind", "value": "add_import" },
           { "pointer": "/graft_templates/3/operation/op", "value": "AddImport" },
+          { "pointer": "/graft_templates/3/operation/payload/owner_module", "value": "app.main" },
           { "pointer": "/graft_templates/3/operation/payload/module", "value": "app.new_module" },
           { "pointer": "/graft_templates/3/editable_json_pointers/0", "value": "/payload/module" }
         ]
@@ -11146,7 +11160,7 @@
           { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
           { "pointer": "/status", "value": "accepted" },
           { "pointer": "/provenance/0/operation", "value": "AddImport" },
-          { "pointer": "/provenance/0/targets/0", "value": "import:app.extra" }
+          { "pointer": "/provenance/0/targets/0", "value": "import:app.main:app.extra" }
         ]
       }
     },
@@ -11211,7 +11225,7 @@
           { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
           { "pointer": "/status", "value": "accepted" },
           { "pointer": "/provenance/0/operation", "value": "AddImport" },
-          { "pointer": "/provenance/0/targets/0", "value": "import:app.extra" }
+          { "pointer": "/provenance/0/targets/0", "value": "import:app.main:app.extra" }
         ]
       }
     },
