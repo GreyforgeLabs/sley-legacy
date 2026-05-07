@@ -10733,7 +10733,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/smoke_case_count"),
-        Some(&serde_json::json!(460))
+        Some(&serde_json::json!(461))
     );
     assert_eq!(
         report_json.pointer("/summary/onboarding_path_count"),
@@ -16934,6 +16934,7 @@ task helper -> Int {
 
 task main -> Int {
   take value: Int
+  take unused: Text
 
   tally total = value
   if true {
@@ -17064,7 +17065,7 @@ task main -> Int {
     assert_eq!(take.target_kind, "take");
     assert_eq!(take.parent, "task:main.main:takes");
     assert_eq!(take.position, 0);
-    assert_eq!(take.max_position, 0);
+    assert_eq!(take.max_position, 1);
     assert_eq!(
         take.operation.pointer("/target"),
         Some(&serde_json::json!("take:task:main.main:0:value"))
@@ -17077,14 +17078,22 @@ task main -> Int {
         "expected helper take destination, got {take:#?}"
     );
 
+    assert!(
+        !slice
+            .delete_affordances
+            .iter()
+            .any(|affordance| affordance.target == "take:task:main.main:0:value"),
+        "used takes should not be advertised as checked delete affordances"
+    );
+
     let delete_take = slice
         .delete_affordances
         .iter()
-        .find(|affordance| affordance.target == "take:task:main.main:0:value")
+        .find(|affordance| affordance.target == "take:task:main.main:1:unused")
         .expect("take delete affordance");
     assert_eq!(delete_take.target_kind, "take");
     assert_eq!(delete_take.parent, "task:main.main:takes");
-    assert_eq!(delete_take.position, 0);
+    assert_eq!(delete_take.position, 1);
     assert_eq!(
         delete_take.operation.pointer("/op"),
         Some(&serde_json::json!("DeleteNode"))
@@ -23014,6 +23023,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:operations:add-take",
         "graft:operations:remove-task-effect",
         "graft:project-existing-import-write",
+        "graph-slice:checked-delete-affordances",
         "graph-slice:delete-affordances",
         "graph-slice:inbound-calls",
         "graph-slice:add-affordances",

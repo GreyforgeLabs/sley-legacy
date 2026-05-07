@@ -169,30 +169,7 @@
       ]
     }
   ],
-  "delete_affordances": [
-    {
-      "target": "take:task:app.math.double:0:value",
-      "target_kind": "take",
-      "parent": "task:app.math.double:takes",
-      "position": 0,
-      "operation": {
-        "op": "DeleteNode",
-        "target": "take:task:app.math.double:0:value"
-      },
-      "editable_json_pointers": []
-    },
-    {
-      "target": "task:app.math.double",
-      "target_kind": "task",
-      "parent": "module:app.math:tasks",
-      "position": 0,
-      "operation": {
-        "op": "DeleteNode",
-        "target": "task:app.math.double"
-      },
-      "editable_json_pointers": []
-    }
-  ],
+  "delete_affordances": [],
   "replace_affordances": [
     {
       "target": "block:task:app.math.double:stmt:0:expr",

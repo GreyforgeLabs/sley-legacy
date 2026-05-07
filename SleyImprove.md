@@ -523,12 +523,14 @@ Graph slices also expose bounded `InsertStatement` affordances for task-local
 block insertion, plus bounded `MoveNode` affordances for import, type, effect,
 task, statement, and take movement planning, including exact parent ids and
 destination insertion limits, starter operation JSON, and editable JSON
-pointers. They also expose bounded `DeleteNode` affordances for import, type,
-effect, task, statement, and take deletion planning, plus `ReplaceStatement`
-affordances for whole task-local statement replacement and `ReplaceExpression`
-affordances for task-local expression replacement; `sley plan
---graft-templates` filters selected task-internal delete, statement replace,
-and expression replace templates through the checker before surfacing them.
+pointers. They also expose checker-filtered `DeleteNode` affordances for
+import, type, effect, task, statement, and take deletion planning, omitting
+entry-module `main` task deletion and any starter rejected by the graft oracle,
+plus `ReplaceStatement` affordances for whole task-local statement replacement
+and `ReplaceExpression` affordances for task-local expression replacement;
+`sley plan --graft-templates` filters selected task-internal delete, statement
+replace, and expression replace templates through the checker before surfacing
+them.
 `sley plan --graft-templates --template-surface program` now emits checked
 `add_task`, `add_type_declaration`, `add_effect_declaration`, and `add_import`
 starters so agents can add new declarations and imports without hand-authoring
