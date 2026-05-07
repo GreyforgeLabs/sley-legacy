@@ -25,6 +25,8 @@ use sley::symbols::{TaskResolution, callee_path, resolve_task};
 
 const FIX_PREVIEW_COMMAND: &str = "sley.fix.preview";
 const FIX_PREVIEW_SCHEMA: &str = "sley.lsp.fix_preview.v0";
+const COMMAND_PREVIEW_COMMAND: &str = "sley.command.preview";
+const COMMAND_PREVIEW_SCHEMA: &str = "sley.lsp.command_preview.v0";
 
 #[derive(Debug, Parser)]
 #[command(name = "sley-lsp")]
@@ -226,6 +228,11 @@ fn handle_message<W: Write>(
                 send_response(writer, id, handle_code_actions(params, state))?;
             }
         }
+        "textDocument/codeLens" => {
+            if let Some(id) = id {
+                send_response(writer, id, handle_code_lens(params, state))?;
+            }
+        }
         "workspace/executeCommand" => {
             if let Some(id) = id {
                 send_response(writer, id, handle_execute_command(params))?;
@@ -305,8 +312,11 @@ fn initialize_result() -> JsonValue {
                 "resolveProvider": false,
                 "codeActionKinds": ["quickfix", "refactor.rewrite"]
             },
+            "codeLensProvider": {
+                "resolveProvider": false
+            },
             "executeCommandProvider": {
-                "commands": [FIX_PREVIEW_COMMAND]
+                "commands": [FIX_PREVIEW_COMMAND, COMMAND_PREVIEW_COMMAND]
             },
             "workspace": {
                 "workspaceFolders": {
@@ -932,24 +942,103 @@ fn handle_code_actions(params: JsonValue, state: &ServerState) -> JsonValue {
     json!(actions)
 }
 
+fn handle_code_lens(params: JsonValue, state: &ServerState) -> JsonValue {
+    let Some(uri) = text_document_uri(&params) else {
+        return json!([]);
+    };
+    let Some(document) = state.documents.get(&uri) else {
+        return json!([]);
+    };
+    let Ok(program) = parse_program(&document.text) else {
+        return json!([]);
+    };
+    let target = target_for_uri(&uri);
+    let module_range = first_line_range(&document.text);
+    let mut lenses = vec![
+        command_preview_lens(
+            &module_range,
+            "Sley: doctor",
+            &uri,
+            "doctor",
+            vec!["doctor", "--json", &target],
+        ),
+        command_preview_lens(
+            &module_range,
+            "Sley: verify --deny-warnings",
+            &uri,
+            "verify",
+            vec!["verify", "--json", "--deny-warnings", &target],
+        ),
+        command_preview_lens(
+            &module_range,
+            "Sley: deploy --dry-run",
+            &uri,
+            "deploy_dry_run",
+            vec!["deploy", "--json", "--dry-run", &target],
+        ),
+    ];
+    for task in &program.tasks {
+        let Some(range) = range_for_task_name(&document.text, task) else {
+            continue;
+        };
+        let slice_arg = task.id.as_str();
+        lenses.push(command_preview_lens(
+            &range,
+            "Sley: graph slice",
+            &uri,
+            "graph_slice",
+            vec!["graph", "--json", "--slice", slice_arg, &target],
+        ));
+    }
+    json!(lenses)
+}
+
 fn handle_execute_command(params: JsonValue) -> JsonValue {
     let command = params
         .get("command")
         .and_then(JsonValue::as_str)
         .unwrap_or_default();
-    if command != FIX_PREVIEW_COMMAND {
-        return JsonValue::Null;
-    }
     let preview = params
         .get("arguments")
         .and_then(JsonValue::as_array)
         .and_then(|arguments| arguments.first())
         .cloned()
         .unwrap_or(JsonValue::Null);
+    match command {
+        FIX_PREVIEW_COMMAND => json!({
+            "schema": FIX_PREVIEW_SCHEMA,
+            "status": "preview",
+            "preview": preview
+        }),
+        COMMAND_PREVIEW_COMMAND => json!({
+            "schema": COMMAND_PREVIEW_SCHEMA,
+            "status": "preview",
+            "preview": preview
+        }),
+        _ => JsonValue::Null,
+    }
+}
+
+fn command_preview_lens(
+    range: &JsonValue,
+    title: &str,
+    uri: &str,
+    kind: &str,
+    args: Vec<&str>,
+) -> JsonValue {
     json!({
-        "schema": FIX_PREVIEW_SCHEMA,
-        "status": "preview",
-        "preview": preview
+        "range": range,
+        "command": {
+            "title": title,
+            "command": COMMAND_PREVIEW_COMMAND,
+            "arguments": [{
+                "schema": COMMAND_PREVIEW_SCHEMA,
+                "uri": uri,
+                "kind": kind,
+                "command": "sley",
+                "args": args
+            }]
+        }
     })
 }
 

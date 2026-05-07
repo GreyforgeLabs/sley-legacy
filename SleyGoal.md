@@ -114,9 +114,9 @@ Current verified surface:
   definition jumps, project task signature help, project task parameter inlay
   hints, exact-range task references, document highlights,
   import document links, prepared cursor-aware project task rename edits,
-  checked edit-plan code
-  actions, and a non-mutating `sley.fix.preview` command whose preview
-  operations and transactions reuse the strict edit-plan graft contracts.
+  checked edit-plan code actions, non-mutating command-preview code lenses,
+  and non-mutating preview commands whose editor repair previews reuse the
+  strict edit-plan graft contracts.
 - `sley-workbench` is available as an in-tree local inspection bootstrap with
   JSON and optional static HTML panels over doctor, query, lint, edit-plan, and
   graph and graph-slice data; its report schema links embedded doctor, query,

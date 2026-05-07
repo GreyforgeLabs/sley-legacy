@@ -188,8 +188,8 @@ Implemented now:
   signature help, project task parameter inlay hints, exact-range task
   references, document highlights, import document links,
   prepared cursor-aware project task rename edits, import/call definition jumps,
-  checked edit-plan code actions, and a non-mutating `sley.fix.preview` command
-  for editor repair previews
+  checked edit-plan code actions, non-mutating command-preview code lenses, and
+  non-mutating preview commands for editor repair and command handoff
 - in-tree `sley-workbench` local inspection bootstrap that emits
   `schema: "sley.workbench.report.v0"` and optional static HTML over
   doctor/query/lint/plan/graph/graph-slice panels without writing source files

@@ -198,11 +198,11 @@ Rules:
   and resolved project task-call hover, semantic tokens, workspace symbols,
   selection ranges, project completions, import/call definition jumps, project
   task signature help, project task parameter inlay hints, exact-range task
-  references, document highlights,
-  import document links, prepared cursor-aware project task rename edits,
-  edit-plan code actions, and non-mutating `sley.fix.preview` payloads whose
-  editor preview operations and transactions reuse the strict edit-plan graft
-  contracts.
+  references, document highlights, import document links, prepared
+  cursor-aware project task rename edits,
+  edit-plan code actions, non-mutating command-preview code lenses, and
+  non-mutating preview payloads whose editor repair previews reuse the strict
+  edit-plan graft contracts.
 - `sley-workbench` exposes a local read-only inspection report and optional
   static HTML page over doctor/query/lint/plan/graph/graph-slice panels. Its
   report schema links embedded panel rows back to the source doctor, query,
