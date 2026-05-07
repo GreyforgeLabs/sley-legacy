@@ -1241,11 +1241,11 @@ Near-term:
    deterministic seeded database surfaces, seeded network text, seeded shell
    command output, seeded model completions, seeded secret values, seeded
    deployment stage results, and seeded spend authorizations. Database host
-   adapters now require exact table capability scopes; URL capability scopes
-   match exact URLs or path boundaries; the remaining non-file seeded host
-   adapters support deterministic exact-or-delimiter text capability scopes over
-   secret names, shell commands, model prompts, deploy targets, and spend
-   requests.
+   adapters now require exact normalized table capability scopes; URL
+   capability scopes match exact URLs or path boundaries; the remaining
+   non-file seeded host adapters support deterministic exact-or-delimiter text
+   capability scopes over secret names, shell commands, model prompts, deploy
+   targets, and spend requests.
    Preserve `Result<T, Error>` surfaces for recoverable host failures and keep
    authority failures as diagnostics.
 2. Grow the accepted/rejected synthetic gold corpus and CLI smoke manifest with

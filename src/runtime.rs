@@ -1680,7 +1680,7 @@ fn enforce_gate_scope(
 
 fn scope_matches_resource(resource_kind: &str, scope: &str, resource: &str) -> bool {
     if resource_kind == "database table" {
-        return normalize_db_table(scope) == resource;
+        return normalize_db_table(scope) == normalize_db_table(resource);
     }
     if resource_kind == "URL" {
         return url_scope_matches(scope, resource);
