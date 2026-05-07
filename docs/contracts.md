@@ -23,9 +23,9 @@ Explicit schema paths remain supported for pinned validation.
 
 Current counts:
 
-- Schemas: `36`
-- Contract fixtures: `104`
-- Schema instances: `107`
+- Schemas: `37`
+- Contract fixtures: `105`
+- Schema instances: `108`
 
 ## Core Compiler Roots
 
@@ -70,6 +70,7 @@ Current counts:
 | `sley.contract.fixture_check.v0` | `sley-contract check-fixtures` | Fixture validation report. |
 | `sley.contract.validate.v0` | `sley-contract validate` | Single-report validation report. |
 | `sley.lsp.fix_preview.v0` | `sley-lsp` | Non-mutating editor repair preview payload. |
+| `sley.lsp.command_preview.v0` | `sley-lsp` | Non-mutating editor command handoff preview payload. |
 | `sley.workbench.report.v0` | `sley-workbench` | Local inspection report and optional HTML panels. |
 | `sley.docgen.report.v0` | `sley-docgen` | Generated reference summary and optional Markdown handoff. |
 | `sley.agent_bench.report.v0` | `sley-agent-bench` | Deterministic agent repair-loop benchmark. |

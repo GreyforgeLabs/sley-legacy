@@ -9694,6 +9694,13 @@ fn report_command_schemas_pin_nonempty_argv_segments() {
             .expect("parse LSP fix preview schema"),
             vec!["/$defs/dry_run_command/properties/args/items/minLength"],
         ),
+        (
+            serde_json::from_str::<serde_json::Value>(include_str!(
+                "../docs/schemas/sley.lsp.command_preview.v0.schema.json"
+            ))
+            .expect("parse LSP command preview schema"),
+            vec!["/$defs/command_preview/properties/args/items/minLength"],
+        ),
     ];
 
     for (schema, pointers) in schemas {
@@ -9733,7 +9740,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         inventory_json.pointer("/schema_count"),
-        Some(&serde_json::json!(36))
+        Some(&serde_json::json!(37))
     );
     let schema_ids = inventory_json
         .pointer("/schemas")
@@ -9762,6 +9769,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     assert!(schema_ids.contains("sley.sandbox.manifest.v0"));
     assert!(schema_ids.contains("sley.sandbox.report.v0"));
     assert!(schema_ids.contains("sley.lsp.fix_preview.v0"));
+    assert!(schema_ids.contains("sley.lsp.command_preview.v0"));
     assert!(schema_ids.contains("sley.workbench.report.v0"));
     assert!(schema_ids.contains("sley.zjx.tool.report.v0"));
 
@@ -9785,7 +9793,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         portable_inventory_json.pointer("/schema_count"),
-        Some(&serde_json::json!(36))
+        Some(&serde_json::json!(37))
     );
     assert!(
         portable_inventory_json
@@ -9869,7 +9877,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(104))
+        Some(&serde_json::json!(105))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -10137,7 +10145,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/schema_count"),
-        Some(&serde_json::json!(36))
+        Some(&serde_json::json!(37))
     );
     assert_eq!(
         report_json.pointer("/summary/schema_without_instance_count"),
@@ -10145,7 +10153,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/contract_fixture_count"),
-        Some(&serde_json::json!(104))
+        Some(&serde_json::json!(105))
     );
     assert_eq!(
         report_json.pointer("/summary/corpus_accepted_count"),

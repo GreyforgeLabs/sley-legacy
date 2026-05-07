@@ -335,6 +335,13 @@ return "unused"
         }),
     );
     let command_preview = read_response(&mut reader, 6);
+    let command_report_bytes = serde_json::to_vec(
+        command_preview
+            .get("result")
+            .expect("command preview result"),
+    )
+    .expect("serialize LSP command preview report");
+    support::validate_report_schema("sley.lsp.command_preview.v0", &command_report_bytes);
     assert_eq!(
         command_preview.pointer("/result/schema"),
         Some(&json!("sley.lsp.command_preview.v0"))

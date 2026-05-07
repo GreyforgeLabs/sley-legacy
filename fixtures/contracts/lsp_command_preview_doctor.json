@@ -1,0 +1,15 @@
+{
+  "schema": "sley.lsp.command_preview.v0",
+  "status": "preview",
+  "preview": {
+    "schema": "sley.lsp.command_preview.v0",
+    "uri": "file:///tmp/sley-lsp-main.sley",
+    "kind": "doctor",
+    "command": "sley",
+    "args": [
+      "doctor",
+      "--json",
+      "/tmp/sley-lsp-main.sley"
+    ]
+  }
+}
