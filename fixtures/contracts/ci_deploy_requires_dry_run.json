@@ -1,0 +1,18 @@
+{
+  "schema": "sley.ci.report.v0",
+  "status": "failed",
+  "command": "deploy",
+  "target": "examples/project",
+  "summary": {
+    "step_count": 0,
+    "passed_count": 0,
+    "failed_count": 0
+  },
+  "steps": [],
+  "issues": [
+    {
+      "code": "dry_run_required",
+      "message": "sley-ci deploy is a dry-run-only CI wrapper and requires explicit --dry-run"
+    }
+  ]
+}

@@ -437,7 +437,7 @@ fn run(cli: Cli) -> Result<(CiReport, bool)> {
         }
         Command::Deploy {
             json,
-            dry_run: _dry_run,
+            dry_run,
             artifacts_dir,
             environment,
             cap,
@@ -450,6 +450,10 @@ fn run(cli: Cli) -> Result<(CiReport, bool)> {
             model_output,
             target,
         } => {
+            if !dry_run {
+                let report = deploy_dry_run_required_report(&target);
+                return Ok((report, json));
+            }
             let runtime = RuntimeArgs {
                 cap,
                 db_table,
@@ -490,6 +494,19 @@ fn run(cli: Cli) -> Result<(CiReport, bool)> {
             Ok((report, json))
         }
     }
+}
+
+fn deploy_dry_run_required_report(target: &Path) -> CiReport {
+    finalize_report(
+        "deploy",
+        Some(path_string(target)),
+        None,
+        Vec::new(),
+        vec![issue(
+            "dry_run_required",
+            "sley-ci deploy is a dry-run-only CI wrapper and requires explicit --dry-run",
+        )],
+    )
 }
 
 #[derive(Debug)]

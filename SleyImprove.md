@@ -364,9 +364,10 @@ Rules:
   `manifest.json` handoff files only after the dry-run package is ready;
   artifact manifests pin report, seal, and package roles to their expected
   schemas. `sley-ci run` wraps deterministic runtime execution under
-  `sley.ci.report.v0`, `sley-ci deploy` passes the same flag through to the
-  wrapped deploy command, failed deploy wrappers summarize nested verify lint
-  findings and runtime diagnostics while preserving repair/retry
+  `sley.ci.report.v0`, `sley-ci deploy` requires explicit `--dry-run` and
+  passes the same flag through to the wrapped deploy command, failed deploy
+  wrappers summarize nested verify lint findings and runtime diagnostics while
+  preserving repair/retry
   `next_actions`, and `sley-contract inspect-deploy-artifacts`
   revalidates the handoff
   manifest, schemas, and digests. `sley-contract` validation commands default

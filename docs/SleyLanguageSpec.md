@@ -897,7 +897,8 @@ packages the same seeded secret, network, model, and deploy authority through
 imported task boundaries so project checks cover multi-module agent deployment
 authoring as well as single-file examples. The agent scaffolds also include
 `sley-ci run`, `sley-ci verify`, and `sley-ci deploy --dry-run` next actions
-over the same deterministic seeds.
+over the same deterministic seeds. The `sley-ci deploy` wrapper requires the
+explicit `--dry-run` flag before it will emit a deploy CI report.
 
 `sley run --json` emits `sley.run.report.v0` on successful execution. The
 report carries `status: "passed"`, the target path, a recursive runtime value
