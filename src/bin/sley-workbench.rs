@@ -471,7 +471,7 @@ fn render_html(report: &WorkbenchReport) -> Result<String> {
     let graph = report
         .graph
         .as_ref()
-        .map(render_graph_panel)
+        .map(|graph| render_graph_panel(graph, report.graph_slice.as_ref(), &report.target))
         .unwrap_or_else(|| "<p class=\"muted\">Graph is unavailable.</p>".to_string());
     let graph_slice = report
         .graph_slice
@@ -546,6 +546,8 @@ pre {{ overflow: auto; padding: 12px; border: 1px solid var(--line); background:
 select {{ min-width: min(100%, 420px); padding: 8px 10px; border: 1px solid var(--line); background: #fff; color: var(--ink); }}
 tr.selected {{ outline: 2px solid var(--accent); outline-offset: -2px; }}
 tr[hidden] {{ display: none; }}
+.graph-focus {{ display: grid; gap: 8px; margin-bottom: 12px; }}
+.graph-focus code {{ display: inline-block; padding: 6px 8px; border: 1px solid var(--line); background: var(--surface); }}
 .slice-focus {{ margin-bottom: 12px; }}
 .slice-focus code {{ font-weight: 700; }}
 .muted {{ color: var(--muted); }}
@@ -607,6 +609,23 @@ function applyWorkbenchFocus(value) {{
 if (focusSelect) {{
   focusSelect.addEventListener("change", (event) => applyWorkbenchFocus(event.target.value));
   applyWorkbenchFocus(focusSelect.value);
+}}
+const graphSelect = document.querySelector("[data-graph-focus]");
+const graphCommand = document.querySelector("[data-graph-slice-command]");
+function applyGraphFocus(value) {{
+  document.querySelectorAll("[data-graph-row]").forEach((row) => {{
+    row.classList.toggle("selected", Boolean(value) && row.dataset.target === value);
+  }});
+  if (graphCommand) {{
+    const target = graphCommand.dataset.workbenchTarget || "";
+    graphCommand.textContent = value
+      ? `sley-workbench --slice ${{value}} ${{target}}`
+      : "Select a graph target to build a focused slice command.";
+  }}
+}}
+if (graphSelect) {{
+  graphSelect.addEventListener("change", (event) => applyGraphFocus(event.target.value));
+  applyGraphFocus(graphSelect.value);
 }}
 </script>
 </body>
@@ -741,27 +760,133 @@ fn render_templates_panel(plan: &WorkbenchPlanPanel) -> String {
     )
 }
 
-fn render_graph_panel(graph: &WorkbenchGraphPanel) -> String {
+fn render_graph_panel(
+    graph: &WorkbenchGraphPanel,
+    slice: Option<&SymbolGraphSlice>,
+    target: &str,
+) -> String {
     if graph.modules.is_empty() {
         return "<p class=\"muted\">No modules.</p>".to_string();
     }
-    let rows = graph
-        .modules
-        .iter()
-        .map(|module| {
-            format!(
-                "<tr><td><code>{}</code></td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>",
-                escape_html(&module.module),
-                module.imports.len(),
-                module.types.len(),
-                module.effects.len(),
-                module.tasks.len()
-            )
-        })
-        .collect::<String>();
+    let selected_target = slice.map(|slice| slice.focus.id.as_str()).unwrap_or("");
+    let mut options = String::from("<option value=\"\">All graph targets</option>");
+    let mut rows = String::new();
+    for module in &graph.modules {
+        let module_target = format!("module:{}", module.module);
+        options.push_str(&graph_target_option(
+            &module_target,
+            &format!("module - {}", module.module),
+            selected_target,
+        ));
+        rows.push_str(&graph_target_row(
+            &module_target,
+            "module",
+            &module.module,
+            &module.module,
+            "-",
+        ));
+        for import in &module.imports {
+            let label = import
+                .alias
+                .as_ref()
+                .map(|alias| format!("import - {} as {}", import.module, alias))
+                .unwrap_or_else(|| format!("import - {}", import.module));
+            options.push_str(&graph_target_option(&import.id, &label, selected_target));
+            rows.push_str(&graph_target_row(
+                &import.id,
+                "import",
+                &module.module,
+                &import.module,
+                import.alias.as_deref().unwrap_or("-"),
+            ));
+        }
+        for ty in &module.types {
+            options.push_str(&graph_target_option(
+                &ty.id,
+                &format!("type - {}", ty.name),
+                selected_target,
+            ));
+            rows.push_str(&graph_target_row(
+                &ty.id,
+                "type",
+                &module.module,
+                &ty.name,
+                exported_label(ty.exported),
+            ));
+        }
+        for effect in &module.effects {
+            options.push_str(&graph_target_option(
+                &effect.id,
+                &format!("effect - {}", effect.name),
+                selected_target,
+            ));
+            rows.push_str(&graph_target_row(
+                &effect.id,
+                "effect",
+                &module.module,
+                &effect.name,
+                exported_label(effect.exported),
+            ));
+        }
+        for task in &module.tasks {
+            options.push_str(&graph_target_option(
+                &task.id,
+                &format!("task - {}", task.name),
+                selected_target,
+            ));
+            rows.push_str(&graph_target_row(
+                &task.id,
+                "task",
+                &module.module,
+                &task.name,
+                exported_label(task.exported),
+            ));
+        }
+    }
+    let command = if selected_target.is_empty() {
+        "Select a graph target to build a focused slice command.".to_string()
+    } else {
+        command_text(&[
+            "sley-workbench".to_string(),
+            "--slice".to_string(),
+            selected_target.to_string(),
+            target.to_string(),
+        ])
+    };
     format!(
-        "<table><thead><tr><th>Module</th><th>Imports</th><th>Types</th><th>Effects</th><th>Tasks</th></tr></thead><tbody>{rows}</tbody></table>"
+        "<div class=\"graph-focus\"><select data-graph-focus>{options}</select><code data-graph-slice-command data-workbench-target=\"{}\">{}</code></div><table><thead><tr><th>Target</th><th>Kind</th><th>Module</th><th>Name</th><th>Export/Alias</th></tr></thead><tbody>{rows}</tbody></table>",
+        escape_html(target),
+        escape_html(&command)
     )
+}
+
+fn graph_target_option(value: &str, label: &str, selected_target: &str) -> String {
+    let selected = if value == selected_target {
+        " selected"
+    } else {
+        ""
+    };
+    format!(
+        "<option value=\"{}\"{selected}>{}</option>",
+        escape_html(value),
+        escape_html(label)
+    )
+}
+
+fn graph_target_row(target: &str, kind: &str, module: &str, name: &str, detail: &str) -> String {
+    format!(
+        "<tr data-graph-row data-target=\"{}\"><td><code>{}</code></td><td>{}</td><td><code>{}</code></td><td>{}</td><td>{}</td></tr>",
+        escape_html(target),
+        escape_html(target),
+        escape_html(kind),
+        escape_html(module),
+        escape_html(name),
+        escape_html(detail)
+    )
+}
+
+fn exported_label(exported: bool) -> &'static str {
+    if exported { "exported" } else { "private" }
 }
 
 fn render_graph_slice_panel(slice: &SymbolGraphSlice) -> String {

@@ -64,6 +64,9 @@ here. Dates use UTC-independent calendar dates from the local repo history.
   authority, scoped host capabilities, and scope-denial diagnostics.
 - `sley-conformance report` now inventories the compact agent onboarding pack
   so missing bootstrap files are visible in release-readiness evidence.
+- `sley-workbench` static HTML now includes a graph target selector that
+  highlights focused graph rows and emits the exact `--slice` command for
+  rerendering a focused graph slice.
 - `sley-lsp` diagnostics now load `sley.toml` project context with unsaved
   open-buffer overlays, so valid imported calls resolve in editor buffers and
   missing imported tasks are diagnosed without requiring a save.
