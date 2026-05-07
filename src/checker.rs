@@ -2596,10 +2596,35 @@ fn validate_effect_name(
 }
 
 fn normalize_type_expr_silent(program: &Program, module: &str, ty: &TypeExpr) -> TypeExpr {
+    normalize_type_expr_silent_inner(program, module, ty, &mut HashSet::new())
+}
+
+fn normalize_type_expr_silent_inner(
+    program: &Program,
+    module: &str,
+    ty: &TypeExpr,
+    visited: &mut HashSet<String>,
+) -> TypeExpr {
     match ty {
-        TypeExpr::Named { name } => {
-            TypeExpr::named(normalize_type_name_silent(program, module, name))
-        }
+        TypeExpr::Named { name } => match resolve_type(program, module, name) {
+            TypeResolution::Builtin(name) => TypeExpr::named(name),
+            TypeResolution::Resolved { index, fq_name } => match &program.types[index].value {
+                TypeExpr::Record { .. } => TypeExpr::named(fq_name),
+                value => {
+                    if !visited.insert(fq_name.clone()) {
+                        return TypeExpr::named(fq_name);
+                    }
+                    let decl_module = type_module(&program.types[index]);
+                    let normalized =
+                        normalize_type_expr_silent_inner(program, &decl_module, value, visited);
+                    visited.remove(&fq_name);
+                    normalized
+                }
+            },
+            TypeResolution::Unknown | TypeResolution::Ambiguous(_) | TypeResolution::Private(_) => {
+                TypeExpr::named(name)
+            }
+        },
         TypeExpr::Generic { name, args } if name == "Gate" => TypeExpr::Generic {
             name: "Gate".to_string(),
             args: args
@@ -2611,7 +2636,7 @@ fn normalize_type_expr_silent(program: &Program, module: &str, ty: &TypeExpr) ->
             name: normalize_type_name_silent(program, module, name),
             args: args
                 .iter()
-                .map(|arg| normalize_type_expr_silent(program, module, arg))
+                .map(|arg| normalize_type_expr_silent_inner(program, module, arg, visited))
                 .collect(),
         },
         TypeExpr::Record { fields } => TypeExpr::Record {
@@ -2619,7 +2644,7 @@ fn normalize_type_expr_silent(program: &Program, module: &str, ty: &TypeExpr) ->
                 .iter()
                 .map(|field| RecordField {
                     name: field.name.clone(),
-                    ty: normalize_type_expr_silent(program, module, &field.ty),
+                    ty: normalize_type_expr_silent_inner(program, module, &field.ty, visited),
                 })
                 .collect(),
         },

@@ -1428,6 +1428,52 @@ task main -> Float {
     assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
     let grafted = parse_program(&outcome.source.expect("grafted source")).expect("parse grafted");
     assert_eq!(run_main(&grafted), Ok(Value::Float(0.0)));
+
+    let alias_source = r#"
+module app.plan
+
+type Score = Int
+
+task main -> Score {
+  return 7
+}
+"#;
+    let alias_program = parse_program(alias_source).expect("parse alias template plan fixture");
+    let alias_report = build_edit_plan_report_with_options(
+        "app.plan",
+        Ok(alias_program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("task:app.plan.main".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(alias_report.status, "ready");
+    let alias_template = alias_report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "replace_task_body")
+        .expect("alias replace task body template");
+    assert_eq!(
+        alias_template.operation.pointer("/payload/statements/0"),
+        Some(&serde_json::json!("return 0"))
+    );
+    let alias_graft: GraftInput = serde_json::from_value(alias_template.operation.clone())
+        .expect("parse alias replace template");
+    let alias_outcome = apply_graft_input(
+        &alias_program,
+        alias_graft,
+        Some("agent:alias-replace-task-body-template-test".to_string()),
+    );
+    assert_eq!(
+        alias_outcome.status, "accepted",
+        "{:#?}",
+        alias_outcome.diagnostics
+    );
+    let alias_grafted =
+        parse_program(&alias_outcome.source.expect("grafted source")).expect("parse grafted");
+    assert!(!has_errors(&check_program(&alias_grafted)));
 }
 
 #[test]
@@ -11281,6 +11327,27 @@ task helper -> Int {
         replacement.pointer("/payload/source"),
         Some(&serde_json::json!("Ok(0)"))
     );
+
+    let alias_source = r#"
+type Score = Int
+
+task ok -> Score {
+  return 0
+}
+
+task wrong -> Score {
+  return "bad"
+}
+"#;
+    let alias_program = parse_program(alias_source).expect("parse alias default hint source");
+    let alias_diagnostics = check_program(&alias_program);
+    assert!(
+        !alias_diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.node.as_deref() == Some("task:main.ok")),
+        "transparent alias return should check cleanly: {alias_diagnostics:#?}"
+    );
+    assert_replace_expression_hint_source(&alias_diagnostics, "RETURN_TYPE_MISMATCH", "0");
 }
 
 #[test]
