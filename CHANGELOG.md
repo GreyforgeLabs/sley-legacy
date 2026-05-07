@@ -123,6 +123,8 @@ here. Dates use UTC-independent calendar dates from the local repo history.
   workspace edits for declarations and resolved call sites.
 - `sley-lsp` edit-plan code actions now respect the requested editor range, so
   cursor-local quick fixes exclude unrelated document repairs.
+- `sley-lsp` fix-preview commands now include `--template-surface` so repeated
+  same-kind repairs stay pinned to the selected edit-plan template.
 - `sley-lsp` declaration hover now includes module, return type, takes,
   effects, export status, and node IDs for editor-side inspection.
 - `sley-workbench` static HTML now renders focused graph-slice summaries,

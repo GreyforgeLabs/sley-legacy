@@ -487,6 +487,14 @@ return "unused"
         preview.pointer("/result/preview/operation/op"),
         Some(&json!("DeleteNode"))
     );
+    assert_eq!(
+        preview.pointer("/result/preview/dryRun/args/5"),
+        Some(&json!("--template-surface"))
+    );
+    assert_eq!(
+        preview.pointer("/result/preview/dryRun/args/6"),
+        preview.pointer("/result/preview/surface")
+    );
 
     write_lsp(
         &mut stdin,
