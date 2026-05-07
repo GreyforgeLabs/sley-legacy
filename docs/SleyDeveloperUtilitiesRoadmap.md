@@ -292,9 +292,9 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
       for effectful tasks.
     - Current bootstrap: in-tree `src/bin/sley-shadow.rs` emits
       `schema: "sley.shadow.report.v0"` from checked `sley.query.report.v0`
-      and `sley.lint.report.v0` data, is covered by integration tests, and has
-      locked contract fixtures plus single-file and project-root CLI smoke
-      coverage.
+      and `sley.lint.report.v0` data, supports module-scoped project replay,
+      is covered by integration tests, and has locked contract fixtures plus
+      single-file, project-root, and module-filtered CLI smoke coverage.
 
 13. `sley-sandbox-runner`
     - A deterministic replay wrapper around seeded host adapters.

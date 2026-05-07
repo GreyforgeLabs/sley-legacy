@@ -7,41 +7,21 @@
     "lint": "sley.lint.report.v0"
   },
   "filters": {
-    "module": null
+    "module": "agent.pipeline"
   },
   "summary": {
-    "module_count": 2,
-    "task_count": 4,
-    "effectful_task_count": 4,
-    "call_count": 11,
+    "module_count": 1,
+    "task_count": 3,
+    "effectful_task_count": 3,
+    "call_count": 10,
     "lint_finding_count": 0,
     "linked_lint_finding_count": 0,
     "unlinked_lint_finding_count": 0,
-    "authority_seed_count": 4,
+    "authority_seed_count": 3,
     "diagnostic_count": 0,
     "issue_count": 0
   },
   "authority_seeds": [
-    {
-      "task_id": "task:agent.main.main",
-      "qualified_name": "agent.main.main",
-      "effects": [
-        "SecretRead",
-        "Network",
-        "ModelCall",
-        "Deploy"
-      ],
-      "command_args": [
-        "--cap",
-        "SecretRead",
-        "--cap",
-        "Network",
-        "--cap",
-        "ModelCall",
-        "--cap",
-        "Deploy"
-      ]
-    },
     {
       "task_id": "task:agent.pipeline.collect_profile",
       "qualified_name": "agent.pipeline.collect_profile",

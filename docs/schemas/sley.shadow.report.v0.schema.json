@@ -8,6 +8,7 @@
     "status",
     "target",
     "source_schemas",
+    "filters",
     "summary",
     "authority_seeds",
     "lint_links",
@@ -19,6 +20,7 @@
     "status": { "enum": ["clean", "findings", "blocked"] },
     "target": { "type": "string", "minLength": 1 },
     "source_schemas": { "$ref": "#/$defs/sourceSchemas" },
+    "filters": { "$ref": "#/$defs/filters" },
     "summary": { "$ref": "#/$defs/summary" },
     "authority_seeds": {
       "type": "array",
@@ -44,6 +46,14 @@
       "properties": {
         "query": { "const": "sley.query.report.v0" },
         "lint": { "const": "sley.lint.report.v0" }
+      },
+      "additionalProperties": false
+    },
+    "filters": {
+      "type": "object",
+      "required": ["module"],
+      "properties": {
+        "module": { "type": ["string", "null"], "minLength": 1 }
       },
       "additionalProperties": false
     },

@@ -214,7 +214,8 @@ Implemented now:
   `schema: "sley.shadow.report.v0"` from checked `sley.query.report.v0` and
   `sley.lint.report.v0` data for single-file or project-root targets, linking
   lint findings back to query rows and deriving seeded `--cap` args for
-  effectful tasks without becoming a semantic authority
+  effectful tasks without becoming a semantic authority; `--module <module>`
+  narrows project reports to a reusable query/lint slice
 - in-tree `sley-agent-bench` deterministic repair-loop benchmark that emits
   `schema: "sley.agent_bench.report.v0"` after proving a JSON inspect, lint,
   plan, checked fix, verify, seal, and ZJX handoff path
