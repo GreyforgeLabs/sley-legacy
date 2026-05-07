@@ -848,10 +848,34 @@ fn deploy_dry_run_reports_verified_package_without_live_mutation() {
             "sley-contract",
             "inspect-deploy-artifacts",
             artifacts_dir_arg.clone(),
-            "--schemas",
-            "docs/schemas",
             "--json"
         ]))
+    );
+    let artifact_action = json
+        .pointer("/next_actions/2/command")
+        .and_then(serde_json::Value::as_array)
+        .expect("deploy artifact next action command")
+        .iter()
+        .map(|value| {
+            value
+                .as_str()
+                .expect("deploy artifact next action command segment")
+                .to_string()
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        artifact_action.first().map(String::as_str),
+        Some("sley-contract")
+    );
+    let action_output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-contract"))
+        .current_dir(&artifacts_root)
+        .args(&artifact_action[1..])
+        .output()
+        .expect("run portable deploy artifact next action");
+    assert!(
+        action_output.status.success(),
+        "portable deploy artifact next action failed: {}",
+        String::from_utf8_lossy(&action_output.stderr)
     );
     assert!(artifacts_dir.join("deploy-report.json").exists());
     assert!(artifacts_dir.join("seal.json").exists());

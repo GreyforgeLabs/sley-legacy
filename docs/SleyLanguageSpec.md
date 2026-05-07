@@ -870,9 +870,12 @@ include an `inspect_deploy_artifacts` next action. The manifest records each
 artifact path, schema, and content digest so another agent can verify the
 directory as one local handoff bundle before any operator-approved deployment
 step.
-`sley-contract inspect-deploy-artifacts <dir> --schemas docs/schemas --json`
-revalidates that bundle later by checking the manifest schema, each artifact
-schema, and each recorded file digest.
+`sley-contract inspect-deploy-artifacts <dir> --json` revalidates that bundle
+later by checking the manifest schema, each artifact schema, and each recorded
+file digest. The contract utility uses `docs/schemas` from the current working
+directory when present and otherwise falls back to the bundled source schema
+directory, so the deploy report's next action remains runnable from scaffolded
+projects outside the Sley repo.
 
 `sley doctor` is the first deterministic helper that consumes the strict
 checker plus checked query and lint reports into one agent readiness report.

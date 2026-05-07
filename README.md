@@ -343,7 +343,8 @@ Implemented now:
   operator approval; `--artifacts-dir <dir>` writes local `deploy-report.json`,
   `seal.json`, `zjx-envelope.json`, and a digest-bearing `manifest.json`
   handoff file only after the dry-run package is ready, and the ready report
-  points agents to `sley-contract inspect-deploy-artifacts`
+  points agents to portable `sley-contract inspect-deploy-artifacts`
+  validation
 - JSON project scaffold reports with `sley new --json`, `hello`, `library`,
   `cli`, `service-gate`, `data-pipeline`, `deploy`, `spend-gate`, `agent`,
   `agent-task-pack`, and `agent-project` templates, relative created-file paths,
@@ -497,7 +498,7 @@ sley-ci examples --json examples
 sley-conformance report --json
 sley-conformance report --json --corpus-manifest fixtures/corpus --smoke-manifest fixtures/cli_smokes --smoke-manifest fixtures/ci_smoke_probe
 sley-conformance coverage --json --require-tag cli:check --require-tag json:sley.trace.receipt.v0
-sley-contract inspect-deploy-artifacts .sley/deploy --schemas docs/schemas --json
+sley-contract inspect-deploy-artifacts .sley/deploy --json
 make smoke
 make syntax
 sley-lsp
@@ -523,7 +524,7 @@ sley lint --json --deny-warnings examples/agent_deploy_pipeline.sley
 sley run --json --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged examples/agent_deploy_pipeline.sley
 sley verify --json --deny-warnings --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged examples/agent_deploy_pipeline.sley
 sley deploy --json --dry-run --artifacts-dir .sley/dogfood-deploy --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged examples/agent_deploy_pipeline.sley
-sley-contract inspect-deploy-artifacts .sley/dogfood-deploy --schemas docs/schemas --json
+sley-contract inspect-deploy-artifacts .sley/dogfood-deploy --json
 ```
 
 Packaged multi-module agent project:

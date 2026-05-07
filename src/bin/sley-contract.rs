@@ -33,8 +33,8 @@ enum Command {
     /// Validate every fixture against its matching top-level schema ID.
     CheckFixtures {
         fixtures_dir: PathBuf,
-        #[arg(long, default_value = "docs/schemas")]
-        schemas: PathBuf,
+        #[arg(long)]
+        schemas: Option<PathBuf>,
         #[arg(long)]
         json: bool,
     },
@@ -43,16 +43,16 @@ enum Command {
         #[arg(long)]
         schema: String,
         report: PathBuf,
-        #[arg(long, default_value = "docs/schemas")]
-        schemas: PathBuf,
+        #[arg(long)]
+        schemas: Option<PathBuf>,
         #[arg(long)]
         json: bool,
     },
     /// Verify a local deploy artifact directory against its manifest and schemas.
     InspectDeployArtifacts {
         artifacts_dir: PathBuf,
-        #[arg(long, default_value = "docs/schemas")]
-        schemas: PathBuf,
+        #[arg(long)]
+        schemas: Option<PathBuf>,
         #[arg(long)]
         json: bool,
     },
@@ -175,6 +175,7 @@ fn main() -> Result<()> {
             schemas,
             json,
         } => {
+            let schemas = resolve_schema_dir(schemas);
             let report = build_fixture_check_report(&schemas, &fixtures_dir)?;
             let failed = report.status == "failed";
             emit_fixture_check(&report, json)?;
@@ -188,6 +189,7 @@ fn main() -> Result<()> {
             schemas,
             json,
         } => {
+            let schemas = resolve_schema_dir(schemas);
             let report = build_validate_report(&schemas, &schema, &report)?;
             let failed = report.status == "failed";
             emit_validate(&report, json)?;
@@ -200,6 +202,7 @@ fn main() -> Result<()> {
             schemas,
             json,
         } => {
+            let schemas = resolve_schema_dir(schemas);
             let report = build_deploy_artifact_check_report(&schemas, &artifacts_dir)?;
             let failed = report.status == "failed";
             emit_deploy_artifact_check(&report, json)?;
@@ -209,6 +212,17 @@ fn main() -> Result<()> {
         }
     }
     Ok(())
+}
+
+fn resolve_schema_dir(schemas: Option<PathBuf>) -> PathBuf {
+    if let Some(schemas) = schemas {
+        return schemas;
+    }
+    let cwd_default = PathBuf::from("docs/schemas");
+    if cwd_default.is_dir() {
+        return cwd_default;
+    }
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("docs/schemas")
 }
 
 fn build_inventory_report(schema_dir: &Path) -> Result<InventoryReport> {
