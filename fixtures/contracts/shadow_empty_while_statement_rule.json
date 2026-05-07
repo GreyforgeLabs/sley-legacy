@@ -1,0 +1,42 @@
+{
+  "schema": "sley.shadow.report.v0",
+  "status": "findings",
+  "target": "examples/empty_while_statement.sley",
+  "source_schemas": {
+    "query": "sley.query.report.v0",
+    "lint": "sley.lint.report.v0"
+  },
+  "filters": {
+    "module": null,
+    "rules": [
+      "empty_while_statement"
+    ]
+  },
+  "summary": {
+    "module_count": 1,
+    "task_count": 1,
+    "effectful_task_count": 0,
+    "call_count": 0,
+    "lint_finding_count": 1,
+    "linked_lint_finding_count": 1,
+    "unlinked_lint_finding_count": 0,
+    "authority_seed_count": 0,
+    "diagnostic_count": 0,
+    "issue_count": 0
+  },
+  "authority_seeds": [],
+  "lint_links": [
+    {
+      "finding_id": "EMPTY_WHILE_STATEMENT",
+      "rule": "empty_while_statement",
+      "node": "block:task:app.empty_while.main:stmt:2",
+      "module": "app.empty_while",
+      "linked": true,
+      "target_kind": "task",
+      "qualified_name": "app.empty_while.main",
+      "hint": "add loop body work or remove the empty loop after proving termination intent"
+    }
+  ],
+  "diagnostics": [],
+  "issues": []
+}
