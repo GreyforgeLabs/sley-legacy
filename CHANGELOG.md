@@ -88,10 +88,13 @@ here. Dates use UTC-independent calendar dates from the local repo history.
 - Ready deploy dry-run reports with artifact directories now include an
   `inspect_deploy_artifacts` next action for validating handoff bundles before
   operator approval.
+- `sley-contract` validation commands now default to repo-local or bundled
+  source schemas while preserving explicit schema overrides for pinned
+  validation.
 - `sley lint --rule empty-else-statement` now flags no-op empty `else`
   branches and `sley plan --graft-templates` emits a checked
   `remove_empty_else_statement` repair.
-- Contract inventory now tracks 36 schemas, 99 contract fixtures, and 102 schema
+- Contract inventory now tracks 36 schemas, 104 contract fixtures, and 107 schema
   instances through the conformance report.
 - The Rust package metadata now declares its supported Rust floor, description,
   README, keywords, categories, and `publish = false` until publication
