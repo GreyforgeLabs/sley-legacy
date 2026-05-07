@@ -9722,6 +9722,51 @@ fn report_command_schemas_pin_nonempty_argv_segments() {
 }
 
 #[test]
+fn workbench_html_exposes_graph_focus_selector() {
+    let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let render_root = temp_project_dir("workbench-graph-focus");
+    fs::create_dir_all(&render_root).expect("create workbench temp dir");
+    let html_path = render_root.join("workbench.html");
+    let html_path_arg = sley_string(&html_path);
+    let report = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-workbench"))
+        .current_dir(&repo_root)
+        .args([
+            "--json",
+            "--html",
+            &html_path_arg,
+            "--slice",
+            "task:app.agent_deploy_pipeline.main",
+            "examples/agent_deploy_pipeline.sley",
+        ])
+        .output()
+        .expect("run sley-workbench graph focus HTML");
+    assert!(
+        report.status.success(),
+        "sley-workbench failed: {}",
+        String::from_utf8_lossy(&report.stderr)
+    );
+    let report_json: serde_json::Value =
+        serde_json::from_slice(&report.stdout).expect("parse workbench JSON");
+    assert_eq!(
+        report_json.pointer("/schema"),
+        Some(&serde_json::json!("sley.workbench.report.v0"))
+    );
+    assert_eq!(
+        report_json.pointer("/graph_slice/focus/id"),
+        Some(&serde_json::json!("task:app.agent_deploy_pipeline.main"))
+    );
+    let html = fs::read_to_string(&html_path).expect("read workbench HTML");
+    assert!(html.contains("data-graph-focus"));
+    assert!(html.contains("data-graph-slice-command"));
+    assert!(html.contains("data-graph-row"));
+    assert!(html.contains("module:app.agent_deploy_pipeline"));
+    assert!(html.contains("task:app.agent_deploy_pipeline.main"));
+    assert!(html.contains(
+        "sley-workbench --slice task:app.agent_deploy_pipeline.main examples/agent_deploy_pipeline.sley"
+    ));
+}
+
+#[test]
 fn contract_utility_inventories_schemas_and_validates_fixtures() {
     let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
@@ -10225,11 +10270,11 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/integration_test_count"),
-        Some(&serde_json::json!(319))
+        Some(&serde_json::json!(320))
     );
     assert_eq!(
         report_json.pointer("/summary/declared_integration_test_count"),
-        Some(&serde_json::json!(319))
+        Some(&serde_json::json!(320))
     );
     assert_eq!(
         report_json.pointer("/summary/test_count_matches_declared"),
@@ -10253,7 +10298,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/tests/integration_test_count"),
-        Some(&serde_json::json!(319))
+        Some(&serde_json::json!(320))
     );
     assert_eq!(
         report_json.pointer("/tests/declared_matches_actual"),

@@ -191,7 +191,8 @@ symbols, declaration hover, edit-plan code actions, and non-mutating
 uses `schema: "sley.lsp.fix_preview.v0"` and has a locked contract fixture.
 The `sley-workbench` binary exposes `schema: "sley.workbench.report.v0"` and
 optional static HTML over doctor/query/lint/plan/graph panels without source
-file writes.
+file writes; HTML includes local lint repair focus and graph target selectors
+for focused slice handoff.
 The `sley-docgen` binary exposes `schema: "sley.docgen.report.v0"` and
 optional Markdown over checked module, task, type, effect, and capability
 reference data.

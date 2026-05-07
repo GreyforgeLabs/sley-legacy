@@ -324,9 +324,9 @@ worth the maintenance cost.
 3. Extend `sley-lsp` from the current in-tree server toward project-wide
    workspace support, editor extension shims, and richer hover/details while
    keeping compiler modules as the semantic authority.
-4. Extend `sley-workbench` from the current static local report toward a live
-   selector UI that can focus lint findings and graph slices without enabling
-   writes by default.
+4. Extend `sley-workbench` from the current static local report toward richer
+   local selectors for lint findings, graph targets, and graph slices without
+   enabling writes by default.
 5. Split `sley-contract-kit`, `sley-ci`, or Tree-sitter packages only after the
    public release posture is settled.
 
