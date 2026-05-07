@@ -1,0 +1,9 @@
+module corpus.rejected.map_index_non_text
+
+task main -> Int {
+  bind scores: Map<Text, Int> = map {
+    "ada": 3,
+    "grace": 5,
+  }
+  return scores[0]
+}
