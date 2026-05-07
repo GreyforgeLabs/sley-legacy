@@ -46,6 +46,10 @@ fn lsp_publishes_diagnostics_formats_symbols_and_previews_code_actions() {
         initialized.pointer("/result/capabilities/executeCommandProvider/commands/0"),
         Some(&json!("sley.fix.preview"))
     );
+    assert_eq!(
+        initialized.pointer("/result/capabilities/definitionProvider"),
+        Some(&json!(true))
+    );
 
     write_lsp(
         &mut stdin,
@@ -278,6 +282,8 @@ entry = "app.main"
     .expect("write LSP project manifest");
     let main_path = root.join("src/app/main.sley");
     let main_uri = file_uri(&main_path);
+    let pipeline_path = root.join("src/app/pipeline.sley");
+    let pipeline_uri = file_uri(&pipeline_path);
     let main_source = r#"module app.main
 
 import app.pipeline as pipe
@@ -285,10 +291,10 @@ import app.pipeline as pipe
 task main -> Text {
   return call pipe.message()
 }
-"#;
+    "#;
     fs::write(&main_path, main_source).expect("write LSP main module");
     fs::write(
-        root.join("src/app/pipeline.sley"),
+        &pipeline_path,
         r#"module app.pipeline
 
 export task message -> Text {
@@ -357,6 +363,60 @@ export task message -> Text {
         "valid imported task should resolve with project context: {diagnostics:#}"
     );
 
+    write_lsp(
+        &mut stdin,
+        json!({
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "textDocument/definition",
+            "params": {
+                "textDocument": {
+                    "uri": main_uri
+                },
+                "position": {
+                    "line": 5,
+                    "character": 20
+                }
+            }
+        }),
+    );
+    let definition = read_response(&mut reader, 2);
+    assert_eq!(
+        definition.pointer("/result/0/uri"),
+        Some(&json!(pipeline_uri))
+    );
+    assert_eq!(
+        definition.pointer("/result/0/range/start/line"),
+        Some(&json!(2))
+    );
+
+    write_lsp(
+        &mut stdin,
+        json!({
+            "jsonrpc": "2.0",
+            "id": 3,
+            "method": "textDocument/definition",
+            "params": {
+                "textDocument": {
+                    "uri": main_uri
+                },
+                "position": {
+                    "line": 2,
+                    "character": 8
+                }
+            }
+        }),
+    );
+    let import_definition = read_response(&mut reader, 3);
+    assert_eq!(
+        import_definition.pointer("/result/0/uri"),
+        Some(&json!(pipeline_uri))
+    );
+    assert_eq!(
+        import_definition.pointer("/result/0/range/start/line"),
+        Some(&json!(0))
+    );
+
     let changed_source = main_source.replace("pipe.message()", "pipe.missing()");
     write_lsp(
         &mut stdin,
@@ -384,12 +444,12 @@ export task message -> Text {
         &mut stdin,
         json!({
             "jsonrpc": "2.0",
-            "id": 2,
+            "id": 4,
             "method": "shutdown",
             "params": null
         }),
     );
-    let shutdown = read_response(&mut reader, 2);
+    let shutdown = read_response(&mut reader, 4);
     assert!(shutdown.get("result").is_some());
     write_lsp(
         &mut stdin,
