@@ -10291,8 +10291,8 @@ fn workbench_html_exposes_graph_focus_selector() {
             "--html",
             &html_path_arg,
             "--slice",
-            "task:app.agent_deploy_pipeline.main",
-            "examples/agent_deploy_pipeline.sley",
+            "task:app.main.main",
+            "examples/project",
         ])
         .output()
         .expect("run sley-workbench graph focus HTML");
@@ -10309,17 +10309,22 @@ fn workbench_html_exposes_graph_focus_selector() {
     );
     assert_eq!(
         report_json.pointer("/graph_slice/focus/id"),
-        Some(&serde_json::json!("task:app.agent_deploy_pipeline.main"))
+        Some(&serde_json::json!("task:app.main.main"))
+    );
+    assert_eq!(
+        report_json.pointer("/graph_slice/call_arg_affordances/0/operation/op"),
+        Some(&serde_json::json!("ReplaceCallArg"))
     );
     let html = fs::read_to_string(&html_path).expect("read workbench HTML");
     assert!(html.contains("data-graph-focus"));
     assert!(html.contains("data-graph-slice-command"));
     assert!(html.contains("data-graph-row"));
-    assert!(html.contains("module:app.agent_deploy_pipeline"));
-    assert!(html.contains("task:app.agent_deploy_pipeline.main"));
-    assert!(html.contains(
-        "sley-workbench --slice task:app.agent_deploy_pipeline.main examples/agent_deploy_pipeline.sley"
-    ));
+    assert!(html.contains("module:app.main"));
+    assert!(html.contains("task:app.main.main"));
+    assert!(html.contains("Call Argument Affordances"));
+    assert!(html.contains("call-arg"));
+    assert!(html.contains("ReplaceCallArg"));
+    assert!(html.contains("sley-workbench --slice task:app.main.main examples/project"));
 }
 
 #[test]

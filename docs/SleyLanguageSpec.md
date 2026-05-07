@@ -805,7 +805,8 @@ It emits `schema: "sley.workbench.report.v0"` and can write an explicit static
 HTML report containing doctor, query, lint, edit-plan, graph, and graph-slice
 panels. Lint rows include focused `sley plan --graft-templates` commands, and
 the HTML report includes local selectors for lint repair focus and graph target
-slice commands. The workbench is read-only for source code; HTML output
+slice commands plus checked graph-slice affordance rows. The workbench is
+read-only for source code; HTML output
 requires `--html <path>`.
 
 The local documentation loop is backed by the in-tree `sley-docgen` bootstrap.

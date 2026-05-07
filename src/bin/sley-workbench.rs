@@ -945,10 +945,16 @@ fn render_graph_slice_panel(slice: &SymbolGraphSlice) -> String {
         ("Tasks", slice.tasks.len()),
         ("Outbound Calls", slice.outbound_calls.len()),
         ("Inbound Calls", slice.inbound_calls.len()),
+        ("Add Affordances", slice.add_affordances.len()),
         ("Insert Affordances", slice.insert_affordances.len()),
         ("Move Affordances", slice.move_affordances.len()),
         ("Delete Affordances", slice.delete_affordances.len()),
         ("Replace Affordances", slice.replace_affordances.len()),
+        ("Call Site Affordances", slice.call_site_affordances.len()),
+        (
+            "Call Argument Affordances",
+            slice.call_arg_affordances.len(),
+        ),
     ]
     .into_iter()
     .map(|(label, value)| {
@@ -992,6 +998,14 @@ fn render_slice_calls(slice: &SymbolGraphSlice) -> String {
 
 fn render_slice_affordances(slice: &SymbolGraphSlice) -> String {
     let mut rows = Vec::new();
+    rows.extend(slice.add_affordances.iter().map(|affordance| {
+        format!(
+            "<tr><td>add</td><td>{}</td><td><code>{}</code></td><td>operation <code>{}</code></td></tr>",
+            escape_html(&affordance.target_kind),
+            escape_html(&affordance.target),
+            escape_html(&operation_name(&affordance.operation))
+        )
+    }));
     rows.extend(slice.insert_affordances.iter().map(|affordance| {
         format!(
             "<tr><td>insert</td><td>{}</td><td><code>{}</code></td><td>max position {}</td></tr>",
@@ -1026,6 +1040,26 @@ fn render_slice_affordances(slice: &SymbolGraphSlice) -> String {
             escape_html(&affordance.parent)
         )
     }));
+    rows.extend(slice.call_site_affordances.iter().map(|affordance| {
+        format!(
+            "<tr><td>call-site</td><td>{}</td><td><code>{}</code></td><td><code>{}</code> to <code>{}</code>, operation <code>{}</code></td></tr>",
+            escape_html(&affordance.target_kind),
+            escape_html(&affordance.target),
+            escape_html(&affordance.callee),
+            escape_html(&affordance.task_target),
+            escape_html(&operation_name(&affordance.operation))
+        )
+    }));
+    rows.extend(slice.call_arg_affordances.iter().map(|affordance| {
+        format!(
+            "<tr><td>call-arg</td><td>{}</td><td><code>{}</code></td><td>call <code>{}</code>, position {}, operation <code>{}</code></td></tr>",
+            escape_html(&affordance.target_kind),
+            escape_html(&affordance.target),
+            escape_html(&affordance.call),
+            affordance.position,
+            escape_html(&operation_name(&affordance.operation))
+        )
+    }));
     if rows.is_empty() {
         return "<p class=\"muted\">No graft affordances in this slice.</p>".to_string();
     }
@@ -1033,6 +1067,14 @@ fn render_slice_affordances(slice: &SymbolGraphSlice) -> String {
         "<table><thead><tr><th>Kind</th><th>Target Kind</th><th>Target</th><th>Detail</th></tr></thead><tbody>{}</tbody></table>",
         rows.join("")
     )
+}
+
+fn operation_name(operation: &JsonValue) -> String {
+    operation
+        .pointer("/op")
+        .and_then(JsonValue::as_str)
+        .unwrap_or("unknown")
+        .to_string()
 }
 
 fn print_human_report(report: &WorkbenchReport) {
