@@ -10958,7 +10958,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(119))
+        Some(&serde_json::json!(120))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -11234,7 +11234,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/contract_fixture_count"),
-        Some(&serde_json::json!(119))
+        Some(&serde_json::json!(120))
     );
     assert_eq!(
         report_json.pointer("/summary/migration_fixture_count"),
