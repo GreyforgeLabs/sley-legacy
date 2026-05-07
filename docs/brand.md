@@ -1,6 +1,6 @@
 # Brand
 
-Brand status: private scaffold assets.
+Brand status: public scaffold assets.
 
 Visual direction follows the Sley `Loom Graph` theme:
 

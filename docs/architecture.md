@@ -12,7 +12,7 @@
 
 - No duplicate Sley semantic checker.
 - No real deployment, provider, spend, wallet, or secret integration.
-- No public release assumption while the repository remains private.
+- No public release assumption without contract-and-release criteria review.
 
 ## Stabilization Strategy
 

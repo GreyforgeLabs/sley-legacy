@@ -1,6 +1,6 @@
 # Contributing
 
-This repository is private while the Sley ecosystem stabilizes.
+This repository is publicly visible while the Sley ecosystem stabilizes.
 
 ## Local Loop
 

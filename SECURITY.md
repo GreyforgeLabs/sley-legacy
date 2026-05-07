@@ -1,6 +1,6 @@
 # Security
 
-`sley-ci` is pre-release private software.
+`sley-ci` is pre-release software.
 
 Do not place secrets, credentials, private endpoints, deployment tokens, or
 provider keys in this repository. Tests must remain deterministic and local.

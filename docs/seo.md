@@ -9,7 +9,7 @@ Meta description:
 Canonical URL:
 `https://sley.greyforge.tech/tools/sley-ci`
 
-Private GitHub URL:
+GitHub URL:
 `https://github.com/GreyforgeLabs/sley-ci`
 
 Keywords:
@@ -19,5 +19,4 @@ Social image:
 `assets/branding/social-card.png`
 
 Release note:
-Keep this metadata private until the repository is intentionally made
-public.
+SEO metadata is public and points to production tool docs.
