@@ -17219,6 +17219,16 @@ task main -> Int {
             .any(|affordance| affordance.target == "block:task:main.main:stmt:2"),
         "return statements should not be advertised as whole-statement replace affordances"
     );
+    for affordance in &slice.replace_affordances {
+        let graft: GraftInput = serde_json::from_value(affordance.operation.clone())
+            .expect("parse checked replace affordance");
+        let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
+        assert_eq!(
+            outcome.status, "accepted",
+            "expected replace affordance {affordance:#?} to apply, got {:#?}",
+            outcome.diagnostics
+        );
+    }
 }
 
 #[test]
@@ -23055,6 +23065,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:project-existing-import-write",
         "graph-slice:checked-delete-affordances",
         "graph-slice:checked-move-affordances",
+        "graph-slice:checked-replace-affordances",
         "graph-slice:delete-affordances",
         "graph-slice:inbound-calls",
         "graph-slice:add-affordances",

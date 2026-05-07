@@ -748,8 +748,8 @@ reports, doctor readiness reports, edit-plan reports, project scaffolds, ZJX
 preview envelopes, LSP help/startup, graft dry runs
 and direct graft writes, write-mode fix trace receipts, non-empty trace
 receipt seals, ZJX envelopes carrying graph digests and schema-backed trace
-receipts, ZJX tool reports, graph-slice checked delete, insert, and replace
-affordances, checked `insert_statement`, `replace_statement`, and
+receipts, ZJX tool reports, graph-slice checked delete, insert, move, and
+replace affordances, checked `insert_statement`, `replace_statement`, and
 `replace_expression` graft templates, lint-driven fix
 writes that clear warnings before verify, program-surface declaration/import
 template planning and dry-run fixes with name/source/module overrides, deploy
@@ -1208,10 +1208,11 @@ take `DeleteNode` planning; each delete affordance exposes the exact target,
 current parent, current position, starter operation JSON, and editable pointer
 list only when the graft checker accepts the starter. Entry-module `main` task
 deletion is not advertised.
-Graph slices also include task-local `replace_affordances` for non-return
-`ReplaceStatement` and `ReplaceExpression` planning; each replace affordance
-exposes the exact statement or expression target, target kind, parent node id,
-starter operation JSON, and editable `/payload/source` pointer.
+Graph slices also include checked task-local `replace_affordances` for
+non-return `ReplaceStatement` and `ReplaceExpression` planning; each replace
+affordance exposes the exact statement or expression target, target kind,
+parent node id, starter operation JSON, and editable `/payload/source` pointer
+only when the graft checker accepts the starter.
 Call-site, statement, and expression grafts now consume node ids and task
 identities from this shard.
 

@@ -687,10 +687,9 @@ fn build_slice(
         .into_iter()
         .filter(|affordance| checked_delete_affordance(program, affordance))
         .collect(),
-        replace_affordances: build_replace_affordances(
-            focus_task_index,
-            &module_task_indexes,
+        replace_affordances: checked_replace_affordances(
             program,
+            build_replace_affordances(focus_task_index, &module_task_indexes, program),
         ),
         outbound_calls,
         inbound_calls,
@@ -1634,6 +1633,22 @@ fn build_replace_affordances(
         );
     }
     affordances
+}
+
+fn checked_replace_affordances(
+    program: &Program,
+    affordances: Vec<ReplaceAffordance>,
+) -> Vec<ReplaceAffordance> {
+    affordances
+        .into_iter()
+        .filter(|affordance| {
+            graph_slice_operation_checks(
+                program,
+                &affordance.operation,
+                Some("agent:graph-slice-replace-affordance"),
+            )
+        })
+        .collect()
 }
 
 fn collect_replace_affordances_in_block(
