@@ -1244,8 +1244,8 @@ Medium-term:
    beyond seeded values, model beyond seeded completions, shell beyond seeded
    command output, network beyond seeded text, and database write beyond
    per-run inserts.
-4. Broaden release gates beyond the current corpus, packaged examples, and CLI
-   smokes into migration fixtures and the final public-release metadata cut.
+4. Finish the final public-release metadata cut after the operator chooses
+   license and repository values.
 5. Shadow selected compiler helper passes in Sley.
 
 Long-term:
