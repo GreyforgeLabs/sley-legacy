@@ -10,7 +10,7 @@ use sley::ast::{
     BindingKind, EffectDecl, Expr, ExprKind, ImportDecl, Program, Statement, StatementKind,
     TaskDecl, TypeDecl,
 };
-use sley::authority::host_effect_contracts;
+use sley::authority::{host_effect_contracts, host_effects_for_callee};
 use sley::checker::{check_program, has_errors};
 use sley::diagnostics::{Diagnostic, Severity, SourceSpan};
 use sley::formatter::format_program;
@@ -518,6 +518,9 @@ fn handle_hover(params: JsonValue, state: &ServerState) -> JsonValue {
                 );
             }
             TaskResolution::Unknown | TaskResolution::Ambiguous(_) | TaskResolution::Private(_) => {
+                if let Some(effects) = host_effects_for_callee(&callee_name) {
+                    return hover_json(&host_call_hover(&callee_name, effects), range);
+                }
             }
         }
     }
@@ -1772,6 +1775,21 @@ fn task_call_hover(task: &TaskDecl, default_module: &str, callee_name: &str) -> 
     format!(
         "call `{callee_name}`\n\nresolved task: `{}.{}`\nsignature: `{signature}`\nvisibility: `{visibility}`\neffects: {effects}\nnode: `{}`",
         task_module, task.name, task.id
+    )
+}
+
+fn host_call_hover(callee_name: &str, effects: &[&str]) -> String {
+    let effects_text = effects
+        .iter()
+        .map(|effect| format!("`{effect}`"))
+        .collect::<Vec<_>>()
+        .join(", ");
+    let cap_hint = effects
+        .first()
+        .map(|effect| format!("`--cap {effect}[=SCOPE]`"))
+        .unwrap_or_else(|| "`--cap EFFECT[=SCOPE]`".to_string());
+    format!(
+        "host call `{callee_name}`\n\nrequired capabilities: {effects_text}\nseeded run flag: {cap_hint}\nauthority failures are diagnostics; recoverable host failures return `Result` values"
     )
 }
 

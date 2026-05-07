@@ -279,6 +279,43 @@ return "unused"
     assert!(hover_text.contains("effects: `Network`"));
     assert!(hover_text.contains("node: `task:app.lsp.fetch`"));
 
+    let host_call_line = source
+        .lines()
+        .position(|line| line.contains("http.try_get_text"))
+        .expect("host call line");
+    let host_call_character = source
+        .lines()
+        .nth(host_call_line)
+        .and_then(|line| line.find("try_get_text"))
+        .map(|character| character + 1)
+        .expect("host call character");
+    write_lsp(
+        &mut stdin,
+        json!({
+            "jsonrpc": "2.0",
+            "id": 21,
+            "method": "textDocument/hover",
+            "params": {
+                "textDocument": {
+                    "uri": uri
+                },
+                "position": {
+                    "line": host_call_line,
+                    "character": host_call_character
+                }
+            }
+        }),
+    );
+    let host_hover = read_response(&mut reader, 21);
+    let host_hover_text = host_hover
+        .pointer("/result/contents/value")
+        .and_then(JsonValue::as_str)
+        .expect("host call hover text");
+    assert!(host_hover_text.contains("host call `http.try_get_text`"));
+    assert!(host_hover_text.contains("required capabilities: `Network`"));
+    assert!(host_hover_text.contains("`--cap Network[=SCOPE]`"));
+    assert!(host_hover_text.contains("recoverable host failures return `Result` values"));
+
     write_lsp(
         &mut stdin,
         json!({
