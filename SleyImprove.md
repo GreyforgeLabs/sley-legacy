@@ -108,7 +108,7 @@ sley-ci plan --json [--deny-warnings] [--graft-templates] [--template-surface <s
 sley-ci run --json [runtime gates/seeds] <target>
 sley-ci corpus --json <fixtures/corpus|fixtures/corpus/manifest.json>
 sley-ci examples --json examples
-sley-conformance report --json [--corpus-manifest <fixtures/corpus|fixtures/corpus/manifest.json>] [--smoke-manifest <fixtures/cli_smokes|fixtures/cli_smokes/manifest.json>] [--editor-shim-root <editors/vscode-sley>] [--makefile <Makefile>]
+sley-conformance report --json [--markdown <report.md>] [--corpus-manifest <fixtures/corpus|fixtures/corpus/manifest.json>] [--smoke-manifest <fixtures/cli_smokes|fixtures/cli_smokes/manifest.json>] [--editor-shim-root <editors/vscode-sley>] [--makefile <Makefile>]
 sley-conformance report --json --require-public-release-ready
 sley-conformance coverage --json --require-tag <tag>
 sley-contract inventory [docs/schemas] --json
@@ -791,6 +791,8 @@ The current smoke manifest covers:
   `sley seal --trace <trace.jsonl>` sealing and
   `sley zjx --trace <trace.jsonl>` envelope transport over a non-empty receipt
   chain with a recomputable graph digest
+- post-run CLI smoke file assertions, including the
+  `sley-conformance report --markdown` public-release decision packet
 - project `AddImport` writeback into an existing on-disk module file that was
   not yet loaded through the entry import graph, through both direct graft JSON
   and the `sley fix --write --kind add_import --module <module>` path, followed

@@ -158,6 +158,7 @@ const DEFAULT_SMOKE_TAGS: &[&str] = &[
     "readiness:contract-schema-defaults",
     "readiness:deploy-package-artifact-inspection",
     "readiness:duplicate-import-repair-write-verify",
+    "readiness:public-release-decision-packet",
     "readiness:doctor-verify-gate",
     "readiness:docgen-reference",
     "readiness:lsp-stdio-startup",
@@ -620,12 +621,10 @@ fn main() -> Result<()> {
                 apply_public_release_gate(&mut report);
             }
             if let Some(path) = markdown {
-                fs::write(&path, render_markdown(&report))
-                    .with_context(|| format!("failed to write {}", path.display()))?;
+                write_rendered_report(&path, render_markdown(&report))?;
             }
             if let Some(path) = html {
-                fs::write(&path, render_html(&report))
-                    .with_context(|| format!("failed to write {}", path.display()))?;
+                write_rendered_report(&path, render_html(&report))?;
             }
             emit_report(&report, json)?;
             if report.status == "failed" {
@@ -648,6 +647,16 @@ fn main() -> Result<()> {
         }
     }
     Ok(())
+}
+
+fn write_rendered_report(path: &Path, content: String) -> Result<()> {
+    if let Some(parent) = path.parent() {
+        if !parent.as_os_str().is_empty() {
+            fs::create_dir_all(parent)
+                .with_context(|| format!("failed to create {}", parent.display()))?;
+        }
+    }
+    fs::write(path, content).with_context(|| format!("failed to write {}", path.display()))
 }
 
 fn apply_public_release_gate(report: &mut ConformanceReport) {

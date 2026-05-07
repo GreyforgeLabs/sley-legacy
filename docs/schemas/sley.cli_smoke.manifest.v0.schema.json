@@ -83,6 +83,22 @@
         "stdout_json_absent": {
           "type": "array",
           "items": { "type": "string" }
+        },
+        "files": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/fileExpectation" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "fileExpectation": {
+      "type": "object",
+      "required": ["path"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "contains": {
+          "type": "array",
+          "items": { "type": "string" }
         }
       },
       "additionalProperties": false

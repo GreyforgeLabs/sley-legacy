@@ -280,6 +280,8 @@ struct SmokeExpectation {
     stdout_json: Vec<JsonExpectation>,
     #[serde(default)]
     stdout_json_absent: Vec<String>,
+    #[serde(default)]
+    files: Vec<FileExpectation>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -287,6 +289,14 @@ struct SmokeExpectation {
 struct JsonExpectation {
     pointer: String,
     value: JsonValue,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct FileExpectation {
+    path: String,
+    #[serde(default)]
+    contains: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -1121,7 +1131,7 @@ fn run_smoke_case(sley_bin: &Path, repo_root: &Path, tmp_root: &Path, case: &Smo
         case.expect.success,
         case.covers.clone(),
     );
-    apply_smoke_expectations(&mut run, &case.expect);
+    apply_smoke_expectations(&mut run, &case.expect, repo_root, tmp_root);
     run.step.status = if run.step.issues.is_empty() {
         "passed".into()
     } else {
@@ -1130,7 +1140,12 @@ fn run_smoke_case(sley_bin: &Path, repo_root: &Path, tmp_root: &Path, case: &Smo
     run
 }
 
-fn apply_smoke_expectations(run: &mut StepRun, expect: &SmokeExpectation) {
+fn apply_smoke_expectations(
+    run: &mut StepRun,
+    expect: &SmokeExpectation,
+    repo_root: &Path,
+    tmp_root: &Path,
+) {
     for expected in &expect.stdout_contains {
         if !run.stdout.contains(expected) {
             run.step.issues.push(issue(
@@ -1148,6 +1163,7 @@ fn apply_smoke_expectations(run: &mut StepRun, expect: &SmokeExpectation) {
         }
     }
     if expect.stdout_json.is_empty() && expect.stdout_json_absent.is_empty() {
+        apply_smoke_file_expectations(run, expect, repo_root, tmp_root);
         return;
     }
     let json = match serde_json::from_str::<JsonValue>(&run.stdout) {
@@ -1182,6 +1198,46 @@ fn apply_smoke_expectations(run: &mut StepRun, expect: &SmokeExpectation) {
                 "stdout_json_pointer_present",
                 format!("stdout JSON unexpectedly contained pointer {pointer}"),
             ));
+        }
+    }
+    apply_smoke_file_expectations(run, expect, repo_root, tmp_root);
+}
+
+fn apply_smoke_file_expectations(
+    run: &mut StepRun,
+    expect: &SmokeExpectation,
+    repo_root: &Path,
+    tmp_root: &Path,
+) {
+    for expected in &expect.files {
+        let path = PathBuf::from(expand_smoke_text(&expected.path, repo_root, tmp_root));
+        if !path.starts_with(repo_root) && !path.starts_with(tmp_root) {
+            run.step.issues.push(issue(
+                "expected_file_outside_allowed_roots",
+                format!(
+                    "expected file {} does not live under {{repo}} or {{tmp}}",
+                    path.display()
+                ),
+            ));
+            continue;
+        }
+        let source = match fs::read_to_string(&path) {
+            Ok(source) => source,
+            Err(error) => {
+                run.step.issues.push(issue(
+                    "expected_file_read_failed",
+                    format!("failed to read expected file {}: {error}", path.display()),
+                ));
+                continue;
+            }
+        };
+        for needle in &expected.contains {
+            if !source.contains(needle) {
+                run.step.issues.push(issue(
+                    "expected_file_missing_text",
+                    format!("{} did not contain {needle:?}", path.display()),
+                ));
+            }
         }
     }
 }
