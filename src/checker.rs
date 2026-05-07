@@ -301,7 +301,7 @@ fn check_block(
                 if let (Some(expected), Some(actual)) = (expected.as_ref(), inferred.as_ref())
                     && !types_compatible(expected, actual)
                 {
-                    diagnostics.push(
+                    diagnostics.push(diagnostic_with_optional_hint(
                         Diagnostic::error(
                             "TYPE_MISMATCH",
                             format!(
@@ -321,13 +321,9 @@ fn check_block(
                             RepairHint::new("replace_initializer")
                                 .with_target(expr.id.clone())
                                 .with_replacement(expected.display()),
-                        )
-                        .with_repair_hint(replace_expression_graft_hint(
-                            expr,
-                            expected,
-                            record_types,
-                        )),
-                    );
+                        ),
+                        replace_expression_graft_hint(expr, expected, record_types),
+                    ));
                 }
                 let local_type = expected
                     .or(inferred)
@@ -392,7 +388,7 @@ fn check_block(
                     infer_expr_type(program, task, expr, locals, known_tasks, record_types)
                     && !types_compatible(&expected, &actual)
                 {
-                    diagnostics.push(
+                    diagnostics.push(diagnostic_with_optional_hint(
                         Diagnostic::error(
                             "SET_TYPE_MISMATCH",
                             format!(
@@ -406,13 +402,9 @@ fn check_block(
                             RepairHint::new("replace_assignment_expression")
                                 .with_target(expr.id.clone())
                                 .with_replacement(expected.display()),
-                        )
-                        .with_repair_hint(replace_expression_graft_hint(
-                            expr,
-                            &expected,
-                            record_types,
-                        )),
-                    );
+                        ),
+                        replace_expression_graft_hint(expr, &expected, record_types),
+                    ));
                 }
             }
             StatementKind::Return { expr } => {
@@ -432,7 +424,7 @@ fn check_block(
                     infer_expr_type(program, task, expr, locals, known_tasks, record_types)
                     && !return_types_compatible(&expected_return, &actual, &expr.source)
                 {
-                    diagnostics.push(
+                    diagnostics.push(diagnostic_with_optional_hint(
                         Diagnostic::error(
                             "RETURN_TYPE_MISMATCH",
                             format!(
@@ -452,13 +444,9 @@ fn check_block(
                             RepairHint::new("replace_return_expression")
                                 .with_target(expr.id.clone())
                                 .with_replacement(expected_return.display()),
-                        )
-                        .with_repair_hint(replace_expression_graft_hint(
-                            expr,
-                            &expected_return,
-                            record_types,
-                        )),
-                    );
+                        ),
+                        replace_expression_graft_hint(expr, &expected_return, record_types),
+                    ));
                 }
             }
             StatementKind::Expr { expr } => {
@@ -492,7 +480,7 @@ fn check_block(
                     infer_expr_type(program, task, condition, locals, known_tasks, record_types)
                     && !is_bool_type(&condition_type)
                 {
-                    diagnostics.push(
+                    diagnostics.push(diagnostic_with_optional_hint(
                         Diagnostic::error(
                             "IF_CONDITION_NOT_BOOL",
                             format!(
@@ -501,13 +489,13 @@ fn check_block(
                             ),
                         )
                         .with_node(condition.id.clone())
-                        .with_repair_hint(bool_condition_hint(condition))
-                        .with_repair_hint(replace_expression_graft_hint(
+                        .with_repair_hint(bool_condition_hint(condition)),
+                        replace_expression_graft_hint(
                             condition,
                             &TypeExpr::named("Bool"),
                             record_types,
-                        )),
-                    );
+                        ),
+                    ));
                 }
                 let mut then_locals = locals.clone();
                 let mut then_bindings = local_bindings.clone();
@@ -553,7 +541,7 @@ fn check_block(
                     infer_expr_type(program, task, condition, locals, known_tasks, record_types)
                     && !is_bool_type(&condition_type)
                 {
-                    diagnostics.push(
+                    diagnostics.push(diagnostic_with_optional_hint(
                         Diagnostic::error(
                             "WHILE_CONDITION_NOT_BOOL",
                             format!(
@@ -562,13 +550,13 @@ fn check_block(
                             ),
                         )
                         .with_node(condition.id.clone())
-                        .with_repair_hint(bool_condition_hint(condition))
-                        .with_repair_hint(replace_expression_graft_hint(
+                        .with_repair_hint(bool_condition_hint(condition)),
+                        replace_expression_graft_hint(
                             condition,
                             &TypeExpr::named("Bool"),
                             record_types,
-                        )),
-                    );
+                        ),
+                    ));
                 }
                 let mut body_locals = locals.clone();
                 let mut body_bindings = local_bindings.clone();
@@ -1104,7 +1092,7 @@ fn check_expr_structure(
                         infer_expr_type(program, task, arg, locals, known_tasks, record_types)
                         && !types_compatible(expected, &actual)
                     {
-                        diagnostics.push(
+                        diagnostics.push(diagnostic_with_optional_hint(
                             Diagnostic::error(
                                 "CALL_ARGUMENT_TYPE_MISMATCH",
                                 format!(
@@ -1118,16 +1106,16 @@ fn check_expr_structure(
                                 RepairHint::new("replace_argument")
                                     .with_target(arg.id.clone())
                                     .with_replacement(expected.display()),
-                            )
-                            .with_repair_hint(replace_call_arg_hint(
+                            ),
+                            replace_call_arg_hint(
                                 task,
                                 &raw_callee,
                                 &callee_name,
                                 index,
                                 expected,
                                 record_types,
-                            )),
-                        );
+                            ),
+                        ));
                     }
                 }
                 for effect in &signature.effects {
@@ -1446,11 +1434,9 @@ fn unary_operator_graft_hint(
     record_types: &HashMap<String, Vec<RecordField>>,
 ) -> Option<RepairHint> {
     match op {
-        UnaryOp::Not => Some(replace_expression_graft_hint(
-            inner,
-            &TypeExpr::named("Bool"),
-            record_types,
-        )),
+        UnaryOp::Not => {
+            replace_expression_graft_hint(inner, &TypeExpr::named("Bool"), record_types)
+        }
         UnaryOp::Negate => None,
     }
 }
@@ -1532,14 +1518,16 @@ fn bool_operand_graft_hints(
     let expected = TypeExpr::named("Bool");
     let mut hints = Vec::new();
     if !is_bool_type(left_type) {
-        hints.push(replace_expression_graft_hint(left, &expected, record_types));
+        push_optional_hint(
+            &mut hints,
+            replace_expression_graft_hint(left, &expected, record_types),
+        );
     }
     if !is_bool_type(right_type) {
-        hints.push(replace_expression_graft_hint(
-            right,
-            &expected,
-            record_types,
-        ));
+        push_optional_hint(
+            &mut hints,
+            replace_expression_graft_hint(right, &expected, record_types),
+        );
     }
     hints
 }
@@ -1555,21 +1543,17 @@ fn add_operand_graft_hints(
         if is_numeric_type(right_type) {
             return Vec::new();
         }
-        return vec![replace_expression_graft_hint(
-            right,
-            left_type,
-            record_types,
-        )];
+        return replace_expression_graft_hint(right, left_type, record_types)
+            .into_iter()
+            .collect();
     }
     if is_named_type(right_type, "Text") && !is_named_type(left_type, "Text") {
         if is_numeric_type(left_type) {
             return Vec::new();
         }
-        return vec![replace_expression_graft_hint(
-            left,
-            right_type,
-            record_types,
-        )];
+        return replace_expression_graft_hint(left, right_type, record_types)
+            .into_iter()
+            .collect();
     }
     numeric_operand_graft_hints(left, left_type, right, right_type, record_types)
 }
@@ -1583,18 +1567,16 @@ fn numeric_operand_graft_hints(
 ) -> Vec<RepairHint> {
     let mut hints = Vec::new();
     if is_numeric_type(left_type) && !is_numeric_type(right_type) {
-        hints.push(replace_expression_graft_hint(
-            right,
-            left_type,
-            record_types,
-        ));
+        push_optional_hint(
+            &mut hints,
+            replace_expression_graft_hint(right, left_type, record_types),
+        );
     }
     if !is_numeric_type(left_type) && is_numeric_type(right_type) {
-        hints.push(replace_expression_graft_hint(
-            left,
-            right_type,
-            record_types,
-        ));
+        push_optional_hint(
+            &mut hints,
+            replace_expression_graft_hint(left, right_type, record_types),
+        );
     }
     hints
 }
@@ -1616,7 +1598,7 @@ fn check_if_expression(
         infer_expr_type(program, task, condition, locals, known_tasks, record_types)
         && !is_bool_type(&condition_type)
     {
-        diagnostics.push(
+        diagnostics.push(diagnostic_with_optional_hint(
             Diagnostic::error(
                 "IF_CONDITION_NOT_BOOL",
                 format!(
@@ -1625,13 +1607,9 @@ fn check_if_expression(
                 ),
             )
             .with_node(condition.id.clone())
-            .with_repair_hint(bool_condition_hint(condition))
-            .with_repair_hint(replace_expression_graft_hint(
-                condition,
-                &TypeExpr::named("Bool"),
-                record_types,
-            )),
-        );
+            .with_repair_hint(bool_condition_hint(condition)),
+            replace_expression_graft_hint(condition, &TypeExpr::named("Bool"), record_types),
+        ));
     }
 
     let then_type = infer_expr_type(
@@ -1653,27 +1631,23 @@ fn check_if_expression(
     if let (Some(then_type), Some(else_type)) = (then_type, else_type)
         && !types_compatible(&then_type, &else_type)
     {
-        diagnostics.push(
-            Diagnostic::error(
-                "IF_BRANCH_TYPE_MISMATCH",
-                format!(
-                    "if branches produce `{}` and `{}`",
-                    then_type.display(),
-                    else_type.display()
-                ),
-            )
-            .with_node(expr.id.clone())
-            .with_repair_hint(replace_expression_graft_hint(
-                then_branch,
-                &else_type,
-                record_types,
-            ))
-            .with_repair_hint(replace_expression_graft_hint(
-                else_branch,
-                &then_type,
-                record_types,
-            )),
+        let diagnostic = Diagnostic::error(
+            "IF_BRANCH_TYPE_MISMATCH",
+            format!(
+                "if branches produce `{}` and `{}`",
+                then_type.display(),
+                else_type.display()
+            ),
+        )
+        .with_node(expr.id.clone());
+        let diagnostic = diagnostic_with_optional_hint(
+            diagnostic,
+            replace_expression_graft_hint(then_branch, &else_type, record_types),
         );
+        diagnostics.push(diagnostic_with_optional_hint(
+            diagnostic,
+            replace_expression_graft_hint(else_branch, &then_type, record_types),
+        ));
     }
 }
 
@@ -1754,7 +1728,7 @@ fn check_list_literal(
             infer_expr_type(program, task, item, locals, known_tasks, record_types)
             && !types_compatible(&first_type, &actual)
         {
-            diagnostics.push(
+            diagnostics.push(diagnostic_with_optional_hint(
                 Diagnostic::error(
                     "LIST_ELEMENT_TYPE_MISMATCH",
                     format!(
@@ -1763,13 +1737,9 @@ fn check_list_literal(
                         actual.display()
                     ),
                 )
-                .with_node(expr.id.clone())
-                .with_repair_hint(replace_expression_graft_hint(
-                    item,
-                    &first_type,
-                    record_types,
-                )),
-            );
+                .with_node(expr.id.clone()),
+                replace_expression_graft_hint(item, &first_type, record_types),
+            ));
         }
     }
 }
@@ -1791,18 +1761,14 @@ fn check_map_literal(
             infer_expr_type(program, task, &entry.key, locals, known_tasks, record_types)
             && !is_named_type(&key_type, "Text")
         {
-            diagnostics.push(
+            diagnostics.push(diagnostic_with_optional_hint(
                 Diagnostic::error(
                     "MAP_KEY_TYPE_MISMATCH",
                     format!("map keys must be `Text`, not `{}`", key_type.display()),
                 )
-                .with_node(entry.key.id.clone())
-                .with_repair_hint(replace_expression_graft_hint(
-                    &entry.key,
-                    &TypeExpr::named("Text"),
-                    record_types,
-                )),
-            );
+                .with_node(entry.key.id.clone()),
+                replace_expression_graft_hint(&entry.key, &TypeExpr::named("Text"), record_types),
+            ));
         }
         if let ExprKind::StringLiteral { value } = &entry.key.kind
             && !seen_literal_keys.insert(value.clone())
@@ -1840,7 +1806,7 @@ fn check_map_literal(
             record_types,
         ) && !types_compatible(&first_type, &actual)
         {
-            diagnostics.push(
+            diagnostics.push(diagnostic_with_optional_hint(
                 Diagnostic::error(
                     "MAP_VALUE_TYPE_MISMATCH",
                     format!(
@@ -1849,13 +1815,9 @@ fn check_map_literal(
                         actual.display()
                     ),
                 )
-                .with_node(expr.id.clone())
-                .with_repair_hint(replace_expression_graft_hint(
-                    &entry.value,
-                    &first_type,
-                    record_types,
-                )),
-            );
+                .with_node(expr.id.clone()),
+                replace_expression_graft_hint(&entry.value, &first_type, record_types),
+            ));
         }
     }
 }
@@ -1880,18 +1842,14 @@ fn check_index_expression(
                 infer_expr_type(program, task, index, locals, known_tasks, record_types)
                 && !is_named_type(&index_type, "Int")
             {
-                diagnostics.push(
+                diagnostics.push(diagnostic_with_optional_hint(
                     Diagnostic::error(
                         "INDEX_NOT_INT",
                         format!("list index must be `Int`, not `{}`", index_type.display()),
                     )
-                    .with_node(index.id.clone())
-                    .with_repair_hint(replace_expression_graft_hint(
-                        index,
-                        &TypeExpr::named("Int"),
-                        record_types,
-                    )),
-                );
+                    .with_node(index.id.clone()),
+                    replace_expression_graft_hint(index, &TypeExpr::named("Int"), record_types),
+                ));
             }
             return;
         }
@@ -1900,18 +1858,14 @@ fn check_index_expression(
                 infer_expr_type(program, task, index, locals, known_tasks, record_types)
                 && !is_named_type(&index_type, "Text")
             {
-                diagnostics.push(
+                diagnostics.push(diagnostic_with_optional_hint(
                     Diagnostic::error(
                         "INDEX_KEY_TYPE_MISMATCH",
                         format!("map key must be `Text`, not `{}`", index_type.display()),
                     )
-                    .with_node(index.id.clone())
-                    .with_repair_hint(replace_expression_graft_hint(
-                        index,
-                        &TypeExpr::named("Text"),
-                        record_types,
-                    )),
-                );
+                    .with_node(index.id.clone()),
+                    replace_expression_graft_hint(index, &TypeExpr::named("Text"), record_types),
+                ));
             }
             return;
         }
@@ -1983,7 +1937,7 @@ fn check_record_literal_fields(
                     record_types,
                 ) && !types_compatible(&expected.ty, &actual)
                 {
-                    diagnostics.push(
+                    diagnostics.push(diagnostic_with_optional_hint(
                         Diagnostic::error(
                             "RECORD_FIELD_TYPE_MISMATCH",
                             format!(
@@ -1993,13 +1947,9 @@ fn check_record_literal_fields(
                                 actual.display()
                             ),
                         )
-                        .with_node(field.expr.id.clone())
-                        .with_repair_hint(replace_expression_graft_hint(
-                            &field.expr,
-                            &expected.ty,
-                            record_types,
-                        )),
-                    );
+                        .with_node(field.expr.id.clone()),
+                        replace_expression_graft_hint(&field.expr, &expected.ty, record_types),
+                    ));
                 }
             }
             None => diagnostics.push(diagnostic_with_optional_hint(
@@ -2067,6 +2017,12 @@ fn diagnostic_with_optional_hint(diagnostic: Diagnostic, hint: Option<RepairHint
         diagnostic.with_repair_hint(hint)
     } else {
         diagnostic
+    }
+}
+
+fn push_optional_hint(hints: &mut Vec<RepairHint>, hint: Option<RepairHint>) {
+    if let Some(hint) = hint {
+        hints.push(hint);
     }
 }
 
@@ -2308,11 +2264,9 @@ fn replace_expression_graft_hint(
     expr: &Expr,
     expected: &TypeExpr,
     record_types: &HashMap<String, Vec<RecordField>>,
-) -> RepairHint {
-    replace_expression_source_graft_hint(
-        expr,
-        &default_expr_source_for_type(expected, record_types),
-    )
+) -> Option<RepairHint> {
+    default_expr_source_for_type_if_available(expected, record_types)
+        .map(|source| replace_expression_source_graft_hint(expr, &source))
 }
 
 fn replace_expression_source_graft_hint(expr: &Expr, source: &str) -> RepairHint {
@@ -2339,6 +2293,8 @@ fn call_arity_graft_hint(
     let target = format!("task:{target_fq_name}");
     let scope = format!("task:{}", task_fq_name(task));
     if arg_count < expected_takes.len() {
+        let source =
+            default_expr_source_for_type_if_available(&expected_takes[arg_count], record_types)?;
         let graft = serde_json::json!({
             "op": "UpdateCallArgs",
             "target": target,
@@ -2346,7 +2302,7 @@ fn call_arity_graft_hint(
                 "from": raw_callee,
                 "position": arg_count,
                 "scope": scope,
-                "source": default_expr_source_for_type(&expected_takes[arg_count], record_types),
+                "source": source,
             }
         });
         return Some(
@@ -2381,8 +2337,9 @@ fn replace_call_arg_hint(
     position: usize,
     expected: &TypeExpr,
     record_types: &HashMap<String, Vec<RecordField>>,
-) -> RepairHint {
+) -> Option<RepairHint> {
     let scope = format!("task:{}", task_fq_name(task));
+    let source = default_expr_source_for_type_if_available(expected, record_types)?;
     let graft = serde_json::json!({
         "op": "ReplaceCallArg",
         "target": format!("task:{callee_name}"),
@@ -2390,12 +2347,14 @@ fn replace_call_arg_hint(
             "from": raw_callee,
             "position": position,
             "scope": scope,
-            "source": default_expr_source_for_type(expected, record_types),
+            "source": source,
         }
     });
-    RepairHint::new("replace_call_arg")
-        .with_target(format!("task:{callee_name}"))
-        .with_replacement(graft.to_string())
+    Some(
+        RepairHint::new("replace_call_arg")
+            .with_target(format!("task:{callee_name}"))
+            .with_replacement(graft.to_string()),
+    )
 }
 
 fn default_expr_source_for_type(
@@ -2403,6 +2362,18 @@ fn default_expr_source_for_type(
     record_types: &HashMap<String, Vec<RecordField>>,
 ) -> String {
     default_expr_source_for_type_inner(ty, record_types, &mut HashSet::new())
+}
+
+fn default_expr_source_for_type_if_available(
+    ty: &TypeExpr,
+    record_types: &HashMap<String, Vec<RecordField>>,
+) -> Option<String> {
+    let source = default_expr_source_for_type(ty, record_types);
+    if default_source_needs_manual_value(&source) {
+        None
+    } else {
+        Some(source)
+    }
 }
 
 fn default_expr_source_for_type_inner(
