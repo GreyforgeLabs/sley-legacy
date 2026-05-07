@@ -31,6 +31,7 @@ const DEFAULT_CORPUS_TAGS: &[&str] = &[
     "accepted:agent-deploy-pipeline",
     "accepted:agent-spend-authority",
     "accepted:agent-split-authority",
+    "accepted:records-and-calls",
     "authority:transitive-effects",
     "diagnostic:CALL_ARGUMENT_TYPE_MISMATCH",
     "diagnostic:CALL_ARITY_MISMATCH",
