@@ -219,6 +219,8 @@ struct SmokeManifest {
 struct SmokeCase {
     name: String,
     #[serde(default)]
+    bin: Option<String>,
+    #[serde(default)]
     cwd: SmokeCwd,
     #[serde(default)]
     setup_files: Vec<SmokeSetupFile>,
@@ -1040,11 +1042,12 @@ fn run_smoke_case(sley_bin: &Path, repo_root: &Path, tmp_root: &Path, case: &Smo
     };
     let setup_issues = write_smoke_setup_files(case, repo_root, tmp_root);
     if !setup_issues.is_empty() {
+        let binary = case.bin.as_deref().unwrap_or("sley");
         return StepRun {
             step: CiStep {
                 name: case.name.clone(),
                 status: "failed".into(),
-                command: command_vector(&args),
+                command: command_vector_for(binary, &args),
                 expected_success: case.expect.success,
                 actual_success: false,
                 exit_code: None,
@@ -1057,8 +1060,31 @@ fn run_smoke_case(sley_bin: &Path, repo_root: &Path, tmp_root: &Path, case: &Smo
         };
     }
 
-    let mut run = run_sley_step(
-        sley_bin,
+    let binary = case.bin.as_deref().unwrap_or("sley");
+    let tool = match find_smoke_binary(sley_bin, binary) {
+        Ok(tool) => tool,
+        Err(message) => {
+            return StepRun {
+                step: CiStep {
+                    name: case.name.clone(),
+                    status: "failed".into(),
+                    command: command_vector_for(binary, &args),
+                    expected_success: case.expect.success,
+                    actual_success: false,
+                    exit_code: None,
+                    stdout_schema: None,
+                    covers: case.covers.clone(),
+                    issues: vec![issue("unsupported_smoke_binary", message)],
+                },
+                stdout: String::new(),
+                stderr: String::new(),
+            };
+        }
+    };
+
+    let mut run = run_binary_step(
+        binary,
+        &tool,
         cwd,
         &case.name,
         args,
@@ -1138,7 +1164,19 @@ fn run_sley_step(
     expected_success: bool,
     covers: Vec<String>,
 ) -> StepRun {
-    let output = match ProcessCommand::new(sley_bin)
+    run_binary_step("sley", sley_bin, cwd, name, args, expected_success, covers)
+}
+
+fn run_binary_step(
+    binary: &str,
+    binary_path: &Path,
+    cwd: &Path,
+    name: &str,
+    args: Vec<String>,
+    expected_success: bool,
+    covers: Vec<String>,
+) -> StepRun {
+    let output = match ProcessCommand::new(binary_path)
         .current_dir(cwd)
         .args(&args)
         .output()
@@ -1149,7 +1187,7 @@ fn run_sley_step(
                 step: CiStep {
                     name: name.into(),
                     status: "failed".into(),
-                    command: command_vector(&args),
+                    command: command_vector_for(binary, &args),
                     expected_success,
                     actual_success: false,
                     exit_code: None,
@@ -1157,7 +1195,7 @@ fn run_sley_step(
                     covers,
                     issues: vec![issue(
                         "command_spawn_failed",
-                        format!("failed to run sley command: {error}"),
+                        format!("failed to run {binary} command: {error}"),
                     )],
                 },
                 stdout: String::new(),
@@ -1195,7 +1233,7 @@ fn run_sley_step(
             } else {
                 "failed".into()
             },
-            command: command_vector(&args),
+            command: command_vector_for(binary, &args),
             expected_success,
             actual_success,
             exit_code: output.status.code(),
@@ -1418,9 +1456,64 @@ fn find_sley_binary() -> PathBuf {
     PathBuf::from("sley")
 }
 
+fn find_smoke_binary(sley_bin: &Path, binary: &str) -> std::result::Result<PathBuf, String> {
+    if !allowed_smoke_binary(binary) {
+        return Err(format!(
+            "smoke binary {binary:?} is not in the Sley binary allowlist"
+        ));
+    }
+    if binary == "sley" {
+        return Ok(sley_bin.to_path_buf());
+    }
+    let cargo_env_key = format!("CARGO_BIN_EXE_{binary}");
+    if let Some(path) = env::var_os(&cargo_env_key) {
+        return Ok(PathBuf::from(path));
+    }
+    let override_env_key = format!("{}_BIN", binary.replace('-', "_").to_uppercase());
+    if let Some(path) = env::var_os(&override_env_key) {
+        return Ok(PathBuf::from(path));
+    }
+    if let Some(parent) = sley_bin.parent() {
+        let candidate = parent.join(exe_name(binary));
+        if candidate.exists() {
+            return Ok(candidate);
+        }
+    }
+    Ok(PathBuf::from(exe_name(binary)))
+}
+
+fn allowed_smoke_binary(binary: &str) -> bool {
+    matches!(
+        binary,
+        "sley"
+            | "sley-agent-bench"
+            | "sley-ci"
+            | "sley-conformance"
+            | "sley-contract"
+            | "sley-docgen"
+            | "sley-lsp"
+            | "sley-migrate"
+            | "sley-sandbox-runner"
+            | "sley-workbench"
+            | "sley-zjx"
+    )
+}
+
+fn exe_name(binary: &str) -> String {
+    if cfg!(windows) {
+        format!("{binary}.exe")
+    } else {
+        binary.to_string()
+    }
+}
+
 fn command_vector(args: &[String]) -> Vec<String> {
+    command_vector_for("sley", args)
+}
+
+fn command_vector_for(binary: &str, args: &[String]) -> Vec<String> {
     let mut command = Vec::with_capacity(args.len() + 1);
-    command.push("sley".into());
+    command.push(binary.into());
     command.extend(args.iter().cloned());
     command
 }

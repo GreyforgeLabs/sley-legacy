@@ -615,7 +615,8 @@ manifests carry `schema: "sley.sandbox.manifest.v0"`; sandbox replay reports
 carry `schema: "sley.sandbox.report.v0"`. Generated reference reports carry
 `schema: "sley.docgen.report.v0"`.
 The CLI smoke manifest carries
-`schema: "sley.cli_smoke.manifest.v0"`. The accepted/rejected compiler corpus
+`schema: "sley.cli_smoke.manifest.v0"` and can select an allowlisted Sley
+utility binary per case, defaulting to `sley`. The accepted/rejected compiler corpus
 manifest carries `schema: "sley.conformance.manifest.v0"`. Project scaffold reports carry
 `schema: "sley.project.scaffold.v0"`. Doctor readiness reports carry
 `schema: "sley.doctor.report.v0"`. Edit-plan reports carry

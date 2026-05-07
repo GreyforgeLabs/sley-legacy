@@ -415,12 +415,14 @@ Implemented now:
   split-task fixtures for transitive authority propagation, including spend
   helper boundaries
 - manifest-backed CLI smoke conformance cases under `fixtures/cli_smokes/`,
-  covering stable command output, JSON roots, graph/ZJX surfaces, doctor
+  covering stable command output from the main `sley` binary and selected
+  sibling utility binaries, JSON roots, graph/ZJX surfaces, doctor
   readiness, edit-plan surfaces, verify pre-deploy gates, project scaffolding,
   graft/fix dry runs, direct graft writes, temp setup files for write-mode
   smokes, explicit graft/fix trace receipts, trace seals over non-empty receipt
   chains, ZJX envelopes carrying graph digests and schema-backed trace
-  receipts, ZJX tool reports, passed-verify next-actions for seal and ZJX
+  receipts, ZJX tool reports, `sley-contract` inventory/validate/fixture-check
+  and deploy-artifact inspection, passed-verify next-actions for seal and ZJX
   handoff artifacts,
   doctor/verify warning next-actions that route to lint repair plans and
   unambiguous dry-run fix previews with explicit
