@@ -10179,7 +10179,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/smoke_case_count"),
-        Some(&serde_json::json!(421))
+        Some(&serde_json::json!(423))
     );
     assert_eq!(
         report_json.pointer("/summary/example_source_count"),
@@ -21824,7 +21824,9 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "cli:check",
         "cli:run",
         "cli:deploy",
+        "cli:sley-ci",
         "cli:sley-agent-bench",
+        "cli:sley-conformance",
         "cli:sley-contract",
         "cli:sley-docgen",
         "cli:sley-migrate",
@@ -21856,6 +21858,8 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "migrate:raw-host-adapter",
         "migrate:unchecked-result",
         "agent-bench:unused-private-task-repair",
+        "ci:corpus",
+        "conformance:coverage",
         "docgen:reference",
         "sandbox:replay",
         "workbench:graph-slice",
@@ -21997,6 +22001,8 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "query:calls",
         "readiness:call-transaction-write-verify",
         "readiness:agent-bench-repair-loop",
+        "readiness:ci-corpus-gate",
+        "readiness:conformance-coverage",
         "readiness:contract-schema-defaults",
         "readiness:constant-if-repair-write-verify",
         "readiness:constant-if-statement-repair-write-verify",
@@ -22082,6 +22088,8 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "json:sley.run.report.v0",
         "json:sley.project.scaffold.v0",
         "json:sley.agent_bench.report.v0",
+        "json:sley.ci.report.v0",
+        "json:sley.conformance.coverage.v0",
         "json:sley.contract.fixture_check.v0",
         "json:sley.contract.inventory.v0",
         "json:sley.contract.validate.v0",
@@ -22154,8 +22162,11 @@ fn cli_smoke_test_binary(binary: &str) -> &'static str {
     match binary {
         "sley" => env!("CARGO_BIN_EXE_sley"),
         "sley-agent-bench" => env!("CARGO_BIN_EXE_sley-agent-bench"),
+        "sley-ci" => env!("CARGO_BIN_EXE_sley-ci"),
+        "sley-conformance" => env!("CARGO_BIN_EXE_sley-conformance"),
         "sley-contract" => env!("CARGO_BIN_EXE_sley-contract"),
         "sley-docgen" => env!("CARGO_BIN_EXE_sley-docgen"),
+        "sley-lsp" => env!("CARGO_BIN_EXE_sley-lsp"),
         "sley-migrate" => env!("CARGO_BIN_EXE_sley-migrate"),
         "sley-sandbox-runner" => env!("CARGO_BIN_EXE_sley-sandbox-runner"),
         "sley-workbench" => env!("CARGO_BIN_EXE_sley-workbench"),
@@ -22169,8 +22180,11 @@ fn allowed_cli_smoke_test_binary(binary: &str) -> bool {
         binary,
         "sley"
             | "sley-agent-bench"
+            | "sley-ci"
+            | "sley-conformance"
             | "sley-contract"
             | "sley-docgen"
+            | "sley-lsp"
             | "sley-migrate"
             | "sley-sandbox-runner"
             | "sley-workbench"

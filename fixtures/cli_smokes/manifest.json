@@ -249,6 +249,47 @@
       }
     },
     {
+      "name": "ci_corpus_manifest_report_json",
+      "bin": "sley-ci",
+      "args": ["corpus", "--json", "fixtures/corpus/manifest.json"],
+      "covers": [
+        "cli:sley-ci",
+        "ci:corpus",
+        "json:sley.ci.report.v0",
+        "readiness:ci-corpus-gate"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.ci.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/command", "value": "corpus" },
+          { "pointer": "/summary/step_count", "value": 59 },
+          { "pointer": "/summary/failed_count", "value": 0 }
+        ]
+      }
+    },
+    {
+      "name": "conformance_required_utility_tag_coverage_json",
+      "bin": "sley-conformance",
+      "args": ["coverage", "--json", "--require-tag", "cli:sley-docgen"],
+      "covers": [
+        "cli:sley-conformance",
+        "conformance:coverage",
+        "json:sley.conformance.coverage.v0",
+        "readiness:conformance-coverage"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.conformance.coverage.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/required_tags/0", "value": "cli:sley-docgen" },
+          { "pointer": "/missing_tags", "value": [] }
+        ]
+      }
+    },
+    {
       "name": "new_deploy_project_json",
       "cwd": "tmp",
       "args": [
