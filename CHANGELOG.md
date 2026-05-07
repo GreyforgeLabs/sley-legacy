@@ -179,7 +179,10 @@ here. Dates use UTC-independent calendar dates from the local repo history.
 - `sley lint --rule empty-else-statement` now flags no-op empty `else`
   branches and `sley plan --graft-templates` emits a checked
   `remove_empty_else_statement` repair.
-- Contract inventory now tracks 38 schemas, 109 contract fixtures, and 112 schema
+- `sley-docgen reference --module <module>` now titles filtered project-root
+  references by the selected module and is pinned by contract plus smoke
+  coverage.
+- Contract inventory now tracks 38 schemas, 110 contract fixtures, and 113 schema
   instances through the conformance report.
 - The Rust package metadata now declares its supported Rust floor, description,
   README, keywords, categories, and `publish = false` until publication

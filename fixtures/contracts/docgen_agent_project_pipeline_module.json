@@ -1,0 +1,183 @@
+{
+  "schema": "sley.docgen.report.v0",
+  "status": "generated",
+  "target": "examples/agent_project",
+  "source_schema": "sley.query.report.v0",
+  "summary": {
+    "module_count": 1,
+    "task_count": 3,
+    "type_count": 0,
+    "effect_count": 0,
+    "capability_count": 10,
+    "document_count": 1,
+    "diagnostic_count": 0,
+    "issue_count": 0
+  },
+  "filters": {
+    "module": "agent.pipeline",
+    "exported_only": false
+  },
+  "documents": [
+    {
+      "kind": "reference",
+      "title": "Sley Reference: agent.pipeline",
+      "section_count": 5
+    }
+  ],
+  "modules": [
+    {
+      "module": "agent.pipeline",
+      "import_count": 0,
+      "task_count": 3,
+      "type_count": 0,
+      "effect_count": 0
+    }
+  ],
+  "tasks": [
+    {
+      "id": "task:agent.pipeline.collect_profile",
+      "name": "collect_profile",
+      "module": "agent.pipeline",
+      "qualified_name": "agent.pipeline.collect_profile",
+      "exported": true,
+      "takes": [
+        {
+          "name": "secret_name",
+          "binding_kind": "take",
+          "type": "Text"
+        },
+        {
+          "name": "profile_url",
+          "binding_kind": "take",
+          "type": "Text"
+        }
+      ],
+      "return_type": "Result<Text, Error>",
+      "effects": ["SecretRead", "Network"],
+      "outbound_call_count": 5,
+      "inbound_call_count": 1
+    },
+    {
+      "id": "task:agent.pipeline.draft_plan",
+      "name": "draft_plan",
+      "module": "agent.pipeline",
+      "qualified_name": "agent.pipeline.draft_plan",
+      "exported": true,
+      "takes": [
+        {
+          "name": "prompt",
+          "binding_kind": "take",
+          "type": "Text"
+        }
+      ],
+      "return_type": "Result<Text, Error>",
+      "effects": ["ModelCall"],
+      "outbound_call_count": 1,
+      "inbound_call_count": 1
+    },
+    {
+      "id": "task:agent.pipeline.stage_release",
+      "name": "stage_release",
+      "module": "agent.pipeline",
+      "qualified_name": "agent.pipeline.stage_release",
+      "exported": true,
+      "takes": [
+        {
+          "name": "target",
+          "binding_kind": "take",
+          "type": "Text"
+        }
+      ],
+      "return_type": "Result<Text, Error>",
+      "effects": ["Deploy"],
+      "outbound_call_count": 1,
+      "inbound_call_count": 1
+    }
+  ],
+  "types": [],
+  "effects": [],
+  "capabilities": [
+    {
+      "effect": "DatabaseRead",
+      "aliases": ["DbRead"],
+      "seed_capability_args": ["--cap", "DatabaseRead"],
+      "host_calls": [
+        "db.query",
+        "db.query_one",
+        "db.try_query",
+        "db.try_query_one"
+      ],
+      "source_needles": [
+        "db.query(",
+        "db.query_one(",
+        "db.try_query(",
+        "db.try_query_one("
+      ]
+    },
+    {
+      "effect": "DatabaseWrite",
+      "aliases": ["DbWrite"],
+      "seed_capability_args": ["--cap", "DatabaseWrite"],
+      "host_calls": ["db.try_insert"],
+      "source_needles": ["db.try_insert("]
+    },
+    {
+      "effect": "Deploy",
+      "aliases": [],
+      "seed_capability_args": ["--cap", "Deploy"],
+      "host_calls": ["deploy.try_stage"],
+      "source_needles": ["deploy.try_stage("]
+    },
+    {
+      "effect": "FileRead",
+      "aliases": [],
+      "seed_capability_args": ["--cap", "FileRead"],
+      "host_calls": ["fs.read_text", "fs.try_read_text"],
+      "source_needles": ["fs.read_text(", "fs.try_read_text("]
+    },
+    {
+      "effect": "FileWrite",
+      "aliases": [],
+      "seed_capability_args": ["--cap", "FileWrite"],
+      "host_calls": ["fs.try_write_text", "fs.write_text"],
+      "source_needles": ["fs.try_write_text(", "fs.write_text("]
+    },
+    {
+      "effect": "ModelCall",
+      "aliases": [],
+      "seed_capability_args": ["--cap", "ModelCall"],
+      "host_calls": ["model.try_complete"],
+      "source_needles": ["model.try_complete("]
+    },
+    {
+      "effect": "Network",
+      "aliases": [],
+      "seed_capability_args": ["--cap", "Network"],
+      "host_calls": ["http.try_get_text"],
+      "source_needles": ["http.try_get_text("]
+    },
+    {
+      "effect": "SecretRead",
+      "aliases": [],
+      "seed_capability_args": ["--cap", "SecretRead"],
+      "host_calls": ["secrets.try_get"],
+      "source_needles": ["secrets.try_get("]
+    },
+    {
+      "effect": "Shell",
+      "aliases": [],
+      "seed_capability_args": ["--cap", "Shell"],
+      "host_calls": ["shell.try_run"],
+      "source_needles": ["shell.try_run("]
+    },
+    {
+      "effect": "Spend",
+      "aliases": [],
+      "seed_capability_args": ["--cap", "Spend"],
+      "host_calls": ["spend.try_authorize"],
+      "source_needles": ["spend.try_authorize("]
+    }
+  ],
+  "diagnostics": [],
+  "issues": []
+}

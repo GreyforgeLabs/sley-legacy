@@ -24,8 +24,8 @@ Explicit schema paths remain supported for pinned validation.
 Current counts:
 
 - Schemas: `38`
-- Contract fixtures: `109`
-- Schema instances: `112`
+- Contract fixtures: `110`
+- Schema instances: `113`
 
 ## Core Compiler Roots
 

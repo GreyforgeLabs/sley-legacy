@@ -283,8 +283,9 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
       `schema: "sley.docgen.report.v0"` and optional Markdown from checked
       `sley.query.report.v0` module/task/type/effect summaries plus the
       canonical host capability contract table, including seeded `--cap`
-      argument fragments. It is covered by an integration test and a locked
-     contract fixture.
+      argument fragments. It supports checked module/export filters over files
+      and project roots and is covered by integration tests plus locked
+      contract fixtures.
 
 12. `sley-shadow`
     - Non-authoritative helper replay over checked query and lint reports.

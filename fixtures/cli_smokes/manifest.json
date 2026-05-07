@@ -147,9 +147,51 @@
           { "pointer": "/schema", "value": "sley.docgen.report.v0" },
           { "pointer": "/status", "value": "generated" },
           { "pointer": "/source_schema", "value": "sley.query.report.v0" },
+          { "pointer": "/filters/module", "value": null },
+          { "pointer": "/filters/exported_only", "value": false },
           { "pointer": "/summary/module_count", "value": 1 },
           { "pointer": "/summary/capability_count", "value": 10 },
           { "pointer": "/summary/document_count", "value": 1 }
+        ]
+      }
+    },
+    {
+      "name": "docgen_agent_project_pipeline_module_json",
+      "bin": "sley-docgen",
+      "args": [
+        "reference",
+        "--json",
+        "--module",
+        "agent.pipeline",
+        "examples/agent_project"
+      ],
+      "covers": [
+        "cli:sley-docgen",
+        "docgen:reference",
+        "dogfood:agent-project",
+        "examples:project",
+        "json:sley.docgen.report.v0",
+        "readiness:docgen-reference"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.docgen.report.v0" },
+          { "pointer": "/status", "value": "generated" },
+          { "pointer": "/target", "value": "examples/agent_project" },
+          { "pointer": "/filters/module", "value": "agent.pipeline" },
+          { "pointer": "/filters/exported_only", "value": false },
+          {
+            "pointer": "/documents/0/title",
+            "value": "Sley Reference: agent.pipeline"
+          },
+          { "pointer": "/summary/module_count", "value": 1 },
+          { "pointer": "/summary/task_count", "value": 3 },
+          { "pointer": "/modules/0/module", "value": "agent.pipeline" },
+          {
+            "pointer": "/tasks/0/qualified_name",
+            "value": "agent.pipeline.collect_profile"
+          }
         ]
       }
     },

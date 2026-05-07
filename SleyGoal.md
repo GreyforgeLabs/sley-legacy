@@ -139,7 +139,8 @@ Current verified surface:
   `schema: "sley.docgen.report.v0"` and optional Markdown over module, task,
   type, effect, and host capability docs from `sley.query.report.v0`,
   including seeded `--cap` args for deterministic host setup; its schema links
-  generated task/type/effect rows back to the strict query row definitions.
+  generated task/type/effect rows back to the strict query row definitions, and
+  project-root references can be narrowed with checked module/export filters.
 - `sley-shadow` is available as an in-tree non-authoritative helper replay with
   `schema: "sley.shadow.report.v0"` over checked `sley.query.report.v0` and
   `sley.lint.report.v0` data for single-file and project-root targets; it

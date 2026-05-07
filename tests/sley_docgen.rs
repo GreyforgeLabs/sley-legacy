@@ -77,6 +77,62 @@ fn docgen_generates_reference_report_and_markdown() {
     let _ = fs::remove_dir_all(root);
 }
 
+#[test]
+fn docgen_filters_project_module_reference() {
+    let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-docgen"))
+        .current_dir(&repo_root)
+        .args([
+            "reference",
+            "--json",
+            "--module",
+            "agent.pipeline",
+            "examples/agent_project",
+        ])
+        .output()
+        .expect("run sley-docgen");
+    assert!(
+        output.status.success(),
+        "docgen failed\nstdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    support::validate_report_schema("sley.docgen.report.v0", &output.stdout);
+    let report: JsonValue = serde_json::from_slice(&output.stdout).expect("parse docgen report");
+    assert_eq!(report.pointer("/status"), Some(&json!("generated")));
+    assert_eq!(
+        report.pointer("/target"),
+        Some(&json!("examples/agent_project"))
+    );
+    assert_eq!(
+        report.pointer("/filters/module"),
+        Some(&json!("agent.pipeline"))
+    );
+    assert_eq!(
+        report.pointer("/filters/exported_only"),
+        Some(&json!(false))
+    );
+    assert_eq!(
+        report.pointer("/documents/0/title"),
+        Some(&json!("Sley Reference: agent.pipeline"))
+    );
+    assert_eq!(report.pointer("/summary/module_count"), Some(&json!(1)));
+    assert_eq!(report.pointer("/summary/task_count"), Some(&json!(3)));
+    assert_eq!(
+        report.pointer("/modules/0/module"),
+        Some(&json!("agent.pipeline"))
+    );
+    assert_eq!(
+        report.pointer("/tasks/0/qualified_name"),
+        Some(&json!("agent.pipeline.collect_profile"))
+    );
+    assert_eq!(
+        report.pointer("/tasks/2/qualified_name"),
+        Some(&json!("agent.pipeline.stage_release"))
+    );
+}
+
 fn path_str(path: &Path) -> String {
     path.to_string_lossy().to_string()
 }

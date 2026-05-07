@@ -803,7 +803,9 @@ The local documentation loop is backed by the in-tree `sley-docgen` bootstrap.
 the canonical host capability contract table. Capability rows include seeded
 `--cap` argument fragments for deterministic host setup. `--markdown <path>`
 writes a single reference page with module, task, type, effect, and capability
-sections.
+sections. `--module <module>` and `--exported-only` reuse the checked query
+filters so agents can emit focused references for one project module or public
+surface.
 The target may be one `.sley` file or a project root; the command is read-only
 for source code.
 
