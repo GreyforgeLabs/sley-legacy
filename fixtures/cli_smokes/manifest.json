@@ -1579,6 +1579,48 @@
       }
     },
     {
+      "name": "plan_type_surface_graft_templates_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/type-surface/main.sley",
+          "content": "module app.type_surface\n\ntype User = {\n  slot name: Text\n}\n\ntask main -> User {\n  return User { name: \"Ada\" }\n}\n"
+        }
+      ],
+      "args": [
+        "plan",
+        "--json",
+        "--graft-templates",
+        "--template-surface",
+        "type:app.type_surface.User",
+        "{tmp}/type-surface/main.sley"
+      ],
+      "covers": [
+        "cli:plan",
+        "cli:smoke-setup-files",
+        "graft:templates",
+        "graft:templates:declaration-surface",
+        "graph-slice:move-affordances",
+        "json:sley.edit_plan.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.edit_plan.report.v0" },
+          { "pointer": "/status", "value": "ready" },
+          { "pointer": "/graft_templates/0/kind", "value": "move_type" },
+          { "pointer": "/graft_templates/0/surface", "value": "type:app.type_surface.User" },
+          { "pointer": "/graft_templates/0/operation/op", "value": "MoveNode" },
+          { "pointer": "/graft_templates/0/operation/target", "value": "type:app.type_surface.User" },
+          { "pointer": "/graft_templates/0/operation/payload/parent", "value": "module:app.type_surface:types" },
+          { "pointer": "/graft_templates/0/operation/payload/position", "value": 0 },
+          { "pointer": "/graft_templates/0/editable_json_pointers/0", "value": "/payload/position" }
+        ],
+        "stdout_json_absent": [
+          "/graft_templates/1"
+        ]
+      }
+    },
+    {
       "name": "plan_program_surface_declaration_templates_json",
       "args": [
         "plan",
