@@ -1,10 +1,13 @@
+use std::collections::HashSet;
 use std::path::{Component, Path};
 
 use serde::Serialize;
 use serde_json::{Value as JsonValue, json};
 
 use crate::Program;
-use crate::ast::{BindingKind, Block, Expr, ExprKind, Statement, StatementKind, TaskDecl};
+use crate::ast::{
+    BindingKind, Block, Expr, ExprKind, RecordField, Statement, StatementKind, TaskDecl, TypeExpr,
+};
 use crate::checker::{check_program, has_errors};
 use crate::diagnostics::{Diagnostic, RepairHint};
 use crate::graft::{GraftInput, apply_graft_input};
@@ -31,7 +34,9 @@ use crate::lint::{
     unused_effectful_binding_statement_replacement_source,
 };
 use crate::query::{QueryKind, QueryOptions, QueryReport, QueryTakeSummary, build_query_report};
-use crate::symbols::{slice_symbol_graph, task_fq_name, task_module, type_module};
+use crate::symbols::{
+    TypeResolution, resolve_type, slice_symbol_graph, task_fq_name, task_module, type_module,
+};
 
 pub const EDIT_PLAN_REPORT_SCHEMA: &str = "sley.edit_plan.report.v0";
 
@@ -532,7 +537,7 @@ fn build_graft_templates(
     };
 
     let mut templates = vec![
-        replace_task_body_template(surface),
+        replace_task_body_template(program, surface),
         rename_declaration_template(surface),
         add_take_template(surface),
         move_task_template(surface),
@@ -2651,7 +2656,10 @@ fn unique_name<'a>(base: &str, existing: impl Iterator<Item = &'a str>) -> Strin
     unreachable!("unbounded unique name search should return")
 }
 
-fn replace_task_body_template(surface: &EditPlanTaskSurface) -> EditPlanGraftTemplate {
+fn replace_task_body_template(
+    program: &Program,
+    surface: &EditPlanTaskSurface,
+) -> EditPlanGraftTemplate {
     EditPlanGraftTemplate {
         kind: "replace_task_body".to_string(),
         reason: "replace the checked task body when the planned edit changes task logic"
@@ -2661,7 +2669,11 @@ fn replace_task_body_template(surface: &EditPlanTaskSurface) -> EditPlanGraftTem
             "op": "ReplaceTaskBody",
             "target": surface.id,
             "payload": {
-                "statements": [default_return_statement(&surface.return_type)]
+                "statements": [default_return_statement(
+                    program,
+                    &surface.module,
+                    &surface.return_type
+                )]
             }
         }),
         editable_json_pointers: vec!["/payload/statements".to_string()],
@@ -3564,7 +3576,7 @@ fn add_take_update_call_args_template(
     let new_take_name = "new_value";
     let new_take_type = "Text";
     let new_take_position = surface.takes.len();
-    let new_arg_source = default_expression(new_take_type);
+    let new_arg_source = default_expression_source(None, "", new_take_type);
     let mut ops = vec![json!({
         "op": "AddTake",
         "target": surface.id,
@@ -3805,21 +3817,42 @@ fn replace_callee_leaf(callee: &str, new_leaf: &str) -> String {
         .unwrap_or_else(|| new_leaf.to_string())
 }
 
-fn default_return_statement(return_type: &str) -> String {
+fn default_return_statement(program: &Program, module: &str, return_type: &str) -> String {
     if let Some(ok_type) = result_ok_type(return_type) {
-        return format!("return Ok({})", default_expression(ok_type));
+        return format!(
+            "return Ok({})",
+            default_expression_source(Some(program), module, ok_type)
+        );
     }
-    format!("return {}", default_expression(return_type))
+    format!(
+        "return {}",
+        default_expression_source(Some(program), module, return_type)
+    )
 }
 
-fn default_expression(ty: &str) -> String {
+fn default_expression_source(program: Option<&Program>, module: &str, ty: &str) -> String {
+    default_expression_source_inner(program, module, ty, &mut HashSet::new())
+}
+
+fn default_expression_source_inner(
+    program: Option<&Program>,
+    module: &str,
+    ty: &str,
+    visited: &mut HashSet<String>,
+) -> String {
     let trimmed = ty.trim();
     match trimmed {
         "Int" => "0".to_string(),
         "Float" => "0.0".to_string(),
         "Text" => "\"\"".to_string(),
         "Bool" => "false".to_string(),
-        _ => default_record_expression(trimmed).unwrap_or_else(|| "TODO_VALUE".to_string()),
+        _ => default_record_expression(program, module, trimmed, visited)
+            .or_else(|| {
+                program.and_then(|program| {
+                    default_named_record_expression(program, module, trimmed, visited)
+                })
+            })
+            .unwrap_or_else(|| "TODO_VALUE".to_string()),
     }
 }
 
@@ -3838,7 +3871,12 @@ fn result_ok_type(return_type: &str) -> Option<&str> {
     None
 }
 
-fn default_record_expression(ty: &str) -> Option<String> {
+fn default_record_expression(
+    program: Option<&Program>,
+    module: &str,
+    ty: &str,
+    visited: &mut HashSet<String>,
+) -> Option<String> {
     let inner = ty.strip_prefix('{')?.strip_suffix('}')?.trim();
     if inner.is_empty() {
         return Some("{ }".to_string());
@@ -3850,9 +3888,63 @@ fn default_record_expression(ty: &str) -> Option<String> {
         if name.is_empty() {
             return None;
         }
-        field_sources.push(format!("{name}: {}", default_expression(field_type)));
+        field_sources.push(format!(
+            "{name}: {}",
+            default_expression_source_inner(program, module, field_type, visited)
+        ));
     }
     Some(format!("{{ {} }}", field_sources.join(", ")))
+}
+
+fn default_named_record_expression(
+    program: &Program,
+    module: &str,
+    ty: &str,
+    visited: &mut HashSet<String>,
+) -> Option<String> {
+    let TypeResolution::Resolved { index, fq_name } = resolve_type(program, module, ty) else {
+        return None;
+    };
+    let TypeExpr::Record { fields } = &program.types[index].value else {
+        return None;
+    };
+    if !visited.insert(fq_name.clone()) {
+        return Some("TODO_VALUE".to_string());
+    }
+    let decl_module = type_module(&program.types[index]);
+    let source =
+        default_record_fields_expression(program, &decl_module, ty.trim(), fields, visited);
+    visited.remove(&fq_name);
+    Some(source)
+}
+
+fn default_record_fields_expression(
+    program: &Program,
+    module: &str,
+    type_name: &str,
+    fields: &[RecordField],
+    visited: &mut HashSet<String>,
+) -> String {
+    if fields.is_empty() {
+        return format!("{type_name} {{ }}");
+    }
+    let field_sources = fields
+        .iter()
+        .map(|field| {
+            format!(
+                "{}: {}",
+                field.name,
+                default_expression_source_inner(
+                    Some(program),
+                    module,
+                    &field.ty.display(),
+                    visited
+                )
+            )
+        })
+        .collect::<Vec<_>>()
+        .join(", ");
+    format!("{type_name} {{ {field_sources} }}")
 }
 
 fn split_top_level(input: &str, separator: char) -> Vec<&str> {

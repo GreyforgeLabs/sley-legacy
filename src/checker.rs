@@ -251,7 +251,7 @@ fn check_task(
         record_types,
         diagnostics,
     );
-    check_task_returns(program, task, diagnostics);
+    check_task_returns(program, task, record_types, diagnostics);
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -322,7 +322,11 @@ fn check_block(
                                 .with_target(expr.id.clone())
                                 .with_replacement(expected.display()),
                         )
-                        .with_repair_hint(replace_expression_graft_hint(expr, expected)),
+                        .with_repair_hint(replace_expression_graft_hint(
+                            expr,
+                            expected,
+                            record_types,
+                        )),
                     );
                 }
                 let local_type = expected
@@ -400,7 +404,11 @@ fn check_block(
                                 .with_target(expr.id.clone())
                                 .with_replacement(expected.display()),
                         )
-                        .with_repair_hint(replace_expression_graft_hint(expr, &expected)),
+                        .with_repair_hint(replace_expression_graft_hint(
+                            expr,
+                            &expected,
+                            record_types,
+                        )),
                     );
                 }
             }
@@ -442,7 +450,11 @@ fn check_block(
                                 .with_target(expr.id.clone())
                                 .with_replacement(expected_return.display()),
                         )
-                        .with_repair_hint(replace_expression_graft_hint(expr, &expected_return)),
+                        .with_repair_hint(replace_expression_graft_hint(
+                            expr,
+                            &expected_return,
+                            record_types,
+                        )),
                     );
                 }
             }
@@ -490,6 +502,7 @@ fn check_block(
                         .with_repair_hint(replace_expression_graft_hint(
                             condition,
                             &TypeExpr::named("Bool"),
+                            record_types,
                         )),
                     );
                 }
@@ -550,6 +563,7 @@ fn check_block(
                         .with_repair_hint(replace_expression_graft_hint(
                             condition,
                             &TypeExpr::named("Bool"),
+                            record_types,
                         )),
                     );
                 }
@@ -647,14 +661,19 @@ fn check_block(
     }
 }
 
-fn check_task_returns(program: &Program, task: &TaskDecl, diagnostics: &mut Vec<Diagnostic>) {
+fn check_task_returns(
+    program: &Program,
+    task: &TaskDecl,
+    record_types: &HashMap<String, Vec<RecordField>>,
+    diagnostics: &mut Vec<Diagnostic>,
+) {
     let expected_return =
         normalize_type_expr_silent(program, &task_module(task), &task.return_type);
     if is_unit_type(&expected_return) || block_guarantees_return(&task.body) {
         return;
     }
 
-    let return_statement = default_return_statement_hint(&expected_return);
+    let return_statement = default_return_statement_hint(&expected_return, record_types);
     diagnostics.push(
         Diagnostic::error(
             "MISSING_RETURN",
@@ -705,36 +724,89 @@ fn statement_guarantees_return(statement: &crate::ast::Statement) -> bool {
     }
 }
 
-fn default_return_statement_hint(ty: &TypeExpr) -> String {
-    format!("return {}", default_expr_hint_for_type(ty))
+fn default_return_statement_hint(
+    ty: &TypeExpr,
+    record_types: &HashMap<String, Vec<RecordField>>,
+) -> String {
+    format!("return {}", default_expr_hint_for_type(ty, record_types))
 }
 
-fn default_expr_hint_for_type(ty: &TypeExpr) -> String {
+fn default_expr_hint_for_type(
+    ty: &TypeExpr,
+    record_types: &HashMap<String, Vec<RecordField>>,
+) -> String {
+    default_expr_hint_for_type_inner(ty, record_types, &mut HashSet::new())
+}
+
+fn default_expr_hint_for_type_inner(
+    ty: &TypeExpr,
+    record_types: &HashMap<String, Vec<RecordField>>,
+    visited: &mut HashSet<String>,
+) -> String {
     match ty {
         TypeExpr::Named { name } if name == "Int" => "0".to_string(),
         TypeExpr::Named { name } if name == "Float" => "0.0".to_string(),
         TypeExpr::Named { name } if name == "Bool" => "false".to_string(),
         TypeExpr::Named { name } if name == "Text" => "\"\"".to_string(),
+        TypeExpr::Named { name } if record_types.contains_key(name) => {
+            default_named_record_expr_hint(name, record_types, visited)
+        }
         TypeExpr::Generic { name, args } if name == "Result" && !args.is_empty() => {
-            format!("Ok({})", default_expr_hint_for_type(&args[0]))
+            format!(
+                "Ok({})",
+                default_expr_hint_for_type_inner(&args[0], record_types, visited)
+            )
         }
         TypeExpr::Generic { name, .. } if name == "List" => "[]".to_string(),
         TypeExpr::Generic { name, .. } if name == "Map" => "map {}".to_string(),
-        TypeExpr::Record { fields } => default_record_expr_hint_for_fields(fields),
+        TypeExpr::Record { fields } => {
+            default_record_expr_hint_for_fields(fields, record_types, visited, None)
+        }
         _ => format!("<{}>", ty.display()),
     }
 }
 
-fn default_record_expr_hint_for_fields(fields: &[RecordField]) -> String {
+fn default_named_record_expr_hint(
+    name: &str,
+    record_types: &HashMap<String, Vec<RecordField>>,
+    visited: &mut HashSet<String>,
+) -> String {
+    let Some(fields) = record_types.get(name) else {
+        return format!("<{name}>");
+    };
+    if !visited.insert(name.to_string()) {
+        return format!("<{name}>");
+    }
+    let source = default_record_expr_hint_for_fields(fields, record_types, visited, Some(name));
+    visited.remove(name);
+    source
+}
+
+fn default_record_expr_hint_for_fields(
+    fields: &[RecordField],
+    record_types: &HashMap<String, Vec<RecordField>>,
+    visited: &mut HashSet<String>,
+    type_name: Option<&str>,
+) -> String {
     if fields.is_empty() {
-        return "{ }".to_string();
+        return type_name
+            .map(|name| format!("{name} {{ }}"))
+            .unwrap_or_else(|| "{ }".to_string());
     }
     let fields = fields
         .iter()
-        .map(|field| format!("{}: {}", field.name, default_expr_hint_for_type(&field.ty)))
+        .map(|field| {
+            format!(
+                "{}: {}",
+                field.name,
+                default_expr_hint_for_type_inner(&field.ty, record_types, visited)
+            )
+        })
         .collect::<Vec<_>>()
         .join(", ");
-    format!("{{ {fields} }}")
+    type_name
+        .map(|name| format!("{name} {{ {fields} }}"))
+        .unwrap_or_else(|| format!("{{ {fields} }}"))
 }
 
 fn escape_json_string_content(value: &str) -> String {
@@ -1009,6 +1081,7 @@ fn check_expr_structure(
                         &callee_name,
                         args.len(),
                         &signature.takes,
+                        record_types,
                     ) {
                         diagnostic = diagnostic.with_repair_hint(hint);
                     }
@@ -1041,6 +1114,7 @@ fn check_expr_structure(
                                 &callee_name,
                                 index,
                                 expected,
+                                record_types,
                             )),
                         );
                     }
@@ -1348,18 +1422,23 @@ fn check_unary_operator(
                 .with_target(inner.id.clone())
                 .with_replacement(unary_expected_type(op)),
         );
-        if let Some(hint) = unary_operator_graft_hint(op, inner) {
+        if let Some(hint) = unary_operator_graft_hint(op, inner, record_types) {
             diagnostic = diagnostic.with_repair_hint(hint);
         }
         diagnostics.push(diagnostic);
     }
 }
 
-fn unary_operator_graft_hint(op: &UnaryOp, inner: &Expr) -> Option<RepairHint> {
+fn unary_operator_graft_hint(
+    op: &UnaryOp,
+    inner: &Expr,
+    record_types: &HashMap<String, Vec<RecordField>>,
+) -> Option<RepairHint> {
     match op {
         UnaryOp::Not => Some(replace_expression_graft_hint(
             inner,
             &TypeExpr::named("Bool"),
+            record_types,
         )),
         UnaryOp::Negate => None,
     }
@@ -1400,7 +1479,9 @@ fn check_binary_operator(
                 .with_target(expr.id.clone())
                 .with_replacement(binary_expected_types(op)),
         );
-        for hint in binary_operator_graft_hints(op, left, &left_type, right, &right_type) {
+        for hint in
+            binary_operator_graft_hints(op, left, &left_type, right, &right_type, record_types)
+        {
             diagnostic = diagnostic.with_repair_hint(hint);
         }
         diagnostics.push(diagnostic);
@@ -1413,17 +1494,18 @@ fn binary_operator_graft_hints(
     left_type: &TypeExpr,
     right: &Expr,
     right_type: &TypeExpr,
+    record_types: &HashMap<String, Vec<RecordField>>,
 ) -> Vec<RepairHint> {
     match op {
         BinaryOp::Or | BinaryOp::And => {
-            bool_operand_graft_hints(left, left_type, right, right_type)
+            bool_operand_graft_hints(left, left_type, right, right_type, record_types)
         }
-        BinaryOp::Add => add_operand_graft_hints(left, left_type, right, right_type),
+        BinaryOp::Add => add_operand_graft_hints(left, left_type, right, right_type, record_types),
         BinaryOp::Subtract | BinaryOp::Multiply | BinaryOp::Divide | BinaryOp::Remainder => {
-            numeric_operand_graft_hints(left, left_type, right, right_type)
+            numeric_operand_graft_hints(left, left_type, right, right_type, record_types)
         }
         BinaryOp::Less | BinaryOp::LessEqual | BinaryOp::Greater | BinaryOp::GreaterEqual => {
-            numeric_operand_graft_hints(left, left_type, right, right_type)
+            numeric_operand_graft_hints(left, left_type, right, right_type, record_types)
         }
         BinaryOp::Equal | BinaryOp::NotEqual => Vec::new(),
     }
@@ -1434,14 +1516,19 @@ fn bool_operand_graft_hints(
     left_type: &TypeExpr,
     right: &Expr,
     right_type: &TypeExpr,
+    record_types: &HashMap<String, Vec<RecordField>>,
 ) -> Vec<RepairHint> {
     let expected = TypeExpr::named("Bool");
     let mut hints = Vec::new();
     if !is_bool_type(left_type) {
-        hints.push(replace_expression_graft_hint(left, &expected));
+        hints.push(replace_expression_graft_hint(left, &expected, record_types));
     }
     if !is_bool_type(right_type) {
-        hints.push(replace_expression_graft_hint(right, &expected));
+        hints.push(replace_expression_graft_hint(
+            right,
+            &expected,
+            record_types,
+        ));
     }
     hints
 }
@@ -1451,20 +1538,29 @@ fn add_operand_graft_hints(
     left_type: &TypeExpr,
     right: &Expr,
     right_type: &TypeExpr,
+    record_types: &HashMap<String, Vec<RecordField>>,
 ) -> Vec<RepairHint> {
     if is_named_type(left_type, "Text") && !is_named_type(right_type, "Text") {
         if is_numeric_type(right_type) {
             return Vec::new();
         }
-        return vec![replace_expression_graft_hint(right, left_type)];
+        return vec![replace_expression_graft_hint(
+            right,
+            left_type,
+            record_types,
+        )];
     }
     if is_named_type(right_type, "Text") && !is_named_type(left_type, "Text") {
         if is_numeric_type(left_type) {
             return Vec::new();
         }
-        return vec![replace_expression_graft_hint(left, right_type)];
+        return vec![replace_expression_graft_hint(
+            left,
+            right_type,
+            record_types,
+        )];
     }
-    numeric_operand_graft_hints(left, left_type, right, right_type)
+    numeric_operand_graft_hints(left, left_type, right, right_type, record_types)
 }
 
 fn numeric_operand_graft_hints(
@@ -1472,13 +1568,22 @@ fn numeric_operand_graft_hints(
     left_type: &TypeExpr,
     right: &Expr,
     right_type: &TypeExpr,
+    record_types: &HashMap<String, Vec<RecordField>>,
 ) -> Vec<RepairHint> {
     let mut hints = Vec::new();
     if is_numeric_type(left_type) && !is_numeric_type(right_type) {
-        hints.push(replace_expression_graft_hint(right, left_type));
+        hints.push(replace_expression_graft_hint(
+            right,
+            left_type,
+            record_types,
+        ));
     }
     if !is_numeric_type(left_type) && is_numeric_type(right_type) {
-        hints.push(replace_expression_graft_hint(left, right_type));
+        hints.push(replace_expression_graft_hint(
+            left,
+            right_type,
+            record_types,
+        ));
     }
     hints
 }
@@ -1513,6 +1618,7 @@ fn check_if_expression(
             .with_repair_hint(replace_expression_graft_hint(
                 condition,
                 &TypeExpr::named("Bool"),
+                record_types,
             )),
         );
     }
@@ -1546,8 +1652,16 @@ fn check_if_expression(
                 ),
             )
             .with_node(expr.id.clone())
-            .with_repair_hint(replace_expression_graft_hint(then_branch, &else_type))
-            .with_repair_hint(replace_expression_graft_hint(else_branch, &then_type)),
+            .with_repair_hint(replace_expression_graft_hint(
+                then_branch,
+                &else_type,
+                record_types,
+            ))
+            .with_repair_hint(replace_expression_graft_hint(
+                else_branch,
+                &then_type,
+                record_types,
+            )),
         );
     }
 }
@@ -1639,7 +1753,11 @@ fn check_list_literal(
                     ),
                 )
                 .with_node(expr.id.clone())
-                .with_repair_hint(replace_expression_graft_hint(item, &first_type)),
+                .with_repair_hint(replace_expression_graft_hint(
+                    item,
+                    &first_type,
+                    record_types,
+                )),
             );
         }
     }
@@ -1671,6 +1789,7 @@ fn check_map_literal(
                 .with_repair_hint(replace_expression_graft_hint(
                     &entry.key,
                     &TypeExpr::named("Text"),
+                    record_types,
                 )),
             );
         }
@@ -1720,7 +1839,11 @@ fn check_map_literal(
                     ),
                 )
                 .with_node(expr.id.clone())
-                .with_repair_hint(replace_expression_graft_hint(&entry.value, &first_type)),
+                .with_repair_hint(replace_expression_graft_hint(
+                    &entry.value,
+                    &first_type,
+                    record_types,
+                )),
             );
         }
     }
@@ -1755,6 +1878,7 @@ fn check_index_expression(
                     .with_repair_hint(replace_expression_graft_hint(
                         index,
                         &TypeExpr::named("Int"),
+                        record_types,
                     )),
                 );
             }
@@ -1774,6 +1898,7 @@ fn check_index_expression(
                     .with_repair_hint(replace_expression_graft_hint(
                         index,
                         &TypeExpr::named("Text"),
+                        record_types,
                     )),
                 );
             }
@@ -1858,7 +1983,11 @@ fn check_record_literal_fields(
                             ),
                         )
                         .with_node(field.expr.id.clone())
-                        .with_repair_hint(replace_expression_graft_hint(&field.expr, &expected.ty)),
+                        .with_repair_hint(replace_expression_graft_hint(
+                            &field.expr,
+                            &expected.ty,
+                            record_types,
+                        )),
                     );
                 }
             }
@@ -1872,6 +2001,7 @@ fn check_record_literal_fields(
                     expr,
                     fields,
                     expected_fields,
+                    record_types,
                 )),
             ),
         }
@@ -1892,6 +2022,7 @@ fn check_record_literal_fields(
                     expr,
                     fields,
                     expected_fields,
+                    record_types,
                 )),
             );
         }
@@ -1902,6 +2033,7 @@ fn record_literal_shape_graft_hint(
     expr: &Expr,
     fields: &[ExprField],
     expected_fields: &[RecordField],
+    record_types: &HashMap<String, Vec<RecordField>>,
 ) -> RepairHint {
     let field_source = expected_fields
         .iter()
@@ -1910,7 +2042,7 @@ fn record_literal_shape_graft_hint(
                 .iter()
                 .find(|field| field.name == expected.name)
                 .map(|field| field.expr.source.clone())
-                .unwrap_or_else(|| default_expr_source_for_type(&expected.ty));
+                .unwrap_or_else(|| default_expr_source_for_type(&expected.ty, record_types));
             format!("{}: {source}", expected.name)
         })
         .collect::<Vec<_>>()
@@ -2126,8 +2258,15 @@ fn bool_condition_hint(condition: &Expr) -> RepairHint {
         .with_replacement("Bool")
 }
 
-fn replace_expression_graft_hint(expr: &Expr, expected: &TypeExpr) -> RepairHint {
-    replace_expression_source_graft_hint(expr, &default_expr_source_for_type(expected))
+fn replace_expression_graft_hint(
+    expr: &Expr,
+    expected: &TypeExpr,
+    record_types: &HashMap<String, Vec<RecordField>>,
+) -> RepairHint {
+    replace_expression_source_graft_hint(
+        expr,
+        &default_expr_source_for_type(expected, record_types),
+    )
 }
 
 fn replace_expression_source_graft_hint(expr: &Expr, source: &str) -> RepairHint {
@@ -2149,6 +2288,7 @@ fn call_arity_graft_hint(
     target_fq_name: &str,
     arg_count: usize,
     expected_takes: &[TypeExpr],
+    record_types: &HashMap<String, Vec<RecordField>>,
 ) -> Option<RepairHint> {
     let target = format!("task:{target_fq_name}");
     let scope = format!("task:{}", task_fq_name(task));
@@ -2160,7 +2300,7 @@ fn call_arity_graft_hint(
                 "from": raw_callee,
                 "position": arg_count,
                 "scope": scope,
-                "source": default_expr_source_for_type(&expected_takes[arg_count]),
+                "source": default_expr_source_for_type(&expected_takes[arg_count], record_types),
             }
         });
         return Some(
@@ -2194,6 +2334,7 @@ fn replace_call_arg_hint(
     callee_name: &str,
     position: usize,
     expected: &TypeExpr,
+    record_types: &HashMap<String, Vec<RecordField>>,
 ) -> RepairHint {
     let scope = format!("task:{}", task_fq_name(task));
     let graft = serde_json::json!({
@@ -2203,7 +2344,7 @@ fn replace_call_arg_hint(
             "from": raw_callee,
             "position": position,
             "scope": scope,
-            "source": default_expr_source_for_type(expected),
+            "source": default_expr_source_for_type(expected, record_types),
         }
     });
     RepairHint::new("replace_call_arg")
@@ -2211,25 +2352,67 @@ fn replace_call_arg_hint(
         .with_replacement(graft.to_string())
 }
 
-fn default_expr_source_for_type(ty: &TypeExpr) -> String {
+fn default_expr_source_for_type(
+    ty: &TypeExpr,
+    record_types: &HashMap<String, Vec<RecordField>>,
+) -> String {
+    default_expr_source_for_type_inner(ty, record_types, &mut HashSet::new())
+}
+
+fn default_expr_source_for_type_inner(
+    ty: &TypeExpr,
+    record_types: &HashMap<String, Vec<RecordField>>,
+    visited: &mut HashSet<String>,
+) -> String {
     match ty {
         TypeExpr::Named { name } if name == "Int" => "0".to_string(),
         TypeExpr::Named { name } if name == "Float" => "0.0".to_string(),
         TypeExpr::Named { name } if name == "Text" => "\"\"".to_string(),
         TypeExpr::Named { name } if name == "Bool" => "false".to_string(),
+        TypeExpr::Named { name } if record_types.contains_key(name) => {
+            default_named_record_expr_source(name, record_types, visited)
+        }
         TypeExpr::Generic { name, args } if name == "Result" && !args.is_empty() => {
-            format!("Ok({})", default_expr_source_for_type(&args[0]))
+            format!(
+                "Ok({})",
+                default_expr_source_for_type_inner(&args[0], record_types, visited)
+            )
         }
         TypeExpr::Generic { name, .. } if name == "List" => "[]".to_string(),
         TypeExpr::Generic { name, .. } if name == "Map" => "map {}".to_string(),
-        TypeExpr::Record { fields } => default_record_expr_source_for_fields(fields),
+        TypeExpr::Record { fields } => {
+            default_record_expr_source_for_fields(fields, record_types, visited, None)
+        }
         _ => "TODO_VALUE".to_string(),
     }
 }
 
-fn default_record_expr_source_for_fields(fields: &[RecordField]) -> String {
+fn default_named_record_expr_source(
+    name: &str,
+    record_types: &HashMap<String, Vec<RecordField>>,
+    visited: &mut HashSet<String>,
+) -> String {
+    let Some(fields) = record_types.get(name) else {
+        return "TODO_VALUE".to_string();
+    };
+    if !visited.insert(name.to_string()) {
+        return "TODO_VALUE".to_string();
+    }
+    let source = default_record_expr_source_for_fields(fields, record_types, visited, Some(name));
+    visited.remove(name);
+    source
+}
+
+fn default_record_expr_source_for_fields(
+    fields: &[RecordField],
+    record_types: &HashMap<String, Vec<RecordField>>,
+    visited: &mut HashSet<String>,
+    type_name: Option<&str>,
+) -> String {
     if fields.is_empty() {
-        return "{ }".to_string();
+        return type_name
+            .map(|name| format!("{name} {{ }}"))
+            .unwrap_or_else(|| "{ }".to_string());
     }
     let fields = fields
         .iter()
@@ -2237,12 +2420,14 @@ fn default_record_expr_source_for_fields(fields: &[RecordField]) -> String {
             format!(
                 "{}: {}",
                 field.name,
-                default_expr_source_for_type(&field.ty)
+                default_expr_source_for_type_inner(&field.ty, record_types, visited)
             )
         })
         .collect::<Vec<_>>()
         .join(", ");
-    format!("{{ {fields} }}")
+    type_name
+        .map(|name| format!("{name} {{ {fields} }}"))
+        .unwrap_or_else(|| format!("{{ {fields} }}"))
 }
 
 fn unary_expected_type(op: &UnaryOp) -> &'static str {
