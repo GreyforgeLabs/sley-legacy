@@ -194,7 +194,8 @@ Implemented now:
   `schema: "sley.workbench.report.v0"` and optional static HTML over
   doctor/query/lint/plan/graph/graph-slice panels without writing source
   files; edit-plan template rows include non-mutating preview commands,
-  explicit write commands, and post-fix check/lint/verify gates
+  explicit write commands, post-fix check/lint/verify gates, and a local
+  repair-focus selector for lint findings
 - in-tree `sley-docgen` reference generator that emits
   `schema: "sley.docgen.report.v0"` and optional Markdown over checked
   module, task, type, effect, and host capability reference data

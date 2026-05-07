@@ -119,6 +119,10 @@ task orphan -> Text {
     assert!(html.contains("Preview Command"));
     assert!(html.contains("sley fix --json --kind delete_unused_private_task"));
     assert!(html.contains("Post-Fix Gates"));
+    assert!(html.contains("data-workbench-focus"));
+    assert!(html.contains("data-lint-row"));
+    assert!(html.contains("data-template-row"));
+    assert!(html.contains("applyWorkbenchFocus"));
 }
 
 fn temp_project_dir(name: &str) -> PathBuf {

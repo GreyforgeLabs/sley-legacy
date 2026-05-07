@@ -122,7 +122,7 @@ Current verified surface:
   graph and graph-slice data; its report schema links embedded doctor, query,
   lint, edit-plan, graph, and graph-slice panels back to their source
   contracts, and edit-plan template rows carry preview, write, and post-fix
-  gate commands for repair handoff.
+  gate commands plus a local repair-focus selector for repair handoff.
 - `sley-docgen` is available as an in-tree checked reference generator with
   `schema: "sley.docgen.report.v0"` and optional Markdown over module, task,
   type, effect, and host capability docs from `sley.query.report.v0`; its

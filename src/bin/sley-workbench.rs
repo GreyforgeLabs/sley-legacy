@@ -453,6 +453,11 @@ fn render_html(report: &WorkbenchReport) -> Result<String> {
         .as_ref()
         .map(render_lint_panel)
         .unwrap_or_else(|| "<p class=\"muted\">Lint is unavailable.</p>".to_string());
+    let repair_focus = report
+        .lint
+        .as_ref()
+        .map(render_repair_focus_panel)
+        .unwrap_or_else(|| "<p class=\"muted\">Repair focus is unavailable.</p>".to_string());
     let tasks = report
         .query
         .as_ref()
@@ -538,6 +543,9 @@ th {{ background: var(--surface); font-size: 12px; text-transform: uppercase; co
 td {{ font-size: 14px; }}
 code, pre {{ font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }}
 pre {{ overflow: auto; padding: 12px; border: 1px solid var(--line); background: var(--surface); }}
+select {{ min-width: min(100%, 420px); padding: 8px 10px; border: 1px solid var(--line); background: #fff; color: var(--ink); }}
+tr.selected {{ outline: 2px solid var(--accent); outline-offset: -2px; }}
+tr[hidden] {{ display: none; }}
 .slice-focus {{ margin-bottom: 12px; }}
 .slice-focus code {{ font-weight: 700; }}
 .muted {{ color: var(--muted); }}
@@ -552,6 +560,10 @@ pre {{ overflow: auto; padding: 12px; border: 1px solid var(--line); background:
 <main>
   <section class="metrics">
     {metrics}
+  </section>
+  <section>
+    <h2>Repair Focus</h2>
+    {repair_focus}
   </section>
   <section>
     <h2>Tasks</h2>
@@ -582,6 +594,21 @@ pre {{ overflow: auto; padding: 12px; border: 1px solid var(--line); background:
     <pre>{summary_json}</pre>
   </section>
 </main>
+<script>
+const focusSelect = document.querySelector("[data-workbench-focus]");
+function applyWorkbenchFocus(value) {{
+  document.querySelectorAll("[data-lint-row]").forEach((row) => {{
+    row.classList.toggle("selected", Boolean(value) && row.dataset.node === value);
+  }});
+  document.querySelectorAll("[data-template-row]").forEach((row) => {{
+    row.hidden = Boolean(value) && row.dataset.surface !== value;
+  }});
+}}
+if (focusSelect) {{
+  focusSelect.addEventListener("change", (event) => applyWorkbenchFocus(event.target.value));
+  applyWorkbenchFocus(focusSelect.value);
+}}
+</script>
 </body>
 </html>
 "#,
@@ -589,6 +616,7 @@ pre {{ overflow: auto; padding: 12px; border: 1px solid var(--line); background:
         status = escape_html(&report.status),
         status_class = escape_html(&report.status),
         metrics = render_metrics(&report.summary),
+        repair_focus = repair_focus,
         tasks = tasks,
         lint = lint,
         templates = templates,
@@ -597,6 +625,27 @@ pre {{ overflow: auto; padding: 12px; border: 1px solid var(--line); background:
         graph = graph,
         summary_json = escape_html(&summary_json)
     ))
+}
+
+fn render_repair_focus_panel(lint: &WorkbenchLintPanel) -> String {
+    if lint.findings.is_empty() {
+        return "<p class=\"muted\">No repair focus.</p>".to_string();
+    }
+    let options = lint
+        .findings
+        .iter()
+        .map(|finding| {
+            format!(
+                "<option value=\"{}\">{} - {}</option>",
+                escape_html(&finding.node),
+                escape_html(&finding.rule),
+                escape_html(&finding.node)
+            )
+        })
+        .collect::<String>();
+    format!(
+        "<select data-workbench-focus><option value=\"\">All findings</option>{options}</select>"
+    )
 }
 
 fn render_metrics(summary: &WorkbenchSummary) -> String {
@@ -652,7 +701,8 @@ fn render_lint_panel(lint: &WorkbenchLintPanel) -> String {
         .iter()
         .map(|finding| {
             format!(
-                "<tr><td>{}</td><td><code>{}</code></td><td>{}</td><td>{}</td></tr>",
+                "<tr data-lint-row data-node=\"{}\"><td>{}</td><td><code>{}</code></td><td>{}</td><td>{}</td></tr>",
+                escape_html(&finding.node),
                 escape_html(&finding.rule),
                 escape_html(&finding.node),
                 escape_html(&finding.message),
@@ -675,7 +725,8 @@ fn render_templates_panel(plan: &WorkbenchPlanPanel) -> String {
         .chain(plan.transaction_templates.iter())
         .map(|template| {
             format!(
-                "<tr><td>{}</td><td><code>{}</code></td><td>{}</td><td><code>{}</code></td><td><code>{}</code></td><td>{}</td></tr>",
+                "<tr data-template-row data-surface=\"{}\"><td>{}</td><td><code>{}</code></td><td>{}</td><td><code>{}</code></td><td><code>{}</code></td><td>{}</td></tr>",
+                escape_html(&template.surface),
                 escape_html(&template.kind),
                 escape_html(&template.surface),
                 escape_html(&template.reason),
