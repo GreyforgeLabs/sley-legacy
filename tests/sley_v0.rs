@@ -10212,6 +10212,14 @@ fn conformance_report_summarizes_release_surface() {
         Some(&serde_json::json!(434))
     );
     assert_eq!(
+        report_json.pointer("/summary/onboarding_path_count"),
+        Some(&serde_json::json!(7))
+    );
+    assert_eq!(
+        report_json.pointer("/summary/missing_onboarding_path_count"),
+        Some(&serde_json::json!(0))
+    );
+    assert_eq!(
         report_json.pointer("/summary/example_source_count"),
         Some(&serde_json::json!(70))
     );
@@ -10250,6 +10258,21 @@ fn conformance_report_summarizes_release_surface() {
     assert_eq!(
         report_json.pointer("/tests/declared_matches_actual"),
         Some(&serde_json::json!(true))
+    );
+    assert_eq!(
+        report_json.pointer("/onboarding/missing_required_paths"),
+        Some(&serde_json::json!([]))
+    );
+    assert!(
+        report_json
+            .pointer("/onboarding/required_paths")
+            .and_then(|value| value.as_array())
+            .is_some_and(|paths| paths
+                .iter()
+                .any(|path| path.pointer("/path") == Some(&serde_json::json!("llms.txt")))
+                && paths.iter().any(|path| path.pointer("/path")
+                    == Some(&serde_json::json!("docs/AgentQuickstart.md")))),
+        "conformance report should inventory the compact agent onboarding pack"
     );
     assert_eq!(
         report_json.pointer("/editor_shims/package_count"),
@@ -10332,6 +10355,8 @@ fn conformance_report_summarizes_release_surface() {
     let text_stdout = String::from_utf8(text_report.stdout).expect("text report stdout is utf8");
     assert!(text_stdout.contains("corpus_missing=0"));
     assert!(text_stdout.contains("smoke_missing=0"));
+    assert!(text_stdout.contains("onboarding=7"));
+    assert!(text_stdout.contains("onboarding_missing=0"));
     assert!(text_stdout.contains("editor_shims=1"));
     assert!(text_stdout.contains("v1_gate=17"));
     assert!(text_stdout.contains("v1_gate_missing=0"));
@@ -10364,11 +10389,13 @@ fn conformance_report_summarizes_release_surface() {
     );
     let rendered_markdown = fs::read_to_string(&markdown_path).expect("read rendered markdown");
     assert!(rendered_markdown.contains("Required corpus tags"));
+    assert!(rendered_markdown.contains("Onboarding pack"));
     assert!(rendered_markdown.contains("Editor shims"));
     assert!(rendered_markdown.contains("`make v1` gate"));
     assert!(rendered_markdown.contains("`0` missing"));
     let rendered_html = fs::read_to_string(&html_path).expect("read rendered html");
     assert!(rendered_html.contains("Required corpus tags"));
+    assert!(rendered_html.contains("Onboarding pack"));
     assert!(rendered_html.contains("Editor shims"));
     assert!(rendered_html.contains("make v1"));
     assert!(rendered_html.contains("Required smoke tags"));

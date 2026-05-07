@@ -93,11 +93,12 @@ Current verified surface:
   with `report` and `coverage` commands that emit
   `schema: "sley.conformance.report.v0"` and
   `schema: "sley.conformance.coverage.v0"` over schema/fixture instances,
-  contract validation status, release manifests, corpus tags, smoke tags, and
-  packaged example counts, plus editor-shim package validation and a check
-  that the declared integration coverage count matches the test file. It also
-  inventories the `make v1` target set and fails when required local gate
-  targets disappear. `report` now fails when required corpus or smoke release
+  contract validation status, release manifests, corpus tags, smoke tags, the
+  compact agent onboarding pack, and packaged example counts, plus editor-shim
+  package validation and a check that the declared integration coverage count
+  matches the test file. It also inventories the `make v1` target set and
+  fails when required local gate targets disappear. `report` now fails when
+  required corpus or smoke release
   tags disappear, including seeded and scoped runtime authority smoke tags.
   `report --require-public-release-ready` turns
   unresolved public-release packaging blockers into an explicit nonzero gate
@@ -514,8 +515,8 @@ Judge work by:
 - Are accepted and rejected examples locked into conformance tests?
 - Are JSON schemas stable and versioned?
 - Are CLI smoke expectations manifest-backed?
-- Can future agents resume from `llms.txt`, schemas, manifests, examples, and
-  tests without private chat context?
+- Can future agents resume from the conformance-inventoried onboarding pack,
+  schemas, manifests, examples, and tests without private chat context?
 
 High-leverage work lanes:
 

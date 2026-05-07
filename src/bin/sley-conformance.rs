@@ -160,6 +160,16 @@ const DEFAULT_V1_GATE_TARGETS: &[&str] = &[
     "syntax",
 ];
 
+const DEFAULT_ONBOARDING_PATHS: &[&str] = &[
+    "README.md",
+    "llms.txt",
+    "docs/AgentQuickstart.md",
+    "docs/SleyLanguageSpec.md",
+    "examples",
+    "fixtures/grafts",
+    "tests",
+];
+
 #[derive(Debug, Parser)]
 #[command(name = "sley-conformance")]
 #[command(about = "Summarize Sley release-readiness contracts and coverage")]
@@ -231,6 +241,7 @@ struct ConformanceReport {
     schemas: SchemaSection,
     corpus: CorpusSection,
     smoke: SmokeSection,
+    onboarding: OnboardingSection,
     examples: ExamplesSection,
     tests: TestSection,
     editor_shims: EditorShimsSection,
@@ -249,6 +260,8 @@ struct ConformanceSummary {
     corpus_accepted_count: usize,
     corpus_rejected_count: usize,
     smoke_case_count: usize,
+    onboarding_path_count: usize,
+    missing_onboarding_path_count: usize,
     example_project_count: usize,
     example_source_count: usize,
     integration_test_count: usize,
@@ -332,6 +345,24 @@ struct SmokeSection {
 struct SmokeManifestSummary {
     path: String,
     case_count: usize,
+}
+
+#[derive(Debug, Serialize)]
+struct OnboardingSection {
+    required_paths: Vec<OnboardingPath>,
+    missing_required_paths: Vec<String>,
+    issue_count: usize,
+    issues: Vec<ConformanceIssue>,
+}
+
+#[derive(Debug, Serialize)]
+struct OnboardingPath {
+    path: String,
+    kind: String,
+    present: bool,
+    byte_count: usize,
+    line_count: usize,
+    entry_count: usize,
 }
 
 #[derive(Debug, Serialize)]
@@ -661,6 +692,8 @@ fn build_report(
             format!("smoke manifest does not cover required tag {tag:?}"),
         ));
     }
+    let onboarding = build_onboarding_section();
+    collect_onboarding_issues(&onboarding, &mut issues);
     let examples = build_examples_section(examples_root, &mut issues);
     let tests = build_test_section(integration_tests, goal_doc, &mut issues);
     let editor_shims = build_editor_shims_section(editor_shim_root);
@@ -695,6 +728,8 @@ fn build_report(
         corpus_accepted_count: corpus.accepted_count,
         corpus_rejected_count: corpus.rejected_count,
         smoke_case_count: smoke.case_count,
+        onboarding_path_count: onboarding.required_paths.len(),
+        missing_onboarding_path_count: onboarding.missing_required_paths.len(),
         example_project_count: examples.project_count,
         example_source_count: examples.source_count,
         integration_test_count: tests.integration_test_count,
@@ -730,6 +765,7 @@ fn build_report(
         },
         corpus,
         smoke,
+        onboarding,
         examples,
         tests,
         editor_shims,
@@ -1026,6 +1062,12 @@ fn collect_v1_gate_issues(v1_gate: &V1GateSection, issues: &mut Vec<ConformanceI
     }
 }
 
+fn collect_onboarding_issues(onboarding: &OnboardingSection, issues: &mut Vec<ConformanceIssue>) {
+    for issue in &onboarding.issues {
+        issues.push(issue.clone());
+    }
+}
+
 fn build_corpus_section(path: &Path, issues: &mut Vec<ConformanceIssue>) -> CorpusSection {
     let required_tags = DEFAULT_CORPUS_TAGS
         .iter()
@@ -1108,6 +1150,83 @@ fn build_smoke_section(paths: &[PathBuf], issues: &mut Vec<ConformanceIssue>) ->
         tag_inventory: tag_counts(tags),
         required_tags,
         missing_required_tags,
+    }
+}
+
+fn build_onboarding_section() -> OnboardingSection {
+    let mut required_paths = Vec::new();
+    let mut missing_required_paths = Vec::new();
+    let mut issues = Vec::new();
+    for path in DEFAULT_ONBOARDING_PATHS {
+        let path = Path::new(path);
+        let item = inspect_onboarding_path(path, &mut issues);
+        if !item.present {
+            missing_required_paths.push(item.path.clone());
+            issues.push(issue(
+                "onboarding_path_missing",
+                format!("required agent onboarding path {} is missing", item.path),
+            ));
+        }
+        required_paths.push(item);
+    }
+    let issue_count = issues.len();
+    OnboardingSection {
+        required_paths,
+        missing_required_paths,
+        issue_count,
+        issues,
+    }
+}
+
+fn inspect_onboarding_path(path: &Path, issues: &mut Vec<ConformanceIssue>) -> OnboardingPath {
+    let path_text = path_string(path);
+    let Ok(metadata) = fs::metadata(path) else {
+        return OnboardingPath {
+            path: path_text,
+            kind: "missing".to_string(),
+            present: false,
+            byte_count: 0,
+            line_count: 0,
+            entry_count: 0,
+        };
+    };
+    if metadata.is_dir() {
+        let entry_count = match fs::read_dir(path) {
+            Ok(entries) => entries.filter_map(Result::ok).count(),
+            Err(error) => {
+                issues.push(issue(
+                    "onboarding_path_inspect_failed",
+                    format!("failed to inspect agent onboarding path {path_text}: {error}"),
+                ));
+                0
+            }
+        };
+        return OnboardingPath {
+            path: path_text,
+            kind: "directory".to_string(),
+            present: true,
+            byte_count: 0,
+            line_count: 0,
+            entry_count,
+        };
+    }
+    let source = match fs::read_to_string(path) {
+        Ok(source) => source,
+        Err(error) => {
+            issues.push(issue(
+                "onboarding_path_inspect_failed",
+                format!("failed to inspect agent onboarding path {path_text}: {error}"),
+            ));
+            String::new()
+        }
+    };
+    OnboardingPath {
+        path: path_text,
+        kind: "file".to_string(),
+        present: true,
+        byte_count: source.len(),
+        line_count: source.lines().count(),
+        entry_count: 0,
     }
 }
 
@@ -1896,13 +2015,15 @@ fn emit_report(report: &ConformanceReport, json: bool) -> Result<()> {
         return Ok(());
     }
     println!(
-        "sley-conformance report status={} schemas={} fixtures={} corpus={}/{} smoke={} examples={} tests={} editor_shims={} v1_gate={} v1_gate_missing={} corpus_required={} corpus_missing={} smoke_required={} smoke_missing={} public_release_blockers={}",
+        "sley-conformance report status={} schemas={} fixtures={} corpus={}/{} smoke={} onboarding={} onboarding_missing={} examples={} tests={} editor_shims={} v1_gate={} v1_gate_missing={} corpus_required={} corpus_missing={} smoke_required={} smoke_missing={} public_release_blockers={}",
         report.status,
         report.summary.schema_count,
         report.summary.contract_fixture_count,
         report.summary.corpus_accepted_count,
         report.summary.corpus_rejected_count,
         report.summary.smoke_case_count,
+        report.summary.onboarding_path_count,
+        report.summary.missing_onboarding_path_count,
         report.summary.example_source_count,
         report.summary.integration_test_count,
         report.summary.editor_shim_count,
@@ -1971,6 +2092,10 @@ fn render_markdown(report: &ConformanceReport) -> String {
         "- Required smoke tags: `{}` required, `{}` missing\n",
         report.smoke.required_tags.len(),
         report.smoke.missing_required_tags.len()
+    ));
+    output.push_str(&format!(
+        "- Onboarding pack: `{}` required paths, `{}` missing\n",
+        report.summary.onboarding_path_count, report.summary.missing_onboarding_path_count
     ));
     output.push_str(&format!(
         "- Examples: `{}` projects, `{}` sources\n",

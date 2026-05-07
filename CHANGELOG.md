@@ -62,6 +62,8 @@ here. Dates use UTC-independent calendar dates from the local repo history.
   if required local release-gate targets disappear or are undefined.
 - `sley-conformance report` now requires smoke tags for seeded runtime
   authority, scoped host capabilities, and scope-denial diagnostics.
+- `sley-conformance report` now inventories the compact agent onboarding pack
+  so missing bootstrap files are visible in release-readiness evidence.
 - `sley-lsp` diagnostics now load `sley.toml` project context with unsaved
   open-buffer overlays, so valid imported calls resolve in editor buffers and
   missing imported tasks are diagnosed without requiring a save.

@@ -15,6 +15,9 @@ cargo run -- ast --json <file-or-project>
 cargo run -- ast --json --node <node-id> <file-or-project>
 cargo run -- graph --json <file-or-project>
 cargo run -- graph --json --slice <node-id> <file-or-project>
+cargo run -- query --json --kind calls <file-or-project>
+cargo run -- lint --json <file-or-project>
+cargo run -- plan --json --graft-templates <file-or-project>
 cargo run -- new --json --template agent-project --name agent-app --module agent.main agent-app
 cargo run -- doctor --json <file-or-project>
 cargo run -- fix --json --kind add_module_declaration --dry-run <file-or-project>
@@ -22,6 +25,8 @@ cargo run -- fix --json --kind delete_unused_private_declarations --dry-run <fil
 cargo run -- fix --json --kind delete_unused_private_declarations --write <file-or-project>
 cargo run -- verify --json <file-or-project>
 cargo run -- deploy --json --dry-run --artifacts-dir .sley/deploy <file-or-project>
+cargo run -- trace --json <file-or-project>
+cargo run -- zjx --json <file-or-project>
 cargo run --bin sley-ci -- lint --json --deny-warnings <file-or-project>
 cargo run --bin sley-ci -- doctor --json --deny-warnings <file-or-project>
 cargo run --bin sley-ci -- plan --json --graft-templates <file-or-project>
@@ -33,7 +38,9 @@ cargo run --bin sley-conformance -- report --json
 cargo run --bin sley-conformance -- coverage --json --require-tag <tag>
 cargo run --bin sley-contract -- inspect-deploy-artifacts .sley/deploy --schemas docs/schemas --json
 make v1
+make public-release-check
 make syntax
+node scripts/validate-editor-shims.mjs editors/vscode-sley
 cargo run --bin sley-lsp
 cargo run --bin sley-workbench -- --json --html .sley/workbench.html <file-or-project>
 cargo run --bin sley-docgen -- reference --json --markdown .sley/reference.md <file-or-project>
@@ -121,16 +128,21 @@ Agent rules:
 Stable v0 JSON roots:
 
 - `sley.ast.program.v0`
+- `sley.ast.node.v0`
 - `sley.diagnostics.report.v0`
 - `sley.symbol_graph.v0`
 - `sley.symbol_graph.slice.v0`
 - `sley.query.report.v0`
 - `sley.lint.report.v0`
+- `sley.edit_plan.report.v0`
 - `sley.run.report.v0`
 - `sley.trace.receipt.v0`
 - `sley.trace.report.v0`
 - `sley.trace.seal.v0`
 - `sley.graft.outcome.v0`
+- `sley.deploy.report.v0`
+- `sley.deploy.artifacts.v0`
+- `sley.deploy.artifact_check.v0`
 - `sley.docgen.report.v0`
 - `sley.agent_bench.report.v0`
 - `sley.migrate.report.v0`
@@ -140,10 +152,18 @@ Stable v0 JSON roots:
 - `sley.zjx.tool.report.v0`
 - `sley.cli_smoke.manifest.v0`
 - `sley.ci.report.v0`
+- `sley.conformance.report.v0`
+- `sley.conformance.coverage.v0`
+- `sley.conformance.manifest.v0`
+- `sley.contract.inventory.v0`
+- `sley.contract.fixture_check.v0`
+- `sley.contract.validate.v0`
+- `sley.lsp.fix_preview.v0`
+- `sley.lsp.command_preview.v0`
+- `sley.workbench.report.v0`
 - `sley.project.scaffold.v0`
 - `sley.doctor.report.v0`
 - `sley.verify.report.v0`
-- `sley.deploy.report.v0`
 
 The graft outcome schema pins accepted provenance records with non-empty
 targets and `result: "accepted"` and has a locked accepted-operation fixture.
@@ -159,7 +179,9 @@ The `sley-ci` binary exposes `check`, `lint`, `doctor`, `plan`, `run`, `verify`,
 for local CI and pre-commit gates over existing Sley commands.
 The `sley-conformance` binary exposes `report` and `coverage` JSON roots for
 schema/fixture instance coverage, contract validation status, corpus tags,
-smoke tags, packaged example counts, and declared integration-test count drift.
+smoke tags, the compact agent onboarding pack, packaged example counts,
+declared integration-test count drift, editor-shim validation, `make v1`
+target inventory, and public-release metadata blockers.
 The in-tree `tree-sitter-sley` package exposes the current syntax grammar,
 highlight queries, generated parser artifacts, exact corpus tests, and fixture
 parsing smoke through `npm test` or `make syntax`.
@@ -188,6 +210,9 @@ commands over `sley.zjx.envelope.v0` preview envelopes.
 The repo-level `Makefile`, `.github/actions/sley-v1/action.yml`,
 `.github/workflows/v1.yml`, and `.pre-commit-config.yaml` all route release
 checks through `make v1`.
+`make public-release-check` is the stricter final public-cut gate and is
+expected to fail until operator-controlled license and repository metadata
+decisions are settled.
 Graph-slice insert/move/delete/replace affordance operations reuse the strict
 graft operation schema from edit-plan reports.
 Graph-slice focus, optional task, and inbound/outbound call summaries reuse
@@ -228,8 +253,9 @@ Current development phase:
   files for write-mode smokes, explicit graft/fix trace receipts, non-empty
   trace receipt seals, ZJX envelopes carrying schema-backed trace receipts,
   ZJX tool reports, lint-driven fix writes that clear warnings before verify,
-  and seeded host-adapter execution while preserving typed recoverable failure
-  records and keeping authority failures as diagnostics
+  editor-shim validation, `make v1` target inventory, conformance-inventoried
+  onboarding paths, and seeded host-adapter execution while preserving typed
+  recoverable failure records and keeping authority failures as diagnostics
 - checked graph query reports are available through `sley query --json` with
   root schema `sley.query.report.v0`; `--kind types` and `--kind effects`
   give direct declaration rows for record and authority surfaces, while

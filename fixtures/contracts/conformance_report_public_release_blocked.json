@@ -10,6 +10,8 @@
     "corpus_accepted_count": 1,
     "corpus_rejected_count": 1,
     "smoke_case_count": 1,
+    "onboarding_path_count": 7,
+    "missing_onboarding_path_count": 0,
     "example_project_count": 1,
     "example_source_count": 1,
     "integration_test_count": 1,
@@ -100,6 +102,69 @@
       "cli:check"
     ],
     "missing_required_tags": []
+  },
+  "onboarding": {
+    "required_paths": [
+      {
+        "path": "README.md",
+        "kind": "file",
+        "present": true,
+        "byte_count": 1000,
+        "line_count": 40,
+        "entry_count": 0
+      },
+      {
+        "path": "llms.txt",
+        "kind": "file",
+        "present": true,
+        "byte_count": 1000,
+        "line_count": 40,
+        "entry_count": 0
+      },
+      {
+        "path": "docs/AgentQuickstart.md",
+        "kind": "file",
+        "present": true,
+        "byte_count": 1000,
+        "line_count": 40,
+        "entry_count": 0
+      },
+      {
+        "path": "docs/SleyLanguageSpec.md",
+        "kind": "file",
+        "present": true,
+        "byte_count": 1000,
+        "line_count": 40,
+        "entry_count": 0
+      },
+      {
+        "path": "examples",
+        "kind": "directory",
+        "present": true,
+        "byte_count": 0,
+        "line_count": 0,
+        "entry_count": 1
+      },
+      {
+        "path": "fixtures/grafts",
+        "kind": "directory",
+        "present": true,
+        "byte_count": 0,
+        "line_count": 0,
+        "entry_count": 1
+      },
+      {
+        "path": "tests",
+        "kind": "directory",
+        "present": true,
+        "byte_count": 0,
+        "line_count": 0,
+        "entry_count": 1
+      }
+    ],
+    "missing_required_paths": [],
+    "issue_count": 0,
+    "issues": []
   },
   "examples": {
     "root": "examples",
