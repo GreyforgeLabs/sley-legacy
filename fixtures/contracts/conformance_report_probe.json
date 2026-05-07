@@ -254,6 +254,49 @@
     "issue_count": 0,
     "issues": []
   },
+  "readiness": {
+    "local_v1": {
+      "status": "ready",
+      "ready": true,
+      "command": ["make", "v1"],
+      "gate_completion_percent": 100,
+      "passed_check_count": 10,
+      "total_check_count": 10,
+      "blocker_count": 0,
+      "blockers": []
+    },
+    "public_v1": {
+      "status": "blocked",
+      "ready": false,
+      "command": ["make", "public-release-check"],
+      "gate_completion_percent": 67,
+      "passed_check_count": 10,
+      "total_check_count": 15,
+      "blocker_count": 5,
+      "blockers": [
+        {
+          "code": "missing_license_file",
+          "message": "LICENSE is not present; choose the repository license before public release"
+        },
+        {
+          "code": "cargo_license_unresolved",
+          "message": "Cargo.toml does not declare `package.license` or `package.license-file`"
+        },
+        {
+          "code": "cargo_repository_unset",
+          "message": "Cargo.toml does not declare `package.repository` for public release consumers"
+        },
+        {
+          "code": "tree_sitter_package_license_unresolved",
+          "message": "tree-sitter-sley/package.json has no public release license"
+        },
+        {
+          "code": "tree_sitter_config_license_unresolved",
+          "message": "tree-sitter-sley/tree-sitter.json has no public release license"
+        }
+      ]
+    }
+  },
   "release": {
     "public_release_ready": false,
     "blocker_count": 5,

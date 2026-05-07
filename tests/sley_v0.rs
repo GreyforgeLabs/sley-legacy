@@ -9634,7 +9634,10 @@ fn report_command_schemas_pin_nonempty_argv_segments() {
                 "../docs/schemas/sley.conformance.report.v0.schema.json"
             ))
             .expect("parse conformance report schema"),
-            vec!["/$defs/validationRun/properties/command/items/minLength"],
+            vec![
+                "/$defs/validationRun/properties/command/items/minLength",
+                "/$defs/readinessTrack/properties/command/items/minLength",
+            ],
         ),
         (
             serde_json::from_str::<serde_json::Value>(include_str!(
@@ -10358,6 +10361,66 @@ fn conformance_report_summarizes_release_surface() {
         Some(&serde_json::json!([]))
     );
     assert_eq!(
+        report_json.pointer("/readiness/local_v1/status"),
+        Some(&serde_json::json!("ready"))
+    );
+    assert_eq!(
+        report_json.pointer("/readiness/local_v1/ready"),
+        Some(&serde_json::json!(true))
+    );
+    assert_eq!(
+        report_json.pointer("/readiness/local_v1/gate_completion_percent"),
+        Some(&serde_json::json!(100))
+    );
+    assert_eq!(
+        report_json.pointer("/readiness/local_v1/passed_check_count"),
+        Some(&serde_json::json!(10))
+    );
+    assert_eq!(
+        report_json.pointer("/readiness/local_v1/total_check_count"),
+        Some(&serde_json::json!(10))
+    );
+    assert_eq!(
+        report_json.pointer("/readiness/local_v1/blocker_count"),
+        Some(&serde_json::json!(0))
+    );
+    assert_eq!(
+        report_json.pointer("/readiness/local_v1/command/0"),
+        Some(&serde_json::json!("make"))
+    );
+    assert_eq!(
+        report_json.pointer("/readiness/local_v1/command/1"),
+        Some(&serde_json::json!("v1"))
+    );
+    assert_eq!(
+        report_json.pointer("/readiness/public_v1/status"),
+        Some(&serde_json::json!("blocked"))
+    );
+    assert_eq!(
+        report_json.pointer("/readiness/public_v1/ready"),
+        Some(&serde_json::json!(false))
+    );
+    assert_eq!(
+        report_json.pointer("/readiness/public_v1/gate_completion_percent"),
+        Some(&serde_json::json!(67))
+    );
+    assert_eq!(
+        report_json.pointer("/readiness/public_v1/passed_check_count"),
+        Some(&serde_json::json!(10))
+    );
+    assert_eq!(
+        report_json.pointer("/readiness/public_v1/total_check_count"),
+        Some(&serde_json::json!(15))
+    );
+    assert_eq!(
+        report_json.pointer("/readiness/public_v1/blocker_count"),
+        Some(&serde_json::json!(5))
+    );
+    assert_eq!(
+        report_json.pointer("/readiness/public_v1/command/1"),
+        Some(&serde_json::json!("public-release-check"))
+    );
+    assert_eq!(
         report_json.pointer("/release/public_release_ready"),
         Some(&serde_json::json!(false))
     );
@@ -10425,6 +10488,10 @@ fn conformance_report_summarizes_release_surface() {
     assert!(text_stdout.contains("editor_shims=1"));
     assert!(text_stdout.contains("v1_gate=17"));
     assert!(text_stdout.contains("v1_gate_missing=0"));
+    assert!(text_stdout.contains("local_v1=ready"));
+    assert!(text_stdout.contains("local_v1_percent=100"));
+    assert!(text_stdout.contains("public_v1=blocked"));
+    assert!(text_stdout.contains("public_v1_percent=67"));
     assert!(text_stdout.contains("public_release_blockers=5"));
     assert!(text_stdout.contains("release:missing_license_file"));
 
@@ -10457,6 +10524,8 @@ fn conformance_report_summarizes_release_surface() {
     assert!(rendered_markdown.contains("Onboarding pack"));
     assert!(rendered_markdown.contains("Editor shims"));
     assert!(rendered_markdown.contains("`make v1` gate"));
+    assert!(rendered_markdown.contains("Local v1 readiness"));
+    assert!(rendered_markdown.contains("Public v1 readiness"));
     assert!(rendered_markdown.contains("Public Release Next Actions"));
     assert!(rendered_markdown.contains("`0` missing"));
     let rendered_html = fs::read_to_string(&html_path).expect("read rendered html");
@@ -10464,6 +10533,8 @@ fn conformance_report_summarizes_release_surface() {
     assert!(rendered_html.contains("Onboarding pack"));
     assert!(rendered_html.contains("Editor shims"));
     assert!(rendered_html.contains("make v1"));
+    assert!(rendered_html.contains("Local v1 readiness"));
+    assert!(rendered_html.contains("Public v1 readiness"));
     assert!(rendered_html.contains("Public Release Next Actions"));
     assert!(rendered_html.contains("Required smoke tags"));
 
@@ -10499,6 +10570,14 @@ fn conformance_report_summarizes_release_surface() {
     assert_eq!(
         gated_json.pointer("/summary/public_release_blocker_count"),
         Some(&serde_json::json!(5))
+    );
+    assert_eq!(
+        gated_json.pointer("/readiness/local_v1/status"),
+        Some(&serde_json::json!("ready"))
+    );
+    assert_eq!(
+        gated_json.pointer("/readiness/public_v1/status"),
+        Some(&serde_json::json!("blocked"))
     );
 
     let coverage = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-conformance"))
