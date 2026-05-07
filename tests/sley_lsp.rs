@@ -51,6 +51,10 @@ fn lsp_publishes_diagnostics_formats_symbols_and_previews_code_actions() {
         Some(&json!(true))
     );
     assert_eq!(
+        initialized.pointer("/result/capabilities/documentLinkProvider/resolveProvider"),
+        Some(&json!(false))
+    );
+    assert_eq!(
         initialized.pointer("/result/capabilities/completionProvider/resolveProvider"),
         Some(&json!(false))
     );
@@ -718,6 +722,37 @@ export task other -> Text {
         Some(&json!(0))
     );
 
+    write_lsp(
+        &mut stdin,
+        json!({
+            "jsonrpc": "2.0",
+            "id": 11,
+            "method": "textDocument/documentLink",
+            "params": {
+                "textDocument": {
+                    "uri": main_uri
+                }
+            }
+        }),
+    );
+    let document_links = read_response(&mut reader, 11);
+    assert_eq!(
+        document_links.pointer("/result/0/target"),
+        Some(&json!(pipeline_uri))
+    );
+    assert_eq!(
+        document_links.pointer("/result/0/range/start/line"),
+        Some(&json!(2))
+    );
+    assert_eq!(
+        document_links.pointer("/result/0/range/start/character"),
+        Some(&json!(7))
+    );
+    assert_eq!(
+        document_links.pointer("/result/0/tooltip"),
+        Some(&json!("Open module app.pipeline"))
+    );
+
     let signature_line = main_source
         .lines()
         .position(|line| line.contains("pipe.join"))
@@ -732,7 +767,7 @@ export task other -> Text {
         &mut stdin,
         json!({
             "jsonrpc": "2.0",
-            "id": 11,
+            "id": 12,
             "method": "textDocument/signatureHelp",
             "params": {
                 "textDocument": {
@@ -745,7 +780,7 @@ export task other -> Text {
             }
         }),
     );
-    let signature_help = read_response(&mut reader, 11);
+    let signature_help = read_response(&mut reader, 12);
     assert_eq!(
         signature_help.pointer("/result/signatures/0/label"),
         Some(&json!("pipe.join(left: Text, right: Text) -> Text"))
@@ -790,12 +825,12 @@ export task other -> Text {
         &mut stdin,
         json!({
             "jsonrpc": "2.0",
-            "id": 12,
+            "id": 13,
             "method": "shutdown",
             "params": null
         }),
     );
-    let shutdown = read_response(&mut reader, 12);
+    let shutdown = read_response(&mut reader, 13);
     assert!(shutdown.get("result").is_some());
     write_lsp(
         &mut stdin,

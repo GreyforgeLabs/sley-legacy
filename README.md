@@ -184,8 +184,8 @@ Implemented now:
   workspaces and open-buffer overlays, formatting edits, document symbols,
   workspace symbols, declaration metadata hover, project completions,
   project task signature help, exact-range task references, document
-  highlights, prepared cursor-aware project task rename edits, import/call
-  definition jumps,
+  highlights, import document links, prepared cursor-aware project task rename
+  edits, import/call definition jumps,
   checked edit-plan code actions, and a non-mutating `sley.fix.preview` command
   for editor repair previews
 - in-tree `sley-workbench` local inspection bootstrap that emits

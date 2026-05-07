@@ -58,6 +58,8 @@ here. Dates use UTC-independent calendar dates from the local repo history.
   missing imported tasks are diagnosed without requiring a save.
 - `sley-lsp` now exposes definition jumps for imported modules and resolved
   task calls across project files.
+- `sley-lsp` now exposes project-aware document links from import module names
+  to their resolved project files.
 - `sley-lsp` now returns deterministic completions for Sley keywords, host
   calls, project modules, local tasks, and visible imported tasks.
 - `sley-lsp` now exposes project-aware `workspace/symbol` results for modules,
