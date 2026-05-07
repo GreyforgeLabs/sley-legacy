@@ -17,6 +17,7 @@ use sley::plan::{
     EditPlanGraftTemplate, EditPlanOptions, EditPlanTransactionTemplate,
     build_edit_plan_report_with_options, module_name_from_sley_path,
 };
+use sley::project::load_project_with_source_overlays;
 
 const FIX_PREVIEW_COMMAND: &str = "sley.fix.preview";
 const FIX_PREVIEW_SCHEMA: &str = "sley.lsp.fix_preview.v0";
@@ -34,6 +35,17 @@ struct ServerState {
 
 struct DocumentState {
     text: String,
+}
+
+impl ServerState {
+    fn source_overlays(&self) -> HashMap<PathBuf, String> {
+        self.documents
+            .iter()
+            .filter_map(|(uri, document)| {
+                uri_to_path(uri).map(|path| (path, document.text.clone()))
+            })
+            .collect()
+    }
 }
 
 fn main() -> Result<()> {
@@ -197,7 +209,7 @@ fn handle_did_open<W: Write>(
     state
         .documents
         .insert(uri.to_string(), DocumentState { text: text.clone() });
-    publish_diagnostics(writer, uri, &text, version)
+    publish_diagnostics(writer, uri, &text, version, state)
 }
 
 fn handle_did_change<W: Write>(
@@ -227,7 +239,7 @@ fn handle_did_change<W: Write>(
             text: text.to_string(),
         },
     );
-    publish_diagnostics(writer, uri, text, version)
+    publish_diagnostics(writer, uri, text, version, state)
 }
 
 fn handle_did_close<W: Write>(
@@ -358,24 +370,41 @@ fn publish_diagnostics<W: Write>(
     uri: &str,
     text: &str,
     version: Option<i64>,
+    state: &ServerState,
 ) -> Result<()> {
     let mut diagnostics = Vec::new();
     match parse_program(text) {
-        Ok(program) => {
-            let compiler_diagnostics = check_program(&program);
+        Ok(current_program) => {
+            let (analysis_program, project_diagnostics) =
+                analysis_program_for_document(uri, &current_program, state);
+            diagnostics.extend(
+                project_diagnostics
+                    .iter()
+                    .filter(|diagnostic| {
+                        project_diagnostic_belongs_to_document(&current_program, diagnostic)
+                    })
+                    .map(|diagnostic| compiler_diagnostic_to_lsp(text, diagnostic)),
+            );
+            let compiler_diagnostics = check_program(&analysis_program);
             let compiler_has_errors = has_errors(&compiler_diagnostics);
             diagnostics.extend(
                 compiler_diagnostics
                     .iter()
+                    .filter(|diagnostic| {
+                        diagnostic_belongs_to_document(&current_program, diagnostic)
+                    })
                     .map(|diagnostic| compiler_diagnostic_to_lsp(text, diagnostic)),
             );
-            if !compiler_has_errors {
-                let lint_report = build_lint_report(&program, LintOptions::default());
+            if !compiler_has_errors && project_diagnostics.is_empty() {
+                let lint_report = build_lint_report(&analysis_program, LintOptions::default());
                 diagnostics.extend(
                     lint_report
                         .findings
                         .iter()
-                        .map(|finding| lint_finding_to_lsp(text, &program, finding)),
+                        .filter(|finding| {
+                            lint_finding_belongs_to_document(&current_program, finding)
+                        })
+                        .map(|finding| lint_finding_to_lsp(text, &current_program, finding)),
                 );
             }
         }
@@ -394,6 +423,56 @@ fn publish_diagnostics<W: Write>(
         params["version"] = json!(version);
     }
     send_notification(writer, "textDocument/publishDiagnostics", params)
+}
+
+fn analysis_program_for_document(
+    uri: &str,
+    current_program: &Program,
+    state: &ServerState,
+) -> (Program, Vec<Diagnostic>) {
+    let Some(project_root) = project_root_for_uri(uri) else {
+        return (current_program.clone(), Vec::new());
+    };
+    let source_overlays = state.source_overlays();
+    match load_project_with_source_overlays(project_root, &source_overlays) {
+        Ok(project)
+            if project
+                .modules
+                .iter()
+                .any(|module| module.module == current_program.module_name()) =>
+        {
+            (project.program, Vec::new())
+        }
+        Ok(_) => (current_program.clone(), Vec::new()),
+        Err(diagnostics) => (current_program.clone(), diagnostics),
+    }
+}
+
+fn project_diagnostic_belongs_to_document(program: &Program, diagnostic: &Diagnostic) -> bool {
+    match diagnostic.node.as_deref() {
+        Some(node) if !node.is_empty() => node_belongs_to_program(program, node),
+        _ => !diagnostic.id.starts_with("PARSE_"),
+    }
+}
+
+fn diagnostic_belongs_to_document(program: &Program, diagnostic: &Diagnostic) -> bool {
+    match diagnostic.node.as_deref() {
+        Some(node) if !node.is_empty() => node_belongs_to_program(program, node),
+        _ => true,
+    }
+}
+
+fn lint_finding_belongs_to_document(program: &Program, finding: &LintFinding) -> bool {
+    node_belongs_to_program(program, &finding.node)
+}
+
+fn node_belongs_to_program(program: &Program, node: &str) -> bool {
+    span_for_node(program, node).is_some()
+        || program.module.as_deref().is_some_and(|module| {
+            node == format!("module:{module}")
+                || node.contains(&format!("{module}."))
+                || node.contains(&format!(":{module}:"))
+        })
 }
 
 fn compiler_diagnostic_to_lsp(text: &str, diagnostic: &Diagnostic) -> JsonValue {
@@ -906,6 +985,22 @@ fn target_for_uri(uri: &str) -> String {
 
 fn module_name_hint_for_uri(uri: &str) -> Option<String> {
     uri_to_path(uri).and_then(|path| module_name_from_sley_path(&path))
+}
+
+fn project_root_for_uri(uri: &str) -> Option<PathBuf> {
+    let path = uri_to_path(uri)?;
+    let mut directory = if path.is_dir() {
+        Some(path.as_path())
+    } else {
+        path.parent()
+    };
+    while let Some(current) = directory {
+        if current.join("sley.toml").exists() {
+            return Some(current.to_path_buf());
+        }
+        directory = current.parent();
+    }
+    None
 }
 
 fn uri_to_path(uri: &str) -> Option<PathBuf> {

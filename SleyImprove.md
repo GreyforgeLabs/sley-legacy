@@ -180,7 +180,7 @@ Rules:
   formatting, whitespace diff checks, full Rust tests, contract fixtures,
   release-manifest validation, conformance summary reporting, declared
   integration-test count drift, corpus conformance, packaged examples, CLI
-  smokes, the focused LSP integration test, deterministic workbench,
+  smokes, the focused LSP integration tests, deterministic workbench,
   agent-bench, raw-host and unchecked-result migration, docgen,
   sandbox-runner, and ZJX tool replays.
 - `sley-conformance report` carries explicit required corpus and smoke release
@@ -192,10 +192,11 @@ Rules:
   `.pre-commit-config.yaml` route hosted CI and local pre-commit checks through
   the same `make v1` gate.
 - `sley-lsp` exposes a stdio language-server loop over current compiler
-  surfaces: parse/check/lint diagnostics, formatting, document symbols,
-  declaration metadata hover, edit-plan code actions, and non-mutating
-  `sley.fix.preview` payloads whose editor preview operations and transactions
-  reuse the strict edit-plan graft contracts.
+  surfaces: parse/check/lint diagnostics with `sley.toml` project context and
+  open-buffer overlays, formatting, document symbols, declaration metadata
+  hover, edit-plan code actions, and non-mutating `sley.fix.preview` payloads
+  whose editor preview operations and transactions reuse the strict edit-plan
+  graft contracts.
 - `sley-workbench` exposes a local read-only inspection report and optional
   static HTML page over doctor/query/lint/plan/graph panels. Its report schema
   links embedded panel rows back to the source doctor, query, lint, edit-plan,

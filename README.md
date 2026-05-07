@@ -180,7 +180,8 @@ Implemented now:
   Tree-sitter corpus tests, highlight queries, generated parser artifacts, and
   fixture parsing over current examples plus accepted compiler corpus
 - in-tree `sley-lsp` stdio language-server bootstrap with full-document sync,
-  compiler diagnostics plus lint warnings, formatting edits, document symbols,
+  project-aware compiler diagnostics plus lint warnings over `sley.toml`
+  workspaces and open-buffer overlays, formatting edits, document symbols,
   declaration metadata hover, checked edit-plan code actions, and a
   non-mutating `sley.fix.preview` command for editor repair previews
 - in-tree `sley-workbench` local inspection bootstrap that emits
@@ -447,7 +448,7 @@ Implemented now:
 - repo-level `Makefile` with `make v1` wrapping fmt, whitespace diff check,
   full Rust tests, contract fixture and release-manifest validation,
   conformance summary reporting, corpus conformance, packaged example
-  conformance, CLI smoke conformance, the focused LSP integration test,
+  conformance, CLI smoke conformance, the focused LSP integration tests,
   deterministic utility replays for workbench, agent-bench, raw-host and
   unchecked-result migration, docgen, sandbox-runner, and ZJX tools, plus
   Tree-sitter syntax parsing

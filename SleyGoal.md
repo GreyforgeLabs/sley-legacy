@@ -53,7 +53,7 @@ Current verified surface:
   fixture and release-manifest validation, conformance summary reporting,
   corpus conformance, packaged example conformance, broad CLI smoke
   conformance, the lightweight `sley-ci smoke` wrapper probe, the focused LSP
-  integration test, deterministic utility replays for workbench, agent-bench,
+  integration tests, deterministic utility replays for workbench, agent-bench,
   raw-host and unchecked-result migration, docgen, sandbox-runner, and ZJX
   tools, and Tree-sitter syntax parsing.
 - The synthetic gold corpus currently has 19 accepted fixtures and 21 rejected
@@ -106,7 +106,8 @@ Current verified surface:
   trees, highlight query validation, and parsing of current `.sley` examples
   plus accepted compiler corpus fixtures.
 - `sley-lsp` is available as an in-tree stdio language-server bootstrap with
-  full-document sync, diagnostics, formatting, document symbols, declaration
+  full-document sync, project-aware diagnostics over `sley.toml` workspaces
+  with open-buffer overlays, formatting, document symbols, declaration
   metadata hover, checked edit-plan code actions, and a non-mutating
   `sley.fix.preview` command whose preview operations and transactions reuse
   the strict edit-plan graft contracts.
