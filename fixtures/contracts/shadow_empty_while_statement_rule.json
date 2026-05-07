@@ -34,7 +34,16 @@
       "linked": true,
       "target_kind": "task",
       "qualified_name": "app.empty_while.main",
-      "hint": "add loop body work or remove the empty loop after proving termination intent"
+      "hint": "add loop body work or remove the empty loop after proving termination intent",
+      "plan_command": [
+        "sley",
+        "plan",
+        "--json",
+        "--graft-templates",
+        "--template-surface",
+        "block:task:app.empty_while.main:stmt:2",
+        "examples/empty_while_statement.sley"
+      ]
     }
   ],
   "diagnostics": [],

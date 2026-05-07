@@ -260,6 +260,18 @@ fn shadow_links_lint_findings_to_query_rows() {
         report.pointer("/lint_links/0/node"),
         Some(&json!("task:app.tasks.orphan"))
     );
+    assert_eq!(
+        report.pointer("/lint_links/0/plan_command"),
+        Some(&json!([
+            "sley",
+            "plan",
+            "--json",
+            "--graft-templates",
+            "--template-surface",
+            "task:app.tasks.orphan",
+            "examples/unused_private_task.sley"
+        ]))
+    );
 }
 
 #[test]
@@ -313,5 +325,17 @@ fn shadow_links_statement_lint_findings_to_owner_task() {
     assert_eq!(
         report.pointer("/lint_links/0/node"),
         Some(&json!("block:task:app.empty_while.main:stmt:2"))
+    );
+    assert_eq!(
+        report.pointer("/lint_links/0/plan_command"),
+        Some(&json!([
+            "sley",
+            "plan",
+            "--json",
+            "--graft-templates",
+            "--template-surface",
+            "block:task:app.empty_while.main:stmt:2",
+            "examples/empty_while_statement.sley"
+        ]))
     );
 }

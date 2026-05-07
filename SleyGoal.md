@@ -157,8 +157,9 @@ Current verified surface:
   `schema: "sley.shadow.report.v0"` over checked `sley.query.report.v0` and
   `sley.lint.report.v0` data for single-file and project-root targets; it
   supports module- and rule-scoped replay, links lint findings to query rows,
-  blocks unknown modules explicitly, and derives seeded `--cap` args for
-  effectful tasks while leaving Rust Loom as the semantic oracle.
+  emits focused `sley plan --graft-templates` commands for lint nodes, blocks
+  unknown modules explicitly, and derives seeded `--cap` args for effectful
+  tasks while leaving Rust Loom as the semantic oracle.
 - `sley-agent-bench` is available as an in-tree deterministic repair-loop
   benchmark with `schema: "sley.agent_bench.report.v0"` over JSON inspection,
   lint failure, checked edit-plan repair selection, `sley fix --write`, strict

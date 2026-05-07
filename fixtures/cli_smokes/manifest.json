@@ -13134,7 +13134,9 @@
           { "pointer": "/summary/unlinked_lint_finding_count", "value": 0 },
           { "pointer": "/lint_links/0/linked", "value": true },
           { "pointer": "/lint_links/0/target_kind", "value": "task" },
-          { "pointer": "/lint_links/0/qualified_name", "value": "app.tasks.orphan" }
+          { "pointer": "/lint_links/0/qualified_name", "value": "app.tasks.orphan" },
+          { "pointer": "/lint_links/0/plan_command/1", "value": "plan" },
+          { "pointer": "/lint_links/0/plan_command/5", "value": "task:app.tasks.orphan" }
         ]
       }
     },
@@ -13167,7 +13169,9 @@
           { "pointer": "/summary/unlinked_lint_finding_count", "value": 0 },
           { "pointer": "/lint_links/0/linked", "value": true },
           { "pointer": "/lint_links/0/target_kind", "value": "task" },
-          { "pointer": "/lint_links/0/qualified_name", "value": "app.empty_while.main" }
+          { "pointer": "/lint_links/0/qualified_name", "value": "app.empty_while.main" },
+          { "pointer": "/lint_links/0/plan_command/1", "value": "plan" },
+          { "pointer": "/lint_links/0/plan_command/5", "value": "block:task:app.empty_while.main:stmt:2" }
         ]
       }
     },

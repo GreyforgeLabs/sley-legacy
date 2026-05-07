@@ -34,7 +34,16 @@
       "linked": true,
       "target_kind": "task",
       "qualified_name": "app.tasks.orphan",
-      "hint": "call it, export it, or delete it"
+      "hint": "call it, export it, or delete it",
+      "plan_command": [
+        "sley",
+        "plan",
+        "--json",
+        "--graft-templates",
+        "--template-surface",
+        "task:app.tasks.orphan",
+        "examples/unused_private_task.sley"
+      ]
     }
   ],
   "diagnostics": [],

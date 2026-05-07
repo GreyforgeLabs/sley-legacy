@@ -99,6 +99,7 @@ struct LintLink {
     #[serde(skip_serializing_if = "Option::is_none")]
     qualified_name: Option<String>,
     hint: String,
+    plan_command: Vec<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -193,7 +194,7 @@ fn build_shadow_report(args: ReportArgs) -> ShadowReport {
     let lint_links = lint
         .findings
         .iter()
-        .map(|finding| link_lint_finding(finding, &index))
+        .map(|finding| link_lint_finding(finding, &index, &target))
         .collect::<Vec<_>>();
     let linked_lint_finding_count = lint_links.iter().filter(|link| link.linked).count();
     let unlinked_lint_finding_count = lint_links.len() - linked_lint_finding_count;
@@ -313,7 +314,7 @@ fn build_link_index(query: &QueryReport) -> LinkIndex {
     index
 }
 
-fn link_lint_finding(finding: &LintFinding, index: &LinkIndex) -> LintLink {
+fn link_lint_finding(finding: &LintFinding, index: &LinkIndex, target_path: &str) -> LintLink {
     let target = find_decl_target(&finding.node, index)
         .or_else(|| {
             parse_import_owner_module(&finding.node)
@@ -349,6 +350,15 @@ fn link_lint_finding(finding: &LintFinding, index: &LinkIndex) -> LintLink {
         target_kind,
         qualified_name,
         hint: finding.hint.clone(),
+        plan_command: vec![
+            "sley".to_string(),
+            "plan".to_string(),
+            "--json".to_string(),
+            "--graft-templates".to_string(),
+            "--template-surface".to_string(),
+            finding.node.clone(),
+            target_path.to_string(),
+        ],
     }
 }
 
