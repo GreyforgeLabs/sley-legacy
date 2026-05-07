@@ -7,7 +7,8 @@
     "lint": "sley.lint.report.v0"
   },
   "filters": {
-    "module": null
+    "module": null,
+    "rules": []
   },
   "summary": {
     "module_count": 2,

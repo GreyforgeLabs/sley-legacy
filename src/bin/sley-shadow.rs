@@ -8,7 +8,7 @@ use serde::Serialize;
 use sley::Program;
 use sley::checker::{check_program, has_errors};
 use sley::diagnostics::Diagnostic;
-use sley::lint::{LINT_REPORT_SCHEMA, LintFinding, LintOptions, build_lint_report};
+use sley::lint::{LINT_REPORT_SCHEMA, LintFinding, LintOptions, LintRule, build_lint_report};
 use sley::parser::parse_program;
 use sley::project::load_project;
 use sley::query::{QUERY_REPORT_SCHEMA, QueryKind, QueryOptions, QueryReport, build_query_report};
@@ -35,6 +35,8 @@ struct ReportArgs {
     json: bool,
     #[arg(long)]
     module: Option<String>,
+    #[arg(long)]
+    rule: Vec<LintRule>,
     target: PathBuf,
 }
 
@@ -61,6 +63,7 @@ struct ShadowSourceSchemas {
 #[derive(Debug, Serialize)]
 struct ShadowFilters {
     module: Option<String>,
+    rules: Vec<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -143,6 +146,11 @@ fn build_shadow_report(args: ReportArgs) -> ShadowReport {
     let target = path_string(&args.target);
     let filters = ShadowFilters {
         module: args.module.clone(),
+        rules: args
+            .rule
+            .iter()
+            .map(|rule| rule.as_str().to_string())
+            .collect(),
     };
     let program = match load_target_program(&args.target) {
         Ok(program) => program,
@@ -165,8 +173,8 @@ fn build_shadow_report(args: ReportArgs) -> ShadowReport {
     let lint = build_lint_report(
         &program,
         LintOptions {
+            rules: args.rule,
             module: args.module,
-            ..LintOptions::default()
         },
     );
     let authority_seeds = build_authority_seeds(&query);
@@ -412,10 +420,15 @@ fn print_json(report: &ShadowReport) -> Result<()> {
 
 fn print_human(report: &ShadowReport) {
     println!(
-        "sley-shadow report status={} target={} module={} modules={} tasks={} effectful_tasks={} calls={} lint_findings={} linked={} unlinked={} authority_seeds={} issues={}",
+        "sley-shadow report status={} target={} module={} rules={} modules={} tasks={} effectful_tasks={} calls={} lint_findings={} linked={} unlinked={} authority_seeds={} issues={}",
         report.status,
         report.target,
         report.filters.module.as_deref().unwrap_or("*"),
+        if report.filters.rules.is_empty() {
+            "*".to_string()
+        } else {
+            report.filters.rules.join(",")
+        },
         report.summary.module_count,
         report.summary.task_count,
         report.summary.effectful_task_count,

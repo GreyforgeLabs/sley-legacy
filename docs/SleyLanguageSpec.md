@@ -585,7 +585,7 @@ sley query --json --kind tasks --module app.main <target>
 sley query --json --kind types --module app.main <target>
 sley query --json --kind effects --module app.main <target>
 sley lint --json <target>
-sley-shadow report --json [--module <module>] <target>
+sley-shadow report --json [--module <module>] [--rule <rule>] <target>
 sley deploy --json --dry-run [--artifacts-dir <dir>] <target>
 sley trace --json <target>
 sley seal --json <target>
@@ -814,7 +814,7 @@ consumes checked `sley.query.report.v0` and `sley.lint.report.v0` data. The
 report links lint findings back to task/type/effect/module rows when possible
 and derives seeded `--cap` argument fragments for effectful tasks. The target
 may be one `.sley` file or a project root loaded through `sley.toml`; `--module
-<module>` narrows both the query and lint replay to that module. It is
+<module>` and repeated `--rule <rule>` narrow the lint/query replay. It is
 non-authoritative; Rust Loom remains the semantic oracle.
 
 The local agent-loop benchmark is backed by the in-tree `sley-agent-bench`
