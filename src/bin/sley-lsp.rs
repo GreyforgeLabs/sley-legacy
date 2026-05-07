@@ -138,6 +138,9 @@ fn handle_message<W: Write>(
         "textDocument/didOpen" => handle_did_open(params, state, writer)?,
         "textDocument/didChange" => handle_did_change(params, state, writer)?,
         "textDocument/didClose" => handle_did_close(params, state, writer)?,
+        "workspace/didChangeWatchedFiles" => {
+            handle_did_change_watched_files(params, state, writer)?
+        }
         "textDocument/formatting" => {
             if let Some(id) = id {
                 send_response(writer, id, handle_formatting(params, state))?;
@@ -277,6 +280,12 @@ fn initialize_result() -> JsonValue {
             },
             "executeCommandProvider": {
                 "commands": [FIX_PREVIEW_COMMAND]
+            },
+            "workspace": {
+                "workspaceFolders": {
+                    "supported": true,
+                    "changeNotifications": true
+                }
             }
         },
         "serverInfo": {
@@ -357,6 +366,14 @@ fn handle_did_close<W: Write>(
             "diagnostics": []
         }),
     )?;
+    publish_all_open_document_diagnostics(writer, state)
+}
+
+fn handle_did_change_watched_files<W: Write>(
+    _params: JsonValue,
+    state: &ServerState,
+    writer: &mut W,
+) -> Result<()> {
     publish_all_open_document_diagnostics(writer, state)
 }
 

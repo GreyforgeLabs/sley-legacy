@@ -162,12 +162,12 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
      framing, tracks full-document buffers, publishes compiler diagnostics plus
      lint warnings with `sley.toml` project context and unsaved open-buffer
      overlays, republishes diagnostics for all open project buffers after
-     open-buffer changes, returns formatting edits, document symbols, folding
-     ranges, declaration metadata and resolved project task-call hover,
-     workspace symbols, project completions, selection ranges, import/call
-     definition jumps, project task signature help, project task parameter
-     inlay hints, exact-range task references, document highlights, import
-     document links, prepared
+     open-buffer and watched project-file changes, returns formatting edits,
+     document symbols, folding ranges, declaration metadata and resolved
+     project task-call hover, workspace symbols, project completions, selection
+     ranges, import/call definition jumps, project task signature help,
+     project task parameter inlay hints, exact-range task references,
+     document highlights, import document links, prepared
      cursor-aware project task rename edits, edit-plan code actions, and
      exposes `sley.fix.preview` as a non-mutating preview command.
      `tests/sley_lsp.rs` drives the server over real JSON-RPC frames.

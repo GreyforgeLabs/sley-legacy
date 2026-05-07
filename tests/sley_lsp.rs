@@ -90,6 +90,10 @@ fn lsp_publishes_diagnostics_formats_symbols_and_previews_code_actions() {
         initialized.pointer("/result/capabilities/renameProvider/prepareProvider"),
         Some(&json!(true))
     );
+    assert_eq!(
+        initialized.pointer("/result/capabilities/workspace/workspaceFolders/supported"),
+        Some(&json!(true))
+    );
 
     write_lsp(
         &mut stdin,
@@ -457,6 +461,49 @@ export task other -> Text {
     assert!(
         !diagnostic_codes(&diagnostics).contains(&"UNKNOWN_TASK"),
         "valid imported task should resolve with project context: {diagnostics:#}"
+    );
+
+    let disk_changed_pipeline_source =
+        pipeline_source.replace("export task message", "export task absent");
+    fs::write(&pipeline_path, &disk_changed_pipeline_source)
+        .expect("write changed LSP pipeline module");
+    write_lsp(
+        &mut stdin,
+        json!({
+            "jsonrpc": "2.0",
+            "method": "workspace/didChangeWatchedFiles",
+            "params": {
+                "changes": [{
+                    "uri": pipeline_uri,
+                    "type": 2
+                }]
+            }
+        }),
+    );
+    let watched_diagnostics = read_diagnostics_for_uri(&mut reader, &main_uri);
+    assert!(
+        diagnostic_codes(&watched_diagnostics).contains(&"UNKNOWN_TASK"),
+        "watched project-file changes should refresh dependent diagnostics: {watched_diagnostics:#}"
+    );
+
+    fs::write(&pipeline_path, pipeline_source).expect("restore LSP pipeline module");
+    write_lsp(
+        &mut stdin,
+        json!({
+            "jsonrpc": "2.0",
+            "method": "workspace/didChangeWatchedFiles",
+            "params": {
+                "changes": [{
+                    "uri": pipeline_uri,
+                    "type": 2
+                }]
+            }
+        }),
+    );
+    let restored_diagnostics = read_diagnostics_for_uri(&mut reader, &main_uri);
+    assert!(
+        !diagnostic_codes(&restored_diagnostics).contains(&"UNKNOWN_TASK"),
+        "restored watched project-file changes should clear dependent diagnostics: {restored_diagnostics:#}"
     );
 
     write_lsp(
