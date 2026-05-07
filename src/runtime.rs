@@ -972,6 +972,7 @@ fn eval_host_call(
             args,
             locals,
             gates,
+            &gate,
             DbQueryMode::RawOne,
         ),
         "db.query" => eval_db_query(
@@ -982,6 +983,7 @@ fn eval_host_call(
             args,
             locals,
             gates,
+            &gate,
             DbQueryMode::RawMany,
         ),
         "db.try_query_one" => eval_db_query(
@@ -992,6 +994,7 @@ fn eval_host_call(
             args,
             locals,
             gates,
+            &gate,
             DbQueryMode::ResultOne,
         ),
         "db.try_query" => eval_db_query(
@@ -1002,9 +1005,12 @@ fn eval_host_call(
             args,
             locals,
             gates,
+            &gate,
             DbQueryMode::ResultMany,
         ),
-        "db.try_insert" => eval_db_insert(program, task, expr, callee_name, args, locals, gates),
+        "db.try_insert" => {
+            eval_db_insert(program, task, expr, callee_name, args, locals, gates, &gate)
+        }
         "secrets.try_get" => eval_secret_get(program, task, expr, callee_name, args, locals, gates),
         "deploy.try_stage" => {
             eval_deploy_stage(program, task, expr, callee_name, args, locals, gates)
@@ -1121,6 +1127,7 @@ fn eval_db_query(
     args: &[Expr],
     locals: &HashMap<String, Value>,
     gates: &mut RuntimeGates,
+    gate: &RuntimeGate,
     mode: DbQueryMode,
 ) -> Result<EvalOutcome, Vec<Diagnostic>> {
     if args.is_empty() {
@@ -1148,12 +1155,7 @@ fn eval_db_query(
     } else {
         None
     };
-    enforce_gate_scope(
-        gates.get("DatabaseRead"),
-        "database table",
-        &parsed.table,
-        expr,
-    )?;
+    enforce_gate_scope(Some(gate), "database table", &parsed.table, expr)?;
     let rows = match gates.db_rows(&parsed.table) {
         Some(rows) => rows,
         None if mode.returns_result() => {
@@ -1227,6 +1229,7 @@ fn eval_db_insert(
     args: &[Expr],
     locals: &HashMap<String, Value>,
     gates: &mut RuntimeGates,
+    gate: &RuntimeGate,
 ) -> Result<EvalOutcome, Vec<Diagnostic>> {
     if args.len() != 2 {
         return host_arity_error(expr, callee_name, 2, args.len()).map(EvalOutcome::value);
@@ -1240,7 +1243,7 @@ fn eval_db_insert(
             "database table name cannot be empty",
         ));
     }
-    enforce_gate_scope(gates.get("DatabaseWrite"), "database table", &table, expr)?;
+    enforce_gate_scope(Some(gate), "database table", &table, expr)?;
 
     let row = value_or_propagate!(eval_expr(program, task, &args[1], locals, gates));
     let row = match row {
