@@ -2860,16 +2860,21 @@ fn graph_slice_move_templates(
             || affordance.target.starts_with(&take_prefix)
     }) {
         let target_kind = affordance.target_kind.clone();
-        templates.push(EditPlanGraftTemplate {
-            kind: format!("move_{target_kind}"),
-            reason: format!(
-                "move or reorder this {target_kind} using graph-slice MoveNode affordance data"
-            ),
-            surface: surface.id.clone(),
-            operation: affordance.operation,
-            editable_json_pointers: affordance.editable_json_pointers,
-        });
+        if move_affordance_checks(program, &affordance.operation) {
+            templates.push(EditPlanGraftTemplate {
+                kind: format!("move_{target_kind}"),
+                reason: format!(
+                    "move or reorder this {target_kind} using graph-slice MoveNode affordance data"
+                ),
+                surface: surface.id.clone(),
+                operation: affordance.operation,
+                editable_json_pointers: affordance.editable_json_pointers,
+            });
+        }
         for destination in affordance.destinations {
+            if !move_affordance_checks(program, &destination.operation) {
+                continue;
+            }
             templates.push(EditPlanGraftTemplate {
                 kind: format!("move_{target_kind}_destination"),
                 reason: format!(
@@ -2882,6 +2887,10 @@ fn graph_slice_move_templates(
         }
     }
     templates
+}
+
+fn move_affordance_checks(program: &Program, operation: &JsonValue) -> bool {
+    graft_operation_checks(program, operation, Some("agent:plan-move-affordance"))
 }
 
 fn graph_slice_delete_templates(

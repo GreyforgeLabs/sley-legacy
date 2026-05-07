@@ -2348,6 +2348,53 @@ task main -> Int {
 }
 
 #[test]
+fn edit_plan_move_templates_omit_unchecked_destinations() {
+    let source = r#"
+module app.plan
+
+task main -> Int {
+  if true {
+    bind scratch = 1
+  }
+  return 1
+}
+"#;
+    let program = parse_program(source).expect("parse move filter fixture");
+    let raw_slice = slice_symbol_graph(&program, "task:app.plan.main").expect("slice task graph");
+    assert!(
+        raw_slice.move_affordances.iter().any(|affordance| {
+            affordance.target == "block:task:app.plan.main:stmt:1"
+                && affordance
+                    .destinations
+                    .iter()
+                    .any(|destination| destination.parent == "block:task:app.plan.main:stmt:0:then")
+        }),
+        "raw slice should expose the broad return move destination before plan filtering"
+    );
+
+    let report = build_edit_plan_report_with_options(
+        "app.plan",
+        Ok(program),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("task:app.plan.main".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "warnings");
+    assert!(
+        report.graft_templates.iter().all(|template| {
+            !(template.kind == "move_statement_destination"
+                && template.operation.pointer("/target")
+                    == Some(&serde_json::json!("block:task:app.plan.main:stmt:1")))
+        }),
+        "plan should omit return move destinations that fail checked graft validation: {:#?}",
+        report.graft_templates
+    );
+}
+
+#[test]
 fn edit_plan_graft_templates_include_checked_delete_affordances() {
     let source = r#"
 module app.plan
@@ -9655,11 +9702,11 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/integration_test_count"),
-        Some(&serde_json::json!(316))
+        Some(&serde_json::json!(317))
     );
     assert_eq!(
         report_json.pointer("/summary/declared_integration_test_count"),
-        Some(&serde_json::json!(316))
+        Some(&serde_json::json!(317))
     );
     assert_eq!(
         report_json.pointer("/summary/test_count_matches_declared"),
@@ -9671,7 +9718,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/tests/integration_test_count"),
-        Some(&serde_json::json!(316))
+        Some(&serde_json::json!(317))
     );
     assert_eq!(
         report_json.pointer("/tests/declared_matches_actual"),
