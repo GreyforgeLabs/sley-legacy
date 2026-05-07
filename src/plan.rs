@@ -27,6 +27,7 @@ use crate::lint::{
     redundant_boolean_if_statement_replacement_source,
     same_branch_if_expression_replacement_source, same_branch_if_statement_replacement_source,
     self_comparison_expression_replacement_source,
+    unchecked_result_binding_statement_replacement_source,
     unused_effectful_binding_statement_replacement_source,
 };
 use crate::query::{QueryKind, QueryOptions, QueryReport, QueryTakeSummary, build_query_report};
@@ -571,6 +572,10 @@ fn lint_graft_templates(
     ));
     templates.extend(lint_raw_host_adapter_templates(program, lint_report));
     templates.extend(lint_unchecked_result_templates(program, lint_report));
+    templates.extend(lint_unchecked_result_binding_templates(
+        program,
+        lint_report,
+    ));
     templates.extend(lint_unused_effectful_binding_templates(
         program,
         lint_report,
@@ -696,6 +701,7 @@ fn is_lint_repair_kind(kind: &str) -> bool {
             | "add_module_declaration"
             | "migrate_raw_host_adapter"
             | "propagate_unchecked_result"
+            | "propagate_unchecked_result_binding"
             | "drop_unused_effectful_binding_value"
             | "qualify_imported_call"
             | "delete_unused_pure_binding"
@@ -2052,6 +2058,40 @@ fn lint_unchecked_result_templates(
                 kind: "propagate_unchecked_result".to_string(),
                 reason:
                     "propagate the discarded Result with `?` when the owning task can return Result"
+                        .to_string(),
+                surface: finding.node.clone(),
+                operation,
+                editable_json_pointers: vec!["/payload/source".to_string()],
+            })
+        })
+        .collect()
+}
+
+fn lint_unchecked_result_binding_templates(
+    program: &Program,
+    lint_report: &LintReport,
+) -> Vec<EditPlanGraftTemplate> {
+    lint_report
+        .findings
+        .iter()
+        .filter(|finding| finding.id == "UNCHECKED_RESULT_BINDING")
+        .filter_map(|finding| {
+            let replacement =
+                unchecked_result_binding_statement_replacement_source(program, &finding.node)?;
+            let operation = json!({
+                "op": "ReplaceStatement",
+                "target": finding.node,
+                "payload": {
+                    "source": replacement
+                }
+            });
+            if !replace_affordance_checks(program, &operation) {
+                return None;
+            }
+            Some(EditPlanGraftTemplate {
+                kind: "propagate_unchecked_result_binding".to_string(),
+                reason:
+                    "propagate the fallible call with `?` while dropping the unread Result binding"
                         .to_string(),
                 surface: finding.node.clone(),
                 operation,
