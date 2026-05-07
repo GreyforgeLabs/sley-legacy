@@ -13369,6 +13369,49 @@
       }
     },
     {
+      "name": "verify_agent_deploy_pipeline_missing_runtime_gates_json",
+      "args": [
+        "verify",
+        "--json",
+        "--deny-warnings",
+        "examples/agent_deploy_pipeline.sley"
+      ],
+      "covers": [
+        "cli:verify",
+        "dogfood:agent-deploy-pipeline",
+        "diagnostic:RUNTIME_CAPABILITY_REQUIRED",
+        "json:sley.verify.report.v0",
+        "readiness:verify-runtime-retry",
+        "runtime:seeded-host-authority"
+      ],
+      "expect": {
+        "success": false,
+        "stderr_contains": ["verify blocked"],
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.verify.report.v0" },
+          { "pointer": "/status", "value": "blocked" },
+          { "pointer": "/summary/runtime_status", "value": "failed" },
+          { "pointer": "/runtime/status", "value": "failed" },
+          { "pointer": "/runtime/diagnostics/0/id", "value": "RUNTIME_CAPABILITY_REQUIRED" },
+          { "pointer": "/next_actions/0/kind", "value": "verify_runtime_with_gates" },
+          { "pointer": "/next_actions/0/command/1", "value": "verify" },
+          { "pointer": "/next_actions/0/command/5", "value": "SecretRead" },
+          { "pointer": "/next_actions/0/command/11", "value": "Deploy" },
+          { "pointer": "/next_actions/0/command/12", "value": "--secret" },
+          { "pointer": "/next_actions/0/command/17", "value": "profile ready" },
+          { "pointer": "/next_actions/0/command/20", "value": "plan approved" },
+          { "pointer": "/next_actions/0/command/23", "value": "staged" },
+          { "pointer": "/next_actions/1/kind", "value": "run_runtime_with_gates" },
+          { "pointer": "/next_actions/1/command/1", "value": "run" },
+          { "pointer": "/next_actions/1/command/4", "value": "SecretRead" },
+          { "pointer": "/next_actions/1/command/10", "value": "Deploy" },
+          { "pointer": "/next_actions/1/command/16", "value": "profile ready" },
+          { "pointer": "/next_actions/1/command/19", "value": "plan approved" },
+          { "pointer": "/next_actions/1/command/22", "value": "staged" }
+        ]
+      }
+    },
+    {
       "name": "deploy_agent_deploy_pipeline_dry_run_json",
       "args": [
         "deploy",

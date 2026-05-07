@@ -167,6 +167,7 @@ const DEFAULT_SMOKE_TAGS: &[&str] = &[
     "readiness:migrate-report",
     "readiness:sandbox-replay",
     "readiness:shadow-helper",
+    "readiness:verify-runtime-retry",
     "readiness:workbench-inspection",
     "readiness:zjx-tool-inspect",
     "runtime:seeded-host-authority",

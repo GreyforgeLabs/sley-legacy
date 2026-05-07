@@ -322,8 +322,9 @@ Current verified surface:
   `sley fix --dry-run` previews carrying explicit `write_command` vectors with
   a staged write-and-verify smoke for a previewed repair plus a project-level
   previewed unused-import write-and-verify smoke and generated scaffold
-  quickstarts re-verified with local or seeded authority, plus ready-state
-  doctor `verify_gate` next-actions with explicit caps and deterministic host
+  quickstarts re-verified with local or seeded authority, a blocked-verify CLI
+  smoke that locks retry next-actions with inferred deterministic gates and host
+  seeds, ready-state doctor `verify_gate` next-actions with explicit caps and deterministic host
   seeds before entrypoint runs and deploy-capable doctor
   and passed-verify `prepare_deploy_package` dry-run handoffs that preserve
   exact verified runtime args when supplied, plus runtime-failed verify retry
