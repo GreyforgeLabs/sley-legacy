@@ -63,6 +63,10 @@
         "stdout_json": {
           "type": "array",
           "items": { "$ref": "#/$defs/jsonExpectation" }
+        },
+        "stdout_json_absent": {
+          "type": "array",
+          "items": { "type": "string" }
         }
       },
       "additionalProperties": false

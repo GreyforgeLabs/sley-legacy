@@ -714,8 +714,9 @@ with the expected diagnostic ids from their sidecars.
 
 The executable CLI conformance smokes live under `fixtures/cli_smokes/`. Their
 `manifest.json` lists stable commands, working-directory mode, optional temp
-setup files, coverage tags, and stdout expectations. The integration suite runs
-the manifest against the built `sley` binary, while `sley-ci smoke --json
+setup files, coverage tags, stdout substring checks, JSON pointer/value checks,
+and JSON pointer absence checks. The integration suite runs the manifest
+against the built `sley` binary, while `sley-ci smoke --json
 --repo-root . fixtures/cli_smokes` accepts the suite directory directly. The
 lightweight `fixtures/ci_smoke_probe` manifest separately locks the `sley-ci
 smoke` wrapper over parse, query, graft dry-run, and seeded multi-capability

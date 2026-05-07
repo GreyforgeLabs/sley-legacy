@@ -103,6 +103,8 @@ struct CliSmokeExpectation {
     stderr_contains: Vec<String>,
     #[serde(default)]
     stdout_json: Vec<CliSmokeJsonExpectation>,
+    #[serde(default)]
+    stdout_json_absent: Vec<String>,
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -431,7 +433,7 @@ fn cli_smoke_manifest_commands_match_stable_release_surface() {
                 case.name
             );
         }
-        if !case.expect.stdout_json.is_empty() {
+        if !case.expect.stdout_json.is_empty() || !case.expect.stdout_json_absent.is_empty() {
             let json: serde_json::Value = serde_json::from_str(&stdout).unwrap_or_else(|error| {
                 panic!("CLI smoke {} stdout JSON: {error}\n{stdout}", case.name)
             });
@@ -446,6 +448,15 @@ fn cli_smoke_manifest_commands_match_stable_release_surface() {
                     actual, &expectation.value,
                     "CLI smoke {} JSON pointer {} mismatch",
                     case.name, expectation.pointer
+                );
+            }
+            for pointer in &case.expect.stdout_json_absent {
+                assert!(
+                    json.pointer(pointer).is_none(),
+                    "CLI smoke {} JSON pointer {} should be absent\njson:\n{}",
+                    case.name,
+                    pointer,
+                    json
                 );
             }
         }
@@ -9694,7 +9705,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/smoke_case_count"),
-        Some(&serde_json::json!(403))
+        Some(&serde_json::json!(404))
     );
     assert_eq!(
         report_json.pointer("/summary/example_source_count"),
@@ -10448,6 +10459,9 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
         "stdout_json": [
           { "pointer": "/schema", "value": "sley.ast.program.v0" },
           { "pointer": "/tasks/0/name", "value": "main" }
+        ],
+        "stdout_json_absent": [
+          "/tasks/99"
         ]
       }
     },
@@ -21148,6 +21162,14 @@ fn assert_cli_smoke_manifest_is_well_formed(manifest: &CliSmokeManifest) {
                 "CLI smoke {} JSON pointer {} must be a valid document or absolute pointer",
                 case.name,
                 expectation.pointer
+            );
+        }
+        for pointer in &case.expect.stdout_json_absent {
+            assert!(
+                pointer.is_empty() || pointer.starts_with('/'),
+                "CLI smoke {} absent JSON pointer {} must be a valid document or absolute pointer",
+                case.name,
+                pointer
             );
         }
     }
