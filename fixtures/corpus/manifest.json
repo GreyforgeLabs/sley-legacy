@@ -168,6 +168,13 @@
       ]
     },
     {
+      "path": "accepted/result_flow.sley",
+      "covers": [
+        "language:result-flow",
+        "formatter:round-trip"
+      ]
+    },
+    {
       "path": "accepted/authority/database_aliases.sley",
       "covers": [
         "accepted:DatabaseAlias",
@@ -317,6 +324,13 @@
       "covers": [
         "language:missing-return",
         "diagnostic:MISSING_RETURN"
+      ]
+    },
+    {
+      "path": "rejected/question_requires_result.sley",
+      "covers": [
+        "language:result-flow",
+        "diagnostic:QUESTION_REQUIRES_RESULT"
       ]
     },
     {

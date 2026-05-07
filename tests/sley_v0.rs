@@ -10306,11 +10306,11 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/corpus_accepted_count"),
-        Some(&serde_json::json!(19))
+        Some(&serde_json::json!(20))
     );
     assert_eq!(
         report_json.pointer("/summary/corpus_rejected_count"),
-        Some(&serde_json::json!(21))
+        Some(&serde_json::json!(22))
     );
     assert_eq!(
         report_json.pointer("/corpus/missing_required_tags"),
@@ -10324,6 +10324,13 @@ fn conformance_report_summarizes_release_surface() {
                 .iter()
                 .any(|tag| tag == "language:type-alias-transparent")),
         "conformance report should require transparent type alias corpus coverage"
+    );
+    assert!(
+        report_json
+            .pointer("/corpus/required_tags")
+            .and_then(|value| value.as_array())
+            .is_some_and(|tags| tags.iter().any(|tag| tag == "language:result-flow")),
+        "conformance report should require Result flow corpus coverage"
     );
     assert!(
         report_json
@@ -11535,7 +11542,7 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     );
     assert_eq!(
         corpus_json.pointer("/summary/step_count"),
-        Some(&serde_json::json!(59))
+        Some(&serde_json::json!(62))
     );
     assert_eq!(
         corpus_json.pointer("/steps/0/name"),
@@ -11554,13 +11561,13 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
         ))
     );
     assert_eq!(
-        corpus_json.pointer("/steps/38/name"),
+        corpus_json.pointer("/steps/40/name"),
         Some(&serde_json::json!(
             "rejected_check:rejected/authority/missing_database_read_effect.sley"
         ))
     );
     assert_eq!(
-        corpus_json.pointer("/steps/38/stdout_schema"),
+        corpus_json.pointer("/steps/40/stdout_schema"),
         Some(&serde_json::json!("sley.diagnostics.report.v0"))
     );
 
@@ -11586,7 +11593,7 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     );
     assert_eq!(
         corpus_dir_json.pointer("/summary/step_count"),
-        Some(&serde_json::json!(59))
+        Some(&serde_json::json!(62))
     );
 
     let examples = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
@@ -22239,10 +22246,12 @@ fn assert_corpus_manifest_has_release_coverage(manifest: &CorpusManifest) {
         "diagnostic:DUPLICATE_TYPE",
         "diagnostic:DUPLICATE_EFFECT",
         "diagnostic:MISSING_RETURN",
+        "diagnostic:QUESTION_REQUIRES_RESULT",
         "diagnostic:TYPE_MISMATCH",
         "diagnostic:UNKNOWN_IDENTIFIER",
         "authority:transitive-effects",
         "language:module-namespace",
+        "language:result-flow",
         "language:type-alias",
         "language:type-alias-transparent",
         "formatter:round-trip",

@@ -1,0 +1,5 @@
+module corpus.rejected.question_requires_result
+
+task main -> Unit {
+  Ok(41)?
+}

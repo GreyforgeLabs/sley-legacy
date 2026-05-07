@@ -57,11 +57,13 @@ Current verified surface:
   replays for workbench, agent-bench, raw-host, unchecked-result expression,
   and unchecked-result binding migration,
   docgen, sandbox-runner, and ZJX tools, and Tree-sitter syntax parsing.
-- The synthetic gold corpus currently has 19 accepted fixtures and 21 rejected
+- The synthetic gold corpus currently has 20 accepted fixtures and 22 rejected
   fixtures, including accepted/rejected split-task agent authority cases that
   lock transitive effect propagation for deploy, spend, and data mutation, plus
-  module namespace fixtures that lock exported declaration success, transparent
-  non-record type alias fixtures, and duplicate type/effect/task diagnostics.
+  result-flow fixtures that lock `?` propagation acceptance and
+  `QUESTION_REQUIRES_RESULT` rejection, module namespace fixtures that lock
+  exported declaration success, transparent non-record type alias fixtures, and
+  duplicate type/effect/task diagnostics.
 - `.github/actions/sley-v1/action.yml`, `.github/workflows/v1.yml`, and
   `.pre-commit-config.yaml` run the `make v1` gate so local and hosted checks
   use the same release surface.

@@ -284,6 +284,9 @@ Rules:
 - The synthetic gold corpus now includes accepted/rejected module namespace
   fixtures for exported declarations and duplicate type/effect/task
   diagnostics.
+- The synthetic gold corpus now includes accepted/rejected Result-flow
+  fixtures for checked `?` propagation and `QUESTION_REQUIRES_RESULT`
+  diagnostics.
 - `sley-ci smoke --repo-root .` now resolves the repo root before `{repo}`
   expansion and accepts either a smoke directory or `manifest.json`, keeping
   temp-cwd smoke cases portable across direct agent invocation and the `make v1`
