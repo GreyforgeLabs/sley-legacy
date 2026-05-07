@@ -177,7 +177,8 @@ Rules:
   release-manifest validation, conformance summary reporting, declared
   integration-test count drift, corpus conformance, packaged examples, CLI
   smokes, the focused LSP integration test, deterministic workbench,
-  agent-bench, migration, docgen, sandbox-runner, and ZJX tool replays.
+  agent-bench, raw-host and unchecked-result migration, docgen,
+  sandbox-runner, and ZJX tool replays.
 - `sley-conformance report --require-public-release-ready` is the explicit
   public-cut gate for license and repository metadata; ordinary executable v1
   conformance remains advisory on those operator decisions.
