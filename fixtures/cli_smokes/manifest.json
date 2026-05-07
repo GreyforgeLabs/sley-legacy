@@ -11595,6 +11595,95 @@
       }
     },
     {
+      "name": "check_type_alias_transparency_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/type-alias/alias.sley",
+          "content": "module app.alias\n\ntype Score = Int\ntype Scores = List<Score>\n\ntask main -> Score {\n  bind scores: Scores = [40, 2]\n  return scores[0] + scores[1]\n}\n"
+        }
+      ],
+      "args": ["check", "--json", "{tmp}/type-alias/alias.sley"],
+      "covers": [
+        "cli:check",
+        "cli:smoke-setup-files",
+        "json:sley.diagnostics.report.v0",
+        "language:type-alias",
+        "language:type-alias-transparent"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.diagnostics.report.v0" },
+          { "pointer": "/status", "value": "ok" }
+        ]
+      }
+    },
+    {
+      "name": "plan_type_alias_replace_task_body_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/type-alias/alias.sley",
+          "content": "module app.alias\n\ntype Score = Int\ntype Scores = List<Score>\n\ntask main -> Score {\n  bind scores: Scores = [40, 2]\n  return scores[0] + scores[1]\n}\n"
+        }
+      ],
+      "args": [
+        "plan",
+        "--json",
+        "--graft-templates",
+        "--template-surface",
+        "task:app.alias.main",
+        "{tmp}/type-alias/alias.sley"
+      ],
+      "covers": [
+        "cli:plan",
+        "cli:smoke-setup-files",
+        "graft:templates:replace-task-body",
+        "language:type-alias",
+        "language:type-alias-transparent",
+        "json:sley.edit_plan.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.edit_plan.report.v0" },
+          { "pointer": "/status", "value": "ready" },
+          { "pointer": "/graft_templates/0/kind", "value": "replace_task_body" },
+          { "pointer": "/graft_templates/0/operation/op", "value": "ReplaceTaskBody" },
+          { "pointer": "/graft_templates/0/operation/payload/statements/0", "value": "return 0" }
+        ]
+      }
+    },
+    {
+      "name": "check_type_alias_mismatch_repair_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/type-alias/alias-bad.sley",
+          "content": "module app.alias_bad\n\ntype Score = Int\ntype Labels = List<Text>\n\ntask main -> Score {\n  bind labels: Labels = [\"bad\"]\n  return labels[0]\n}\n"
+        }
+      ],
+      "args": ["check", "--json", "{tmp}/type-alias/alias-bad.sley"],
+      "covers": [
+        "cli:check",
+        "cli:smoke-setup-files",
+        "json:sley.diagnostics.report.v0",
+        "language:type-alias",
+        "language:type-alias-transparent",
+        "diagnostic:RETURN_TYPE_MISMATCH",
+        "graft:templates:replace-expression"
+      ],
+      "expect": {
+        "success": false,
+        "stderr_contains": ["check failed"],
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.diagnostics.report.v0" },
+          { "pointer": "/status", "value": "error" },
+          { "pointer": "/diagnostics/0/id", "value": "RETURN_TYPE_MISMATCH" },
+          { "pointer": "/diagnostics/0/repair_hints/2/kind", "value": "replace_expression" },
+          { "pointer": "/diagnostics/0/repair_hints/2/replacement", "value": "{\"op\":\"ReplaceExpression\",\"payload\":{\"source\":\"0\"},\"target\":\"block:task:app.alias_bad.main:stmt:1:expr\"}" }
+        ]
+      }
+    },
+    {
       "name": "run_spend_json",
       "args": [
         "run",

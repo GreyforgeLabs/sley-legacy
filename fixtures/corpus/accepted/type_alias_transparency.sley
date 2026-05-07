@@ -1,0 +1,10 @@
+module corpus.accepted.type_alias_transparency
+
+type Score = Int
+type Scores = List<Score>
+type Label = Text
+
+task main -> Score {
+  bind scores: Scores = [40, 2]
+  return scores[0] + scores[1]
+}
