@@ -528,6 +528,11 @@ fn build_graft_templates(
             return Ok(vec![template]);
         }
         if let Some(templates) =
+            direct_module_graph_slice_graft_templates(program, requested_surface)
+        {
+            return Ok(templates);
+        }
+        if let Some(templates) =
             direct_graph_slice_graft_templates(program, surfaces, requested_surface)
         {
             return Ok(templates);
@@ -2305,6 +2310,79 @@ fn direct_graph_slice_graft_templates(
     }
 }
 
+fn direct_module_graph_slice_graft_templates(
+    program: &Program,
+    requested_surface: &str,
+) -> Option<Vec<EditPlanGraftTemplate>> {
+    let owner_module = owning_module_surface_id(requested_surface)?;
+    let slice = slice_symbol_graph(program, &owner_module)?;
+    let move_affordances = slice.move_affordances;
+    let delete_affordances = slice.delete_affordances;
+    let mut templates = Vec::new();
+    for affordance in move_affordances.into_iter().filter(|affordance| {
+        module_affordance_matches(requested_surface, &affordance.target, &affordance.parent)
+    }) {
+        let target_kind = affordance.target_kind.clone();
+        if move_affordance_checks(program, &affordance.operation) {
+            templates.push(EditPlanGraftTemplate {
+                kind: format!("move_{target_kind}"),
+                reason: format!(
+                    "move or reorder this {target_kind} using graph-slice MoveNode affordance data"
+                ),
+                surface: requested_surface.to_string(),
+                operation: affordance.operation,
+                editable_json_pointers: affordance.editable_json_pointers,
+            });
+        }
+        for destination in affordance.destinations {
+            if !move_affordance_checks(program, &destination.operation) {
+                continue;
+            }
+            templates.push(EditPlanGraftTemplate {
+                kind: format!("move_{target_kind}_destination"),
+                reason: format!(
+                    "move this {target_kind} into a graph-slice destination parent using MoveNode affordance data"
+                ),
+                surface: requested_surface.to_string(),
+                operation: destination.operation,
+                editable_json_pointers: destination.editable_json_pointers,
+            });
+        }
+    }
+    templates.extend(
+        delete_affordances
+            .into_iter()
+            .filter(|affordance| {
+                module_affordance_matches(requested_surface, &affordance.target, &affordance.parent)
+            })
+            .filter(|affordance| {
+                module_delete_affordance_checks(program, &affordance.target, &affordance.operation)
+            })
+            .map(|affordance| EditPlanGraftTemplate {
+                kind: format!("delete_{}", affordance.target_kind),
+                reason: format!(
+                    "delete this {} using checked graph-slice DeleteNode affordance data",
+                    affordance.target_kind
+                ),
+                surface: requested_surface.to_string(),
+                operation: affordance.operation,
+                editable_json_pointers: affordance.editable_json_pointers,
+            }),
+    );
+    if templates.is_empty() {
+        None
+    } else {
+        Some(templates)
+    }
+}
+
+fn module_delete_affordance_checks(program: &Program, target: &str, operation: &JsonValue) -> bool {
+    if target == format!("task:{}.main", program.module_name()) {
+        return false;
+    }
+    delete_affordance_checks(program, operation)
+}
+
 fn statement_surface_replace_template(
     program: &Program,
     requested_surface: &str,
@@ -2345,6 +2423,46 @@ fn owning_task_surface_id(surface: &str) -> Option<&str> {
         return parts.next();
     }
     None
+}
+
+fn owning_module_surface_id(surface: &str) -> Option<String> {
+    if surface == "program" {
+        return None;
+    }
+    if surface.starts_with("task:") || surface.starts_with("block:") || surface.starts_with("take:")
+    {
+        return None;
+    }
+    if let Some(module) = surface.strip_prefix("module:") {
+        return Some(format!("module:{module}"));
+    }
+    if let Some(rest) = surface.strip_prefix("import:") {
+        let (owner_module, _imported_module) = rest.split_once(':')?;
+        return Some(format!("module:{owner_module}"));
+    }
+    for prefix in ["type:", "effect:"] {
+        if let Some(rest) = surface.strip_prefix(prefix) {
+            let (module, _name) = rest.rsplit_once('.')?;
+            return Some(format!("module:{module}"));
+        }
+    }
+    None
+}
+
+fn module_affordance_matches(requested_surface: &str, target: &str, parent: &str) -> bool {
+    if target == requested_surface {
+        return true;
+    }
+    let Some(module) = requested_surface.strip_prefix("module:") else {
+        return false;
+    };
+    module_level_affordance_parent(parent).is_some_and(|parent_module| parent_module == module)
+}
+
+fn module_level_affordance_parent(parent: &str) -> Option<&str> {
+    let rest = parent.strip_prefix("module:")?;
+    let (module, parent_kind) = rest.rsplit_once(':')?;
+    matches!(parent_kind, "imports" | "types" | "effects" | "tasks").then_some(module)
 }
 
 fn operation_target(operation: &JsonValue) -> Option<&str> {
@@ -2575,13 +2693,13 @@ fn select_template_surface<'a>(
             Diagnostic::error(
                 "PLAN_SURFACE_NOT_FOUND",
                 format!(
-                    "plan surface `{requested_surface}` was not found; use `program`, a task id, qualified task name, block node id, statement node id, take node id, expression node id, or lint finding node"
+                    "plan surface `{requested_surface}` was not found; use `program`, a module id, declaration/import id, task id, qualified task name, block node id, statement node id, take node id, expression node id, or lint finding node"
                 ),
             )
             .with_node(requested_surface)
             .with_repair_hint(
                 RepairHint::new("inspect_task_surfaces")
-                    .with_replacement("Run `sley ast --json <target>` or `sley plan --json <target>` and choose `program`, a block, statement, take, or expression node id, task_surfaces id, task qualified_name, or lint.findings node"),
+                    .with_replacement("Run `sley ast --json <target>`, `sley graph --json <target>`, or `sley plan --json <target>` and choose `program`, a module id, declaration/import id, block, statement, take, or expression node id, task_surfaces id, task qualified_name, or lint.findings node"),
             )
         })
 }
