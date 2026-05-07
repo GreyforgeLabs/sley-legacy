@@ -112,6 +112,64 @@ fn migrate_reports_checked_source_migrations_and_schema_drift() {
     let _ = fs::remove_dir_all(root);
 }
 
+#[test]
+fn migrate_reports_unchecked_result_binding_propagation() {
+    let root = temp_project_dir("migrate-result-binding");
+    fs::create_dir_all(&root).expect("create migrate result binding dir");
+    let source_path = root.join("unchecked_binding.sley");
+    fs::write(
+        &source_path,
+        r#"module app.migrate_result
+
+task main -> Result<Text, Error> uses FileRead {
+  bind ignored = fs.try_read_text("examples/hello.sley")
+  bind used = fs.try_read_text("examples/hello.sley")?
+
+  return Ok(used)
+}
+"#,
+    )
+    .expect("write unchecked result binding source");
+
+    let output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-migrate"))
+        .args(["report", "--json", path_str(&source_path).as_str()])
+        .output()
+        .expect("run sley-migrate");
+    assert!(
+        output.status.success(),
+        "sley-migrate failed\nstdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    support::validate_report_schema("sley.migrate.report.v0", &output.stdout);
+    let report: JsonValue = serde_json::from_slice(&output.stdout).expect("parse migrate JSON");
+    assert_eq!(report.pointer("/status"), Some(&json!("migrations")));
+    assert_eq!(report.pointer("/summary/migration_count"), Some(&json!(1)));
+    assert_eq!(
+        report.pointer("/summary/result_propagation_count"),
+        Some(&json!(1))
+    );
+    assert_eq!(
+        report.pointer("/migrations/0/kind"),
+        Some(&json!("propagate_unchecked_result_binding"))
+    );
+    assert_eq!(
+        report.pointer("/migrations/0/category"),
+        Some(&json!("result_propagation"))
+    );
+    assert_eq!(
+        report.pointer("/migrations/0/operation/op"),
+        Some(&json!("ReplaceStatement"))
+    );
+    assert_eq!(
+        report.pointer("/migrations/0/operation/payload/source"),
+        Some(&json!("fs.try_read_text(\"examples/hello.sley\")?"))
+    );
+
+    let _ = fs::remove_dir_all(root);
+}
+
 fn path_str(path: &Path) -> String {
     path.to_string_lossy().to_string()
 }
