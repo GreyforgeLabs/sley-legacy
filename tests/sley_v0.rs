@@ -9503,6 +9503,19 @@ fn conformance_report_summarizes_release_surface() {
         Some(&serde_json::json!(20))
     );
     assert_eq!(
+        report_json.pointer("/corpus/missing_required_tags"),
+        Some(&serde_json::json!([]))
+    );
+    assert!(
+        report_json
+            .pointer("/corpus/required_tags")
+            .and_then(|value| value.as_array())
+            .is_some_and(|tags| tags
+                .iter()
+                .any(|tag| tag == "language:type-alias-transparent")),
+        "conformance report should require transparent type alias corpus coverage"
+    );
+    assert_eq!(
         report_json.pointer("/summary/smoke_case_count"),
         Some(&serde_json::json!(395))
     );
@@ -20408,6 +20421,8 @@ fn assert_corpus_manifest_has_release_coverage(manifest: &CorpusManifest) {
         "accepted:SecretRead",
         "accepted:Shell",
         "accepted:Spend",
+        "accepted:agent-data-authority",
+        "accepted:agent-deploy-pipeline",
         "accepted:agent-spend-authority",
         "accepted:agent-split-authority",
         "rejected:DatabaseRead",
@@ -20421,6 +20436,7 @@ fn assert_corpus_manifest_has_release_coverage(manifest: &CorpusManifest) {
         "rejected:Shell",
         "rejected:Spend",
         "rejected:agent-transitive-effect",
+        "rejected:data-write-transitive-effect",
         "rejected:spend-transitive-effect",
         "diagnostic:EFFECT_UNAUTHORIZED",
         "diagnostic:DUPLICATE_TASK",
@@ -20431,6 +20447,8 @@ fn assert_corpus_manifest_has_release_coverage(manifest: &CorpusManifest) {
         "diagnostic:UNKNOWN_IDENTIFIER",
         "authority:transitive-effects",
         "language:module-namespace",
+        "language:type-alias",
+        "language:type-alias-transparent",
         "formatter:round-trip",
     ];
     for tag in required {

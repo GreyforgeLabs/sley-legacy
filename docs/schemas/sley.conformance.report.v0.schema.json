@@ -167,7 +167,9 @@
         "accepted_count",
         "rejected_count",
         "tag_inventory",
-        "feature_counts"
+        "feature_counts",
+        "required_tags",
+        "missing_required_tags"
       ],
       "properties": {
         "manifest": { "type": "string", "minLength": 1 },
@@ -180,6 +182,14 @@
         "feature_counts": {
           "type": "array",
           "items": { "$ref": "#/$defs/tagCount" }
+        },
+        "required_tags": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "missing_required_tags": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
         }
       },
       "additionalProperties": false
