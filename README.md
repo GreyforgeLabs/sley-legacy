@@ -249,8 +249,9 @@ Implemented now:
   repair exists, a non-mutating `sley fix --dry-run` preview plus an explicit
   `write_command` for the matching `sley fix --write`, and ready reports now
   include `verify_gate` commands before entrypoint runs, with seeded `--cap`
-  args when the entrypoint declares effects, plus direct and `sley-ci` deploy
-  dry-run package handoffs for Deploy entrypoints, and
+  args when the entrypoint declares effects, matching `sley-ci` verify/run
+  handoffs for effectful entrypoints, plus direct and `sley-ci` deploy dry-run
+  package handoffs for Deploy entrypoints, and
   `schema: "sley.doctor.report.v0"` for agent pre-edit gates; doctor, plan,
   and verify text output also print stable lint finding IDs and nodes
 - checked JSON edit-plan reports with `sley plan`, consuming strict

@@ -346,8 +346,9 @@ Current development phase:
   project targets, including generated deploy and agent scaffold quickstarts
   re-verified with seeded authority. Ready doctor reports include
   `verify_gate` next-actions before entrypoint runs, with seeded `--cap` args
-  when the entrypoint declares effects, plus direct and `sley-ci` deploy
-  dry-run package handoffs for Deploy entrypoints
+  when the entrypoint declares effects, matching `sley-ci` verify/run handoffs
+  for effectful entrypoints, plus direct and `sley-ci` deploy dry-run package
+  handoffs for Deploy entrypoints
 - `sley plan --json` emits `sley.edit_plan.report.v0` and consumes strict
   diagnostics plus checked query/lint findings into ranked task edit surfaces,
   graft targets, call-row inspection next-actions, and post-edit gate commands;

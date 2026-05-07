@@ -262,7 +262,8 @@ Rules:
   repair exists; those preview actions keep `command` non-mutating and add
   optional `write_command` vectors for the matching write. Ready reports now
   include `verify_gate` next-actions before entrypoint runs, with seeded
-  `--cap` args when the entrypoint declares effects, plus direct and `sley-ci`
+  `--cap` args when the entrypoint declares effects, matching `sley-ci`
+  verify/run handoffs for effectful entrypoints, plus direct and `sley-ci`
   deploy dry-run package handoffs for Deploy entrypoints.
 - `sley new --json` emits typed scaffold `next_actions` plus legacy
   `next_commands`; the deploy and agent starters' generated action sequences

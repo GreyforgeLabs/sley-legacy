@@ -942,10 +942,11 @@ gates, checked `sley plan --json --graft-templates` repair planning when lint
 findings exist, non-mutating `sley fix --dry-run` previews when exactly one
 checked lint repair exists, explicit optional `write_command` vectors for the
 matching `sley fix --write`, and entrypoint runs.
-Ready reports include a `verify_gate` next action before entrypoint runs; if
-the entrypoint declares effects, the command includes explicit runtime `--cap`
-gates plus deterministic seed arguments inferred from reachable literal host
-calls when Sley can do so safely. Deploy-capable entrypoints also include
+Ready reports include a direct `verify_gate` next action before entrypoint
+runs; if the entrypoint declares effects, the report also includes matching
+`sley-ci` verify/run handoffs, and the commands include explicit runtime
+`--cap` gates plus deterministic seed arguments inferred from reachable literal
+host calls when Sley can do so safely. Deploy-capable entrypoints also include
 direct `prepare_deploy_package` and `sley-ci` `ci_deploy_package` next actions
 that build local dry-run deploy packages under `.sley/deploy` and
 `.sley/ci-deploy` without live provider calls.

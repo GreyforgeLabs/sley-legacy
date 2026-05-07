@@ -330,8 +330,8 @@ Current verified surface:
   previewed unused-import write-and-verify smoke and generated scaffold
   quickstarts re-verified with local or seeded authority, a blocked-verify CLI
   smoke that locks retry next-actions with inferred deterministic gates and host
-  seeds, ready-state doctor `verify_gate` next-actions with explicit caps and deterministic host
-  seeds before entrypoint runs and deploy-capable doctor
+  seeds, ready-state doctor direct and `sley-ci` verify/run next-actions with
+  explicit caps and deterministic host seeds before deploy-capable doctor
   and passed-verify direct plus `sley-ci` deploy dry-run handoffs that preserve
   exact verified runtime args when supplied, plus runtime-failed verify retry
   actions with deterministic inferred gates and host seeds, plus
