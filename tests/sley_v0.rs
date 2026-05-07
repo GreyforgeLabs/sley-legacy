@@ -9414,6 +9414,14 @@ task main -> Used uses UsedEffect {
         &doctor,
         include_str!("../fixtures/contracts/doctor_project_ready.json"),
     );
+    let empty_for = parse_program(include_str!("../examples/empty_for_statement.sley"))
+        .expect("parse empty for fixture");
+    let denied_doctor =
+        build_doctor_report("examples/empty_for_statement.sley", Ok(empty_for), true);
+    assert_json_snapshot(
+        &denied_doctor,
+        include_str!("../fixtures/contracts/doctor_denied_empty_for_statement.json"),
+    );
 
     let edit_plan = build_edit_plan_report("examples/project", Ok(project.program.clone()), false);
     assert_json_snapshot(
@@ -9981,7 +9989,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(113))
+        Some(&serde_json::json!(114))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -10257,7 +10265,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/contract_fixture_count"),
-        Some(&serde_json::json!(113))
+        Some(&serde_json::json!(114))
     );
     assert_eq!(
         report_json.pointer("/summary/corpus_accepted_count"),
