@@ -10365,6 +10365,42 @@
       }
     },
     {
+      "name": "run_database_read_alias_scope_denied_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/db-read-alias-scope/main.sley",
+          "content": "module app.db_read_alias_scope\n\ntask main -> Result<Text, Error> uses DbRead {\n  bind row = call db.try_query_one(\"select * from users where id = ?\", \"u1\")?\n  return Ok(row.text(\"name\"))\n}\n"
+        }
+      ],
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "DbRead=tenant_",
+        "--db-table",
+        "users=examples/users.json",
+        "{tmp}/db-read-alias-scope/main.sley"
+      ],
+      "covers": [
+        "cli:run",
+        "cli:smoke-setup-files",
+        "json:sley.diagnostics.report.v0",
+        "diagnostic:RUNTIME_CAPABILITY_SCOPE_DENIED",
+        "host:DatabaseRead",
+        "host:scoped-capability"
+      ],
+      "expect": {
+        "success": false,
+        "stderr_contains": ["operation failed"],
+        "stdout_contains": ["DbRead", "users"],
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.diagnostics.report.v0" },
+          { "pointer": "/status", "value": "error" },
+          { "pointer": "/diagnostics/0/id", "value": "RUNTIME_CAPABILITY_SCOPE_DENIED" }
+        ]
+      }
+    },
+    {
       "name": "run_database_write_scoped_json",
       "args": [
         "run",
@@ -10424,6 +10460,40 @@
           { "pointer": "/status", "value": "error" },
           { "pointer": "/diagnostics/0/id", "value": "RUNTIME_CAPABILITY_SCOPE_DENIED" },
           { "pointer": "/diagnostics/0/node", "value": "block:task:main.main:stmt:0:expr:try" }
+        ]
+      }
+    },
+    {
+      "name": "run_database_write_alias_scope_denied_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/db-write-alias-scope/main.sley",
+          "content": "module app.db_write_alias_scope\n\ntask main -> Result<DbRow, Error> uses DbWrite {\n  return call db.try_insert(\"users\", { id: \"u1\" })\n}\n"
+        }
+      ],
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "DbWrite=tenant_",
+        "{tmp}/db-write-alias-scope/main.sley"
+      ],
+      "covers": [
+        "cli:run",
+        "cli:smoke-setup-files",
+        "json:sley.diagnostics.report.v0",
+        "diagnostic:RUNTIME_CAPABILITY_SCOPE_DENIED",
+        "host:DatabaseWrite",
+        "host:scoped-capability"
+      ],
+      "expect": {
+        "success": false,
+        "stderr_contains": ["operation failed"],
+        "stdout_contains": ["DbWrite", "users"],
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.diagnostics.report.v0" },
+          { "pointer": "/status", "value": "error" },
+          { "pointer": "/diagnostics/0/id", "value": "RUNTIME_CAPABILITY_SCOPE_DENIED" }
         ]
       }
     },
