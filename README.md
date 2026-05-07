@@ -256,7 +256,8 @@ Implemented now:
   and verify text output also print stable lint finding IDs and nodes
 - checked JSON edit-plan reports with `sley plan`, consuming strict
   diagnostics plus query and lint findings into ranked task edit surfaces,
-  graft target ids, call-row inspection next-actions, optional
+  graft target ids, call-row inspection next-actions, seeded post-edit verify
+  commands when reachable host calls can be inferred safely, optional
   `--graft-templates` starter operation payloads, rename-plus-call-site and
   add-take-plus-call-arg transaction templates for targeted caller surfaces,
   direct module-surface, module declaration-list, and declaration-id
