@@ -10340,6 +10340,43 @@
       }
     },
     {
+      "name": "run_network_sibling_host_scope_denied_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/network-sibling-host/main.sley",
+          "content": "module app.network_sibling_host\n\ntask main -> Result<Text, Error> uses Network {\n  return call http.try_get_text(\"https://example.test.evil/profile\")\n}\n"
+        }
+      ],
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "Network=https://example.test",
+        "--http-text",
+        "https://example.test.evil/profile",
+        "blocked",
+        "{tmp}/network-sibling-host/main.sley"
+      ],
+      "covers": [
+        "cli:run",
+        "cli:smoke-setup-files",
+        "json:sley.diagnostics.report.v0",
+        "diagnostic:RUNTIME_CAPABILITY_SCOPE_DENIED",
+        "host:Network",
+        "host:scoped-capability"
+      ],
+      "expect": {
+        "success": false,
+        "stderr_contains": ["operation failed"],
+        "stdout_contains": ["Network", "https://example.test.evil/profile"],
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.diagnostics.report.v0" },
+          { "pointer": "/status", "value": "error" },
+          { "pointer": "/diagnostics/0/id", "value": "RUNTIME_CAPABILITY_SCOPE_DENIED" }
+        ]
+      }
+    },
+    {
       "name": "run_database_read_scoped_json",
       "args": [
         "run",
