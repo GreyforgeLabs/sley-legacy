@@ -801,10 +801,10 @@
       "name": "conformance_report_markdown_decision_packet_json",
       "bin": "sley-conformance",
       "args": ["report", "--json", "--markdown", "{tmp}/conformance/report.md"],
-      "covers": [
-        "cli:sley-conformance",
-        "conformance:report",
-        "conformance:markdown",
+        "covers": [
+          "cli:sley-conformance",
+          "conformance:report",
+          "conformance:markdown",
         "json:sley.conformance.report.v0",
         "readiness:public-release-decision-packet"
       ],
@@ -813,17 +813,18 @@
         "stdout_json": [
           { "pointer": "/schema", "value": "sley.conformance.report.v0" },
           { "pointer": "/status", "value": "passed" },
-          { "pointer": "/release/blocker_count", "value": 5 },
-          { "pointer": "/release/next_actions/0/owner", "value": "operator" },
-          { "pointer": "/release/next_actions/0/approval_required", "value": true }
+          { "pointer": "/release/blocker_count", "value": 0 },
+          { "pointer": "/release/next_actions", "value": [] },
+          { "pointer": "/release/public_release_ready", "value": true },
+          { "pointer": "/readiness/public_v1/status", "value": "ready" }
         ],
         "files": [
           {
             "path": "{tmp}/conformance/report.md",
             "contains": [
               "# Sley Conformance Report",
-              "Public Release Next Actions",
-              "`missing_license_file`"
+              "Public release ready: `true` with `0` blockers",
+              "`make public-release-check`"
             ]
           }
         ]
