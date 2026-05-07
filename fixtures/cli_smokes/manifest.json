@@ -11247,6 +11247,143 @@
       }
     },
     {
+      "name": "fix_project_non_entry_module_import_write_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/fix-non-entry-import/sley.toml",
+          "content": "[project]\nroot = \"src\"\nentry = \"app.main\"\n"
+        },
+        {
+          "path": "{tmp}/fix-non-entry-import/src/app/main.sley",
+          "content": "module app.main\n\nimport app.extra\n\ntask main -> Int {\n  return call app.extra.helper()\n}\n"
+        },
+        {
+          "path": "{tmp}/fix-non-entry-import/src/app/extra.sley",
+          "content": "module app.extra\n\nexport task helper -> Int {\n  return 2\n}\n"
+        },
+        {
+          "path": "{tmp}/fix-non-entry-import/src/app/shared.sley",
+          "content": "module app.shared\n\nexport type User = {\n  slot id: Int\n}\n"
+        }
+      ],
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "add_import",
+        "--template-surface",
+        "module:app.extra",
+        "--module",
+        "app.shared",
+        "--write",
+        "{tmp}/fix-non-entry-import"
+      ],
+      "covers": [
+        "cli:fix",
+        "cli:fix-write",
+        "cli:smoke-setup-files",
+        "fix:payload-override-module",
+        "graft:templates:add-import",
+        "graft:templates:module-add-surface",
+        "graft:project-non-entry-import-write",
+        "graph-slice:add-affordances",
+        "json:sley.graft.outcome.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_contains": ["import app.shared"],
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/operation", "value": "AddImport" },
+          { "pointer": "/provenance/0/targets/0", "value": "import:app.extra:app.shared" }
+        ]
+      }
+    },
+    {
+      "name": "check_fix_project_non_entry_module_import_write_json",
+      "args": ["check", "--json", "{tmp}/fix-non-entry-import"],
+      "covers": [
+        "cli:check",
+        "graft:project-non-entry-import-write",
+        "json:sley.diagnostics.report.v0",
+        "readiness:project-import-write-verify"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.diagnostics.report.v0" },
+          { "pointer": "/status", "value": "ok" }
+        ]
+      }
+    },
+    {
+      "name": "fix_project_non_entry_module_effect_write_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/fix-non-entry-effect/sley.toml",
+          "content": "[project]\nroot = \"src\"\nentry = \"app.main\"\n"
+        },
+        {
+          "path": "{tmp}/fix-non-entry-effect/src/app/main.sley",
+          "content": "module app.main\n\nimport app.extra\n\ntask main -> Int {\n  return call app.extra.helper()\n}\n"
+        },
+        {
+          "path": "{tmp}/fix-non-entry-effect/src/app/extra.sley",
+          "content": "module app.extra\n\nexport task helper -> Int {\n  return 2\n}\n"
+        }
+      ],
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "add_effect_declaration",
+        "--template-surface",
+        "module:app.extra",
+        "--name",
+        "Audit",
+        "--write",
+        "{tmp}/fix-non-entry-effect"
+      ],
+      "covers": [
+        "cli:fix",
+        "cli:fix-write",
+        "cli:smoke-setup-files",
+        "fix:payload-override-name",
+        "graft:templates:module-add-surface",
+        "graft:operations:add-effect-declaration",
+        "graft:project-non-entry-effect-write",
+        "graph-slice:add-affordances",
+        "json:sley.graft.outcome.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_contains": ["effect Audit"],
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/operation", "value": "AddEffectDeclaration" },
+          { "pointer": "/provenance/0/targets/0", "value": "effect:app.extra.Audit" }
+        ]
+      }
+    },
+    {
+      "name": "check_fix_project_non_entry_module_effect_write_json",
+      "args": ["check", "--json", "{tmp}/fix-non-entry-effect"],
+      "covers": [
+        "cli:check",
+        "graft:project-non-entry-effect-write",
+        "json:sley.diagnostics.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.diagnostics.report.v0" },
+          { "pointer": "/status", "value": "ok" }
+        ]
+      }
+    },
+    {
       "name": "graft_project_move_task_between_modules_write_json",
       "setup_files": [
         {
