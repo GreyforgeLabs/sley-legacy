@@ -1736,6 +1736,25 @@
       }
     },
     {
+      "name": "query_unknown_project_module_json",
+      "args": ["query", "--json", "--kind", "tasks", "--module", "app.typo", "examples/project"],
+      "covers": [
+        "cli:query",
+        "diagnostic:QUERY_MODULE_FILTER_NOT_FOUND",
+        "json:sley.diagnostics.report.v0",
+        "query:tasks"
+      ],
+      "expect": {
+        "success": false,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.diagnostics.report.v0" },
+          { "pointer": "/status", "value": "error" },
+          { "pointer": "/diagnostics/0/id", "value": "QUERY_MODULE_FILTER_NOT_FOUND" },
+          { "pointer": "/diagnostics/0/severity", "value": "error" }
+        ]
+      }
+    },
+    {
       "name": "query_project_exported_tasks_json",
       "args": [
         "query",
