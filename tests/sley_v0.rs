@@ -2075,6 +2075,86 @@ task orphan -> Int {
 }
 
 #[test]
+fn edit_plan_ready_actions_seed_reachable_agent_host_calls() {
+    let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let plan = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .current_dir(&repo_root)
+        .args(["plan", "--json", "examples/agent_project"])
+        .output()
+        .expect("run plan for agent project");
+    let plan_stdout = String::from_utf8(plan.stdout).expect("plan stdout utf8");
+    let plan_stderr = String::from_utf8(plan.stderr).expect("plan stderr utf8");
+    assert!(
+        plan.status.success(),
+        "stdout: {plan_stdout}\nstderr: {plan_stderr}"
+    );
+    let plan_json: serde_json::Value =
+        serde_json::from_str(&plan_stdout).expect("parse agent plan JSON");
+    assert_eq!(
+        plan_json.pointer("/next_actions/3/kind"),
+        Some(&serde_json::json!("post_edit_verify"))
+    );
+    let verify_command = plan_json
+        .pointer("/next_actions/3/command")
+        .and_then(serde_json::Value::as_array)
+        .expect("post-edit verify command")
+        .iter()
+        .map(|value| value.as_str().expect("string command segment").to_string())
+        .collect::<Vec<_>>();
+    assert_eq!(
+        verify_command,
+        vec![
+            "sley",
+            "verify",
+            "--json",
+            "--cap",
+            "SecretRead",
+            "--cap",
+            "Network",
+            "--cap",
+            "ModelCall",
+            "--cap",
+            "Deploy",
+            "--secret",
+            "api_key",
+            "redacted",
+            "--http-text",
+            "https://example.test/profile",
+            "profile ready",
+            "--model-output",
+            "deploy-plan",
+            "plan approved",
+            "--deploy-result",
+            "staging",
+            "staged",
+            "examples/agent_project",
+        ]
+    );
+
+    let verify = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .current_dir(&repo_root)
+        .args(&verify_command[1..])
+        .output()
+        .expect("run plan post-edit verify action");
+    let verify_stdout = String::from_utf8(verify.stdout).expect("verify stdout utf8");
+    let verify_stderr = String::from_utf8(verify.stderr).expect("verify stderr utf8");
+    assert!(
+        verify.status.success(),
+        "stdout: {verify_stdout}\nstderr: {verify_stderr}"
+    );
+    let verify_json: serde_json::Value =
+        serde_json::from_str(&verify_stdout).expect("parse verify JSON");
+    assert_eq!(
+        verify_json.pointer("/schema"),
+        Some(&serde_json::json!(VERIFY_REPORT_SCHEMA))
+    );
+    assert_eq!(
+        verify_json.pointer("/runtime/value/value/value"),
+        Some(&serde_json::json!("profile ready | plan approved | staged"))
+    );
+}
+
+#[test]
 fn edit_plan_report_can_emit_primary_surface_graft_templates() {
     let source = r#"
 module app.plan
@@ -11748,11 +11828,11 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/integration_test_count"),
-        Some(&serde_json::json!(334))
+        Some(&serde_json::json!(335))
     );
     assert_eq!(
         report_json.pointer("/summary/declared_integration_test_count"),
-        Some(&serde_json::json!(334))
+        Some(&serde_json::json!(335))
     );
     assert_eq!(
         report_json.pointer("/summary/test_count_matches_declared"),
@@ -11776,7 +11856,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/tests/integration_test_count"),
-        Some(&serde_json::json!(334))
+        Some(&serde_json::json!(335))
     );
     assert_eq!(
         report_json.pointer("/tests/declared_matches_actual"),
@@ -24706,6 +24786,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:lint-repair-preview",
         "readiness:lint-repair-write-command",
         "readiness:lint-repair-write-verify",
+        "readiness:plan-seeded-post-edit-verify",
         "readiness:mutable-binding-repair-write-verify",
         "readiness:self-assignment-repair-write-verify",
         "readiness:overwritten-set-repair-write-verify",

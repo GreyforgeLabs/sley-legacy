@@ -960,7 +960,9 @@ strict checker, checked query, and checked lint surfaces. It reports `ready`,
 with stable task ids, qualified names, takes, call counts, declared effects,
 graft target ids, and planning notes; and gives next-command vectors for graph
 slice inspection, strict call-row inspection when checked calls exist, plus
-post-edit doctor and verify gates. `--deny-warnings` treats lint findings as
+post-edit doctor and verify gates. Post-edit verify commands include
+deterministic runtime gates and host seed arguments when reachable literal host
+calls make those seeds safe to infer. `--deny-warnings` treats lint findings as
 blocked while still printing
 `schema: "sley.edit_plan.report.v0"`. Non-JSON plan output prints stable lint
 finding IDs and nodes before next actions. `--graft-templates` adds starter

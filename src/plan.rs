@@ -35,6 +35,7 @@ use crate::lint::{
     unused_effectful_binding_statement_replacement_source,
 };
 use crate::query::{QueryKind, QueryOptions, QueryReport, QueryTakeSummary, build_query_report};
+use crate::runtime_seed_plan::{cap_args, inferred_runtime_seed_args};
 use crate::symbols::{
     TypeResolution, effect_module, import_owner_module, resolve_type, slice_symbol_graph,
     task_fq_name, task_module, type_module,
@@ -353,7 +354,7 @@ pub fn build_edit_plan_report_with_options(
     } else if warning_count > 0 {
         warning_actions(&target, &query_report, &task_surfaces)
     } else {
-        ready_actions(&target, &query_report, &task_surfaces)
+        ready_actions(&target, &query_report, &program, &task_surfaces)
     };
 
     EditPlanReport {
@@ -4478,6 +4479,7 @@ fn warning_actions(
 fn ready_actions(
     target: &str,
     query: &QueryReport,
+    program: &Program,
     surfaces: &[EditPlanTaskSurface],
 ) -> Vec<EditPlanAction> {
     let mut actions = Vec::new();
@@ -4501,7 +4503,7 @@ fn ready_actions(
     actions.push(EditPlanAction {
         kind: "post_edit_verify".to_string(),
         reason: "run deterministic verification after the planned graft is applied".to_string(),
-        command: verify_command(target, query),
+        command: verify_command(target, query, program),
     });
     actions
 }
@@ -4533,7 +4535,7 @@ fn inspect_surface_action(target: &str, surface_id: &str) -> EditPlanAction {
     }
 }
 
-fn verify_command(target: &str, query: &QueryReport) -> Vec<String> {
+fn verify_command(target: &str, query: &QueryReport, program: &Program) -> Vec<String> {
     let entry_task = format!("{}.main", query.entry_module);
     let mut command = vec![
         "sley".to_string(),
@@ -4545,10 +4547,8 @@ fn verify_command(target: &str, query: &QueryReport) -> Vec<String> {
         .iter()
         .find(|task| task.qualified_name == entry_task)
     {
-        for effect in &task.effects {
-            command.push("--cap".to_string());
-            command.push(effect.clone());
-        }
+        command.extend(cap_args(&task.effects));
+        command.extend(inferred_runtime_seed_args(program, &entry_task));
     }
     command.push(target.to_string());
     command
