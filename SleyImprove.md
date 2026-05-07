@@ -102,10 +102,14 @@ sley verify --json [--deny-warnings] [runtime gates/seeds] <target>
 sley deploy --json --dry-run [--artifacts-dir <dir>] [runtime gates/seeds] <target>
 sley query --json [--kind all|modules|tasks|types|effects|calls] [--module <module>] <target>
 sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|duplicate-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter|missing-module-declaration|unchecked-result|unchecked-result-binding|unused-effectful-binding|unqualified-imported-call|unused-pure-binding|unused-pure-expression-statement|mutable-binding-never-set|self-assignment-statement|overwritten-set-statement|redundant-initial-set-statement|constant-if-expression|constant-if-statement|constant-false-if-statement|constant-false-while-statement|constant-comparison-expression|constant-arithmetic-expression|constant-text-concatenation-expression|constant-list-index-expression|constant-map-index-expression|constant-record-field-access-expression|constant-len-expression|constant-not-expression|empty-if-statement|empty-else-statement|empty-for-statement|empty-forge-statement|empty-while-statement|identity-binary-expression|redundant-boolean-comparison|absorbing-boolean-expression|idempotent-boolean-expression|self-comparison-expression|double-negation-expression|negated-comparison-expression|redundant-boolean-if-expression|redundant-boolean-if-statement|same-branch-if-expression|same-branch-if-statement|unreachable-statement|absorbing-arithmetic-expression] [--module <module>] <target>
+sley-ci check --json <target>
 sley-ci lint --json [--deny-warnings] [--rule <rule>] [--module <module>] <target>
 sley-ci doctor --json [--deny-warnings] <target>
 sley-ci plan --json [--deny-warnings] [--graft-templates] [--template-surface <surface>] <target>
 sley-ci run --json [runtime gates/seeds] <target>
+sley-ci verify --json [--deny-warnings] [runtime gates/seeds] <target>
+sley-ci deploy --json --dry-run [--artifacts-dir <dir>] [runtime gates/seeds] <target>
+sley-ci smoke --json [--repo-root <path>] <fixtures/cli_smokes|fixtures/cli_smokes/manifest.json>
 sley-ci corpus --json <fixtures/corpus|fixtures/corpus/manifest.json>
 sley-ci examples --json examples
 sley-conformance report --json [--markdown <report.md>] [--corpus-manifest <fixtures/corpus|fixtures/corpus/manifest.json>] [--smoke-manifest <fixtures/cli_smokes|fixtures/cli_smokes/manifest.json>] [--editor-shim-root <editors/vscode-sley>] [--makefile <Makefile>]
@@ -361,7 +365,9 @@ Rules:
   artifact manifests pin report, seal, and package roles to their expected
   schemas. `sley-ci run` wraps deterministic runtime execution under
   `sley.ci.report.v0`, `sley-ci deploy` passes the same flag through to the
-  wrapped deploy command, and `sley-contract inspect-deploy-artifacts`
+  wrapped deploy command, failed deploy wrappers summarize nested verify lint
+  findings and runtime diagnostics while preserving repair/retry
+  `next_actions`, and `sley-contract inspect-deploy-artifacts`
   revalidates the handoff
   manifest, schemas, and digests. `sley-contract` validation commands default
   to repo-local or bundled source schemas while keeping explicit schema
