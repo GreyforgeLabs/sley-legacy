@@ -1530,10 +1530,10 @@ two envelopes by target, digest, module IDs, task IDs, and trace receipt count.
 Its report root is `sley.zjx.tool.report.v0`.
 
 The future compressed Sley runtime must validate Sley structure before packing.
-It must not treat envelope metadata as proof of Sley scope. The lock boundary
-is specified in `docs/SleyZjxRuntimeLockSpec.md`: reconstruct Sley graph
-structure, recompute the graph hash, reject unknown or opaque fields, and
-refuse generic data disguised as Sley artifacts before compression begins.
+It must not treat envelope metadata as proof of Sley scope.
+That boundary is to reconstruct Sley graph structure, recompute the graph
+hash, reject unknown or opaque fields, and refuse generic data disguised as Sley
+artifacts before compression begins.
 
 ## Current Gaps
 
