@@ -67,7 +67,7 @@ Implemented now:
   `fs.read_text`/`fs.write_text` are backed by root-scoped file capabilities
   while database adapters use exact table scopes, URL adapters use exact or
   path-boundary scopes, and other non-file seeded adapters can be narrowed by
-  deterministic text scopes
+  deterministic exact-or-delimiter text scopes
 - deterministic database host seeding with `sley run --cap DatabaseRead
   --db-table TABLE=rows.json`; `db.query_one` and `db.query` read seeded JSON
   rows, and `DbRow` values expose `row.text`, `row.int`, `row.float`,
@@ -815,10 +815,10 @@ Known v0 limits:
   deterministic seeded stage results, and the `Spend` adapter returns
   deterministic seeded authorization results. Database adapters use exact table
   scopes, URL adapters use exact or path-boundary scopes, and the remaining
-  non-file adapters can be scoped by resource-key prefix with
-  `--cap EFFECT=SCOPE`. Scope mismatches remain authority diagnostics. None of
-  the seeded host adapters perform live network, shell, model, secret, deploy,
-  or spend actions.
+  non-file adapters can be scoped by exact resource key or delimiter boundary
+  with `--cap EFFECT=SCOPE`. Scope mismatches remain authority diagnostics.
+  None of the seeded host adapters perform live network, shell, model, secret,
+  deploy, or spend actions.
 - Sley-level `Result` values and `?` propagation execute, and fallible
   filesystem, database, network, shell, model, secret, deploy, and spend host
   variants return typed `Error` records.

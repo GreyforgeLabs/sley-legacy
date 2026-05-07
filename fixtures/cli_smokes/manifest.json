@@ -10734,12 +10734,48 @@
       }
     },
     {
+      "name": "run_secret_sibling_scope_denied_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/secret-sibling/main.sley",
+          "content": "module app.secret_sibling\n\ntask main -> Result<Text, Error> uses SecretRead {\n  return call secrets.try_get(\"production/api_key\")\n}\n"
+        }
+      ],
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "SecretRead=prod",
+        "--secret",
+        "production/api_key",
+        "blocked",
+        "{tmp}/secret-sibling/main.sley"
+      ],
+      "covers": [
+        "cli:run",
+        "cli:smoke-setup-files",
+        "json:sley.diagnostics.report.v0",
+        "diagnostic:RUNTIME_CAPABILITY_SCOPE_DENIED",
+        "host:SecretRead",
+        "host:scoped-capability"
+      ],
+      "expect": {
+        "success": false,
+        "stderr_contains": ["operation failed"],
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.diagnostics.report.v0" },
+          { "pointer": "/status", "value": "error" },
+          { "pointer": "/diagnostics/0/id", "value": "RUNTIME_CAPABILITY_SCOPE_DENIED" }
+        ]
+      }
+    },
+    {
       "name": "run_shell_scoped_json",
       "args": [
         "run",
         "--json",
         "--cap",
-        "Shell=da",
+        "Shell=date",
         "--shell-output",
         "date",
         "2026-05-05",
@@ -10797,7 +10833,7 @@
         "run",
         "--json",
         "--cap",
-        "ModelCall=na",
+        "ModelCall=name",
         "--model-output",
         "name",
         "Ada",
@@ -10855,7 +10891,7 @@
         "run",
         "--json",
         "--cap",
-        "Deploy=stag",
+        "Deploy=staging",
         "--deploy-result",
         "staging",
         "staged",
@@ -11708,7 +11744,7 @@
         "deploy-plan",
         "plan approved",
         "--cap",
-        "Deploy=stag",
+        "Deploy=staging",
         "--deploy-result",
         "staging",
         "staged",
@@ -11759,7 +11795,7 @@
         "deploy-plan",
         "plan approved",
         "--cap",
-        "Deploy=stag",
+        "Deploy=staging",
         "--deploy-result",
         "staging",
         "staged",

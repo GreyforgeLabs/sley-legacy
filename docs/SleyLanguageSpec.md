@@ -243,10 +243,12 @@ calls reject paths outside that root with `RUNTIME_CAPABILITY_SCOPE_DENIED`.
 For non-filesystem host effects, `=SCOPE` narrows the seeded resource key:
 database host adapters require an exact table scope, URL scopes match exact
 URLs or path boundaries, and secret name, shell command, model prompt, deploy
-target, and spend request adapters use a deterministic text-prefix scope. A
-scoped host adapter that tries to touch a non-matching seeded resource fails with
-`RUNTIME_CAPABILITY_SCOPE_DENIED`; this remains an authority diagnostic, not a
+target, and spend request adapters use deterministic exact-or-delimiter text
+scopes. A scoped host adapter that tries to touch a non-matching seeded resource
+fails with `RUNTIME_CAPABILITY_SCOPE_DENIED`; this remains an authority
+diagnostic, not a
 recoverable `Result` error.
+Text-scope delimiter boundaries are `/`, `:`, `.`, `-`, `_`, space, and tab.
 
 `DatabaseRead` currently backs deterministic seeded-table reads. The runtime
 does not open a real database connection in v0; the host supplies JSON rows:
@@ -1411,8 +1413,8 @@ refuse generic data disguised as Sley artifacts before compression begins.
   network text responses, seeded shell command outputs, and seeded model prompt
   completions; database host adapters now require exact table scopes, URL
   scopes match exact URLs or path boundaries, and the remaining non-file seeded
-  adapters support deterministic text-prefix scopes over their seeded resource
-  keys
+  adapters support deterministic exact-or-delimiter text scopes over their
+  seeded resource keys
 - Sley-level `Result` values, `?` propagation, and typed filesystem,
   database, secret, deploy, spend, network, shell, and model host fallibility
   execute
