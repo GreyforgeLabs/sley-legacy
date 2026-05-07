@@ -2369,11 +2369,7 @@ fn direct_module_graph_slice_graft_templates(
                 editable_json_pointers: affordance.editable_json_pointers,
             }),
     );
-    if templates.is_empty() {
-        None
-    } else {
-        Some(templates)
-    }
+    Some(templates)
 }
 
 fn module_delete_affordance_checks(program: &Program, target: &str, operation: &JsonValue) -> bool {
