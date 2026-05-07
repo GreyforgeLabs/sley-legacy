@@ -170,6 +170,49 @@ task main -> Result<Text, Error> uses FileRead {
     let _ = fs::remove_dir_all(root);
 }
 
+#[test]
+fn migrate_reports_unchecked_result_expression_propagation() {
+    let source_path =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("examples/unchecked_result.sley");
+    let output = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-migrate"))
+        .args(["report", "--json", path_str(&source_path).as_str()])
+        .output()
+        .expect("run sley-migrate");
+    assert!(
+        output.status.success(),
+        "sley-migrate failed\nstdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    support::validate_report_schema("sley.migrate.report.v0", &output.stdout);
+    let report: JsonValue = serde_json::from_slice(&output.stdout).expect("parse migrate JSON");
+    assert_eq!(report.pointer("/status"), Some(&json!("migrations")));
+    assert_eq!(report.pointer("/summary/migration_count"), Some(&json!(1)));
+    assert_eq!(
+        report.pointer("/summary/result_propagation_count"),
+        Some(&json!(1))
+    );
+    assert_eq!(
+        report.pointer("/migrations/0/kind"),
+        Some(&json!("propagate_unchecked_result"))
+    );
+    assert_eq!(
+        report.pointer("/migrations/0/category"),
+        Some(&json!("result_propagation"))
+    );
+    assert_eq!(
+        report.pointer("/migrations/0/operation/op"),
+        Some(&json!("ReplaceExpression"))
+    );
+    assert_eq!(
+        report.pointer("/migrations/0/operation/payload/source"),
+        Some(&json!(
+            "fs.try_write_text(\"sley_cli_smoke.txt\", \"written\")?"
+        ))
+    );
+}
+
 fn path_str(path: &Path) -> String {
     path.to_string_lossy().to_string()
 }
