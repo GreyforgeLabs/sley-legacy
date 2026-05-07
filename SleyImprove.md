@@ -685,6 +685,8 @@ utility binaries such as `sley-ci`, `sley-conformance`, `sley-contract`,
 `fixtures/ci_smoke_probe` manifest now separately locks the `sley-ci smoke`
 wrapper contract across parse, query, graft dry-run, and seeded
 multi-capability agent runtime authority cases.
+The broad smoke surface also pins direct and `sley-ci lint` module-filter
+failure paths so typo filters remain visible to both command surfaces.
 
 The current smoke manifest covers:
 
@@ -956,6 +958,9 @@ The v0 query report carries `schema: "sley.query.report.v0"` and supports:
 - strict call rows with caller, expression, source, callee, status, optional
   target, and optional candidates
 
+Unknown module filters fail with `QUERY_MODULE_FILTER_NOT_FOUND` instead of
+returning an empty successful query report.
+
 This is the immediate substrate for lints, migration hints, project dashboards,
 and eventually non-authoritative Sley helper passes.
 
@@ -965,6 +970,8 @@ and eventually non-authoritative Sley helper passes.
 surface. It runs the checker before linting, emits
 `schema: "sley.lint.report.v0"`, and keeps warning-grade lint output separate
 from hard checker diagnostics.
+Unknown module filters fail with `LINT_MODULE_FILTER_NOT_FOUND` instead of
+returning a clean lint report for an empty slice.
 
 The v0 lint rules are:
 
