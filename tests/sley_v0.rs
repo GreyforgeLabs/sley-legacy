@@ -2038,6 +2038,75 @@ task helper -> Int {
 }
 
 #[test]
+fn edit_plan_graft_templates_include_checked_call_site_affordances() {
+    let source = r#"
+module app.plan
+
+task main -> Int {
+  return call helper(21)
+}
+
+task helper -> Int {
+  take value: Int
+
+  return value * 2
+}
+"#;
+    let program = parse_program(source).expect("parse call-site affordance plan fixture");
+    let report = build_edit_plan_report_with_options(
+        "app.plan",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("task:app.plan.main".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "ready");
+    let template = report
+        .graft_templates
+        .iter()
+        .find(|template| {
+            template.kind == "update_call_sites"
+                && template.operation.pointer("/target")
+                    == Some(&serde_json::json!("task:app.plan.helper"))
+        })
+        .expect("checked call-site update template");
+    assert_eq!(
+        template.operation.pointer("/op"),
+        Some(&serde_json::json!("UpdateCallSites"))
+    );
+    assert_eq!(
+        template.operation.pointer("/payload/from"),
+        Some(&serde_json::json!("helper"))
+    );
+    assert_eq!(
+        template.operation.pointer("/payload/replacement"),
+        Some(&serde_json::json!("helper"))
+    );
+    assert_eq!(
+        template.operation.pointer("/payload/scope"),
+        Some(&serde_json::json!("task:app.plan.main"))
+    );
+    assert_eq!(
+        template.editable_json_pointers,
+        vec![
+            "/payload/replacement".to_string(),
+            "/payload/scope".to_string()
+        ]
+    );
+    let graft: GraftInput =
+        serde_json::from_value(template.operation.clone()).expect("parse call-site template");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:call-site-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+}
+
+#[test]
 fn edit_plan_graft_templates_can_target_expression_surfaces() {
     let source = r#"
 module app.plan
@@ -10751,11 +10820,11 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/integration_test_count"),
-        Some(&serde_json::json!(326))
+        Some(&serde_json::json!(327))
     );
     assert_eq!(
         report_json.pointer("/summary/declared_integration_test_count"),
-        Some(&serde_json::json!(326))
+        Some(&serde_json::json!(327))
     );
     assert_eq!(
         report_json.pointer("/summary/test_count_matches_declared"),
@@ -10779,7 +10848,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/tests/integration_test_count"),
-        Some(&serde_json::json!(326))
+        Some(&serde_json::json!(327))
     );
     assert_eq!(
         report_json.pointer("/tests/declared_matches_actual"),
@@ -12466,6 +12535,7 @@ fn graph_slice_schema_reuses_strict_graft_operation_affordances() {
         "/$defs/moveDestination/properties/operation/$ref",
         "/$defs/deleteAffordance/properties/operation/$ref",
         "/$defs/replaceAffordance/properties/operation/$ref",
+        "/$defs/callSiteAffordance/properties/operation/$ref",
     ] {
         assert_eq!(
             schema.pointer(pointer),
@@ -12504,6 +12574,14 @@ fn graph_slice_schema_covers_focus_task_and_call_summaries() {
     assert_eq!(
         schema.pointer("/$defs/replaceAffordance/properties/target_kind/enum/0"),
         Some(&serde_json::json!("statement"))
+    );
+    assert_eq!(
+        schema.pointer("/properties/call_site_affordances/items/$ref"),
+        Some(&serde_json::json!("#/$defs/callSiteAffordance"))
+    );
+    assert_eq!(
+        schema.pointer("/$defs/callSiteAffordance/properties/target_kind/enum"),
+        Some(&serde_json::json!(["call_site"]))
     );
     assert_eq!(
         schema.pointer("/$defs/sliceFocus/additionalProperties"),
@@ -16971,6 +17049,48 @@ fn graph_slice_reports_resolved_project_task_calls() {
         slice.outbound_calls[0].target.as_deref(),
         Some("app.math.double")
     );
+    assert_eq!(slice.call_site_affordances.len(), 1);
+    let affordance = &slice.call_site_affordances[0];
+    assert_eq!(affordance.target, "block:task:app.main.main:stmt:0:expr");
+    assert_eq!(affordance.target_kind, "call_site");
+    assert_eq!(affordance.task_target, "task:app.math.double");
+    assert_eq!(affordance.from, "app.main.main");
+    assert_eq!(affordance.callee, "math.double");
+    assert_eq!(
+        affordance.operation.pointer("/op"),
+        Some(&serde_json::json!("UpdateCallSites"))
+    );
+    assert_eq!(
+        affordance.operation.pointer("/target"),
+        Some(&serde_json::json!("task:app.math.double"))
+    );
+    assert_eq!(
+        affordance.operation.pointer("/payload/from"),
+        Some(&serde_json::json!("math.double"))
+    );
+    assert_eq!(
+        affordance.operation.pointer("/payload/replacement"),
+        Some(&serde_json::json!("math.double"))
+    );
+    assert_eq!(
+        affordance.operation.pointer("/payload/scope"),
+        Some(&serde_json::json!("task:app.main.main"))
+    );
+    assert_eq!(
+        affordance.editable_json_pointers,
+        vec![
+            "/payload/replacement".to_string(),
+            "/payload/scope".to_string()
+        ]
+    );
+    let graft: GraftInput =
+        serde_json::from_value(affordance.operation.clone()).expect("parse call site affordance");
+    let outcome = apply_graft_input(
+        &project.program,
+        graft,
+        Some("agent:graph-slice-call-site-affordance-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
 }
 
 #[test]
@@ -23124,10 +23244,12 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:operations:remove-task-effect",
         "graft:project-existing-import-write",
         "graph-slice:checked-add-affordances",
+        "graph-slice:checked-call-site-affordances",
         "graph-slice:checked-delete-affordances",
         "graph-slice:checked-insert-affordances",
         "graph-slice:checked-move-affordances",
         "graph-slice:checked-replace-affordances",
+        "graph-slice:call-site-affordances",
         "graph-slice:delete-affordances",
         "graph-slice:inbound-calls",
         "graph-slice:add-affordances",

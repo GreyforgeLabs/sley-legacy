@@ -286,6 +286,28 @@
       ]
     }
   ],
+  "call_site_affordances": [
+    {
+      "target": "block:task:app.main.main:stmt:0:expr",
+      "target_kind": "call_site",
+      "task_target": "task:app.math.double",
+      "from": "app.main.main",
+      "callee": "math.double",
+      "operation": {
+        "op": "UpdateCallSites",
+        "payload": {
+          "from": "math.double",
+          "replacement": "math.double",
+          "scope": "task:app.main.main"
+        },
+        "target": "task:app.math.double"
+      },
+      "editable_json_pointers": [
+        "/payload/replacement",
+        "/payload/scope"
+      ]
+    }
+  ],
   "outbound_calls": [
     {
       "from": "app.main.main",

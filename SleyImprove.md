@@ -164,8 +164,9 @@ Rules:
   shared diagnostic record, the edit-plan schema pins strict graft operation
   and transaction template envelopes reused by graph-slice affordances,
   the graph-slice schema links
-  focus, task, call-summary, inbound-call, and add/insert/move/delete/replace
-  affordance payloads to shared contracts, `sley-ci`
+  focus, task, call-summary, inbound-call, and
+  add/insert/move/delete/replace/call-site affordance payloads to shared
+  contracts, `sley-ci`
   check/lint/doctor/plan/run/verify/deploy/smoke/corpus/examples reports,
   LSP fix-preview and command-preview payloads, workbench reports, docgen
   reports, agent-bench reports, migrate reports, sandbox manifests, sandbox-runner reports,
@@ -315,8 +316,9 @@ Rules:
   selected graph-slice movement affordances as
   `move_statement`,
   `move_take`, and destination-variant templates when legal graph-slice
-  destinations exist. Agents can target a specific task surface by node id or
-  qualified name for task-body templates including a checked
+  destinations exist, and consumes checked graph-slice call-site affordances as
+  `update_call_sites` templates. Agents can target a specific task surface by
+  node id or qualified name for task-body templates including a checked
   `insert_statement` starter, a block node id backed by graph-slice insert
   affordances for a checked `insert_statement`
   starter, a statement node id for direct checked graph-slice move/delete and
@@ -532,7 +534,10 @@ deletion planning, omitting entry-module `main` task deletion and any starter
 rejected by the graft oracle, plus checker-filtered `ReplaceStatement`
 affordances for whole task-local
 statement replacement and `ReplaceExpression` affordances for task-local
-expression replacement.
+expression replacement. They also expose checker-filtered `UpdateCallSites`
+affordances for resolved task-local call sites, including the call expression
+id, called task target, caller task scope, raw callee, starter operation JSON,
+and editable replacement/scope pointers.
 `sley plan --graft-templates --template-surface program` now emits checked
 `add_task`, `add_type_declaration`, `add_effect_declaration`, and `add_import`
 starters so agents can add new declarations and imports without hand-authoring
@@ -729,9 +734,10 @@ The current smoke manifest covers:
   `rename_and_update_call_sites` transaction through `sley fix --write`
 - a write/query/verify smoke for `remove_take_and_remove_call_arg`, proving
   unused-take cleanup can also update resolved callers
-- checked graph-slice add, insert, move, delete, and replace affordances, plus
-  checked `insert_statement`, `replace_statement`, and `replace_expression` graft
-  templates in edit-plan reports
+- checked graph-slice add, insert, move, delete, replace, and call-site
+  affordances, plus checked `insert_statement`, `replace_statement`,
+  `replace_expression`, and `update_call_sites` graft templates in edit-plan
+  reports
 - program-surface declaration/import templates for checked `add_task`,
   `add_type_declaration`, `add_effect_declaration`, and `add_import` starters,
   plus `add_task` emission and dry-run fix execution with source, name, and

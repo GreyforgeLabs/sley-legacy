@@ -560,6 +560,7 @@ fn build_graft_templates(
     templates.extend(graph_slice_move_templates(program, surface));
     templates.extend(graph_slice_delete_templates(program, surface));
     templates.extend(graph_slice_replace_templates(program, surface));
+    templates.extend(graph_slice_call_site_templates(program, surface));
     templates.extend(lint_templates);
     if let Some(template) = task_body_insert_statement_template(program, surface) {
         templates.push(template);
@@ -2316,6 +2317,7 @@ fn direct_graph_slice_graft_templates(
     templates.extend(graph_slice_move_templates(program, surface));
     templates.extend(graph_slice_delete_templates(program, surface));
     templates.extend(graph_slice_replace_templates(program, surface));
+    templates.extend(graph_slice_call_site_templates(program, surface));
     if let Some(template) = statement_surface_replace_template(program, requested_surface) {
         let already_present = templates.iter().any(|existing| {
             existing.kind == "replace_statement"
@@ -3225,6 +3227,33 @@ fn replace_affordance_checks(program: &Program, operation: &JsonValue) -> bool {
     )
     .status
         == "accepted"
+}
+
+fn graph_slice_call_site_templates(
+    program: &Program,
+    surface: &EditPlanTaskSurface,
+) -> Vec<EditPlanGraftTemplate> {
+    let Some(slice) = slice_symbol_graph(program, &surface.id) else {
+        return Vec::new();
+    };
+    slice
+        .call_site_affordances
+        .into_iter()
+        .filter(|affordance| call_site_affordance_checks(program, &affordance.operation))
+        .map(|affordance| EditPlanGraftTemplate {
+            kind: "update_call_sites".to_string(),
+            reason:
+                "update this resolved call site using checked graph-slice UpdateCallSites affordance data"
+                    .to_string(),
+            surface: surface.id.clone(),
+            operation: affordance.operation,
+            editable_json_pointers: affordance.editable_json_pointers,
+        })
+        .collect()
+}
+
+fn call_site_affordance_checks(program: &Program, operation: &JsonValue) -> bool {
+    graft_operation_checks(program, operation, Some("agent:plan-call-site-affordance"))
 }
 
 fn build_transaction_templates(

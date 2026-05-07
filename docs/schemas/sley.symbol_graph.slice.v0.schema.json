@@ -17,6 +17,7 @@
     "move_affordances",
     "delete_affordances",
     "replace_affordances",
+    "call_site_affordances",
     "outbound_calls",
     "inbound_calls"
   ],
@@ -35,6 +36,7 @@
     "move_affordances": { "type": "array", "items": { "$ref": "#/$defs/moveAffordance" } },
     "delete_affordances": { "type": "array", "items": { "$ref": "#/$defs/deleteAffordance" } },
     "replace_affordances": { "type": "array", "items": { "$ref": "#/$defs/replaceAffordance" } },
+    "call_site_affordances": { "type": "array", "items": { "$ref": "#/$defs/callSiteAffordance" } },
     "outbound_calls": {
       "type": "array",
       "items": { "$ref": "sley.query.report.v0#/$defs/callSummary" }
@@ -221,6 +223,31 @@
           ]
         },
         "parent": { "type": "string", "minLength": 1 },
+        "operation": { "$ref": "sley.edit_plan.report.v0#/$defs/graftOperation" },
+        "editable_json_pointers": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "callSiteAffordance": {
+      "type": "object",
+      "required": [
+        "target",
+        "target_kind",
+        "task_target",
+        "from",
+        "callee",
+        "operation",
+        "editable_json_pointers"
+      ],
+      "properties": {
+        "target": { "type": "string", "minLength": 1 },
+        "target_kind": { "enum": ["call_site"] },
+        "task_target": { "type": "string", "minLength": 1 },
+        "from": { "type": "string", "minLength": 1 },
+        "callee": { "type": "string", "minLength": 1 },
         "operation": { "$ref": "sley.edit_plan.report.v0#/$defs/graftOperation" },
         "editable_json_pointers": {
           "type": "array",

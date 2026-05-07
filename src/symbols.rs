@@ -87,6 +87,7 @@ pub struct SymbolGraphSlice {
     pub move_affordances: Vec<MoveNodeAffordance>,
     pub delete_affordances: Vec<DeleteNodeAffordance>,
     pub replace_affordances: Vec<ReplaceAffordance>,
+    pub call_site_affordances: Vec<CallSiteAffordance>,
     pub outbound_calls: Vec<TaskCallSummary>,
     pub inbound_calls: Vec<TaskCallSummary>,
 }
@@ -165,6 +166,17 @@ pub struct ReplaceAffordance {
     pub target: String,
     pub target_kind: String,
     pub parent: String,
+    pub operation: JsonValue,
+    pub editable_json_pointers: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct CallSiteAffordance {
+    pub target: String,
+    pub target_kind: String,
+    pub task_target: String,
+    pub from: String,
+    pub callee: String,
     pub operation: JsonValue,
     pub editable_json_pointers: Vec<String>,
 }
@@ -692,6 +704,10 @@ fn build_slice(
         replace_affordances: checked_replace_affordances(
             program,
             build_replace_affordances(focus_task_index, &module_task_indexes, program),
+        ),
+        call_site_affordances: checked_call_site_affordances(
+            program,
+            build_call_site_affordances(&outbound_calls, program),
         ),
         outbound_calls,
         inbound_calls,
@@ -1864,6 +1880,76 @@ fn replace_statement_operation(target: &str, source: &str) -> JsonValue {
 
 fn replace_source_editable_json_pointers() -> Vec<String> {
     vec!["/payload/source".to_string()]
+}
+
+fn build_call_site_affordances(
+    calls: &[TaskCallSummary],
+    program: &Program,
+) -> Vec<CallSiteAffordance> {
+    calls
+        .iter()
+        .filter_map(|call| call_site_affordance(call, program))
+        .collect()
+}
+
+fn checked_call_site_affordances(
+    program: &Program,
+    affordances: Vec<CallSiteAffordance>,
+) -> Vec<CallSiteAffordance> {
+    affordances
+        .into_iter()
+        .filter(|affordance| {
+            graph_slice_operation_checks(
+                program,
+                &affordance.operation,
+                Some("agent:graph-slice-call-site-affordance"),
+            )
+        })
+        .collect()
+}
+
+fn call_site_affordance(call: &TaskCallSummary, program: &Program) -> Option<CallSiteAffordance> {
+    if call.status != "resolved" {
+        return None;
+    }
+    let target = call.target.as_deref()?;
+    let task = program
+        .tasks
+        .iter()
+        .find(|task| task_fq_name(task) == target)?;
+    Some(CallSiteAffordance {
+        target: call.expr_id.clone(),
+        target_kind: "call_site".to_string(),
+        task_target: task.id.clone(),
+        from: call.from.clone(),
+        callee: call.callee.clone(),
+        operation: update_call_sites_operation(&task.id, &call.callee, &call.callee, &call.from),
+        editable_json_pointers: update_call_sites_editable_json_pointers(),
+    })
+}
+
+fn update_call_sites_operation(
+    target: &str,
+    from: &str,
+    replacement: &str,
+    task_scope: &str,
+) -> JsonValue {
+    json!({
+        "op": "UpdateCallSites",
+        "target": target,
+        "payload": {
+            "from": from,
+            "replacement": replacement,
+            "scope": format!("task:{task_scope}")
+        }
+    })
+}
+
+fn update_call_sites_editable_json_pointers() -> Vec<String> {
+    vec![
+        "/payload/replacement".to_string(),
+        "/payload/scope".to_string(),
+    ]
 }
 
 fn expr_kind_name(kind: &ExprKind) -> &'static str {
