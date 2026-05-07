@@ -989,6 +989,37 @@
       }
     },
     {
+      "name": "query_project_exported_tasks_json",
+      "args": [
+        "query",
+        "--json",
+        "--kind",
+        "tasks",
+        "--module",
+        "app.math",
+        "--exported",
+        "examples/project"
+      ],
+      "covers": [
+        "cli:query",
+        "json:sley.query.report.v0",
+        "query:tasks",
+        "query:exported-only"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.query.report.v0" },
+          { "pointer": "/kind", "value": "tasks" },
+          { "pointer": "/filters/module", "value": "app.math" },
+          { "pointer": "/filters/exported_only", "value": true },
+          { "pointer": "/tasks/0/qualified_name", "value": "app.math.double" },
+          { "pointer": "/tasks/0/exported", "value": true },
+          { "pointer": "/tasks/0/inbound_call_count", "value": 1 }
+        ]
+      }
+    },
+    {
       "name": "query_profile_types_json",
       "args": ["query", "--json", "--kind", "types", "--module", "app.profile", "examples/profile_service.sley"],
       "covers": ["cli:query", "json:sley.query.report.v0", "query:types"],
