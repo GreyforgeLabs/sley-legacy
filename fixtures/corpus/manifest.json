@@ -321,6 +321,14 @@
         "language:unknown-identifier",
         "diagnostic:UNKNOWN_IDENTIFIER"
       ]
+    },
+    {
+      "path": "rejected/unknown_task.sley",
+      "covers": [
+        "language:unknown-task",
+        "diagnostic:UNKNOWN_TASK",
+        "repair:declare-or-import-task"
+      ]
     }
   ]
 }

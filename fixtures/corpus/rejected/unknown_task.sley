@@ -1,0 +1,4 @@
+task main -> Unit {
+  bind label = "ready"
+  call missing(1, label)
+}

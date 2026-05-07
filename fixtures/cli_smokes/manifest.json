@@ -794,6 +794,27 @@
       }
     },
     {
+      "name": "check_unknown_task_repair_hint_json",
+      "args": ["check", "--json", "fixtures/corpus/rejected/unknown_task.sley"],
+      "covers": [
+        "cli:check",
+        "json:sley.diagnostics.report.v0",
+        "diagnostic:UNKNOWN_TASK",
+        "repair:declare-or-import-task"
+      ],
+      "expect": {
+        "success": false,
+        "stderr_contains": ["check failed"],
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.diagnostics.report.v0" },
+          { "pointer": "/status", "value": "error" },
+          { "pointer": "/diagnostics/0/id", "value": "UNKNOWN_TASK" },
+          { "pointer": "/diagnostics/0/repair_hints/0/kind", "value": "declare_or_import_task" },
+          { "pointer": "/diagnostics/0/repair_hints/0/replacement", "value": "task missing -> Unit {\n  take arg0: Int\n  take arg1: Text\n}" }
+        ]
+      }
+    },
+    {
       "name": "ast_hello_task_json",
       "args": ["ast", "--json", "--node", "task:app.hello.main", "examples/hello.sley"],
       "covers": ["cli:ast", "json:sley.ast.node.v0"],
