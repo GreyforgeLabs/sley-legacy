@@ -302,9 +302,10 @@ Rules:
   temp-cwd smoke cases portable across direct agent invocation and the `make v1`
   absolute-root path.
 - `sley plan` consumes the same checked surfaces into ranked task edit
-  surfaces, call-row inspection next-actions, post-edit gate commands with
-  inferred deterministic host seeds when reachable literal host calls make that
-  safe, and optional starter graft operation templates, rename-plus-call-site
+  surfaces, call-row inspection next-actions, direct and `sley-ci` post-edit
+  gate commands with inferred deterministic host seeds when reachable literal
+  host calls make that safe, and optional starter graft operation templates,
+  rename-plus-call-site
   transactions, and add-take-plus-call-arg transactions, plus safe
   remove-take-plus-call-arg transactions for unused
   takes and lint-driven delete templates plus cleanup transactions for unused
@@ -779,8 +780,8 @@ The current smoke manifest covers:
   staged write-and-verify smoke for the previewed unused-private-task repair
   path and a project-level previewed unused-import repair path, including
   generated starter, service, deploy, and agent scaffold quickstarts
-  re-verified with local or seeded authority and seeded plan post-edit verify
-  commands for reachable agent host calls
+  re-verified with local or seeded authority and direct plus `sley-ci` seeded
+  plan post-edit verify commands for reachable agent host calls
 - lint-driven declaration delete templates, cleanup transactions, and direct
   declaration surface targeting in edit-plan reports
 - lint-driven missing-module `AddModuleDeclaration` templates, module-name

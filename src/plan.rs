@@ -4503,8 +4503,16 @@ fn ready_actions(
     actions.push(EditPlanAction {
         kind: "post_edit_verify".to_string(),
         reason: "run deterministic verification after the planned graft is applied".to_string(),
-        command: verify_command(target, query, program),
+        command: verify_command("sley", target, query, program),
     });
+    if entry_task_has_effects(query) {
+        actions.push(EditPlanAction {
+            kind: "post_edit_ci_verify".to_string(),
+            reason: "run the same deterministic post-edit verification through the CI wrapper"
+                .to_string(),
+            command: verify_command("sley-ci", target, query, program),
+        });
+    }
     actions
 }
 
@@ -4535,10 +4543,24 @@ fn inspect_surface_action(target: &str, surface_id: &str) -> EditPlanAction {
     }
 }
 
-fn verify_command(target: &str, query: &QueryReport, program: &Program) -> Vec<String> {
+fn entry_task_has_effects(query: &QueryReport) -> bool {
+    let entry_task = format!("{}.main", query.entry_module);
+    query
+        .tasks
+        .iter()
+        .find(|task| task.qualified_name == entry_task)
+        .is_some_and(|task| !task.effects.is_empty())
+}
+
+fn verify_command(
+    binary: &str,
+    target: &str,
+    query: &QueryReport,
+    program: &Program,
+) -> Vec<String> {
     let entry_task = format!("{}.main", query.entry_module);
     let mut command = vec![
-        "sley".to_string(),
+        binary.to_string(),
         "verify".to_string(),
         "--json".to_string(),
     ];
