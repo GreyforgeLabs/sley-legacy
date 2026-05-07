@@ -824,6 +824,7 @@
         "json:sley.query.report.v0",
         "json:sley.lint.report.v0",
         "readiness:verify-deploy-package",
+        "readiness:verify-ci-deploy-package",
         "readiness:verify-package-next-action",
         "scaffold:deploy-quickstart",
         "scaffold:verify-ready",
@@ -853,7 +854,13 @@
           { "pointer": "/next_actions/2/command/1", "value": "deploy" },
           { "pointer": "/next_actions/2/command/5", "value": ".sley/deploy" },
           { "pointer": "/next_actions/2/command/7", "value": "Deploy" },
-          { "pointer": "/next_actions/2/command/10", "value": "staged" }
+          { "pointer": "/next_actions/2/command/10", "value": "staged" },
+          { "pointer": "/next_actions/3/kind", "value": "ci_deploy_package" },
+          { "pointer": "/next_actions/3/command/0", "value": "sley-ci" },
+          { "pointer": "/next_actions/3/command/1", "value": "deploy" },
+          { "pointer": "/next_actions/3/command/5", "value": ".sley/ci-deploy" },
+          { "pointer": "/next_actions/3/command/7", "value": "Deploy" },
+          { "pointer": "/next_actions/3/command/10", "value": "staged" }
         ]
       }
     },
@@ -1289,6 +1296,7 @@
         "json:sley.doctor.report.v0",
         "readiness:agent-quickstart-path",
         "readiness:doctor-deploy-package",
+        "readiness:doctor-ci-deploy-package",
         "scaffold:agent-project-quickstart"
       ],
       "expect": {
@@ -1302,7 +1310,10 @@
           { "pointer": "/summary/call_count", "value": 11 },
           { "pointer": "/next_actions/1/kind", "value": "inspect_calls" },
           { "pointer": "/next_actions/5/kind", "value": "prepare_deploy_package" },
-          { "pointer": "/next_actions/5/command/5", "value": ".sley/deploy" }
+          { "pointer": "/next_actions/5/command/5", "value": ".sley/deploy" },
+          { "pointer": "/next_actions/6/kind", "value": "ci_deploy_package" },
+          { "pointer": "/next_actions/6/command/0", "value": "sley-ci" },
+          { "pointer": "/next_actions/6/command/5", "value": ".sley/ci-deploy" }
         ]
       }
     },
@@ -13408,6 +13419,7 @@
         "dogfood:agent-deploy-pipeline",
         "json:sley.doctor.report.v0",
         "readiness:doctor-deploy-package",
+        "readiness:doctor-ci-deploy-package",
         "readiness:doctor-verify-gate",
         "readiness:inspect-calls"
       ],
@@ -13439,7 +13451,15 @@
           { "pointer": "/next_actions/5/command/14", "value": "--secret" },
           { "pointer": "/next_actions/5/command/19", "value": "profile ready" },
           { "pointer": "/next_actions/5/command/22", "value": "plan approved" },
-          { "pointer": "/next_actions/5/command/25", "value": "staged" }
+          { "pointer": "/next_actions/5/command/25", "value": "staged" },
+          { "pointer": "/next_actions/6/kind", "value": "ci_deploy_package" },
+          { "pointer": "/next_actions/6/command/0", "value": "sley-ci" },
+          { "pointer": "/next_actions/6/command/1", "value": "deploy" },
+          { "pointer": "/next_actions/6/command/5", "value": ".sley/ci-deploy" },
+          { "pointer": "/next_actions/6/command/14", "value": "--secret" },
+          { "pointer": "/next_actions/6/command/19", "value": "profile ready" },
+          { "pointer": "/next_actions/6/command/22", "value": "plan approved" },
+          { "pointer": "/next_actions/6/command/25", "value": "staged" }
         ]
       }
     },
@@ -13929,6 +13949,7 @@
         "examples:project",
         "json:sley.doctor.report.v0",
         "readiness:doctor-deploy-package",
+        "readiness:doctor-ci-deploy-package",
         "readiness:doctor-verify-gate",
         "readiness:inspect-calls"
       ],
@@ -13962,7 +13983,15 @@
           { "pointer": "/next_actions/5/command/14", "value": "--secret" },
           { "pointer": "/next_actions/5/command/19", "value": "profile ready" },
           { "pointer": "/next_actions/5/command/22", "value": "plan approved" },
-          { "pointer": "/next_actions/5/command/25", "value": "staged" }
+          { "pointer": "/next_actions/5/command/25", "value": "staged" },
+          { "pointer": "/next_actions/6/kind", "value": "ci_deploy_package" },
+          { "pointer": "/next_actions/6/command/0", "value": "sley-ci" },
+          { "pointer": "/next_actions/6/command/1", "value": "deploy" },
+          { "pointer": "/next_actions/6/command/5", "value": ".sley/ci-deploy" },
+          { "pointer": "/next_actions/6/command/14", "value": "--secret" },
+          { "pointer": "/next_actions/6/command/19", "value": "profile ready" },
+          { "pointer": "/next_actions/6/command/22", "value": "plan approved" },
+          { "pointer": "/next_actions/6/command/25", "value": "staged" }
         ]
       }
     },
@@ -14148,6 +14177,7 @@
         "examples:project",
         "json:sley.verify.report.v0",
         "readiness:verify-deploy-package",
+        "readiness:verify-ci-deploy-package",
         "host:SecretRead",
         "host:Network",
         "host:ModelCall",
@@ -14173,7 +14203,15 @@
           { "pointer": "/next_actions/2/command/14", "value": "--secret" },
           { "pointer": "/next_actions/2/command/19", "value": "profile ready" },
           { "pointer": "/next_actions/2/command/22", "value": "plan approved" },
-          { "pointer": "/next_actions/2/command/25", "value": "staged" }
+          { "pointer": "/next_actions/2/command/25", "value": "staged" },
+          { "pointer": "/next_actions/3/kind", "value": "ci_deploy_package" },
+          { "pointer": "/next_actions/3/command/0", "value": "sley-ci" },
+          { "pointer": "/next_actions/3/command/1", "value": "deploy" },
+          { "pointer": "/next_actions/3/command/5", "value": ".sley/ci-deploy" },
+          { "pointer": "/next_actions/3/command/14", "value": "--secret" },
+          { "pointer": "/next_actions/3/command/19", "value": "profile ready" },
+          { "pointer": "/next_actions/3/command/22", "value": "plan approved" },
+          { "pointer": "/next_actions/3/command/25", "value": "staged" }
         ]
       }
     },

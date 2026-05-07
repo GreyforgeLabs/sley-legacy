@@ -324,17 +324,28 @@ fn ready_actions(target: &str, query: &QueryReport, program: &Program) -> Vec<Do
             "--artifacts-dir".to_string(),
             ".sley/deploy".to_string(),
         ];
+        let mut ci_deploy_command = vec![
+            "sley-ci".to_string(),
+            "deploy".to_string(),
+            "--json".to_string(),
+            "--dry-run".to_string(),
+            "--artifacts-dir".to_string(),
+            ".sley/ci-deploy".to_string(),
+        ];
         let authority_args = cap_args(&task.effects);
         verify_command.extend(authority_args.iter().cloned());
         run_command.extend(authority_args.iter().cloned());
-        deploy_command.extend(authority_args);
+        deploy_command.extend(authority_args.iter().cloned());
+        ci_deploy_command.extend(authority_args);
         let seed_args = inferred_runtime_seed_args(program, &entry_task);
         verify_command.extend(seed_args.iter().cloned());
         run_command.extend(seed_args.iter().cloned());
-        deploy_command.extend(seed_args);
+        deploy_command.extend(seed_args.iter().cloned());
+        ci_deploy_command.extend(seed_args);
         verify_command.push(target.to_string());
         run_command.push(target.to_string());
         deploy_command.push(target.to_string());
+        ci_deploy_command.push(target.to_string());
         actions.push(DoctorAction {
             kind: "verify_gate".to_string(),
             reason: if task.effects.is_empty() {
@@ -368,6 +379,13 @@ fn ready_actions(target: &str, query: &QueryReport, program: &Program) -> Vec<Do
                     "entrypoint has Deploy authority, so prepare a local dry-run deploy package"
                         .to_string(),
                 command: deploy_command,
+                write_command: None,
+            });
+            actions.push(DoctorAction {
+                kind: "ci_deploy_package".to_string(),
+                reason: "run the same local deploy dry-run package gate through the CI wrapper"
+                    .to_string(),
+                command: ci_deploy_command,
                 write_command: None,
             });
         }

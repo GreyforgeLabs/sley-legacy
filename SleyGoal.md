@@ -332,7 +332,7 @@ Current verified surface:
   smoke that locks retry next-actions with inferred deterministic gates and host
   seeds, ready-state doctor `verify_gate` next-actions with explicit caps and deterministic host
   seeds before entrypoint runs and deploy-capable doctor
-  and passed-verify `prepare_deploy_package` dry-run handoffs that preserve
+  and passed-verify direct plus `sley-ci` deploy dry-run handoffs that preserve
   exact verified runtime args when supplied, plus runtime-failed verify retry
   actions with deterministic inferred gates and host seeds, plus
   scaffold-level and passed-verify seal/ZJX handoff next-actions, doctor/plan
