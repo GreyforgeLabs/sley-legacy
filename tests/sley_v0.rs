@@ -5773,6 +5773,73 @@ fn edit_plan_graft_templates_include_empty_if_statement_delete() {
 }
 
 #[test]
+fn edit_plan_graft_templates_include_empty_while_statement_delete() {
+    let source = include_str!("../examples/empty_while_statement.sley");
+    let program = parse_program(source).expect("parse empty while fixture");
+    let report = build_edit_plan_report_with_options(
+        "examples/empty_while_statement.sley",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: None,
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "warnings");
+    assert_eq!(report.summary.lint_finding_count, 1);
+    assert_eq!(
+        report.lint.as_ref().expect("lint summary").findings[0].id,
+        "EMPTY_WHILE_STATEMENT"
+    );
+    let template = report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "delete_empty_while_statement")
+        .expect("empty while delete template");
+    assert_eq!(template.surface, "block:task:app.empty_while.main:stmt:2");
+    assert_eq!(
+        template.operation.pointer("/op"),
+        Some(&serde_json::json!("DeleteNode"))
+    );
+    assert_eq!(
+        template.operation.pointer("/target"),
+        Some(&serde_json::json!("block:task:app.empty_while.main:stmt:2"))
+    );
+    assert!(template.editable_json_pointers.is_empty());
+    let graft: GraftInput = serde_json::from_value(template.operation.clone())
+        .expect("parse empty while delete template");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:empty-while-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted_source = outcome.source.expect("grafted source");
+    assert!(!grafted_source.contains("while ready"));
+    assert!(grafted_source.contains("return value"));
+
+    let targeted_report = build_edit_plan_report_with_options(
+        "examples/empty_while_statement.sley",
+        Ok(program),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("block:task:app.empty_while.main:stmt:2".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(targeted_report.status, "warnings");
+    assert!(targeted_report.diagnostics.is_empty());
+    assert_eq!(targeted_report.graft_templates.len(), 1);
+    assert_eq!(
+        targeted_report.graft_templates[0].kind,
+        "delete_empty_while_statement"
+    );
+    assert!(targeted_report.transaction_templates.is_empty());
+}
+
+#[test]
 fn edit_plan_graft_templates_include_empty_else_statement_remove() {
     let source = include_str!("../examples/empty_else_statement.sley");
     let program = parse_program(source).expect("parse empty else fixture");
@@ -10666,7 +10733,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/smoke_case_count"),
-        Some(&serde_json::json!(454))
+        Some(&serde_json::json!(459))
     );
     assert_eq!(
         report_json.pointer("/summary/onboarding_path_count"),
@@ -10682,11 +10749,11 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/integration_test_count"),
-        Some(&serde_json::json!(324))
+        Some(&serde_json::json!(325))
     );
     assert_eq!(
         report_json.pointer("/summary/declared_integration_test_count"),
-        Some(&serde_json::json!(324))
+        Some(&serde_json::json!(325))
     );
     assert_eq!(
         report_json.pointer("/summary/test_count_matches_declared"),
@@ -10710,7 +10777,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/tests/integration_test_count"),
-        Some(&serde_json::json!(324))
+        Some(&serde_json::json!(325))
     );
     assert_eq!(
         report_json.pointer("/tests/declared_matches_actual"),
@@ -22991,6 +23058,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:templates:empty-else-statement-remove",
         "graft:templates:empty-for-statement-delete",
         "graft:templates:empty-forge-statement-delete",
+        "graft:templates:empty-while-statement-delete",
         "graft:templates:unreachable-statement-delete",
         "graft:templates:redundant-boolean-if-statement",
         "graft:templates:same-branch-if-statement",
@@ -23082,6 +23150,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:empty-if-repair-write-verify",
         "readiness:empty-for-repair-write-verify",
         "readiness:empty-forge-repair-write-verify",
+        "readiness:empty-while-repair-write-verify",
         "readiness:deploy-package-artifacts",
         "readiness:deploy-package-artifact-inspection",
         "readiness:deploy-package-dry-run",

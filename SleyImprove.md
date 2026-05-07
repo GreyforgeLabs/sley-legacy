@@ -880,9 +880,11 @@ The current smoke manifest covers:
 - empty-forge statement warnings through `empty_forge_statement`, plus checked
   `delete_empty_forge_statement` templates that remove no-op `forge { }`
   starter blocks through lint/plan/fix-write/verify CLI smoke coverage
-- empty-while statement warnings through `empty_while_statement` for empty
-  loops with delete-safe pure conditions, while leaving constant-false loop
-  deletion to the existing `constant_false_while_statement` repair path
+- empty-while statement warnings through `empty_while_statement`, plus checked
+  `delete_empty_while_statement` templates that remove empty loops with
+  delete-safe pure conditions through lint/plan/fix-write/verify CLI smoke
+  coverage, while leaving constant-false loop deletion to the existing
+  `constant_false_while_statement` repair path
 - identity binary expression style warnings through `identity_binary_expression`,
   plus checked `simplify_identity_binary_expression` templates that replace
   `x + 0`, `x * 1`, `flag && true`, `flag || false`, or empty-text
@@ -1095,7 +1097,8 @@ The v0 lint rules are:
   agents can delete placeholder starter blocks before readiness or deploy gates.
 - `empty_while_statement`: an empty `while` body with a delete-safe pure
   non-`false` condition is reported so agents review loops that may hang or do
-  no visible work without overlapping the `while false` deletion rule.
+  no visible work and can remove them through checked `DeleteNode` templates
+  without overlapping the `while false` deletion rule.
 - `identity_binary_expression`: a checked identity binary expression such as
   `x + 0`, `x * 1`, `flag && true`, `flag || false`, `"" + name`, or
   `name + ""` is reported so agents can replace it with the non-identity side.

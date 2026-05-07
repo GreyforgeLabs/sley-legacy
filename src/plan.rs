@@ -653,6 +653,7 @@ fn lint_graft_templates(
     templates.extend(lint_empty_else_statement_templates(program, lint_report));
     templates.extend(lint_empty_for_statement_templates(program, lint_report));
     templates.extend(lint_empty_forge_statement_templates(program, lint_report));
+    templates.extend(lint_empty_while_statement_templates(program, lint_report));
     templates.extend(lint_identity_binary_expression_templates(
         program,
         lint_report,
@@ -739,6 +740,7 @@ fn is_lint_repair_kind(kind: &str) -> bool {
             | "remove_empty_else_statement"
             | "delete_empty_for_statement"
             | "delete_empty_forge_statement"
+            | "delete_empty_while_statement"
             | "simplify_identity_binary_expression"
             | "simplify_redundant_boolean_comparison"
             | "simplify_double_negation_expression"
@@ -1555,6 +1557,33 @@ fn lint_empty_forge_statement_templates(
             Some(EditPlanGraftTemplate {
                 kind: "delete_empty_forge_statement".to_string(),
                 reason: "delete this no-op forge statement".to_string(),
+                surface: finding.node.clone(),
+                operation,
+                editable_json_pointers: Vec::new(),
+            })
+        })
+        .collect()
+}
+
+fn lint_empty_while_statement_templates(
+    program: &Program,
+    lint_report: &LintReport,
+) -> Vec<EditPlanGraftTemplate> {
+    lint_report
+        .findings
+        .iter()
+        .filter(|finding| finding.id == "EMPTY_WHILE_STATEMENT")
+        .filter_map(|finding| {
+            let operation = json!({
+                "op": "DeleteNode",
+                "target": finding.node
+            });
+            if !delete_affordance_checks(program, &operation) {
+                return None;
+            }
+            Some(EditPlanGraftTemplate {
+                kind: "delete_empty_while_statement".to_string(),
+                reason: "delete this empty while statement after checked lint proves its condition is delete-safe and pure".to_string(),
                 surface: finding.node.clone(),
                 operation,
                 editable_json_pointers: Vec::new(),

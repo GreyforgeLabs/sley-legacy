@@ -1080,6 +1080,9 @@ statement over a literal empty list preserves a checked program.
 `empty_forge_statement` lint findings become checked
 `delete_empty_forge_statement` `DeleteNode` templates when deleting a no-op
 `forge { }` starter block preserves a checked program.
+`empty_while_statement` lint findings become checked
+`delete_empty_while_statement` `DeleteNode` templates when deleting an empty
+loop with a delete-safe pure condition preserves a checked program.
 `identity_binary_expression` lint findings become checked
 `simplify_identity_binary_expression` `ReplaceExpression` templates when
 replacing `x + 0`, `x * 1`, `flag && true`, `flag || false`, or empty-text
@@ -1307,7 +1310,8 @@ can be removed as never-executed code; and
 `empty_forge_statement`, which warns when a no-op `forge { }` statement can be
 removed before readiness or deploy gates; and
 `empty_while_statement`, which warns when an empty `while` body with a
-delete-safe pure non-`false` condition may hang or do no visible work; and
+delete-safe pure non-`false` condition may hang or do no visible work and can
+be removed through a checked `DeleteNode` repair template; and
 `identity_binary_expression`, which warns when a checked identity
 binary expression such as `x + 0`, `x * 1`, `flag && true`, `flag || false`,
 `"" + name`, or `name + ""` can be replaced with the non-identity side; and
@@ -1502,7 +1506,8 @@ refuse generic data disguised as Sley artifacts before compression begins.
   empty-if statement cleanup templates,
   empty-else statement cleanup templates,
   empty-for statement cleanup templates, empty-forge statement cleanup
-  templates, redundant boolean-if statement cleanup templates,
+  templates, empty-while statement cleanup templates,
+  redundant boolean-if statement cleanup templates,
   unreachable statement cleanup templates, and mutable
   binding conversion transactions, constant-if expression and statement
   simplification, constant arithmetic and absorbing arithmetic simplification,

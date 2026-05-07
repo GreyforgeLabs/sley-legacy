@@ -323,8 +323,8 @@ Implemented now:
   empty lists,
   `delete_empty_forge_statement` templates for no-op `forge { }` starter
   blocks,
-  `empty_while_statement` warnings for empty loops with delete-safe pure
-  conditions,
+  `delete_empty_while_statement` templates for empty loops with delete-safe
+  pure conditions,
   `simplify_identity_binary_expression` templates for identity binary
   expressions, including empty-text concatenation, that can be replaced by the
   non-identity side,
@@ -483,8 +483,8 @@ Implemented now:
   declaration/import planning and `add_task`/effect/import fix dry runs with
   name/source/module overrides,
   missing-module checked repair templates with module-name inference,
-  lint-driven fix writes that clear warnings before verify, including empty-if
-  and empty-else cleanup, a standalone agent deploy pipeline example with
+  lint-driven fix writes that clear warnings before verify, including empty-if,
+  empty-else, and empty-while cleanup, a standalone agent deploy pipeline example with
   check/lint/run/verify/deploy dry-run coverage, and seeded host-adapter
   execution
 - packaged example conformance through `sley-ci examples --json examples`,
@@ -971,6 +971,7 @@ empty-if statement delete templates with write/verify coverage,
 empty-else statement removal templates with write/verify coverage,
 empty-for statement delete templates with write/verify coverage,
 empty-forge statement delete templates with write/verify coverage,
+empty-while statement delete templates with write/verify coverage,
 no-op self-assignment statement delete templates with write/verify coverage,
 overwritten set statement delete templates with write/verify coverage,
 identity binary expression simplification templates, including empty-text
