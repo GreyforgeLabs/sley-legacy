@@ -223,7 +223,8 @@ Rules:
   lint, edit-plan, graph, and graph-slice contracts. Lint rows carry focused
   `sley plan --graft-templates` commands, and edit-plan template rows carry
   preview, write, and post-fix gate commands plus a local repair-focus selector
-  for repair handoff.
+  for repair handoff. Graph-slice HTML rows expose checked
+  add/insert/move/delete/replace/call-site/call-argument affordances.
 - `sley-docgen` exposes checked Markdown reference generation over
   query-derived module, task, type, effect, and host capability docs. Its
   report schema reuses the strict query task/type/effect row definitions and

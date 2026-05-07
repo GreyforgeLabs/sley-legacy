@@ -146,7 +146,9 @@ Current verified surface:
   lint, edit-plan, graph, and graph-slice panels back to their source
   contracts; lint rows carry focused `sley plan --graft-templates` commands,
   and edit-plan template rows carry preview, write, and post-fix gate commands
-  plus a local repair-focus selector for repair handoff.
+  plus a local repair-focus selector for repair handoff; graph-slice HTML rows
+  expose checked add/insert/move/delete/replace/call-site/call-argument
+  affordances.
 - `sley-docgen` is available as an in-tree checked reference generator with
   `schema: "sley.docgen.report.v0"` and optional Markdown over module, task,
   type, effect, and host capability docs from `sley.query.report.v0`,

@@ -209,7 +209,8 @@ Implemented now:
   explicit write commands, post-fix check/lint/verify gates, and a local
   repair-focus selector plus focused `sley plan --graft-templates` commands
   for lint findings and a graph target selector that builds focused `--slice`
-  commands
+  commands; graph-slice HTML rows expose checked add, insert, move, delete,
+  replace, call-site, and call-argument affordances
 - in-tree `sley-docgen` reference generator that emits
   `schema: "sley.docgen.report.v0"` and optional Markdown over checked
   module, task, type, effect, and host capability reference data, including
