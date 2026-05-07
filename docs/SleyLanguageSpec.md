@@ -1084,7 +1084,9 @@ or qualified task name, a block node id backed by graph-slice insert
 affordances, a statement node id for direct checked graph-slice move/delete and
 `replace_statement` templates, a take node id for direct checked graph-slice
 move/delete templates, an expression node id for a checked no-op
-`replace_expression` starter template, the `program` declaration/import and
+`replace_expression` starter template, a module surface or module declaration
+list parent such as `module:app.module:tasks`, a direct declaration surface
+such as `type:app.module.Name`, the `program` declaration/import and
 missing-module surface, or a lint surface by lint finding node id such as
 `import:app.main:app.stale`,
 `type:app.module.Name`, or `effect:app.module.Name`. For selected tasks with

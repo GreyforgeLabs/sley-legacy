@@ -215,8 +215,9 @@ Implemented now:
   graft target ids, call-row inspection next-actions, optional
   `--graft-templates` starter operation payloads, rename-plus-call-site and
   add-take-plus-call-arg transaction templates for targeted caller surfaces,
-  direct module-surface and module declaration-list graph-slice templates for
-  checked top-level import/type/effect/task moves and deletes,
+  direct module-surface, module declaration-list, and declaration-id
+  graph-slice templates for checked top-level import/type/effect/task moves
+  and deletes,
   safe remove-take-plus-call-arg transaction templates for unused takes,
   lint-driven delete templates and cleanup
   transactions for unused private types/effects, checked

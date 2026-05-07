@@ -463,7 +463,10 @@ machine contract instead of reconstructing them.
 `sley plan --graft-templates --template-surface module:<name>` and declaration
 list parents such as `module:<name>:tasks` now consume the module graph-slice
 affordances directly, exposing checked top-level import/type/effect/task move
-and delete templates at module granularity.
+and delete templates at module granularity. Direct declaration ids such as
+`type:app.module.Name`, `effect:app.module.Audit`, and
+`import:app.module:app.shared` use the same graph-slice move/delete
+affordance path scoped to the selected declaration.
 Graph slices also expose bounded `InsertStatement` affordances for task-local
 block insertion, plus bounded `MoveNode` affordances for import, type, effect,
 task, statement, and take movement planning, including exact parent ids and
