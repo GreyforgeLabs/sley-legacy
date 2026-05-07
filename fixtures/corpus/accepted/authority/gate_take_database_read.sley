@@ -1,0 +1,13 @@
+module corpus.accepted.authority_gate
+
+task lookup_user -> Text uses DatabaseRead {
+  take gate db: Gate<DatabaseRead>
+  take id: Text
+
+  bind row = call db.query_one("select * from users where id = ?", id)
+  return row.text("name")
+}
+
+task main -> Text uses DatabaseRead {
+  return call lookup_user("u1")
+}

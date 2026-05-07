@@ -11,6 +11,17 @@
       ]
     },
     {
+      "path": "accepted/authority/gate_take_database_read.sley",
+      "covers": [
+        "accepted:GateTake",
+        "accepted:DatabaseRead",
+        "host:db.query_one",
+        "authority:gate-take",
+        "authority:declared-effect",
+        "formatter:round-trip"
+      ]
+    },
+    {
       "path": "accepted/authority/database_write.sley",
       "covers": [
         "accepted:DatabaseWrite",
@@ -192,6 +203,17 @@
       "covers": [
         "rejected:DatabaseRead",
         "host:db.query_one",
+        "authority:missing-effect",
+        "diagnostic:EFFECT_UNAUTHORIZED"
+      ]
+    },
+    {
+      "path": "rejected/authority/missing_gate_take_effect.sley",
+      "covers": [
+        "rejected:GateTake",
+        "rejected:DatabaseRead",
+        "host:db.query_one",
+        "authority:gate-take",
         "authority:missing-effect",
         "diagnostic:EFFECT_UNAUTHORIZED"
       ]
