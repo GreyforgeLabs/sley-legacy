@@ -61,7 +61,19 @@ fn shadow_reports_query_lint_links_and_authority_seeds() {
             "--cap",
             "ModelCall",
             "--cap",
-            "Deploy"
+            "Deploy",
+            "--secret",
+            "api_key",
+            "redacted",
+            "--http-text",
+            "https://example.test/profile",
+            "profile ready",
+            "--model-output",
+            "deploy-plan",
+            "plan approved",
+            "--deploy-result",
+            "staging",
+            "staged"
         ]))
     );
 }
@@ -108,6 +120,14 @@ fn shadow_reports_multi_module_project_authority_seeds() {
     assert_eq!(
         report.pointer("/authority_seeds/1/qualified_name"),
         Some(&json!("agent.pipeline.collect_profile"))
+    );
+    assert_eq!(
+        report.pointer("/authority_seeds/0/command_args/8"),
+        Some(&json!("--secret"))
+    );
+    assert_eq!(
+        report.pointer("/authority_seeds/0/command_args/13"),
+        Some(&json!("profile ready"))
     );
     assert_eq!(
         report.pointer("/authority_seeds/3/command_args"),
