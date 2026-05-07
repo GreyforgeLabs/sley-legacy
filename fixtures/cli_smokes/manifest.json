@@ -794,6 +794,35 @@
       }
     },
     {
+      "name": "check_result_unit_missing_return_repair_hint_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/result-unit-missing-return/main.sley",
+          "content": "module app.result_unit\n\ntask main -> Result<Unit, Error> {\n  bind value = 1\n}\n"
+        }
+      ],
+      "args": ["check", "--json", "{tmp}/result-unit-missing-return/main.sley"],
+      "covers": [
+        "cli:check",
+        "cli:smoke-setup-files",
+        "json:sley.diagnostics.report.v0",
+        "diagnostic:MISSING_RETURN",
+        "readiness:result-unit-missing-return-repair-hint"
+      ],
+      "expect": {
+        "success": false,
+        "stderr_contains": ["check failed"],
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.diagnostics.report.v0" },
+          { "pointer": "/status", "value": "error" },
+          { "pointer": "/diagnostics/0/id", "value": "MISSING_RETURN" },
+          { "pointer": "/diagnostics/0/repair_hints/0/kind", "value": "insert_return" },
+          { "pointer": "/diagnostics/0/repair_hints/0/replacement", "value": "return Err(\"\")" },
+          { "pointer": "/diagnostics/0/repair_hints/1/kind", "value": "replace_task_body" }
+        ]
+      }
+    },
+    {
       "name": "check_unknown_task_repair_hint_json",
       "args": ["check", "--json", "fixtures/corpus/rejected/unknown_task.sley"],
       "covers": [
