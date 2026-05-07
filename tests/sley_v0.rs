@@ -2410,6 +2410,20 @@ task main -> Int {
             && template.operation.pointer("/target")
                 == Some(&serde_json::json!("type:app.plan.User"))
     }));
+    assert!(report.graft_templates.iter().any(|template| {
+        template.kind == "add_import"
+            && template.operation.pointer("/op") == Some(&serde_json::json!("AddImport"))
+            && template.operation.pointer("/payload/module")
+                == Some(&serde_json::json!("app.new_module"))
+    }));
+    assert!(report.graft_templates.iter().any(|template| {
+        template.kind == "add_task"
+            && template.operation.pointer("/op") == Some(&serde_json::json!("AddTask"))
+            && template.operation.pointer("/payload/source")
+                == Some(&serde_json::json!(
+                    "module app.plan\n\ntask new_task -> Int {\n  return 0\n}"
+                ))
+    }));
     for template in &report.graft_templates {
         let graft: GraftInput = serde_json::from_value(template.operation.clone())
             .expect("module surface template should parse");
@@ -2434,16 +2448,21 @@ task main -> Int {
     assert_eq!(task_parent_report.status, "warnings");
     assert!(task_parent_report.diagnostics.is_empty());
     assert!(task_parent_report.graft_templates.iter().all(|template| {
-        template
-            .operation
-            .pointer("/target")
-            .and_then(serde_json::Value::as_str)
-            .is_some_and(|target| target.starts_with("task:app.plan."))
+        template.kind == "add_task"
+            || template
+                .operation
+                .pointer("/target")
+                .and_then(serde_json::Value::as_str)
+                .is_some_and(|target| target.starts_with("task:app.plan."))
     }));
     assert!(task_parent_report.graft_templates.iter().any(|template| {
         template.kind == "move_task"
             && template.operation.pointer("/target")
                 == Some(&serde_json::json!("task:app.plan.helper"))
+    }));
+    assert!(task_parent_report.graft_templates.iter().any(|template| {
+        template.kind == "add_task"
+            && template.operation.pointer("/op") == Some(&serde_json::json!("AddTask"))
     }));
     assert!(
         !task_parent_report
@@ -2468,16 +2487,21 @@ task main -> Int {
     );
     assert_eq!(type_parent_report.status, "warnings");
     assert!(type_parent_report.graft_templates.iter().all(|template| {
-        template
-            .operation
-            .pointer("/target")
-            .and_then(serde_json::Value::as_str)
-            .is_some_and(|target| target.starts_with("type:app.plan."))
+        template.kind == "add_type_declaration"
+            || template
+                .operation
+                .pointer("/target")
+                .and_then(serde_json::Value::as_str)
+                .is_some_and(|target| target.starts_with("type:app.plan."))
     }));
     assert!(type_parent_report.graft_templates.iter().any(|template| {
         template.kind == "move_type"
             && template.operation.pointer("/target")
                 == Some(&serde_json::json!("type:app.plan.User"))
+    }));
+    assert!(type_parent_report.graft_templates.iter().any(|template| {
+        template.kind == "add_type_declaration"
+            && template.operation.pointer("/op") == Some(&serde_json::json!("AddTypeDeclaration"))
     }));
 
     let empty_import_parent_report = build_edit_plan_report_with_options(
@@ -2492,7 +2516,17 @@ task main -> Int {
     );
     assert_eq!(empty_import_parent_report.status, "warnings");
     assert!(empty_import_parent_report.diagnostics.is_empty());
-    assert!(empty_import_parent_report.graft_templates.is_empty());
+    assert_eq!(empty_import_parent_report.graft_templates.len(), 1);
+    assert_eq!(
+        empty_import_parent_report.graft_templates[0].kind,
+        "add_import"
+    );
+    assert_eq!(
+        empty_import_parent_report.graft_templates[0]
+            .operation
+            .pointer("/payload/module"),
+        Some(&serde_json::json!("app.new_module"))
+    );
 
     let empty_module = parse_program(
         r#"
@@ -22585,6 +22619,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graph-slice:module-focus",
         "graph-slice:move-affordances",
         "graft:templates:declaration-surface",
+        "graft:templates:module-add-surface",
         "graft:templates:module-parent-surface",
         "graft:templates:module-surface",
         "graft:templates:lint-declaration-delete",

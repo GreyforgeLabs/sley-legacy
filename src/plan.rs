@@ -2316,6 +2316,7 @@ fn direct_module_graph_slice_graft_templates(
 ) -> Option<Vec<EditPlanGraftTemplate>> {
     let owner_module = owning_module_surface_id(requested_surface)?;
     let slice = slice_symbol_graph(program, &owner_module)?;
+    let add_affordances = slice.add_affordances;
     let move_affordances = slice.move_affordances;
     let delete_affordances = slice.delete_affordances;
     let mut templates = Vec::new();
@@ -2369,7 +2370,40 @@ fn direct_module_graph_slice_graft_templates(
                 editable_json_pointers: affordance.editable_json_pointers,
             }),
     );
+    templates.extend(
+        add_affordances
+            .into_iter()
+            .filter(|affordance| {
+                module_add_affordance_matches(requested_surface, &affordance.target)
+            })
+            .filter(|affordance| add_affordance_checks(program, &affordance.operation))
+            .map(|affordance| EditPlanGraftTemplate {
+                kind: add_affordance_template_kind(&affordance.target_kind),
+                reason: format!(
+                    "add a checked {} declaration using graph-slice add affordance data",
+                    affordance.target_kind
+                ),
+                surface: requested_surface.to_string(),
+                operation: affordance.operation,
+                editable_json_pointers: affordance.editable_json_pointers,
+            }),
+    );
     Some(templates)
+}
+
+fn add_affordance_template_kind(target_kind: &str) -> String {
+    match target_kind {
+        "import" => "add_import",
+        "type" => "add_type_declaration",
+        "effect" => "add_effect_declaration",
+        "task" => "add_task",
+        other => other,
+    }
+    .to_string()
+}
+
+fn add_affordance_checks(program: &Program, operation: &JsonValue) -> bool {
+    graft_operation_checks(program, operation, Some("agent:plan-add-affordance"))
 }
 
 fn module_delete_affordance_checks(program: &Program, target: &str, operation: &JsonValue) -> bool {
@@ -2454,6 +2488,17 @@ fn module_affordance_matches(requested_surface: &str, target: &str, parent: &str
         return false;
     };
     module_level_affordance_parent(parent).is_some_and(|(parent_module, parent_kind)| {
+        parent_module == requested_module
+            && requested_parent_kind.is_none_or(|requested_kind| requested_kind == parent_kind)
+    })
+}
+
+fn module_add_affordance_matches(requested_surface: &str, target: &str) -> bool {
+    let Some((requested_module, requested_parent_kind)) = module_surface_request(requested_surface)
+    else {
+        return false;
+    };
+    module_level_affordance_parent(target).is_some_and(|(parent_module, parent_kind)| {
         parent_module == requested_module
             && requested_parent_kind.is_none_or(|requested_kind| requested_kind == parent_kind)
     })

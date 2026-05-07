@@ -103,6 +103,7 @@ const DEFAULT_SMOKE_TAGS: &[&str] = &[
     "diagnostic:RETURN_TYPE_MISMATCH",
     "docgen:reference",
     "graft:templates:declaration-surface",
+    "graft:templates:module-add-surface",
     "graft:templates:module-parent-surface",
     "graft:templates:module-surface",
     "graft:templates:replace-task-body",

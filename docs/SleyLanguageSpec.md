@@ -947,7 +947,10 @@ and adds `move_statement`/`move_take` templates plus destination variants from
 checked `move_affordances`, and checked `delete_statement`/`delete_take`
 templates from `delete_affordances` when the starter delete graft validates,
 plus checked `replace_statement` and `replace_expression` templates from
-`replace_affordances` when the starter replace graft validates. Direct
+`replace_affordances` when the starter replace graft validates. Module and
+module declaration-list surfaces also consume entry-module `add_affordances`
+for checked `add_import`, `add_type_declaration`, `add_effect_declaration`,
+and `add_task` starters. Direct
 statement surfaces can still emit a checked no-op `ReplaceStatement` starter
 even when the raw graph slice suppresses a broader affordance. It also turns
 checked
