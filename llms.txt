@@ -182,7 +182,9 @@ fixture-check, and validate reports have locked fixtures.
 The `sley-ci` binary exposes `check`, `lint`, `doctor`, `plan`, `run`, `verify`, `deploy`, `smoke`, `corpus`, and `examples` reports
 for local CI and pre-commit gates over existing Sley commands; wrapped
 diagnostic-report steps and reports carrying lint findings summarize diagnostic
-or finding IDs directly on the CI step.
+or finding IDs directly on the CI step. Failed verify and deploy wrappers also
+copy structured `next_actions` into the step; deploy wrappers preserve nested
+verify repair/retry actions before deploy-level fallback actions.
 The `sley-conformance` binary exposes `report` and `coverage` JSON roots for
 schema/fixture instance coverage, contract validation status, corpus tags,
 smoke tags, the compact agent onboarding pack, packaged example counts,
@@ -472,7 +474,9 @@ Current development phase:
   operator approval. Add `--artifacts-dir <dir>` to write local
   `deploy-report.json`, `seal.json`, `zjx-envelope.json`, and digest-bearing
   `manifest.json` handoff files after the dry-run package is ready;
-  `sley-ci deploy` passes the same flag through to the wrapped deploy command.
+  `sley-ci deploy` passes the same flag through to the wrapped deploy command
+  and exposes nested verify lint findings, runtime diagnostics, and repair
+  `next_actions` on failed CI steps.
   Use `sley-contract inspect-deploy-artifacts <dir> --schemas docs/schemas
   --json` to validate the handoff manifest, schemas, and file digests after the
   directory moves between agent sessions
