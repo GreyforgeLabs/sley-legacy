@@ -926,7 +926,8 @@ Ready reports include a `verify_gate` next action before entrypoint runs; if
 the entrypoint declares effects, the command includes the same seeded `--cap`
 arguments needed by runtime execution.
 `--deny-warnings` treats lint findings as blocked while still printing the
-versioned report.
+versioned report. Non-JSON doctor output prints stable lint finding IDs and
+nodes before next actions.
 
 `sley plan` is the first deterministic pre-edit helper built from the same
 strict checker, checked query, and checked lint surfaces. It reports `ready`,

@@ -2287,6 +2287,19 @@ fn print_human_doctor_report(report: &DoctorReport) {
     for diagnostic in &report.diagnostics {
         println!("diagnostic {} {}", diagnostic.id, diagnostic.message);
     }
+    if let Some(lint) = &report.lint {
+        for finding in &lint.findings {
+            println!(
+                "lint {} {}: {} node={} module={} hint={}",
+                finding.severity,
+                finding.id,
+                finding.message,
+                finding.node,
+                finding.module,
+                finding.hint
+            );
+        }
+    }
     for action in &report.next_actions {
         println!(
             "next {}: {} -> {}",

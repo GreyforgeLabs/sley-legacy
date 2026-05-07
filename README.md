@@ -244,7 +244,8 @@ Implemented now:
   `write_command` for the matching `sley fix --write`, and ready reports now
   include `verify_gate` commands before entrypoint runs, with seeded `--cap`
   args when the entrypoint declares effects, and
-  `schema: "sley.doctor.report.v0"` for agent pre-edit gates
+  `schema: "sley.doctor.report.v0"` for agent pre-edit gates; text output
+  also prints stable lint finding IDs and nodes
 - checked JSON edit-plan reports with `sley plan`, consuming strict
   diagnostics plus query and lint findings into ranked task edit surfaces,
   graft target ids, call-row inspection next-actions, optional
