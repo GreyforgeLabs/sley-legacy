@@ -1497,7 +1497,9 @@ fn collect_replace_affordances_in_statement(
             );
         }
     }
-    push_statement_replace_affordance(affordances, statement, parent);
+    if !matches!(statement.kind, StatementKind::Return { .. }) {
+        push_statement_replace_affordance(affordances, statement, parent);
+    }
 }
 
 fn collect_replace_affordances_in_expr(

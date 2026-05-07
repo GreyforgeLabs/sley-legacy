@@ -968,7 +968,7 @@
           { "pointer": "/inbound_calls/0/target", "value": "app.math.double" },
           { "pointer": "/move_affordances/2/destinations/0/operation/payload/parent", "value": "module:app.main:tasks" },
           { "pointer": "/delete_affordances/1/target", "value": "task:app.math.double" },
-          { "pointer": "/replace_affordances/3/operation/op", "value": "ReplaceStatement" }
+          { "pointer": "/replace_affordances/0/operation/op", "value": "ReplaceExpression" }
         ]
       }
     },

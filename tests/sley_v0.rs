@@ -2055,6 +2055,43 @@ task main -> Int {
         Some("agent:statement-surface-replace-test".to_string()),
     );
     assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+
+    let return_target = "block:task:app.plan.main:stmt:2";
+    let return_report = build_edit_plan_report_with_options(
+        "app.plan",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some(return_target.to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(return_report.status, "ready");
+    assert_eq!(return_report.graft_templates.len(), 2);
+    assert!(
+        return_report
+            .graft_templates
+            .iter()
+            .any(|template| template.kind == "move_statement")
+    );
+    let return_replace = return_report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "replace_statement")
+        .expect("checked return statement replace template");
+    assert_eq!(
+        return_replace.operation.pointer("/payload/source"),
+        Some(&serde_json::json!("return total"))
+    );
+    let graft: GraftInput = serde_json::from_value(return_replace.operation.clone())
+        .expect("parse return replace statement template");
+    let outcome = apply_graft_input(
+        &program,
+        graft,
+        Some("agent:return-statement-surface-replace-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
 }
 
 #[test]
@@ -15524,6 +15561,13 @@ task main -> Int {
         replace_outcome.status, "accepted",
         "{:#?}",
         replace_outcome.diagnostics
+    );
+    assert!(
+        !slice
+            .replace_affordances
+            .iter()
+            .any(|affordance| affordance.target == "block:task:main.main:stmt:2"),
+        "return statements should not be advertised as whole-statement replace affordances"
     );
 }
 
