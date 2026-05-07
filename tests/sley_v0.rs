@@ -10292,6 +10292,18 @@ fn conformance_report_summarizes_release_surface() {
             ),
         "conformance report should require scoped runtime authority smoke coverage"
     );
+    assert!(
+        report_json
+            .pointer("/smoke/required_tags")
+            .and_then(|value| value.as_array())
+            .is_some_and(|tags| tags
+                .iter()
+                .any(|tag| tag == "diagnostic:QUERY_MODULE_FILTER_NOT_FOUND")
+                && tags
+                    .iter()
+                    .any(|tag| tag == "diagnostic:LINT_MODULE_FILTER_NOT_FOUND")),
+        "conformance report should require strict module-filter diagnostic coverage"
+    );
     assert_eq!(
         report_json.pointer("/summary/smoke_case_count"),
         Some(&serde_json::json!(444))
@@ -22220,7 +22232,9 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "cli:graft-write",
         "cli:smoke-setup-files",
         "diagnostic:AST_NODE_NOT_FOUND",
+        "diagnostic:LINT_MODULE_FILTER_NOT_FOUND",
         "diagnostic:MISSING_RETURN",
+        "diagnostic:QUERY_MODULE_FILTER_NOT_FOUND",
         "diagnostic:RETURN_TYPE_MISMATCH",
         "diagnostic:RUNTIME_CAPABILITY_SCOPE_DENIED",
         "contract:inventory",

@@ -92,6 +92,8 @@ const DEFAULT_SMOKE_TAGS: &[&str] = &[
     "contract:inventory",
     "contract:validate",
     "conformance:coverage",
+    "diagnostic:LINT_MODULE_FILTER_NOT_FOUND",
+    "diagnostic:QUERY_MODULE_FILTER_NOT_FOUND",
     "diagnostic:RUNTIME_CAPABILITY_SCOPE_DENIED",
     "diagnostic:RETURN_TYPE_MISMATCH",
     "docgen:reference",
