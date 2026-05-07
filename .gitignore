@@ -1,3 +1,8 @@
 /target/
 node_modules/
 tree-sitter-sley/.tree-sitter/
+
+# Private planning notes (kept in operator vault only)
+SleyCompiler.md
+SleyGoal.md
+SleyImprove.md
