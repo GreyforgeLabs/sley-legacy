@@ -632,7 +632,10 @@ when local handoff files are requested. Deploy dry-run reports carry
 `schema: "sley.deploy.artifact_check.v0"`. Contract utility reports carry
 `schema: "sley.contract.inventory.v0"`,
 `schema: "sley.contract.fixture_check.v0"`, or
-`schema: "sley.contract.validate.v0"`.
+`schema: "sley.contract.validate.v0"`. Contract validation commands use
+`docs/schemas` from the current working directory when present and otherwise
+fall back to the bundled source schema directory; explicit `--schemas <dir>` or
+an explicit `inventory <dir>` argument still pin a chosen schema set.
 
 Current `sley trace --json` reports have this root shape:
 

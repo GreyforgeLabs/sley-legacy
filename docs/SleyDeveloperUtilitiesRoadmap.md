@@ -72,7 +72,7 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
      bindings, contract drift report.
    - MVP commands:
      - `sley-contract validate --schema sley.verify.report.v0 report.json`
-     - `sley-contract inventory docs/schemas`
+     - `sley-contract inventory`
      - `sley-contract check-fixtures fixtures/contracts`
      - `sley-contract validate --schema sley.conformance.manifest.v0 fixtures/corpus/manifest.json`
    - Scaffold:
@@ -81,6 +81,8 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
      - separate `sley-contract-kit` repo when published.
    - Current bootstrap: `inventory`, `check-fixtures`, `validate`, and
      `inspect-deploy-artifacts` emit versioned JSON Schema validation reports;
+     contract validation commands default to the repo or bundled source schema
+     directory while preserving explicit schema overrides;
      `make v1` validates contract fixtures plus corpus and smoke manifests;
      generated bindings and reusable package splits remain future contract-kit
      work.

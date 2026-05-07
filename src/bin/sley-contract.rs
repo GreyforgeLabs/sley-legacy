@@ -26,7 +26,7 @@ struct Cli {
 enum Command {
     /// List schema IDs available under a schema directory.
     Inventory {
-        schema_dir: PathBuf,
+        schema_dir: Option<PathBuf>,
         #[arg(long)]
         json: bool,
     },
@@ -167,6 +167,7 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
     match cli.command {
         Command::Inventory { schema_dir, json } => {
+            let schema_dir = resolve_schema_dir(schema_dir);
             let report = build_inventory_report(&schema_dir)?;
             emit_inventory(&report, json)?;
         }
