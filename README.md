@@ -478,6 +478,12 @@ make public-release-check
 The exact public metadata decisions and cut checklist live in
 `docs/PublicReleaseChecklist.md`.
 
+Fast agent path:
+
+- `docs/AgentQuickstart.md` is the concise local path from `sley new` to
+  checked run, warning-denying verify, dry-run deploy artifacts, and artifact
+  contract inspection.
+
 Project form:
 
 ```bash

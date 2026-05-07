@@ -243,6 +243,11 @@ Rules:
   model, and deploy authority explicit across imported task boundaries and
   passes seeded check, lint, run, verify, deploy, examples conformance, scoped
   imported-host authority, and CLI smoke gates.
+- `docs/AgentQuickstart.md` captures the shortest first-run path from
+  `sley new --template agent-project` through JSON inspection, warning-denying
+  verify, local dry-run deploy artifacts, and artifact contract inspection, so
+  agents can start writing and packaging Sley code without reading the full
+  release surface inventory first.
 - The accepted/rejected synthetic gold corpus now includes split-task agent
   authority fixtures for transitive deploy, spend, and data mutation effect
   propagation, so helper-task authority drift is covered outside the large CLI
