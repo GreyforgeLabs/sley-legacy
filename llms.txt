@@ -4,6 +4,9 @@ Sley is an agent-native structural programming language. Source files are the
 human review projection; the canonical working model is the typed graph exposed
 by the Loom compiler.
 
+Start with `docs/AgentQuickstart.md` when the task is to create, inspect,
+verify, or dry-run deploy a Sley agent project quickly.
+
 Core commands:
 
 ```bash
