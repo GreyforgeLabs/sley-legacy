@@ -20,6 +20,8 @@ here. Dates use UTC-independent calendar dates from the local repo history.
   deploy, agent, agent-task-pack, and multi-module agent-project starters.
 - `sley-workbench`, `sley-lsp`, `sley-conformance`, `sley-contract`, and
   `sley-ci` bootstraps for the local v1 release gate.
+- `editors/vscode-sley`, a private local VS Code shim for `.sley` language
+  metadata, basic highlighting, and `sley-lsp` startup.
 - `docs/contracts.md`, a contract map for the current schema-backed JSON roots.
 - Non-gating public-release packaging blockers in
   `sley-conformance report --json`, covering license and repository metadata
@@ -50,9 +52,9 @@ here. Dates use UTC-independent calendar dates from the local repo history.
 ### Changed
 
 - `make v1` now runs deterministic workbench, agent-bench, migration, docgen,
-  sandbox-runner, and ZJX tool replays plus the focused LSP integration tests,
-  contract fixtures, conformance, corpus, examples, CLI smokes, and
-  Tree-sitter syntax parsing.
+  sandbox-runner, ZJX tool replays, and VS Code editor-shim validation plus
+  the focused LSP integration tests, contract fixtures, conformance, corpus,
+  examples, CLI smokes, and Tree-sitter syntax parsing.
 - `sley-lsp` diagnostics now load `sley.toml` project context with unsaved
   open-buffer overlays, so valid imported calls resolve in editor buffers and
   missing imported tasks are diagnosed without requiring a save.

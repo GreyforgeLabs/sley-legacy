@@ -28,6 +28,8 @@ Before a public v1.0 cut, the operator must choose:
   private/unpublished;
 - matching license metadata for `tree-sitter-sley/package.json`;
 - matching license metadata for `tree-sitter-sley/tree-sitter.json`.
+- whether `editors/vscode-sley` remains a private local shim or receives
+  public marketplace/package metadata in a later release lane.
 
 Do not guess these values in an agent session. Apply them only after explicit
 operator approval.
