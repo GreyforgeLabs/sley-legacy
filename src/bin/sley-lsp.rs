@@ -38,6 +38,7 @@ struct ServerState {
 
 struct DocumentState {
     text: String,
+    version: Option<i64>,
 }
 
 struct TaskSymbolContext {
@@ -289,8 +290,8 @@ fn handle_did_open<W: Write>(
     let version = text_document.get("version").and_then(JsonValue::as_i64);
     state
         .documents
-        .insert(uri.to_string(), DocumentState { text: text.clone() });
-    publish_diagnostics(writer, uri, &text, version, state)
+        .insert(uri.to_string(), DocumentState { text, version });
+    publish_all_open_document_diagnostics(writer, state)
 }
 
 fn handle_did_change<W: Write>(
@@ -318,9 +319,10 @@ fn handle_did_change<W: Write>(
         uri.to_string(),
         DocumentState {
             text: text.to_string(),
+            version,
         },
     );
-    publish_diagnostics(writer, uri, text, version, state)
+    publish_all_open_document_diagnostics(writer, state)
 }
 
 fn handle_did_close<W: Write>(
@@ -339,7 +341,8 @@ fn handle_did_close<W: Write>(
             "uri": uri,
             "diagnostics": []
         }),
-    )
+    )?;
+    publish_all_open_document_diagnostics(writer, state)
 }
 
 fn handle_formatting(params: JsonValue, state: &ServerState) -> JsonValue {
@@ -770,6 +773,22 @@ fn handle_execute_command(params: JsonValue) -> JsonValue {
         "status": "preview",
         "preview": preview
     })
+}
+
+fn publish_all_open_document_diagnostics<W: Write>(
+    writer: &mut W,
+    state: &ServerState,
+) -> Result<()> {
+    let mut documents = state
+        .documents
+        .iter()
+        .map(|(uri, document)| (uri.clone(), document.text.clone(), document.version))
+        .collect::<Vec<_>>();
+    documents.sort_by(|left, right| left.0.cmp(&right.0));
+    for (uri, text, version) in documents {
+        publish_diagnostics(writer, &uri, &text, version, state)?;
+    }
+    Ok(())
 }
 
 fn publish_diagnostics<W: Write>(

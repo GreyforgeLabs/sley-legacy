@@ -56,6 +56,8 @@ here. Dates use UTC-independent calendar dates from the local repo history.
 - `sley-lsp` diagnostics now load `sley.toml` project context with unsaved
   open-buffer overlays, so valid imported calls resolve in editor buffers and
   missing imported tasks are diagnosed without requiring a save.
+- `sley-lsp` now republishes diagnostics for all open project buffers after an
+  open-buffer change, so dependent files react to unsaved imported-module edits.
 - `sley-lsp` now exposes definition jumps for imported modules and resolved
   task calls across project files.
 - `sley-lsp` now exposes project-aware document links from import module names

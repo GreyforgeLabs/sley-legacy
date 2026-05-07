@@ -181,11 +181,11 @@ Implemented now:
   fixture parsing over current examples plus accepted compiler corpus
 - in-tree `sley-lsp` stdio language-server bootstrap with full-document sync,
   project-aware compiler diagnostics plus lint warnings over `sley.toml`
-  workspaces and open-buffer overlays, formatting edits, document symbols,
-  folding ranges, workspace symbols, declaration metadata hover, project
-  completions, project task signature help, exact-range task references,
-  document highlights, import document links, prepared cursor-aware project
-  task rename edits, import/call definition jumps,
+  workspaces and open-buffer overlays, all-open-buffer diagnostic refresh,
+  formatting edits, document symbols, folding ranges, workspace symbols,
+  declaration metadata hover, project completions, project task signature help,
+  exact-range task references, document highlights, import document links,
+  prepared cursor-aware project task rename edits, import/call definition jumps,
   checked edit-plan code actions, and a non-mutating `sley.fix.preview` command
   for editor repair previews
 - in-tree `sley-workbench` local inspection bootstrap that emits

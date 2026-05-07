@@ -161,12 +161,13 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
    - Current bootstrap: in-tree `src/bin/sley-lsp.rs` speaks stdio LSP
      framing, tracks full-document buffers, publishes compiler diagnostics plus
      lint warnings with `sley.toml` project context and unsaved open-buffer
-     overlays, returns formatting edits, document symbols, folding ranges,
-     declaration metadata hover, workspace symbols, project completions,
-     import/call definition jumps, project task signature help, exact-range
-     task references, document highlights, import document links, prepared
-     cursor-aware project task rename edits, edit-plan code actions, and
-     exposes `sley.fix.preview` as a non-mutating preview command.
+     overlays, republishes diagnostics for all open project buffers after
+     open-buffer changes, returns formatting edits, document symbols, folding
+     ranges, declaration metadata hover, workspace symbols, project
+     completions, import/call definition jumps, project task signature help,
+     exact-range task references, document highlights, import document links,
+     prepared cursor-aware project task rename edits, edit-plan code actions,
+     and exposes `sley.fix.preview` as a non-mutating preview command.
      `tests/sley_lsp.rs` drives the server over real JSON-RPC frames.
    - Done when an example project receives diagnostics and at least one checked
      lint repair code action without the server writing files directly.
