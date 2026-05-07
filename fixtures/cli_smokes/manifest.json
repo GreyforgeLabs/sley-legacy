@@ -1919,6 +1919,8 @@
           { "pointer": "/schema", "value": "sley.doctor.report.v0" },
           { "pointer": "/status", "value": "warnings" },
           { "pointer": "/summary/lint_finding_count", "value": 1 },
+          { "pointer": "/lint/findings/0/id", "value": "UNUSED_PRIVATE_TASK" },
+          { "pointer": "/lint/findings/0/node", "value": "task:app.warning.orphan" },
           { "pointer": "/next_actions/0/kind", "value": "repair_lint_findings" },
           { "pointer": "/next_actions/1/kind", "value": "plan_lint_repairs" },
           { "pointer": "/next_actions/1/command/1", "value": "plan" },
