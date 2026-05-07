@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.empty_while",
+  "filters": {
+    "module": null,
+    "rules": [
+      "empty_while_statement"
+    ]
+  },
+  "findings": [
+    {
+      "id": "EMPTY_WHILE_STATEMENT",
+      "rule": "empty_while_statement",
+      "severity": "warning",
+      "message": "task `app.empty_while.main` has an empty while statement",
+      "node": "block:task:app.empty_while.main:stmt:2",
+      "module": "app.empty_while",
+      "hint": "add loop body work or remove the empty loop after proving termination intent"
+    }
+  ]
+}

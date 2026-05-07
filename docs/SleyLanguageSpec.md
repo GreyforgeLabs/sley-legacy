@@ -1306,6 +1306,8 @@ without changing the checked then-branch; and
 can be removed as never-executed code; and
 `empty_forge_statement`, which warns when a no-op `forge { }` statement can be
 removed before readiness or deploy gates; and
+`empty_while_statement`, which warns when an empty `while` body with a
+delete-safe pure non-`false` condition may hang or do no visible work; and
 `identity_binary_expression`, which warns when a checked identity
 binary expression such as `x + 0`, `x * 1`, `flag && true`, `flag || false`,
 `"" + name`, or `name + ""` can be replaced with the non-identity side; and
@@ -1360,6 +1362,7 @@ diagnostics report. `--rule unused-private-task`,
 `--rule empty-else-statement`, or
 `--rule empty-for-statement`, or
 `--rule empty-forge-statement`, or
+`--rule empty-while-statement`, or
 `--rule identity-binary-expression`, or
 `--rule redundant-boolean-comparison`, or
 `--rule absorbing-boolean-expression`, or `--rule self-comparison-expression`, or

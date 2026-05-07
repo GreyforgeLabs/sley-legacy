@@ -4104,6 +4104,7 @@
           { "pointer": "/filters/rules/45", "value": "self_assignment_statement" },
           { "pointer": "/filters/rules/46", "value": "overwritten_set_statement" },
           { "pointer": "/filters/rules/47", "value": "redundant_initial_set_statement" },
+          { "pointer": "/filters/rules/48", "value": "empty_while_statement" },
           { "pointer": "/findings", "value": [] }
         ]
       }
@@ -7697,6 +7698,31 @@
           { "pointer": "/runtime/value/kind", "value": "Int" },
           { "pointer": "/runtime/value/value", "value": 42 },
           { "pointer": "/lint/status", "value": "ok" }
+        ]
+      }
+    },
+    {
+      "name": "lint_empty_while_statement_rule_json",
+      "args": [
+        "lint",
+        "--json",
+        "--rule",
+        "empty-while-statement",
+        "examples/empty_while_statement.sley"
+      ],
+      "covers": [
+        "cli:lint",
+        "lint:empty_while_statement",
+        "json:sley.lint.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.lint.report.v0" },
+          { "pointer": "/status", "value": "findings" },
+          { "pointer": "/filters/rules/0", "value": "empty_while_statement" },
+          { "pointer": "/findings/0/id", "value": "EMPTY_WHILE_STATEMENT" },
+          { "pointer": "/findings/0/node", "value": "block:task:app.empty_while.main:stmt:2" }
         ]
       }
     },

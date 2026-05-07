@@ -68,6 +68,7 @@ pub enum LintRule {
     SelfAssignmentStatement,
     OverwrittenSetStatement,
     RedundantInitialSetStatement,
+    EmptyWhileStatement,
 }
 
 impl LintRule {
@@ -121,6 +122,7 @@ impl LintRule {
             Self::SelfAssignmentStatement,
             Self::OverwrittenSetStatement,
             Self::RedundantInitialSetStatement,
+            Self::EmptyWhileStatement,
         ]
     }
 
@@ -174,6 +176,7 @@ impl LintRule {
             Self::SelfAssignmentStatement => "self_assignment_statement",
             Self::OverwrittenSetStatement => "overwritten_set_statement",
             Self::RedundantInitialSetStatement => "redundant_initial_set_statement",
+            Self::EmptyWhileStatement => "empty_while_statement",
         }
     }
 }
@@ -494,6 +497,12 @@ pub fn build_lint_report(program: &Program, options: LintOptions) -> LintReport 
     }
     if rules.contains(&LintRule::AbsorbingArithmeticExpression) {
         findings.extend(lint_absorbing_arithmetic_expressions(
+            program,
+            options.module.as_deref(),
+        ));
+    }
+    if rules.contains(&LintRule::EmptyWhileStatement) {
+        findings.extend(lint_empty_while_statements(
             program,
             options.module.as_deref(),
         ));
@@ -1225,6 +1234,18 @@ fn lint_empty_forge_statements(program: &Program, module: Option<&str>) -> Vec<L
         .filter(|task| module_matches(module, &task_module(task)))
     {
         collect_empty_forge_statements_in_block(task, &task.body, &mut findings);
+    }
+    findings
+}
+
+fn lint_empty_while_statements(program: &Program, module: Option<&str>) -> Vec<LintFinding> {
+    let mut findings = Vec::new();
+    for task in program
+        .tasks
+        .iter()
+        .filter(|task| module_matches(module, &task_module(task)))
+    {
+        collect_empty_while_statements_in_block(task, &task.body, &mut findings);
     }
     findings
 }
@@ -4686,6 +4707,55 @@ fn collect_empty_forge_statements_in_block(
             }
             StatementKind::While { body, .. } | StatementKind::For { body, .. } => {
                 collect_empty_forge_statements_in_block(task, body, findings);
+            }
+            StatementKind::Binding { .. }
+            | StatementKind::Set { .. }
+            | StatementKind::Return { .. }
+            | StatementKind::Expr { .. } => {}
+        }
+    }
+}
+
+fn collect_empty_while_statements_in_block(
+    task: &TaskDecl,
+    block: &Block,
+    findings: &mut Vec<LintFinding>,
+) {
+    for statement in &block.statements {
+        match &statement.kind {
+            StatementKind::While { condition, body } => {
+                if body.statements.is_empty()
+                    && !is_false_literal(condition)
+                    && expr_is_delete_safe_pure(condition)
+                {
+                    let task_name = task_fq_name(task);
+                    findings.push(LintFinding {
+                        id: "EMPTY_WHILE_STATEMENT".to_string(),
+                        rule: LintRule::EmptyWhileStatement.as_str().to_string(),
+                        severity: "warning".to_string(),
+                        message: format!("task `{task_name}` has an empty while statement"),
+                        node: statement.id.clone(),
+                        module: task_module(task),
+                        hint:
+                            "add loop body work or remove the empty loop after proving termination intent"
+                                .to_string(),
+                    });
+                } else {
+                    collect_empty_while_statements_in_block(task, body, findings);
+                }
+            }
+            StatementKind::If {
+                then_block,
+                else_block,
+                ..
+            } => {
+                collect_empty_while_statements_in_block(task, then_block, findings);
+                if let Some(else_block) = else_block {
+                    collect_empty_while_statements_in_block(task, else_block, findings);
+                }
+            }
+            StatementKind::For { body, .. } | StatementKind::Forge { body } => {
+                collect_empty_while_statements_in_block(task, body, findings);
             }
             StatementKind::Binding { .. }
             | StatementKind::Set { .. }

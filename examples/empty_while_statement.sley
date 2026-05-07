@@ -1,0 +1,11 @@
+module app.empty_while
+
+task main -> Int {
+  bind ready = true
+  bind value = 41
+
+  while ready {
+  }
+
+  return value
+}

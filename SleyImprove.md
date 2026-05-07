@@ -101,7 +101,7 @@ sley fix --json --kind <kind> [--template-surface <surface>] [--name <name>] [--
 sley verify --json [--deny-warnings] [runtime gates/seeds] <target>
 sley deploy --json --dry-run [--artifacts-dir <dir>] [runtime gates/seeds] <target>
 sley query --json [--kind all|modules|tasks|types|effects|calls] [--module <module>] <target>
-sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter|missing-module-declaration|unchecked-result|unchecked-result-binding|unused-effectful-binding|unqualified-imported-call|unused-pure-binding|unused-pure-expression-statement|mutable-binding-never-set|self-assignment-statement|overwritten-set-statement|redundant-initial-set-statement|constant-if-expression|constant-if-statement|constant-false-if-statement|constant-false-while-statement|constant-comparison-expression|constant-arithmetic-expression|constant-text-concatenation-expression|constant-list-index-expression|constant-map-index-expression|constant-record-field-access-expression|constant-len-expression|constant-not-expression|empty-if-statement|empty-else-statement|empty-for-statement|empty-forge-statement|identity-binary-expression|redundant-boolean-comparison|absorbing-boolean-expression|idempotent-boolean-expression|self-comparison-expression|double-negation-expression|negated-comparison-expression|redundant-boolean-if-expression|redundant-boolean-if-statement|same-branch-if-expression|same-branch-if-statement|unreachable-statement|absorbing-arithmetic-expression] [--module <module>] <target>
+sley lint --json [--rule unused-private-task|unreachable-private-task|unused-declared-effect|unused-import|unused-take|unused-private-type|unused-private-effect|raw-host-adapter|missing-module-declaration|unchecked-result|unchecked-result-binding|unused-effectful-binding|unqualified-imported-call|unused-pure-binding|unused-pure-expression-statement|mutable-binding-never-set|self-assignment-statement|overwritten-set-statement|redundant-initial-set-statement|constant-if-expression|constant-if-statement|constant-false-if-statement|constant-false-while-statement|constant-comparison-expression|constant-arithmetic-expression|constant-text-concatenation-expression|constant-list-index-expression|constant-map-index-expression|constant-record-field-access-expression|constant-len-expression|constant-not-expression|empty-if-statement|empty-else-statement|empty-for-statement|empty-forge-statement|empty-while-statement|identity-binary-expression|redundant-boolean-comparison|absorbing-boolean-expression|idempotent-boolean-expression|self-comparison-expression|double-negation-expression|negated-comparison-expression|redundant-boolean-if-expression|redundant-boolean-if-statement|same-branch-if-expression|same-branch-if-statement|unreachable-statement|absorbing-arithmetic-expression] [--module <module>] <target>
 sley-ci lint --json [--deny-warnings] [--rule <rule>] [--module <module>] <target>
 sley-ci doctor --json [--deny-warnings] <target>
 sley-ci plan --json [--deny-warnings] [--graft-templates] [--template-surface <surface>] <target>
@@ -880,6 +880,9 @@ The current smoke manifest covers:
 - empty-forge statement warnings through `empty_forge_statement`, plus checked
   `delete_empty_forge_statement` templates that remove no-op `forge { }`
   starter blocks through lint/plan/fix-write/verify CLI smoke coverage
+- empty-while statement warnings through `empty_while_statement` for empty
+  loops with delete-safe pure conditions, while leaving constant-false loop
+  deletion to the existing `constant_false_while_statement` repair path
 - identity binary expression style warnings through `identity_binary_expression`,
   plus checked `simplify_identity_binary_expression` templates that replace
   `x + 0`, `x * 1`, `flag && true`, `flag || false`, or empty-text
@@ -1090,6 +1093,9 @@ The v0 lint rules are:
   any non-empty collection expression.
 - `empty_forge_statement`: a no-op `forge { }` statement is reported so
   agents can delete placeholder starter blocks before readiness or deploy gates.
+- `empty_while_statement`: an empty `while` body with a delete-safe pure
+  non-`false` condition is reported so agents review loops that may hang or do
+  no visible work without overlapping the `while false` deletion rule.
 - `identity_binary_expression`: a checked identity binary expression such as
   `x + 0`, `x * 1`, `flag && true`, `flag || false`, `"" + name`, or
   `name + ""` is reported so agents can replace it with the non-identity side.
@@ -1159,6 +1165,7 @@ The command supports `--module <module>`, `--rule unused-private-task`,
 `--rule empty-else-statement`,
 `--rule empty-for-statement`,
 `--rule empty-forge-statement`,
+`--rule empty-while-statement`,
 `--rule identity-binary-expression`, `--rule redundant-boolean-comparison`,
 `--rule absorbing-boolean-expression`, `--rule idempotent-boolean-expression`,
 `--rule self-comparison-expression`,

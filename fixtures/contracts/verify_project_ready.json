@@ -71,7 +71,8 @@
       "absorbing_arithmetic_expression",
       "self_assignment_statement",
       "overwritten_set_statement",
-      "redundant_initial_set_statement"
+      "redundant_initial_set_statement",
+      "empty_while_statement"
     ],
     "finding_count": 0,
     "findings": []
