@@ -1821,6 +1821,7 @@
       "args": ["graph", "--json", "--slice", "module:app.math", "examples/project"],
       "covers": [
         "cli:graph-slice",
+        "graph-slice:add-affordances",
         "graph-slice:delete-affordances",
         "graph-slice:inbound-calls",
         "graph-slice:module-focus",
@@ -1838,6 +1839,10 @@
           { "pointer": "/tasks/0/id", "value": "task:app.math.double" },
           { "pointer": "/inbound_calls/0/from", "value": "app.main.main" },
           { "pointer": "/inbound_calls/0/target", "value": "app.math.double" },
+          { "pointer": "/add_affordances/0/target", "value": "module:app.math:types" },
+          { "pointer": "/add_affordances/0/operation/op", "value": "AddTypeDeclaration" },
+          { "pointer": "/add_affordances/1/target", "value": "module:app.math:tasks" },
+          { "pointer": "/add_affordances/1/operation/op", "value": "AddTask" },
           { "pointer": "/move_affordances/2/destinations/0/operation/payload/parent", "value": "module:app.main:tasks" },
           { "pointer": "/delete_affordances/1/target", "value": "task:app.math.double" },
           { "pointer": "/replace_affordances/0/operation/op", "value": "ReplaceExpression" }

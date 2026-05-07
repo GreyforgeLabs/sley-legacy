@@ -106,7 +106,7 @@ Implemented now:
 - JSON module symbol graph output for module imports and exported declarations,
   plus bounded graph slices with `sley graph --slice <node-id>`; symbol graph
   and graph-slice JSON carry v0 schema IDs, including schema-linked focus,
-  task, and call payloads plus entry-module add, insert, move, delete, and
+  task, and call payloads plus supported add, insert, move, delete, and
   replace affordances for structural graft planning
 - checked JSON query reports with
   `sley query --kind all|modules|tasks|types|effects|calls`, optional
@@ -253,7 +253,7 @@ Implemented now:
   add-take-plus-call-arg transaction templates for targeted caller surfaces,
   direct module-surface, module declaration-list, and declaration-id
   graph-slice templates for checked top-level import/type/effect/task moves
-  and deletes, plus graph-slice add affordance parity for entry-module
+  and deletes, plus graph-slice add affordance parity for supported
   import/type/effect/task starters,
   safe remove-take-plus-call-arg transaction templates for unused takes,
   lint-driven delete templates and cleanup
