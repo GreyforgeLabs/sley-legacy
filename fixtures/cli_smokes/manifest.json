@@ -13139,6 +13139,39 @@
       }
     },
     {
+      "name": "shadow_empty_while_statement_rule_json",
+      "bin": "sley-shadow",
+      "args": [
+        "report",
+        "--json",
+        "--rule",
+        "empty_while_statement",
+        "examples/empty_while_statement.sley"
+      ],
+      "covers": [
+        "cli:sley-shadow",
+        "json:sley.shadow.report.v0",
+        "lint:empty_while_statement",
+        "readiness:shadow-helper"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.shadow.report.v0" },
+          { "pointer": "/status", "value": "findings" },
+          { "pointer": "/target", "value": "examples/empty_while_statement.sley" },
+          { "pointer": "/filters/module", "value": null },
+          { "pointer": "/filters/rules", "value": ["empty_while_statement"] },
+          { "pointer": "/summary/lint_finding_count", "value": 1 },
+          { "pointer": "/summary/linked_lint_finding_count", "value": 1 },
+          { "pointer": "/summary/unlinked_lint_finding_count", "value": 0 },
+          { "pointer": "/lint_links/0/linked", "value": true },
+          { "pointer": "/lint_links/0/target_kind", "value": "task" },
+          { "pointer": "/lint_links/0/qualified_name", "value": "app.empty_while.main" }
+        ]
+      }
+    },
+    {
       "name": "doctor_agent_project_json",
       "args": ["doctor", "--json", "examples/agent_project"],
       "covers": [
