@@ -316,7 +316,9 @@ Rules:
   `sley.ci.report.v0`, `sley-ci deploy` passes the same flag through to the
   wrapped deploy command, and `sley-contract inspect-deploy-artifacts`
   revalidates the handoff
-  manifest, schemas, and digests.
+  manifest, schemas, and digests. `sley-contract` validation commands default
+  to repo-local or bundled source schemas while keeping explicit schema
+  overrides for pinned validation.
 - Grafts support dry-run by default and an explicit `--dry-run` flag.
 - Graft input JSON is strict: unknown operation or payload fields reject instead
   of being silently ignored.

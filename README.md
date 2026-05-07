@@ -158,8 +158,8 @@ Implemented now:
 - in-tree `sley-contract` utility scaffold with `inventory`, `check-fixtures`,
   `validate`, and `inspect-deploy-artifacts` JSON validation commands over
   `docs/schemas/`, `fixtures/contracts/`, release manifests, and local deploy artifact
-  directories, using versioned JSON report roots for downstream contract-kit
-  work
+  directories, using versioned JSON report roots and portable default schema
+  resolution for downstream contract-kit work
 - in-tree `sley-ci` utility with `check`, `lint`, `doctor`, `plan`, `run`,
   `verify`, `deploy`, `smoke`, `corpus`, and `examples` wrappers over existing
   Sley check/lint/doctor/plan/run/verify/deploy gates, CLI smoke manifests,

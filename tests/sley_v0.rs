@@ -9762,6 +9762,82 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     assert!(schema_ids.contains("sley.workbench.report.v0"));
     assert!(schema_ids.contains("sley.zjx.tool.report.v0"));
 
+    let portable_contract_root = temp_project_dir("contract-schema-defaults");
+    fs::create_dir_all(&portable_contract_root).expect("create portable contract cwd");
+    let portable_inventory = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-contract"))
+        .current_dir(&portable_contract_root)
+        .args(["inventory", "--json"])
+        .output()
+        .expect("run default-schema sley-contract inventory");
+    assert!(
+        portable_inventory.status.success(),
+        "portable inventory failed: {}",
+        String::from_utf8_lossy(&portable_inventory.stderr)
+    );
+    let portable_inventory_json: serde_json::Value =
+        serde_json::from_slice(&portable_inventory.stdout).expect("parse portable inventory JSON");
+    assert_eq!(
+        portable_inventory_json.pointer("/schema"),
+        Some(&serde_json::json!("sley.contract.inventory.v0"))
+    );
+    assert_eq!(
+        portable_inventory_json.pointer("/schema_count"),
+        Some(&serde_json::json!(36))
+    );
+    assert!(
+        portable_inventory_json
+            .pointer("/schema_dir")
+            .and_then(serde_json::Value::as_str)
+            .is_some_and(|path| path.ends_with("docs/schemas")),
+        "default schema dir should resolve to the bundled schema directory: {portable_inventory_json}"
+    );
+
+    let portable_validate = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-contract"))
+        .current_dir(&portable_contract_root)
+        .args([
+            "validate",
+            "--schema",
+            "sley.query.report.v0",
+            &sley_string(&repo_root.join("fixtures/contracts/query_project_tasks.json")),
+            "--json",
+        ])
+        .output()
+        .expect("run default-schema sley-contract validate");
+    assert!(
+        portable_validate.status.success(),
+        "portable validate failed: {}",
+        String::from_utf8_lossy(&portable_validate.stderr)
+    );
+    let portable_validate_json: serde_json::Value =
+        serde_json::from_slice(&portable_validate.stdout).expect("parse portable validate JSON");
+    assert_eq!(
+        portable_validate_json.pointer("/status"),
+        Some(&serde_json::json!("passed"))
+    );
+
+    let portable_fixture_check = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-contract"))
+        .current_dir(&portable_contract_root)
+        .args([
+            "check-fixtures",
+            &sley_string(&repo_root.join("fixtures/contract_probe")),
+            "--json",
+        ])
+        .output()
+        .expect("run default-schema sley-contract check-fixtures");
+    assert!(
+        portable_fixture_check.status.success(),
+        "portable fixture check failed: {}",
+        String::from_utf8_lossy(&portable_fixture_check.stderr)
+    );
+    let portable_fixture_json: serde_json::Value =
+        serde_json::from_slice(&portable_fixture_check.stdout)
+            .expect("parse portable fixture check JSON");
+    assert_eq!(
+        portable_fixture_json.pointer("/status"),
+        Some(&serde_json::json!("passed"))
+    );
+    let _ = fs::remove_dir_all(portable_contract_root);
+
     let fixture_check = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-contract"))
         .current_dir(&repo_root)
         .args([

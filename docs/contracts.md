@@ -1,7 +1,7 @@
 # Sley Contract Map
 
 Status: v0 contract map for the current release-candidate surface.
-Last checked: 2026-05-06.
+Last checked: 2026-05-07.
 
 This file names the machine-readable JSON roots that external tools may
 consume. Schemas live under `docs/schemas/`, representative instances live
@@ -11,16 +11,21 @@ under `fixtures/contracts/`, and the local release gate validates both.
 
 ```bash
 cargo run --bin sley-contract -- inventory docs/schemas --json
-cargo run --bin sley-contract -- check-fixtures fixtures/contracts --schemas docs/schemas --json
+cargo run --bin sley-contract -- inventory --json
+cargo run --bin sley-contract -- check-fixtures fixtures/contracts --json
 cargo run --bin sley-conformance -- report --json
 make v1
 ```
 
+`sley-contract` uses `docs/schemas` from the current working directory when it
+exists and otherwise falls back to the bundled source schema directory.
+Explicit schema paths remain supported for pinned validation.
+
 Current counts:
 
 - Schemas: `36`
-- Contract fixtures: `99`
-- Schema instances: `102`
+- Contract fixtures: `104`
+- Schema instances: `107`
 
 ## Core Compiler Roots
 
