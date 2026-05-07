@@ -755,10 +755,12 @@ fn default_expr_hint_for_type_inner(
             default_named_record_expr_hint(name, record_types, visited)
         }
         TypeExpr::Generic { name, args } if name == "Result" && !args.is_empty() => {
-            format!(
-                "Ok({})",
-                default_expr_hint_for_type_inner(&args[0], record_types, visited)
-            )
+            let ok_source = default_expr_hint_for_type_inner(&args[0], record_types, visited);
+            if default_hint_needs_manual_value(&ok_source) {
+                "Err(\"\")".to_string()
+            } else {
+                format!("Ok({ok_source})")
+            }
         }
         TypeExpr::Generic { name, .. } if name == "List" => "[]".to_string(),
         TypeExpr::Generic { name, .. } if name == "Map" => "map {}".to_string(),
@@ -2415,10 +2417,12 @@ fn default_expr_source_for_type_inner(
             default_named_record_expr_source(name, record_types, visited)
         }
         TypeExpr::Generic { name, args } if name == "Result" && !args.is_empty() => {
-            format!(
-                "Ok({})",
-                default_expr_source_for_type_inner(&args[0], record_types, visited)
-            )
+            let ok_source = default_expr_source_for_type_inner(&args[0], record_types, visited);
+            if default_source_needs_manual_value(&ok_source) {
+                "Err(\"\")".to_string()
+            } else {
+                format!("Ok({ok_source})")
+            }
         }
         TypeExpr::Generic { name, .. } if name == "List" => "[]".to_string(),
         TypeExpr::Generic { name, .. } if name == "Map" => "map {}".to_string(),
@@ -2470,6 +2474,14 @@ fn default_record_expr_source_for_fields(
     type_name
         .map(|name| format!("{name} {{ {fields} }}"))
         .unwrap_or_else(|| format!("{{ {fields} }}"))
+}
+
+fn default_hint_needs_manual_value(source: &str) -> bool {
+    source.contains('<')
+}
+
+fn default_source_needs_manual_value(source: &str) -> bool {
+    source.contains("TODO_VALUE")
 }
 
 fn unary_expected_type(op: &UnaryOp) -> &'static str {
