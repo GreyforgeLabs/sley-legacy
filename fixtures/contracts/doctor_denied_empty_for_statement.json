@@ -31,6 +31,7 @@
       "unreachable_private_task",
       "unused_declared_effect",
       "unused_import",
+      "duplicate_import",
       "unused_take",
       "unused_private_type",
       "unused_private_effect",

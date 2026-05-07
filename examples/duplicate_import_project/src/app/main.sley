@@ -1,0 +1,8 @@
+module app.main
+
+import app.shared
+import app.shared
+
+task main -> Text {
+  return call shared.message()
+}

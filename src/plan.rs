@@ -577,6 +577,7 @@ fn lint_graft_templates(
     let mut templates = lint_declaration_delete_templates(program, lint_report);
     templates.extend(lint_private_task_delete_templates(program, lint_report));
     templates.extend(lint_unused_import_templates(program, lint_report));
+    templates.extend(lint_duplicate_import_templates(program, lint_report));
     templates.extend(lint_unused_take_templates(program, lint_report));
     templates.extend(lint_unused_declared_effect_templates(program, lint_report));
     templates.extend(lint_missing_module_templates(
@@ -711,6 +712,7 @@ fn is_lint_repair_kind(kind: &str) -> bool {
             | "delete_unused_private_effect"
             | "delete_unused_private_task"
             | "delete_unused_import"
+            | "delete_duplicate_import"
             | "remove_unused_take"
             | "remove_unused_declared_effect"
             | "add_module_declaration"
@@ -844,6 +846,34 @@ fn lint_unused_import_templates(
                 reason:
                     "delete this unused import after checked lint proves no checked task, type, or effect uses it"
                         .to_string(),
+                surface: finding.node.clone(),
+                operation,
+                editable_json_pointers: Vec::new(),
+            })
+        })
+        .collect()
+}
+
+fn lint_duplicate_import_templates(
+    program: &Program,
+    lint_report: &LintReport,
+) -> Vec<EditPlanGraftTemplate> {
+    lint_report
+        .findings
+        .iter()
+        .filter(|finding| finding.id == "DUPLICATE_IMPORT")
+        .filter_map(|finding| {
+            let operation = json!({
+                "op": "DeleteNode",
+                "target": finding.node
+            });
+            if !delete_affordance_checks(program, &operation) {
+                return None;
+            }
+            Some(EditPlanGraftTemplate {
+                kind: "delete_duplicate_import".to_string(),
+                reason: "delete this duplicate import after checked lint proves an identical import already exists"
+                    .to_string(),
                 surface: finding.node.clone(),
                 operation,
                 editable_json_pointers: Vec::new(),

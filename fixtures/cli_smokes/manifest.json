@@ -3178,6 +3178,155 @@
       }
     },
     {
+      "name": "lint_duplicate_import_rule_json",
+      "args": ["lint", "--json", "--rule", "duplicate-import", "examples/duplicate_import_project"],
+      "covers": ["cli:lint", "lint:duplicate_import", "json:sley.lint.report.v0"],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.lint.report.v0" },
+          { "pointer": "/status", "value": "findings" },
+          { "pointer": "/filters/rules/0", "value": "duplicate_import" },
+          { "pointer": "/findings/0/id", "value": "DUPLICATE_IMPORT" },
+          { "pointer": "/findings/0/node", "value": "import:app.main:app.shared" }
+        ]
+      }
+    },
+    {
+      "name": "plan_duplicate_import_template_json",
+      "args": [
+        "plan",
+        "--json",
+        "--graft-templates",
+        "--template-surface",
+        "import:app.main:app.shared",
+        "examples/duplicate_import_project"
+      ],
+      "covers": [
+        "cli:plan",
+        "graft:templates",
+        "graft:templates:duplicate-import-delete",
+        "lint:duplicate_import",
+        "json:sley.edit_plan.report.v0",
+        "json:sley.lint.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.edit_plan.report.v0" },
+          { "pointer": "/status", "value": "warnings" },
+          { "pointer": "/summary/lint_finding_count", "value": 1 },
+          { "pointer": "/lint/findings/0/id", "value": "DUPLICATE_IMPORT" },
+          { "pointer": "/lint/findings/0/node", "value": "import:app.main:app.shared" },
+          { "pointer": "/graft_templates/0/kind", "value": "delete_duplicate_import" },
+          { "pointer": "/graft_templates/0/surface", "value": "import:app.main:app.shared" },
+          { "pointer": "/graft_templates/0/operation/op", "value": "DeleteNode" },
+          { "pointer": "/graft_templates/0/operation/target", "value": "import:app.main:app.shared" }
+        ]
+      }
+    },
+    {
+      "name": "fix_duplicate_import_dry_run_json",
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "delete_duplicate_import",
+        "--template-surface",
+        "import:app.main:app.shared",
+        "--dry-run",
+        "examples/duplicate_import_project"
+      ],
+      "covers": [
+        "cli:fix",
+        "fix:duplicate-import-dry-run",
+        "graft:templates:duplicate-import-delete",
+        "lint:duplicate_import",
+        "json:sley.graft.outcome.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/operation", "value": "DeleteNode" },
+          { "pointer": "/provenance/0/targets/0", "value": "import:app.main:app.shared" }
+        ]
+      }
+    },
+    {
+      "name": "fix_duplicate_import_write_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/duplicate-import-write/sley.toml",
+          "content": "[project]\nname = \"duplicate-import-write\"\nroot = \"src\"\nentry = \"app.main\"\n"
+        },
+        {
+          "path": "{tmp}/duplicate-import-write/src/app/main.sley",
+          "content": "module app.main\n\nimport app.shared\nimport app.shared\n\ntask main -> Text {\n  return call shared.message()\n}\n"
+        },
+        {
+          "path": "{tmp}/duplicate-import-write/src/app/shared.sley",
+          "content": "module app.shared\n\nexport task message -> Text {\n  return \"ready\"\n}\n"
+        }
+      ],
+      "args": [
+        "fix",
+        "--json",
+        "--kind",
+        "delete_duplicate_import",
+        "--template-surface",
+        "import:app.main:app.shared",
+        "--write",
+        "--actor",
+        "agent:cli-smoke",
+        "{tmp}/duplicate-import-write"
+      ],
+      "covers": [
+        "cli:fix",
+        "cli:fix-write",
+        "cli:smoke-setup-files",
+        "fix:duplicate-import-write",
+        "graft:templates:duplicate-import-delete",
+        "lint:duplicate_import",
+        "readiness:duplicate-import-repair-write-verify",
+        "json:sley.graft.outcome.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.graft.outcome.v0" },
+          { "pointer": "/status", "value": "accepted" },
+          { "pointer": "/provenance/0/actor", "value": "agent:cli-smoke" },
+          { "pointer": "/provenance/0/operation", "value": "DeleteNode" },
+          { "pointer": "/provenance/0/targets/0", "value": "import:app.main:app.shared" }
+        ]
+      }
+    },
+    {
+      "name": "verify_duplicate_import_write_json",
+      "args": ["verify", "--json", "--deny-warnings", "{tmp}/duplicate-import-write"],
+      "covers": [
+        "cli:verify",
+        "fix:duplicate-import-write",
+        "graft:templates:duplicate-import-delete",
+        "lint:duplicate_import",
+        "readiness:duplicate-import-repair-write-verify",
+        "json:sley.verify.report.v0",
+        "json:sley.lint.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.verify.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/summary/warning_count", "value": 0 },
+          { "pointer": "/summary/lint_finding_count", "value": 0 },
+          { "pointer": "/lint/status", "value": "ok" }
+        ]
+      }
+    },
+    {
       "name": "plan_unused_private_task_template_json",
       "args": [
         "plan",
@@ -4226,51 +4375,52 @@
           { "pointer": "/filters/rules/1", "value": "unreachable_private_task" },
           { "pointer": "/filters/rules/2", "value": "unused_declared_effect" },
           { "pointer": "/filters/rules/3", "value": "unused_import" },
-          { "pointer": "/filters/rules/4", "value": "unused_take" },
-          { "pointer": "/filters/rules/5", "value": "unused_private_type" },
-          { "pointer": "/filters/rules/6", "value": "unused_private_effect" },
-          { "pointer": "/filters/rules/7", "value": "raw_host_adapter" },
-          { "pointer": "/filters/rules/8", "value": "missing_module_declaration" },
-          { "pointer": "/filters/rules/9", "value": "unchecked_result" },
-          { "pointer": "/filters/rules/10", "value": "unchecked_result_binding" },
-          { "pointer": "/filters/rules/11", "value": "unused_effectful_binding" },
-          { "pointer": "/filters/rules/12", "value": "unqualified_imported_call" },
-          { "pointer": "/filters/rules/13", "value": "unused_pure_binding" },
-          { "pointer": "/filters/rules/14", "value": "unused_pure_expression_statement" },
-          { "pointer": "/filters/rules/15", "value": "mutable_binding_never_set" },
-          { "pointer": "/filters/rules/16", "value": "constant_if_expression" },
-          { "pointer": "/filters/rules/17", "value": "constant_if_statement" },
-          { "pointer": "/filters/rules/18", "value": "constant_false_if_statement" },
-          { "pointer": "/filters/rules/19", "value": "constant_false_while_statement" },
-          { "pointer": "/filters/rules/20", "value": "constant_comparison_expression" },
-          { "pointer": "/filters/rules/21", "value": "constant_arithmetic_expression" },
-          { "pointer": "/filters/rules/22", "value": "constant_text_concatenation_expression" },
-          { "pointer": "/filters/rules/23", "value": "constant_list_index_expression" },
-          { "pointer": "/filters/rules/24", "value": "constant_map_index_expression" },
-          { "pointer": "/filters/rules/25", "value": "constant_record_field_access_expression" },
-          { "pointer": "/filters/rules/26", "value": "constant_len_expression" },
-          { "pointer": "/filters/rules/27", "value": "constant_not_expression" },
-          { "pointer": "/filters/rules/28", "value": "empty_if_statement" },
-          { "pointer": "/filters/rules/29", "value": "empty_else_statement" },
-          { "pointer": "/filters/rules/30", "value": "empty_for_statement" },
-          { "pointer": "/filters/rules/31", "value": "empty_forge_statement" },
-          { "pointer": "/filters/rules/32", "value": "identity_binary_expression" },
-          { "pointer": "/filters/rules/33", "value": "redundant_boolean_comparison" },
-          { "pointer": "/filters/rules/34", "value": "absorbing_boolean_expression" },
-          { "pointer": "/filters/rules/35", "value": "idempotent_boolean_expression" },
-          { "pointer": "/filters/rules/36", "value": "self_comparison_expression" },
-          { "pointer": "/filters/rules/37", "value": "double_negation_expression" },
-          { "pointer": "/filters/rules/38", "value": "negated_comparison_expression" },
-          { "pointer": "/filters/rules/39", "value": "redundant_boolean_if_expression" },
-          { "pointer": "/filters/rules/40", "value": "redundant_boolean_if_statement" },
-          { "pointer": "/filters/rules/41", "value": "same_branch_if_expression" },
-          { "pointer": "/filters/rules/42", "value": "same_branch_if_statement" },
-          { "pointer": "/filters/rules/43", "value": "unreachable_statement" },
-          { "pointer": "/filters/rules/44", "value": "absorbing_arithmetic_expression" },
-          { "pointer": "/filters/rules/45", "value": "self_assignment_statement" },
-          { "pointer": "/filters/rules/46", "value": "overwritten_set_statement" },
-          { "pointer": "/filters/rules/47", "value": "redundant_initial_set_statement" },
-          { "pointer": "/filters/rules/48", "value": "empty_while_statement" },
+          { "pointer": "/filters/rules/4", "value": "duplicate_import" },
+          { "pointer": "/filters/rules/5", "value": "unused_take" },
+          { "pointer": "/filters/rules/6", "value": "unused_private_type" },
+          { "pointer": "/filters/rules/7", "value": "unused_private_effect" },
+          { "pointer": "/filters/rules/8", "value": "raw_host_adapter" },
+          { "pointer": "/filters/rules/9", "value": "missing_module_declaration" },
+          { "pointer": "/filters/rules/10", "value": "unchecked_result" },
+          { "pointer": "/filters/rules/11", "value": "unchecked_result_binding" },
+          { "pointer": "/filters/rules/12", "value": "unused_effectful_binding" },
+          { "pointer": "/filters/rules/13", "value": "unqualified_imported_call" },
+          { "pointer": "/filters/rules/14", "value": "unused_pure_binding" },
+          { "pointer": "/filters/rules/15", "value": "unused_pure_expression_statement" },
+          { "pointer": "/filters/rules/16", "value": "mutable_binding_never_set" },
+          { "pointer": "/filters/rules/17", "value": "constant_if_expression" },
+          { "pointer": "/filters/rules/18", "value": "constant_if_statement" },
+          { "pointer": "/filters/rules/19", "value": "constant_false_if_statement" },
+          { "pointer": "/filters/rules/20", "value": "constant_false_while_statement" },
+          { "pointer": "/filters/rules/21", "value": "constant_comparison_expression" },
+          { "pointer": "/filters/rules/22", "value": "constant_arithmetic_expression" },
+          { "pointer": "/filters/rules/23", "value": "constant_text_concatenation_expression" },
+          { "pointer": "/filters/rules/24", "value": "constant_list_index_expression" },
+          { "pointer": "/filters/rules/25", "value": "constant_map_index_expression" },
+          { "pointer": "/filters/rules/26", "value": "constant_record_field_access_expression" },
+          { "pointer": "/filters/rules/27", "value": "constant_len_expression" },
+          { "pointer": "/filters/rules/28", "value": "constant_not_expression" },
+          { "pointer": "/filters/rules/29", "value": "empty_if_statement" },
+          { "pointer": "/filters/rules/30", "value": "empty_else_statement" },
+          { "pointer": "/filters/rules/31", "value": "empty_for_statement" },
+          { "pointer": "/filters/rules/32", "value": "empty_forge_statement" },
+          { "pointer": "/filters/rules/33", "value": "identity_binary_expression" },
+          { "pointer": "/filters/rules/34", "value": "redundant_boolean_comparison" },
+          { "pointer": "/filters/rules/35", "value": "absorbing_boolean_expression" },
+          { "pointer": "/filters/rules/36", "value": "idempotent_boolean_expression" },
+          { "pointer": "/filters/rules/37", "value": "self_comparison_expression" },
+          { "pointer": "/filters/rules/38", "value": "double_negation_expression" },
+          { "pointer": "/filters/rules/39", "value": "negated_comparison_expression" },
+          { "pointer": "/filters/rules/40", "value": "redundant_boolean_if_expression" },
+          { "pointer": "/filters/rules/41", "value": "redundant_boolean_if_statement" },
+          { "pointer": "/filters/rules/42", "value": "same_branch_if_expression" },
+          { "pointer": "/filters/rules/43", "value": "same_branch_if_statement" },
+          { "pointer": "/filters/rules/44", "value": "unreachable_statement" },
+          { "pointer": "/filters/rules/45", "value": "absorbing_arithmetic_expression" },
+          { "pointer": "/filters/rules/46", "value": "self_assignment_statement" },
+          { "pointer": "/filters/rules/47", "value": "overwritten_set_statement" },
+          { "pointer": "/filters/rules/48", "value": "redundant_initial_set_statement" },
+          { "pointer": "/filters/rules/49", "value": "empty_while_statement" },
           { "pointer": "/findings", "value": [] }
         ]
       }

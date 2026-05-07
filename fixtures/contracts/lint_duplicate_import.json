@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.main",
+  "filters": {
+    "module": null,
+    "rules": [
+      "duplicate_import"
+    ]
+  },
+  "findings": [
+    {
+      "id": "DUPLICATE_IMPORT",
+      "rule": "duplicate_import",
+      "severity": "warning",
+      "message": "module `app.main` imports `app.shared` more than once",
+      "node": "import:app.main:app.shared",
+      "module": "app.main",
+      "hint": "delete the duplicate import `app.shared`"
+    }
+  ]
+}

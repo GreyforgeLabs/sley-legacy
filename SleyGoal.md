@@ -44,7 +44,7 @@ Current verified surface:
 
 - `cargo fmt -- --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 329 tests in the core `tests/sley_v0.rs`
+- Current integration coverage is 331 tests in the core `tests/sley_v0.rs`
   conformance file, with additional focused integration tests for LSP,
   workbench, agent bench, docgen, migration reports, sandbox replay, project
   templates, and ZJX envelope tools. The focused utility tests validate live
@@ -86,7 +86,7 @@ Current verified surface:
   `inventory`, `check-fixtures`, `validate`, and `inspect-deploy-artifacts`
   JSON Schema validation commands over `docs/schemas/`, `fixtures/contracts/`,
   release manifests, and local deploy artifact directories. Contract inventory
-  currently tracks 38 schemas, 118 contract fixtures, and 121 schema instances.
+  currently tracks 38 schemas, 119 contract fixtures, and 122 schema instances.
 - `sley-ci` is available as an in-tree CI wrapper with `check`, `lint`,
   `doctor`, `plan`, `run`, `verify`, `deploy`, `smoke`, `corpus`, and
   `examples` commands that emit

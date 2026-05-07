@@ -24,6 +24,7 @@ pub enum LintRule {
     UnreachablePrivateTask,
     UnusedDeclaredEffect,
     UnusedImport,
+    DuplicateImport,
     UnusedTake,
     UnusedPrivateType,
     UnusedPrivateEffect,
@@ -78,6 +79,7 @@ impl LintRule {
             Self::UnreachablePrivateTask,
             Self::UnusedDeclaredEffect,
             Self::UnusedImport,
+            Self::DuplicateImport,
             Self::UnusedTake,
             Self::UnusedPrivateType,
             Self::UnusedPrivateEffect,
@@ -132,6 +134,7 @@ impl LintRule {
             Self::UnreachablePrivateTask => "unreachable_private_task",
             Self::UnusedDeclaredEffect => "unused_declared_effect",
             Self::UnusedImport => "unused_import",
+            Self::DuplicateImport => "duplicate_import",
             Self::UnusedTake => "unused_take",
             Self::UnusedPrivateType => "unused_private_type",
             Self::UnusedPrivateEffect => "unused_private_effect",
@@ -248,6 +251,9 @@ pub fn build_lint_report(program: &Program, options: LintOptions) -> LintReport 
     }
     if rules.contains(&LintRule::UnusedImport) {
         findings.extend(lint_unused_imports(program, options.module.as_deref()));
+    }
+    if rules.contains(&LintRule::DuplicateImport) {
+        findings.extend(lint_duplicate_imports(program, options.module.as_deref()));
     }
     if rules.contains(&LintRule::UnusedTake) {
         findings.extend(lint_unused_takes(program, options.module.as_deref()));
@@ -5573,6 +5579,44 @@ fn lint_unused_imports(program: &Program, module: Option<&str>) -> Vec<LintFindi
             }
         })
         .collect()
+}
+
+fn lint_duplicate_imports(program: &Program, module: Option<&str>) -> Vec<LintFinding> {
+    let mut seen = BTreeSet::new();
+    let mut findings = Vec::new();
+    for import in program
+        .imports
+        .iter()
+        .filter(|import| module_matches(module, &import_owner_module(import)))
+    {
+        let owner_module = import_owner_module(import);
+        let key = (
+            owner_module.clone(),
+            import.module.clone(),
+            import.alias.clone(),
+        );
+        if seen.insert(key) {
+            continue;
+        }
+        let alias = import
+            .alias
+            .as_deref()
+            .map(|alias| format!(" as {alias}"))
+            .unwrap_or_default();
+        findings.push(LintFinding {
+            id: "DUPLICATE_IMPORT".to_string(),
+            rule: LintRule::DuplicateImport.as_str().to_string(),
+            severity: "warning".to_string(),
+            message: format!(
+                "module `{owner_module}` imports `{}`{alias} more than once",
+                import.module
+            ),
+            node: import.id.clone(),
+            module: owner_module,
+            hint: format!("delete the duplicate import `{}`{alias}", import.module),
+        });
+    }
+    findings
 }
 
 fn import_is_used(program: &Program, import: &ImportDecl) -> bool {

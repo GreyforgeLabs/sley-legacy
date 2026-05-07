@@ -978,7 +978,9 @@ node ids and become checked `remove_unused_declared_effect`
 authority correctness.
 `unused_import` lint findings become checked `delete_unused_import`
 `DeleteNode` templates when the import delete validates against the checked
-candidate.
+candidate. `duplicate_import` findings become checked
+`delete_duplicate_import` `DeleteNode` templates for repeated imports with the
+same owner module, imported module, and alias.
 `missing_module_declaration` lint findings become checked
 `add_module_declaration` graft templates on the `program` surface, with the
 starter module name inferred from project-relative path context when available.
@@ -1259,6 +1261,8 @@ tasks rather than from `main` or an exported task; and
 direct host call or resolved called-task effect justifies and points at an
 exact `effect-use:<task>:<index>:<effect>` node; `unused_import`,
 which warns when an import is not needed by any checked task, type, or effect;
+`duplicate_import`, which warns when the same owner module imports the same
+module and alias more than once;
 `unused_take`, which warns when a normal task take is never read by the task
 body; `unused_private_type`, which warns when a non-exported type is not
 referenced by any checked task, type, or record literal;
@@ -1363,7 +1367,7 @@ guaranteed `return` in the same block.
 checked module, the command fails with `LINT_MODULE_FILTER_NOT_FOUND` in a
 diagnostics report. `--rule unused-private-task`,
 `--rule unreachable-private-task`, `--rule unused-declared-effect`,
-`--rule unused-import`, `--rule unused-take`, `--rule unused-private-type`,
+`--rule unused-import`, `--rule duplicate-import`, `--rule unused-take`, `--rule unused-private-type`,
 `--rule unused-private-effect`, `--rule raw-host-adapter`,
 `--rule missing-module-declaration`, `--rule unchecked-result`,
 `--rule unchecked-result-binding`, `--rule unused-effectful-binding`, or

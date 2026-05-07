@@ -116,7 +116,7 @@ Implemented now:
 - checked JSON lint reports with `sley lint`, optional `--module` and
   `--rule unused-private-task`, `--rule unreachable-private-task`,
   `--rule unused-declared-effect`, `--rule unused-import`,
-  `--rule unused-take`, `--rule unused-private-type`,
+  `--rule duplicate-import`, `--rule unused-take`, `--rule unused-private-type`,
   `--rule unused-private-effect`, `--rule raw-host-adapter`,
   `--rule missing-module-declaration`, `--rule unchecked-result`,
   `--rule unchecked-result-binding`, `--rule unused-effectful-binding`, or
@@ -270,7 +270,8 @@ Implemented now:
   fallout, checked
   `remove_unused_declared_effect` templates for unused task-declared effects,
   checked
-  `delete_unused_import` templates for unused imports, lint-driven
+  `delete_unused_import` and `delete_duplicate_import` templates for import
+  hygiene, lint-driven
   `AddModuleDeclaration` templates for explicit module style fixes with module
   names inferred from the target file or project-relative path,
   `migrate_raw_host_adapter` templates for eligible raw host calls that can
