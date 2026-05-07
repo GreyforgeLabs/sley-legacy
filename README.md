@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <strong>Sley v0</strong><br />
+  <strong>Sley</strong><br />
   <a href="https://sley.greyforge.tech/">Official Sley site</a> •
   <a href="https://greyforge.tech/">Greyforge Labs</a> •
   <a href="https://x.com/GreyforgeLabs">X / Twitter</a> •
@@ -32,14 +32,14 @@
   <a href="https://x.com/GreyforgeLabs">X / Twitter</a>
 </p>
 
-# Sley v0
+# Sley
 
 **SEO metadata:** Sley • structural programming language • deterministic edits •
 auditable grafts • graph-aware agent tooling • `sley` • `Greyforge Labs` • Apache-2.0
 
 Sley is an agent-native structural programming language. The Loom compiler reads
 human-reviewable `.sley` source, exposes typed graph-shaped AST data, checks
-task/effect/binding semantics, runs pure and explicitly gated v0 tasks, and
+task/effect/binding semantics, runs pure and explicitly gated tasks, and
 accepts verified grafts instead of blind text edits.
 
 Implemented now:
@@ -142,7 +142,7 @@ Implemented now:
   task, take, block, statement, and expression inspection before grafting
 - JSON module symbol graph output for module imports and exported declarations,
   plus bounded graph slices with `sley graph --slice <node-id>`; symbol graph
-  and graph-slice JSON carry v0 schema IDs, including schema-linked focus,
+  and graph-slice JSON carry schema IDs, including schema-linked focus,
   task, and call payloads plus supported add, insert, move, delete, replace,
   call-site, and call-argument affordances for structural graft planning
 - checked JSON query reports with
@@ -468,7 +468,7 @@ Implemented now:
   deleting checked graph nodes such as declarations, imports, takes, and
   statements, and moving checked statements or top-level declaration order
   within their current parent
-- strict graft input JSON for the v0 operation shapes; unknown graft fields are
+- strict graft input JSON for the operation payloads; unknown graft fields are
   rejected instead of silently ignored
 - versioned JSON report roots for deterministic `sley run --json` results,
   diagnostics with a shared diagnostic record schema, and graft outcomes with
@@ -484,7 +484,7 @@ Implemented now:
   payloads, workbench reports, docgen reports, shadow reports, agent-bench
   reports, migrate reports, sandbox manifests and sandbox-runner reports, plus contract
   inventory, fixture-check, validate reports, and conformance readiness tracks
-- external v0 JSON Schema files under `docs/schemas/`, including strict
+- external JSON Schema files under `docs/schemas/`, including strict
   query task/take/type/effect/call row definitions,
   strict runtime value definitions for `sley.run.report.v0`,
   `sley-ci` check/lint/doctor/plan/run/verify/deploy/smoke/corpus/examples reports,
@@ -732,7 +732,7 @@ sley run --json --cap DatabaseRead --db-table users=examples/users.json examples
 
 `db.query_one` returns one `DbRow`, `db.query` returns `List<DbRow>`, and row
 accessors such as `row.text("name")` read typed fields from the seeded JSON
-rows. This is a deterministic v0 host adapter, not a real database connection.
+rows. This is a deterministic seeded host adapter, not a real database connection.
 Fallible variants `db.try_query_one` and `db.try_query` return
 `Result<DbRow, Error>` and `Result<List<DbRow>, Error>`.
 `DatabaseWrite` backs `db.try_insert(table, row)`, which accepts a record or
@@ -754,7 +754,7 @@ sley run --json --cap SecretRead --secret api_key redacted examples/secret_gate.
 ```
 
 `secrets.try_get(name)` reads an exact seeded secret value and returns
-`Result<Text, Error>`. This is a deterministic v0 host adapter, not a real
+`Result<Text, Error>`. This is a deterministic seeded host adapter, not a real
 secret backend. Missing secret seeds produce `RUNTIME_SECRET_NOT_FOUND` as a
 typed host error; empty names produce `RUNTIME_SECRET_NAME_INVALID`; missing
 `SecretRead` remains a runtime capability diagnostic.
@@ -774,7 +774,7 @@ sley run --json --cap Deploy --deploy-result staging staged examples/deploy_gate
 ```
 
 `deploy.try_stage(target)` reads an exact seeded deployment stage result and
-returns `Result<Text, Error>`. This is a deterministic v0 host adapter, not a
+returns `Result<Text, Error>`. This is a deterministic seeded host adapter, not a
 deployment client. It does not upload artifacts, push branches, start services,
 mutate infrastructure, or call providers. Missing target seeds produce
 `RUNTIME_DEPLOY_RESULT_NOT_FOUND` as a typed host error; empty targets produce
@@ -796,7 +796,7 @@ sley run --json --cap Spend --spend-result ads-budget authorized examples/spend_
 ```
 
 `spend.try_authorize(request)` reads an exact seeded spend authorization result
-and returns `Result<Text, Error>`. This is a deterministic v0 host adapter, not
+and returns `Result<Text, Error>`. This is a deterministic seeded host adapter, not
 a payment, broker, wallet, cloud-billing, or market-order client. It does not
 move money, buy credits, place orders, call providers, or mutate external
 accounts. Missing request seeds produce `RUNTIME_SPEND_RESULT_NOT_FOUND` as a
@@ -818,7 +818,7 @@ sley run --json --cap Network --http-text https://example.test/profile Ada examp
 ```
 
 `http.try_get_text(url)` reads an exact seeded URL response and returns
-`Result<Text, Error>`. This is a deterministic v0 host adapter, not a live HTTP
+`Result<Text, Error>`. This is a deterministic seeded host adapter, not a live HTTP
 client. Missing response seeds produce `RUNTIME_HTTP_RESPONSE_NOT_FOUND` as a
 typed host error; empty URLs produce `RUNTIME_HTTP_URL_INVALID`; missing
 `Network` remains a runtime capability diagnostic.
@@ -838,7 +838,7 @@ sley run --json --cap Shell --shell-output date 2026-05-05 examples/shell_gate.s
 ```
 
 `shell.try_run(command)` reads an exact seeded command output and returns
-`Result<Text, Error>`. This is a deterministic v0 host adapter, not a
+`Result<Text, Error>`. This is a deterministic seeded host adapter, not a
 subprocess runner. Missing output seeds produce `RUNTIME_SHELL_OUTPUT_NOT_FOUND`
 as a typed host error; empty commands produce
 `RUNTIME_SHELL_COMMAND_INVALID`; missing `Shell` remains a runtime capability
@@ -859,7 +859,7 @@ sley run --json --cap ModelCall --model-output name Ada examples/model_gate.sley
 ```
 
 `model.try_complete(prompt)` reads an exact seeded prompt completion and
-returns `Result<Text, Error>`. This is a deterministic v0 host adapter, not a
+returns `Result<Text, Error>`. This is a deterministic seeded host adapter, not a
 provider client. Missing output seeds produce `RUNTIME_MODEL_OUTPUT_NOT_FOUND`
 as a typed host error; empty prompts produce
 `RUNTIME_MODEL_PROMPT_INVALID`; missing `ModelCall` remains a runtime
@@ -905,7 +905,7 @@ capabilities and gate scope violations remain diagnostics because they are
 authority failures, not recoverable host values. The legacy raw adapters still
 return their direct values and keep diagnostic failure behavior.
 
-Known v0 limits:
+Known current limits:
 
 - Expression parsing still falls back to raw nodes for unsupported syntax such
   as lambdas, pattern matching, and multi-statement expression blocks.
@@ -953,8 +953,8 @@ Known v0 limits:
   expressions, spans, and provenance recursively. The edit-plan schema also
   pins strict graft operation and transaction template envelopes, including
   `ReplaceStatement`. The graft outcome schema pins strict accepted provenance
-  records. Other external JSON Schema files remain narrower v0 root-contract
-  schemas.
+  records. Other external JSON Schema files remain narrower compatibility root
+  contracts.
 - `MoveNode` currently reorders statements within their existing block,
   moves statements across existing block parents with `payload.destination`,
   reorders takes within their owning task, reorders top-level imports, types,
