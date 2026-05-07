@@ -2214,6 +2214,9 @@ fn block_surface_insert_template(
     if !requested_surface.starts_with("block:") {
         return None;
     }
+    if let Some(template) = graph_slice_insert_template_for_block(program, requested_surface) {
+        return Some(template);
+    }
     let operation = json!({
         "op": "InsertStatement",
         "target": requested_surface,
@@ -2241,6 +2244,30 @@ fn block_surface_insert_template(
 
 fn insert_statement_checks(program: &Program, operation: &JsonValue) -> bool {
     graft_operation_checks(program, operation, Some("agent:plan-insert-affordance"))
+}
+
+fn graph_slice_insert_template_for_block(
+    program: &Program,
+    requested_surface: &str,
+) -> Option<EditPlanGraftTemplate> {
+    let owner_task = owning_task_surface_id(requested_surface)?;
+    let slice = slice_symbol_graph(program, owner_task)?;
+    let affordance = slice
+        .insert_affordances
+        .into_iter()
+        .find(|affordance| affordance.target == requested_surface)?;
+    if !insert_statement_checks(program, &affordance.operation) {
+        return None;
+    }
+    Some(EditPlanGraftTemplate {
+        kind: "insert_statement".to_string(),
+        reason:
+            "insert one checked statement into this block using graph-slice InsertStatement affordance data; edit /payload/source before applying"
+                .to_string(),
+        surface: requested_surface.to_string(),
+        operation: affordance.operation,
+        editable_json_pointers: affordance.editable_json_pointers,
+    })
 }
 
 fn direct_graph_slice_graft_templates(
@@ -2308,7 +2335,8 @@ fn owning_task_surface_id(surface: &str) -> Option<&str> {
     if let Some(rest) = surface.strip_prefix("block:") {
         return rest
             .split_once(":stmt:")
-            .map(|(task_surface, _statement_path)| task_surface);
+            .map(|(task_surface, _statement_path)| task_surface)
+            .or_else(|| rest.starts_with("task:").then_some(rest));
     }
     if let Some(rest) = surface.strip_prefix("take:") {
         let mut parts = rest.rsplitn(3, ':');

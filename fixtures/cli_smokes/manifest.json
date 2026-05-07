@@ -2255,7 +2255,7 @@
           { "pointer": "/graft_templates/0/operation/op", "value": "InsertStatement" },
           { "pointer": "/graft_templates/0/operation/target", "value": "block:task:app.collections.sum" },
           { "pointer": "/graft_templates/0/operation/payload/source", "value": "forge { }" },
-          { "pointer": "/graft_templates/0/operation/payload/position", "value": 0 },
+          { "pointer": "/graft_templates/0/operation/payload/position", "value": 4 },
           { "pointer": "/graft_templates/0/editable_json_pointers/0", "value": "/payload/source" },
           { "pointer": "/graft_templates/0/editable_json_pointers/1", "value": "/payload/position" }
         ]
