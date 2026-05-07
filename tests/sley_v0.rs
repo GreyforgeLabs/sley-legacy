@@ -10217,6 +10217,14 @@ fn conformance_report_summarizes_release_surface() {
         Some(&serde_json::json!(1))
     );
     assert_eq!(
+        report_json.pointer("/summary/v1_gate_target_count"),
+        Some(&serde_json::json!(17))
+    );
+    assert_eq!(
+        report_json.pointer("/summary/missing_v1_gate_target_count"),
+        Some(&serde_json::json!(0))
+    );
+    assert_eq!(
         report_json.pointer("/summary/public_release_blocker_count"),
         Some(&serde_json::json!(5))
     );
@@ -10243,6 +10251,28 @@ fn conformance_report_summarizes_release_surface() {
     assert_eq!(
         report_json.pointer("/editor_shims/validation/status"),
         Some(&serde_json::json!("passed"))
+    );
+    assert_eq!(
+        report_json.pointer("/v1_gate/makefile"),
+        Some(&serde_json::json!("Makefile"))
+    );
+    assert!(
+        report_json
+            .pointer("/v1_gate/actual_targets")
+            .and_then(|value| value.as_array())
+            .is_some_and(
+                |targets| targets.iter().any(|target| target == "editor-shims")
+                    && targets.iter().any(|target| target == "syntax")
+            ),
+        "conformance report should inventory make v1 editor and syntax gates"
+    );
+    assert_eq!(
+        report_json.pointer("/v1_gate/missing_required_targets"),
+        Some(&serde_json::json!([]))
+    );
+    assert_eq!(
+        report_json.pointer("/v1_gate/undefined_targets"),
+        Some(&serde_json::json!([]))
     );
     assert_eq!(
         report_json.pointer("/release/public_release_ready"),
@@ -10288,6 +10318,8 @@ fn conformance_report_summarizes_release_surface() {
     assert!(text_stdout.contains("corpus_missing=0"));
     assert!(text_stdout.contains("smoke_missing=0"));
     assert!(text_stdout.contains("editor_shims=1"));
+    assert!(text_stdout.contains("v1_gate=17"));
+    assert!(text_stdout.contains("v1_gate_missing=0"));
     assert!(text_stdout.contains("public_release_blockers=5"));
     assert!(text_stdout.contains("release:missing_license_file"));
 
@@ -10318,10 +10350,12 @@ fn conformance_report_summarizes_release_surface() {
     let rendered_markdown = fs::read_to_string(&markdown_path).expect("read rendered markdown");
     assert!(rendered_markdown.contains("Required corpus tags"));
     assert!(rendered_markdown.contains("Editor shims"));
+    assert!(rendered_markdown.contains("`make v1` gate"));
     assert!(rendered_markdown.contains("`0` missing"));
     let rendered_html = fs::read_to_string(&html_path).expect("read rendered html");
     assert!(rendered_html.contains("Required corpus tags"));
     assert!(rendered_html.contains("Editor shims"));
+    assert!(rendered_html.contains("make v1"));
     assert!(rendered_html.contains("Required smoke tags"));
 
     let gated_report = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-conformance"))

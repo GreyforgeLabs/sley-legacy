@@ -14,6 +14,7 @@
     "examples",
     "tests",
     "editor_shims",
+    "v1_gate",
     "release",
     "issues"
   ],
@@ -28,6 +29,7 @@
     "examples": { "$ref": "#/$defs/examples" },
     "tests": { "$ref": "#/$defs/tests" },
     "editor_shims": { "$ref": "#/$defs/editorShims" },
+    "v1_gate": { "$ref": "#/$defs/v1Gate" },
     "release": { "$ref": "#/$defs/release" },
     "issues": {
       "type": "array",
@@ -52,6 +54,8 @@
         "declared_integration_test_count",
         "test_count_matches_declared",
         "editor_shim_count",
+        "v1_gate_target_count",
+        "missing_v1_gate_target_count",
         "public_release_blocker_count",
         "issue_count"
       ],
@@ -73,6 +77,8 @@
         },
         "test_count_matches_declared": { "type": "boolean" },
         "editor_shim_count": { "type": "integer", "minimum": 0 },
+        "v1_gate_target_count": { "type": "integer", "minimum": 0 },
+        "missing_v1_gate_target_count": { "type": "integer", "minimum": 0 },
         "public_release_blocker_count": { "type": "integer", "minimum": 0 },
         "issue_count": { "type": "integer", "minimum": 0 }
       },
@@ -320,6 +326,45 @@
         "grammar_count": { "type": "integer", "minimum": 0 },
         "command_count": { "type": "integer", "minimum": 0 },
         "dependency_count": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "v1Gate": {
+      "type": "object",
+      "required": [
+        "makefile",
+        "target",
+        "required_targets",
+        "actual_targets",
+        "missing_required_targets",
+        "undefined_targets",
+        "issue_count",
+        "issues"
+      ],
+      "properties": {
+        "makefile": { "type": "string", "minLength": 1 },
+        "target": { "const": "v1" },
+        "required_targets": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "actual_targets": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "missing_required_targets": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "undefined_targets": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "issue_count": { "type": "integer", "minimum": 0 },
+        "issues": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/issue" }
+        }
       },
       "additionalProperties": false
     },
