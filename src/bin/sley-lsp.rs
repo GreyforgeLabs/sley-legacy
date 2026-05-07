@@ -146,6 +146,11 @@ fn handle_message<W: Write>(
                 send_response(writer, id, handle_document_symbols(params, state))?;
             }
         }
+        "textDocument/foldingRange" => {
+            if let Some(id) = id {
+                send_response(writer, id, handle_folding_ranges(params, state))?;
+            }
+        }
         "textDocument/hover" => {
             if let Some(id) = id {
                 send_response(writer, id, handle_hover(params, state))?;
@@ -231,6 +236,7 @@ fn initialize_result() -> JsonValue {
             },
             "documentFormattingProvider": true,
             "documentSymbolProvider": true,
+            "foldingRangeProvider": true,
             "hoverProvider": true,
             "definitionProvider": true,
             "documentLinkProvider": {
@@ -363,6 +369,19 @@ fn handle_document_symbols(params: JsonValue, state: &ServerState) -> JsonValue 
         return json!([]);
     };
     json!(document_symbols(&program, &document.text))
+}
+
+fn handle_folding_ranges(params: JsonValue, state: &ServerState) -> JsonValue {
+    let Some(uri) = text_document_uri(&params) else {
+        return json!([]);
+    };
+    let Some(document) = state.documents.get(&uri) else {
+        return json!([]);
+    };
+    let Ok(program) = parse_program(&document.text) else {
+        return json!([]);
+    };
+    json!(folding_ranges_for_program(&document.text, &program))
 }
 
 fn handle_hover(params: JsonValue, state: &ServerState) -> JsonValue {
@@ -991,6 +1010,82 @@ fn document_links_for_imports(
             }))
         })
         .collect()
+}
+
+fn folding_ranges_for_program(source: &str, program: &Program) -> Vec<JsonValue> {
+    let mut ranges = Vec::new();
+    for ty in &program.types {
+        push_folding_range_for_span(source, ty.span.as_ref(), &mut ranges);
+    }
+    for task in &program.tasks {
+        push_folding_range_for_span(source, task.span.as_ref(), &mut ranges);
+        collect_statement_folding_ranges(source, &task.body.statements, &mut ranges);
+    }
+    ranges.sort_by_key(folding_range_sort_key);
+    ranges
+}
+
+fn collect_statement_folding_ranges(
+    source: &str,
+    statements: &[Statement],
+    ranges: &mut Vec<JsonValue>,
+) {
+    for statement in statements {
+        match &statement.kind {
+            StatementKind::If {
+                then_block,
+                else_block,
+                ..
+            } => {
+                push_folding_range_for_span(source, statement.span.as_ref(), ranges);
+                collect_statement_folding_ranges(source, &then_block.statements, ranges);
+                if let Some(else_block) = else_block {
+                    collect_statement_folding_ranges(source, &else_block.statements, ranges);
+                }
+            }
+            StatementKind::While { body, .. } => {
+                push_folding_range_for_span(source, statement.span.as_ref(), ranges);
+                collect_statement_folding_ranges(source, &body.statements, ranges);
+            }
+            StatementKind::For { body, .. } => {
+                push_folding_range_for_span(source, statement.span.as_ref(), ranges);
+                collect_statement_folding_ranges(source, &body.statements, ranges);
+            }
+            StatementKind::Forge { body } => {
+                push_folding_range_for_span(source, statement.span.as_ref(), ranges);
+                collect_statement_folding_ranges(source, &body.statements, ranges);
+            }
+            StatementKind::Binding { .. }
+            | StatementKind::Set { .. }
+            | StatementKind::Return { .. }
+            | StatementKind::Expr { .. } => {}
+        }
+    }
+}
+
+fn push_folding_range_for_span(
+    source: &str,
+    span: Option<&SourceSpan>,
+    ranges: &mut Vec<JsonValue>,
+) {
+    if let Some(span) = span
+        && let Some(range) = folding_range_for_braced_region(source, span)
+    {
+        ranges.push(range);
+    }
+}
+
+fn folding_range_sort_key(range: &JsonValue) -> (u64, u64) {
+    (
+        range
+            .get("startLine")
+            .and_then(JsonValue::as_u64)
+            .unwrap_or_default(),
+        range
+            .get("endLine")
+            .and_then(JsonValue::as_u64)
+            .unwrap_or_default(),
+    )
 }
 
 fn symbol_json(
@@ -2449,6 +2544,59 @@ fn range_for_import_module(source: &str, import: &ImportDecl) -> Option<JsonValu
     range_for_text_on_line(source, line, &import.module)
 }
 
+fn folding_range_for_braced_region(source: &str, span: &SourceSpan) -> Option<JsonValue> {
+    let start_line = span.line.saturating_sub(1);
+    let start_character = span.column.saturating_sub(1);
+    let start_offset = source_offset_for_line_and_character(source, start_line, start_character)?;
+    let mut depth = 0usize;
+    let mut current_line = start_line;
+    let mut open_line = None;
+    let mut in_string = false;
+    let mut escaped = false;
+
+    for ch in source.get(start_offset..)?.chars() {
+        if ch == '\n' {
+            current_line += 1;
+            continue;
+        }
+        if in_string {
+            if escaped {
+                escaped = false;
+            } else if ch == '\\' {
+                escaped = true;
+            } else if ch == '"' {
+                in_string = false;
+            }
+            continue;
+        }
+        match ch {
+            '"' => in_string = true,
+            '{' => {
+                if depth == 0 {
+                    open_line = Some(current_line);
+                }
+                depth += 1;
+            }
+            '}' => {
+                if depth == 1 {
+                    let start_line = open_line?;
+                    if current_line > start_line {
+                        return Some(json!({
+                            "startLine": start_line,
+                            "endLine": current_line,
+                            "kind": "region"
+                        }));
+                    }
+                    return None;
+                }
+                depth = depth.saturating_sub(1);
+            }
+            _ => {}
+        }
+    }
+    None
+}
+
 fn range_for_callee_leaf(
     source: &str,
     expr: &Expr,
@@ -2579,6 +2727,36 @@ fn byte_offset_for_character(line_text: &str, character: usize) -> usize {
         .nth(character)
         .map(|(byte, _)| byte)
         .unwrap_or_else(|| line_text.len())
+}
+
+fn source_offset_for_line_and_character(
+    source: &str,
+    line: usize,
+    character: usize,
+) -> Option<usize> {
+    let line_start = source_line_start_byte(source, line)?;
+    let line_text = source
+        .get(line_start..)?
+        .split_once('\n')
+        .map(|(line_text, _)| line_text)
+        .unwrap_or_else(|| &source[line_start..]);
+    Some(line_start + byte_offset_for_character(line_text, character))
+}
+
+fn source_line_start_byte(source: &str, target_line: usize) -> Option<usize> {
+    if target_line == 0 {
+        return Some(0);
+    }
+    let mut line = 0usize;
+    for (byte, ch) in source.char_indices() {
+        if ch == '\n' {
+            line += 1;
+            if line == target_line {
+                return Some(byte + 1);
+            }
+        }
+    }
+    None
 }
 
 fn leading_span_for_expr(expr: &Expr) -> Option<&SourceSpan> {

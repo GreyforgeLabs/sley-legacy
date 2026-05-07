@@ -43,6 +43,10 @@ fn lsp_publishes_diagnostics_formats_symbols_and_previews_code_actions() {
         Some(&json!(true))
     );
     assert_eq!(
+        initialized.pointer("/result/capabilities/foldingRangeProvider"),
+        Some(&json!(true))
+    );
+    assert_eq!(
         initialized.pointer("/result/capabilities/executeCommandProvider/commands/0"),
         Some(&json!("sley.fix.preview"))
     );
@@ -97,7 +101,10 @@ export task fetch -> Result<Text, Error> uses Network {
 }
 
 task main -> Text {
+if true {
 return "hello"
+}
+return "fallback"
 }
 
 task orphan -> Text {
@@ -131,6 +138,38 @@ return "unused"
     assert!(
         diagnostic_codes.contains(&"unused_private_task"),
         "expected unused_private_task diagnostic, got {diagnostic_codes:?}"
+    );
+
+    write_lsp(
+        &mut stdin,
+        json!({
+            "jsonrpc": "2.0",
+            "id": 20,
+            "method": "textDocument/foldingRange",
+            "params": {
+                "textDocument": {
+                    "uri": uri
+                }
+            }
+        }),
+    );
+    let folding_ranges = read_response(&mut reader, 20);
+    let fold_lines = folding_range_lines_and_kinds(&folding_ranges);
+    assert!(
+        fold_lines.contains(&(2, 5, "region")),
+        "folding ranges should include fetch task body, got {fold_lines:?}"
+    );
+    assert!(
+        fold_lines.contains(&(7, 12, "region")),
+        "folding ranges should include main task body, got {fold_lines:?}"
+    );
+    assert!(
+        fold_lines.contains(&(8, 10, "region")),
+        "folding ranges should include nested if block, got {fold_lines:?}"
+    );
+    assert!(
+        fold_lines.contains(&(14, 16, "region")),
+        "folding ranges should include orphan task body, got {fold_lines:?}"
     );
 
     write_lsp(
@@ -921,6 +960,22 @@ fn document_highlight_lines_and_chars(message: &JsonValue) -> Vec<(u64, u64)> {
             Some((
                 highlight.pointer("/range/start/line")?.as_u64()?,
                 highlight.pointer("/range/start/character")?.as_u64()?,
+            ))
+        })
+        .collect()
+}
+
+fn folding_range_lines_and_kinds(message: &JsonValue) -> Vec<(u64, u64, &str)> {
+    message
+        .get("result")
+        .and_then(JsonValue::as_array)
+        .expect("folding range array")
+        .iter()
+        .filter_map(|range| {
+            Some((
+                range.get("startLine")?.as_u64()?,
+                range.get("endLine")?.as_u64()?,
+                range.get("kind")?.as_str()?,
             ))
         })
         .collect()

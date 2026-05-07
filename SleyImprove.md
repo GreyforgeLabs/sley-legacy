@@ -193,11 +193,11 @@ Rules:
   the same `make v1` gate.
 - `sley-lsp` exposes a stdio language-server loop over current compiler
   surfaces: parse/check/lint diagnostics with `sley.toml` project context and
-  open-buffer overlays, formatting, document symbols, declaration metadata
-  hover, workspace symbols, project completions, import/call definition jumps,
-  project task signature help, exact-range task references, document
-  highlights, import document links, prepared cursor-aware project task rename
-  edits, edit-plan code actions, and
+  open-buffer overlays, formatting, document symbols, folding ranges,
+  declaration metadata hover, workspace symbols, project completions,
+  import/call definition jumps, project task signature help, exact-range task
+  references, document highlights, import document links, prepared
+  cursor-aware project task rename edits, edit-plan code actions, and
   non-mutating `sley.fix.preview` payloads whose editor preview operations and
   transactions reuse the strict edit-plan graft contracts.
 - `sley-workbench` exposes a local read-only inspection report and optional
