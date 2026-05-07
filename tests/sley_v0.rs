@@ -1231,6 +1231,25 @@ task orphan -> Int {
             .all(|action| action.pointer("/kind") != Some(&serde_json::json!("inspect_calls"))),
         "call-free warning reports should not suggest call-row inspection"
     );
+    let human_warnings = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .args(["doctor"])
+        .arg(&warning_file)
+        .output()
+        .expect("run warning doctor text");
+    let human_warnings_stdout =
+        String::from_utf8(human_warnings.stdout).expect("human warnings stdout utf8");
+    assert!(
+        human_warnings.status.success(),
+        "doctor text warnings should be non-blocking by default"
+    );
+    assert!(
+        human_warnings_stdout.contains("lint warning UNUSED_PRIVATE_TASK"),
+        "doctor text should include stable lint finding id: {human_warnings_stdout}"
+    );
+    assert!(
+        human_warnings_stdout.contains("node=task:app.warning.orphan"),
+        "doctor text should include stable lint finding node: {human_warnings_stdout}"
+    );
 
     let denied = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
         .args(["doctor", "--json", "--deny-warnings"])
