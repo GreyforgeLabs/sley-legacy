@@ -179,6 +179,7 @@ const DEFAULT_SMOKE_TAGS: &[&str] = &[
     "readiness:docgen-reference",
     "readiness:lsp-stdio-startup",
     "readiness:migrate-report",
+    "readiness:plan-ci-post-edit-doctor",
     "readiness:plan-ci-post-edit-verify",
     "readiness:plan-seeded-post-edit-verify",
     "readiness:sandbox-replay",

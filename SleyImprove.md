@@ -780,8 +780,9 @@ The current smoke manifest covers:
   staged write-and-verify smoke for the previewed unused-private-task repair
   path and a project-level previewed unused-import repair path, including
   generated starter, service, deploy, and agent scaffold quickstarts
-  re-verified with local or seeded authority and direct plus `sley-ci` seeded
-  plan post-edit verify commands for reachable agent host calls
+  re-verified with local or seeded authority and direct plus `sley-ci`
+  post-edit doctor gates and seeded plan post-edit verify commands for
+  reachable agent host calls
 - lint-driven declaration delete templates, cleanup transactions, and direct
   declaration surface targeting in edit-plan reports
 - lint-driven missing-module `AddModuleDeclaration` templates, module-name

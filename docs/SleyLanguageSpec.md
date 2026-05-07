@@ -960,8 +960,9 @@ strict checker, checked query, and checked lint surfaces. It reports `ready`,
 with stable task ids, qualified names, takes, call counts, declared effects,
 graft target ids, and planning notes; and gives next-command vectors for graph
 slice inspection, strict call-row inspection when checked calls exist, plus
-post-edit doctor and verify gates. Post-edit verify commands include direct
-and `sley-ci` variants with deterministic runtime gates and host seed
+post-edit doctor and verify gates. Post-edit doctor commands include direct
+and `sley-ci` strict readiness variants; post-edit verify commands include
+direct and `sley-ci` variants with deterministic runtime gates and host seed
 arguments when reachable literal host calls make those seeds safe to infer.
 `--deny-warnings` treats lint findings as blocked while still printing
 `schema: "sley.edit_plan.report.v0"`. Non-JSON plan output prints stable lint
@@ -1571,7 +1572,8 @@ refuse generic data disguised as Sley artifacts before compression begins.
   transaction templates, safe remove-take-plus-call-arg transaction templates
   for unused takes, lint-driven delete templates and cleanup transactions for
   unused private types/effects, lint-driven module declaration templates with
-  inferred module names, and post-edit gate commands; `sley fix` can execute
+  inferred module names, direct plus `sley-ci` post-edit doctor gates, and
+  direct plus `sley-ci` seeded post-edit verify gates; `sley fix` can execute
   one named checked template by explicit kind, including missing-module
   declaration repair, but broad autonomous repair selection remains later work
 - `sley verify` emits a deterministic CI/pre-deploy report over strict check,

@@ -401,6 +401,17 @@
       ]
     },
     {
+      "kind": "post_edit_ci_doctor",
+      "reason": "run the same strict post-edit readiness check through the CI wrapper",
+      "command": [
+        "sley-ci",
+        "doctor",
+        "--json",
+        "--deny-warnings",
+        "examples/project"
+      ]
+    },
+    {
       "kind": "post_edit_verify",
       "reason": "run deterministic verification after the planned graft is applied",
       "command": [

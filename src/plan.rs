@@ -4501,6 +4501,11 @@ fn ready_actions(
         command: command(["sley", "doctor", "--json", "--deny-warnings", target]),
     });
     actions.push(EditPlanAction {
+        kind: "post_edit_ci_doctor".to_string(),
+        reason: "run the same strict post-edit readiness check through the CI wrapper".to_string(),
+        command: command(["sley-ci", "doctor", "--json", "--deny-warnings", target]),
+    });
+    actions.push(EditPlanAction {
         kind: "post_edit_verify".to_string(),
         reason: "run deterministic verification after the planned graft is applied".to_string(),
         command: verify_command("sley", target, query, program),
