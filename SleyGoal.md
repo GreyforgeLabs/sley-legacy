@@ -53,9 +53,9 @@ Current verified surface:
   fixture and release-manifest validation, conformance summary reporting,
   corpus conformance, packaged example conformance, broad CLI smoke
   conformance, the lightweight `sley-ci smoke` wrapper probe, the focused LSP
-  integration tests, deterministic utility replays for workbench, agent-bench,
-  raw-host and unchecked-result migration, docgen, sandbox-runner, and ZJX
-  tools, and Tree-sitter syntax parsing.
+  integration tests, VS Code editor-shim validation, deterministic utility
+  replays for workbench, agent-bench, raw-host and unchecked-result migration,
+  docgen, sandbox-runner, and ZJX tools, and Tree-sitter syntax parsing.
 - The synthetic gold corpus currently has 19 accepted fixtures and 21 rejected
   fixtures, including accepted/rejected split-task agent authority cases that
   lock transitive effect propagation for deploy, spend, and data mutation, plus
@@ -117,6 +117,11 @@ Current verified surface:
   checked edit-plan code actions, non-mutating command-preview code lenses,
   and non-mutating preview commands whose editor repair previews reuse the
   strict edit-plan graft contracts.
+- `editors/vscode-sley` is available as a private local VS Code shim that
+  contributes `.sley` language metadata, basic TextMate highlighting, and a
+  `vscode-languageclient` bridge to the current `sley-lsp` server. It is
+  validation-gated locally but remains unpublished until public release
+  metadata is approved.
 - `sley-workbench` is available as an in-tree local inspection bootstrap with
   JSON and optional static HTML panels over doctor, query, lint, edit-plan, and
   graph and graph-slice data; its report schema links embedded doctor, query,

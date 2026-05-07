@@ -203,6 +203,10 @@ Rules:
   edit-plan code actions, non-mutating command-preview code lenses, and
   non-mutating preview payloads whose editor repair previews reuse the strict
   edit-plan graft contracts.
+- `editors/vscode-sley` exposes a private local VS Code shim with `.sley`
+  language metadata, basic TextMate highlighting, and a `vscode-languageclient`
+  bridge to the current `sley-lsp` binary. It is validation-gated through
+  `make v1` but remains unpublished until release metadata is approved.
 - `sley-workbench` exposes a local read-only inspection report and optional
   static HTML page over doctor/query/lint/plan/graph/graph-slice panels. Its
   report schema links embedded panel rows back to the source doctor, query,

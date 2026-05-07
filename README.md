@@ -190,6 +190,9 @@ Implemented now:
   prepared cursor-aware project task rename edits, import/call definition jumps,
   checked edit-plan code actions, non-mutating command-preview code lenses, and
   non-mutating preview commands for editor repair and command handoff
+- private local VS Code shim under `editors/vscode-sley/` that contributes
+  `.sley` language metadata, basic TextMate highlighting, and a
+  `vscode-languageclient` bridge to `sley-lsp`
 - in-tree `sley-workbench` local inspection bootstrap that emits
   `schema: "sley.workbench.report.v0"` and optional static HTML over
   doctor/query/lint/plan/graph/graph-slice panels without writing source
@@ -459,9 +462,9 @@ Implemented now:
   full Rust tests, contract fixture and release-manifest validation,
   conformance summary reporting, corpus conformance, packaged example
   conformance, CLI smoke conformance, the focused LSP integration tests,
-  deterministic utility replays for workbench, agent-bench, raw-host and
-  unchecked-result migration, docgen, sandbox-runner, and ZJX tools, plus
-  Tree-sitter syntax parsing
+  VS Code editor-shim validation, deterministic utility replays for workbench,
+  agent-bench, raw-host and unchecked-result migration, docgen,
+  sandbox-runner, and ZJX tools, plus Tree-sitter syntax parsing
 - GitHub Actions and pre-commit entry points that run the same `make v1` gate
   through `.github/actions/sley-v1/action.yml`, `.github/workflows/v1.yml`,
   and `.pre-commit-config.yaml`; the action installs Rust and Node tooling

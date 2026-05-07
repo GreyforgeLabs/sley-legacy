@@ -1,4 +1,4 @@
-.PHONY: fmt diff-check build-cli build-bins test contracts conformance public-release-check corpus examples smoke lsp workbench agent-bench migrate docgen sandbox-runner zjx-tools syntax v1
+.PHONY: fmt diff-check build-cli build-bins test contracts conformance public-release-check corpus examples smoke lsp editor-shims workbench agent-bench migrate docgen sandbox-runner zjx-tools syntax v1
 
 fmt:
 	cargo fmt -- --check
@@ -40,6 +40,9 @@ smoke: build-bins
 lsp:
 	cargo test --test sley_lsp
 
+editor-shims:
+	npm --prefix editors/vscode-sley run validate
+
 workbench:
 	cargo run --bin sley-workbench -- --json examples/dead_private_tasks.sley
 
@@ -68,4 +71,4 @@ tree-sitter-sley/node_modules/.package-lock.json: tree-sitter-sley/package.json 
 syntax: tree-sitter-sley/node_modules/.package-lock.json
 	npm --prefix tree-sitter-sley test
 
-v1: fmt diff-check test contracts conformance corpus examples smoke lsp workbench agent-bench migrate docgen sandbox-runner zjx-tools syntax
+v1: fmt diff-check test contracts conformance corpus examples smoke lsp editor-shims workbench agent-bench migrate docgen sandbox-runner zjx-tools syntax
