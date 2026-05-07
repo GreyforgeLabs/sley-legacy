@@ -56,6 +56,11 @@ fn lsp_publishes_diagnostics_formats_symbols_and_previews_code_actions() {
     let uri = "file:///tmp/sley-lsp-main.sley";
     let source = r#"module app.lsp
 
+export task fetch -> Result<Text, Error> uses Network {
+  take url: Text
+  return call http.try_get_text(url)
+}
+
 task main -> Text {
 return "hello"
 }
@@ -139,6 +144,7 @@ return "unused"
         .filter_map(|symbol| symbol.get("name").and_then(JsonValue::as_str))
         .collect::<Vec<_>>();
     assert!(symbol_names.contains(&"app.lsp"));
+    assert!(symbol_names.contains(&"fetch"));
     assert!(symbol_names.contains(&"main"));
     assert!(symbol_names.contains(&"orphan"));
 
@@ -147,6 +153,35 @@ return "unused"
         json!({
             "jsonrpc": "2.0",
             "id": 4,
+            "method": "textDocument/hover",
+            "params": {
+                "textDocument": {
+                    "uri": uri
+                },
+                "position": {
+                    "line": 2,
+                    "character": 5
+                }
+            }
+        }),
+    );
+    let hover = read_response(&mut reader, 4);
+    let hover_text = hover
+        .pointer("/result/contents/value")
+        .and_then(JsonValue::as_str)
+        .expect("task hover text");
+    assert!(hover_text.contains("export task `fetch`"));
+    assert!(hover_text.contains("module: `app.lsp`"));
+    assert!(hover_text.contains("returns: `Result<Text, Error>`"));
+    assert!(hover_text.contains("takes: `url: Text`"));
+    assert!(hover_text.contains("effects: `Network`"));
+    assert!(hover_text.contains("node: `task:app.lsp.fetch`"));
+
+    write_lsp(
+        &mut stdin,
+        json!({
+            "jsonrpc": "2.0",
+            "id": 5,
             "method": "textDocument/codeAction",
             "params": {
                 "textDocument": {
@@ -162,7 +197,7 @@ return "unused"
             }
         }),
     );
-    let actions = read_response(&mut reader, 4);
+    let actions = read_response(&mut reader, 5);
     let delete_action = actions
         .get("result")
         .and_then(JsonValue::as_array)
@@ -176,7 +211,7 @@ return "unused"
         &mut stdin,
         json!({
             "jsonrpc": "2.0",
-            "id": 5,
+            "id": 6,
             "method": "workspace/executeCommand",
             "params": {
                 "command": delete_action.pointer("/command/command").expect("command name"),
@@ -184,7 +219,7 @@ return "unused"
             }
         }),
     );
-    let preview = read_response(&mut reader, 5);
+    let preview = read_response(&mut reader, 6);
     let report_bytes = serde_json::to_vec(preview.get("result").expect("preview result"))
         .expect("serialize LSP fix preview report");
     support::validate_report_schema("sley.lsp.fix_preview.v0", &report_bytes);
@@ -206,12 +241,12 @@ return "unused"
         &mut stdin,
         json!({
             "jsonrpc": "2.0",
-            "id": 6,
+            "id": 7,
             "method": "shutdown",
             "params": null
         }),
     );
-    let shutdown = read_response(&mut reader, 6);
+    let shutdown = read_response(&mut reader, 7);
     assert!(shutdown.get("result").is_some());
     write_lsp(
         &mut stdin,

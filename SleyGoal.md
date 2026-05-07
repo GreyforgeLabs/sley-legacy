@@ -107,7 +107,7 @@ Current verified surface:
   plus accepted compiler corpus fixtures.
 - `sley-lsp` is available as an in-tree stdio language-server bootstrap with
   full-document sync, diagnostics, formatting, document symbols, declaration
-  hover, checked edit-plan code actions, and a non-mutating
+  metadata hover, checked edit-plan code actions, and a non-mutating
   `sley.fix.preview` command whose preview operations and transactions reuse
   the strict edit-plan graft contracts.
 - `sley-workbench` is available as an in-tree local inspection bootstrap with

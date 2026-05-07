@@ -53,6 +53,8 @@ here. Dates use UTC-independent calendar dates from the local repo history.
   sandbox-runner, and ZJX tool replays plus the focused LSP integration test,
   contract fixtures, conformance, corpus, examples, CLI smokes, and
   Tree-sitter syntax parsing.
+- `sley-lsp` declaration hover now includes module, return type, takes,
+  effects, export status, and node IDs for editor-side inspection.
 - Added `make public-release-check` as the explicit failing gate for public
   release cuts until license and repository metadata blockers are resolved.
 - Utility integration tests now validate live docgen, migrate, agent-bench,
