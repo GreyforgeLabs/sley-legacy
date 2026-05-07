@@ -9969,7 +9969,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(106))
+        Some(&serde_json::json!(107))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -10245,7 +10245,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/contract_fixture_count"),
-        Some(&serde_json::json!(106))
+        Some(&serde_json::json!(107))
     );
     assert_eq!(
         report_json.pointer("/summary/corpus_accepted_count"),
@@ -10294,7 +10294,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/smoke_case_count"),
-        Some(&serde_json::json!(435))
+        Some(&serde_json::json!(436))
     );
     assert_eq!(
         report_json.pointer("/summary/onboarding_path_count"),

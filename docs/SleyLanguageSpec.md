@@ -812,7 +812,8 @@ bootstrap. `sley-shadow report --json <target>` emits
 `schema: "sley.shadow.report.v0"` after parsing and checking the target, then
 consumes checked `sley.query.report.v0` and `sley.lint.report.v0` data. The
 report links lint findings back to task/type/effect/module rows when possible
-and derives seeded `--cap` argument fragments for effectful tasks. It is
+and derives seeded `--cap` argument fragments for effectful tasks. The target
+may be one `.sley` file or a project root loaded through `sley.toml`. It is
 non-authoritative; Rust Loom remains the semantic oracle.
 
 The local agent-loop benchmark is backed by the in-tree `sley-agent-bench`

@@ -1,0 +1,82 @@
+{
+  "schema": "sley.shadow.report.v0",
+  "status": "clean",
+  "target": "examples/agent_project",
+  "source_schemas": {
+    "query": "sley.query.report.v0",
+    "lint": "sley.lint.report.v0"
+  },
+  "summary": {
+    "module_count": 2,
+    "task_count": 4,
+    "effectful_task_count": 4,
+    "call_count": 11,
+    "lint_finding_count": 0,
+    "linked_lint_finding_count": 0,
+    "unlinked_lint_finding_count": 0,
+    "authority_seed_count": 4,
+    "diagnostic_count": 0,
+    "issue_count": 0
+  },
+  "authority_seeds": [
+    {
+      "task_id": "task:agent.main.main",
+      "qualified_name": "agent.main.main",
+      "effects": [
+        "SecretRead",
+        "Network",
+        "ModelCall",
+        "Deploy"
+      ],
+      "command_args": [
+        "--cap",
+        "SecretRead",
+        "--cap",
+        "Network",
+        "--cap",
+        "ModelCall",
+        "--cap",
+        "Deploy"
+      ]
+    },
+    {
+      "task_id": "task:agent.pipeline.collect_profile",
+      "qualified_name": "agent.pipeline.collect_profile",
+      "effects": [
+        "SecretRead",
+        "Network"
+      ],
+      "command_args": [
+        "--cap",
+        "SecretRead",
+        "--cap",
+        "Network"
+      ]
+    },
+    {
+      "task_id": "task:agent.pipeline.draft_plan",
+      "qualified_name": "agent.pipeline.draft_plan",
+      "effects": [
+        "ModelCall"
+      ],
+      "command_args": [
+        "--cap",
+        "ModelCall"
+      ]
+    },
+    {
+      "task_id": "task:agent.pipeline.stage_release",
+      "qualified_name": "agent.pipeline.stage_release",
+      "effects": [
+        "Deploy"
+      ],
+      "command_args": [
+        "--cap",
+        "Deploy"
+      ]
+    }
+  ],
+  "lint_links": [],
+  "diagnostics": [],
+  "issues": []
+}
