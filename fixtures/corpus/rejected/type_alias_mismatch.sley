@@ -1,0 +1,9 @@
+module corpus.rejected.type_alias_mismatch
+
+type Score = Int
+type Labels = List<Text>
+
+task main -> Score {
+  bind labels: Labels = ["bad"]
+  return labels[0]
+}

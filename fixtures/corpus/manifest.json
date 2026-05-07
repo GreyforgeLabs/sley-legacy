@@ -153,6 +153,14 @@
       ]
     },
     {
+      "path": "accepted/type_alias_transparency.sley",
+      "covers": [
+        "language:type-alias",
+        "language:type-alias-transparent",
+        "formatter:round-trip"
+      ]
+    },
+    {
       "path": "accepted/pure_main.sley",
       "covers": [
         "language:pure-task-call",
@@ -305,6 +313,15 @@
       "covers": [
         "language:type-mismatch",
         "diagnostic:TYPE_MISMATCH"
+      ]
+    },
+    {
+      "path": "rejected/type_alias_mismatch.sley",
+      "covers": [
+        "language:type-alias",
+        "language:type-alias-transparent",
+        "language:type-mismatch",
+        "diagnostic:RETURN_TYPE_MISMATCH"
       ]
     },
     {
