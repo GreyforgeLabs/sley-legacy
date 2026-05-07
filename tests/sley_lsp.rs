@@ -404,7 +404,7 @@ return "unused"
                 },
                 "range": {
                     "start": { "line": 0, "character": 0 },
-                    "end": { "line": 8, "character": 0 }
+                    "end": { "line": 17, "character": 0 }
                 },
                 "context": {
                     "diagnostics": []
@@ -413,6 +413,42 @@ return "unused"
         }),
     );
     let actions = read_response(&mut reader, 7);
+    write_lsp(
+        &mut stdin,
+        json!({
+            "jsonrpc": "2.0",
+            "id": 22,
+            "method": "textDocument/codeAction",
+            "params": {
+                "textDocument": {
+                    "uri": uri
+                },
+                "range": {
+                    "start": { "line": 8, "character": 0 },
+                    "end": { "line": 8, "character": 8 }
+                },
+                "context": {
+                    "diagnostics": []
+                }
+            }
+        }),
+    );
+    let scoped_actions = read_response(&mut reader, 22);
+    let scoped_action_kinds = scoped_actions
+        .get("result")
+        .and_then(JsonValue::as_array)
+        .expect("scoped code actions")
+        .iter()
+        .filter_map(|action| action.pointer("/data/kind").and_then(JsonValue::as_str))
+        .collect::<Vec<_>>();
+    assert!(
+        scoped_action_kinds.contains(&"simplify_constant_if_statement"),
+        "scoped code action should include the if-statement repair, got {scoped_action_kinds:?}"
+    );
+    assert!(
+        !scoped_action_kinds.contains(&"delete_unused_private_task"),
+        "scoped code action should exclude unrelated private-task repair, got {scoped_action_kinds:?}"
+    );
     let delete_action = actions
         .get("result")
         .and_then(JsonValue::as_array)

@@ -918,6 +918,8 @@ fn handle_code_actions(params: JsonValue, state: &ServerState) -> JsonValue {
     let Some(document) = state.documents.get(&uri) else {
         return json!([]);
     };
+    let requested_range = request_range(&params, &document.text);
+    let program_for_range_filter = parse_program(&document.text).ok();
     let report = build_edit_plan_report_with_options(
         target_for_uri(&uri),
         parse_program(&document.text),
@@ -933,16 +935,46 @@ fn handle_code_actions(params: JsonValue, state: &ServerState) -> JsonValue {
         report
             .graft_templates
             .iter()
+            .filter(|template| {
+                code_action_surface_in_range(
+                    program_for_range_filter.as_ref(),
+                    requested_range,
+                    &template.surface,
+                )
+            })
             .map(|template| code_action_for_graft_template(&uri, &report.target, template)),
     );
     actions.extend(
         report
             .transaction_templates
             .iter()
+            .filter(|template| {
+                code_action_surface_in_range(
+                    program_for_range_filter.as_ref(),
+                    requested_range,
+                    &template.surface,
+                )
+            })
             .map(|template| code_action_for_transaction_template(&uri, &report.target, template)),
     );
     actions.truncate(50);
     json!(actions)
+}
+
+fn code_action_surface_in_range(
+    program: Option<&Program>,
+    range: Option<(usize, usize, usize, usize)>,
+    surface: &str,
+) -> bool {
+    let (Some(program), Some(range)) = (program, range) else {
+        return true;
+    };
+    let Some(span) = span_for_node(program, surface) else {
+        return true;
+    };
+    let line = span.line.saturating_sub(1);
+    let character = span.column.saturating_sub(1);
+    position_in_request_range(range, line, character)
 }
 
 fn handle_code_lens(params: JsonValue, state: &ServerState) -> JsonValue {
