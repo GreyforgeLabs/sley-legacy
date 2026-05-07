@@ -170,8 +170,9 @@ Implemented now:
   schema/fixture instance coverage, contract validation status, corpus coverage
   tags, smoke coverage tags, packaged example counts, and the declared
   integration-test count, plus editor-shim package validation, including
-  required corpus and smoke release tags, `make v1` target inventory, plus
-  non-gating public-release packaging blockers,
+  required corpus and smoke release tags for seeded and scoped runtime
+  authority, `make v1` target inventory, plus non-gating public-release
+  packaging blockers,
   with `--require-public-release-ready` available as the explicit public-cut
   gate once license and repository metadata are settled,
   emitting

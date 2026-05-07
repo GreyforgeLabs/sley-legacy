@@ -10192,6 +10192,21 @@ fn conformance_report_summarizes_release_surface() {
                 .any(|tag| tag == "graft:templates:declaration-surface")),
         "conformance report should require direct declaration surface smoke coverage"
     );
+    assert!(
+        report_json
+            .pointer("/smoke/required_tags")
+            .and_then(|value| value.as_array())
+            .is_some_and(
+                |tags| tags.iter().any(|tag| tag == "host:scoped-capability")
+                    && tags
+                        .iter()
+                        .any(|tag| tag == "diagnostic:RUNTIME_CAPABILITY_SCOPE_DENIED")
+                    && tags
+                        .iter()
+                        .any(|tag| tag == "runtime:seeded-host-authority")
+            ),
+        "conformance report should require scoped runtime authority smoke coverage"
+    );
     assert_eq!(
         report_json.pointer("/summary/smoke_case_count"),
         Some(&serde_json::json!(434))

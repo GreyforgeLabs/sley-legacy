@@ -185,7 +185,8 @@ Rules:
   sandbox-runner, and ZJX tool replays.
 - `sley-conformance report` carries explicit required corpus and smoke release
   tags, inventories editor-shim package validation and the `make v1` target
-  set, and fails if either manifest or the local gate drops required evidence.
+  set, and fails if either manifest or the local gate drops required evidence,
+  including seeded and scoped runtime authority smoke evidence.
 - `sley-conformance report --require-public-release-ready` is the explicit
   public-cut gate for license and repository metadata; ordinary executable v1
   conformance remains advisory on those operator decisions.
