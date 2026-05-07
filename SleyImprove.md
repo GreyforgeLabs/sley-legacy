@@ -511,8 +511,9 @@ add list empty until add grafts carry explicit destination-module targets.
 `sley plan --graft-templates --template-surface module:<name>` and declaration
 list parents such as `module:<name>:tasks` now consume the module graph-slice
 affordances directly, exposing checked top-level import/type/effect/task move
-and delete templates at module granularity. Direct declaration ids such as
-`type:app.module.Name`, `effect:app.module.Audit`, and
+and delete templates at module granularity, plus checked entry-module add
+starters where the graph slice exposes `add_affordances`. Direct declaration
+ids such as `type:app.module.Name`, `effect:app.module.Audit`, and
 `import:app.module:app.shared` use the same graph-slice move/delete
 affordance path scoped to the selected declaration.
 Graph slices also expose bounded `InsertStatement` affordances for task-local

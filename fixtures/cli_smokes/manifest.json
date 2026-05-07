@@ -2397,7 +2397,9 @@
         "cli:plan",
         "cli:smoke-setup-files",
         "graft:templates",
+        "graft:templates:module-add-surface",
         "graft:templates:module-surface",
+        "graph-slice:add-affordances",
         "graph-slice:delete-affordances",
         "graph-slice:move-affordances",
         "json:sley.edit_plan.report.v0"
@@ -2421,10 +2423,15 @@
           { "pointer": "/graft_templates/4/operation/op", "value": "DeleteNode" },
           { "pointer": "/graft_templates/4/operation/target", "value": "type:app.plan.User" },
           { "pointer": "/graft_templates/6/kind", "value": "delete_task" },
-          { "pointer": "/graft_templates/6/operation/target", "value": "task:app.plan.helper" }
+          { "pointer": "/graft_templates/6/operation/target", "value": "task:app.plan.helper" },
+          { "pointer": "/graft_templates/7/kind", "value": "add_import" },
+          { "pointer": "/graft_templates/7/operation/op", "value": "AddImport" },
+          { "pointer": "/graft_templates/7/operation/payload/module", "value": "app.new_module" },
+          { "pointer": "/graft_templates/10/kind", "value": "add_task" },
+          { "pointer": "/graft_templates/10/operation/op", "value": "AddTask" }
         ],
         "stdout_json_absent": [
-          "/graft_templates/7"
+          "/graft_templates/11"
         ]
       }
     },
@@ -2448,7 +2455,9 @@
         "cli:plan",
         "cli:smoke-setup-files",
         "graft:templates",
+        "graft:templates:module-add-surface",
         "graft:templates:module-parent-surface",
+        "graph-slice:add-affordances",
         "graph-slice:delete-affordances",
         "graph-slice:move-affordances",
         "json:sley.edit_plan.report.v0"
@@ -2467,10 +2476,13 @@
           { "pointer": "/graft_templates/1/operation/target", "value": "task:app.plan.main" },
           { "pointer": "/graft_templates/2/kind", "value": "delete_task" },
           { "pointer": "/graft_templates/2/operation/op", "value": "DeleteNode" },
-          { "pointer": "/graft_templates/2/operation/target", "value": "task:app.plan.helper" }
+          { "pointer": "/graft_templates/2/operation/target", "value": "task:app.plan.helper" },
+          { "pointer": "/graft_templates/3/kind", "value": "add_task" },
+          { "pointer": "/graft_templates/3/operation/op", "value": "AddTask" },
+          { "pointer": "/graft_templates/3/operation/payload/source", "value": "module app.plan\n\ntask new_task -> Int {\n  return 0\n}" }
         ],
         "stdout_json_absent": [
-          "/graft_templates/3"
+          "/graft_templates/4"
         ]
       }
     },
