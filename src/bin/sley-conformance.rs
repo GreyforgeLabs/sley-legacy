@@ -126,6 +126,7 @@ const DEFAULT_SMOKE_TAGS: &[&str] = &[
     "language:type-alias-transparent",
     "lsp:help",
     "migrate:raw-host-adapter",
+    "migrate:schema-drift",
     "migrate:unchecked-result",
     "migrate:unchecked-result-binding",
     "readiness:agent-bench-repair-loop",

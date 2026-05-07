@@ -281,8 +281,8 @@ Current verified surface:
   runtime authority. The broad suite can exercise allowlisted sibling utility
   binaries and now smokes `sley-contract` inventory, validate, fixture-check,
   deploy-artifact inspection flows, plus `sley-migrate` raw-host,
-  unchecked-result expression, and unchecked-result binding migration reports,
-  plus `sley-ci`, `sley-conformance`,
+  schema-drift, unchecked-result expression, and unchecked-result binding
+  migration reports, plus `sley-ci`, `sley-conformance`,
   `sley-docgen`, `sley-workbench`, `sley-sandbox-runner`, `sley-shadow`,
   `sley-agent-bench`, `sley-zjx` utility reports, and `sley-lsp` help/startup. It also includes
   graph-slice insert and replace affordances, checked `insert_statement`,

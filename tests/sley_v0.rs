@@ -10377,9 +10377,16 @@ fn conformance_report_summarizes_release_surface() {
                 .any(|tag| tag == "migrate:unchecked-result-binding")),
         "conformance report should require unchecked result binding migration smoke coverage"
     );
+    assert!(
+        report_json
+            .pointer("/smoke/required_tags")
+            .and_then(|value| value.as_array())
+            .is_some_and(|tags| tags.iter().any(|tag| tag == "migrate:schema-drift")),
+        "conformance report should require migration schema drift smoke coverage"
+    );
     assert_eq!(
         report_json.pointer("/summary/smoke_case_count"),
-        Some(&serde_json::json!(446))
+        Some(&serde_json::json!(447))
     );
     assert_eq!(
         report_json.pointer("/summary/onboarding_path_count"),

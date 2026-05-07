@@ -460,8 +460,8 @@ Implemented now:
   smokes, explicit graft/fix trace receipts, trace seals over non-empty receipt
   chains, ZJX envelopes carrying graph digests and schema-backed trace
   receipts, ZJX tool reports, `sley-contract` inventory/validate/fixture-check
-  and deploy-artifact inspection, `sley-migrate` raw-host, unchecked-result
-  expression, and unchecked-result binding reports, `sley-ci`,
+  and deploy-artifact inspection, `sley-migrate` raw-host, schema-drift,
+  unchecked-result expression, and unchecked-result binding reports, `sley-ci`,
   `sley-conformance`, `sley-docgen`, `sley-workbench`,
   `sley-sandbox-runner`, `sley-shadow`, `sley-agent-bench`, `sley-zjx` utility
   reports, and `sley-lsp` help/startup, passed-verify next-actions for seal and ZJX handoff
