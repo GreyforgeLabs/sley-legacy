@@ -99,7 +99,8 @@ Current verified surface:
   wrapped diagnostic ID summarized inside the CI step; denied lint findings
   from lint, doctor, plan, and verify surfaces also expose their finding IDs
   inside the step, while run/verify runtime diagnostics are summarized for
-  missing authority gates.
+  missing authority gates and failed verify next-actions are copied into the
+  wrapper step.
 - `sley-conformance` is available as an in-tree conformance visibility helper
   with `report` and `coverage` commands that emit
   `schema: "sley.conformance.report.v0"` and

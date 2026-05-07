@@ -74,6 +74,10 @@
           "type": "array",
           "items": { "$ref": "#/$defs/finding" }
         },
+        "next_actions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/action" }
+        },
         "covers": {
           "type": "array",
           "items": { "type": "string", "minLength": 1 }
@@ -81,6 +85,25 @@
         "issues": {
           "type": "array",
           "items": { "$ref": "#/$defs/issue" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "action": {
+      "type": "object",
+      "required": ["kind", "reason", "command"],
+      "properties": {
+        "kind": { "type": "string", "minLength": 1 },
+        "reason": { "type": "string", "minLength": 1 },
+        "command": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "write_command": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
         }
       },
       "additionalProperties": false

@@ -34,6 +34,67 @@
           "hint": "delete this never-executed for statement"
         }
       ],
+      "next_actions": [
+        {
+          "kind": "repair_lint_findings",
+          "reason": "warning-grade lint findings should be resolved before deployment review",
+          "command": [
+            "sley",
+            "lint",
+            "--json",
+            "examples/empty_for_statement.sley"
+          ]
+        },
+        {
+          "kind": "plan_lint_repairs",
+          "reason": "checked graft templates show which lint findings can be repaired structurally",
+          "command": [
+            "sley",
+            "plan",
+            "--json",
+            "--graft-templates",
+            "examples/empty_for_statement.sley"
+          ]
+        },
+        {
+          "kind": "preview_lint_repair",
+          "reason": "exactly one checked lint repair is available; preview it before writing",
+          "command": [
+            "sley",
+            "fix",
+            "--json",
+            "--kind",
+            "delete_empty_for_statement",
+            "--template-surface",
+            "block:task:app.empty_for.main:stmt:1",
+            "--dry-run",
+            "examples/empty_for_statement.sley"
+          ],
+          "write_command": [
+            "sley",
+            "fix",
+            "--json",
+            "--kind",
+            "delete_empty_for_statement",
+            "--template-surface",
+            "block:task:app.empty_for.main:stmt:1",
+            "--write",
+            "examples/empty_for_statement.sley"
+          ]
+        },
+        {
+          "kind": "inspect_tasks",
+          "reason": "query task and call facts before planning a repair",
+          "command": [
+            "sley",
+            "query",
+            "--json",
+            "--kind",
+            "tasks",
+            "examples/empty_for_statement.sley"
+          ]
+        }
+      ],
       "issues": [
         {
           "code": "exit_status_mismatch",

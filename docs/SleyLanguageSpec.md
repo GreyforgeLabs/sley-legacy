@@ -731,6 +731,9 @@ and optional node.
 When a wrapped run or verify step emits runtime diagnostics, the CI step
 summarizes those diagnostics directly as well, so missing authority gates remain
 visible in wrapper output.
+Failed wrapped verify reports also copy their structured `next_actions` into the
+CI step, preserving retry and repair commands for agents that only consume
+`sley-ci` output.
 When a wrapped step emits `schema: "sley.lint.report.v0"` or a report with
 nested lint findings such as doctor, edit-plan, or verify, non-empty lint findings are
 summarized directly on the CI step by ID, rule, severity, message, node,
