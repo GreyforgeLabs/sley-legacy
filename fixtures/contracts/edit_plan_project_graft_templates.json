@@ -291,6 +291,26 @@
       ]
     },
     {
+      "kind": "replace_call_arg",
+      "reason": "replace this resolved call argument using checked graph-slice ReplaceCallArg affordance data",
+      "surface": "task:app.main.main",
+      "operation": {
+        "op": "ReplaceCallArg",
+        "payload": {
+          "from": "math.double",
+          "position": 0,
+          "scope": "task:app.main.main",
+          "source": "21"
+        },
+        "target": "task:app.math.double"
+      },
+      "editable_json_pointers": [
+        "/payload/source",
+        "/payload/position",
+        "/payload/scope"
+      ]
+    },
+    {
       "kind": "insert_statement",
       "reason": "insert one checked statement into the selected task body; edit /payload/source before applying",
       "surface": "task:app.main.main",

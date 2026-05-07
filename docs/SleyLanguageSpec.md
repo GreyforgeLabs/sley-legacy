@@ -695,7 +695,7 @@ results. Symbol graph, graph slice, and query schemas also pin module
 import/declaration summary shapes so agents can rely on stable import node ids
 for graft targets. The edit-plan schema pins strict graft operation and
 transaction template envelopes, and
-graph-slice add/insert/move/delete/replace/call-site affordance operations
+graph-slice add/insert/move/delete/replace/call-site/call-argument affordance operations
 reuse that strict graft operation schema. Graph-slice
 focus, optional task, and inbound/outbound call summaries reuse AST and query report
 contracts. The graft outcome schema pins strict accepted provenance records.
@@ -1221,8 +1221,15 @@ task-local calls. Each call-site affordance exposes the call expression id,
 resolved task target, caller task, raw callee text, starter `UpdateCallSites`
 operation JSON, and editable `/payload/replacement` plus `/payload/scope`
 pointers only when the graft checker accepts the starter.
-Call-site, statement, and expression grafts now consume node ids and task
-identities from this shard.
+Graph slices also include checked `call_arg_affordances` for resolved
+task-local call arguments when the task/callee scope maps to exactly one
+outbound call. Each call-argument affordance exposes the argument expression id,
+expression kind, enclosing call expression id, resolved task target, caller
+task, raw callee text, argument position, starter `ReplaceCallArg` operation
+JSON, and editable `/payload/source`, `/payload/position`, and `/payload/scope`
+pointers only when the graft checker accepts the starter.
+Call-site, call-argument, statement, and expression grafts now consume node ids
+and task identities from this shard.
 
 `sley query` is the first checked graph query report. It parses and checks the
 target before emitting results, so semantic failures return the normal

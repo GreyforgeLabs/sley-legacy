@@ -190,6 +190,7 @@
     }
   ],
   "call_site_affordances": [],
+  "call_arg_affordances": [],
   "outbound_calls": [],
   "inbound_calls": []
 }

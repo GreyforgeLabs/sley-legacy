@@ -165,7 +165,7 @@ Rules:
   and transaction template envelopes reused by graph-slice affordances,
   the graph-slice schema links
   focus, task, call-summary, inbound-call, and
-  add/insert/move/delete/replace/call-site affordance payloads to shared
+  add/insert/move/delete/replace/call-site/call-argument affordance payloads to shared
   contracts, `sley-ci`
   check/lint/doctor/plan/run/verify/deploy/smoke/corpus/examples reports,
   LSP fix-preview and command-preview payloads, workbench reports, docgen
@@ -316,8 +316,9 @@ Rules:
   selected graph-slice movement affordances as
   `move_statement`,
   `move_take`, and destination-variant templates when legal graph-slice
-  destinations exist, and consumes checked graph-slice call-site affordances as
-  `update_call_sites` templates. Agents can target a specific task surface by
+  destinations exist, consumes checked graph-slice call-site affordances as
+  `update_call_sites` templates, and consumes checked call-argument affordances
+  as `replace_call_arg` templates. Agents can target a specific task surface by
   node id or qualified name for task-body templates including a checked
   `insert_statement` starter, a block node id backed by graph-slice insert
   affordances for a checked `insert_statement`
@@ -734,9 +735,10 @@ The current smoke manifest covers:
   `rename_and_update_call_sites` transaction through `sley fix --write`
 - a write/query/verify smoke for `remove_take_and_remove_call_arg`, proving
   unused-take cleanup can also update resolved callers
-- checked graph-slice add, insert, move, delete, replace, and call-site
-  affordances, plus checked `insert_statement`, `replace_statement`,
-  `replace_expression`, and `update_call_sites` graft templates in edit-plan
+- checked graph-slice add, insert, move, delete, replace, call-site, and
+  call-argument affordances, plus checked `insert_statement`,
+  `replace_statement`, `replace_expression`, `update_call_sites`, and
+  `replace_call_arg` graft templates in edit-plan
   reports
 - program-surface declaration/import templates for checked `add_task`,
   `add_type_declaration`, `add_effect_declaration`, and `add_import` starters,
@@ -1267,8 +1269,8 @@ Near-term:
 
 Medium-term:
 
-1. Extend graph-slice grafts beyond call-site, statement, expression, move,
-   delete, and replace edits.
+1. Extend graph-slice grafts beyond current call-site, call-argument,
+   statement, expression, move, delete, and replace edits.
 2. Move trace seals and ZJX preview payloads into a compressed binary `.zjx`
    handoff.
 3. Expand runtime host capability values beyond seeded v0 adapters: deploy

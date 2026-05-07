@@ -1814,6 +1814,8 @@
         "graph-slice:checked-replace-affordances",
         "graph-slice:call-site-affordances",
         "graph-slice:checked-call-site-affordances",
+        "graph-slice:call-arg-affordances",
+        "graph-slice:checked-call-arg-affordances",
         "json:sley.symbol_graph.slice.v0"
       ],
       "expect": {
@@ -1843,7 +1845,11 @@
           { "pointer": "/call_site_affordances/0/target_kind", "value": "call_site" },
           { "pointer": "/call_site_affordances/0/task_target", "value": "task:app.math.double" },
           { "pointer": "/call_site_affordances/0/operation/op", "value": "UpdateCallSites" },
-          { "pointer": "/call_site_affordances/0/operation/payload/scope", "value": "task:app.main.main" }
+          { "pointer": "/call_site_affordances/0/operation/payload/scope", "value": "task:app.main.main" },
+          { "pointer": "/call_arg_affordances/0/target_kind", "value": "IntLiteral" },
+          { "pointer": "/call_arg_affordances/0/task_target", "value": "task:app.math.double" },
+          { "pointer": "/call_arg_affordances/0/operation/op", "value": "ReplaceCallArg" },
+          { "pointer": "/call_arg_affordances/0/operation/payload/source", "value": "21" }
         ],
         "stdout_json_absent": [
           "/move_affordances/1/destinations/0",
@@ -2362,6 +2368,7 @@
         "cli:plan",
         "graft:templates",
         "graft:templates:replace-expression",
+        "graft:templates:replace-call-arg",
         "json:sley.edit_plan.report.v0"
       ],
       "expect": {
@@ -2377,7 +2384,10 @@
           { "pointer": "/graft_templates/5/kind", "value": "replace_expression" },
           { "pointer": "/graft_templates/5/operation/op", "value": "ReplaceExpression" },
           { "pointer": "/graft_templates/5/operation/target", "value": "block:task:app.main.main:stmt:0:expr" },
-          { "pointer": "/graft_templates/5/editable_json_pointers/0", "value": "/payload/source" }
+          { "pointer": "/graft_templates/5/editable_json_pointers/0", "value": "/payload/source" },
+          { "pointer": "/graft_templates/10/kind", "value": "replace_call_arg" },
+          { "pointer": "/graft_templates/10/operation/op", "value": "ReplaceCallArg" },
+          { "pointer": "/graft_templates/10/operation/payload/source", "value": "21" }
         ]
       }
     },
