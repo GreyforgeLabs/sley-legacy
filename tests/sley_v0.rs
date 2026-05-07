@@ -2327,6 +2327,79 @@ task main -> Int {
         assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
     }
 
+    let task_parent_report = build_edit_plan_report_with_options(
+        "app.plan",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("module:app.plan:tasks".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(task_parent_report.status, "warnings");
+    assert!(task_parent_report.diagnostics.is_empty());
+    assert!(task_parent_report.graft_templates.iter().all(|template| {
+        template
+            .operation
+            .pointer("/target")
+            .and_then(serde_json::Value::as_str)
+            .is_some_and(|target| target.starts_with("task:app.plan."))
+    }));
+    assert!(task_parent_report.graft_templates.iter().any(|template| {
+        template.kind == "move_task"
+            && template.operation.pointer("/target")
+                == Some(&serde_json::json!("task:app.plan.helper"))
+    }));
+    assert!(
+        !task_parent_report
+            .graft_templates
+            .iter()
+            .any(|template| template.kind == "delete_task"
+                && template.operation.pointer("/target")
+                    == Some(&serde_json::json!("task:app.plan.main"))),
+        "entry task deletion should not be advertised from task parent surface: {:#?}",
+        task_parent_report.graft_templates
+    );
+
+    let type_parent_report = build_edit_plan_report_with_options(
+        "app.plan",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("module:app.plan:types".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(type_parent_report.status, "warnings");
+    assert!(type_parent_report.graft_templates.iter().all(|template| {
+        template
+            .operation
+            .pointer("/target")
+            .and_then(serde_json::Value::as_str)
+            .is_some_and(|target| target.starts_with("type:app.plan."))
+    }));
+    assert!(type_parent_report.graft_templates.iter().any(|template| {
+        template.kind == "move_type"
+            && template.operation.pointer("/target")
+                == Some(&serde_json::json!("type:app.plan.User"))
+    }));
+
+    let empty_import_parent_report = build_edit_plan_report_with_options(
+        "app.plan",
+        Ok(program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("module:app.plan:imports".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(empty_import_parent_report.status, "warnings");
+    assert!(empty_import_parent_report.diagnostics.is_empty());
+    assert!(empty_import_parent_report.graft_templates.is_empty());
+
     let empty_module = parse_program(
         r#"
 module app.empty

@@ -434,9 +434,10 @@ moves takes across task take lists with `payload.destination`, and reorders
 top-level imports, types, effects, or tasks within their declaration lists. It
 can also move top-level types, effects, or tasks into a known loaded or imported
 module parent such as `module:app.extra:tasks`.
-`sley plan --graft-templates --template-surface module:<name>` exposes the
-checked module-level graph-slice move/delete templates directly for top-level
-imports, types, effects, and tasks.
+`sley plan --graft-templates --template-surface module:<name>` and declaration
+list parents such as `module:<name>:tasks` expose checked module-level
+graph-slice move/delete templates directly for top-level imports, types,
+effects, and tasks.
 Unsupported graph movement returns explicit diagnostics until implemented.
 
 Implemented graph-edit payloads:
