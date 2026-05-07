@@ -169,8 +169,9 @@ Implemented now:
 - in-tree `sley-conformance` utility with `report` and `coverage` commands for
   schema/fixture instance coverage, contract validation status, corpus coverage
   tags, smoke coverage tags, packaged example counts, and the declared
-  integration-test count, including required corpus and smoke release tags,
-  plus non-gating public-release packaging blockers,
+  integration-test count, plus editor-shim package validation, including
+  required corpus and smoke release tags, plus non-gating public-release
+  packaging blockers,
   with `--require-public-release-ready` available as the explicit public-cut
   gate once license and repository metadata are settled,
   emitting
@@ -192,7 +193,8 @@ Implemented now:
   non-mutating preview commands for editor repair and command handoff
 - private local VS Code shim under `editors/vscode-sley/` that contributes
   `.sley` language metadata, basic TextMate highlighting, and a
-  `vscode-languageclient` bridge to `sley-lsp`
+  `vscode-languageclient` bridge to `sley-lsp`, with validation surfaced in
+  `sley-conformance report`
 - in-tree `sley-workbench` local inspection bootstrap that emits
   `schema: "sley.workbench.report.v0"` and optional static HTML over
   doctor/query/lint/plan/graph/graph-slice panels without writing source
@@ -521,7 +523,7 @@ sley-ci deploy --json --dry-run --artifacts-dir .sley/ci-deploy --cap SecretRead
 sley-ci corpus --json fixtures/corpus
 sley-ci examples --json examples
 sley-conformance report --json
-sley-conformance report --json --corpus-manifest fixtures/corpus --smoke-manifest fixtures/cli_smokes --smoke-manifest fixtures/ci_smoke_probe
+sley-conformance report --json --corpus-manifest fixtures/corpus --smoke-manifest fixtures/cli_smokes --smoke-manifest fixtures/ci_smoke_probe --editor-shim-root editors/vscode-sley
 sley-conformance coverage --json --require-tag cli:check --require-tag json:sley.trace.receipt.v0
 sley-contract inspect-deploy-artifacts .sley/deploy --json
 make smoke

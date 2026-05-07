@@ -15,6 +15,7 @@
     "integration_test_count": 1,
     "declared_integration_test_count": 1,
     "test_count_matches_declared": true,
+    "editor_shim_count": 1,
     "public_release_blocker_count": 5,
     "issue_count": 0
   },
@@ -109,6 +110,36 @@
     "goal_doc": "SleyGoal.md",
     "declared_integration_test_count": 1,
     "declared_matches_actual": true
+  },
+  "editor_shims": {
+    "root": "editors/vscode-sley",
+    "package_count": 1,
+    "packages": [
+      {
+        "path": "editors/vscode-sley/package.json",
+        "name": "sley-vscode",
+        "display_name": "Sley",
+        "version": "0.1.0",
+        "private": true,
+        "language_ids": ["sley"],
+        "grammar_count": 1,
+        "command_count": 1,
+        "dependency_count": 1
+      }
+    ],
+    "validation": {
+      "name": "editor_shims",
+      "status": "passed",
+      "command": [
+        "node",
+        "scripts/validate-editor-shims.mjs",
+        "editors/vscode-sley"
+      ],
+      "issue_count": 0,
+      "issues": []
+    },
+    "issue_count": 0,
+    "issues": []
   },
   "release": {
     "public_release_ready": false,
