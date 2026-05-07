@@ -1370,10 +1370,25 @@ fn extract_step_diagnostics(json: &JsonValue, stdout_schema: Option<&str>) -> Ve
         Some("sley.deploy.report.v0") => &["/verify/diagnostics", "/verify/runtime/diagnostics"],
         _ => return Vec::new(),
     };
-    pointers
-        .iter()
-        .flat_map(|pointer| extract_diagnostics_at(json, pointer))
-        .collect()
+    let mut diagnostics = Vec::new();
+    for pointer in pointers {
+        for diagnostic in extract_diagnostics_at(json, pointer) {
+            if !diagnostics
+                .iter()
+                .any(|existing| same_diagnostic(existing, &diagnostic))
+            {
+                diagnostics.push(diagnostic);
+            }
+        }
+    }
+    diagnostics
+}
+
+fn same_diagnostic(left: &CiDiagnostic, right: &CiDiagnostic) -> bool {
+    left.id == right.id
+        && left.severity == right.severity
+        && left.message == right.message
+        && left.node == right.node
 }
 
 fn extract_diagnostics_at(json: &JsonValue, pointer: &str) -> Vec<CiDiagnostic> {

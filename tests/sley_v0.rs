@@ -10958,7 +10958,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(120))
+        Some(&serde_json::json!(121))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -11234,7 +11234,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/contract_fixture_count"),
-        Some(&serde_json::json!(120))
+        Some(&serde_json::json!(121))
     );
     assert_eq!(
         report_json.pointer("/summary/migration_fixture_count"),
@@ -12228,6 +12228,13 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
         Some(&serde_json::json!("error"))
     );
     assert_eq!(
+        blocked_runtime_verify_json
+            .pointer("/steps/0/diagnostics")
+            .and_then(serde_json::Value::as_array)
+            .map(Vec::len),
+        Some(1)
+    );
+    assert_eq!(
         blocked_runtime_verify_json.pointer("/steps/0/next_actions/0/kind"),
         Some(&serde_json::json!("verify_runtime_with_gates"))
     );
@@ -12260,6 +12267,13 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     assert_eq!(
         blocked_runtime_deploy_json.pointer("/steps/0/diagnostics/0/id"),
         Some(&serde_json::json!("RUNTIME_CAPABILITY_REQUIRED"))
+    );
+    assert_eq!(
+        blocked_runtime_deploy_json
+            .pointer("/steps/0/diagnostics")
+            .and_then(serde_json::Value::as_array)
+            .map(Vec::len),
+        Some(1)
     );
     assert_eq!(
         blocked_runtime_deploy_json.pointer("/steps/0/next_actions/0/kind"),
