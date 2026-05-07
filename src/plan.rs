@@ -3812,13 +3812,14 @@ fn default_return_statement(return_type: &str) -> String {
     format!("return {}", default_expression(return_type))
 }
 
-fn default_expression(ty: &str) -> &'static str {
-    match ty.trim() {
-        "Int" => "0",
-        "Float" => "0.0",
-        "Text" => "\"\"",
-        "Bool" => "false",
-        _ => "TODO_VALUE",
+fn default_expression(ty: &str) -> String {
+    let trimmed = ty.trim();
+    match trimmed {
+        "Int" => "0".to_string(),
+        "Float" => "0.0".to_string(),
+        "Text" => "\"\"".to_string(),
+        "Bool" => "false".to_string(),
+        _ => default_record_expression(trimmed).unwrap_or_else(|| "TODO_VALUE".to_string()),
     }
 }
 
@@ -3831,6 +3832,63 @@ fn result_ok_type(return_type: &str) -> Option<&str> {
             '<' => depth += 1,
             '>' => depth = depth.saturating_sub(1),
             ',' if depth == 0 => return Some(inner[..index].trim()),
+            _ => {}
+        }
+    }
+    None
+}
+
+fn default_record_expression(ty: &str) -> Option<String> {
+    let inner = ty.strip_prefix('{')?.strip_suffix('}')?.trim();
+    if inner.is_empty() {
+        return Some("{ }".to_string());
+    }
+    let mut field_sources = Vec::new();
+    for field in split_top_level(inner, ',') {
+        let (name, field_type) = split_top_level_once(field, ':')?;
+        let name = name.trim();
+        if name.is_empty() {
+            return None;
+        }
+        field_sources.push(format!("{name}: {}", default_expression(field_type)));
+    }
+    Some(format!("{{ {} }}", field_sources.join(", ")))
+}
+
+fn split_top_level(input: &str, separator: char) -> Vec<&str> {
+    let mut parts = Vec::new();
+    let mut start = 0usize;
+    let mut angle_depth = 0usize;
+    let mut brace_depth = 0usize;
+    for (index, ch) in input.char_indices() {
+        match ch {
+            '<' => angle_depth += 1,
+            '>' => angle_depth = angle_depth.saturating_sub(1),
+            '{' => brace_depth += 1,
+            '}' => brace_depth = brace_depth.saturating_sub(1),
+            _ if ch == separator && angle_depth == 0 && brace_depth == 0 => {
+                parts.push(input[start..index].trim());
+                start = index + ch.len_utf8();
+            }
+            _ => {}
+        }
+    }
+    parts.push(input[start..].trim());
+    parts
+}
+
+fn split_top_level_once(input: &str, separator: char) -> Option<(&str, &str)> {
+    let mut angle_depth = 0usize;
+    let mut brace_depth = 0usize;
+    for (index, ch) in input.char_indices() {
+        match ch {
+            '<' => angle_depth += 1,
+            '>' => angle_depth = angle_depth.saturating_sub(1),
+            '{' => brace_depth += 1,
+            '}' => brace_depth = brace_depth.saturating_sub(1),
+            _ if ch == separator && angle_depth == 0 && brace_depth == 0 => {
+                return Some((input[..index].trim(), input[index + ch.len_utf8()..].trim()));
+            }
             _ => {}
         }
     }

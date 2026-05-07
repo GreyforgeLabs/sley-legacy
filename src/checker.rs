@@ -719,9 +719,22 @@ fn default_expr_hint_for_type(ty: &TypeExpr) -> String {
             format!("Ok({})", default_expr_hint_for_type(&args[0]))
         }
         TypeExpr::Generic { name, .. } if name == "List" => "[]".to_string(),
-        TypeExpr::Generic { name, .. } if name == "Map" => "{}".to_string(),
+        TypeExpr::Generic { name, .. } if name == "Map" => "map {}".to_string(),
+        TypeExpr::Record { fields } => default_record_expr_hint_for_fields(fields),
         _ => format!("<{}>", ty.display()),
     }
+}
+
+fn default_record_expr_hint_for_fields(fields: &[RecordField]) -> String {
+    if fields.is_empty() {
+        return "{ }".to_string();
+    }
+    let fields = fields
+        .iter()
+        .map(|field| format!("{}: {}", field.name, default_expr_hint_for_type(&field.ty)))
+        .collect::<Vec<_>>()
+        .join(", ");
+    format!("{{ {fields} }}")
 }
 
 fn escape_json_string_content(value: &str) -> String {
@@ -2209,8 +2222,27 @@ fn default_expr_source_for_type(ty: &TypeExpr) -> String {
         }
         TypeExpr::Generic { name, .. } if name == "List" => "[]".to_string(),
         TypeExpr::Generic { name, .. } if name == "Map" => "map {}".to_string(),
+        TypeExpr::Record { fields } => default_record_expr_source_for_fields(fields),
         _ => "TODO_VALUE".to_string(),
     }
+}
+
+fn default_record_expr_source_for_fields(fields: &[RecordField]) -> String {
+    if fields.is_empty() {
+        return "{ }".to_string();
+    }
+    let fields = fields
+        .iter()
+        .map(|field| {
+            format!(
+                "{}: {}",
+                field.name,
+                default_expr_source_for_type(&field.ty)
+            )
+        })
+        .collect::<Vec<_>>()
+        .join(", ");
+    format!("{{ {fields} }}")
 }
 
 fn unary_expected_type(op: &UnaryOp) -> &'static str {
