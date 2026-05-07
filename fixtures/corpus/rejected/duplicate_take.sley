@@ -1,0 +1,8 @@
+module corpus.rejected.duplicate_take
+
+task main -> Int {
+  take value: Int
+  take value: Int
+
+  return value
+}

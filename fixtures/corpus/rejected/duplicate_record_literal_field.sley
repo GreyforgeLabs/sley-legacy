@@ -1,0 +1,11 @@
+module corpus.rejected.duplicate_record_literal_field
+
+type User = {
+  slot name: Text
+  slot age: Int
+}
+
+task main -> Text {
+  bind user = User { name: "Ada", name: "Byron", age: 36 }
+  return user.name
+}
