@@ -499,7 +499,7 @@
           { "pointer": "/schema", "value": "sley.ci.report.v0" },
           { "pointer": "/status", "value": "passed" },
           { "pointer": "/command", "value": "corpus" },
-          { "pointer": "/summary/step_count", "value": 78 },
+          { "pointer": "/summary/step_count", "value": 85 },
           { "pointer": "/summary/failed_count", "value": 0 }
         ]
       }

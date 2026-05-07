@@ -1,0 +1,11 @@
+module corpus.rejected.record_field_missing
+
+type User = {
+  slot name: Text
+  slot age: Int
+}
+
+task main -> Text {
+  bind user = User { name: "Ada" }
+  return user.name
+}

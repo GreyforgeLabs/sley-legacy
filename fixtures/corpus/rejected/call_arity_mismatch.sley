@@ -1,0 +1,11 @@
+module corpus.rejected.call_arity_mismatch
+
+task helper -> Int {
+  take value: Int
+
+  return value
+}
+
+task main -> Int {
+  return call helper()
+}

@@ -1,0 +1,11 @@
+module corpus.rejected.unknown_record_field
+
+type User = {
+  slot name: Text
+  slot age: Int
+}
+
+task main -> Text {
+  bind user = User { name: "Ada", age: 36 }
+  return user.email
+}

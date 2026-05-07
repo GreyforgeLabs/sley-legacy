@@ -1,0 +1,11 @@
+module corpus.rejected.record_field_type_mismatch
+
+type User = {
+  slot name: Text
+  slot age: Int
+}
+
+task main -> Text {
+  bind user = User { name: "Ada", age: "old" }
+  return user.name
+}
