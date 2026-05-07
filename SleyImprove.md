@@ -460,9 +460,10 @@ agents can plan the supported structural edit.
 Graph, graph-slice, and query module import summaries now expose canonical
 import node ids so agents can copy import graft targets directly from the
 machine contract instead of reconstructing them.
-`sley plan --graft-templates --template-surface module:<name>` now consumes the
-module graph-slice affordances directly, exposing checked top-level
-import/type/effect/task move and delete templates at module granularity.
+`sley plan --graft-templates --template-surface module:<name>` and declaration
+list parents such as `module:<name>:tasks` now consume the module graph-slice
+affordances directly, exposing checked top-level import/type/effect/task move
+and delete templates at module granularity.
 Graph slices also expose bounded `InsertStatement` affordances for task-local
 block insertion, plus bounded `MoveNode` affordances for import, type, effect,
 task, statement, and take movement planning, including exact parent ids and

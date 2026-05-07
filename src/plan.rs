@@ -2429,7 +2429,7 @@ fn owning_module_surface_id(surface: &str) -> Option<String> {
     {
         return None;
     }
-    if let Some(module) = surface.strip_prefix("module:") {
+    if let Some((module, _parent_kind)) = module_surface_request(surface) {
         return Some(format!("module:{module}"));
     }
     if let Some(rest) = surface.strip_prefix("import:") {
@@ -2449,16 +2449,31 @@ fn module_affordance_matches(requested_surface: &str, target: &str, parent: &str
     if target == requested_surface {
         return true;
     }
-    let Some(module) = requested_surface.strip_prefix("module:") else {
+    let Some((requested_module, requested_parent_kind)) = module_surface_request(requested_surface)
+    else {
         return false;
     };
-    module_level_affordance_parent(parent).is_some_and(|parent_module| parent_module == module)
+    module_level_affordance_parent(parent).is_some_and(|(parent_module, parent_kind)| {
+        parent_module == requested_module
+            && requested_parent_kind.is_none_or(|requested_kind| requested_kind == parent_kind)
+    })
 }
 
-fn module_level_affordance_parent(parent: &str) -> Option<&str> {
+fn module_surface_request(surface: &str) -> Option<(&str, Option<&str>)> {
+    let rest = surface.strip_prefix("module:")?;
+    if let Some((module, parent_kind)) = rest.rsplit_once(':')
+        && matches!(parent_kind, "imports" | "types" | "effects" | "tasks")
+    {
+        return Some((module, Some(parent_kind)));
+    }
+    Some((rest, None))
+}
+
+fn module_level_affordance_parent(parent: &str) -> Option<(&str, &str)> {
     let rest = parent.strip_prefix("module:")?;
     let (module, parent_kind) = rest.rsplit_once(':')?;
-    matches!(parent_kind, "imports" | "types" | "effects" | "tasks").then_some(module)
+    matches!(parent_kind, "imports" | "types" | "effects" | "tasks")
+        .then_some((module, parent_kind))
 }
 
 fn operation_target(operation: &JsonValue) -> Option<&str> {
@@ -2689,13 +2704,13 @@ fn select_template_surface<'a>(
             Diagnostic::error(
                 "PLAN_SURFACE_NOT_FOUND",
                 format!(
-                    "plan surface `{requested_surface}` was not found; use `program`, a module id, declaration/import id, task id, qualified task name, block node id, statement node id, take node id, expression node id, or lint finding node"
+                    "plan surface `{requested_surface}` was not found; use `program`, a module id, module declaration-list parent id, declaration/import id, task id, qualified task name, block node id, statement node id, take node id, expression node id, or lint finding node"
                 ),
             )
             .with_node(requested_surface)
             .with_repair_hint(
                 RepairHint::new("inspect_task_surfaces")
-                    .with_replacement("Run `sley ast --json <target>`, `sley graph --json <target>`, or `sley plan --json <target>` and choose `program`, a module id, declaration/import id, block, statement, take, or expression node id, task_surfaces id, task qualified_name, or lint.findings node"),
+                    .with_replacement("Run `sley ast --json <target>`, `sley graph --json <target>`, or `sley plan --json <target>` and choose `program`, a module id, module declaration-list parent id, declaration/import id, block, statement, take, or expression node id, task_surfaces id, task qualified_name, or lint.findings node"),
             )
         })
 }
