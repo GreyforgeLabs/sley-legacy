@@ -829,11 +829,57 @@ export task other -> Text {
         .and_then(|line| line.find("\"b\""))
         .map(|character| character + 1)
         .expect("signature second argument character");
+    let hover_character = main_source
+        .lines()
+        .nth(signature_line)
+        .and_then(|line| line.find("join"))
+        .map(|character| character + 1)
+        .expect("signature call hover character");
     write_lsp(
         &mut stdin,
         json!({
             "jsonrpc": "2.0",
             "id": 12,
+            "method": "textDocument/hover",
+            "params": {
+                "textDocument": {
+                    "uri": main_uri
+                },
+                "position": {
+                    "line": signature_line,
+                    "character": hover_character
+                }
+            }
+        }),
+    );
+    let call_hover = read_response(&mut reader, 12);
+    let call_hover_text = call_hover
+        .pointer("/result/contents/value")
+        .and_then(JsonValue::as_str)
+        .expect("task call hover text");
+    assert!(call_hover_text.contains("call `pipe.join`"));
+    assert!(call_hover_text.contains("resolved task: `app.pipeline.join`"));
+    assert!(call_hover_text.contains("signature: `pipe.join(left: Text, right: Text) -> Text`"));
+    assert!(call_hover_text.contains("effects: none"));
+    assert!(call_hover_text.contains("node: `task:app.pipeline.join`"));
+    assert_eq!(
+        call_hover.pointer("/result/range/start/line"),
+        Some(&json!(signature_line))
+    );
+    assert_eq!(
+        call_hover.pointer("/result/range/start/character"),
+        Some(&json!(14))
+    );
+    assert_eq!(
+        call_hover.pointer("/result/range/end/character"),
+        Some(&json!(18))
+    );
+
+    write_lsp(
+        &mut stdin,
+        json!({
+            "jsonrpc": "2.0",
+            "id": 13,
             "method": "textDocument/signatureHelp",
             "params": {
                 "textDocument": {
@@ -846,7 +892,7 @@ export task other -> Text {
             }
         }),
     );
-    let signature_help = read_response(&mut reader, 12);
+    let signature_help = read_response(&mut reader, 13);
     assert_eq!(
         signature_help.pointer("/result/signatures/0/label"),
         Some(&json!("pipe.join(left: Text, right: Text) -> Text"))
@@ -868,7 +914,7 @@ export task other -> Text {
         &mut stdin,
         json!({
             "jsonrpc": "2.0",
-            "id": 13,
+            "id": 14,
             "method": "textDocument/inlayHint",
             "params": {
                 "textDocument": {
@@ -881,7 +927,7 @@ export task other -> Text {
             }
         }),
     );
-    let inlay_hints = read_response(&mut reader, 13);
+    let inlay_hints = read_response(&mut reader, 14);
     let inlay_hint_rows = inlay_hint_labels_lines_and_chars(&inlay_hints);
     assert!(
         inlay_hint_rows.contains(&("left:", signature_line as u64, 19)),
@@ -897,7 +943,7 @@ export task other -> Text {
         &mut stdin,
         json!({
             "jsonrpc": "2.0",
-            "id": 14,
+            "id": 15,
             "method": "textDocument/selectionRange",
             "params": {
                 "textDocument": {
@@ -910,7 +956,7 @@ export task other -> Text {
             }
         }),
     );
-    let selection_range = read_response(&mut reader, 14);
+    let selection_range = read_response(&mut reader, 15);
     assert_eq!(
         selection_range.pointer("/result/0/range/start/line"),
         Some(&json!(6))
@@ -979,12 +1025,12 @@ export task other -> Text {
         &mut stdin,
         json!({
             "jsonrpc": "2.0",
-            "id": 15,
+            "id": 16,
             "method": "shutdown",
             "params": null
         }),
     );
-    let shutdown = read_response(&mut reader, 15);
+    let shutdown = read_response(&mut reader, 16);
     assert!(shutdown.get("result").is_some());
     write_lsp(
         &mut stdin,

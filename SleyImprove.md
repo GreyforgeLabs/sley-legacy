@@ -194,13 +194,14 @@ Rules:
 - `sley-lsp` exposes a stdio language-server loop over current compiler
   surfaces: parse/check/lint diagnostics with `sley.toml` project context and
   open-buffer overlays, all-open-buffer diagnostic refresh, formatting,
-  document symbols, folding ranges, declaration metadata hover, workspace
-  symbols, selection ranges, project completions, import/call definition
-  jumps, project task signature help, project task parameter inlay hints,
-  exact-range task references, document highlights, import document links,
-  prepared cursor-aware project task rename edits, edit-plan code actions, and
-  non-mutating `sley.fix.preview` payloads whose editor preview operations and
-  transactions reuse the strict edit-plan graft contracts.
+  document symbols, folding ranges, declaration metadata and resolved project
+  task-call hover, workspace symbols, selection ranges, project completions,
+  import/call definition jumps, project task signature help, project task
+  parameter inlay hints, exact-range task references, document highlights,
+  import document links, prepared cursor-aware project task rename edits,
+  edit-plan code actions, and non-mutating `sley.fix.preview` payloads whose
+  editor preview operations and transactions reuse the strict edit-plan graft
+  contracts.
 - `sley-workbench` exposes a local read-only inspection report and optional
   static HTML page over doctor/query/lint/plan/graph/graph-slice panels. Its
   report schema links embedded panel rows back to the source doctor, query,
