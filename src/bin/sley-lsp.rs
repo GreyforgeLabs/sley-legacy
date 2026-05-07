@@ -161,6 +161,11 @@ fn handle_message<W: Write>(
                 send_response(writer, id, handle_references(params, state))?;
             }
         }
+        "textDocument/rename" => {
+            if let Some(id) = id {
+                send_response(writer, id, handle_rename(params, state))?;
+            }
+        }
         "textDocument/codeAction" => {
             if let Some(id) = id {
                 send_response(writer, id, handle_code_actions(params, state))?;
@@ -204,6 +209,7 @@ fn initialize_result() -> JsonValue {
             },
             "workspaceSymbolProvider": true,
             "referencesProvider": true,
+            "renameProvider": true,
             "codeActionProvider": {
                 "resolveProvider": false,
                 "codeActionKinds": ["quickfix", "refactor.rewrite"]
@@ -491,6 +497,65 @@ fn handle_references(params: JsonValue, state: &ServerState) -> JsonValue {
         include_declaration,
         state,
     ))
+}
+
+fn handle_rename(params: JsonValue, state: &ServerState) -> JsonValue {
+    let new_name = params
+        .get("newName")
+        .and_then(JsonValue::as_str)
+        .unwrap_or_default();
+    if !is_sley_identifier(new_name) {
+        return JsonValue::Null;
+    }
+    let Some(uri) = text_document_uri(&params) else {
+        return JsonValue::Null;
+    };
+    let Some(document) = state.documents.get(&uri) else {
+        return JsonValue::Null;
+    };
+    let Some(position) = params.get("position") else {
+        return JsonValue::Null;
+    };
+    let line = position
+        .get("line")
+        .and_then(JsonValue::as_u64)
+        .unwrap_or_default() as usize;
+    let Ok(current_program) = parse_program(&document.text) else {
+        return JsonValue::Null;
+    };
+    let project = project_graph_for_document(&uri, &current_program, state);
+    let analysis_program = project
+        .as_ref()
+        .map(|project| &project.program)
+        .unwrap_or(&current_program);
+    let Some(target_task_id) =
+        task_reference_target_at_line(&current_program, analysis_program, line)
+    else {
+        return JsonValue::Null;
+    };
+    let Some(target_task) = analysis_program
+        .tasks
+        .iter()
+        .find(|task| task.id == target_task_id)
+    else {
+        return JsonValue::Null;
+    };
+    let changes = rename_edits_for_task(
+        &target_task_id,
+        &target_task.name,
+        new_name,
+        analysis_program,
+        project.as_ref(),
+        &uri,
+        &document.text,
+        &current_program,
+        state,
+    );
+    if changes.is_empty() {
+        JsonValue::Null
+    } else {
+        json!({ "changes": changes })
+    }
 }
 
 fn handle_code_actions(params: JsonValue, state: &ServerState) -> JsonValue {
@@ -1667,6 +1732,640 @@ fn location_sort_key(location: &JsonValue) -> String {
             .and_then(JsonValue::as_u64)
             .unwrap_or_default()
     )
+}
+
+fn rename_edits_for_task(
+    target_task_id: &str,
+    old_name: &str,
+    new_name: &str,
+    analysis_program: &Program,
+    project: Option<&ProjectGraph>,
+    current_uri: &str,
+    current_source: &str,
+    current_program: &Program,
+    state: &ServerState,
+) -> BTreeMap<String, Vec<JsonValue>> {
+    let mut changes = BTreeMap::new();
+    let mut seen = BTreeSet::new();
+    if let Some(project) = project {
+        for module in &project.modules {
+            let uri = file_uri_for_path(&module.path);
+            let source = source_text_for_path(&module.path, state);
+            collect_task_rename_edits_for_program(
+                target_task_id,
+                old_name,
+                new_name,
+                analysis_program,
+                &uri,
+                &source,
+                &module.program,
+                &mut changes,
+                &mut seen,
+            );
+        }
+    } else {
+        collect_task_rename_edits_for_program(
+            target_task_id,
+            old_name,
+            new_name,
+            analysis_program,
+            current_uri,
+            current_source,
+            current_program,
+            &mut changes,
+            &mut seen,
+        );
+    }
+    changes
+}
+
+fn collect_task_rename_edits_for_program(
+    target_task_id: &str,
+    old_name: &str,
+    new_name: &str,
+    analysis_program: &Program,
+    uri: &str,
+    source: &str,
+    program: &Program,
+    changes: &mut BTreeMap<String, Vec<JsonValue>>,
+    seen: &mut BTreeSet<String>,
+) {
+    if let Some(task) = program.tasks.iter().find(|task| task.id == target_task_id)
+        && let Some(range) = range_for_task_name(source, task)
+    {
+        push_rename_edit(changes, seen, uri, range, new_name);
+    }
+    for task in &program.tasks {
+        let caller_module = task
+            .module
+            .clone()
+            .unwrap_or_else(|| program.module_name().to_string());
+        collect_task_rename_edits_from_statements(
+            target_task_id,
+            old_name,
+            new_name,
+            analysis_program,
+            &caller_module,
+            &task.body.statements,
+            uri,
+            source,
+            changes,
+            seen,
+        );
+    }
+}
+
+fn collect_task_rename_edits_from_statements(
+    target_task_id: &str,
+    old_name: &str,
+    new_name: &str,
+    analysis_program: &Program,
+    caller_module: &str,
+    statements: &[Statement],
+    uri: &str,
+    source: &str,
+    changes: &mut BTreeMap<String, Vec<JsonValue>>,
+    seen: &mut BTreeSet<String>,
+) {
+    for statement in statements {
+        match &statement.kind {
+            StatementKind::Binding { expr, .. }
+            | StatementKind::Set { expr, .. }
+            | StatementKind::Return { expr }
+            | StatementKind::Expr { expr } => collect_task_rename_edits_from_expr(
+                target_task_id,
+                old_name,
+                new_name,
+                analysis_program,
+                caller_module,
+                expr,
+                uri,
+                source,
+                changes,
+                seen,
+            ),
+            StatementKind::If {
+                condition,
+                then_block,
+                else_block,
+            } => {
+                collect_task_rename_edits_from_expr(
+                    target_task_id,
+                    old_name,
+                    new_name,
+                    analysis_program,
+                    caller_module,
+                    condition,
+                    uri,
+                    source,
+                    changes,
+                    seen,
+                );
+                collect_task_rename_edits_from_statements(
+                    target_task_id,
+                    old_name,
+                    new_name,
+                    analysis_program,
+                    caller_module,
+                    &then_block.statements,
+                    uri,
+                    source,
+                    changes,
+                    seen,
+                );
+                if let Some(else_block) = else_block {
+                    collect_task_rename_edits_from_statements(
+                        target_task_id,
+                        old_name,
+                        new_name,
+                        analysis_program,
+                        caller_module,
+                        &else_block.statements,
+                        uri,
+                        source,
+                        changes,
+                        seen,
+                    );
+                }
+            }
+            StatementKind::While { condition, body } => {
+                collect_task_rename_edits_from_expr(
+                    target_task_id,
+                    old_name,
+                    new_name,
+                    analysis_program,
+                    caller_module,
+                    condition,
+                    uri,
+                    source,
+                    changes,
+                    seen,
+                );
+                collect_task_rename_edits_from_statements(
+                    target_task_id,
+                    old_name,
+                    new_name,
+                    analysis_program,
+                    caller_module,
+                    &body.statements,
+                    uri,
+                    source,
+                    changes,
+                    seen,
+                );
+            }
+            StatementKind::For {
+                collection, body, ..
+            } => {
+                collect_task_rename_edits_from_expr(
+                    target_task_id,
+                    old_name,
+                    new_name,
+                    analysis_program,
+                    caller_module,
+                    collection,
+                    uri,
+                    source,
+                    changes,
+                    seen,
+                );
+                collect_task_rename_edits_from_statements(
+                    target_task_id,
+                    old_name,
+                    new_name,
+                    analysis_program,
+                    caller_module,
+                    &body.statements,
+                    uri,
+                    source,
+                    changes,
+                    seen,
+                );
+            }
+            StatementKind::Forge { body } => collect_task_rename_edits_from_statements(
+                target_task_id,
+                old_name,
+                new_name,
+                analysis_program,
+                caller_module,
+                &body.statements,
+                uri,
+                source,
+                changes,
+                seen,
+            ),
+        }
+    }
+}
+
+fn collect_task_rename_edits_from_expr(
+    target_task_id: &str,
+    old_name: &str,
+    new_name: &str,
+    analysis_program: &Program,
+    caller_module: &str,
+    expr: &Expr,
+    uri: &str,
+    source: &str,
+    changes: &mut BTreeMap<String, Vec<JsonValue>>,
+    seen: &mut BTreeSet<String>,
+) {
+    match &expr.kind {
+        ExprKind::Call { callee, args } => {
+            if let Some(callee_name) = callee_path(callee)
+                && let TaskResolution::Resolved { index, .. } =
+                    resolve_task(analysis_program, caller_module, &callee_name)
+                && analysis_program.tasks[index].id == target_task_id
+                && let Some(range) =
+                    range_for_callee_leaf(source, expr, callee, &callee_name, old_name)
+            {
+                push_rename_edit(changes, seen, uri, range, new_name);
+            }
+            collect_task_rename_edits_from_expr(
+                target_task_id,
+                old_name,
+                new_name,
+                analysis_program,
+                caller_module,
+                callee,
+                uri,
+                source,
+                changes,
+                seen,
+            );
+            for arg in args {
+                collect_task_rename_edits_from_expr(
+                    target_task_id,
+                    old_name,
+                    new_name,
+                    analysis_program,
+                    caller_module,
+                    arg,
+                    uri,
+                    source,
+                    changes,
+                    seen,
+                );
+            }
+        }
+        ExprKind::Unary { expr, .. } | ExprKind::Try { expr } => {
+            collect_task_rename_edits_from_expr(
+                target_task_id,
+                old_name,
+                new_name,
+                analysis_program,
+                caller_module,
+                expr,
+                uri,
+                source,
+                changes,
+                seen,
+            );
+        }
+        ExprKind::Binary { left, right, .. } => {
+            collect_task_rename_edits_from_expr(
+                target_task_id,
+                old_name,
+                new_name,
+                analysis_program,
+                caller_module,
+                left,
+                uri,
+                source,
+                changes,
+                seen,
+            );
+            collect_task_rename_edits_from_expr(
+                target_task_id,
+                old_name,
+                new_name,
+                analysis_program,
+                caller_module,
+                right,
+                uri,
+                source,
+                changes,
+                seen,
+            );
+        }
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
+            collect_task_rename_edits_from_expr(
+                target_task_id,
+                old_name,
+                new_name,
+                analysis_program,
+                caller_module,
+                condition,
+                uri,
+                source,
+                changes,
+                seen,
+            );
+            collect_task_rename_edits_from_expr(
+                target_task_id,
+                old_name,
+                new_name,
+                analysis_program,
+                caller_module,
+                then_branch,
+                uri,
+                source,
+                changes,
+                seen,
+            );
+            collect_task_rename_edits_from_expr(
+                target_task_id,
+                old_name,
+                new_name,
+                analysis_program,
+                caller_module,
+                else_branch,
+                uri,
+                source,
+                changes,
+                seen,
+            );
+        }
+        ExprKind::ListLiteral { items } => {
+            for item in items {
+                collect_task_rename_edits_from_expr(
+                    target_task_id,
+                    old_name,
+                    new_name,
+                    analysis_program,
+                    caller_module,
+                    item,
+                    uri,
+                    source,
+                    changes,
+                    seen,
+                );
+            }
+        }
+        ExprKind::MapLiteral { entries } => {
+            for entry in entries {
+                collect_task_rename_edits_from_expr(
+                    target_task_id,
+                    old_name,
+                    new_name,
+                    analysis_program,
+                    caller_module,
+                    &entry.key,
+                    uri,
+                    source,
+                    changes,
+                    seen,
+                );
+                collect_task_rename_edits_from_expr(
+                    target_task_id,
+                    old_name,
+                    new_name,
+                    analysis_program,
+                    caller_module,
+                    &entry.value,
+                    uri,
+                    source,
+                    changes,
+                    seen,
+                );
+            }
+        }
+        ExprKind::Index { collection, index } => {
+            collect_task_rename_edits_from_expr(
+                target_task_id,
+                old_name,
+                new_name,
+                analysis_program,
+                caller_module,
+                collection,
+                uri,
+                source,
+                changes,
+                seen,
+            );
+            collect_task_rename_edits_from_expr(
+                target_task_id,
+                old_name,
+                new_name,
+                analysis_program,
+                caller_module,
+                index,
+                uri,
+                source,
+                changes,
+                seen,
+            );
+        }
+        ExprKind::FieldAccess { receiver, .. } => collect_task_rename_edits_from_expr(
+            target_task_id,
+            old_name,
+            new_name,
+            analysis_program,
+            caller_module,
+            receiver,
+            uri,
+            source,
+            changes,
+            seen,
+        ),
+        ExprKind::RecordLiteral { fields, .. } => {
+            for field in fields {
+                collect_task_rename_edits_from_expr(
+                    target_task_id,
+                    old_name,
+                    new_name,
+                    analysis_program,
+                    caller_module,
+                    &field.expr,
+                    uri,
+                    source,
+                    changes,
+                    seen,
+                );
+            }
+        }
+        ExprKind::Raw { .. }
+        | ExprKind::StringLiteral { .. }
+        | ExprKind::IntLiteral { .. }
+        | ExprKind::FloatLiteral { .. }
+        | ExprKind::BoolLiteral { .. }
+        | ExprKind::Identifier { .. } => {}
+    }
+}
+
+fn range_for_task_name(source: &str, task: &TaskDecl) -> Option<JsonValue> {
+    let line = task.span.as_ref()?.line.saturating_sub(1);
+    range_for_text_on_line(source, line, &task.name)
+}
+
+fn range_for_callee_leaf(
+    source: &str,
+    expr: &Expr,
+    callee: &Expr,
+    callee_name: &str,
+    old_name: &str,
+) -> Option<JsonValue> {
+    let span = leading_span_for_expr(callee).or_else(|| expr.span.as_ref())?;
+    let line = span.line.saturating_sub(1);
+    let line_text = source.lines().nth(line)?;
+    let hint_start_byte = byte_offset_for_character(line_text, span.column.saturating_sub(1));
+    if let Some(path_start_byte) = line_text
+        .get(hint_start_byte..)
+        .and_then(|text| text.find(callee_name))
+        .map(|offset| hint_start_byte + offset)
+    {
+        let leaf_start_in_path = callee_name
+            .rsplit_once('.')
+            .map(|(prefix, _)| prefix.len() + 1)
+            .unwrap_or(0);
+        let leaf_start_byte = path_start_byte + leaf_start_in_path;
+        let leaf_end_byte = leaf_start_byte + old_name.len();
+        if line_text.get(leaf_start_byte..leaf_end_byte) == Some(old_name) {
+            return Some(range_for_byte_offsets(
+                line_text,
+                line,
+                leaf_start_byte,
+                leaf_end_byte,
+            ));
+        }
+    }
+    range_for_text_on_line_after(source, line, old_name, hint_start_byte)
+        .or_else(|| range_for_text_on_line(source, line, old_name))
+}
+
+fn range_for_text_on_line(source: &str, line: usize, needle: &str) -> Option<JsonValue> {
+    let line_text = source.lines().nth(line)?;
+    let start = line_text.find(needle)?;
+    Some(range_for_byte_offsets(
+        line_text,
+        line,
+        start,
+        start + needle.len(),
+    ))
+}
+
+fn range_for_text_on_line_after(
+    source: &str,
+    line: usize,
+    needle: &str,
+    start_byte: usize,
+) -> Option<JsonValue> {
+    let line_text = source.lines().nth(line)?;
+    let relative_start = line_text.get(start_byte..)?.find(needle)?;
+    let start = start_byte + relative_start;
+    Some(range_for_byte_offsets(
+        line_text,
+        line,
+        start,
+        start + needle.len(),
+    ))
+}
+
+fn range_for_byte_offsets(
+    line_text: &str,
+    line: usize,
+    start_byte: usize,
+    end_byte: usize,
+) -> JsonValue {
+    let start_character = line_text[..start_byte].chars().count();
+    let end_character = line_text[..end_byte].chars().count();
+    json!({
+        "start": {
+            "line": line,
+            "character": start_character
+        },
+        "end": {
+            "line": line,
+            "character": end_character
+        }
+    })
+}
+
+fn byte_offset_for_character(line_text: &str, character: usize) -> usize {
+    line_text
+        .char_indices()
+        .nth(character)
+        .map(|(byte, _)| byte)
+        .unwrap_or_else(|| line_text.len())
+}
+
+fn leading_span_for_expr(expr: &Expr) -> Option<&SourceSpan> {
+    if let Some(span) = expr.span.as_ref() {
+        return Some(span);
+    }
+    match &expr.kind {
+        ExprKind::Unary { expr, .. } | ExprKind::Try { expr } => leading_span_for_expr(expr),
+        ExprKind::Binary { left, right, .. } => {
+            leading_span_for_expr(left).or_else(|| leading_span_for_expr(right))
+        }
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => leading_span_for_expr(condition)
+            .or_else(|| leading_span_for_expr(then_branch))
+            .or_else(|| leading_span_for_expr(else_branch)),
+        ExprKind::Call { callee, args } => {
+            leading_span_for_expr(callee).or_else(|| args.iter().find_map(leading_span_for_expr))
+        }
+        ExprKind::ListLiteral { items } => items.iter().find_map(leading_span_for_expr),
+        ExprKind::MapLiteral { entries } => entries.iter().find_map(|entry| {
+            leading_span_for_expr(&entry.key).or_else(|| leading_span_for_expr(&entry.value))
+        }),
+        ExprKind::Index { collection, index } => {
+            leading_span_for_expr(collection).or_else(|| leading_span_for_expr(index))
+        }
+        ExprKind::FieldAccess { receiver, .. } => leading_span_for_expr(receiver),
+        ExprKind::RecordLiteral { fields, .. } => fields
+            .iter()
+            .find_map(|field| leading_span_for_expr(&field.expr)),
+        ExprKind::Raw { .. }
+        | ExprKind::StringLiteral { .. }
+        | ExprKind::IntLiteral { .. }
+        | ExprKind::FloatLiteral { .. }
+        | ExprKind::BoolLiteral { .. }
+        | ExprKind::Identifier { .. } => None,
+    }
+}
+
+fn push_rename_edit(
+    changes: &mut BTreeMap<String, Vec<JsonValue>>,
+    seen: &mut BTreeSet<String>,
+    uri: &str,
+    range: JsonValue,
+    new_name: &str,
+) {
+    let edit = json!({
+        "range": range,
+        "newText": new_name
+    });
+    if let Some(key) = text_edit_key(uri, &edit)
+        && seen.insert(key)
+    {
+        changes.entry(uri.to_string()).or_default().push(edit);
+    }
+}
+
+fn text_edit_key(uri: &str, edit: &JsonValue) -> Option<String> {
+    Some(format!(
+        "{}:{}:{}",
+        uri,
+        edit.pointer("/range/start/line")?.as_u64()?,
+        edit.pointer("/range/start/character")?.as_u64()?
+    ))
+}
+
+fn is_sley_identifier(value: &str) -> bool {
+    let mut chars = value.chars();
+    let Some(first) = chars.next() else {
+        return false;
+    };
+    (first.is_ascii_alphabetic() || first == '_')
+        && chars.all(|ch| ch.is_ascii_alphanumeric() || ch == '_')
 }
 
 fn hover_json(value: &str, range: JsonValue) -> JsonValue {

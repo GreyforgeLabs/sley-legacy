@@ -64,6 +64,8 @@ here. Dates use UTC-independent calendar dates from the local repo history.
   tasks, types, and effects.
 - `sley-lsp` now exposes project-aware task references, including declarations
   and resolved call sites.
+- `sley-lsp` now returns project task rename workspace edits for declarations
+  and resolved call sites.
 - `sley-lsp` declaration hover now includes module, return type, takes,
   effects, export status, and node IDs for editor-side inspection.
 - Added `make public-release-check` as the explicit failing gate for public

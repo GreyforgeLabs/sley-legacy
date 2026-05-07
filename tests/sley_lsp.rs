@@ -62,6 +62,10 @@ fn lsp_publishes_diagnostics_formats_symbols_and_previews_code_actions() {
         initialized.pointer("/result/capabilities/referencesProvider"),
         Some(&json!(true))
     );
+    assert_eq!(
+        initialized.pointer("/result/capabilities/renameProvider"),
+        Some(&json!(true))
+    );
 
     write_lsp(
         &mut stdin,
@@ -301,7 +305,12 @@ entry = "app.main"
 import app.pipeline as pipe
 
 task main -> Text {
+  bind direct = pipe.message()
   return call pipe.message()
+}
+
+task pair -> Text {
+  return pipe.message() + pipe.message()
 }
     "#;
     fs::write(&main_path, main_source).expect("write LSP main module");
@@ -386,7 +395,7 @@ export task message -> Text {
                     "uri": main_uri
                 },
                 "position": {
-                    "line": 5,
+                    "line": 6,
                     "character": 14
                 }
             }
@@ -440,7 +449,7 @@ export task message -> Text {
                     "uri": main_uri
                 },
                 "position": {
-                    "line": 5,
+                    "line": 6,
                     "character": 20
                 },
                 "context": {
@@ -456,7 +465,7 @@ export task message -> Text {
         "references should include imported task declaration, got {reference_locations:?}"
     );
     assert!(
-        reference_locations.contains(&(main_uri.as_str(), 5)),
+        reference_locations.contains(&(main_uri.as_str(), 6)),
         "references should include project call site, got {reference_locations:?}"
     );
 
@@ -465,26 +474,40 @@ export task message -> Text {
         json!({
             "jsonrpc": "2.0",
             "id": 5,
-            "method": "textDocument/definition",
+            "method": "textDocument/rename",
             "params": {
                 "textDocument": {
                     "uri": main_uri
                 },
                 "position": {
-                    "line": 5,
+                    "line": 6,
                     "character": 20
-                }
+                },
+                "newName": "compose"
             }
         }),
     );
-    let definition = read_response(&mut reader, 5);
-    assert_eq!(
-        definition.pointer("/result/0/uri"),
-        Some(&json!(pipeline_uri))
+    let rename = read_response(&mut reader, 5);
+    let edits = workspace_edit_uri_lines_and_text(&rename);
+    assert!(
+        edits.contains(&(pipeline_uri.as_str(), 2, 12, "compose")),
+        "rename should edit imported task declaration, got {edits:?}"
     );
-    assert_eq!(
-        definition.pointer("/result/0/range/start/line"),
-        Some(&json!(2))
+    assert!(
+        edits.contains(&(main_uri.as_str(), 5, 21, "compose")),
+        "rename should edit bare project call site, got {edits:?}"
+    );
+    assert!(
+        edits.contains(&(main_uri.as_str(), 6, 19, "compose")),
+        "rename should edit call-keyword project call site, got {edits:?}"
+    );
+    assert!(
+        edits.contains(&(main_uri.as_str(), 10, 14, "compose")),
+        "rename should edit first same-line project call site, got {edits:?}"
+    );
+    assert!(
+        edits.contains(&(main_uri.as_str(), 10, 31, "compose")),
+        "rename should edit second same-line project call site, got {edits:?}"
     );
 
     write_lsp(
@@ -498,13 +521,40 @@ export task message -> Text {
                     "uri": main_uri
                 },
                 "position": {
+                    "line": 6,
+                    "character": 20
+                }
+            }
+        }),
+    );
+    let definition = read_response(&mut reader, 6);
+    assert_eq!(
+        definition.pointer("/result/0/uri"),
+        Some(&json!(pipeline_uri))
+    );
+    assert_eq!(
+        definition.pointer("/result/0/range/start/line"),
+        Some(&json!(2))
+    );
+
+    write_lsp(
+        &mut stdin,
+        json!({
+            "jsonrpc": "2.0",
+            "id": 7,
+            "method": "textDocument/definition",
+            "params": {
+                "textDocument": {
+                    "uri": main_uri
+                },
+                "position": {
                     "line": 2,
                     "character": 8
                 }
             }
         }),
     );
-    let import_definition = read_response(&mut reader, 6);
+    let import_definition = read_response(&mut reader, 7);
     assert_eq!(
         import_definition.pointer("/result/0/uri"),
         Some(&json!(pipeline_uri))
@@ -541,12 +591,12 @@ export task message -> Text {
         &mut stdin,
         json!({
             "jsonrpc": "2.0",
-            "id": 7,
+            "id": 8,
             "method": "shutdown",
             "params": null
         }),
     );
-    let shutdown = read_response(&mut reader, 7);
+    let shutdown = read_response(&mut reader, 8);
     assert!(shutdown.get("result").is_some());
     write_lsp(
         &mut stdin,
@@ -609,6 +659,31 @@ fn location_uris_and_lines(message: &JsonValue) -> Vec<(&str, u64)> {
             ))
         })
         .collect()
+}
+
+fn workspace_edit_uri_lines_and_text(message: &JsonValue) -> Vec<(&str, u64, u64, &str)> {
+    let changes = message
+        .pointer("/result/changes")
+        .and_then(JsonValue::as_object)
+        .expect("workspace edit changes");
+    let mut edits = Vec::new();
+    for (uri, uri_edits) in changes {
+        let Some(uri_edits) = uri_edits.as_array() else {
+            continue;
+        };
+        for edit in uri_edits {
+            if let (Some(line), Some(character), Some(new_text)) = (
+                edit.pointer("/range/start/line")
+                    .and_then(JsonValue::as_u64),
+                edit.pointer("/range/start/character")
+                    .and_then(JsonValue::as_u64),
+                edit.get("newText").and_then(JsonValue::as_str),
+            ) {
+                edits.push((uri.as_str(), line, character, new_text));
+            }
+        }
+    }
+    edits
 }
 
 fn temp_lsp_project_dir(name: &str) -> PathBuf {
