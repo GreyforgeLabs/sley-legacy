@@ -11527,11 +11527,11 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/corpus_accepted_count"),
-        Some(&serde_json::json!(20))
+        Some(&serde_json::json!(21))
     );
     assert_eq!(
         report_json.pointer("/summary/corpus_rejected_count"),
-        Some(&serde_json::json!(22))
+        Some(&serde_json::json!(23))
     );
     assert_eq!(
         report_json.pointer("/corpus/missing_required_tags"),
@@ -11557,8 +11557,22 @@ fn conformance_report_summarizes_release_surface() {
         report_json
             .pointer("/corpus/required_tags")
             .and_then(|value| value.as_array())
+            .is_some_and(|tags| tags.iter().any(|tag| tag == "accepted:GateTake")),
+        "conformance report should require accepted gate-take corpus coverage"
+    );
+    assert!(
+        report_json
+            .pointer("/corpus/required_tags")
+            .and_then(|value| value.as_array())
             .is_some_and(|tags| tags.iter().any(|tag| tag == "rejected:DatabaseAlias")),
         "conformance report should require rejected database alias corpus coverage"
+    );
+    assert!(
+        report_json
+            .pointer("/corpus/required_tags")
+            .and_then(|value| value.as_array())
+            .is_some_and(|tags| tags.iter().any(|tag| tag == "rejected:GateTake")),
+        "conformance report should require rejected gate-take corpus coverage"
     );
     assert!(
         report_json
@@ -13025,7 +13039,7 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     );
     assert_eq!(
         corpus_json.pointer("/summary/step_count"),
-        Some(&serde_json::json!(62))
+        Some(&serde_json::json!(65))
     );
     assert_eq!(
         corpus_json.pointer("/steps/0/name"),
@@ -13044,13 +13058,13 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
         ))
     );
     assert_eq!(
-        corpus_json.pointer("/steps/40/name"),
+        corpus_json.pointer("/steps/42/name"),
         Some(&serde_json::json!(
             "rejected_check:rejected/authority/missing_database_read_effect.sley"
         ))
     );
     assert_eq!(
-        corpus_json.pointer("/steps/40/stdout_schema"),
+        corpus_json.pointer("/steps/42/stdout_schema"),
         Some(&serde_json::json!("sley.diagnostics.report.v0"))
     );
 
@@ -13076,7 +13090,7 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     );
     assert_eq!(
         corpus_dir_json.pointer("/summary/step_count"),
-        Some(&serde_json::json!(62))
+        Some(&serde_json::json!(65))
     );
 
     let examples = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
@@ -24263,6 +24277,7 @@ fn assert_corpus_manifest_has_release_coverage(manifest: &CorpusManifest) {
         "accepted:Deploy",
         "accepted:FileRead",
         "accepted:FileWrite",
+        "accepted:GateTake",
         "accepted:ModelCall",
         "accepted:Network",
         "accepted:SecretRead",
@@ -24278,6 +24293,7 @@ fn assert_corpus_manifest_has_release_coverage(manifest: &CorpusManifest) {
         "rejected:Deploy",
         "rejected:FileRead",
         "rejected:FileWrite",
+        "rejected:GateTake",
         "rejected:ModelCall",
         "rejected:Network",
         "rejected:SecretRead",
@@ -24295,6 +24311,7 @@ fn assert_corpus_manifest_has_release_coverage(manifest: &CorpusManifest) {
         "diagnostic:TYPE_MISMATCH",
         "diagnostic:UNKNOWN_IDENTIFIER",
         "authority:transitive-effects",
+        "authority:gate-take",
         "language:module-namespace",
         "language:result-flow",
         "language:type-alias",
