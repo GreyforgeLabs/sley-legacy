@@ -11074,6 +11074,14 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     );
     let denied_verify_json: serde_json::Value =
         serde_json::from_slice(&denied_verify.stdout).expect("parse denied sley-ci verify JSON");
+    assert_eq!(
+        denied_verify_json.pointer("/steps/0/stdout_schema"),
+        Some(&serde_json::json!("sley.verify.report.v0"))
+    );
+    assert_eq!(
+        denied_verify_json.pointer("/steps/0/findings/0/id"),
+        Some(&serde_json::json!("EMPTY_FOR_STATEMENT"))
+    );
     assert_json_snapshot(
         &denied_verify_json,
         include_str!("../fixtures/contracts/ci_verify_denied_empty_for_statement.json"),
@@ -11128,6 +11136,10 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     assert_eq!(
         denied_plan_json.pointer("/steps/0/stdout_schema"),
         Some(&serde_json::json!("sley.edit_plan.report.v0"))
+    );
+    assert_eq!(
+        denied_plan_json.pointer("/steps/0/findings/0/id"),
+        Some(&serde_json::json!("EMPTY_FOR_STATEMENT"))
     );
     assert_eq!(
         denied_plan_json.pointer("/steps/0/issues/0/code"),

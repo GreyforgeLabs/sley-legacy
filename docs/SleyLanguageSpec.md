@@ -726,9 +726,10 @@ with the expected diagnostic ids from their sidecars.
 When a wrapped step emits `schema: "sley.diagnostics.report.v0"`, non-empty
 diagnostics are summarized directly on the CI step by ID, severity, message,
 and optional node.
-When a wrapped step emits `schema: "sley.lint.report.v0"`, non-empty lint
-findings are summarized directly on the CI step by ID, rule, severity, message,
-node, module, and hint.
+When a wrapped step emits `schema: "sley.lint.report.v0"` or a report with
+nested lint findings such as edit-plan or verify, non-empty lint findings are
+summarized directly on the CI step by ID, rule, severity, message, node,
+module, and hint.
 
 The executable CLI conformance smokes live under `fixtures/cli_smokes/`. Their
 `manifest.json` lists stable commands, working-directory mode, optional temp
