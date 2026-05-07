@@ -781,9 +781,10 @@ tokenization, and editor ergonomics.
 The editor feedback loop is backed by the in-tree `sley-lsp` bootstrap. It
 speaks stdio LSP framing, publishes parse/check diagnostics plus lint warnings,
 formats documents with the compiler formatter, exposes declaration symbols and
-hover text, and returns checked edit-plan code actions with a non-mutating
-`sley.fix.preview` command. The server reuses compiler modules directly; it is
-not a separate semantic implementation.
+hover text, including host-call capability requirements, and returns checked
+edit-plan code actions with a non-mutating `sley.fix.preview` command. The
+server reuses compiler modules directly; it is not a separate semantic
+implementation.
 
 The local inspection loop is backed by the in-tree `sley-workbench` bootstrap.
 It emits `schema: "sley.workbench.report.v0"` and can write an explicit static

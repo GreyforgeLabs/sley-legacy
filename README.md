@@ -187,9 +187,10 @@ Implemented now:
   workspaces and open-buffer overlays, all-open-buffer diagnostic refresh,
   watched project-file diagnostic refresh, formatting edits, document symbols,
   folding ranges, semantic tokens, workspace symbols, selection ranges,
-  declaration and project task-call hover, project completions, project task
-  signature help, project task parameter inlay hints, exact-range task
-  references, document highlights, import document links,
+  declaration hover, project task-call hover, host-call capability hover,
+  project completions, project task signature help, project task parameter
+  inlay hints, exact-range task references, document highlights, import
+  document links,
   prepared cursor-aware project task rename edits, import/call definition jumps,
   checked edit-plan code actions, non-mutating command-preview code lenses, and
   non-mutating preview commands for editor repair and command handoff

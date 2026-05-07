@@ -186,9 +186,10 @@ The in-tree `tree-sitter-sley` package exposes the current syntax grammar,
 highlight queries, generated parser artifacts, exact corpus tests, and fixture
 parsing smoke through `npm test` or `make syntax`.
 The `sley-lsp` binary exposes stdio LSP diagnostics, formatting, document
-symbols, declaration hover, edit-plan code actions, and non-mutating
-`sley.fix.preview` payloads backed by compiler modules; the preview payload
-uses `schema: "sley.lsp.fix_preview.v0"` and has a locked contract fixture.
+symbols, declaration hover, project task-call hover, host-call capability
+hover, edit-plan code actions, and non-mutating `sley.fix.preview` payloads
+backed by compiler modules; the preview payload uses
+`schema: "sley.lsp.fix_preview.v0"` and has a locked contract fixture.
 The `sley-workbench` binary exposes `schema: "sley.workbench.report.v0"` and
 optional static HTML over doctor/query/lint/plan/graph panels without source
 file writes; HTML includes local lint repair focus and graph target selectors
