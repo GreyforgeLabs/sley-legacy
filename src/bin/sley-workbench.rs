@@ -99,7 +99,19 @@ struct WorkbenchQueryPanel {
 struct WorkbenchLintPanel {
     source_schema: String,
     status: String,
-    findings: Vec<LintFinding>,
+    findings: Vec<WorkbenchLintFinding>,
+}
+
+#[derive(Debug, Serialize)]
+struct WorkbenchLintFinding {
+    id: String,
+    rule: String,
+    severity: String,
+    message: String,
+    node: String,
+    module: String,
+    hint: String,
+    plan_command: Vec<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -308,7 +320,11 @@ fn build_workbench_report(
     let lint = WorkbenchLintPanel {
         source_schema: lint_report.schema,
         status: lint_report.status,
-        findings: lint_report.findings,
+        findings: lint_report
+            .findings
+            .into_iter()
+            .map(|finding| workbench_lint_finding(finding, &target))
+            .collect(),
     };
     let plan = WorkbenchPlanPanel {
         source_schema: plan_report.schema,
@@ -720,18 +736,44 @@ fn render_lint_panel(lint: &WorkbenchLintPanel) -> String {
         .iter()
         .map(|finding| {
             format!(
-                "<tr data-lint-row data-node=\"{}\"><td>{}</td><td><code>{}</code></td><td>{}</td><td>{}</td></tr>",
+                "<tr data-lint-row data-node=\"{}\"><td>{}</td><td><code>{}</code></td><td>{}</td><td>{}</td><td><code>{}</code></td></tr>",
                 escape_html(&finding.node),
                 escape_html(&finding.rule),
                 escape_html(&finding.node),
                 escape_html(&finding.message),
-                escape_html(&finding.hint)
+                escape_html(&finding.hint),
+                escape_html(&command_text(&finding.plan_command))
             )
         })
         .collect::<String>();
     format!(
-        "<table><thead><tr><th>Rule</th><th>Node</th><th>Message</th><th>Hint</th></tr></thead><tbody>{rows}</tbody></table>"
+        "<table><thead><tr><th>Rule</th><th>Node</th><th>Message</th><th>Hint</th><th>Plan Command</th></tr></thead><tbody>{rows}</tbody></table>"
     )
+}
+
+fn workbench_lint_finding(finding: LintFinding, target: &str) -> WorkbenchLintFinding {
+    WorkbenchLintFinding {
+        plan_command: plan_lint_finding_command(target, &finding.node),
+        id: finding.id,
+        rule: finding.rule,
+        severity: finding.severity,
+        message: finding.message,
+        node: finding.node,
+        module: finding.module,
+        hint: finding.hint,
+    }
+}
+
+fn plan_lint_finding_command(target: &str, surface: &str) -> Vec<String> {
+    vec![
+        "sley".to_string(),
+        "plan".to_string(),
+        "--json".to_string(),
+        "--graft-templates".to_string(),
+        "--template-surface".to_string(),
+        surface.to_string(),
+        target.to_string(),
+    ]
 }
 
 fn render_templates_panel(plan: &WorkbenchPlanPanel) -> String {

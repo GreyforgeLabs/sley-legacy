@@ -109,8 +109,32 @@
         "status": { "enum": ["ok", "findings"] },
         "findings": {
           "type": "array",
-          "items": { "$ref": "sley.lint.report.v0#/properties/findings/items" }
+          "items": { "$ref": "#/$defs/lintFinding" }
         }
+      },
+      "additionalProperties": false
+    },
+    "lintFinding": {
+      "type": "object",
+      "required": [
+        "id",
+        "rule",
+        "severity",
+        "message",
+        "node",
+        "module",
+        "hint",
+        "plan_command"
+      ],
+      "properties": {
+        "id": { "$ref": "sley.lint.report.v0#/properties/findings/items/properties/id" },
+        "rule": { "$ref": "sley.lint.report.v0#/properties/findings/items/properties/rule" },
+        "severity": { "$ref": "sley.lint.report.v0#/properties/findings/items/properties/severity" },
+        "message": { "$ref": "sley.lint.report.v0#/properties/findings/items/properties/message" },
+        "node": { "$ref": "sley.lint.report.v0#/properties/findings/items/properties/node" },
+        "module": { "$ref": "sley.lint.report.v0#/properties/findings/items/properties/module" },
+        "hint": { "$ref": "sley.lint.report.v0#/properties/findings/items/properties/hint" },
+        "plan_command": { "$ref": "#/$defs/command" }
       },
       "additionalProperties": false
     },
