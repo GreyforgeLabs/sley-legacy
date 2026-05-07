@@ -183,8 +183,9 @@ Implemented now:
   project-aware compiler diagnostics plus lint warnings over `sley.toml`
   workspaces and open-buffer overlays, formatting edits, document symbols,
   workspace symbols, declaration metadata hover, project completions,
-  import/call definition jumps, checked edit-plan code actions, and a
-  non-mutating `sley.fix.preview` command for editor repair previews
+  task references, import/call definition jumps, checked edit-plan code
+  actions, and a non-mutating `sley.fix.preview` command for editor repair
+  previews
 - in-tree `sley-workbench` local inspection bootstrap that emits
   `schema: "sley.workbench.report.v0"` and optional static HTML over
   doctor/query/lint/plan/graph panels without writing source files

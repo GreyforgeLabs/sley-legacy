@@ -58,6 +58,10 @@ fn lsp_publishes_diagnostics_formats_symbols_and_previews_code_actions() {
         initialized.pointer("/result/capabilities/workspaceSymbolProvider"),
         Some(&json!(true))
     );
+    assert_eq!(
+        initialized.pointer("/result/capabilities/referencesProvider"),
+        Some(&json!(true))
+    );
 
     write_lsp(
         &mut stdin,
@@ -430,7 +434,7 @@ export task message -> Text {
         json!({
             "jsonrpc": "2.0",
             "id": 4,
-            "method": "textDocument/definition",
+            "method": "textDocument/references",
             "params": {
                 "textDocument": {
                     "uri": main_uri
@@ -438,18 +442,22 @@ export task message -> Text {
                 "position": {
                     "line": 5,
                     "character": 20
+                },
+                "context": {
+                    "includeDeclaration": true
                 }
             }
         }),
     );
-    let definition = read_response(&mut reader, 4);
-    assert_eq!(
-        definition.pointer("/result/0/uri"),
-        Some(&json!(pipeline_uri))
+    let references = read_response(&mut reader, 4);
+    let reference_locations = location_uris_and_lines(&references);
+    assert!(
+        reference_locations.contains(&(pipeline_uri.as_str(), 2)),
+        "references should include imported task declaration, got {reference_locations:?}"
     );
-    assert_eq!(
-        definition.pointer("/result/0/range/start/line"),
-        Some(&json!(2))
+    assert!(
+        reference_locations.contains(&(main_uri.as_str(), 5)),
+        "references should include project call site, got {reference_locations:?}"
     );
 
     write_lsp(
@@ -463,13 +471,40 @@ export task message -> Text {
                     "uri": main_uri
                 },
                 "position": {
+                    "line": 5,
+                    "character": 20
+                }
+            }
+        }),
+    );
+    let definition = read_response(&mut reader, 5);
+    assert_eq!(
+        definition.pointer("/result/0/uri"),
+        Some(&json!(pipeline_uri))
+    );
+    assert_eq!(
+        definition.pointer("/result/0/range/start/line"),
+        Some(&json!(2))
+    );
+
+    write_lsp(
+        &mut stdin,
+        json!({
+            "jsonrpc": "2.0",
+            "id": 6,
+            "method": "textDocument/definition",
+            "params": {
+                "textDocument": {
+                    "uri": main_uri
+                },
+                "position": {
                     "line": 2,
                     "character": 8
                 }
             }
         }),
     );
-    let import_definition = read_response(&mut reader, 5);
+    let import_definition = read_response(&mut reader, 6);
     assert_eq!(
         import_definition.pointer("/result/0/uri"),
         Some(&json!(pipeline_uri))
@@ -506,12 +541,12 @@ export task message -> Text {
         &mut stdin,
         json!({
             "jsonrpc": "2.0",
-            "id": 6,
+            "id": 7,
             "method": "shutdown",
             "params": null
         }),
     );
-    let shutdown = read_response(&mut reader, 6);
+    let shutdown = read_response(&mut reader, 7);
     assert!(shutdown.get("result").is_some());
     write_lsp(
         &mut stdin,
@@ -556,6 +591,21 @@ fn workspace_symbol_names_and_uris(message: &JsonValue) -> Vec<(&str, &str)> {
             Some((
                 symbol.get("name")?.as_str()?,
                 symbol.pointer("/location/uri")?.as_str()?,
+            ))
+        })
+        .collect()
+}
+
+fn location_uris_and_lines(message: &JsonValue) -> Vec<(&str, u64)> {
+    message
+        .get("result")
+        .and_then(JsonValue::as_array)
+        .expect("location array")
+        .iter()
+        .filter_map(|location| {
+            Some((
+                location.get("uri")?.as_str()?,
+                location.pointer("/range/start/line")?.as_u64()?,
             ))
         })
         .collect()
