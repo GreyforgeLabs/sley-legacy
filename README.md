@@ -911,7 +911,8 @@ Known v0 limits:
   An all-or-nothing transaction can add the destination import before the move
   and create the new module file from the moved declaration. Cross-task take
   movement and expression movement still reject explicitly; expression movement
-  rejection carries a `replace_expression` repair hint.
+  and deletion rejections carry `replace_expression` repair hints with starter
+  `ReplaceExpression` graft JSON.
 
 The current release-readiness phase is underway for the executable slice. The
 gold corpus and CLI smoke suite now have manifests with required coverage tags

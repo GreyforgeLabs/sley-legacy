@@ -1271,17 +1271,13 @@ fn delete_node(program: &mut Program, target: &str) -> Result<String, Vec<Diagno
         }
     }
 
-    if expression_exists(program, target) {
+    if let Some(expr) = find_expression(program, target) {
         return Err(vec![
             Diagnostic::error(
                 "GRAFT_DELETE_UNSUPPORTED",
                 format!("expression target `{target}` cannot be deleted without replacement"),
             )
-            .with_repair_hint(
-                RepairHint::new("replace_expression")
-                    .with_target(target)
-                    .with_replacement("Use ReplaceExpression with payload.source"),
-            )
+            .with_repair_hint(replace_expression_graft_hint(expr))
             .with_repair_hint(unsupported_graft_operation_hint(
                 target,
                 "DeleteNode only removes declarations, imports, takes, and statements",
@@ -1439,17 +1435,13 @@ fn move_node(
         ]);
     }
 
-    if expression_exists(program, target) {
+    if let Some(expr) = find_expression(program, target) {
         return Err(vec![
             Diagnostic::error(
                 "GRAFT_MOVE_UNSUPPORTED",
                 format!("expression target `{target}` cannot be moved by v0 MoveNode"),
             )
-            .with_repair_hint(
-                RepairHint::new("replace_expression")
-                    .with_target(target)
-                    .with_replacement("Use ReplaceExpression with payload.source"),
-            )
+            .with_repair_hint(replace_expression_graft_hint(expr))
             .with_repair_hint(unsupported_graft_operation_hint(
                 target,
                 "Expression targets cannot be moved; replace the expression source instead",
@@ -2396,11 +2388,58 @@ fn statement_contains_expr(statement: &Statement, target: &str) -> bool {
     }
 }
 
-fn expression_exists(program: &Program, target: &str) -> bool {
+fn replace_expression_graft_hint(expr: &Expr) -> RepairHint {
+    let graft = serde_json::json!({
+        "op": "ReplaceExpression",
+        "target": expr.id,
+        "payload": {
+            "source": &expr.source,
+        }
+    });
+    RepairHint::new("replace_expression")
+        .with_target(expr.id.clone())
+        .with_replacement(graft.to_string())
+}
+
+fn find_expression<'a>(program: &'a Program, target: &str) -> Option<&'a Expr> {
     program
         .tasks
         .iter()
-        .any(|task| block_contains_expr(&task.body, target))
+        .find_map(|task| find_expression_in_block(&task.body, target))
+}
+
+fn find_expression_in_block<'a>(block: &'a Block, target: &str) -> Option<&'a Expr> {
+    block
+        .statements
+        .iter()
+        .find_map(|statement| find_expression_in_statement(statement, target))
+}
+
+fn find_expression_in_statement<'a>(statement: &'a Statement, target: &str) -> Option<&'a Expr> {
+    match &statement.kind {
+        StatementKind::Binding { expr, .. }
+        | StatementKind::Set { expr, .. }
+        | StatementKind::Return { expr }
+        | StatementKind::Expr { expr } => find_expression_in_expr(expr, target),
+        StatementKind::If {
+            condition,
+            then_block,
+            else_block,
+        } => find_expression_in_expr(condition, target)
+            .or_else(|| find_expression_in_block(then_block, target))
+            .or_else(|| {
+                else_block
+                    .as_ref()
+                    .and_then(|block| find_expression_in_block(block, target))
+            }),
+        StatementKind::While { condition, body } => find_expression_in_expr(condition, target)
+            .or_else(|| find_expression_in_block(body, target)),
+        StatementKind::For {
+            collection, body, ..
+        } => find_expression_in_expr(collection, target)
+            .or_else(|| find_expression_in_block(body, target)),
+        StatementKind::Forge { body } => find_expression_in_block(body, target),
+    }
 }
 
 fn expr_contains_target(expr: &Expr, target: &str) -> bool {
@@ -2445,6 +2484,51 @@ fn expr_contains_target(expr: &Expr, target: &str) -> bool {
         | ExprKind::FloatLiteral { .. }
         | ExprKind::BoolLiteral { .. }
         | ExprKind::Identifier { .. } => false,
+    }
+}
+
+fn find_expression_in_expr<'a>(expr: &'a Expr, target: &str) -> Option<&'a Expr> {
+    if expr.id == target {
+        return Some(expr);
+    }
+
+    match &expr.kind {
+        ExprKind::Unary { expr, .. } | ExprKind::Try { expr } => {
+            find_expression_in_expr(expr, target)
+        }
+        ExprKind::Binary { left, right, .. } => {
+            find_expression_in_expr(left, target).or_else(|| find_expression_in_expr(right, target))
+        }
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => find_expression_in_expr(condition, target)
+            .or_else(|| find_expression_in_expr(then_branch, target))
+            .or_else(|| find_expression_in_expr(else_branch, target)),
+        ExprKind::Call { callee, args } => find_expression_in_expr(callee, target).or_else(|| {
+            args.iter()
+                .find_map(|arg| find_expression_in_expr(arg, target))
+        }),
+        ExprKind::ListLiteral { items } => items
+            .iter()
+            .find_map(|item| find_expression_in_expr(item, target)),
+        ExprKind::MapLiteral { entries } => entries.iter().find_map(|entry| {
+            find_expression_in_expr(&entry.key, target)
+                .or_else(|| find_expression_in_expr(&entry.value, target))
+        }),
+        ExprKind::Index { collection, index } => find_expression_in_expr(collection, target)
+            .or_else(|| find_expression_in_expr(index, target)),
+        ExprKind::FieldAccess { receiver, .. } => find_expression_in_expr(receiver, target),
+        ExprKind::RecordLiteral { fields, .. } => fields
+            .iter()
+            .find_map(|field| find_expression_in_expr(&field.expr, target)),
+        ExprKind::Raw { .. }
+        | ExprKind::StringLiteral { .. }
+        | ExprKind::IntLiteral { .. }
+        | ExprKind::FloatLiteral { .. }
+        | ExprKind::BoolLiteral { .. }
+        | ExprKind::Identifier { .. } => None,
     }
 }
 
