@@ -11360,9 +11360,18 @@ fn conformance_report_summarizes_release_surface() {
             .is_some_and(|tags| tags.iter().any(|tag| tag == "migrate:schema-drift")),
         "conformance report should require migration schema drift smoke coverage"
     );
+    assert!(
+        report_json
+            .pointer("/smoke/required_tags")
+            .and_then(|value| value.as_array())
+            .is_some_and(|tags| tags
+                .iter()
+                .any(|tag| tag == "readiness:verify-runtime-retry")),
+        "conformance report should require runtime-failed verify retry smoke coverage"
+    );
     assert_eq!(
         report_json.pointer("/summary/smoke_case_count"),
-        Some(&serde_json::json!(470))
+        Some(&serde_json::json!(471))
     );
     assert_eq!(
         report_json.pointer("/summary/onboarding_path_count"),
@@ -24175,6 +24184,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:project-import-write-verify",
         "readiness:remove-take-transaction-write-verify",
         "readiness:verify-package-next-action",
+        "readiness:verify-runtime-retry",
         "scaffold:agent-quickstart",
         "scaffold:deploy-quickstart",
         "scaffold:spend-quickstart",

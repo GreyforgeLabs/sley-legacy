@@ -751,9 +751,10 @@ and direct graft writes, write-mode fix trace receipts, non-empty trace
 receipt seals, ZJX envelopes carrying graph digests and schema-backed trace
 receipts, ZJX tool reports, graph-slice checked add, insert, delete, move, and
 replace affordances, checked `insert_statement`, `replace_statement`, and
-`replace_expression` graft templates, lint-driven fix
-writes that clear warnings before verify, program-surface declaration/import
-template planning and dry-run fixes with name/source/module overrides, deploy
+`replace_expression` graft templates, runtime-failed verify next-actions with
+seeded retry gates, lint-driven fix writes that clear warnings before verify,
+program-surface declaration/import template planning and dry-run fixes with
+name/source/module overrides, deploy
 dry-run reports, typed starter/deploy/agent scaffold next-actions, and
 seeded host-adapter
 execution for `FileRead`, `FileWrite`, `DatabaseRead`, `DatabaseWrite`,
