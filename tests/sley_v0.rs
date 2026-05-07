@@ -10026,7 +10026,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(114))
+        Some(&serde_json::json!(115))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -10302,7 +10302,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/contract_fixture_count"),
-        Some(&serde_json::json!(114))
+        Some(&serde_json::json!(115))
     );
     assert_eq!(
         report_json.pointer("/summary/corpus_accepted_count"),
@@ -10368,9 +10368,18 @@ fn conformance_report_summarizes_release_surface() {
             .is_some_and(|tags| tags.iter().any(|tag| tag == "ci:lint")),
         "conformance report should require sley-ci lint smoke coverage"
     );
+    assert!(
+        report_json
+            .pointer("/smoke/required_tags")
+            .and_then(|value| value.as_array())
+            .is_some_and(|tags| tags
+                .iter()
+                .any(|tag| tag == "migrate:unchecked-result-binding")),
+        "conformance report should require unchecked result binding migration smoke coverage"
+    );
     assert_eq!(
         report_json.pointer("/summary/smoke_case_count"),
-        Some(&serde_json::json!(445))
+        Some(&serde_json::json!(446))
     );
     assert_eq!(
         report_json.pointer("/summary/onboarding_path_count"),
@@ -10382,7 +10391,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/example_source_count"),
-        Some(&serde_json::json!(70))
+        Some(&serde_json::json!(71))
     );
     assert_eq!(
         report_json.pointer("/summary/integration_test_count"),
@@ -11599,7 +11608,7 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     );
     assert_eq!(
         examples_json.pointer("/summary/step_count"),
-        Some(&serde_json::json!(135))
+        Some(&serde_json::json!(137))
     );
     assert_eq!(
         examples_json.pointer("/steps/0/name"),
@@ -11620,7 +11629,7 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
         ))
     );
     assert_eq!(
-        examples_json.pointer("/steps/65/name"),
+        examples_json.pointer("/steps/66/name"),
         Some(&serde_json::json!(
             "format_round_trip:examples/absorbing_arithmetic_expression.sley"
         ))

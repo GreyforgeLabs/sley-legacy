@@ -127,6 +127,7 @@ const DEFAULT_SMOKE_TAGS: &[&str] = &[
     "lsp:help",
     "migrate:raw-host-adapter",
     "migrate:unchecked-result",
+    "migrate:unchecked-result-binding",
     "readiness:agent-bench-repair-loop",
     "readiness:agent-quickstart-path",
     "readiness:ci-corpus-gate",

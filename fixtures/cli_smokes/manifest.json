@@ -132,6 +132,29 @@
       }
     },
     {
+      "name": "migrate_unchecked_result_binding_report_json",
+      "bin": "sley-migrate",
+      "args": ["report", "--json", "examples/unchecked_result_binding.sley"],
+      "covers": [
+        "cli:sley-migrate",
+        "migrate:unchecked-result-binding",
+        "json:sley.migrate.report.v0",
+        "readiness:migrate-report"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.migrate.report.v0" },
+          { "pointer": "/status", "value": "migrations" },
+          { "pointer": "/summary/migration_count", "value": 1 },
+          { "pointer": "/summary/result_propagation_count", "value": 1 },
+          { "pointer": "/migrations/0/kind", "value": "propagate_unchecked_result_binding" },
+          { "pointer": "/migrations/0/category", "value": "result_propagation" },
+          { "pointer": "/migrations/0/operation/op", "value": "ReplaceStatement" }
+        ]
+      }
+    },
+    {
       "name": "docgen_reference_report_json",
       "bin": "sley-docgen",
       "args": ["reference", "--json", "examples/agent_deploy_pipeline.sley"],

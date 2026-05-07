@@ -54,7 +54,8 @@ Current verified surface:
   corpus conformance, packaged example conformance, broad CLI smoke
   conformance, the lightweight `sley-ci smoke` wrapper probe, the focused LSP
   integration tests, VS Code editor-shim validation, deterministic utility
-  replays for workbench, agent-bench, raw-host and unchecked-result migration,
+  replays for workbench, agent-bench, raw-host, unchecked-result expression,
+  and unchecked-result binding migration,
   docgen, sandbox-runner, and ZJX tools, and Tree-sitter syntax parsing.
 - The synthetic gold corpus currently has 19 accepted fixtures and 21 rejected
   fixtures, including accepted/rejected split-task agent authority cases that
@@ -83,7 +84,7 @@ Current verified surface:
   `inventory`, `check-fixtures`, `validate`, and `inspect-deploy-artifacts`
   JSON Schema validation commands over `docs/schemas/`, `fixtures/contracts/`,
   release manifests, and local deploy artifact directories. Contract inventory
-  currently tracks 38 schemas, 114 contract fixtures, and 117 schema instances.
+  currently tracks 38 schemas, 115 contract fixtures, and 118 schema instances.
 - `sley-ci` is available as an in-tree CI wrapper with `check`, `lint`,
   `doctor`, `plan`, `run`, `verify`, `deploy`, `smoke`, `corpus`, and
   `examples` commands that emit
@@ -279,8 +280,9 @@ Current verified surface:
   wrapper over parse, query, graft dry-run, and seeded multi-capability agent
   runtime authority. The broad suite can exercise allowlisted sibling utility
   binaries and now smokes `sley-contract` inventory, validate, fixture-check,
-  deploy-artifact inspection flows, plus `sley-migrate` raw-host and
-  unchecked-result migration reports, plus `sley-ci`, `sley-conformance`,
+  deploy-artifact inspection flows, plus `sley-migrate` raw-host,
+  unchecked-result expression, and unchecked-result binding migration reports,
+  plus `sley-ci`, `sley-conformance`,
   `sley-docgen`, `sley-workbench`, `sley-sandbox-runner`, `sley-shadow`,
   `sley-agent-bench`, `sley-zjx` utility reports, and `sley-lsp` help/startup. It also includes
   graph-slice insert and replace affordances, checked `insert_statement`,
