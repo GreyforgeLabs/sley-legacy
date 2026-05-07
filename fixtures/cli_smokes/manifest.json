@@ -13239,7 +13239,15 @@
           { "pointer": "/next_actions/1/kind", "value": "inspect_calls" },
           { "pointer": "/next_actions/3/kind", "value": "verify_gate" },
           { "pointer": "/next_actions/3/command/5", "value": "SecretRead" },
-          { "pointer": "/next_actions/3/command/11", "value": "Deploy" }
+          { "pointer": "/next_actions/3/command/11", "value": "Deploy" },
+          { "pointer": "/next_actions/3/command/12", "value": "--secret" },
+          { "pointer": "/next_actions/3/command/17", "value": "profile ready" },
+          { "pointer": "/next_actions/3/command/20", "value": "plan approved" },
+          { "pointer": "/next_actions/3/command/23", "value": "staged" },
+          { "pointer": "/next_actions/4/command/11", "value": "--secret" },
+          { "pointer": "/next_actions/4/command/16", "value": "profile ready" },
+          { "pointer": "/next_actions/4/command/19", "value": "plan approved" },
+          { "pointer": "/next_actions/4/command/22", "value": "staged" }
         ]
       }
     },
@@ -13699,7 +13707,15 @@
           { "pointer": "/next_actions/1/kind", "value": "inspect_calls" },
           { "pointer": "/next_actions/3/kind", "value": "verify_gate" },
           { "pointer": "/next_actions/3/command/5", "value": "SecretRead" },
-          { "pointer": "/next_actions/3/command/11", "value": "Deploy" }
+          { "pointer": "/next_actions/3/command/11", "value": "Deploy" },
+          { "pointer": "/next_actions/3/command/12", "value": "--secret" },
+          { "pointer": "/next_actions/3/command/17", "value": "profile ready" },
+          { "pointer": "/next_actions/3/command/20", "value": "plan approved" },
+          { "pointer": "/next_actions/3/command/23", "value": "staged" },
+          { "pointer": "/next_actions/4/command/11", "value": "--secret" },
+          { "pointer": "/next_actions/4/command/16", "value": "profile ready" },
+          { "pointer": "/next_actions/4/command/19", "value": "plan approved" },
+          { "pointer": "/next_actions/4/command/22", "value": "staged" }
         ]
       }
     },
