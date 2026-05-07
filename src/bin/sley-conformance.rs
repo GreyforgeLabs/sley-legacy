@@ -137,6 +137,26 @@ const DEFAULT_SMOKE_TAGS: &[&str] = &[
     "zjx-tool:inspect",
 ];
 
+const DEFAULT_V1_GATE_TARGETS: &[&str] = &[
+    "fmt",
+    "diff-check",
+    "test",
+    "contracts",
+    "conformance",
+    "corpus",
+    "examples",
+    "smoke",
+    "lsp",
+    "editor-shims",
+    "workbench",
+    "agent-bench",
+    "migrate",
+    "docgen",
+    "sandbox-runner",
+    "zjx-tools",
+    "syntax",
+];
+
 #[derive(Debug, Parser)]
 #[command(name = "sley-conformance")]
 #[command(about = "Summarize Sley release-readiness contracts and coverage")]
@@ -167,6 +187,8 @@ enum Command {
         goal_doc: PathBuf,
         #[arg(long, default_value = "editors/vscode-sley")]
         editor_shim_root: PathBuf,
+        #[arg(long, default_value = "Makefile")]
+        makefile: PathBuf,
         #[arg(long, default_value = "Cargo.toml")]
         cargo_manifest: PathBuf,
         #[arg(long, default_value = "LICENSE")]
@@ -209,6 +231,7 @@ struct ConformanceReport {
     examples: ExamplesSection,
     tests: TestSection,
     editor_shims: EditorShimsSection,
+    v1_gate: V1GateSection,
     release: ReleaseSection,
     issues: Vec<ConformanceIssue>,
 }
@@ -229,6 +252,8 @@ struct ConformanceSummary {
     declared_integration_test_count: Option<usize>,
     test_count_matches_declared: bool,
     editor_shim_count: usize,
+    v1_gate_target_count: usize,
+    missing_v1_gate_target_count: usize,
     public_release_blocker_count: usize,
     issue_count: usize,
 }
@@ -346,6 +371,18 @@ struct EditorShimPackage {
 }
 
 #[derive(Debug, Serialize)]
+struct V1GateSection {
+    makefile: String,
+    target: String,
+    required_targets: Vec<String>,
+    actual_targets: Vec<String>,
+    missing_required_targets: Vec<String>,
+    undefined_targets: Vec<String>,
+    issue_count: usize,
+    issues: Vec<ConformanceIssue>,
+}
+
+#[derive(Debug, Serialize)]
 struct ReleaseSection {
     public_release_ready: bool,
     blocker_count: usize,
@@ -454,6 +491,7 @@ fn main() -> Result<()> {
             integration_tests,
             goal_doc,
             editor_shim_root,
+            makefile,
             cargo_manifest,
             license_file,
             tree_sitter_package,
@@ -474,6 +512,7 @@ fn main() -> Result<()> {
                 &integration_tests,
                 &goal_doc,
                 &editor_shim_root,
+                &makefile,
                 &cargo_manifest,
                 &license_file,
                 &tree_sitter_package,
@@ -538,6 +577,7 @@ fn build_report(
     integration_tests: &Path,
     goal_doc: &Path,
     editor_shim_root: &Path,
+    makefile: &Path,
     cargo_manifest: &Path,
     license_file: &Path,
     tree_sitter_package: &Path,
@@ -622,6 +662,8 @@ fn build_report(
     let tests = build_test_section(integration_tests, goal_doc, &mut issues);
     let editor_shims = build_editor_shims_section(editor_shim_root);
     collect_editor_shim_issues(&editor_shims, &mut issues);
+    let v1_gate = build_v1_gate_section(makefile);
+    collect_v1_gate_issues(&v1_gate, &mut issues);
     let release = build_release_section(
         cargo_manifest,
         license_file,
@@ -656,6 +698,8 @@ fn build_report(
         declared_integration_test_count: tests.declared_integration_test_count,
         test_count_matches_declared: tests.declared_matches_actual,
         editor_shim_count: editor_shims.package_count,
+        v1_gate_target_count: v1_gate.actual_targets.len(),
+        missing_v1_gate_target_count: v1_gate.missing_required_targets.len(),
         public_release_blocker_count: release.blocker_count,
         issue_count,
     };
@@ -686,6 +730,7 @@ fn build_report(
         examples,
         tests,
         editor_shims,
+        v1_gate,
         release,
         issues,
     }
@@ -968,6 +1013,12 @@ fn collect_editor_shim_issues(
         issues.push(issue.clone());
     }
     for issue in &editor_shims.issues {
+        issues.push(issue.clone());
+    }
+}
+
+fn collect_v1_gate_issues(v1_gate: &V1GateSection, issues: &mut Vec<ConformanceIssue>) {
+    for issue in &v1_gate.issues {
         issues.push(issue.clone());
     }
 }
@@ -1270,6 +1321,131 @@ fn run_editor_shim_validation(root: &Path) -> ValidationRun {
             )],
         },
     }
+}
+
+fn build_v1_gate_section(makefile: &Path) -> V1GateSection {
+    let required_targets = DEFAULT_V1_GATE_TARGETS
+        .iter()
+        .map(|target| (*target).to_string())
+        .collect::<Vec<_>>();
+    let mut issues = Vec::new();
+    let (actual_targets, defined_targets) = match fs::read_to_string(makefile) {
+        Ok(source) => (
+            parse_make_target_dependencies(&source, "v1").unwrap_or_default(),
+            parse_make_defined_targets(&source),
+        ),
+        Err(error) => {
+            issues.push(issue(
+                "v1_gate_makefile_read_failed",
+                format!("failed to read {}: {error}", makefile.display()),
+            ));
+            (Vec::new(), BTreeSet::new())
+        }
+    };
+    if actual_targets.is_empty() && issues.is_empty() {
+        issues.push(issue(
+            "v1_gate_target_missing",
+            format!("{} does not define a v1 target", makefile.display()),
+        ));
+    }
+    let actual_set = actual_targets.iter().cloned().collect::<BTreeSet<_>>();
+    let missing_required_targets = required_targets
+        .iter()
+        .filter(|target| !actual_set.contains(*target))
+        .cloned()
+        .collect::<Vec<_>>();
+    for target in &missing_required_targets {
+        issues.push(issue(
+            "v1_gate_required_target_missing",
+            format!("make v1 does not depend on required target {target:?}"),
+        ));
+    }
+    let undefined_targets = actual_targets
+        .iter()
+        .filter(|target| !defined_targets.contains(*target))
+        .cloned()
+        .collect::<Vec<_>>();
+    for target in &undefined_targets {
+        issues.push(issue(
+            "v1_gate_target_undefined",
+            format!("make v1 depends on undefined target {target:?}"),
+        ));
+    }
+    let issue_count = issues.len();
+    V1GateSection {
+        makefile: path_string(makefile),
+        target: "v1".to_string(),
+        required_targets,
+        actual_targets,
+        missing_required_targets,
+        undefined_targets,
+        issue_count,
+        issues,
+    }
+}
+
+fn parse_make_target_dependencies(source: &str, target: &str) -> Option<Vec<String>> {
+    let logical_lines = make_logical_lines(source);
+    logical_lines.iter().find_map(|line| {
+        let trimmed = line.trim();
+        if trimmed.starts_with('#') || trimmed.starts_with('\t') {
+            return None;
+        }
+        let (left, right) = trimmed.split_once(':')?;
+        if !left.split_whitespace().any(|candidate| candidate == target) {
+            return None;
+        }
+        Some(make_words(right))
+    })
+}
+
+fn parse_make_defined_targets(source: &str) -> BTreeSet<String> {
+    let mut targets = BTreeSet::new();
+    for line in make_logical_lines(source) {
+        let trimmed = line.trim();
+        if trimmed.starts_with('#') || trimmed.starts_with('\t') {
+            continue;
+        }
+        let Some((left, _)) = trimmed.split_once(':') else {
+            continue;
+        };
+        for target in left.split_whitespace() {
+            if !target.contains('=') {
+                targets.insert(target.to_string());
+            }
+        }
+    }
+    targets
+}
+
+fn make_logical_lines(source: &str) -> Vec<String> {
+    let mut lines = Vec::new();
+    let mut current = String::new();
+    for line in source.lines() {
+        let trimmed_end = line.trim_end();
+        if let Some(prefix) = trimmed_end.strip_suffix('\\') {
+            current.push_str(prefix);
+            current.push(' ');
+            continue;
+        }
+        current.push_str(trimmed_end);
+        lines.push(std::mem::take(&mut current));
+    }
+    if !current.is_empty() {
+        lines.push(current);
+    }
+    lines
+}
+
+fn make_words(value: &str) -> Vec<String> {
+    value
+        .split('#')
+        .next()
+        .unwrap_or_default()
+        .split_whitespace()
+        .filter(|word| !word.is_empty())
+        .map(str::to_string)
+        .collect()
 }
 
 fn parse_declared_integration_test_count(source: &str) -> Option<usize> {
@@ -1717,7 +1893,7 @@ fn emit_report(report: &ConformanceReport, json: bool) -> Result<()> {
         return Ok(());
     }
     println!(
-        "sley-conformance report status={} schemas={} fixtures={} corpus={}/{} smoke={} examples={} tests={} editor_shims={} corpus_required={} corpus_missing={} smoke_required={} smoke_missing={} public_release_blockers={}",
+        "sley-conformance report status={} schemas={} fixtures={} corpus={}/{} smoke={} examples={} tests={} editor_shims={} v1_gate={} v1_gate_missing={} corpus_required={} corpus_missing={} smoke_required={} smoke_missing={} public_release_blockers={}",
         report.status,
         report.summary.schema_count,
         report.summary.contract_fixture_count,
@@ -1727,6 +1903,8 @@ fn emit_report(report: &ConformanceReport, json: bool) -> Result<()> {
         report.summary.example_source_count,
         report.summary.integration_test_count,
         report.summary.editor_shim_count,
+        report.summary.v1_gate_target_count,
+        report.summary.missing_v1_gate_target_count,
         report.corpus.required_tags.len(),
         report.corpus.missing_required_tags.len(),
         report.smoke.required_tags.len(),
@@ -1807,6 +1985,10 @@ fn render_markdown(report: &ConformanceReport) -> String {
     output.push_str(&format!(
         "- Editor shims: `{}` packages, validation `{}`\n",
         report.summary.editor_shim_count, report.editor_shims.validation.status
+    ));
+    output.push_str(&format!(
+        "- `make v1` gate: `{}` targets, `{}` missing required targets\n",
+        report.summary.v1_gate_target_count, report.summary.missing_v1_gate_target_count
     ));
     output.push_str(&format!(
         "- Public release ready: `{}` with `{}` blockers\n",

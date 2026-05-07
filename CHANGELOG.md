@@ -58,6 +58,8 @@ here. Dates use UTC-independent calendar dates from the local repo history.
 - `sley-conformance report` now inventories `editors/vscode-sley` package
   metadata and runs the deterministic editor-shim validator as part of the
   release-readiness report.
+- `sley-conformance report` now inventories the `make v1` target set and fails
+  if required local release-gate targets disappear or are undefined.
 - `sley-lsp` diagnostics now load `sley.toml` project context with unsaved
   open-buffer overlays, so valid imported calls resolve in editor buffers and
   missing imported tasks are diagnosed without requiring a save.

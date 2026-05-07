@@ -108,7 +108,7 @@ sley-ci plan --json [--deny-warnings] [--graft-templates] [--template-surface <s
 sley-ci run --json [runtime gates/seeds] <target>
 sley-ci corpus --json <fixtures/corpus|fixtures/corpus/manifest.json>
 sley-ci examples --json examples
-sley-conformance report --json [--corpus-manifest <fixtures/corpus|fixtures/corpus/manifest.json>] [--smoke-manifest <fixtures/cli_smokes|fixtures/cli_smokes/manifest.json>] [--editor-shim-root <editors/vscode-sley>]
+sley-conformance report --json [--corpus-manifest <fixtures/corpus|fixtures/corpus/manifest.json>] [--smoke-manifest <fixtures/cli_smokes|fixtures/cli_smokes/manifest.json>] [--editor-shim-root <editors/vscode-sley>] [--makefile <Makefile>]
 sley-conformance report --json --require-public-release-ready
 sley-conformance coverage --json --require-tag <tag>
 sley-contract inventory [docs/schemas] --json
@@ -184,8 +184,8 @@ Rules:
   agent-bench, raw-host and unchecked-result migration, docgen,
   sandbox-runner, and ZJX tool replays.
 - `sley-conformance report` carries explicit required corpus and smoke release
-  tags, inventories editor-shim package validation, and fails if either
-  manifest drops required evidence.
+  tags, inventories editor-shim package validation and the `make v1` target
+  set, and fails if either manifest or the local gate drops required evidence.
 - `sley-conformance report --require-public-release-ready` is the explicit
   public-cut gate for license and repository metadata; ordinary executable v1
   conformance remains advisory on those operator decisions.

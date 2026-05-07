@@ -170,8 +170,8 @@ Implemented now:
   schema/fixture instance coverage, contract validation status, corpus coverage
   tags, smoke coverage tags, packaged example counts, and the declared
   integration-test count, plus editor-shim package validation, including
-  required corpus and smoke release tags, plus non-gating public-release
-  packaging blockers,
+  required corpus and smoke release tags, `make v1` target inventory, plus
+  non-gating public-release packaging blockers,
   with `--require-public-release-ready` available as the explicit public-cut
   gate once license and repository metadata are settled,
   emitting
@@ -523,7 +523,7 @@ sley-ci deploy --json --dry-run --artifacts-dir .sley/ci-deploy --cap SecretRead
 sley-ci corpus --json fixtures/corpus
 sley-ci examples --json examples
 sley-conformance report --json
-sley-conformance report --json --corpus-manifest fixtures/corpus --smoke-manifest fixtures/cli_smokes --smoke-manifest fixtures/ci_smoke_probe --editor-shim-root editors/vscode-sley
+sley-conformance report --json --corpus-manifest fixtures/corpus --smoke-manifest fixtures/cli_smokes --smoke-manifest fixtures/ci_smoke_probe --editor-shim-root editors/vscode-sley --makefile Makefile
 sley-conformance coverage --json --require-tag cli:check --require-tag json:sley.trace.receipt.v0
 sley-contract inspect-deploy-artifacts .sley/deploy --json
 make smoke

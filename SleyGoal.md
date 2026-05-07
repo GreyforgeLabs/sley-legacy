@@ -95,8 +95,10 @@ Current verified surface:
   `schema: "sley.conformance.coverage.v0"` over schema/fixture instances,
   contract validation status, release manifests, corpus tags, smoke tags, and
   packaged example counts, plus editor-shim package validation and a check
-  that the declared integration coverage count matches the test file. `report`
-  now fails when required corpus or smoke release tags disappear.
+  that the declared integration coverage count matches the test file. It also
+  inventories the `make v1` target set and fails when required local gate
+  targets disappear. `report` now fails when required corpus or smoke release
+  tags disappear.
   `report --require-public-release-ready` turns
   unresolved public-release packaging blockers into an explicit nonzero gate
   for final release cuts. `--corpus-manifest` and repeated `--smoke-manifest`
