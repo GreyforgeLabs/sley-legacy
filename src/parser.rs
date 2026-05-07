@@ -1526,7 +1526,7 @@ fn expected_token_hint(expected: impl Into<String>) -> RepairHint {
 }
 
 fn expected_expression_hint() -> RepairHint {
-    RepairHint::new("provide_expression").with_replacement("TODO_VALUE")
+    RepairHint::new("provide_expression").with_replacement("0")
 }
 
 fn needs_no_space_before(text: &str) -> bool {
