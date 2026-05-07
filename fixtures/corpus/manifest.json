@@ -199,6 +199,16 @@
       ]
     },
     {
+      "path": "rejected/authority/missing_database_alias_write_effect.sley",
+      "covers": [
+        "rejected:DatabaseAlias",
+        "host:db.try_insert",
+        "authority:effect-alias",
+        "authority:missing-effect",
+        "diagnostic:EFFECT_UNAUTHORIZED"
+      ]
+    },
+    {
       "path": "rejected/authority/missing_deploy_effect.sley",
       "covers": [
         "rejected:Deploy",

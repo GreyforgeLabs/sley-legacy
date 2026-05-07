@@ -9630,7 +9630,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/corpus_rejected_count"),
-        Some(&serde_json::json!(20))
+        Some(&serde_json::json!(21))
     );
     assert_eq!(
         report_json.pointer("/corpus/missing_required_tags"),
@@ -10549,7 +10549,7 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     );
     assert_eq!(
         corpus_json.pointer("/summary/step_count"),
-        Some(&serde_json::json!(58))
+        Some(&serde_json::json!(59))
     );
     assert_eq!(
         corpus_json.pointer("/steps/0/name"),
@@ -10600,7 +10600,7 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     );
     assert_eq!(
         corpus_dir_json.pointer("/summary/step_count"),
-        Some(&serde_json::json!(58))
+        Some(&serde_json::json!(59))
     );
 
     let examples = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
