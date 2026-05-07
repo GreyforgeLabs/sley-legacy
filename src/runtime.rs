@@ -1685,7 +1685,7 @@ fn scope_matches_resource(resource_kind: &str, scope: &str, resource: &str) -> b
     if resource_kind == "URL" {
         return url_scope_matches(scope, resource);
     }
-    resource.starts_with(scope)
+    text_scope_matches(scope, resource)
 }
 
 fn url_scope_matches(scope: &str, resource: &str) -> bool {
@@ -1697,6 +1697,26 @@ fn url_scope_matches(scope: &str, resource: &str) -> bool {
             .as_bytes()
             .get(scope.len())
             .is_some_and(|byte| matches!(byte, b'/' | b'?' | b'#'))
+}
+
+fn text_scope_matches(scope: &str, resource: &str) -> bool {
+    if resource == scope
+        || scope
+            .as_bytes()
+            .last()
+            .is_some_and(|byte| text_scope_boundary(*byte))
+    {
+        return resource.starts_with(scope);
+    }
+    resource.starts_with(scope)
+        && resource
+            .as_bytes()
+            .get(scope.len())
+            .is_some_and(|byte| text_scope_boundary(*byte))
+}
+
+fn text_scope_boundary(byte: u8) -> bool {
+    matches!(byte, b'/' | b':' | b'.' | b'-' | b'_' | b' ' | b'\t')
 }
 
 fn absolute_normalized_path(path: &Path) -> PathBuf {

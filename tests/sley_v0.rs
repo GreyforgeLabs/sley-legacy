@@ -9705,7 +9705,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/smoke_case_count"),
-        Some(&serde_json::json!(404))
+        Some(&serde_json::json!(405))
     );
     assert_eq!(
         report_json.pointer("/summary/example_source_count"),
@@ -9713,11 +9713,11 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/integration_test_count"),
-        Some(&serde_json::json!(317))
+        Some(&serde_json::json!(318))
     );
     assert_eq!(
         report_json.pointer("/summary/declared_integration_test_count"),
-        Some(&serde_json::json!(317))
+        Some(&serde_json::json!(318))
     );
     assert_eq!(
         report_json.pointer("/summary/test_count_matches_declared"),
@@ -9729,7 +9729,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/tests/integration_test_count"),
-        Some(&serde_json::json!(317))
+        Some(&serde_json::json!(318))
     );
     assert_eq!(
         report_json.pointer("/tests/declared_matches_actual"),
@@ -14802,6 +14802,157 @@ task main -> Result<Text, Error> uses Spend {
         spend,
         "Spend",
         "infra/budget",
+    );
+}
+
+#[test]
+fn runtime_scoped_seeded_host_resources_use_text_boundaries() {
+    fn assert_text_scope_ok(source: &str, gates: RuntimeGates, expected: &str) {
+        let program = parse_program(source).expect("parse scoped text resource");
+        let diagnostics = check_program(&program);
+        assert!(
+            !has_errors(&diagnostics),
+            "unexpected diagnostics: {diagnostics:#?}"
+        );
+        assert_eq!(
+            run_main_with_gates(&program, &gates),
+            Ok(Value::Ok(Box::new(Value::Text(expected.to_string()))))
+        );
+    }
+
+    let mut secret_ok = RuntimeGates::new();
+    secret_ok.grant_effect_scope("SecretRead", "prod");
+    secret_ok.grant_secret("prod/api_key", "redacted");
+    assert_text_scope_ok(
+        r#"
+task main -> Result<Text, Error> uses SecretRead {
+  return call secrets.try_get("prod/api_key")
+}
+"#,
+        secret_ok,
+        "redacted",
+    );
+
+    let mut shell_ok = RuntimeGates::new();
+    shell_ok.grant_effect_scope("Shell", "safe");
+    shell_ok.grant_shell_output("safe:date", "2026-05-06");
+    assert_text_scope_ok(
+        r#"
+task main -> Result<Text, Error> uses Shell {
+  return call shell.try_run("safe:date")
+}
+"#,
+        shell_ok,
+        "2026-05-06",
+    );
+
+    let mut model_ok = RuntimeGates::new();
+    model_ok.grant_effect_scope("ModelCall", "classification");
+    model_ok.grant_model_output("classification:ticket", "safe");
+    assert_text_scope_ok(
+        r#"
+task main -> Result<Text, Error> uses ModelCall {
+  return call model.try_complete("classification:ticket")
+}
+"#,
+        model_ok,
+        "safe",
+    );
+
+    let mut deploy_ok = RuntimeGates::new();
+    deploy_ok.grant_effect_scope("Deploy", "staging");
+    deploy_ok.grant_deploy_result("staging/app", "staged");
+    assert_text_scope_ok(
+        r#"
+task main -> Result<Text, Error> uses Deploy {
+  return call deploy.try_stage("staging/app")
+}
+"#,
+        deploy_ok,
+        "staged",
+    );
+
+    let mut spend_ok = RuntimeGates::new();
+    spend_ok.grant_effect_scope("Spend", "ads");
+    spend_ok.grant_spend_result("ads-budget", "authorized");
+    assert_text_scope_ok(
+        r#"
+task main -> Result<Text, Error> uses Spend {
+  return call spend.try_authorize("ads-budget")
+}
+"#,
+        spend_ok,
+        "authorized",
+    );
+
+    let mut secret_sibling = RuntimeGates::new();
+    secret_sibling.grant_effect_scope("SecretRead", "prod");
+    secret_sibling.grant_secret("production/api_key", "blocked");
+    assert_scope_denied(
+        r#"
+task main -> Result<Text, Error> uses SecretRead {
+  return call secrets.try_get("production/api_key")
+}
+"#,
+        secret_sibling,
+        "SecretRead",
+        "production/api_key",
+    );
+
+    let mut shell_sibling = RuntimeGates::new();
+    shell_sibling.grant_effect_scope("Shell", "safe");
+    shell_sibling.grant_shell_output("safely date", "blocked");
+    assert_scope_denied(
+        r#"
+task main -> Result<Text, Error> uses Shell {
+  return call shell.try_run("safely date")
+}
+"#,
+        shell_sibling,
+        "Shell",
+        "safely date",
+    );
+
+    let mut model_sibling = RuntimeGates::new();
+    model_sibling.grant_effect_scope("ModelCall", "classification");
+    model_sibling.grant_model_output("classificationist prompt", "blocked");
+    assert_scope_denied(
+        r#"
+task main -> Result<Text, Error> uses ModelCall {
+  return call model.try_complete("classificationist prompt")
+}
+"#,
+        model_sibling,
+        "ModelCall",
+        "classificationist prompt",
+    );
+
+    let mut deploy_sibling = RuntimeGates::new();
+    deploy_sibling.grant_effect_scope("Deploy", "staging");
+    deploy_sibling.grant_deploy_result("stagingprod/app", "blocked");
+    assert_scope_denied(
+        r#"
+task main -> Result<Text, Error> uses Deploy {
+  return call deploy.try_stage("stagingprod/app")
+}
+"#,
+        deploy_sibling,
+        "Deploy",
+        "stagingprod/app",
+    );
+
+    let mut spend_sibling = RuntimeGates::new();
+    spend_sibling.grant_effect_scope("Spend", "ads");
+    spend_sibling.grant_spend_result("adserver", "blocked");
+    assert_scope_denied(
+        r#"
+task main -> Result<Text, Error> uses Spend {
+  return call spend.try_authorize("adserver")
+}
+"#,
+        spend_sibling,
+        "Spend",
+        "adserver",
     );
 }
 

@@ -44,7 +44,7 @@ Current verified surface:
 
 - `cargo fmt -- --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 317 tests in the core `tests/sley_v0.rs`
+- Current integration coverage is 318 tests in the core `tests/sley_v0.rs`
   conformance file, with additional focused integration tests for LSP,
   workbench, agent bench, docgen, migration reports, sandbox replay, project
   templates, and ZJX envelope tools. The focused utility tests validate live
@@ -74,8 +74,9 @@ Current verified surface:
   file effects treat the scope as a filesystem root, database host adapters
   require exact table scopes, URL scopes match exact URLs or path boundaries,
   and the remaining non-file seeded host adapters enforce deterministic
-  text-prefix scopes over secret names, shell commands, model prompts, deploy
-  targets, and spend requests. Scope mismatches remain authority diagnostics.
+  exact-or-delimiter text scopes over secret names, shell commands, model
+  prompts, deploy targets, and spend requests. Scope mismatches remain
+  authority diagnostics.
 - `sley-contract` is available as an in-tree contract utility scaffold with
   `inventory`, `check-fixtures`, `validate`, and `inspect-deploy-artifacts`
   JSON Schema validation commands over `docs/schemas/`, `fixtures/contracts/`,
