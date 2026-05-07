@@ -45,6 +45,11 @@ sley graph --json --slice <node-id> .
 sley ast --json --node <node-id> .
 ```
 
+Graph slices expose checked affordance arrays for add, insert, move, delete,
+replace, call-site, and call-argument graft starters. Use those operation
+payloads, or the matching `sley plan --graft-templates` rows, before falling
+back to raw source edits.
+
 ## 3. Run With Seeded Authority
 
 The starter intentionally requires seeded capabilities. In bash or zsh, keep the
