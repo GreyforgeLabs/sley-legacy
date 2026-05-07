@@ -65,8 +65,9 @@ Implemented now:
 - runtime gates with `sley run --cap EFFECT[=SCOPE]`; effectful tasks reject
   without matching gates, `Gate<Effect>` takes are injected at runtime, and
   `fs.read_text`/`fs.write_text` are backed by root-scoped file capabilities
-  while database adapters use exact table scopes and other non-file seeded
-  adapters can be narrowed by deterministic text scopes
+  while database adapters use exact table scopes, URL adapters use exact or
+  path-boundary scopes, and other non-file seeded adapters can be narrowed by
+  deterministic text scopes
 - deterministic database host seeding with `sley run --cap DatabaseRead
   --db-table TABLE=rows.json`; `db.query_one` and `db.query` read seeded JSON
   rows, and `DbRow` values expose `row.text`, `row.int`, `row.float`,
