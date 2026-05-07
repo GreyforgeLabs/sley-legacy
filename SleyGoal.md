@@ -238,11 +238,13 @@ Current verified surface:
   runtime authority. The broad suite can exercise allowlisted sibling utility
   binaries and now smokes `sley-contract` inventory, validate, fixture-check,
   deploy-artifact inspection flows, plus `sley-migrate` raw-host and
-  unchecked-result migration reports. It also includes graph-slice insert and
-  replace affordances, checked `insert_statement`, `replace_statement`, and
-  `replace_expression` graft templates, task-body insert graft emission, direct
-  block, statement, take, and expression node surface targeting with expression
-  and statement `--emit-graft`, direct statement-surface delete graft emission,
+  unchecked-result migration reports, plus `sley-docgen`, `sley-workbench`,
+  `sley-sandbox-runner`, `sley-agent-bench`, and `sley-zjx` utility reports. It
+  also includes graph-slice insert and replace affordances, checked
+  `insert_statement`, `replace_statement`, and `replace_expression` graft
+  templates, task-body insert graft emission, direct block, statement, take,
+  and expression node surface targeting with expression and statement
+  `--emit-graft`, direct statement-surface delete graft emission,
   program-surface declaration/import templates for checked `add_task`,
   `add_type_declaration`, `add_effect_declaration`, and `add_import` starters, direct
   program-surface `add_task` graft emission, exact node-surface

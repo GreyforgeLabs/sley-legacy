@@ -132,6 +132,123 @@
       }
     },
     {
+      "name": "docgen_reference_report_json",
+      "bin": "sley-docgen",
+      "args": ["reference", "--json", "examples/agent_deploy_pipeline.sley"],
+      "covers": [
+        "cli:sley-docgen",
+        "docgen:reference",
+        "json:sley.docgen.report.v0",
+        "readiness:docgen-reference"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.docgen.report.v0" },
+          { "pointer": "/status", "value": "generated" },
+          { "pointer": "/source_schema", "value": "sley.query.report.v0" },
+          { "pointer": "/summary/module_count", "value": 1 },
+          { "pointer": "/summary/capability_count", "value": 10 },
+          { "pointer": "/summary/document_count", "value": 1 }
+        ]
+      }
+    },
+    {
+      "name": "workbench_graph_slice_report_json",
+      "bin": "sley-workbench",
+      "args": [
+        "--json",
+        "--slice",
+        "task:app.agent_deploy_pipeline.main",
+        "examples/agent_deploy_pipeline.sley"
+      ],
+      "covers": [
+        "cli:sley-workbench",
+        "workbench:graph-slice",
+        "json:sley.workbench.report.v0",
+        "readiness:workbench-inspection"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.workbench.report.v0" },
+          { "pointer": "/status", "value": "ready" },
+          { "pointer": "/summary/module_count", "value": 1 },
+          { "pointer": "/summary/call_count", "value": 7 },
+          { "pointer": "/graph_slice/schema", "value": "sley.symbol_graph.slice.v0" },
+          { "pointer": "/graph_slice/focus/id", "value": "task:app.agent_deploy_pipeline.main" }
+        ]
+      }
+    },
+    {
+      "name": "sandbox_runner_agent_pipeline_report_json",
+      "bin": "sley-sandbox-runner",
+      "args": ["run", "--json", "fixtures/contracts/sandbox_manifest_agent_pipeline.json"],
+      "covers": [
+        "cli:sley-sandbox-runner",
+        "sandbox:replay",
+        "json:sley.sandbox.report.v0",
+        "readiness:sandbox-replay"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.sandbox.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/manifest_schema", "value": "sley.sandbox.manifest.v0" },
+          { "pointer": "/summary/capability_count", "value": 4 },
+          { "pointer": "/summary/seed_count", "value": 4 },
+          { "pointer": "/verify/schema", "value": "sley.verify.report.v0" },
+          { "pointer": "/verify/status", "value": "passed" }
+        ]
+      }
+    },
+    {
+      "name": "agent_bench_unused_private_task_report_json",
+      "bin": "sley-agent-bench",
+      "args": ["run", "--json", "--case", "unused-private-task-repair"],
+      "covers": [
+        "cli:sley-agent-bench",
+        "agent-bench:unused-private-task-repair",
+        "json:sley.agent_bench.report.v0",
+        "readiness:agent-bench-repair-loop"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.agent_bench.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/case_count", "value": 1 },
+          { "pointer": "/passed_count", "value": 1 },
+          { "pointer": "/failed_count", "value": 0 },
+          { "pointer": "/cases/0/name", "value": "unused-private-task-repair" },
+          { "pointer": "/cases/0/status", "value": "passed" },
+          { "pointer": "/cases/0/trace_receipt_count", "value": 1 }
+        ]
+      }
+    },
+    {
+      "name": "zjx_tool_inspect_report_json",
+      "bin": "sley-zjx",
+      "args": ["inspect", "fixtures/contracts/zjx_hello_ready.json", "--json"],
+      "covers": [
+        "cli:sley-zjx",
+        "zjx-tool:inspect",
+        "json:sley.zjx.tool.report.v0",
+        "readiness:zjx-tool-inspect"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.zjx.tool.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/command", "value": "inspect" },
+          { "pointer": "/digest/matches", "value": true },
+          { "pointer": "/envelopes/0/graph_digest_match", "value": true }
+        ]
+      }
+    },
+    {
       "name": "new_deploy_project_json",
       "cwd": "tmp",
       "args": [

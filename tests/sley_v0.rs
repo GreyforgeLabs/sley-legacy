@@ -10179,7 +10179,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/smoke_case_count"),
-        Some(&serde_json::json!(416))
+        Some(&serde_json::json!(421))
     );
     assert_eq!(
         report_json.pointer("/summary/example_source_count"),
@@ -21824,8 +21824,13 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "cli:check",
         "cli:run",
         "cli:deploy",
+        "cli:sley-agent-bench",
         "cli:sley-contract",
+        "cli:sley-docgen",
         "cli:sley-migrate",
+        "cli:sley-sandbox-runner",
+        "cli:sley-workbench",
+        "cli:sley-zjx",
         "cli:ast",
         "cli:graph",
         "cli:graph-slice",
@@ -21850,6 +21855,11 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "contract:inspect-deploy-artifacts",
         "migrate:raw-host-adapter",
         "migrate:unchecked-result",
+        "agent-bench:unused-private-task-repair",
+        "docgen:reference",
+        "sandbox:replay",
+        "workbench:graph-slice",
+        "zjx-tool:inspect",
         "fix:call-transaction-write",
         "fix:lint-cleanup-write",
         "fix:remove-take-transaction-write",
@@ -21986,6 +21996,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "query:effects",
         "query:calls",
         "readiness:call-transaction-write-verify",
+        "readiness:agent-bench-repair-loop",
         "readiness:contract-schema-defaults",
         "readiness:constant-if-repair-write-verify",
         "readiness:constant-if-statement-repair-write-verify",
@@ -22006,7 +22017,11 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:deploy-package-artifacts",
         "readiness:deploy-package-artifact-inspection",
         "readiness:deploy-package-dry-run",
+        "readiness:docgen-reference",
         "readiness:migrate-report",
+        "readiness:sandbox-replay",
+        "readiness:workbench-inspection",
+        "readiness:zjx-tool-inspect",
         "readiness:inspect-calls",
         "readiness:deploy-lint-repair-write-verify",
         "readiness:identity-binary-repair-write-verify",
@@ -22066,12 +22081,16 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "json:sley.lint.report.v0",
         "json:sley.run.report.v0",
         "json:sley.project.scaffold.v0",
+        "json:sley.agent_bench.report.v0",
         "json:sley.contract.fixture_check.v0",
         "json:sley.contract.inventory.v0",
         "json:sley.contract.validate.v0",
+        "json:sley.docgen.report.v0",
         "json:sley.doctor.report.v0",
         "json:sley.edit_plan.report.v0",
         "json:sley.migrate.report.v0",
+        "json:sley.sandbox.report.v0",
+        "json:sley.workbench.report.v0",
         "json:sley.verify.report.v0",
         "json:sley.deploy.report.v0",
         "json:sley.deploy.artifact_check.v0",
@@ -22079,6 +22098,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "json:sley.trace.report.v0",
         "json:sley.trace.seal.v0",
         "json:sley.zjx.envelope.v0",
+        "json:sley.zjx.tool.report.v0",
         "trace:explicit-path",
         "trace:seal-with-receipts",
         "zjx:graph-digest",
@@ -22133,14 +22153,29 @@ fn expand_cli_smoke_text(text: &str, repo_root: &Path, tmp_root: &Path) -> Strin
 fn cli_smoke_test_binary(binary: &str) -> &'static str {
     match binary {
         "sley" => env!("CARGO_BIN_EXE_sley"),
+        "sley-agent-bench" => env!("CARGO_BIN_EXE_sley-agent-bench"),
         "sley-contract" => env!("CARGO_BIN_EXE_sley-contract"),
+        "sley-docgen" => env!("CARGO_BIN_EXE_sley-docgen"),
         "sley-migrate" => env!("CARGO_BIN_EXE_sley-migrate"),
+        "sley-sandbox-runner" => env!("CARGO_BIN_EXE_sley-sandbox-runner"),
+        "sley-workbench" => env!("CARGO_BIN_EXE_sley-workbench"),
+        "sley-zjx" => env!("CARGO_BIN_EXE_sley-zjx"),
         other => panic!("unsupported CLI smoke binary {other}"),
     }
 }
 
 fn allowed_cli_smoke_test_binary(binary: &str) -> bool {
-    matches!(binary, "sley" | "sley-contract" | "sley-migrate")
+    matches!(
+        binary,
+        "sley"
+            | "sley-agent-bench"
+            | "sley-contract"
+            | "sley-docgen"
+            | "sley-migrate"
+            | "sley-sandbox-runner"
+            | "sley-workbench"
+            | "sley-zjx"
+    )
 }
 
 fn temp_project_dir(name: &str) -> PathBuf {
