@@ -1,6 +1,6 @@
 # Sley Language Specification
 
-Status: v0 executable slice plus module task/type/effect namespace, runtime gates with filesystem roots and non-file seeded resource scopes, Sley-level Result flow, typed host fallibility, seeded database host reads/writes, seeded secret values, seeded deploy stage results, seeded spend authorizations, seeded network host text, seeded shell host output, seeded model completions, trace tooling, checked lint tooling, and checked edit-plan tooling
+Status: v1 executable surface with module task/type/effect namespaces, runtime gates with filesystem roots and non-file seeded resource scopes, Sley-level Result flow, typed host fallibility, seeded database host reads/writes, seeded secret values, seeded deploy stage results, seeded spend authorizations, seeded network host text, seeded shell host output, seeded model completions, trace tooling, checked lint tooling, and checked edit-plan tooling
 
 Sley is a human-readable, agent-writable structural language. The canonical
 program model is a typed graph. `.sley` source is the stable review projection,
@@ -54,7 +54,7 @@ take bind state cell knot slot gate lease veil dial flag memo cache derive flow
 port tally hole draft taint witness seal anchor view cursor
 ```
 
-The v0 executable syntax supports `take`, `bind`, `state`, `tally`, `slot`, and
+The current executable syntax supports `take`, `bind`, `state`, `tally`, `slot`, and
 `forge` directly. Task inputs may also use `take gate`, `take veil`,
 `take taint`, and `take view` qualifiers; only `take gate` currently has
 runtime capability semantics. The AST already carries `BindingKind` so later
@@ -251,7 +251,7 @@ recoverable `Result` error.
 Text-scope delimiter boundaries are `/`, `:`, `.`, `-`, `_`, space, and tab.
 
 `DatabaseRead` currently backs deterministic seeded-table reads. The runtime
-does not open a real database connection in v0; the host supplies JSON rows:
+does not open a real database connection; the host supplies JSON rows:
 
 ```bash
 sley run --cap DatabaseRead --db-table users=examples/users.json examples/db_gate.sley
@@ -419,7 +419,7 @@ diagnostic.
 
 Agents should edit Sley by submitting structural grafts against bounded graph
 shards. A graft is accepted only after parse, type, effect, authority, lifetime,
-and provenance checks pass for the implemented v0 surface.
+and provenance checks pass for the current surface.
 
 Current graft operations include adding explicit module declarations,
 adding/removing takes, removing task-declared effects, replacing task bodies,
@@ -547,12 +547,12 @@ for it, using `PROJECT_WRITEBACK_UNKNOWN_IMPORT`.
 `sley graft` remains non-mutating by default; only `--write` changes source or
 appends trace receipts. `--dry-run` and `--write` are mutually exclusive.
 
-Graft input JSON is strict for the v0 contract. Unknown fields in transaction,
+Graft input JSON is strict for the contract. Unknown fields in transaction,
 operation, or payload objects reject during deserialization instead of being
 ignored. This prevents agents from believing unsupported intent metadata was
 honored.
 
-Current v0 graft outcome JSON has this root shape:
+Graft outcome JSON has this root shape:
 
 ```json
 {
@@ -654,7 +654,7 @@ Current `sley trace --json` reports have this root shape:
 }
 ```
 
-Current v0 trace receipt JSONL records have this root shape:
+Trace receipt JSONL records have this root shape:
 
 ```json
 {
@@ -665,7 +665,7 @@ Current v0 trace receipt JSONL records have this root shape:
 }
 ```
 
-Current v0 trace seal JSON has this root shape:
+Trace seal JSON has this root shape:
 
 ```json
 {
@@ -681,7 +681,7 @@ Current v0 trace seal JSON has this root shape:
 }
 ```
 
-The v0 JSON contracts are locked by small snapshots under
+The JSON contracts are locked by small snapshots under
 `fixtures/contracts/` and JSON Schema files under `docs/schemas/`, including
 contract inventory/fixture-check/validate fixtures, graft outcome fixtures, and
 full symbol graph and ZJX envelope fixtures for handoff roots. The AST program
@@ -868,7 +868,7 @@ capabilities and host adapter data, enters a temp sandbox for `$sandbox`
 filesystem roots, and emits `schema: "sley.sandbox.report.v0"` without calling
 external providers.
 
-`sley new` is the v0 project scaffold command. It writes a `sley.toml`,
+`sley new` is the project scaffold command. It writes a `sley.toml`,
 `README.md`, and one or more module source files, refusing to overwrite any of
 those paths when they already exist. `--template hello`, `--template library`,
 `--template cli`, and `--template data-pipeline` create pure starters.
@@ -907,7 +907,7 @@ to use the diagnostics report path.
 `sley-ci run --json` wraps the same deterministic runtime execution under
 `sley.ci.report.v0` for local CI and pre-commit gates.
 
-`sley deploy --dry-run` is the v0 local deploy package command. It refuses to
+`sley deploy --dry-run` is the local deploy package command. It refuses to
 run unless `--dry-run` is present and, in JSON mode, emits a
 `DRY_RUN_REQUIRED` diagnostics report with a rerun repair hint. It consumes the
 same deterministic runtime gates and seed flags as `sley run` and
@@ -1275,11 +1275,11 @@ declared effects, and inbound/outbound call counts. Type query rows include
 stable ids, qualified names, rendered type values, and record fields; effect
 query rows include stable ids and qualified names. Call query rows include
 stable caller, expression, source, callee, status, target, and candidate
-fields. The v0 JSON root is `sley.query.report.v0`.
+fields. The query JSON root is `sley.query.report.v0`.
 
 `sley lint` is the first checked lint command built on the graph query surface.
 It parses and checks the target before emitting results, so semantic failures
-return the normal diagnostic report instead of a lint report. The v0 rules are
+return the normal diagnostic report instead of a lint report. The current rules are
 `unused_private_task`, which warns on non-exported tasks with zero inbound
 checked calls excluding the entry module's `main`; `unreachable_private_task`,
 which warns on private task islands that are only reachable from other private
@@ -1436,7 +1436,7 @@ diagnostics report. `--rule unused-private-task`,
 `--rule unreachable-statement`, or
 `--rule absorbing-arithmetic-expression` selects one rule explicitly, and
 `--deny-warnings` turns findings into a nonzero CLI exit after printing the
-report. The v0 JSON root is `sley.lint.report.v0`.
+ report. The lint JSON root is `sley.lint.report.v0`.
 
 Diagnostics include machine-readable repair hints for common checker failures
 and selected graft planning failures. Hints are intentionally small and
@@ -1551,7 +1551,7 @@ artifacts before compression begins.
 - trace receipts can be sealed, but sidecar storage is not yet a compressed ZJX
   archive
 - the AST JSON Schema covers nested AST and expression variants; the remaining
-  JSON Schema files are still narrower v0 root contracts
+  JSON Schema files are still narrower root contracts
 - `sley lint` currently ships warning-grade private-task graph rules, authority
   hygiene for unused declared effects, private declaration/import/API hygiene,
   raw-host-adapter, imported-call naming, and unchecked-result migration
@@ -1619,7 +1619,8 @@ artifacts before compression begins.
   passed-verify next-actions for `sley seal --json` and `sley zjx --json`
   handoff artifacts, and
   `sley deploy --dry-run` local deploy package reports over verify, seal, and
-  ZJX summaries where applicable; live deploy/provider calls remain outside v0
+  ZJX summaries where applicable; live deploy/provider calls remain outside the
+  local-only release surface
 - no `match`, agent declarations, spawn/cast/join, or compressed ZJX archive
   writer yet
 - `MoveNode` supports checked in-parent and cross-parent statement movement

@@ -175,7 +175,7 @@
   "tests": {
     "integration_test_file": "tests/sley_v0.rs",
     "integration_test_count": 1,
-    "goal_doc": "SleyGoal.md",
+    "goal_doc": "docs/contracts.md",
     "declared_integration_test_count": 1,
     "declared_matches_actual": true
   },

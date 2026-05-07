@@ -1,6 +1,6 @@
 # Sley Contract Map
 
-Status: v0 contract map for the current release-candidate surface.
+Status: v1 contract map for the current release-candidate surface.
 Last checked: 2026-05-07.
 
 This file names the machine-readable JSON roots that external tools may
