@@ -168,8 +168,9 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
      completions, selection ranges, import/call definition jumps, project task
      signature help, project task parameter inlay hints, exact-range task
      references, document highlights, import document links, prepared
-     cursor-aware project task rename edits, edit-plan code actions, and
-     exposes `sley.fix.preview` as a non-mutating preview command.
+     cursor-aware project task rename edits, edit-plan code actions,
+     non-mutating command-preview code lenses, and non-mutating preview commands
+     for repair and command handoff.
      `tests/sley_lsp.rs` drives the server over real JSON-RPC frames.
    - Done when an example project receives diagnostics and at least one checked
      lint repair code action without the server writing files directly.

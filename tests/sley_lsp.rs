@@ -55,6 +55,14 @@ fn lsp_publishes_diagnostics_formats_symbols_and_previews_code_actions() {
         Some(&json!("sley.fix.preview"))
     );
     assert_eq!(
+        initialized.pointer("/result/capabilities/executeCommandProvider/commands/1"),
+        Some(&json!("sley.command.preview"))
+    );
+    assert_eq!(
+        initialized.pointer("/result/capabilities/codeLensProvider/resolveProvider"),
+        Some(&json!(false))
+    );
+    assert_eq!(
         initialized.pointer("/result/capabilities/definitionProvider"),
         Some(&json!(true))
     );
@@ -276,6 +284,75 @@ return "unused"
         json!({
             "jsonrpc": "2.0",
             "id": 5,
+            "method": "textDocument/codeLens",
+            "params": {
+                "textDocument": {
+                    "uri": uri
+                }
+            }
+        }),
+    );
+    let code_lenses = read_response(&mut reader, 5);
+    let doctor_lens = code_lenses
+        .get("result")
+        .and_then(JsonValue::as_array)
+        .expect("code lens array")
+        .iter()
+        .find(|lens| lens.pointer("/command/title") == Some(&json!("Sley: doctor")))
+        .cloned()
+        .expect("doctor code lens");
+    assert_eq!(
+        doctor_lens.pointer("/command/command"),
+        Some(&json!("sley.command.preview"))
+    );
+    assert_eq!(
+        doctor_lens.pointer("/command/arguments/0/args/0"),
+        Some(&json!("doctor"))
+    );
+    assert_eq!(
+        doctor_lens.pointer("/command/arguments/0/args/1"),
+        Some(&json!("--json"))
+    );
+    let graph_lens_count = code_lenses
+        .get("result")
+        .and_then(JsonValue::as_array)
+        .expect("code lens array")
+        .iter()
+        .filter(|lens| lens.pointer("/command/title") == Some(&json!("Sley: graph slice")))
+        .count();
+    assert_eq!(graph_lens_count, 3);
+
+    write_lsp(
+        &mut stdin,
+        json!({
+            "jsonrpc": "2.0",
+            "id": 6,
+            "method": "workspace/executeCommand",
+            "params": {
+                "command": doctor_lens.pointer("/command/command").expect("command name"),
+                "arguments": doctor_lens.pointer("/command/arguments").expect("command args")
+            }
+        }),
+    );
+    let command_preview = read_response(&mut reader, 6);
+    assert_eq!(
+        command_preview.pointer("/result/schema"),
+        Some(&json!("sley.lsp.command_preview.v0"))
+    );
+    assert_eq!(
+        command_preview.pointer("/result/preview/kind"),
+        Some(&json!("doctor"))
+    );
+    assert_eq!(
+        command_preview.pointer("/result/preview/uri"),
+        Some(&json!(uri))
+    );
+
+    write_lsp(
+        &mut stdin,
+        json!({
+            "jsonrpc": "2.0",
+            "id": 7,
             "method": "textDocument/codeAction",
             "params": {
                 "textDocument": {
@@ -291,7 +368,7 @@ return "unused"
             }
         }),
     );
-    let actions = read_response(&mut reader, 5);
+    let actions = read_response(&mut reader, 7);
     let delete_action = actions
         .get("result")
         .and_then(JsonValue::as_array)
@@ -305,7 +382,7 @@ return "unused"
         &mut stdin,
         json!({
             "jsonrpc": "2.0",
-            "id": 6,
+            "id": 8,
             "method": "workspace/executeCommand",
             "params": {
                 "command": delete_action.pointer("/command/command").expect("command name"),
@@ -313,7 +390,7 @@ return "unused"
             }
         }),
     );
-    let preview = read_response(&mut reader, 6);
+    let preview = read_response(&mut reader, 8);
     let report_bytes = serde_json::to_vec(preview.get("result").expect("preview result"))
         .expect("serialize LSP fix preview report");
     support::validate_report_schema("sley.lsp.fix_preview.v0", &report_bytes);
@@ -335,12 +412,12 @@ return "unused"
         &mut stdin,
         json!({
             "jsonrpc": "2.0",
-            "id": 7,
+            "id": 9,
             "method": "shutdown",
             "params": null
         }),
     );
-    let shutdown = read_response(&mut reader, 7);
+    let shutdown = read_response(&mut reader, 9);
     assert!(shutdown.get("result").is_some());
     write_lsp(
         &mut stdin,
