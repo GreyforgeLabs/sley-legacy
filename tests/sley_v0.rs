@@ -10749,6 +10749,41 @@ task main -> Text uses Network {
         ]
     );
 
+    let warning_call_graph = parse_program(
+        r#"
+module app.calls
+
+task main -> Int {
+  return call used()
+}
+
+task used -> Int {
+  return 1
+}
+
+task orphan -> Int {
+  return 2
+}
+"#,
+    )
+    .expect("parse warning call graph");
+    let warning_call_report = build_verify_report(
+        "app.calls",
+        Ok(warning_call_graph),
+        RuntimeGates::new(),
+        true,
+    );
+    assert_eq!(warning_call_report.summary.call_count, 1);
+    assert!(
+        warning_call_report
+            .next_actions
+            .iter()
+            .any(|action| action.kind == "inspect_calls"
+                && action.command
+                    == vec!["sley", "query", "--json", "--kind", "calls", "app.calls"]),
+        "verify warning reports with calls should suggest strict call-row inspection"
+    );
+
     let ambiguous = parse_program(
         r#"
 module app.effects

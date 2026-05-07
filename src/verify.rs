@@ -136,7 +136,7 @@ pub fn build_verify_report(
     let checked_lint_repair = single_checked_lint_repair(&target, &program, &lint_report);
 
     if deny_warnings && lint_finding_count > 0 {
-        let actions = lint_actions(&target, checked_lint_repair.as_ref());
+        let actions = lint_actions(&target, checked_lint_repair.as_ref(), &query_report);
         return blocked_report(
             target,
             Some(program.module_name().to_string()),
@@ -178,7 +178,7 @@ pub fn build_verify_report(
         "passed"
     };
     let actions = if lint_finding_count > 0 {
-        lint_actions(&target, checked_lint_repair.as_ref())
+        lint_actions(&target, checked_lint_repair.as_ref(), &query_report)
     } else {
         passed_actions(&target)
     };
@@ -303,7 +303,11 @@ fn check_actions(target: &str) -> Vec<VerifyAction> {
     }]
 }
 
-fn lint_actions(target: &str, checked_repair: Option<&CheckedLintRepair>) -> Vec<VerifyAction> {
+fn lint_actions(
+    target: &str,
+    checked_repair: Option<&CheckedLintRepair>,
+    query: &QueryReport,
+) -> Vec<VerifyAction> {
     let mut actions = vec![
         VerifyAction {
             kind: "repair_lint_findings".to_string(),
@@ -335,6 +339,9 @@ fn lint_actions(target: &str, checked_repair: Option<&CheckedLintRepair>) -> Vec
         command: command(["sley", "query", "--json", "--kind", "tasks", target]),
         write_command: None,
     });
+    if !query.calls.is_empty() {
+        actions.push(inspect_calls_action(target));
+    }
     actions
 }
 
@@ -359,6 +366,15 @@ fn runtime_actions(target: &str) -> Vec<VerifyAction> {
         command: command(["sley", "run", "--json", target]),
         write_command: None,
     }]
+}
+
+fn inspect_calls_action(target: &str) -> VerifyAction {
+    VerifyAction {
+        kind: "inspect_calls".to_string(),
+        reason: "strict call rows show caller/callee edges before warning repair".to_string(),
+        command: command(["sley", "query", "--json", "--kind", "calls", target]),
+        write_command: None,
+    }
 }
 
 fn passed_actions(target: &str) -> Vec<VerifyAction> {
