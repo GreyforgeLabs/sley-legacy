@@ -58,6 +58,8 @@ here. Dates use UTC-independent calendar dates from the local repo history.
   missing imported tasks are diagnosed without requiring a save.
 - `sley-lsp` now exposes definition jumps for imported modules and resolved
   task calls across project files.
+- `sley-lsp` now returns deterministic completions for Sley keywords, host
+  calls, project modules, local tasks, and visible imported tasks.
 - `sley-lsp` declaration hover now includes module, return type, takes,
   effects, export status, and node IDs for editor-side inspection.
 - Added `make public-release-check` as the explicit failing gate for public
