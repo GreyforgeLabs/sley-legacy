@@ -142,21 +142,6 @@
       "editable_json_pointers": [
         "/payload/source"
       ]
-    },
-    {
-      "target": "block:task:main.main:stmt:0",
-      "target_kind": "statement",
-      "parent": "block:task:main.main",
-      "operation": {
-        "op": "ReplaceStatement",
-        "payload": {
-          "source": "return 1"
-        },
-        "target": "block:task:main.main:stmt:0"
-      },
-      "editable_json_pointers": [
-        "/payload/source"
-      ]
     }
   ],
   "outbound_calls": [],

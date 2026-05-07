@@ -2254,6 +2254,15 @@ fn direct_graph_slice_graft_templates(
     templates.extend(graph_slice_move_templates(program, surface));
     templates.extend(graph_slice_delete_templates(program, surface));
     templates.extend(graph_slice_replace_templates(program, surface));
+    if let Some(template) = statement_surface_replace_template(program, requested_surface) {
+        let already_present = templates.iter().any(|existing| {
+            existing.kind == "replace_statement"
+                && operation_target(&existing.operation) == Some(requested_surface)
+        });
+        if !already_present {
+            templates.push(template);
+        }
+    }
     let templates = templates
         .into_iter()
         .filter(|template| operation_target(&template.operation) == Some(requested_surface))
@@ -2267,6 +2276,32 @@ fn direct_graph_slice_graft_templates(
     } else {
         Some(templates)
     }
+}
+
+fn statement_surface_replace_template(
+    program: &Program,
+    requested_surface: &str,
+) -> Option<EditPlanGraftTemplate> {
+    let location = find_statement_location(program, requested_surface)?;
+    let operation = json!({
+        "op": "ReplaceStatement",
+        "target": requested_surface,
+        "payload": {
+            "source": format_statement_source(location.statement)
+        }
+    });
+    if !replace_affordance_checks(program, &operation) {
+        return None;
+    }
+    Some(EditPlanGraftTemplate {
+        kind: "replace_statement".to_string(),
+        reason:
+            "replace this statement using a checked no-op starter graft; edit /payload/source before applying"
+                .to_string(),
+        surface: requested_surface.to_string(),
+        operation,
+        editable_json_pointers: vec!["/payload/source".to_string()],
+    })
 }
 
 fn owning_task_surface_id(surface: &str) -> Option<&str> {

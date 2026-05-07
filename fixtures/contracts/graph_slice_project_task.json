@@ -282,21 +282,6 @@
       "editable_json_pointers": [
         "/payload/source"
       ]
-    },
-    {
-      "target": "block:task:app.main.main:stmt:0",
-      "target_kind": "statement",
-      "parent": "block:task:app.main.main",
-      "operation": {
-        "op": "ReplaceStatement",
-        "payload": {
-          "source": "return call math.double(21)"
-        },
-        "target": "block:task:app.main.main:stmt:0"
-      },
-      "editable_json_pointers": [
-        "/payload/source"
-      ]
     }
   ],
   "outbound_calls": [

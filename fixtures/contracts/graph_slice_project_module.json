@@ -181,21 +181,6 @@
       "editable_json_pointers": [
         "/payload/source"
       ]
-    },
-    {
-      "target": "block:task:app.math.double:stmt:0",
-      "target_kind": "statement",
-      "parent": "block:task:app.math.double",
-      "operation": {
-        "op": "ReplaceStatement",
-        "payload": {
-          "source": "return value * 2"
-        },
-        "target": "block:task:app.math.double:stmt:0"
-      },
-      "editable_json_pointers": [
-        "/payload/source"
-      ]
     }
   ],
   "outbound_calls": [],

@@ -457,10 +457,12 @@ Current development phase:
   `sley plan --graft-templates` surfaces checked task-internal
   `delete_statement` and `delete_take` templates when the starter delete graft
   validates
-- graph slices expose `replace_affordances` for task-local
+- graph slices expose `replace_affordances` for task-local non-return
   `ReplaceStatement` and `ReplaceExpression` planning; `sley plan
   --graft-templates` surfaces checked `replace_statement` and
-  `replace_expression` templates when the starter replace graft validates
+  `replace_expression` templates when the starter replace graft validates;
+  direct statement surfaces can still emit checked no-op `ReplaceStatement`
+  starters
 - `sley plan --graft-templates --template-surface program` surfaces checked
   declaration starters for `add_task`, `add_type_declaration`, and
   `add_effect_declaration`; source-backed declaration starters can be executed
