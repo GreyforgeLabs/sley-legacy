@@ -10026,7 +10026,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(115))
+        Some(&serde_json::json!(116))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -10302,7 +10302,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/contract_fixture_count"),
-        Some(&serde_json::json!(115))
+        Some(&serde_json::json!(116))
     );
     assert_eq!(
         report_json.pointer("/summary/corpus_accepted_count"),
@@ -10402,12 +10402,19 @@ fn conformance_report_summarizes_release_surface() {
         report_json
             .pointer("/smoke/required_tags")
             .and_then(|value| value.as_array())
+            .is_some_and(|tags| tags.iter().any(|tag| tag == "migrate:naming-cleanup")),
+        "conformance report should require imported-call naming cleanup migration smoke coverage"
+    );
+    assert!(
+        report_json
+            .pointer("/smoke/required_tags")
+            .and_then(|value| value.as_array())
             .is_some_and(|tags| tags.iter().any(|tag| tag == "migrate:schema-drift")),
         "conformance report should require migration schema drift smoke coverage"
     );
     assert_eq!(
         report_json.pointer("/summary/smoke_case_count"),
-        Some(&serde_json::json!(447))
+        Some(&serde_json::json!(448))
     );
     assert_eq!(
         report_json.pointer("/summary/onboarding_path_count"),
@@ -22423,6 +22430,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "contract:validate",
         "contract:check-fixtures",
         "contract:inspect-deploy-artifacts",
+        "migrate:naming-cleanup",
         "migrate:raw-host-adapter",
         "migrate:unchecked-result",
         "agent-bench:unused-private-task-repair",

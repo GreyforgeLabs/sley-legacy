@@ -1478,9 +1478,9 @@ refuse generic data disguised as Sley artifacts before compression begins.
   JSON Schema files are still narrower v0 root contracts
 - `sley lint` currently ships warning-grade private-task graph rules, authority
   hygiene for unused declared effects, private declaration/import/API hygiene,
-  raw-host-adapter and unchecked-result migration warnings with checked
-  expression and binding propagation templates, unqualified imported-call
-  qualification templates,
+  raw-host-adapter, imported-call naming, and unchecked-result migration
+  warnings with checked expression and binding propagation templates,
+  unqualified imported-call qualification templates,
   unused pure binding cleanup templates, unused pure expression statement
   cleanup templates, self-assignment statement cleanup templates, overwritten
   set statement cleanup templates,

@@ -1,0 +1,59 @@
+{
+  "schema": "sley.migrate.report.v0",
+  "status": "migrations",
+  "target": "examples/unqualified_import_call_project",
+  "source_schema": "sley.edit_plan.report.v0",
+  "summary": {
+    "diagnostic_count": 0,
+    "migration_count": 1,
+    "raw_host_adapter_count": 0,
+    "module_declaration_count": 0,
+    "naming_cleanup_count": 1,
+    "result_propagation_count": 0,
+    "schema_drift_count": 0,
+    "issue_count": 0
+  },
+  "migrations": [
+    {
+      "kind": "qualify_imported_call",
+      "category": "naming_cleanup",
+      "surface": "block:task:app.main.main:stmt:0:expr",
+      "reason": "qualify this imported task call so future imports cannot change simple-name resolution",
+      "dry_run_command": [
+        "sley",
+        "fix",
+        "--json",
+        "--kind",
+        "qualify_imported_call",
+        "--template-surface",
+        "block:task:app.main.main:stmt:0:expr",
+        "--dry-run",
+        "examples/unqualified_import_call_project"
+      ],
+      "write_command": [
+        "sley",
+        "fix",
+        "--json",
+        "--kind",
+        "qualify_imported_call",
+        "--template-surface",
+        "block:task:app.main.main:stmt:0:expr",
+        "--write",
+        "examples/unqualified_import_call_project"
+      ],
+      "editable_json_pointers": [
+        "/payload/source"
+      ],
+      "operation": {
+        "op": "ReplaceExpression",
+        "payload": {
+          "source": "call math.double(21)"
+        },
+        "target": "block:task:app.main.main:stmt:0:expr"
+      }
+    }
+  ],
+  "schema_drift": [],
+  "diagnostics": [],
+  "issues": []
+}

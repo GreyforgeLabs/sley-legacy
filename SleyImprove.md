@@ -182,8 +182,8 @@ Rules:
   release-manifest validation, conformance summary reporting, declared
   integration-test count drift, corpus conformance, packaged examples, CLI
   smokes, the focused LSP integration tests, deterministic workbench,
-  agent-bench, raw-host, unchecked-result expression, and unchecked-result
-  binding migration, docgen,
+  agent-bench, raw-host, imported-call naming, unchecked-result expression, and
+  unchecked-result binding migration, docgen,
   sandbox-runner, shadow, and ZJX tool replays.
 - `sley-conformance report` carries explicit required corpus and smoke release
   tags, inventories editor-shim package validation and the `make v1` target

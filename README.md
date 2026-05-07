@@ -460,8 +460,9 @@ Implemented now:
   smokes, explicit graft/fix trace receipts, trace seals over non-empty receipt
   chains, ZJX envelopes carrying graph digests and schema-backed trace
   receipts, ZJX tool reports, `sley-contract` inventory/validate/fixture-check
-  and deploy-artifact inspection, `sley-migrate` raw-host, schema-drift,
-  unchecked-result expression, and unchecked-result binding reports, `sley-ci`,
+  and deploy-artifact inspection, `sley-migrate` raw-host, imported-call
+  naming cleanup, schema-drift, unchecked-result expression, and
+  unchecked-result binding reports, `sley-ci`,
   `sley-conformance`, `sley-docgen`, `sley-workbench`,
   `sley-sandbox-runner`, `sley-shadow`, `sley-agent-bench`, `sley-zjx` utility
   reports, and `sley-lsp` help/startup, passed-verify next-actions for seal and ZJX handoff
@@ -488,8 +489,8 @@ Implemented now:
   conformance summary reporting, corpus conformance, packaged example
   conformance, CLI smoke conformance, the focused LSP integration tests,
   VS Code editor-shim validation, deterministic utility replays for workbench,
-  agent-bench, raw-host, unchecked-result expression, and unchecked-result
-  binding migration, docgen,
+  agent-bench, raw-host, imported-call naming, unchecked-result expression, and
+  unchecked-result binding migration, docgen,
   sandbox-runner, shadow replay, and ZJX tools, plus Tree-sitter syntax parsing
 - GitHub Actions and pre-commit entry points that run the same `make v1` gate
   through `.github/actions/sley-v1/action.yml`, `.github/workflows/v1.yml`,
