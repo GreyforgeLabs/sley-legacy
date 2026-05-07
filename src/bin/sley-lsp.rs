@@ -438,14 +438,36 @@ fn handle_hover(params: JsonValue, state: &ServerState) -> JsonValue {
     let Some(position) = params.get("position") else {
         return JsonValue::Null;
     };
-    let line = position
-        .get("line")
-        .and_then(JsonValue::as_u64)
-        .unwrap_or_default() as usize;
-    let Ok(program) = parse_program(&document.text) else {
+    let Some((line, character)) = position_line_and_character(position) else {
         return JsonValue::Null;
     };
-    hover_for_line(&program, &document.text, line).unwrap_or(JsonValue::Null)
+    let Ok(current_program) = parse_program(&document.text) else {
+        return JsonValue::Null;
+    };
+    let project = project_graph_for_document(&uri, &current_program, state);
+    let analysis_program = project
+        .as_ref()
+        .map(|project| &project.program)
+        .unwrap_or(&current_program);
+    if let Some((caller_module, callee_name, range)) =
+        call_at_position(&current_program, &document.text, line, character)
+    {
+        match resolve_task(analysis_program, &caller_module, &callee_name) {
+            TaskResolution::Resolved { index, .. } => {
+                return hover_json(
+                    &task_call_hover(
+                        &analysis_program.tasks[index],
+                        analysis_program.module_name(),
+                        &callee_name,
+                    ),
+                    range,
+                );
+            }
+            TaskResolution::Unknown | TaskResolution::Ambiguous(_) | TaskResolution::Private(_) => {
+            }
+        }
+    }
+    hover_for_line(&current_program, &document.text, line).unwrap_or(JsonValue::Null)
 }
 
 fn handle_definition(params: JsonValue, state: &ServerState) -> JsonValue {
@@ -1577,6 +1599,34 @@ fn task_hover(task: &TaskDecl, default_module: &str) -> String {
         task.module.as_deref().unwrap_or(default_module),
         task.return_type.display(),
         task.id
+    )
+}
+
+fn task_call_hover(task: &TaskDecl, default_module: &str, callee_name: &str) -> String {
+    let parameter_labels = task
+        .takes
+        .iter()
+        .map(|take| format!("{}: {}", take.name, take.ty.display()))
+        .collect::<Vec<_>>();
+    let signature = format!(
+        "{callee_name}({}) -> {}",
+        parameter_labels.join(", "),
+        task.return_type.display()
+    );
+    let effects = if task.effects.is_empty() {
+        "none".to_string()
+    } else {
+        task.effects
+            .iter()
+            .map(|effect| format!("`{effect}`"))
+            .collect::<Vec<_>>()
+            .join(", ")
+    };
+    let visibility = if task.exported { "exported" } else { "private" };
+    let task_module = task.module.as_deref().unwrap_or(default_module);
+    format!(
+        "call `{callee_name}`\n\nresolved task: `{}.{}`\nsignature: `{signature}`\nvisibility: `{visibility}`\neffects: {effects}\nnode: `{}`",
+        task_module, task.name, task.id
     )
 }
 

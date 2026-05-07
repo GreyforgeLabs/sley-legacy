@@ -58,6 +58,8 @@ here. Dates use UTC-independent calendar dates from the local repo history.
   missing imported tasks are diagnosed without requiring a save.
 - `sley-lsp` now republishes diagnostics for all open project buffers after an
   open-buffer change, so dependent files react to unsaved imported-module edits.
+- `sley-lsp` hover now resolves project task call sites to their target task
+  signature, visibility, effect list, and node id.
 - `sley-lsp` now exposes definition jumps for imported modules and resolved
   task calls across project files.
 - `sley-lsp` now exposes project-aware document links from import module names
