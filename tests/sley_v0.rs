@@ -9618,11 +9618,11 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/integration_test_count"),
-        Some(&serde_json::json!(313))
+        Some(&serde_json::json!(314))
     );
     assert_eq!(
         report_json.pointer("/summary/declared_integration_test_count"),
-        Some(&serde_json::json!(313))
+        Some(&serde_json::json!(314))
     );
     assert_eq!(
         report_json.pointer("/summary/test_count_matches_declared"),
@@ -9634,7 +9634,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/tests/integration_test_count"),
-        Some(&serde_json::json!(313))
+        Some(&serde_json::json!(314))
     );
     assert_eq!(
         report_json.pointer("/tests/declared_matches_actual"),
@@ -14513,6 +14513,43 @@ task main -> Result<Text, Error> uses Spend {
         spend,
         "Spend",
         "infra/budget",
+    );
+}
+
+#[test]
+fn runtime_database_alias_scopes_reject_nonmatching_tables() {
+    let mut read = RuntimeGates::new();
+    read.grant_effect_scope("DbRead", "tenant_");
+    read.grant_db_rows(
+        "users",
+        vec![db_row([
+            ("id", Value::Text("u1".to_string())),
+            ("name", Value::Text("Ada".to_string())),
+        ])],
+    );
+    assert_scope_denied(
+        r#"
+task main -> Result<Text, Error> uses DbRead {
+  bind row = call db.try_query_one("select * from users where id = ?", "u1")?
+  return Ok(row.text("name"))
+}
+"#,
+        read,
+        "DbRead",
+        "users",
+    );
+
+    let mut write = RuntimeGates::new();
+    write.grant_effect_scope("DbWrite", "tenant_");
+    assert_scope_denied(
+        r#"
+task main -> Result<DbRow, Error> uses DbWrite {
+  return call db.try_insert("users", { id: "u1" })
+}
+"#,
+        write,
+        "DbWrite",
+        "users",
     );
 }
 
