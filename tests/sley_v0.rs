@@ -11343,6 +11343,22 @@ fn conformance_report_summarizes_release_surface() {
             .and_then(|value| value.as_array())
             .is_some_and(|tags| tags
                 .iter()
+                .any(|tag| tag == "ci:deploy-runtime-diagnostics")),
+        "conformance report should require sley-ci deploy runtime diagnostic coverage"
+    );
+    assert!(
+        report_json
+            .pointer("/smoke/required_tags")
+            .and_then(|value| value.as_array())
+            .is_some_and(|tags| tags.iter().any(|tag| tag == "ci:deploy-next-actions")),
+        "conformance report should require sley-ci deploy next-action coverage"
+    );
+    assert!(
+        report_json
+            .pointer("/smoke/required_tags")
+            .and_then(|value| value.as_array())
+            .is_some_and(|tags| tags
+                .iter()
                 .any(|tag| tag == "ci:verify-runtime-diagnostics")),
         "conformance report should require sley-ci verify runtime diagnostic coverage"
     );
@@ -11382,12 +11398,21 @@ fn conformance_report_summarizes_release_surface() {
             .and_then(|value| value.as_array())
             .is_some_and(|tags| tags
                 .iter()
+                .any(|tag| tag == "readiness:deploy-runtime-retry")),
+        "conformance report should require runtime-failed deploy retry smoke coverage"
+    );
+    assert!(
+        report_json
+            .pointer("/smoke/required_tags")
+            .and_then(|value| value.as_array())
+            .is_some_and(|tags| tags
+                .iter()
                 .any(|tag| tag == "readiness:verify-runtime-retry")),
         "conformance report should require runtime-failed verify retry smoke coverage"
     );
     assert_eq!(
         report_json.pointer("/summary/smoke_case_count"),
-        Some(&serde_json::json!(472))
+        Some(&serde_json::json!(473))
     );
     assert_eq!(
         report_json.pointer("/summary/onboarding_path_count"),
@@ -12202,6 +12227,48 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     assert_eq!(
         blocked_runtime_verify_json.pointer("/steps/0/next_actions/1/kind"),
         Some(&serde_json::json!("run_runtime_with_gates"))
+    );
+
+    let blocked_runtime_deploy = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
+        .current_dir(&repo_root)
+        .args([
+            "deploy",
+            "--json",
+            "--dry-run",
+            "examples/agent_deploy_pipeline.sley",
+        ])
+        .output()
+        .expect("run blocked runtime sley-ci deploy");
+    assert!(
+        !blocked_runtime_deploy.status.success(),
+        "sley-ci deploy without runtime gates should fail"
+    );
+    let blocked_runtime_deploy_json: serde_json::Value =
+        serde_json::from_slice(&blocked_runtime_deploy.stdout)
+            .expect("parse blocked runtime sley-ci deploy JSON");
+    assert_eq!(
+        blocked_runtime_deploy_json.pointer("/steps/0/stdout_schema"),
+        Some(&serde_json::json!("sley.deploy.report.v0"))
+    );
+    assert_eq!(
+        blocked_runtime_deploy_json.pointer("/steps/0/diagnostics/0/id"),
+        Some(&serde_json::json!("RUNTIME_CAPABILITY_REQUIRED"))
+    );
+    assert_eq!(
+        blocked_runtime_deploy_json.pointer("/steps/0/next_actions/0/kind"),
+        Some(&serde_json::json!("verify_runtime_with_gates"))
+    );
+    assert_eq!(
+        blocked_runtime_deploy_json.pointer("/steps/0/next_actions/1/kind"),
+        Some(&serde_json::json!("run_runtime_with_gates"))
+    );
+    assert_eq!(
+        blocked_runtime_deploy_json.pointer("/steps/0/next_actions/2/kind"),
+        Some(&serde_json::json!("repair_verify_gate"))
+    );
+    assert_eq!(
+        blocked_runtime_deploy_json.pointer("/steps/0/next_actions/3/kind"),
+        Some(&serde_json::json!("inspect_readiness"))
     );
 
     let stable_deploy = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
@@ -24010,6 +24077,8 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "agent-bench:unused-private-task-repair",
         "ci:corpus",
         "ci:lint",
+        "ci:deploy-next-actions",
+        "ci:deploy-runtime-diagnostics",
         "ci:verify-next-actions",
         "ci:verify-runtime-diagnostics",
         "conformance:coverage",
@@ -24240,6 +24309,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:project-import-write-verify",
         "readiness:remove-take-transaction-write-verify",
         "readiness:verify-package-next-action",
+        "readiness:deploy-runtime-retry",
         "readiness:verify-runtime-retry",
         "scaffold:agent-quickstart",
         "scaffold:deploy-quickstart",

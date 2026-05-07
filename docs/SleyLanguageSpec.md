@@ -734,6 +734,10 @@ visible in wrapper output.
 Failed wrapped verify reports also copy their structured `next_actions` into the
 CI step, preserving retry and repair commands for agents that only consume
 `sley-ci` output.
+Failed wrapped deploy dry-runs summarize nested verify runtime diagnostics and
+copy nested verify `next_actions` before deploy-level repair actions, so agents
+can retry blocked deploy packages with the exact required runtime gates from
+the CI report alone.
 When a wrapped step emits `schema: "sley.lint.report.v0"` or a report with
 nested lint findings such as doctor, edit-plan, or verify, non-empty lint findings are
 summarized directly on the CI step by ID, rule, severity, message, node,
