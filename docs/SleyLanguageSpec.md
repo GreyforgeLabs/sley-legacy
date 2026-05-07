@@ -694,8 +694,9 @@ schemas pin inventory, fixture root-check, and single-report root-match
 results. Symbol graph, graph slice, and query schemas also pin module
 import/declaration summary shapes so agents can rely on stable import node ids
 for graft targets. The edit-plan schema pins strict graft operation and
-transaction template envelopes, and graph-slice add/insert/move/delete/replace
-affordance operations reuse that strict graft operation schema. Graph-slice
+transaction template envelopes, and
+graph-slice add/insert/move/delete/replace/call-site affordance operations
+reuse that strict graft operation schema. Graph-slice
 focus, optional task, and inbound/outbound call summaries reuse AST and query report
 contracts. The graft outcome schema pins strict accepted provenance records.
 The trace receipt schema pins the JSONL receipt record for accepted write
@@ -948,8 +949,9 @@ pointers naming the fields an agent should edit before running
 and adds `move_statement`/`move_take` templates plus destination variants from
 checked `move_affordances`, and checked `delete_statement`/`delete_take`
 templates from `delete_affordances` when the starter delete graft validates,
-plus checked `replace_statement` and `replace_expression` templates from
-`replace_affordances` when the starter replace graft validates. Module and
+checked `replace_statement` and `replace_expression` templates from
+`replace_affordances`, and checked `update_call_sites` templates from
+`call_site_affordances` when those starter grafts validate. Module and
 module declaration-list surfaces also consume module-scoped `add_affordances`
 for checked `add_import`, `add_type_declaration`, `add_effect_declaration`,
 and `add_task` starters. Direct
@@ -1214,6 +1216,11 @@ non-return `ReplaceStatement` and `ReplaceExpression` planning; each replace
 affordance exposes the exact statement or expression target, target kind,
 parent node id, starter operation JSON, and editable `/payload/source` pointer
 only when the graft checker accepts the starter.
+Graph slices also include checked `call_site_affordances` for resolved
+task-local calls. Each call-site affordance exposes the call expression id,
+resolved task target, caller task, raw callee text, starter `UpdateCallSites`
+operation JSON, and editable `/payload/replacement` plus `/payload/scope`
+pointers only when the graft checker accepts the starter.
 Call-site, statement, and expression grafts now consume node ids and task
 identities from this shard.
 

@@ -1812,6 +1812,8 @@
         "graph-slice:move-affordances",
         "graph-slice:replace-affordances",
         "graph-slice:checked-replace-affordances",
+        "graph-slice:call-site-affordances",
+        "graph-slice:checked-call-site-affordances",
         "json:sley.symbol_graph.slice.v0"
       ],
       "expect": {
@@ -1837,7 +1839,11 @@
           { "pointer": "/move_affordances/2/target_kind", "value": "task" },
           { "pointer": "/replace_affordances/0/target_kind", "value": "Call" },
           { "pointer": "/replace_affordances/0/operation/op", "value": "ReplaceExpression" },
-          { "pointer": "/replace_affordances/0/editable_json_pointers/0", "value": "/payload/source" }
+          { "pointer": "/replace_affordances/0/editable_json_pointers/0", "value": "/payload/source" },
+          { "pointer": "/call_site_affordances/0/target_kind", "value": "call_site" },
+          { "pointer": "/call_site_affordances/0/task_target", "value": "task:app.math.double" },
+          { "pointer": "/call_site_affordances/0/operation/op", "value": "UpdateCallSites" },
+          { "pointer": "/call_site_affordances/0/operation/payload/scope", "value": "task:app.main.main" }
         ],
         "stdout_json_absent": [
           "/move_affordances/1/destinations/0",
