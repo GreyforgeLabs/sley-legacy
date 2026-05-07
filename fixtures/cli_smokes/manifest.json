@@ -1831,14 +1831,14 @@
           { "pointer": "/move_affordances/0/target", "value": "block:task:app.main.main:stmt:0" },
           { "pointer": "/move_affordances/0/operation/op", "value": "MoveNode" },
           { "pointer": "/move_affordances/1/target_kind", "value": "import" },
-          { "pointer": "/move_affordances/1/destinations/0/operation/payload/parent", "value": "module:app.math:imports" },
           { "pointer": "/move_affordances/2/target_kind", "value": "task" },
-          { "pointer": "/move_affordances/2/destinations/0/operation/payload/parent", "value": "module:app.math:tasks" },
           { "pointer": "/replace_affordances/0/target_kind", "value": "Call" },
           { "pointer": "/replace_affordances/0/operation/op", "value": "ReplaceExpression" },
           { "pointer": "/replace_affordances/0/editable_json_pointers/0", "value": "/payload/source" }
         ],
         "stdout_json_absent": [
+          "/move_affordances/1/destinations/0",
+          "/move_affordances/2/destinations/0",
           "/delete_affordances/0"
         ]
       }
@@ -1875,11 +1875,46 @@
           { "pointer": "/add_affordances/2/operation/payload/module", "value": "app.math" },
           { "pointer": "/add_affordances/3/target", "value": "module:app.math:tasks" },
           { "pointer": "/add_affordances/3/operation/op", "value": "AddTask" },
-          { "pointer": "/move_affordances/2/destinations/0/operation/payload/parent", "value": "module:app.main:tasks" },
           { "pointer": "/replace_affordances/0/operation/op", "value": "ReplaceExpression" }
         ],
         "stdout_json_absent": [
+          "/move_affordances/2/destinations/0",
           "/delete_affordances/0"
+        ]
+      }
+    },
+    {
+      "name": "graph_checked_move_destination_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/graph-move/main.sley",
+          "content": "module app.move\n\nimport app.extra\n\ntask helper -> Int {\n  return 2\n}\n\ntask main -> Int {\n  return 1\n}\n"
+        }
+      ],
+      "args": ["graph", "--json", "--slice", "module:app.move", "{tmp}/graph-move/main.sley"],
+      "covers": [
+        "cli:graph-slice",
+        "cli:smoke-setup-files",
+        "graph-slice:move-affordances",
+        "graph-slice:checked-move-affordances",
+        "json:sley.symbol_graph.slice.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.symbol_graph.slice.v0" },
+          { "pointer": "/target", "value": "module:app.move" },
+          { "pointer": "/move_affordances/3/target", "value": "task:app.move.helper" },
+          { "pointer": "/move_affordances/3/target_kind", "value": "task" },
+          { "pointer": "/move_affordances/3/destinations/0/parent", "value": "module:app.extra:tasks" },
+          { "pointer": "/move_affordances/3/destinations/0/operation/op", "value": "MoveNode" },
+          { "pointer": "/move_affordances/3/destinations/0/operation/target", "value": "task:app.move.helper" },
+          { "pointer": "/move_affordances/3/destinations/0/operation/payload/parent", "value": "module:app.extra:tasks" },
+          { "pointer": "/move_affordances/4/target", "value": "task:app.move.main" }
+        ],
+        "stdout_json_absent": [
+          "/move_affordances/3/destinations/1",
+          "/move_affordances/4/destinations/0"
         ]
       }
     },

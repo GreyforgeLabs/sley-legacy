@@ -520,10 +520,11 @@ ids such as `type:app.module.Name`, `effect:app.module.Audit`, and
 `import:app.module:app.shared` use the same graph-slice move/delete
 affordance path scoped to the selected declaration.
 Graph slices also expose bounded `InsertStatement` affordances for task-local
-block insertion, plus bounded `MoveNode` affordances for import, type, effect,
-task, statement, and take movement planning, including exact parent ids and
-destination insertion limits, starter operation JSON, and editable JSON
-pointers. They also expose checker-filtered `DeleteNode` affordances for
+block insertion, plus checker-filtered `MoveNode` affordances for import, type,
+effect, task, statement, and take movement planning, including exact parent ids
+and checked destination insertion limits, starter operation JSON, and editable
+JSON pointers. Entry-module `main` task cross-module movement is not
+advertised. They also expose checker-filtered `DeleteNode` affordances for
 import, type, effect, task, statement, and take deletion planning, omitting
 entry-module `main` task deletion and any starter rejected by the graft oracle,
 plus `ReplaceStatement` affordances for whole task-local statement replacement
