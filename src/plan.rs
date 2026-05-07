@@ -3845,11 +3845,10 @@ fn replace_callee_leaf(callee: &str, new_leaf: &str) -> String {
 }
 
 fn default_return_statement(program: &Program, module: &str, return_type: &str) -> String {
-    if let Some(ok_type) = result_ok_type(return_type) {
-        return format!(
-            "return Ok({})",
-            default_expression_source(Some(program), module, ok_type)
-        );
+    if let Some(result_source) =
+        default_result_expression_source(Some(program), module, return_type, &mut HashSet::new())
+    {
+        return format!("return {result_source}");
     }
     format!(
         "return {}",
@@ -3873,6 +3872,10 @@ fn default_expression_source_inner(
         "Float" => "0.0".to_string(),
         "Text" => "\"\"".to_string(),
         "Bool" => "false".to_string(),
+        _ if result_type_args(trimmed).is_some() => {
+            default_result_expression_source(program, module, trimmed, visited)
+                .expect("checked Result type args should produce a default expression")
+        }
         _ => default_record_expression(program, module, trimmed, visited)
             .or_else(|| {
                 program.and_then(|program| {
@@ -3883,7 +3886,22 @@ fn default_expression_source_inner(
     }
 }
 
-fn result_ok_type(return_type: &str) -> Option<&str> {
+fn default_result_expression_source(
+    program: Option<&Program>,
+    module: &str,
+    ty: &str,
+    visited: &mut HashSet<String>,
+) -> Option<String> {
+    let (ok_type, _err_type) = result_type_args(ty)?;
+    let ok_source = default_expression_source_inner(program, module, ok_type, visited);
+    if default_source_needs_manual_value(&ok_source) {
+        Some("Err(\"\")".to_string())
+    } else {
+        Some(format!("Ok({ok_source})"))
+    }
+}
+
+fn result_type_args(return_type: &str) -> Option<(&str, &str)> {
     let trimmed = return_type.trim();
     let inner = trimmed.strip_prefix("Result<")?.strip_suffix('>')?.trim();
     let mut depth = 0usize;
@@ -3891,7 +3909,14 @@ fn result_ok_type(return_type: &str) -> Option<&str> {
         match ch {
             '<' => depth += 1,
             '>' => depth = depth.saturating_sub(1),
-            ',' if depth == 0 => return Some(inner[..index].trim()),
+            ',' if depth == 0 => {
+                let ok_type = inner[..index].trim();
+                let err_type = inner[index + 1..].trim();
+                if ok_type.is_empty() || err_type.is_empty() {
+                    return None;
+                }
+                return Some((ok_type, err_type));
+            }
             _ => {}
         }
     }
@@ -3921,6 +3946,10 @@ fn default_record_expression(
         ));
     }
     Some(format!("{{ {} }}", field_sources.join(", ")))
+}
+
+fn default_source_needs_manual_value(source: &str) -> bool {
+    source.contains("TODO_VALUE")
 }
 
 fn default_named_type_expression(

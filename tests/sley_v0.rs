@@ -1623,7 +1623,7 @@ task main -> User {
 }
 
 #[test]
-fn edit_plan_replace_task_body_template_falls_back_to_existing_checked_body() {
+fn edit_plan_replace_task_body_template_uses_checked_body_defaults() {
     let unit_source = r#"
 module app.plan
 
@@ -1693,9 +1693,7 @@ task main -> Result<Unit, Error> uses FileWrite {
         result_unit_template
             .operation
             .pointer("/payload/statements/0"),
-        Some(&serde_json::json!(
-            "return fs.try_write_text(\"build/out.txt\", \"ok\")"
-        ))
+        Some(&serde_json::json!("return Err(\"\")"))
     );
     assert!(
         !serde_json::to_string(&result_unit_template.operation)
@@ -9620,11 +9618,11 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/integration_test_count"),
-        Some(&serde_json::json!(310))
+        Some(&serde_json::json!(311))
     );
     assert_eq!(
         report_json.pointer("/summary/declared_integration_test_count"),
-        Some(&serde_json::json!(310))
+        Some(&serde_json::json!(311))
     );
     assert_eq!(
         report_json.pointer("/summary/test_count_matches_declared"),
@@ -9636,7 +9634,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/tests/integration_test_count"),
-        Some(&serde_json::json!(310))
+        Some(&serde_json::json!(311))
     );
     assert_eq!(
         report_json.pointer("/tests/declared_matches_actual"),
@@ -11588,6 +11586,46 @@ task side_effect_only -> Unit {
     );
     assert_has_repair_hint(&diagnostics, "MISSING_RETURN", "insert_return");
     assert_has_repair_hint(&diagnostics, "MISSING_RETURN", "replace_task_body");
+}
+
+#[test]
+fn checker_missing_result_unit_return_hints_use_checked_error_default() {
+    let source = r#"
+task main -> Result<Unit, Error> {
+  bind value = 1
+}
+"#;
+    let program = parse_program(source).expect("parse result unit missing return source");
+    let diagnostics = check_program(&program);
+    let diagnostic = diagnostics
+        .iter()
+        .find(|diagnostic| diagnostic.id == "MISSING_RETURN")
+        .unwrap_or_else(|| panic!("missing MISSING_RETURN diagnostic: {diagnostics:#?}"));
+    let insert_hint = diagnostic
+        .repair_hints
+        .iter()
+        .find(|hint| hint.kind == "insert_return")
+        .expect("insert_return hint");
+    assert_eq!(insert_hint.replacement.as_deref(), Some("return Err(\"\")"));
+
+    let replace_body_hint = diagnostic
+        .repair_hints
+        .iter()
+        .find(|hint| hint.kind == "replace_task_body")
+        .expect("replace_task_body hint");
+    let replacement = replace_body_hint
+        .replacement
+        .as_deref()
+        .expect("replace task body replacement");
+    assert!(
+        !replacement.contains("TODO_VALUE"),
+        "replacement should not leak TODO_VALUE: {replacement}"
+    );
+    let graft: GraftInput = serde_json::from_str(replacement).expect("parse replacement graft");
+    let outcome = apply_graft_input(&program, graft, Some("agent:test".to_string()));
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted = parse_program(&outcome.source.expect("grafted source")).expect("parse grafted");
+    assert!(!has_errors(&check_program(&grafted)));
 }
 
 #[test]
