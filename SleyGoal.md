@@ -109,7 +109,8 @@ Current verified surface:
   full-document sync, project-aware diagnostics over `sley.toml` workspaces
   with open-buffer overlays, formatting, document symbols, declaration
   metadata hover, workspace symbols, project completions, import/call
-  definition jumps, task references, project task rename edits, checked
+  definition jumps, task references, prepared cursor-aware project task rename
+  edits, checked
   edit-plan code actions, and a non-mutating `sley.fix.preview` command whose
   preview operations and transactions reuse the strict edit-plan graft
   contracts.

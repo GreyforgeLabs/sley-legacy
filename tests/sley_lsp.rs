@@ -63,7 +63,7 @@ fn lsp_publishes_diagnostics_formats_symbols_and_previews_code_actions() {
         Some(&json!(true))
     );
     assert_eq!(
-        initialized.pointer("/result/capabilities/renameProvider"),
+        initialized.pointer("/result/capabilities/renameProvider/prepareProvider"),
         Some(&json!(true))
     );
 
@@ -312,6 +312,10 @@ task main -> Text {
 task pair -> Text {
   return pipe.message() + pipe.message()
 }
+
+task mixed -> Text {
+  return pipe.message() + pipe.other()
+}
     "#;
     fs::write(&main_path, main_source).expect("write LSP main module");
     fs::write(
@@ -320,6 +324,10 @@ task pair -> Text {
 
 export task message -> Text {
   return "ready"
+}
+
+export task other -> Text {
+  return "other"
 }
 "#,
     )
@@ -474,6 +482,41 @@ export task message -> Text {
         json!({
             "jsonrpc": "2.0",
             "id": 5,
+            "method": "textDocument/prepareRename",
+            "params": {
+                "textDocument": {
+                    "uri": main_uri
+                },
+                "position": {
+                    "line": 6,
+                    "character": 20
+                }
+            }
+        }),
+    );
+    let prepare_rename = read_response(&mut reader, 5);
+    assert_eq!(
+        prepare_rename.pointer("/result/placeholder"),
+        Some(&json!("message"))
+    );
+    assert_eq!(
+        prepare_rename.pointer("/result/range/start/line"),
+        Some(&json!(6))
+    );
+    assert_eq!(
+        prepare_rename.pointer("/result/range/start/character"),
+        Some(&json!(19))
+    );
+    assert_eq!(
+        prepare_rename.pointer("/result/range/end/character"),
+        Some(&json!(26))
+    );
+
+    write_lsp(
+        &mut stdin,
+        json!({
+            "jsonrpc": "2.0",
+            "id": 6,
             "method": "textDocument/rename",
             "params": {
                 "textDocument": {
@@ -487,7 +530,7 @@ export task message -> Text {
             }
         }),
     );
-    let rename = read_response(&mut reader, 5);
+    let rename = read_response(&mut reader, 6);
     let edits = workspace_edit_uri_lines_and_text(&rename);
     assert!(
         edits.contains(&(pipeline_uri.as_str(), 2, 12, "compose")),
@@ -509,12 +552,51 @@ export task message -> Text {
         edits.contains(&(main_uri.as_str(), 10, 31, "compose")),
         "rename should edit second same-line project call site, got {edits:?}"
     );
+    assert!(
+        edits.contains(&(main_uri.as_str(), 14, 14, "compose")),
+        "rename should edit mixed-line project call site, got {edits:?}"
+    );
+    assert!(
+        !edits.contains(&(main_uri.as_str(), 14, 31, "compose")),
+        "rename should not edit a different task on the same line, got {edits:?}"
+    );
 
     write_lsp(
         &mut stdin,
         json!({
             "jsonrpc": "2.0",
-            "id": 6,
+            "id": 7,
+            "method": "textDocument/prepareRename",
+            "params": {
+                "textDocument": {
+                    "uri": main_uri
+                },
+                "position": {
+                    "line": 14,
+                    "character": 33
+                }
+            }
+        }),
+    );
+    let prepare_other_rename = read_response(&mut reader, 7);
+    assert_eq!(
+        prepare_other_rename.pointer("/result/placeholder"),
+        Some(&json!("other"))
+    );
+    assert_eq!(
+        prepare_other_rename.pointer("/result/range/start/line"),
+        Some(&json!(14))
+    );
+    assert_eq!(
+        prepare_other_rename.pointer("/result/range/start/character"),
+        Some(&json!(31))
+    );
+
+    write_lsp(
+        &mut stdin,
+        json!({
+            "jsonrpc": "2.0",
+            "id": 8,
             "method": "textDocument/definition",
             "params": {
                 "textDocument": {
@@ -527,7 +609,7 @@ export task message -> Text {
             }
         }),
     );
-    let definition = read_response(&mut reader, 6);
+    let definition = read_response(&mut reader, 8);
     assert_eq!(
         definition.pointer("/result/0/uri"),
         Some(&json!(pipeline_uri))
@@ -541,7 +623,7 @@ export task message -> Text {
         &mut stdin,
         json!({
             "jsonrpc": "2.0",
-            "id": 7,
+            "id": 9,
             "method": "textDocument/definition",
             "params": {
                 "textDocument": {
@@ -554,7 +636,7 @@ export task message -> Text {
             }
         }),
     );
-    let import_definition = read_response(&mut reader, 7);
+    let import_definition = read_response(&mut reader, 9);
     assert_eq!(
         import_definition.pointer("/result/0/uri"),
         Some(&json!(pipeline_uri))
@@ -591,12 +673,12 @@ export task message -> Text {
         &mut stdin,
         json!({
             "jsonrpc": "2.0",
-            "id": 8,
+            "id": 10,
             "method": "shutdown",
             "params": null
         }),
     );
-    let shutdown = read_response(&mut reader, 8);
+    let shutdown = read_response(&mut reader, 10);
     assert!(shutdown.get("result").is_some());
     write_lsp(
         &mut stdin,

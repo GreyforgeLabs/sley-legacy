@@ -40,6 +40,16 @@ struct DocumentState {
     text: String,
 }
 
+struct RenameContext {
+    uri: String,
+    source: String,
+    current_program: Program,
+    project: Option<ProjectGraph>,
+    target_task_id: String,
+    old_name: String,
+    range: JsonValue,
+}
+
 impl ServerState {
     fn source_overlays(&self) -> HashMap<PathBuf, String> {
         self.documents
@@ -161,6 +171,11 @@ fn handle_message<W: Write>(
                 send_response(writer, id, handle_references(params, state))?;
             }
         }
+        "textDocument/prepareRename" => {
+            if let Some(id) = id {
+                send_response(writer, id, handle_prepare_rename(params, state))?;
+            }
+        }
         "textDocument/rename" => {
             if let Some(id) = id {
                 send_response(writer, id, handle_rename(params, state))?;
@@ -209,7 +224,9 @@ fn initialize_result() -> JsonValue {
             },
             "workspaceSymbolProvider": true,
             "referencesProvider": true,
-            "renameProvider": true,
+            "renameProvider": {
+                "prepareProvider": true
+            },
             "codeActionProvider": {
                 "resolveProvider": false,
                 "codeActionKinds": ["quickfix", "refactor.rewrite"]
@@ -499,6 +516,16 @@ fn handle_references(params: JsonValue, state: &ServerState) -> JsonValue {
     ))
 }
 
+fn handle_prepare_rename(params: JsonValue, state: &ServerState) -> JsonValue {
+    let Some(context) = rename_context_for_request(&params, state) else {
+        return JsonValue::Null;
+    };
+    json!({
+        "range": context.range,
+        "placeholder": context.old_name
+    })
+}
+
 fn handle_rename(params: JsonValue, state: &ServerState) -> JsonValue {
     let new_name = params
         .get("newName")
@@ -507,48 +534,23 @@ fn handle_rename(params: JsonValue, state: &ServerState) -> JsonValue {
     if !is_sley_identifier(new_name) {
         return JsonValue::Null;
     }
-    let Some(uri) = text_document_uri(&params) else {
+    let Some(context) = rename_context_for_request(&params, state) else {
         return JsonValue::Null;
     };
-    let Some(document) = state.documents.get(&uri) else {
-        return JsonValue::Null;
-    };
-    let Some(position) = params.get("position") else {
-        return JsonValue::Null;
-    };
-    let line = position
-        .get("line")
-        .and_then(JsonValue::as_u64)
-        .unwrap_or_default() as usize;
-    let Ok(current_program) = parse_program(&document.text) else {
-        return JsonValue::Null;
-    };
-    let project = project_graph_for_document(&uri, &current_program, state);
-    let analysis_program = project
+    let analysis_program = context
+        .project
         .as_ref()
         .map(|project| &project.program)
-        .unwrap_or(&current_program);
-    let Some(target_task_id) =
-        task_reference_target_at_line(&current_program, analysis_program, line)
-    else {
-        return JsonValue::Null;
-    };
-    let Some(target_task) = analysis_program
-        .tasks
-        .iter()
-        .find(|task| task.id == target_task_id)
-    else {
-        return JsonValue::Null;
-    };
+        .unwrap_or(&context.current_program);
     let changes = rename_edits_for_task(
-        &target_task_id,
-        &target_task.name,
+        &context.target_task_id,
+        &context.old_name,
         new_name,
         analysis_program,
-        project.as_ref(),
-        &uri,
-        &document.text,
-        &current_program,
+        context.project.as_ref(),
+        &context.uri,
+        &context.source,
+        &context.current_program,
         state,
     );
     if changes.is_empty() {
@@ -556,6 +558,43 @@ fn handle_rename(params: JsonValue, state: &ServerState) -> JsonValue {
     } else {
         json!({ "changes": changes })
     }
+}
+
+fn rename_context_for_request(params: &JsonValue, state: &ServerState) -> Option<RenameContext> {
+    let uri = text_document_uri(params)?;
+    let document = state.documents.get(&uri)?;
+    let (line, character) = position_line_and_character(params.get("position")?)?;
+    let current_program = parse_program(&document.text).ok()?;
+    let project = project_graph_for_document(&uri, &current_program, state);
+    let (target_task_id, old_name, range) = {
+        let analysis_program = project
+            .as_ref()
+            .map(|project| &project.program)
+            .unwrap_or(&current_program);
+        task_rename_target_at_position(
+            &current_program,
+            analysis_program,
+            &document.text,
+            line,
+            character,
+        )?
+    };
+    Some(RenameContext {
+        uri,
+        source: document.text.clone(),
+        current_program,
+        project,
+        target_task_id,
+        old_name,
+        range,
+    })
+}
+
+fn position_line_and_character(position: &JsonValue) -> Option<(usize, usize)> {
+    Some((
+        position.get("line")?.as_u64()? as usize,
+        position.get("character")?.as_u64()? as usize,
+    ))
 }
 
 fn handle_code_actions(params: JsonValue, state: &ServerState) -> JsonValue {
@@ -1275,6 +1314,31 @@ fn task_reference_target_at_line(
     let (caller_module, callee_name) = call_at_line(current_program, line)?;
     match resolve_task(analysis_program, &caller_module, &callee_name) {
         TaskResolution::Resolved { index, .. } => Some(analysis_program.tasks[index].id.clone()),
+        TaskResolution::Unknown | TaskResolution::Ambiguous(_) | TaskResolution::Private(_) => None,
+    }
+}
+
+fn task_rename_target_at_position(
+    current_program: &Program,
+    analysis_program: &Program,
+    source: &str,
+    line: usize,
+    character: usize,
+) -> Option<(String, String, JsonValue)> {
+    for task in &current_program.tasks {
+        if let Some(range) = range_for_task_name(source, task)
+            && position_in_range(&range, line, character)
+        {
+            return Some((task.id.clone(), task.name.clone(), range));
+        }
+    }
+    let (caller_module, callee_name, range) =
+        call_at_position(current_program, source, line, character)?;
+    match resolve_task(analysis_program, &caller_module, &callee_name) {
+        TaskResolution::Resolved { index, .. } => {
+            let task = &analysis_program.tasks[index];
+            Some((task.id.clone(), task.name.clone(), range))
+        }
         TaskResolution::Unknown | TaskResolution::Ambiguous(_) | TaskResolution::Private(_) => None,
     }
 }
@@ -2285,6 +2349,47 @@ fn range_for_byte_offsets(
     })
 }
 
+fn position_in_range(range: &JsonValue, line: usize, character: usize) -> bool {
+    let Some(start_line) = range
+        .pointer("/start/line")
+        .and_then(JsonValue::as_u64)
+        .map(|value| value as usize)
+    else {
+        return false;
+    };
+    let Some(start_character) = range
+        .pointer("/start/character")
+        .and_then(JsonValue::as_u64)
+        .map(|value| value as usize)
+    else {
+        return false;
+    };
+    let Some(end_line) = range
+        .pointer("/end/line")
+        .and_then(JsonValue::as_u64)
+        .map(|value| value as usize)
+    else {
+        return false;
+    };
+    let Some(end_character) = range
+        .pointer("/end/character")
+        .and_then(JsonValue::as_u64)
+        .map(|value| value as usize)
+    else {
+        return false;
+    };
+    if line < start_line || line > end_line {
+        return false;
+    }
+    if line == start_line && character < start_character {
+        return false;
+    }
+    if line == end_line && character > end_character {
+        return false;
+    }
+    true
+}
+
 fn byte_offset_for_character(line_text: &str, character: usize) -> usize {
     line_text
         .char_indices()
@@ -2330,6 +2435,13 @@ fn leading_span_for_expr(expr: &Expr) -> Option<&SourceSpan> {
         | ExprKind::BoolLiteral { .. }
         | ExprKind::Identifier { .. } => None,
     }
+}
+
+fn callee_leaf_name(callee_name: &str) -> &str {
+    callee_name
+        .rsplit_once('.')
+        .map(|(_, leaf)| leaf)
+        .unwrap_or(callee_name)
 }
 
 fn push_rename_edit(
@@ -2452,6 +2564,26 @@ fn call_at_line(program: &Program, line: usize) -> Option<(String, String)> {
     None
 }
 
+fn call_at_position(
+    program: &Program,
+    source: &str,
+    line: usize,
+    character: usize,
+) -> Option<(String, String, JsonValue)> {
+    for task in &program.tasks {
+        if let Some((callee_name, range)) =
+            call_in_statements_at_position(&task.body.statements, source, line, character)
+        {
+            let caller_module = task
+                .module
+                .clone()
+                .unwrap_or_else(|| program.module_name().to_string());
+            return Some((caller_module, callee_name, range));
+        }
+    }
+    None
+}
+
 fn call_in_statements_at_line(statements: &[Statement], line: usize) -> Option<String> {
     for statement in statements {
         match &statement.kind {
@@ -2510,6 +2642,80 @@ fn call_in_statements_at_line(statements: &[Statement], line: usize) -> Option<S
     None
 }
 
+fn call_in_statements_at_position(
+    statements: &[Statement],
+    source: &str,
+    line: usize,
+    character: usize,
+) -> Option<(String, JsonValue)> {
+    for statement in statements {
+        match &statement.kind {
+            StatementKind::Binding { expr, .. }
+            | StatementKind::Set { expr, .. }
+            | StatementKind::Return { expr }
+            | StatementKind::Expr { expr } => {
+                if let Some(call) = call_in_expr_at_position(expr, source, line, character) {
+                    return Some(call);
+                }
+            }
+            StatementKind::If {
+                condition,
+                then_block,
+                else_block,
+            } => {
+                if let Some(call) = call_in_expr_at_position(condition, source, line, character) {
+                    return Some(call);
+                }
+                if let Some(call) =
+                    call_in_statements_at_position(&then_block.statements, source, line, character)
+                {
+                    return Some(call);
+                }
+                if let Some(else_block) = else_block
+                    && let Some(call) = call_in_statements_at_position(
+                        &else_block.statements,
+                        source,
+                        line,
+                        character,
+                    )
+                {
+                    return Some(call);
+                }
+            }
+            StatementKind::While { condition, body } => {
+                if let Some(call) = call_in_expr_at_position(condition, source, line, character) {
+                    return Some(call);
+                }
+                if let Some(call) =
+                    call_in_statements_at_position(&body.statements, source, line, character)
+                {
+                    return Some(call);
+                }
+            }
+            StatementKind::For {
+                collection, body, ..
+            } => {
+                if let Some(call) = call_in_expr_at_position(collection, source, line, character) {
+                    return Some(call);
+                }
+                if let Some(call) =
+                    call_in_statements_at_position(&body.statements, source, line, character)
+                {
+                    return Some(call);
+                }
+            }
+            StatementKind::Forge { body } => {
+                if let Some(call) =
+                    call_in_statements_at_position(&body.statements, source, line, character)
+                {
+                    return Some(call);
+                }
+            }
+        }
+    }
+    None
+}
+
 fn call_in_expr_at_line(expr: &Expr, line: usize) -> Option<String> {
     match &expr.kind {
         ExprKind::Call { callee, args } => {
@@ -2547,6 +2753,67 @@ fn call_in_expr_at_line(expr: &Expr, line: usize) -> Option<String> {
         ExprKind::RecordLiteral { fields, .. } => fields
             .iter()
             .find_map(|field| call_in_expr_at_line(&field.expr, line)),
+        ExprKind::Raw { .. }
+        | ExprKind::StringLiteral { .. }
+        | ExprKind::IntLiteral { .. }
+        | ExprKind::FloatLiteral { .. }
+        | ExprKind::BoolLiteral { .. }
+        | ExprKind::Identifier { .. } => None,
+    }
+}
+
+fn call_in_expr_at_position(
+    expr: &Expr,
+    source: &str,
+    line: usize,
+    character: usize,
+) -> Option<(String, JsonValue)> {
+    match &expr.kind {
+        ExprKind::Call { callee, args } => {
+            if let Some(callee_name) = callee_path(callee) {
+                let leaf_name = callee_leaf_name(&callee_name);
+                if let Some(range) =
+                    range_for_callee_leaf(source, expr, callee, &callee_name, leaf_name)
+                    && position_in_range(&range, line, character)
+                {
+                    return Some((callee_name, range));
+                }
+            }
+            args.iter()
+                .find_map(|arg| call_in_expr_at_position(arg, source, line, character))
+                .or_else(|| call_in_expr_at_position(callee, source, line, character))
+        }
+        ExprKind::Unary { expr, .. } | ExprKind::Try { expr } => {
+            call_in_expr_at_position(expr, source, line, character)
+        }
+        ExprKind::Binary { left, right, .. } => {
+            call_in_expr_at_position(left, source, line, character)
+                .or_else(|| call_in_expr_at_position(right, source, line, character))
+        }
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => call_in_expr_at_position(condition, source, line, character)
+            .or_else(|| call_in_expr_at_position(then_branch, source, line, character))
+            .or_else(|| call_in_expr_at_position(else_branch, source, line, character)),
+        ExprKind::ListLiteral { items } => items
+            .iter()
+            .find_map(|item| call_in_expr_at_position(item, source, line, character)),
+        ExprKind::MapLiteral { entries } => entries.iter().find_map(|entry| {
+            call_in_expr_at_position(&entry.key, source, line, character)
+                .or_else(|| call_in_expr_at_position(&entry.value, source, line, character))
+        }),
+        ExprKind::Index { collection, index } => {
+            call_in_expr_at_position(collection, source, line, character)
+                .or_else(|| call_in_expr_at_position(index, source, line, character))
+        }
+        ExprKind::FieldAccess { receiver, .. } => {
+            call_in_expr_at_position(receiver, source, line, character)
+        }
+        ExprKind::RecordLiteral { fields, .. } => fields
+            .iter()
+            .find_map(|field| call_in_expr_at_position(&field.expr, source, line, character)),
         ExprKind::Raw { .. }
         | ExprKind::StringLiteral { .. }
         | ExprKind::IntLiteral { .. }
