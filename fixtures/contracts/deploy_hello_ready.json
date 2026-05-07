@@ -184,8 +184,6 @@
         "sley-contract",
         "inspect-deploy-artifacts",
         "artifacts",
-        "--schemas",
-        "docs/schemas",
         "--json"
       ]
     }

@@ -247,8 +247,6 @@ fn ready_actions(target: &str, artifacts: Option<&DeployArtifacts>) -> Vec<Deplo
                 "sley-contract",
                 "inspect-deploy-artifacts",
                 artifacts.directory.as_str(),
-                "--schemas",
-                "docs/schemas",
                 "--json",
             ]),
         });
