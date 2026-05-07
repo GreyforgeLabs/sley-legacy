@@ -1182,7 +1182,10 @@ report is printed.
 This is not production lint coverage yet. It is the first stable surface for
 agent-facing hygiene, authority lints, migration hints, and non-authoritative
 Sley helper passes such as `sley-shadow` that consume `sley.query.report.v0`
-and `sley.lint.report.v0`.
+and `sley.lint.report.v0`. Shadow lint links now include focused
+`sley plan --graft-templates --template-surface <node>` commands so agents can
+move from a query/lint replay into checked repair planning without treating the
+shadow report as semantic authority.
 
 ## Improvement 11: ZJX Boundary Discipline
 

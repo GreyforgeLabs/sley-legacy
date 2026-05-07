@@ -117,7 +117,8 @@
         "module",
         "linked",
         "target_kind",
-        "hint"
+        "hint",
+        "plan_command"
       ],
       "properties": {
         "finding_id": { "type": "string", "minLength": 1 },
@@ -129,9 +130,15 @@
           "enum": ["task", "type", "effect", "module", "unknown"]
         },
         "qualified_name": { "type": "string", "minLength": 1 },
-        "hint": { "type": "string" }
+        "hint": { "type": "string" },
+        "plan_command": { "$ref": "#/$defs/command" }
       },
       "additionalProperties": false
+    },
+    "command": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
     },
     "issue": {
       "type": "object",
