@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "Tree-sitter grammar for Sley source",
-  "license": "UNLICENSED",
+  "license": "Apache-2.0",
   "type": "commonjs",
   "scripts": {
     "generate": "tree-sitter generate",
