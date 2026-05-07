@@ -381,7 +381,10 @@ fn check_block(
                         .with_repair_hint(
                             RepairHint::new("use_mutable_binding_kind")
                                 .with_target(statement.id.clone())
-                                .with_replacement(format!("state {name} = <value>")),
+                                .with_replacement(format!(
+                                    "state {name} = {}",
+                                    default_expr_source_for_type(&expected, record_types)
+                                )),
                         ),
                     );
                 }
@@ -2240,10 +2243,7 @@ fn declare_binding_hint(task: &TaskDecl, name: &str, binding_kind: BindingKind) 
     };
     RepairHint::new(kind)
         .with_target(task.id.clone())
-        .with_replacement(format!(
-            "{} {name} = <value>",
-            binding_kind.as_source_keyword()
-        ))
+        .with_replacement(format!("{} {name} = 0", binding_kind.as_source_keyword()))
 }
 
 fn add_required_effect_hint(task: &TaskDecl, effect: &str) -> RepairHint {
