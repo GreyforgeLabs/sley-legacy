@@ -200,9 +200,9 @@ Rules:
   non-mutating `sley.fix.preview` payloads whose editor preview operations and
   transactions reuse the strict edit-plan graft contracts.
 - `sley-workbench` exposes a local read-only inspection report and optional
-  static HTML page over doctor/query/lint/plan/graph panels. Its report schema
-  links embedded panel rows back to the source doctor, query, lint, edit-plan,
-  graph, and graph-slice contracts.
+  static HTML page over doctor/query/lint/plan/graph/graph-slice panels. Its
+  report schema links embedded panel rows back to the source doctor, query,
+  lint, edit-plan, graph, and graph-slice contracts.
 - `sley-docgen` exposes checked Markdown reference generation over
   query-derived module, task, type, effect, and host capability docs. Its
   report schema reuses the strict query task/type/effect row definitions.

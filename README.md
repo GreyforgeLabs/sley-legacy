@@ -189,7 +189,7 @@ Implemented now:
   for editor repair previews
 - in-tree `sley-workbench` local inspection bootstrap that emits
   `schema: "sley.workbench.report.v0"` and optional static HTML over
-  doctor/query/lint/plan/graph panels without writing source files
+  doctor/query/lint/plan/graph/graph-slice panels without writing source files
 - in-tree `sley-docgen` reference generator that emits
   `schema: "sley.docgen.report.v0"` and optional Markdown over checked
   module, task, type, effect, and host capability reference data

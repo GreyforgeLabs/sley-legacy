@@ -185,8 +185,9 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
      - write mode disabled by default.
    - Current bootstrap: in-tree `src/bin/sley-workbench.rs` emits
      `schema: "sley.workbench.report.v0"` plus optional static HTML over
-     doctor/query/lint/plan/graph panels. It reads compiler data directly and
-     writes only the requested HTML report path, never source files.
+     doctor/query/lint/plan/graph/graph-slice panels. It reads compiler data
+     directly and writes only the requested HTML report path, never source
+     files.
    - Done when a developer can open `examples/project`, select a lint finding,
      preview the checked fix, and inspect the post-fix gate commands.
 
