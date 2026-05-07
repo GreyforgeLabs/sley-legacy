@@ -508,7 +508,11 @@ fn run(cli: Cli) -> Result<()> {
             if has_errors(&diagnostics) {
                 return emit_diagnostics_and_fail(diagnostics, json);
             }
-            if let Some(diagnostic) = query_module_filter_diagnostic(&program, module.as_deref()) {
+            if let Some(diagnostic) = module_filter_diagnostic(
+                &program,
+                module.as_deref(),
+                "QUERY_MODULE_FILTER_NOT_FOUND",
+            ) {
                 return emit_diagnostics_and_fail(vec![diagnostic], json);
             }
             let report = build_query_report(
@@ -540,6 +544,13 @@ fn run(cli: Cli) -> Result<()> {
             let diagnostics = check_program(&program);
             if has_errors(&diagnostics) {
                 return emit_diagnostics_and_fail(diagnostics, json);
+            }
+            if let Some(diagnostic) = module_filter_diagnostic(
+                &program,
+                module.as_deref(),
+                "LINT_MODULE_FILTER_NOT_FOUND",
+            ) {
+                return emit_diagnostics_and_fail(vec![diagnostic], json);
             }
             let report = build_lint_report(
                 &program,
@@ -2140,14 +2151,18 @@ fn emit_diagnostics_and_fail(diagnostics: Vec<Diagnostic>, json: bool) -> Result
     anyhow::bail!("operation failed")
 }
 
-fn query_module_filter_diagnostic(program: &Program, module: Option<&str>) -> Option<Diagnostic> {
+fn module_filter_diagnostic(
+    program: &Program,
+    module: Option<&str>,
+    code: &'static str,
+) -> Option<Diagnostic> {
     let module = module?;
     let graph = build_symbol_graph(program);
     if graph.modules.iter().any(|summary| summary.module == module) {
         return None;
     }
     Some(Diagnostic::error(
-        "QUERY_MODULE_FILTER_NOT_FOUND",
+        code,
         format!("module filter `{module}` did not match any checked module"),
     ))
 }

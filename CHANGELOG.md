@@ -187,6 +187,9 @@ here. Dates use UTC-independent calendar dates from the local repo history.
 - `sley query --module <module>` now rejects unknown checked project modules
   with `QUERY_MODULE_FILTER_NOT_FOUND` instead of returning an empty successful
   query report.
+- `sley lint --module <module>` now rejects unknown checked project modules
+  with `LINT_MODULE_FILTER_NOT_FOUND` instead of returning a clean lint report
+  for an empty slice.
 - Contract inventory now tracks 38 schemas, 110 contract fixtures, and 113 schema
   instances through the conformance report.
 - The Rust package metadata now declares its supported Rust floor, description,
