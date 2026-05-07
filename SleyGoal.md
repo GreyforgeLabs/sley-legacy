@@ -107,13 +107,13 @@ Current verified surface:
   plus accepted compiler corpus fixtures.
 - `sley-lsp` is available as an in-tree stdio language-server bootstrap with
   full-document sync, project-aware diagnostics over `sley.toml` workspaces
-  with open-buffer overlays, formatting, document symbols, declaration
-  metadata hover, folding ranges, workspace symbols, project completions,
-  import/call definition jumps, project task signature help, exact-range task
-  references, document highlights, import document links, prepared
-  cursor-aware project task rename edits, checked edit-plan code actions, and a
-  non-mutating `sley.fix.preview` command whose preview operations and
-  transactions reuse the strict edit-plan graft
+  with open-buffer overlays, all-open-buffer diagnostic refresh, formatting,
+  document symbols, declaration metadata hover, folding ranges, workspace
+  symbols, project completions, import/call definition jumps, project task
+  signature help, exact-range task references, document highlights, import
+  document links, prepared cursor-aware project task rename edits, checked
+  edit-plan code actions, and a non-mutating `sley.fix.preview` command whose
+  preview operations and transactions reuse the strict edit-plan graft
   contracts.
 - `sley-workbench` is available as an in-tree local inspection bootstrap with
   JSON and optional static HTML panels over doctor, query, lint, edit-plan, and

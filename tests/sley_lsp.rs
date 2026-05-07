@@ -373,9 +373,7 @@ task signature -> Text {
 }
     "#;
     fs::write(&main_path, main_source).expect("write LSP main module");
-    fs::write(
-        &pipeline_path,
-        r#"module app.pipeline
+    let pipeline_source = r#"module app.pipeline
 
 export task message -> Text {
   return "ready"
@@ -391,9 +389,8 @@ export task join -> Text {
 export task other -> Text {
   return "other"
 }
-"#,
-    )
-    .expect("write LSP pipeline module");
+"#;
+    fs::write(&pipeline_path, pipeline_source).expect("write LSP pipeline module");
 
     let mut child = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-lsp"))
         .stdin(Stdio::piped())
@@ -447,11 +444,33 @@ export task other -> Text {
             }
         }),
     );
-    let diagnostics = read_notification(&mut reader, "textDocument/publishDiagnostics");
+    let diagnostics = read_diagnostics_for_uri(&mut reader, &main_uri);
     assert_eq!(diagnostics.pointer("/params/uri"), Some(&json!(main_uri)));
     assert!(
         !diagnostic_codes(&diagnostics).contains(&"UNKNOWN_TASK"),
         "valid imported task should resolve with project context: {diagnostics:#}"
+    );
+
+    write_lsp(
+        &mut stdin,
+        json!({
+            "jsonrpc": "2.0",
+            "method": "textDocument/didOpen",
+            "params": {
+                "textDocument": {
+                    "uri": pipeline_uri,
+                    "languageId": "sley",
+                    "version": 1,
+                    "text": pipeline_source
+                }
+            }
+        }),
+    );
+    let _ = read_diagnostics_for_uri(&mut reader, &main_uri);
+    let pipeline_diagnostics = read_diagnostics_for_uri(&mut reader, &pipeline_uri);
+    assert!(
+        !diagnostic_codes(&pipeline_diagnostics).contains(&"UNKNOWN_TASK"),
+        "valid imported module should diagnose cleanly when opened: {pipeline_diagnostics:#}"
     );
 
     write_lsp(
@@ -837,6 +856,30 @@ export task other -> Text {
         Some(&json!(1))
     );
 
+    let changed_pipeline_source =
+        pipeline_source.replace("export task message", "export task absent");
+    write_lsp(
+        &mut stdin,
+        json!({
+            "jsonrpc": "2.0",
+            "method": "textDocument/didChange",
+            "params": {
+                "textDocument": {
+                    "uri": pipeline_uri,
+                    "version": 2
+                },
+                "contentChanges": [{
+                    "text": changed_pipeline_source
+                }]
+            }
+        }),
+    );
+    let dependent_diagnostics = read_diagnostics_for_uri(&mut reader, &main_uri);
+    assert!(
+        diagnostic_codes(&dependent_diagnostics).contains(&"UNKNOWN_TASK"),
+        "unsaved imported-module changes should refresh dependent main diagnostics: {dependent_diagnostics:#}"
+    );
+
     let changed_source = main_source.replace("pipe.message()", "pipe.missing()");
     write_lsp(
         &mut stdin,
@@ -854,7 +897,7 @@ export task other -> Text {
             }
         }),
     );
-    let diagnostics = read_notification(&mut reader, "textDocument/publishDiagnostics");
+    let diagnostics = read_diagnostics_for_uri(&mut reader, &main_uri);
     assert!(
         diagnostic_codes(&diagnostics).contains(&"UNKNOWN_TASK"),
         "unsaved missing imported task should be diagnosed: {diagnostics:#}"
@@ -1045,6 +1088,19 @@ fn read_notification(reader: &mut BufReader<ChildStdout>, method: &str) -> JsonV
         }
     }
     panic!("notification {method} not received");
+}
+
+fn read_diagnostics_for_uri(reader: &mut BufReader<ChildStdout>, uri: &str) -> JsonValue {
+    for _ in 0..40 {
+        let message = read_lsp(reader);
+        if message.get("method").and_then(JsonValue::as_str)
+            == Some("textDocument/publishDiagnostics")
+            && message.pointer("/params/uri").and_then(JsonValue::as_str) == Some(uri)
+        {
+            return message;
+        }
+    }
+    panic!("diagnostics for {uri} not received");
 }
 
 fn read_lsp(reader: &mut BufReader<ChildStdout>) -> JsonValue {
