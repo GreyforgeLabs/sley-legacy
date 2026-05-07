@@ -194,6 +194,8 @@ struct CiStep {
     #[serde(skip_serializing_if = "Vec::is_empty")]
     findings: Vec<CiLintFinding>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
+    next_actions: Vec<CiNextAction>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     covers: Vec<String>,
     issues: Vec<CiIssue>,
 }
@@ -216,6 +218,15 @@ struct CiLintFinding {
     node: String,
     module: String,
     hint: String,
+}
+
+#[derive(Debug, Serialize)]
+struct CiNextAction {
+    kind: String,
+    reason: String,
+    command: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    write_command: Option<Vec<String>>,
 }
 
 #[derive(Debug, Serialize)]
@@ -1000,6 +1011,7 @@ fn run_format_round_trip_step(
         stdout_schema: None,
         diagnostics: Vec::new(),
         findings: Vec::new(),
+        next_actions: Vec::new(),
         covers,
         issues,
     }
@@ -1090,6 +1102,7 @@ fn run_smoke_case(sley_bin: &Path, repo_root: &Path, tmp_root: &Path, case: &Smo
                 stdout_schema: None,
                 diagnostics: Vec::new(),
                 findings: Vec::new(),
+                next_actions: Vec::new(),
                 covers: case.covers.clone(),
                 issues: setup_issues,
             },
@@ -1113,6 +1126,7 @@ fn run_smoke_case(sley_bin: &Path, repo_root: &Path, tmp_root: &Path, case: &Smo
                     stdout_schema: None,
                     diagnostics: Vec::new(),
                     findings: Vec::new(),
+                    next_actions: Vec::new(),
                     covers: case.covers.clone(),
                     issues: vec![issue("unsupported_smoke_binary", message)],
                 },
@@ -1280,6 +1294,7 @@ fn run_binary_step(
                     stdout_schema: None,
                     diagnostics: Vec::new(),
                     findings: Vec::new(),
+                    next_actions: Vec::new(),
                     covers,
                     issues: vec![issue(
                         "command_spawn_failed",
@@ -1310,6 +1325,10 @@ fn run_binary_step(
         .as_ref()
         .map(|json| extract_step_findings(json, stdout_schema.as_deref()))
         .unwrap_or_default();
+    let next_actions = stdout_json
+        .as_ref()
+        .map(|json| extract_step_next_actions(json, stdout_schema.as_deref()))
+        .unwrap_or_default();
     let mut issues = Vec::new();
     if actual_success != expected_success {
         issues.push(issue(
@@ -1335,6 +1354,7 @@ fn run_binary_step(
             stdout_schema,
             diagnostics,
             findings,
+            next_actions,
             covers,
             issues,
         },
@@ -1407,6 +1427,43 @@ fn extract_step_findings(json: &JsonValue, stdout_schema: Option<&str>) -> Vec<C
                 .collect()
         })
         .unwrap_or_default()
+}
+
+fn extract_step_next_actions(json: &JsonValue, stdout_schema: Option<&str>) -> Vec<CiNextAction> {
+    if stdout_schema != Some("sley.verify.report.v0") {
+        return Vec::new();
+    }
+    if json.get("status").and_then(JsonValue::as_str) == Some("passed") {
+        return Vec::new();
+    }
+    json.pointer("/next_actions")
+        .and_then(JsonValue::as_array)
+        .map(|actions| {
+            actions
+                .iter()
+                .filter_map(|action| {
+                    let kind = action.get("kind").and_then(JsonValue::as_str)?;
+                    let reason = action.get("reason").and_then(JsonValue::as_str)?;
+                    let command = string_array(action.get("command")?)?;
+                    let write_command = action.get("write_command").and_then(string_array);
+                    Some(CiNextAction {
+                        kind: kind.into(),
+                        reason: reason.into(),
+                        command,
+                        write_command,
+                    })
+                })
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+fn string_array(value: &JsonValue) -> Option<Vec<String>> {
+    value
+        .as_array()?
+        .iter()
+        .map(|item| item.as_str().map(str::to_string))
+        .collect()
 }
 
 fn finalize_report(

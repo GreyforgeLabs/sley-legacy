@@ -11350,6 +11350,13 @@ fn conformance_report_summarizes_release_surface() {
         report_json
             .pointer("/smoke/required_tags")
             .and_then(|value| value.as_array())
+            .is_some_and(|tags| tags.iter().any(|tag| tag == "ci:verify-next-actions")),
+        "conformance report should require sley-ci verify next-action coverage"
+    );
+    assert!(
+        report_json
+            .pointer("/smoke/required_tags")
+            .and_then(|value| value.as_array())
             .is_some_and(|tags| tags
                 .iter()
                 .any(|tag| tag == "migrate:unchecked-result-binding")),
@@ -12187,6 +12194,14 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     assert_eq!(
         blocked_runtime_verify_json.pointer("/steps/0/diagnostics/0/severity"),
         Some(&serde_json::json!("error"))
+    );
+    assert_eq!(
+        blocked_runtime_verify_json.pointer("/steps/0/next_actions/0/kind"),
+        Some(&serde_json::json!("verify_runtime_with_gates"))
+    );
+    assert_eq!(
+        blocked_runtime_verify_json.pointer("/steps/0/next_actions/1/kind"),
+        Some(&serde_json::json!("run_runtime_with_gates"))
     );
 
     let stable_deploy = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
@@ -23995,6 +24010,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "agent-bench:unused-private-task-repair",
         "ci:corpus",
         "ci:lint",
+        "ci:verify-next-actions",
         "ci:verify-runtime-diagnostics",
         "conformance:coverage",
         "docgen:reference",
