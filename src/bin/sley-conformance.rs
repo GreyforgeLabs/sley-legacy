@@ -32,12 +32,16 @@ const DEFAULT_SMOKE_TAGS: &[&str] = &[
     "cli:trace",
     "cli:verify",
     "cli:zjx",
+    "diagnostic:RETURN_TYPE_MISMATCH",
+    "graft:templates:replace-task-body",
     "graph-slice:delete-affordances",
     "graph-slice:inbound-calls",
     "graph-slice:insert-affordances",
     "graph-slice:module-focus",
     "graph-slice:move-affordances",
     "graph-slice:replace-affordances",
+    "language:type-alias",
+    "language:type-alias-transparent",
 ];
 
 #[derive(Debug, Parser)]
