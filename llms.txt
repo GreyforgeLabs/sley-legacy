@@ -67,7 +67,8 @@ Agent rules:
 
 - Prefer structural grafts over raw text edits.
 - Run `check --json` after every proposed semantic change.
-- Use `graph --json --slice <node-id>` before planning a bounded graft.
+- Use `graph --json --slice <node-id>` before planning a bounded graft; checked
+  affordance arrays expose copyable starter graft JSON for structural edits.
 - Use `ast --json --node <node-id>` when exact task, statement, or expression
   shape matters; node reports use `schema: "sley.ast.node.v0"`.
 - Treat diagnostic `repair_hints` as suggestions, not authority bypasses.
@@ -229,8 +230,8 @@ checks through `make v1`.
 `make public-release-check` is the stricter final public-cut gate and is
 expected to fail until operator-controlled license and repository metadata
 decisions are settled.
-Graph-slice insert/move/delete/replace affordance operations reuse the strict
-graft operation schema from edit-plan reports.
+Graph-slice add/insert/move/delete/replace/call-site/call-argument affordance
+operations reuse the strict graft operation schema from edit-plan reports.
 Graph-slice focus, optional task, and inbound/outbound call summaries reuse
 AST and query report contracts.
 The trace report schema wraps trace receipt JSONL records for `sley trace --json`;
@@ -416,8 +417,8 @@ Current development phase:
   selected task graph-slice
   affordances are surfaced as checked
   `move_statement`/`move_take`, destination-variant, `delete_statement`,
-  `delete_take`, `replace_statement`, and `replace_expression` templates where
-  legal, or
+  `delete_take`, `replace_statement`, `replace_expression`,
+  `update_call_sites`, and `replace_call_arg` templates where legal, or
   `--template-surface <surface>` can target a specific task id, qualified task
   name, block node id, statement node id, take node id, expression node id, or
   lint finding node; selected task and block surfaces emit checked
@@ -513,6 +514,13 @@ Current development phase:
   `replace_expression` templates when the starter replace graft validates;
   direct statement surfaces can still emit checked no-op `ReplaceStatement`
   starters
+- graph slices expose `call_site_affordances` for resolved task-local
+  `UpdateCallSites` planning, including the call expression id, resolved task
+  target, raw callee text, starter operation JSON, and editable JSON pointers
+- graph slices expose `call_arg_affordances` for resolved task-local
+  `ReplaceCallArg` planning when the task/callee scope maps to exactly one
+  outbound call, including the argument id, call id, argument position, starter
+  operation JSON, and editable JSON pointers
 - `sley plan --graft-templates --template-surface program` surfaces checked
   declaration starters for `add_task`, `add_type_declaration`, and
   `add_effect_declaration`; source-backed declaration starters can be executed
