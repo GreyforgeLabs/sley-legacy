@@ -1129,9 +1129,10 @@ available destination parents with their insertion limits. Affordances and
 destination entries also carry strict starter `MoveNode` operation JSON plus
 editable JSON pointers so agents can copy a template, adjust
 `/payload/position`, and dry-run the graft. Graph slices also include
-`delete_affordances` for import, type, effect, task, statement, and take
-`DeleteNode` planning; each delete affordance exposes the exact target, current
-parent, current position, starter operation JSON, and editable pointer list.
+`delete_affordances` for import, type, effect, task, non-return statement, and
+take `DeleteNode` planning; each delete affordance exposes the exact target,
+current parent, current position, starter operation JSON, and editable pointer
+list.
 Graph slices also include task-local `replace_affordances` for
 `ReplaceStatement` and `ReplaceExpression` planning; each replace affordance
 exposes the exact statement or expression target, target kind, parent node id,

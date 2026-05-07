@@ -936,8 +936,8 @@
           { "pointer": "/move_affordances/2/target_kind", "value": "task" },
           { "pointer": "/move_affordances/2/destinations/0/operation/payload/parent", "value": "module:app.math:tasks" },
           { "pointer": "/delete_affordances/0/operation/op", "value": "DeleteNode" },
-          { "pointer": "/delete_affordances/1/target_kind", "value": "import" },
-          { "pointer": "/delete_affordances/2/target_kind", "value": "task" },
+          { "pointer": "/delete_affordances/0/target_kind", "value": "import" },
+          { "pointer": "/delete_affordances/1/target_kind", "value": "task" },
           { "pointer": "/replace_affordances/0/target_kind", "value": "Call" },
           { "pointer": "/replace_affordances/0/operation/op", "value": "ReplaceExpression" },
           { "pointer": "/replace_affordances/0/editable_json_pointers/0", "value": "/payload/source" }
@@ -967,7 +967,7 @@
           { "pointer": "/inbound_calls/0/from", "value": "app.main.main" },
           { "pointer": "/inbound_calls/0/target", "value": "app.math.double" },
           { "pointer": "/move_affordances/2/destinations/0/operation/payload/parent", "value": "module:app.main:tasks" },
-          { "pointer": "/delete_affordances/2/target", "value": "task:app.math.double" },
+          { "pointer": "/delete_affordances/1/target", "value": "task:app.math.double" },
           { "pointer": "/replace_affordances/3/operation/op", "value": "ReplaceStatement" }
         ]
       }

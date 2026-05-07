@@ -116,17 +116,6 @@
   ],
   "delete_affordances": [
     {
-      "target": "block:task:main.main:stmt:0",
-      "target_kind": "statement",
-      "parent": "block:task:main.main",
-      "position": 0,
-      "operation": {
-        "op": "DeleteNode",
-        "target": "block:task:main.main:stmt:0"
-      },
-      "editable_json_pointers": []
-    },
-    {
       "target": "task:main.main",
       "target_kind": "task",
       "parent": "module:main:tasks",

@@ -15456,6 +15456,13 @@ task main -> Int {
             "block:task:main.main:stmt:1:then:stmt:0"
         ))
     );
+    assert!(
+        !slice
+            .delete_affordances
+            .iter()
+            .any(|affordance| affordance.target == "block:task:main.main:stmt:2"),
+        "return statements should not be advertised as delete affordances"
+    );
 
     let replace_statement = slice
         .replace_affordances
