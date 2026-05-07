@@ -280,8 +280,8 @@ Current development phase:
 - checked lint reports are available through `sley lint --json` with root schema
   `sley.lint.report.v0`; private-task rules include `unused_private_task` and
   `unreachable_private_task`, the authority hygiene rule
-  `unused_declared_effect`, the import hygiene rule `unused_import`, the API
-  hygiene rule `unused_take`, the declaration hygiene rules
+  `unused_declared_effect`, the import hygiene rules `unused_import` and
+  `duplicate_import`, the API hygiene rule `unused_take`, the declaration hygiene rules
   `unused_private_type` and `unused_private_effect`, and the migration rule
   `raw_host_adapter`, plus the style rules `missing_module_declaration` and
   `unqualified_imported_call`, the local cleanup rule
@@ -361,7 +361,8 @@ Current development phase:
   templates for unused takes that validate through checked `RemoveTake`, and
   `remove_unused_declared_effect` templates for unused task-declared effects
   that validate through checked `RemoveTaskEffect`, and `delete_unused_import`
-  templates for unused imports that validate through checked `DeleteNode`, plus
+  or `delete_duplicate_import` templates for import hygiene that validate
+  through checked `DeleteNode`, plus
   `migrate_raw_host_adapter` templates for raw host calls that can safely move
   to fallible `try_` adapters with `?`, plus
   `propagate_unchecked_result` templates for discarded `Result` expression

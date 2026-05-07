@@ -3833,6 +3833,62 @@ fn edit_plan_graft_templates_include_unused_import_delete() {
 }
 
 #[test]
+fn edit_plan_graft_templates_include_duplicate_import_delete() {
+    let project = load_project(Path::new("examples/duplicate_import_project"))
+        .expect("load duplicate import project");
+    let report = build_edit_plan_report_with_options(
+        "examples/duplicate_import_project",
+        Ok(project.program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("import:app.main:app.shared".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(report.status, "warnings");
+    assert_eq!(report.summary.lint_finding_count, 1);
+    assert_eq!(
+        report.lint.as_ref().expect("lint summary").findings[0].id,
+        "DUPLICATE_IMPORT"
+    );
+    let template = report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "delete_duplicate_import")
+        .expect("duplicate import delete template");
+    assert_eq!(template.surface, "import:app.main:app.shared");
+    assert_eq!(
+        template.operation.pointer("/op"),
+        Some(&serde_json::json!("DeleteNode"))
+    );
+    assert_eq!(
+        template.operation.pointer("/target"),
+        Some(&serde_json::json!("import:app.main:app.shared"))
+    );
+    assert!(template.editable_json_pointers.is_empty());
+    let graft: GraftInput =
+        serde_json::from_value(template.operation.clone()).expect("parse duplicate import delete");
+    let outcome = apply_graft_input(
+        &project.program,
+        graft,
+        Some("agent:duplicate-import-template-test".to_string()),
+    );
+    assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
+    let grafted_source = outcome.source.expect("grafted source");
+    assert_eq!(grafted_source.matches("import app.shared").count(), 1);
+    let grafted_program = parse_program(&grafted_source).expect("parse grafted source");
+    let lint_report = build_lint_report(
+        &grafted_program,
+        LintOptions {
+            rules: vec![LintRule::DuplicateImport],
+            module: None,
+        },
+    );
+    assert_eq!(lint_report.status, "ok");
+}
+
+#[test]
 fn edit_plan_graft_templates_include_missing_module_fix() {
     let source = r#"task main -> Text {
   return "hello"
@@ -9483,6 +9539,20 @@ task main -> Text {
     );
     let _ = fs::remove_dir_all(unused_import_root);
 
+    let duplicate_import_project = load_project(Path::new("examples/duplicate_import_project"))
+        .expect("load duplicate import project");
+    let duplicate_import_lint = build_lint_report(
+        &duplicate_import_project.program,
+        LintOptions {
+            rules: vec![LintRule::DuplicateImport],
+            module: None,
+        },
+    );
+    assert_json_snapshot(
+        &duplicate_import_lint,
+        include_str!("../fixtures/contracts/lint_duplicate_import.json"),
+    );
+
     let unused_take_source = r#"
 module app.takes
 
@@ -10491,7 +10561,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(118))
+        Some(&serde_json::json!(119))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -10767,7 +10837,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/contract_fixture_count"),
-        Some(&serde_json::json!(118))
+        Some(&serde_json::json!(119))
     );
     assert_eq!(
         report_json.pointer("/summary/migration_fixture_count"),
@@ -10895,7 +10965,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/smoke_case_count"),
-        Some(&serde_json::json!(464))
+        Some(&serde_json::json!(469))
     );
     assert_eq!(
         report_json.pointer("/summary/onboarding_path_count"),
@@ -10907,15 +10977,15 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/example_source_count"),
-        Some(&serde_json::json!(72))
+        Some(&serde_json::json!(74))
     );
     assert_eq!(
         report_json.pointer("/summary/integration_test_count"),
-        Some(&serde_json::json!(329))
+        Some(&serde_json::json!(331))
     );
     assert_eq!(
         report_json.pointer("/summary/declared_integration_test_count"),
-        Some(&serde_json::json!(329))
+        Some(&serde_json::json!(331))
     );
     assert_eq!(
         report_json.pointer("/summary/test_count_matches_declared"),
@@ -10939,7 +11009,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/tests/integration_test_count"),
-        Some(&serde_json::json!(329))
+        Some(&serde_json::json!(331))
     );
     assert_eq!(
         report_json.pointer("/tests/declared_matches_actual"),
@@ -12125,7 +12195,7 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     );
     assert_eq!(
         examples_json.pointer("/summary/step_count"),
-        Some(&serde_json::json!(139))
+        Some(&serde_json::json!(142))
     );
     assert_eq!(
         examples_json.pointer("/steps/0/name"),
@@ -12137,16 +12207,22 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     );
     assert_eq!(
         examples_json.pointer("/steps/1/name"),
+        Some(&serde_json::json!(
+            "project_check:examples/duplicate_import_project"
+        ))
+    );
+    assert_eq!(
+        examples_json.pointer("/steps/2/name"),
         Some(&serde_json::json!("project_check:examples/project"))
     );
     assert_eq!(
-        examples_json.pointer("/steps/4/name"),
+        examples_json.pointer("/steps/5/name"),
         Some(&serde_json::json!(
             "file_check:examples/absorbing_arithmetic_expression.sley"
         ))
     );
     assert_eq!(
-        examples_json.pointer("/steps/67/name"),
+        examples_json.pointer("/steps/68/name"),
         Some(&serde_json::json!(
             "format_round_trip:examples/absorbing_arithmetic_expression.sley"
         ))
@@ -21235,6 +21311,46 @@ fn lint_report_flags_unused_imports() {
 }
 
 #[test]
+fn lint_report_flags_duplicate_imports() {
+    let project =
+        load_project(Path::new("examples/duplicate_import_project")).expect("load project");
+    let diagnostics = check_program(&project.program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+
+    let report = build_lint_report(
+        &project.program,
+        LintOptions {
+            rules: vec![LintRule::DuplicateImport],
+            module: None,
+        },
+    );
+
+    assert_eq!(report.schema, LINT_REPORT_SCHEMA);
+    assert_eq!(report.status, "findings");
+    assert_eq!(report.entry_module, "app.main");
+    assert_eq!(report.filters.rules, vec!["duplicate_import"]);
+    assert_eq!(report.findings.len(), 1);
+    assert_eq!(report.findings[0].id, "DUPLICATE_IMPORT");
+    assert_eq!(report.findings[0].rule, "duplicate_import");
+    assert_eq!(report.findings[0].node, "import:app.main:app.shared");
+    assert_eq!(report.findings[0].module, "app.main");
+    assert!(report.findings[0].message.contains("more than once"));
+
+    let scoped_report = build_lint_report(
+        &project.program,
+        LintOptions {
+            rules: vec![LintRule::DuplicateImport],
+            module: Some("app.shared".to_string()),
+        },
+    );
+    assert_eq!(scoped_report.status, "ok");
+    assert!(scoped_report.findings.is_empty());
+}
+
+#[test]
 fn lint_report_flags_unused_takes() {
     let source = r#"
 module app.takes
@@ -23449,6 +23565,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:templates:module-add-surface",
         "graft:templates:module-parent-surface",
         "graft:templates:module-surface",
+        "graft:templates:duplicate-import-delete",
         "graft:templates:lint-declaration-delete",
         "graft:templates:lint-declaration-target",
         "graft:templates:module-name-inference",
@@ -23458,6 +23575,8 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "graft:templates:qualified-import-call",
         "graft:emit:replace-call-arg",
         "fix:replace-call-arg-dry-run",
+        "fix:duplicate-import-dry-run",
+        "fix:duplicate-import-write",
         "graft:templates:replace-task-body",
         "graft:templates:replace-expression",
         "graft:templates:replace-call-arg",
@@ -23506,6 +23625,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "lint:unreachable_private_task",
         "lint:unused_declared_effect",
         "lint:unused_import",
+        "lint:duplicate_import",
         "lint:unused_take",
         "lint:unused_private_type",
         "lint:unused_private_effect",
@@ -23558,6 +23678,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "query:effects",
         "query:calls",
         "readiness:call-transaction-write-verify",
+        "readiness:duplicate-import-repair-write-verify",
         "readiness:agent-bench-repair-loop",
         "readiness:agent-quickstart-path",
         "readiness:ci-corpus-gate",

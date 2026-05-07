@@ -1,0 +1,5 @@
+module app.shared
+
+export task message -> Text {
+  return "ready"
+}

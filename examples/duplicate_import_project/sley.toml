@@ -1,0 +1,4 @@
+[project]
+name = "duplicate-import"
+root = "src"
+entry = "app.main"
