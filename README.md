@@ -424,8 +424,9 @@ Implemented now:
   receipts, ZJX tool reports, `sley-contract` inventory/validate/fixture-check
   and deploy-artifact inspection, `sley-migrate` raw-host and unchecked-result
   reports, `sley-ci`, `sley-conformance`, `sley-docgen`, `sley-workbench`,
-  `sley-sandbox-runner`, `sley-agent-bench`, and `sley-zjx` utility reports,
-  passed-verify next-actions for seal and ZJX handoff artifacts,
+  `sley-sandbox-runner`, `sley-agent-bench`, `sley-zjx` utility reports, and
+  `sley-lsp` help/startup, passed-verify next-actions for seal and ZJX handoff
+  artifacts,
   doctor/verify warning next-actions that route to lint repair plans and
   unambiguous dry-run fix previews with explicit
   `write_command` vectors, a staged previewed-repair write smoke that proves

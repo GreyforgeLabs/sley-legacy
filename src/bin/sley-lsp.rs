@@ -3,6 +3,7 @@ use std::io::{self, BufRead, BufReader, BufWriter, Read, Write};
 use std::path::PathBuf;
 
 use anyhow::{Context, Result};
+use clap::Parser;
 use serde_json::{Value as JsonValue, json};
 use sley::ast::{Expr, ExprKind, Program, Statement, StatementKind};
 use sley::checker::{check_program, has_errors};
@@ -18,6 +19,11 @@ use sley::plan::{
 const FIX_PREVIEW_COMMAND: &str = "sley.fix.preview";
 const FIX_PREVIEW_SCHEMA: &str = "sley.lsp.fix_preview.v0";
 
+#[derive(Debug, Parser)]
+#[command(name = "sley-lsp")]
+#[command(about = "Run the Sley stdio language server")]
+struct Cli {}
+
 #[derive(Default)]
 struct ServerState {
     documents: HashMap<String, DocumentState>,
@@ -29,6 +35,7 @@ struct DocumentState {
 }
 
 fn main() -> Result<()> {
+    let _cli = Cli::parse();
     let stdin = io::stdin();
     let stdout = io::stdout();
     let mut reader = BufReader::new(stdin.lock());

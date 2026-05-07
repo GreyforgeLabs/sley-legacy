@@ -96,7 +96,7 @@ here. Dates use UTC-independent calendar dates from the local repo history.
   validate, fixture-check, deploy-artifact inspection flows, and `sley-migrate`
   raw-host and unchecked-result reports, plus `sley-ci`, `sley-conformance`,
   `sley-docgen`, `sley-workbench`, `sley-sandbox-runner`, `sley-agent-bench`,
-  and `sley-zjx` utility reports.
+  `sley-zjx` utility reports, and `sley-lsp` help/startup.
 - `sley lint --rule empty-else-statement` now flags no-op empty `else`
   branches and `sley plan --graft-templates` emits a checked
   `remove_empty_else_statement` repair.
