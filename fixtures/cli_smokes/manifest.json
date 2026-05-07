@@ -10365,6 +10365,41 @@
       }
     },
     {
+      "name": "run_database_read_alias_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/db-read-alias/main.sley",
+          "content": "module app.db_read_alias\n\ntask get_user_name -> Text uses DatabaseRead {\n  take gate db: Gate<DatabaseRead>\n  take id: Text\n\n  bind row = call db.query_one(\"select * from users where id = ?\", id)\n  return row.text(\"name\")\n}\n\ntask main -> Text uses DatabaseRead {\n  return call get_user_name(\"u1\")\n}\n"
+        }
+      ],
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "DbRead=user",
+        "--db-table",
+        "users=examples/users.json",
+        "{tmp}/db-read-alias/main.sley"
+      ],
+      "covers": [
+        "cli:run",
+        "cli:smoke-setup-files",
+        "json:sley.run.report.v0",
+        "host:DatabaseRead",
+        "host:DbRead",
+        "host:scoped-capability"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.run.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/value/kind", "value": "Text" },
+          { "pointer": "/value/value", "value": "Ada" }
+        ]
+      }
+    },
+    {
       "name": "run_database_read_alias_scope_denied_json",
       "setup_files": [
         {
@@ -10460,6 +10495,40 @@
           { "pointer": "/status", "value": "error" },
           { "pointer": "/diagnostics/0/id", "value": "RUNTIME_CAPABILITY_SCOPE_DENIED" },
           { "pointer": "/diagnostics/0/node", "value": "block:task:main.main:stmt:0:expr:try" }
+        ]
+      }
+    },
+    {
+      "name": "run_database_write_alias_json",
+      "setup_files": [
+        {
+          "path": "{tmp}/db-write-alias/main.sley",
+          "content": "module app.db_write_alias\n\ntask create_user -> Result<Text, Error> uses DatabaseWrite {\n  take gate db: Gate<DatabaseWrite>\n\n  bind inserted = call db.try_insert(\"users\", { id: \"u3\", name: \"Lin\" })?\n  return Ok(inserted.text(\"name\"))\n}\n\ntask main -> Result<Text, Error> uses DatabaseWrite {\n  return call create_user()\n}\n"
+        }
+      ],
+      "args": [
+        "run",
+        "--json",
+        "--cap",
+        "DbWrite=user",
+        "{tmp}/db-write-alias/main.sley"
+      ],
+      "covers": [
+        "cli:run",
+        "cli:smoke-setup-files",
+        "json:sley.run.report.v0",
+        "host:DatabaseWrite",
+        "host:DbWrite",
+        "host:scoped-capability"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.run.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/value/kind", "value": "Ok" },
+          { "pointer": "/value/value/kind", "value": "Text" },
+          { "pointer": "/value/value/value", "value": "Lin" }
         ]
       }
     },
