@@ -161,8 +161,8 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
    - Current bootstrap: in-tree `src/bin/sley-lsp.rs` speaks stdio LSP
      framing, tracks full-document buffers, publishes compiler diagnostics plus
      lint warnings, returns formatting edits, document symbols, declaration
-     hover, edit-plan code actions, and exposes `sley.fix.preview` as a
-     non-mutating preview command. `tests/sley_lsp.rs` drives the server over
+     metadata hover, edit-plan code actions, and exposes `sley.fix.preview` as
+     a non-mutating preview command. `tests/sley_lsp.rs` drives the server over
      real JSON-RPC frames.
    - Done when an example project receives diagnostics and at least one checked
      lint repair code action without the server writing files directly.

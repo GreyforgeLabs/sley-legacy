@@ -5,7 +5,9 @@ use std::path::PathBuf;
 use anyhow::{Context, Result};
 use clap::Parser;
 use serde_json::{Value as JsonValue, json};
-use sley::ast::{Expr, ExprKind, Program, Statement, StatementKind};
+use sley::ast::{
+    EffectDecl, Expr, ExprKind, ImportDecl, Program, Statement, StatementKind, TaskDecl, TypeDecl,
+};
 use sley::checker::{check_program, has_errors};
 use sley::diagnostics::{Diagnostic, Severity, SourceSpan};
 use sley::formatter::format_program;
@@ -506,16 +508,13 @@ fn symbol_json(
 fn hover_for_line(program: &Program, text: &str, line: usize) -> Option<JsonValue> {
     if line == 0 {
         if let Some(module) = &program.module {
-            return Some(hover_json(
-                &format!("module `{module}`"),
-                first_line_range(text),
-            ));
+            return Some(hover_json(&module_hover(module), first_line_range(text)));
         }
     }
     for import in &program.imports {
         if span_line_matches(import.span.as_ref(), line) {
             return Some(hover_json(
-                &format!("import `{}`", import.module),
+                &import_hover(import),
                 import
                     .span
                     .as_ref()
@@ -526,7 +525,7 @@ fn hover_for_line(program: &Program, text: &str, line: usize) -> Option<JsonValu
     for ty in &program.types {
         if span_line_matches(ty.span.as_ref(), line) {
             return Some(hover_json(
-                &format!("type `{}`", ty.name),
+                &type_hover(ty, program.module_name()),
                 ty.span.as_ref().map(|span| range_for_span(text, span))?,
             ));
         }
@@ -534,7 +533,7 @@ fn hover_for_line(program: &Program, text: &str, line: usize) -> Option<JsonValu
     for effect in &program.effects {
         if span_line_matches(effect.span.as_ref(), line) {
             return Some(hover_json(
-                &format!("effect `{}`", effect.name),
+                &effect_hover(effect, program.module_name()),
                 effect
                     .span
                     .as_ref()
@@ -545,12 +544,75 @@ fn hover_for_line(program: &Program, text: &str, line: usize) -> Option<JsonValu
     for task in &program.tasks {
         if span_line_matches(task.span.as_ref(), line) {
             return Some(hover_json(
-                &format!("task `{}`", task.name),
+                &task_hover(task, program.module_name()),
                 task.span.as_ref().map(|span| range_for_span(text, span))?,
             ));
         }
     }
     None
+}
+
+fn module_hover(module: &str) -> String {
+    format!("module `{module}`")
+}
+
+fn import_hover(import: &ImportDecl) -> String {
+    let alias = import
+        .alias
+        .as_ref()
+        .map(|alias| format!("\n\nalias: `{alias}`"))
+        .unwrap_or_default();
+    format!("import `{}`{alias}\n\nnode: `{}`", import.module, import.id)
+}
+
+fn type_hover(ty: &TypeDecl, default_module: &str) -> String {
+    let export = if ty.exported { "export " } else { "" };
+    format!(
+        "{export}type `{}` = `{}`\n\nmodule: `{}`\nnode: `{}`",
+        ty.name,
+        ty.value.display(),
+        ty.module.as_deref().unwrap_or(default_module),
+        ty.id
+    )
+}
+
+fn effect_hover(effect: &EffectDecl, default_module: &str) -> String {
+    let export = if effect.exported { "export " } else { "" };
+    format!(
+        "{export}effect `{}`\n\nmodule: `{}`\nnode: `{}`",
+        effect.name,
+        effect.module.as_deref().unwrap_or(default_module),
+        effect.id
+    )
+}
+
+fn task_hover(task: &TaskDecl, default_module: &str) -> String {
+    let export = if task.exported { "export " } else { "" };
+    let takes = if task.takes.is_empty() {
+        "none".to_string()
+    } else {
+        task.takes
+            .iter()
+            .map(|take| format!("`{}: {}`", take.name, take.ty.display()))
+            .collect::<Vec<_>>()
+            .join(", ")
+    };
+    let effects = if task.effects.is_empty() {
+        "none".to_string()
+    } else {
+        task.effects
+            .iter()
+            .map(|effect| format!("`{effect}`"))
+            .collect::<Vec<_>>()
+            .join(", ")
+    };
+    format!(
+        "{export}task `{}`\n\nmodule: `{}`\nreturns: `{}`\ntakes: {takes}\neffects: {effects}\nnode: `{}`",
+        task.name,
+        task.module.as_deref().unwrap_or(default_module),
+        task.return_type.display(),
+        task.id
+    )
 }
 
 fn hover_json(value: &str, range: JsonValue) -> JsonValue {

@@ -181,8 +181,8 @@ Implemented now:
   fixture parsing over current examples plus accepted compiler corpus
 - in-tree `sley-lsp` stdio language-server bootstrap with full-document sync,
   compiler diagnostics plus lint warnings, formatting edits, document symbols,
-  declaration hover, checked edit-plan code actions, and a non-mutating
-  `sley.fix.preview` command for editor repair previews
+  declaration metadata hover, checked edit-plan code actions, and a
+  non-mutating `sley.fix.preview` command for editor repair previews
 - in-tree `sley-workbench` local inspection bootstrap that emits
   `schema: "sley.workbench.report.v0"` and optional static HTML over
   doctor/query/lint/plan/graph panels without writing source files
