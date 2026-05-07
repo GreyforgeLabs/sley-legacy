@@ -2326,6 +2326,42 @@ task main -> Int {
         );
         assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
     }
+
+    let empty_module = parse_program(
+        r#"
+module app.empty
+
+task main -> Int {
+  return 1
+}
+"#,
+    )
+    .expect("parse empty module surface fixture");
+    let empty_report = build_edit_plan_report_with_options(
+        "app.empty",
+        Ok(empty_module),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("module:app.empty".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(empty_report.status, "ready");
+    assert!(empty_report.diagnostics.is_empty());
+    assert!(empty_report.graft_templates.iter().any(|template| {
+        template.kind == "move_task"
+            && template.operation.pointer("/target")
+                == Some(&serde_json::json!("task:app.empty.main"))
+    }));
+    assert!(
+        !empty_report
+            .graft_templates
+            .iter()
+            .any(|template| template.kind == "delete_task"),
+        "entry task deletion should not be advertised from module surface: {:#?}",
+        empty_report.graft_templates
+    );
 }
 
 #[test]
