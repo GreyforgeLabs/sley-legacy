@@ -2481,6 +2481,129 @@ task main -> User {
         "{:#?}",
         type_outcome.diagnostics
     );
+
+    let used_effect_module = parse_program(
+        r#"
+module app.effect_surface
+
+effect Audit
+
+task main -> Int uses Audit {
+  return 1
+}
+"#,
+    )
+    .expect("parse direct effect surface fixture");
+    let effect_report = build_edit_plan_report_with_options(
+        "app.effect_surface",
+        Ok(used_effect_module.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("effect:app.effect_surface.Audit".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(effect_report.status, "warnings");
+    assert!(effect_report.graft_templates.iter().any(|template| {
+        template.kind == "move_effect"
+            && template.surface == "effect:app.effect_surface.Audit"
+            && template.operation.pointer("/target")
+                == Some(&serde_json::json!("effect:app.effect_surface.Audit"))
+            && template.operation.pointer("/payload/parent")
+                == Some(&serde_json::json!("module:app.effect_surface:effects"))
+    }));
+    let effect_template = effect_report
+        .graft_templates
+        .iter()
+        .find(|template| template.kind == "move_effect")
+        .expect("direct effect surface move template");
+    let effect_graft: GraftInput = serde_json::from_value(effect_template.operation.clone())
+        .expect("direct effect surface template should parse");
+    let effect_outcome = apply_graft_input(
+        &used_effect_module,
+        effect_graft,
+        Some("agent:effect-surface-template-test".to_string()),
+    );
+    assert_eq!(
+        effect_outcome.status, "accepted",
+        "{:#?}",
+        effect_outcome.diagnostics
+    );
+
+    let import_root = temp_project_dir("direct-import-surface-template");
+    fs::create_dir_all(import_root.join("src/app")).expect("create import project dirs");
+    fs::write(
+        import_root.join("sley.toml"),
+        r#"
+[project]
+name = "import-surface"
+root = "src"
+entry = "app.main"
+"#,
+    )
+    .expect("write import project manifest");
+    fs::write(
+        import_root.join("src/app/main.sley"),
+        r#"
+module app.main
+
+import app.shared as shared
+
+task main -> Int {
+  return shared.helper()
+}
+"#,
+    )
+    .expect("write import project main");
+    fs::write(
+        import_root.join("src/app/shared.sley"),
+        r#"
+module app.shared
+
+export task helper -> Int {
+  return 7
+}
+"#,
+    )
+    .expect("write import project shared");
+    let import_project = load_project(&import_root).expect("load direct import surface project");
+    let import_report = build_edit_plan_report_with_options(
+        import_root.display().to_string(),
+        Ok(import_project.program.clone()),
+        EditPlanOptions {
+            deny_warnings: false,
+            include_graft_templates: true,
+            template_surface: Some("import:app.main:app.shared".to_string()),
+            module_name_hint: None,
+        },
+    );
+    assert_eq!(import_report.status, "ready");
+    assert_eq!(import_report.graft_templates.len(), 1);
+    let import_template = &import_report.graft_templates[0];
+    assert_eq!(import_template.kind, "move_import");
+    assert_eq!(import_template.surface, "import:app.main:app.shared");
+    assert_eq!(
+        import_template.operation.pointer("/target"),
+        Some(&serde_json::json!("import:app.main:app.shared"))
+    );
+    assert_eq!(
+        import_template.operation.pointer("/payload/parent"),
+        Some(&serde_json::json!("module:app.main:imports"))
+    );
+    let import_graft: GraftInput = serde_json::from_value(import_template.operation.clone())
+        .expect("direct import surface template should parse");
+    let import_outcome = apply_graft_input(
+        &import_project.program,
+        import_graft,
+        Some("agent:import-surface-template-test".to_string()),
+    );
+    assert_eq!(
+        import_outcome.status, "accepted",
+        "{:#?}",
+        import_outcome.diagnostics
+    );
+    let _ = fs::remove_dir_all(import_root);
 }
 
 #[test]
