@@ -8,6 +8,7 @@ use crate::ast::{
     TypeDecl,
 };
 use crate::formatter::format_statement_source;
+use crate::graft::{GraftInput, apply_graft_input};
 
 pub const SYMBOL_GRAPH_SCHEMA: &str = "sley.symbol_graph.v0";
 pub const SYMBOL_GRAPH_SLICE_SCHEMA: &str = "sley.symbol_graph.slice.v0";
@@ -679,7 +680,10 @@ fn build_slice(
             &focus_module,
             focus_task_index,
             &module_task_indexes,
-        ),
+        )
+        .into_iter()
+        .filter(|affordance| checked_delete_affordance(program, affordance))
+        .collect(),
         replace_affordances: build_replace_affordances(
             focus_task_index,
             &module_task_indexes,
@@ -1443,8 +1447,30 @@ fn collect_module_delete_affordances(
         .filter(|task| task_module(task) == focus_module)
         .enumerate()
     {
+        if task.name == "main" && task_module(task) == program.module_name() {
+            continue;
+        }
         push_delete_affordance(affordances, &task.id, "task", &task_parent, position);
     }
+}
+
+fn checked_delete_affordance(program: &Program, affordance: &DeleteNodeAffordance) -> bool {
+    graph_slice_operation_checks(
+        program,
+        &affordance.operation,
+        Some("agent:graph-slice-delete-affordance"),
+    )
+}
+
+fn graph_slice_operation_checks(
+    program: &Program,
+    operation: &JsonValue,
+    actor: Option<&str>,
+) -> bool {
+    let Ok(input) = serde_json::from_value::<GraftInput>(operation.clone()) else {
+        return false;
+    };
+    apply_graft_input(program, input, actor.map(str::to_string)).status == "accepted"
 }
 
 fn collect_take_delete_affordances(task: &TaskDecl, affordances: &mut Vec<DeleteNodeAffordance>) {

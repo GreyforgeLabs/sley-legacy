@@ -256,7 +256,7 @@ Implemented now:
   add-take-plus-call-arg transaction templates for targeted caller surfaces,
   direct module-surface, module declaration-list, and declaration-id
   graph-slice templates for checked top-level import/type/effect/task moves
-  and deletes, plus graph-slice add affordance parity for module-scoped
+  and checker-filtered deletes, plus graph-slice add affordance parity for module-scoped
   import/type/effect/task starters,
   safe remove-take-plus-call-arg transaction templates for unused takes,
   lint-driven delete templates and cleanup
@@ -448,8 +448,8 @@ Implemented now:
   `sley.zjx.tool.report.v0` envelope inspection reports,
   `sley-contract` inventory/fixture-check/validate/deploy-artifact-check reports,
   edit-plan graft operation and transaction template envelopes reused by graph
-  slice add/insert/move/delete/replace affordances, graph-slice
-  focus/task/call summary refs, a shared
+  slice add/insert/move/delete/replace affordances, with delete affordances
+  checker-filtered, graph-slice focus/task/call summary refs, a shared
   diagnostic record schema, a trace report schema over standalone trace
   receipts, plus ZJX graph, slice, and trace receipt handoff refs backed by
   fixtures

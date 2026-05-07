@@ -1806,7 +1806,6 @@
       "covers": [
         "cli:graph-slice",
         "graph-slice:add-affordances",
-        "graph-slice:delete-affordances",
         "graph-slice:insert-affordances",
         "graph-slice:move-affordances",
         "graph-slice:replace-affordances",
@@ -1835,12 +1834,12 @@
           { "pointer": "/move_affordances/1/destinations/0/operation/payload/parent", "value": "module:app.math:imports" },
           { "pointer": "/move_affordances/2/target_kind", "value": "task" },
           { "pointer": "/move_affordances/2/destinations/0/operation/payload/parent", "value": "module:app.math:tasks" },
-          { "pointer": "/delete_affordances/0/operation/op", "value": "DeleteNode" },
-          { "pointer": "/delete_affordances/0/target_kind", "value": "import" },
-          { "pointer": "/delete_affordances/1/target_kind", "value": "task" },
           { "pointer": "/replace_affordances/0/target_kind", "value": "Call" },
           { "pointer": "/replace_affordances/0/operation/op", "value": "ReplaceExpression" },
           { "pointer": "/replace_affordances/0/editable_json_pointers/0", "value": "/payload/source" }
+        ],
+        "stdout_json_absent": [
+          "/delete_affordances/0"
         ]
       }
     },
@@ -1850,7 +1849,6 @@
       "covers": [
         "cli:graph-slice",
         "graph-slice:add-affordances",
-        "graph-slice:delete-affordances",
         "graph-slice:inbound-calls",
         "graph-slice:module-focus",
         "graph-slice:move-affordances",
@@ -1878,8 +1876,34 @@
           { "pointer": "/add_affordances/3/target", "value": "module:app.math:tasks" },
           { "pointer": "/add_affordances/3/operation/op", "value": "AddTask" },
           { "pointer": "/move_affordances/2/destinations/0/operation/payload/parent", "value": "module:app.main:tasks" },
-          { "pointer": "/delete_affordances/1/target", "value": "task:app.math.double" },
           { "pointer": "/replace_affordances/0/operation/op", "value": "ReplaceExpression" }
+        ],
+        "stdout_json_absent": [
+          "/delete_affordances/0"
+        ]
+      }
+    },
+    {
+      "name": "graph_unused_private_task_checked_delete_affordance_json",
+      "args": ["graph", "--json", "--slice", "module:app.tasks", "examples/unused_private_task.sley"],
+      "covers": [
+        "cli:graph-slice",
+        "graph-slice:delete-affordances",
+        "graph-slice:checked-delete-affordances",
+        "json:sley.symbol_graph.slice.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.symbol_graph.slice.v0" },
+          { "pointer": "/target", "value": "module:app.tasks" },
+          { "pointer": "/delete_affordances/0/target", "value": "task:app.tasks.orphan" },
+          { "pointer": "/delete_affordances/0/target_kind", "value": "task" },
+          { "pointer": "/delete_affordances/0/operation/op", "value": "DeleteNode" },
+          { "pointer": "/delete_affordances/0/operation/target", "value": "task:app.tasks.orphan" }
+        ],
+        "stdout_json_absent": [
+          "/delete_affordances/1"
         ]
       }
     },
