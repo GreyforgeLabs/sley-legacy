@@ -20978,6 +20978,7 @@ fn assert_corpus_manifest_has_release_coverage(manifest: &CorpusManifest) {
         .flat_map(|case| case.covers.iter().map(String::as_str))
         .collect::<BTreeSet<_>>();
     let required = [
+        "accepted:DatabaseAlias",
         "accepted:DatabaseRead",
         "accepted:DatabaseWrite",
         "accepted:Deploy",
@@ -20992,6 +20993,7 @@ fn assert_corpus_manifest_has_release_coverage(manifest: &CorpusManifest) {
         "accepted:agent-deploy-pipeline",
         "accepted:agent-spend-authority",
         "accepted:agent-split-authority",
+        "rejected:DatabaseAlias",
         "rejected:DatabaseRead",
         "rejected:DatabaseWrite",
         "rejected:Deploy",
