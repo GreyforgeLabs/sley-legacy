@@ -1,0 +1,11 @@
+module corpus.accepted.collections_indexing
+
+task main -> Int {
+  bind names = ["ada", "grace", "linus"]
+  bind scores: Map<Text, Int> = map {
+    "ada": 3,
+    "grace": 5,
+    "linus": 7,
+  }
+  return scores[names[1]] + len(names)
+}
