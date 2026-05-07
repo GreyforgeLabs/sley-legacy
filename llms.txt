@@ -453,9 +453,10 @@ Current development phase:
   destination insertion limits, starter operation JSON, and editable JSON
   pointers
 - graph slices expose `delete_affordances` for bounded
-  import/type/effect/task/statement/take `DeleteNode` planning; `sley plan
-  --graft-templates` surfaces checked task-internal `delete_statement` and
-  `delete_take` templates when the starter delete graft validates
+  import/type/effect/task/non-return statement/take `DeleteNode` planning;
+  `sley plan --graft-templates` surfaces checked task-internal
+  `delete_statement` and `delete_take` templates when the starter delete graft
+  validates
 - graph slices expose `replace_affordances` for task-local
   `ReplaceStatement` and `ReplaceExpression` planning; `sley plan
   --graft-templates` surfaces checked `replace_statement` and

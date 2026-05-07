@@ -125,17 +125,6 @@
       "editable_json_pointers": []
     },
     {
-      "target": "block:task:app.math.double:stmt:0",
-      "target_kind": "statement",
-      "parent": "block:task:app.math.double",
-      "position": 0,
-      "operation": {
-        "op": "DeleteNode",
-        "target": "block:task:app.math.double:stmt:0"
-      },
-      "editable_json_pointers": []
-    },
-    {
       "target": "task:app.math.double",
       "target_kind": "task",
       "parent": "module:app.math:tasks",

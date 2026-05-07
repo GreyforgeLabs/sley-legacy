@@ -1331,7 +1331,9 @@ fn collect_statement_delete_affordances_in_block(
     affordances: &mut Vec<DeleteNodeAffordance>,
 ) {
     for (position, statement) in block.statements.iter().enumerate() {
-        push_delete_affordance(affordances, &statement.id, "statement", parent, position);
+        if !matches!(statement.kind, StatementKind::Return { .. }) {
+            push_delete_affordance(affordances, &statement.id, "statement", parent, position);
+        }
         match &statement.kind {
             StatementKind::If {
                 then_block,
