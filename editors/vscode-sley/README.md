@@ -35,8 +35,8 @@ Example setting:
 
 The extension contributes `.sley` language metadata, a TextMate grammar for
 basic highlighting, and a stdio LSP bridge to `sley-lsp`. The server remains
-the semantic authority for diagnostics, symbols, hover, code actions, rename,
-and non-mutating repair previews.
+the semantic authority for diagnostics, symbols, hover, range-scoped code
+actions, rename, and surface-pinned non-mutating repair previews.
 
 ## Validate
 
