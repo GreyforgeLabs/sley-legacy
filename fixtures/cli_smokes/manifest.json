@@ -505,6 +505,31 @@
       }
     },
     {
+      "name": "ci_plan_project_next_actions_json",
+      "bin": "sley-ci",
+      "args": ["plan", "--json", "--graft-templates", "examples/project"],
+      "covers": [
+        "cli:sley-ci",
+        "ci:plan-next-actions",
+        "json:sley.ci.report.v0",
+        "json:sley.edit_plan.report.v0",
+        "readiness:ci-plan-next-actions"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.ci.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/command", "value": "plan" },
+          { "pointer": "/steps/0/stdout_schema", "value": "sley.edit_plan.report.v0" },
+          { "pointer": "/steps/0/next_actions/2/kind", "value": "post_edit_doctor" },
+          { "pointer": "/steps/0/next_actions/3/kind", "value": "post_edit_ci_doctor" },
+          { "pointer": "/steps/0/next_actions/3/command/0", "value": "sley-ci" },
+          { "pointer": "/steps/0/next_actions/4/kind", "value": "post_edit_verify" }
+        ]
+      }
+    },
+    {
       "name": "ci_lint_unknown_project_module_json",
       "bin": "sley-ci",
       "args": ["lint", "--json", "--module", "app.typo", "examples/project"],

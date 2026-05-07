@@ -11939,7 +11939,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/smoke_case_count"),
-        Some(&serde_json::json!(476))
+        Some(&serde_json::json!(477))
     );
     assert_eq!(
         report_json.pointer("/summary/onboarding_path_count"),
@@ -24888,6 +24888,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:agent-bench-repair-loop",
         "readiness:agent-quickstart-path",
         "readiness:ci-corpus-gate",
+        "readiness:ci-plan-next-actions",
         "readiness:conformance-coverage",
         "readiness:contract-schema-defaults",
         "readiness:public-release-decision-packet",

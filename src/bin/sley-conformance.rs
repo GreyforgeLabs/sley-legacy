@@ -169,6 +169,7 @@ const DEFAULT_SMOKE_TAGS: &[&str] = &[
     "readiness:agent-bench-repair-loop",
     "readiness:agent-quickstart-path",
     "readiness:ci-corpus-gate",
+    "readiness:ci-plan-next-actions",
     "readiness:conformance-coverage",
     "readiness:contract-schema-defaults",
     "readiness:deploy-package-artifact-inspection",
