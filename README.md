@@ -393,15 +393,16 @@ Implemented now:
 - locked JSON contract snapshots under `fixtures/contracts/`, including
   symbol graphs, graft outcomes, ZJX envelopes, ZJX tool reports, checked run,
   query, lint, doctor, edit-plan, verify, deploy dry-run, deploy artifact
-  check, CI, and project scaffold reports, LSP fix-preview payloads, workbench
-  reports, docgen reports, agent-bench reports, migrate reports, sandbox
-  manifests and sandbox-runner reports, plus contract inventory, fixture-check,
-  and validate reports
+  check, CI, and project scaffold reports, LSP fix-preview and command-preview
+  payloads, workbench reports, docgen reports, agent-bench reports, migrate
+  reports, sandbox manifests and sandbox-runner reports, plus contract
+  inventory, fixture-check, and validate reports
 - external v0 JSON Schema files under `docs/schemas/`, including strict
   query task/take/type/effect/call row definitions,
   strict runtime value definitions for `sley.run.report.v0`,
   `sley-ci` check/lint/doctor/plan/run/verify/deploy/smoke/corpus/examples reports,
-  `sley.lsp.fix_preview.v0` preview-command payloads,
+  `sley.lsp.fix_preview.v0` repair payloads,
+  `sley.lsp.command_preview.v0` editor command handoff payloads,
   `sley.workbench.report.v0` local inspection reports,
   `sley.docgen.report.v0` generated reference reports,
   `sley.agent_bench.report.v0` deterministic agent-loop benchmark reports,

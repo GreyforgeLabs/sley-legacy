@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.lsp.command_preview.v0",
+  "title": "Sley LSP Command Preview v0",
+  "type": "object",
+  "required": ["schema", "status", "preview"],
+  "properties": {
+    "schema": { "const": "sley.lsp.command_preview.v0" },
+    "status": { "const": "preview" },
+    "preview": { "$ref": "#/$defs/command_preview" }
+  },
+  "$defs": {
+    "command_preview": {
+      "type": "object",
+      "required": ["schema", "uri", "kind", "command", "args"],
+      "properties": {
+        "schema": { "const": "sley.lsp.command_preview.v0" },
+        "uri": { "type": "string", "minLength": 1 },
+        "kind": {
+          "enum": ["doctor", "verify", "deploy_dry_run", "graph_slice"]
+        },
+        "command": { "const": "sley" },
+        "args": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

@@ -152,7 +152,7 @@ Rules:
   lint-report, run-report, graft-outcome, trace-report, trace-seal,
   ZJX-envelope, ZJX-tool-report, doctor-report, project-scaffold, agent-bench,
   migrate, docgen, sandbox manifest/report, and CI/deploy report snapshots,
-  LSP fix-preview payloads, workbench reports, plus contract
+  LSP fix-preview and command-preview payloads, workbench reports, plus contract
   inventory/fixture-check/validate report snapshots, are locked under
   `fixtures/contracts/`.
 - JSON Schema files live under `docs/schemas/`; the AST schema covers nested
@@ -166,8 +166,8 @@ Rules:
   focus, task, call-summary, inbound-call, and insert/move/delete/replace
   affordance payloads to shared contracts, `sley-ci`
   check/lint/doctor/plan/run/verify/deploy/smoke/corpus/examples reports,
-  LSP fix-preview payloads, workbench reports, docgen reports, agent-bench
-  reports, migrate reports, sandbox manifests, sandbox-runner reports,
+  LSP fix-preview and command-preview payloads, workbench reports, docgen
+  reports, agent-bench reports, migrate reports, sandbox manifests, sandbox-runner reports,
   `sley-conformance` report/coverage roots, and `sley-contract`
   inventory/fixture-check/validate/deploy-artifact-check reports have versioned
   schemas and representative fixtures, the graft outcome and trace receipt

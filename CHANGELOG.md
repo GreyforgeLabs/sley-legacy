@@ -67,6 +67,8 @@ here. Dates use UTC-independent calendar dates from the local repo history.
 - `sley-lsp` now exposes non-mutating command-preview code lenses for
   `doctor`, `verify --deny-warnings`, `deploy --dry-run`, and task graph
   slices.
+- `sley.lsp.command_preview.v0` now has a JSON Schema and representative
+  contract fixture for editor command handoff payloads.
 - `sley-lsp` now exposes definition jumps for imported modules and resolved
   task calls across project files.
 - `sley-lsp` now exposes project-aware document links from import module names
@@ -144,7 +146,7 @@ here. Dates use UTC-independent calendar dates from the local repo history.
 - `sley lint --rule empty-else-statement` now flags no-op empty `else`
   branches and `sley plan --graft-templates` emits a checked
   `remove_empty_else_statement` repair.
-- Contract inventory now tracks 36 schemas, 104 contract fixtures, and 107 schema
+- Contract inventory now tracks 37 schemas, 105 contract fixtures, and 108 schema
   instances through the conformance report.
 - The Rust package metadata now declares its supported Rust floor, description,
   README, keywords, categories, and `publish = false` until publication
