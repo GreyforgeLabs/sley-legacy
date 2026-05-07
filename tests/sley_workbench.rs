@@ -60,6 +60,18 @@ task orphan -> Text {
         Some(&json!(1))
     );
     assert_eq!(
+        report.pointer("/lint/findings/0/plan_command/1"),
+        Some(&json!("plan"))
+    );
+    assert_eq!(
+        report.pointer("/lint/findings/0/plan_command/5"),
+        Some(&json!("task:app.workbench.orphan"))
+    );
+    assert_eq!(
+        report.pointer("/lint/findings/0/plan_command/6"),
+        Some(&json!(source_path.to_string_lossy()))
+    );
+    assert_eq!(
         report.pointer("/graph_slice/focus/id"),
         Some(&json!("task:app.workbench.orphan"))
     );
@@ -116,6 +128,8 @@ task orphan -> Text {
     assert!(html.contains("app.workbench.orphan"));
     assert!(html.contains("Delete Affordances"));
     assert!(html.contains("delete_unused_private_task"));
+    assert!(html.contains("Plan Command"));
+    assert!(html.contains("sley plan --json --graft-templates --template-surface"));
     assert!(html.contains("Preview Command"));
     assert!(html.contains("sley fix --json --kind delete_unused_private_task"));
     assert!(html.contains("Post-Fix Gates"));

@@ -219,9 +219,10 @@ Rules:
 - `sley-workbench` exposes a local read-only inspection report and optional
   static HTML page over doctor/query/lint/plan/graph/graph-slice panels. Its
   report schema links embedded panel rows back to the source doctor, query,
-  lint, edit-plan, graph, and graph-slice contracts, and edit-plan template
-  rows carry preview, write, and post-fix gate commands plus a local
-  repair-focus selector for repair handoff.
+  lint, edit-plan, graph, and graph-slice contracts. Lint rows carry focused
+  `sley plan --graft-templates` commands, and edit-plan template rows carry
+  preview, write, and post-fix gate commands plus a local repair-focus selector
+  for repair handoff.
 - `sley-docgen` exposes checked Markdown reference generation over
   query-derived module, task, type, effect, and host capability docs. Its
   report schema reuses the strict query task/type/effect row definitions and

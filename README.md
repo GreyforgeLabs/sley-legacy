@@ -207,8 +207,9 @@ Implemented now:
   doctor/query/lint/plan/graph/graph-slice panels without writing source
   files; edit-plan template rows include non-mutating preview commands,
   explicit write commands, post-fix check/lint/verify gates, and a local
-  repair-focus selector for lint findings plus a graph target selector that
-  builds focused `--slice` commands
+  repair-focus selector plus focused `sley plan --graft-templates` commands
+  for lint findings and a graph target selector that builds focused `--slice`
+  commands
 - in-tree `sley-docgen` reference generator that emits
   `schema: "sley.docgen.report.v0"` and optional Markdown over checked
   module, task, type, effect, and host capability reference data, including
