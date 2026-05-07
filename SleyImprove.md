@@ -356,7 +356,8 @@ Priority diagnostic families:
   `provide_identifier`, `provide_expression`, and expected-item hints
 - unknown identifiers: implemented with parse-valid `declare_binding` and
   `declare_mutable_binding` starter declarations
-- unknown tasks: implemented with `declare_or_import_task`
+- unknown tasks: implemented with parse-valid `declare_or_import_task`
+  starter declarations
 - unknown types: implemented with parse-valid `declare_or_import_type`
   starter declarations
 - binding and assignment type mismatch: implemented with type-change hints and
