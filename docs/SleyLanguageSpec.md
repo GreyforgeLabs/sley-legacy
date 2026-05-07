@@ -1337,6 +1337,8 @@ Unknown identifier diagnostics carry `declare_binding` or
 `declare_mutable_binding` hints with parse-valid starter declarations, and
 immutable binding mutation diagnostics carry `use_mutable_binding_kind` hints
 with typed mutable starter declarations.
+Unknown type and effect diagnostics carry `declare_or_import_type` and
+`declare_or_import_effect` hints with parse-valid starter declarations.
 Missing return paths in non-`Unit` tasks produce `MISSING_RETURN` with
 `insert_return` and `replace_task_body` repair hints, including valid anonymous
 and named record-literal starter returns when the task return type is a record.
