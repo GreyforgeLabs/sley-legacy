@@ -1065,6 +1065,10 @@ never-executed `while false` statement preserves a checked program.
 `simplify_constant_comparison_expression` `ReplaceExpression` templates when
 replacing a literal comparison with its boolean result preserves a checked
 program.
+`constant_boolean_comparison_expression` lint findings become checked
+`simplify_constant_boolean_comparison_expression` `ReplaceExpression` templates
+when replacing a boolean literal comparison with its boolean result preserves a
+checked program.
 `constant_arithmetic_expression` lint findings become checked
 `simplify_constant_arithmetic_expression` `ReplaceExpression` templates when
 replacing safe numeric literal arithmetic with its result preserves a checked
@@ -1328,6 +1332,9 @@ deleted; and `constant_false_while_statement`, which warns when a
 `while false { ... }` statement can be removed as never-executed code; and
 `constant_comparison_expression`, which warns when a checked literal comparison
 can be replaced by its boolean result; and
+`constant_boolean_comparison_expression`, which warns when a checked boolean
+literal comparison can be replaced by its boolean result without overlapping
+self-comparison or runtime boolean-comparison cleanup; and
 `constant_arithmetic_expression`, which warns when checked numeric literal
 arithmetic can be replaced by its result without overlapping identity cleanup
 or folding divide-by-zero; and
@@ -1403,6 +1410,7 @@ diagnostics report. `--rule unused-private-task`,
 `--rule constant-false-if-statement`, or
 `--rule constant-false-while-statement`, or
 `--rule constant-comparison-expression`, or
+`--rule constant-boolean-comparison-expression`, or
 `--rule constant-arithmetic-expression`, or
 `--rule absorbing-arithmetic-expression`, or
 `--rule constant-text-concatenation-expression`, or

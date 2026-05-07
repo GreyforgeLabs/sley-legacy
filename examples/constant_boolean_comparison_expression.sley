@@ -1,0 +1,5 @@
+module app.constant_bool_compare
+
+task main -> Bool {
+  return true == false
+}

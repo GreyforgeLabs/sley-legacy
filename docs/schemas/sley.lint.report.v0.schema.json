@@ -66,7 +66,8 @@
               "self_assignment_statement",
               "overwritten_set_statement",
               "redundant_initial_set_statement",
-              "empty_while_statement"
+              "empty_while_statement",
+              "constant_boolean_comparison_expression"
             ]
           },
           "uniqueItems": true
@@ -112,6 +113,7 @@
               "CONSTANT_FALSE_IF_STATEMENT",
               "CONSTANT_FALSE_WHILE_STATEMENT",
               "CONSTANT_COMPARISON_EXPRESSION",
+              "CONSTANT_BOOLEAN_COMPARISON_EXPRESSION",
               "CONSTANT_ARITHMETIC_EXPRESSION",
               "CONSTANT_TEXT_CONCATENATION_EXPRESSION",
               "CONSTANT_LIST_INDEX_EXPRESSION",
@@ -193,7 +195,8 @@
               "self_assignment_statement",
               "overwritten_set_statement",
               "redundant_initial_set_statement",
-              "empty_while_statement"
+              "empty_while_statement",
+              "constant_boolean_comparison_expression"
             ]
           },
           "severity": { "enum": ["warning"] },

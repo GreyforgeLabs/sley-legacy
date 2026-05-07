@@ -1,0 +1,22 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.constant_bool_compare",
+  "filters": {
+    "module": null,
+    "rules": [
+      "constant_boolean_comparison_expression"
+    ]
+  },
+  "findings": [
+    {
+      "id": "CONSTANT_BOOLEAN_COMPARISON_EXPRESSION",
+      "rule": "constant_boolean_comparison_expression",
+      "severity": "warning",
+      "message": "task `app.constant_bool_compare.main` has a constant boolean comparison expression `true == false`",
+      "node": "block:task:app.constant_bool_compare.main:stmt:0:expr",
+      "module": "app.constant_bool_compare",
+      "hint": "replace the constant boolean comparison with `false`"
+    }
+  ]
+}

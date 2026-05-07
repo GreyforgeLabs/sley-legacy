@@ -44,7 +44,7 @@ Current verified surface:
 
 - `cargo fmt -- --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 335 tests in the core `tests/sley_v0.rs`
+- Current integration coverage is 337 tests in the core `tests/sley_v0.rs`
   conformance file, with additional focused integration tests for LSP,
   workbench, agent bench, docgen, migration reports, sandbox replay, project
   templates, and ZJX envelope tools. The focused utility tests validate live
@@ -89,7 +89,7 @@ Current verified surface:
   `inventory`, `check-fixtures`, `validate`, and `inspect-deploy-artifacts`
   JSON Schema validation commands over `docs/schemas/`, `fixtures/contracts/`,
   release manifests, and local deploy artifact directories. Contract inventory
-  currently tracks 38 schemas, 123 contract fixtures, and 126 schema instances.
+  currently tracks 38 schemas, 124 contract fixtures, and 127 schema instances.
 - `sley-ci` is available as an in-tree CI wrapper with `check`, `lint`,
   `doctor`, `plan`, `run`, `verify`, `deploy`, `smoke`, `corpus`, and
   `examples` commands that emit
@@ -232,6 +232,7 @@ Current verified surface:
   `--rule constant-false-if-statement`,
   `--rule constant-false-while-statement`,
   `--rule constant-comparison-expression`,
+  `--rule constant-boolean-comparison-expression`,
   `--rule constant-arithmetic-expression`,
   `--rule constant-text-concatenation-expression`,
   `--rule constant-list-index-expression`,
@@ -271,6 +272,7 @@ Current verified surface:
   `constant_false_if_statement`,
   `constant_false_while_statement`,
   `constant_comparison_expression`,
+  `constant_boolean_comparison_expression`,
   `constant_arithmetic_expression`,
   `constant_text_concatenation_expression`,
   `constant_list_index_expression`,
@@ -383,6 +385,9 @@ Current verified surface:
   lint/plan/fix-write/verify
   smoke coverage, plus checked `constant_comparison_expression` style findings
   and `simplify_constant_comparison_expression` templates with
+  lint/plan/fix-write/verify
+  smoke coverage, plus checked `constant_boolean_comparison_expression` style
+  findings and `simplify_constant_boolean_comparison_expression` templates with
   lint/plan/fix-write/verify
   smoke coverage, plus checked `constant_arithmetic_expression` style findings
   and `simplify_constant_arithmetic_expression` templates with
@@ -674,6 +679,7 @@ cargo run -- lint --json --rule constant-if-statement <target>
 cargo run -- lint --json --rule constant-false-if-statement <target>
 cargo run -- lint --json --rule constant-false-while-statement <target>
 cargo run -- lint --json --rule constant-comparison-expression <target>
+cargo run -- lint --json --rule constant-boolean-comparison-expression <target>
 cargo run -- lint --json --rule constant-arithmetic-expression <target>
 cargo run -- lint --json --rule absorbing-arithmetic-expression <target>
 cargo run -- lint --json --rule constant-text-concatenation-expression <target>
