@@ -34,7 +34,7 @@ use sley::trace::{
     TraceSeal, append_trace_receipt, build_trace_receipt, build_trace_report, build_trace_seal,
     content_digest, default_trace_path, read_trace_receipts,
 };
-use sley::verify::{VerifyReport, build_verify_report};
+use sley::verify::{VerifyReport, build_verify_report, build_verify_report_with_runtime_args};
 use sley::zjx::build_zjx_envelope;
 
 #[derive(Debug, Parser)]
@@ -723,12 +723,23 @@ fn run(cli: Cli) -> Result<()> {
                 &shell_output,
                 &model_output,
             )?;
+            let runtime_args = runtime_cli_args(
+                &cap,
+                &db_table,
+                &secret,
+                &deploy_result,
+                &spend_result,
+                &http_text,
+                &shell_output,
+                &model_output,
+            );
             let target = file.display().to_string();
-            let report = build_verify_report(
+            let report = build_verify_report_with_runtime_args(
                 target,
                 load_target_program(&file),
                 runtime_gates,
                 deny_warnings,
+                runtime_args,
             );
             if json {
                 print_json(&report)?;
@@ -768,14 +779,25 @@ fn run(cli: Cli) -> Result<()> {
                 &shell_output,
                 &model_output,
             )?;
+            let runtime_args = runtime_cli_args(
+                &cap,
+                &db_table,
+                &secret,
+                &deploy_result,
+                &spend_result,
+                &http_text,
+                &shell_output,
+                &model_output,
+            );
             let target = file.display().to_string();
             let (verify, seal, package) = match load_target_program_and_source_bytes(&file) {
                 Ok((program, source_bytes)) => {
-                    let verify = build_verify_report(
+                    let verify = build_verify_report_with_runtime_args(
                         target.clone(),
                         Ok(program.clone()),
                         runtime_gates,
                         true,
+                        runtime_args,
                     );
                     if verify.status == "passed" {
                         let trace_path = default_trace_path(&file);
@@ -1693,6 +1715,42 @@ fn build_runtime_gates(
     load_runtime_shell_outputs(&mut gates, shell_output)?;
     load_runtime_model_outputs(&mut gates, model_output)?;
     Ok(gates)
+}
+
+fn runtime_cli_args(
+    cap: &[String],
+    db_table: &[String],
+    secret: &[String],
+    deploy_result: &[String],
+    spend_result: &[String],
+    http_text: &[String],
+    shell_output: &[String],
+    model_output: &[String],
+) -> Vec<String> {
+    let mut args = Vec::new();
+    append_repeated_cli_arg(&mut args, "--cap", cap);
+    append_repeated_cli_arg(&mut args, "--db-table", db_table);
+    append_pair_cli_arg(&mut args, "--secret", secret);
+    append_pair_cli_arg(&mut args, "--http-text", http_text);
+    append_pair_cli_arg(&mut args, "--shell-output", shell_output);
+    append_pair_cli_arg(&mut args, "--model-output", model_output);
+    append_pair_cli_arg(&mut args, "--deploy-result", deploy_result);
+    append_pair_cli_arg(&mut args, "--spend-result", spend_result);
+    args
+}
+
+fn append_repeated_cli_arg(args: &mut Vec<String>, flag: &str, values: &[String]) {
+    for value in values {
+        args.push(flag.to_string());
+        args.push(value.clone());
+    }
+}
+
+fn append_pair_cli_arg(args: &mut Vec<String>, flag: &str, values: &[String]) {
+    for pair in values.chunks(2) {
+        args.push(flag.to_string());
+        args.extend(pair.iter().cloned());
+    }
 }
 
 fn load_runtime_db_tables(gates: &mut RuntimeGates, values: &[String]) -> Result<()> {

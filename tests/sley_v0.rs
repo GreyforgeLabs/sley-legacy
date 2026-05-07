@@ -1579,6 +1579,137 @@ fn verify_passed_deploy_actions_prepare_dry_run_package() {
 }
 
 #[test]
+fn verify_cli_deploy_action_preserves_runtime_args() {
+    let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let verify = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .current_dir(&repo_root)
+        .args([
+            "verify",
+            "--json",
+            "--deny-warnings",
+            "--cap",
+            "SecretRead",
+            "--secret",
+            "api_key",
+            "custom redacted",
+            "--cap",
+            "Network",
+            "--http-text",
+            "https://example.test/profile",
+            "custom profile",
+            "--cap",
+            "ModelCall",
+            "--model-output",
+            "deploy-plan",
+            "custom plan",
+            "--cap",
+            "Deploy",
+            "--deploy-result",
+            "staging",
+            "custom staged",
+            "examples/agent_deploy_pipeline.sley",
+        ])
+        .output()
+        .expect("run custom seeded verify");
+    let verify_stdout = String::from_utf8(verify.stdout).expect("verify stdout utf8");
+    let verify_stderr = String::from_utf8(verify.stderr).expect("verify stderr utf8");
+    assert!(
+        verify.status.success(),
+        "stdout: {verify_stdout}\nstderr: {verify_stderr}"
+    );
+    let verify_json: serde_json::Value =
+        serde_json::from_str(&verify_stdout).expect("parse verify JSON");
+    assert_eq!(
+        verify_json.pointer("/runtime/value/value/value"),
+        Some(&serde_json::json!(
+            "custom profile | custom plan | custom staged"
+        ))
+    );
+    assert_eq!(
+        verify_json.pointer("/next_actions/2/kind"),
+        Some(&serde_json::json!("prepare_deploy_package"))
+    );
+    let deploy_command = verify_json
+        .pointer("/next_actions/2/command")
+        .and_then(serde_json::Value::as_array)
+        .expect("deploy command")
+        .iter()
+        .map(|value| value.as_str().expect("string command segment").to_string())
+        .collect::<Vec<_>>();
+    assert_eq!(
+        deploy_command,
+        vec![
+            "sley",
+            "deploy",
+            "--json",
+            "--dry-run",
+            "--artifacts-dir",
+            ".sley/deploy",
+            "--cap",
+            "SecretRead",
+            "--cap",
+            "Network",
+            "--cap",
+            "ModelCall",
+            "--cap",
+            "Deploy",
+            "--secret",
+            "api_key",
+            "custom redacted",
+            "--http-text",
+            "https://example.test/profile",
+            "custom profile",
+            "--model-output",
+            "deploy-plan",
+            "custom plan",
+            "--deploy-result",
+            "staging",
+            "custom staged",
+            "examples/agent_deploy_pipeline.sley",
+        ]
+        .into_iter()
+        .map(str::to_string)
+        .collect::<Vec<_>>()
+    );
+
+    let deploy_root = temp_project_dir("verify-custom-deploy");
+    let deploy_root_arg = sley_string(&deploy_root);
+    let portable_deploy_command = deploy_command
+        .iter()
+        .map(|segment| {
+            if segment == ".sley/deploy" {
+                deploy_root_arg.clone()
+            } else {
+                segment.clone()
+            }
+        })
+        .collect::<Vec<_>>();
+    let deploy = ProcessCommand::new(env!("CARGO_BIN_EXE_sley"))
+        .current_dir(&repo_root)
+        .args(&portable_deploy_command[1..])
+        .output()
+        .expect("run custom verify deploy action");
+    let deploy_stdout = String::from_utf8(deploy.stdout).expect("deploy stdout utf8");
+    let deploy_stderr = String::from_utf8(deploy.stderr).expect("deploy stderr utf8");
+    assert!(
+        deploy.status.success(),
+        "stdout: {deploy_stdout}\nstderr: {deploy_stderr}"
+    );
+    let deploy_json: serde_json::Value =
+        serde_json::from_str(&deploy_stdout).expect("parse deploy JSON");
+    assert_eq!(
+        deploy_json.pointer("/verify/runtime/value/value/value"),
+        Some(&serde_json::json!(
+            "custom profile | custom plan | custom staged"
+        ))
+    );
+    assert!(deploy_root.join("deploy-report.json").exists());
+    assert!(deploy_root.join("seal.json").exists());
+    assert!(deploy_root.join("zjx-envelope.json").exists());
+    let _ = fs::remove_dir_all(deploy_root);
+}
+
+#[test]
 fn edit_plan_report_ranks_query_surfaces_and_carries_lint_findings() {
     let source = r#"
 module app.plan
@@ -11247,11 +11378,11 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/integration_test_count"),
-        Some(&serde_json::json!(333))
+        Some(&serde_json::json!(334))
     );
     assert_eq!(
         report_json.pointer("/summary/declared_integration_test_count"),
-        Some(&serde_json::json!(333))
+        Some(&serde_json::json!(334))
     );
     assert_eq!(
         report_json.pointer("/summary/test_count_matches_declared"),
@@ -11275,7 +11406,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/tests/integration_test_count"),
-        Some(&serde_json::json!(333))
+        Some(&serde_json::json!(334))
     );
     assert_eq!(
         report_json.pointer("/tests/declared_matches_actual"),
