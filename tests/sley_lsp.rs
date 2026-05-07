@@ -55,6 +55,10 @@ fn lsp_publishes_diagnostics_formats_symbols_and_previews_code_actions() {
         Some(&json!(false))
     );
     assert_eq!(
+        initialized.pointer("/result/capabilities/signatureHelpProvider/triggerCharacters/0"),
+        Some(&json!("("))
+    );
+    assert_eq!(
         initialized.pointer("/result/capabilities/workspaceSymbolProvider"),
         Some(&json!(true))
     );
@@ -320,6 +324,10 @@ task pair -> Text {
 task mixed -> Text {
   return pipe.message() + pipe.other()
 }
+
+task signature -> Text {
+  return pipe.join("a", "b")
+}
     "#;
     fs::write(&main_path, main_source).expect("write LSP main module");
     fs::write(
@@ -328,6 +336,13 @@ task mixed -> Text {
 
 export task message -> Text {
   return "ready"
+}
+
+export task join -> Text {
+  take left: Text
+  take right: Text
+
+  return left + right
 }
 
 export task other -> Text {
@@ -703,6 +718,51 @@ export task other -> Text {
         Some(&json!(0))
     );
 
+    let signature_line = main_source
+        .lines()
+        .position(|line| line.contains("pipe.join"))
+        .expect("signature call line");
+    let signature_character = main_source
+        .lines()
+        .nth(signature_line)
+        .and_then(|line| line.find("\"b\""))
+        .map(|character| character + 1)
+        .expect("signature second argument character");
+    write_lsp(
+        &mut stdin,
+        json!({
+            "jsonrpc": "2.0",
+            "id": 11,
+            "method": "textDocument/signatureHelp",
+            "params": {
+                "textDocument": {
+                    "uri": main_uri
+                },
+                "position": {
+                    "line": signature_line,
+                    "character": signature_character
+                }
+            }
+        }),
+    );
+    let signature_help = read_response(&mut reader, 11);
+    assert_eq!(
+        signature_help.pointer("/result/signatures/0/label"),
+        Some(&json!("pipe.join(left: Text, right: Text) -> Text"))
+    );
+    assert_eq!(
+        signature_help.pointer("/result/signatures/0/parameters/0/label"),
+        Some(&json!("left: Text"))
+    );
+    assert_eq!(
+        signature_help.pointer("/result/signatures/0/parameters/1/label"),
+        Some(&json!("right: Text"))
+    );
+    assert_eq!(
+        signature_help.pointer("/result/activeParameter"),
+        Some(&json!(1))
+    );
+
     let changed_source = main_source.replace("pipe.message()", "pipe.missing()");
     write_lsp(
         &mut stdin,
@@ -730,12 +790,12 @@ export task other -> Text {
         &mut stdin,
         json!({
             "jsonrpc": "2.0",
-            "id": 11,
+            "id": 12,
             "method": "shutdown",
             "params": null
         }),
     );
-    let shutdown = read_response(&mut reader, 11);
+    let shutdown = read_response(&mut reader, 12);
     assert!(shutdown.get("result").is_some());
     write_lsp(
         &mut stdin,
