@@ -9618,11 +9618,11 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/integration_test_count"),
-        Some(&serde_json::json!(312))
+        Some(&serde_json::json!(313))
     );
     assert_eq!(
         report_json.pointer("/summary/declared_integration_test_count"),
-        Some(&serde_json::json!(312))
+        Some(&serde_json::json!(313))
     );
     assert_eq!(
         report_json.pointer("/summary/test_count_matches_declared"),
@@ -9634,7 +9634,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/tests/integration_test_count"),
-        Some(&serde_json::json!(312))
+        Some(&serde_json::json!(313))
     );
     assert_eq!(
         report_json.pointer("/tests/declared_matches_actual"),
@@ -11626,6 +11626,94 @@ task main -> Result<Unit, Error> {
     assert_eq!(outcome.status, "accepted", "{:#?}", outcome.diagnostics);
     let grafted = parse_program(&outcome.source.expect("grafted source")).expect("parse grafted");
     assert!(!has_errors(&check_program(&grafted)));
+}
+
+#[test]
+fn checker_omits_structural_grafts_for_uninhabited_default_sources() {
+    let source = r#"
+type Box = {
+  slot value: Unit
+}
+
+task unit_value -> Unit {
+}
+
+task takes_unit -> Unit {
+  take value: Unit
+}
+
+task bad_binding -> Unit {
+  bind value: Unit = 1
+}
+
+task bad_set -> Unit {
+  state value: Unit = call unit_value()
+  set value = 1
+}
+
+task bad_return -> Unit {
+  return 1
+}
+
+task bad_call -> Unit {
+  call takes_unit(1)
+}
+
+task bad_record -> Box {
+  return Box { value: 1 }
+}
+"#;
+    let program = parse_program(source).expect("parse uninhabited default source");
+    let diagnostics = check_program(&program);
+    for id in [
+        "TYPE_MISMATCH",
+        "SET_TYPE_MISMATCH",
+        "RETURN_TYPE_MISMATCH",
+        "CALL_ARGUMENT_TYPE_MISMATCH",
+        "RECORD_FIELD_TYPE_MISMATCH",
+    ] {
+        let diagnostic = diagnostics
+            .iter()
+            .find(|diagnostic| diagnostic.id == id)
+            .unwrap_or_else(|| panic!("missing {id} diagnostic: {diagnostics:#?}"));
+        assert!(
+            diagnostic.repair_hints.iter().all(|hint| hint
+                .replacement
+                .as_deref()
+                .is_none_or(|value| !value.contains("TODO_VALUE"))),
+            "{id} should not emit TODO_VALUE structural starters: {diagnostic:#?}"
+        );
+    }
+
+    for id in [
+        "TYPE_MISMATCH",
+        "SET_TYPE_MISMATCH",
+        "RETURN_TYPE_MISMATCH",
+        "RECORD_FIELD_TYPE_MISMATCH",
+    ] {
+        let diagnostic = diagnostics
+            .iter()
+            .find(|diagnostic| diagnostic.id == id)
+            .expect("diagnostic already checked");
+        assert!(
+            !diagnostic
+                .repair_hints
+                .iter()
+                .any(|hint| hint.kind == "replace_expression"),
+            "{id} should omit unchecked ReplaceExpression grafts: {diagnostic:#?}"
+        );
+    }
+    let call_diagnostic = diagnostics
+        .iter()
+        .find(|diagnostic| diagnostic.id == "CALL_ARGUMENT_TYPE_MISMATCH")
+        .expect("call argument diagnostic already checked");
+    assert!(
+        !call_diagnostic
+            .repair_hints
+            .iter()
+            .any(|hint| hint.kind == "replace_call_arg"),
+        "call argument mismatch should omit unchecked ReplaceCallArg grafts: {call_diagnostic:#?}"
+    );
 }
 
 #[test]
