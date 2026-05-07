@@ -67,6 +67,8 @@ Current verified surface:
 - `sley query --json` emits `schema: "sley.query.report.v0"` and supports
   `--kind all|modules|tasks|types|effects|calls`, `--module <module>`, and
   `--exported`, including strict task/take/type/effect/call row definitions.
+  Unknown module filters fail with `QUERY_MODULE_FILTER_NOT_FOUND` instead of
+  producing empty successful reports.
 - `sley run --json` emits `schema: "sley.run.report.v0"` with a strict
   recursive runtime value payload and empty diagnostics on successful
   deterministic execution. Verify reports reuse the same strict value contract
@@ -80,7 +82,8 @@ Current verified surface:
 - `sley-contract` is available as an in-tree contract utility scaffold with
   `inventory`, `check-fixtures`, `validate`, and `inspect-deploy-artifacts`
   JSON Schema validation commands over `docs/schemas/`, `fixtures/contracts/`,
-  release manifests, and local deploy artifact directories.
+  release manifests, and local deploy artifact directories. Contract inventory
+  currently tracks 38 schemas, 112 contract fixtures, and 115 schema instances.
 - `sley-ci` is available as an in-tree CI wrapper with `check`, `lint`,
   `doctor`, `plan`, `run`, `verify`, `deploy`, `smoke`, `corpus`, and
   `examples` commands that emit
@@ -88,7 +91,8 @@ Current verified surface:
   existing Sley check/lint/doctor/plan/run/verify/deploy, CLI smoke manifest,
   accepted/rejected corpus, and packaged example gates, including deploy
   artifact directory pass-through. `sley-ci smoke` and `sley-ci corpus` accept
-  either explicit `manifest.json` files or manifest directories.
+  either explicit `manifest.json` files or manifest directories, and
+  `sley-ci lint` is smoke-pinned for strict module-filter failures.
 - `sley-conformance` is available as an in-tree conformance visibility helper
   with `report` and `coverage` commands that emit
   `schema: "sley.conformance.report.v0"` and
@@ -101,7 +105,8 @@ Current verified surface:
   percentages. It fails when required local gate targets disappear. `report`
   now fails when
   required corpus or smoke release tags disappear, including seeded and scoped
-  runtime authority smoke tags.
+  runtime authority smoke tags, strict module-filter diagnostic tags, and
+  `ci:lint` wrapper coverage.
   `report --require-public-release-ready` turns
   unresolved public-release packaging blockers into an explicit nonzero gate
   for final release cuts, and the regular report carries next actions for the
@@ -230,7 +235,8 @@ Current verified surface:
   `--rule same-branch-if-expression`,
   `--rule same-branch-if-statement`, `--rule unreachable-statement`,
   `--rule absorbing-arithmetic-expression`, and
-  `--deny-warnings`.
+  `--deny-warnings`. Unknown module filters fail with
+  `LINT_MODULE_FILTER_NOT_FOUND` instead of producing clean empty-slice reports.
 - The current lint rules are `unused_private_task` and
   `unreachable_private_task`, `unused_declared_effect`, and
   `unused_import`, `unused_take`, `unused_private_type`,
