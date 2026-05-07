@@ -64,7 +64,8 @@
               "absorbing_arithmetic_expression",
               "self_assignment_statement",
               "overwritten_set_statement",
-              "redundant_initial_set_statement"
+              "redundant_initial_set_statement",
+              "empty_while_statement"
             ]
           },
           "uniqueItems": true
@@ -135,7 +136,8 @@
               "ABSORBING_ARITHMETIC_EXPRESSION",
               "SELF_ASSIGNMENT_STATEMENT",
               "OVERWRITTEN_SET_STATEMENT",
-              "REDUNDANT_INITIAL_SET_STATEMENT"
+              "REDUNDANT_INITIAL_SET_STATEMENT",
+              "EMPTY_WHILE_STATEMENT"
             ]
           },
           "rule": {
@@ -187,7 +189,8 @@
               "absorbing_arithmetic_expression",
               "self_assignment_statement",
               "overwritten_set_statement",
-              "redundant_initial_set_statement"
+              "redundant_initial_set_statement",
+              "empty_while_statement"
             ]
           },
           "severity": { "enum": ["warning"] },

@@ -9053,6 +9053,20 @@ task helper -> Result<Text, Error> {
         include_str!("../fixtures/contracts/lint_empty_forge_statement.json"),
     );
 
+    let empty_while_source = include_str!("../examples/empty_while_statement.sley");
+    let empty_while_program = parse_program(empty_while_source).expect("parse empty while fixture");
+    let empty_while_lint = build_lint_report(
+        &empty_while_program,
+        LintOptions {
+            rules: vec![LintRule::EmptyWhileStatement],
+            module: None,
+        },
+    );
+    assert_json_snapshot(
+        &empty_while_lint,
+        include_str!("../fixtures/contracts/lint_empty_while_statement.json"),
+    );
+
     let identity_binary_source = include_str!("../examples/identity_binary_expression.sley");
     let identity_binary_program =
         parse_program(identity_binary_source).expect("parse identity binary fixture");
@@ -10260,7 +10274,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(116))
+        Some(&serde_json::json!(117))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -10536,7 +10550,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/contract_fixture_count"),
-        Some(&serde_json::json!(116))
+        Some(&serde_json::json!(117))
     );
     assert_eq!(
         report_json.pointer("/summary/migration_fixture_count"),
@@ -10652,7 +10666,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/smoke_case_count"),
-        Some(&serde_json::json!(452))
+        Some(&serde_json::json!(453))
     );
     assert_eq!(
         report_json.pointer("/summary/onboarding_path_count"),
@@ -10664,15 +10678,15 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/example_source_count"),
-        Some(&serde_json::json!(71))
+        Some(&serde_json::json!(72))
     );
     assert_eq!(
         report_json.pointer("/summary/integration_test_count"),
-        Some(&serde_json::json!(323))
+        Some(&serde_json::json!(324))
     );
     assert_eq!(
         report_json.pointer("/summary/declared_integration_test_count"),
-        Some(&serde_json::json!(323))
+        Some(&serde_json::json!(324))
     );
     assert_eq!(
         report_json.pointer("/summary/test_count_matches_declared"),
@@ -10696,7 +10710,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/tests/integration_test_count"),
-        Some(&serde_json::json!(323))
+        Some(&serde_json::json!(324))
     );
     assert_eq!(
         report_json.pointer("/tests/declared_matches_actual"),
@@ -11882,7 +11896,7 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     );
     assert_eq!(
         examples_json.pointer("/summary/step_count"),
-        Some(&serde_json::json!(137))
+        Some(&serde_json::json!(139))
     );
     assert_eq!(
         examples_json.pointer("/steps/0/name"),
@@ -11903,7 +11917,7 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
         ))
     );
     assert_eq!(
-        examples_json.pointer("/steps/66/name"),
+        examples_json.pointer("/steps/67/name"),
         Some(&serde_json::json!(
             "format_round_trip:examples/absorbing_arithmetic_expression.sley"
         ))
@@ -19697,6 +19711,88 @@ task main -> Int {
 }
 
 #[test]
+fn lint_report_flags_empty_while_statements() {
+    let source = r#"
+module app.empty_while
+
+task main -> Int {
+  bind ready = true
+  state total = 0
+
+  while ready {
+  }
+
+  while false {
+  }
+
+  while call check_ready() {
+  }
+
+  while total > 0 {
+    set total = total - 1
+  }
+
+  if ready {
+    while total >= 0 {
+    }
+  }
+
+  return total
+}
+
+task check_ready -> Bool {
+  return true
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+
+    let report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::EmptyWhileStatement],
+            module: None,
+        },
+    );
+
+    assert_eq!(report.schema, LINT_REPORT_SCHEMA);
+    assert_eq!(report.status, "findings");
+    assert_eq!(report.entry_module, "app.empty_while");
+    assert_eq!(report.filters.rules, vec!["empty_while_statement"]);
+    assert_eq!(
+        report.findings.len(),
+        2,
+        "empty while should skip while false and effectful or non-empty loops"
+    );
+    assert_eq!(report.findings[0].id, "EMPTY_WHILE_STATEMENT");
+    assert_eq!(report.findings[0].rule, "empty_while_statement");
+    let nodes: Vec<&str> = report
+        .findings
+        .iter()
+        .map(|finding| finding.node.as_str())
+        .collect();
+    assert!(nodes.contains(&"block:task:app.empty_while.main:stmt:2"));
+    assert!(nodes.contains(&"block:task:app.empty_while.main:stmt:6:then:stmt:0"));
+    assert_eq!(report.findings[0].module, "app.empty_while");
+    assert!(report.findings[0].message.contains("empty while"));
+    assert!(report.findings[0].hint.contains("termination"));
+
+    let scoped_report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::EmptyWhileStatement],
+            module: Some("app.other".to_string()),
+        },
+    );
+    assert_eq!(scoped_report.status, "ok");
+    assert!(scoped_report.findings.is_empty());
+}
+
+#[test]
 fn lint_report_flags_empty_forge_statements() {
     let source = r#"
 module app.empty_forge
@@ -22943,6 +23039,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "lint:constant_not_expression",
         "lint:empty_if_statement",
         "lint:empty_else_statement",
+        "lint:empty_while_statement",
         "lint:empty_for_statement",
         "lint:empty_forge_statement",
         "lint:identity_binary_expression",

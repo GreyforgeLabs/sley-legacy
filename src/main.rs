@@ -1014,6 +1014,7 @@ enum CliLintRule {
     SelfAssignmentStatement,
     OverwrittenSetStatement,
     RedundantInitialSetStatement,
+    EmptyWhileStatement,
 }
 
 impl From<CliLintRule> for LintRule {
@@ -1071,6 +1072,7 @@ impl From<CliLintRule> for LintRule {
             CliLintRule::SelfAssignmentStatement => Self::SelfAssignmentStatement,
             CliLintRule::OverwrittenSetStatement => Self::OverwrittenSetStatement,
             CliLintRule::RedundantInitialSetStatement => Self::RedundantInitialSetStatement,
+            CliLintRule::EmptyWhileStatement => Self::EmptyWhileStatement,
         }
     }
 }

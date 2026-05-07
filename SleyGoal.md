@@ -44,7 +44,7 @@ Current verified surface:
 
 - `cargo fmt -- --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 323 tests in the core `tests/sley_v0.rs`
+- Current integration coverage is 324 tests in the core `tests/sley_v0.rs`
   conformance file, with additional focused integration tests for LSP,
   workbench, agent bench, docgen, migration reports, sandbox replay, project
   templates, and ZJX envelope tools. The focused utility tests validate live
@@ -240,7 +240,8 @@ Current verified surface:
   `--rule redundant-boolean-if-statement`,
   `--rule same-branch-if-expression`,
   `--rule same-branch-if-statement`, `--rule unreachable-statement`,
-  `--rule absorbing-arithmetic-expression`, and
+  `--rule absorbing-arithmetic-expression`,
+  `--rule empty-while-statement`, and
   `--deny-warnings`. Unknown module filters fail with
   `LINT_MODULE_FILTER_NOT_FOUND` instead of producing clean empty-slice reports.
 - The current lint rules are `unused_private_task` and
@@ -275,7 +276,8 @@ Current verified surface:
   `redundant_boolean_if_statement`, `same_branch_if_expression`, and
   `same_branch_if_statement`, and `unreachable_statement`, and
   `absorbing_arithmetic_expression`, `self_assignment_statement`, and
-  `overwritten_set_statement`, and `redundant_initial_set_statement`.
+  `overwritten_set_statement`, and `redundant_initial_set_statement`, and
+  `empty_while_statement`.
 - CLI smoke coverage is manifest-backed under
   `fixtures/cli_smokes/manifest.json`, with a separate
   `fixtures/ci_smoke_probe/manifest.json` contract for the `sley-ci smoke`
@@ -392,7 +394,9 @@ Current verified surface:
   `delete_empty_for_statement` templates with lint/plan/fix-write/verify
   smoke coverage, plus checked `empty_forge_statement` no-op block findings and
   `delete_empty_forge_statement` templates with lint/plan/fix-write/verify
-  smoke coverage, plus checked `identity_binary_expression` style findings and
+  smoke coverage, plus checked `empty_while_statement` warning coverage for
+  empty loops with delete-safe pure conditions, plus checked
+  `identity_binary_expression` style findings and
   `simplify_identity_binary_expression` templates with lint/plan/fix-write/verify
   smoke coverage, including empty-text concatenation cleanup, plus checked
   `redundant_boolean_comparison` style findings and

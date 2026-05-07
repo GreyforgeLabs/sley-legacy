@@ -140,6 +140,7 @@ Implemented now:
   `--rule empty-else-statement`,
   `--rule empty-for-statement`,
   `--rule empty-forge-statement`,
+  `--rule empty-while-statement`,
   `--rule identity-binary-expression`, or
   `--rule redundant-boolean-comparison`, or
   `--rule absorbing-boolean-expression`, or
@@ -321,6 +322,8 @@ Implemented now:
   empty lists,
   `delete_empty_forge_statement` templates for no-op `forge { }` starter
   blocks,
+  `empty_while_statement` warnings for empty loops with delete-safe pure
+  conditions,
   `simplify_identity_binary_expression` templates for identity binary
   expressions, including empty-text concatenation, that can be replaced by the
   non-identity side,
