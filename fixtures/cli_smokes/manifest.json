@@ -677,6 +677,7 @@
         "json:sley.verify.report.v0",
         "json:sley.query.report.v0",
         "json:sley.lint.report.v0",
+        "readiness:verify-deploy-package",
         "readiness:verify-package-next-action",
         "scaffold:deploy-quickstart",
         "scaffold:verify-ready",
@@ -701,7 +702,12 @@
           { "pointer": "/runtime/value/value/value", "value": "staged" },
           { "pointer": "/next_actions/0/kind", "value": "seal_verified_target" },
           { "pointer": "/next_actions/1/kind", "value": "package_verified_target" },
-          { "pointer": "/next_actions/1/command/1", "value": "zjx" }
+          { "pointer": "/next_actions/1/command/1", "value": "zjx" },
+          { "pointer": "/next_actions/2/kind", "value": "prepare_deploy_package" },
+          { "pointer": "/next_actions/2/command/1", "value": "deploy" },
+          { "pointer": "/next_actions/2/command/5", "value": ".sley/deploy" },
+          { "pointer": "/next_actions/2/command/7", "value": "Deploy" },
+          { "pointer": "/next_actions/2/command/10", "value": "staged" }
         ]
       }
     },
@@ -13927,6 +13933,7 @@
         "dogfood:agent-project",
         "examples:project",
         "json:sley.verify.report.v0",
+        "readiness:verify-deploy-package",
         "host:SecretRead",
         "host:Network",
         "host:ModelCall",
@@ -13945,7 +13952,14 @@
           { "pointer": "/runtime/value/kind", "value": "Ok" },
           { "pointer": "/runtime/value/value/value", "value": "profile ready | plan approved | staged" },
           { "pointer": "/next_actions/0/kind", "value": "seal_verified_target" },
-          { "pointer": "/next_actions/1/kind", "value": "package_verified_target" }
+          { "pointer": "/next_actions/1/kind", "value": "package_verified_target" },
+          { "pointer": "/next_actions/2/kind", "value": "prepare_deploy_package" },
+          { "pointer": "/next_actions/2/command/1", "value": "deploy" },
+          { "pointer": "/next_actions/2/command/5", "value": ".sley/deploy" },
+          { "pointer": "/next_actions/2/command/14", "value": "--secret" },
+          { "pointer": "/next_actions/2/command/19", "value": "profile ready" },
+          { "pointer": "/next_actions/2/command/22", "value": "plan approved" },
+          { "pointer": "/next_actions/2/command/25", "value": "staged" }
         ]
       }
     },

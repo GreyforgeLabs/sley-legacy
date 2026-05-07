@@ -7,6 +7,7 @@ use crate::lint::{LintOptions, LintReport, build_lint_report};
 use crate::plan::{CheckedLintRepair, single_checked_lint_repair};
 use crate::query::{QueryKind, QueryOptions, QueryReport, build_query_report};
 use crate::runtime::{RuntimeGates, Value, run_main, run_main_with_gates};
+use crate::runtime_seed_plan::{cap_args, inferred_runtime_seed_args};
 
 pub const VERIFY_REPORT_SCHEMA: &str = "sley.verify.report.v0";
 
@@ -180,7 +181,7 @@ pub fn build_verify_report(
     let actions = if lint_finding_count > 0 {
         lint_actions(&target, checked_lint_repair.as_ref(), &query_report)
     } else {
-        passed_actions(&target)
+        passed_actions(&target, &query_report, &program)
     };
     let summary = build_summary(&[], Some(&query), Some(&lint), &runtime);
 
@@ -377,8 +378,8 @@ fn inspect_calls_action(target: &str) -> VerifyAction {
     }
 }
 
-fn passed_actions(target: &str) -> Vec<VerifyAction> {
-    vec![
+fn passed_actions(target: &str, query: &QueryReport, program: &Program) -> Vec<VerifyAction> {
+    let mut actions = vec![
         VerifyAction {
             kind: "seal_verified_target".to_string(),
             reason: "create a content-addressed review artifact after verification".to_string(),
@@ -392,7 +393,36 @@ fn passed_actions(target: &str) -> Vec<VerifyAction> {
             command: command(["sley", "zjx", "--json", target]),
             write_command: None,
         },
-    ]
+    ];
+
+    let entry_task = format!("{}.main", query.entry_module);
+    if let Some(task) = query
+        .tasks
+        .iter()
+        .find(|task| task.qualified_name == entry_task)
+    {
+        if task.effects.iter().any(|effect| effect == "Deploy") {
+            let mut deploy_command = vec![
+                "sley".to_string(),
+                "deploy".to_string(),
+                "--json".to_string(),
+                "--dry-run".to_string(),
+                "--artifacts-dir".to_string(),
+                ".sley/deploy".to_string(),
+            ];
+            deploy_command.extend(cap_args(&task.effects));
+            deploy_command.extend(inferred_runtime_seed_args(program, &entry_task));
+            deploy_command.push(target.to_string());
+            actions.push(VerifyAction {
+                kind: "prepare_deploy_package".to_string(),
+                reason: "verified entrypoint has Deploy authority, so prepare a local dry-run deploy package".to_string(),
+                command: deploy_command,
+                write_command: None,
+            });
+        }
+    }
+
+    actions
 }
 
 fn command<const N: usize>(items: [&str; N]) -> Vec<String> {
