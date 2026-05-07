@@ -474,9 +474,9 @@ Current development phase:
   operator approval. Add `--artifacts-dir <dir>` to write local
   `deploy-report.json`, `seal.json`, `zjx-envelope.json`, and digest-bearing
   `manifest.json` handoff files after the dry-run package is ready;
-  `sley-ci deploy` passes the same flag through to the wrapped deploy command
-  and exposes nested verify lint findings, runtime diagnostics, and repair
-  `next_actions` on failed CI steps.
+  `sley-ci deploy` requires explicit `--dry-run`, passes the same flag through
+  to the wrapped deploy command, and exposes nested verify lint findings,
+  runtime diagnostics, and repair `next_actions` on failed CI steps.
   Use `sley-contract inspect-deploy-artifacts <dir> --schemas docs/schemas
   --json` to validate the handoff manifest, schemas, and file digests after the
   directory moves between agent sessions

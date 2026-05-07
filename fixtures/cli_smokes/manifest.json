@@ -567,6 +567,35 @@
       }
     },
     {
+      "name": "ci_deploy_requires_explicit_dry_run_json",
+      "bin": "sley-ci",
+      "args": [
+        "deploy",
+        "--json",
+        "examples/project"
+      ],
+      "covers": [
+        "cli:sley-ci",
+        "ci:deploy-dry-run-required",
+        "json:sley.ci.report.v0",
+        "readiness:deploy-dry-run-only"
+      ],
+      "expect": {
+        "success": false,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.ci.report.v0" },
+          { "pointer": "/status", "value": "failed" },
+          { "pointer": "/command", "value": "deploy" },
+          { "pointer": "/summary/step_count", "value": 0 },
+          { "pointer": "/summary/failed_count", "value": 0 },
+          { "pointer": "/issues/0/code", "value": "dry_run_required" }
+        ],
+        "stdout_json_absent": [
+          "/steps/0"
+        ]
+      }
+    },
+    {
       "name": "ci_deploy_agent_deploy_pipeline_missing_runtime_gates_json",
       "bin": "sley-ci",
       "args": [

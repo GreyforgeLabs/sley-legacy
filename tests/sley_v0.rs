@@ -10958,7 +10958,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(121))
+        Some(&serde_json::json!(122))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -11234,7 +11234,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/contract_fixture_count"),
-        Some(&serde_json::json!(121))
+        Some(&serde_json::json!(122))
     );
     assert_eq!(
         report_json.pointer("/summary/migration_fixture_count"),
@@ -11364,6 +11364,13 @@ fn conformance_report_summarizes_release_surface() {
         report_json
             .pointer("/smoke/required_tags")
             .and_then(|value| value.as_array())
+            .is_some_and(|tags| tags.iter().any(|tag| tag == "ci:deploy-dry-run-required")),
+        "conformance report should require sley-ci deploy dry-run boundary coverage"
+    );
+    assert!(
+        report_json
+            .pointer("/smoke/required_tags")
+            .and_then(|value| value.as_array())
             .is_some_and(|tags| tags
                 .iter()
                 .any(|tag| tag == "ci:verify-runtime-diagnostics")),
@@ -11419,7 +11426,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/smoke_case_count"),
-        Some(&serde_json::json!(474))
+        Some(&serde_json::json!(475))
     );
     assert_eq!(
         report_json.pointer("/summary/onboarding_path_count"),
@@ -12328,6 +12335,31 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     assert_eq!(
         blocked_lint_deploy_json.pointer("/steps/0/next_actions/4/kind"),
         Some(&serde_json::json!("repair_verify_gate"))
+    );
+
+    let missing_dry_run_deploy = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
+        .current_dir(&repo_root)
+        .args(["deploy", "--json", "examples/project"])
+        .output()
+        .expect("run sley-ci deploy without dry-run");
+    assert!(
+        !missing_dry_run_deploy.status.success(),
+        "sley-ci deploy without explicit dry-run should fail"
+    );
+    let missing_dry_run_deploy_json: serde_json::Value =
+        serde_json::from_slice(&missing_dry_run_deploy.stdout)
+            .expect("parse missing dry-run sley-ci deploy JSON");
+    assert_eq!(
+        missing_dry_run_deploy_json.pointer("/summary/step_count"),
+        Some(&serde_json::json!(0))
+    );
+    assert_eq!(
+        missing_dry_run_deploy_json.pointer("/issues/0/code"),
+        Some(&serde_json::json!("dry_run_required"))
+    );
+    assert_json_snapshot(
+        &missing_dry_run_deploy_json,
+        include_str!("../fixtures/contracts/ci_deploy_requires_dry_run.json"),
     );
 
     let stable_deploy = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
@@ -24136,6 +24168,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "agent-bench:unused-private-task-repair",
         "ci:corpus",
         "ci:lint",
+        "ci:deploy-dry-run-required",
         "ci:deploy-lint-findings",
         "ci:deploy-next-actions",
         "ci:deploy-runtime-diagnostics",
