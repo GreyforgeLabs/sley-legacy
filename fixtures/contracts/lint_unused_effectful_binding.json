@@ -1,0 +1,31 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.effectful_binding",
+  "filters": {
+    "module": null,
+    "rules": [
+      "unused_effectful_binding"
+    ]
+  },
+  "findings": [
+    {
+      "id": "UNUSED_EFFECTFUL_BINDING",
+      "rule": "unused_effectful_binding",
+      "severity": "warning",
+      "message": "task `app.effectful_binding.main` binds checked Result value from `fs.try_read_text` to `discarded_file` but never reads it",
+      "node": "block:task:app.effectful_binding.main:stmt:0",
+      "module": "app.effectful_binding",
+      "hint": "read `discarded_file`, return it, or keep the fallible call as an expression statement with `?` if only the effect matters"
+    },
+    {
+      "id": "UNUSED_EFFECTFUL_BINDING",
+      "rule": "unused_effectful_binding",
+      "severity": "warning",
+      "message": "task `app.effectful_binding.main` binds checked Result value from `helper` to `discarded_task` but never reads it",
+      "node": "block:task:app.effectful_binding.main:stmt:1",
+      "module": "app.effectful_binding",
+      "hint": "read `discarded_task`, return it, or keep the fallible call as an expression statement with `?` if only the effect matters"
+    }
+  ]
+}

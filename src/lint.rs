@@ -30,6 +30,7 @@ pub enum LintRule {
     MissingModuleDeclaration,
     UncheckedResult,
     UncheckedResultBinding,
+    UnusedEffectfulBinding,
     UnqualifiedImportedCall,
     UnusedPureBinding,
     UnusedPureExpressionStatement,
@@ -82,6 +83,7 @@ impl LintRule {
             Self::MissingModuleDeclaration,
             Self::UncheckedResult,
             Self::UncheckedResultBinding,
+            Self::UnusedEffectfulBinding,
             Self::UnqualifiedImportedCall,
             Self::UnusedPureBinding,
             Self::UnusedPureExpressionStatement,
@@ -134,6 +136,7 @@ impl LintRule {
             Self::MissingModuleDeclaration => "missing_module_declaration",
             Self::UncheckedResult => "unchecked_result",
             Self::UncheckedResultBinding => "unchecked_result_binding",
+            Self::UnusedEffectfulBinding => "unused_effectful_binding",
             Self::UnqualifiedImportedCall => "unqualified_imported_call",
             Self::UnusedPureBinding => "unused_pure_binding",
             Self::UnusedPureExpressionStatement => "unused_pure_expression_statement",
@@ -260,6 +263,12 @@ pub fn build_lint_report(program: &Program, options: LintOptions) -> LintReport 
     }
     if rules.contains(&LintRule::UncheckedResultBinding) {
         findings.extend(lint_unchecked_result_bindings(
+            program,
+            options.module.as_deref(),
+        ));
+    }
+    if rules.contains(&LintRule::UnusedEffectfulBinding) {
+        findings.extend(lint_unused_effectful_bindings(
             program,
             options.module.as_deref(),
         ));
@@ -5767,6 +5776,87 @@ fn lint_unchecked_result_bindings(program: &Program, module: Option<&str>) -> Ve
     findings
 }
 
+fn lint_unused_effectful_bindings(program: &Program, module: Option<&str>) -> Vec<LintFinding> {
+    let mut findings = Vec::new();
+    for task in program
+        .tasks
+        .iter()
+        .filter(|task| module_matches(module, &task_module(task)))
+    {
+        collect_unused_effectful_bindings_in_block(
+            program,
+            task,
+            &task.body,
+            &task.body,
+            &mut findings,
+        );
+    }
+    findings
+}
+
+fn collect_unused_effectful_bindings_in_block(
+    program: &Program,
+    task: &TaskDecl,
+    task_body: &Block,
+    block: &Block,
+    findings: &mut Vec<LintFinding>,
+) {
+    for statement in &block.statements {
+        match &statement.kind {
+            StatementKind::Binding {
+                binding_kind,
+                name,
+                expr,
+                ..
+            } => {
+                if binding_kind == &BindingKind::Bind
+                    && !block_uses_identifier_except_statement(task_body, name, &statement.id)
+                    && let Some(source) = unwrapped_result_source(program, task, expr)
+                {
+                    let task_name = task_fq_name(task);
+                    findings.push(LintFinding {
+                        id: "UNUSED_EFFECTFUL_BINDING".to_string(),
+                        rule: LintRule::UnusedEffectfulBinding.as_str().to_string(),
+                        severity: "warning".to_string(),
+                        message: format!(
+                            "task `{task_name}` binds checked Result value from `{source}` to `{name}` but never reads it"
+                        ),
+                        node: statement.id.clone(),
+                        module: task_module(task),
+                        hint: format!(
+                            "read `{name}`, return it, or keep the fallible call as an expression statement with `?` if only the effect matters"
+                        ),
+                    });
+                }
+            }
+            StatementKind::If {
+                then_block,
+                else_block,
+                ..
+            } => {
+                collect_unused_effectful_bindings_in_block(
+                    program, task, task_body, then_block, findings,
+                );
+                if let Some(else_block) = else_block {
+                    collect_unused_effectful_bindings_in_block(
+                        program, task, task_body, else_block, findings,
+                    );
+                }
+            }
+            StatementKind::While { body, .. }
+            | StatementKind::For { body, .. }
+            | StatementKind::Forge { body } => {
+                collect_unused_effectful_bindings_in_block(
+                    program, task, task_body, body, findings,
+                );
+            }
+            StatementKind::Set { .. }
+            | StatementKind::Return { .. }
+            | StatementKind::Expr { .. } => {}
+        }
+    }
+}
+
 fn collect_unchecked_result_bindings_in_block(
     program: &Program,
     task: &TaskDecl,
@@ -5891,6 +5981,13 @@ fn unchecked_result_source(program: &Program, task: &TaskDecl, expr: &Expr) -> O
         return Some(callee_name);
     }
     None
+}
+
+fn unwrapped_result_source(program: &Program, task: &TaskDecl, expr: &Expr) -> Option<String> {
+    let ExprKind::Try { expr } = &expr.kind else {
+        return None;
+    };
+    unchecked_result_source(program, task, expr)
 }
 
 fn user_task_returns_result(program: &Program, task: &TaskDecl, callee_name: &str) -> bool {

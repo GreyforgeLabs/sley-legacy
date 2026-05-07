@@ -7414,6 +7414,35 @@ task helper -> Result<Text, Error> {
         include_str!("../fixtures/contracts/lint_unchecked_result_binding.json"),
     );
 
+    let unused_effectful_binding_source = r#"
+module app.effectful_binding
+
+task main -> Result<Text, Error> uses FileRead {
+  bind discarded_file = fs.try_read_text("examples/hello.sley")?
+  bind discarded_task = call helper()?
+  bind handled_file = fs.try_read_text("examples/hello.sley")?
+
+  return Ok(handled_file)
+}
+
+task helper -> Result<Text, Error> {
+  return Ok("helper")
+}
+"#;
+    let unused_effectful_binding_program = parse_program(unused_effectful_binding_source)
+        .expect("parse unused effectful binding lint fixture");
+    let unused_effectful_binding_lint = build_lint_report(
+        &unused_effectful_binding_program,
+        LintOptions {
+            rules: vec![LintRule::UnusedEffectfulBinding],
+            module: None,
+        },
+    );
+    assert_json_snapshot(
+        &unused_effectful_binding_lint,
+        include_str!("../fixtures/contracts/lint_unused_effectful_binding.json"),
+    );
+
     let unqualified_import_project = load_project("examples/unqualified_import_call_project")
         .expect("load import style project");
     let unqualified_import_lint = build_lint_report(
@@ -8833,7 +8862,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(102))
+        Some(&serde_json::json!(103))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -9109,7 +9138,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/contract_fixture_count"),
-        Some(&serde_json::json!(102))
+        Some(&serde_json::json!(103))
     );
     assert_eq!(
         report_json.pointer("/summary/corpus_accepted_count"),
@@ -9121,7 +9150,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/smoke_case_count"),
-        Some(&serde_json::json!(379))
+        Some(&serde_json::json!(380))
     );
     assert_eq!(
         report_json.pointer("/summary/example_source_count"),
@@ -9129,11 +9158,11 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/integration_test_count"),
-        Some(&serde_json::json!(299))
+        Some(&serde_json::json!(300))
     );
     assert_eq!(
         report_json.pointer("/summary/declared_integration_test_count"),
-        Some(&serde_json::json!(299))
+        Some(&serde_json::json!(300))
     );
     assert_eq!(
         report_json.pointer("/summary/test_count_matches_declared"),
@@ -9145,7 +9174,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/tests/integration_test_count"),
-        Some(&serde_json::json!(299))
+        Some(&serde_json::json!(300))
     );
     assert_eq!(
         report_json.pointer("/tests/declared_matches_actual"),
@@ -14996,6 +15025,68 @@ task helper -> Result<Text, Error> {
 }
 
 #[test]
+fn lint_report_flags_unused_effectful_bindings() {
+    let source = r#"
+module app.effectful_binding
+
+task main -> Result<Text, Error> uses FileRead {
+  bind discarded_file = fs.try_read_text("examples/hello.sley")?
+  bind discarded_task = call helper()?
+  bind handled_file = fs.try_read_text("examples/hello.sley")?
+
+  return Ok(handled_file)
+}
+
+task helper -> Result<Text, Error> {
+  return Ok("helper")
+}
+"#;
+    let program = parse_program(source).expect("parse source");
+    let diagnostics = check_program(&program);
+    assert!(
+        !has_errors(&diagnostics),
+        "unexpected diagnostics: {diagnostics:#?}"
+    );
+
+    let report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::UnusedEffectfulBinding],
+            module: None,
+        },
+    );
+
+    assert_eq!(report.schema, LINT_REPORT_SCHEMA);
+    assert_eq!(report.status, "findings");
+    assert_eq!(report.entry_module, "app.effectful_binding");
+    assert_eq!(report.filters.rules, vec!["unused_effectful_binding"]);
+    assert_eq!(report.findings.len(), 2);
+    assert_eq!(report.findings[0].id, "UNUSED_EFFECTFUL_BINDING");
+    assert_eq!(report.findings[0].rule, "unused_effectful_binding");
+    assert_eq!(
+        report.findings[0].node,
+        "block:task:app.effectful_binding.main:stmt:0"
+    );
+    assert_eq!(
+        report.findings[1].node,
+        "block:task:app.effectful_binding.main:stmt:1"
+    );
+    assert!(report.findings[0].message.contains("fs.try_read_text"));
+    assert!(report.findings[1].message.contains("helper"));
+    assert!(report.findings[0].hint.contains("expression statement"));
+
+    let scoped_report = build_lint_report(
+        &program,
+        LintOptions {
+            rules: vec![LintRule::UnusedEffectfulBinding],
+            module: Some("app.other".to_string()),
+        },
+    );
+    assert_eq!(scoped_report.status, "ok");
+    assert!(scoped_report.findings.is_empty());
+}
+
+#[test]
 fn lint_report_flags_unqualified_imported_calls() {
     let project = load_project("examples/unqualified_import_call_project")
         .expect("load import style project");
@@ -19944,6 +20035,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "lint:missing_module_declaration",
         "lint:unchecked_result",
         "lint:unchecked_result_binding",
+        "lint:unused_effectful_binding",
         "lint:unqualified_imported_call",
         "lint:unused_pure_binding",
         "lint:unused_pure_expression_statement",

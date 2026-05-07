@@ -926,6 +926,9 @@ expression can be rewritten with `?` and the checked candidate still passes.
 `unchecked_result_binding` lint findings are warning-only and flag fallible
 host or user-task `Result` values that are bound and then never read; agents
 must choose whether to propagate, return, or handle the value explicitly.
+`unused_effectful_binding` lint findings are warning-only and flag fallible
+host or user-task `Result` values that have already been checked with `?` but
+whose bound value is never read.
 `unqualified_imported_call` lint findings become checked
 `qualify_imported_call` graft templates when a simple imported task call can be
 rewritten through its import alias or module segment and the checked candidate
@@ -1168,7 +1171,9 @@ implicit `main` module instead of declaring a stable module name;
 fallible host or user-task `Result` instead of propagating, returning, or
 binding it; `unchecked_result_binding`, which warns when a local `bind`
 captures a fallible host or user-task `Result` and the task never reads that
-binding; and `unqualified_imported_call`, which warns when a resolved call
+binding; `unused_effectful_binding`, which warns when a local `bind` unwraps a
+fallible host or user-task `Result` with `?` and then never reads the recovered
+value; and `unqualified_imported_call`, which warns when a resolved call
 uses a simple imported task name instead of an alias- or module-qualified
 callee; and `unused_pure_binding`, which warns when a local `bind` statement
 has an unread delete-safe initializer with no calls, raw fragments, `?`,
@@ -1254,7 +1259,7 @@ guaranteed `return` in the same block.
 `--rule unused-import`, `--rule unused-take`, `--rule unused-private-type`,
 `--rule unused-private-effect`, `--rule raw-host-adapter`,
 `--rule missing-module-declaration`, `--rule unchecked-result`,
-`--rule unchecked-result-binding`, or
+`--rule unchecked-result-binding`, `--rule unused-effectful-binding`, or
 `--rule unqualified-imported-call`, `--rule unused-pure-binding`, or
 `--rule unused-pure-expression-statement`, or
 `--rule mutable-binding-never-set`, `--rule self-assignment-statement`, or
