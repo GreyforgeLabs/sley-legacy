@@ -387,11 +387,12 @@ Implemented now:
   composing strict verify, trace seal, and ZJX package summaries into
   `schema: "sley.deploy.report.v0"` while recording that live deployment,
   external mutation, and provider calls are not allowed without explicit
-  operator approval; `--artifacts-dir <dir>` writes local `deploy-report.json`,
-  `seal.json`, `zjx-envelope.json`, and a digest-bearing `manifest.json`
-  handoff file only after the dry-run package is ready, and the ready report
-  points agents to portable `sley-contract inspect-deploy-artifacts`
-  validation
+  operator approval; omitted `--dry-run` in JSON mode emits a
+  `DRY_RUN_REQUIRED` diagnostics report with a repair hint; `--artifacts-dir
+  <dir>` writes local `deploy-report.json`, `seal.json`, `zjx-envelope.json`,
+  and a digest-bearing `manifest.json` handoff file only after the dry-run
+  package is ready, and the ready report points agents to portable
+  `sley-contract inspect-deploy-artifacts` validation
 - JSON project scaffold reports with `sley new --json`, `hello`, `library`,
   `cli`, `service-gate`, `data-pipeline`, `deploy`, `spend-gate`, `agent`,
   `agent-task-pack`, and `agent-project` templates, relative created-file paths,

@@ -359,9 +359,11 @@ Rules:
   verify plus trace seal and ZJX package summaries into
   `sley.deploy.report.v0`. It is explicitly non-live: no provider calls,
   external mutations, infrastructure changes, or spend, and live deployment
-  remains behind operator approval. `--artifacts-dir <dir>` writes local
-  `deploy-report.json`, `seal.json`, `zjx-envelope.json`, and digest-bearing
-  `manifest.json` handoff files only after the dry-run package is ready;
+  remains behind operator approval. Omitted `--dry-run` in JSON mode emits a
+  `DRY_RUN_REQUIRED` diagnostics report with a repair hint. `--artifacts-dir
+  <dir>` writes local `deploy-report.json`, `seal.json`, `zjx-envelope.json`,
+  and digest-bearing `manifest.json` handoff files only after the dry-run
+  package is ready;
   artifact manifests pin report, seal, and package roles to their expected
   schemas. `sley-ci run` wraps deterministic runtime execution under
   `sley.ci.report.v0`, `sley-ci deploy` requires explicit `--dry-run` and

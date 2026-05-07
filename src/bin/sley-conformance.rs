@@ -107,6 +107,7 @@ const DEFAULT_SMOKE_TAGS: &[&str] = &[
     "diagnostic:QUERY_MODULE_FILTER_NOT_FOUND",
     "diagnostic:RUNTIME_CAPABILITY_SCOPE_DENIED",
     "diagnostic:RETURN_TYPE_MISMATCH",
+    "deploy:dry-run-required",
     "docgen:reference",
     "graft:templates:declaration-surface",
     "graft:templates:module-add-surface",
