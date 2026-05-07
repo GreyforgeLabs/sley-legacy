@@ -86,6 +86,52 @@
       }
     },
     {
+      "name": "migrate_raw_host_adapter_report_json",
+      "bin": "sley-migrate",
+      "args": ["report", "--json", "examples/raw_host_migration.sley"],
+      "covers": [
+        "cli:sley-migrate",
+        "migrate:raw-host-adapter",
+        "json:sley.migrate.report.v0",
+        "readiness:migrate-report"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.migrate.report.v0" },
+          { "pointer": "/status", "value": "migrations" },
+          { "pointer": "/summary/migration_count", "value": 1 },
+          { "pointer": "/summary/raw_host_adapter_count", "value": 1 },
+          { "pointer": "/migrations/0/kind", "value": "migrate_raw_host_adapter" },
+          { "pointer": "/migrations/0/category", "value": "raw_host_adapter" },
+          { "pointer": "/migrations/0/operation/op", "value": "ReplaceExpression" }
+        ]
+      }
+    },
+    {
+      "name": "migrate_unchecked_result_report_json",
+      "bin": "sley-migrate",
+      "args": ["report", "--json", "examples/unchecked_result.sley"],
+      "covers": [
+        "cli:sley-migrate",
+        "migrate:unchecked-result",
+        "json:sley.migrate.report.v0",
+        "readiness:migrate-report"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.migrate.report.v0" },
+          { "pointer": "/status", "value": "migrations" },
+          { "pointer": "/summary/migration_count", "value": 1 },
+          { "pointer": "/summary/result_propagation_count", "value": 1 },
+          { "pointer": "/migrations/0/kind", "value": "propagate_unchecked_result" },
+          { "pointer": "/migrations/0/category", "value": "result_propagation" },
+          { "pointer": "/migrations/0/operation/op", "value": "ReplaceExpression" }
+        ]
+      }
+    },
+    {
       "name": "new_deploy_project_json",
       "cwd": "tmp",
       "args": [

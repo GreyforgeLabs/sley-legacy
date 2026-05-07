@@ -21,7 +21,8 @@ Current evidence base:
 - Stable JSON roots and JSON schemas live under `docs/schemas/`.
 - Contract snapshots live under `fixtures/contracts/`.
 - CLI smoke coverage is manifest-backed under `fixtures/cli_smokes/`, including
-  allowlisted sibling utility binary cases for `sley-contract`.
+  allowlisted sibling utility binary cases for `sley-contract` and
+  `sley-migrate`.
 - `sley new --json` already exposes typed next actions for first-run projects.
 - `sley plan --json --graft-templates` and `sley fix --dry-run` already expose
   non-mutating repair surfaces that editor and workbench tools can call.

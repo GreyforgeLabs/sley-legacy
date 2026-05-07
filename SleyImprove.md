@@ -642,7 +642,7 @@ absence expectations.
 `sley-ci smoke --json --repo-root .
 fixtures/cli_smokes` accepts the suite directory, and the Rust integration
 suite runs those cases against the built `sley` binary plus selected sibling
-utility binaries such as `sley-contract`. The lightweight
+utility binaries such as `sley-contract` and `sley-migrate`. The lightweight
 `fixtures/ci_smoke_probe` manifest now separately locks the `sley-ci smoke`
 wrapper contract across parse, query, graft dry-run, and seeded
 multi-capability agent runtime authority cases.
@@ -656,9 +656,9 @@ The current smoke manifest covers:
   reports, trace reports, trace receipts, trace seals, graft outcomes with
   strict accepted provenance records, query task/take/type/effect/call row
   definitions, graph-slice focus/task/call payloads, graph-slice affordance operations,
-  `sley-ci` reports, `sley-contract` JSON Schema validation reports, deploy
-  artifact checks, and ZJX preview envelopes with graph digest and nested
-  handoff refs
+  `sley-ci` reports, `sley-contract` JSON Schema validation reports,
+  `sley-migrate` checked migration reports, deploy artifact checks, and ZJX
+  preview envelopes with graph digest and nested handoff refs
 - query report direct task/take/type/effect/call row definitions
 - doctor/plan call-bearing reports route agents to strict
   `sley query --kind calls` next-actions

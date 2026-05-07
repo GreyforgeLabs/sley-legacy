@@ -422,8 +422,8 @@ Implemented now:
   smokes, explicit graft/fix trace receipts, trace seals over non-empty receipt
   chains, ZJX envelopes carrying graph digests and schema-backed trace
   receipts, ZJX tool reports, `sley-contract` inventory/validate/fixture-check
-  and deploy-artifact inspection, passed-verify next-actions for seal and ZJX
-  handoff artifacts,
+  and deploy-artifact inspection, `sley-migrate` raw-host and unchecked-result
+  reports, passed-verify next-actions for seal and ZJX handoff artifacts,
   doctor/verify warning next-actions that route to lint repair plans and
   unambiguous dry-run fix previews with explicit
   `write_command` vectors, a staged previewed-repair write smoke that proves
