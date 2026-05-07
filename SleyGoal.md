@@ -237,7 +237,8 @@ Current verified surface:
   wrapper over parse, query, graft dry-run, and seeded multi-capability agent
   runtime authority. The broad suite can exercise allowlisted sibling utility
   binaries and now smokes `sley-contract` inventory, validate, fixture-check,
-  and deploy-artifact inspection flows. It also includes graph-slice insert and
+  deploy-artifact inspection flows, plus `sley-migrate` raw-host and
+  unchecked-result migration reports. It also includes graph-slice insert and
   replace affordances, checked `insert_statement`, `replace_statement`, and
   `replace_expression` graft templates, task-body insert graft emission, direct
   block, statement, take, and expression node surface targeting with expression

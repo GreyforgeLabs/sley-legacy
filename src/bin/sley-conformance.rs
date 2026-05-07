@@ -72,6 +72,7 @@ const DEFAULT_SMOKE_TAGS: &[&str] = &[
     "cli:run",
     "cli:seal",
     "cli:sley-contract",
+    "cli:sley-migrate",
     "cli:trace",
     "cli:verify",
     "cli:zjx",
@@ -94,10 +95,14 @@ const DEFAULT_SMOKE_TAGS: &[&str] = &[
     "json:sley.contract.inventory.v0",
     "json:sley.contract.validate.v0",
     "json:sley.deploy.artifact_check.v0",
+    "json:sley.migrate.report.v0",
     "language:type-alias",
     "language:type-alias-transparent",
+    "migrate:raw-host-adapter",
+    "migrate:unchecked-result",
     "readiness:contract-schema-defaults",
     "readiness:deploy-package-artifact-inspection",
+    "readiness:migrate-report",
 ];
 
 #[derive(Debug, Parser)]

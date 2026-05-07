@@ -10179,7 +10179,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/smoke_case_count"),
-        Some(&serde_json::json!(414))
+        Some(&serde_json::json!(416))
     );
     assert_eq!(
         report_json.pointer("/summary/example_source_count"),
@@ -21825,6 +21825,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "cli:run",
         "cli:deploy",
         "cli:sley-contract",
+        "cli:sley-migrate",
         "cli:ast",
         "cli:graph",
         "cli:graph-slice",
@@ -21847,6 +21848,8 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "contract:validate",
         "contract:check-fixtures",
         "contract:inspect-deploy-artifacts",
+        "migrate:raw-host-adapter",
+        "migrate:unchecked-result",
         "fix:call-transaction-write",
         "fix:lint-cleanup-write",
         "fix:remove-take-transaction-write",
@@ -22003,6 +22006,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:deploy-package-artifacts",
         "readiness:deploy-package-artifact-inspection",
         "readiness:deploy-package-dry-run",
+        "readiness:migrate-report",
         "readiness:inspect-calls",
         "readiness:deploy-lint-repair-write-verify",
         "readiness:identity-binary-repair-write-verify",
@@ -22067,6 +22071,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "json:sley.contract.validate.v0",
         "json:sley.doctor.report.v0",
         "json:sley.edit_plan.report.v0",
+        "json:sley.migrate.report.v0",
         "json:sley.verify.report.v0",
         "json:sley.deploy.report.v0",
         "json:sley.deploy.artifact_check.v0",
@@ -22129,12 +22134,13 @@ fn cli_smoke_test_binary(binary: &str) -> &'static str {
     match binary {
         "sley" => env!("CARGO_BIN_EXE_sley"),
         "sley-contract" => env!("CARGO_BIN_EXE_sley-contract"),
+        "sley-migrate" => env!("CARGO_BIN_EXE_sley-migrate"),
         other => panic!("unsupported CLI smoke binary {other}"),
     }
 }
 
 fn allowed_cli_smoke_test_binary(binary: &str) -> bool {
-    matches!(binary, "sley" | "sley-contract")
+    matches!(binary, "sley" | "sley-contract" | "sley-migrate")
 }
 
 fn temp_project_dir(name: &str) -> PathBuf {
