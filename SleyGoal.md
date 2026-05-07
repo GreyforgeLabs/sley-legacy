@@ -139,9 +139,9 @@ Current verified surface:
   definition jumps, project task signature help, project task parameter inlay
   hints, exact-range task references, document highlights,
   import document links, prepared cursor-aware project task rename edits,
-  checked edit-plan code actions, non-mutating command-preview code lenses,
-  and non-mutating preview commands whose editor repair previews reuse the
-  strict edit-plan graft contracts.
+  range-scoped checked edit-plan code actions, non-mutating command-preview
+  code lenses, and non-mutating preview commands whose editor repair previews
+  reuse the strict edit-plan graft contracts.
 - `editors/vscode-sley` is available as a private local VS Code shim that
   contributes `.sley` language metadata, basic TextMate highlighting, and a
   `vscode-languageclient` bridge to the current `sley-lsp` server. It is

@@ -121,6 +121,8 @@ here. Dates use UTC-independent calendar dates from the local repo history.
   imported task calls, including active parameter tracking in call arguments.
 - `sley-lsp` now prepares cursor-aware project task rename ranges and returns
   workspace edits for declarations and resolved call sites.
+- `sley-lsp` edit-plan code actions now respect the requested editor range, so
+  cursor-local quick fixes exclude unrelated document repairs.
 - `sley-lsp` declaration hover now includes module, return type, takes,
   effects, export status, and node IDs for editor-side inspection.
 - `sley-workbench` static HTML now renders focused graph-slice summaries,
