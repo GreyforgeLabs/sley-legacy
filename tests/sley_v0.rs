@@ -11738,7 +11738,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/corpus_rejected_count"),
-        Some(&serde_json::json!(23))
+        Some(&serde_json::json!(25))
     );
     assert_eq!(
         report_json.pointer("/corpus/missing_required_tags"),
@@ -13246,7 +13246,7 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     );
     assert_eq!(
         corpus_json.pointer("/summary/step_count"),
-        Some(&serde_json::json!(65))
+        Some(&serde_json::json!(67))
     );
     assert_eq!(
         corpus_json.pointer("/steps/0/name"),
@@ -13297,7 +13297,7 @@ fn sley_ci_wraps_check_verify_and_smoke_manifest() {
     );
     assert_eq!(
         corpus_dir_json.pointer("/summary/step_count"),
-        Some(&serde_json::json!(65))
+        Some(&serde_json::json!(67))
     );
 
     let examples = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
@@ -24516,13 +24516,19 @@ fn assert_corpus_manifest_has_release_coverage(manifest: &CorpusManifest) {
         "diagnostic:MISSING_RETURN",
         "diagnostic:QUESTION_REQUIRES_RESULT",
         "diagnostic:TYPE_MISMATCH",
+        "diagnostic:UNKNOWN_EFFECT",
         "diagnostic:UNKNOWN_IDENTIFIER",
+        "diagnostic:UNKNOWN_TYPE",
         "authority:transitive-effects",
         "authority:gate-take",
+        "language:effect-resolution",
         "language:module-namespace",
         "language:result-flow",
         "language:type-alias",
         "language:type-alias-transparent",
+        "language:type-resolution",
+        "rejected:unknown-effect",
+        "rejected:unknown-type",
         "formatter:round-trip",
     ];
     for tag in required {

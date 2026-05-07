@@ -38,12 +38,16 @@ const DEFAULT_CORPUS_TAGS: &[&str] = &[
     "diagnostic:MISSING_RETURN",
     "diagnostic:QUESTION_REQUIRES_RESULT",
     "diagnostic:TYPE_MISMATCH",
+    "diagnostic:UNKNOWN_EFFECT",
     "diagnostic:UNKNOWN_IDENTIFIER",
+    "diagnostic:UNKNOWN_TYPE",
     "formatter:round-trip",
+    "language:effect-resolution",
     "language:module-namespace",
     "language:result-flow",
     "language:type-alias",
     "language:type-alias-transparent",
+    "language:type-resolution",
     "rejected:DatabaseRead",
     "rejected:DatabaseWrite",
     "rejected:Deploy",
@@ -59,6 +63,8 @@ const DEFAULT_CORPUS_TAGS: &[&str] = &[
     "rejected:agent-transitive-effect",
     "rejected:data-write-transitive-effect",
     "rejected:spend-transitive-effect",
+    "rejected:unknown-effect",
+    "rejected:unknown-type",
 ];
 
 const DEFAULT_SMOKE_TAGS: &[&str] = &[

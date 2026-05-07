@@ -1,0 +1,5 @@
+module corpus.rejected.unknown_effect
+
+task main -> Int uses MissingEffect {
+  return 1
+}

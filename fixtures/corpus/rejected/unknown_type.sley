@@ -1,0 +1,5 @@
+module corpus.rejected.unknown_type
+
+task main -> MissingType {
+  return 1
+}

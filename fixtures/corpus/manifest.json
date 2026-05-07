@@ -366,6 +366,22 @@
       ]
     },
     {
+      "path": "rejected/unknown_effect.sley",
+      "covers": [
+        "language:effect-resolution",
+        "rejected:unknown-effect",
+        "diagnostic:UNKNOWN_EFFECT"
+      ]
+    },
+    {
+      "path": "rejected/unknown_type.sley",
+      "covers": [
+        "language:type-resolution",
+        "rejected:unknown-type",
+        "diagnostic:UNKNOWN_TYPE"
+      ]
+    },
+    {
       "path": "rejected/type_mismatch.sley",
       "covers": [
         "language:type-mismatch",
