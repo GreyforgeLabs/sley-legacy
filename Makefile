@@ -52,6 +52,7 @@ agent-bench: build-cli
 migrate:
 	cargo run --bin sley-migrate -- report --json examples/raw_host_migration.sley
 	cargo run --bin sley-migrate -- report --json examples/unchecked_result.sley
+	cargo run --bin sley-migrate -- report --json examples/unchecked_result_binding.sley
 
 docgen:
 	cargo run --bin sley-docgen -- reference --json examples/agent_deploy_pipeline.sley

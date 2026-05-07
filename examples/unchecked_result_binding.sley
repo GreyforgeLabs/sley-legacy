@@ -1,0 +1,8 @@
+module app.unchecked_binding
+
+task main -> Result<Text, Error> uses FileRead {
+  bind ignored = fs.try_read_text("examples/hello.sley")
+  bind text = fs.try_read_text("examples/hello.sley")?
+
+  return Ok(text)
+}

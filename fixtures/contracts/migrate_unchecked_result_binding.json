@@ -1,0 +1,57 @@
+{
+  "schema": "sley.migrate.report.v0",
+  "status": "migrations",
+  "target": "examples/unchecked_result_binding.sley",
+  "source_schema": "sley.edit_plan.report.v0",
+  "summary": {
+    "diagnostic_count": 0,
+    "migration_count": 1,
+    "raw_host_adapter_count": 0,
+    "module_declaration_count": 0,
+    "naming_cleanup_count": 0,
+    "result_propagation_count": 1,
+    "schema_drift_count": 0,
+    "issue_count": 0
+  },
+  "migrations": [
+    {
+      "kind": "propagate_unchecked_result_binding",
+      "category": "result_propagation",
+      "surface": "block:task:app.unchecked_binding.main:stmt:0",
+      "reason": "propagate the fallible call with `?` while dropping the unread Result binding",
+      "dry_run_command": [
+        "sley",
+        "fix",
+        "--json",
+        "--kind",
+        "propagate_unchecked_result_binding",
+        "--template-surface",
+        "block:task:app.unchecked_binding.main:stmt:0",
+        "--dry-run",
+        "examples/unchecked_result_binding.sley"
+      ],
+      "write_command": [
+        "sley",
+        "fix",
+        "--json",
+        "--kind",
+        "propagate_unchecked_result_binding",
+        "--template-surface",
+        "block:task:app.unchecked_binding.main:stmt:0",
+        "--write",
+        "examples/unchecked_result_binding.sley"
+      ],
+      "editable_json_pointers": ["/payload/source"],
+      "operation": {
+        "op": "ReplaceStatement",
+        "payload": {
+          "source": "fs.try_read_text(\"examples/hello.sley\")?"
+        },
+        "target": "block:task:app.unchecked_binding.main:stmt:0"
+      }
+    }
+  ],
+  "schema_drift": [],
+  "diagnostics": [],
+  "issues": []
+}
