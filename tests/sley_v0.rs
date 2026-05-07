@@ -1486,6 +1486,64 @@ fn doctor_ready_actions_seed_reachable_agent_host_calls() {
     assert!(deploy_root.join("seal.json").exists());
     assert!(deploy_root.join("zjx-envelope.json").exists());
     let _ = fs::remove_dir_all(deploy_root);
+
+    let ci_deploy_root = temp_project_dir("doctor-agent-ci-deploy");
+    let ci_deploy_root_arg = sley_string(&ci_deploy_root);
+    let ci_deploy_command = doctor_json
+        .pointer("/next_actions/6/command")
+        .and_then(serde_json::Value::as_array)
+        .expect("ci deploy action command")
+        .iter()
+        .map(|value| {
+            let segment = value.as_str().expect("string command segment");
+            if segment == ".sley/ci-deploy" {
+                ci_deploy_root_arg.clone()
+            } else {
+                segment.to_string()
+            }
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        doctor_json.pointer("/next_actions/6/kind"),
+        Some(&serde_json::json!("ci_deploy_package"))
+    );
+    assert_eq!(
+        doctor_json.pointer("/next_actions/6/command/0"),
+        Some(&serde_json::json!("sley-ci"))
+    );
+    assert_eq!(
+        doctor_json.pointer("/next_actions/6/command/5"),
+        Some(&serde_json::json!(".sley/ci-deploy"))
+    );
+    let ci_deploy = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
+        .current_dir(&repo_root)
+        .args(&ci_deploy_command[1..])
+        .output()
+        .expect("run seeded doctor ci deploy action");
+    let ci_deploy_stdout = String::from_utf8(ci_deploy.stdout).expect("ci deploy stdout utf8");
+    let ci_deploy_stderr = String::from_utf8(ci_deploy.stderr).expect("ci deploy stderr utf8");
+    assert!(
+        ci_deploy.status.success(),
+        "stdout: {ci_deploy_stdout}\nstderr: {ci_deploy_stderr}"
+    );
+    let ci_deploy_json: serde_json::Value =
+        serde_json::from_str(&ci_deploy_stdout).expect("parse sley-ci deploy JSON");
+    assert_eq!(
+        ci_deploy_json.pointer("/schema"),
+        Some(&serde_json::json!("sley.ci.report.v0"))
+    );
+    assert_eq!(
+        ci_deploy_json.pointer("/command"),
+        Some(&serde_json::json!("deploy"))
+    );
+    assert_eq!(
+        ci_deploy_json.pointer("/steps/0/stdout_schema"),
+        Some(&serde_json::json!(DEPLOY_REPORT_SCHEMA))
+    );
+    assert!(ci_deploy_root.join("deploy-report.json").exists());
+    assert!(ci_deploy_root.join("seal.json").exists());
+    assert!(ci_deploy_root.join("zjx-envelope.json").exists());
+    let _ = fs::remove_dir_all(ci_deploy_root);
 }
 
 #[test]
@@ -1513,6 +1571,7 @@ fn verify_passed_deploy_actions_prepare_dry_run_package() {
     assert_eq!(report.next_actions[0].kind, "seal_verified_target");
     assert_eq!(report.next_actions[1].kind, "package_verified_target");
     assert_eq!(report.next_actions[2].kind, "prepare_deploy_package");
+    assert_eq!(report.next_actions[3].kind, "ci_deploy_package");
     assert_eq!(
         report.next_actions[2].command,
         vec![
@@ -1522,6 +1581,41 @@ fn verify_passed_deploy_actions_prepare_dry_run_package() {
             "--dry-run",
             "--artifacts-dir",
             ".sley/deploy",
+            "--cap",
+            "SecretRead",
+            "--cap",
+            "Network",
+            "--cap",
+            "ModelCall",
+            "--cap",
+            "Deploy",
+            "--secret",
+            "api_key",
+            "redacted",
+            "--http-text",
+            "https://example.test/profile",
+            "profile ready",
+            "--model-output",
+            "deploy-plan",
+            "plan approved",
+            "--deploy-result",
+            "staging",
+            "staged",
+            "examples/agent_deploy_pipeline.sley",
+        ]
+        .into_iter()
+        .map(str::to_string)
+        .collect::<Vec<_>>()
+    );
+    assert_eq!(
+        report.next_actions[3].command,
+        vec![
+            "sley-ci",
+            "deploy",
+            "--json",
+            "--dry-run",
+            "--artifacts-dir",
+            ".sley/ci-deploy",
             "--cap",
             "SecretRead",
             "--cap",
@@ -1591,6 +1685,49 @@ fn verify_passed_deploy_actions_prepare_dry_run_package() {
     assert!(deploy_root.join("seal.json").exists());
     assert!(deploy_root.join("zjx-envelope.json").exists());
     let _ = fs::remove_dir_all(deploy_root);
+
+    let ci_deploy_root = temp_project_dir("verify-agent-ci-deploy");
+    let ci_deploy_root_arg = sley_string(&ci_deploy_root);
+    let ci_deploy_command = report.next_actions[3]
+        .command
+        .iter()
+        .map(|segment| {
+            if segment == ".sley/ci-deploy" {
+                ci_deploy_root_arg.clone()
+            } else {
+                segment.clone()
+            }
+        })
+        .collect::<Vec<_>>();
+    let ci_deploy = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
+        .current_dir(&repo_root)
+        .args(&ci_deploy_command[1..])
+        .output()
+        .expect("run verify ci deploy action");
+    let ci_deploy_stdout = String::from_utf8(ci_deploy.stdout).expect("ci deploy stdout utf8");
+    let ci_deploy_stderr = String::from_utf8(ci_deploy.stderr).expect("ci deploy stderr utf8");
+    assert!(
+        ci_deploy.status.success(),
+        "stdout: {ci_deploy_stdout}\nstderr: {ci_deploy_stderr}"
+    );
+    let ci_deploy_json: serde_json::Value =
+        serde_json::from_str(&ci_deploy_stdout).expect("parse sley-ci deploy JSON");
+    assert_eq!(
+        ci_deploy_json.pointer("/schema"),
+        Some(&serde_json::json!("sley.ci.report.v0"))
+    );
+    assert_eq!(
+        ci_deploy_json.pointer("/command"),
+        Some(&serde_json::json!("deploy"))
+    );
+    assert_eq!(
+        ci_deploy_json.pointer("/steps/0/stdout_schema"),
+        Some(&serde_json::json!(DEPLOY_REPORT_SCHEMA))
+    );
+    assert!(ci_deploy_root.join("deploy-report.json").exists());
+    assert!(ci_deploy_root.join("seal.json").exists());
+    assert!(ci_deploy_root.join("zjx-envelope.json").exists());
+    let _ = fs::remove_dir_all(ci_deploy_root);
 }
 
 #[test]
@@ -1644,6 +1781,10 @@ fn verify_cli_deploy_action_preserves_runtime_args() {
         verify_json.pointer("/next_actions/2/kind"),
         Some(&serde_json::json!("prepare_deploy_package"))
     );
+    assert_eq!(
+        verify_json.pointer("/next_actions/3/kind"),
+        Some(&serde_json::json!("ci_deploy_package"))
+    );
     let deploy_command = verify_json
         .pointer("/next_actions/2/command")
         .and_then(serde_json::Value::as_array)
@@ -1686,6 +1827,17 @@ fn verify_cli_deploy_action_preserves_runtime_args() {
         .map(str::to_string)
         .collect::<Vec<_>>()
     );
+    let ci_deploy_command = verify_json
+        .pointer("/next_actions/3/command")
+        .and_then(serde_json::Value::as_array)
+        .expect("ci deploy command")
+        .iter()
+        .map(|value| value.as_str().expect("string command segment").to_string())
+        .collect::<Vec<_>>();
+    let mut expected_ci_deploy_command = deploy_command.clone();
+    expected_ci_deploy_command[0] = "sley-ci".to_string();
+    expected_ci_deploy_command[5] = ".sley/ci-deploy".to_string();
+    assert_eq!(ci_deploy_command, expected_ci_deploy_command);
 
     let deploy_root = temp_project_dir("verify-custom-deploy");
     let deploy_root_arg = sley_string(&deploy_root);
@@ -1722,6 +1874,44 @@ fn verify_cli_deploy_action_preserves_runtime_args() {
     assert!(deploy_root.join("seal.json").exists());
     assert!(deploy_root.join("zjx-envelope.json").exists());
     let _ = fs::remove_dir_all(deploy_root);
+
+    let ci_deploy_root = temp_project_dir("verify-custom-ci-deploy");
+    let ci_deploy_root_arg = sley_string(&ci_deploy_root);
+    let portable_ci_deploy_command = ci_deploy_command
+        .iter()
+        .map(|segment| {
+            if segment == ".sley/ci-deploy" {
+                ci_deploy_root_arg.clone()
+            } else {
+                segment.clone()
+            }
+        })
+        .collect::<Vec<_>>();
+    let ci_deploy = ProcessCommand::new(env!("CARGO_BIN_EXE_sley-ci"))
+        .current_dir(&repo_root)
+        .args(&portable_ci_deploy_command[1..])
+        .output()
+        .expect("run custom verify ci deploy action");
+    let ci_deploy_stdout = String::from_utf8(ci_deploy.stdout).expect("ci deploy stdout utf8");
+    let ci_deploy_stderr = String::from_utf8(ci_deploy.stderr).expect("ci deploy stderr utf8");
+    assert!(
+        ci_deploy.status.success(),
+        "stdout: {ci_deploy_stdout}\nstderr: {ci_deploy_stderr}"
+    );
+    let ci_deploy_json: serde_json::Value =
+        serde_json::from_str(&ci_deploy_stdout).expect("parse custom sley-ci deploy JSON");
+    assert_eq!(
+        ci_deploy_json.pointer("/schema"),
+        Some(&serde_json::json!("sley.ci.report.v0"))
+    );
+    assert_eq!(
+        ci_deploy_json.pointer("/steps/0/stdout_schema"),
+        Some(&serde_json::json!(DEPLOY_REPORT_SCHEMA))
+    );
+    assert!(ci_deploy_root.join("deploy-report.json").exists());
+    assert!(ci_deploy_root.join("seal.json").exists());
+    assert!(ci_deploy_root.join("zjx-envelope.json").exists());
+    let _ = fs::remove_dir_all(ci_deploy_root);
 }
 
 #[test]
@@ -24387,6 +24577,8 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:deploy-package-artifacts",
         "readiness:deploy-package-artifact-inspection",
         "readiness:deploy-package-dry-run",
+        "readiness:doctor-deploy-package",
+        "readiness:doctor-ci-deploy-package",
         "readiness:docgen-reference",
         "readiness:lsp-stdio-startup",
         "readiness:migrate-report",
@@ -24425,6 +24617,8 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:project-import-write-verify",
         "readiness:remove-take-transaction-write-verify",
         "readiness:verify-package-next-action",
+        "readiness:verify-deploy-package",
+        "readiness:verify-ci-deploy-package",
         "readiness:deploy-runtime-retry",
         "readiness:verify-runtime-retry",
         "scaffold:agent-quickstart",

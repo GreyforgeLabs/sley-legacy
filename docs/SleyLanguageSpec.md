@@ -945,9 +945,10 @@ matching `sley fix --write`, and entrypoint runs.
 Ready reports include a `verify_gate` next action before entrypoint runs; if
 the entrypoint declares effects, the command includes explicit runtime `--cap`
 gates plus deterministic seed arguments inferred from reachable literal host
-calls when Sley can do so safely. Deploy-capable entrypoints also include a
-`prepare_deploy_package` next action that builds a local dry-run deploy package
-under `.sley/deploy` without live provider calls.
+calls when Sley can do so safely. Deploy-capable entrypoints also include
+direct `prepare_deploy_package` and `sley-ci` `ci_deploy_package` next actions
+that build local dry-run deploy packages under `.sley/deploy` and
+`.sley/ci-deploy` without live provider calls.
 `--deny-warnings` treats lint findings as blocked while still printing the
 versioned report. Non-JSON doctor output prints stable lint finding IDs and
 nodes before next actions.
@@ -1578,10 +1579,10 @@ refuse generic data disguised as Sley artifacts before compression begins.
   Runtime-failed reports for effectful entrypoints emit seeded verify/run retry
   actions when deterministic gates and host seeds can be inferred from literal
   reachable host calls.
-  Passed reports for Deploy entrypoints append a local `prepare_deploy_package`
-  dry-run action that preserves the exact runtime gates and seeds supplied to
-  the verified CLI run, or falls back to inferred deterministic caps and host
-  seeds when building reports without CLI args.
+  Passed reports for Deploy entrypoints append local direct and `sley-ci`
+  deploy dry-run actions that preserve the exact runtime gates and seeds
+  supplied to the verified CLI run, or fall back to inferred deterministic caps
+  and host seeds when building reports without CLI args.
   Non-JSON verify output prints stable lint finding IDs and nodes before next
   actions.
   The CLI smoke suite locks previewed lint-repair writes followed by strict

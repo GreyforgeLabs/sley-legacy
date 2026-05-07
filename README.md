@@ -249,7 +249,8 @@ Implemented now:
   repair exists, a non-mutating `sley fix --dry-run` preview plus an explicit
   `write_command` for the matching `sley fix --write`, and ready reports now
   include `verify_gate` commands before entrypoint runs, with seeded `--cap`
-  args when the entrypoint declares effects, and
+  args when the entrypoint declares effects, plus direct and `sley-ci` deploy
+  dry-run package handoffs for Deploy entrypoints, and
   `schema: "sley.doctor.report.v0"` for agent pre-edit gates; doctor, plan,
   and verify text output also print stable lint finding IDs and nodes
 - checked JSON edit-plan reports with `sley plan`, consuming strict
@@ -379,7 +380,8 @@ Implemented now:
   execution into `schema: "sley.verify.report.v0"` for CI and pre-deploy gates;
   warning or denied-warning reports point to checked graft-template repair
   planning and expose a dry-run fix preview plus explicit `write_command` when
-  the repair is unambiguous, while passed reports point to `sley seal --json`
+  the repair is unambiguous, while passed reports point to direct and `sley-ci`
+  deploy dry-run package gates for Deploy entrypoints plus `sley seal --json`
   and `sley zjx --json` handoff artifacts
 - schema-versioned runtime reports with `sley run --json`, carrying successful
   deterministic execution values under `schema: "sley.run.report.v0"`
@@ -478,8 +480,8 @@ Implemented now:
   unchecked-result binding reports, `sley-ci`,
   `sley-conformance`, `sley-docgen`, `sley-workbench`,
   `sley-sandbox-runner`, `sley-shadow`, `sley-agent-bench`, `sley-zjx` utility
-  reports, and `sley-lsp` help/startup, passed-verify next-actions for seal and ZJX handoff
-  artifacts,
+  reports, and `sley-lsp` help/startup, passed-verify next-actions for direct
+  and `sley-ci` deploy dry-run packages plus seal and ZJX handoff artifacts,
   doctor/verify warning next-actions that route to lint repair plans and
   unambiguous dry-run fix previews with explicit
   `write_command` vectors, a staged previewed-repair write smoke that proves
@@ -932,8 +934,8 @@ verify and deploy dry-run pre-deploy gates,
 edit-plan surfaces, call-site rename and remove-take/call-arg transaction
 write/query/verify, typed scaffold next-actions for starter, deploy, service,
 and agent quickstarts, strict seeded verify readiness for the generated gated
-starters, deploy dry-run package reports with optional local artifact
-manifests, scaffold-level seal/ZJX handoff actions,
+starters, direct and `sley-ci` deploy dry-run package reports with optional
+local artifact manifests, scaffold-level seal/ZJX handoff actions,
 local/public v1 readiness tracks in conformance reports,
 temp setup files for write-mode CLI smokes, direct graft write smokes,
 the lightweight `sley-ci smoke` probe for parse, query, graft dry-run, and

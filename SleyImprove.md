@@ -262,7 +262,8 @@ Rules:
   repair exists; those preview actions keep `command` non-mutating and add
   optional `write_command` vectors for the matching write. Ready reports now
   include `verify_gate` next-actions before entrypoint runs, with seeded
-  `--cap` args when the entrypoint declares effects.
+  `--cap` args when the entrypoint declares effects, plus direct and `sley-ci`
+  deploy dry-run package handoffs for Deploy entrypoints.
 - `sley new --json` emits typed scaffold `next_actions` plus legacy
   `next_commands`; the deploy and agent starters' generated action sequences
   are executed in integration coverage so first-run check, doctor, query, plan,
@@ -352,8 +353,9 @@ Rules:
   check, `sley.query.report.v0`, `sley.lint.report.v0`, and seeded runtime
   execution into one pass/warnings/blocked report; warning and denied-warning
   reports include `plan_lint_repairs` next-actions and unambiguous dry-run fix
-  previews before deployment review, while passed reports include seal and ZJX
-  handoff next-actions. Embedded runtime values reuse the strict
+  previews before deployment review, while passed reports include direct and
+  `sley-ci` deploy dry-run package gates for Deploy entrypoints plus seal and
+  ZJX handoff next-actions. Embedded runtime values reuse the strict
   `sley.run.report.v0` value contract.
 - `sley deploy --dry-run` is the local deploy package helper consuming strict
   verify plus trace seal and ZJX package summaries into
@@ -762,8 +764,9 @@ The current smoke manifest covers:
   next-actions, first-run sequence execution, strict seeded
   `verify --json --deny-warnings` readiness, and local
   `sley deploy --dry-run` package reports, including optional deploy artifact
-  manifests plus scaffold-level and passed-verify seal/ZJX handoff
-  next-actions plus the agent scaffolds' `sley-ci run`/`sley-ci verify`/
+  manifests plus doctor/passed-verify direct and `sley-ci` deploy handoff
+  next-actions plus scaffold-level seal/ZJX handoff next-actions and the agent
+  scaffolds' `sley-ci run`/`sley-ci verify`/
   `sley-ci deploy` handoffs
 - a standalone dogfood agent deploy pipeline example with strict
   check/lint/run/verify/deploy dry-run coverage across SecretRead, Network,
