@@ -1,7 +1,7 @@
 # Sley Public Release Checklist
 
 Status: blocked pending operator metadata decisions.
-Last checked: 2026-05-06.
+Last checked: 2026-05-07.
 
 The local executable v1 gate is:
 
