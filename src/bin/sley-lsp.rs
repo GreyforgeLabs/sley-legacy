@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::fs;
 use std::io::{self, BufRead, BufReader, BufWriter, Read, Write};
 use std::path::{Path, PathBuf};
@@ -151,6 +151,11 @@ fn handle_message<W: Write>(
                 send_response(writer, id, handle_completion(params, state))?;
             }
         }
+        "workspace/symbol" => {
+            if let Some(id) = id {
+                send_response(writer, id, handle_workspace_symbol(params, state))?;
+            }
+        }
         "textDocument/codeAction" => {
             if let Some(id) = id {
                 send_response(writer, id, handle_code_actions(params, state))?;
@@ -192,6 +197,7 @@ fn initialize_result() -> JsonValue {
                 "resolveProvider": false,
                 "triggerCharacters": [".", " ", ":", ">"]
             },
+            "workspaceSymbolProvider": true,
             "codeActionProvider": {
                 "resolveProvider": false,
                 "codeActionKinds": ["quickfix", "refactor.rewrite"]
@@ -397,6 +403,45 @@ fn handle_completion(params: JsonValue, state: &ServerState) -> JsonValue {
         analysis_program,
         project.as_ref(),
     ))
+}
+
+fn handle_workspace_symbol(params: JsonValue, state: &ServerState) -> JsonValue {
+    let query = params
+        .get("query")
+        .and_then(JsonValue::as_str)
+        .unwrap_or_default();
+    let mut symbols = Vec::new();
+    let mut seen = BTreeSet::new();
+    for (uri, document) in &state.documents {
+        let Ok(program) = parse_program(&document.text) else {
+            continue;
+        };
+        if let Some(project) = project_graph_for_document(uri, &program, state) {
+            for symbol in workspace_symbols_for_project(&project, state, query) {
+                if let Some(key) = workspace_symbol_key(&symbol)
+                    && seen.insert(key)
+                {
+                    symbols.push(symbol);
+                }
+            }
+        } else {
+            for symbol in workspace_symbols_for_document(uri, &document.text, &program, query) {
+                if let Some(key) = workspace_symbol_key(&symbol)
+                    && seen.insert(key)
+                {
+                    symbols.push(symbol);
+                }
+            }
+        }
+    }
+    symbols.sort_by_key(|symbol| {
+        symbol
+            .get("name")
+            .and_then(JsonValue::as_str)
+            .unwrap_or_default()
+            .to_string()
+    });
+    json!(symbols)
 }
 
 fn handle_code_actions(params: JsonValue, state: &ServerState) -> JsonValue {
@@ -960,6 +1005,145 @@ fn completion_list(items: Vec<JsonValue>) -> JsonValue {
         "isIncomplete": false,
         "items": items
     })
+}
+
+fn workspace_symbols_for_project(
+    project: &ProjectGraph,
+    state: &ServerState,
+    query: &str,
+) -> Vec<JsonValue> {
+    let mut symbols = Vec::new();
+    for module in &project.modules {
+        let uri = file_uri_for_path(&module.path);
+        let source = source_text_for_path(&module.path, state);
+        let module_name = module.module.as_str();
+        if symbol_matches(query, module_name) {
+            symbols.push(workspace_symbol_json(
+                module_name,
+                2,
+                None,
+                &uri,
+                first_line_range(&source),
+            ));
+        }
+        symbols.extend(workspace_symbols_for_program(
+            &uri,
+            &source,
+            &module.program,
+            query,
+        ));
+    }
+    symbols
+}
+
+fn workspace_symbols_for_document(
+    uri: &str,
+    source: &str,
+    program: &Program,
+    query: &str,
+) -> Vec<JsonValue> {
+    let mut symbols = Vec::new();
+    let module_name = program.module_name();
+    if symbol_matches(query, module_name) {
+        symbols.push(workspace_symbol_json(
+            module_name,
+            2,
+            None,
+            uri,
+            first_line_range(source),
+        ));
+    }
+    symbols.extend(workspace_symbols_for_program(uri, source, program, query));
+    symbols
+}
+
+fn workspace_symbols_for_program(
+    uri: &str,
+    source: &str,
+    program: &Program,
+    query: &str,
+) -> Vec<JsonValue> {
+    let module = program.module_name();
+    let mut symbols = Vec::new();
+    for ty in &program.types {
+        let name = format!("{module}.{}", ty.name);
+        if symbol_matches(query, &name) {
+            symbols.push(workspace_symbol_json(
+                &name,
+                23,
+                Some(module),
+                uri,
+                ty.span
+                    .as_ref()
+                    .map(|span| range_for_span(source, span))
+                    .unwrap_or_else(|| first_line_range(source)),
+            ));
+        }
+    }
+    for effect in &program.effects {
+        let name = format!("{module}.{}", effect.name);
+        if symbol_matches(query, &name) {
+            symbols.push(workspace_symbol_json(
+                &name,
+                24,
+                Some(module),
+                uri,
+                effect
+                    .span
+                    .as_ref()
+                    .map(|span| range_for_span(source, span))
+                    .unwrap_or_else(|| first_line_range(source)),
+            ));
+        }
+    }
+    for task in &program.tasks {
+        let task_module = task.module.as_deref().unwrap_or(module);
+        let name = format!("{task_module}.{}", task.name);
+        if symbol_matches(query, &name) {
+            symbols.push(workspace_symbol_json(
+                &name,
+                12,
+                Some(task_module),
+                uri,
+                task.span
+                    .as_ref()
+                    .map(|span| range_for_span(source, span))
+                    .unwrap_or_else(|| first_line_range(source)),
+            ));
+        }
+    }
+    symbols
+}
+
+fn workspace_symbol_json(
+    name: &str,
+    kind: u8,
+    container_name: Option<&str>,
+    uri: &str,
+    range: JsonValue,
+) -> JsonValue {
+    let mut symbol = json!({
+        "name": name,
+        "kind": kind,
+        "location": location_json(uri, range)
+    });
+    if let Some(container_name) = container_name {
+        symbol["containerName"] = json!(container_name);
+    }
+    symbol
+}
+
+fn workspace_symbol_key(symbol: &JsonValue) -> Option<String> {
+    Some(format!(
+        "{}:{}:{}",
+        symbol.get("name")?.as_str()?,
+        symbol.get("kind")?.as_u64()?,
+        symbol.pointer("/location/uri")?.as_str()?
+    ))
+}
+
+fn symbol_matches(query: &str, name: &str) -> bool {
+    query.trim().is_empty() || name.to_lowercase().contains(&query.to_lowercase())
 }
 
 fn hover_json(value: &str, range: JsonValue) -> JsonValue {
