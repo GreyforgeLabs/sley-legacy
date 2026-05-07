@@ -108,12 +108,21 @@ struct CliSmokeExpectation {
     stdout_json: Vec<CliSmokeJsonExpectation>,
     #[serde(default)]
     stdout_json_absent: Vec<String>,
+    #[serde(default)]
+    files: Vec<CliSmokeFileExpectation>,
 }
 
 #[derive(Debug, serde::Deserialize)]
 struct CliSmokeJsonExpectation {
     pointer: String,
     value: serde_json::Value,
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct CliSmokeFileExpectation {
+    path: String,
+    #[serde(default)]
+    contains: Vec<String>,
 }
 
 fn assert_cli_run_value(stdout: &[u8], expected: Value) {
@@ -464,6 +473,7 @@ fn cli_smoke_manifest_commands_match_stable_release_surface() {
                 );
             }
         }
+        assert_cli_smoke_expected_files(case, &repo_root, &tmp_root);
     }
 
     let _ = fs::remove_dir_all(tmp_root);
@@ -10965,7 +10975,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/smoke_case_count"),
-        Some(&serde_json::json!(469))
+        Some(&serde_json::json!(470))
     );
     assert_eq!(
         report_json.pointer("/summary/onboarding_path_count"),
@@ -23684,6 +23694,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:ci-corpus-gate",
         "readiness:conformance-coverage",
         "readiness:contract-schema-defaults",
+        "readiness:public-release-decision-packet",
         "readiness:constant-if-repair-write-verify",
         "readiness:constant-if-statement-repair-write-verify",
         "readiness:constant-false-if-repair-write-verify",
@@ -23827,6 +23838,27 @@ fn write_cli_smoke_setup_files(case: &CliSmokeCase, repo_root: &Path, tmp_root: 
                 path.display()
             )
         });
+    }
+}
+
+fn assert_cli_smoke_expected_files(case: &CliSmokeCase, repo_root: &Path, tmp_root: &Path) {
+    for file in &case.expect.files {
+        let path = PathBuf::from(expand_cli_smoke_text(&file.path, repo_root, tmp_root));
+        let source = fs::read_to_string(&path).unwrap_or_else(|error| {
+            panic!(
+                "read expected file for CLI smoke {} file {}: {error}",
+                case.name,
+                path.display()
+            )
+        });
+        for needle in &file.contains {
+            assert!(
+                source.contains(needle),
+                "CLI smoke {} expected file {} did not contain {needle:?}\nfile:\n{source}",
+                case.name,
+                path.display()
+            );
+        }
     }
 }
 

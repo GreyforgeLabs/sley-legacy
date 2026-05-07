@@ -560,6 +560,7 @@ sley-ci deploy --json --dry-run --artifacts-dir .sley/ci-deploy --cap SecretRead
 sley-ci corpus --json fixtures/corpus
 sley-ci examples --json examples
 sley-conformance report --json
+sley-conformance report --json --markdown .sley/public-release-report.md
 sley-conformance report --json --corpus-manifest fixtures/corpus --smoke-manifest fixtures/cli_smokes --smoke-manifest fixtures/ci_smoke_probe --editor-shim-root editors/vscode-sley --makefile Makefile
 sley-conformance coverage --json --require-tag cli:check --require-tag json:sley.trace.receipt.v0
 sley-contract inspect-deploy-artifacts .sley/deploy --json

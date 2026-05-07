@@ -19,6 +19,11 @@ make public-release-check
 public license and repository metadata.
 `sley-conformance report --json` includes `release.next_actions` entries that
 map each blocker to the approval owner and file paths to update after approval.
+The same command can render a review packet for the release decision:
+
+```bash
+sley-conformance report --json --markdown .sley/public-release-report.md
+```
 
 ## Operator Decisions
 
@@ -58,9 +63,11 @@ After the operator supplies the metadata decisions:
 4. Update `tree-sitter-sley/package.json` license metadata, and refresh
    `tree-sitter-sley/package-lock.json` if npm metadata changes require it.
 5. Update `tree-sitter-sley/tree-sitter.json` license metadata.
-6. Run `make v1`.
-7. Run `make public-release-check`.
-8. Review `CHANGELOG.md`, `README.md`, `docs/contracts.md`, and generated
+6. Run `sley-conformance report --json --markdown .sley/public-release-report.md`
+   and review the remaining `release.next_actions`.
+7. Run `make v1`.
+8. Run `make public-release-check`.
+9. Review `CHANGELOG.md`, `README.md`, `docs/contracts.md`, and generated
    package artifacts before any public tag, push, crate publish, npm publish,
    release upload, or announcement.
 

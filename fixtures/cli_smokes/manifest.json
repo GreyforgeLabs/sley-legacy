@@ -550,6 +550,38 @@
       }
     },
     {
+      "name": "conformance_report_markdown_decision_packet_json",
+      "bin": "sley-conformance",
+      "args": ["report", "--json", "--markdown", "{tmp}/conformance/report.md"],
+      "covers": [
+        "cli:sley-conformance",
+        "conformance:report",
+        "conformance:markdown",
+        "json:sley.conformance.report.v0",
+        "readiness:public-release-decision-packet"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.conformance.report.v0" },
+          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/release/blocker_count", "value": 5 },
+          { "pointer": "/release/next_actions/0/owner", "value": "operator" },
+          { "pointer": "/release/next_actions/0/approval_required", "value": true }
+        ],
+        "files": [
+          {
+            "path": "{tmp}/conformance/report.md",
+            "contains": [
+              "# Sley Conformance Report",
+              "Public Release Next Actions",
+              "`missing_license_file`"
+            ]
+          }
+        ]
+      }
+    },
+    {
       "name": "lsp_help_startup_text",
       "bin": "sley-lsp",
       "args": ["--help"],
