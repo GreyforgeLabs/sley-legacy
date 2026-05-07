@@ -1714,6 +1714,7 @@
         "json:sley.doctor.report.v0",
         "json:sley.query.report.v0",
         "json:sley.lint.report.v0",
+        "readiness:doctor-verify-gate",
         "readiness:inspect-calls"
       ],
       "expect": {
@@ -1727,7 +1728,9 @@
           { "pointer": "/summary/task_count", "value": 2 },
           { "pointer": "/next_actions/0/kind", "value": "inspect_tasks" },
           { "pointer": "/next_actions/1/kind", "value": "inspect_calls" },
-          { "pointer": "/next_actions/1/command/4", "value": "calls" }
+          { "pointer": "/next_actions/1/command/4", "value": "calls" },
+          { "pointer": "/next_actions/3/kind", "value": "verify_gate" },
+          { "pointer": "/next_actions/3/command/1", "value": "verify" }
         ]
       }
     },
@@ -12224,6 +12227,7 @@
         "cli:doctor",
         "dogfood:agent-deploy-pipeline",
         "json:sley.doctor.report.v0",
+        "readiness:doctor-verify-gate",
         "readiness:inspect-calls"
       ],
       "expect": {
@@ -12236,7 +12240,10 @@
           { "pointer": "/query/effectful_tasks/0/effects/1", "value": "Network" },
           { "pointer": "/query/effectful_tasks/0/effects/2", "value": "ModelCall" },
           { "pointer": "/query/effectful_tasks/0/effects/3", "value": "Deploy" },
-          { "pointer": "/next_actions/1/kind", "value": "inspect_calls" }
+          { "pointer": "/next_actions/1/kind", "value": "inspect_calls" },
+          { "pointer": "/next_actions/3/kind", "value": "verify_gate" },
+          { "pointer": "/next_actions/3/command/5", "value": "SecretRead" },
+          { "pointer": "/next_actions/3/command/11", "value": "Deploy" }
         ]
       }
     },
@@ -12520,6 +12527,7 @@
         "dogfood:agent-project",
         "examples:project",
         "json:sley.doctor.report.v0",
+        "readiness:doctor-verify-gate",
         "readiness:inspect-calls"
       ],
       "expect": {
@@ -12534,7 +12542,10 @@
           { "pointer": "/query/effectful_tasks/1/qualified_name", "value": "agent.pipeline.collect_profile" },
           { "pointer": "/query/effectful_tasks/2/effects/0", "value": "ModelCall" },
           { "pointer": "/query/effectful_tasks/3/effects/0", "value": "Deploy" },
-          { "pointer": "/next_actions/1/kind", "value": "inspect_calls" }
+          { "pointer": "/next_actions/1/kind", "value": "inspect_calls" },
+          { "pointer": "/next_actions/3/kind", "value": "verify_gate" },
+          { "pointer": "/next_actions/3/command/5", "value": "SecretRead" },
+          { "pointer": "/next_actions/3/command/11", "value": "Deploy" }
         ]
       }
     },

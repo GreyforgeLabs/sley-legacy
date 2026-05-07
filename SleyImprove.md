@@ -248,7 +248,9 @@ Rules:
   `sley plan --json --graft-templates <target>` repair planning, plus
   `preview_lint_repair` dry-run fix commands when exactly one checked lint
   repair exists; those preview actions keep `command` non-mutating and add
-  optional `write_command` vectors for the matching write.
+  optional `write_command` vectors for the matching write. Ready reports now
+  include `verify_gate` next-actions before entrypoint runs, with seeded
+  `--cap` args when the entrypoint declares effects.
 - `sley new --json` emits typed scaffold `next_actions` plus legacy
   `next_commands`; the deploy and agent starters' generated action sequences
   are executed in integration coverage so first-run check, doctor, query, plan,

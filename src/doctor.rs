@@ -305,12 +305,33 @@ fn ready_actions(target: &str, query: &QueryReport) -> Vec<DoctorAction> {
         .iter()
         .find(|task| task.qualified_name == entry_task)
     {
+        let mut verify_command = vec![
+            "sley".to_string(),
+            "verify".to_string(),
+            "--json".to_string(),
+            "--deny-warnings".to_string(),
+        ];
         let mut run_command = vec!["sley".to_string(), "run".to_string(), "--json".to_string()];
         for effect in &task.effects {
+            verify_command.push("--cap".to_string());
+            verify_command.push(effect.clone());
             run_command.push("--cap".to_string());
             run_command.push(effect.clone());
         }
+        verify_command.push(target.to_string());
         run_command.push(target.to_string());
+        actions.push(DoctorAction {
+            kind: "verify_gate".to_string(),
+            reason: if task.effects.is_empty() {
+                "strict verification should pass before deploy, seal, or package handoff"
+                    .to_string()
+            } else {
+                "strict verification should pass with explicit runtime gates before deploy, seal, or package handoff"
+                    .to_string()
+            },
+            command: verify_command,
+            write_command: None,
+        });
         actions.push(DoctorAction {
             kind: if task.effects.is_empty() {
                 "run_entrypoint".to_string()

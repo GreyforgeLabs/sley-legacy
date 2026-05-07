@@ -128,6 +128,7 @@ const DEFAULT_SMOKE_TAGS: &[&str] = &[
     "readiness:conformance-coverage",
     "readiness:contract-schema-defaults",
     "readiness:deploy-package-artifact-inspection",
+    "readiness:doctor-verify-gate",
     "readiness:docgen-reference",
     "readiness:lsp-stdio-startup",
     "readiness:migrate-report",

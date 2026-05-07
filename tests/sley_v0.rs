@@ -1110,6 +1110,24 @@ fn doctor_report_summarizes_readiness_and_lint_gates() {
             "examples/project"
         ]))
     );
+    assert_eq!(
+        ready_json.pointer("/next_actions/3/kind"),
+        Some(&serde_json::json!("verify_gate"))
+    );
+    assert_eq!(
+        ready_json.pointer("/next_actions/3/command"),
+        Some(&serde_json::json!([
+            "sley",
+            "verify",
+            "--json",
+            "--deny-warnings",
+            "examples/project"
+        ]))
+    );
+    assert_eq!(
+        ready_json.pointer("/next_actions/4/kind"),
+        Some(&serde_json::json!("run_entrypoint"))
+    );
 
     let root = temp_project_dir("doctor-warnings");
     fs::create_dir_all(&root).expect("create doctor temp dir");
