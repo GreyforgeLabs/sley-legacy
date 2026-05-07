@@ -122,6 +122,7 @@ make syntax
 sley-lsp
 sley-workbench --json [--html <path>] [--slice <node-id>] <target>
 sley-docgen reference --json [--markdown <path>] [--module <module>] [--exported-only] <target>
+sley-shadow report --json <target>
 sley-agent-bench run --json [--case <name>] [--keep-workdir] [--sley-bin <path>]
 sley-migrate report --json [--schemas <dir> --fixtures <dir>] <target>
 sley-sandbox-runner run --json [--keep-workdir] <manifest.json>
@@ -182,7 +183,7 @@ Rules:
   integration-test count drift, corpus conformance, packaged examples, CLI
   smokes, the focused LSP integration tests, deterministic workbench,
   agent-bench, raw-host and unchecked-result migration, docgen,
-  sandbox-runner, and ZJX tool replays.
+  sandbox-runner, shadow, and ZJX tool replays.
 - `sley-conformance report` carries explicit required corpus and smoke release
   tags, inventories editor-shim package validation and the `make v1` target
   set, and fails if either manifest or the local gate drops required evidence,
@@ -678,7 +679,7 @@ fixtures/cli_smokes` accepts the suite directory, and the Rust integration
 suite runs those cases against the built `sley` binary plus selected sibling
 utility binaries such as `sley-ci`, `sley-conformance`, `sley-contract`,
 `sley-migrate`, `sley-docgen`, `sley-workbench`, `sley-sandbox-runner`,
-`sley-agent-bench`, `sley-zjx`, and `sley-lsp`. The lightweight
+`sley-shadow`, `sley-agent-bench`, `sley-zjx`, and `sley-lsp`. The lightweight
 `fixtures/ci_smoke_probe` manifest now separately locks the `sley-ci smoke`
 wrapper contract across parse, query, graft dry-run, and seeded
 multi-capability agent runtime authority cases.
@@ -694,8 +695,8 @@ The current smoke manifest covers:
   definitions, graph-slice focus/task/call payloads, graph-slice affordance operations,
   `sley-ci` reports, `sley-conformance` coverage reports, `sley-contract` JSON
   Schema validation reports, `sley-migrate` checked migration reports,
-  `sley-docgen`, `sley-workbench`, `sley-sandbox-runner`, `sley-agent-bench`,
-  `sley-zjx` utility reports, `sley-lsp` help/startup, deploy artifact checks,
+  `sley-docgen`, `sley-workbench`, `sley-sandbox-runner`, `sley-shadow`,
+  `sley-agent-bench`, `sley-zjx` utility reports, `sley-lsp` help/startup, deploy artifact checks,
   and ZJX preview envelopes with graph digest and nested handoff refs
 - query report direct task/take/type/effect/call row definitions
 - doctor/plan call-bearing reports route agents to strict
@@ -1148,9 +1149,9 @@ and
 report is printed.
 
 This is not production lint coverage yet. It is the first stable surface for
-agent-facing hygiene, authority lints, migration hints, and eventually
-non-authoritative Sley helper passes that consume `sley.query.report.v0` and
-`sley.lint.report.v0`.
+agent-facing hygiene, authority lints, migration hints, and non-authoritative
+Sley helper passes such as `sley-shadow` that consume `sley.query.report.v0`
+and `sley.lint.report.v0`.
 
 ## Improvement 11: ZJX Boundary Discipline
 
@@ -1209,8 +1210,9 @@ Near-term:
    authority failures as diagnostics.
 2. Grow the accepted/rejected synthetic gold corpus and CLI smoke manifest with
    graft, module, and runtime authority cases.
-3. Start consuming `sley.query.report.v0` and `sley.lint.report.v0` from Sley
-   helper passes, then broaden authority, style, and migration lints.
+3. Extend `sley-shadow` and other deterministic helpers that consume
+   `sley.query.report.v0` and `sley.lint.report.v0`, then broaden authority,
+   style, and migration lints.
 4. Extend graph-slice grafts around insert, move, delete, and replace planning.
 5. Harden graph-slice grafts for broader graph-contract checks.
 

@@ -30,7 +30,7 @@
         "stdout_json": [
           { "pointer": "/schema", "value": "sley.contract.inventory.v0" },
           { "pointer": "/status", "value": "passed" },
-          { "pointer": "/schema_count", "value": 37 }
+          { "pointer": "/schema_count", "value": 38 }
         ]
       }
     },
@@ -12217,6 +12217,29 @@
           { "pointer": "/calls/1/callee", "value": "http.try_get_text" },
           { "pointer": "/calls/2/callee", "value": "model.try_complete" },
           { "pointer": "/calls/3/callee", "value": "deploy.try_stage" }
+        ]
+      }
+    },
+    {
+      "name": "shadow_agent_deploy_pipeline_json",
+      "bin": "sley-shadow",
+      "args": ["report", "--json", "examples/agent_deploy_pipeline.sley"],
+      "covers": [
+        "cli:sley-shadow",
+        "dogfood:agent-deploy-pipeline",
+        "json:sley.shadow.report.v0",
+        "readiness:shadow-helper"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.shadow.report.v0" },
+          { "pointer": "/status", "value": "clean" },
+          { "pointer": "/source_schemas/query", "value": "sley.query.report.v0" },
+          { "pointer": "/source_schemas/lint", "value": "sley.lint.report.v0" },
+          { "pointer": "/summary/authority_seed_count", "value": 1 },
+          { "pointer": "/authority_seeds/0/command_args/1", "value": "SecretRead" },
+          { "pointer": "/authority_seeds/0/command_args/7", "value": "Deploy" }
         ]
       }
     },

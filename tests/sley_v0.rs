@@ -9498,6 +9498,10 @@ task main -> Used uses UsedEffect {
         LINT_REPORT_SCHEMA,
     );
     assert_schema_file(
+        include_str!("../docs/schemas/sley.shadow.report.v0.schema.json"),
+        "sley.shadow.report.v0",
+    );
+    assert_schema_file(
         include_str!("../docs/schemas/sley.zjx.envelope.v0.schema.json"),
         "sley.zjx.envelope.v0",
     );
@@ -9717,6 +9721,13 @@ fn report_command_schemas_pin_nonempty_argv_segments() {
         ),
         (
             serde_json::from_str::<serde_json::Value>(include_str!(
+                "../docs/schemas/sley.shadow.report.v0.schema.json"
+            ))
+            .expect("parse shadow report schema"),
+            vec!["/$defs/authoritySeed/properties/command_args/items/minLength"],
+        ),
+        (
+            serde_json::from_str::<serde_json::Value>(include_str!(
                 "../docs/schemas/sley.lsp.fix_preview.v0.schema.json"
             ))
             .expect("parse LSP fix preview schema"),
@@ -9820,7 +9831,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         inventory_json.pointer("/schema_count"),
-        Some(&serde_json::json!(37))
+        Some(&serde_json::json!(38))
     );
     let schema_ids = inventory_json
         .pointer("/schemas")
@@ -9841,6 +9852,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     assert!(schema_ids.contains("sley.deploy.artifacts.v0"));
     assert!(schema_ids.contains("sley.deploy.report.v0"));
     assert!(schema_ids.contains("sley.docgen.report.v0"));
+    assert!(schema_ids.contains("sley.shadow.report.v0"));
     assert!(schema_ids.contains("sley.contract.inventory.v0"));
     assert!(schema_ids.contains("sley.contract.fixture_check.v0"));
     assert!(schema_ids.contains("sley.contract.validate.v0"));
@@ -9873,7 +9885,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         portable_inventory_json.pointer("/schema_count"),
-        Some(&serde_json::json!(37))
+        Some(&serde_json::json!(38))
     );
     assert!(
         portable_inventory_json
@@ -9957,7 +9969,7 @@ fn contract_utility_inventories_schemas_and_validates_fixtures() {
     );
     assert_eq!(
         fixture_json.pointer("/fixture_count"),
-        Some(&serde_json::json!(105))
+        Some(&serde_json::json!(106))
     );
     assert_eq!(
         fixture_json.pointer("/failed_count"),
@@ -10225,7 +10237,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/schema_count"),
-        Some(&serde_json::json!(37))
+        Some(&serde_json::json!(38))
     );
     assert_eq!(
         report_json.pointer("/summary/schema_without_instance_count"),
@@ -10233,7 +10245,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/contract_fixture_count"),
-        Some(&serde_json::json!(105))
+        Some(&serde_json::json!(106))
     );
     assert_eq!(
         report_json.pointer("/summary/corpus_accepted_count"),
@@ -10282,7 +10294,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/smoke_case_count"),
-        Some(&serde_json::json!(434))
+        Some(&serde_json::json!(435))
     );
     assert_eq!(
         report_json.pointer("/summary/onboarding_path_count"),
@@ -10314,7 +10326,7 @@ fn conformance_report_summarizes_release_surface() {
     );
     assert_eq!(
         report_json.pointer("/summary/v1_gate_target_count"),
-        Some(&serde_json::json!(17))
+        Some(&serde_json::json!(18))
     );
     assert_eq!(
         report_json.pointer("/summary/missing_v1_gate_target_count"),
@@ -10373,9 +10385,10 @@ fn conformance_report_summarizes_release_surface() {
             .and_then(|value| value.as_array())
             .is_some_and(
                 |targets| targets.iter().any(|target| target == "editor-shims")
+                    && targets.iter().any(|target| target == "shadow")
                     && targets.iter().any(|target| target == "syntax")
             ),
-        "conformance report should inventory make v1 editor and syntax gates"
+        "conformance report should inventory make v1 editor, shadow, and syntax gates"
     );
     assert_eq!(
         report_json.pointer("/v1_gate/missing_required_targets"),
@@ -10511,7 +10524,7 @@ fn conformance_report_summarizes_release_surface() {
     assert!(text_stdout.contains("onboarding=7"));
     assert!(text_stdout.contains("onboarding_missing=0"));
     assert!(text_stdout.contains("editor_shims=1"));
-    assert!(text_stdout.contains("v1_gate=17"));
+    assert!(text_stdout.contains("v1_gate=18"));
     assert!(text_stdout.contains("v1_gate_missing=0"));
     assert!(text_stdout.contains("local_v1=ready"));
     assert!(text_stdout.contains("local_v1_percent=100"));
@@ -22117,6 +22130,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "cli:sley-lsp",
         "cli:sley-migrate",
         "cli:sley-sandbox-runner",
+        "cli:sley-shadow",
         "cli:sley-workbench",
         "cli:sley-zjx",
         "cli:ast",
@@ -22315,6 +22329,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "readiness:lsp-stdio-startup",
         "readiness:migrate-report",
         "readiness:sandbox-replay",
+        "readiness:shadow-helper",
         "readiness:workbench-inspection",
         "readiness:zjx-tool-inspect",
         "readiness:inspect-calls",
@@ -22387,6 +22402,7 @@ fn assert_cli_smoke_manifest_has_release_coverage(manifest: &CliSmokeManifest) {
         "json:sley.edit_plan.report.v0",
         "json:sley.migrate.report.v0",
         "json:sley.sandbox.report.v0",
+        "json:sley.shadow.report.v0",
         "json:sley.workbench.report.v0",
         "json:sley.verify.report.v0",
         "json:sley.deploy.report.v0",
@@ -22458,6 +22474,7 @@ fn cli_smoke_test_binary(binary: &str) -> &'static str {
         "sley-lsp" => env!("CARGO_BIN_EXE_sley-lsp"),
         "sley-migrate" => env!("CARGO_BIN_EXE_sley-migrate"),
         "sley-sandbox-runner" => env!("CARGO_BIN_EXE_sley-sandbox-runner"),
+        "sley-shadow" => env!("CARGO_BIN_EXE_sley-shadow"),
         "sley-workbench" => env!("CARGO_BIN_EXE_sley-workbench"),
         "sley-zjx" => env!("CARGO_BIN_EXE_sley-zjx"),
         other => panic!("unsupported CLI smoke binary {other}"),
@@ -22476,6 +22493,7 @@ fn allowed_cli_smoke_test_binary(binary: &str) -> bool {
             | "sley-lsp"
             | "sley-migrate"
             | "sley-sandbox-runner"
+            | "sley-shadow"
             | "sley-workbench"
             | "sley-zjx"
     )

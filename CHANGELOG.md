@@ -16,6 +16,8 @@ here. Dates use UTC-independent calendar dates from the local repo history.
 - `sley-agent-bench run`, a deterministic agent repair-loop benchmark over
   query, lint, plan, fix, verify, seal, and ZJX evidence.
 - `sley-zjx`, a read-only inspection utility for preview ZJX envelopes.
+- `sley-shadow report`, a non-authoritative helper replay over checked query
+  and lint reports with lint-link evidence and seeded authority args.
 - Expanded `sley new` templates for library, CLI, service-gate, data-pipeline,
   deploy, agent, agent-task-pack, and multi-module agent-project starters.
 - `sley-workbench`, `sley-lsp`, `sley-conformance`, `sley-contract`, and
@@ -52,7 +54,7 @@ here. Dates use UTC-independent calendar dates from the local repo history.
 ### Changed
 
 - `make v1` now runs deterministic workbench, agent-bench, migration, docgen,
-  sandbox-runner, ZJX tool replays, and VS Code editor-shim validation plus
+  sandbox-runner, shadow, ZJX tool replays, and VS Code editor-shim validation plus
   the focused LSP integration tests, contract fixtures, conformance, corpus,
   examples, CLI smokes, and Tree-sitter syntax parsing.
 - `sley-conformance report` now inventories `editors/vscode-sley` package
@@ -171,12 +173,12 @@ here. Dates use UTC-independent calendar dates from the local repo history.
   binaries, and the broad smoke suite covers `sley-contract` inventory,
   validate, fixture-check, deploy-artifact inspection flows, and `sley-migrate`
   raw-host and unchecked-result reports, plus `sley-ci`, `sley-conformance`,
-  `sley-docgen`, `sley-workbench`, `sley-sandbox-runner`, `sley-agent-bench`,
-  `sley-zjx` utility reports, and `sley-lsp` help/startup.
+  `sley-docgen`, `sley-workbench`, `sley-sandbox-runner`, `sley-shadow`,
+  `sley-agent-bench`, `sley-zjx` utility reports, and `sley-lsp` help/startup.
 - `sley lint --rule empty-else-statement` now flags no-op empty `else`
   branches and `sley plan --graft-templates` emits a checked
   `remove_empty_else_statement` repair.
-- Contract inventory now tracks 37 schemas, 105 contract fixtures, and 108 schema
+- Contract inventory now tracks 38 schemas, 106 contract fixtures, and 109 schema
   instances through the conformance report.
 - The Rust package metadata now declares its supported Rust floor, description,
   README, keywords, categories, and `publish = false` until publication

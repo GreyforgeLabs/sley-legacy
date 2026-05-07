@@ -30,6 +30,7 @@
             "sley-lsp",
             "sley-migrate",
             "sley-sandbox-runner",
+            "sley-shadow",
             "sley-workbench",
             "sley-zjx"
           ]

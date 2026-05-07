@@ -18,7 +18,7 @@
     "declared_integration_test_count": 1,
     "test_count_matches_declared": true,
     "editor_shim_count": 1,
-    "v1_gate_target_count": 17,
+    "v1_gate_target_count": 18,
     "missing_v1_gate_target_count": 0,
     "public_release_blocker_count": 5,
     "issue_count": 1
@@ -227,6 +227,7 @@
       "migrate",
       "docgen",
       "sandbox-runner",
+      "shadow",
       "zjx-tools",
       "syntax"
     ],
@@ -246,6 +247,7 @@
       "migrate",
       "docgen",
       "sandbox-runner",
+      "shadow",
       "zjx-tools",
       "syntax"
     ],

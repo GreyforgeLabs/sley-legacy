@@ -23,9 +23,9 @@ Explicit schema paths remain supported for pinned validation.
 
 Current counts:
 
-- Schemas: `37`
-- Contract fixtures: `105`
-- Schema instances: `108`
+- Schemas: `38`
+- Contract fixtures: `106`
+- Schema instances: `109`
 
 ## Core Compiler Roots
 
@@ -73,6 +73,7 @@ Current counts:
 | `sley.lsp.command_preview.v0` | `sley-lsp` | Non-mutating editor command handoff preview payload. |
 | `sley.workbench.report.v0` | `sley-workbench` | Local inspection report and optional HTML panels. |
 | `sley.docgen.report.v0` | `sley-docgen` | Generated reference summary, host capability seed args, and optional Markdown handoff. |
+| `sley.shadow.report.v0` | `sley-shadow` | Non-authoritative query/lint join replay, lint-link evidence, and seeded authority args. |
 | `sley.agent_bench.report.v0` | `sley-agent-bench` | Deterministic agent repair-loop benchmark. |
 | `sley.migrate.report.v0` | `sley-migrate` | Checked migration and schema-drift report. |
 | `sley.sandbox.manifest.v0` | sandbox manifests | Deterministic seeded runtime replay input. |

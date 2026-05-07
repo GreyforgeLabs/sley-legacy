@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.shadow.report.v0",
+  "title": "Sley Shadow Report v0",
+  "type": "object",
+  "required": [
+    "schema",
+    "status",
+    "target",
+    "source_schemas",
+    "summary",
+    "authority_seeds",
+    "lint_links",
+    "diagnostics",
+    "issues"
+  ],
+  "properties": {
+    "schema": { "const": "sley.shadow.report.v0" },
+    "status": { "enum": ["clean", "findings", "blocked"] },
+    "target": { "type": "string", "minLength": 1 },
+    "source_schemas": { "$ref": "#/$defs/sourceSchemas" },
+    "summary": { "$ref": "#/$defs/summary" },
+    "authority_seeds": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/authoritySeed" }
+    },
+    "lint_links": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/lintLink" }
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": { "$ref": "sley.diagnostics.report.v0#/$defs/diagnostic" }
+    },
+    "issues": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/issue" }
+    }
+  },
+  "$defs": {
+    "sourceSchemas": {
+      "type": "object",
+      "required": ["query", "lint"],
+      "properties": {
+        "query": { "const": "sley.query.report.v0" },
+        "lint": { "const": "sley.lint.report.v0" }
+      },
+      "additionalProperties": false
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "module_count",
+        "task_count",
+        "effectful_task_count",
+        "call_count",
+        "lint_finding_count",
+        "linked_lint_finding_count",
+        "unlinked_lint_finding_count",
+        "authority_seed_count",
+        "diagnostic_count",
+        "issue_count"
+      ],
+      "properties": {
+        "module_count": { "type": "integer", "minimum": 0 },
+        "task_count": { "type": "integer", "minimum": 0 },
+        "effectful_task_count": { "type": "integer", "minimum": 0 },
+        "call_count": { "type": "integer", "minimum": 0 },
+        "lint_finding_count": { "type": "integer", "minimum": 0 },
+        "linked_lint_finding_count": { "type": "integer", "minimum": 0 },
+        "unlinked_lint_finding_count": { "type": "integer", "minimum": 0 },
+        "authority_seed_count": { "type": "integer", "minimum": 0 },
+        "diagnostic_count": { "type": "integer", "minimum": 0 },
+        "issue_count": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "authoritySeed": {
+      "type": "object",
+      "required": ["task_id", "qualified_name", "effects", "command_args"],
+      "properties": {
+        "task_id": { "type": "string", "minLength": 1 },
+        "qualified_name": { "type": "string", "minLength": 1 },
+        "effects": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "command_args": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "lintLink": {
+      "type": "object",
+      "required": [
+        "finding_id",
+        "rule",
+        "node",
+        "module",
+        "linked",
+        "target_kind",
+        "hint"
+      ],
+      "properties": {
+        "finding_id": { "type": "string", "minLength": 1 },
+        "rule": { "type": "string", "minLength": 1 },
+        "node": { "type": "string", "minLength": 1 },
+        "module": { "type": "string", "minLength": 1 },
+        "linked": { "type": "boolean" },
+        "target_kind": {
+          "enum": ["task", "type", "effect", "module", "unknown"]
+        },
+        "qualified_name": { "type": "string", "minLength": 1 },
+        "hint": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "issue": {
+      "type": "object",
+      "required": ["code", "message"],
+      "properties": {
+        "code": { "type": "string", "minLength": 1 },
+        "message": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,4 +1,4 @@
-.PHONY: fmt diff-check build-cli build-bins test contracts conformance public-release-check corpus examples smoke lsp editor-shims workbench agent-bench migrate docgen sandbox-runner zjx-tools syntax v1
+.PHONY: fmt diff-check build-cli build-bins test contracts conformance public-release-check corpus examples smoke lsp editor-shims workbench agent-bench migrate docgen sandbox-runner shadow zjx-tools syntax v1
 
 fmt:
 	cargo fmt -- --check
@@ -59,6 +59,9 @@ docgen:
 sandbox-runner:
 	cargo run --bin sley-sandbox-runner -- run --json fixtures/contracts/sandbox_manifest_agent_pipeline.json
 
+shadow:
+	cargo run --bin sley-shadow -- report --json examples/agent_deploy_pipeline.sley
+
 zjx-tools:
 	cargo run --bin sley-zjx -- inspect --json fixtures/contracts/zjx_hello_ready.json
 	cargo run --bin sley-zjx -- verify-digest --json fixtures/contracts/zjx_hello_ready.json
@@ -71,4 +74,4 @@ tree-sitter-sley/node_modules/.package-lock.json: tree-sitter-sley/package.json 
 syntax: tree-sitter-sley/node_modules/.package-lock.json
 	npm --prefix tree-sitter-sley test
 
-v1: fmt diff-check test contracts conformance corpus examples smoke lsp editor-shims workbench agent-bench migrate docgen sandbox-runner zjx-tools syntax
+v1: fmt diff-check test contracts conformance corpus examples smoke lsp editor-shims workbench agent-bench migrate docgen sandbox-runner shadow zjx-tools syntax

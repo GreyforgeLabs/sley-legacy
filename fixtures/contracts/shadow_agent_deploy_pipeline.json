@@ -1,0 +1,46 @@
+{
+  "schema": "sley.shadow.report.v0",
+  "status": "clean",
+  "target": "examples/agent_deploy_pipeline.sley",
+  "source_schemas": {
+    "query": "sley.query.report.v0",
+    "lint": "sley.lint.report.v0"
+  },
+  "summary": {
+    "module_count": 1,
+    "task_count": 1,
+    "effectful_task_count": 1,
+    "call_count": 7,
+    "lint_finding_count": 0,
+    "linked_lint_finding_count": 0,
+    "unlinked_lint_finding_count": 0,
+    "authority_seed_count": 1,
+    "diagnostic_count": 0,
+    "issue_count": 0
+  },
+  "authority_seeds": [
+    {
+      "task_id": "task:app.agent_deploy_pipeline.main",
+      "qualified_name": "app.agent_deploy_pipeline.main",
+      "effects": [
+        "SecretRead",
+        "Network",
+        "ModelCall",
+        "Deploy"
+      ],
+      "command_args": [
+        "--cap",
+        "SecretRead",
+        "--cap",
+        "Network",
+        "--cap",
+        "ModelCall",
+        "--cap",
+        "Deploy"
+      ]
+    }
+  ],
+  "lint_links": [],
+  "diagnostics": [],
+  "issues": []
+}
