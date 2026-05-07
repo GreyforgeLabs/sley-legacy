@@ -1,0 +1,31 @@
+{
+  "schema": "sley.lint.report.v0",
+  "status": "findings",
+  "entry_module": "app.unchecked_binding",
+  "filters": {
+    "module": null,
+    "rules": [
+      "unchecked_result_binding"
+    ]
+  },
+  "findings": [
+    {
+      "id": "UNCHECKED_RESULT_BINDING",
+      "rule": "unchecked_result_binding",
+      "severity": "warning",
+      "message": "task `app.unchecked_binding.main` binds Result from `fs.try_read_text` to `discarded_file` but never reads it",
+      "node": "block:task:app.unchecked_binding.main:stmt:0",
+      "module": "app.unchecked_binding",
+      "hint": "use `?` to propagate failure, return the Result, or read `discarded_file` for explicit handling"
+    },
+    {
+      "id": "UNCHECKED_RESULT_BINDING",
+      "rule": "unchecked_result_binding",
+      "severity": "warning",
+      "message": "task `app.unchecked_binding.main` binds Result from `helper` to `discarded_task` but never reads it",
+      "node": "block:task:app.unchecked_binding.main:stmt:1",
+      "module": "app.unchecked_binding",
+      "hint": "use `?` to propagate failure, return the Result, or read `discarded_task` for explicit handling"
+    }
+  ]
+}

@@ -116,7 +116,8 @@ Implemented now:
   `--rule unused-declared-effect`, `--rule unused-import`,
   `--rule unused-take`, `--rule unused-private-type`,
   `--rule unused-private-effect`, `--rule raw-host-adapter`,
-  `--rule missing-module-declaration`, `--rule unchecked-result`, or
+  `--rule missing-module-declaration`, `--rule unchecked-result`,
+  `--rule unchecked-result-binding`, or
   `--rule unqualified-imported-call`, `--rule unused-pure-binding`,
   `--rule unused-pure-expression-statement`, or
   `--rule mutable-binding-never-set`, `--rule self-assignment-statement`,
@@ -228,6 +229,8 @@ Implemented now:
   move to fallible `try_` adapters with `?`,
   `propagate_unchecked_result` templates for discarded `Result` expression
   statements that can be safely rewritten with `?`,
+  `unchecked_result_binding` warnings for fallible `Result` values that are
+  bound and then never read,
   `qualify_imported_call` templates for simple imported task calls that should
   be alias- or module-qualified,
   `delete_unused_pure_expression_statement` templates for no-op pure

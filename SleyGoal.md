@@ -44,7 +44,7 @@ Current verified surface:
 
 - `cargo fmt -- --check` passes.
 - `cargo test` passes.
-- Current integration coverage is 298 tests in the core `tests/sley_v0.rs`
+- Current integration coverage is 299 tests in the core `tests/sley_v0.rs`
   conformance file, with additional focused integration tests for LSP,
   workbench, agent bench, docgen, migration reports, sandbox replay, project
   templates, and ZJX envelope tools. The focused utility tests validate live
@@ -159,6 +159,7 @@ Current verified surface:
   `--rule unused-import`, `--rule unused-take`, `--rule unused-private-type`,
   `--rule unused-private-effect`, `--rule raw-host-adapter`,
   `--rule missing-module-declaration`, `--rule unchecked-result`,
+  `--rule unchecked-result-binding`,
   `--rule unqualified-imported-call`, `--rule unused-pure-binding`,
   `--rule unused-pure-expression-statement`,
   `--rule mutable-binding-never-set`, `--rule self-assignment-statement`,
@@ -196,7 +197,8 @@ Current verified surface:
   `unreachable_private_task`, `unused_declared_effect`, and
   `unused_import`, `unused_take`, `unused_private_type`,
   `unused_private_effect`, `raw_host_adapter`,
-  `missing_module_declaration`, `unchecked_result`, and
+  `missing_module_declaration`, `unchecked_result`,
+  `unchecked_result_binding`, and
   `unqualified_imported_call`, `unused_pure_binding`,
   `unused_pure_expression_statement`, and `mutable_binding_never_set`,
   `constant_if_expression`,
@@ -263,7 +265,9 @@ Current verified surface:
   removal transaction, explicit deploy artifact manifest handoff writes plus
   digest/schema reinspection for dry-run packages, and checked
   `unchecked_result` migration templates that turn discarded `Result`
-  expression statements into explicit `?` propagation when valid, plus checked
+  expression statements into explicit `?` propagation when valid, plus
+  `unchecked_result_binding` warnings for fallible `Result` values that are
+  bound and then never read, plus checked
   `unqualified_imported_call` style templates that qualify imported task calls
   through their import alias or module segment, including a write/query/verify
   smoke that proves the repair clears strict lint, plus checked `unused_import`
