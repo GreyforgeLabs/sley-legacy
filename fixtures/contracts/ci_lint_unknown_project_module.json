@@ -1,0 +1,43 @@
+{
+  "schema": "sley.ci.report.v0",
+  "status": "failed",
+  "command": "lint",
+  "target": "examples/project",
+  "summary": {
+    "step_count": 1,
+    "passed_count": 0,
+    "failed_count": 1
+  },
+  "steps": [
+    {
+      "name": "lint",
+      "status": "failed",
+      "command": [
+        "sley",
+        "lint",
+        "--json",
+        "--module",
+        "app.typo",
+        "examples/project"
+      ],
+      "expected_success": true,
+      "actual_success": false,
+      "exit_code": 1,
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "LINT_MODULE_FILTER_NOT_FOUND",
+          "severity": "error",
+          "message": "module filter `app.typo` did not match any checked module"
+        }
+      ],
+      "issues": [
+        {
+          "code": "exit_status_mismatch",
+          "message": "expected success=true, got success=false; stderr=\"operation failed\\n\""
+        }
+      ]
+    }
+  ],
+  "issues": []
+}

@@ -723,6 +723,9 @@ duplicate declaration diagnostics.
 accepted/rejected gate as a machine-readable CI report: accepted cases run
 strict check plus formatter round-trip checks, while rejected cases must fail
 with the expected diagnostic ids from their sidecars.
+When a wrapped step emits `schema: "sley.diagnostics.report.v0"`, non-empty
+diagnostics are summarized directly on the CI step by ID, severity, message,
+and optional node.
 
 The executable CLI conformance smokes live under `fixtures/cli_smokes/`. Their
 `manifest.json` lists stable commands, working-directory mode, optional temp
