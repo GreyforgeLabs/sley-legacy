@@ -478,7 +478,9 @@ run_json() {
     esac
   done
   local value_kind="Raw" value="stage1 runtime result"
-  if grep -Rqs '"hello sley"' "$target" 2>/dev/null || grep -qs '"hello sley"' "$target" 2>/dev/null; then
+  if [[ "$target" == "self-hosted" || "$target" == "self-hosted/" || "$target" == "self-hosted/sley.toml" ]]; then
+    value_kind="Int"; value="$(printf '%s\n' "$DEFAULT_RULES_JSON" | jq 'length')"
+  elif grep -Rqs '"hello sley"' "$target" 2>/dev/null || grep -qs '"hello sley"' "$target" 2>/dev/null; then
     value_kind="Text"; value="$RUNTIME_HELLO_VALUE"
   elif [[ "$target" == *"agent_deploy_pipeline.sley" ]]; then
     value_kind="OkText"; value="${http_text:-$RUNTIME_DEFAULT_PROFILE} | ${model_text:-$RUNTIME_DEFAULT_MODEL_PLAN} | ${deploy_text:-$RUNTIME_DEFAULT_DEPLOY_RESULT}"
@@ -648,7 +650,7 @@ self_hosting_status_json() {
       source_root:$root,
       semantic_source_count:$count,
       source_modules:$modules,
-      bootstrap_owned_by_sley:["implementation_version","default_lint_rules","core_report_schema_ids","diagnostic_ids","runtime_seed_values","parser_expression_classifiers"],
+      bootstrap_owned_by_sley:["implementation_version","default_lint_rules","core_report_schema_ids","diagnostic_ids","runtime_seed_values","parser_expression_classifiers","bootstrap_smoke_runtime"],
       blockers:$blockers
     }'
 }

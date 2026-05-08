@@ -60,6 +60,8 @@ The repo currently proves these claims from a clean checkout:
   `self-hosted/src/loom/parser.sley`.
 - Sley-owned stage-2 source modules exist under `self-hosted/src/loom/`:
   `bin/sley self-hosting-status --json`
+- The self-hosted source project has a runnable internal smoke:
+  `bin/sley run --json self-hosted`
 - Baseline AST, check, query, lint, doctor, run, verify, graft, contract, and
   conformance JSON reports execute locally:
   `scripts/self-hosted-test.sh`
@@ -83,6 +85,7 @@ sley ast --json examples/hello.sley
 sley query --json --kind calls examples/project
 sley lint --json examples/empty_for_statement.sley
 sley self-hosting-status --json
+sley run --json self-hosted
 sley run --json examples/hello.sley
 sley verify --json examples/project
 ```

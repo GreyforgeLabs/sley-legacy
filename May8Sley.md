@@ -20,6 +20,8 @@ Current state after remediation:
   modules, and the bootstrap reads version, lint-rule inventory, core report
   IDs, diagnostic IDs, runtime seed values, and parser expression classifiers
   from `.sley` source;
+- `sley run --json self-hosted` now executes a bootstrap smoke over the
+  Sley-owned lint-rule inventory;
 - `make v1` passes without Cargo, Rust, Node, npm, or tree-sitter;
 - `make public-release-check` intentionally fails with `PUBLIC_RELEASE_BLOCKED`
   until strict Sley-written parity, operator approval, and a published proof

@@ -9,7 +9,8 @@ and exposes a runnable stage-1 command surface through `bin/`. Stage-2 source
 ownership has started under `self-hosted/src/loom/`; bootstrap version,
 lint-rule inventory, core report schema IDs, diagnostic IDs, and runtime seed
 values are read from `.sley` source. AST expression-kind classifiers are also
-read from `self-hosted/src/loom/parser.sley`.
+read from `self-hosted/src/loom/parser.sley`, and `sley run --json self-hosted`
+executes the bootstrap smoke over the Sley-owned lint-rule inventory.
 
 ## Current Proof Commands
 
@@ -46,6 +47,7 @@ sley zjx --json <file-or-project>
 sley graft --json --dry-run <file> <graft.json>
 sley format <file>
 sley run --json <file-or-project>
+sley run --json self-hosted
 sley self-hosting-status --json
 ```
 
@@ -128,5 +130,7 @@ Use:
 Do not claim strict self-hosting yet. Stage-1 proves a foreign-source-free
 runnable bootstrap and command envelopes. Stage-2 now gives Loom Sley-owned
 semantic source modules and moves bootstrap version/lint-rule inventory into
-`.sley` source. Strict self-hosting still requires parser, checker, runtime,
-and command semantics to execute from Sley source and pass parity tests.
+`.sley` source. It also runs the self-hosted project smoke from the Sley-owned
+lint-rule inventory. Strict self-hosting still requires parser, checker,
+runtime, and command semantics to execute from Sley source and pass parity
+tests.

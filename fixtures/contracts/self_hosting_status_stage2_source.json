@@ -18,7 +18,8 @@
     "core_report_schema_ids",
     "diagnostic_ids",
     "runtime_seed_values",
-    "parser_expression_classifiers"
+    "parser_expression_classifiers",
+    "bootstrap_smoke_runtime"
   ],
   "blockers": [
     "execute parser semantics from Sley source",
