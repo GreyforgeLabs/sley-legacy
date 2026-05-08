@@ -79,7 +79,7 @@ The repo currently proves these claims from a clean checkout:
   Seeded agent-deploy text results now execute the
   `loom.runtime.seeded_agent_deploy_value` source task.
   Project-ready integer results now execute the
-  `loom.runtime.project_ready_value` source task.
+  `loom.runtime.project_ready_value` source task after AST-based dispatch.
 - Checker diagnostic status and unknown-identifier message construction are
   read from `self-hosted/src/loom/checker.sley`.
   The checker report status now executes `loom.checker.diagnostic_status`.
