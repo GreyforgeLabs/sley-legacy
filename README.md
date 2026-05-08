@@ -62,6 +62,8 @@ The repo currently proves these claims from a clean checkout:
   `bin/sley self-hosting-status --json`
 - The self-hosted source project has a runnable internal smoke:
   `bin/sley run --json self-hosted`
+- Runtime report statuses, value-kind tags, and current dispatch probes are
+  read from `self-hosted/src/loom/runtime.sley`.
 - Checker diagnostic status and unknown-identifier message construction are
   read from `self-hosted/src/loom/checker.sley`.
 - Lint finding statuses, messages, and hints are read from

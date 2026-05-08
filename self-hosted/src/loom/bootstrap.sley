@@ -22,7 +22,8 @@ export task owned_bootstrap_values -> List<Text> {
     "parser_expression_classifiers",
     "bootstrap_smoke_runtime",
     "checker_diagnostic_status",
-    "lint_finding_messages"
+    "lint_finding_messages",
+    "runtime_report_status_and_dispatch"
   ]
 }
 
