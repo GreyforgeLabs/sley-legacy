@@ -356,6 +356,7 @@ fi
 SCHEMA_AST_PROGRAM="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" ast_program_schema)"
 SCHEMA_AST_NODE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" ast_node_schema)"
 SCHEMA_DIAGNOSTICS="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" diagnostics_schema)"
+DIAGNOSTICS_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" diagnostics_report_fields)"
 SCHEMA_QUERY="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" query_schema)"
 SCHEMA_LINT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" lint_schema)"
 SCHEMA_DOCTOR="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" doctor_schema)"
@@ -369,6 +370,9 @@ SELF_HOSTING_STATUS_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOU
 SCHEMA_AST_PROGRAM="${SCHEMA_AST_PROGRAM:-sley.ast.program.v0}"
 SCHEMA_AST_NODE="${SCHEMA_AST_NODE:-sley.ast.node.v0}"
 SCHEMA_DIAGNOSTICS="${SCHEMA_DIAGNOSTICS:-sley.diagnostics.report.v0}"
+if [[ "$DIAGNOSTICS_REPORT_FIELDS_JSON" == "[]" ]]; then
+  DIAGNOSTICS_REPORT_FIELDS_JSON='["schema","status","diagnostics"]'
+fi
 SCHEMA_QUERY="${SCHEMA_QUERY:-sley.query.report.v0}"
 SCHEMA_LINT="${SCHEMA_LINT:-sley.lint.report.v0}"
 SCHEMA_DOCTOR="${SCHEMA_DOCTOR:-sley.doctor.report.v0}"
@@ -847,8 +851,16 @@ check_json() {
   if [[ -z "$check_status" ]]; then
     if [[ "$diagnostic_count" -eq 0 ]]; then check_status="$CHECK_OK_STATUS"; else check_status="$CHECK_ERROR_STATUS"; fi
   fi
-  jq -n --arg schema "$SCHEMA_DIAGNOSTICS" --arg status "$check_status" --argjson diagnostics "$diagnostics" \
-    '{schema:$schema, status:$status, diagnostics:$diagnostics}'
+  jq -n \
+    --arg schema "$SCHEMA_DIAGNOSTICS" \
+    --arg status "$check_status" \
+    --argjson diagnostics "$diagnostics" \
+    --argjson fields "$DIAGNOSTICS_REPORT_FIELDS_JSON" \
+    '{
+      ($fields[0] // "schema"):$schema,
+      ($fields[1] // "status"):$status,
+      ($fields[2] // "diagnostics"):$diagnostics
+    }'
 }
 
 lint_json() {
