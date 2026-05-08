@@ -13,6 +13,7 @@
   - `implementation_stage`
   - `self_hosting_status`
   - `strict_self_hosted`
+  - `source_modules`
   - the `self-hosting-status` ownership list
   - `default_lint_rules`
   - core report schema IDs
@@ -89,7 +90,7 @@ forbidden extension is present.
 - [x] Stage-1 deterministic runtime envelope bootstrapped
 - [x] Stage-1 tooling and schema smoke validation added
 - [x] Stage-2 Sley-owned semantic source modules added
-- [x] Bootstrap version/stage/status fields, status ownership list, report schema IDs, diagnostics, runtime seeds, parser classifiers and AST kind names, checker diagnostics, lint finding text, runtime report dispatch, lint-rule inventory, and bootstrap smoke value/task execution read from Sley source
+- [x] Bootstrap version/stage/status fields, source-module list, status ownership list, report schema IDs, diagnostics, runtime seeds, parser classifiers and AST kind names, checker diagnostics, lint finding text, runtime report dispatch, lint-rule inventory, and bootstrap smoke value/task execution read from Sley source
 - [x] Rust/C/JS/TS/Python foreign implementation files fully removed
 - [x] `./scripts/check-self-hosted-code.sh` exits cleanly
 - [x] README and llms command surfaces updated away from Cargo/Node claims

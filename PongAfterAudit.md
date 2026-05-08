@@ -26,9 +26,9 @@ Use the migration gates below as the canonical status:
 - `bin/sley self-hosting-status --json` is the current source-ownership report;
   its ownership list is now read from `loom.bootstrap` and reports Sley-owned
   version/stage/status, strict-self-hosting flag, rule, report-ID, diagnostic,
-  and runtime seed surfaces plus parser expression/statement/binding kind
-  names, checker diagnostic status, lint finding text, runtime dispatch/report
-  vocabulary, and bootstrap smoke runtime/source-task execution.
+  source-module, and runtime seed surfaces plus parser expression, statement,
+  and binding kind names, checker diagnostic status, lint finding text, runtime
+  dispatch/report vocabulary, and bootstrap smoke runtime/source-task execution.
 - Remaining migration work is strict Sley-written semantic/runtime execution
   parity, not source-language cleanup.
 

@@ -61,6 +61,7 @@ The repo currently proves these claims from a clean checkout:
   `self-hosted/src/loom/parser.sley`.
 - Sley-owned stage-2 source modules exist under `self-hosted/src/loom/`:
   `bin/sley self-hosting-status --json`
+  The report reads the module list from `loom.bootstrap.source_modules`.
 - The self-hosting status report reads its ownership list from
   `self-hosted/src/loom/bootstrap.sley`, including the bootstrap/strict status
   fields.
