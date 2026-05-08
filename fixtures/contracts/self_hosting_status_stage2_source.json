@@ -14,6 +14,7 @@
   ],
   "bootstrap_owned_by_sley": [
     "implementation_version",
+    "implementation_stage",
     "default_lint_rules",
     "core_report_schema_ids",
     "diagnostic_ids",
