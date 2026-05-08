@@ -360,6 +360,7 @@ SCHEMA_QUERY="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.
 SCHEMA_LINT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" lint_schema)"
 SCHEMA_DOCTOR="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" doctor_schema)"
 SCHEMA_RUN="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" run_schema)"
+RUN_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" run_report_fields)"
 SCHEMA_VERIFY="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" verify_schema)"
 SCHEMA_SELF_HOSTING="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_status_schema)"
 SELF_HOSTING_REPORT_SOURCE_ROOT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_source_root)"
@@ -372,6 +373,9 @@ SCHEMA_QUERY="${SCHEMA_QUERY:-sley.query.report.v0}"
 SCHEMA_LINT="${SCHEMA_LINT:-sley.lint.report.v0}"
 SCHEMA_DOCTOR="${SCHEMA_DOCTOR:-sley.doctor.report.v0}"
 SCHEMA_RUN="${SCHEMA_RUN:-sley.run.report.v0}"
+if [[ "$RUN_REPORT_FIELDS_JSON" == "[]" ]]; then
+  RUN_REPORT_FIELDS_JSON='["schema","status","target","value","diagnostics"]'
+fi
 SCHEMA_VERIFY="${SCHEMA_VERIFY:-sley.verify.report.v0}"
 SCHEMA_SELF_HOSTING="${SCHEMA_SELF_HOSTING:-sley.self_hosting.status.v0}"
 SELF_HOSTING_REPORT_SOURCE_ROOT="${SELF_HOSTING_REPORT_SOURCE_ROOT:-self-hosted/src}"
@@ -956,14 +960,21 @@ run_json() {
     --arg text_kind "$RUNTIME_TEXT_VALUE_KIND" \
     --arg bool_kind "$RUNTIME_BOOL_VALUE_KIND" \
     --arg ok_text_kind "$RUNTIME_OK_TEXT_VALUE_KIND" \
-    --arg raw_kind "$RUNTIME_RAW_VALUE_KIND" '
+    --arg raw_kind "$RUNTIME_RAW_VALUE_KIND" \
+    --argjson fields "$RUN_REPORT_FIELDS_JSON" '
     def val:
       if $kind == $int_kind then {kind:$int_kind, value:($value|tonumber)}
       elif $kind == $text_kind then {kind:$text_kind, value:$value}
       elif $kind == $bool_kind then {kind:$bool_kind, value:($value == "true")}
       elif $kind == $ok_text_kind then {kind:"Ok", value:{kind:$text_kind, value:$value}}
       else {kind:$raw_kind, value:$value} end;
-    {schema:$schema, status:$runtime_status, target:$target, value:val, diagnostics:[]}
+    {
+      ($fields[0] // "schema"):$schema,
+      ($fields[1] // "status"):$runtime_status,
+      ($fields[2] // "target"):$target,
+      ($fields[3] // "value"):val,
+      ($fields[4] // "diagnostics"):[]
+    }
   '
 }
 

@@ -28,6 +28,16 @@ export task run_schema -> Text {
   return "sley.run.report.v0"
 }
 
+export task run_report_fields -> List<Text> {
+  return [
+    "schema",
+    "status",
+    "target",
+    "value",
+    "diagnostics"
+  ]
+}
+
 export task verify_schema -> Text {
   return "sley.verify.report.v0"
 }

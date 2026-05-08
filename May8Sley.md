@@ -34,6 +34,7 @@ Current state after remediation:
   are now read from `loom.lint`;
 - runtime report status task execution, value-kind tags, and current dispatch
   probes are now read from `loom.runtime`;
+- run report top-level field shape is now read from `loom.reports`;
 - pure `main` string, integer, and boolean literal returns now execute through
   the AST-backed runtime path;
 - seeded agent-deploy text results now execute the
