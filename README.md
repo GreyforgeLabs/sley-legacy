@@ -62,6 +62,8 @@ The repo currently proves these claims from a clean checkout:
   `bin/sley self-hosting-status --json`
 - The self-hosted source project has a runnable internal smoke:
   `bin/sley run --json self-hosted`
+- Checker diagnostic status and unknown-identifier message construction are
+  read from `self-hosted/src/loom/checker.sley`.
 - Baseline AST, check, query, lint, doctor, run, verify, graft, contract, and
   conformance JSON reports execute locally:
   `scripts/self-hosted-test.sh`

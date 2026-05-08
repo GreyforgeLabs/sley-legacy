@@ -11,13 +11,37 @@ export task unknown_identifier_id -> Text {
   return "UNKNOWN_IDENTIFIER"
 }
 
+export task ok_status -> Text {
+  return "ok"
+}
+
+export task error_status -> Text {
+  return "error"
+}
+
+export task unknown_identifier_message_prefix -> Text {
+  return "unknown identifier `"
+}
+
+export task unknown_identifier_message_suffix -> Text {
+  return "`"
+}
+
+export task identifier_resolution_inputs -> List<Text> {
+  return [
+    "task_names",
+    "take_names",
+    "binding_names"
+  ]
+}
+
 export task diagnostic_status -> Text {
   take error_count: Int
 
   if error_count > 0 {
-    return "error"
+    return call error_status()
   }
-  return "ok"
+  return call ok_status()
 }
 
 export task is_builtin_type -> Bool {
