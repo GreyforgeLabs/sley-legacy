@@ -4,7 +4,7 @@
 
 <p align="center">
   <strong>Sley</strong><br />
-  <a href="https://sley.greyforge.tech/">Official Sley site</a> •
+  <a href="https://sleylang.org/">Official Sley site</a> •
   <a href="https://greyforge.tech/">Greyforge Labs</a> •
   <a href="https://x.com/GreyforgeLabs">X / Twitter</a> •
   <a href="https://greyforge.tech/chronicles">Chronicles</a> •
@@ -19,12 +19,12 @@
 </p>
 
 <!-- SEO / discoverability metadata -->
-<meta name="description" content="Sley is a deterministic, schema-backed language for graph-checked automation and agentic tooling, maintained by Greyforge Labs." />
-<meta name="keywords" content="Sley, deterministic language, schema-backed reports, graph compiler, agent tooling, Greyforge Labs" />
-<link rel="canonical" href="https://sley.greyforge.tech/" />
+<meta name="description" content="Sley is the world's first AI-native programming language designed by AI for AI, optimized for AI-driven workflows and deterministic, graph-checked editing." />
+<meta name="keywords" content="Sley, AI-native language, designed by AI for AI, deterministic language, token efficiency, schema-backed reports, graph compiler, agent tooling, Greyforge Labs" />
+<link rel="canonical" href="https://sleylang.org/" />
 <meta property="og:title" content="Sley" />
-<meta property="og:description" content="Deterministic, graph-backed structural language and release toolchain from Greyforge Labs." />
-<meta property="og:url" content="https://sley.greyforge.tech/" />
+<meta property="og:description" content="Sley's first-of-kind language design for AI-native development, token-efficient structural edits, and auditable compiler-mediated workflows." />
+<meta property="og:url" content="https://sleylang.org/" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="Greyforge Labs" />
 <meta property="og:image" content="https://raw.githubusercontent.com/GreyforgeLabs/sley/main/assets/branding/canonical/sley_loom_graph_board.png" />
@@ -32,6 +32,8 @@
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Sley by Greyforge Labs" />
 <meta name="twitter:site" content="@GreyforgeLabs" />
+<meta name="twitter:title" content="Sley | AI-native language for AI agents" />
+<meta name="twitter:description" content="Sley is the world's first AI-native language designed by AI for AI, optimized for language agents and token-efficient edits." />
 <meta name="twitter:creator" content="@GreyforgeLabs" />
 <meta name="twitter:image" content="https://raw.githubusercontent.com/GreyforgeLabs/sley/main/assets/branding/canonical/sley_loom_graph_board.png" />
 <meta name="twitter:image:alt" content="Sley Loom logo and graph banner" />
@@ -39,7 +41,7 @@
 <meta name="geo.placename" content="United States" />
 <p align="center">
   <strong>Canonical:</strong>
-  <a href="https://sley.greyforge.tech/">sley.greyforge.tech</a> ·
+  <a href="https://sleylang.org/">sleylang.org</a> ·
   <a href="https://greyforge.tech/">greyforge.tech</a> ·
   <a href="https://greyforge.tech/chronicles">Chronicles</a> ·
   <a href="https://greyforge.tech/openforge">OpenForge</a>
@@ -52,13 +54,17 @@
 
 # Sley
 
+Sley is the world's first AI-native programming language: designed by AI for AI,
+optimized for AI agent workflows, and focused on token-efficient compiler-mediated
+structural edits with auditable authority and evidence surfaces.
+
 **SEO metadata:** Sley • structural programming language • deterministic edits •
 auditable grafts • graph-aware agent tooling • `sley` • `Greyforge Labs` • Apache-2.0
 
-Sley is an agent-native structural programming language. The Loom compiler reads
+Sley is the world's first AI-native structural language. The Loom compiler reads
 human-reviewable `.sley` source, exposes typed graph-shaped AST data, checks
-task/effect/binding semantics, runs pure and explicitly gated tasks, and
-accepts verified grafts instead of blind text edits.
+task/effect/binding semantics, runs pure and explicitly gated tasks, and accepts
+verified grafts instead of blind text edits.
 
 Implemented now:
 
