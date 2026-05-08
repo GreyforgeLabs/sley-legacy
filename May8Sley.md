@@ -26,8 +26,8 @@ Current state after remediation:
   construction are now read from `loom.checker`;
 - lint report status task execution plus finding statuses, messages, and hints
   are now read from `loom.lint`;
-- runtime report statuses, value-kind tags, and current dispatch probes are now
-  read from `loom.runtime`;
+- runtime report status task execution, value-kind tags, and current dispatch
+  probes are now read from `loom.runtime`;
 - `sley run --json self-hosted` now executes the `loom.bootstrap.smoke` source
   task over the Sley-owned lint-rule inventory;
 - `make v1` passes without Cargo, Rust, Node, npm, or tree-sitter;
