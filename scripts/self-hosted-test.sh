@@ -21,10 +21,10 @@ bin/sley --help >/dev/null
 bin/sley --version | grep -q 'self-hosting-stage2-source'
 
 bin/sley self-hosting-status --json \
-  | json_field '.schema == "sley.self_hosting.status.v0" and .status == "bootstrap" and .strict_self_hosted == false and .semantic_source_count >= 6 and (.bootstrap_owned_by_sley | index("implementation_version")) and (.bootstrap_owned_by_sley | index("default_lint_rules")) and (.bootstrap_owned_by_sley | index("core_report_schema_ids")) and (.bootstrap_owned_by_sley | index("diagnostic_ids")) and (.bootstrap_owned_by_sley | index("runtime_seed_values"))'
+  | json_field '.schema == "sley.self_hosting.status.v0" and .status == "bootstrap" and .strict_self_hosted == false and .semantic_source_count >= 6 and (.bootstrap_owned_by_sley | index("implementation_version")) and (.bootstrap_owned_by_sley | index("default_lint_rules")) and (.bootstrap_owned_by_sley | index("core_report_schema_ids")) and (.bootstrap_owned_by_sley | index("diagnostic_ids")) and (.bootstrap_owned_by_sley | index("runtime_seed_values")) and (.bootstrap_owned_by_sley | index("parser_expression_classifiers"))'
 
 bin/sley ast --json examples/hello.sley \
-  | json_field '.schema == "sley.ast.program.v0" and .module == "app.hello" and .tasks[0].name == "main"'
+  | json_field '.schema == "sley.ast.program.v0" and .module == "app.hello" and .tasks[0].name == "main" and .tasks[0].body.statements[0].expr.expr_kind == "StringLiteral"'
 
 bin/sley ast --json --node block:task:app.hello.main:stmt:0:expr examples/hello.sley \
   | json_field '.schema == "sley.ast.node.v0" and .node_kind == "expression"'

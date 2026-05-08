@@ -8,7 +8,8 @@ forbidden Rust, C/C++, JavaScript, TypeScript, or Python implementation files
 and exposes a runnable stage-1 command surface through `bin/`. Stage-2 source
 ownership has started under `self-hosted/src/loom/`; bootstrap version,
 lint-rule inventory, core report schema IDs, diagnostic IDs, and runtime seed
-values are read from `.sley` source.
+values are read from `.sley` source. AST expression-kind classifiers are also
+read from `self-hosted/src/loom/parser.sley`.
 
 ## Current Proof Commands
 

@@ -14,6 +14,7 @@
   - core report schema IDs
   - diagnostic and lint finding IDs
   - runtime seed values
+  - parser expression classifier names and patterns
 - Current local proof gate: `make v1`.
 
 ## Required target state
@@ -78,7 +79,7 @@ forbidden extension is present.
 - [x] Stage-1 deterministic runtime envelope bootstrapped
 - [x] Stage-1 tooling and schema smoke validation added
 - [x] Stage-2 Sley-owned semantic source modules added
-- [x] Bootstrap version, report schema IDs, diagnostics, runtime seeds, and lint-rule inventory read from Sley source
+- [x] Bootstrap version, report schema IDs, diagnostics, runtime seeds, parser classifiers, and lint-rule inventory read from Sley source
 - [x] Rust/C/JS/TS/Python foreign implementation files fully removed
 - [x] `./scripts/check-self-hosted-code.sh` exits cleanly
 - [x] README and llms command surfaces updated away from Cargo/Node claims
