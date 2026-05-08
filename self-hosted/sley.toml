@@ -1,0 +1,4 @@
+[project]
+name = "sley-loom-self-hosted"
+entry = "loom.bootstrap"
+source = "src"

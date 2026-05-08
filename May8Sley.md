@@ -16,14 +16,18 @@ Current state after remediation:
   are absent from the working tree;
 - `bin/sley` and companion wrappers provide a runnable self-hosting stage-1
   bootstrap command surface;
+- `self-hosted/src/loom/` now contains Sley-owned stage-2 semantic source
+  modules, and the bootstrap reads version/lint-rule inventory from `.sley`
+  source;
 - `make v1` passes without Cargo, Rust, Node, npm, or tree-sitter;
 - `make public-release-check` intentionally fails with `PUBLIC_RELEASE_BLOCKED`
   until strict Sley-written parity, operator approval, and a published proof
   bundle exist.
 
 The strict claim "Sley's compiler is written in Sley" remains blocked. The
-current accurate claim is that the repo has a foreign-source-free stage-1
-bootstrap with runnable command envelopes and truthful public wording.
+current accurate claim is that the repo has a foreign-source-free bootstrap,
+runnable command envelopes, initial Sley-owned semantic source modules, and
+truthful public wording.
 
 ## Verdict
 

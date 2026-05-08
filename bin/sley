@@ -4,9 +4,56 @@ set -euo pipefail
 SELF_PATH="${BASH_SOURCE[0]}"
 SELF_NAME="$(basename "$SELF_PATH")"
 ROOT_DIR="$(cd "$(dirname "$SELF_PATH")/.." && pwd)"
-VERSION="sley 0.2.0-self-hosting-stage1-bootstrap"
+SELF_HOSTED_SOURCE_ROOT="$ROOT_DIR/self-hosted/src"
 
-DEFAULT_RULES_JSON='["unused_private_task","unreachable_private_task","unused_declared_effect","unused_import","duplicate_import","unused_take","unused_private_type","unused_private_effect","raw_host_adapter","missing_module_declaration","unchecked_result","unchecked_result_binding","unused_effectful_binding","unqualified_imported_call","unused_pure_binding","unused_pure_expression_statement","mutable_binding_never_set","constant_if_expression","constant_if_statement","constant_false_if_statement","constant_false_while_statement","constant_comparison_expression","constant_arithmetic_expression","constant_text_concatenation_expression","constant_list_index_expression","constant_map_index_expression","constant_record_field_access_expression","constant_len_expression","constant_not_expression","empty_if_statement","empty_else_statement","empty_for_statement","empty_forge_statement","identity_binary_expression","redundant_boolean_comparison","absorbing_boolean_expression","idempotent_boolean_expression","self_comparison_expression","double_negation_expression","negated_comparison_expression","redundant_boolean_if_expression","redundant_boolean_if_statement","same_branch_if_expression","same_branch_if_statement","unreachable_statement","absorbing_arithmetic_expression","self_assignment_statement","overwritten_set_statement","redundant_initial_set_statement","empty_while_statement","constant_boolean_comparison_expression"]'
+extract_sley_string_task() {
+  local file="$1" task="$2"
+  [[ -f "$file" ]] || return 0
+  awk -v task="$task" '
+    $0 ~ "task[ \t]+" task "[ \t]*->" {in_task=1}
+    in_task && /^[ \t]*}/ {exit}
+    in_task && /return[ \t]+"/ {
+      line=$0
+      sub(/^.*return[ \t]+"/, "", line)
+      sub(/".*$/, "", line)
+      print line
+      exit
+    }
+  ' "$file"
+}
+
+extract_sley_list_task_json() {
+  local file="$1" task="$2"
+  [[ -f "$file" ]] || {
+    printf '[]\n'
+    return 0
+  }
+  awk -v task="$task" '
+    function esc(s){gsub(/\\/, "\\\\", s); gsub(/"/, "\\\"", s); return s}
+    BEGIN {printf "["; first=1}
+    $0 ~ "task[ \t]+" task "[ \t]*->" {in_task=1}
+    in_task && /^[ \t]*}/ {in_task=0}
+    in_task {
+      line=$0
+      while (match(line, /"[^"]+"/)) {
+        item=substr(line, RSTART + 1, RLENGTH - 2)
+        if (!first) printf ","
+        printf "\"%s\"", esc(item)
+        first=0
+        line=substr(line, RSTART + RLENGTH)
+      }
+    }
+    END {print "]"}
+  ' "$file"
+}
+
+VERSION="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/bootstrap.sley" implementation_version)"
+VERSION="${VERSION:-sley 0.2.0-self-hosting-stage1-bootstrap}"
+
+DEFAULT_RULES_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" default_lint_rules)"
+if [[ "$DEFAULT_RULES_JSON" == "[]" ]]; then
+  DEFAULT_RULES_JSON='["empty_for_statement","empty_while_statement","empty_forge_statement","empty_if_statement"]'
+fi
 
 usage() {
   cat <<'EOF'
@@ -18,7 +65,7 @@ Usage:
 
 Commands:
   parse, ast, check, doctor, graph, query, lint, plan, verify, run
-  deploy, trace, seal, zjx, graft, fix, format, new
+  deploy, trace, seal, zjx, graft, fix, format, new, self-hosting-status
 
 Companion tools:
   sley-ci, sley-conformance, sley-contract, sley-docgen, sley-lsp,
@@ -485,10 +532,44 @@ tool_conformance() {
       editor_shims:{root:"editors/vscode-sley",package_count:0,packages:[],validation:{name:"editor_shims",status:"passed",command:["sley-lsp","--validate-editor-shims"],issue_count:0,issues:[]}},
       v1_gate:{targets:["diff-check","self-hosted-gate","test","contracts","conformance"],missing_targets:[]},
       readiness:{public_release_ready:false,blockers:["public release still requires operator approval, strict Sley-written parity, and a published proof bundle"]},
-      release:{tag:null,notes:"self-hosting stage-1 bootstrap proof"},
+      release:{tag:null,notes:"self-hosting stage-2 source bootstrap proof"},
       issues:(if $status=="passed" then [] elif $require_ready==1 then [{id:"PUBLIC_RELEASE_BLOCKED",severity:"error",message:"public release requires operator approval, strict Sley-written parity, and a published proof bundle"}] else [{id:"CONFORMANCE_DECLARATION_MISMATCH",severity:"error",message:"declared integration test count does not match generated stage-1 count"}] end)
     }'
   [[ "$status" == "passed" ]]
+}
+
+source_modules_json() {
+  if [[ ! -d "$SELF_HOSTED_SOURCE_ROOT" ]]; then
+    printf '[]\n'
+    return
+  fi
+  find "$SELF_HOSTED_SOURCE_ROOT" -type f -name '*.sley' -print | sort |
+    while IFS= read -r file; do
+      awk '/^[[:space:]]*module[[:space:]]+/ {print $2; exit}' "$file"
+    done |
+    jq -R . | jq -s .
+}
+
+self_hosting_status_json() {
+  local modules_json blockers_json count
+  modules_json="$(source_modules_json)"
+  blockers_json="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/bootstrap.sley" remaining_strict_self_hosting_blockers)"
+  count="$(find "$SELF_HOSTED_SOURCE_ROOT" -type f -name '*.sley' 2>/dev/null | wc -l | tr -d ' ')"
+  jq -n \
+    --arg root "self-hosted/src" \
+    --argjson count "$count" \
+    --argjson modules "$modules_json" \
+    --argjson blockers "$blockers_json" \
+    '{
+      schema:"sley.self_hosting.status.v0",
+      status:"bootstrap",
+      strict_self_hosted:false,
+      source_root:$root,
+      semantic_source_count:$count,
+      source_modules:$modules,
+      bootstrap_owned_by_sley:["implementation_version","default_lint_rules"],
+      blockers:$blockers
+    }'
 }
 
 tool_ci() {
@@ -657,6 +738,7 @@ main_sley() {
     zjx) shift; command_zjx "$@" ;;
     graft) shift; command_graft "$@" ;;
     fix) shift; command_graft "$@" ;;
+    self-hosting|self-hosting-status) shift; self_hosting_status_json "$@" ;;
     format) shift; command_format "$@" ;;
     new) shift; command_new "$@" ;;
     sley-ci) shift; tool_ci "$@" ;;

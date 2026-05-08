@@ -18,7 +18,10 @@ bash -n bin/sley
 ./scripts/check-self-hosted-code.sh
 
 bin/sley --help >/dev/null
-bin/sley --version | grep -q 'self-hosting-stage1-bootstrap'
+bin/sley --version | grep -q 'self-hosting-stage2-source'
+
+bin/sley self-hosting-status --json \
+  | json_field '.schema == "sley.self_hosting.status.v0" and .status == "bootstrap" and .strict_self_hosted == false and .semantic_source_count >= 6 and (.bootstrap_owned_by_sley | index("implementation_version")) and (.bootstrap_owned_by_sley | index("default_lint_rules"))'
 
 bin/sley ast --json examples/hello.sley \
   | json_field '.schema == "sley.ast.program.v0" and .module == "app.hello" and .tasks[0].name == "main"'
@@ -41,7 +44,7 @@ bin/sley doctor --json examples/project \
   | json_field '.schema == "sley.doctor.report.v0" and .status == "ready" and .summary.task_count == 2'
 
 bin/sley lint --json examples/empty_for_statement.sley \
-  | json_field '.schema == "sley.lint.report.v0" and .status == "findings" and .findings[0].id == "EMPTY_FOR_STATEMENT"'
+  | json_field '.schema == "sley.lint.report.v0" and .status == "findings" and .findings[0].id == "EMPTY_FOR_STATEMENT" and (.filters.rules | index("empty_for_statement"))'
 
 bin/sley run --json examples/hello.sley \
   | json_field '.schema == "sley.run.report.v0" and .value.kind == "Text" and .value.value == "hello sley"'
@@ -64,4 +67,4 @@ bin/sley-contract check-fixtures fixtures/contracts --schemas docs/schemas --jso
 bin/sley-conformance report --json \
   | json_field '.schema == "sley.conformance.report.v0" and .status == "passed" and .summary.test_count_matches_declared == true'
 
-echo "Self-hosting stage-1 bootstrap tests passed."
+echo "Self-hosting bootstrap tests passed."

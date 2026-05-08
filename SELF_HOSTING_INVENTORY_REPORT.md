@@ -1,6 +1,6 @@
 # Self-Hosting Migration Inventory
 
-Generated: 2026-05-08T17:56:36Z
+Generated: 2026-05-08T18:05:15Z
 
 ## Foreign-language surface scan
 
@@ -27,7 +27,7 @@ Generated: 2026-05-08T17:56:36Z
 | *.ts | 0 |
 | *.tsx | 0 |
 
-## Stage-1 executable surfaces
+## Stage-1/2 executable and source surfaces
 
 - bin/sley
 - bin/sley-agent-bench
@@ -41,6 +41,12 @@ Generated: 2026-05-08T17:56:36Z
 - bin/sley-shadow
 - bin/sley-workbench
 - bin/sley-zjx
+- self-hosted/src/loom/bootstrap.sley
+- self-hosted/src/loom/checker.sley
+- self-hosted/src/loom/lint.sley
+- self-hosted/src/loom/parser.sley
+- self-hosted/src/loom/reports.sley
+- self-hosted/src/loom/runtime.sley
 
 ## Reported CLI commands in llms.txt
 
@@ -64,28 +70,29 @@ Generated: 2026-05-08T17:56:36Z
 18. `sley graft --json --dry-run <file> <graft.json>`
 19. `sley format <file>`
 20. `sley run --json <file-or-project>`
-21. `sley-ci lint --json --deny-warnings <file-or-project>`
-22. `sley-ci doctor --json --deny-warnings <file-or-project>`
-23. `sley-ci plan --json --graft-templates <file-or-project>`
-24. `sley-ci run --json <file-or-project>`
-25. `sley-ci deploy --json --dry-run --artifacts-dir .sley/ci-deploy <file-or-project>`
-26. `sley-ci corpus --json fixtures/corpus/manifest.json`
-27. `sley-ci examples --json examples`
-28. `sley-ci smoke --json fixtures/ci_smoke_probe/manifest.json`
-29. `sley-conformance report --json`
-30. `sley-conformance coverage --json --require-tag <tag>`
-31. `sley-contract inventory --json`
-32. `sley-contract check-fixtures fixtures/contracts --schemas docs/schemas --json`
-33. `sley-contract validate --schema sley.conformance.manifest.v0 fixtures/corpus/manifest.json --schemas docs/schemas --json`
-34. `sley-contract inspect-deploy-artifacts .sley/deploy --schemas docs/schemas --json`
-35. `sley-lsp --validate-editor-shims`
-36. `sley-workbench --json --html .sley/workbench.html <file-or-project>`
-37. `sley-docgen reference --json --markdown .sley/reference.md <file-or-project>`
-38. `sley-agent-bench run --json`
-39. `sley-migrate report --json --schemas docs/schemas --fixtures fixtures/contracts <file-or-project>`
-40. `sley-sandbox-runner run --json <manifest.json>`
-41. `sley-zjx inspect --json <zjx-envelope.json>`
-42. `sley-zjx verify-digest --json <zjx-envelope.json>`
+21. `sley self-hosting-status --json`
+22. `sley-ci lint --json --deny-warnings <file-or-project>`
+23. `sley-ci doctor --json --deny-warnings <file-or-project>`
+24. `sley-ci plan --json --graft-templates <file-or-project>`
+25. `sley-ci run --json <file-or-project>`
+26. `sley-ci deploy --json --dry-run --artifacts-dir .sley/ci-deploy <file-or-project>`
+27. `sley-ci corpus --json fixtures/corpus/manifest.json`
+28. `sley-ci examples --json examples`
+29. `sley-ci smoke --json fixtures/ci_smoke_probe/manifest.json`
+30. `sley-conformance report --json`
+31. `sley-conformance coverage --json --require-tag <tag>`
+32. `sley-contract inventory --json`
+33. `sley-contract check-fixtures fixtures/contracts --schemas docs/schemas --json`
+34. `sley-contract validate --schema sley.conformance.manifest.v0 fixtures/corpus/manifest.json --schemas docs/schemas --json`
+35. `sley-contract inspect-deploy-artifacts .sley/deploy --schemas docs/schemas --json`
+36. `sley-lsp --validate-editor-shims`
+37. `sley-workbench --json --html .sley/workbench.html <file-or-project>`
+38. `sley-docgen reference --json --markdown .sley/reference.md <file-or-project>`
+39. `sley-agent-bench run --json`
+40. `sley-migrate report --json --schemas docs/schemas --fixtures fixtures/contracts <file-or-project>`
+41. `sley-sandbox-runner run --json <manifest.json>`
+42. `sley-zjx inspect --json <zjx-envelope.json>`
+43. `sley-zjx verify-digest --json <zjx-envelope.json>`
 
 ## Make targets in Makefile
 
@@ -133,6 +140,18 @@ assets/branding/canonical/sley_loom_graph_banner_1500x500.png
 assets/branding/canonical/sley_loom_graph_board.png
 assets/branding/canonical/sley_loom_graph_post_1200x675.png
 assets/branding/canonical/sley_loom_graph_profile_1024.png
+bin/sley
+bin/sley-agent-bench
+bin/sley-ci
+bin/sley-conformance
+bin/sley-contract
+bin/sley-docgen
+bin/sley-lsp
+bin/sley-migrate
+bin/sley-sandbox-runner
+bin/sley-shadow
+bin/sley-workbench
+bin/sley-zjx
 docs/AgentQuickstart.md
 docs/BrandingAssets.md
 docs/PublicReleaseChecklist.md
@@ -516,6 +535,7 @@ fixtures/grafts/replace_missing_expression.json
 fixtures/grafts/stale_add_tenant_take.json
 llms.txt
 scripts/check-self-hosted-code.sh
+scripts/self-hosted-test.sh
 scripts/self-hosting-inventory.sh
 
 ## Notes

@@ -22,12 +22,15 @@ OUT="${1:-/tmp/self-hosting-inventory.md}"
   done
 
   echo ""
-  echo "## Stage-1 executable surfaces"
+  echo "## Stage-1/2 executable and source surfaces"
   echo ""
   if [ -d bin ]; then
     find bin -maxdepth 1 -type f -perm -111 -print | sort | sed 's#^\./##' | sed 's/^/- /'
   else
     echo "- bin directory missing"
+  fi
+  if [ -d self-hosted/src ]; then
+    find self-hosted/src -type f -name '*.sley' -print | sort | sed 's#^\./##' | sed 's/^/- /'
   fi
 
   echo ""

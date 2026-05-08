@@ -1,0 +1,51 @@
+module loom.parser
+
+export type ModuleHeader = {
+  slot name: Text
+  slot line: Int
+  slot column: Int
+}
+
+export type TaskHeader = {
+  slot module: Text
+  slot name: Text
+  slot return_type: Text
+  slot exported: Bool
+  slot line: Int
+}
+
+export type ParsedProgramSummary = {
+  slot entry_module: Text
+  slot module_count: Int
+  slot task_count: Int
+}
+
+export task classify_expression -> Text {
+  take source: Text
+
+  if source == "true" {
+    return "BoolLiteral"
+  }
+  if source == "false" {
+    return "BoolLiteral"
+  }
+  if source == "[]" {
+    return "ListLiteral"
+  }
+  return "Raw"
+}
+
+export task task_id -> Text {
+  take module_name: Text
+  take task_name: Text
+
+  return "task:" + module_name + "." + task_name
+}
+
+export task statement_id -> Text {
+  take module_name: Text
+  take task_name: Text
+  take index: Int
+
+  return "block:task:" + module_name + "." + task_name + ":stmt:" + index
+}

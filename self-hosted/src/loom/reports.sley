@@ -1,0 +1,33 @@
+module loom.reports
+
+export task ast_program_schema -> Text {
+  return "sley.ast.program.v0"
+}
+
+export task ast_node_schema -> Text {
+  return "sley.ast.node.v0"
+}
+
+export task diagnostics_schema -> Text {
+  return "sley.diagnostics.report.v0"
+}
+
+export task lint_schema -> Text {
+  return "sley.lint.report.v0"
+}
+
+export task query_schema -> Text {
+  return "sley.query.report.v0"
+}
+
+export task run_schema -> Text {
+  return "sley.run.report.v0"
+}
+
+export task verify_schema -> Text {
+  return "sley.verify.report.v0"
+}
+
+export task self_hosting_status_schema -> Text {
+  return "sley.self_hosting.status.v0"
+}

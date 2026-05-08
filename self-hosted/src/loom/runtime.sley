@@ -1,0 +1,31 @@
+module loom.runtime
+
+export type RuntimeValue = {
+  slot kind: Text
+  slot value: Text
+}
+
+export task hello_value -> Text {
+  return "hello sley"
+}
+
+export task project_ready_value -> Int {
+  return 42
+}
+
+export task seeded_agent_deploy_value -> Text {
+  take profile: Text
+  take model_plan: Text
+  take deploy_result: Text
+
+  return profile + " | " + model_plan + " | " + deploy_result
+}
+
+export task runtime_status -> Text {
+  take diagnostic_count: Int
+
+  if diagnostic_count > 0 {
+    return "failed"
+  }
+  return "passed"
+}
