@@ -24,6 +24,20 @@ export task doctor_schema -> Text {
   return "sley.doctor.report.v0"
 }
 
+export task doctor_report_fields -> List<Text> {
+  return [
+    "schema",
+    "status",
+    "target",
+    "entry_module",
+    "summary",
+    "diagnostics",
+    "query",
+    "lint",
+    "next_actions"
+  ]
+}
+
 export task lint_schema -> Text {
   return "sley.lint.report.v0"
 }

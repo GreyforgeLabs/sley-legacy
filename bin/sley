@@ -362,6 +362,7 @@ QUERY_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROO
 SCHEMA_LINT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" lint_schema)"
 LINT_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" lint_report_fields)"
 SCHEMA_DOCTOR="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" doctor_schema)"
+DOCTOR_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" doctor_report_fields)"
 SCHEMA_RUN="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" run_schema)"
 RUN_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" run_report_fields)"
 SCHEMA_VERIFY="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" verify_schema)"
@@ -384,6 +385,9 @@ if [[ "$LINT_REPORT_FIELDS_JSON" == "[]" ]]; then
   LINT_REPORT_FIELDS_JSON='["schema","status","entry_module","filters","findings"]'
 fi
 SCHEMA_DOCTOR="${SCHEMA_DOCTOR:-sley.doctor.report.v0}"
+if [[ "$DOCTOR_REPORT_FIELDS_JSON" == "[]" ]]; then
+  DOCTOR_REPORT_FIELDS_JSON='["schema","status","target","entry_module","summary","diagnostics","query","lint","next_actions"]'
+fi
 SCHEMA_RUN="${SCHEMA_RUN:-sley.run.report.v0}"
 if [[ "$RUN_REPORT_FIELDS_JSON" == "[]" ]]; then
   RUN_REPORT_FIELDS_JSON='["schema","status","target","value","diagnostics"]'
@@ -919,19 +923,19 @@ doctor_json() {
   check="$(check_json "$target")"
   query="$(query_json "$target" all)"
   lint="$(lint_json "$target")"
-  jq -n --arg schema "$SCHEMA_DOCTOR" --arg query_schema "$SCHEMA_QUERY" --arg lint_schema "$SCHEMA_LINT" --arg target "$target" --argjson check "$check" --argjson query "$query" --argjson lint "$lint" --argjson rules "$DEFAULT_RULES_JSON" '
+  jq -n --arg schema "$SCHEMA_DOCTOR" --arg query_schema "$SCHEMA_QUERY" --arg lint_schema "$SCHEMA_LINT" --arg target "$target" --argjson check "$check" --argjson query "$query" --argjson lint "$lint" --argjson rules "$DEFAULT_RULES_JSON" --argjson fields "$DOCTOR_REPORT_FIELDS_JSON" '
     ($check.diagnostics | length) as $errors |
     ($lint.findings | length) as $warnings |
     {
-      schema:$schema,
-      status:(if $errors > 0 then "blocked" elif $warnings > 0 then "blocked" else "ready" end),
-      target:$target,
-      entry_module:$query.entry_module,
-      summary:{error_count:$errors, warning_count:$warnings, module_count:($query.modules|length), task_count:($query.tasks|length), call_count:($query.calls|length), lint_finding_count:$warnings},
-      diagnostics:$check.diagnostics,
-      query:{source_schema:$query_schema, kind:"all", module_count:($query.modules|length), task_count:($query.tasks|length), call_count:($query.calls|length), entrypoints:($query.tasks|map(.qualified_name)), effectful_tasks:($query.tasks|map(select((.effects|length)>0)|{id,qualified_name,effects}))},
-      lint:{source_schema:$lint_schema, status:$lint.status, rules:$rules, finding_count:$warnings, findings:$lint.findings},
-      next_actions:[
+      ($fields[0] // "schema"):$schema,
+      ($fields[1] // "status"):(if $errors > 0 then "blocked" elif $warnings > 0 then "blocked" else "ready" end),
+      ($fields[2] // "target"):$target,
+      ($fields[3] // "entry_module"):$query.entry_module,
+      ($fields[4] // "summary"):{error_count:$errors, warning_count:$warnings, module_count:($query.modules|length), task_count:($query.tasks|length), call_count:($query.calls|length), lint_finding_count:$warnings},
+      ($fields[5] // "diagnostics"):$check.diagnostics,
+      ($fields[6] // "query"):{source_schema:$query_schema, kind:"all", module_count:($query.modules|length), task_count:($query.tasks|length), call_count:($query.calls|length), entrypoints:($query.tasks|map(.qualified_name)), effectful_tasks:($query.tasks|map(select((.effects|length)>0)|{id,qualified_name,effects}))},
+      ($fields[7] // "lint"):{source_schema:$lint_schema, status:$lint.status, rules:$rules, finding_count:$warnings, findings:$lint.findings},
+      ($fields[8] // "next_actions"):[
         {kind:"inspect_tasks", reason:"query task facts before planning edits", command:["sley","query","--json","--kind","tasks",$target]},
         {kind:"lint_gate", reason:"preserve the warning-grade lint gate after edits", command:["sley","lint","--json",$target]},
         {kind:"verify_gate", reason:"strict verification should pass before deploy, seal, or package handoff", command:["sley","verify","--json",$target]}

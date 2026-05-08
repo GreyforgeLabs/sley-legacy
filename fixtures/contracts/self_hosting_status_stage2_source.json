@@ -20,6 +20,7 @@
     "source_modules",
     "default_lint_rules",
     "core_report_schema_ids",
+    "doctor_report_shape",
     "diagnostics_report_shape",
     "diagnostic_ids",
     "query_report_shape",
