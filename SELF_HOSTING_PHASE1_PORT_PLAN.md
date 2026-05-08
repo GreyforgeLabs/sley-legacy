@@ -6,12 +6,15 @@ Complete the first self-hosted implementation wave so command surfaces remain st
 ## Current blocker baseline
 - `./scripts/check-self-hosted-code.sh` currently fails.
 - Foreign-language artifacts count is generated in `SELF_HOSTING_INVENTORY_REPORT.md`.
+- `tree-sitter` parser C artifacts have been removed from git-tracked sources in this phase.
+- Latest blocker report shows `*.c`/`*.h` now at zero while `*.rs` still remain.
 
 ## Phase 1 target (go/no-go)
 - Keep marketing/claim surfaces unchanged.
 - Deliver a TypeScript/Node runtime skeleton for at least one executable path to prove non-Rust migration pattern.
 - Maintain command parity for `sley -- help`, `sley -- version`, and `sley doctor` with JSON schema-shape-compatible output.
 - No `*.rs`, `*.c`, or `*.h` files remain.
+- Milestone reached: `*.c` and `*.h` files are currently removed; remaining migration work is `*.rs`.
 
 ## Command parity map (from `llms.txt`, prioritized)
 1. `sley -- check --json <file-or-project>`
