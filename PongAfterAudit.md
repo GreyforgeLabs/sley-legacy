@@ -26,7 +26,7 @@ Use the migration gates below as the canonical status:
 - `bin/sley self-hosting-status --json` is the current source-ownership report;
   it now reports Sley-owned version, rule, report-ID, diagnostic, and runtime
   seed surfaces plus parser expression classifiers, checker diagnostic status,
-  and bootstrap smoke runtime.
+  lint finding text, and bootstrap smoke runtime.
 - Remaining migration work is strict Sley-written semantic/runtime execution
   parity, not source-language cleanup.
 
