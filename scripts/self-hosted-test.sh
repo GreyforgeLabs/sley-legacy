@@ -38,6 +38,9 @@ bin/sley self-hosting-status --json \
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("diagnostics_report_shape"))'
 
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("lint_report_shape"))'
+
 bin/sley ast --json examples/hello.sley \
   | json_field '.schema == "sley.ast.program.v0" and .module == "app.hello" and .tasks[0].name == "main" and .tasks[0].body.statements[0].expr.expr_kind == "StringLiteral"'
 
@@ -68,6 +71,9 @@ bin/sley doctor --json examples/project \
 
 bin/sley lint --json examples/empty_for_statement.sley \
   | json_field '.schema == "sley.lint.report.v0" and .status == "findings" and .findings[0].id == "EMPTY_FOR_STATEMENT" and (.filters.rules | index("empty_for_statement"))'
+
+bin/sley lint --json examples/empty_for_statement.sley \
+  | json_field 'keys == (["schema","status","entry_module","filters","findings"] | sort)'
 
 bin/sley run --json examples/hello.sley \
   | json_field '.schema == "sley.run.report.v0" and .value.kind == "Text" and .value.value == "hello sley"'
