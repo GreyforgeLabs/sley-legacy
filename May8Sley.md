@@ -34,6 +34,8 @@ Current state after remediation:
   the AST-backed runtime path;
 - seeded agent-deploy text results now execute the
   `loom.runtime.seeded_agent_deploy_value` source task;
+- project-ready integer results now execute the
+  `loom.runtime.project_ready_value` source task;
 - `sley run --json self-hosted` now executes the `loom.bootstrap.smoke` source
   task over the Sley-owned lint-rule inventory;
 - `make v1` passes without Cargo, Rust, Node, npm, or tree-sitter;
