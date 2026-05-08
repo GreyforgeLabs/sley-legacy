@@ -28,6 +28,16 @@ export task lint_schema -> Text {
   return "sley.lint.report.v0"
 }
 
+export task lint_report_fields -> List<Text> {
+  return [
+    "schema",
+    "status",
+    "entry_module",
+    "filters",
+    "findings"
+  ]
+}
+
 export task query_schema -> Text {
   return "sley.query.report.v0"
 }

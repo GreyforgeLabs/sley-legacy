@@ -30,9 +30,9 @@ Use the migration gates below as the canonical status:
   and binding kind names, checker status task execution, lint status task
   execution and finding text, checker builtin-type/unknown-type diagnostics,
   checker identifier-resolution inputs, runtime status task execution plus
-  dispatch/report vocabulary, self-hosting, diagnostics, and run report shapes,
-  pure string/integer/boolean literal runtime execution, seeded agent-deploy
-  task execution, project-ready task execution, and bootstrap smoke
+  dispatch/report vocabulary, self-hosting, diagnostics, lint, and run report
+  shapes, pure string/integer/boolean literal runtime execution, seeded
+  agent-deploy task execution, project-ready task execution, and bootstrap smoke
   runtime/source task execution, with project-ready probes dispatched from the
   AST projection instead of raw source grep.
 - Remaining migration work is strict Sley-written semantic/runtime execution

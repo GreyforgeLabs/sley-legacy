@@ -359,6 +359,7 @@ SCHEMA_DIAGNOSTICS="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/re
 DIAGNOSTICS_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" diagnostics_report_fields)"
 SCHEMA_QUERY="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" query_schema)"
 SCHEMA_LINT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" lint_schema)"
+LINT_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" lint_report_fields)"
 SCHEMA_DOCTOR="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" doctor_schema)"
 SCHEMA_RUN="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" run_schema)"
 RUN_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" run_report_fields)"
@@ -375,6 +376,9 @@ if [[ "$DIAGNOSTICS_REPORT_FIELDS_JSON" == "[]" ]]; then
 fi
 SCHEMA_QUERY="${SCHEMA_QUERY:-sley.query.report.v0}"
 SCHEMA_LINT="${SCHEMA_LINT:-sley.lint.report.v0}"
+if [[ "$LINT_REPORT_FIELDS_JSON" == "[]" ]]; then
+  LINT_REPORT_FIELDS_JSON='["schema","status","entry_module","filters","findings"]'
+fi
 SCHEMA_DOCTOR="${SCHEMA_DOCTOR:-sley.doctor.report.v0}"
 SCHEMA_RUN="${SCHEMA_RUN:-sley.run.report.v0}"
 if [[ "$RUN_REPORT_FIELDS_JSON" == "[]" ]]; then
@@ -893,9 +897,15 @@ lint_json() {
   if [[ -z "$lint_status" ]]; then
     if [[ "$finding_count" -eq 0 ]]; then lint_status="$LINT_OK_STATUS"; else lint_status="$LINT_FINDINGS_STATUS"; fi
   fi
-  jq -n --arg schema "$SCHEMA_LINT" --arg entry "$entry" --arg lint_status "$lint_status" --argjson rules "$DEFAULT_RULES_JSON" --slurpfile raw <(if [[ -s "$findings" ]]; then jq -s '.' "$findings"; else printf '[]\n'; fi) '
+  jq -n --arg schema "$SCHEMA_LINT" --arg entry "$entry" --arg lint_status "$lint_status" --argjson rules "$DEFAULT_RULES_JSON" --argjson fields "$LINT_REPORT_FIELDS_JSON" --slurpfile raw <(if [[ -s "$findings" ]]; then jq -s '.' "$findings"; else printf '[]\n'; fi) '
     ($raw[0] // []) as $findings |
-    {schema:$schema, status:$lint_status, entry_module:$entry, filters:{module:null, rules:$rules}, findings:$findings}
+    {
+      ($fields[0] // "schema"):$schema,
+      ($fields[1] // "status"):$lint_status,
+      ($fields[2] // "entry_module"):$entry,
+      ($fields[3] // "filters"):{module:null, rules:$rules},
+      ($fields[4] // "findings"):$findings
+    }
   '
   rm -f "$findings"
 }

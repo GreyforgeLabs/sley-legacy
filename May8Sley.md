@@ -33,6 +33,7 @@ Current state after remediation:
   `loom.checker.identifier_resolution_inputs`;
 - lint report status task execution plus finding statuses, messages, and hints
   are now read from `loom.lint`;
+- lint report top-level field shape is now read from `loom.reports`;
 - runtime report status task execution, value-kind tags, and current dispatch
   probes are now read from `loom.runtime`;
 - run report top-level field shape is now read from `loom.reports`;
