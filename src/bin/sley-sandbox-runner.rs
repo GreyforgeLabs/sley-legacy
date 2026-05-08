@@ -623,8 +623,14 @@ fn print_human(report: &SandboxReport) {
         report.summary.diagnostic_count,
         report.summary.issue_count
     );
-    for issue in &report.issues {
-        eprintln!("{}: {}", issue.code, issue.message);
+    if !report.issues.is_empty() {
+        let issue_codes = report
+            .issues
+            .iter()
+            .map(|issue| issue.code.as_str())
+            .collect::<Vec<_>>()
+            .join(",");
+        eprintln!("issue codes={issue_codes}");
     }
 }
 

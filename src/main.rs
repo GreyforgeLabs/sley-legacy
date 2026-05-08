@@ -24,7 +24,9 @@ use sley::plan::{
 };
 use sley::project::{ProjectGraph, ProjectManifest, load_project};
 use sley::query::{QueryKind, QueryOptions, QueryReport, build_query_report};
-use sley::runtime::{RuntimeGate, RuntimeGates, build_run_report, run_main, run_main_with_gates};
+use sley::runtime::{
+    RuntimeGate, RuntimeGates, Value, build_run_report, run_main, run_main_with_gates,
+};
 use sley::scaffold::{ScaffoldOptions, ScaffoldTemplate, scaffold_project};
 use sley::symbols::{
     SymbolGraphSlice, build_symbol_graph, effect_module, import_owner_module, slice_symbol_graph,
@@ -394,22 +396,22 @@ fn run(cli: Cli) -> Result<()> {
                 &shell_output,
                 &model_output,
             )?;
-            let result = if runtime_gates.is_empty() {
-                run_main(&program)
-            } else {
-                run_main_with_gates(&program, &runtime_gates)
-            };
-            match result {
-                Ok(value) => {
-                    if json {
-                        print_json(&build_run_report(file.display().to_string(), value))?;
-                    } else {
-                        println!("{value:?}");
+                let result = if runtime_gates.is_empty() {
+                    run_main(&program)
+                } else {
+                    run_main_with_gates(&program, &runtime_gates)
+                };
+                match result {
+                    Ok(value) => {
+                        if json {
+                            print_json(&build_run_report(file.display().to_string(), value))?;
+                        } else {
+                            println!("run result: {}", summarize_value(&value));
+                        }
+                        Ok(())
                     }
-                    Ok(())
+                    Err(diagnostics) => emit_diagnostics_and_fail(diagnostics, json),
                 }
-                Err(diagnostics) => emit_diagnostics_and_fail(diagnostics, json),
-            }
         }
         Command::Ast { json, node, file } => {
             let program = load_target_program_or_fail(&file)?;
@@ -2251,6 +2253,23 @@ fn module_filter_diagnostic(
 fn print_json<T: serde::Serialize>(value: &T) -> Result<()> {
     println!("{}", serde_json::to_string_pretty(value)?);
     Ok(())
+}
+
+fn summarize_value(value: &Value) -> String {
+    match value {
+        Value::Unit => "unit".to_string(),
+        Value::Text(value) => format!("text(len={})", value.len()),
+        Value::Int(value) => format!("int({value})"),
+        Value::Float(value) => format!("float({value})"),
+        Value::Bool(value) => format!("bool({value})"),
+        Value::Gate(gate) => format!("gate({})", gate.effect),
+        Value::List(values) => format!("list(len={})", values.len()),
+        Value::Map(fields) => format!("map(len={})", fields.len()),
+        Value::Record(fields) => format!("record(len={})", fields.len()),
+        Value::Ok(value) => format!("ok({})", summarize_value(value)),
+        Value::Err(value) => format!("err({})", summarize_value(value)),
+        Value::Raw(value) => format!("raw(len={})", value.len()),
+    }
 }
 
 fn print_human_diagnostics(diagnostics: &[Diagnostic]) {

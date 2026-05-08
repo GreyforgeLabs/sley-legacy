@@ -16300,7 +16300,7 @@ task main -> Result<Text, Error> uses FileRead {{
     gates.grant_effect_root("FileRead", &root);
     let result = run_main_with_gates(&program, &gates).expect("run main");
     let Value::Err(error) = result else {
-        panic!("expected host error result, got {result:#?}");
+        panic!("expected host error result");
     };
     assert_error_record(&error, "RUNTIME_HOST_IO_ERROR", "fs.try_read_text");
 }
@@ -16391,7 +16391,7 @@ task main -> Result<Text, Error> uses DatabaseRead {
     );
     let result = run_main_with_gates(&program, &gates).expect("run main");
     let Value::Err(error) = result else {
-        panic!("expected host error result, got {result:#?}");
+        panic!("expected host error result");
     };
     assert_error_record(&error, "RUNTIME_DB_ROW_NOT_FOUND", "returned no rows");
 }
@@ -16461,7 +16461,7 @@ task main -> Result<DbRow, Error> uses DatabaseWrite {
     gates.grant_effect("DatabaseWrite");
     let result = run_main_with_gates(&program, &gates).expect("run main");
     let Value::Err(error) = result else {
-        panic!("expected host error result, got {result:#?}");
+        panic!("expected host error result");
     };
     assert_error_record(&error, "RUNTIME_DB_TABLE_INVALID", "table name");
 }
@@ -16621,7 +16621,7 @@ task main -> Result<Text, Error> uses Network {
     gates.grant_effect("Network");
     let result = run_main_with_gates(&program, &gates).expect("run main");
     let Value::Err(error) = result else {
-        panic!("expected host error result, got {result:#?}");
+        panic!("expected host error result");
     };
     assert_error_record(&error, "RUNTIME_HTTP_RESPONSE_NOT_FOUND", "was not seeded");
 }
@@ -16796,7 +16796,7 @@ task main -> Result<Text, Error> uses Shell {
     gates.grant_effect("Shell");
     let result = run_main_with_gates(&program, &gates).expect("run main");
     let Value::Err(error) = result else {
-        panic!("expected host error result, got {result:#?}");
+        panic!("expected host error result");
     };
     assert_error_record(&error, "RUNTIME_SHELL_OUTPUT_NOT_FOUND", "was not seeded");
 }
@@ -16930,7 +16930,7 @@ task main -> Result<Text, Error> uses ModelCall {
     gates.grant_effect("ModelCall");
     let result = run_main_with_gates(&program, &gates).expect("run main");
     let Value::Err(error) = result else {
-        panic!("expected host error result, got {result:#?}");
+        panic!("expected host error result");
     };
     assert_error_record(&error, "RUNTIME_MODEL_OUTPUT_NOT_FOUND", "was not seeded");
 }
@@ -17064,7 +17064,7 @@ task main -> Result<Text, Error> uses SecretRead {
     gates.grant_effect("SecretRead");
     let result = run_main_with_gates(&program, &gates).expect("run main");
     let Value::Err(error) = result else {
-        panic!("expected host error result, got {result:#?}");
+        panic!("expected host error result");
     };
     assert_error_record(&error, "RUNTIME_SECRET_NOT_FOUND", "was not seeded");
 }
@@ -17086,7 +17086,7 @@ task main -> Result<Text, Error> uses SecretRead {
     gates.grant_effect("SecretRead");
     let result = run_main_with_gates(&program, &gates).expect("run main");
     let Value::Err(error) = result else {
-        panic!("expected host error result, got {result:#?}");
+        panic!("expected host error result");
     };
     assert_error_record(&error, "RUNTIME_SECRET_NAME_INVALID", "secret name");
 }
@@ -17220,7 +17220,7 @@ task main -> Result<Text, Error> uses Deploy {
     gates.grant_effect("Deploy");
     let result = run_main_with_gates(&program, &gates).expect("run main");
     let Value::Err(error) = result else {
-        panic!("expected host error result, got {result:#?}");
+        panic!("expected host error result");
     };
     assert_error_record(&error, "RUNTIME_DEPLOY_RESULT_NOT_FOUND", "was not seeded");
 }
@@ -17242,7 +17242,7 @@ task main -> Result<Text, Error> uses Deploy {
     gates.grant_effect("Deploy");
     let result = run_main_with_gates(&program, &gates).expect("run main");
     let Value::Err(error) = result else {
-        panic!("expected host error result, got {result:#?}");
+        panic!("expected host error result");
     };
     assert_error_record(&error, "RUNTIME_DEPLOY_TARGET_INVALID", "deploy target");
 }
@@ -17376,7 +17376,7 @@ task main -> Result<Text, Error> uses Spend {
     gates.grant_effect("Spend");
     let result = run_main_with_gates(&program, &gates).expect("run main");
     let Value::Err(error) = result else {
-        panic!("expected host error result, got {result:#?}");
+        panic!("expected host error result");
     };
     assert_error_record(&error, "RUNTIME_SPEND_RESULT_NOT_FOUND", "was not seeded");
 }
@@ -17398,7 +17398,7 @@ task main -> Result<Text, Error> uses Spend {
     gates.grant_effect("Spend");
     let result = run_main_with_gates(&program, &gates).expect("run main");
     let Value::Err(error) = result else {
-        panic!("expected host error result, got {result:#?}");
+        panic!("expected host error result");
     };
     assert_error_record(&error, "RUNTIME_SPEND_REQUEST_INVALID", "spend request");
 }
@@ -25462,11 +25462,11 @@ fn db_row<const N: usize>(fields: [(&str, Value); N]) -> BTreeMap<String, Value>
 
 fn assert_error_record(value: &Value, code: &str, message_fragment: &str) {
     let Value::Record(fields) = value else {
-        panic!("expected error record, got {value:#?}");
+        panic!("expected error record");
     };
     assert_eq!(fields.get("code"), Some(&Value::Text(code.to_string())));
     let Some(Value::Text(message)) = fields.get("message") else {
-        panic!("expected error record message, got {fields:#?}");
+        panic!("expected error record message");
     };
     assert!(
         message.contains(message_fragment),
