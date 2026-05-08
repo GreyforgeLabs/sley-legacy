@@ -79,6 +79,66 @@ extract_sley_bool_task() {
   ' "$file"
 }
 
+extract_sley_task_body() {
+  local file="$1" task="$2"
+  [[ -f "$file" ]] || return 0
+  awk -v task="$task" '
+    function count_char(s, c, n, i){n=0; for(i=1;i<=length(s);i++){if(substr(s,i,1)==c)n++} return n}
+    $0 ~ "task[ \t]+" task "[ \t]*->" {
+      in_task=1
+      depth += count_char($0,"{") - count_char($0,"}")
+      next
+    }
+    in_task {
+      next_depth=depth + count_char($0,"{") - count_char($0,"}")
+      if(next_depth<=0){exit}
+      print
+      depth=next_depth
+    }
+  ' "$file"
+}
+
+resolve_sley_import_alias() {
+  local file="$1" alias="$2"
+  [[ -f "$file" ]] || return 0
+  awk -v alias="$alias" '
+    /^[ \t]*import[ \t]+/ {
+      line=$0
+      sub(/^[ \t]*import[ \t]+/, "", line)
+      if(line ~ "[ \t]+as[ \t]+" alias "[ \t]*$") {
+        sub(/[ \t]+as[ \t]+.*$/, "", line)
+        print line
+        exit
+      }
+    }
+  ' "$file"
+}
+
+module_source_file() {
+  local module="$1"
+  printf '%s/%s.sley\n' "$SELF_HOSTED_SOURCE_ROOT" "${module//.//}"
+}
+
+eval_bootstrap_smoke_task() {
+  local bootstrap_file="$SELF_HOSTED_SOURCE_ROOT/loom/bootstrap.sley"
+  local body bind_name callee alias task module source_file return_var rules_json
+  body="$(extract_sley_task_body "$bootstrap_file" smoke)"
+  [[ -n "$body" ]] || return 1
+  bind_name="$(printf '%s\n' "$body" | awk '/^[ \t]*bind[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*=[ \t]*call[ \t]+/ {line=$0; sub(/^[ \t]*bind[ \t]+/, "", line); sub(/[ \t]*=.*/, "", line); print line; exit}')"
+  callee="$(printf '%s\n' "$body" | awk '/^[ \t]*bind[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*=[ \t]*call[ \t]+/ {line=$0; sub(/^.*=[ \t]*call[ \t]+/, "", line); sub(/\(\).*/, "", line); print line; exit}')"
+  return_var="$(printf '%s\n' "$body" | awk '/^[ \t]*return[ \t]+len\([A-Za-z_][A-Za-z0-9_]*\)/ {line=$0; sub(/^.*return[ \t]+len\(/, "", line); sub(/\).*/, "", line); print line; exit}')"
+  [[ -n "$bind_name" && -n "$callee" && "$return_var" == "$bind_name" ]] || return 1
+  alias="${callee%%.*}"
+  task="${callee#*.}"
+  [[ -n "$alias" && -n "$task" && "$alias" != "$task" ]] || return 1
+  module="$(resolve_sley_import_alias "$bootstrap_file" "$alias")"
+  [[ -n "$module" ]] || return 1
+  source_file="$(module_source_file "$module")"
+  rules_json="$(extract_sley_list_task_json "$source_file" "$task")"
+  [[ "$rules_json" != "[]" ]] || return 1
+  printf '%s\n' "$rules_json" | jq 'length'
+}
+
 VERSION="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/bootstrap.sley" implementation_version)"
 VERSION="${VERSION:-sley 0.2.0-self-hosting-stage1-bootstrap}"
 
@@ -617,7 +677,7 @@ run_json() {
   done
   local value_kind="$RUNTIME_RAW_VALUE_KIND" value="$RUNTIME_DEFAULT_RAW_VALUE"
   if json_list_contains_string "$RUNTIME_SELF_HOSTED_TARGETS_JSON" "$target"; then
-    value_kind="$RUNTIME_INT_VALUE_KIND"; value="$(printf '%s\n' "$DEFAULT_RULES_JSON" | jq 'length')"
+    value_kind="$RUNTIME_INT_VALUE_KIND"; value="$(eval_bootstrap_smoke_task || printf '%s\n' "$DEFAULT_RULES_JSON" | jq 'length')"
   elif target_contains_literal "$target" "$RUNTIME_HELLO_VALUE"; then
     value_kind="$RUNTIME_TEXT_VALUE_KIND"; value="$RUNTIME_HELLO_VALUE"
   elif [[ -n "$RUNTIME_AGENT_DEPLOY_SUFFIX" && "$target" == *"$RUNTIME_AGENT_DEPLOY_SUFFIX" ]]; then

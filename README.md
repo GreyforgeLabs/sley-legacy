@@ -66,6 +66,8 @@ The repo currently proves these claims from a clean checkout:
   fields.
 - The self-hosted source project has a runnable internal smoke:
   `bin/sley run --json self-hosted`
+  That smoke now executes `loom.bootstrap.smoke` from source for its current
+  `len(call lint.default_lint_rules())` result.
 - Runtime report statuses, value-kind tags, and current dispatch probes are
   read from `self-hosted/src/loom/runtime.sley`.
 - Checker diagnostic status and unknown-identifier message construction are
