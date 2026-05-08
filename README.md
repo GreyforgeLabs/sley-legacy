@@ -73,6 +73,7 @@ The repo currently proves these claims from a clean checkout:
   read from `self-hosted/src/loom/runtime.sley`.
 - Checker diagnostic status and unknown-identifier message construction are
   read from `self-hosted/src/loom/checker.sley`.
+  The checker report status now executes `loom.checker.diagnostic_status`.
 - Lint finding statuses, messages, and hints are read from
   `self-hosted/src/loom/lint.sley`.
   The lint report status now executes `loom.lint.lint_status`.

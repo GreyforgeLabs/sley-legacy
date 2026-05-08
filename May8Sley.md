@@ -22,8 +22,8 @@ Current state after remediation:
   self-hosting status fields, the source-module list, and the self-hosting
   status ownership list from `.sley` source;
 - parser statement and binding kind names are now read from `loom.parser`;
-- checker diagnostic status and unknown-identifier message construction are now
-  read from `loom.checker`;
+- checker report status task execution plus unknown-identifier message
+  construction are now read from `loom.checker`;
 - lint report status task execution plus finding statuses, messages, and hints
   are now read from `loom.lint`;
 - runtime report statuses, value-kind tags, and current dispatch probes are now
