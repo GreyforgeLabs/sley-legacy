@@ -832,6 +832,12 @@ source_modules_json() {
     printf '[]\n'
     return
   fi
+  local modules_json
+  modules_json="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/bootstrap.sley" source_modules)"
+  if [[ "$modules_json" != "[]" ]]; then
+    printf '%s\n' "$modules_json"
+    return
+  fi
   find "$SELF_HOSTED_SOURCE_ROOT" -type f -name '*.sley' -print | sort |
     while IFS= read -r file; do
       awk '/^[[:space:]]*module[[:space:]]+/ {print $2; exit}' "$file"

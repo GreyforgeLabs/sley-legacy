@@ -7,10 +7,10 @@ The repository is in a self-hosting migration. The current source tree has no
 forbidden Rust, C/C++, JavaScript, TypeScript, or Python implementation files
 and exposes a runnable stage-1 command surface through `bin/`. Stage-2 source
 ownership has started under `self-hosted/src/loom/`; bootstrap version,
-implementation stage, bootstrap/strict self-hosting status fields, lint-rule
-inventory, core report schema IDs, diagnostic IDs, runtime seed values, and the
-self-hosting status ownership list are read from `.sley` source. AST expression,
-statement, and binding kind names are also read from
+implementation stage, bootstrap/strict self-hosting status fields, source-module
+inventory, lint-rule inventory, core report schema IDs, diagnostic IDs, runtime
+seed values, and the self-hosting status ownership list are read from `.sley`
+source. AST expression, statement, and binding kind names are also read from
 `self-hosted/src/loom/parser.sley`, and `sley run --json self-hosted`
 executes the `loom.bootstrap.smoke` source task over the Sley-owned lint-rule
 inventory. Checker diagnostic status and unknown-identifier message

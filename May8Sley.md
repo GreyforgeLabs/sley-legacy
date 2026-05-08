@@ -19,8 +19,8 @@ Current state after remediation:
 - `self-hosted/src/loom/` now contains Sley-owned stage-2 semantic source
   modules, and the bootstrap reads version, lint-rule inventory, core report
   IDs, diagnostic IDs, runtime seed values, parser expression classifiers, the
-  self-hosting status fields, and the self-hosting status ownership list from
-  `.sley` source;
+  self-hosting status fields, the source-module list, and the self-hosting
+  status ownership list from `.sley` source;
 - parser statement and binding kind names are now read from `loom.parser`;
 - checker diagnostic status and unknown-identifier message construction are now
   read from `loom.checker`;
