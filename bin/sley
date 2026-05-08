@@ -389,12 +389,16 @@ UNKNOWN_IDENTIFIER_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOUR
 UNKNOWN_IDENTIFIER_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_identifier_message_suffix)"
 UNKNOWN_TYPE_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_type_message_prefix)"
 UNKNOWN_TYPE_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_type_message_suffix)"
+CHECKER_IDENTIFIER_INPUTS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" identifier_resolution_inputs)"
 CHECK_OK_STATUS="${CHECK_OK_STATUS:-ok}"
 CHECK_ERROR_STATUS="${CHECK_ERROR_STATUS:-error}"
 UNKNOWN_IDENTIFIER_MESSAGE_PREFIX="${UNKNOWN_IDENTIFIER_MESSAGE_PREFIX:-unknown identifier \`}"
 UNKNOWN_IDENTIFIER_MESSAGE_SUFFIX="${UNKNOWN_IDENTIFIER_MESSAGE_SUFFIX:-\`}"
 UNKNOWN_TYPE_MESSAGE_PREFIX="${UNKNOWN_TYPE_MESSAGE_PREFIX:-unknown type \`}"
 UNKNOWN_TYPE_MESSAGE_SUFFIX="${UNKNOWN_TYPE_MESSAGE_SUFFIX:-\`}"
+if [[ "$CHECKER_IDENTIFIER_INPUTS_JSON" == "[]" ]]; then
+  CHECKER_IDENTIFIER_INPUTS_JSON='["task_names","take_names","binding_names"]'
+fi
 LINT_EMPTY_FOR="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_for_statement_id)"
 LINT_EMPTY_WHILE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_while_statement_id)"
 LINT_EMPTY_FORGE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_forge_statement_id)"
@@ -797,10 +801,13 @@ check_json() {
     --arg unknown_suffix "$UNKNOWN_IDENTIFIER_MESSAGE_SUFFIX" \
     --arg unknown_type_prefix "$UNKNOWN_TYPE_MESSAGE_PREFIX" \
     --arg unknown_type_suffix "$UNKNOWN_TYPE_MESSAGE_SUFFIX" \
-    --argjson builtin_types "$builtin_types" '
+    --argjson builtin_types "$builtin_types" \
+    --argjson identifier_inputs "$CHECKER_IDENTIFIER_INPUTS_JSON" '
     . as $root |
     [$root.tasks[].name] as $all_task_names |
     [$root.types[]?.name] as $declared_types |
+    def include_identifier_input($name):
+      ($identifier_inputs | index($name)) != null;
     def base_type_name:
       (. // "Unit") | sub("<.*$"; "");
     def type_known($name):
@@ -808,7 +815,11 @@ check_json() {
       (($builtin_types | index($base)) != null) or (($declared_types | index($base)) != null);
     def task_diags:
       $root.tasks[] as $t |
-      (([$t.takes[].name] + [$t.body.statements[]? | select(.kind==$binding_statement_kind) | .name] + $all_task_names) | unique) as $known |
+      ((
+        (if include_identifier_input("take_names") then [$t.takes[].name] else [] end) +
+        (if include_identifier_input("binding_names") then [$t.body.statements[]? | select(.kind==$binding_statement_kind) | .name] else [] end) +
+        (if include_identifier_input("task_names") then $all_task_names else [] end)
+      ) | unique) as $known |
       $t.body.statements[]? |
       . as $stmt |
       select(.expr.expr_kind? == "Identifier") |

@@ -30,6 +30,7 @@
     "checker_status_task_execution",
     "checker_builtin_type_task_execution",
     "checker_unknown_type_diagnostics",
+    "checker_identifier_resolution_inputs",
     "lint_status_task_execution",
     "lint_finding_messages",
     "runtime_status_task_execution",
