@@ -28,6 +28,8 @@ Current state after remediation:
   construction are now read from `loom.checker`;
 - builtin type recognition and unknown-type diagnostics now execute from
   `loom.checker.is_builtin_type`;
+- identifier resolution input classes are now read from
+  `loom.checker.identifier_resolution_inputs`;
 - lint report status task execution plus finding statuses, messages, and hints
   are now read from `loom.lint`;
 - runtime report status task execution, value-kind tags, and current dispatch

@@ -18,8 +18,9 @@ executes the `loom.bootstrap.smoke` source task over the Sley-owned lint-rule
 inventory. Checker diagnostic status and unknown-identifier message
 construction, including checker report status task execution, are read from
 `self-hosted/src/loom/checker.sley`. Builtin type recognition and unknown-type
-diagnostics execute from `loom.checker.is_builtin_type`. Lint finding statuses,
-report status task execution, messages, and hints are read from
+diagnostics execute from `loom.checker.is_builtin_type`; identifier resolution
+input classes are read from `loom.checker.identifier_resolution_inputs`. Lint
+finding statuses, report status task execution, messages, and hints are read from
 `self-hosted/src/loom/lint.sley`.
 Runtime report statuses, report status task execution, value-kind tags, and
 current dispatch probes are read from `self-hosted/src/loom/runtime.sley`.

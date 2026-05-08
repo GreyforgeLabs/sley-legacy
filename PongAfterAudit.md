@@ -29,11 +29,12 @@ Use the migration gates below as the canonical status:
   source-module, and runtime seed surfaces plus parser expression, statement,
   and binding kind names, checker status task execution, lint status task
   execution and finding text, checker builtin-type/unknown-type diagnostics,
-  runtime status task execution plus dispatch/report vocabulary, self-hosting
-  report shape, pure string/integer/boolean literal runtime execution, seeded
-  agent-deploy task execution, project-ready task execution, and bootstrap
-  smoke runtime/source task execution, with project-ready probes dispatched from
-  the AST projection instead of raw source grep.
+  checker identifier-resolution inputs, runtime status task execution plus
+  dispatch/report vocabulary, self-hosting report shape, pure
+  string/integer/boolean literal runtime execution, seeded agent-deploy task
+  execution, project-ready task execution, and bootstrap smoke runtime/source
+  task execution, with project-ready probes dispatched from the AST projection
+  instead of raw source grep.
 - Remaining migration work is strict Sley-written semantic/runtime execution
   parity, not source-language cleanup.
 

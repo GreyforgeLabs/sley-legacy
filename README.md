@@ -85,6 +85,8 @@ The repo currently proves these claims from a clean checkout:
   The checker report status now executes `loom.checker.diagnostic_status`.
   Builtin type recognition and unknown-type diagnostics now execute from
   `loom.checker.is_builtin_type`.
+  Identifier resolution input classes now read from
+  `loom.checker.identifier_resolution_inputs`.
 - Lint finding statuses, messages, and hints are read from
   `self-hosted/src/loom/lint.sley`.
   The lint report status now executes `loom.lint.lint_status`.
