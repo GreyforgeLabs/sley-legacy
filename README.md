@@ -56,7 +56,8 @@ The repo currently proves these claims from a clean checkout:
   lint-rule inventory, core report schema IDs, diagnostic IDs, and runtime seed
   values from Sley source:
   `bin/sley --version`
-- AST expression-kind classifiers now use parser-owned declarations from
+- AST expression, statement, and binding kind names now use parser-owned
+  declarations from
   `self-hosted/src/loom/parser.sley`.
 - Sley-owned stage-2 source modules exist under `self-hosted/src/loom/`:
   `bin/sley self-hosting-status --json`
