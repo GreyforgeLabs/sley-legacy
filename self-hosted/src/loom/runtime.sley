@@ -25,6 +25,58 @@ export task default_deploy_result_text -> Text {
   return "staged"
 }
 
+export task default_raw_value -> Text {
+  return "stage1 runtime result"
+}
+
+export task passed_status -> Text {
+  return "passed"
+}
+
+export task failed_status -> Text {
+  return "failed"
+}
+
+export task skipped_status -> Text {
+  return "skipped"
+}
+
+export task int_value_kind -> Text {
+  return "Int"
+}
+
+export task text_value_kind -> Text {
+  return "Text"
+}
+
+export task raw_value_kind -> Text {
+  return "Raw"
+}
+
+export task ok_text_value_kind -> Text {
+  return "OkText"
+}
+
+export task self_hosted_target_aliases -> List<Text> {
+  return [
+    "self-hosted",
+    "self-hosted/",
+    "self-hosted/sley.toml"
+  ]
+}
+
+export task agent_deploy_target_suffix -> Text {
+  return "agent_deploy_pipeline.sley"
+}
+
+export task project_ready_call_probe -> Text {
+  return "call math.double(21)"
+}
+
+export task project_ready_binding_probe -> Text {
+  return "call double(base)"
+}
+
 export task seeded_agent_deploy_value -> Text {
   take profile: Text
   take model_plan: Text
@@ -37,7 +89,7 @@ export task runtime_status -> Text {
   take diagnostic_count: Int
 
   if diagnostic_count > 0 {
-    return "failed"
+    return call failed_status()
   }
-  return "passed"
+  return call passed_status()
 }

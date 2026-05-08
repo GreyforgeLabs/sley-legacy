@@ -21,7 +21,8 @@
     "parser_expression_classifiers",
     "bootstrap_smoke_runtime",
     "checker_diagnostic_status",
-    "lint_finding_messages"
+    "lint_finding_messages",
+    "runtime_report_status_and_dispatch"
   ],
   "blockers": [
     "execute parser semantics from Sley source",
