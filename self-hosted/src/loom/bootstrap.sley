@@ -34,6 +34,7 @@ export task owned_bootstrap_values -> List<Text> {
     "bootstrap_smoke_runtime",
     "bootstrap_smoke_task_execution",
     "checker_diagnostic_status",
+    "lint_status_task_execution",
     "lint_finding_messages",
     "runtime_report_status_and_dispatch"
   ]

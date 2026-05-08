@@ -75,6 +75,7 @@ The repo currently proves these claims from a clean checkout:
   read from `self-hosted/src/loom/checker.sley`.
 - Lint finding statuses, messages, and hints are read from
   `self-hosted/src/loom/lint.sley`.
+  The lint report status now executes `loom.lint.lint_status`.
 - Baseline AST, check, query, lint, doctor, run, verify, graft, contract, and
   conformance JSON reports execute locally:
   `scripts/self-hosted-test.sh`

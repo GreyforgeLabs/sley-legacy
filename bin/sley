@@ -139,6 +139,42 @@ eval_bootstrap_smoke_task() {
   printf '%s\n' "$rules_json" | jq 'length'
 }
 
+eval_lint_status_task() {
+  local finding_count="$1"
+  local lint_file="$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley"
+  local body findings_task ok_task
+  body="$(extract_sley_task_body "$lint_file" lint_status)"
+  [[ -n "$body" ]] || return 1
+  findings_task="$(printf '%s\n' "$body" | awk '
+    /^[ \t]*if[ \t]+finding_count[ \t]*>[ \t]*0[ \t]*\{/ {in_if=1; next}
+    in_if && /^[ \t]*}/ {in_if=0}
+    in_if && /^[ \t]*return[ \t]+call[ \t]+[A-Za-z_][A-Za-z0-9_]*\(\)/ {
+      line=$0
+      sub(/^.*return[ \t]+call[ \t]+/, "", line)
+      sub(/\(\).*/, "", line)
+      print line
+      exit
+    }
+  ')"
+  ok_task="$(printf '%s\n' "$body" | awk '
+    /^[ \t]*if[ \t]+/ {in_if=1}
+    in_if && /^[ \t]*}/ {in_if=0; next}
+    !in_if && /^[ \t]*return[ \t]+call[ \t]+[A-Za-z_][A-Za-z0-9_]*\(\)/ {
+      line=$0
+      sub(/^.*return[ \t]+call[ \t]+/, "", line)
+      sub(/\(\).*/, "", line)
+      print line
+      exit
+    }
+  ')"
+  [[ -n "$findings_task" && -n "$ok_task" ]] || return 1
+  if [[ "$finding_count" -gt 0 ]]; then
+    extract_sley_string_task "$lint_file" "$findings_task"
+  else
+    extract_sley_string_task "$lint_file" "$ok_task"
+  fi
+}
+
 VERSION="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/bootstrap.sley" implementation_version)"
 VERSION="${VERSION:-sley 0.2.0-self-hosting-stage1-bootstrap}"
 
@@ -604,7 +640,7 @@ check_json() {
 }
 
 lint_json() {
-  local target="$1" entry findings
+  local target="$1" entry findings finding_count lint_status
   entry="$(entry_module_for "$target")"
   findings="$(mktemp)"
   : > "$findings"
@@ -624,9 +660,18 @@ lint_json() {
       printf '%s\n' "{\"id\":\"$LINT_EMPTY_IF\",\"rule\":\"$LINT_EMPTY_IF_RULE\",\"severity\":\"warning\",\"message\":\"task \`$module.main\` $LINT_EMPTY_IF_MESSAGE\",\"node\":\"block:task:$module.main:stmt:1\",\"module\":\"$module\",\"hint\":\"$LINT_EMPTY_IF_HINT\"}" >> "$findings"
     fi
   done < <(collect_files "$target")
-  jq -n --arg schema "$SCHEMA_LINT" --arg entry "$entry" --arg ok_status "$LINT_OK_STATUS" --arg findings_status "$LINT_FINDINGS_STATUS" --argjson rules "$DEFAULT_RULES_JSON" --slurpfile raw <(if [[ -s "$findings" ]]; then jq -s '.' "$findings"; else printf '[]\n'; fi) '
+  if [[ -s "$findings" ]]; then
+    finding_count="$(jq -s 'length' "$findings")"
+  else
+    finding_count=0
+  fi
+  lint_status="$(eval_lint_status_task "$finding_count" || { if [[ "$finding_count" -eq 0 ]]; then printf '%s\n' "$LINT_OK_STATUS"; else printf '%s\n' "$LINT_FINDINGS_STATUS"; fi; })"
+  if [[ -z "$lint_status" ]]; then
+    if [[ "$finding_count" -eq 0 ]]; then lint_status="$LINT_OK_STATUS"; else lint_status="$LINT_FINDINGS_STATUS"; fi
+  fi
+  jq -n --arg schema "$SCHEMA_LINT" --arg entry "$entry" --arg lint_status "$lint_status" --argjson rules "$DEFAULT_RULES_JSON" --slurpfile raw <(if [[ -s "$findings" ]]; then jq -s '.' "$findings"; else printf '[]\n'; fi) '
     ($raw[0] // []) as $findings |
-    {schema:$schema, status:(if ($findings|length)==0 then $ok_status else $findings_status end), entry_module:$entry, filters:{module:null, rules:$rules}, findings:$findings}
+    {schema:$schema, status:$lint_status, entry_module:$entry, filters:{module:null, rules:$rules}, findings:$findings}
   '
   rm -f "$findings"
 }

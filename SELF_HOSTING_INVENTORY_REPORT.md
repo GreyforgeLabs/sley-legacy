@@ -1,6 +1,6 @@
 # Self-Hosting Migration Inventory
 
-Generated: 2026-05-08T18:34:15Z
+Generated: 2026-05-08T18:36:35Z
 
 ## Foreign-language surface scan
 
