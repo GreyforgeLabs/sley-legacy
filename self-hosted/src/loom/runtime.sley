@@ -49,6 +49,10 @@ export task text_value_kind -> Text {
   return "Text"
 }
 
+export task bool_value_kind -> Text {
+  return "Bool"
+}
+
 export task raw_value_kind -> Text {
   return "Raw"
 }

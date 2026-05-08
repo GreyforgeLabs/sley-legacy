@@ -32,6 +32,7 @@
     "lint_finding_messages",
     "runtime_status_task_execution",
     "pure_literal_runtime_execution",
+    "bool_literal_runtime_execution",
     "seeded_agent_deploy_task_execution",
     "self_hosting_report_shape",
     "runtime_report_status_and_dispatch"
