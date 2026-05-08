@@ -10,6 +10,10 @@ export task implementation_stage -> Text {
   return "self-hosting-stage2-source"
 }
 
+export task self_hosting_status -> Text {
+  return "bootstrap"
+}
+
 export task strict_self_hosted -> Bool {
   return false
 }
@@ -18,6 +22,8 @@ export task owned_bootstrap_values -> List<Text> {
   return [
     "implementation_version",
     "implementation_stage",
+    "self_hosting_status",
+    "strict_self_hosted",
     "default_lint_rules",
     "core_report_schema_ids",
     "diagnostic_ids",

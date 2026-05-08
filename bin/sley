@@ -63,6 +63,22 @@ extract_sley_int_task() {
   ' "$file"
 }
 
+extract_sley_bool_task() {
+  local file="$1" task="$2"
+  [[ -f "$file" ]] || return 0
+  awk -v task="$task" '
+    $0 ~ "task[ \t]+" task "[ \t]*->" {in_task=1}
+    in_task && /^[ \t]*}/ {exit}
+    in_task && /return[ \t]+(true|false)/ {
+      line=$0
+      sub(/^.*return[ \t]+/, "", line)
+      sub(/[^a-z].*$/, "", line)
+      print line
+      exit
+    }
+  ' "$file"
+}
+
 VERSION="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/bootstrap.sley" implementation_version)"
 VERSION="${VERSION:-sley 0.2.0-self-hosting-stage1-bootstrap}"
 
@@ -764,25 +780,32 @@ source_modules_json() {
 }
 
 self_hosting_status_json() {
-  local modules_json blockers_json owned_json count
+  local modules_json blockers_json owned_json status strict count
   modules_json="$(source_modules_json)"
   blockers_json="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/bootstrap.sley" remaining_strict_self_hosting_blockers)"
   owned_json="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/bootstrap.sley" owned_bootstrap_values)"
   if [[ "$owned_json" == "[]" ]]; then
-    owned_json='["implementation_version","default_lint_rules","core_report_schema_ids","diagnostic_ids","runtime_seed_values","parser_expression_classifiers","parser_statement_and_binding_kinds","bootstrap_smoke_runtime","checker_diagnostic_status","lint_finding_messages","runtime_report_status_and_dispatch"]'
+    owned_json='["implementation_version","implementation_stage","self_hosting_status","strict_self_hosted","default_lint_rules","core_report_schema_ids","diagnostic_ids","runtime_seed_values","parser_expression_classifiers","parser_statement_and_binding_kinds","bootstrap_smoke_runtime","checker_diagnostic_status","lint_finding_messages","runtime_report_status_and_dispatch"]'
   fi
+  status="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/bootstrap.sley" self_hosting_status)"
+  status="${status:-bootstrap}"
+  strict="$(extract_sley_bool_task "$SELF_HOSTED_SOURCE_ROOT/loom/bootstrap.sley" strict_self_hosted)"
+  strict="${strict:-false}"
+  case "$strict" in true|false) ;; *) strict=false ;; esac
   count="$(find "$SELF_HOSTED_SOURCE_ROOT" -type f -name '*.sley' 2>/dev/null | wc -l | tr -d ' ')"
   jq -n \
     --arg schema "$SCHEMA_SELF_HOSTING" \
+    --arg status "$status" \
     --arg root "self-hosted/src" \
+    --argjson strict "$strict" \
     --argjson count "$count" \
     --argjson modules "$modules_json" \
     --argjson owned "$owned_json" \
     --argjson blockers "$blockers_json" \
     '{
       schema:$schema,
-      status:"bootstrap",
-      strict_self_hosted:false,
+      status:$status,
+      strict_self_hosted:$strict,
       source_root:$root,
       semantic_source_count:$count,
       source_modules:$modules,
