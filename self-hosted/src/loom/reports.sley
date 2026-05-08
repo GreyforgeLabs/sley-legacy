@@ -42,6 +42,20 @@ export task query_schema -> Text {
   return "sley.query.report.v0"
 }
 
+export task query_report_fields -> List<Text> {
+  return [
+    "schema",
+    "kind",
+    "entry_module",
+    "filters",
+    "modules",
+    "tasks",
+    "types",
+    "effects",
+    "calls"
+  ]
+}
+
 export task run_schema -> Text {
   return "sley.run.report.v0"
 }

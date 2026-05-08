@@ -358,6 +358,7 @@ SCHEMA_AST_NODE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/repor
 SCHEMA_DIAGNOSTICS="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" diagnostics_schema)"
 DIAGNOSTICS_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" diagnostics_report_fields)"
 SCHEMA_QUERY="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" query_schema)"
+QUERY_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" query_report_fields)"
 SCHEMA_LINT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" lint_schema)"
 LINT_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" lint_report_fields)"
 SCHEMA_DOCTOR="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" doctor_schema)"
@@ -375,6 +376,9 @@ if [[ "$DIAGNOSTICS_REPORT_FIELDS_JSON" == "[]" ]]; then
   DIAGNOSTICS_REPORT_FIELDS_JSON='["schema","status","diagnostics"]'
 fi
 SCHEMA_QUERY="${SCHEMA_QUERY:-sley.query.report.v0}"
+if [[ "$QUERY_REPORT_FIELDS_JSON" == "[]" ]]; then
+  QUERY_REPORT_FIELDS_JSON='["schema","kind","entry_module","filters","modules","tasks","types","effects","calls"]'
+fi
 SCHEMA_LINT="${SCHEMA_LINT:-sley.lint.report.v0}"
 if [[ "$LINT_REPORT_FIELDS_JSON" == "[]" ]]; then
   LINT_REPORT_FIELDS_JSON='["schema","status","entry_module","filters","findings"]'
@@ -760,7 +764,7 @@ node_json() {
 
 query_json() {
   local target="$1" kind="${2:-all}"
-  ast_json "$target" | jq --arg kind "$kind" --arg schema "$SCHEMA_QUERY" '
+  ast_json "$target" | jq --arg kind "$kind" --arg schema "$SCHEMA_QUERY" --argjson fields "$QUERY_REPORT_FIELDS_JSON" '
     def call_callee:
       .source | sub("^call[[:space:]]+";"") | sub("\\(.*$";"");
     def resolve($ast; $module; $callee):
@@ -773,18 +777,18 @@ query_json() {
     . as $ast |
     ($ast.tasks | map(.module) | unique) as $mods |
     {
-      schema:$schema,
-      kind:$kind,
-      entry_module:($ast.module // ($ast.tasks[0].module // "main")),
-      filters:{module:null, exported_only:false},
-      modules:($mods | map(. as $m | {
+      ($fields[0] // "schema"):$schema,
+      ($fields[1] // "kind"):$kind,
+      ($fields[2] // "entry_module"):($ast.module // ($ast.tasks[0].module // "main")),
+      ($fields[3] // "filters"):{module:null, exported_only:false},
+      ($fields[4] // "modules"):($mods | map(. as $m | {
         module:$m,
         imports:[$ast.imports[]? | select(.owner_module == $m) | {id, module} + (if .alias then {alias} else {} end)],
         types:[$ast.types[]? | select(.module == $m) | {name,id,exported}],
         effects:[$ast.effects[]? | select(.module == $m) | {name,id,exported}],
         tasks:[$ast.tasks[]? | select(.module == $m) | {name,id,exported}]
       })),
-      tasks:[$ast.tasks[] | {
+      ($fields[5] // "tasks"):[$ast.tasks[] | {
         id, name, module, qualified_name:(.module + "." + .name), exported,
         takes:(.takes | map({name, binding_kind, type:(.type.name // "Unit")})),
         return_type:(.return_type.name // "Unit"),
@@ -792,9 +796,9 @@ query_json() {
         outbound_call_count:([.body.statements[]?.expr? | select(.source? | startswith("call "))] | length),
         inbound_call_count:0
       }],
-      types:[$ast.types[]? | {id,name,module,qualified_name:(.module + "." + .name),exported,value:(.value.name // "Unit"),fields:[]}],
-      effects:[$ast.effects[]? | {id,name,module,qualified_name:(.module + "." + .name),exported}],
-      calls:[$ast.tasks[] as $t | $t.body.statements[]?.expr? | select(.source? | startswith("call ")) |
+      ($fields[6] // "types"):[$ast.types[]? | {id,name,module,qualified_name:(.module + "." + .name),exported,value:(.value.name // "Unit"),fields:[]}],
+      ($fields[7] // "effects"):[$ast.effects[]? | {id,name,module,qualified_name:(.module + "." + .name),exported}],
+      ($fields[8] // "calls"):[$ast.tasks[] as $t | $t.body.statements[]?.expr? | select(.source? | startswith("call ")) |
         (call_callee) as $callee |
         {from:($t.module + "." + $t.name), from_module:$t.module, expr_id:.id, source:.source, callee:$callee, status:"resolved", target:resolve($ast; $t.module; $callee)}
       ]

@@ -11,7 +11,7 @@ implementation stage, bootstrap/strict self-hosting status fields, source-module
 inventory, lint-rule inventory, core report schema IDs, diagnostic IDs, runtime
 seed values, and the self-hosting status ownership list are read from `.sley`
 source. The self-hosting status source-root label and top-level report field
-shape and diagnostics report field shape are read from
+shape and diagnostics/query report field shapes are read from
 `self-hosted/src/loom/reports.sley`. AST expression, statement, and binding
 kind names are also read from
 `self-hosted/src/loom/parser.sley`, and `sley run --json self-hosted`
