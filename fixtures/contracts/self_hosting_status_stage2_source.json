@@ -19,6 +19,7 @@
     "diagnostic_ids",
     "runtime_seed_values",
     "parser_expression_classifiers",
+    "parser_statement_and_binding_kinds",
     "bootstrap_smoke_runtime",
     "checker_diagnostic_status",
     "lint_finding_messages",

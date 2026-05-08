@@ -20,6 +20,7 @@ Current state after remediation:
   modules, and the bootstrap reads version, lint-rule inventory, core report
   IDs, diagnostic IDs, runtime seed values, and parser expression classifiers
   from `.sley` source;
+- parser statement and binding kind names are now read from `loom.parser`;
 - checker diagnostic status and unknown-identifier message construction are now
   read from `loom.checker`;
 - lint finding statuses, messages, and hints are now read from `loom.lint`;

@@ -20,6 +20,7 @@ export task owned_bootstrap_values -> List<Text> {
     "implementation_stage",
     "default_lint_rules",
     "parser_expression_classifiers",
+    "parser_statement_and_binding_kinds",
     "bootstrap_smoke_runtime",
     "checker_diagnostic_status",
     "lint_finding_messages",

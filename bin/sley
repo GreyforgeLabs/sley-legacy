@@ -182,6 +182,18 @@ PARSER_STRING_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/pa
 PARSER_BOOL_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" bool_literal_kind)"
 PARSER_IDENTIFIER_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" identifier_kind)"
 PARSER_RAW_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" raw_expr_kind)"
+PARSER_RETURN_STATEMENT_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" return_statement_kind)"
+PARSER_BINDING_STATEMENT_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" binding_statement_kind)"
+PARSER_SET_STATEMENT_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" set_statement_kind)"
+PARSER_FOR_STATEMENT_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" for_statement_kind)"
+PARSER_WHILE_STATEMENT_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" while_statement_kind)"
+PARSER_IF_STATEMENT_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" if_statement_kind)"
+PARSER_FORGE_STATEMENT_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" forge_statement_kind)"
+PARSER_TAKE_BINDING_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" take_binding_kind)"
+PARSER_GATE_BINDING_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" gate_binding_kind)"
+PARSER_STATE_BINDING_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" state_binding_kind)"
+PARSER_TALLY_BINDING_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" tally_binding_kind)"
+PARSER_BIND_BINDING_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" bind_binding_kind)"
 PARSER_INT_PATTERN="${PARSER_INT_PATTERN:--?[0-9]+}"
 PARSER_IDENTIFIER_PATTERN="${PARSER_IDENTIFIER_PATTERN:-^[A-Za-z_][A-Za-z0-9_]*$}"
 PARSER_INT_KIND="${PARSER_INT_KIND:-IntLiteral}"
@@ -189,6 +201,18 @@ PARSER_STRING_KIND="${PARSER_STRING_KIND:-StringLiteral}"
 PARSER_BOOL_KIND="${PARSER_BOOL_KIND:-BoolLiteral}"
 PARSER_IDENTIFIER_KIND="${PARSER_IDENTIFIER_KIND:-Identifier}"
 PARSER_RAW_KIND="${PARSER_RAW_KIND:-Raw}"
+PARSER_RETURN_STATEMENT_KIND="${PARSER_RETURN_STATEMENT_KIND:-Return}"
+PARSER_BINDING_STATEMENT_KIND="${PARSER_BINDING_STATEMENT_KIND:-Binding}"
+PARSER_SET_STATEMENT_KIND="${PARSER_SET_STATEMENT_KIND:-Set}"
+PARSER_FOR_STATEMENT_KIND="${PARSER_FOR_STATEMENT_KIND:-For}"
+PARSER_WHILE_STATEMENT_KIND="${PARSER_WHILE_STATEMENT_KIND:-While}"
+PARSER_IF_STATEMENT_KIND="${PARSER_IF_STATEMENT_KIND:-If}"
+PARSER_FORGE_STATEMENT_KIND="${PARSER_FORGE_STATEMENT_KIND:-Forge}"
+PARSER_TAKE_BINDING_KIND="${PARSER_TAKE_BINDING_KIND:-Take}"
+PARSER_GATE_BINDING_KIND="${PARSER_GATE_BINDING_KIND:-Gate}"
+PARSER_STATE_BINDING_KIND="${PARSER_STATE_BINDING_KIND:-State}"
+PARSER_TALLY_BINDING_KIND="${PARSER_TALLY_BINDING_KIND:-Tally}"
+PARSER_BIND_BINDING_KIND="${PARSER_BIND_BINDING_KIND:-Bind}"
 
 usage() {
   cat <<'EOF'
@@ -300,7 +324,19 @@ ast_json() {
     -v string_kind="$PARSER_STRING_KIND" \
     -v bool_kind="$PARSER_BOOL_KIND" \
     -v identifier_kind="$PARSER_IDENTIFIER_KIND" \
-    -v raw_kind="$PARSER_RAW_KIND" '
+    -v raw_kind="$PARSER_RAW_KIND" \
+    -v return_statement_kind="$PARSER_RETURN_STATEMENT_KIND" \
+    -v binding_statement_kind="$PARSER_BINDING_STATEMENT_KIND" \
+    -v set_statement_kind="$PARSER_SET_STATEMENT_KIND" \
+    -v for_statement_kind="$PARSER_FOR_STATEMENT_KIND" \
+    -v while_statement_kind="$PARSER_WHILE_STATEMENT_KIND" \
+    -v if_statement_kind="$PARSER_IF_STATEMENT_KIND" \
+    -v forge_statement_kind="$PARSER_FORGE_STATEMENT_KIND" \
+    -v take_binding_kind="$PARSER_TAKE_BINDING_KIND" \
+    -v gate_binding_kind="$PARSER_GATE_BINDING_KIND" \
+    -v state_binding_kind="$PARSER_STATE_BINDING_KIND" \
+    -v tally_binding_kind="$PARSER_TALLY_BINDING_KIND" \
+    -v bind_binding_kind="$PARSER_BIND_BINDING_KIND" '
     function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
     function esc(s){gsub(/\\/, "\\\\", s); gsub(/"/, "\\\"", s); gsub(/\t/, "\\t", s); return s}
     function count_char(s, c, n, i){n=0; for(i=1;i<=length(s);i++){if(substr(s,i,1)==c)n++} return n}
@@ -314,7 +350,7 @@ ast_json() {
       if(expr ~ identifier_pattern){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" identifier_kind "\",\"name\":\"" esc(expr) "\",\"span\":" span_json(line,col) "}"}
       return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" raw_kind "\",\"fallible\":" (expr ~ /\?$/ ? "true" : "false") ",\"span\":" span_json(line,col) "}"
     }
-    function binding_kind(k){return k=="state" ? "State" : (k=="tally" ? "Tally" : "Bind")}
+    function binding_kind(k){return k=="state" ? state_binding_kind : (k=="tally" ? tally_binding_kind : bind_binding_kind)}
     function add_stmt(kind, txt, line, col, id){
       stmt_count[current]++
       id="block:task:" task_module[current] "." task_name[current] ":stmt:" (stmt_count[current]-1)
@@ -350,26 +386,26 @@ ast_json() {
     in_task {
       raw=$0; line=trim(raw)
       if(line ~ /^take[ \t]+/) {
-        take_count[current]++; t=line; sub(/^take[ \t]+/,"",t); kind="Take"
-        if(t ~ /^gate[ \t]+/){kind="Gate"; sub(/^gate[ \t]+/,"",t)}
+        take_count[current]++; t=line; sub(/^take[ \t]+/,"",t); kind=take_binding_kind
+        if(t ~ /^gate[ \t]+/){kind=gate_binding_kind; sub(/^gate[ \t]+/,"",t)}
         name=t; sub(/[ \t]*:.*/,"",name); typ=t; sub(/^.*:[ \t]*/,"",typ)
         take_name[current,take_count[current]]=trim(name); take_kind[current,take_count[current]]=kind; take_type[current,take_count[current]]=trim(typ); take_line[current,take_count[current]]=FNR
       } else if(line ~ /^(bind|state|tally)[ \t]+/) {
         kind=line; sub(/[ \t].*/,"",kind); rest=line; sub(/^[A-Za-z]+[ \t]+/,"",rest); name=rest; sub(/[ \t:=].*/,"",name); expr=rest; sub(/^.*=[ \t]*/,"",expr)
-        add_stmt("Binding|" binding_kind(kind) "|" trim(name), expr, FNR, index(raw, kind))
+        add_stmt(binding_statement_kind "|" binding_kind(kind) "|" trim(name), expr, FNR, index(raw, kind))
       } else if(line ~ /^set[ \t]+/) {
         rest=line; sub(/^set[ \t]+/,"",rest); name=rest; sub(/[ \t]*=.*/,"",name); expr=rest; sub(/^.*=[ \t]*/,"",expr)
-        add_stmt("Set|" trim(name), expr, FNR, index(raw, "set"))
+        add_stmt(set_statement_kind "|" trim(name), expr, FNR, index(raw, "set"))
       } else if(line ~ /^return[ \t]+/) {
-        expr=line; sub(/^return[ \t]+/,"",expr); add_stmt("Return", expr, FNR, index(raw, "return"))
+        expr=line; sub(/^return[ \t]+/,"",expr); add_stmt(return_statement_kind, expr, FNR, index(raw, "return"))
       } else if(line ~ /^for[ \t]+/) {
-        add_stmt("For", line, FNR, index(raw, "for"))
+        add_stmt(for_statement_kind, line, FNR, index(raw, "for"))
       } else if(line ~ /^while[ \t]+/) {
-        add_stmt("While", line, FNR, index(raw, "while"))
+        add_stmt(while_statement_kind, line, FNR, index(raw, "while"))
       } else if(line ~ /^if[ \t]+/) {
-        add_stmt("If", line, FNR, index(raw, "if"))
+        add_stmt(if_statement_kind, line, FNR, index(raw, "if"))
       } else if(line ~ /^forge[ \t]*\{/) {
-        add_stmt("Forge", line, FNR, index(raw, "forge"))
+        add_stmt(forge_statement_kind, line, FNR, index(raw, "forge"))
       }
       depth += count_char($0,"{")-count_char($0,"}")
       if(depth<=0){in_task=0; current=0}
@@ -394,13 +430,13 @@ ast_json() {
         for(j=1;j<=stmt_count[i];j++){
           if(j>1)printf ","
           split(stmt_kind[i,j], parts, /\|/); id=stmt_id[i,j]
-          if(parts[1]=="Return"){printf "{\"id\":\"%s\",\"kind\":\"Return\",\"expr\":%s,\"span\":%s}", id, expr_json(stmt_text[i,j], id ":expr", stmt_line[i,j], stmt_col[i,j]+7), span_json(stmt_line[i,j],stmt_col[i,j])}
-          else if(parts[1]=="Binding"){printf "{\"id\":\"%s\",\"kind\":\"Binding\",\"binding_kind\":\"%s\",\"name\":\"%s\",\"expr\":%s,\"span\":%s}", id, parts[2], esc(parts[3]), expr_json(stmt_text[i,j], id ":expr", stmt_line[i,j], stmt_col[i,j]+length(parts[3])+4), span_json(stmt_line[i,j],stmt_col[i,j])}
-          else if(parts[1]=="Set"){printf "{\"id\":\"%s\",\"kind\":\"Set\",\"name\":\"%s\",\"expr\":%s,\"span\":%s}", id, esc(parts[2]), expr_json(stmt_text[i,j], id ":expr", stmt_line[i,j], stmt_col[i,j]+length(parts[2])+4), span_json(stmt_line[i,j],stmt_col[i,j])}
-          else if(parts[1]=="For"){printf "{\"id\":\"%s\",\"kind\":\"For\",\"item\":\"item\",\"collection\":%s,\"body\":{\"statements\":[]},\"span\":%s}", id, expr_json("[]", id ":collection", stmt_line[i,j], stmt_col[i,j]+4), span_json(stmt_line[i,j],stmt_col[i,j])}
-          else if(parts[1]=="While"){printf "{\"id\":\"%s\",\"kind\":\"While\",\"condition\":%s,\"body\":{\"statements\":[]},\"span\":%s}", id, expr_json(stmt_text[i,j], id ":condition", stmt_line[i,j], stmt_col[i,j]+6), span_json(stmt_line[i,j],stmt_col[i,j])}
-          else if(parts[1]=="If"){printf "{\"id\":\"%s\",\"kind\":\"If\",\"condition\":%s,\"then_block\":{\"statements\":[]},\"else_block\":{\"statements\":[]},\"span\":%s}", id, expr_json(stmt_text[i,j], id ":condition", stmt_line[i,j], stmt_col[i,j]+3), span_json(stmt_line[i,j],stmt_col[i,j])}
-          else if(parts[1]=="Forge"){printf "{\"id\":\"%s\",\"kind\":\"Forge\",\"body\":{\"statements\":[]},\"span\":%s}", id, span_json(stmt_line[i,j],stmt_col[i,j])}
+          if(parts[1]==return_statement_kind){printf "{\"id\":\"%s\",\"kind\":\"%s\",\"expr\":%s,\"span\":%s}", id, return_statement_kind, expr_json(stmt_text[i,j], id ":expr", stmt_line[i,j], stmt_col[i,j]+7), span_json(stmt_line[i,j],stmt_col[i,j])}
+          else if(parts[1]==binding_statement_kind){printf "{\"id\":\"%s\",\"kind\":\"%s\",\"binding_kind\":\"%s\",\"name\":\"%s\",\"expr\":%s,\"span\":%s}", id, binding_statement_kind, parts[2], esc(parts[3]), expr_json(stmt_text[i,j], id ":expr", stmt_line[i,j], stmt_col[i,j]+length(parts[3])+4), span_json(stmt_line[i,j],stmt_col[i,j])}
+          else if(parts[1]==set_statement_kind){printf "{\"id\":\"%s\",\"kind\":\"%s\",\"name\":\"%s\",\"expr\":%s,\"span\":%s}", id, set_statement_kind, esc(parts[2]), expr_json(stmt_text[i,j], id ":expr", stmt_line[i,j], stmt_col[i,j]+length(parts[2])+4), span_json(stmt_line[i,j],stmt_col[i,j])}
+          else if(parts[1]==for_statement_kind){printf "{\"id\":\"%s\",\"kind\":\"%s\",\"item\":\"item\",\"collection\":%s,\"body\":{\"statements\":[]},\"span\":%s}", id, for_statement_kind, expr_json("[]", id ":collection", stmt_line[i,j], stmt_col[i,j]+4), span_json(stmt_line[i,j],stmt_col[i,j])}
+          else if(parts[1]==while_statement_kind){printf "{\"id\":\"%s\",\"kind\":\"%s\",\"condition\":%s,\"body\":{\"statements\":[]},\"span\":%s}", id, while_statement_kind, expr_json(stmt_text[i,j], id ":condition", stmt_line[i,j], stmt_col[i,j]+6), span_json(stmt_line[i,j],stmt_col[i,j])}
+          else if(parts[1]==if_statement_kind){printf "{\"id\":\"%s\",\"kind\":\"%s\",\"condition\":%s,\"then_block\":{\"statements\":[]},\"else_block\":{\"statements\":[]},\"span\":%s}", id, if_statement_kind, expr_json(stmt_text[i,j], id ":condition", stmt_line[i,j], stmt_col[i,j]+3), span_json(stmt_line[i,j],stmt_col[i,j])}
+          else if(parts[1]==forge_statement_kind){printf "{\"id\":\"%s\",\"kind\":\"%s\",\"body\":{\"statements\":[]},\"span\":%s}", id, forge_statement_kind, span_json(stmt_line[i,j],stmt_col[i,j])}
         }
         printf "]},\"span\":%s}", span_json(task_line[i],1)
       }
@@ -473,13 +509,14 @@ check_json() {
     --arg unknown "$DIAG_UNKNOWN_IDENTIFIER" \
     --arg ok_status "$CHECK_OK_STATUS" \
     --arg error_status "$CHECK_ERROR_STATUS" \
+    --arg binding_statement_kind "$PARSER_BINDING_STATEMENT_KIND" \
     --arg unknown_prefix "$UNKNOWN_IDENTIFIER_MESSAGE_PREFIX" \
     --arg unknown_suffix "$UNKNOWN_IDENTIFIER_MESSAGE_SUFFIX" '
     . as $root |
     [$root.tasks[].name] as $all_task_names |
     def task_diags:
       $root.tasks[] as $t |
-      (([$t.takes[].name] + [$t.body.statements[]? | select(.kind=="Binding") | .name] + $all_task_names) | unique) as $known |
+      (([$t.takes[].name] + [$t.body.statements[]? | select(.kind==$binding_statement_kind) | .name] + $all_task_names) | unique) as $known |
       $t.body.statements[]? |
       . as $stmt |
       select(.expr.expr_kind? == "Identifier") |
@@ -744,7 +781,7 @@ self_hosting_status_json() {
       source_root:$root,
       semantic_source_count:$count,
       source_modules:$modules,
-      bootstrap_owned_by_sley:["implementation_version","default_lint_rules","core_report_schema_ids","diagnostic_ids","runtime_seed_values","parser_expression_classifiers","bootstrap_smoke_runtime","checker_diagnostic_status","lint_finding_messages","runtime_report_status_and_dispatch"],
+      bootstrap_owned_by_sley:["implementation_version","default_lint_rules","core_report_schema_ids","diagnostic_ids","runtime_seed_values","parser_expression_classifiers","parser_statement_and_binding_kinds","bootstrap_smoke_runtime","checker_diagnostic_status","lint_finding_messages","runtime_report_status_and_dispatch"],
       blockers:$blockers
     }'
 }
