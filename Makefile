@@ -1,4 +1,6 @@
-.PHONY: fmt diff-check build-cli build-bins test contracts conformance public-release-check corpus examples smoke lsp editor-shims workbench agent-bench migrate docgen sandbox-runner shadow zjx-tools syntax v1
+.PHONY: fmt diff-check build-cli build-bins test contracts conformance public-release-check corpus examples smoke lsp editor-shims workbench agent-bench migrate docgen sandbox-runner shadow zjx-tools syntax self-hosted-cli v1
+
+SELF_HOSTED_ARGS := --help
 
 fmt:
 	cargo fmt -- --check
@@ -79,5 +81,8 @@ tree-sitter-sley/node_modules/.package-lock.json: tree-sitter-sley/package.json 
 
 syntax: tree-sitter-sley/node_modules/.package-lock.json
 	npm --prefix tree-sitter-sley test
+
+self-hosted-cli:
+	node self-hosted/cli.mjs $(SELF_HOSTED_ARGS)
 
 v1: fmt diff-check test contracts conformance corpus examples smoke lsp editor-shims workbench agent-bench migrate docgen sandbox-runner shadow zjx-tools syntax
