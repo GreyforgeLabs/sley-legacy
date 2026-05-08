@@ -52,8 +52,11 @@ The repo currently proves these claims from a clean checkout:
 
 - No forbidden foreign-language implementation files are present:
   `./scripts/check-self-hosted-code.sh`
-- A runnable `sley` command exists under `bin/`:
+- A runnable `sley` command exists under `bin/` and reads bootstrap version
+  and lint-rule inventory from Sley source:
   `bin/sley --version`
+- Sley-owned stage-2 source modules exist under `self-hosted/src/loom/`:
+  `bin/sley self-hosting-status --json`
 - Baseline AST, check, query, lint, doctor, run, verify, graft, contract, and
   conformance JSON reports execute locally:
   `scripts/self-hosted-test.sh`
@@ -61,8 +64,9 @@ The repo currently proves these claims from a clean checkout:
   `make v1`
 
 This is not yet the final strict self-hosting claim. The stricter claim means
-the compiler/checker/runtime implementation is written in Sley itself, with the
-bootstrap reduced to a loader. That remains the next migration stage.
+the parser/checker/runtime implementation executes from Sley source, with the
+shell surface reduced to a loader and test harness. That remains the next
+migration stage.
 
 ## Start In 10 Minutes
 
@@ -75,6 +79,7 @@ sley doctor --json examples/project
 sley ast --json examples/hello.sley
 sley query --json --kind calls examples/project
 sley lint --json examples/empty_for_statement.sley
+sley self-hosting-status --json
 sley run --json examples/hello.sley
 sley verify --json examples/project
 ```
@@ -91,6 +96,7 @@ Stage-1 executable commands:
 - `sley doctor --json <file-or-project>`
 - `sley run --json <file-or-project>`
 - `sley verify --json <file-or-project>`
+- `sley self-hosting-status --json`
 - `sley graft --json --dry-run <file> <graft.json>`
 - `sley-contract inventory --json`
 - `sley-contract check-fixtures fixtures/contracts --schemas docs/schemas --json`
@@ -121,6 +127,7 @@ The active migration documents are:
 - `SELF_HOSTING_PHASE1_PORT_PLAN.md` - current stage-1 implementation scope
 - `SELF_HOSTING_INVENTORY_REPORT.md` - generated source-surface inventory
 - `PongAfterAudit.md` - post-audit continuity note
+- `self-hosted/src/loom/` - Sley-owned stage-2 semantic source modules
 
 The old Rust-backed implementation remains useful as historical design context,
 but it is no longer the executable source tree. Do not restore Rust, C,
@@ -133,7 +140,7 @@ unless the release state is explicitly reverted.
 - Keep `./scripts/check-self-hosted-code.sh` green before calling the repo
   foreign-language-free.
 - Do not claim strict self-hosting until the parser, checker, runtime, and
-  command surface are implemented in Sley source and verified by parity tests.
+  command surface execute from Sley source and are verified by parity tests.
 - Public release still requires an operator-reviewed proof bundle and current
   prior-art-safe wording.
 

@@ -5,7 +5,9 @@ compiler-mediated, human-reviewed software change.
 
 The repository is in a self-hosting migration. The current source tree has no
 forbidden Rust, C/C++, JavaScript, TypeScript, or Python implementation files
-and exposes a runnable stage-1 command surface through `bin/`.
+and exposes a runnable stage-1 command surface through `bin/`. Stage-2 source
+ownership has started under `self-hosted/src/loom/`; bootstrap version and
+lint-rule inventory are read from `.sley` source.
 
 ## Current Proof Commands
 
@@ -42,6 +44,7 @@ sley zjx --json <file-or-project>
 sley graft --json --dry-run <file> <graft.json>
 sley format <file>
 sley run --json <file-or-project>
+sley self-hosting-status --json
 ```
 
 ## Companion Commands
@@ -99,6 +102,7 @@ sley-zjx verify-digest --json <zjx-envelope.json>
 - `sley.edit_plan.report.v0`
 - `sley.run.report.v0`
 - `sley.verify.report.v0`
+- `sley.self_hosting.status.v0`
 - `sley.doctor.report.v0`
 - `sley.graft.outcome.v0`
 - `sley.deploy.report.v0`
@@ -120,6 +124,7 @@ Use:
 > compiler-mediated, human-reviewed software change.
 
 Do not claim strict self-hosting yet. Stage-1 proves a foreign-source-free
-runnable bootstrap and command envelopes. Strict self-hosting requires the
-parser, checker, runtime, and command semantics to be implemented in Sley source
-and covered by parity tests.
+runnable bootstrap and command envelopes. Stage-2 now gives Loom Sley-owned
+semantic source modules and moves bootstrap version/lint-rule inventory into
+`.sley` source. Strict self-hosting still requires parser, checker, runtime,
+and command semantics to execute from Sley source and pass parity tests.

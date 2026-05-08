@@ -7,6 +7,8 @@ stable while removing forbidden foreign-language implementation files.
 ## Current blocker baseline
 - `./scripts/check-self-hosted-code.sh` currently passes.
 - `make v1` is the current stage-1 proof gate.
+- `bin/sley self-hosting-status --json` reports the stage-2 source ownership
+  boundary.
 - Foreign-language artifacts count is generated in `SELF_HOSTING_INVENTORY_REPORT.md`.
 - `tree-sitter` parser C artifacts have been removed from git-tracked sources in this phase.
 - Latest blocker report now shows forbidden implementation extensions at zero.
@@ -19,8 +21,9 @@ stable while removing forbidden foreign-language implementation files.
   `sley ast`, `sley check`, `sley query`, `sley lint`, `sley run`, and
   `sley verify` with JSON schema-shape-compatible output.
 - No forbidden foreign-language implementation files remain.
-- Milestone reached: stage-1 command/runtime envelopes are runnable; remaining
-  migration work is strict Sley-written semantic parity.
+- Milestone reached: stage-1 command/runtime envelopes are runnable, and
+  stage-2 Sley source modules now own bootstrap metadata and lint-rule
+  inventory. Remaining migration work is strict Sley-written semantic parity.
 
 ## Command parity map (from `llms.txt`, prioritized)
 1. `sley check --json <file-or-project>`
@@ -50,6 +53,8 @@ stable while removing forbidden foreign-language implementation files.
 - `sley doctor --json` and `sley ast --json` return structured responses on a small public fixture set.
 - CLI metadata and docs remain aligned with new behavior.
 - `make v1` passes without Cargo, Rust, Node, npm, or tree-sitter.
+- `bin/sley self-hosting-status --json` reports `strict_self_hosted: false`
+  until execution from Sley source is complete.
 
 ## Enforcement
 - No foreign-language files: keep this as the release-blocking invariant before advancing.

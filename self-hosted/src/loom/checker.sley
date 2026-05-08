@@ -1,0 +1,48 @@
+module loom.checker
+
+export type Diagnostic = {
+  slot id: Text
+  slot severity: Text
+  slot message: Text
+  slot node: Text
+}
+
+export task unknown_identifier_id -> Text {
+  return "UNKNOWN_IDENTIFIER"
+}
+
+export task diagnostic_status -> Text {
+  take error_count: Int
+
+  if error_count > 0 {
+    return "error"
+  }
+  return "ok"
+}
+
+export task is_builtin_type -> Bool {
+  take name: Text
+
+  if name == "Int" {
+    return true
+  }
+  if name == "Text" {
+    return true
+  }
+  if name == "Bool" {
+    return true
+  }
+  if name == "Unit" {
+    return true
+  }
+  if name == "Result" {
+    return true
+  }
+  if name == "Error" {
+    return true
+  }
+  if name == "Gate" {
+    return true
+  }
+  return false
+}

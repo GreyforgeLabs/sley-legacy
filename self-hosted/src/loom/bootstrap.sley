@@ -1,0 +1,50 @@
+module loom.bootstrap
+
+import loom.lint as lint
+
+export task implementation_version -> Text {
+  return "sley 0.3.0-self-hosting-stage2-source"
+}
+
+export task implementation_stage -> Text {
+  return "self-hosting-stage2-source"
+}
+
+export task strict_self_hosted -> Bool {
+  return false
+}
+
+export task owned_bootstrap_values -> List<Text> {
+  return [
+    "implementation_version",
+    "implementation_stage",
+    "default_lint_rules"
+  ]
+}
+
+export task source_modules -> List<Text> {
+  return [
+    "loom.bootstrap",
+    "loom.parser",
+    "loom.checker",
+    "loom.lint",
+    "loom.runtime",
+    "loom.reports"
+  ]
+}
+
+export task remaining_strict_self_hosting_blockers -> List<Text> {
+  return [
+    "execute parser semantics from Sley source",
+    "execute checker semantics from Sley source",
+    "execute runtime semantics from Sley source",
+    "replace shell JSON shaping with Sley-owned report builders",
+    "prove parity against public fixtures and command manifests"
+  ]
+}
+
+task smoke -> Int {
+  bind rules = call lint.default_lint_rules()
+
+  return len(rules)
+}

@@ -16,13 +16,16 @@ provide a single place for current migration assumptions.
   - `scripts/check-self-hosted-code.sh`
   - `scripts/self-hosted-test.sh`
   - `bin/sley`
+  - `self-hosted/src/loom/`
 
 ## Immediate stance
 
 Use the migration gates below as the canonical status:
 - `./scripts/check-self-hosted-code.sh` currently passes (no tracked foreign extensions found).
 - `make v1` is the current local proof gate for stage-1 command/runtime envelopes.
-- Remaining migration work is strict Sley-written semantic/runtime parity, not source-language cleanup.
+- `bin/sley self-hosting-status --json` is the current source-ownership report.
+- Remaining migration work is strict Sley-written semantic/runtime execution
+  parity, not source-language cleanup.
 
 ## Required direction
 

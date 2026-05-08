@@ -7,6 +7,10 @@
 - C headers: 0 (`*.h`)
 - JavaScript, TypeScript, and Python implementation files: 0.
 - Runnable stage-1 CLI/tooling bootstrap: `bin/sley` plus companion wrappers.
+- Sley-owned stage-2 semantic source modules: `self-hosted/src/loom/*.sley`.
+- Bootstrap values now read from Sley source:
+  - `implementation_version`
+  - `default_lint_rules`
 - Current local proof gate: `make v1`.
 
 ## Required target state
@@ -24,7 +28,8 @@
 ## Current blocker
 
 The active Rust implementation and Tree-sitter C artifacts are removed from
-tracked sources. Stage-1 command envelopes are runnable, but strict
+tracked sources. Stage-1 command envelopes are runnable and stage-2 Sley source
+modules now own initial bootstrap metadata/rule inventory, but strict
 compiler-written-in-Sley parity is not complete.
 
 ## Migration guardrails
@@ -68,6 +73,8 @@ forbidden extension is present.
 - [x] Stage-1 CLI command compatibility achieved
 - [x] Stage-1 deterministic runtime envelope bootstrapped
 - [x] Stage-1 tooling and schema smoke validation added
+- [x] Stage-2 Sley-owned semantic source modules added
+- [x] Bootstrap version and lint-rule inventory read from Sley source
 - [x] Rust/C/JS/TS/Python foreign implementation files fully removed
 - [x] `./scripts/check-self-hosted-code.sh` exits cleanly
 - [x] README and llms command surfaces updated away from Cargo/Node claims

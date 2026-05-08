@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.self_hosting.status.v0",
+  "title": "Sley Self-Hosting Status v0",
+  "type": "object",
+  "required": [
+    "schema",
+    "status",
+    "strict_self_hosted",
+    "source_root",
+    "semantic_source_count",
+    "source_modules",
+    "bootstrap_owned_by_sley",
+    "blockers"
+  ],
+  "properties": {
+    "schema": { "const": "sley.self_hosting.status.v0" },
+    "status": { "enum": ["bootstrap", "strict"] },
+    "strict_self_hosted": { "type": "boolean" },
+    "source_root": { "type": "string", "minLength": 1 },
+    "semantic_source_count": { "type": "integer", "minimum": 0 },
+    "source_modules": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "bootstrap_owned_by_sley": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "blockers": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "additionalProperties": false
+}

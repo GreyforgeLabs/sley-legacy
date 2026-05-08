@@ -43,6 +43,7 @@ Current counts:
 | `sley.run.report.v0` | `sley run --json` | Deterministic runtime result. |
 | `sley.verify.report.v0` | `sley verify --json` | Pre-deploy verification report. |
 | `sley.doctor.report.v0` | `sley doctor --json` | Agent-facing readiness summary. |
+| `sley.self_hosting.status.v0` | `sley self-hosting-status --json` | Self-hosting source ownership and strict-parity blocker summary. |
 
 ## Trace, ZJX, And Deploy Roots
 

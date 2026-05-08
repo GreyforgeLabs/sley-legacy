@@ -1,0 +1,26 @@
+{
+  "schema": "sley.self_hosting.status.v0",
+  "status": "bootstrap",
+  "strict_self_hosted": false,
+  "source_root": "self-hosted/src",
+  "semantic_source_count": 6,
+  "source_modules": [
+    "loom.bootstrap",
+    "loom.checker",
+    "loom.lint",
+    "loom.parser",
+    "loom.reports",
+    "loom.runtime"
+  ],
+  "bootstrap_owned_by_sley": [
+    "implementation_version",
+    "default_lint_rules"
+  ],
+  "blockers": [
+    "execute parser semantics from Sley source",
+    "execute checker semantics from Sley source",
+    "execute runtime semantics from Sley source",
+    "replace shell JSON shaping with Sley-owned report builders",
+    "prove parity against public fixtures and command manifests"
+  ]
+}

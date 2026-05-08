@@ -1,0 +1,82 @@
+module loom.lint
+
+export task default_lint_rules -> List<Text> {
+  return [
+    "unused_private_task",
+    "unreachable_private_task",
+    "unused_declared_effect",
+    "unused_import",
+    "duplicate_import",
+    "unused_take",
+    "unused_private_type",
+    "unused_private_effect",
+    "raw_host_adapter",
+    "missing_module_declaration",
+    "unchecked_result",
+    "unchecked_result_binding",
+    "unused_effectful_binding",
+    "unqualified_imported_call",
+    "unused_pure_binding",
+    "unused_pure_expression_statement",
+    "mutable_binding_never_set",
+    "constant_if_expression",
+    "constant_if_statement",
+    "constant_false_if_statement",
+    "constant_false_while_statement",
+    "constant_comparison_expression",
+    "constant_arithmetic_expression",
+    "constant_text_concatenation_expression",
+    "constant_list_index_expression",
+    "constant_map_index_expression",
+    "constant_record_field_access_expression",
+    "constant_len_expression",
+    "constant_not_expression",
+    "empty_if_statement",
+    "empty_else_statement",
+    "empty_for_statement",
+    "empty_forge_statement",
+    "identity_binary_expression",
+    "redundant_boolean_comparison",
+    "absorbing_boolean_expression",
+    "idempotent_boolean_expression",
+    "self_comparison_expression",
+    "double_negation_expression",
+    "negated_comparison_expression",
+    "redundant_boolean_if_expression",
+    "redundant_boolean_if_statement",
+    "same_branch_if_expression",
+    "same_branch_if_statement",
+    "unreachable_statement",
+    "absorbing_arithmetic_expression",
+    "self_assignment_statement",
+    "overwritten_set_statement",
+    "redundant_initial_set_statement",
+    "empty_while_statement",
+    "constant_boolean_comparison_expression"
+  ]
+}
+
+export task lint_status -> Text {
+  take finding_count: Int
+
+  if finding_count > 0 {
+    return "findings"
+  }
+  return "ok"
+}
+
+export task empty_for_statement_id -> Text {
+  return "EMPTY_FOR_STATEMENT"
+}
+
+export task empty_while_statement_id -> Text {
+  return "EMPTY_WHILE_STATEMENT"
+}
+
+export task empty_forge_statement_id -> Text {
+  return "EMPTY_FORGE_STATEMENT"
+}
+
+export task empty_if_statement_id -> Text {
+  return "EMPTY_IF_STATEMENT"
+}
