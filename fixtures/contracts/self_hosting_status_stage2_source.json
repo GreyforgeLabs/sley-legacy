@@ -19,7 +19,8 @@
     "diagnostic_ids",
     "runtime_seed_values",
     "parser_expression_classifiers",
-    "bootstrap_smoke_runtime"
+    "bootstrap_smoke_runtime",
+    "checker_diagnostic_status"
   ],
   "blockers": [
     "execute parser semantics from Sley source",
