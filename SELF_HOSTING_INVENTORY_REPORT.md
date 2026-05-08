@@ -1,6 +1,6 @@
 # Self-Hosting Migration Inventory
 
-Generated: 2026-05-08T18:11:28Z
+Generated: 2026-05-08T18:13:04Z
 
 ## Foreign-language surface scan
 
@@ -70,29 +70,30 @@ Generated: 2026-05-08T18:11:28Z
 18. `sley graft --json --dry-run <file> <graft.json>`
 19. `sley format <file>`
 20. `sley run --json <file-or-project>`
-21. `sley self-hosting-status --json`
-22. `sley-ci lint --json --deny-warnings <file-or-project>`
-23. `sley-ci doctor --json --deny-warnings <file-or-project>`
-24. `sley-ci plan --json --graft-templates <file-or-project>`
-25. `sley-ci run --json <file-or-project>`
-26. `sley-ci deploy --json --dry-run --artifacts-dir .sley/ci-deploy <file-or-project>`
-27. `sley-ci corpus --json fixtures/corpus/manifest.json`
-28. `sley-ci examples --json examples`
-29. `sley-ci smoke --json fixtures/ci_smoke_probe/manifest.json`
-30. `sley-conformance report --json`
-31. `sley-conformance coverage --json --require-tag <tag>`
-32. `sley-contract inventory --json`
-33. `sley-contract check-fixtures fixtures/contracts --schemas docs/schemas --json`
-34. `sley-contract validate --schema sley.conformance.manifest.v0 fixtures/corpus/manifest.json --schemas docs/schemas --json`
-35. `sley-contract inspect-deploy-artifacts .sley/deploy --schemas docs/schemas --json`
-36. `sley-lsp --validate-editor-shims`
-37. `sley-workbench --json --html .sley/workbench.html <file-or-project>`
-38. `sley-docgen reference --json --markdown .sley/reference.md <file-or-project>`
-39. `sley-agent-bench run --json`
-40. `sley-migrate report --json --schemas docs/schemas --fixtures fixtures/contracts <file-or-project>`
-41. `sley-sandbox-runner run --json <manifest.json>`
-42. `sley-zjx inspect --json <zjx-envelope.json>`
-43. `sley-zjx verify-digest --json <zjx-envelope.json>`
+21. `sley run --json self-hosted`
+22. `sley self-hosting-status --json`
+23. `sley-ci lint --json --deny-warnings <file-or-project>`
+24. `sley-ci doctor --json --deny-warnings <file-or-project>`
+25. `sley-ci plan --json --graft-templates <file-or-project>`
+26. `sley-ci run --json <file-or-project>`
+27. `sley-ci deploy --json --dry-run --artifacts-dir .sley/ci-deploy <file-or-project>`
+28. `sley-ci corpus --json fixtures/corpus/manifest.json`
+29. `sley-ci examples --json examples`
+30. `sley-ci smoke --json fixtures/ci_smoke_probe/manifest.json`
+31. `sley-conformance report --json`
+32. `sley-conformance coverage --json --require-tag <tag>`
+33. `sley-contract inventory --json`
+34. `sley-contract check-fixtures fixtures/contracts --schemas docs/schemas --json`
+35. `sley-contract validate --schema sley.conformance.manifest.v0 fixtures/corpus/manifest.json --schemas docs/schemas --json`
+36. `sley-contract inspect-deploy-artifacts .sley/deploy --schemas docs/schemas --json`
+37. `sley-lsp --validate-editor-shims`
+38. `sley-workbench --json --html .sley/workbench.html <file-or-project>`
+39. `sley-docgen reference --json --markdown .sley/reference.md <file-or-project>`
+40. `sley-agent-bench run --json`
+41. `sley-migrate report --json --schemas docs/schemas --fixtures fixtures/contracts <file-or-project>`
+42. `sley-sandbox-runner run --json <manifest.json>`
+43. `sley-zjx inspect --json <zjx-envelope.json>`
+44. `sley-zjx verify-digest --json <zjx-envelope.json>`
 
 ## Make targets in Makefile
 

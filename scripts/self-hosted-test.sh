@@ -21,7 +21,7 @@ bin/sley --help >/dev/null
 bin/sley --version | grep -q 'self-hosting-stage2-source'
 
 bin/sley self-hosting-status --json \
-  | json_field '.schema == "sley.self_hosting.status.v0" and .status == "bootstrap" and .strict_self_hosted == false and .semantic_source_count >= 6 and (.bootstrap_owned_by_sley | index("implementation_version")) and (.bootstrap_owned_by_sley | index("default_lint_rules")) and (.bootstrap_owned_by_sley | index("core_report_schema_ids")) and (.bootstrap_owned_by_sley | index("diagnostic_ids")) and (.bootstrap_owned_by_sley | index("runtime_seed_values")) and (.bootstrap_owned_by_sley | index("parser_expression_classifiers"))'
+  | json_field '.schema == "sley.self_hosting.status.v0" and .status == "bootstrap" and .strict_self_hosted == false and .semantic_source_count >= 6 and (.bootstrap_owned_by_sley | index("implementation_version")) and (.bootstrap_owned_by_sley | index("default_lint_rules")) and (.bootstrap_owned_by_sley | index("core_report_schema_ids")) and (.bootstrap_owned_by_sley | index("diagnostic_ids")) and (.bootstrap_owned_by_sley | index("runtime_seed_values")) and (.bootstrap_owned_by_sley | index("parser_expression_classifiers")) and (.bootstrap_owned_by_sley | index("bootstrap_smoke_runtime"))'
 
 bin/sley ast --json examples/hello.sley \
   | json_field '.schema == "sley.ast.program.v0" and .module == "app.hello" and .tasks[0].name == "main" and .tasks[0].body.statements[0].expr.expr_kind == "StringLiteral"'
@@ -48,6 +48,9 @@ bin/sley lint --json examples/empty_for_statement.sley \
 
 bin/sley run --json examples/hello.sley \
   | json_field '.schema == "sley.run.report.v0" and .value.kind == "Text" and .value.value == "hello sley"'
+
+bin/sley run --json self-hosted \
+  | json_field '.schema == "sley.run.report.v0" and .value.kind == "Int" and .value.value == 51'
 
 bin/sley run --json --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "profile ready" --cap ModelCall --model-output deploy-plan "plan approved" --cap Deploy --deploy-result staging staged fixtures/corpus/accepted/agent_deploy_pipeline.sley \
   | json_field '.schema == "sley.run.report.v0" and .value.kind == "Ok" and .value.value.value == "profile ready | plan approved | staged"'
