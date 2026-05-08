@@ -24,7 +24,8 @@ Current state after remediation:
 - parser statement and binding kind names are now read from `loom.parser`;
 - checker diagnostic status and unknown-identifier message construction are now
   read from `loom.checker`;
-- lint finding statuses, messages, and hints are now read from `loom.lint`;
+- lint report status task execution plus finding statuses, messages, and hints
+  are now read from `loom.lint`;
 - runtime report statuses, value-kind tags, and current dispatch probes are now
   read from `loom.runtime`;
 - `sley run --json self-hosted` now executes the `loom.bootstrap.smoke` source
