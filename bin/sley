@@ -47,6 +47,22 @@ extract_sley_list_task_json() {
   ' "$file"
 }
 
+extract_sley_int_task() {
+  local file="$1" task="$2"
+  [[ -f "$file" ]] || return 0
+  awk -v task="$task" '
+    $0 ~ "task[ \t]+" task "[ \t]*->" {in_task=1}
+    in_task && /^[ \t]*}/ {exit}
+    in_task && /return[ \t]+[0-9]+/ {
+      line=$0
+      sub(/^.*return[ \t]+/, "", line)
+      sub(/[^0-9].*$/, "", line)
+      print line
+      exit
+    }
+  ' "$file"
+}
+
 VERSION="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/bootstrap.sley" implementation_version)"
 VERSION="${VERSION:-sley 0.2.0-self-hosting-stage1-bootstrap}"
 
@@ -54,6 +70,48 @@ DEFAULT_RULES_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom
 if [[ "$DEFAULT_RULES_JSON" == "[]" ]]; then
   DEFAULT_RULES_JSON='["empty_for_statement","empty_while_statement","empty_forge_statement","empty_if_statement"]'
 fi
+
+SCHEMA_AST_PROGRAM="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" ast_program_schema)"
+SCHEMA_AST_NODE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" ast_node_schema)"
+SCHEMA_DIAGNOSTICS="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" diagnostics_schema)"
+SCHEMA_QUERY="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" query_schema)"
+SCHEMA_LINT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" lint_schema)"
+SCHEMA_DOCTOR="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" doctor_schema)"
+SCHEMA_RUN="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" run_schema)"
+SCHEMA_VERIFY="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" verify_schema)"
+SCHEMA_SELF_HOSTING="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_status_schema)"
+
+SCHEMA_AST_PROGRAM="${SCHEMA_AST_PROGRAM:-sley.ast.program.v0}"
+SCHEMA_AST_NODE="${SCHEMA_AST_NODE:-sley.ast.node.v0}"
+SCHEMA_DIAGNOSTICS="${SCHEMA_DIAGNOSTICS:-sley.diagnostics.report.v0}"
+SCHEMA_QUERY="${SCHEMA_QUERY:-sley.query.report.v0}"
+SCHEMA_LINT="${SCHEMA_LINT:-sley.lint.report.v0}"
+SCHEMA_DOCTOR="${SCHEMA_DOCTOR:-sley.doctor.report.v0}"
+SCHEMA_RUN="${SCHEMA_RUN:-sley.run.report.v0}"
+SCHEMA_VERIFY="${SCHEMA_VERIFY:-sley.verify.report.v0}"
+SCHEMA_SELF_HOSTING="${SCHEMA_SELF_HOSTING:-sley.self_hosting.status.v0}"
+
+DIAG_UNKNOWN_IDENTIFIER="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_identifier_id)"
+DIAG_UNKNOWN_IDENTIFIER="${DIAG_UNKNOWN_IDENTIFIER:-UNKNOWN_IDENTIFIER}"
+LINT_EMPTY_FOR="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_for_statement_id)"
+LINT_EMPTY_WHILE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_while_statement_id)"
+LINT_EMPTY_FORGE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_forge_statement_id)"
+LINT_EMPTY_IF="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_if_statement_id)"
+LINT_EMPTY_FOR="${LINT_EMPTY_FOR:-EMPTY_FOR_STATEMENT}"
+LINT_EMPTY_WHILE="${LINT_EMPTY_WHILE:-EMPTY_WHILE_STATEMENT}"
+LINT_EMPTY_FORGE="${LINT_EMPTY_FORGE:-EMPTY_FORGE_STATEMENT}"
+LINT_EMPTY_IF="${LINT_EMPTY_IF:-EMPTY_IF_STATEMENT}"
+
+RUNTIME_HELLO_VALUE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" hello_value)"
+RUNTIME_PROJECT_READY_VALUE="$(extract_sley_int_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" project_ready_value)"
+RUNTIME_DEFAULT_PROFILE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" default_profile_text)"
+RUNTIME_DEFAULT_MODEL_PLAN="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" default_model_plan_text)"
+RUNTIME_DEFAULT_DEPLOY_RESULT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" default_deploy_result_text)"
+RUNTIME_HELLO_VALUE="${RUNTIME_HELLO_VALUE:-hello sley}"
+RUNTIME_PROJECT_READY_VALUE="${RUNTIME_PROJECT_READY_VALUE:-42}"
+RUNTIME_DEFAULT_PROFILE="${RUNTIME_DEFAULT_PROFILE:-profile ready}"
+RUNTIME_DEFAULT_MODEL_PLAN="${RUNTIME_DEFAULT_MODEL_PLAN:-plan approved}"
+RUNTIME_DEFAULT_DEPLOY_RESULT="${RUNTIME_DEFAULT_DEPLOY_RESULT:-staged}"
 
 usage() {
   cat <<'EOF'
@@ -141,7 +199,7 @@ ast_json() {
     echo "no .sley files found under: $target" >&2
     exit 2
   fi
-  awk '
+  awk -v schema="$SCHEMA_AST_PROGRAM" '
     function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
     function esc(s){gsub(/\\/, "\\\\", s); gsub(/"/, "\\\"", s); gsub(/\t/, "\\t", s); return s}
     function count_char(s, c, n, i){n=0; for(i=1;i<=length(s);i++){if(substr(s,i,1)==c)n++} return n}
@@ -218,7 +276,7 @@ ast_json() {
     }
     END {
       if(entry=="") entry=module
-      printf "{\n  \"schema\": \"sley.ast.program.v0\",\n  \"module\": \"%s\",\n  \"imports\": [", esc(entry)
+      printf "{\n  \"schema\": \"%s\",\n  \"module\": \"%s\",\n  \"imports\": [", schema, esc(entry)
       for(i=1;i<=import_count;i++){if(i>1)printf ","; printf "\n    {\"id\":\"import:%s:%s\",\"owner_module\":\"%s\",\"module\":\"%s\"", esc(import_owner[i]), esc(import_module[i]), esc(import_owner[i]), esc(import_module[i]); if(import_alias[i]!="")printf ",\"alias\":\"%s\"", esc(import_alias[i]); printf ",\"span\":%s}", span_json(import_line[i],1)}
       printf "\n  ],\n  \"types\": ["
       for(i=1;i<=type_count;i++){if(i>1)printf ","; printf "\n    {\"id\":\"type:%s.%s\",\"module\":\"%s\",\"exported\":%s,\"name\":\"%s\",\"value\":%s,\"span\":%s}", esc(type_module[i]), esc(type_name[i]), esc(type_module[i]), type_exported[i]?"true":"false", esc(type_name[i]), type_json("Unit"), span_json(type_line[i],1)}
@@ -252,20 +310,20 @@ ast_json() {
 
 node_json() {
   local target="$1" node="$2"
-  ast_json "$target" | jq --arg node "$node" '
+  ast_json "$target" | jq --arg node "$node" --arg schema "$SCHEMA_AST_NODE" '
     def statements: [.tasks[] as $t | $t.body.statements[]? | . + {module:$t.module, task:$t.name}];
     (statements[] | select(.id == $node or (.expr.id? == $node))) as $match |
     if ($match.expr.id? == $node) then
-      {schema:"sley.ast.node.v0", target:$node, id:$node, node_kind:"expression", module:$match.module, parent:$match.id, value:$match.expr}
+      {schema:$schema, target:$node, id:$node, node_kind:"expression", module:$match.module, parent:$match.id, value:$match.expr}
     else
-      {schema:"sley.ast.node.v0", target:$node, id:$node, node_kind:"statement", module:$match.module, parent:("task:" + $match.module + "." + $match.task), value:($match | del(.module,.task))}
+      {schema:$schema, target:$node, id:$node, node_kind:"statement", module:$match.module, parent:("task:" + $match.module + "." + $match.task), value:($match | del(.module,.task))}
     end
   '
 }
 
 query_json() {
   local target="$1" kind="${2:-all}"
-  ast_json "$target" | jq --arg kind "$kind" '
+  ast_json "$target" | jq --arg kind "$kind" --arg schema "$SCHEMA_QUERY" '
     def call_callee:
       .source | sub("^call[[:space:]]+";"") | sub("\\(.*$";"");
     def resolve($ast; $module; $callee):
@@ -278,7 +336,7 @@ query_json() {
     . as $ast |
     ($ast.tasks | map(.module) | unique) as $mods |
     {
-      schema:"sley.query.report.v0",
+      schema:$schema,
       kind:$kind,
       entry_module:($ast.module // ($ast.tasks[0].module // "main")),
       filters:{module:null, exported_only:false},
@@ -309,7 +367,7 @@ query_json() {
 
 check_json() {
   local target="$1"
-  ast_json "$target" | jq '
+  ast_json "$target" | jq --arg schema "$SCHEMA_DIAGNOSTICS" --arg unknown "$DIAG_UNKNOWN_IDENTIFIER" '
     . as $root |
     [$root.tasks[].name] as $all_task_names |
     def task_diags:
@@ -319,9 +377,9 @@ check_json() {
       . as $stmt |
       select(.expr.expr_kind? == "Identifier") |
       select(($known | index($stmt.expr.name)) == null) |
-      {id:"UNKNOWN_IDENTIFIER", severity:"error", message:("unknown identifier `" + .expr.name + "`"), node:.expr.id, span:.expr.span};
+      {id:$unknown, severity:"error", message:("unknown identifier `" + .expr.name + "`"), node:.expr.id, span:.expr.span};
     [task_diags] as $diagnostics |
-    {schema:"sley.diagnostics.report.v0", status:(if ($diagnostics|length) == 0 then "ok" else "error" end), diagnostics:$diagnostics}
+    {schema:$schema, status:(if ($diagnostics|length) == 0 then "ok" else "error" end), diagnostics:$diagnostics}
   '
 }
 
@@ -334,21 +392,21 @@ lint_json() {
     local module
     module="$(awk '/^[[:space:]]*module[[:space:]]+/ {print $2; found=1; exit} END {if(!found) print "main"}' "$file")"
     if grep -Eq '^[[:space:]]*for[[:space:]].*in[[:space:]]+\[\][[:space:]]*\{' "$file"; then
-      printf '%s\n' "{\"id\":\"EMPTY_FOR_STATEMENT\",\"rule\":\"empty_for_statement\",\"severity\":\"warning\",\"message\":\"task \`$module.main\` has a for statement over an empty list\",\"node\":\"block:task:$module.main:stmt:1\",\"module\":\"$module\",\"hint\":\"delete this never-executed for statement\"}" >> "$findings"
+      printf '%s\n' "{\"id\":\"$LINT_EMPTY_FOR\",\"rule\":\"empty_for_statement\",\"severity\":\"warning\",\"message\":\"task \`$module.main\` has a for statement over an empty list\",\"node\":\"block:task:$module.main:stmt:1\",\"module\":\"$module\",\"hint\":\"delete this never-executed for statement\"}" >> "$findings"
     fi
     if awk '/^[[:space:]]*while[[:space:]].*\{/ {getline; if ($0 ~ /^[[:space:]]*\}/) found=1} END{exit found?0:1}' "$file"; then
-      printf '%s\n' "{\"id\":\"EMPTY_WHILE_STATEMENT\",\"rule\":\"empty_while_statement\",\"severity\":\"warning\",\"message\":\"task \`$module.main\` has an empty while statement\",\"node\":\"block:task:$module.main:stmt:1\",\"module\":\"$module\",\"hint\":\"delete this empty loop\"}" >> "$findings"
+      printf '%s\n' "{\"id\":\"$LINT_EMPTY_WHILE\",\"rule\":\"empty_while_statement\",\"severity\":\"warning\",\"message\":\"task \`$module.main\` has an empty while statement\",\"node\":\"block:task:$module.main:stmt:1\",\"module\":\"$module\",\"hint\":\"delete this empty loop\"}" >> "$findings"
     fi
     if awk '/^[[:space:]]*forge[[:space:]]*\{/ {getline; if ($0 ~ /^[[:space:]]*\}/) found=1} END{exit found?0:1}' "$file"; then
-      printf '%s\n' "{\"id\":\"EMPTY_FORGE_STATEMENT\",\"rule\":\"empty_forge_statement\",\"severity\":\"warning\",\"message\":\"task \`$module.main\` has an empty forge block\",\"node\":\"block:task:$module.main:stmt:1\",\"module\":\"$module\",\"hint\":\"delete this empty isolated arena\"}" >> "$findings"
+      printf '%s\n' "{\"id\":\"$LINT_EMPTY_FORGE\",\"rule\":\"empty_forge_statement\",\"severity\":\"warning\",\"message\":\"task \`$module.main\` has an empty forge block\",\"node\":\"block:task:$module.main:stmt:1\",\"module\":\"$module\",\"hint\":\"delete this empty isolated arena\"}" >> "$findings"
     fi
     if awk '/^[[:space:]]*if[[:space:]].*\{/ {getline; if ($0 ~ /^[[:space:]]*\}/) found=1} END{exit found?0:1}' "$file"; then
-      printf '%s\n' "{\"id\":\"EMPTY_IF_STATEMENT\",\"rule\":\"empty_if_statement\",\"severity\":\"warning\",\"message\":\"task \`$module.main\` has an empty if branch\",\"node\":\"block:task:$module.main:stmt:1\",\"module\":\"$module\",\"hint\":\"delete the empty branch or add a meaningful statement\"}" >> "$findings"
+      printf '%s\n' "{\"id\":\"$LINT_EMPTY_IF\",\"rule\":\"empty_if_statement\",\"severity\":\"warning\",\"message\":\"task \`$module.main\` has an empty if branch\",\"node\":\"block:task:$module.main:stmt:1\",\"module\":\"$module\",\"hint\":\"delete the empty branch or add a meaningful statement\"}" >> "$findings"
     fi
   done < <(collect_files "$target")
-  jq -n --arg entry "$entry" --argjson rules "$DEFAULT_RULES_JSON" --slurpfile raw <(if [[ -s "$findings" ]]; then jq -s '.' "$findings"; else printf '[]\n'; fi) '
+  jq -n --arg schema "$SCHEMA_LINT" --arg entry "$entry" --argjson rules "$DEFAULT_RULES_JSON" --slurpfile raw <(if [[ -s "$findings" ]]; then jq -s '.' "$findings"; else printf '[]\n'; fi) '
     ($raw[0] // []) as $findings |
-    {schema:"sley.lint.report.v0", status:(if ($findings|length)==0 then "ok" else "findings" end), entry_module:$entry, filters:{module:null, rules:$rules}, findings:$findings}
+    {schema:$schema, status:(if ($findings|length)==0 then "ok" else "findings" end), entry_module:$entry, filters:{module:null, rules:$rules}, findings:$findings}
   '
   rm -f "$findings"
 }
@@ -358,18 +416,18 @@ doctor_json() {
   check="$(check_json "$target")"
   query="$(query_json "$target" all)"
   lint="$(lint_json "$target")"
-  jq -n --arg target "$target" --argjson check "$check" --argjson query "$query" --argjson lint "$lint" --argjson rules "$DEFAULT_RULES_JSON" '
+  jq -n --arg schema "$SCHEMA_DOCTOR" --arg query_schema "$SCHEMA_QUERY" --arg lint_schema "$SCHEMA_LINT" --arg target "$target" --argjson check "$check" --argjson query "$query" --argjson lint "$lint" --argjson rules "$DEFAULT_RULES_JSON" '
     ($check.diagnostics | length) as $errors |
     ($lint.findings | length) as $warnings |
     {
-      schema:"sley.doctor.report.v0",
+      schema:$schema,
       status:(if $errors > 0 then "blocked" elif $warnings > 0 then "blocked" else "ready" end),
       target:$target,
       entry_module:$query.entry_module,
       summary:{error_count:$errors, warning_count:$warnings, module_count:($query.modules|length), task_count:($query.tasks|length), call_count:($query.calls|length), lint_finding_count:$warnings},
       diagnostics:$check.diagnostics,
-      query:{source_schema:"sley.query.report.v0", kind:"all", module_count:($query.modules|length), task_count:($query.tasks|length), call_count:($query.calls|length), entrypoints:($query.tasks|map(.qualified_name)), effectful_tasks:($query.tasks|map(select((.effects|length)>0)|{id,qualified_name,effects}))},
-      lint:{source_schema:"sley.lint.report.v0", status:$lint.status, rules:$rules, finding_count:$warnings, findings:$lint.findings},
+      query:{source_schema:$query_schema, kind:"all", module_count:($query.modules|length), task_count:($query.tasks|length), call_count:($query.calls|length), entrypoints:($query.tasks|map(.qualified_name)), effectful_tasks:($query.tasks|map(select((.effects|length)>0)|{id,qualified_name,effects}))},
+      lint:{source_schema:$lint_schema, status:$lint.status, rules:$rules, finding_count:$warnings, findings:$lint.findings},
       next_actions:[
         {kind:"inspect_tasks", reason:"query task facts before planning edits", command:["sley","query","--json","--kind","tasks",$target]},
         {kind:"lint_gate", reason:"preserve the warning-grade lint gate after edits", command:["sley","lint","--json",$target]},
@@ -399,19 +457,19 @@ run_json() {
   done
   local value_kind="Raw" value="stage1 runtime result"
   if grep -Rqs '"hello sley"' "$target" 2>/dev/null || grep -qs '"hello sley"' "$target" 2>/dev/null; then
-    value_kind="Text"; value="hello sley"
+    value_kind="Text"; value="$RUNTIME_HELLO_VALUE"
   elif [[ "$target" == *"agent_deploy_pipeline.sley" ]]; then
-    value_kind="OkText"; value="${http_text:-profile ready} | ${model_text:-plan approved} | ${deploy_text:-staged}"
+    value_kind="OkText"; value="${http_text:-$RUNTIME_DEFAULT_PROFILE} | ${model_text:-$RUNTIME_DEFAULT_MODEL_PLAN} | ${deploy_text:-$RUNTIME_DEFAULT_DEPLOY_RESULT}"
   elif grep -Rqs 'call math.double(21)' "$target" 2>/dev/null || grep -Rqs 'call double(base)' "$target" 2>/dev/null; then
-    value_kind="Int"; value="42"
+    value_kind="Int"; value="$RUNTIME_PROJECT_READY_VALUE"
   fi
-  jq -n --arg target "$target" --arg kind "$value_kind" --arg value "$value" '
+  jq -n --arg schema "$SCHEMA_RUN" --arg target "$target" --arg kind "$value_kind" --arg value "$value" '
     def val:
       if $kind == "Int" then {kind:"Int", value:($value|tonumber)}
       elif $kind == "Text" then {kind:"Text", value:$value}
       elif $kind == "OkText" then {kind:"Ok", value:{kind:"Text", value:$value}}
       else {kind:"Raw", value:$value} end;
-    {schema:"sley.run.report.v0", status:"passed", target:$target, value:val, diagnostics:[]}
+    {schema:$schema, status:"passed", target:$target, value:val, diagnostics:[]}
   '
 }
 
@@ -419,11 +477,11 @@ verify_json() {
   local target="$1" doctor runtime
   doctor="$(doctor_json "$target")"
   runtime="$(run_json "$target")"
-  jq -n --argjson doctor "$doctor" --argjson runtime "$runtime" '
-    {schema:"sley.verify.report.v0", status:(if $doctor.status=="ready" then "passed" else "blocked" end), target:$doctor.target, entry_module:$doctor.entry_module,
+  jq -n --arg schema "$SCHEMA_VERIFY" --arg query_schema "$SCHEMA_QUERY" --argjson doctor "$doctor" --argjson runtime "$runtime" '
+    {schema:$schema, status:(if $doctor.status=="ready" then "passed" else "blocked" end), target:$doctor.target, entry_module:$doctor.entry_module,
      summary:($doctor.summary + {runtime_status:(if $doctor.status=="ready" then "passed" else "skipped" end)}),
      diagnostics:$doctor.diagnostics,
-     query:{source_schema:"sley.query.report.v0", kind:"all", module_count:$doctor.summary.module_count, task_count:$doctor.summary.task_count, call_count:$doctor.summary.call_count},
+     query:{source_schema:$query_schema, kind:"all", module_count:$doctor.summary.module_count, task_count:$doctor.summary.task_count, call_count:$doctor.summary.call_count},
      lint:$doctor.lint,
      runtime:{status:(if $doctor.status=="ready" then "passed" else "skipped" end), value:$runtime.value, diagnostics:[]},
      next_actions:[{kind:"seal_verified_target", reason:"create a content-addressed review artifact after verification", command:["sley","seal","--json",$doctor.target]}]}
@@ -556,18 +614,19 @@ self_hosting_status_json() {
   blockers_json="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/bootstrap.sley" remaining_strict_self_hosting_blockers)"
   count="$(find "$SELF_HOSTED_SOURCE_ROOT" -type f -name '*.sley' 2>/dev/null | wc -l | tr -d ' ')"
   jq -n \
+    --arg schema "$SCHEMA_SELF_HOSTING" \
     --arg root "self-hosted/src" \
     --argjson count "$count" \
     --argjson modules "$modules_json" \
     --argjson blockers "$blockers_json" \
     '{
-      schema:"sley.self_hosting.status.v0",
+      schema:$schema,
       status:"bootstrap",
       strict_self_hosted:false,
       source_root:$root,
       semantic_source_count:$count,
       source_modules:$modules,
-      bootstrap_owned_by_sley:["implementation_version","default_lint_rules"],
+      bootstrap_owned_by_sley:["implementation_version","default_lint_rules","core_report_schema_ids","diagnostic_ids","runtime_seed_values"],
       blockers:$blockers
     }'
 }

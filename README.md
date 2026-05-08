@@ -52,8 +52,9 @@ The repo currently proves these claims from a clean checkout:
 
 - No forbidden foreign-language implementation files are present:
   `./scripts/check-self-hosted-code.sh`
-- A runnable `sley` command exists under `bin/` and reads bootstrap version
-  and lint-rule inventory from Sley source:
+- A runnable `sley` command exists under `bin/` and reads bootstrap version,
+  lint-rule inventory, core report schema IDs, diagnostic IDs, and runtime seed
+  values from Sley source:
   `bin/sley --version`
 - Sley-owned stage-2 source modules exist under `self-hosted/src/loom/`:
   `bin/sley self-hosting-status --json`

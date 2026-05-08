@@ -1,6 +1,6 @@
 # Self-Hosting Migration Inventory
 
-Generated: 2026-05-08T18:05:15Z
+Generated: 2026-05-08T18:08:58Z
 
 ## Foreign-language surface scan
 
@@ -186,6 +186,7 @@ docs/schemas/sley.query.report.v0.schema.json
 docs/schemas/sley.run.report.v0.schema.json
 docs/schemas/sley.sandbox.manifest.v0.schema.json
 docs/schemas/sley.sandbox.report.v0.schema.json
+docs/schemas/sley.self_hosting.status.v0.schema.json
 docs/schemas/sley.shadow.report.v0.schema.json
 docs/schemas/sley.symbol_graph.slice.v0.schema.json
 docs/schemas/sley.symbol_graph.v0.schema.json
@@ -392,6 +393,7 @@ fixtures/contracts/query_unknown_project_module.json
 fixtures/contracts/run_hello_ready.json
 fixtures/contracts/sandbox_manifest_agent_pipeline.json
 fixtures/contracts/sandbox_report_agent_pipeline.json
+fixtures/contracts/self_hosting_status_stage2_source.json
 fixtures/contracts/shadow_agent_deploy_pipeline.json
 fixtures/contracts/shadow_agent_project.json
 fixtures/contracts/shadow_agent_project_pipeline_module.json
@@ -537,6 +539,13 @@ llms.txt
 scripts/check-self-hosted-code.sh
 scripts/self-hosted-test.sh
 scripts/self-hosting-inventory.sh
+self-hosted/sley.toml
+self-hosted/src/loom/bootstrap.sley
+self-hosted/src/loom/checker.sley
+self-hosted/src/loom/lint.sley
+self-hosted/src/loom/parser.sley
+self-hosted/src/loom/reports.sley
+self-hosted/src/loom/runtime.sley
 
 ## Notes
 
