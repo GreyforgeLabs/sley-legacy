@@ -1,9 +1,29 @@
 # May 8 Sley Claim Audit
 
-Status: internal engineering audit  
+Status: internal engineering audit, historical baseline for the stage-1 remediation
 Repo audited: `/home/greyforge/sley`  
 Branch: `public` at `8a67018 Add self-hosted CLI make target`  
 External prior-art spot check: `https://github.com/sbhooley/ainativelang`
+
+## 2026-05-08 Remediation Addendum
+
+This audit remains the baseline that identified the overclaim. It is no longer a
+description of the current worktree after the stage-1 remediation.
+
+Current state after remediation:
+
+- forbidden Rust, C/C++, JavaScript, TypeScript, and Python implementation files
+  are absent from the working tree;
+- `bin/sley` and companion wrappers provide a runnable self-hosting stage-1
+  bootstrap command surface;
+- `make v1` passes without Cargo, Rust, Node, npm, or tree-sitter;
+- `make public-release-check` intentionally fails with `PUBLIC_RELEASE_BLOCKED`
+  until strict Sley-written parity, operator approval, and a published proof
+  bundle exist.
+
+The strict claim "Sley's compiler is written in Sley" remains blocked. The
+current accurate claim is that the repo has a foreign-source-free stage-1
+bootstrap with runnable command envelopes and truthful public wording.
 
 ## Verdict
 

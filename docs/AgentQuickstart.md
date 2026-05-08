@@ -5,13 +5,10 @@ agent project with dry-run deploy artifacts. It is local-only: the seeded
 runtime adapters below do not read real secrets, call live networks, call model
 providers, mutate infrastructure, or spend money.
 
-When working from the source checkout before installation, build the binaries
-once and put them on `PATH` for this shell:
+The project is designed for source-repo, release-binary, and shim-based usage.
 
-```bash
-cargo build --bins
-export PATH="$(pwd)/target/debug:$PATH"
-```
+Ensure the `sley` CLI and companion binaries are available on `PATH` for this
+shell (from release packaging or install tooling) before running these commands.
 
 ## 1. Create A Project
 

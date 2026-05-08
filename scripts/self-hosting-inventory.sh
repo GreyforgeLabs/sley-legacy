@@ -16,42 +16,32 @@ OUT="${1:-/tmp/self-hosting-inventory.md}"
   echo "| Extension | Count |"
   echo "|---|---:|"
 
-  for ext in rs c cc cpp h m mm swift; do
-    count=$(find . -type f -name "*.${ext}" \( -path "./.git" -o -path "./target" -o -path "./node_modules" \) -prune -o -type f -name "*.${ext}" -print | wc -l)
+  for ext in rs c cc cpp h hpp m mm swift go java kt cs rb php py js mjs ts tsx; do
+    count=$(find . \( -path "./.git" -o -path "./target" -o -path "./node_modules" \) -prune -o -type f -name "*.${ext}" -print | wc -l)
     echo "| *.${ext} | ${count} |"
   done
 
   echo ""
-  echo "## Rust bins present"
+  echo "## Stage-1 executable surfaces"
   echo ""
-  if [ -d src/bin ]; then
-    for f in src/bin/*.rs; do
-      [ -f "$f" ] || continue
-      name="$(basename "$f" .rs)"
-      echo "- $name"
-    done
+  if [ -d bin ]; then
+    find bin -maxdepth 1 -type f -perm -111 -print | sort | sed 's#^\./##' | sed 's/^/- /'
+  else
+    echo "- bin directory missing"
   fi
 
   echo ""
   echo "## Reported CLI commands in llms.txt"
   echo ""
   if [ -f llms.txt ]; then
-    python - <<'PY'
-import re
-from pathlib import Path
-text = Path('llms.txt').read_text()
-cmds = []
-for line in text.splitlines():
-    line = line.strip()
-    if line.startswith("cargo run"):
-        m = re.search(r"cargo run(?: --bin\s+([\w-]+))?(.*)", line)
-        if m:
-            bin_name = m.group(1) or 'sley'
-            rest = m.group(2).strip()
-            cmds.append(f"{bin_name} {rest}".strip())
-for i, cmd in enumerate(cmds, 1):
-    print(f"{i}. `{cmd}`")
-PY
+    awk '
+      /^[[:space:]]*(sley|sley-ci|sley-conformance|sley-contract|sley-lsp|sley-workbench|sley-docgen|sley-agent-bench|sley-migrate|sley-sandbox-runner|sley-zjx)[[:space:]]/ {
+        line=$0
+        sub(/^[[:space:]]*/, "", line)
+        count++
+        printf "%d. `%s`\n", count, line
+      }
+    ' llms.txt
   else
     echo "- llms.txt missing"
   fi
@@ -66,18 +56,16 @@ PY
   fi
 
   echo ""
-  echo "## Non-Rust/C non-foreign files (tracked)"
+  echo "## Current tracked files"
   echo ""
-  find . -type f \
-    \( -path "./.git" -o -path "./target" -o -path "./node_modules" \) -prune -o \
-    \( -name "*.ts" -o -name "*.js" -o -name "*.mjs" -o -name "*.json" -o -name "*.md" -o -name "*.yaml" -o -name "*.yml" \) -print \
-    | sort
+  git ls-files | sort
 
   echo ""
   echo "## Notes"
   echo ""
   echo "- This report is generated with \`./scripts/self-hosting-inventory.sh\`."
-  echo "- Treat as evidence for phase planning, not proof of runtime parity."
+  echo "- The extension scan is a release blocker, not a full semantic parity proof."
+  echo "- Runtime parity evidence lives in \`scripts/self-hosted-test.sh\` and \`make v1\`."
 } > "$OUT"
 
 echo "Inventory written to $OUT"

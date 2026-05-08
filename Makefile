@@ -1,88 +1,103 @@
 .PHONY: fmt diff-check build-cli build-bins test contracts conformance public-release-check corpus examples smoke lsp editor-shims workbench agent-bench migrate docgen sandbox-runner shadow zjx-tools syntax self-hosted-cli v1
 
 SELF_HOSTED_ARGS := --help
+export PATH := $(CURDIR)/bin:$(PATH)
 
 fmt:
-	cargo fmt -- --check
+	bash -n bin/sley
+	bash -n bin/sley-ci
+	bash -n bin/sley-conformance
+	bash -n bin/sley-contract
+	bash -n scripts/check-self-hosted-code.sh
+	bash -n scripts/self-hosting-inventory.sh
+	bash -n scripts/self-hosted-test.sh
 
 diff-check:
 	git diff --check
 
 build-cli:
-	cargo build --bin sley
+	test -x bin/sley
+	bin/sley --version
 
 build-bins:
-	cargo build --bins
+	test -x bin/sley-ci
+	test -x bin/sley-conformance
+	test -x bin/sley-contract
+	test -x bin/sley-docgen
+	test -x bin/sley-lsp
+	test -x bin/sley-workbench
+	test -x bin/sley-agent-bench
+	test -x bin/sley-migrate
+	test -x bin/sley-sandbox-runner
+	test -x bin/sley-shadow
+	test -x bin/sley-zjx
 
 test:
-	cargo test
+	scripts/self-hosted-test.sh
 
 contracts:
-	cargo run --bin sley-contract -- check-fixtures fixtures/contracts --schemas docs/schemas --json
-	cargo run --bin sley-contract -- validate --schema sley.conformance.manifest.v0 fixtures/corpus/manifest.json --schemas docs/schemas --json
-	cargo run --bin sley-contract -- validate --schema sley.cli_smoke.manifest.v0 fixtures/cli_smokes/manifest.json --schemas docs/schemas --json
-	cargo run --bin sley-contract -- validate --schema sley.cli_smoke.manifest.v0 fixtures/ci_smoke_probe/manifest.json --schemas docs/schemas --json
+	sley-contract check-fixtures fixtures/contracts --schemas docs/schemas --json
+	sley-contract validate --schema sley.conformance.manifest.v0 fixtures/corpus/manifest.json --schemas docs/schemas --json
+	sley-contract validate --schema sley.cli_smoke.manifest.v0 fixtures/cli_smokes/manifest.json --schemas docs/schemas --json
+	sley-contract validate --schema sley.cli_smoke.manifest.v0 fixtures/ci_smoke_probe/manifest.json --schemas docs/schemas --json
 
 conformance:
-	cargo run --bin sley-conformance -- report --json
+	sley-conformance report --json
 
 public-release-check:
-	cargo run --bin sley-conformance -- report --json --require-public-release-ready
+	sley-conformance report --json --require-public-release-ready
 
-corpus: build-cli
-	cargo run --bin sley-ci -- corpus --json fixtures/corpus/manifest.json
+corpus:
+	sley-ci corpus --json fixtures/corpus/manifest.json
 
-examples: build-cli
-	cargo run --bin sley-ci -- examples --json examples
+examples:
+	sley-ci examples --json examples
 
-smoke: build-bins
-	cargo run --bin sley-ci -- smoke --json --repo-root $(CURDIR) fixtures/cli_smokes/manifest.json
-	cargo run --bin sley-ci -- smoke --json --repo-root $(CURDIR) fixtures/ci_smoke_probe/manifest.json
+smoke:
+	sley-ci smoke --json --repo-root $(CURDIR) fixtures/cli_smokes/manifest.json
+	sley-ci smoke --json --repo-root $(CURDIR) fixtures/ci_smoke_probe/manifest.json
 
 lsp:
-	cargo test --test sley_lsp
+	sley-lsp --json
 
 editor-shims:
-	npm --prefix editors/vscode-sley run validate
+	sley-lsp --validate-editor-shims
 
 workbench:
-	cargo run --bin sley-workbench -- --json examples/dead_private_tasks.sley
+	sley-workbench --json examples/dead_private_tasks.sley
 
-agent-bench: build-cli
-	cargo run --bin sley-agent-bench -- run --json
+agent-bench:
+	sley-agent-bench run --json
 
 migrate:
-	cargo run --bin sley-migrate -- report --json examples/raw_host_migration.sley
-	cargo run --bin sley-migrate -- report --json examples/unqualified_import_call_project
-	cargo run --bin sley-migrate -- report --json examples/unchecked_result.sley
-	cargo run --bin sley-migrate -- report --json examples/unchecked_result_binding.sley
+	sley-migrate report --json examples/raw_host_migration.sley
+	sley-migrate report --json examples/unqualified_import_call_project
+	sley-migrate report --json examples/unchecked_result.sley
+	sley-migrate report --json examples/unchecked_result_binding.sley
 
 docgen:
-	cargo run --bin sley-docgen -- reference --json examples/agent_deploy_pipeline.sley
-	cargo run --bin sley-docgen -- reference --json --module agent.pipeline examples/agent_project
+	sley-docgen reference --json examples/agent_deploy_pipeline.sley
+	sley-docgen reference --json --module agent.pipeline examples/agent_project
 
 sandbox-runner:
-	cargo run --bin sley-sandbox-runner -- run --json fixtures/contracts/sandbox_manifest_agent_pipeline.json
+	sley-sandbox-runner run --json fixtures/contracts/sandbox_manifest_agent_pipeline.json
 
 shadow:
-	cargo run --bin sley-shadow -- report --json examples/agent_deploy_pipeline.sley
-	cargo run --bin sley-shadow -- report --json examples/agent_project
-	cargo run --bin sley-shadow -- report --json --module agent.pipeline examples/agent_project
-	cargo run --bin sley-shadow -- report --json --rule unused_private_task examples/unused_private_task.sley
+	sley-shadow report --json examples/agent_deploy_pipeline.sley
+	sley-shadow report --json examples/agent_project
+	sley-shadow report --json --module agent.pipeline examples/agent_project
+	sley-shadow report --json --rule unused_private_task examples/unused_private_task.sley
 
 zjx-tools:
-	cargo run --bin sley-zjx -- inspect --json fixtures/contracts/zjx_hello_ready.json
-	cargo run --bin sley-zjx -- verify-digest --json fixtures/contracts/zjx_hello_ready.json
-	cargo run --bin sley-zjx -- extract-graph --json fixtures/contracts/zjx_hello_ready.json
-	cargo run --bin sley-zjx -- diff-envelope --json fixtures/contracts/zjx_hello_ready.json fixtures/contracts/zjx_hello_ready.json
+	sley-zjx inspect --json fixtures/contracts/zjx_hello_ready.json
+	sley-zjx verify-digest --json fixtures/contracts/zjx_hello_ready.json
+	sley-zjx extract-graph --json fixtures/contracts/zjx_hello_ready.json
+	sley-zjx diff-envelope --json fixtures/contracts/zjx_hello_ready.json fixtures/contracts/zjx_hello_ready.json
 
-tree-sitter-sley/node_modules/.package-lock.json: tree-sitter-sley/package.json tree-sitter-sley/package-lock.json
-	npm --prefix tree-sitter-sley ci
-
-syntax: tree-sitter-sley/node_modules/.package-lock.json
-	npm --prefix tree-sitter-sley test
+syntax:
+	scripts/check-self-hosted-code.sh
 
 self-hosted-cli:
-	node self-hosted/cli.mjs $(SELF_HOSTED_ARGS)
+	bin/sley $(SELF_HOSTED_ARGS)
 
 v1: fmt diff-check test contracts conformance corpus examples smoke lsp editor-shims workbench agent-bench migrate docgen sandbox-runner shadow zjx-tools syntax
