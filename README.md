@@ -65,6 +65,8 @@ The repo currently proves these claims from a clean checkout:
 - The self-hosting status report reads its ownership list from
   `self-hosted/src/loom/bootstrap.sley`, including the bootstrap/strict status
   fields.
+  Its source-root label and top-level report field shape are read from
+  `self-hosted/src/loom/reports.sley`.
 - The self-hosted source project has a runnable internal smoke:
   `bin/sley run --json self-hosted`
   That smoke now executes `loom.bootstrap.smoke` from source for its current
