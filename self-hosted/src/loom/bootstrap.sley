@@ -38,6 +38,7 @@ export task owned_bootstrap_values -> List<Text> {
     "lint_status_task_execution",
     "lint_finding_messages",
     "runtime_status_task_execution",
+    "pure_literal_runtime_execution",
     "runtime_report_status_and_dispatch"
   ]
 }
