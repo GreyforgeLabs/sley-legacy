@@ -764,15 +764,20 @@ source_modules_json() {
 }
 
 self_hosting_status_json() {
-  local modules_json blockers_json count
+  local modules_json blockers_json owned_json count
   modules_json="$(source_modules_json)"
   blockers_json="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/bootstrap.sley" remaining_strict_self_hosting_blockers)"
+  owned_json="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/bootstrap.sley" owned_bootstrap_values)"
+  if [[ "$owned_json" == "[]" ]]; then
+    owned_json='["implementation_version","default_lint_rules","core_report_schema_ids","diagnostic_ids","runtime_seed_values","parser_expression_classifiers","parser_statement_and_binding_kinds","bootstrap_smoke_runtime","checker_diagnostic_status","lint_finding_messages","runtime_report_status_and_dispatch"]'
+  fi
   count="$(find "$SELF_HOSTED_SOURCE_ROOT" -type f -name '*.sley' 2>/dev/null | wc -l | tr -d ' ')"
   jq -n \
     --arg schema "$SCHEMA_SELF_HOSTING" \
     --arg root "self-hosted/src" \
     --argjson count "$count" \
     --argjson modules "$modules_json" \
+    --argjson owned "$owned_json" \
     --argjson blockers "$blockers_json" \
     '{
       schema:$schema,
@@ -781,7 +786,7 @@ self_hosting_status_json() {
       source_root:$root,
       semantic_source_count:$count,
       source_modules:$modules,
-      bootstrap_owned_by_sley:["implementation_version","default_lint_rules","core_report_schema_ids","diagnostic_ids","runtime_seed_values","parser_expression_classifiers","parser_statement_and_binding_kinds","bootstrap_smoke_runtime","checker_diagnostic_status","lint_finding_messages","runtime_report_status_and_dispatch"],
+      bootstrap_owned_by_sley:$owned,
       blockers:$blockers
     }'
 }
