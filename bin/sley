@@ -113,6 +113,21 @@ RUNTIME_DEFAULT_PROFILE="${RUNTIME_DEFAULT_PROFILE:-profile ready}"
 RUNTIME_DEFAULT_MODEL_PLAN="${RUNTIME_DEFAULT_MODEL_PLAN:-plan approved}"
 RUNTIME_DEFAULT_DEPLOY_RESULT="${RUNTIME_DEFAULT_DEPLOY_RESULT:-staged}"
 
+PARSER_INT_PATTERN="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" int_literal_pattern)"
+PARSER_IDENTIFIER_PATTERN="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" identifier_pattern)"
+PARSER_INT_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" int_literal_kind)"
+PARSER_STRING_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" string_literal_kind)"
+PARSER_BOOL_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" bool_literal_kind)"
+PARSER_IDENTIFIER_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" identifier_kind)"
+PARSER_RAW_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" raw_expr_kind)"
+PARSER_INT_PATTERN="${PARSER_INT_PATTERN:--?[0-9]+}"
+PARSER_IDENTIFIER_PATTERN="${PARSER_IDENTIFIER_PATTERN:-^[A-Za-z_][A-Za-z0-9_]*$}"
+PARSER_INT_KIND="${PARSER_INT_KIND:-IntLiteral}"
+PARSER_STRING_KIND="${PARSER_STRING_KIND:-StringLiteral}"
+PARSER_BOOL_KIND="${PARSER_BOOL_KIND:-BoolLiteral}"
+PARSER_IDENTIFIER_KIND="${PARSER_IDENTIFIER_KIND:-Identifier}"
+PARSER_RAW_KIND="${PARSER_RAW_KIND:-Raw}"
+
 usage() {
   cat <<'EOF'
 Sley Loom self-hosting stage-1 bootstrap CLI
@@ -199,7 +214,14 @@ ast_json() {
     echo "no .sley files found under: $target" >&2
     exit 2
   fi
-  awk -v schema="$SCHEMA_AST_PROGRAM" '
+  awk -v schema="$SCHEMA_AST_PROGRAM" \
+    -v int_pattern="$PARSER_INT_PATTERN" \
+    -v identifier_pattern="$PARSER_IDENTIFIER_PATTERN" \
+    -v int_kind="$PARSER_INT_KIND" \
+    -v string_kind="$PARSER_STRING_KIND" \
+    -v bool_kind="$PARSER_BOOL_KIND" \
+    -v identifier_kind="$PARSER_IDENTIFIER_KIND" \
+    -v raw_kind="$PARSER_RAW_KIND" '
     function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
     function esc(s){gsub(/\\/, "\\\\", s); gsub(/"/, "\\\"", s); gsub(/\t/, "\\t", s); return s}
     function count_char(s, c, n, i){n=0; for(i=1;i<=length(s);i++){if(substr(s,i,1)==c)n++} return n}
@@ -207,11 +229,11 @@ ast_json() {
     function span_json(line, col){if(col<1)col=1; return "{\"line\":" line ",\"column\":" col "}"}
     function expr_json(expr, id, line, col, value){
       expr=trim(expr)
-      if(expr ~ /^-?[0-9]+$/){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"IntLiteral\",\"value\":" expr ",\"span\":" span_json(line,col) "}"}
-      if(expr ~ /^"(.*)"$/){value=expr; sub(/^"/,"",value); sub(/"$/,"",value); return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"StringLiteral\",\"value\":\"" esc(value) "\",\"span\":" span_json(line,col) "}"}
-      if(expr=="true" || expr=="false"){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"BoolLiteral\",\"value\":" expr ",\"span\":" span_json(line,col) "}"}
-      if(expr ~ /^[A-Za-z_][A-Za-z0-9_]*$/){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"Identifier\",\"name\":\"" esc(expr) "\",\"span\":" span_json(line,col) "}"}
-      return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"Raw\",\"fallible\":" (expr ~ /\?$/ ? "true" : "false") ",\"span\":" span_json(line,col) "}"
+      if(expr ~ int_pattern){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" int_kind "\",\"value\":" expr ",\"span\":" span_json(line,col) "}"}
+      if(expr ~ /^"(.*)"$/){value=expr; sub(/^"/,"",value); sub(/"$/,"",value); return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" string_kind "\",\"value\":\"" esc(value) "\",\"span\":" span_json(line,col) "}"}
+      if(expr=="true" || expr=="false"){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" bool_kind "\",\"value\":" expr ",\"span\":" span_json(line,col) "}"}
+      if(expr ~ identifier_pattern){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" identifier_kind "\",\"name\":\"" esc(expr) "\",\"span\":" span_json(line,col) "}"}
+      return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" raw_kind "\",\"fallible\":" (expr ~ /\?$/ ? "true" : "false") ",\"span\":" span_json(line,col) "}"
     }
     function binding_kind(k){return k=="state" ? "State" : (k=="tally" ? "Tally" : "Bind")}
     function add_stmt(kind, txt, line, col, id){
@@ -626,7 +648,7 @@ self_hosting_status_json() {
       source_root:$root,
       semantic_source_count:$count,
       source_modules:$modules,
-      bootstrap_owned_by_sley:["implementation_version","default_lint_rules","core_report_schema_ids","diagnostic_ids","runtime_seed_values"],
+      bootstrap_owned_by_sley:["implementation_version","default_lint_rules","core_report_schema_ids","diagnostic_ids","runtime_seed_values","parser_expression_classifiers"],
       blockers:$blockers
     }'
 }

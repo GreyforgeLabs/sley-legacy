@@ -24,14 +24,46 @@ export task classify_expression -> Text {
   take source: Text
 
   if source == "true" {
-    return "BoolLiteral"
+    return call bool_literal_kind()
   }
   if source == "false" {
-    return "BoolLiteral"
+    return call bool_literal_kind()
   }
   if source == "[]" {
-    return "ListLiteral"
+    return call list_literal_kind()
   }
+  return call raw_expr_kind()
+}
+
+export task int_literal_pattern -> Text {
+  return "^-?[0-9]+$"
+}
+
+export task identifier_pattern -> Text {
+  return "^[A-Za-z_][A-Za-z0-9_]*$"
+}
+
+export task int_literal_kind -> Text {
+  return "IntLiteral"
+}
+
+export task string_literal_kind -> Text {
+  return "StringLiteral"
+}
+
+export task bool_literal_kind -> Text {
+  return "BoolLiteral"
+}
+
+export task identifier_kind -> Text {
+  return "Identifier"
+}
+
+export task list_literal_kind -> Text {
+  return "ListLiteral"
+}
+
+export task raw_expr_kind -> Text {
   return "Raw"
 }
 

@@ -18,7 +18,8 @@ Current state after remediation:
   bootstrap command surface;
 - `self-hosted/src/loom/` now contains Sley-owned stage-2 semantic source
   modules, and the bootstrap reads version, lint-rule inventory, core report
-  IDs, diagnostic IDs, and runtime seed values from `.sley` source;
+  IDs, diagnostic IDs, runtime seed values, and parser expression classifiers
+  from `.sley` source;
 - `make v1` passes without Cargo, Rust, Node, npm, or tree-sitter;
 - `make public-release-check` intentionally fails with `PUBLIC_RELEASE_BLOCKED`
   until strict Sley-written parity, operator approval, and a published proof

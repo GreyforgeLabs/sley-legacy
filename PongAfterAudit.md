@@ -25,7 +25,7 @@ Use the migration gates below as the canonical status:
 - `make v1` is the current local proof gate for stage-1 command/runtime envelopes.
 - `bin/sley self-hosting-status --json` is the current source-ownership report;
   it now reports Sley-owned version, rule, report-ID, diagnostic, and runtime
-  seed surfaces.
+  seed surfaces plus parser expression classifiers.
 - Remaining migration work is strict Sley-written semantic/runtime execution
   parity, not source-language cleanup.
 
