@@ -1,16 +1,16 @@
 # Self-Hosting Migration Inventory
 
-Generated: 2026-05-08T07:22:37Z
+Generated: 2026-05-08T07:24:25Z
 
 ## Foreign-language surface scan
 
 | Extension | Count |
 |---|---:|
 | *.rs | 50 |
-| *.c | 1 |
+| *.c | 0 |
 | *.cc | 0 |
 | *.cpp | 0 |
-| *.h | 3 |
+| *.h | 0 |
 | *.m | 0 |
 | *.mm | 0 |
 | *.swift | 0 |
@@ -114,6 +114,7 @@ Generated: 2026-05-08T07:22:37Z
 ./README.md
 ./SELF_HOSTING_INVENTORY_REPORT.md
 ./SELF_HOSTING_MIGRATION_PLAN.md
+./SELF_HOSTING_PHASE1_PORT_PLAN.md
 ./docs/AgentQuickstart.md
 ./docs/BrandingAssets.md
 ./docs/PublicReleaseChecklist.md
