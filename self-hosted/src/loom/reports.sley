@@ -12,6 +12,10 @@ export task diagnostics_schema -> Text {
   return "sley.diagnostics.report.v0"
 }
 
+export task doctor_schema -> Text {
+  return "sley.doctor.report.v0"
+}
+
 export task lint_schema -> Text {
   return "sley.lint.report.v0"
 }

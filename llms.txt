@@ -6,8 +6,9 @@ compiler-mediated, human-reviewed software change.
 The repository is in a self-hosting migration. The current source tree has no
 forbidden Rust, C/C++, JavaScript, TypeScript, or Python implementation files
 and exposes a runnable stage-1 command surface through `bin/`. Stage-2 source
-ownership has started under `self-hosted/src/loom/`; bootstrap version and
-lint-rule inventory are read from `.sley` source.
+ownership has started under `self-hosted/src/loom/`; bootstrap version,
+lint-rule inventory, core report schema IDs, diagnostic IDs, and runtime seed
+values are read from `.sley` source.
 
 ## Current Proof Commands
 

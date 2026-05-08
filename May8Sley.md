@@ -17,8 +17,8 @@ Current state after remediation:
 - `bin/sley` and companion wrappers provide a runnable self-hosting stage-1
   bootstrap command surface;
 - `self-hosted/src/loom/` now contains Sley-owned stage-2 semantic source
-  modules, and the bootstrap reads version/lint-rule inventory from `.sley`
-  source;
+  modules, and the bootstrap reads version, lint-rule inventory, core report
+  IDs, diagnostic IDs, and runtime seed values from `.sley` source;
 - `make v1` passes without Cargo, Rust, Node, npm, or tree-sitter;
 - `make public-release-check` intentionally fails with `PUBLIC_RELEASE_BLOCKED`
   until strict Sley-written parity, operator approval, and a published proof

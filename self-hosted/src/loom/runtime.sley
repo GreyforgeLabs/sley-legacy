@@ -13,6 +13,18 @@ export task project_ready_value -> Int {
   return 42
 }
 
+export task default_profile_text -> Text {
+  return "profile ready"
+}
+
+export task default_model_plan_text -> Text {
+  return "plan approved"
+}
+
+export task default_deploy_result_text -> Text {
+  return "staged"
+}
+
 export task seeded_agent_deploy_value -> Text {
   take profile: Text
   take model_plan: Text
