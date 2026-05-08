@@ -22,6 +22,7 @@
     "core_report_schema_ids",
     "diagnostics_report_shape",
     "diagnostic_ids",
+    "query_report_shape",
     "runtime_seed_values",
     "parser_expression_classifiers",
     "parser_statement_and_binding_kinds",

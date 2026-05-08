@@ -17,6 +17,7 @@
   - the `self-hosting-status` ownership list
   - self-hosting status source-root label and top-level report field shape
   - diagnostics report top-level field shape
+  - query report top-level field shape
   - `default_lint_rules`
   - core report schema IDs
   - diagnostic and lint finding IDs
@@ -107,7 +108,7 @@ forbidden extension is present.
 - [x] Stage-1 deterministic runtime envelope bootstrapped
 - [x] Stage-1 tooling and schema smoke validation added
 - [x] Stage-2 Sley-owned semantic source modules added
-- [x] Bootstrap version/stage/status fields, source-module list, status ownership list, self-hosting report shape, diagnostics report shape, lint report shape, run report shape, report schema IDs, diagnostics, runtime seeds, parser classifiers and AST kind names, checker diagnostics/status task execution, checker builtin-type/unknown-type diagnostics, checker identifier-resolution inputs, lint finding/status task execution/text, runtime report dispatch/status task execution, AST runtime probe dispatch, pure string/integer/boolean literal runtime execution, seeded agent-deploy task execution, project-ready task execution, lint-rule inventory, and bootstrap smoke value/task execution read from Sley source
+- [x] Bootstrap version/stage/status fields, source-module list, status ownership list, self-hosting report shape, diagnostics report shape, query report shape, lint report shape, run report shape, report schema IDs, diagnostics, runtime seeds, parser classifiers and AST kind names, checker diagnostics/status task execution, checker builtin-type/unknown-type diagnostics, checker identifier-resolution inputs, lint finding/status task execution/text, runtime report dispatch/status task execution, AST runtime probe dispatch, pure string/integer/boolean literal runtime execution, seeded agent-deploy task execution, project-ready task execution, lint-rule inventory, and bootstrap smoke value/task execution read from Sley source
 - [x] Rust/C/JS/TS/Python foreign implementation files fully removed
 - [x] `./scripts/check-self-hosted-code.sh` exits cleanly
 - [x] README and llms command surfaces updated away from Cargo/Node claims

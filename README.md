@@ -96,6 +96,8 @@ The repo currently proves these claims from a clean checkout:
   The lint report status now executes `loom.lint.lint_status`.
   Lint report top-level field shape is read from
   `self-hosted/src/loom/reports.sley`.
+- Query report top-level field shape is read from
+  `self-hosted/src/loom/reports.sley`.
 - Baseline AST, check, query, lint, doctor, run, verify, graft, contract, and
   conformance JSON reports execute locally:
   `scripts/self-hosted-test.sh`
