@@ -27,6 +27,7 @@
     "bootstrap_smoke_runtime",
     "bootstrap_smoke_task_execution",
     "checker_diagnostic_status",
+    "checker_status_task_execution",
     "lint_status_task_execution",
     "lint_finding_messages",
     "runtime_report_status_and_dispatch"

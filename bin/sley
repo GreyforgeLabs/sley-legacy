@@ -175,6 +175,42 @@ eval_lint_status_task() {
   fi
 }
 
+eval_checker_status_task() {
+  local error_count="$1"
+  local checker_file="$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley"
+  local body error_task ok_task
+  body="$(extract_sley_task_body "$checker_file" diagnostic_status)"
+  [[ -n "$body" ]] || return 1
+  error_task="$(printf '%s\n' "$body" | awk '
+    /^[ \t]*if[ \t]+error_count[ \t]*>[ \t]*0[ \t]*\{/ {in_if=1; next}
+    in_if && /^[ \t]*}/ {in_if=0}
+    in_if && /^[ \t]*return[ \t]+call[ \t]+[A-Za-z_][A-Za-z0-9_]*\(\)/ {
+      line=$0
+      sub(/^.*return[ \t]+call[ \t]+/, "", line)
+      sub(/\(\).*/, "", line)
+      print line
+      exit
+    }
+  ')"
+  ok_task="$(printf '%s\n' "$body" | awk '
+    /^[ \t]*if[ \t]+/ {in_if=1}
+    in_if && /^[ \t]*}/ {in_if=0; next}
+    !in_if && /^[ \t]*return[ \t]+call[ \t]+[A-Za-z_][A-Za-z0-9_]*\(\)/ {
+      line=$0
+      sub(/^.*return[ \t]+call[ \t]+/, "", line)
+      sub(/\(\).*/, "", line)
+      print line
+      exit
+    }
+  ')"
+  [[ -n "$error_task" && -n "$ok_task" ]] || return 1
+  if [[ "$error_count" -gt 0 ]]; then
+    extract_sley_string_task "$checker_file" "$error_task"
+  else
+    extract_sley_string_task "$checker_file" "$ok_task"
+  fi
+}
+
 VERSION="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/bootstrap.sley" implementation_version)"
 VERSION="${VERSION:-sley 0.2.0-self-hosting-stage1-bootstrap}"
 
@@ -615,12 +651,9 @@ query_json() {
 }
 
 check_json() {
-  local target="$1"
-  ast_json "$target" | jq \
-    --arg schema "$SCHEMA_DIAGNOSTICS" \
+  local target="$1" diagnostics diagnostic_count check_status
+  diagnostics="$(ast_json "$target" | jq \
     --arg unknown "$DIAG_UNKNOWN_IDENTIFIER" \
-    --arg ok_status "$CHECK_OK_STATUS" \
-    --arg error_status "$CHECK_ERROR_STATUS" \
     --arg binding_statement_kind "$PARSER_BINDING_STATEMENT_KIND" \
     --arg unknown_prefix "$UNKNOWN_IDENTIFIER_MESSAGE_PREFIX" \
     --arg unknown_suffix "$UNKNOWN_IDENTIFIER_MESSAGE_SUFFIX" '
@@ -634,9 +667,15 @@ check_json() {
       select(.expr.expr_kind? == "Identifier") |
       select(($known | index($stmt.expr.name)) == null) |
       {id:$unknown, severity:"error", message:($unknown_prefix + .expr.name + $unknown_suffix), node:.expr.id, span:.expr.span};
-    [task_diags] as $diagnostics |
-    {schema:$schema, status:(if ($diagnostics|length) == 0 then $ok_status else $error_status end), diagnostics:$diagnostics}
-  '
+    [task_diags]
+  ')"
+  diagnostic_count="$(printf '%s\n' "$diagnostics" | jq 'length')"
+  check_status="$(eval_checker_status_task "$diagnostic_count" || { if [[ "$diagnostic_count" -eq 0 ]]; then printf '%s\n' "$CHECK_OK_STATUS"; else printf '%s\n' "$CHECK_ERROR_STATUS"; fi; })"
+  if [[ -z "$check_status" ]]; then
+    if [[ "$diagnostic_count" -eq 0 ]]; then check_status="$CHECK_OK_STATUS"; else check_status="$CHECK_ERROR_STATUS"; fi
+  fi
+  jq -n --arg schema "$SCHEMA_DIAGNOSTICS" --arg status "$check_status" --argjson diagnostics "$diagnostics" \
+    '{schema:$schema, status:$status, diagnostics:$diagnostics}'
 }
 
 lint_json() {

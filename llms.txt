@@ -14,10 +14,11 @@ source. AST expression, statement, and binding kind names are also read from
 `self-hosted/src/loom/parser.sley`, and `sley run --json self-hosted`
 executes the `loom.bootstrap.smoke` source task over the Sley-owned lint-rule
 inventory. Checker diagnostic status and unknown-identifier message
-construction are read from `self-hosted/src/loom/checker.sley`. Lint finding
-statuses, report status task execution, messages, and hints are read from
-`self-hosted/src/loom/lint.sley`. Runtime report statuses, value-kind tags, and
-current dispatch probes are read from `self-hosted/src/loom/runtime.sley`.
+construction, including checker report status task execution, are read from
+`self-hosted/src/loom/checker.sley`. Lint finding statuses, report status task
+execution, messages, and hints are read from `self-hosted/src/loom/lint.sley`.
+Runtime report statuses, value-kind tags, and current dispatch probes are read
+from `self-hosted/src/loom/runtime.sley`.
 
 ## Current Proof Commands
 
