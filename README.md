@@ -73,11 +73,11 @@ Implementation reality: Sley-native source-of-truth is now in `src/tool.sley`; c
 
     ## SEO Surface
 
-    Draft SEO title: `Sley CI - Sley developer tooling`
+    Draft SEO title: `Sley CI - AI-native workflow gates`
 
-    Draft description: Run one obvious Sley quality gate for format, check, lint, verify, seal, ZJX handoff, and manifest-backed CLI smoke checks.
+    Draft description: Run one obvious AI-native workflow gate for format, check, lint, verify, seal, ZJX handoff, and manifest-backed CLI smoke checks.
 
-    Future canonical URL: `https://sley.greyforge.tech/tools/sley-ci`
+    Future canonical URL: `https://sleylang.org/tools/sley-ci`
 
     GitHub URL: `https://github.com/GreyforgeLabs/sley-ci`
 
