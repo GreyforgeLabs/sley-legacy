@@ -105,10 +105,38 @@ LINT_EMPTY_FOR="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.s
 LINT_EMPTY_WHILE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_while_statement_id)"
 LINT_EMPTY_FORGE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_forge_statement_id)"
 LINT_EMPTY_IF="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_if_statement_id)"
+LINT_OK_STATUS="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" ok_status)"
+LINT_FINDINGS_STATUS="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" findings_status)"
+LINT_EMPTY_FOR_RULE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_for_statement_rule)"
+LINT_EMPTY_WHILE_RULE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_while_statement_rule)"
+LINT_EMPTY_FORGE_RULE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_forge_statement_rule)"
+LINT_EMPTY_IF_RULE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_if_statement_rule)"
+LINT_EMPTY_FOR_MESSAGE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_for_statement_message)"
+LINT_EMPTY_WHILE_MESSAGE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_while_statement_message)"
+LINT_EMPTY_FORGE_MESSAGE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_forge_statement_message)"
+LINT_EMPTY_IF_MESSAGE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_if_statement_message)"
+LINT_EMPTY_FOR_HINT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_for_statement_hint)"
+LINT_EMPTY_WHILE_HINT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_while_statement_hint)"
+LINT_EMPTY_FORGE_HINT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_forge_statement_hint)"
+LINT_EMPTY_IF_HINT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_if_statement_hint)"
 LINT_EMPTY_FOR="${LINT_EMPTY_FOR:-EMPTY_FOR_STATEMENT}"
 LINT_EMPTY_WHILE="${LINT_EMPTY_WHILE:-EMPTY_WHILE_STATEMENT}"
 LINT_EMPTY_FORGE="${LINT_EMPTY_FORGE:-EMPTY_FORGE_STATEMENT}"
 LINT_EMPTY_IF="${LINT_EMPTY_IF:-EMPTY_IF_STATEMENT}"
+LINT_OK_STATUS="${LINT_OK_STATUS:-ok}"
+LINT_FINDINGS_STATUS="${LINT_FINDINGS_STATUS:-findings}"
+LINT_EMPTY_FOR_RULE="${LINT_EMPTY_FOR_RULE:-empty_for_statement}"
+LINT_EMPTY_WHILE_RULE="${LINT_EMPTY_WHILE_RULE:-empty_while_statement}"
+LINT_EMPTY_FORGE_RULE="${LINT_EMPTY_FORGE_RULE:-empty_forge_statement}"
+LINT_EMPTY_IF_RULE="${LINT_EMPTY_IF_RULE:-empty_if_statement}"
+LINT_EMPTY_FOR_MESSAGE="${LINT_EMPTY_FOR_MESSAGE:-has a for statement over an empty list}"
+LINT_EMPTY_WHILE_MESSAGE="${LINT_EMPTY_WHILE_MESSAGE:-has an empty while statement}"
+LINT_EMPTY_FORGE_MESSAGE="${LINT_EMPTY_FORGE_MESSAGE:-has an empty forge block}"
+LINT_EMPTY_IF_MESSAGE="${LINT_EMPTY_IF_MESSAGE:-has an empty if branch}"
+LINT_EMPTY_FOR_HINT="${LINT_EMPTY_FOR_HINT:-delete this never-executed for statement}"
+LINT_EMPTY_WHILE_HINT="${LINT_EMPTY_WHILE_HINT:-delete this empty loop}"
+LINT_EMPTY_FORGE_HINT="${LINT_EMPTY_FORGE_HINT:-delete this empty isolated arena}"
+LINT_EMPTY_IF_HINT="${LINT_EMPTY_IF_HINT:-delete the empty branch or add a meaningful statement}"
 
 RUNTIME_HELLO_VALUE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" hello_value)"
 RUNTIME_PROJECT_READY_VALUE="$(extract_sley_int_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" project_ready_value)"
@@ -428,21 +456,21 @@ lint_json() {
     local module
     module="$(awk '/^[[:space:]]*module[[:space:]]+/ {print $2; found=1; exit} END {if(!found) print "main"}' "$file")"
     if grep -Eq '^[[:space:]]*for[[:space:]].*in[[:space:]]+\[\][[:space:]]*\{' "$file"; then
-      printf '%s\n' "{\"id\":\"$LINT_EMPTY_FOR\",\"rule\":\"empty_for_statement\",\"severity\":\"warning\",\"message\":\"task \`$module.main\` has a for statement over an empty list\",\"node\":\"block:task:$module.main:stmt:1\",\"module\":\"$module\",\"hint\":\"delete this never-executed for statement\"}" >> "$findings"
+      printf '%s\n' "{\"id\":\"$LINT_EMPTY_FOR\",\"rule\":\"$LINT_EMPTY_FOR_RULE\",\"severity\":\"warning\",\"message\":\"task \`$module.main\` $LINT_EMPTY_FOR_MESSAGE\",\"node\":\"block:task:$module.main:stmt:1\",\"module\":\"$module\",\"hint\":\"$LINT_EMPTY_FOR_HINT\"}" >> "$findings"
     fi
     if awk '/^[[:space:]]*while[[:space:]].*\{/ {getline; if ($0 ~ /^[[:space:]]*\}/) found=1} END{exit found?0:1}' "$file"; then
-      printf '%s\n' "{\"id\":\"$LINT_EMPTY_WHILE\",\"rule\":\"empty_while_statement\",\"severity\":\"warning\",\"message\":\"task \`$module.main\` has an empty while statement\",\"node\":\"block:task:$module.main:stmt:1\",\"module\":\"$module\",\"hint\":\"delete this empty loop\"}" >> "$findings"
+      printf '%s\n' "{\"id\":\"$LINT_EMPTY_WHILE\",\"rule\":\"$LINT_EMPTY_WHILE_RULE\",\"severity\":\"warning\",\"message\":\"task \`$module.main\` $LINT_EMPTY_WHILE_MESSAGE\",\"node\":\"block:task:$module.main:stmt:1\",\"module\":\"$module\",\"hint\":\"$LINT_EMPTY_WHILE_HINT\"}" >> "$findings"
     fi
     if awk '/^[[:space:]]*forge[[:space:]]*\{/ {getline; if ($0 ~ /^[[:space:]]*\}/) found=1} END{exit found?0:1}' "$file"; then
-      printf '%s\n' "{\"id\":\"$LINT_EMPTY_FORGE\",\"rule\":\"empty_forge_statement\",\"severity\":\"warning\",\"message\":\"task \`$module.main\` has an empty forge block\",\"node\":\"block:task:$module.main:stmt:1\",\"module\":\"$module\",\"hint\":\"delete this empty isolated arena\"}" >> "$findings"
+      printf '%s\n' "{\"id\":\"$LINT_EMPTY_FORGE\",\"rule\":\"$LINT_EMPTY_FORGE_RULE\",\"severity\":\"warning\",\"message\":\"task \`$module.main\` $LINT_EMPTY_FORGE_MESSAGE\",\"node\":\"block:task:$module.main:stmt:1\",\"module\":\"$module\",\"hint\":\"$LINT_EMPTY_FORGE_HINT\"}" >> "$findings"
     fi
     if awk '/^[[:space:]]*if[[:space:]].*\{/ {getline; if ($0 ~ /^[[:space:]]*\}/) found=1} END{exit found?0:1}' "$file"; then
-      printf '%s\n' "{\"id\":\"$LINT_EMPTY_IF\",\"rule\":\"empty_if_statement\",\"severity\":\"warning\",\"message\":\"task \`$module.main\` has an empty if branch\",\"node\":\"block:task:$module.main:stmt:1\",\"module\":\"$module\",\"hint\":\"delete the empty branch or add a meaningful statement\"}" >> "$findings"
+      printf '%s\n' "{\"id\":\"$LINT_EMPTY_IF\",\"rule\":\"$LINT_EMPTY_IF_RULE\",\"severity\":\"warning\",\"message\":\"task \`$module.main\` $LINT_EMPTY_IF_MESSAGE\",\"node\":\"block:task:$module.main:stmt:1\",\"module\":\"$module\",\"hint\":\"$LINT_EMPTY_IF_HINT\"}" >> "$findings"
     fi
   done < <(collect_files "$target")
-  jq -n --arg schema "$SCHEMA_LINT" --arg entry "$entry" --argjson rules "$DEFAULT_RULES_JSON" --slurpfile raw <(if [[ -s "$findings" ]]; then jq -s '.' "$findings"; else printf '[]\n'; fi) '
+  jq -n --arg schema "$SCHEMA_LINT" --arg entry "$entry" --arg ok_status "$LINT_OK_STATUS" --arg findings_status "$LINT_FINDINGS_STATUS" --argjson rules "$DEFAULT_RULES_JSON" --slurpfile raw <(if [[ -s "$findings" ]]; then jq -s '.' "$findings"; else printf '[]\n'; fi) '
     ($raw[0] // []) as $findings |
-    {schema:$schema, status:(if ($findings|length)==0 then "ok" else "findings" end), entry_module:$entry, filters:{module:null, rules:$rules}, findings:$findings}
+    {schema:$schema, status:(if ($findings|length)==0 then $ok_status else $findings_status end), entry_module:$entry, filters:{module:null, rules:$rules}, findings:$findings}
   '
   rm -f "$findings"
 }
@@ -664,7 +692,7 @@ self_hosting_status_json() {
       source_root:$root,
       semantic_source_count:$count,
       source_modules:$modules,
-      bootstrap_owned_by_sley:["implementation_version","default_lint_rules","core_report_schema_ids","diagnostic_ids","runtime_seed_values","parser_expression_classifiers","bootstrap_smoke_runtime","checker_diagnostic_status"],
+      bootstrap_owned_by_sley:["implementation_version","default_lint_rules","core_report_schema_ids","diagnostic_ids","runtime_seed_values","parser_expression_classifiers","bootstrap_smoke_runtime","checker_diagnostic_status","lint_finding_messages"],
       blockers:$blockers
     }'
 }

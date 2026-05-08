@@ -60,23 +60,79 @@ export task lint_status -> Text {
   take finding_count: Int
 
   if finding_count > 0 {
-    return "findings"
+    return call findings_status()
   }
+  return call ok_status()
+}
+
+export task ok_status -> Text {
   return "ok"
+}
+
+export task findings_status -> Text {
+  return "findings"
 }
 
 export task empty_for_statement_id -> Text {
   return "EMPTY_FOR_STATEMENT"
 }
 
+export task empty_for_statement_rule -> Text {
+  return "empty_for_statement"
+}
+
+export task empty_for_statement_message -> Text {
+  return "has a for statement over an empty list"
+}
+
+export task empty_for_statement_hint -> Text {
+  return "delete this never-executed for statement"
+}
+
 export task empty_while_statement_id -> Text {
   return "EMPTY_WHILE_STATEMENT"
+}
+
+export task empty_while_statement_rule -> Text {
+  return "empty_while_statement"
+}
+
+export task empty_while_statement_message -> Text {
+  return "has an empty while statement"
+}
+
+export task empty_while_statement_hint -> Text {
+  return "delete this empty loop"
 }
 
 export task empty_forge_statement_id -> Text {
   return "EMPTY_FORGE_STATEMENT"
 }
 
+export task empty_forge_statement_rule -> Text {
+  return "empty_forge_statement"
+}
+
+export task empty_forge_statement_message -> Text {
+  return "has an empty forge block"
+}
+
+export task empty_forge_statement_hint -> Text {
+  return "delete this empty isolated arena"
+}
+
 export task empty_if_statement_id -> Text {
   return "EMPTY_IF_STATEMENT"
+}
+
+export task empty_if_statement_rule -> Text {
+  return "empty_if_statement"
+}
+
+export task empty_if_statement_message -> Text {
+  return "has an empty if branch"
+}
+
+export task empty_if_statement_hint -> Text {
+  return "delete the empty branch or add a meaningful statement"
 }

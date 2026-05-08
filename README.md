@@ -64,6 +64,8 @@ The repo currently proves these claims from a clean checkout:
   `bin/sley run --json self-hosted`
 - Checker diagnostic status and unknown-identifier message construction are
   read from `self-hosted/src/loom/checker.sley`.
+- Lint finding statuses, messages, and hints are read from
+  `self-hosted/src/loom/lint.sley`.
 - Baseline AST, check, query, lint, doctor, run, verify, graft, contract, and
   conformance JSON reports execute locally:
   `scripts/self-hosted-test.sh`

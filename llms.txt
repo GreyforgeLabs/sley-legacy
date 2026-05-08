@@ -12,7 +12,8 @@ values are read from `.sley` source. AST expression-kind classifiers are also
 read from `self-hosted/src/loom/parser.sley`, and `sley run --json self-hosted`
 executes the bootstrap smoke over the Sley-owned lint-rule inventory. Checker
 diagnostic status and unknown-identifier message construction are read from
-`self-hosted/src/loom/checker.sley`.
+`self-hosted/src/loom/checker.sley`. Lint finding statuses, messages, and
+hints are read from `self-hosted/src/loom/lint.sley`.
 
 ## Current Proof Commands
 

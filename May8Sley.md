@@ -22,6 +22,7 @@ Current state after remediation:
   from `.sley` source;
 - checker diagnostic status and unknown-identifier message construction are now
   read from `loom.checker`;
+- lint finding statuses, messages, and hints are now read from `loom.lint`;
 - `sley run --json self-hosted` now executes a bootstrap smoke over the
   Sley-owned lint-rule inventory;
 - `make v1` passes without Cargo, Rust, Node, npm, or tree-sitter;

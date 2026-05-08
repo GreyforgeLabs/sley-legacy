@@ -20,7 +20,8 @@
     "runtime_seed_values",
     "parser_expression_classifiers",
     "bootstrap_smoke_runtime",
-    "checker_diagnostic_status"
+    "checker_diagnostic_status",
+    "lint_finding_messages"
   ],
   "blockers": [
     "execute parser semantics from Sley source",
