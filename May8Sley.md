@@ -27,8 +27,8 @@ Current state after remediation:
 - lint finding statuses, messages, and hints are now read from `loom.lint`;
 - runtime report statuses, value-kind tags, and current dispatch probes are now
   read from `loom.runtime`;
-- `sley run --json self-hosted` now executes a bootstrap smoke over the
-  Sley-owned lint-rule inventory;
+- `sley run --json self-hosted` now executes the `loom.bootstrap.smoke` source
+  task over the Sley-owned lint-rule inventory;
 - `make v1` passes without Cargo, Rust, Node, npm, or tree-sitter;
 - `make public-release-check` intentionally fails with `PUBLIC_RELEASE_BLOCKED`
   until strict Sley-written parity, operator approval, and a published proof

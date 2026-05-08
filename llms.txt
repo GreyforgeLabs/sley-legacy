@@ -12,12 +12,12 @@ inventory, core report schema IDs, diagnostic IDs, runtime seed values, and the
 self-hosting status ownership list are read from `.sley` source. AST expression,
 statement, and binding kind names are also read from
 `self-hosted/src/loom/parser.sley`, and `sley run --json self-hosted`
-executes the bootstrap smoke over the Sley-owned lint-rule inventory. Checker
-diagnostic status and unknown-identifier message construction are read from
-`self-hosted/src/loom/checker.sley`. Lint finding statuses, messages, and
-hints are read from `self-hosted/src/loom/lint.sley`. Runtime report statuses,
-value-kind tags, and current dispatch probes are read from
-`self-hosted/src/loom/runtime.sley`.
+executes the `loom.bootstrap.smoke` source task over the Sley-owned lint-rule
+inventory. Checker diagnostic status and unknown-identifier message
+construction are read from `self-hosted/src/loom/checker.sley`. Lint finding
+statuses, messages, and hints are read from `self-hosted/src/loom/lint.sley`.
+Runtime report statuses, value-kind tags, and current dispatch probes are read
+from `self-hosted/src/loom/runtime.sley`.
 
 ## Current Proof Commands
 
@@ -138,6 +138,7 @@ Do not claim strict self-hosting yet. Stage-1 proves a foreign-source-free
 runnable bootstrap and command envelopes. Stage-2 now gives Loom Sley-owned
 semantic source modules and moves bootstrap version/lint-rule inventory into
 `.sley` source. It also runs the self-hosted project smoke from the Sley-owned
-lint-rule inventory, with runtime report vocabulary and dispatch probes owned
-by `.sley` source. Strict self-hosting still requires parser, checker, runtime,
-and command semantics to execute from Sley source and pass parity tests.
+`loom.bootstrap.smoke` task, with runtime report vocabulary and dispatch probes
+owned by `.sley` source. Strict self-hosting still requires parser, checker,
+runtime, and command semantics to execute from Sley source and pass parity
+tests.
