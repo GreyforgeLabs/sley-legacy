@@ -55,8 +55,9 @@
 # Sley
 
 Sley is the world's first AI-native programming language: designed by AI for AI,
-optimized for AI agent workflows, and focused on token-efficient compiler-mediated
-structural edits with auditable authority and evidence surfaces.
+the language AI agents want to speak. It is optimized for AI agent workflows and
+focused on token-efficient compiler-mediated structural edits with auditable
+authority and evidence surfaces.
 
 **SEO metadata:** Sley • structural programming language • deterministic edits •
 auditable grafts • graph-aware agent tooling • `sley` • `Greyforge Labs` • Apache-2.0
