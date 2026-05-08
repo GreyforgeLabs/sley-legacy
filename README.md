@@ -74,7 +74,8 @@ The repo currently proves these claims from a clean checkout:
 - Runtime report statuses, value-kind tags, and current dispatch probes are
   read from `self-hosted/src/loom/runtime.sley`.
   The run report status now executes `loom.runtime.runtime_status`.
-  Pure `main` literal returns now execute through the AST-backed runtime path.
+  Pure `main` string, integer, and boolean literal returns now execute through
+  the AST-backed runtime path.
   Seeded agent-deploy text results now execute the
   `loom.runtime.seeded_agent_deploy_value` source task.
 - Checker diagnostic status and unknown-identifier message construction are

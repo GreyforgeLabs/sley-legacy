@@ -296,13 +296,17 @@ eval_pure_literal_main_return() {
     --arg return_kind "$PARSER_RETURN_STATEMENT_KIND" \
     --arg string_kind "$PARSER_STRING_KIND" \
     --arg int_expr_kind "$PARSER_INT_KIND" \
+    --arg bool_kind "$PARSER_BOOL_KIND" \
     --arg text_value_kind "$RUNTIME_TEXT_VALUE_KIND" \
-    --arg int_value_kind "$RUNTIME_INT_VALUE_KIND" '
+    --arg int_value_kind "$RUNTIME_INT_VALUE_KIND" \
+    --arg bool_value_kind "$RUNTIME_BOOL_VALUE_KIND" '
     ([.tasks[] | select(.name == "main") | .body.statements[]? | select(.kind == $return_kind) | .expr][0] // empty) as $expr |
     if $expr.expr_kind == $string_kind then
       {kind:$text_value_kind, value:$expr.value}
     elif $expr.expr_kind == $int_expr_kind then
       {kind:$int_value_kind, value:($expr.value | tostring)}
+    elif $expr.expr_kind == $bool_kind then
+      {kind:$bool_value_kind, value:($expr.value | tostring)}
     else
       empty
     end
@@ -401,6 +405,7 @@ RUNTIME_FAILED_STATUS="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom
 RUNTIME_SKIPPED_STATUS="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" skipped_status)"
 RUNTIME_INT_VALUE_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" int_value_kind)"
 RUNTIME_TEXT_VALUE_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" text_value_kind)"
+RUNTIME_BOOL_VALUE_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" bool_value_kind)"
 RUNTIME_RAW_VALUE_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" raw_value_kind)"
 RUNTIME_OK_TEXT_VALUE_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" ok_text_value_kind)"
 RUNTIME_SELF_HOSTED_TARGETS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" self_hosted_target_aliases)"
@@ -418,6 +423,7 @@ RUNTIME_FAILED_STATUS="${RUNTIME_FAILED_STATUS:-failed}"
 RUNTIME_SKIPPED_STATUS="${RUNTIME_SKIPPED_STATUS:-skipped}"
 RUNTIME_INT_VALUE_KIND="${RUNTIME_INT_VALUE_KIND:-Int}"
 RUNTIME_TEXT_VALUE_KIND="${RUNTIME_TEXT_VALUE_KIND:-Text}"
+RUNTIME_BOOL_VALUE_KIND="${RUNTIME_BOOL_VALUE_KIND:-Bool}"
 RUNTIME_RAW_VALUE_KIND="${RUNTIME_RAW_VALUE_KIND:-Raw}"
 RUNTIME_OK_TEXT_VALUE_KIND="${RUNTIME_OK_TEXT_VALUE_KIND:-OkText}"
 if [[ "$RUNTIME_SELF_HOSTED_TARGETS_JSON" == "[]" ]]; then
@@ -889,11 +895,13 @@ run_json() {
     --arg runtime_status "$runtime_status" \
     --arg int_kind "$RUNTIME_INT_VALUE_KIND" \
     --arg text_kind "$RUNTIME_TEXT_VALUE_KIND" \
+    --arg bool_kind "$RUNTIME_BOOL_VALUE_KIND" \
     --arg ok_text_kind "$RUNTIME_OK_TEXT_VALUE_KIND" \
     --arg raw_kind "$RUNTIME_RAW_VALUE_KIND" '
     def val:
       if $kind == $int_kind then {kind:$int_kind, value:($value|tonumber)}
       elif $kind == $text_kind then {kind:$text_kind, value:$value}
+      elif $kind == $bool_kind then {kind:$bool_kind, value:($value == "true")}
       elif $kind == $ok_text_kind then {kind:"Ok", value:{kind:$text_kind, value:$value}}
       else {kind:$raw_kind, value:$value} end;
     {schema:$schema, status:$runtime_status, target:$target, value:val, diagnostics:[]}
