@@ -35,6 +35,9 @@ bin/sley self-hosting-status --json \
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("run_report_shape"))'
 
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("diagnostics_report_shape"))'
+
 bin/sley ast --json examples/hello.sley \
   | json_field '.schema == "sley.ast.program.v0" and .module == "app.hello" and .tasks[0].name == "main" and .tasks[0].body.statements[0].expr.expr_kind == "StringLiteral"'
 
@@ -43,6 +46,9 @@ bin/sley ast --json --node block:task:app.hello.main:stmt:0:expr examples/hello.
 
 bin/sley check --json examples/hello.sley \
   | json_field '.schema == "sley.diagnostics.report.v0" and .status == "ok"'
+
+bin/sley check --json examples/hello.sley \
+  | json_field 'keys == (["schema","status","diagnostics"] | sort)'
 
 if bin/sley check --json fixtures/corpus/rejected/unknown_identifier.sley >/tmp/sley-rejected-check.json; then
   fail "rejected unknown_identifier.sley passed check"

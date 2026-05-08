@@ -67,6 +67,8 @@ The repo currently proves these claims from a clean checkout:
   fields.
   Its source-root label and top-level report field shape are read from
   `self-hosted/src/loom/reports.sley`.
+- Diagnostics report top-level field shape is read from
+  `self-hosted/src/loom/reports.sley`.
 - The self-hosted source project has a runnable internal smoke:
   `bin/sley run --json self-hosted`
   That smoke now executes `loom.bootstrap.smoke` from source for its current

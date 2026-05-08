@@ -20,6 +20,7 @@
     "source_modules",
     "default_lint_rules",
     "core_report_schema_ids",
+    "diagnostics_report_shape",
     "diagnostic_ids",
     "runtime_seed_values",
     "parser_expression_classifiers",

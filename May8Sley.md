@@ -23,6 +23,7 @@ Current state after remediation:
   status ownership list from `.sley` source;
 - self-hosting status source-root label and top-level report field shape are
   now read from `loom.reports`;
+- diagnostics report top-level field shape is now read from `loom.reports`;
 - parser statement and binding kind names are now read from `loom.parser`;
 - checker report status task execution plus unknown-identifier message
   construction are now read from `loom.checker`;

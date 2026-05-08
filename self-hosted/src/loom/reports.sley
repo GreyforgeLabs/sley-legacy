@@ -12,6 +12,14 @@ export task diagnostics_schema -> Text {
   return "sley.diagnostics.report.v0"
 }
 
+export task diagnostics_report_fields -> List<Text> {
+  return [
+    "schema",
+    "status",
+    "diagnostics"
+  ]
+}
+
 export task doctor_schema -> Text {
   return "sley.doctor.report.v0"
 }
