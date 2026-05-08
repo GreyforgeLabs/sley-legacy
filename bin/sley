@@ -211,6 +211,21 @@ eval_checker_status_task() {
   fi
 }
 
+eval_checker_builtin_types_json() {
+  local checker_file="$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley"
+  local body
+  body="$(extract_sley_task_body "$checker_file" is_builtin_type)"
+  [[ -n "$body" ]] || return 1
+  printf '%s\n' "$body" | awk '
+    /^[ \t]*if[ \t]+name[ \t]*==[ \t]*"/ {
+      line=$0
+      sub(/^.*==[ \t]*"/, "", line)
+      sub(/".*$/, "", line)
+      print line
+    }
+  ' | jq -R . | jq -s .
+}
+
 eval_runtime_status_task() {
   local diagnostic_count="$1"
   local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
@@ -356,15 +371,21 @@ if [[ "$SELF_HOSTING_STATUS_FIELDS_JSON" == "[]" ]]; then
 fi
 
 DIAG_UNKNOWN_IDENTIFIER="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_identifier_id)"
+DIAG_UNKNOWN_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_type_id)"
 DIAG_UNKNOWN_IDENTIFIER="${DIAG_UNKNOWN_IDENTIFIER:-UNKNOWN_IDENTIFIER}"
+DIAG_UNKNOWN_TYPE="${DIAG_UNKNOWN_TYPE:-UNKNOWN_TYPE}"
 CHECK_OK_STATUS="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" ok_status)"
 CHECK_ERROR_STATUS="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" error_status)"
 UNKNOWN_IDENTIFIER_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_identifier_message_prefix)"
 UNKNOWN_IDENTIFIER_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_identifier_message_suffix)"
+UNKNOWN_TYPE_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_type_message_prefix)"
+UNKNOWN_TYPE_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_type_message_suffix)"
 CHECK_OK_STATUS="${CHECK_OK_STATUS:-ok}"
 CHECK_ERROR_STATUS="${CHECK_ERROR_STATUS:-error}"
 UNKNOWN_IDENTIFIER_MESSAGE_PREFIX="${UNKNOWN_IDENTIFIER_MESSAGE_PREFIX:-unknown identifier \`}"
 UNKNOWN_IDENTIFIER_MESSAGE_SUFFIX="${UNKNOWN_IDENTIFIER_MESSAGE_SUFFIX:-\`}"
+UNKNOWN_TYPE_MESSAGE_PREFIX="${UNKNOWN_TYPE_MESSAGE_PREFIX:-unknown type \`}"
+UNKNOWN_TYPE_MESSAGE_SUFFIX="${UNKNOWN_TYPE_MESSAGE_SUFFIX:-\`}"
 LINT_EMPTY_FOR="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_for_statement_id)"
 LINT_EMPTY_WHILE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_while_statement_id)"
 LINT_EMPTY_FORGE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_forge_statement_id)"
@@ -769,14 +790,25 @@ query_json() {
 }
 
 check_json() {
-  local target="$1" diagnostics diagnostic_count check_status
+  local target="$1" diagnostics diagnostic_count check_status builtin_types
+  builtin_types="$(eval_checker_builtin_types_json || printf '%s\n' '["Int","Text","Bool","Unit","Result","Error","Gate","List","Map"]')"
   diagnostics="$(ast_json "$target" | jq \
     --arg unknown "$DIAG_UNKNOWN_IDENTIFIER" \
+    --arg unknown_type "$DIAG_UNKNOWN_TYPE" \
     --arg binding_statement_kind "$PARSER_BINDING_STATEMENT_KIND" \
     --arg unknown_prefix "$UNKNOWN_IDENTIFIER_MESSAGE_PREFIX" \
-    --arg unknown_suffix "$UNKNOWN_IDENTIFIER_MESSAGE_SUFFIX" '
+    --arg unknown_suffix "$UNKNOWN_IDENTIFIER_MESSAGE_SUFFIX" \
+    --arg unknown_type_prefix "$UNKNOWN_TYPE_MESSAGE_PREFIX" \
+    --arg unknown_type_suffix "$UNKNOWN_TYPE_MESSAGE_SUFFIX" \
+    --argjson builtin_types "$builtin_types" '
     . as $root |
     [$root.tasks[].name] as $all_task_names |
+    [$root.types[]?.name] as $declared_types |
+    def base_type_name:
+      (. // "Unit") | sub("<.*$"; "");
+    def type_known($name):
+      ($name | base_type_name) as $base |
+      (($builtin_types | index($base)) != null) or (($declared_types | index($base)) != null);
     def task_diags:
       $root.tasks[] as $t |
       (([$t.takes[].name] + [$t.body.statements[]? | select(.kind==$binding_statement_kind) | .name] + $all_task_names) | unique) as $known |
@@ -785,7 +817,18 @@ check_json() {
       select(.expr.expr_kind? == "Identifier") |
       select(($known | index($stmt.expr.name)) == null) |
       {id:$unknown, severity:"error", message:($unknown_prefix + .expr.name + $unknown_suffix), node:.expr.id, span:.expr.span};
-    [task_diags]
+    def return_type_diags:
+      $root.tasks[] as $t |
+      ($t.return_type.name // "Unit") as $name |
+      select(type_known($name) | not) |
+      {id:$unknown_type, severity:"error", message:($unknown_type_prefix + $name + $unknown_type_suffix), node:$t.id, span:$t.span};
+    def take_type_diags:
+      $root.tasks[] as $t |
+      $t.takes[]? as $take |
+      ($take.type.name // "Unit") as $name |
+      select(type_known($name) | not) |
+      {id:$unknown_type, severity:"error", message:($unknown_type_prefix + $name + $unknown_type_suffix), node:$take.id, span:$take.span};
+    [task_diags, return_type_diags, take_type_diags]
   ')"
   diagnostic_count="$(printf '%s\n' "$diagnostics" | jq 'length')"
   check_status="$(eval_checker_status_task "$diagnostic_count" || { if [[ "$diagnostic_count" -eq 0 ]]; then printf '%s\n' "$CHECK_OK_STATUS"; else printf '%s\n' "$CHECK_ERROR_STATUS"; fi; })"
