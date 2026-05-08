@@ -313,6 +313,15 @@ eval_project_ready_value_task() {
   printf '%s\n' "$value"
 }
 
+runtime_project_ready_probe_matches() {
+  local target="$1"
+  ast_json "$target" | jq -e \
+    --arg call_probe "$RUNTIME_PROJECT_READY_CALL_PROBE" \
+    --arg binding_probe "$RUNTIME_PROJECT_READY_BINDING_PROBE" '
+    [.tasks[].body.statements[]?.expr?.source?] | any(. == $call_probe or . == $binding_probe)
+  ' >/dev/null
+}
+
 eval_pure_literal_main_return() {
   local target="$1"
   ast_json "$target" | jq -ec \
@@ -534,18 +543,6 @@ json_string() {
 json_list_contains_string() {
   local json="$1" item="$2"
   printf '%s\n' "$json" | jq -e --arg item "$item" 'index($item) != null' >/dev/null
-}
-
-target_contains_literal() {
-  local target="$1" needle="$2"
-  [[ -n "$needle" ]] || return 1
-  if [[ -d "$target" ]]; then
-    grep -RqsF -- "$needle" "$target"
-  elif [[ -f "$target" ]]; then
-    grep -qsF -- "$needle" "$target"
-  else
-    return 1
-  fi
 }
 
 last_path_arg() {
@@ -933,7 +930,7 @@ run_json() {
     deploy_result_text="${deploy_text:-$RUNTIME_DEFAULT_DEPLOY_RESULT}"
     value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
     value="$(eval_seeded_agent_deploy_value "$profile_text" "$model_plan_text" "$deploy_result_text" || printf '%s | %s | %s\n' "$profile_text" "$model_plan_text" "$deploy_result_text")"
-  elif target_contains_literal "$target" "$RUNTIME_PROJECT_READY_CALL_PROBE" || target_contains_literal "$target" "$RUNTIME_PROJECT_READY_BINDING_PROBE"; then
+  elif runtime_project_ready_probe_matches "$target"; then
     value_kind="$RUNTIME_INT_VALUE_KIND"; value="$(eval_project_ready_value_task || printf '%s\n' "$RUNTIME_PROJECT_READY_VALUE")"
   fi
   runtime_status="$(eval_runtime_status_task 0 || printf '%s\n' "$RUNTIME_PASSED_STATUS")"

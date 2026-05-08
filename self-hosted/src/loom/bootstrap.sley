@@ -44,6 +44,7 @@ export task owned_bootstrap_values -> List<Text> {
     "bool_literal_runtime_execution",
     "seeded_agent_deploy_task_execution",
     "project_ready_task_execution",
+    "ast_runtime_probe_dispatch",
     "self_hosting_report_shape",
     "runtime_report_status_and_dispatch"
   ]
