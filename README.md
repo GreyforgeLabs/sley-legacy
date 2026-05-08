@@ -62,7 +62,8 @@ The repo currently proves these claims from a clean checkout:
 - Sley-owned stage-2 source modules exist under `self-hosted/src/loom/`:
   `bin/sley self-hosting-status --json`
 - The self-hosting status report reads its ownership list from
-  `self-hosted/src/loom/bootstrap.sley`.
+  `self-hosted/src/loom/bootstrap.sley`, including the bootstrap/strict status
+  fields.
 - The self-hosted source project has a runnable internal smoke:
   `bin/sley run --json self-hosted`
 - Runtime report statuses, value-kind tags, and current dispatch probes are
