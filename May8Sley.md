@@ -29,6 +29,8 @@ Current state after remediation:
 - runtime report status task execution, value-kind tags, and current dispatch
   probes are now read from `loom.runtime`;
 - pure `main` literal returns now execute through the AST-backed runtime path;
+- seeded agent-deploy text results now execute the
+  `loom.runtime.seeded_agent_deploy_value` source task;
 - `sley run --json self-hosted` now executes the `loom.bootstrap.smoke` source
   task over the Sley-owned lint-rule inventory;
 - `make v1` passes without Cargo, Rust, Node, npm, or tree-sitter;

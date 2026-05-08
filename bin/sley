@@ -247,6 +247,49 @@ eval_runtime_status_task() {
   fi
 }
 
+eval_seeded_agent_deploy_value() {
+  local profile="$1" model_plan="$2" deploy_result="$3"
+  local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
+  local body expr
+  body="$(extract_sley_task_body "$runtime_file" seeded_agent_deploy_value)"
+  [[ -n "$body" ]] || return 1
+  expr="$(printf '%s\n' "$body" | awk '
+    /^[ \t]*return[ \t]+/ {
+      line=$0
+      sub(/^[ \t]*return[ \t]+/, "", line)
+      print line
+      exit
+    }
+  ')"
+  [[ -n "$expr" ]] || return 1
+  printf '%s\n' "$expr" | awk \
+    -v profile="$profile" \
+    -v model_plan="$model_plan" \
+    -v deploy_result="$deploy_result" '
+    function unquote(s){sub(/^"/, "", s); sub(/"$/, "", s); return s}
+    function token_value(token) {
+      if (token ~ /^"/) return unquote(token)
+      if (token == "profile") return profile
+      if (token == "model_plan") return model_plan
+      if (token == "deploy_result") return deploy_result
+      exit 7
+    }
+    {
+      line=$0
+      out=""
+      seen=0
+      while (match(line, /"[^"]*"|[A-Za-z_][A-Za-z0-9_]*/)) {
+        token=substr(line, RSTART, RLENGTH)
+        out=out token_value(token)
+        seen=1
+        line=substr(line, RSTART + RLENGTH)
+      }
+      if (!seen) exit 7
+      print out
+    }
+  '
+}
+
 eval_pure_literal_main_return() {
   local target="$1"
   ast_json "$target" | jq -ec \
@@ -821,7 +864,12 @@ run_json() {
     value_kind="$(printf '%s\n' "$literal_runtime" | jq -r '.kind')"
     value="$(printf '%s\n' "$literal_runtime" | jq -r '.value')"
   elif [[ -n "$RUNTIME_AGENT_DEPLOY_SUFFIX" && "$target" == *"$RUNTIME_AGENT_DEPLOY_SUFFIX" ]]; then
-    value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"; value="${http_text:-$RUNTIME_DEFAULT_PROFILE} | ${model_text:-$RUNTIME_DEFAULT_MODEL_PLAN} | ${deploy_text:-$RUNTIME_DEFAULT_DEPLOY_RESULT}"
+    local profile_text model_plan_text deploy_result_text
+    profile_text="${http_text:-$RUNTIME_DEFAULT_PROFILE}"
+    model_plan_text="${model_text:-$RUNTIME_DEFAULT_MODEL_PLAN}"
+    deploy_result_text="${deploy_text:-$RUNTIME_DEFAULT_DEPLOY_RESULT}"
+    value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
+    value="$(eval_seeded_agent_deploy_value "$profile_text" "$model_plan_text" "$deploy_result_text" || printf '%s | %s | %s\n' "$profile_text" "$model_plan_text" "$deploy_result_text")"
   elif target_contains_literal "$target" "$RUNTIME_PROJECT_READY_CALL_PROBE" || target_contains_literal "$target" "$RUNTIME_PROJECT_READY_BINDING_PROBE"; then
     value_kind="$RUNTIME_INT_VALUE_KIND"; value="$RUNTIME_PROJECT_READY_VALUE"
   fi

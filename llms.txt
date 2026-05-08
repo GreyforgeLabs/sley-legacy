@@ -20,6 +20,8 @@ execution, messages, and hints are read from `self-hosted/src/loom/lint.sley`.
 Runtime report statuses, report status task execution, value-kind tags, and
 current dispatch probes are read from `self-hosted/src/loom/runtime.sley`.
 Pure `main` literal returns execute through the AST-backed runtime path.
+Seeded agent-deploy text results execute the
+`loom.runtime.seeded_agent_deploy_value` source task.
 
 ## Current Proof Commands
 
