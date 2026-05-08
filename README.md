@@ -71,6 +71,7 @@ The repo currently proves these claims from a clean checkout:
   `len(call lint.default_lint_rules())` result.
 - Runtime report statuses, value-kind tags, and current dispatch probes are
   read from `self-hosted/src/loom/runtime.sley`.
+  The run report status now executes `loom.runtime.runtime_status`.
 - Checker diagnostic status and unknown-identifier message construction are
   read from `self-hosted/src/loom/checker.sley`.
   The checker report status now executes `loom.checker.diagnostic_status`.

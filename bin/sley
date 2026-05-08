@@ -211,6 +211,42 @@ eval_checker_status_task() {
   fi
 }
 
+eval_runtime_status_task() {
+  local diagnostic_count="$1"
+  local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
+  local body failed_task passed_task
+  body="$(extract_sley_task_body "$runtime_file" runtime_status)"
+  [[ -n "$body" ]] || return 1
+  failed_task="$(printf '%s\n' "$body" | awk '
+    /^[ \t]*if[ \t]+diagnostic_count[ \t]*>[ \t]*0[ \t]*\{/ {in_if=1; next}
+    in_if && /^[ \t]*}/ {in_if=0}
+    in_if && /^[ \t]*return[ \t]+call[ \t]+[A-Za-z_][A-Za-z0-9_]*\(\)/ {
+      line=$0
+      sub(/^.*return[ \t]+call[ \t]+/, "", line)
+      sub(/\(\).*/, "", line)
+      print line
+      exit
+    }
+  ')"
+  passed_task="$(printf '%s\n' "$body" | awk '
+    /^[ \t]*if[ \t]+/ {in_if=1}
+    in_if && /^[ \t]*}/ {in_if=0; next}
+    !in_if && /^[ \t]*return[ \t]+call[ \t]+[A-Za-z_][A-Za-z0-9_]*\(\)/ {
+      line=$0
+      sub(/^.*return[ \t]+call[ \t]+/, "", line)
+      sub(/\(\).*/, "", line)
+      print line
+      exit
+    }
+  ')"
+  [[ -n "$failed_task" && -n "$passed_task" ]] || return 1
+  if [[ "$diagnostic_count" -gt 0 ]]; then
+    extract_sley_string_task "$runtime_file" "$failed_task"
+  else
+    extract_sley_string_task "$runtime_file" "$passed_task"
+  fi
+}
+
 VERSION="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/bootstrap.sley" implementation_version)"
 VERSION="${VERSION:-sley 0.2.0-self-hosting-stage1-bootstrap}"
 
@@ -742,7 +778,7 @@ doctor_json() {
 }
 
 run_json() {
-  local target="$1" http_text="" model_text="" deploy_text="" arg prev=""
+  local target="$1" http_text="" model_text="" deploy_text="" runtime_status arg prev=""
   for arg in "$@"; do
     case "$prev" in
       --http-text-url) prev="--http-text-value"; continue ;;
@@ -769,12 +805,14 @@ run_json() {
   elif target_contains_literal "$target" "$RUNTIME_PROJECT_READY_CALL_PROBE" || target_contains_literal "$target" "$RUNTIME_PROJECT_READY_BINDING_PROBE"; then
     value_kind="$RUNTIME_INT_VALUE_KIND"; value="$RUNTIME_PROJECT_READY_VALUE"
   fi
+  runtime_status="$(eval_runtime_status_task 0 || printf '%s\n' "$RUNTIME_PASSED_STATUS")"
+  [[ -n "$runtime_status" ]] || runtime_status="$RUNTIME_PASSED_STATUS"
   jq -n \
     --arg schema "$SCHEMA_RUN" \
     --arg target "$target" \
     --arg kind "$value_kind" \
     --arg value "$value" \
-    --arg passed_status "$RUNTIME_PASSED_STATUS" \
+    --arg runtime_status "$runtime_status" \
     --arg int_kind "$RUNTIME_INT_VALUE_KIND" \
     --arg text_kind "$RUNTIME_TEXT_VALUE_KIND" \
     --arg ok_text_kind "$RUNTIME_OK_TEXT_VALUE_KIND" \
@@ -784,7 +822,7 @@ run_json() {
       elif $kind == $text_kind then {kind:$text_kind, value:$value}
       elif $kind == $ok_text_kind then {kind:"Ok", value:{kind:$text_kind, value:$value}}
       else {kind:$raw_kind, value:$value} end;
-    {schema:$schema, status:$passed_status, target:$target, value:val, diagnostics:[]}
+    {schema:$schema, status:$runtime_status, target:$target, value:val, diagnostics:[]}
   '
 }
 
