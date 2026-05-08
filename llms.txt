@@ -25,6 +25,8 @@ Pure `main` string, integer, and boolean literal returns execute through the
 AST-backed runtime path.
 Seeded agent-deploy text results execute the
 `loom.runtime.seeded_agent_deploy_value` source task.
+Project-ready integer results execute the `loom.runtime.project_ready_value`
+source task.
 
 ## Current Proof Commands
 
