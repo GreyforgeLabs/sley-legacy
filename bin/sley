@@ -326,6 +326,8 @@ SCHEMA_DOCTOR="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports
 SCHEMA_RUN="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" run_schema)"
 SCHEMA_VERIFY="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" verify_schema)"
 SCHEMA_SELF_HOSTING="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_status_schema)"
+SELF_HOSTING_REPORT_SOURCE_ROOT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_source_root)"
+SELF_HOSTING_STATUS_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_status_fields)"
 
 SCHEMA_AST_PROGRAM="${SCHEMA_AST_PROGRAM:-sley.ast.program.v0}"
 SCHEMA_AST_NODE="${SCHEMA_AST_NODE:-sley.ast.node.v0}"
@@ -336,6 +338,10 @@ SCHEMA_DOCTOR="${SCHEMA_DOCTOR:-sley.doctor.report.v0}"
 SCHEMA_RUN="${SCHEMA_RUN:-sley.run.report.v0}"
 SCHEMA_VERIFY="${SCHEMA_VERIFY:-sley.verify.report.v0}"
 SCHEMA_SELF_HOSTING="${SCHEMA_SELF_HOSTING:-sley.self_hosting.status.v0}"
+SELF_HOSTING_REPORT_SOURCE_ROOT="${SELF_HOSTING_REPORT_SOURCE_ROOT:-self-hosted/src}"
+if [[ "$SELF_HOSTING_STATUS_FIELDS_JSON" == "[]" ]]; then
+  SELF_HOSTING_STATUS_FIELDS_JSON='["schema","status","strict_self_hosted","source_root","semantic_source_count","source_modules","bootstrap_owned_by_sley","blockers"]'
+fi
 
 DIAG_UNKNOWN_IDENTIFIER="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_identifier_id)"
 DIAG_UNKNOWN_IDENTIFIER="${DIAG_UNKNOWN_IDENTIFIER:-UNKNOWN_IDENTIFIER}"
@@ -1052,21 +1058,22 @@ self_hosting_status_json() {
   jq -n \
     --arg schema "$SCHEMA_SELF_HOSTING" \
     --arg status "$status" \
-    --arg root "self-hosted/src" \
+    --arg root "$SELF_HOSTING_REPORT_SOURCE_ROOT" \
     --argjson strict "$strict" \
     --argjson count "$count" \
     --argjson modules "$modules_json" \
     --argjson owned "$owned_json" \
     --argjson blockers "$blockers_json" \
+    --argjson fields "$SELF_HOSTING_STATUS_FIELDS_JSON" \
     '{
-      schema:$schema,
-      status:$status,
-      strict_self_hosted:$strict,
-      source_root:$root,
-      semantic_source_count:$count,
-      source_modules:$modules,
-      bootstrap_owned_by_sley:$owned,
-      blockers:$blockers
+      ($fields[0] // "schema"):$schema,
+      ($fields[1] // "status"):$status,
+      ($fields[2] // "strict_self_hosted"):$strict,
+      ($fields[3] // "source_root"):$root,
+      ($fields[4] // "semantic_source_count"):$count,
+      ($fields[5] // "source_modules"):$modules,
+      ($fields[6] // "bootstrap_owned_by_sley"):$owned,
+      ($fields[7] // "blockers"):$blockers
     }'
 }
 

@@ -21,6 +21,8 @@ Current state after remediation:
   IDs, diagnostic IDs, runtime seed values, parser expression classifiers, the
   self-hosting status fields, the source-module list, and the self-hosting
   status ownership list from `.sley` source;
+- self-hosting status source-root label and top-level report field shape are
+  now read from `loom.reports`;
 - parser statement and binding kind names are now read from `loom.parser`;
 - checker report status task execution plus unknown-identifier message
   construction are now read from `loom.checker`;

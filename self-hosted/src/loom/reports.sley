@@ -35,3 +35,20 @@ export task verify_schema -> Text {
 export task self_hosting_status_schema -> Text {
   return "sley.self_hosting.status.v0"
 }
+
+export task self_hosting_source_root -> Text {
+  return "self-hosted/src"
+}
+
+export task self_hosting_status_fields -> List<Text> {
+  return [
+    "schema",
+    "status",
+    "strict_self_hosted",
+    "source_root",
+    "semantic_source_count",
+    "source_modules",
+    "bootstrap_owned_by_sley",
+    "blockers"
+  ]
+}
