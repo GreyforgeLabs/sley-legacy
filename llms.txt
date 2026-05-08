@@ -1,543 +1,125 @@
 # Sley Agent Onboarding
 
-Sley is an agent-native structural programming language. Source files are the
-human review projection; the canonical working model is the typed graph exposed
-by the Loom compiler.
+Sley is Greyforge Labs' agent-native structural programming language for
+compiler-mediated, human-reviewed software change.
 
-Start with `docs/AgentQuickstart.md` when the task is to create, inspect,
-verify, or dry-run deploy a Sley agent project quickly.
+The repository is in a self-hosting migration. The current source tree has no
+forbidden Rust, C/C++, JavaScript, TypeScript, or Python implementation files
+and exposes a runnable stage-1 command surface through `bin/`.
 
-Core commands:
+## Current Proof Commands
 
 ```bash
-cargo run -- check --json <file-or-project>
-cargo run -- ast --json <file-or-project>
-cargo run -- ast --json --node <node-id> <file-or-project>
-cargo run -- graph --json <file-or-project>
-cargo run -- graph --json --slice <node-id> <file-or-project>
-cargo run -- query --json --kind calls <file-or-project>
-cargo run -- lint --json <file-or-project>
-cargo run -- plan --json --graft-templates <file-or-project>
-cargo run -- new --json --template agent-project --name agent-app --module agent.main agent-app
-cargo run -- doctor --json <file-or-project>
-cargo run -- fix --json --kind add_module_declaration --dry-run <file-or-project>
-cargo run -- fix --json --kind delete_unused_private_declarations --dry-run <file-or-project>
-cargo run -- fix --json --kind delete_unused_private_declarations --write <file-or-project>
-cargo run -- verify --json <file-or-project>
-cargo run -- deploy --json --dry-run --artifacts-dir .sley/deploy <file-or-project>
-cargo run -- trace --json <file-or-project>
-cargo run -- zjx --json <file-or-project>
-cargo run --bin sley-ci -- lint --json --deny-warnings <file-or-project>
-cargo run --bin sley-ci -- doctor --json --deny-warnings <file-or-project>
-cargo run --bin sley-ci -- plan --json --graft-templates <file-or-project>
-cargo run --bin sley-ci -- run --json <file-or-project>
-cargo run --bin sley-ci -- deploy --json --dry-run --artifacts-dir .sley/ci-deploy <file-or-project>
-cargo run --bin sley-ci -- corpus --json fixtures/corpus/manifest.json
-cargo run --bin sley-ci -- examples --json examples
-cargo run --bin sley-conformance -- report --json
-cargo run --bin sley-conformance -- coverage --json --require-tag <tag>
-cargo run --bin sley-contract -- inspect-deploy-artifacts .sley/deploy --schemas docs/schemas --json
+export PATH="$(pwd)/bin:$PATH"
+./scripts/check-self-hosted-code.sh
+scripts/self-hosted-test.sh
 make v1
-make public-release-check
-make syntax
-node scripts/validate-editor-shims.mjs editors/vscode-sley
-cargo run --bin sley-lsp
-cargo run --bin sley-workbench -- --json --html .sley/workbench.html <file-or-project>
-cargo run --bin sley-docgen -- reference --json --markdown .sley/reference.md <file-or-project>
-cargo run --bin sley-agent-bench -- run --json
-cargo run --bin sley-migrate -- report --json --schemas docs/schemas --fixtures fixtures/contracts <file-or-project>
-cargo run --bin sley-sandbox-runner -- run --json <manifest.json>
-cargo run --bin sley-zjx -- inspect --json <zjx-envelope.json>
-cargo run --bin sley-zjx -- verify-digest --json <zjx-envelope.json>
-cargo run -- seal --json <file-or-project>
-cargo run -- graft --json --dry-run <file> <graft.json>
-cargo run -- graft --json --write <file> <graft.json>
-cargo run -- format <file>
-cargo run -- run --json --cap DatabaseRead --db-table users=examples/users.json examples/db_gate.sley
-cargo run -- run --json --cap DatabaseRead --cap DatabaseWrite --db-table users=examples/users.json examples/db_write_gate.sley
-cargo run -- run --json --cap Network --http-text https://example.test/profile Ada examples/network_gate.sley
-cargo run -- run --json --cap Shell --shell-output date 2026-05-05 examples/shell_gate.sley
-cargo run -- run --json --cap ModelCall --model-output name Ada examples/model_gate.sley
-cargo run -- run --json --cap SecretRead --secret api_key redacted examples/secret_gate.sley
-cargo run -- run --json --cap Deploy --deploy-result staging staged examples/deploy_gate.sley
-cargo run -- run --json --cap Spend --spend-result ads-budget authorized examples/spend_gate.sley
 ```
 
-Agent rules:
+`make public-release-check` is expected to fail until strict Sley-written
+semantic parity, operator approval, and a published proof bundle are present.
 
-- Prefer structural grafts over raw text edits.
-- Run `check --json` after every proposed semantic change.
-- Use `graph --json --slice <node-id>` before planning a bounded graft; checked
-  affordance arrays expose copyable starter graft JSON for structural edits.
-- Use `ast --json --node <node-id>` when exact task, statement, or expression
-  shape matters; node reports use `schema: "sley.ast.node.v0"`.
-- Treat diagnostic `repair_hints` as suggestions, not authority bypasses.
-- For `PARSE_EXPECTED_*`, inspect `insert_expected_token`,
-  `provide_identifier`, `provide_expression`, or `choose_expected_item` hints
-  before guessing at syntax.
-- For `GRAFT_PRECONDITION_FAILED`, inspect `refresh_graft_precondition` hints;
-  stale grafts should be rebuilt from current AST/query state before retrying.
-- For `GRAFT_MOVE_UNSUPPORTED` and `GRAFT_DELETE_UNSUPPORTED`, inspect
-  `use_supported_graft_operation` hints before retrying; expression targets
-  should normally switch to `ReplaceExpression` instead of move/delete.
-- For duplicate declaration diagnostics and graft `*_EXISTS` namespace
-  collisions, inspect `resolve_namespace_conflict`; choose a new name, remove
-  the duplicate, or reuse the existing declaration instead of retrying.
-- For `CALL_ARITY_MISMATCH`, prefer structural `update_call_args` or
-  `remove_call_arg` hints when present; their replacements are starter
-  `UpdateCallArgs` or `RemoveCallArg` graft JSON.
-- For `CALL_ARGUMENT_TYPE_MISMATCH`, prefer the structural `replace_call_arg`
-  hint when present; its replacement is caller-scoped starter
-  `ReplaceCallArg` graft JSON.
-- For binding or assignment type mismatches, prefer structural
-  `replace_expression` graft JSON when the declared/local type should remain.
-- For Bool condition, collection element, map key/value, index key, and
-  record-field type diagnostics, prefer structural `replace_expression` graft
-  JSON when the surrounding structure is correct and only the expression should
-  change.
-- For record literal missing/unknown field diagnostics, inspect the
-  whole-record `replace_expression` graft JSON; it preserves known expected
-  fields and removes unknown fields.
-- For unary or binary operator type diagnostics, prefer structural
-  `replace_expression` graft JSON when present; the checker omits it for
-  ambiguous operator families.
-- For `IF_BRANCH_TYPE_MISMATCH`, inspect both structural `replace_expression`
-  graft JSON hints and choose the branch whose value should conform.
-- For non-iterable `each` collections and invalid `len` arguments, treat
-  structural `replace_expression` hints as conservative valid starters and
-  refine the value after the graft checks.
-- For `INDEX_COLLECTION_NOT_INDEXABLE`, prefer structural `replace_expression`
-  hints when present; the checker chooses list or map starters from the index
-  expression type.
-- For `RETURN_TYPE_MISMATCH`, use `change_return_type` only when the signature
-  should change; otherwise prefer structural `replace_expression` graft JSON.
-- For `MISSING_RETURN`, add a guaranteed return path or use the
-  `replace_task_body` starter; do not delete the last return from a non-`Unit`
-  task.
-- Do not add effects only to silence diagnostics; the authority must be real.
-- Do not invent binding kinds. The stable vocabulary is in
+## Core Commands
+
+```bash
+sley check --json <file-or-project>
+sley ast --json <file-or-project>
+sley ast --json --node <node-id> <file-or-project>
+sley graph --json <file-or-project>
+sley graph --json --slice <node-id> <file-or-project>
+sley query --json --kind calls <file-or-project>
+sley lint --json <file-or-project>
+sley plan --json --graft-templates <file-or-project>
+sley new --json --template agent-project --name agent-app --module agent.main agent-app
+sley doctor --json <file-or-project>
+sley fix --json --kind add_module_declaration --dry-run <file-or-project>
+sley fix --json --kind delete_unused_private_declarations --dry-run <file-or-project>
+sley verify --json <file-or-project>
+sley deploy --json --dry-run --artifacts-dir .sley/deploy <file-or-project>
+sley trace --json <file-or-project>
+sley seal --json <file-or-project>
+sley zjx --json <file-or-project>
+sley graft --json --dry-run <file> <graft.json>
+sley format <file>
+sley run --json <file-or-project>
+```
+
+## Companion Commands
+
+```bash
+sley-ci lint --json --deny-warnings <file-or-project>
+sley-ci doctor --json --deny-warnings <file-or-project>
+sley-ci plan --json --graft-templates <file-or-project>
+sley-ci run --json <file-or-project>
+sley-ci deploy --json --dry-run --artifacts-dir .sley/ci-deploy <file-or-project>
+sley-ci corpus --json fixtures/corpus/manifest.json
+sley-ci examples --json examples
+sley-ci smoke --json fixtures/ci_smoke_probe/manifest.json
+sley-conformance report --json
+sley-conformance coverage --json --require-tag <tag>
+sley-contract inventory --json
+sley-contract check-fixtures fixtures/contracts --schemas docs/schemas --json
+sley-contract validate --schema sley.conformance.manifest.v0 fixtures/corpus/manifest.json --schemas docs/schemas --json
+sley-contract inspect-deploy-artifacts .sley/deploy --schemas docs/schemas --json
+sley-lsp --validate-editor-shims
+sley-workbench --json --html .sley/workbench.html <file-or-project>
+sley-docgen reference --json --markdown .sley/reference.md <file-or-project>
+sley-agent-bench run --json
+sley-migrate report --json --schemas docs/schemas --fixtures fixtures/contracts <file-or-project>
+sley-sandbox-runner run --json <manifest.json>
+sley-shadow report --json <file-or-project>
+sley-zjx inspect --json <zjx-envelope.json>
+sley-zjx verify-digest --json <zjx-envelope.json>
+```
+
+## Agent Rules
+
+- Prefer JSON command surfaces over prose guesses.
+- Run `sley check --json` after semantic edits.
+- Run `sley lint --json` before claiming a hygiene-clean target.
+- Use `sley query --json --kind calls` before call-site edits.
+- Use `sley ast --json --node <node-id>` when exact node shape matters.
+- Use `sley graft --json --dry-run` before any write-mode structural edit.
+- Treat diagnostics and repair hints as evidence, not authority bypasses.
+- Do not add effects only to silence diagnostics.
+- Do not invent binding kinds; the stable vocabulary lives in
   `docs/SleyLanguageSpec.md`.
-- Keep formatting controlled by `sley format`.
-- Do not use old names or old-project framing. This project is Sley.
-- Current typed host fallibility includes filesystem reads/writes, seeded
-  database reads, per-run `db.try_insert` writes, seeded `http.try_get_text`
-  network text reads, seeded `shell.try_run` command output reads, and seeded
-  `model.try_complete` prompt completions, plus seeded `secrets.try_get`
-  secret values, seeded `deploy.try_stage` deployment stage results, and
-  seeded `spend.try_authorize` spend authorization results.
+- Do not restore Cargo, Rust, Node, npm, tree-sitter, or deleted editor shim
+  infrastructure for the self-hosted migration without explicitly reverting the
+  release state.
 
-Stable v0 JSON roots:
+## Stable Stage-1 JSON Roots
 
 - `sley.ast.program.v0`
 - `sley.ast.node.v0`
 - `sley.diagnostics.report.v0`
 - `sley.symbol_graph.v0`
-- `sley.symbol_graph.slice.v0`
 - `sley.query.report.v0`
 - `sley.lint.report.v0`
 - `sley.edit_plan.report.v0`
 - `sley.run.report.v0`
-- `sley.trace.receipt.v0`
-- `sley.trace.report.v0`
-- `sley.trace.seal.v0`
+- `sley.verify.report.v0`
+- `sley.doctor.report.v0`
 - `sley.graft.outcome.v0`
 - `sley.deploy.report.v0`
-- `sley.deploy.artifacts.v0`
-- `sley.deploy.artifact_check.v0`
-- `sley.docgen.report.v0`
-- `sley.shadow.report.v0`
-- `sley.agent_bench.report.v0`
-- `sley.migrate.report.v0`
-- `sley.sandbox.manifest.v0`
-- `sley.sandbox.report.v0`
-- `sley.zjx.envelope.v0`
+- `sley.trace.report.v0`
+- `sley.trace.seal.v0`
 - `sley.zjx.tool.report.v0`
-- `sley.cli_smoke.manifest.v0`
 - `sley.ci.report.v0`
 - `sley.conformance.report.v0`
 - `sley.conformance.coverage.v0`
-- `sley.conformance.manifest.v0`
 - `sley.contract.inventory.v0`
 - `sley.contract.fixture_check.v0`
 - `sley.contract.validate.v0`
-- `sley.lsp.fix_preview.v0`
-- `sley.lsp.command_preview.v0`
-- `sley.workbench.report.v0`
-- `sley.project.scaffold.v0`
-- `sley.doctor.report.v0`
-- `sley.verify.report.v0`
 
-The graft outcome schema pins accepted provenance records with non-empty
-targets and `result: "accepted"` and has a locked accepted-operation fixture.
-The diagnostics schema exposes a shared diagnostic record used by graft,
-doctor, plan, and verify report schemas.
-The query schema exposes strict task, take, type, effect, and call summary row
-definitions for downstream bindings. Direct `sley query --module <module>` and
-`sley lint --module <module>` reject unknown checked modules with
-diagnostic reports, not empty successful reports.
-The `sley-contract` binary exposes `inventory`, `check-fixtures`, `validate`,
-and `inspect-deploy-artifacts` JSON Schema validation reports for
-schema/fixture/manifest/deploy-handoff contract-kit work; inventory,
-fixture-check, and validate reports have locked fixtures.
-The `sley-ci` binary exposes `check`, `lint`, `doctor`, `plan`, `run`, `verify`, `deploy`, `smoke`, `corpus`, and `examples` reports
-for local CI and pre-commit gates over existing Sley commands; wrapped
-diagnostic-report steps and reports carrying lint findings summarize diagnostic
-or finding IDs directly on the CI step. Doctor, plan, verify, and deploy
-wrappers copy structured `next_actions` into the step; deploy wrappers preserve
-nested verify repair/retry actions before deploy-level fallback actions.
-The `sley-conformance` binary exposes `report` and `coverage` JSON roots for
-schema/fixture instance coverage, contract validation status, corpus tags,
-smoke tags, the compact agent onboarding pack, packaged example counts,
-declared integration-test count drift, editor-shim validation, `make v1`
-target inventory, local/public v1 readiness tracks, public-release metadata
-blockers, and public-release next-actions for operator-controlled metadata
-decisions.
-The in-tree `tree-sitter-sley` package exposes the current syntax grammar,
-highlight queries, generated parser artifacts, exact corpus tests, and fixture
-parsing smoke through `npm test` or `make syntax`.
-The `sley-lsp` binary exposes stdio LSP diagnostics, formatting, document
-symbols, declaration hover, project task-call hover, host-call capability
-hover, edit-plan code actions, and non-mutating `sley.fix.preview` payloads
-backed by compiler modules; the preview payload uses
-`schema: "sley.lsp.fix_preview.v0"` and has a locked contract fixture.
-The `sley-workbench` binary exposes `schema: "sley.workbench.report.v0"` and
-optional static HTML over doctor/query/lint/plan/graph panels without source
-file writes; HTML includes local lint repair focus and graph target selectors
-for focused slice handoff.
-The `sley-docgen` binary exposes `schema: "sley.docgen.report.v0"` and
-optional Markdown over checked module, task, type, effect, and capability
-reference data, including seeded `--cap` args for deterministic host setup; use
-`--module <module>` or `--exported-only` to narrow project-root references;
-unknown module filters block explicitly.
-The `sley-shadow` binary exposes `schema: "sley.shadow.report.v0"` and
-non-authoritatively consumes checked query/lint reports to link lint findings
-to query rows and derive seeded `--cap` args for effectful tasks on single-file
-or project-root targets; pass `--module <module>` or repeated `--rule <rule>`
-to narrow a replay; unknown module filters block explicitly.
-The `sley-agent-bench` binary exposes
-`schema: "sley.agent_bench.report.v0"` for deterministic local repair-loop
-benchmarks over JSON inspection, checked fixes, post-fix gates, trace receipts,
-seal digests, and ZJX handoff evidence.
-The `sley-migrate` binary exposes `schema: "sley.migrate.report.v0"` for
-checked source migration reports and optional schema/fixture drift checks.
-The `sley-sandbox-runner` binary consumes
-`schema: "sley.sandbox.manifest.v0"` manifests and emits
-`schema: "sley.sandbox.report.v0"` for deterministic seeded runtime replays.
-The `sley-zjx` binary exposes `schema: "sley.zjx.tool.report.v0"` for
-read-only `inspect`, `verify-digest`, `extract-graph`, and `diff-envelope`
-commands over `sley.zjx.envelope.v0` preview envelopes.
-The repo-level `Makefile`, `.github/actions/sley-v1/action.yml`,
-`.github/workflows/v1.yml`, and `.pre-commit-config.yaml` all route release
-checks through `make v1`.
-`make public-release-check` is the stricter final public-cut gate and is
-expected to fail until operator-controlled license and repository metadata
-decisions are settled.
-Graph-slice add/insert/move/delete/replace/call-site/call-argument affordance
-operations reuse the strict graft operation schema from edit-plan reports.
-Graph-slice focus, optional task, and inbound/outbound call summaries reuse
-AST and query report contracts.
-The trace report schema wraps trace receipt JSONL records for `sley trace --json`;
-the trace receipt schema pins each standalone JSONL record and references
-accepted provenance records.
-The ZJX envelope schema pins a recomputable `graph_digest`, references the
-symbol graph, graph slice, and trace receipt schemas, and has a locked fixture
-beside the full symbol graph fixture. The ZJX tool report schema pins local
-inspection, digest verification, graph extraction, and envelope diff outputs.
+## Claim Boundary
 
-Contract references:
+Use:
 
-- `docs/contracts.md`
-- `docs/SleyLanguageSpec.md`
-- `docs/schemas/*.schema.json`
-- `fixtures/contracts/*.json`
-- `fixtures/grafts/*.json`
-- `tests/sley_v0.rs`
-- `CHANGELOG.md`
+> Sley is an agent-native structural programming language for
+> compiler-mediated, human-reviewed software change.
 
-Current development phase:
-
-- typed host fallibility is in place for filesystem and seeded database
-  adapters plus seeded network text, seeded shell output, seeded model
-  completions, seeded secret values, seeded deployment stage results, and
-  seeded spend authorization results through explicit fallible calls returning
-  `Result<T, Error>`; database adapters can be narrowed with exact table
-  scopes, URL adapters use exact or path-boundary scopes, and other non-file
-  seeded adapters can be narrowed with `--cap EFFECT=SCOPE` deterministic text
-  prefixes over the seeded resource key, and scope mismatches remain
-  diagnostics
-- release-readiness now includes manifest-backed CLI smokes for stable command
-  output, JSON roots, graph/ZJX surfaces, run reports, edit-plan reports,
-  deploy dry-run reports, graft/fix dry runs, strict edit-plan graft operation
-  and transaction template schema envelopes, direct graft writes, temp setup
-  files for write-mode smokes, explicit graft/fix trace receipts, non-empty
-  trace receipt seals, ZJX envelopes carrying schema-backed trace receipts,
-  ZJX tool reports, shadow query/lint replay reports, lint-driven fix writes
-  that clear warnings before verify, editor-shim validation, `make v1` target inventory, conformance-inventoried
-  onboarding paths, and seeded host-adapter execution while preserving typed
-  recoverable failure records and keeping authority failures as diagnostics
-- checked graph query reports are available through `sley query --json` with
-  root schema `sley.query.report.v0`; `--kind types` and `--kind effects`
-  give direct declaration rows for record and authority surfaces, while
-  `--kind calls` exposes strict call rows
-- checked lint reports are available through `sley lint --json` with root schema
-  `sley.lint.report.v0`; private-task rules include `unused_private_task` and
-  `unreachable_private_task`, the authority hygiene rule
-  `unused_declared_effect`, the import hygiene rules `unused_import` and
-  `duplicate_import`, the API hygiene rule `unused_take`, the declaration hygiene rules
-  `unused_private_type` and `unused_private_effect`, and the migration rule
-  `raw_host_adapter`, plus the style rules `missing_module_declaration` and
-  `unqualified_imported_call`, the local cleanup rule
-  `unused_pure_binding`, the no-op expression cleanup rule
-  `unused_pure_expression_statement`, the mutable-local style rule
-  `mutable_binding_never_set`, the self-assignment cleanup rule
-  `self_assignment_statement`, the overwritten-set cleanup rule
-  `overwritten_set_statement`, the redundant-initial-set cleanup rule
-  `redundant_initial_set_statement`, the expression simplification rule
-  `constant_if_expression`, the constant-if statement simplification rule
-  `constant_if_statement`, the constant-false if cleanup rule
-  `constant_false_if_statement`, the constant-false while cleanup rule
-  `constant_false_while_statement`, the constant comparison simplification rule
-  `constant_comparison_expression`, the constant arithmetic simplification rule
-  `constant_arithmetic_expression`, the absorbing arithmetic simplification rule
-  `absorbing_arithmetic_expression`, the constant text concatenation rule
-  `constant_text_concatenation_expression`, the constant list index rule
-  `constant_list_index_expression`, the constant map index rule
-  `constant_map_index_expression`, the constant record field access rule
-  `constant_record_field_access_expression`, the constant len rule
-  `constant_len_expression`, the constant not rule
-  `constant_not_expression`, the empty-if cleanup rule
-  `empty_if_statement`, the empty-for cleanup rule
-  `empty_for_statement`, the empty-forge cleanup rule
-  `empty_forge_statement`, the identity simplification rule
-  `identity_binary_expression` including empty-text concatenation, the
-  redundant boolean comparison rule
-  `redundant_boolean_comparison`, the absorbing boolean expression rule
-  `absorbing_boolean_expression`, the idempotent boolean expression rule
-  `idempotent_boolean_expression`, the self-comparison expression rule
-  `self_comparison_expression` including strict and non-strict ordering, the
-  double negation simplification rule
-  `double_negation_expression`, the negated comparison simplification rule
-  `negated_comparison_expression`, the redundant boolean-if simplification rule
-  `redundant_boolean_if_expression`, the redundant boolean-if statement rule
-  `redundant_boolean_if_statement`, the same-branch if simplification rules
-  `same_branch_if_expression` and `same_branch_if_statement`, the dead-code
-  cleanup rule `unreachable_statement`, and the result-safety rule
-  `unchecked_result`
-- `sley new --json` emits `sley.project.scaffold.v0` and creates
-  non-destructive `hello`, `library`, `cli`, `service-gate`,
-  `data-pipeline`, `deploy`, `spend-gate`, `agent`, `agent-task-pack`, or `agent-project`
-  starter projects
-  that can immediately run through check, doctor, query, plan, lint, local or
-  seeded runtime gates with denied warnings, deploy dry-run packaging where
-  applicable, seal, and ZJX handoff packaging; scaffold JSON includes typed
-  `next_actions` plus legacy `next_commands`
-- `sley doctor --json` emits `sley.doctor.report.v0` and consumes strict
-  diagnostics plus checked query summaries and non-empty lint findings into one
-  agent readiness report;
-  call-bearing reports include `inspect_calls` next-actions for strict
-  `sley query --kind calls` rows; warning reports include
-  `plan_lint_repairs` next-actions that call
-  `sley plan --json --graft-templates <target>` and `preview_lint_repair`
-  next-actions with `sley fix --json --dry-run` when exactly one checked lint
-  repair exists; these preview actions keep `command` non-mutating and include
-  an explicit `write_command` for the matching `sley fix --write`. CLI smokes
-  prove the previewed repair can be written and followed by clean
-  `sley verify --json --deny-warnings` for both single-file and multi-file
-  project targets, including generated deploy and agent scaffold quickstarts
-  re-verified with seeded authority. Ready doctor reports include
-  `verify_gate` next-actions before entrypoint runs, with seeded `--cap` args
-  when the entrypoint declares effects, matching `sley-ci` verify/run handoffs
-  for effectful entrypoints, plus direct and `sley-ci` deploy dry-run package
-  handoffs for Deploy entrypoints
-- `sley plan --json` emits `sley.edit_plan.report.v0` and consumes strict
-  diagnostics plus checked query/lint findings into ranked task edit surfaces,
-  graft targets, call-row inspection next-actions, direct plus `sley-ci`
-  post-edit doctor gates, and direct plus `sley-ci` seeded post-edit verify
-  gates when reachable literal host calls make that safe;
-  add `--graft-templates` to emit starter graft operation payloads,
-  rename-plus-call-site transactions, and add-take-plus-call-arg transactions
-  for the highest-ranked task surface, plus safe remove-take-plus-call-arg
-  transactions when an unused take can be proven
-  and lint-driven `DeleteNode` templates plus cleanup transactions for unused
-  private type/effect declarations, plus `AddModuleDeclaration` templates for
-  `missing_module_declaration` with module names inferred from the target file
-  or project-relative path, plus `delete_unused_private_task` templates for
-  dead private tasks, `delete_dead_private_tasks` cleanup transactions for
-  dead private task groups and unreachable cycles, `remove_unused_take`
-  templates for unused takes that validate through checked `RemoveTake`, and
-  `remove_unused_declared_effect` templates for unused task-declared effects
-  that validate through checked `RemoveTaskEffect`, and `delete_unused_import`
-  or `delete_duplicate_import` templates for import hygiene that validate
-  through checked `DeleteNode`, plus
-  `migrate_raw_host_adapter` templates for raw host calls that can safely move
-  to fallible `try_` adapters with `?`, plus
-  `propagate_unchecked_result` templates for discarded `Result` expression
-  statements, plus `qualify_imported_call` templates for simple imported task
-  calls that should be alias- or module-qualified, plus
-  `delete_unused_pure_expression_statement` templates for no-op pure
-  expression statements, plus
-  `delete_self_assignment_statement` templates for no-op mutation statements,
-  plus `delete_overwritten_set_statement` templates for dead set statements
-  immediately overwritten before any read,
-  plus `fold_redundant_initial_set_into_binding` and
-  `convert_redundant_initial_set_to_bind` transactions for safe immediate
-  mutable-initializer replacements,
-  plus
-  `delete_constant_false_if_statement` templates for never-executed
-  `if false` statements without `else` branches, plus
-  `delete_constant_false_while_statement` templates for never-executed
-  `while false` statements, plus
-  `simplify_constant_comparison_expression` templates for literal comparisons
-  with constant boolean results, plus
-  `simplify_constant_arithmetic_expression` templates for numeric literal
-  arithmetic, plus
-  `simplify_absorbing_arithmetic_expression` templates for delete-safe
-  multiplication by zero, plus
-  `simplify_constant_text_concatenation_expression` templates for text literal
-  concatenation, plus
-  `simplify_constant_list_index_expression` templates for literal list indexes,
-  plus `simplify_constant_map_index_expression` templates for literal map
-  indexes, plus `simplify_constant_record_field_access_expression` templates
-  for literal record field access, plus `simplify_constant_len_expression`
-  templates for literal `len` calls, plus
-  `simplify_constant_not_expression` templates for literal boolean negation,
-  plus
-  `simplify_idempotent_boolean_expression` templates for delete-safe repeated
-  boolean operands, plus
-  `simplify_negated_comparison_expression` templates for inverted
-  comparisons, plus
-  `simplify_constant_if_statement` templates for constant `if` statements with
-  one executing branch statement, plus
-  `simplify_redundant_boolean_if_statement` templates for boolean `if`
-  statements that can return the condition or its negation directly, plus
-  `simplify_same_branch_if_statement` templates for same-branch statement-level
-  `if` cleanup, plus
-  `delete_empty_if_statement` templates for no-op `if` statements with
-  delete-safe conditions and empty branches, plus
-  `delete_empty_for_statement` templates for `for` statements over literal
-  empty lists, plus
-  `delete_empty_forge_statement` templates for no-op `forge { }` starter
-  blocks, plus
-  `delete_unreachable_statement` templates for dead statements after a
-  guaranteed return, plus
-  `convert_mutable_binding_to_bind` transactions for never-set mutable locals;
-  selected task graph-slice
-  affordances are surfaced as checked
-  `move_statement`/`move_take`, destination-variant, `delete_statement`,
-  `delete_take`, `replace_statement`, `replace_expression`,
-  `update_call_sites`, and `replace_call_arg` templates where legal, or
-  `--template-surface <surface>` can target a specific task id, qualified task
-  name, block node id, statement node id, take node id, expression node id, or
-  lint finding node; selected task and block surfaces emit checked
-  `insert_statement` starters, selected statement surfaces emit checked
-  `replace_statement` starters, and the `program` surface emits checked
-  `add_task`, `add_type_declaration`, `add_effect_declaration`, and
-  `add_import` starters; `--emit-graft <kind>` prints one
-  matching operation/transaction JSON object for `sley graft`
-- `sley fix --json --kind <kind>` consumes checked plan templates and applies
-  one named operation or transaction through the same graft checker, emitting
-  `sley.graft.outcome.v0`; exact block, statement, take, and expression node
-  surfaces can be selected with `--template-surface`; `--name <name>`,
-  `--type <type>`, `--module <module>`, `--source <source>`,
-  `--source-file <path>`, and
-  `--position <n>` can override matching editable payload fields on
-  single-operation templates before the normal graft checker runs; default and
-  `--dry-run` mode are
-  non-mutating, and `--write` records the normal graft trace receipt or a
-  caller-supplied `--trace <trace.jsonl>` path; CLI smokes cover a call-row-driven
-  `rename_and_update_call_sites` write and an unused-take
-  `remove_take_and_remove_call_arg` write followed by call query and verify;
-  `qualify_imported_call` write, call query, and strict verify for imported
-  call style cleanup; `add_module_declaration` is the checked fixer for
-  explicit module-declaration style warnings and uses the same module-name
-  inference
-- graft call-argument edits are structural: use `UpdateCallArgs` to insert,
-  `ReplaceCallArg` to replace, and `RemoveCallArg` to remove checked caller
-  arguments by task target plus optional `from`/`scope`
-- `sley verify --json` emits `sley.verify.report.v0` and consumes strict
-  diagnostics, checked query/lint summaries, and deterministic runtime
-  execution into one CI/pre-deploy gate; scaffold templates include checked
-  local pure starters, a seeded Network service smoke, a checked
-  `--deny-warnings --cap Deploy --deploy-result staging staged` deploy smoke,
-  a checked `--deny-warnings --cap Spend --spend-result ads-budget authorized`
-  spend smoke,
-  and seeded SecretRead/Network/ModelCall/Deploy agent smokes through both
-  `sley verify` and `sley-ci verify`, direct runtime smoke through `sley run`
-  and `sley-ci run`, plus deploy package smoke through `sley deploy` and
-  `sley-ci deploy`; denied warning
-  reports route agents to checked lint repair plans plus
-  dry-run fix previews when the repair is unambiguous before deployment review;
-  passed reports point agents to direct and `sley-ci` deploy dry-run package
-  gates for Deploy entrypoints plus `sley seal --json <target>` and
-  `sley zjx --json <target>` for review and handoff artifacts
-- `sley run --json` emits `sley.run.report.v0` on successful deterministic
-  execution, with the runtime value under `/value`
-- `sley deploy --json --dry-run` emits `sley.deploy.report.v0` and composes
-  strict verify, trace seal, and ZJX package summaries into one local deploy
-  package report; it records `live_deploy_allowed=false`, makes no external
-  mutations or provider calls, and keeps live deployment behind explicit
-  operator approval. Omitting `--dry-run` in JSON mode emits
-  `DRY_RUN_REQUIRED` with a rerun repair hint. Add `--artifacts-dir <dir>` to
-  write local `deploy-report.json`, `seal.json`, `zjx-envelope.json`, and
-  digest-bearing `manifest.json` handoff files after the dry-run package is
-  ready;
-  `sley-ci deploy` requires explicit `--dry-run`, passes the same flag through
-  to the wrapped deploy command, and exposes nested verify lint findings,
-  runtime diagnostics, and repair `next_actions` on failed CI steps.
-  Use `sley-contract inspect-deploy-artifacts <dir> --schemas docs/schemas
-  --json` to validate the handoff manifest, schemas, and file digests after the
-  directory moves between agent sessions
-- `examples/agent_deploy_pipeline.sley` is the standalone dogfood path for
-  SecretRead + Network + ModelCall + Deploy: check it, inspect it with
-  doctor/query, lint with denied warnings, run with deterministic seeds, verify
-  with denied warnings, then build and contract-inspect a local deploy dry-run
-  package with optional artifact handoff files
-- next development work should keep broadening style and migration lints after
-  the empty-if cleanup path
-- project graft writeback now supports create/update/delete module files,
-  `AddImport` writes to existing on-disk module files that were not yet loaded
-  through the entry import graph, and module rename, including manifest entry
-  updates; top-level type/effect/task movement into known modules is supported,
-  including AddImport-then-MoveNode transactions that create new module files
-  from moved declarations; top-level import moves into known modules are
-  supported for project writeback
-- `MoveNode` supports cross-parent statement movement between existing block
-  parents with `payload.destination`, take reordering within the owning task,
-  and checked cross-task take movement into another task's take list; expression
-  movement remains an explicit rejection, and expression move rejection carries
-  a `replace_expression` repair hint
-- graph, graph-slice, and query module import summaries expose canonical import
-  node ids for graft targets such as `import:app.main:app.math`
-- graph slices expose `insert_affordances` for task-local block
-  `InsertStatement` planning, including exact block target ids, insertion
-  limits, starter operation JSON, and editable JSON pointers
-- graph slices expose `move_affordances` for bounded import/type/effect/task,
-  statement, and take `MoveNode` planning, including exact parent ids,
-  destination insertion limits, starter operation JSON, and editable JSON
-  pointers
-- graph slices expose `delete_affordances` for bounded
-  import/type/effect/task/non-return statement/take `DeleteNode` planning;
-  `sley plan --graft-templates` surfaces checked task-internal
-  `delete_statement` and `delete_take` templates when the starter delete graft
-  validates
-- graph slices expose `replace_affordances` for task-local non-return
-  `ReplaceStatement` and `ReplaceExpression` planning; `sley plan
-  --graft-templates` surfaces checked `replace_statement` and
-  `replace_expression` templates when the starter replace graft validates;
-  direct statement surfaces can still emit checked no-op `ReplaceStatement`
-  starters
-- graph slices expose `call_site_affordances` for resolved task-local
-  `UpdateCallSites` planning, including the call expression id, resolved task
-  target, raw callee text, starter operation JSON, and editable JSON pointers
-- graph slices expose `call_arg_affordances` for resolved task-local
-  `ReplaceCallArg` planning when the task/callee scope maps to exactly one
-  outbound call, including the argument id, call id, argument position, starter
-  operation JSON, and editable JSON pointers
-- `sley plan --graft-templates --template-surface program` surfaces checked
-  declaration starters for `add_task`, `add_type_declaration`, and
-  `add_effect_declaration`; source-backed declaration starters can be executed
-  through `sley fix --source` or `--source-file`, and name-backed starters can
-  use `--name`
-- manifest-backed accepted/rejected synthetic gold corpus growth, including
-  spend and data helper boundaries for transitive authority checks
-- broader graph-slice graft operations around insert/move/delete/replace planning
+Do not claim strict self-hosting yet. Stage-1 proves a foreign-source-free
+runnable bootstrap and command envelopes. Strict self-hosting requires the
+parser, checker, runtime, and command semantics to be implemented in Sley source
+and covered by parity tests.

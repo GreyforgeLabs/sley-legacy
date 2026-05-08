@@ -10,9 +10,21 @@ FORBIDDEN_EXTENSIONS=(
   "*.cc"
   "*.cpp"
   "*.h"
+  "*.hpp"
   "*.m"
   "*.mm"
   "*.swift"
+  "*.go"
+  "*.java"
+  "*.kt"
+  "*.cs"
+  "*.rb"
+  "*.php"
+  "*.py"
+  "*.js"
+  "*.mjs"
+  "*.ts"
+  "*.tsx"
 )
 
 
@@ -32,9 +44,10 @@ for ext in "${FORBIDDEN_EXTENSIONS[@]}"; do
 done
 
 if [[ "$FOUND" -eq 1 ]]; then
-  echo "\nSelf-hosted gate failed: foreign-language source files are present." >&2
-  echo "Run a staged migration plan before removing this gate." >&2
+  echo "" >&2
+  echo "Self-hosted gate failed: forbidden foreign-language source files are present." >&2
+  echo "Keep source implementation in .sley plus the permitted POSIX shell bootstrap/test surface." >&2
   exit 1
 fi
 
-echo "Self-hosted gate passed: no forbidden extensions found."
+echo "Self-hosted gate passed: no forbidden foreign-language source files found."

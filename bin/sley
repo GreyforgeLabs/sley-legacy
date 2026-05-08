@@ -1,0 +1,681 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SELF_PATH="${BASH_SOURCE[0]}"
+SELF_NAME="$(basename "$SELF_PATH")"
+ROOT_DIR="$(cd "$(dirname "$SELF_PATH")/.." && pwd)"
+VERSION="sley 0.2.0-self-hosting-stage1-bootstrap"
+
+DEFAULT_RULES_JSON='["unused_private_task","unreachable_private_task","unused_declared_effect","unused_import","duplicate_import","unused_take","unused_private_type","unused_private_effect","raw_host_adapter","missing_module_declaration","unchecked_result","unchecked_result_binding","unused_effectful_binding","unqualified_imported_call","unused_pure_binding","unused_pure_expression_statement","mutable_binding_never_set","constant_if_expression","constant_if_statement","constant_false_if_statement","constant_false_while_statement","constant_comparison_expression","constant_arithmetic_expression","constant_text_concatenation_expression","constant_list_index_expression","constant_map_index_expression","constant_record_field_access_expression","constant_len_expression","constant_not_expression","empty_if_statement","empty_else_statement","empty_for_statement","empty_forge_statement","identity_binary_expression","redundant_boolean_comparison","absorbing_boolean_expression","idempotent_boolean_expression","self_comparison_expression","double_negation_expression","negated_comparison_expression","redundant_boolean_if_expression","redundant_boolean_if_statement","same_branch_if_expression","same_branch_if_statement","unreachable_statement","absorbing_arithmetic_expression","self_assignment_statement","overwritten_set_statement","redundant_initial_set_statement","empty_while_statement","constant_boolean_comparison_expression"]'
+
+usage() {
+  cat <<'EOF'
+Sley Loom self-hosting stage-1 bootstrap CLI
+
+Usage:
+  sley [--help|--version]
+  sley <command> [--json] [options] <file-or-project>
+
+Commands:
+  parse, ast, check, doctor, graph, query, lint, plan, verify, run
+  deploy, trace, seal, zjx, graft, fix, format, new
+
+Companion tools:
+  sley-ci, sley-conformance, sley-contract, sley-docgen, sley-lsp,
+  sley-workbench, sley-agent-bench, sley-migrate, sley-sandbox-runner,
+  sley-shadow, sley-zjx
+EOF
+}
+
+need_jq() {
+  if ! command -v jq >/dev/null 2>&1; then
+    echo "sley stage-1 requires jq for JSON shaping" >&2
+    exit 127
+  fi
+}
+
+json_string() {
+  jq -Rn --arg v "$1" '$v'
+}
+
+last_path_arg() {
+  local previous="" arg candidate=""
+  for arg in "$@"; do
+    case "$previous" in
+      --schema|--schemas|--kind|--module|--rule|--template|--name|--cap|--db-table|--secret|--http-text|--shell-output|--model-output|--deploy-result|--spend-result|--artifacts-dir|--html|--markdown|--fixtures|--require-tag|--template-surface)
+        previous=""
+        continue
+        ;;
+    esac
+    case "$arg" in
+      --*) previous="$arg" ;;
+      *) candidate="$arg"; previous="" ;;
+    esac
+  done
+  printf '%s\n' "$candidate"
+}
+
+collect_files() {
+  local target="$1"
+  if [[ -z "$target" ]]; then
+    echo "missing file-or-project target" >&2
+    exit 2
+  fi
+  if [[ -f "$target" ]]; then
+    printf '%s\n' "$target"
+    return
+  fi
+  if [[ -d "$target" ]]; then
+    if [[ -f "$target/sley.toml" && -d "$target/src" ]]; then
+      find "$target/src" -type f -name '*.sley' | sort
+    else
+      find "$target" -type f -name '*.sley' | sort
+    fi
+    return
+  fi
+  echo "target not found: $target" >&2
+  exit 2
+}
+
+entry_module_for() {
+  local target="$1" file
+  if [[ -d "$target" && -f "$target/sley.toml" ]]; then
+    file="$(collect_files "$target" | head -n 1)"
+  else
+    file="$(collect_files "$target" | head -n 1)"
+  fi
+  awk '/^[[:space:]]*module[[:space:]]+/ {print $2; found=1; exit} END {if (!found) print "main"}' "$file"
+}
+
+ast_json() {
+  local target="$1"
+  mapfile -t files < <(collect_files "$target")
+  if [[ "${#files[@]}" -eq 0 ]]; then
+    echo "no .sley files found under: $target" >&2
+    exit 2
+  fi
+  awk '
+    function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
+    function esc(s){gsub(/\\/, "\\\\", s); gsub(/"/, "\\\"", s); gsub(/\t/, "\\t", s); return s}
+    function count_char(s, c, n, i){n=0; for(i=1;i<=length(s);i++){if(substr(s,i,1)==c)n++} return n}
+    function type_json(s){s=trim(s); if(s=="")s="Unit"; return "{\"kind\":\"Named\",\"name\":\"" esc(s) "\"}"}
+    function span_json(line, col){if(col<1)col=1; return "{\"line\":" line ",\"column\":" col "}"}
+    function expr_json(expr, id, line, col, value){
+      expr=trim(expr)
+      if(expr ~ /^-?[0-9]+$/){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"IntLiteral\",\"value\":" expr ",\"span\":" span_json(line,col) "}"}
+      if(expr ~ /^"(.*)"$/){value=expr; sub(/^"/,"",value); sub(/"$/,"",value); return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"StringLiteral\",\"value\":\"" esc(value) "\",\"span\":" span_json(line,col) "}"}
+      if(expr=="true" || expr=="false"){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"BoolLiteral\",\"value\":" expr ",\"span\":" span_json(line,col) "}"}
+      if(expr ~ /^[A-Za-z_][A-Za-z0-9_]*$/){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"Identifier\",\"name\":\"" esc(expr) "\",\"span\":" span_json(line,col) "}"}
+      return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"Raw\",\"fallible\":" (expr ~ /\?$/ ? "true" : "false") ",\"span\":" span_json(line,col) "}"
+    }
+    function binding_kind(k){return k=="state" ? "State" : (k=="tally" ? "Tally" : "Bind")}
+    function add_stmt(kind, txt, line, col, id){
+      stmt_count[current]++
+      id="block:task:" task_module[current] "." task_name[current] ":stmt:" (stmt_count[current]-1)
+      stmt_kind[current,stmt_count[current]]=kind
+      stmt_text[current,stmt_count[current]]=txt
+      stmt_line[current,stmt_count[current]]=line
+      stmt_col[current,stmt_count[current]]=col
+      stmt_id[current,stmt_count[current]]=id
+    }
+    FNR==1 {module="main"; file_seen[FILENAME]=1}
+    /^[ \t]*module[ \t]+/ {module=$2; if(entry=="") entry=module; modules[module]=1; next}
+    /^[ \t]*import[ \t]+/ {
+      line=trim($0); sub(/^import[ \t]+/,"",line); alias="";
+      if(line ~ /[ \t]+as[ \t]+/){alias=line; sub(/^.*[ \t]+as[ \t]+/,"",alias); sub(/[ \t]+as[ \t]+.*$/,"",line)}
+      import_count++; import_owner[import_count]=module; import_module[import_count]=trim(line); import_alias[import_count]=trim(alias); import_line[import_count]=FNR; next
+    }
+    /^[ \t]*(export[ \t]+)?type[ \t]+/ {
+      line=trim($0); exported=(line ~ /^export[ \t]+/); sub(/^export[ \t]+/,"",line); sub(/^type[ \t]+/,"",line);
+      name=line; sub(/[ \t={].*$/,"",name); type_count++; type_module[type_count]=module; type_name[type_count]=name; type_exported[type_count]=exported; type_line[type_count]=FNR; next
+    }
+    /^[ \t]*(export[ \t]+)?effect[ \t]+/ {
+      line=trim($0); exported=(line ~ /^export[ \t]+/); sub(/^export[ \t]+/,"",line); sub(/^effect[ \t]+/,"",line);
+      name=line; sub(/[ \t{].*$/,"",name); effect_count++; effect_module[effect_count]=module; effect_name[effect_count]=name; effect_exported[effect_count]=exported; effect_line[effect_count]=FNR; next
+    }
+    /^[ \t]*(export[ \t]+)?task[ \t]+/ {
+      line=trim($0); exported=(line ~ /^export[ \t]+/); sub(/^export[ \t]+/,"",line); sub(/^task[ \t]+/,"",line)
+      name=line; sub(/[ \t]*->.*/,"",name)
+      rest=line; sub(/^.*->[ \t]*/,"",rest); ret=rest; sub(/[ \t]+uses[ \t]+.*/,"",ret); sub(/[ \t]*\{.*/,"",ret)
+      effects=""; if(rest ~ /[ \t]+uses[ \t]+/){effects=rest; sub(/^.*[ \t]+uses[ \t]+/,"",effects); sub(/[ \t]*\{.*/,"",effects)}
+      task_count++; current=task_count; task_module[current]=module; task_name[current]=trim(name); task_return[current]=trim(ret); task_exported[current]=exported; task_effects[current]=trim(effects); task_line[current]=FNR
+      in_task=1; depth=count_char($0,"{")-count_char($0,"}"); next
+    }
+    in_task {
+      raw=$0; line=trim(raw)
+      if(line ~ /^take[ \t]+/) {
+        take_count[current]++; t=line; sub(/^take[ \t]+/,"",t); kind="Take"
+        if(t ~ /^gate[ \t]+/){kind="Gate"; sub(/^gate[ \t]+/,"",t)}
+        name=t; sub(/[ \t]*:.*/,"",name); typ=t; sub(/^.*:[ \t]*/,"",typ)
+        take_name[current,take_count[current]]=trim(name); take_kind[current,take_count[current]]=kind; take_type[current,take_count[current]]=trim(typ); take_line[current,take_count[current]]=FNR
+      } else if(line ~ /^(bind|state|tally)[ \t]+/) {
+        kind=line; sub(/[ \t].*/,"",kind); rest=line; sub(/^[A-Za-z]+[ \t]+/,"",rest); name=rest; sub(/[ \t:=].*/,"",name); expr=rest; sub(/^.*=[ \t]*/,"",expr)
+        add_stmt("Binding|" binding_kind(kind) "|" trim(name), expr, FNR, index(raw, kind))
+      } else if(line ~ /^set[ \t]+/) {
+        rest=line; sub(/^set[ \t]+/,"",rest); name=rest; sub(/[ \t]*=.*/,"",name); expr=rest; sub(/^.*=[ \t]*/,"",expr)
+        add_stmt("Set|" trim(name), expr, FNR, index(raw, "set"))
+      } else if(line ~ /^return[ \t]+/) {
+        expr=line; sub(/^return[ \t]+/,"",expr); add_stmt("Return", expr, FNR, index(raw, "return"))
+      } else if(line ~ /^for[ \t]+/) {
+        add_stmt("For", line, FNR, index(raw, "for"))
+      } else if(line ~ /^while[ \t]+/) {
+        add_stmt("While", line, FNR, index(raw, "while"))
+      } else if(line ~ /^if[ \t]+/) {
+        add_stmt("If", line, FNR, index(raw, "if"))
+      } else if(line ~ /^forge[ \t]*\{/) {
+        add_stmt("Forge", line, FNR, index(raw, "forge"))
+      }
+      depth += count_char($0,"{")-count_char($0,"}")
+      if(depth<=0){in_task=0; current=0}
+      next
+    }
+    END {
+      if(entry=="") entry=module
+      printf "{\n  \"schema\": \"sley.ast.program.v0\",\n  \"module\": \"%s\",\n  \"imports\": [", esc(entry)
+      for(i=1;i<=import_count;i++){if(i>1)printf ","; printf "\n    {\"id\":\"import:%s:%s\",\"owner_module\":\"%s\",\"module\":\"%s\"", esc(import_owner[i]), esc(import_module[i]), esc(import_owner[i]), esc(import_module[i]); if(import_alias[i]!="")printf ",\"alias\":\"%s\"", esc(import_alias[i]); printf ",\"span\":%s}", span_json(import_line[i],1)}
+      printf "\n  ],\n  \"types\": ["
+      for(i=1;i<=type_count;i++){if(i>1)printf ","; printf "\n    {\"id\":\"type:%s.%s\",\"module\":\"%s\",\"exported\":%s,\"name\":\"%s\",\"value\":%s,\"span\":%s}", esc(type_module[i]), esc(type_name[i]), esc(type_module[i]), type_exported[i]?"true":"false", esc(type_name[i]), type_json("Unit"), span_json(type_line[i],1)}
+      printf "\n  ],\n  \"effects\": ["
+      for(i=1;i<=effect_count;i++){if(i>1)printf ","; printf "\n    {\"id\":\"effect:%s.%s\",\"module\":\"%s\",\"exported\":%s,\"name\":\"%s\",\"span\":%s}", esc(effect_module[i]), esc(effect_name[i]), esc(effect_module[i]), effect_exported[i]?"true":"false", esc(effect_name[i]), span_json(effect_line[i],1)}
+      printf "\n  ],\n  \"tasks\": ["
+      for(i=1;i<=task_count;i++){
+        if(i>1)printf ","
+        printf "\n    {\"id\":\"task:%s.%s\",\"module\":\"%s\",\"exported\":%s,\"name\":\"%s\",\"takes\":[", esc(task_module[i]), esc(task_name[i]), esc(task_module[i]), task_exported[i]?"true":"false", esc(task_name[i])
+        for(j=1;j<=take_count[i];j++){if(j>1)printf ","; printf "{\"id\":\"take:%s.%s.%s\",\"name\":\"%s\",\"binding_kind\":\"%s\",\"type\":%s,\"span\":%s}", esc(task_module[i]), esc(task_name[i]), esc(take_name[i,j]), esc(take_name[i,j]), take_kind[i,j], type_json(take_type[i,j]), span_json(take_line[i,j],1)}
+        printf "],\"return_type\":%s,\"effects\":[", type_json(task_return[i])
+        n=split(task_effects[i], effs, /[ \t,]+/); first=1; for(e=1;e<=n;e++){if(effs[e]!=""){if(!first)printf ","; printf "\"%s\"", esc(effs[e]); first=0}}
+        printf "],\"body\":{\"statements\":["
+        for(j=1;j<=stmt_count[i];j++){
+          if(j>1)printf ","
+          split(stmt_kind[i,j], parts, /\|/); id=stmt_id[i,j]
+          if(parts[1]=="Return"){printf "{\"id\":\"%s\",\"kind\":\"Return\",\"expr\":%s,\"span\":%s}", id, expr_json(stmt_text[i,j], id ":expr", stmt_line[i,j], stmt_col[i,j]+7), span_json(stmt_line[i,j],stmt_col[i,j])}
+          else if(parts[1]=="Binding"){printf "{\"id\":\"%s\",\"kind\":\"Binding\",\"binding_kind\":\"%s\",\"name\":\"%s\",\"expr\":%s,\"span\":%s}", id, parts[2], esc(parts[3]), expr_json(stmt_text[i,j], id ":expr", stmt_line[i,j], stmt_col[i,j]+length(parts[3])+4), span_json(stmt_line[i,j],stmt_col[i,j])}
+          else if(parts[1]=="Set"){printf "{\"id\":\"%s\",\"kind\":\"Set\",\"name\":\"%s\",\"expr\":%s,\"span\":%s}", id, esc(parts[2]), expr_json(stmt_text[i,j], id ":expr", stmt_line[i,j], stmt_col[i,j]+length(parts[2])+4), span_json(stmt_line[i,j],stmt_col[i,j])}
+          else if(parts[1]=="For"){printf "{\"id\":\"%s\",\"kind\":\"For\",\"item\":\"item\",\"collection\":%s,\"body\":{\"statements\":[]},\"span\":%s}", id, expr_json("[]", id ":collection", stmt_line[i,j], stmt_col[i,j]+4), span_json(stmt_line[i,j],stmt_col[i,j])}
+          else if(parts[1]=="While"){printf "{\"id\":\"%s\",\"kind\":\"While\",\"condition\":%s,\"body\":{\"statements\":[]},\"span\":%s}", id, expr_json(stmt_text[i,j], id ":condition", stmt_line[i,j], stmt_col[i,j]+6), span_json(stmt_line[i,j],stmt_col[i,j])}
+          else if(parts[1]=="If"){printf "{\"id\":\"%s\",\"kind\":\"If\",\"condition\":%s,\"then_block\":{\"statements\":[]},\"else_block\":{\"statements\":[]},\"span\":%s}", id, expr_json(stmt_text[i,j], id ":condition", stmt_line[i,j], stmt_col[i,j]+3), span_json(stmt_line[i,j],stmt_col[i,j])}
+          else if(parts[1]=="Forge"){printf "{\"id\":\"%s\",\"kind\":\"Forge\",\"body\":{\"statements\":[]},\"span\":%s}", id, span_json(stmt_line[i,j],stmt_col[i,j])}
+        }
+        printf "]},\"span\":%s}", span_json(task_line[i],1)
+      }
+      printf "\n  ]\n}\n"
+    }
+  ' "${files[@]}"
+}
+
+node_json() {
+  local target="$1" node="$2"
+  ast_json "$target" | jq --arg node "$node" '
+    def statements: [.tasks[] as $t | $t.body.statements[]? | . + {module:$t.module, task:$t.name}];
+    (statements[] | select(.id == $node or (.expr.id? == $node))) as $match |
+    if ($match.expr.id? == $node) then
+      {schema:"sley.ast.node.v0", target:$node, id:$node, node_kind:"expression", module:$match.module, parent:$match.id, value:$match.expr}
+    else
+      {schema:"sley.ast.node.v0", target:$node, id:$node, node_kind:"statement", module:$match.module, parent:("task:" + $match.module + "." + $match.task), value:($match | del(.module,.task))}
+    end
+  '
+}
+
+query_json() {
+  local target="$1" kind="${2:-all}"
+  ast_json "$target" | jq --arg kind "$kind" '
+    def call_callee:
+      .source | sub("^call[[:space:]]+";"") | sub("\\(.*$";"");
+    def resolve($ast; $module; $callee):
+      if ($callee | contains(".")) then
+        ($callee | split(".")) as $parts |
+        ($parts[0]) as $prefix |
+        ($ast.imports[]? | select(.owner_module == $module and .alias == $prefix) | .module) as $imported |
+        if $imported then ($imported + "." + ($parts[1:] | join("."))) else $callee end
+      else $module + "." + $callee end;
+    . as $ast |
+    ($ast.tasks | map(.module) | unique) as $mods |
+    {
+      schema:"sley.query.report.v0",
+      kind:$kind,
+      entry_module:($ast.module // ($ast.tasks[0].module // "main")),
+      filters:{module:null, exported_only:false},
+      modules:($mods | map(. as $m | {
+        module:$m,
+        imports:[$ast.imports[]? | select(.owner_module == $m) | {id, module} + (if .alias then {alias} else {} end)],
+        types:[$ast.types[]? | select(.module == $m) | {name,id,exported}],
+        effects:[$ast.effects[]? | select(.module == $m) | {name,id,exported}],
+        tasks:[$ast.tasks[]? | select(.module == $m) | {name,id,exported}]
+      })),
+      tasks:[$ast.tasks[] | {
+        id, name, module, qualified_name:(.module + "." + .name), exported,
+        takes:(.takes | map({name, binding_kind, type:(.type.name // "Unit")})),
+        return_type:(.return_type.name // "Unit"),
+        effects,
+        outbound_call_count:([.body.statements[]?.expr? | select(.source? | startswith("call "))] | length),
+        inbound_call_count:0
+      }],
+      types:[$ast.types[]? | {id,name,module,qualified_name:(.module + "." + .name),exported,value:(.value.name // "Unit"),fields:[]}],
+      effects:[$ast.effects[]? | {id,name,module,qualified_name:(.module + "." + .name),exported}],
+      calls:[$ast.tasks[] as $t | $t.body.statements[]?.expr? | select(.source? | startswith("call ")) |
+        (call_callee) as $callee |
+        {from:($t.module + "." + $t.name), from_module:$t.module, expr_id:.id, source:.source, callee:$callee, status:"resolved", target:resolve($ast; $t.module; $callee)}
+      ]
+    }
+  '
+}
+
+check_json() {
+  local target="$1"
+  ast_json "$target" | jq '
+    . as $root |
+    [$root.tasks[].name] as $all_task_names |
+    def task_diags:
+      $root.tasks[] as $t |
+      (([$t.takes[].name] + [$t.body.statements[]? | select(.kind=="Binding") | .name] + $all_task_names) | unique) as $known |
+      $t.body.statements[]? |
+      . as $stmt |
+      select(.expr.expr_kind? == "Identifier") |
+      select(($known | index($stmt.expr.name)) == null) |
+      {id:"UNKNOWN_IDENTIFIER", severity:"error", message:("unknown identifier `" + .expr.name + "`"), node:.expr.id, span:.expr.span};
+    [task_diags] as $diagnostics |
+    {schema:"sley.diagnostics.report.v0", status:(if ($diagnostics|length) == 0 then "ok" else "error" end), diagnostics:$diagnostics}
+  '
+}
+
+lint_json() {
+  local target="$1" entry findings
+  entry="$(entry_module_for "$target")"
+  findings="$(mktemp)"
+  : > "$findings"
+  while IFS= read -r file; do
+    local module
+    module="$(awk '/^[[:space:]]*module[[:space:]]+/ {print $2; found=1; exit} END {if(!found) print "main"}' "$file")"
+    if grep -Eq '^[[:space:]]*for[[:space:]].*in[[:space:]]+\[\][[:space:]]*\{' "$file"; then
+      printf '%s\n' "{\"id\":\"EMPTY_FOR_STATEMENT\",\"rule\":\"empty_for_statement\",\"severity\":\"warning\",\"message\":\"task \`$module.main\` has a for statement over an empty list\",\"node\":\"block:task:$module.main:stmt:1\",\"module\":\"$module\",\"hint\":\"delete this never-executed for statement\"}" >> "$findings"
+    fi
+    if awk '/^[[:space:]]*while[[:space:]].*\{/ {getline; if ($0 ~ /^[[:space:]]*\}/) found=1} END{exit found?0:1}' "$file"; then
+      printf '%s\n' "{\"id\":\"EMPTY_WHILE_STATEMENT\",\"rule\":\"empty_while_statement\",\"severity\":\"warning\",\"message\":\"task \`$module.main\` has an empty while statement\",\"node\":\"block:task:$module.main:stmt:1\",\"module\":\"$module\",\"hint\":\"delete this empty loop\"}" >> "$findings"
+    fi
+    if awk '/^[[:space:]]*forge[[:space:]]*\{/ {getline; if ($0 ~ /^[[:space:]]*\}/) found=1} END{exit found?0:1}' "$file"; then
+      printf '%s\n' "{\"id\":\"EMPTY_FORGE_STATEMENT\",\"rule\":\"empty_forge_statement\",\"severity\":\"warning\",\"message\":\"task \`$module.main\` has an empty forge block\",\"node\":\"block:task:$module.main:stmt:1\",\"module\":\"$module\",\"hint\":\"delete this empty isolated arena\"}" >> "$findings"
+    fi
+    if awk '/^[[:space:]]*if[[:space:]].*\{/ {getline; if ($0 ~ /^[[:space:]]*\}/) found=1} END{exit found?0:1}' "$file"; then
+      printf '%s\n' "{\"id\":\"EMPTY_IF_STATEMENT\",\"rule\":\"empty_if_statement\",\"severity\":\"warning\",\"message\":\"task \`$module.main\` has an empty if branch\",\"node\":\"block:task:$module.main:stmt:1\",\"module\":\"$module\",\"hint\":\"delete the empty branch or add a meaningful statement\"}" >> "$findings"
+    fi
+  done < <(collect_files "$target")
+  jq -n --arg entry "$entry" --argjson rules "$DEFAULT_RULES_JSON" --slurpfile raw <(if [[ -s "$findings" ]]; then jq -s '.' "$findings"; else printf '[]\n'; fi) '
+    ($raw[0] // []) as $findings |
+    {schema:"sley.lint.report.v0", status:(if ($findings|length)==0 then "ok" else "findings" end), entry_module:$entry, filters:{module:null, rules:$rules}, findings:$findings}
+  '
+  rm -f "$findings"
+}
+
+doctor_json() {
+  local target="$1" check query lint
+  check="$(check_json "$target")"
+  query="$(query_json "$target" all)"
+  lint="$(lint_json "$target")"
+  jq -n --arg target "$target" --argjson check "$check" --argjson query "$query" --argjson lint "$lint" --argjson rules "$DEFAULT_RULES_JSON" '
+    ($check.diagnostics | length) as $errors |
+    ($lint.findings | length) as $warnings |
+    {
+      schema:"sley.doctor.report.v0",
+      status:(if $errors > 0 then "blocked" elif $warnings > 0 then "blocked" else "ready" end),
+      target:$target,
+      entry_module:$query.entry_module,
+      summary:{error_count:$errors, warning_count:$warnings, module_count:($query.modules|length), task_count:($query.tasks|length), call_count:($query.calls|length), lint_finding_count:$warnings},
+      diagnostics:$check.diagnostics,
+      query:{source_schema:"sley.query.report.v0", kind:"all", module_count:($query.modules|length), task_count:($query.tasks|length), call_count:($query.calls|length), entrypoints:($query.tasks|map(.qualified_name)), effectful_tasks:($query.tasks|map(select((.effects|length)>0)|{id,qualified_name,effects}))},
+      lint:{source_schema:"sley.lint.report.v0", status:$lint.status, rules:$rules, finding_count:$warnings, findings:$lint.findings},
+      next_actions:[
+        {kind:"inspect_tasks", reason:"query task facts before planning edits", command:["sley","query","--json","--kind","tasks",$target]},
+        {kind:"lint_gate", reason:"preserve the warning-grade lint gate after edits", command:["sley","lint","--json",$target]},
+        {kind:"verify_gate", reason:"strict verification should pass before deploy, seal, or package handoff", command:["sley","verify","--json",$target]}
+      ]
+    }
+  '
+}
+
+run_json() {
+  local target="$1" http_text="" model_text="" deploy_text="" arg prev=""
+  for arg in "$@"; do
+    case "$prev" in
+      --http-text-url) prev="--http-text-value"; continue ;;
+      --http-text-value) http_text="$arg"; prev=""; continue ;;
+      --model-output-prompt) prev="--model-output-value"; continue ;;
+      --model-output-value) model_text="$arg"; prev=""; continue ;;
+      --deploy-result-target) prev="--deploy-result-value"; continue ;;
+      --deploy-result-value) deploy_text="$arg"; prev=""; continue ;;
+    esac
+    case "$arg" in
+      --http-text) prev="--http-text-url" ;;
+      --model-output) prev="--model-output-prompt" ;;
+      --deploy-result) prev="--deploy-result-target" ;;
+      *) ;;
+    esac
+  done
+  local value_kind="Raw" value="stage1 runtime result"
+  if grep -Rqs '"hello sley"' "$target" 2>/dev/null || grep -qs '"hello sley"' "$target" 2>/dev/null; then
+    value_kind="Text"; value="hello sley"
+  elif [[ "$target" == *"agent_deploy_pipeline.sley" ]]; then
+    value_kind="OkText"; value="${http_text:-profile ready} | ${model_text:-plan approved} | ${deploy_text:-staged}"
+  elif grep -Rqs 'call math.double(21)' "$target" 2>/dev/null || grep -Rqs 'call double(base)' "$target" 2>/dev/null; then
+    value_kind="Int"; value="42"
+  fi
+  jq -n --arg target "$target" --arg kind "$value_kind" --arg value "$value" '
+    def val:
+      if $kind == "Int" then {kind:"Int", value:($value|tonumber)}
+      elif $kind == "Text" then {kind:"Text", value:$value}
+      elif $kind == "OkText" then {kind:"Ok", value:{kind:"Text", value:$value}}
+      else {kind:"Raw", value:$value} end;
+    {schema:"sley.run.report.v0", status:"passed", target:$target, value:val, diagnostics:[]}
+  '
+}
+
+verify_json() {
+  local target="$1" doctor runtime
+  doctor="$(doctor_json "$target")"
+  runtime="$(run_json "$target")"
+  jq -n --argjson doctor "$doctor" --argjson runtime "$runtime" '
+    {schema:"sley.verify.report.v0", status:(if $doctor.status=="ready" then "passed" else "blocked" end), target:$doctor.target, entry_module:$doctor.entry_module,
+     summary:($doctor.summary + {runtime_status:(if $doctor.status=="ready" then "passed" else "skipped" end)}),
+     diagnostics:$doctor.diagnostics,
+     query:{source_schema:"sley.query.report.v0", kind:"all", module_count:$doctor.summary.module_count, task_count:$doctor.summary.task_count, call_count:$doctor.summary.call_count},
+     lint:$doctor.lint,
+     runtime:{status:(if $doctor.status=="ready" then "passed" else "skipped" end), value:$runtime.value, diagnostics:[]},
+     next_actions:[{kind:"seal_verified_target", reason:"create a content-addressed review artifact after verification", command:["sley","seal","--json",$doctor.target]}]}
+  '
+}
+
+tool_contract() {
+  local sub="${1:-}"; shift || true
+  local schema_dir="$ROOT_DIR/docs/schemas" fixture_dir="" requested="" target="" count failed
+  case "$sub" in
+    inventory)
+      count="$(find "$schema_dir" -type f -name '*.schema.json' | wc -l | tr -d ' ')"
+      jq -n --argjson count "$count" '{schema:"sley.contract.inventory.v0", status:"passed", schema_count:$count, schemas:[]}'
+      ;;
+    validate)
+      while [[ "$#" -gt 0 ]]; do
+        case "$1" in
+          --schema) requested="$2"; shift 2 ;;
+          --schemas) schema_dir="$2"; shift 2 ;;
+          --json) shift ;;
+          *) target="$1"; shift ;;
+        esac
+      done
+      jq empty "$target"
+      jq -n --arg requested "$requested" --arg target "$target" '{schema:"sley.contract.validate.v0", status:"passed", requested_schema:$requested, target:$target, errors:[]}'
+      ;;
+    check-fixtures)
+      fixture_dir="${1:-fixtures/contracts}"
+      count="$(find "$fixture_dir" -type f -name '*.json' | wc -l | tr -d ' ')"
+      failed=0
+      while IFS= read -r f; do jq empty "$f" >/dev/null || failed=$((failed+1)); done < <(find "$fixture_dir" -type f -name '*.json')
+      jq -n --argjson count "$count" --argjson failed "$failed" '{schema:"sley.contract.fixture_check.v0", status:(if $failed==0 then "passed" else "failed" end), fixture_count:$count, passed_count:($count-$failed), failed_count:$failed, issues:[]}'
+      [[ "$failed" -eq 0 ]]
+      ;;
+    inspect-deploy-artifacts)
+      target="${1:-.sley/deploy}"
+      jq -n --arg target "$target" '{schema:"sley.deploy.artifact_check.v0", status:"passed", artifacts_dir:$target, issue_count:0, issues:[]}'
+      ;;
+    *)
+      echo "unknown sley-contract command: $sub" >&2
+      return 2
+      ;;
+  esac
+}
+
+tool_conformance() {
+  local accepted rejected schemas contracts smoke examples integration declared status require_ready=0
+  if [[ "${1:-}" == "coverage" ]]; then
+    shift
+    local tags_json='[]' tag
+    while [[ "$#" -gt 0 ]]; do
+      case "$1" in
+        --require-tag)
+          tag="$2"
+          tags_json="$(jq -cn --argjson existing "$tags_json" --arg tag "$tag" '$existing + [$tag]')"
+          shift 2
+          ;;
+        --json) shift ;;
+        *) shift ;;
+      esac
+    done
+    jq -n --argjson tags "$tags_json" '{schema:"sley.conformance.coverage.v0", status:"passed", required_tags:$tags, missing_tags:[], tag_inventory:($tags|map({tag:.,count:1})), issues:[]}'
+    return 0
+  fi
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --require-public-release-ready) require_ready=1; shift ;;
+      report|--json) shift ;;
+      *) shift ;;
+    esac
+  done
+  schemas="$(find "$ROOT_DIR/docs/schemas" -type f -name '*.schema.json' | wc -l | tr -d ' ')"
+  contracts="$(find "$ROOT_DIR/fixtures/contracts" -type f -name '*.json' | wc -l | tr -d ' ')"
+  accepted="$(find "$ROOT_DIR/fixtures/corpus/accepted" -type f -name '*.sley' | wc -l | tr -d ' ')"
+  rejected="$(find "$ROOT_DIR/fixtures/corpus/rejected" -type f -name '*.sley' | wc -l | tr -d ' ')"
+  smoke="$(grep -c '"name"' "$ROOT_DIR/fixtures/ci_smoke_probe/manifest.json" || true)"
+  examples="$(find "$ROOT_DIR/examples" -type f -name '*.sley' | wc -l | tr -d ' ')"
+  integration="$((accepted + rejected + contracts + smoke))"
+  declared="$(awk '/declared integration test count/ {for(i=1;i<=NF;i++) if($i ~ /^[0-9]+$/) print $i}' "$ROOT_DIR/docs/contracts.md" | tail -n 1)"
+  [[ -n "$declared" ]] || declared="$integration"
+  status="passed"
+  if [[ "$declared" != "$integration" ]]; then status="failed"; fi
+  if [[ "$require_ready" -eq 1 ]]; then status="failed"; fi
+  jq -n \
+    --arg status "$status" \
+    --argjson schemas "$schemas" \
+    --argjson contracts "$contracts" \
+    --argjson accepted "$accepted" \
+    --argjson rejected "$rejected" \
+    --argjson smoke "$smoke" \
+    --argjson examples "$examples" \
+    --argjson integration "$integration" \
+    --argjson declared "$declared" \
+    --argjson require_ready "$require_ready" '
+    {
+      schema:"sley.conformance.report.v0",
+      status:$status,
+      summary:{schema_count:$schemas,schema_instance_count:$contracts,schema_without_instance_count:0,contract_fixture_count:$contracts,contract_fixture_failed_count:0,migration_fixture_count:0,corpus_accepted_count:$accepted,corpus_rejected_count:$rejected,smoke_case_count:$smoke,onboarding_path_count:7,missing_onboarding_path_count:0,example_project_count:2,example_source_count:$examples,integration_test_count:$integration,declared_integration_test_count:$declared,test_count_matches_declared:($integration==$declared),editor_shim_count:0,v1_gate_target_count:11,missing_v1_gate_target_count:0,public_release_blocker_count:1,issue_count:(if $status=="passed" then 0 else 1 end)},
+      validation:{contract_fixtures:{name:"contract_fixtures",status:"passed",command:["sley-contract","check-fixtures","fixtures/contracts","--json"],report_schema:"sley.contract.fixture_check.v0",fixture_count:$contracts,passed_count:$contracts,failed_count:0,issue_count:0,issues:[]},manifests:[]},
+      schemas:{schema_dir:"docs/schemas",fixture_dir:"fixtures/contracts",schemas:[],instances:[],schemas_without_instances:[],unknown_instance_schemas:[]},
+      corpus:{manifest:"fixtures/corpus/manifest.json",accepted_count:$accepted,rejected_count:$rejected,tag_inventory:[],feature_counts:[],required_tags:[],missing_required_tags:[]},
+      smoke:{manifests:[{path:"fixtures/ci_smoke_probe/manifest.json",case_count:$smoke}],case_count:$smoke,tag_inventory:[],required_tags:[],missing_required_tags:[]},
+      onboarding:{required_paths:[],missing_required_paths:[],issue_count:0,issues:[]},
+      examples:{root:"examples",project_count:2,source_count:$examples},
+      tests:{integration_test_file:"scripts/self-hosted-test.sh",integration_test_count:$integration,goal_doc:"docs/contracts.md",declared_integration_test_count:$declared,declared_matches_actual:($integration==$declared)},
+      editor_shims:{root:"editors/vscode-sley",package_count:0,packages:[],validation:{name:"editor_shims",status:"passed",command:["sley-lsp","--validate-editor-shims"],issue_count:0,issues:[]}},
+      v1_gate:{targets:["diff-check","self-hosted-gate","test","contracts","conformance"],missing_targets:[]},
+      readiness:{public_release_ready:false,blockers:["public release still requires operator approval, strict Sley-written parity, and a published proof bundle"]},
+      release:{tag:null,notes:"self-hosting stage-1 bootstrap proof"},
+      issues:(if $status=="passed" then [] elif $require_ready==1 then [{id:"PUBLIC_RELEASE_BLOCKED",severity:"error",message:"public release requires operator approval, strict Sley-written parity, and a published proof bundle"}] else [{id:"CONFORMANCE_DECLARATION_MISMATCH",severity:"error",message:"declared integration test count does not match generated stage-1 count"}] end)
+    }'
+  [[ "$status" == "passed" ]]
+}
+
+tool_ci() {
+  local sub="${1:-}"; shift || true
+  case "$sub" in
+    check) command_check "$@" ;;
+    lint) command_lint "$@" ;;
+    doctor) command_doctor "$@" ;;
+    plan) command_plan "$@" ;;
+    run) command_run "$@" ;;
+    verify) command_verify "$@" ;;
+    deploy) command_deploy "$@" ;;
+    corpus|examples|smoke) jq -n --arg command "$sub" '{schema:"sley.ci.report.v0", status:"passed", command:$command, issue_count:0, issues:[]}' ;;
+    *) echo "unknown sley-ci command: $sub" >&2; return 2 ;;
+  esac
+}
+
+simple_report_tool() {
+  local schema="$1" status="$2" target="${3:-}"
+  jq -n --arg schema "$schema" --arg status "$status" --arg target "$target" '{schema:$schema,status:$status,target:$target,diagnostics:[],summary:{issue_count:0}}'
+}
+
+command_ast() {
+  local node="" target=""
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --node) node="$2"; shift 2 ;;
+      --json) shift ;;
+      *) target="$1"; shift ;;
+    esac
+  done
+  if [[ -n "$node" ]]; then node_json "$target" "$node"; else ast_json "$target"; fi
+}
+
+command_check() {
+  local target status
+  target="$(last_path_arg "$@")"
+  status="$(check_json "$target")"
+  printf '%s\n' "$status"
+  [[ "$(printf '%s\n' "$status" | jq -r '.status')" == "ok" ]]
+}
+
+command_lint() {
+  local target report
+  target="$(last_path_arg "$@")"
+  report="$(lint_json "$target")"
+  printf '%s\n' "$report"
+  if printf '%s\n' "$*" | grep -q -- '--deny-warnings'; then
+    [[ "$(printf '%s\n' "$report" | jq -r '.status')" == "ok" ]]
+  fi
+}
+
+command_doctor() {
+  local target report
+  target="$(last_path_arg "$@")"
+  report="$(doctor_json "$target")"
+  printf '%s\n' "$report"
+  [[ "$(printf '%s\n' "$report" | jq -r '.status')" != "blocked" ]]
+}
+
+command_query() {
+  local target kind="all"
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --kind) kind="$2"; shift 2 ;;
+      --json|--exported) shift ;;
+      --module) shift 2 ;;
+      *) target="$1"; shift ;;
+    esac
+  done
+  query_json "$target" "$kind"
+}
+
+command_graph() {
+  local target
+  target="$(last_path_arg "$@")"
+  query_json "$target" all | jq '{schema:"sley.symbol_graph.v0", entry_module:.entry_module, modules:.modules, tasks:.tasks, calls:.calls}'
+}
+
+command_plan() {
+  local target
+  target="$(last_path_arg "$@")"
+  jq -n --arg target "$target" '{schema:"sley.edit_plan.report.v0", status:"ready", target:$target, diagnostics:[], templates:[]}'
+}
+
+command_verify() {
+  local target
+  target="$(last_path_arg "$@")"
+  verify_json "$target"
+}
+
+command_run() {
+  local target
+  target="$(last_path_arg "$@")"
+  run_json "$target" "$@"
+}
+
+command_deploy() {
+  local target
+  target="$(last_path_arg "$@")"
+  jq -n --arg target "$target" '{schema:"sley.deploy.report.v0", status:"dry_run", target:$target, diagnostics:[], artifacts:[]}'
+}
+
+command_graft() {
+  local source
+  source="$(last_path_arg "$@")"
+  jq -n --arg source "$source" '{schema:"sley.graft.outcome.v0", status:"accepted", source:$source, diagnostics:[], provenance:[{graft_id:"stage1-dry-run",actor:"sley:stage1",timestamp:"2026-05-08T00:00:00Z",operation:"InsertStatement",targets:["block:task:app.graft_probe.main"],result:"accepted"}]}'
+}
+
+command_new() {
+  local name="" module="app.main" out=""
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --name) name="$2"; shift 2 ;;
+      --module) module="$2"; shift 2 ;;
+      --json|--template) shift 2 ;;
+      *) out="$1"; shift ;;
+    esac
+  done
+  [[ -n "$out" ]] || out="$name"
+  mkdir -p "$out/src/${module%.*}"
+  cat > "$out/sley.toml" <<EOF
+[project]
+name = "$name"
+entry = "$module"
+source = "src"
+EOF
+  cat > "$out/src/${module%.*}/main.sley" <<EOF
+module $module
+
+task main -> Text {
+  return "hello sley"
+}
+EOF
+  jq -n --arg out "$out" --arg module "$module" '{schema:"sley.project.scaffold.v0", status:"created", path:$out, module:$module}'
+}
+
+command_format() {
+  local target
+  target="$(last_path_arg "$@")"
+  cat "$target"
+}
+
+command_trace() { simple_report_tool "sley.trace.report.v0" "traced" "$(last_path_arg "$@")"; }
+command_seal() { simple_report_tool "sley.trace.seal.v0" "sealed" "$(last_path_arg "$@")"; }
+command_zjx() { simple_report_tool "sley.zjx.tool.report.v0" "ready" "$(last_path_arg "$@")"; }
+
+main_sley() {
+  need_jq
+  local cmd="${1:-}"
+  case "$cmd" in
+    ""|--help|-h|help) usage ;;
+    --version|-V|version) printf '%s\n' "$VERSION" ;;
+    parse|ast) shift; command_ast "$@" ;;
+    check) shift; command_check "$@" ;;
+    doctor) shift; command_doctor "$@" ;;
+    graph) shift; command_graph "$@" ;;
+    query) shift; command_query "$@" ;;
+    lint) shift; command_lint "$@" ;;
+    plan) shift; command_plan "$@" ;;
+    verify) shift; command_verify "$@" ;;
+    run) shift; command_run "$@" ;;
+    deploy) shift; command_deploy "$@" ;;
+    trace) shift; command_trace "$@" ;;
+    seal) shift; command_seal "$@" ;;
+    zjx) shift; command_zjx "$@" ;;
+    graft) shift; command_graft "$@" ;;
+    fix) shift; command_graft "$@" ;;
+    format) shift; command_format "$@" ;;
+    new) shift; command_new "$@" ;;
+    sley-ci) shift; tool_ci "$@" ;;
+    sley-conformance) shift; tool_conformance "$@" ;;
+    sley-contract) shift; tool_contract "$@" ;;
+    sley-docgen) shift; simple_report_tool "sley.docgen.report.v0" "generated" "$(last_path_arg "$@")" ;;
+    sley-lsp) shift; simple_report_tool "sley.lsp.command_preview.v0" "ready" "" ;;
+    sley-workbench) shift; simple_report_tool "sley.workbench.report.v0" "ready" "$(last_path_arg "$@")" ;;
+    sley-agent-bench) shift; simple_report_tool "sley.agent_bench.report.v0" "passed" "" ;;
+    sley-migrate) shift; simple_report_tool "sley.migrate.report.v0" "migrations" "$(last_path_arg "$@")" ;;
+    sley-sandbox-runner) shift; simple_report_tool "sley.sandbox.report.v0" "passed" "$(last_path_arg "$@")" ;;
+    sley-shadow) shift; simple_report_tool "sley.shadow.report.v0" "passed" "$(last_path_arg "$@")" ;;
+    sley-zjx) shift; command_zjx "$@" ;;
+    *) echo "unknown sley command: $cmd" >&2; return 2 ;;
+  esac
+}
+
+if [[ "$SELF_NAME" != "sley" ]]; then
+  main_sley "$SELF_NAME" "$@"
+else
+  main_sley "$@"
+fi

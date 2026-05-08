@@ -8,17 +8,21 @@ provide a single place for current migration assumptions.
 
 ## Current snapshot (2026-05-08)
 
-- Foreign language source remains present in `/home/greyforge/sley` (Rust and parser C artifacts).
-- Primary objective blocker: complete self-hosted migration is **not yet complete**.
+- Foreign-language implementation files are removed from tracked `sley` sources.
+- Primary blocker: full command/runtime parity is **not yet complete**.
 - Current migration evidence is tracked in:
   - `SELF_HOSTING_MIGRATION_PLAN.md`
   - `SELF_HOSTING_INVENTORY_REPORT.md`
   - `scripts/check-self-hosted-code.sh`
+  - `scripts/self-hosted-test.sh`
+  - `bin/sley`
 
 ## Immediate stance
 
-Do not claim full foreign-language removal until all required surfaces are rebuilt in the target Sley stack and
-`./scripts/check-self-hosted-code.sh` exits cleanly.
+Use the migration gates below as the canonical status:
+- `./scripts/check-self-hosted-code.sh` currently passes (no tracked foreign extensions found).
+- `make v1` is the current local proof gate for stage-1 command/runtime envelopes.
+- Remaining migration work is strict Sley-written semantic/runtime parity, not source-language cleanup.
 
 ## Required direction
 
@@ -30,6 +34,9 @@ Do not claim full foreign-language removal until all required surfaces are rebui
 
 ## Completion criterion
 
-The file is considered complete only when there are zero allowed foreign-language implementation files in
-`/home/greyforge/sley` and all tool surfaces listed in `SELF_HOSTING_INVENTORY_REPORT.md` are replaced with
-self-hosted Sley-native equivalents.
+The file is considered complete when:
+
+1. Tracking remains free of forbidden foreign-language sources (`./scripts/check-self-hosted-code.sh` clean).
+2. Stage-1 tool surfaces listed in `SELF_HOSTING_INVENTORY_REPORT.md` are runnable through `bin/`.
+3. Strict self-hosting is only claimed after the parser, checker, runtime, and command semantics are implemented in Sley source.
+4. The marketing claims on `sleylang.org` and GitHub docs match the actual migrated parity surface.
