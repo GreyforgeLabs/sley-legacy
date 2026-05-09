@@ -143,18 +143,6 @@ Compatibility wrappers also exist for the previous companion-tool names:
 `sley-ci`, `sley-docgen`, `sley-lsp`, `sley-workbench`, `sley-agent-bench`,
 `sley-migrate`, `sley-sandbox-runner`, `sley-shadow`, and `sley-zjx`.
 
-## Positioning
-
-Use this public-safe claim:
-
-> Sley is an agent-native structural programming language for
-> compiler-mediated, human-reviewed software change.
-
-Avoid unqualified "world's first AI-native language" and "designed by AI for
-AI" claims. Prior art exists for those phrases, and Sley's strongest
-differentiator is narrower and stronger: human-reviewable source as the review
-projection with compiler-exposed structure as the agent work surface.
-
 ## Release Rules
 
 - Keep `make v1` green before promoting any public command claim.
