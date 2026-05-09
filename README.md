@@ -36,15 +36,14 @@
 
 # Sley
 
-Sley is Greyforge Labs' agent-native structural programming language for
-compiler-mediated, human-reviewed software change.
+Sley is the world's first fully native AI programming language.
 
-The design goal is simple: `.sley` source remains the stable human review
-projection, while Loom exposes typed graph structure, diagnostics, and checked
-edit surfaces for software agents. The current public source tree is in a
-self-hosting migration: Rust, C, JavaScript, TypeScript, and Python
-implementation files have been removed, and the repo now carries a runnable
-stage-1 POSIX shell bootstrap for the command surface.
+Sley keeps `.sley` source as the stable human-reviewable projection, while Loom
+exposes typed graph structure, compiler diagnostics, and checked edit surfaces
+for software agents. The current public source tree is in a self-hosting
+migration: Rust, C, JavaScript, TypeScript, and Python implementation files
+have been removed, and the repo now carries a runnable stage-1 POSIX shell
+bootstrap for the command surface.
 
 ## Current Evidence
 
