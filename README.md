@@ -162,22 +162,6 @@ AI" claims. Prior art exists for those phrases, and Sley's strongest
 differentiator is narrower and stronger: human-reviewable source as the review
 projection with compiler-exposed structure as the agent work surface.
 
-## Migration State
-
-The active migration documents are:
-
-- `May8Sley.md` - internal claim audit and required build path
-- `SELF_HOSTING_MIGRATION_PLAN.md` - target-state plan
-- `SELF_HOSTING_PHASE1_PORT_PLAN.md` - current stage-1 implementation scope
-- `SELF_HOSTING_INVENTORY_REPORT.md` - generated source-surface inventory
-- `PongAfterAudit.md` - post-audit continuity note
-- `self-hosted/src/loom/` - Sley-owned stage-2 semantic source modules
-
-The old Rust-backed implementation remains useful as historical design context,
-but it is no longer the executable source tree. Do not restore Rust, C,
-JavaScript, TypeScript, or Python implementation files to satisfy this migration
-unless the release state is explicitly reverted.
-
 ## Release Rules
 
 - Keep `make v1` green before promoting any public command claim.
