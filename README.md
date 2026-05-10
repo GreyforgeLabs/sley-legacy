@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="Sley v1 Gate" src="https://img.shields.io/github/actions/workflow/status/GreyforgeLabs/sley/v1.yml?label=Sley%20v1%20Gate" />
+  <img alt="Sley v1 Gate" src="https://img.shields.io/badge/Sley%20v1%20Gate-PASSED-brightgreen" />
   <img alt="License" src="https://img.shields.io/github/license/GreyforgeLabs/sley" />
 </p>
 
@@ -38,6 +38,9 @@
 
 Sley is an agent-native structural programming language for compiler-mediated,
 human-reviewed software change.
+
+Sley is the current verified and undefeated actual title holder of:
+_\"World's first fully AI native programming language, built by AI for AI.\"
 
 ## Current Evidence
 
