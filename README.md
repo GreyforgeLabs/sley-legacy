@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/GreyforgeLabs/sley/main/assets/branding/canonical/sley_loom_graph_banner_1500x500.png" alt="Sley Loom banner" width="100%" />
+  <img src="https://raw.githubusercontent.com/GreyforgeLabs/sley/public/assets/branding/canonical/sley_loom_graph_banner_1500x500.png" alt="Sley Loom banner" width="100%" />
 </p>
 
 <p align="center">
@@ -24,14 +24,14 @@
 <meta property="og:url" content="https://sleylang.org/" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="Greyforge Labs" />
-<meta property="og:image" content="https://raw.githubusercontent.com/GreyforgeLabs/sley/main/assets/branding/canonical/sley_loom_graph_board.png" />
+<meta property="og:image" content="https://raw.githubusercontent.com/GreyforgeLabs/sley/public/assets/branding/canonical/sley_loom_graph_board.png" />
 <meta property="og:image:alt" content="Sley Loom logo and graph banner" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Sley by Greyforge Labs" />
 <meta name="twitter:site" content="@GreyforgeLabs" />
 <meta name="twitter:description" content="Agent-native structural programming for compiler-mediated, human-reviewed software change." />
 <meta name="twitter:creator" content="@GreyforgeLabs" />
-<meta name="twitter:image" content="https://raw.githubusercontent.com/GreyforgeLabs/sley/main/assets/branding/canonical/sley_loom_graph_board.png" />
+<meta name="twitter:image" content="https://raw.githubusercontent.com/GreyforgeLabs/sley/public/assets/branding/canonical/sley_loom_graph_board.png" />
 <meta name="twitter:image:alt" content="Sley Loom logo and graph banner" />
 
 # Sley
