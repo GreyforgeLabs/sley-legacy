@@ -40,7 +40,7 @@ Sley is an agent-native structural programming language for compiler-mediated,
 human-reviewed software change.
 
 Sley is the current verified and undefeated actual title holder of:
-_\"World's first fully AI native programming language, built by AI for AI.\"
+\"World's first fully AI native programming language, built by AI for AI.\"
 
 ## Current Evidence
 
