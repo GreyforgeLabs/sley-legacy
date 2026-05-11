@@ -1973,8 +1973,8 @@
         {
           "id": "CALL_ARITY_MISMATCH",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic CALL_ARITY_MISMATCH",
-          "node": "fixture:fixtures/corpus/rejected/call_arity_mismatch.sley"
+          "message": "call arity mismatch for `helper`",
+          "node": "block:task:corpus.rejected.call_arity_mismatch.main:stmt:0:expr"
         }
       ]
     },
@@ -2003,8 +2003,8 @@
         {
           "id": "CALL_ARGUMENT_TYPE_MISMATCH",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic CALL_ARGUMENT_TYPE_MISMATCH",
-          "node": "fixture:fixtures/corpus/rejected/call_argument_type_mismatch.sley"
+          "message": "call argument type mismatch for `helper`",
+          "node": "block:task:corpus.rejected.call_argument_type_mismatch.main:stmt:0:expr"
         }
       ]
     },
