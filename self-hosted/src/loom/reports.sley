@@ -115,6 +115,20 @@ export task verify_report_fields -> List<Text> {
   ]
 }
 
+export task graft_outcome_schema -> Text {
+  return "sley.graft.outcome.v0"
+}
+
+export task graft_outcome_report_fields -> List<Text> {
+  return [
+    "schema",
+    "status",
+    "source",
+    "diagnostics",
+    "provenance"
+  ]
+}
+
 export task self_hosting_status_schema -> Text {
   return "sley.self_hosting.status.v0"
 }
