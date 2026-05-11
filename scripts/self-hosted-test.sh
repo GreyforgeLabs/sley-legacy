@@ -296,7 +296,7 @@ bin/sley deploy --json --dry-run --artifacts-dir /tmp/sley-deploy-report-shape e
   | json_field '.schema == "sley.deploy.report.v0" and .status == "ready" and .mode == "dry_run" and .target == "examples/hello.sley" and .policy.live_deploy_allowed == false and .verify.schema == "sley.verify.report.v0" and .summary.verify_status == "passed"'
 
 bin/sley deploy --json --dry-run --artifacts-dir /tmp/sley-deploy-report-shape examples/hello.sley \
-  | json_field 'keys == (["schema","status","mode","target","environment","policy","summary","verify","artifacts","next_actions"] | sort)'
+  | json_field 'keys == (["schema","status","mode","target","environment","policy","summary","verify","seal","package","artifacts","next_actions"] | sort)'
 
 printf '%s\n' '{"schema":"sley.deploy.report.v0"}' > "$artifact_dir/deploy-report.json"
 printf '%s\n' '{"schema":"sley.trace.seal.v0"}' > "$artifact_dir/seal.json"
