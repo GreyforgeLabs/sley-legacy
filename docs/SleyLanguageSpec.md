@@ -794,6 +794,9 @@ public-release blockers such as unresolved license and repository metadata, so
 the executable gate can pass while publication decisions remain explicit. The
 plain-text report lists those release blockers directly; the JSON report keeps
 them under `release.blockers`.
+`--markdown <path>` writes the same decision packet to a Markdown file and
+preserves the explicit public-release blocker until the release gate is
+approved.
 `sley-conformance report --json --require-public-release-ready` turns those
 public-release blockers into a hard report failure by adding a
 `public_release_not_ready` issue and exiting nonzero until license and
