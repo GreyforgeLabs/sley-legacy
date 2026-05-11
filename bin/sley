@@ -394,6 +394,7 @@ if [[ "$RUN_REPORT_FIELDS_JSON" == "[]" ]]; then
 fi
 SCHEMA_VERIFY="${SCHEMA_VERIFY:-sley.verify.report.v0}"
 SCHEMA_SELF_HOSTING="${SCHEMA_SELF_HOSTING:-sley.self_hosting.status.v0}"
+SCHEMA_CLAIM_VERIFY="sley.claim.verify.v0"
 SELF_HOSTING_REPORT_SOURCE_ROOT="${SELF_HOSTING_REPORT_SOURCE_ROOT:-self-hosted/src}"
 if [[ "$SELF_HOSTING_STATUS_FIELDS_JSON" == "[]" ]]; then
   SELF_HOSTING_STATUS_FIELDS_JSON='["schema","status","strict_self_hosted","source_root","semantic_source_count","source_modules","bootstrap_owned_by_sley","blockers"]'
@@ -545,6 +546,7 @@ Usage:
 Commands:
   parse, ast, check, doctor, graph, query, lint, plan, verify, run
   deploy, trace, seal, zjx, graft, fix, format, new, self-hosting-status
+  claim-verify
 
 Companion tools:
   sley-ci, sley-conformance, sley-contract, sley-docgen, sley-lsp,
@@ -1023,6 +1025,144 @@ verify_json() {
   '
 }
 
+append_claim_check() {
+  local checks="$1" id="$2" status="$3" message="$4" paths="${5:-[]}"
+  jq -cn \
+    --argjson checks "$checks" \
+    --arg id "$id" \
+    --arg status "$status" \
+    --arg message "$message" \
+    --argjson paths "$paths" \
+    '$checks + [{id:$id,status:$status,message:$message,paths:$paths}]'
+}
+
+claim_verify_json() {
+  local target="${1:-docs/SleyClaimManifest.json}"
+  local target_path="$target" checks='[]' failed=0 manifest='{}'
+  local manifest_schema="" claim_id="" path_json path_failed=0 required_projects
+  [[ "$target_path" = /* ]] || target_path="$ROOT_DIR/$target_path"
+
+  if [[ -f "$target_path" ]]; then
+    checks="$(append_claim_check "$checks" "manifest_file_present" "passed" "claim manifest file is present" "$(jq -cn --arg path "$target" '[$path]')")"
+  else
+    checks="$(append_claim_check "$checks" "manifest_file_present" "failed" "claim manifest file is missing" "$(jq -cn --arg path "$target" '[$path]')")"
+    failed=$((failed + 1))
+  fi
+
+  if [[ -f "$target_path" ]] && jq empty "$target_path" >/dev/null 2>&1; then
+    manifest="$(jq '.' "$target_path")"
+    checks="$(append_claim_check "$checks" "manifest_json_parse" "passed" "claim manifest parses as JSON")"
+  else
+    checks="$(append_claim_check "$checks" "manifest_json_parse" "failed" "claim manifest does not parse as JSON")"
+    failed=$((failed + 1))
+  fi
+
+  manifest_schema="$(printf '%s\n' "$manifest" | jq -r '.schema // ""')"
+  claim_id="$(printf '%s\n' "$manifest" | jq -r '.canonical_claim.id // ""')"
+
+  if printf '%s\n' "$manifest" | jq -e '.schema == "sley.claim.manifest.v0"' >/dev/null; then
+    checks="$(append_claim_check "$checks" "manifest_schema_id" "passed" "manifest uses sley.claim.manifest.v0")"
+  else
+    checks="$(append_claim_check "$checks" "manifest_schema_id" "failed" "manifest schema id is not sley.claim.manifest.v0")"
+    failed=$((failed + 1))
+  fi
+
+  if printf '%s\n' "$manifest" | jq -e '
+    .canonical_claim.global_first_proven == false and
+    .canonical_claim.strict_self_hosted_claimed == false and
+    .canonical_claim.disputed_search_phrase_allowed_only_with_evidence == true and
+    (.canonical_claim.safe_public_wording | type == "string" and length > 0)
+  ' >/dev/null; then
+    checks="$(append_claim_check "$checks" "claim_boundary_safe" "passed" "manifest preserves public claim boundary and blocks unsupported strict/global claims")"
+  else
+    checks="$(append_claim_check "$checks" "claim_boundary_safe" "failed" "manifest overclaims or omits required claim-boundary flags")"
+    failed=$((failed + 1))
+  fi
+
+  if printf '%s\n' "$manifest" | jq -e '
+    [.required_criteria[]?.id] as $ids |
+    ($ids | length) == 5 and
+    ($ids | unique | length) == 5 and
+    (["independent_language_substrate","compiler_owned_structural_model","native_agent_edit_path","deterministic_authority_gates","independent_auditability"] | all(. as $id | $ids | index($id)))
+  ' >/dev/null; then
+    checks="$(append_claim_check "$checks" "criteria_complete" "passed" "all five Sley agent-native structural criteria are present exactly once")"
+  else
+    checks="$(append_claim_check "$checks" "criteria_complete" "failed" "required Sley agent-native structural criteria are incomplete")"
+    failed=$((failed + 1))
+  fi
+
+  if printf '%s\n' "$manifest" | jq -e '
+    [.evidence[]?] as $evidence |
+    ($evidence | length) >= 8 and
+    all($evidence[]; (.id | type == "string" and length > 0) and (.audit_command | type == "array" and length > 0) and (.paths | type == "array" and length > 0))
+  ' >/dev/null; then
+    checks="$(append_claim_check "$checks" "evidence_commands_present" "passed" "evidence entries include paths and audit commands")"
+  else
+    checks="$(append_claim_check "$checks" "evidence_commands_present" "failed" "one or more evidence entries lacks paths or audit commands")"
+    failed=$((failed + 1))
+  fi
+
+  path_json="$(printf '%s\n' "$manifest" | jq -c '[.evidence[]?.paths[]?, .prior_art.source_pack?] | map(select(type == "string")) | unique')"
+  while IFS= read -r evidence_path; do
+    [[ -z "$evidence_path" ]] && continue
+    if [[ ! -e "$ROOT_DIR/$evidence_path" ]]; then
+      path_failed=1
+      break
+    fi
+  done < <(printf '%s\n' "$path_json" | jq -r '.[]')
+  if [[ "$path_failed" -eq 0 ]]; then
+    checks="$(append_claim_check "$checks" "evidence_paths_exist" "passed" "all manifest evidence paths exist" "$path_json")"
+  else
+    checks="$(append_claim_check "$checks" "evidence_paths_exist" "failed" "one or more manifest evidence paths is missing" "$path_json")"
+    failed=$((failed + 1))
+  fi
+
+  required_projects='["Sley","Dana","Jac","Codong","Codon","Agentis","Mojo"]'
+  if printf '%s\n' "$manifest" | jq -e --argjson required "$required_projects" '
+    [.prior_art.candidates[]?.project] as $projects |
+    ($projects | unique | length) >= ($required | length) and
+    all($required[]; . as $project | $projects | index($project))
+  ' >/dev/null; then
+    checks="$(append_claim_check "$checks" "prior_art_candidates_covered" "passed" "prior-art manifest covers the named review candidates")"
+  else
+    checks="$(append_claim_check "$checks" "prior_art_candidates_covered" "failed" "prior-art manifest is missing one or more named review candidates")"
+    failed=$((failed + 1))
+  fi
+
+  if printf '%s\n' "$manifest" | jq -e '
+    .publication_gates.external_issue_requires_operator_approval == true and
+    .publication_gates.public_release_ready == false and
+    (.publication_gates.blockers | type == "array" and length >= 3)
+  ' >/dev/null; then
+    checks="$(append_claim_check "$checks" "publication_gates_preserved" "passed" "manifest preserves public issue and release approval gates")"
+  else
+    checks="$(append_claim_check "$checks" "publication_gates_preserved" "failed" "manifest does not preserve required public issue or release gates")"
+    failed=$((failed + 1))
+  fi
+
+  jq -n \
+    --arg schema "$SCHEMA_CLAIM_VERIFY" \
+    --arg status "$(if [[ "$failed" -eq 0 ]]; then printf passed; else printf failed; fi)" \
+    --arg target "$target" \
+    --arg manifest_schema "$manifest_schema" \
+    --arg claim_id "$claim_id" \
+    --argjson checks "$checks" '
+    {
+      schema:$schema,
+      status:$status,
+      target:$target,
+      manifest_schema:$manifest_schema,
+      claim_id:$claim_id,
+      check_count:($checks | length),
+      passed_count:($checks | map(select(.status == "passed")) | length),
+      failed_count:($checks | map(select(.status == "failed")) | length),
+      checks:$checks,
+      issues:($checks | map(select(.status == "failed") | {code:.id,message:.message}))
+    }
+  '
+  [[ "$failed" -eq 0 ]]
+}
+
 tool_contract() {
   local sub="${1:-}"; shift || true
   local schema_dir="$ROOT_DIR/docs/schemas" fixture_dir="" requested="" target="" count failed
@@ -1064,6 +1204,8 @@ tool_contract() {
 
 tool_conformance() {
   local accepted rejected schemas contracts smoke examples integration declared status require_ready=0
+  local v1_targets_json
+  v1_targets_json='["fmt","diff-check","test","contracts","conformance","claim-audit","corpus","examples","smoke","lsp","editor-shims","workbench","agent-bench","migrate","docgen","sandbox-runner","shadow","zjx-tools","syntax"]'
   if [[ "${1:-}" == "coverage" ]]; then
     shift
     local tags_json='[]' tag
@@ -1110,11 +1252,12 @@ tool_conformance() {
     --argjson examples "$examples" \
     --argjson integration "$integration" \
     --argjson declared "$declared" \
+    --argjson v1_targets "$v1_targets_json" \
     --argjson require_ready "$require_ready" '
     {
       schema:"sley.conformance.report.v0",
       status:$status,
-      summary:{schema_count:$schemas,schema_instance_count:$contracts,schema_without_instance_count:0,contract_fixture_count:$contracts,contract_fixture_failed_count:0,migration_fixture_count:0,corpus_accepted_count:$accepted,corpus_rejected_count:$rejected,smoke_case_count:$smoke,onboarding_path_count:7,missing_onboarding_path_count:0,example_project_count:2,example_source_count:$examples,integration_test_count:$integration,declared_integration_test_count:$declared,test_count_matches_declared:($integration==$declared),editor_shim_count:0,v1_gate_target_count:11,missing_v1_gate_target_count:0,public_release_blocker_count:1,issue_count:(if $status=="passed" then 0 else 1 end)},
+      summary:{schema_count:$schemas,schema_instance_count:$contracts,schema_without_instance_count:0,contract_fixture_count:$contracts,contract_fixture_failed_count:0,migration_fixture_count:0,corpus_accepted_count:$accepted,corpus_rejected_count:$rejected,smoke_case_count:$smoke,onboarding_path_count:7,missing_onboarding_path_count:0,example_project_count:2,example_source_count:$examples,integration_test_count:$integration,declared_integration_test_count:$declared,test_count_matches_declared:($integration==$declared),editor_shim_count:0,v1_gate_target_count:($v1_targets|length),missing_v1_gate_target_count:0,public_release_blocker_count:1,issue_count:(if $status=="passed" then 0 else 1 end)},
       validation:{contract_fixtures:{name:"contract_fixtures",status:"passed",command:["sley-contract","check-fixtures","fixtures/contracts","--json"],report_schema:"sley.contract.fixture_check.v0",fixture_count:$contracts,passed_count:$contracts,failed_count:0,issue_count:0,issues:[]},manifests:[]},
       schemas:{schema_dir:"docs/schemas",fixture_dir:"fixtures/contracts",schemas:[],instances:[],schemas_without_instances:[],unknown_instance_schemas:[]},
       corpus:{manifest:"fixtures/corpus/manifest.json",accepted_count:$accepted,rejected_count:$rejected,tag_inventory:[],feature_counts:[],required_tags:[],missing_required_tags:[]},
@@ -1123,7 +1266,7 @@ tool_conformance() {
       examples:{root:"examples",project_count:2,source_count:$examples},
       tests:{integration_test_file:"scripts/self-hosted-test.sh",integration_test_count:$integration,goal_doc:"docs/contracts.md",declared_integration_test_count:$declared,declared_matches_actual:($integration==$declared)},
       editor_shims:{root:"editors/vscode-sley",package_count:0,packages:[],validation:{name:"editor_shims",status:"passed",command:["sley-lsp","--validate-editor-shims"],issue_count:0,issues:[]}},
-      v1_gate:{targets:["diff-check","self-hosted-gate","test","contracts","conformance"],missing_targets:[]},
+      v1_gate:{targets:$v1_targets,missing_targets:[]},
       readiness:{public_release_ready:false,blockers:["public release still requires operator approval, strict Sley-written parity, and a published proof bundle"]},
       release:{tag:null,notes:"self-hosting stage-2 source bootstrap proof"},
       issues:(if $status=="passed" then [] elif $require_ready==1 then [{id:"PUBLIC_RELEASE_BLOCKED",severity:"error",message:"public release requires operator approval, strict Sley-written parity, and a published proof bundle"}] else [{id:"CONFORMANCE_DECLARATION_MISMATCH",severity:"error",message:"declared integration test count does not match generated stage-1 count"}] end)
@@ -1274,6 +1417,17 @@ command_verify() {
   verify_json "$target"
 }
 
+command_claim_verify() {
+  local target=""
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --json) shift ;;
+      *) target="$1"; shift ;;
+    esac
+  done
+  claim_verify_json "${target:-docs/SleyClaimManifest.json}"
+}
+
 command_run() {
   local target
   target="$(last_path_arg "$@")"
@@ -1344,6 +1498,7 @@ main_sley() {
     lint) shift; command_lint "$@" ;;
     plan) shift; command_plan "$@" ;;
     verify) shift; command_verify "$@" ;;
+    claim-verify|claim-audit) shift; command_claim_verify "$@" ;;
     run) shift; command_run "$@" ;;
     deploy) shift; command_deploy "$@" ;;
     trace) shift; command_trace "$@" ;;

@@ -41,6 +41,9 @@ human-reviewed software change.
 
 Sley's public claim is now tracked as an auditable evidence packet instead of a
 bare slogan: see [`docs/SleyClaimEvidence.md`](docs/SleyClaimEvidence.md).
+The machine-readable claim manifest is
+[`docs/SleyClaimManifest.json`](docs/SleyClaimManifest.json) and is checked by
+`sley claim-verify --json docs/SleyClaimManifest.json`.
 Prior-art comparison is tracked separately in
 [`docs/SleyPriorArtSourcePack.md`](docs/SleyPriorArtSourcePack.md).
 The disputed search phrase "world's first fully AI-native programming
@@ -105,6 +108,9 @@ The repo currently proves these claims from a clean checkout:
 - Baseline AST, check, query, lint, doctor, run, verify, graft, contract, and
   conformance JSON reports execute locally:
   `scripts/self-hosted-test.sh`
+- The public claim boundary, criteria, evidence paths, prior-art candidates,
+  and publication gates are machine-checkable:
+  `bin/sley claim-verify --json docs/SleyClaimManifest.json`
 - The release gate no longer requires Cargo, Rust, Node, npm, or tree-sitter:
   `make v1`
 
@@ -126,6 +132,7 @@ sley query --json --kind calls examples/project
 sley lint --json examples/empty_for_statement.sley
 sley self-hosting-status --json
 sley run --json self-hosted
+sley claim-verify --json docs/SleyClaimManifest.json
 sley run --json examples/hello.sley
 sley verify --json examples/project
 ```
@@ -143,6 +150,7 @@ Stage-1 executable commands:
 - `sley run --json <file-or-project>`
 - `sley verify --json <file-or-project>`
 - `sley self-hosting-status --json`
+- `sley claim-verify --json docs/SleyClaimManifest.json`
 - `sley graft --json --dry-run <file> <graft.json>`
 - `sley-contract inventory --json`
 - `sley-contract check-fixtures fixtures/contracts --schemas docs/schemas --json`
@@ -155,6 +163,8 @@ Compatibility wrappers also exist for the previous companion-tool names:
 ## Release Rules
 
 - Keep `make v1` green before promoting any public command claim.
+- Keep `sley claim-verify --json docs/SleyClaimManifest.json` green before
+  promoting any public claim wording.
 - Keep `./scripts/check-self-hosted-code.sh` green before calling the repo
   foreign-language-free.
 - Do not claim strict self-hosting until the parser, checker, runtime, and

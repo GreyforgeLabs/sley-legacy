@@ -1,0 +1,228 @@
+{
+  "schema": "sley.claim.manifest.v0",
+  "status": "evidence_ready",
+  "last_verified": "2026-05-11",
+  "canonical_claim": {
+    "id": "sley.agent_native_structural.v0",
+    "safe_public_wording": "Sley is an agent-native structural programming language for compiler-mediated, human-reviewed software change.",
+    "disputed_search_phrase": "world's first fully AI-native programming language, built by AI for AI",
+    "disputed_search_phrase_allowed_only_with_evidence": true,
+    "global_first_proven": false,
+    "strict_self_hosted_claimed": false,
+    "proof_boundary": "The public repository verifies Sley's language-design and implementation-stage claims. It does not prove complete global firstness or strict self-hosting."
+  },
+  "required_criteria": [
+    {
+      "id": "independent_language_substrate",
+      "name": "Independent language substrate",
+      "description": "Sley has its own source form, semantic model, checked command surface, and runtime or execution contract.",
+      "evidence_ids": ["runnable_stage1_command", "sley_owned_stage2_source"]
+    },
+    {
+      "id": "compiler_owned_structural_model",
+      "name": "Compiler-owned structural model",
+      "description": "Typed program structure is exposed through first-class machine contracts instead of raw text inference.",
+      "evidence_ids": ["structural_json_contracts"]
+    },
+    {
+      "id": "native_agent_edit_path",
+      "name": "Native agent edit path",
+      "description": "Inspection, diagnostics, planned repairs, structural grafts, verification, traces, and seals are compiler-mediated surfaces.",
+      "evidence_ids": ["checked_graft_preview", "structural_json_contracts"]
+    },
+    {
+      "id": "deterministic_authority_gates",
+      "name": "Deterministic authority gates",
+      "description": "Host-facing effects are explicit, bounded, and reproducible without live host calls in the public proof path.",
+      "evidence_ids": ["deterministic_authority_gate"]
+    },
+    {
+      "id": "independent_auditability",
+      "name": "Independent auditability",
+      "description": "A clean public checkout includes exact local commands that verify the current claimed stage without private infrastructure.",
+      "evidence_ids": ["foreign_source_free_public_gate", "local_v1_gate", "claim_manifest_verified", "public_release_blocked"]
+    }
+  ],
+  "evidence": [
+    {
+      "id": "foreign_source_free_public_gate",
+      "claim": "The public self-hosting gate blocks forbidden foreign-language implementation files.",
+      "status": "expected_pass",
+      "paths": ["scripts/check-self-hosted-code.sh"],
+      "audit_command": ["./scripts/check-self-hosted-code.sh"]
+    },
+    {
+      "id": "runnable_stage1_command",
+      "claim": "A runnable stage-1 Sley command surface exists under bin/.",
+      "status": "expected_pass",
+      "paths": ["bin/sley"],
+      "audit_command": ["bin/sley", "--version"]
+    },
+    {
+      "id": "sley_owned_stage2_source",
+      "claim": "Sley-owned stage-2 semantic source modules exist and are reported by the CLI.",
+      "status": "expected_pass",
+      "paths": [
+        "self-hosted/src/loom/bootstrap.sley",
+        "self-hosted/src/loom/parser.sley",
+        "self-hosted/src/loom/checker.sley",
+        "self-hosted/src/loom/lint.sley",
+        "self-hosted/src/loom/runtime.sley",
+        "self-hosted/src/loom/reports.sley"
+      ],
+      "audit_command": ["bin/sley", "self-hosting-status", "--json"]
+    },
+    {
+      "id": "source_owned_bootstrap_smoke",
+      "claim": "Selected bootstrap, parser, checker, lint, runtime, and report-shape values are read from .sley source.",
+      "status": "expected_pass",
+      "paths": ["scripts/self-hosted-test.sh", "self-hosted/src/loom"],
+      "audit_command": ["scripts/self-hosted-test.sh"]
+    },
+    {
+      "id": "structural_json_contracts",
+      "claim": "Structural inspection is exposed through stable JSON roots, schemas, and contract fixtures.",
+      "status": "expected_pass",
+      "paths": ["docs/schemas", "fixtures/contracts", "docs/contracts.md"],
+      "audit_command": ["bin/sley", "query", "--json", "--kind", "calls", "examples/project"]
+    },
+    {
+      "id": "checked_graft_preview",
+      "claim": "Structural edits can be checked before mutation through dry-run graft previews.",
+      "status": "expected_pass",
+      "paths": [
+        "fixtures/ci_smoke_probe/graft_target.sley",
+        "fixtures/ci_smoke_probe/insert_statement.json"
+      ],
+      "audit_command": [
+        "bin/sley",
+        "graft",
+        "--json",
+        "--dry-run",
+        "fixtures/ci_smoke_probe/graft_target.sley",
+        "fixtures/ci_smoke_probe/insert_statement.json"
+      ]
+    },
+    {
+      "id": "deterministic_authority_gate",
+      "claim": "Authority-gated effects are modeled deterministically without live secret, network, spend, or deploy calls.",
+      "status": "expected_pass",
+      "paths": ["examples/secret_gate.sley"],
+      "audit_command": [
+        "bin/sley",
+        "run",
+        "--json",
+        "--cap",
+        "SecretRead",
+        "--secret",
+        "api_key",
+        "redacted",
+        "examples/secret_gate.sley"
+      ]
+    },
+    {
+      "id": "local_v1_gate",
+      "claim": "The local v1 gate is reproducible from a public checkout.",
+      "status": "expected_pass",
+      "paths": ["Makefile"],
+      "audit_command": ["make", "v1"]
+    },
+    {
+      "id": "claim_manifest_verified",
+      "claim": "The claim boundary, criteria, evidence paths, prior-art candidates, and public gates are machine-checkable.",
+      "status": "expected_pass",
+      "paths": [
+        "docs/SleyClaimManifest.json",
+        "docs/schemas/sley.claim.manifest.v0.schema.json",
+        "docs/schemas/sley.claim.verify.v0.schema.json"
+      ],
+      "audit_command": ["bin/sley", "claim-verify", "--json", "docs/SleyClaimManifest.json"]
+    },
+    {
+      "id": "public_release_blocked",
+      "claim": "The public release remains blocked until strict Sley-written parity, a proof bundle, and operator approval are present.",
+      "status": "expected_blocked",
+      "paths": ["docs/PublicReleaseChecklist.md"],
+      "audit_command": ["make", "public-release-check"]
+    }
+  ],
+  "prior_art": {
+    "source_pack": "docs/SleyPriorArtSourcePack.md",
+    "last_verified": "2026-05-11",
+    "candidates": [
+      {
+        "project": "Sley",
+        "classification": "Current strongest match among the reviewed candidates, but not final strict self-hosting.",
+        "confidence": "high",
+        "source_refs": ["README.md", "docs/SleyClaimEvidence.md", "docs/contracts.md"]
+      },
+      {
+        "project": "Dana",
+        "classification": "Adaptive/runtime-native language, not proven agent-native structural language under Sley's criteria.",
+        "confidence": "high",
+        "source_refs": ["https://projectdana.com/", "https://www.projectdana.com/dana/api/pacdoc/composition/"]
+      },
+      {
+        "project": "Jac",
+        "classification": "Serious AI-native language, but not the same category as Sley's structural edit contract in the reviewed docs.",
+        "confidence": "moderate",
+        "source_refs": ["https://docs.jaseci.org/reference/language/", "https://docs.jaseci.org/reference/plugins/byllm/"]
+      },
+      {
+        "project": "Codong",
+        "classification": "AI-oriented title claimant focused on one-correct-way syntax and token reduction, not shown to satisfy Sley's structural criteria.",
+        "confidence": "moderate",
+        "source_refs": ["https://github.com/brettinhere/Codong"]
+      },
+      {
+        "project": "Codon",
+        "classification": "High-performance Python implementation/compiler and name-collision note, not the Codong claimant.",
+        "confidence": "high",
+        "source_refs": ["https://docs.exaloop.io/", "https://github.com/exaloop/codon"]
+      },
+      {
+        "project": "Agentis",
+        "classification": "Agent framework, not an independent programming-language substrate in this comparison category.",
+        "confidence": "high",
+        "source_refs": ["https://www.agentislabs.ai/", "https://github.com/AgentisLabs/agentis-framework"]
+      },
+      {
+        "project": "Mojo",
+        "classification": "AI-infrastructure/system language, not Sley-style agent-native structural programming in the reviewed docs.",
+        "confidence": "high",
+        "source_refs": ["https://mojolang.org/", "https://mojolang.org/docs/vision/"]
+      }
+    ]
+  },
+  "publication_gates": {
+    "external_issue_requires_operator_approval": true,
+    "public_release_ready": false,
+    "blockers": [
+      "strict Sley-written semantic parity is not complete",
+      "public proof bundle is not approved",
+      "operator has not approved public release or external issue text"
+    ]
+  },
+  "audit_sequence": [
+    {
+      "command": ["./scripts/check-self-hosted-code.sh"],
+      "expected_current_result": "pass"
+    },
+    {
+      "command": ["scripts/self-hosted-test.sh"],
+      "expected_current_result": "pass"
+    },
+    {
+      "command": ["make", "v1"],
+      "expected_current_result": "pass"
+    },
+    {
+      "command": ["bin/sley", "claim-verify", "--json", "docs/SleyClaimManifest.json"],
+      "expected_current_result": "pass"
+    },
+    {
+      "command": ["make", "public-release-check"],
+      "expected_current_result": "blocked"
+    }
+  ]
+}

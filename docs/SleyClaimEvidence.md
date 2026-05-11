@@ -57,6 +57,7 @@ structural editing.
 | Structural inspection is exposed as JSON contracts. | `docs/schemas/`, `fixtures/contracts/`, `docs/contracts.md` | `bin/sley ast --json examples/hello.sley` and `bin/sley query --json --kind calls examples/project` |
 | Structural edits can be checked before mutation. | `fixtures/ci_smoke_probe/insert_statement.json` | `bin/sley graft --json --dry-run fixtures/ci_smoke_probe/graft_target.sley fixtures/ci_smoke_probe/insert_statement.json` |
 | Deterministic authority gates are modeled without live host calls. | `examples/*_gate.sley`, `scripts/self-hosted-test.sh` | `bin/sley run --json --cap SecretRead --secret api_key redacted examples/secret_gate.sley` |
+| The claim boundary, criteria, evidence paths, prior-art candidates, and publication gates are machine-checkable. | `docs/SleyClaimManifest.json`, `docs/schemas/sley.claim.manifest.v0.schema.json`, `docs/schemas/sley.claim.verify.v0.schema.json` | `bin/sley claim-verify --json docs/SleyClaimManifest.json` |
 | The public v1 gate is reproducible. | `Makefile` | `make v1` |
 | The public release remains intentionally blocked until the proof bar is higher. | `docs/PublicReleaseChecklist.md` | `make public-release-check` |
 
@@ -69,6 +70,7 @@ export PATH="$(pwd)/bin:$PATH"
 git status --short
 ./scripts/check-self-hosted-code.sh
 scripts/self-hosted-test.sh
+bin/sley claim-verify --json docs/SleyClaimManifest.json
 make v1
 bin/sley self-hosting-status --json
 make public-release-check
@@ -76,7 +78,8 @@ make public-release-check
 
 Expected current result:
 
-- `check-self-hosted-code.sh`, `scripts/self-hosted-test.sh`, and `make v1`
+- `check-self-hosted-code.sh`, `scripts/self-hosted-test.sh`,
+  `bin/sley claim-verify --json docs/SleyClaimManifest.json`, and `make v1`
   pass.
 - `make public-release-check` fails intentionally with
   `PUBLIC_RELEASE_BLOCKED` until operator approval, strict Sley-written parity,
@@ -115,5 +118,6 @@ interoperability questions with evidence, not drive-by marketing claims.
 Sley's present, independently auditable claim is that it is an agent-native
 structural programming language with a foreign-source-free public bootstrap
 gate, Sley-owned stage-2 semantic modules, compiler-exposed graph/report
-contracts, deterministic authority gates, checked graft previews, and a local
-v1 gate. The public proof is the repository itself plus the commands above.
+contracts, deterministic authority gates, checked graft previews, a
+machine-checkable claim manifest, and a local v1 gate. The public proof is the
+repository itself plus the commands above.

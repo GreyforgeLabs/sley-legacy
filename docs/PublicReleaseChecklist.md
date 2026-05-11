@@ -29,21 +29,22 @@ blocks on:
 
 The regular conformance report currently passes and records:
 
-- `schema_count: 39`
-- `contract_fixture_count: 125`
+- `schema_count: 41`
+- `contract_fixture_count: 127`
 - `corpus_accepted_count: 23`
 - `corpus_rejected_count: 43`
-- `integration_test_count: 195`
-- `declared_integration_test_count: 195`
+- `integration_test_count: 197`
+- `declared_integration_test_count: 197`
 - `test_count_matches_declared: true`
+- `v1_gate_target_count: 19`
 
 ## Cut Procedure
 
 After strict parity, proof bundle, and operator approval:
 
-1. Review `docs/SleyClaimEvidence.md`, `docs/SleyPriorArtSourcePack.md`, and
-   the public proof bundle against the current code, examples, fixtures,
-   schemas, and official prior-art sources.
+1. Review `docs/SleyClaimEvidence.md`, `docs/SleyClaimManifest.json`,
+   `docs/SleyPriorArtSourcePack.md`, and the public proof bundle against the
+   current code, examples, fixtures, schemas, and official prior-art sources.
 2. Run `sley-conformance report --json` and confirm the regular gate passes.
 3. Run `make v1`.
 4. Run `make public-release-check`.

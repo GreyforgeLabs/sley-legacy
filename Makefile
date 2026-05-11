@@ -1,4 +1,4 @@
-.PHONY: fmt diff-check build-cli build-bins test contracts conformance public-release-check corpus examples smoke lsp editor-shims workbench agent-bench migrate docgen sandbox-runner shadow zjx-tools syntax self-hosted-cli v1
+.PHONY: fmt diff-check build-cli build-bins test contracts conformance public-release-check claim-audit corpus examples smoke lsp editor-shims workbench agent-bench migrate docgen sandbox-runner shadow zjx-tools syntax self-hosted-cli v1
 
 SELF_HOSTED_ARGS := --help
 export PATH := $(CURDIR)/bin:$(PATH)
@@ -40,12 +40,16 @@ contracts:
 	sley-contract validate --schema sley.conformance.manifest.v0 fixtures/corpus/manifest.json --schemas docs/schemas --json
 	sley-contract validate --schema sley.cli_smoke.manifest.v0 fixtures/cli_smokes/manifest.json --schemas docs/schemas --json
 	sley-contract validate --schema sley.cli_smoke.manifest.v0 fixtures/ci_smoke_probe/manifest.json --schemas docs/schemas --json
+	sley-contract validate --schema sley.claim.manifest.v0 docs/SleyClaimManifest.json --schemas docs/schemas --json
 
 conformance:
 	sley-conformance report --json
 
 public-release-check:
 	sley-conformance report --json --require-public-release-ready
+
+claim-audit:
+	sley claim-verify --json docs/SleyClaimManifest.json
 
 corpus:
 	sley-ci corpus --json fixtures/corpus/manifest.json
@@ -100,4 +104,4 @@ syntax:
 self-hosted-cli:
 	bin/sley $(SELF_HOSTED_ARGS)
 
-v1: fmt diff-check test contracts conformance corpus examples smoke lsp editor-shims workbench agent-bench migrate docgen sandbox-runner shadow zjx-tools syntax
+v1: fmt diff-check test contracts conformance claim-audit corpus examples smoke lsp editor-shims workbench agent-bench migrate docgen sandbox-runner shadow zjx-tools syntax

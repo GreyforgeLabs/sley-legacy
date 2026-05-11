@@ -2,7 +2,7 @@
   "schema": "sley.contract.inventory.v0",
   "status": "passed",
   "schema_dir": "docs/schemas",
-  "schema_count": 38,
+  "schema_count": 41,
   "schemas": [
     {
       "id": "sley.agent_bench.report.v0",
@@ -29,6 +29,20 @@
       "id": "sley.ci.report.v0",
       "path": "docs/schemas/sley.ci.report.v0.schema.json",
       "title": "Sley CI Report v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.claim.manifest.v0",
+      "path": "docs/schemas/sley.claim.manifest.v0.schema.json",
+      "title": "Sley Claim Manifest v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.claim.verify.v0",
+      "path": "docs/schemas/sley.claim.verify.v0.schema.json",
+      "title": "Sley Claim Verify Report v0",
       "draft": "https://json-schema.org/draft/2020-12/schema",
       "root_type": "object"
     },
@@ -197,6 +211,13 @@
       "id": "sley.sandbox.report.v0",
       "path": "docs/schemas/sley.sandbox.report.v0.schema.json",
       "title": "Sley Sandbox Runner Report v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.self_hosting.status.v0",
+      "path": "docs/schemas/sley.self_hosting.status.v0.schema.json",
+      "title": "Sley Self-Hosting Status Report v0",
       "draft": "https://json-schema.org/draft/2020-12/schema",
       "root_type": "object"
     },

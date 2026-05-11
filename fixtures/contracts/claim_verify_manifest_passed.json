@@ -1,0 +1,67 @@
+{
+  "schema": "sley.claim.verify.v0",
+  "status": "passed",
+  "target": "docs/SleyClaimManifest.json",
+  "manifest_schema": "sley.claim.manifest.v0",
+  "claim_id": "sley.agent_native_structural.v0",
+  "check_count": 9,
+  "passed_count": 9,
+  "failed_count": 0,
+  "checks": [
+    {
+      "id": "manifest_file_present",
+      "status": "passed",
+      "message": "claim manifest file is present",
+      "paths": ["docs/SleyClaimManifest.json"]
+    },
+    {
+      "id": "manifest_json_parse",
+      "status": "passed",
+      "message": "claim manifest parses as JSON",
+      "paths": []
+    },
+    {
+      "id": "manifest_schema_id",
+      "status": "passed",
+      "message": "manifest uses sley.claim.manifest.v0",
+      "paths": []
+    },
+    {
+      "id": "claim_boundary_safe",
+      "status": "passed",
+      "message": "manifest preserves public claim boundary and blocks unsupported strict/global claims",
+      "paths": []
+    },
+    {
+      "id": "criteria_complete",
+      "status": "passed",
+      "message": "all five Sley agent-native structural criteria are present exactly once",
+      "paths": []
+    },
+    {
+      "id": "evidence_commands_present",
+      "status": "passed",
+      "message": "evidence entries include paths and audit commands",
+      "paths": []
+    },
+    {
+      "id": "evidence_paths_exist",
+      "status": "passed",
+      "message": "all manifest evidence paths exist",
+      "paths": ["bin/sley", "docs/SleyClaimManifest.json"]
+    },
+    {
+      "id": "prior_art_candidates_covered",
+      "status": "passed",
+      "message": "prior-art manifest covers the named review candidates",
+      "paths": []
+    },
+    {
+      "id": "publication_gates_preserved",
+      "status": "passed",
+      "message": "manifest preserves public issue and release approval gates",
+      "paths": []
+    }
+  ],
+  "issues": []
+}

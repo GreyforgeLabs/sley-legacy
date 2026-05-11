@@ -39,6 +39,9 @@ claim, strict criteria, local audit commands, and prior-art comparison
 discipline. Treat the phrase "world's first fully AI-native programming
 language, built by AI for AI" as a disputed search phrase that requires that
 evidence packet, not as a standalone proof line.
+Read `docs/SleyClaimManifest.json` for the machine-readable claim boundary,
+criteria, evidence paths, prior-art candidate list, and publication gates.
+Verify it with `sley claim-verify --json docs/SleyClaimManifest.json`.
 
 For competitor/prior-art comparison, read `docs/SleyPriorArtSourcePack.md`.
 It maps Dana, Jac, Codong, Codon, Agentis, and Mojo to official sources and
@@ -52,6 +55,7 @@ without operator approval of the exact outgoing text.
 export PATH="$(pwd)/bin:$PATH"
 ./scripts/check-self-hosted-code.sh
 scripts/self-hosted-test.sh
+sley claim-verify --json docs/SleyClaimManifest.json
 make v1
 ```
 
@@ -83,6 +87,7 @@ sley format <file>
 sley run --json <file-or-project>
 sley run --json self-hosted
 sley self-hosting-status --json
+sley claim-verify --json docs/SleyClaimManifest.json
 ```
 
 ## Companion Commands
@@ -134,6 +139,8 @@ sley-zjx verify-digest --json <zjx-envelope.json>
 - `sley.ast.program.v0`
 - `sley.ast.node.v0`
 - `sley.diagnostics.report.v0`
+- `sley.claim.manifest.v0`
+- `sley.claim.verify.v0`
 - `sley.symbol_graph.v0`
 - `sley.query.report.v0`
 - `sley.lint.report.v0`

@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.claim.verify.v0",
+  "title": "Sley Claim Verify Report v0",
+  "type": "object",
+  "required": [
+    "schema",
+    "status",
+    "target",
+    "manifest_schema",
+    "claim_id",
+    "check_count",
+    "passed_count",
+    "failed_count",
+    "checks",
+    "issues"
+  ],
+  "properties": {
+    "schema": { "const": "sley.claim.verify.v0" },
+    "status": { "enum": ["passed", "failed"] },
+    "target": { "type": "string", "minLength": 1 },
+    "manifest_schema": { "type": "string" },
+    "claim_id": { "type": "string" },
+    "check_count": { "type": "integer", "minimum": 0 },
+    "passed_count": { "type": "integer", "minimum": 0 },
+    "failed_count": { "type": "integer", "minimum": 0 },
+    "checks": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/check" }
+    },
+    "issues": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/issue" }
+    }
+  },
+  "$defs": {
+    "check": {
+      "type": "object",
+      "required": ["id", "status", "message", "paths"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "status": { "enum": ["passed", "failed"] },
+        "message": { "type": "string", "minLength": 1 },
+        "paths": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "issue": {
+      "type": "object",
+      "required": ["code", "message"],
+      "properties": {
+        "code": { "type": "string", "minLength": 1 },
+        "message": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
