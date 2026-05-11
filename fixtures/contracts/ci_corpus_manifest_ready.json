@@ -2248,14 +2248,14 @@
         {
           "id": "TYPE_MISMATCH",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic TYPE_MISMATCH",
-          "node": "fixture:fixtures/corpus/rejected/type_mismatch.sley"
+          "message": "type mismatch `label`",
+          "node": "block:task:corpus.rejected.main:stmt:0"
         },
         {
           "id": "RETURN_TYPE_MISMATCH",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic RETURN_TYPE_MISMATCH",
-          "node": "fixture:fixtures/corpus/rejected/type_mismatch.sley"
+          "message": "return type mismatch `corpus.rejected.main`",
+          "node": "block:task:corpus.rejected.main:stmt:1:expr"
         }
       ]
     },
@@ -2285,8 +2285,8 @@
         {
           "id": "RETURN_TYPE_MISMATCH",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic RETURN_TYPE_MISMATCH",
-          "node": "fixture:fixtures/corpus/rejected/type_alias_mismatch.sley"
+          "message": "return type mismatch `corpus.rejected.type_alias_mismatch.main`",
+          "node": "block:task:corpus.rejected.type_alias_mismatch.main:stmt:1:expr"
         }
       ]
     },
