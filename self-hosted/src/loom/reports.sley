@@ -253,6 +253,25 @@ export task contract_fixture_check_fields -> List<Text> {
   ]
 }
 
+export task deploy_report_schema -> Text {
+  return "sley.deploy.report.v0"
+}
+
+export task deploy_report_fields -> List<Text> {
+  return [
+    "schema",
+    "status",
+    "mode",
+    "target",
+    "environment",
+    "policy",
+    "summary",
+    "verify",
+    "artifacts",
+    "next_actions"
+  ]
+}
+
 export task self_hosting_status_schema -> Text {
   return "sley.self_hosting.status.v0"
 }

@@ -57,6 +57,9 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("contract_report_shapes"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("deploy_report_shape"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("diagnostics_report_shape"))'
 
 bin/sley self-hosting-status --json \
@@ -259,6 +262,12 @@ bin/sley run --json --cap SecretRead --secret api_key redacted --cap Network --h
 
 bin/sley verify --json examples/project \
   | json_field '.schema == "sley.verify.report.v0" and .status == "passed" and .runtime.value.value == 42'
+
+bin/sley deploy --json --dry-run --artifacts-dir /tmp/sley-deploy-report-shape examples/hello.sley \
+  | json_field '.schema == "sley.deploy.report.v0" and .status == "ready" and .mode == "dry_run" and .target == "examples/hello.sley" and .policy.live_deploy_allowed == false and .verify.schema == "sley.verify.report.v0" and .summary.verify_status == "passed"'
+
+bin/sley deploy --json --dry-run --artifacts-dir /tmp/sley-deploy-report-shape examples/hello.sley \
+  | json_field 'keys == (["schema","status","mode","target","environment","policy","summary","verify","artifacts","next_actions"] | sort)'
 
 bin/sley graft --json --dry-run fixtures/ci_smoke_probe/graft_target.sley fixtures/ci_smoke_probe/insert_statement.json \
   | json_field '.schema == "sley.graft.outcome.v0" and .status == "accepted"'
