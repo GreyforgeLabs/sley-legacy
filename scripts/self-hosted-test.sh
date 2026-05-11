@@ -48,6 +48,9 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("conformance_report_shape"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("conformance_coverage_report_shape"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("diagnostics_report_shape"))'
 
 bin/sley self-hosting-status --json \
@@ -274,5 +277,11 @@ bin/sley-conformance report --json \
 
 bin/sley-conformance report --json \
   | json_field 'keys == (["schema","status","summary","validation","schemas","corpus","smoke","onboarding","examples","tests","editor_shims","v1_gate","readiness","release","issues"] | sort)'
+
+bin/sley-conformance coverage --json --require-tag cli:parse \
+  | json_field '.schema == "sley.conformance.coverage.v0" and .status == "passed" and (.required_tags | index("cli:parse"))'
+
+bin/sley-conformance coverage --json --require-tag cli:parse \
+  | json_field 'keys == (["schema","status","required_tags","missing_tags","tag_inventory","issues"] | sort)'
 
 echo "Self-hosting bootstrap tests passed."
