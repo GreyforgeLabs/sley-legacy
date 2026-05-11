@@ -391,6 +391,24 @@ export task agent_bench_report_fields -> List<Text> {
   ]
 }
 
+export task zjx_tool_schema -> Text {
+  return "sley.zjx.tool.report.v0"
+}
+
+export task zjx_tool_report_fields -> List<Text> {
+  return [
+    "schema",
+    "status",
+    "command",
+    "envelopes",
+    "digest",
+    "diff",
+    "output_path",
+    "graph",
+    "issues"
+  ]
+}
+
 export task self_hosting_status_schema -> Text {
   return "sley.self_hosting.status.v0"
 }

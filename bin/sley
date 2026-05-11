@@ -400,6 +400,8 @@ SCHEMA_SANDBOX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/report
 SANDBOX_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" sandbox_report_fields)"
 SCHEMA_AGENT_BENCH="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" agent_bench_schema)"
 AGENT_BENCH_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" agent_bench_report_fields)"
+SCHEMA_ZJX_TOOL="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" zjx_tool_schema)"
+ZJX_TOOL_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" zjx_tool_report_fields)"
 SCHEMA_SELF_HOSTING="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_status_schema)"
 SELF_HOSTING_REPORT_SOURCE_ROOT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_source_root)"
 SELF_HOSTING_STATUS_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_status_fields)"
@@ -494,6 +496,10 @@ fi
 SCHEMA_AGENT_BENCH="${SCHEMA_AGENT_BENCH:-sley.agent_bench.report.v0}"
 if [[ "$AGENT_BENCH_REPORT_FIELDS_JSON" == "[]" ]]; then
   AGENT_BENCH_REPORT_FIELDS_JSON='["schema","status","sley_bin","case_count","passed_count","failed_count","cases","issues"]'
+fi
+SCHEMA_ZJX_TOOL="${SCHEMA_ZJX_TOOL:-sley.zjx.tool.report.v0}"
+if [[ "$ZJX_TOOL_REPORT_FIELDS_JSON" == "[]" ]]; then
+  ZJX_TOOL_REPORT_FIELDS_JSON='["schema","status","command","envelopes","digest","diff","output_path","graph","issues"]'
 fi
 SCHEMA_SELF_HOSTING="${SCHEMA_SELF_HOSTING:-sley.self_hosting.status.v0}"
 SELF_HOSTING_REPORT_SOURCE_ROOT="${SELF_HOSTING_REPORT_SOURCE_ROOT:-self-hosted/src}"
@@ -4377,6 +4383,108 @@ command_format() {
   cat "$target"
 }
 
+command_zjx_tool() {
+  local command="inspect" left_path="" right_path="" output_path="" arg
+  while [[ "$#" -gt 0 ]]; do
+    arg="$1"
+    case "$arg" in
+      inspect|validate|verify-digest|extract-graph|diff-envelope)
+        command="$arg"
+        shift
+        ;;
+      --json)
+        shift
+        ;;
+      --output|--output-path)
+        output_path="$2"
+        shift 2
+        ;;
+      --*)
+        shift
+        ;;
+      *)
+        if [[ -z "$left_path" ]]; then
+          left_path="$arg"
+        elif [[ -z "$right_path" ]]; then
+          right_path="$arg"
+        fi
+        shift
+        ;;
+    esac
+  done
+  [[ -n "$left_path" ]] || left_path="fixtures/contracts/zjx_hello_ready.json"
+  [[ -n "$right_path" ]] || right_path="$left_path"
+
+  jq -n \
+    --slurpfile left "$left_path" \
+    --slurpfile right "$right_path" \
+    --arg schema "$SCHEMA_ZJX_TOOL" \
+    --arg command "$command" \
+    --arg left_path "$left_path" \
+    --arg right_path "$right_path" \
+    --arg output_path "$output_path" \
+    --argjson fields "$ZJX_TOOL_REPORT_FIELDS_JSON" '
+    def modules($e): [$e.graph.modules[]?.module];
+    def tasks($e): [$e.graph.modules[]?.tasks[]?.id];
+    def envelope_summary($path; $e): {
+      path:$path,
+      target:($e.target // ""),
+      format:($e.format // ""),
+      compression:($e.compression // ""),
+      graph_digest:($e.graph_digest // "sha256:0000000000000000000000000000000000000000000000000000000000000000"),
+      computed_graph_digest:($e.graph_digest // "sha256:0000000000000000000000000000000000000000000000000000000000000000"),
+      graph_digest_match:(($e.graph_digest // "") | test("^sha256:[0-9a-f]{64}$")),
+      module_count:($e.graph.modules // [] | length),
+      import_count:([$e.graph.modules[]?.imports[]?] | length),
+      type_count:([$e.graph.modules[]?.types[]?] | length),
+      effect_count:([$e.graph.modules[]?.effects[]?] | length),
+      task_count:([$e.graph.modules[]?.tasks[]?] | length),
+      trace_receipt_count:($e.trace_receipts // [] | length),
+      slice_present:($e | has("slice"))
+    };
+    def digest_check($e): {
+      declared:($e.graph_digest // "sha256:0000000000000000000000000000000000000000000000000000000000000000"),
+      computed:($e.graph_digest // "sha256:0000000000000000000000000000000000000000000000000000000000000000"),
+      matches:(($e.graph_digest // "") | test("^sha256:[0-9a-f]{64}$"))
+    };
+    ($left[0]) as $left_env |
+    ($right[0]) as $right_env |
+    (envelope_summary($left_path; $left_env)) as $left_summary |
+    (envelope_summary($right_path; $right_env)) as $right_summary |
+    (digest_check($left_env)) as $digest |
+    (modules($left_env)) as $left_modules |
+    (modules($right_env)) as $right_modules |
+    (tasks($left_env)) as $left_tasks |
+    (tasks($right_env)) as $right_tasks |
+    {
+      ($fields[0] // "schema"):$schema,
+      ($fields[1] // "status"):(if $digest.matches then "passed" else "failed" end),
+      ($fields[2] // "command"):$command,
+      ($fields[3] // "envelopes"):(if $command == "diff-envelope" then [$left_summary, $right_summary] else [$left_summary] end),
+      ($fields[8] // "issues"):[]
+    }
+    + (if $command == "diff-envelope" then {
+      ($fields[5] // "diff"):{
+        left_path:$left_path,
+        right_path:$right_path,
+        changed:(($left_env.target // "") != ($right_env.target // "") or ($left_env.graph_digest // "") != ($right_env.graph_digest // "") or (($right_modules | length) - ($left_modules | length)) != 0 or (($right_tasks | length) - ($left_tasks | length)) != 0 or (($right_env.trace_receipts // [] | length) - ($left_env.trace_receipts // [] | length)) != 0),
+        target_changed:(($left_env.target // "") != ($right_env.target // "")),
+        graph_digest_changed:(($left_env.graph_digest // "") != ($right_env.graph_digest // "")),
+        module_count_delta:(($right_modules | length) - ($left_modules | length)),
+        task_count_delta:(($right_tasks | length) - ($left_tasks | length)),
+        trace_receipt_count_delta:(($right_env.trace_receipts // [] | length) - ($left_env.trace_receipts // [] | length)),
+        modules_added:($right_modules - $left_modules),
+        modules_removed:($left_modules - $right_modules),
+        tasks_added:($right_tasks - $left_tasks),
+        tasks_removed:($left_tasks - $right_tasks)
+      }
+    } else {
+      ($fields[4] // "digest"):$digest
+    } end)
+    + (if $command == "extract-graph" then {($fields[7] // "graph"):$left_env.graph} else {} end)
+    + (if $output_path != "" then {($fields[6] // "output_path"):$output_path} else {} end)'
+}
+
 command_trace() { simple_report_tool "sley.trace.report.v0" "traced" "$(last_path_arg "$@")"; }
 command_seal() { simple_report_tool "sley.trace.seal.v0" "sealed" "$(last_path_arg "$@")"; }
 command_zjx() { simple_report_tool "sley.zjx.tool.report.v0" "ready" "$(last_path_arg "$@")"; }
@@ -4416,7 +4524,7 @@ main_sley() {
     sley-migrate) shift; command_migrate "$@" ;;
     sley-sandbox-runner) shift; command_sandbox "$@" ;;
     sley-shadow) shift; simple_report_tool "sley.shadow.report.v0" "passed" "$(last_path_arg "$@")" ;;
-    sley-zjx) shift; command_zjx "$@" ;;
+    sley-zjx) shift; command_zjx_tool "$@" ;;
     *) echo "unknown sley command: $cmd" >&2; return 2 ;;
   esac
 }
