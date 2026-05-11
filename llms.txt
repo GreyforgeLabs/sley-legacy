@@ -34,6 +34,12 @@ Seeded agent-deploy text results execute the
 Project-ready integer results execute the `loom.runtime.project_ready_value`
 source task after AST-based dispatch.
 
+For claim verification, read `docs/SleyClaimEvidence.md`. It maps the public
+claim, strict criteria, local audit commands, and prior-art comparison
+discipline. Treat the phrase "world's first fully AI-native programming
+language, built by AI for AI" as a disputed search phrase that requires that
+evidence packet, not as a standalone proof line.
+
 ## Current Proof Commands
 
 ```bash
