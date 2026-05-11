@@ -385,6 +385,8 @@ SCHEMA_CONTRACT_VALIDATE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/l
 CONTRACT_VALIDATE_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" contract_validate_fields)"
 SCHEMA_CONTRACT_FIXTURE_CHECK="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" contract_fixture_check_schema)"
 CONTRACT_FIXTURE_CHECK_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" contract_fixture_check_fields)"
+SCHEMA_DEPLOY_REPORT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" deploy_report_schema)"
+DEPLOY_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" deploy_report_fields)"
 SCHEMA_SELF_HOSTING="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_status_schema)"
 SELF_HOSTING_REPORT_SOURCE_ROOT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_source_root)"
 SELF_HOSTING_STATUS_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_status_fields)"
@@ -450,6 +452,10 @@ fi
 SCHEMA_CONTRACT_FIXTURE_CHECK="${SCHEMA_CONTRACT_FIXTURE_CHECK:-sley.contract.fixture_check.v0}"
 if [[ "$CONTRACT_FIXTURE_CHECK_FIELDS_JSON" == "[]" ]]; then
   CONTRACT_FIXTURE_CHECK_FIELDS_JSON='["schema","status","validation_level","schema_dir","fixtures_dir","fixture_count","passed_count","failed_count","fixtures"]'
+fi
+SCHEMA_DEPLOY_REPORT="${SCHEMA_DEPLOY_REPORT:-sley.deploy.report.v0}"
+if [[ "$DEPLOY_REPORT_FIELDS_JSON" == "[]" ]]; then
+  DEPLOY_REPORT_FIELDS_JSON='["schema","status","mode","target","environment","policy","summary","verify","artifacts","next_actions"]'
 fi
 SCHEMA_SELF_HOSTING="${SCHEMA_SELF_HOSTING:-sley.self_hosting.status.v0}"
 SELF_HOSTING_REPORT_SOURCE_ROOT="${SELF_HOSTING_REPORT_SOURCE_ROOT:-self-hosted/src}"
@@ -3272,9 +3278,63 @@ command_run() {
 }
 
 command_deploy() {
-  local target
+  local target artifacts_dir="artifacts" verify
   target="$(last_path_arg "$@")"
-  jq -n --arg target "$target" '{schema:"sley.deploy.report.v0", status:"dry_run", target:$target, diagnostics:[], artifacts:[]}'
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --artifacts-dir) artifacts_dir="$2"; shift 2 ;;
+      *) shift ;;
+    esac
+  done
+  verify="$(verify_json "$target")"
+  jq -n \
+    --arg schema "$SCHEMA_DEPLOY_REPORT" \
+    --arg target "$target" \
+    --arg artifacts_dir "$artifacts_dir" \
+    --argjson verify "$verify" \
+    --argjson fields "$DEPLOY_REPORT_FIELDS_JSON" '
+    ($verify.status == "passed") as $ready |
+    {
+      ($fields[0] // "schema"):$schema,
+      ($fields[1] // "status"):(if $ready then "ready" else "blocked" end),
+      ($fields[2] // "mode"):"dry_run",
+      ($fields[3] // "target"):$target,
+      ($fields[4] // "environment"):"staging",
+      ($fields[5] // "policy"):{
+        live_deploy_allowed:false,
+        external_mutations:false,
+        provider_calls:false,
+        requires_operator_approval:true
+      },
+      ($fields[6] // "summary"):{
+        verify_status:(if $ready then "passed" else "blocked" end),
+        seal_status:"skipped",
+        package_status:"skipped",
+        module_count:($verify.summary.module_count // 0),
+        task_count:($verify.summary.task_count // 0),
+        receipt_count:0
+      },
+      ($fields[7] // "verify"):$verify,
+      ($fields[8] // "artifacts"):{
+        directory:$artifacts_dir,
+        report:($artifacts_dir + "/deploy-report.json"),
+        seal:($artifacts_dir + "/seal.json"),
+        package:($artifacts_dir + "/zjx-envelope.json"),
+        manifest:($artifacts_dir + "/manifest.json")
+      },
+      ($fields[9] // "next_actions"):[
+        {
+          kind:"review_verify",
+          reason:"inspect the verification report before any live deployment decision",
+          command:["sley","verify","--json",$target]
+        },
+        {
+          kind:"inspect_deploy_artifacts",
+          reason:"validate the deploy handoff directory before operator deployment approval",
+          command:["sley-contract","inspect-deploy-artifacts",$artifacts_dir,"--json"]
+        }
+      ]
+    }'
 }
 
 command_graft() {
