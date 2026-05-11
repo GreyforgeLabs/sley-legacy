@@ -1601,20 +1601,20 @@
         {
           "id": "DUPLICATE_EFFECT",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic DUPLICATE_EFFECT",
-          "node": "fixture:fixtures/corpus/rejected/module_namespace_conflict.sley"
+          "message": "duplicate effect `Audit`",
+          "node": "effect:corpus.rejected.module_namespace.Audit"
         },
         {
           "id": "DUPLICATE_TYPE",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic DUPLICATE_TYPE",
-          "node": "fixture:fixtures/corpus/rejected/module_namespace_conflict.sley"
+          "message": "duplicate type `User`",
+          "node": "type:corpus.rejected.module_namespace.User"
         },
         {
           "id": "DUPLICATE_TASK",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic DUPLICATE_TASK",
-          "node": "fixture:fixtures/corpus/rejected/module_namespace_conflict.sley"
+          "message": "duplicate task `main`",
+          "node": "task:corpus.rejected.module_namespace.main"
         }
       ]
     },
