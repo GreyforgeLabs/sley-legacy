@@ -717,7 +717,9 @@ The compiler conformance corpus lives under `fixtures/corpus/`. Its
 `manifest.json` lists every accepted and rejected fixture plus coverage tags.
 Accepted fixtures must parse, check, and formatter-round-trip. Rejected
 fixtures carry a JSON sidecar listing the diagnostic ids that must remain
-stable. The current corpus locks declared and missing authority coverage for
+stable for CI comparison only; `sley check` must emit diagnostics from checker
+logic and must not manufacture rejected diagnostics from those sidecars. The
+current corpus locks declared and missing authority coverage for
 the deterministic seeded host adapters and transitive authority propagation
 through split-task agent helpers, including spend helper boundaries, plus
 accepted/rejected module namespace coverage for exported declarations and
@@ -726,7 +728,7 @@ duplicate declaration diagnostics.
 `sley-ci corpus --json fixtures/corpus/manifest.json` expose the same
 accepted/rejected gate as a machine-readable CI report: accepted cases run
 strict check plus formatter round-trip checks, while rejected cases must fail
-with the expected diagnostic ids from their sidecars.
+with checker-emitted diagnostic ids that match their sidecars.
 When a wrapped step emits `schema: "sley.diagnostics.report.v0"`, non-empty
 diagnostics are summarized directly on the CI step by ID, severity, message,
 and optional node.

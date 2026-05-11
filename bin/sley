@@ -1002,44 +1002,8 @@ query_json() {
   '
 }
 
-rejected_fixture_diagnostics_json() {
-  local target="$1" abs sidecar rel ids_json
-  abs="$(absolute_path "$target")" || return 1
-  case "$abs" in
-    "$ROOT_DIR"/fixtures/corpus/rejected/*.sley|"$ROOT_DIR"/fixtures/corpus/rejected/*/*.sley) ;;
-    *) return 1 ;;
-  esac
-  case "$abs" in
-    "$ROOT_DIR"/fixtures/corpus/rejected/unknown_identifier.sley|"$ROOT_DIR"/fixtures/corpus/rejected/unknown_type.sley|"$ROOT_DIR"/fixtures/corpus/rejected/unknown_task.sley|"$ROOT_DIR"/fixtures/corpus/rejected/call_arity_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/call_argument_type_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/type_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/type_alias_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/duplicate_take.sley|"$ROOT_DIR"/fixtures/corpus/rejected/duplicate_map_key.sley|"$ROOT_DIR"/fixtures/corpus/rejected/duplicate_record_field.sley|"$ROOT_DIR"/fixtures/corpus/rejected/duplicate_record_literal_field.sley|"$ROOT_DIR"/fixtures/corpus/rejected/record_field_missing.sley|"$ROOT_DIR"/fixtures/corpus/rejected/record_field_unknown.sley|"$ROOT_DIR"/fixtures/corpus/rejected/record_field_type_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/record_literal_non_record_type.sley|"$ROOT_DIR"/fixtures/corpus/rejected/unknown_record_field.sley|"$ROOT_DIR"/fixtures/corpus/rejected/list_element_type_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/list_index_non_int.sley|"$ROOT_DIR"/fixtures/corpus/rejected/map_index_non_text.sley|"$ROOT_DIR"/fixtures/corpus/rejected/map_key_type_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/map_value_type_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/module_namespace_conflict.sley|"$ROOT_DIR"/fixtures/corpus/rejected/unknown_effect.sley|"$ROOT_DIR"/fixtures/corpus/rejected/gate_take_type_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/gate_effect_undeclared.sley|"$ROOT_DIR"/fixtures/corpus/rejected/unauthorized_effect.sley|"$ROOT_DIR"/fixtures/corpus/rejected/authority/*.sley|"$ROOT_DIR"/fixtures/corpus/rejected/missing_return.sley|"$ROOT_DIR"/fixtures/corpus/rejected/question_requires_result.sley)
-      return 1
-      ;;
-  esac
-  sidecar="${abs%.sley}.json"
-  [[ -f "$sidecar" ]] || return 1
-  jq -e '.diagnostics | type == "array" and length > 0 and all(.[]; type == "string" and length > 0)' "$sidecar" >/dev/null || return 1
-  rel="${abs#$ROOT_DIR/}"
-  ids_json="$(jq -c '.diagnostics' "$sidecar")"
-  jq -n \
-    --arg schema "$SCHEMA_DIAGNOSTICS" \
-    --arg rel "$rel" \
-    --argjson ids "$ids_json" '
-    {
-      schema:$schema,
-      status:"error",
-      diagnostics:($ids | map({
-        id:.,
-        severity:"error",
-        message:("rejected corpus fixture expects diagnostic " + .),
-        node:("fixture:" + $rel)
-      }))
-    }'
-}
-
 check_json() {
   local target="$1" diagnostics diagnostic_count check_status builtin_types source_text
-  if rejected_fixture_diagnostics_json "$target"; then
-    return 0
-  fi
   if [[ -f "$target" ]]; then
     source_text="$(<"$target")"
   else
