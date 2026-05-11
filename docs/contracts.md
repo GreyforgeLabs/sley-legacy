@@ -5,7 +5,8 @@ Last checked: 2026-05-11.
 
 This file names the machine-readable JSON roots that external tools may
 consume. Schemas live under `docs/schemas/`, representative instances live
-under `fixtures/contracts/`, and the local release gate validates both.
+under `fixtures/contracts/`, and the local release gate validates both with
+JSON Schema draft 2020-12.
 
 ## Validation Commands
 
@@ -20,7 +21,9 @@ make v1
 
 `sley-contract` uses `docs/schemas` from the current working directory when it
 exists and otherwise falls back to the bundled source schema directory.
-Explicit schema paths remain supported for pinned validation.
+Explicit schema paths remain supported for pinned validation. `validate` checks
+one report against the requested schema; `check-fixtures` checks every fixture
+against the schema named by its top-level `schema` field.
 
 Current counts:
 

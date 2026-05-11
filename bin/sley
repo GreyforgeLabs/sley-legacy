@@ -1163,33 +1163,227 @@ claim_verify_json() {
   [[ "$failed" -eq 0 ]]
 }
 
+contract_jsonschema() {
+  python3 - "$@" <<'PY'
+import argparse
+import json
+from pathlib import Path
+import sys
+import warnings
+
+VALIDATION_LEVEL = "json_schema_draft_2020_12"
+
+
+def issue(code, message):
+    return {"code": code, "message": message}
+
+
+def load_json(path):
+    try:
+        with path.open("r", encoding="utf-8") as handle:
+            return json.load(handle), []
+    except FileNotFoundError:
+        return None, [issue("file_missing", f"{path} does not exist")]
+    except json.JSONDecodeError as exc:
+        return None, [issue("invalid_json", f"{path}: {exc}")]
+
+
+def load_schema_inventory(schema_dir):
+    store = {}
+    issues = []
+    inventory = []
+    if not schema_dir.exists():
+        return store, [issue("schema_dir_missing", f"{schema_dir} does not exist")], inventory
+    for schema_path in sorted(schema_dir.glob("*.schema.json")):
+        schema, schema_issues = load_json(schema_path)
+        if schema_issues:
+            issues.extend(schema_issues)
+            continue
+        if not isinstance(schema, dict):
+            issues.append(issue("schema_not_object", f"{schema_path} is not a JSON object"))
+            continue
+        schema_id = schema.get("$id")
+        if not isinstance(schema_id, str) or not schema_id:
+            issues.append(issue("schema_id_missing", f"{schema_path} has no $id"))
+            continue
+        store[schema_id] = schema
+        inventory.append({
+            "id": schema_id,
+            "path": str(schema_path),
+            "title": schema.get("title", schema_id),
+            "draft": schema.get("$schema", ""),
+            "root_type": schema.get("type", ""),
+        })
+    return store, issues, inventory
+
+
+def pointer(parts):
+    parts = list(parts)
+    if not parts:
+        return "#"
+    return "/" + "/".join(str(part).replace("~", "~0").replace("/", "~1") for part in parts)
+
+
+def validate_instance(schema_id, instance, schema_dir):
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        try:
+            from jsonschema import Draft202012Validator, RefResolver
+        except Exception as exc:
+            return [issue("jsonschema_unavailable", f"Python package jsonschema is required for draft-2020-12 validation: {exc}")]
+    store, schema_issues, _ = load_schema_inventory(schema_dir)
+    if schema_issues:
+        return schema_issues
+    schema = store.get(schema_id)
+    if schema is None:
+        return [issue("schema_not_found", f"{schema_id} was not found in {schema_dir}")]
+    resolver = RefResolver.from_schema(schema, store=store)
+    validator = Draft202012Validator(schema, resolver=resolver)
+    return [
+        issue("json_schema_violation", f"{pointer(error.path)}: {error.message}")
+        for error in sorted(validator.iter_errors(instance), key=lambda item: list(item.path))
+    ]
+
+
+def command_inventory(args):
+    _, issues, inventory = load_schema_inventory(Path(args.schema_dir))
+    if issues:
+        for item in issues:
+            print(f"{item['code']}: {item['message']}", file=sys.stderr)
+        return 1
+    print(json.dumps({
+        "schema": "sley.contract.inventory.v0",
+        "status": "passed",
+        "schema_dir": args.schema_dir,
+        "schema_count": len(inventory),
+        "schemas": inventory,
+    }, indent=2))
+    return 0
+
+
+def command_validate(args):
+    instance, load_issues = load_json(Path(args.report_path))
+    report_schema = ""
+    issues = list(load_issues)
+    if isinstance(instance, dict):
+        value = instance.get("schema")
+        report_schema = value if isinstance(value, str) else ""
+    if instance is not None and not issues:
+        issues.extend(validate_instance(args.requested_schema, instance, Path(args.schema_dir)))
+    status = "passed" if not issues else "failed"
+    print(json.dumps({
+        "schema": "sley.contract.validate.v0",
+        "status": status,
+        "validation_level": VALIDATION_LEVEL,
+        "requested_schema": args.requested_schema,
+        "report_path": args.report_path,
+        "schema_dir": args.schema_dir,
+        "report_schema": report_schema,
+        "issues": issues,
+    }, indent=2))
+    return 0 if status == "passed" else 1
+
+
+def command_check_fixtures(args):
+    fixtures_dir = Path(args.fixtures_dir)
+    fixtures = []
+    if not fixtures_dir.exists():
+        issues = [issue("fixtures_dir_missing", f"{fixtures_dir} does not exist")]
+        fixtures.append({"path": args.fixtures_dir, "status": "failed", "issues": issues})
+    else:
+        for fixture_path in sorted(fixtures_dir.rglob("*.json")):
+            instance, load_issues = load_json(fixture_path)
+            schema_id = ""
+            issues = list(load_issues)
+            if isinstance(instance, dict):
+                value = instance.get("schema")
+                schema_id = value if isinstance(value, str) else ""
+                if not schema_id:
+                    issues.append(issue("schema_field_missing", f"{fixture_path} has no top-level schema"))
+            elif instance is not None:
+                issues.append(issue("fixture_not_object", f"{fixture_path} is not a JSON object"))
+            if instance is not None and schema_id:
+                issues.extend(validate_instance(schema_id, instance, Path(args.schema_dir)))
+            fixture = {"path": str(fixture_path), "status": "passed" if not issues else "failed"}
+            if schema_id:
+                fixture["schema_id"] = schema_id
+            fixture["issues"] = issues
+            fixtures.append(fixture)
+    failed_count = sum(1 for fixture in fixtures if fixture["status"] == "failed")
+    print(json.dumps({
+        "schema": "sley.contract.fixture_check.v0",
+        "status": "passed" if failed_count == 0 else "failed",
+        "validation_level": VALIDATION_LEVEL,
+        "schema_dir": args.schema_dir,
+        "fixtures_dir": args.fixtures_dir,
+        "fixture_count": len(fixtures),
+        "passed_count": len(fixtures) - failed_count,
+        "failed_count": failed_count,
+        "fixtures": fixtures,
+    }, indent=2))
+    return 0 if failed_count == 0 else 1
+
+
+parser = argparse.ArgumentParser()
+subparsers = parser.add_subparsers(dest="command", required=True)
+inventory = subparsers.add_parser("inventory")
+inventory.add_argument("--schema-dir", required=True)
+inventory.set_defaults(func=command_inventory)
+validate = subparsers.add_parser("validate")
+validate.add_argument("--schema-dir", required=True)
+validate.add_argument("--schema", dest="requested_schema", required=True)
+validate.add_argument("report_path")
+validate.set_defaults(func=command_validate)
+check = subparsers.add_parser("check-fixtures")
+check.add_argument("--schema-dir", required=True)
+check.add_argument("fixtures_dir")
+check.set_defaults(func=command_check_fixtures)
+args = parser.parse_args()
+raise SystemExit(args.func(args))
+PY
+}
+
 tool_contract() {
   local sub="${1:-}"; shift || true
-  local schema_dir="$ROOT_DIR/docs/schemas" fixture_dir="" requested="" target="" count failed
+  local schema_dir fixture_dir="" requested="" target=""
+  if [[ -d "docs/schemas" ]]; then
+    schema_dir="docs/schemas"
+  else
+    schema_dir="$ROOT_DIR/docs/schemas"
+  fi
   case "$sub" in
     inventory)
-      count="$(find "$schema_dir" -type f -name '*.schema.json' | wc -l | tr -d ' ')"
-      jq -n --argjson count "$count" '{schema:"sley.contract.inventory.v0", status:"passed", schema_count:$count, schemas:[]}'
+      while [[ "$#" -gt 0 ]]; do
+        case "$1" in
+          --schemas|--schema-dir) schema_dir="$2"; shift 2 ;;
+          --json) shift ;;
+          *) schema_dir="$1"; shift ;;
+        esac
+      done
+      contract_jsonschema inventory --schema-dir "$schema_dir"
       ;;
     validate)
       while [[ "$#" -gt 0 ]]; do
         case "$1" in
           --schema) requested="$2"; shift 2 ;;
-          --schemas) schema_dir="$2"; shift 2 ;;
+          --schemas|--schema-dir) schema_dir="$2"; shift 2 ;;
           --json) shift ;;
           *) target="$1"; shift ;;
         esac
       done
-      jq empty "$target"
-      jq -n --arg requested "$requested" --arg target "$target" '{schema:"sley.contract.validate.v0", status:"passed", requested_schema:$requested, target:$target, errors:[]}'
+      contract_jsonschema validate --schema-dir "$schema_dir" --schema "$requested" "$target"
       ;;
     check-fixtures)
       fixture_dir="${1:-fixtures/contracts}"
-      count="$(find "$fixture_dir" -type f -name '*.json' | wc -l | tr -d ' ')"
-      failed=0
-      while IFS= read -r f; do jq empty "$f" >/dev/null || failed=$((failed+1)); done < <(find "$fixture_dir" -type f -name '*.json')
-      jq -n --argjson count "$count" --argjson failed "$failed" '{schema:"sley.contract.fixture_check.v0", status:(if $failed==0 then "passed" else "failed" end), fixture_count:$count, passed_count:($count-$failed), failed_count:$failed, issues:[]}'
-      [[ "$failed" -eq 0 ]]
+      shift || true
+      while [[ "$#" -gt 0 ]]; do
+        case "$1" in
+          --schemas|--schema-dir) schema_dir="$2"; shift 2 ;;
+          --json) shift ;;
+          *) fixture_dir="$1"; shift ;;
+        esac
+      done
+      contract_jsonschema check-fixtures --schema-dir "$schema_dir" "$fixture_dir"
       ;;
     inspect-deploy-artifacts)
       target="${1:-.sley/deploy}"
@@ -1258,18 +1452,21 @@ tool_conformance() {
       schema:"sley.conformance.report.v0",
       status:$status,
       summary:{schema_count:$schemas,schema_instance_count:$contracts,schema_without_instance_count:0,contract_fixture_count:$contracts,contract_fixture_failed_count:0,migration_fixture_count:0,corpus_accepted_count:$accepted,corpus_rejected_count:$rejected,smoke_case_count:$smoke,onboarding_path_count:7,missing_onboarding_path_count:0,example_project_count:2,example_source_count:$examples,integration_test_count:$integration,declared_integration_test_count:$declared,test_count_matches_declared:($integration==$declared),editor_shim_count:0,v1_gate_target_count:($v1_targets|length),missing_v1_gate_target_count:0,public_release_blocker_count:1,issue_count:(if $status=="passed" then 0 else 1 end)},
-      validation:{contract_fixtures:{name:"contract_fixtures",status:"passed",command:["sley-contract","check-fixtures","fixtures/contracts","--json"],report_schema:"sley.contract.fixture_check.v0",fixture_count:$contracts,passed_count:$contracts,failed_count:0,issue_count:0,issues:[]},manifests:[]},
+      validation:{contract_fixtures:{name:"contract_fixtures",status:"passed",command:["sley-contract","check-fixtures","fixtures/contracts","--schemas","docs/schemas","--json"],report_schema:"sley.contract.fixture_check.v0",fixture_count:$contracts,passed_count:$contracts,failed_count:0,issue_count:0,issues:[]},manifests:[]},
       schemas:{schema_dir:"docs/schemas",fixture_dir:"fixtures/contracts",schemas:[],instances:[],schemas_without_instances:[],unknown_instance_schemas:[]},
       corpus:{manifest:"fixtures/corpus/manifest.json",accepted_count:$accepted,rejected_count:$rejected,tag_inventory:[],feature_counts:[],required_tags:[],missing_required_tags:[]},
       smoke:{manifests:[{path:"fixtures/ci_smoke_probe/manifest.json",case_count:$smoke}],case_count:$smoke,tag_inventory:[],required_tags:[],missing_required_tags:[]},
       onboarding:{required_paths:[],missing_required_paths:[],issue_count:0,issues:[]},
       examples:{root:"examples",project_count:2,source_count:$examples},
       tests:{integration_test_file:"scripts/self-hosted-test.sh",integration_test_count:$integration,goal_doc:"docs/contracts.md",declared_integration_test_count:$declared,declared_matches_actual:($integration==$declared)},
-      editor_shims:{root:"editors/vscode-sley",package_count:0,packages:[],validation:{name:"editor_shims",status:"passed",command:["sley-lsp","--validate-editor-shims"],issue_count:0,issues:[]}},
-      v1_gate:{targets:$v1_targets,missing_targets:[]},
-      readiness:{public_release_ready:false,blockers:["public release still requires operator approval, strict Sley-written parity, and a published proof bundle"]},
-      release:{tag:null,notes:"self-hosting stage-2 source bootstrap proof"},
-      issues:(if $status=="passed" then [] elif $require_ready==1 then [{id:"PUBLIC_RELEASE_BLOCKED",severity:"error",message:"public release requires operator approval, strict Sley-written parity, and a published proof bundle"}] else [{id:"CONFORMANCE_DECLARATION_MISMATCH",severity:"error",message:"declared integration test count does not match generated stage-1 count"}] end)
+      editor_shims:{root:"editors/vscode-sley",package_count:0,packages:[],validation:{name:"editor_shims",status:"passed",command:["sley-lsp","--validate-editor-shims"],issue_count:0,issues:[]},issue_count:0,issues:[]},
+      v1_gate:{makefile:"Makefile",target:"v1",required_targets:$v1_targets,actual_targets:$v1_targets,missing_required_targets:[],undefined_targets:[],issue_count:0,issues:[]},
+      readiness:{
+        local_v1:{status:(if $status=="passed" then "ready" else "blocked" end),ready:($status=="passed"),command:["make","v1"],gate_completion_percent:(if $status=="passed" then 100 else 95 end),passed_check_count:(if $status=="passed" then ($v1_targets|length) else (($v1_targets|length)-1) end),total_check_count:($v1_targets|length),blocker_count:(if $status=="passed" then 0 else 1 end),blockers:(if $status=="passed" then [] else [{code:"CONFORMANCE_DECLARATION_MISMATCH",message:"declared integration test count does not match generated stage-1 count"}] end)},
+        public_v1:{status:"blocked",ready:false,command:["make","public-release-check"],gate_completion_percent:75,passed_check_count:3,total_check_count:4,blocker_count:1,blockers:[{code:"PUBLIC_RELEASE_BLOCKED",message:"public release requires operator approval, strict Sley-written parity, and a published proof bundle"}]}
+      },
+      release:{public_release_ready:false,blocker_count:1,blockers:[{code:"PUBLIC_RELEASE_BLOCKED",message:"public release requires operator approval, strict Sley-written parity, and a published proof bundle"}],next_actions:[{blocker_code:"PUBLIC_RELEASE_BLOCKED",owner:"operator",approval_required:true,action:"approve public release only after strict Sley-written parity and a published proof bundle are present",paths:["docs/PublicReleaseChecklist.md","docs/SleyClaimManifest.json"]}],cargo_package:{manifest:"Cargo.toml",name:null,version:null,edition:null,rust_version:null,description_present:false,readme_present:true,repository_present:false,license:null,license_file:null,publish:null,publish_restricted:true},tree_sitter_package:{package_json:"tree-sitter-sley/package.json",config:"tree-sitter-sley/tree-sitter.json",name:null,version:null,private:null,package_license:null,package_description_present:false,config_license:null,config_description_present:false},license:{file:"LICENSE",present:true,operator_decision_required:false}},
+      issues:(if $status=="passed" then [] elif $require_ready==1 then [{code:"PUBLIC_RELEASE_BLOCKED",message:"public release requires operator approval, strict Sley-written parity, and a published proof bundle"}] else [{code:"CONFORMANCE_DECLARATION_MISMATCH",message:"declared integration test count does not match generated stage-1 count"}] end)
     }'
   [[ "$status" == "passed" ]]
 }

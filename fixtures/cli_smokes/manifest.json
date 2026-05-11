@@ -30,7 +30,7 @@
         "stdout_json": [
           { "pointer": "/schema", "value": "sley.contract.inventory.v0" },
           { "pointer": "/status", "value": "passed" },
-          { "pointer": "/schema_count", "value": 38 }
+          { "pointer": "/schema_count", "value": 41 }
         ]
       }
     },

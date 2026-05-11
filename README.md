@@ -123,6 +123,8 @@ migration stage.
 
 From this checkout:
 
+Prerequisites: Bash, `jq`, and Python 3 with the `jsonschema` package.
+
 ```bash
 export PATH="$(pwd)/bin:$PATH"
 make v1
@@ -154,6 +156,7 @@ Stage-1 executable commands:
 - `sley graft --json --dry-run <file> <graft.json>`
 - `sley-contract inventory --json`
 - `sley-contract check-fixtures fixtures/contracts --schemas docs/schemas --json`
+- `sley-contract validate --schema sley.conformance.manifest.v0 fixtures/corpus/manifest.json --schemas docs/schemas --json`
 - `sley-conformance report --json`
 
 Compatibility wrappers also exist for the previous companion-tool names:
@@ -165,6 +168,9 @@ Compatibility wrappers also exist for the previous companion-tool names:
 - Keep `make v1` green before promoting any public command claim.
 - Keep `sley claim-verify --json docs/SleyClaimManifest.json` green before
   promoting any public claim wording.
+- Keep `sley-contract check-fixtures fixtures/contracts --schemas docs/schemas
+  --json` green before citing schema-backed evidence; it performs JSON Schema
+  draft 2020-12 validation for each fixture.
 - Keep `./scripts/check-self-hosted-code.sh` green before calling the repo
   foreign-language-free.
 - Do not claim strict self-hosting until the parser, checker, runtime, and

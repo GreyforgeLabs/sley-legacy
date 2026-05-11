@@ -2,26 +2,26 @@
   "schema": "sley.conformance.report.v0",
   "status": "passed",
   "summary": {
-    "schema_count": 1,
-    "schema_instance_count": 1,
+    "schema_count": 41,
+    "schema_instance_count": 127,
     "schema_without_instance_count": 0,
-    "contract_fixture_count": 1,
+    "contract_fixture_count": 127,
     "contract_fixture_failed_count": 0,
-    "migration_fixture_count": 1,
-    "corpus_accepted_count": 1,
-    "corpus_rejected_count": 1,
-    "smoke_case_count": 1,
+    "migration_fixture_count": 0,
+    "corpus_accepted_count": 23,
+    "corpus_rejected_count": 43,
+    "smoke_case_count": 4,
     "onboarding_path_count": 7,
     "missing_onboarding_path_count": 0,
-    "example_project_count": 1,
-    "example_source_count": 1,
-    "integration_test_count": 1,
-    "declared_integration_test_count": 1,
+    "example_project_count": 2,
+    "example_source_count": 75,
+    "integration_test_count": 197,
+    "declared_integration_test_count": 197,
     "test_count_matches_declared": true,
-    "editor_shim_count": 1,
+    "editor_shim_count": 0,
     "v1_gate_target_count": 19,
     "missing_v1_gate_target_count": 0,
-    "public_release_blocker_count": 5,
+    "public_release_blocker_count": 1,
     "issue_count": 0
   },
   "validation": {
@@ -37,8 +37,8 @@
         "--json"
       ],
       "report_schema": "sley.contract.fixture_check.v0",
-      "fixture_count": 1,
-      "passed_count": 1,
+      "fixture_count": 127,
+      "passed_count": 127,
       "failed_count": 0,
       "issue_count": 0,
       "issues": []
@@ -48,160 +48,60 @@
   "schemas": {
     "schema_dir": "docs/schemas",
     "fixture_dir": "fixtures/contracts",
-    "schemas": [
-      {
-        "id": "sley.ast.program.v0",
-        "path": "docs/schemas/sley.ast.program.v0.schema.json",
-        "title": "Sley AST Program v0"
-      }
-    ],
-    "instances": [
-      {
-        "schema_id": "sley.ast.program.v0",
-        "count": 1
-      }
-    ],
+    "schemas": [],
+    "instances": [],
     "schemas_without_instances": [],
     "unknown_instance_schemas": []
   },
   "corpus": {
     "manifest": "fixtures/corpus/manifest.json",
-    "accepted_count": 1,
-    "rejected_count": 1,
-    "tag_inventory": [
-      {
-        "tag": "language:pure-task-call",
-        "count": 1
-      }
-    ],
-    "feature_counts": [
-      {
-        "tag": "language",
-        "count": 1
-      }
-    ],
-    "required_tags": [
-      "language:pure-task-call"
-    ],
+    "accepted_count": 23,
+    "rejected_count": 43,
+    "tag_inventory": [],
+    "feature_counts": [],
+    "required_tags": [],
     "missing_required_tags": []
   },
   "smoke": {
     "manifests": [
       {
-        "path": "fixtures/cli_smokes/manifest.json",
-        "case_count": 1
+        "path": "fixtures/ci_smoke_probe/manifest.json",
+        "case_count": 4
       }
     ],
-    "case_count": 1,
-    "tag_inventory": [
-      {
-        "tag": "cli:check",
-        "count": 1
-      }
-    ],
-    "required_tags": [
-      "cli:check"
-    ],
+    "case_count": 4,
+    "tag_inventory": [],
+    "required_tags": [],
     "missing_required_tags": []
   },
   "onboarding": {
-    "required_paths": [
-      {
-        "path": "README.md",
-        "kind": "file",
-        "present": true,
-        "byte_count": 1000,
-        "line_count": 40,
-        "entry_count": 0
-      },
-      {
-        "path": "llms.txt",
-        "kind": "file",
-        "present": true,
-        "byte_count": 1000,
-        "line_count": 40,
-        "entry_count": 0
-      },
-      {
-        "path": "docs/AgentQuickstart.md",
-        "kind": "file",
-        "present": true,
-        "byte_count": 1000,
-        "line_count": 40,
-        "entry_count": 0
-      },
-      {
-        "path": "docs/SleyLanguageSpec.md",
-        "kind": "file",
-        "present": true,
-        "byte_count": 1000,
-        "line_count": 40,
-        "entry_count": 0
-      },
-      {
-        "path": "examples",
-        "kind": "directory",
-        "present": true,
-        "byte_count": 0,
-        "line_count": 0,
-        "entry_count": 1
-      },
-      {
-        "path": "fixtures/grafts",
-        "kind": "directory",
-        "present": true,
-        "byte_count": 0,
-        "line_count": 0,
-        "entry_count": 1
-      },
-      {
-        "path": "tests",
-        "kind": "directory",
-        "present": true,
-        "byte_count": 0,
-        "line_count": 0,
-        "entry_count": 1
-      }
-    ],
+    "required_paths": [],
     "missing_required_paths": [],
     "issue_count": 0,
     "issues": []
   },
   "examples": {
     "root": "examples",
-    "project_count": 1,
-    "source_count": 1
+    "project_count": 2,
+    "source_count": 75
   },
   "tests": {
-    "integration_test_file": "tests/sley_v0.rs",
-    "integration_test_count": 1,
+    "integration_test_file": "scripts/self-hosted-test.sh",
+    "integration_test_count": 197,
     "goal_doc": "docs/contracts.md",
-    "declared_integration_test_count": 1,
+    "declared_integration_test_count": 197,
     "declared_matches_actual": true
   },
   "editor_shims": {
     "root": "editors/vscode-sley",
-    "package_count": 1,
-    "packages": [
-      {
-        "path": "editors/vscode-sley/package.json",
-        "name": "sley-vscode",
-        "display_name": "Sley",
-        "version": "0.1.0",
-        "private": true,
-        "language_ids": ["sley"],
-        "grammar_count": 1,
-        "command_count": 1,
-        "dependency_count": 1
-      }
-    ],
+    "package_count": 0,
+    "packages": [],
     "validation": {
       "name": "editor_shims",
       "status": "passed",
       "command": [
-        "node",
-        "scripts/validate-editor-shims.mjs",
-        "editors/vscode-sley"
+        "sley-lsp",
+        "--validate-editor-shims"
       ],
       "issue_count": 0,
       "issues": []
@@ -263,136 +163,85 @@
     "local_v1": {
       "status": "ready",
       "ready": true,
-      "command": ["make", "v1"],
+      "command": [
+        "make",
+        "v1"
+      ],
       "gate_completion_percent": 100,
-      "passed_check_count": 11,
-      "total_check_count": 11,
+      "passed_check_count": 19,
+      "total_check_count": 19,
       "blocker_count": 0,
       "blockers": []
     },
     "public_v1": {
       "status": "blocked",
       "ready": false,
-      "command": ["make", "public-release-check"],
-      "gate_completion_percent": 69,
-      "passed_check_count": 11,
-      "total_check_count": 16,
-      "blocker_count": 5,
+      "command": [
+        "make",
+        "public-release-check"
+      ],
+      "gate_completion_percent": 75,
+      "passed_check_count": 3,
+      "total_check_count": 4,
+      "blocker_count": 1,
       "blockers": [
         {
-          "code": "missing_license_file",
-          "message": "LICENSE is not present; choose the repository license before public release"
-        },
-        {
-          "code": "cargo_license_unresolved",
-          "message": "Cargo.toml does not declare `package.license` or `package.license-file`"
-        },
-        {
-          "code": "cargo_repository_unset",
-          "message": "Cargo.toml does not declare `package.repository` for public release consumers"
-        },
-        {
-          "code": "tree_sitter_package_license_unresolved",
-          "message": "tree-sitter-sley/package.json has no public release license"
-        },
-        {
-          "code": "tree_sitter_config_license_unresolved",
-          "message": "tree-sitter-sley/tree-sitter.json has no public release license"
+          "code": "PUBLIC_RELEASE_BLOCKED",
+          "message": "public release requires operator approval, strict Sley-written parity, and a published proof bundle"
         }
       ]
     }
   },
   "release": {
     "public_release_ready": false,
-    "blocker_count": 5,
+    "blocker_count": 1,
     "blockers": [
       {
-        "code": "missing_license_file",
-        "message": "LICENSE is not present; choose the repository license before public release"
-      },
-      {
-        "code": "cargo_license_unresolved",
-        "message": "Cargo.toml does not declare `package.license` or `package.license-file`"
-      },
-      {
-        "code": "cargo_repository_unset",
-        "message": "Cargo.toml does not declare `package.repository` for public release consumers"
-      },
-      {
-        "code": "tree_sitter_package_license_unresolved",
-        "message": "tree-sitter-sley/package.json has no public release license"
-      },
-      {
-        "code": "tree_sitter_config_license_unresolved",
-        "message": "tree-sitter-sley/tree-sitter.json has no public release license"
+        "code": "PUBLIC_RELEASE_BLOCKED",
+        "message": "public release requires operator approval, strict Sley-written parity, and a published proof bundle"
       }
     ],
     "next_actions": [
       {
-        "blocker_code": "missing_license_file",
+        "blocker_code": "PUBLIC_RELEASE_BLOCKED",
         "owner": "operator",
         "approval_required": true,
-        "action": "choose repository license text or an approved license-file path before adding LICENSE",
-        "paths": ["LICENSE"]
-      },
-      {
-        "blocker_code": "cargo_license_unresolved",
-        "owner": "operator",
-        "approval_required": true,
-        "action": "approve Cargo package license metadata before setting package.license or package.license-file",
-        "paths": ["Cargo.toml"]
-      },
-      {
-        "blocker_code": "cargo_repository_unset",
-        "owner": "operator",
-        "approval_required": true,
-        "action": "approve the public repository URL before setting package.repository",
-        "paths": ["Cargo.toml"]
-      },
-      {
-        "blocker_code": "tree_sitter_package_license_unresolved",
-        "owner": "operator",
-        "approval_required": true,
-        "action": "approve Tree-sitter package license metadata before updating package.json",
-        "paths": ["tree-sitter-sley/package.json"]
-      },
-      {
-        "blocker_code": "tree_sitter_config_license_unresolved",
-        "owner": "operator",
-        "approval_required": true,
-        "action": "approve Tree-sitter config license metadata before updating tree-sitter.json",
-        "paths": ["tree-sitter-sley/tree-sitter.json"]
+        "action": "approve public release only after strict Sley-written parity and a published proof bundle are present",
+        "paths": [
+          "docs/PublicReleaseChecklist.md",
+          "docs/SleyClaimManifest.json"
+        ]
       }
     ],
     "cargo_package": {
       "manifest": "Cargo.toml",
-      "name": "sley",
-      "version": "0.1.0",
-      "edition": "2024",
-      "rust_version": "1.85.0",
-      "description_present": true,
+      "name": null,
+      "version": null,
+      "edition": null,
+      "rust_version": null,
+      "description_present": false,
       "readme_present": true,
       "repository_present": false,
       "license": null,
       "license_file": null,
-      "publish": "false",
+      "publish": null,
       "publish_restricted": true
     },
     "tree_sitter_package": {
       "package_json": "tree-sitter-sley/package.json",
       "config": "tree-sitter-sley/tree-sitter.json",
-      "name": "tree-sitter-sley",
-      "version": "0.1.0",
-      "private": true,
-      "package_license": "UNLICENSED",
-      "package_description_present": true,
-      "config_license": "UNLICENSED",
-      "config_description_present": true
+      "name": null,
+      "version": null,
+      "private": null,
+      "package_license": null,
+      "package_description_present": false,
+      "config_license": null,
+      "config_description_present": false
     },
     "license": {
       "file": "LICENSE",
-      "present": false,
-      "operator_decision_required": true
+      "present": true,
+      "operator_decision_required": false
     }
   },
   "issues": []
