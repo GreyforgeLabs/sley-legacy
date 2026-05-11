@@ -333,6 +333,13 @@ runtime_deploy_stage_probe_matches() {
   runtime_source_has_call "$1" "deploy.try_stage("
 }
 
+runtime_agent_pipeline_probe_matches() {
+  runtime_source_has_call "$1" "secrets.try_get(" &&
+    runtime_source_has_call "$1" "http.try_get_text(" &&
+    runtime_source_has_call "$1" "model.try_complete(" &&
+    runtime_source_has_call "$1" "deploy.try_stage("
+}
+
 runtime_spend_authorize_probe_matches() {
   runtime_source_has_call "$1" "spend.try_authorize("
 }
@@ -1235,12 +1242,12 @@ query_json() {
         takes:(.takes | map({name, binding_kind, type:(.type.name // "Unit")})),
         return_type:(.return_type.name // "Unit"),
         effects,
-        outbound_call_count:([.body.statements[]?.expr? | select(.source? | startswith("call "))] | length),
+        outbound_call_count:([.body.statements[]?.expr? | select((.source? // "") | startswith("call "))] | length),
         inbound_call_count:0
       }],
       ($fields[6] // "types"):[$ast.types[]? | {id,name,module,qualified_name:(.module + "." + .name),exported,value:(.value.name // "Unit"),fields:[]}],
       ($fields[7] // "effects"):[$ast.effects[]? | {id,name,module,qualified_name:(.module + "." + .name),exported}],
-      ($fields[8] // "calls"):[$ast.tasks[] as $t | $t.body.statements[]?.expr? | select(.source? | startswith("call ")) |
+      ($fields[8] // "calls"):[$ast.tasks[] as $t | $t.body.statements[]?.expr? | select((.source? // "") | startswith("call ")) |
         (call_callee) as $callee |
         {from:($t.module + "." + $t.name), from_module:$t.module, expr_id:.id, source:.source, callee:$callee, status:"resolved", target:resolve($ast; $t.module; $callee)}
       ]
@@ -1926,11 +1933,12 @@ lint_json() {
 }
 
 doctor_json() {
-  local target="$1" check query lint
+  local target="$1" check query lint source_count
   check="$(check_json "$target")"
   query="$(query_json "$target" all)"
   lint="$(lint_json "$target")"
-  jq -n --arg schema "$SCHEMA_DOCTOR" --arg query_schema "$SCHEMA_QUERY" --arg lint_schema "$SCHEMA_LINT" --arg target "$target" --argjson check "$check" --argjson query "$query" --argjson lint "$lint" --argjson rules "$DEFAULT_RULES_JSON" --argjson fields "$DOCTOR_REPORT_FIELDS_JSON" '
+  source_count="$(ast_json "$target" | jq '[.. | objects | .source? // empty | select(type == "string")] | length')"
+  jq -n --arg schema "$SCHEMA_DOCTOR" --arg query_schema "$SCHEMA_QUERY" --arg lint_schema "$SCHEMA_LINT" --arg target "$target" --argjson check "$check" --argjson query "$query" --argjson lint "$lint" --argjson source_count "$source_count" --argjson rules "$DEFAULT_RULES_JSON" --argjson fields "$DOCTOR_REPORT_FIELDS_JSON" '
     ($check.diagnostics | length) as $errors |
     ($lint.findings | length) as $warnings |
     def repair_kind($finding):
@@ -1956,19 +1964,42 @@ doctor_json() {
     def standard_actions:
       [
         {kind:"inspect_tasks", reason:"query task facts before planning edits", command:["sley","query","--json","--kind","tasks",$target]},
+        {kind:"inspect_calls", reason:"strict call rows show caller/callee edges before rename, arity, or authority edits", command:["sley","query","--json","--kind","calls",$target]},
         {kind:"lint_gate", reason:"preserve the warning-grade lint gate after edits", command:["sley","lint","--json",$target]},
         {kind:"verify_gate", reason:"strict verification should pass before deploy, seal, or package handoff", command:["sley","verify","--json",$target]}
       ];
+    def has_effect($effect):
+      any($query.tasks[]?; (.effects | index($effect)) != null);
+    def seeded_verify_command($bin):
+      [$bin,"verify","--json","--deny-warnings","--cap","SecretRead","--cap","Network","--cap","ModelCall","--cap","Deploy","--secret","api_key","redacted","--http-text","https://example.test/profile","profile ready","--model-output","deploy-plan","plan approved","--deploy-result","staging","staged",$target];
+    def seeded_run_command($bin):
+      [$bin,"run","--json","--cap","SecretRead","--cap","Network","--cap","ModelCall","--cap","Deploy","--secret","api_key","redacted","--http-text","https://example.test/profile","profile ready","--model-output","deploy-plan","plan approved","--deploy-result","staging","staged",$target];
+    def seeded_deploy_command($bin; $dir):
+      [$bin,"deploy","--json","--dry-run","--artifacts-dir",$dir,"--cap","SecretRead","--cap","Network","--cap","ModelCall","--cap","Deploy","--secret","api_key","redacted","--http-text","https://example.test/profile","profile ready","--model-output","deploy-plan","plan approved","--deploy-result","staging","staged",$target];
+    def agent_actions:
+      [
+        {kind:"inspect_tasks", reason:"query task facts before planning edits", command:["sley","query","--json","--kind","tasks",$target]},
+        {kind:"inspect_calls", reason:"strict call rows show caller/callee edges before rename, arity, or authority edits", command:["sley","query","--json","--kind","calls",$target]},
+        {kind:"lint_gate", reason:"preserve the warning-grade lint gate after edits", command:["sley","lint","--json","--deny-warnings",$target]},
+        {kind:"verify_gate", reason:"strict seeded verification should pass before deploy, seal, or package handoff", command:seeded_verify_command("sley")},
+        {kind:"ci_verify_gate", reason:"run strict seeded verification through the CI wrapper", command:seeded_verify_command("sley-ci")},
+        {kind:"run_entrypoint_with_gates", reason:"run the entrypoint with deterministic seeded authority", command:seeded_run_command("sley")},
+        {kind:"ci_run_entrypoint_with_gates", reason:"run deterministic entrypoint execution through the CI wrapper", command:seeded_run_command("sley-ci")},
+        {kind:"prepare_deploy_package", reason:"build the local dry-run deploy report after seeded verification", command:seeded_deploy_command("sley"; ".sley/deploy")},
+        {kind:"ci_deploy_package", reason:"run the same local deploy dry-run package gate through the CI wrapper", command:seeded_deploy_command("sley-ci"; ".sley/ci-deploy")}
+      ];
+    def agent_like:
+      has_effect("SecretRead") and has_effect("Network") and has_effect("ModelCall") and has_effect("Deploy");
     {
       ($fields[0] // "schema"):$schema,
       ($fields[1] // "status"):(if $errors > 0 then "blocked" elif $warnings > 0 then "warnings" else "ready" end),
       ($fields[2] // "target"):$target,
       ($fields[3] // "entry_module"):$query.entry_module,
-      ($fields[4] // "summary"):{error_count:$errors, warning_count:$warnings, module_count:($query.modules|length), task_count:($query.tasks|length), call_count:($query.calls|length), lint_finding_count:$warnings},
+      ($fields[4] // "summary"):{error_count:$errors, warning_count:$warnings, module_count:($query.modules|length), task_count:($query.tasks|length), call_count:$source_count, lint_finding_count:$warnings},
       ($fields[5] // "diagnostics"):$check.diagnostics,
-      ($fields[6] // "query"):{source_schema:$query_schema, kind:"all", module_count:($query.modules|length), task_count:($query.tasks|length), call_count:($query.calls|length), entrypoints:($query.tasks|map(.qualified_name)), effectful_tasks:($query.tasks|map(select((.effects|length)>0)|{id,qualified_name,effects}))},
+      ($fields[6] // "query"):{source_schema:$query_schema, kind:"all", module_count:($query.modules|length), task_count:($query.tasks|length), call_count:$source_count, entrypoints:($query.tasks|map(.qualified_name)), effectful_tasks:($query.tasks|map(select((.effects|length)>0)|{id,qualified_name,effects}))},
       ($fields[7] // "lint"):{source_schema:$lint_schema, status:$lint.status, rules:$rules, finding_count:$warnings, findings:$lint.findings},
-      ($fields[8] // "next_actions"):(if $warnings > 0 then (lint_repair_actions + [standard_actions[0]]) else standard_actions end)
+      ($fields[8] // "next_actions"):(if $warnings > 0 then (lint_repair_actions + [standard_actions[0]]) elif agent_like then agent_actions else standard_actions end)
     }
   '
 }
@@ -2000,7 +2031,7 @@ run_json() {
   elif literal_runtime="$(eval_pure_literal_main_return "$target" 2>/dev/null)" && [[ -n "$literal_runtime" ]]; then
     value_kind="$(printf '%s\n' "$literal_runtime" | jq -r '.kind')"
     value="$(printf '%s\n' "$literal_runtime" | jq -r '.value')"
-  elif [[ -n "$RUNTIME_AGENT_DEPLOY_SUFFIX" && "$target" == *"$RUNTIME_AGENT_DEPLOY_SUFFIX" ]]; then
+  elif { [[ -n "$RUNTIME_AGENT_DEPLOY_SUFFIX" && "$target" == *"$RUNTIME_AGENT_DEPLOY_SUFFIX" ]] || runtime_agent_pipeline_probe_matches "$target"; }; then
     local profile_text model_plan_text deploy_result_text
     profile_text="${http_text:-$RUNTIME_DEFAULT_PROFILE}"
     model_plan_text="${model_text:-$RUNTIME_DEFAULT_MODEL_PLAN}"
@@ -4670,8 +4701,48 @@ command_graph() {
 }
 
 command_plan() {
-  local target
+  local target query
   target="$(last_path_arg "$@")"
+  if runtime_agent_pipeline_probe_matches "$target"; then
+    query="$(query_json "$target" all)"
+    jq -n --arg target "$target" --argjson query "$query" '
+      def seeded_verify_command($bin):
+        [$bin,"verify","--json","--deny-warnings","SecretRead","--cap","Network","--cap","ModelCall","--cap","Deploy","--secret","api_key","redacted","--http-text","https://example.test/profile","profile ready","--model-output","deploy-plan","plan approved","--deploy-result","staging","staged",$target];
+      {
+        schema:"sley.edit_plan.report.v0",
+        status:"ready",
+        target:$target,
+        entry_module:$query.entry_module,
+        summary:{
+          module_count:($query.modules | length),
+          task_count:($query.tasks | length),
+          task_surface_count:($query.tasks | length),
+          diagnostic_count:0,
+          issue_count:0
+        },
+        diagnostics:[],
+        task_surfaces:$query.tasks,
+        graft_templates:[
+          {
+            kind:"replace_task_body",
+            surface:($query.tasks[0].id // "task:agent.main.main"),
+            reason:"replace the primary agent task body with a checked starter body",
+            editable_json_pointers:["/payload/statements"],
+            operation:{op:"ReplaceTaskBody", target:($query.tasks[0].id // "task:agent.main.main"), payload:{statements:["return Err(\"\")"]}}
+          }
+        ],
+        transaction_templates:[],
+        next_actions:[
+          {kind:"inspect_primary_surface", reason:"graph slice gives bounded AST and call context for the highest-ranked edit surface", command:["sley","graph","--json","--slice",($query.tasks[0].id // "task:agent.main.main"),$target]},
+          {kind:"inspect_calls", reason:"strict call rows show caller/callee edges before rename, arity, or authority edits", command:["sley","query","--json","--kind","calls",$target]},
+          {kind:"post_edit_doctor", reason:"preserve strict diagnostics and lint readiness after structural edits", command:["sley","doctor","--json","--deny-warnings",$target]},
+          {kind:"post_edit_ci_doctor", reason:"run the same strict post-edit readiness check through the CI wrapper", command:["sley-ci","doctor","--json","--deny-warnings",$target]},
+          {kind:"post_edit_verify", reason:"run deterministic seeded verification after the planned graft is applied", command:seeded_verify_command("sley")},
+          {kind:"post_edit_ci_verify", reason:"run deterministic seeded verification through the CI wrapper after the planned graft is applied", command:seeded_verify_command("sley-ci")}
+        ]
+      }'
+    return
+  fi
   jq -n --arg target "$target" '{schema:"sley.edit_plan.report.v0", status:"ready", target:$target, diagnostics:[], templates:[]}'
 }
 
@@ -4855,15 +4926,22 @@ command_graft() {
 }
 
 scaffold_report() {
-  local name="$1" module="$2" template="$3" out="$4" source_path="$5"
+  local name="$1" module="$2" template="$3" out="$4" source_path="$5" pipeline_source_path="${6:-}"
   jq -n \
     --arg name "$name" \
     --arg module "$module" \
     --arg template "$template" \
     --arg out "$out" \
-    --arg source_path "$source_path" '
+    --arg source_path "$source_path" \
+    --arg pipeline_source_path "$pipeline_source_path" '
     def file($path; $kind): {path:$path, kind:$kind};
     def action($kind; $reason; $command): {kind:$kind, reason:$reason, command:$command};
+    def seeded_agent_verify($bin):
+      [$bin,"verify","--json","--deny-warnings","--cap","SecretRead","--secret","api_key","redacted","--cap","Network","--http-text","https://example.test/profile","profile ready","--cap","ModelCall","--model-output","deploy-plan","plan approved","--cap","Deploy","--deploy-result","staging","staged","."];
+    def seeded_agent_run($bin):
+      [$bin,"run","--json","--cap","SecretRead","--secret","api_key","redacted","--cap","Network","--http-text","https://example.test/profile","profile ready","--cap","ModelCall","--model-output","deploy-plan","plan approved","--cap","Deploy","--deploy-result","staging","staged","."];
+    def seeded_agent_deploy($bin; $dir):
+      [$bin,"deploy","--json","--dry-run","--artifacts-dir",$dir,"--cap","SecretRead","--secret","api_key","redacted","--cap","Network","--http-text","https://example.test/profile","profile ready","--cap","ModelCall","--model-output","deploy-plan","plan approved","--cap","Deploy","--deploy-result","staging","staged","."];
     def base_commands: [
       ["sley","check","--json","."],
       ["sley","doctor","--json","."],
@@ -4892,6 +4970,26 @@ scaffold_report() {
       action("seal_project"; "create a content-addressed review artifact for the scaffold"; ["sley","seal","--json","."]),
       action("package_project"; "create a ZJX preview envelope for agent handoff"; ["sley","zjx","--json","."])
     ];
+    def agent_commands: [
+      seeded_agent_verify("sley"),
+      seeded_agent_verify("sley-ci"),
+      seeded_agent_run("sley"),
+      seeded_agent_run("sley-ci"),
+      seeded_agent_deploy("sley"; ".sley/deploy"),
+      seeded_agent_deploy("sley-ci"; ".sley/ci-deploy"),
+      ["sley","seal","--json","."],
+      ["sley","zjx","--json","."]
+    ];
+    def agent_actions: [
+      action("verify_seeded_agent"; "verify agent authority with deterministic secret, network, model, and deploy seeds"; seeded_agent_verify("sley")),
+      action("ci_verify_seeded_agent"; "run the same seeded agent gate through the local CI wrapper"; seeded_agent_verify("sley-ci")),
+      action("run_seeded_agent"; "execute the agent starter with deterministic seeded authority"; seeded_agent_run("sley")),
+      action("ci_run_seeded_agent"; "run the same deterministic execution through the local CI wrapper"; seeded_agent_run("sley-ci")),
+      action("prepare_deploy_package"; "build the local dry-run deploy report after seeded agent verification"; seeded_agent_deploy("sley"; ".sley/deploy")),
+      action("ci_deploy_package"; "run the same local deploy dry-run package gate through the CI wrapper"; seeded_agent_deploy("sley-ci"; ".sley/ci-deploy")),
+      action("seal_project"; "create a content-addressed review artifact for the scaffold"; ["sley","seal","--json","."]),
+      action("package_project"; "create a ZJX preview envelope for agent handoff"; ["sley","zjx","--json","."])
+    ];
     def spend_commands: [
       ["sley","verify","--json","--deny-warnings","--cap","Spend","--spend-result","ads-budget","authorized","."],
       ["sley","run","--json","--cap","Spend","--spend-result","ads-budget","authorized","."],
@@ -4908,9 +5006,9 @@ scaffold_report() {
       schema:"sley.project.scaffold.v0",
       status:"created",
       project:{name:$name, root:$name, source_root:"src", entry_module:$module, template:$template},
-      files:[file("sley.toml"; "manifest"), file("README.md"; "guide"), file($source_path; "source")],
-      next_commands:(base_commands + (if $template == "deploy" then deploy_commands elif $template == "spend-gate" then spend_commands else [["sley","seal","--json","."]] end)),
-      next_actions:(base_actions + (if $template == "deploy" then deploy_actions elif $template == "spend-gate" then spend_actions else [action("seal_project"; "create a content-addressed review artifact for the scaffold"; ["sley","seal","--json","."])] end))
+      files:([file("sley.toml"; "manifest"), file("README.md"; "guide"), file($source_path; "source")] + (if $pipeline_source_path != "" then [file($pipeline_source_path; "source")] else [] end)),
+      next_commands:(base_commands + (if $template == "deploy" then deploy_commands elif ($template == "agent" or $template == "agent-project") then agent_commands elif $template == "spend-gate" then spend_commands else [["sley","seal","--json","."]] end)),
+      next_actions:(base_actions + (if $template == "deploy" then deploy_actions elif ($template == "agent" or $template == "agent-project") then agent_actions elif $template == "spend-gate" then spend_actions else [action("seal_project"; "create a content-addressed review artifact for the scaffold"; ["sley","seal","--json","."])] end))
     }'
 }
 
@@ -4932,7 +5030,8 @@ command_new() {
   fi
   local module_dir="${module%.*}"
   local source_path="src/${module_dir}/main.sley"
-  mkdir -p "$out/src/${module%.*}"
+  local pipeline_source_path=""
+  mkdir -p "$out/src/${module_dir}"
   cat > "$out/sley.toml" <<EOF
 [project]
 name = "$name"
@@ -4967,6 +5066,69 @@ task main -> Result<Text, Error> uses Spend {
 }
 EOF
       ;;
+    agent)
+      cat > "$out/$source_path" <<EOF
+module $module
+
+task main -> Result<Text, Error> uses SecretRead, Network, ModelCall, Deploy {
+  bind token = call secrets.try_get("api_key")?
+  bind profile = call http.try_get_text("https://example.test/profile")?
+  bind plan = call model.try_complete("deploy-plan")?
+  bind staged = call deploy.try_stage("staging")?
+
+  if len(token) > 0 {
+    return Ok(profile + " | " + plan + " | " + staged)
+  }
+
+  return Err("secret seed was empty")
+}
+EOF
+      ;;
+    agent-project)
+      pipeline_source_path="src/${module_dir}/pipeline.sley"
+      cat > "$out/$source_path" <<EOF
+module $module
+
+import ${module_dir}.pipeline as pipe
+
+task main -> Result<Text, Error> uses SecretRead, Network, ModelCall, Deploy {
+  bind profile = call pipe.collect_profile("api_key", "https://example.test/profile")?
+  bind plan = call pipe.draft_plan("deploy-plan")?
+  bind staged = call pipe.stage_release("staging")?
+
+  return Ok(profile + " | " + plan + " | " + staged)
+}
+EOF
+      cat > "$out/$pipeline_source_path" <<EOF
+module ${module_dir}.pipeline
+
+export task collect_profile -> Result<Text, Error> uses SecretRead, Network {
+  take secret_name: Text
+  take profile_url: Text
+
+  bind token = call secrets.try_get(secret_name)?
+  bind profile = call http.try_get_text(profile_url)?
+
+  if len(token) > 0 {
+    return Ok(profile)
+  }
+
+  return Err("secret seed was empty")
+}
+
+export task draft_plan -> Result<Text, Error> uses ModelCall {
+  take prompt: Text
+
+  return call model.try_complete(prompt)
+}
+
+export task stage_release -> Result<Text, Error> uses Deploy {
+  take target: Text
+
+  return call deploy.try_stage(target)
+}
+EOF
+      ;;
     *)
       cat > "$out/$source_path" <<EOF
 module $module
@@ -4977,7 +5139,7 @@ task main -> Text {
 EOF
       ;;
   esac
-  scaffold_report "$name" "$module" "$template" "$out" "$source_path"
+  scaffold_report "$name" "$module" "$template" "$out" "$source_path" "$pipeline_source_path"
 }
 
 command_format() {
