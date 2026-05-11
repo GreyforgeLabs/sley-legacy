@@ -70,6 +70,7 @@ export task owned_bootstrap_values -> List<Text> {
     "workbench_report_shape",
     "sandbox_report_shape",
     "agent_bench_report_shape",
+    "zjx_tool_report_shape",
     "pure_literal_runtime_execution",
     "bool_literal_runtime_execution",
     "seeded_agent_deploy_task_execution",

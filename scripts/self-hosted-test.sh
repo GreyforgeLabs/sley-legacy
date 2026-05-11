@@ -22,7 +22,8 @@ docgen_report="$(mktemp)"
 workbench_report="$(mktemp)"
 sandbox_report="$(mktemp)"
 agent_bench_report="$(mktemp)"
-trap 'rm -f "$bool_literal_source" "$artifact_check_report" "$migrate_report" "$docgen_report" "$workbench_report" "$sandbox_report" "$agent_bench_report"; rm -rf "$artifact_dir"' EXIT
+zjx_tool_report="$(mktemp)"
+trap 'rm -f "$bool_literal_source" "$artifact_check_report" "$migrate_report" "$docgen_report" "$workbench_report" "$sandbox_report" "$agent_bench_report" "$zjx_tool_report"; rm -rf "$artifact_dir"' EXIT
 printf '%s\n' \
   'module app.bool_literal' \
   '' \
@@ -83,6 +84,9 @@ bin/sley self-hosting-status --json \
 
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("agent_bench_report_shape"))'
+
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("zjx_tool_report_shape"))'
 
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("diagnostics_report_shape"))'
@@ -376,6 +380,12 @@ json_field '.schema == "sley.agent_bench.report.v0" and .status == "passed" and 
 
 bin/sley-contract validate --schema sley.agent_bench.report.v0 "$agent_bench_report" --schemas docs/schemas --json \
   | json_field '.schema == "sley.contract.validate.v0" and .status == "passed" and .requested_schema == "sley.agent_bench.report.v0" and .report_schema == "sley.agent_bench.report.v0"'
+
+bin/sley-zjx inspect --json fixtures/contracts/zjx_hello_ready.json > "$zjx_tool_report"
+json_field '.schema == "sley.zjx.tool.report.v0" and .status == "passed" and .command == "inspect" and .digest.matches == true and .envelopes[0].graph_digest_match == true' < "$zjx_tool_report"
+
+bin/sley-contract validate --schema sley.zjx.tool.report.v0 "$zjx_tool_report" --schemas docs/schemas --json \
+  | json_field '.schema == "sley.contract.validate.v0" and .status == "passed" and .requested_schema == "sley.zjx.tool.report.v0" and .report_schema == "sley.zjx.tool.report.v0"'
 
 bin/sley graft --json --dry-run fixtures/ci_smoke_probe/graft_target.sley fixtures/ci_smoke_probe/insert_statement.json \
   | json_field '.schema == "sley.graft.outcome.v0" and .status == "accepted"'
