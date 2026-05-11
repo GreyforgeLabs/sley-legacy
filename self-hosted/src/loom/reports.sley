@@ -172,6 +172,21 @@ export task conformance_report_fields -> List<Text> {
   ]
 }
 
+export task conformance_coverage_schema -> Text {
+  return "sley.conformance.coverage.v0"
+}
+
+export task conformance_coverage_fields -> List<Text> {
+  return [
+    "schema",
+    "status",
+    "required_tags",
+    "missing_tags",
+    "tag_inventory",
+    "issues"
+  ]
+}
+
 export task self_hosting_status_schema -> Text {
   return "sley.self_hosting.status.v0"
 }

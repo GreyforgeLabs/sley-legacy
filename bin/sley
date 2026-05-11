@@ -375,6 +375,8 @@ SCHEMA_CLAIM_VERIFY="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/r
 CLAIM_VERIFY_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" claim_verify_report_fields)"
 SCHEMA_CONFORMANCE_REPORT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" conformance_report_schema)"
 CONFORMANCE_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" conformance_report_fields)"
+SCHEMA_CONFORMANCE_COVERAGE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" conformance_coverage_schema)"
+CONFORMANCE_COVERAGE_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" conformance_coverage_fields)"
 SCHEMA_SELF_HOSTING="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_status_schema)"
 SELF_HOSTING_REPORT_SOURCE_ROOT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_source_root)"
 SELF_HOSTING_STATUS_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_status_fields)"
@@ -420,6 +422,10 @@ fi
 SCHEMA_CONFORMANCE_REPORT="${SCHEMA_CONFORMANCE_REPORT:-sley.conformance.report.v0}"
 if [[ "$CONFORMANCE_REPORT_FIELDS_JSON" == "[]" ]]; then
   CONFORMANCE_REPORT_FIELDS_JSON='["schema","status","summary","validation","schemas","corpus","smoke","onboarding","examples","tests","editor_shims","v1_gate","readiness","release","issues"]'
+fi
+SCHEMA_CONFORMANCE_COVERAGE="${SCHEMA_CONFORMANCE_COVERAGE:-sley.conformance.coverage.v0}"
+if [[ "$CONFORMANCE_COVERAGE_FIELDS_JSON" == "[]" ]]; then
+  CONFORMANCE_COVERAGE_FIELDS_JSON='["schema","status","required_tags","missing_tags","tag_inventory","issues"]'
 fi
 SCHEMA_SELF_HOSTING="${SCHEMA_SELF_HOSTING:-sley.self_hosting.status.v0}"
 SELF_HOSTING_REPORT_SOURCE_ROOT="${SELF_HOSTING_REPORT_SOURCE_ROOT:-self-hosted/src}"
@@ -2189,7 +2195,14 @@ tool_conformance() {
         *) shift ;;
       esac
     done
-    jq -n --argjson tags "$tags_json" '{schema:"sley.conformance.coverage.v0", status:"passed", required_tags:$tags, missing_tags:[], tag_inventory:($tags|map({tag:.,count:1})), issues:[]}'
+    jq -n --arg schema "$SCHEMA_CONFORMANCE_COVERAGE" --argjson fields "$CONFORMANCE_COVERAGE_FIELDS_JSON" --argjson tags "$tags_json" '{
+      ($fields[0] // "schema"):$schema,
+      ($fields[1] // "status"):"passed",
+      ($fields[2] // "required_tags"):$tags,
+      ($fields[3] // "missing_tags"):[],
+      ($fields[4] // "tag_inventory"):($tags|map({tag:.,count:1})),
+      ($fields[5] // "issues"):[]
+    }'
     return 0
   fi
   while [[ "$#" -gt 0 ]]; do
