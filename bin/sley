@@ -405,6 +405,8 @@ DIAG_UNKNOWN_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/che
 DIAG_UNKNOWN_TASK="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_task_id)"
 DIAG_CALL_ARITY_MISMATCH="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" call_arity_mismatch_id)"
 DIAG_CALL_ARGUMENT_TYPE_MISMATCH="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" call_argument_type_mismatch_id)"
+DIAG_TYPE_MISMATCH="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" type_mismatch_id)"
+DIAG_RETURN_TYPE_MISMATCH="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" return_type_mismatch_id)"
 DIAG_DUPLICATE_TAKE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" duplicate_take_id)"
 DIAG_DUPLICATE_MAP_KEY="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" duplicate_map_key_id)"
 DIAG_DUPLICATE_FIELD="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" duplicate_field_id)"
@@ -433,6 +435,8 @@ DIAG_UNKNOWN_TYPE="${DIAG_UNKNOWN_TYPE:-UNKNOWN_TYPE}"
 DIAG_UNKNOWN_TASK="${DIAG_UNKNOWN_TASK:-UNKNOWN_TASK}"
 DIAG_CALL_ARITY_MISMATCH="${DIAG_CALL_ARITY_MISMATCH:-CALL_ARITY_MISMATCH}"
 DIAG_CALL_ARGUMENT_TYPE_MISMATCH="${DIAG_CALL_ARGUMENT_TYPE_MISMATCH:-CALL_ARGUMENT_TYPE_MISMATCH}"
+DIAG_TYPE_MISMATCH="${DIAG_TYPE_MISMATCH:-TYPE_MISMATCH}"
+DIAG_RETURN_TYPE_MISMATCH="${DIAG_RETURN_TYPE_MISMATCH:-RETURN_TYPE_MISMATCH}"
 DIAG_DUPLICATE_TAKE="${DIAG_DUPLICATE_TAKE:-DUPLICATE_TAKE}"
 DIAG_DUPLICATE_MAP_KEY="${DIAG_DUPLICATE_MAP_KEY:-DUPLICATE_MAP_KEY}"
 DIAG_DUPLICATE_FIELD="${DIAG_DUPLICATE_FIELD:-DUPLICATE_FIELD}"
@@ -468,6 +472,10 @@ CALL_ARITY_MISMATCH_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOU
 CALL_ARITY_MISMATCH_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" call_arity_mismatch_message_suffix)"
 CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" call_argument_type_mismatch_message_prefix)"
 CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" call_argument_type_mismatch_message_suffix)"
+TYPE_MISMATCH_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" type_mismatch_message_prefix)"
+TYPE_MISMATCH_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" type_mismatch_message_suffix)"
+RETURN_TYPE_MISMATCH_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" return_type_mismatch_message_prefix)"
+RETURN_TYPE_MISMATCH_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" return_type_mismatch_message_suffix)"
 DUPLICATE_TAKE_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" duplicate_take_message_prefix)"
 DUPLICATE_TAKE_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" duplicate_take_message_suffix)"
 DUPLICATE_MAP_KEY_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" duplicate_map_key_message_prefix)"
@@ -528,6 +536,10 @@ CALL_ARITY_MISMATCH_MESSAGE_PREFIX="${CALL_ARITY_MISMATCH_MESSAGE_PREFIX:-call a
 CALL_ARITY_MISMATCH_MESSAGE_SUFFIX="${CALL_ARITY_MISMATCH_MESSAGE_SUFFIX:-\`}"
 CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_PREFIX="${CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_PREFIX:-call argument type mismatch for \`}"
 CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_SUFFIX="${CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_SUFFIX:-\`}"
+TYPE_MISMATCH_MESSAGE_PREFIX="${TYPE_MISMATCH_MESSAGE_PREFIX:-type mismatch \`}"
+TYPE_MISMATCH_MESSAGE_SUFFIX="${TYPE_MISMATCH_MESSAGE_SUFFIX:-\`}"
+RETURN_TYPE_MISMATCH_MESSAGE_PREFIX="${RETURN_TYPE_MISMATCH_MESSAGE_PREFIX:-return type mismatch \`}"
+RETURN_TYPE_MISMATCH_MESSAGE_SUFFIX="${RETURN_TYPE_MISMATCH_MESSAGE_SUFFIX:-\`}"
 DUPLICATE_TAKE_MESSAGE_PREFIX="${DUPLICATE_TAKE_MESSAGE_PREFIX:-duplicate take \`}"
 DUPLICATE_TAKE_MESSAGE_SUFFIX="${DUPLICATE_TAKE_MESSAGE_SUFFIX:-\`}"
 DUPLICATE_MAP_KEY_MESSAGE_PREFIX="${DUPLICATE_MAP_KEY_MESSAGE_PREFIX:-duplicate map key \`}"
@@ -998,7 +1010,7 @@ rejected_fixture_diagnostics_json() {
     *) return 1 ;;
   esac
   case "$abs" in
-    "$ROOT_DIR"/fixtures/corpus/rejected/unknown_identifier.sley|"$ROOT_DIR"/fixtures/corpus/rejected/unknown_type.sley|"$ROOT_DIR"/fixtures/corpus/rejected/unknown_task.sley|"$ROOT_DIR"/fixtures/corpus/rejected/call_arity_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/call_argument_type_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/duplicate_take.sley|"$ROOT_DIR"/fixtures/corpus/rejected/duplicate_map_key.sley|"$ROOT_DIR"/fixtures/corpus/rejected/duplicate_record_field.sley|"$ROOT_DIR"/fixtures/corpus/rejected/duplicate_record_literal_field.sley|"$ROOT_DIR"/fixtures/corpus/rejected/record_field_missing.sley|"$ROOT_DIR"/fixtures/corpus/rejected/record_field_unknown.sley|"$ROOT_DIR"/fixtures/corpus/rejected/record_field_type_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/record_literal_non_record_type.sley|"$ROOT_DIR"/fixtures/corpus/rejected/unknown_record_field.sley|"$ROOT_DIR"/fixtures/corpus/rejected/list_element_type_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/list_index_non_int.sley|"$ROOT_DIR"/fixtures/corpus/rejected/map_index_non_text.sley|"$ROOT_DIR"/fixtures/corpus/rejected/map_key_type_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/map_value_type_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/module_namespace_conflict.sley|"$ROOT_DIR"/fixtures/corpus/rejected/unknown_effect.sley|"$ROOT_DIR"/fixtures/corpus/rejected/gate_take_type_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/gate_effect_undeclared.sley|"$ROOT_DIR"/fixtures/corpus/rejected/unauthorized_effect.sley|"$ROOT_DIR"/fixtures/corpus/rejected/authority/*.sley|"$ROOT_DIR"/fixtures/corpus/rejected/missing_return.sley|"$ROOT_DIR"/fixtures/corpus/rejected/question_requires_result.sley)
+    "$ROOT_DIR"/fixtures/corpus/rejected/unknown_identifier.sley|"$ROOT_DIR"/fixtures/corpus/rejected/unknown_type.sley|"$ROOT_DIR"/fixtures/corpus/rejected/unknown_task.sley|"$ROOT_DIR"/fixtures/corpus/rejected/call_arity_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/call_argument_type_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/type_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/type_alias_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/duplicate_take.sley|"$ROOT_DIR"/fixtures/corpus/rejected/duplicate_map_key.sley|"$ROOT_DIR"/fixtures/corpus/rejected/duplicate_record_field.sley|"$ROOT_DIR"/fixtures/corpus/rejected/duplicate_record_literal_field.sley|"$ROOT_DIR"/fixtures/corpus/rejected/record_field_missing.sley|"$ROOT_DIR"/fixtures/corpus/rejected/record_field_unknown.sley|"$ROOT_DIR"/fixtures/corpus/rejected/record_field_type_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/record_literal_non_record_type.sley|"$ROOT_DIR"/fixtures/corpus/rejected/unknown_record_field.sley|"$ROOT_DIR"/fixtures/corpus/rejected/list_element_type_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/list_index_non_int.sley|"$ROOT_DIR"/fixtures/corpus/rejected/map_index_non_text.sley|"$ROOT_DIR"/fixtures/corpus/rejected/map_key_type_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/map_value_type_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/module_namespace_conflict.sley|"$ROOT_DIR"/fixtures/corpus/rejected/unknown_effect.sley|"$ROOT_DIR"/fixtures/corpus/rejected/gate_take_type_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/gate_effect_undeclared.sley|"$ROOT_DIR"/fixtures/corpus/rejected/unauthorized_effect.sley|"$ROOT_DIR"/fixtures/corpus/rejected/authority/*.sley|"$ROOT_DIR"/fixtures/corpus/rejected/missing_return.sley|"$ROOT_DIR"/fixtures/corpus/rejected/question_requires_result.sley)
       return 1
       ;;
   esac
@@ -1040,6 +1052,8 @@ check_json() {
     --arg unknown_task "$DIAG_UNKNOWN_TASK" \
     --arg call_arity "$DIAG_CALL_ARITY_MISMATCH" \
     --arg call_argument_type "$DIAG_CALL_ARGUMENT_TYPE_MISMATCH" \
+    --arg type_mismatch "$DIAG_TYPE_MISMATCH" \
+    --arg return_type_mismatch "$DIAG_RETURN_TYPE_MISMATCH" \
     --arg duplicate_take "$DIAG_DUPLICATE_TAKE" \
     --arg duplicate_map_key "$DIAG_DUPLICATE_MAP_KEY" \
     --arg duplicate_field "$DIAG_DUPLICATE_FIELD" \
@@ -1075,6 +1089,10 @@ check_json() {
     --arg call_arity_suffix "$CALL_ARITY_MISMATCH_MESSAGE_SUFFIX" \
     --arg call_argument_type_prefix "$CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_PREFIX" \
     --arg call_argument_type_suffix "$CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_SUFFIX" \
+    --arg type_mismatch_prefix "$TYPE_MISMATCH_MESSAGE_PREFIX" \
+    --arg type_mismatch_suffix "$TYPE_MISMATCH_MESSAGE_SUFFIX" \
+    --arg return_type_mismatch_prefix "$RETURN_TYPE_MISMATCH_MESSAGE_PREFIX" \
+    --arg return_type_mismatch_suffix "$RETURN_TYPE_MISMATCH_MESSAGE_SUFFIX" \
     --arg duplicate_take_prefix "$DUPLICATE_TAKE_MESSAGE_PREFIX" \
     --arg duplicate_take_suffix "$DUPLICATE_TAKE_MESSAGE_SUFFIX" \
     --arg duplicate_map_key_prefix "$DUPLICATE_MAP_KEY_MESSAGE_PREFIX" \
@@ -1192,6 +1210,82 @@ check_json() {
       else "" end;
     def csv_items:
       if (trim == "") then [] else split(",") | map(trim | select(length > 0)) end;
+    def alias_target($type_name):
+      ([
+        range(0; ($source_lines | length)) as $i |
+        ($source_lines[$i]) as $line |
+        select($line | test("^[[:space:]]*(export[[:space:]]+)?type[[:space:]]+" + $type_name + "([[:space:]=]|$)")) |
+        (($line | capture("=[[:space:]]*(?<target>.+)$")? // {target:null}) | .target | select(. != null) | trim | select(startswith("{") | not))
+      ][0]) // $type_name;
+    def normalize_type($type_name):
+      ($type_name | trim) as $name |
+      (alias_target($name)) as $target |
+      ($target | trim) as $resolved |
+      if ($resolved | test("^List<[^>]+>$")) then
+        (($resolved | capture("^List<(?<element>[^>]+)>$")) | .element | trim) as $element |
+        "List<" + (alias_target($element) | trim) + ">"
+      elif $resolved == $name then $name
+      else
+        (alias_target($resolved)) as $second |
+        if $second == $resolved then $resolved else $second end
+      end;
+    def types_compatible($expected; $actual):
+      (normalize_type($expected)) == (normalize_type($actual));
+    def type_known_for_compare($name):
+      (normalize_type($name)) as $normalized |
+      type_known($name) and
+      if ($normalized | test("^List<[^>]+>$")) then
+        (($normalized | capture("^List<(?<element>[^>]+)>$")) | .element | trim | type_known(.))
+      elif ($normalized | test("^Map<[^,>]+,[^>]+>$")) then
+        ($normalized | capture("^Map<(?<key>[^,>]+),[[:space:]]*(?<value>[^>]+)>$")) as $map |
+        (($map.key | trim | type_known(.)) and ($map.value | trim | type_known(.)))
+      else type_known($normalized) end;
+    def list_literal_type:
+      (capture("^\\[(?<items>[^\\[\\]]*)\\]$")? // {items:null}) as $list |
+      if $list.items == null then ""
+      else
+        ($list.items | csv_items | map(literal_type) | map(select(. != "")) | unique) as $types |
+        if (($list.items | csv_items | length) > 0) and (($types | length) == 1) then "List<" + $types[0] + ">" else "" end
+      end;
+    def indexed_list_literal_element_type:
+      (capture("^\\[(?<items>[^\\[\\]]*)\\]\\[[^\\[\\]]+\\]$")? // {items:null}) as $list |
+      if $list.items == null then ""
+      else
+        ($list.items | csv_items | map(literal_type) | map(select(. != "")) | unique) as $types |
+        if (($list.items | csv_items | length) > 0) and (($types | length) == 1) then $types[0] else "" end
+      end;
+    def declared_binding_type($stmt):
+      (source_line($stmt.span.line) | capture("^[[:space:]]*(bind|let|var|mut)[[:space:]]+[A-Za-z_][A-Za-z0-9_]*[[:space:]]*:[[:space:]]*(?<declared>[^=]+)=")? // {declared:null}) as $binding |
+      if $binding.declared == null then null else ($binding.declared | trim) end;
+    def binding_type($task; $name):
+      ([$task.takes[]? | select(.name == $name) | .type.name][0]) as $take_type |
+      if $take_type != null then $take_type
+      else ([$task.body.statements[]? | select(.kind==$binding_statement_kind and .name == $name) | declared_binding_type(.) | select(. != null)][0]) // null end;
+    def list_element_type($type_name):
+      ((normalize_type($type_name)) | capture("^List<(?<element>[^>]+)>$")? // {element:null}) | .element | if . == null then null else trim end;
+    def expression_static_type($task; $expr):
+      ($expr.source? // "") as $source |
+      ($source | literal_type) as $literal |
+      if $literal != "" then $literal
+      else
+        ($source | indexed_list_literal_element_type) as $indexed_list_type |
+        if $indexed_list_type != "" then $indexed_list_type
+        else
+          ($source | list_literal_type) as $list_type |
+          if $list_type != "" then $list_type
+          else
+            (($source | capture("^(?<name>[A-Za-z_][A-Za-z0-9_]*)$")? // {name:null}) | .name) as $identifier |
+            if $identifier != null then ((binding_type($task; $identifier)) // "")
+            else
+              (($source | capture("^(?<name>[A-Za-z_][A-Za-z0-9_]*)\\[[^\\[\\]]+\\]$")? // {name:null}) | .name) as $indexed |
+              if $indexed != null then
+                (binding_type($task; $indexed)) as $indexed_type |
+                if $indexed_type == null then "" else (list_element_type($indexed_type) // "") end
+              else "" end
+            end
+          end
+        end
+      end;
     def line_list_element_type:
       ((. | capture(":\\s*List<(?<element>[^>]+)>\\s*=")?) // {element:null}) | .element;
     def line_map_key_type:
@@ -1351,6 +1445,29 @@ check_json() {
       ($arg.value | literal_type) as $actual |
       select($actual != "" and $expected != $actual) |
       {id:$call_argument_type, severity:"error", message:($call_argument_type_prefix + $callee + $call_argument_type_suffix), node:$expr.id, span:$expr.span};
+    def type_mismatch_diags:
+      $root.tasks[] as $t |
+      $t.body.statements[]? |
+      select(.kind==$binding_statement_kind) |
+      . as $stmt |
+      (declared_binding_type($stmt)) as $expected |
+      select($expected != null) |
+      select(type_known_for_compare($expected)) |
+      (expression_static_type($t; $stmt.expr)) as $actual |
+      select(type_known_for_compare($actual)) |
+      select($actual != "" and (types_compatible($expected; $actual) | not)) |
+      {id:$type_mismatch, severity:"error", message:($type_mismatch_prefix + $stmt.name + $type_mismatch_suffix), node:$stmt.id, span:$stmt.span};
+    def return_type_mismatch_diags:
+      $root.tasks[] as $t |
+      ($t.return_type.name // "Unit") as $expected |
+      select(type_known_for_compare($expected)) |
+      $t.body.statements[]? |
+      select(.kind == $return_statement_kind) |
+      . as $stmt |
+      (expression_static_type($t; $stmt.expr)) as $actual |
+      select(type_known_for_compare($actual)) |
+      select($actual != "" and (types_compatible($expected; $actual) | not)) |
+      {id:$return_type_mismatch, severity:"error", message:($return_type_mismatch_prefix + $t.module + "." + $t.name + $return_type_mismatch_suffix), node:$stmt.expr.id, span:$stmt.expr.span};
     def duplicate_take_diags:
       $root.tasks[] as $t |
       ($t.takes | group_by(.name)[] | select(length > 1) | .[1]) as $take |
@@ -1519,7 +1636,7 @@ check_json() {
       select($name != "Unit") |
       select(([$t.body.statements[]? | select(.kind == $return_statement_kind)] | length) == 0) |
       {id:$missing_return, severity:"error", message:($missing_return_prefix + $t.module + "." + $t.name + $missing_return_suffix), node:$t.id, span:$t.span};
-    [duplicate_effect_diags, duplicate_type_diags, duplicate_task_diags, task_diags, return_type_diags, take_type_diags, unknown_effect_diags, gate_take_type_diags, gate_effect_diags, question_requires_result_diags, direct_effect_diags, transitive_effect_diags, unknown_task_diags, call_arity_diags, call_argument_type_diags, duplicate_take_diags, duplicate_map_key_diags, duplicate_record_field_diags, duplicate_record_literal_field_diags, record_field_missing_diags, record_field_unknown_diags, record_field_type_mismatch_diags, record_literal_non_record_type_diags, unknown_record_field_diags, list_element_type_diags, index_diags, map_key_type_diags, map_value_type_diags, missing_return_diags]
+    [duplicate_effect_diags, duplicate_type_diags, duplicate_task_diags, task_diags, return_type_diags, take_type_diags, unknown_effect_diags, gate_take_type_diags, gate_effect_diags, question_requires_result_diags, direct_effect_diags, transitive_effect_diags, unknown_task_diags, call_arity_diags, call_argument_type_diags, type_mismatch_diags, return_type_mismatch_diags, duplicate_take_diags, duplicate_map_key_diags, duplicate_record_field_diags, duplicate_record_literal_field_diags, record_field_missing_diags, record_field_unknown_diags, record_field_type_mismatch_diags, record_literal_non_record_type_diags, unknown_record_field_diags, list_element_type_diags, index_diags, map_key_type_diags, map_value_type_diags, missing_return_diags]
   ')"
   diagnostic_count="$(printf '%s\n' "$diagnostics" | jq 'length')"
   check_status="$(eval_checker_status_task "$diagnostic_count" || { if [[ "$diagnostic_count" -eq 0 ]]; then printf '%s\n' "$CHECK_OK_STATUS"; else printf '%s\n' "$CHECK_ERROR_STATUS"; fi; })"

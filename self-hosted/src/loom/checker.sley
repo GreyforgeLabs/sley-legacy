@@ -27,6 +27,14 @@ export task call_argument_type_mismatch_id -> Text {
   return "CALL_ARGUMENT_TYPE_MISMATCH"
 }
 
+export task type_mismatch_id -> Text {
+  return "TYPE_MISMATCH"
+}
+
+export task return_type_mismatch_id -> Text {
+  return "RETURN_TYPE_MISMATCH"
+}
+
 export task duplicate_take_id -> Text {
   return "DUPLICATE_TAKE"
 }
@@ -164,6 +172,22 @@ export task call_argument_type_mismatch_message_prefix -> Text {
 }
 
 export task call_argument_type_mismatch_message_suffix -> Text {
+  return "`"
+}
+
+export task type_mismatch_message_prefix -> Text {
+  return "type mismatch `"
+}
+
+export task type_mismatch_message_suffix -> Text {
+  return "`"
+}
+
+export task return_type_mismatch_message_prefix -> Text {
+  return "return type mismatch `"
+}
+
+export task return_type_mismatch_message_suffix -> Text {
   return "`"
 }
 

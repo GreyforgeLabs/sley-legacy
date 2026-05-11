@@ -87,6 +87,16 @@ if bin/sley check --json fixtures/corpus/rejected/call_argument_type_mismatch.sl
 fi
 jq -er '.status == "error" and .diagnostics[0].id == "CALL_ARGUMENT_TYPE_MISMATCH" and .diagnostics[0].message == "call argument type mismatch for `helper`"' /tmp/sley-rejected-call-type-check.json >/dev/null
 
+if bin/sley check --json fixtures/corpus/rejected/type_mismatch.sley >/tmp/sley-rejected-type-mismatch-check.json; then
+  fail "rejected type_mismatch.sley passed check"
+fi
+jq -er '.status == "error" and [.diagnostics[].id] == ["TYPE_MISMATCH", "RETURN_TYPE_MISMATCH"] and .diagnostics[0].message == "type mismatch `label`" and .diagnostics[1].message == "return type mismatch `corpus.rejected.main`"' /tmp/sley-rejected-type-mismatch-check.json >/dev/null
+
+if bin/sley check --json fixtures/corpus/rejected/type_alias_mismatch.sley >/tmp/sley-rejected-type-alias-mismatch-check.json; then
+  fail "rejected type_alias_mismatch.sley passed check"
+fi
+jq -er '.status == "error" and .diagnostics[0].id == "RETURN_TYPE_MISMATCH" and .diagnostics[0].message == "return type mismatch `corpus.rejected.type_alias_mismatch.main`"' /tmp/sley-rejected-type-alias-mismatch-check.json >/dev/null
+
 if bin/sley check --json fixtures/corpus/rejected/duplicate_take.sley >/tmp/sley-rejected-duplicate-take-check.json; then
   fail "rejected duplicate_take.sley passed check"
 fi
