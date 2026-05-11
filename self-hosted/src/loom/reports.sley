@@ -187,6 +187,23 @@ export task conformance_coverage_fields -> List<Text> {
   ]
 }
 
+export task ci_report_schema -> Text {
+  return "sley.ci.report.v0"
+}
+
+export task ci_report_fields -> List<Text> {
+  return [
+    "schema",
+    "status",
+    "command",
+    "target",
+    "manifest",
+    "summary",
+    "steps",
+    "issues"
+  ]
+}
+
 export task self_hosting_status_schema -> Text {
   return "sley.self_hosting.status.v0"
 }

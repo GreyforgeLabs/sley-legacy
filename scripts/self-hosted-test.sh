@@ -51,6 +51,9 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("conformance_coverage_report_shape"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("ci_report_shape"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("diagnostics_report_shape"))'
 
 bin/sley self-hosting-status --json \
@@ -265,6 +268,12 @@ bin/sley claim-verify --json docs/SleyClaimManifest.json \
 
 bin/sley claim-verify --json docs/SleyClaimManifest.json \
   | json_field 'keys == (["schema","status","target","manifest_schema","claim_id","check_count","passed_count","failed_count","checks","issues"] | sort)'
+
+bin/sley-ci smoke --json --repo-root "$PWD" fixtures/ci_smoke_probe/manifest.json \
+  | json_field '.schema == "sley.ci.report.v0" and .status == "passed" and .command == "smoke" and .manifest == "fixtures/ci_smoke_probe/manifest.json" and .summary.failed_count == 0'
+
+bin/sley-ci smoke --json --repo-root "$PWD" fixtures/ci_smoke_probe/manifest.json \
+  | json_field 'keys == (["schema","status","command","manifest","summary","steps","issues"] | sort)'
 
 bin/sley-contract inventory --json \
   | json_field '.schema == "sley.contract.inventory.v0" and .status == "passed" and .schema_count > 0'
