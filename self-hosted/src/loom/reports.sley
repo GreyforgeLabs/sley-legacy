@@ -148,6 +148,30 @@ export task claim_verify_report_fields -> List<Text> {
   ]
 }
 
+export task conformance_report_schema -> Text {
+  return "sley.conformance.report.v0"
+}
+
+export task conformance_report_fields -> List<Text> {
+  return [
+    "schema",
+    "status",
+    "summary",
+    "validation",
+    "schemas",
+    "corpus",
+    "smoke",
+    "onboarding",
+    "examples",
+    "tests",
+    "editor_shims",
+    "v1_gate",
+    "readiness",
+    "release",
+    "issues"
+  ]
+}
+
 export task self_hosting_status_schema -> Text {
   return "sley.self_hosting.status.v0"
 }

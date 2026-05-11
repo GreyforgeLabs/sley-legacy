@@ -373,6 +373,8 @@ SCHEMA_GRAFT_OUTCOME="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/
 GRAFT_OUTCOME_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" graft_outcome_report_fields)"
 SCHEMA_CLAIM_VERIFY="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" claim_verify_schema)"
 CLAIM_VERIFY_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" claim_verify_report_fields)"
+SCHEMA_CONFORMANCE_REPORT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" conformance_report_schema)"
+CONFORMANCE_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" conformance_report_fields)"
 SCHEMA_SELF_HOSTING="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_status_schema)"
 SELF_HOSTING_REPORT_SOURCE_ROOT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_source_root)"
 SELF_HOSTING_STATUS_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_status_fields)"
@@ -414,6 +416,10 @@ fi
 SCHEMA_CLAIM_VERIFY="${SCHEMA_CLAIM_VERIFY:-sley.claim.verify.v0}"
 if [[ "$CLAIM_VERIFY_REPORT_FIELDS_JSON" == "[]" ]]; then
   CLAIM_VERIFY_REPORT_FIELDS_JSON='["schema","status","target","manifest_schema","claim_id","check_count","passed_count","failed_count","checks","issues"]'
+fi
+SCHEMA_CONFORMANCE_REPORT="${SCHEMA_CONFORMANCE_REPORT:-sley.conformance.report.v0}"
+if [[ "$CONFORMANCE_REPORT_FIELDS_JSON" == "[]" ]]; then
+  CONFORMANCE_REPORT_FIELDS_JSON='["schema","status","summary","validation","schemas","corpus","smoke","onboarding","examples","tests","editor_shims","v1_gate","readiness","release","issues"]'
 fi
 SCHEMA_SELF_HOSTING="${SCHEMA_SELF_HOSTING:-sley.self_hosting.status.v0}"
 SELF_HOSTING_REPORT_SOURCE_ROOT="${SELF_HOSTING_REPORT_SOURCE_ROOT:-self-hosted/src}"
@@ -2206,6 +2212,7 @@ tool_conformance() {
   if [[ "$declared" != "$integration" ]]; then status="failed"; fi
   if [[ "$require_ready" -eq 1 ]]; then status="failed"; fi
   jq -n \
+    --arg schema "$SCHEMA_CONFORMANCE_REPORT" \
     --arg status "$status" \
     --argjson schemas "$schemas" \
     --argjson contracts "$contracts" \
@@ -2216,26 +2223,27 @@ tool_conformance() {
     --argjson integration "$integration" \
     --argjson declared "$declared" \
     --argjson v1_targets "$v1_targets_json" \
+    --argjson fields "$CONFORMANCE_REPORT_FIELDS_JSON" \
     --argjson require_ready "$require_ready" '
     {
-      schema:"sley.conformance.report.v0",
-      status:$status,
-      summary:{schema_count:$schemas,schema_instance_count:$contracts,schema_without_instance_count:0,contract_fixture_count:$contracts,contract_fixture_failed_count:0,migration_fixture_count:0,corpus_accepted_count:$accepted,corpus_rejected_count:$rejected,smoke_case_count:$smoke,onboarding_path_count:7,missing_onboarding_path_count:0,example_project_count:2,example_source_count:$examples,integration_test_count:$integration,declared_integration_test_count:$declared,test_count_matches_declared:($integration==$declared),editor_shim_count:0,v1_gate_target_count:($v1_targets|length),missing_v1_gate_target_count:0,public_release_blocker_count:1,issue_count:(if $status=="passed" then 0 else 1 end)},
-      validation:{contract_fixtures:{name:"contract_fixtures",status:"passed",command:["sley-contract","check-fixtures","fixtures/contracts","--schemas","docs/schemas","--json"],report_schema:"sley.contract.fixture_check.v0",fixture_count:$contracts,passed_count:$contracts,failed_count:0,issue_count:0,issues:[]},manifests:[]},
-      schemas:{schema_dir:"docs/schemas",fixture_dir:"fixtures/contracts",schemas:[],instances:[],schemas_without_instances:[],unknown_instance_schemas:[]},
-      corpus:{manifest:"fixtures/corpus/manifest.json",accepted_count:$accepted,rejected_count:$rejected,tag_inventory:[],feature_counts:[],required_tags:[],missing_required_tags:[]},
-      smoke:{manifests:[{path:"fixtures/ci_smoke_probe/manifest.json",case_count:$smoke}],case_count:$smoke,tag_inventory:[],required_tags:[],missing_required_tags:[]},
-      onboarding:{required_paths:[],missing_required_paths:[],issue_count:0,issues:[]},
-      examples:{root:"examples",project_count:2,source_count:$examples},
-      tests:{integration_test_file:"scripts/self-hosted-test.sh",integration_test_count:$integration,goal_doc:"docs/contracts.md",declared_integration_test_count:$declared,declared_matches_actual:($integration==$declared)},
-      editor_shims:{root:"editors/vscode-sley",package_count:0,packages:[],validation:{name:"editor_shims",status:"passed",command:["sley-lsp","--validate-editor-shims"],issue_count:0,issues:[]},issue_count:0,issues:[]},
-      v1_gate:{makefile:"Makefile",target:"v1",required_targets:$v1_targets,actual_targets:$v1_targets,missing_required_targets:[],undefined_targets:[],issue_count:0,issues:[]},
-      readiness:{
+      ($fields[0] // "schema"):$schema,
+      ($fields[1] // "status"):$status,
+      ($fields[2] // "summary"):{schema_count:$schemas,schema_instance_count:$contracts,schema_without_instance_count:0,contract_fixture_count:$contracts,contract_fixture_failed_count:0,migration_fixture_count:0,corpus_accepted_count:$accepted,corpus_rejected_count:$rejected,smoke_case_count:$smoke,onboarding_path_count:7,missing_onboarding_path_count:0,example_project_count:2,example_source_count:$examples,integration_test_count:$integration,declared_integration_test_count:$declared,test_count_matches_declared:($integration==$declared),editor_shim_count:0,v1_gate_target_count:($v1_targets|length),missing_v1_gate_target_count:0,public_release_blocker_count:1,issue_count:(if $status=="passed" then 0 else 1 end)},
+      ($fields[3] // "validation"):{contract_fixtures:{name:"contract_fixtures",status:"passed",command:["sley-contract","check-fixtures","fixtures/contracts","--schemas","docs/schemas","--json"],report_schema:"sley.contract.fixture_check.v0",fixture_count:$contracts,passed_count:$contracts,failed_count:0,issue_count:0,issues:[]},manifests:[]},
+      ($fields[4] // "schemas"):{schema_dir:"docs/schemas",fixture_dir:"fixtures/contracts",schemas:[],instances:[],schemas_without_instances:[],unknown_instance_schemas:[]},
+      ($fields[5] // "corpus"):{manifest:"fixtures/corpus/manifest.json",accepted_count:$accepted,rejected_count:$rejected,tag_inventory:[],feature_counts:[],required_tags:[],missing_required_tags:[]},
+      ($fields[6] // "smoke"):{manifests:[{path:"fixtures/ci_smoke_probe/manifest.json",case_count:$smoke}],case_count:$smoke,tag_inventory:[],required_tags:[],missing_required_tags:[]},
+      ($fields[7] // "onboarding"):{required_paths:[],missing_required_paths:[],issue_count:0,issues:[]},
+      ($fields[8] // "examples"):{root:"examples",project_count:2,source_count:$examples},
+      ($fields[9] // "tests"):{integration_test_file:"scripts/self-hosted-test.sh",integration_test_count:$integration,goal_doc:"docs/contracts.md",declared_integration_test_count:$declared,declared_matches_actual:($integration==$declared)},
+      ($fields[10] // "editor_shims"):{root:"editors/vscode-sley",package_count:0,packages:[],validation:{name:"editor_shims",status:"passed",command:["sley-lsp","--validate-editor-shims"],issue_count:0,issues:[]},issue_count:0,issues:[]},
+      ($fields[11] // "v1_gate"):{makefile:"Makefile",target:"v1",required_targets:$v1_targets,actual_targets:$v1_targets,missing_required_targets:[],undefined_targets:[],issue_count:0,issues:[]},
+      ($fields[12] // "readiness"):{
         local_v1:{status:(if $status=="passed" then "ready" else "blocked" end),ready:($status=="passed"),command:["make","v1"],gate_completion_percent:(if $status=="passed" then 100 else 95 end),passed_check_count:(if $status=="passed" then ($v1_targets|length) else (($v1_targets|length)-1) end),total_check_count:($v1_targets|length),blocker_count:(if $status=="passed" then 0 else 1 end),blockers:(if $status=="passed" then [] else [{code:"CONFORMANCE_DECLARATION_MISMATCH",message:"declared integration test count does not match generated stage-1 count"}] end)},
         public_v1:{status:"blocked",ready:false,command:["make","public-release-check"],gate_completion_percent:75,passed_check_count:3,total_check_count:4,blocker_count:1,blockers:[{code:"PUBLIC_RELEASE_BLOCKED",message:"public release requires operator approval, strict Sley-written parity, and a published proof bundle"}]}
       },
-      release:{public_release_ready:false,blocker_count:1,blockers:[{code:"PUBLIC_RELEASE_BLOCKED",message:"public release requires operator approval, strict Sley-written parity, and a published proof bundle"}],next_actions:[{blocker_code:"PUBLIC_RELEASE_BLOCKED",owner:"operator",approval_required:true,action:"approve public release only after strict Sley-written parity and a published proof bundle are present",paths:["docs/PublicReleaseChecklist.md","docs/SleyClaimManifest.json"]}],cargo_package:{manifest:"Cargo.toml",name:null,version:null,edition:null,rust_version:null,description_present:false,readme_present:true,repository_present:false,license:null,license_file:null,publish:null,publish_restricted:true},tree_sitter_package:{package_json:"tree-sitter-sley/package.json",config:"tree-sitter-sley/tree-sitter.json",name:null,version:null,private:null,package_license:null,package_description_present:false,config_license:null,config_description_present:false},license:{file:"LICENSE",present:true,operator_decision_required:false}},
-      issues:(if $status=="passed" then [] elif $require_ready==1 then [{code:"PUBLIC_RELEASE_BLOCKED",message:"public release requires operator approval, strict Sley-written parity, and a published proof bundle"}] else [{code:"CONFORMANCE_DECLARATION_MISMATCH",message:"declared integration test count does not match generated stage-1 count"}] end)
+      ($fields[13] // "release"):{public_release_ready:false,blocker_count:1,blockers:[{code:"PUBLIC_RELEASE_BLOCKED",message:"public release requires operator approval, strict Sley-written parity, and a published proof bundle"}],next_actions:[{blocker_code:"PUBLIC_RELEASE_BLOCKED",owner:"operator",approval_required:true,action:"approve public release only after strict Sley-written parity and a published proof bundle are present",paths:["docs/PublicReleaseChecklist.md","docs/SleyClaimManifest.json"]}],cargo_package:{manifest:"Cargo.toml",name:null,version:null,edition:null,rust_version:null,description_present:false,readme_present:true,repository_present:false,license:null,license_file:null,publish:null,publish_restricted:true},tree_sitter_package:{package_json:"tree-sitter-sley/package.json",config:"tree-sitter-sley/tree-sitter.json",name:null,version:null,private:null,package_license:null,package_description_present:false,config_license:null,config_description_present:false},license:{file:"LICENSE",present:true,operator_decision_required:false}},
+      ($fields[14] // "issues"):(if $status=="passed" then [] elif $require_ready==1 then [{code:"PUBLIC_RELEASE_BLOCKED",message:"public release requires operator approval, strict Sley-written parity, and a published proof bundle"}] else [{code:"CONFORMANCE_DECLARATION_MISMATCH",message:"declared integration test count does not match generated stage-1 count"}] end)
     }'
   [[ "$status" == "passed" ]]
 }
