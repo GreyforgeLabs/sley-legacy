@@ -36,6 +36,8 @@
     "checker_unknown_task_diagnostics",
     "checker_call_diagnostics",
     "checker_duplicate_take_diagnostics",
+    "checker_collection_diagnostics",
+    "checker_record_diagnostics",
     "checker_namespace_diagnostics",
     "checker_effect_diagnostics",
     "checker_effect_propagation_diagnostics",

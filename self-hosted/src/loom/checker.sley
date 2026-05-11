@@ -35,6 +35,14 @@ export task duplicate_map_key_id -> Text {
   return "DUPLICATE_MAP_KEY"
 }
 
+export task duplicate_field_id -> Text {
+  return "DUPLICATE_FIELD"
+}
+
+export task duplicate_record_literal_field_id -> Text {
+  return "DUPLICATE_RECORD_LITERAL_FIELD"
+}
+
 export task list_element_type_mismatch_id -> Text {
   return "LIST_ELEMENT_TYPE_MISMATCH"
 }
@@ -152,6 +160,22 @@ export task duplicate_map_key_message_prefix -> Text {
 }
 
 export task duplicate_map_key_message_suffix -> Text {
+  return "`"
+}
+
+export task duplicate_field_message_prefix -> Text {
+  return "duplicate record field `"
+}
+
+export task duplicate_field_message_suffix -> Text {
+  return "`"
+}
+
+export task duplicate_record_literal_field_message_prefix -> Text {
+  return "duplicate record literal field `"
+}
+
+export task duplicate_record_literal_field_message_suffix -> Text {
   return "`"
 }
 
