@@ -217,7 +217,7 @@
     {
       "id": "sley.self_hosting.status.v0",
       "path": "docs/schemas/sley.self_hosting.status.v0.schema.json",
-      "title": "Sley Self-Hosting Status Report v0",
+      "title": "Sley Self-Hosting Status v0",
       "draft": "https://json-schema.org/draft/2020-12/schema",
       "root_type": "object"
     },
@@ -259,6 +259,7 @@
     {
       "id": "sley.trace.seal.v0",
       "path": "docs/schemas/sley.trace.seal.v0.schema.json",
+      "title": "sley.trace.seal.v0",
       "draft": "https://json-schema.org/draft/2020-12/schema",
       "root_type": "object"
     },

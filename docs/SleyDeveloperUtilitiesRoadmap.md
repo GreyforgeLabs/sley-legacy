@@ -84,8 +84,9 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
      - separate `sley-contract-kit` repo when published.
    - Current bootstrap: `inventory`, `check-fixtures`, `validate`, and
      `inspect-deploy-artifacts` emit versioned JSON Schema validation reports;
-     contract validation commands default to the repo or bundled source schema
-     directory while preserving explicit schema overrides;
+     `validate` and `check-fixtures` perform JSON Schema draft 2020-12 checks,
+     default to the repo or bundled source schema directory, and preserve
+     explicit schema overrides;
      `make v1` validates contract fixtures plus corpus and smoke manifests;
      generated bindings and reusable package splits remain future contract-kit
      work.

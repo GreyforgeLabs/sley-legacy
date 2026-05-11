@@ -639,7 +639,9 @@ when local handoff files are requested. Deploy dry-run reports carry
 `schema: "sley.contract.validate.v0"`. Contract validation commands use
 `docs/schemas` from the current working directory when present and otherwise
 fall back to the bundled source schema directory; explicit `--schemas <dir>` or
-an explicit `inventory <dir>` argument still pin a chosen schema set.
+an explicit `inventory <dir>` argument still pin a chosen schema set. `validate`
+and `check-fixtures` perform JSON Schema draft 2020-12 validation rather than
+only checking that the target is parseable JSON.
 
 Current `sley trace --json` reports have this root shape:
 

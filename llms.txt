@@ -161,6 +161,10 @@ sley-zjx verify-digest --json <zjx-envelope.json>
 - `sley.contract.fixture_check.v0`
 - `sley.contract.validate.v0`
 
+Contract validation uses JSON Schema draft 2020-12. `validate` checks a single
+report against the requested schema, and `check-fixtures` checks every fixture
+against the schema named by its top-level `schema` field.
+
 ## Claim Boundary
 
 Use:
