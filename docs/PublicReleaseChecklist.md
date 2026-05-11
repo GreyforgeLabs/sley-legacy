@@ -41,8 +41,9 @@ The regular conformance report currently passes and records:
 
 After strict parity, proof bundle, and operator approval:
 
-1. Review `docs/SleyClaimEvidence.md` and the public proof bundle against the
-   current code, examples, fixtures, and schemas.
+1. Review `docs/SleyClaimEvidence.md`, `docs/SleyPriorArtSourcePack.md`, and
+   the public proof bundle against the current code, examples, fixtures,
+   schemas, and official prior-art sources.
 2. Run `sley-conformance report --json` and confirm the regular gate passes.
 3. Run `make v1`.
 4. Run `make public-release-check`.
