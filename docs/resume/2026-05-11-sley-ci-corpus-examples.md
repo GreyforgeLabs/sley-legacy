@@ -45,6 +45,10 @@ Status: local checkpoint from Codex resume `019e1799-3642-7dd0-b6c3-55a66d7df677
 - `sley-ci ... --json` reports now read their schema ID and top-level report
   field order from `self-hosted/src/loom/reports.sley`, and self-hosting status
   records `ci_report_shape` as Sley-owned bootstrap evidence.
+- `sley-contract inventory|validate|check-fixtures --json` reports now read
+  their schema IDs and top-level report field order from
+  `self-hosted/src/loom/reports.sley`, and self-hosting status records
+  `contract_report_shapes` as Sley-owned bootstrap evidence.
 - `sley-ci examples --json examples` now checks each example project root,
   checks standalone `.sley` files, and formatter-round-trips every shipped
   example source.

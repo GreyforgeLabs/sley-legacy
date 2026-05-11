@@ -54,6 +54,9 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("ci_report_shape"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("contract_report_shapes"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("diagnostics_report_shape"))'
 
 bin/sley self-hosting-status --json \
@@ -278,8 +281,20 @@ bin/sley-ci smoke --json --repo-root "$PWD" fixtures/ci_smoke_probe/manifest.jso
 bin/sley-contract inventory --json \
   | json_field '.schema == "sley.contract.inventory.v0" and .status == "passed" and .schema_count > 0'
 
+bin/sley-contract inventory --json \
+  | json_field 'keys == (["schema","status","schema_dir","schema_count","schemas"] | sort)'
+
+bin/sley-contract validate --schema sley.query.report.v0 fixtures/contracts/query_project_tasks.json --schemas docs/schemas --json \
+  | json_field '.schema == "sley.contract.validate.v0" and .status == "passed" and .requested_schema == "sley.query.report.v0" and .report_schema == "sley.query.report.v0"'
+
+bin/sley-contract validate --schema sley.query.report.v0 fixtures/contracts/query_project_tasks.json --schemas docs/schemas --json \
+  | json_field 'keys == (["schema","status","validation_level","requested_schema","report_path","schema_dir","report_schema","issues"] | sort)'
+
 bin/sley-contract check-fixtures fixtures/contracts --schemas docs/schemas --json \
   | json_field '.schema == "sley.contract.fixture_check.v0" and .status == "passed" and .failed_count == 0'
+
+bin/sley-contract check-fixtures fixtures/contracts --schemas docs/schemas --json \
+  | json_field 'keys == (["schema","status","validation_level","schema_dir","fixtures_dir","fixture_count","passed_count","failed_count","fixtures"] | sort)'
 
 bin/sley-conformance report --json \
   | json_field '.schema == "sley.conformance.report.v0" and .status == "passed" and .summary.test_count_matches_declared == true'
