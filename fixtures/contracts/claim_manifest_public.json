@@ -1,0 +1,81 @@
+{
+  "schema": "sley.claim.manifest.v0",
+  "status": "evidence_ready",
+  "last_verified": "2026-05-11",
+  "canonical_claim": {
+    "id": "sley.agent_native_structural.v0",
+    "safe_public_wording": "Sley is an agent-native structural programming language for compiler-mediated, human-reviewed software change.",
+    "disputed_search_phrase": "world's first fully AI-native programming language, built by AI for AI",
+    "disputed_search_phrase_allowed_only_with_evidence": true,
+    "global_first_proven": false,
+    "strict_self_hosted_claimed": false,
+    "proof_boundary": "The public repository verifies Sley's current language-design and implementation-stage claims."
+  },
+  "required_criteria": [
+    {
+      "id": "independent_language_substrate",
+      "name": "Independent language substrate",
+      "description": "Sley has its own source form, semantic model, checked command surface, and runtime or execution contract.",
+      "evidence_ids": ["runnable_stage1_command"]
+    },
+    {
+      "id": "compiler_owned_structural_model",
+      "name": "Compiler-owned structural model",
+      "description": "Typed program structure is exposed through first-class machine contracts.",
+      "evidence_ids": ["structural_json_contracts"]
+    },
+    {
+      "id": "native_agent_edit_path",
+      "name": "Native agent edit path",
+      "description": "Structural edits are routed through compiler-mediated surfaces.",
+      "evidence_ids": ["checked_graft_preview"]
+    },
+    {
+      "id": "deterministic_authority_gates",
+      "name": "Deterministic authority gates",
+      "description": "Host-facing effects are explicit, bounded, and reproducible.",
+      "evidence_ids": ["deterministic_authority_gate"]
+    },
+    {
+      "id": "independent_auditability",
+      "name": "Independent auditability",
+      "description": "A clean public checkout includes exact local verification commands.",
+      "evidence_ids": ["local_v1_gate"]
+    }
+  ],
+  "evidence": [
+    {
+      "id": "runnable_stage1_command",
+      "claim": "A runnable stage-1 Sley command surface exists under bin/.",
+      "status": "expected_pass",
+      "paths": ["bin/sley"],
+      "audit_command": ["bin/sley", "--version"]
+    }
+  ],
+  "prior_art": {
+    "source_pack": "docs/SleyPriorArtSourcePack.md",
+    "last_verified": "2026-05-11",
+    "candidates": [
+      {
+        "project": "Sley",
+        "classification": "Current strongest match among the reviewed candidates, but not final strict self-hosting.",
+        "confidence": "high",
+        "source_refs": ["README.md"]
+      }
+    ]
+  },
+  "publication_gates": {
+    "external_issue_requires_operator_approval": true,
+    "public_release_ready": false,
+    "blockers": [
+      "strict Sley-written semantic parity is not complete",
+      "operator approval is required"
+    ]
+  },
+  "audit_sequence": [
+    {
+      "command": ["bin/sley", "--version"],
+      "expected_current_result": "pass"
+    }
+  ]
+}

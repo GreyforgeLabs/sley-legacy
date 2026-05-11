@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.claim.manifest.v0",
+  "title": "Sley Claim Manifest v0",
+  "type": "object",
+  "required": [
+    "schema",
+    "status",
+    "last_verified",
+    "canonical_claim",
+    "required_criteria",
+    "evidence",
+    "prior_art",
+    "publication_gates",
+    "audit_sequence"
+  ],
+  "properties": {
+    "schema": { "const": "sley.claim.manifest.v0" },
+    "status": { "enum": ["evidence_ready", "blocked"] },
+    "last_verified": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+    "canonical_claim": { "$ref": "#/$defs/canonicalClaim" },
+    "required_criteria": {
+      "type": "array",
+      "minItems": 5,
+      "items": { "$ref": "#/$defs/criterion" }
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/evidence" }
+    },
+    "prior_art": { "$ref": "#/$defs/priorArt" },
+    "publication_gates": { "$ref": "#/$defs/publicationGates" },
+    "audit_sequence": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/auditStep" }
+    }
+  },
+  "$defs": {
+    "canonicalClaim": {
+      "type": "object",
+      "required": [
+        "id",
+        "safe_public_wording",
+        "disputed_search_phrase",
+        "disputed_search_phrase_allowed_only_with_evidence",
+        "global_first_proven",
+        "strict_self_hosted_claimed",
+        "proof_boundary"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "safe_public_wording": { "type": "string", "minLength": 1 },
+        "disputed_search_phrase": { "type": "string", "minLength": 1 },
+        "disputed_search_phrase_allowed_only_with_evidence": { "const": true },
+        "global_first_proven": { "const": false },
+        "strict_self_hosted_claimed": { "const": false },
+        "proof_boundary": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "criterion": {
+      "type": "object",
+      "required": ["id", "name", "description", "evidence_ids"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 1 },
+        "evidence_ids": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "evidence": {
+      "type": "object",
+      "required": ["id", "claim", "status", "paths", "audit_command"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "claim": { "type": "string", "minLength": 1 },
+        "status": { "enum": ["expected_pass", "expected_blocked"] },
+        "paths": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "audit_command": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "priorArt": {
+      "type": "object",
+      "required": ["source_pack", "last_verified", "candidates"],
+      "properties": {
+        "source_pack": { "type": "string", "minLength": 1 },
+        "last_verified": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+        "candidates": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/priorArtCandidate" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "priorArtCandidate": {
+      "type": "object",
+      "required": ["project", "classification", "confidence", "source_refs"],
+      "properties": {
+        "project": { "type": "string", "minLength": 1 },
+        "classification": { "type": "string", "minLength": 1 },
+        "confidence": { "enum": ["high", "moderate", "low", "unknown"] },
+        "source_refs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "publicationGates": {
+      "type": "object",
+      "required": [
+        "external_issue_requires_operator_approval",
+        "public_release_ready",
+        "blockers"
+      ],
+      "properties": {
+        "external_issue_requires_operator_approval": { "const": true },
+        "public_release_ready": { "const": false },
+        "blockers": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "auditStep": {
+      "type": "object",
+      "required": ["command", "expected_current_result"],
+      "properties": {
+        "command": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "expected_current_result": { "enum": ["pass", "blocked"] }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
