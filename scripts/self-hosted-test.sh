@@ -21,7 +21,8 @@ migrate_report="$(mktemp)"
 docgen_report="$(mktemp)"
 workbench_report="$(mktemp)"
 sandbox_report="$(mktemp)"
-trap 'rm -f "$bool_literal_source" "$artifact_check_report" "$migrate_report" "$docgen_report" "$workbench_report" "$sandbox_report"; rm -rf "$artifact_dir"' EXIT
+agent_bench_report="$(mktemp)"
+trap 'rm -f "$bool_literal_source" "$artifact_check_report" "$migrate_report" "$docgen_report" "$workbench_report" "$sandbox_report" "$agent_bench_report"; rm -rf "$artifact_dir"' EXIT
 printf '%s\n' \
   'module app.bool_literal' \
   '' \
@@ -79,6 +80,9 @@ bin/sley self-hosting-status --json \
 
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("sandbox_report_shape"))'
+
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("agent_bench_report_shape"))'
 
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("diagnostics_report_shape"))'
@@ -366,6 +370,12 @@ json_field '.schema == "sley.sandbox.report.v0" and .status == "passed" and .man
 
 bin/sley-contract validate --schema sley.sandbox.report.v0 "$sandbox_report" --schemas docs/schemas --json \
   | json_field '.schema == "sley.contract.validate.v0" and .status == "passed" and .requested_schema == "sley.sandbox.report.v0" and .report_schema == "sley.sandbox.report.v0"'
+
+bin/sley-agent-bench run --json --case unused-private-task-repair > "$agent_bench_report"
+json_field '.schema == "sley.agent_bench.report.v0" and .status == "passed" and .case_count == 1 and .passed_count == 1 and .failed_count == 0 and .cases[0].name == "unused-private-task-repair" and .cases[0].status == "passed" and .cases[0].trace_receipt_count == 1' < "$agent_bench_report"
+
+bin/sley-contract validate --schema sley.agent_bench.report.v0 "$agent_bench_report" --schemas docs/schemas --json \
+  | json_field '.schema == "sley.contract.validate.v0" and .status == "passed" and .requested_schema == "sley.agent_bench.report.v0" and .report_schema == "sley.agent_bench.report.v0"'
 
 bin/sley graft --json --dry-run fixtures/ci_smoke_probe/graft_target.sley fixtures/ci_smoke_probe/insert_statement.json \
   | json_field '.schema == "sley.graft.outcome.v0" and .status == "accepted"'
