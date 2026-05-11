@@ -392,6 +392,8 @@ SCHEMA_DEPLOY_ARTIFACT_CHECK="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_RO
 DEPLOY_ARTIFACT_CHECK_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" deploy_artifact_check_fields)"
 SCHEMA_MIGRATE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" migrate_schema)"
 MIGRATE_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" migrate_report_fields)"
+SCHEMA_DOCGEN="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" docgen_schema)"
+DOCGEN_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" docgen_report_fields)"
 SCHEMA_SELF_HOSTING="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_status_schema)"
 SELF_HOSTING_REPORT_SOURCE_ROOT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_source_root)"
 SELF_HOSTING_STATUS_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_status_fields)"
@@ -470,6 +472,10 @@ fi
 SCHEMA_MIGRATE="${SCHEMA_MIGRATE:-sley.migrate.report.v0}"
 if [[ "$MIGRATE_REPORT_FIELDS_JSON" == "[]" ]]; then
   MIGRATE_REPORT_FIELDS_JSON='["schema","status","target","source_schema","summary","migrations","schema_drift","diagnostics","issues"]'
+fi
+SCHEMA_DOCGEN="${SCHEMA_DOCGEN:-sley.docgen.report.v0}"
+if [[ "$DOCGEN_REPORT_FIELDS_JSON" == "[]" ]]; then
+  DOCGEN_REPORT_FIELDS_JSON='["schema","status","target","source_schema","summary","filters","documents","modules","tasks","types","effects","capabilities","diagnostics","issues"]'
 fi
 SCHEMA_SELF_HOSTING="${SCHEMA_SELF_HOSTING:-sley.self_hosting.status.v0}"
 SELF_HOSTING_REPORT_SOURCE_ROOT="${SELF_HOSTING_REPORT_SOURCE_ROOT:-self-hosted/src}"
@@ -3542,6 +3548,215 @@ command_migrate() {
   migrate_json "$@"
 }
 
+docgen_capabilities_json() {
+  jq -cn '[
+    {
+      effect:"DatabaseRead",
+      aliases:["DbRead"],
+      seed_capability_args:["--cap","DatabaseRead"],
+      host_calls:["db.query","db.query_one","db.try_query","db.try_query_one"],
+      source_needles:["db.query(","db.query_one(","db.try_query(","db.try_query_one("]
+    },
+    {
+      effect:"DatabaseWrite",
+      aliases:["DbWrite"],
+      seed_capability_args:["--cap","DatabaseWrite"],
+      host_calls:["db.try_insert"],
+      source_needles:["db.try_insert("]
+    },
+    {
+      effect:"Deploy",
+      aliases:[],
+      seed_capability_args:["--cap","Deploy"],
+      host_calls:["deploy.try_stage"],
+      source_needles:["deploy.try_stage("]
+    },
+    {
+      effect:"FileRead",
+      aliases:[],
+      seed_capability_args:["--cap","FileRead"],
+      host_calls:["fs.read_text","fs.try_read_text"],
+      source_needles:["fs.read_text(","fs.try_read_text("]
+    },
+    {
+      effect:"FileWrite",
+      aliases:[],
+      seed_capability_args:["--cap","FileWrite"],
+      host_calls:["fs.try_write_text","fs.write_text"],
+      source_needles:["fs.try_write_text(","fs.write_text("]
+    },
+    {
+      effect:"ModelCall",
+      aliases:[],
+      seed_capability_args:["--cap","ModelCall"],
+      host_calls:["model.try_complete"],
+      source_needles:["model.try_complete("]
+    },
+    {
+      effect:"Network",
+      aliases:[],
+      seed_capability_args:["--cap","Network"],
+      host_calls:["http.try_get_text"],
+      source_needles:["http.try_get_text("]
+    },
+    {
+      effect:"SecretRead",
+      aliases:[],
+      seed_capability_args:["--cap","SecretRead"],
+      host_calls:["secrets.try_get"],
+      source_needles:["secrets.try_get("]
+    },
+    {
+      effect:"Shell",
+      aliases:[],
+      seed_capability_args:["--cap","Shell"],
+      host_calls:["shell.try_run"],
+      source_needles:["shell.try_run("]
+    },
+    {
+      effect:"Spend",
+      aliases:[],
+      seed_capability_args:["--cap","Spend"],
+      host_calls:["spend.try_authorize"],
+      source_needles:["spend.try_authorize("]
+    }
+  ]'
+}
+
+docgen_json() {
+  local target="" module_filter="" exported_only=false ast capabilities
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      reference|--json) shift ;;
+      --module) module_filter="$2"; shift 2 ;;
+      --exported-only|--exported) exported_only=true; shift ;;
+      *) target="$1"; shift ;;
+    esac
+  done
+  ast="$(ast_json "$target")"
+  capabilities="$(docgen_capabilities_json)"
+  printf '%s\n' "$ast" | jq \
+    --arg schema "$SCHEMA_DOCGEN" \
+    --arg target "$target" \
+    --arg source_schema "$SCHEMA_QUERY" \
+    --arg module_filter "$module_filter" \
+    --argjson exported_only "$exported_only" \
+    --argjson fields "$DOCGEN_REPORT_FIELDS_JSON" \
+    --argjson capabilities "$capabilities" '
+    def task_sources($task):
+      ([$task.body.statements[]? | (.expr?.source? // empty)] +
+       [$task.body.statements[]? | (.condition?.source? // empty)]);
+    def call_callee:
+      (.source // "") | sub("^call[[:space:]]+";"") | sub("\\(.*$";"");
+    def resolve_call($ast; $module; $callee):
+      if ($callee | contains(".")) then
+        ($callee | split(".")) as $parts |
+        ($parts[0]) as $prefix |
+        ([$ast.imports[]? | select(.owner_module == $module and .alias == $prefix) | .module][0]) as $imported |
+        if $imported then ($imported + "." + ($parts[1:] | join("."))) else $callee end
+      else $module + "." + $callee end;
+    def inbound_count($ast; $qualified):
+      [
+        $ast.tasks[]? as $from |
+        $from.body.statements[]?.expr? |
+        select((.source? // "") | startswith("call ")) |
+        select(resolve_call($ast; $from.module; call_callee) == $qualified)
+      ] | length;
+    . as $ast |
+    ($ast.tasks | map(.module) | unique) as $all_modules |
+    (if $module_filter == "" then $all_modules else ($all_modules | map(select(. == $module_filter))) end) as $selected_modules |
+    ($module_filter != "" and (($all_modules | index($module_filter)) == null)) as $missing_module |
+    ([
+      $ast.tasks[]? as $task |
+      select(($selected_modules | index($task.module)) != null) |
+      select(($exported_only | not) or $task.exported) |
+      $task
+    ]) as $selected_tasks |
+    ([
+      $ast.types[]? |
+      . as $type |
+      select(($selected_modules | index($type.module)) != null) |
+      select(($exported_only | not) or $type.exported) |
+      {id,name,module,qualified_name:(.module + "." + .name),exported,value:(.value.name // "Unit"),fields:[]}
+    ]) as $selected_types |
+    ([
+      $ast.effects[]? |
+      . as $effect |
+      select(($selected_modules | index($effect.module)) != null) |
+      select(($exported_only | not) or $effect.exported) |
+      {id,name,module,qualified_name:(.module + "." + .name),exported}
+    ]) as $selected_effects |
+    ($selected_modules | map(. as $module | {
+      module:$module,
+      import_count:([$ast.imports[]? | select(.owner_module == $module)] | length),
+      task_count:([$selected_tasks[] | select(.module == $module)] | length),
+      type_count:([$selected_types[] | select(.module == $module)] | length),
+      effect_count:([$selected_effects[] | select(.module == $module)] | length)
+    })) as $module_reports |
+    ($selected_tasks | map(. as $task |
+      ($task.module + "." + $task.name) as $qualified |
+      {
+        id:$task.id,
+        name:$task.name,
+        module:$task.module,
+        qualified_name:$qualified,
+        exported:$task.exported,
+        takes:($task.takes | map({
+          name,
+          binding_kind:(.binding_kind | ascii_downcase),
+          type:(.type.name // "Unit")
+        })),
+        return_type:($task.return_type.name // "Unit"),
+        effects:$task.effects,
+        outbound_call_count:([task_sources($task)[] | select(test("[A-Za-z_][A-Za-z0-9_.]*\\("))] | length),
+        inbound_call_count:inbound_count($ast; $qualified)
+      }
+    )) as $task_reports |
+    (if $missing_module or (($selected_modules | length) == 0) then []
+     else [{
+       kind:"reference",
+       title:("Sley Reference: " + (if $module_filter != "" then $module_filter elif ($selected_modules | length) == 1 then $selected_modules[0] else ($ast.module // $target) end)),
+       section_count:5
+     }] end) as $documents |
+    (if $missing_module then [{code:"DOCGEN_MODULE_FILTER_NOT_FOUND",message:("module filter `" + $module_filter + "` matched no module")}]
+     else [] end) as $issues |
+    {
+      ($fields[0] // "schema"):$schema,
+      ($fields[1] // "status"):(if ($issues | length) > 0 then "blocked" else "generated" end),
+      ($fields[2] // "target"):$target,
+      ($fields[3] // "source_schema"):$source_schema,
+      ($fields[4] // "summary"):{
+        module_count:($module_reports | length),
+        task_count:($task_reports | length),
+        type_count:($selected_types | length),
+        effect_count:($selected_effects | length),
+        capability_count:($capabilities | length),
+        document_count:($documents | length),
+        diagnostic_count:0,
+        issue_count:($issues | length)
+      },
+      ($fields[5] // "filters"):{
+        module:(if $module_filter == "" then null else $module_filter end),
+        exported_only:$exported_only
+      },
+      ($fields[6] // "documents"):$documents,
+      ($fields[7] // "modules"):$module_reports,
+      ($fields[8] // "tasks"):$task_reports,
+      ($fields[9] // "types"):$selected_types,
+      ($fields[10] // "effects"):$selected_effects,
+      ($fields[11] // "capabilities"):$capabilities,
+      ($fields[12] // "diagnostics"):[],
+      ($fields[13] // "issues"):$issues
+    }'
+}
+
+command_docgen() {
+  local report
+  report="$(docgen_json "$@")"
+  printf '%s\n' "$report"
+  [[ "$(printf '%s\n' "$report" | jq -r '.status')" != "blocked" ]]
+}
+
 command_ast() {
   local node="" target=""
   while [[ "$#" -gt 0 ]]; do
@@ -3770,7 +3985,7 @@ main_sley() {
     sley-ci) shift; tool_ci "$@" ;;
     sley-conformance) shift; tool_conformance "$@" ;;
     sley-contract) shift; tool_contract "$@" ;;
-    sley-docgen) shift; simple_report_tool "sley.docgen.report.v0" "generated" "$(last_path_arg "$@")" ;;
+    sley-docgen) shift; command_docgen "$@" ;;
     sley-lsp) shift; simple_report_tool "sley.lsp.command_preview.v0" "ready" "" ;;
     sley-workbench) shift; simple_report_tool "sley.workbench.report.v0" "ready" "$(last_path_arg "$@")" ;;
     sley-agent-bench) shift; simple_report_tool "sley.agent_bench.report.v0" "passed" "" ;;

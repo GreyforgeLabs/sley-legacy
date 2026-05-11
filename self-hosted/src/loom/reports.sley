@@ -312,6 +312,29 @@ export task migrate_report_fields -> List<Text> {
   ]
 }
 
+export task docgen_schema -> Text {
+  return "sley.docgen.report.v0"
+}
+
+export task docgen_report_fields -> List<Text> {
+  return [
+    "schema",
+    "status",
+    "target",
+    "source_schema",
+    "summary",
+    "filters",
+    "documents",
+    "modules",
+    "tasks",
+    "types",
+    "effects",
+    "capabilities",
+    "diagnostics",
+    "issues"
+  ]
+}
+
 export task self_hosting_status_schema -> Text {
   return "sley.self_hosting.status.v0"
 }

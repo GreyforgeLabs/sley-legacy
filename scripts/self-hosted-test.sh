@@ -18,7 +18,8 @@ bool_literal_source="$(mktemp)"
 artifact_dir="$(mktemp -d)"
 artifact_check_report="$(mktemp)"
 migrate_report="$(mktemp)"
-trap 'rm -f "$bool_literal_source" "$artifact_check_report" "$migrate_report"; rm -rf "$artifact_dir"' EXIT
+docgen_report="$(mktemp)"
+trap 'rm -f "$bool_literal_source" "$artifact_check_report" "$migrate_report" "$docgen_report"; rm -rf "$artifact_dir"' EXIT
 printf '%s\n' \
   'module app.bool_literal' \
   '' \
@@ -67,6 +68,9 @@ bin/sley self-hosting-status --json \
 
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("migrate_report_shape"))'
+
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("docgen_report_shape"))'
 
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("diagnostics_report_shape"))'
@@ -321,6 +325,21 @@ json_field 'keys == (["schema","status","target","source_schema","summary","migr
 
 bin/sley-contract validate --schema sley.migrate.report.v0 "$migrate_report" --schemas docs/schemas --json \
   | json_field '.schema == "sley.contract.validate.v0" and .status == "passed" and .requested_schema == "sley.migrate.report.v0" and .report_schema == "sley.migrate.report.v0"'
+
+bin/sley-docgen reference --json --module agent.pipeline examples/agent_project > "$docgen_report"
+json_field '.schema == "sley.docgen.report.v0" and .status == "generated" and .source_schema == "sley.query.report.v0" and .filters.module == "agent.pipeline" and .filters.exported_only == false and .summary.module_count == 1 and .summary.task_count == 3 and .summary.capability_count == 10 and .documents[0].title == "Sley Reference: agent.pipeline" and .tasks[0].qualified_name == "agent.pipeline.collect_profile" and .tasks[0].inbound_call_count == 1' < "$docgen_report"
+json_field 'keys == (["schema","status","target","source_schema","summary","filters","documents","modules","tasks","types","effects","capabilities","diagnostics","issues"] | sort)' < "$docgen_report"
+
+bin/sley-contract validate --schema sley.docgen.report.v0 "$docgen_report" --schemas docs/schemas --json \
+  | json_field '.schema == "sley.contract.validate.v0" and .status == "passed" and .requested_schema == "sley.docgen.report.v0" and .report_schema == "sley.docgen.report.v0"'
+
+if bin/sley-docgen reference --json --module agent.typo examples/agent_project > "$docgen_report"; then
+  fail "docgen unknown module filter passed"
+fi
+json_field '.schema == "sley.docgen.report.v0" and .status == "blocked" and .filters.module == "agent.typo" and .summary.module_count == 0 and .summary.task_count == 0 and .summary.issue_count == 1 and .issues[0].code == "DOCGEN_MODULE_FILTER_NOT_FOUND"' < "$docgen_report"
+
+bin/sley-contract validate --schema sley.docgen.report.v0 "$docgen_report" --schemas docs/schemas --json \
+  | json_field '.schema == "sley.contract.validate.v0" and .status == "passed" and .requested_schema == "sley.docgen.report.v0" and .report_schema == "sley.docgen.report.v0"'
 
 bin/sley graft --json --dry-run fixtures/ci_smoke_probe/graft_target.sley fixtures/ci_smoke_probe/insert_statement.json \
   | json_field '.schema == "sley.graft.outcome.v0" and .status == "accepted"'
