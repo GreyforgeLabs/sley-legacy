@@ -220,7 +220,7 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
      - smoke manifest coverage holes;
      - accepted/rejected corpus counts by feature.
    - Scaffold:
-     - `sley-conformance report --json --html <path>`;
+     - `sley-conformance report --json --markdown <path>`;
      - `sley-conformance coverage --json --require-tag <tag>`.
    - Current bootstrap: in-tree `src/bin/sley-conformance.rs` emits
      `sley.conformance.report.v0` and `sley.conformance.coverage.v0`, validates

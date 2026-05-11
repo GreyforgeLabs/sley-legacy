@@ -2463,8 +2463,45 @@ tool_contract() {
   esac
 }
 
+write_conformance_markdown() {
+  local path="$1" status="$2" schemas="$3" contracts="$4" accepted="$5" rejected="$6"
+  local smoke="$7" examples="$8" integration="$9" declared="${10}"
+  local public_ready=false public_blocker_count=1 local_ready=true
+  if [[ "$status" != "passed" ]]; then
+    local_ready=false
+  fi
+  mkdir -p "$(dirname -- "$path")"
+  cat > "$path" <<EOF
+# Sley Conformance Report
+
+Status: \`$status\`
+
+Local v1 ready: \`$local_ready\`
+
+Public release ready: \`$public_ready\` with \`$public_blocker_count\` blockers
+
+- Schema count: \`$schemas\`
+- Contract fixture count: \`$contracts\`
+- Corpus accepted count: \`$accepted\`
+- Corpus rejected count: \`$rejected\`
+- Smoke case count: \`$smoke\`
+- Example source count: \`$examples\`
+- Integration test count: \`$integration\`
+- Declared integration test count: \`$declared\`
+
+Gates:
+
+- \`make v1\`
+- \`make public-release-check\`
+
+Public release blockers:
+
+- \`PUBLIC_RELEASE_BLOCKED\`: public release requires operator approval, strict Sley-written parity, and a published proof bundle.
+EOF
+}
+
 tool_conformance() {
-  local accepted rejected schemas contracts smoke examples integration declared status require_ready=0
+  local accepted rejected schemas contracts smoke examples integration declared status require_ready=0 markdown_path=""
   local v1_targets_json
   v1_targets_json='["fmt","diff-check","test","contracts","conformance","claim-audit","corpus","examples","smoke","lsp","editor-shims","workbench","agent-bench","migrate","docgen","sandbox-runner","shadow","zjx-tools","syntax"]'
   if [[ "${1:-}" == "coverage" ]]; then
@@ -2494,6 +2531,7 @@ tool_conformance() {
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
       --require-public-release-ready) require_ready=1; shift ;;
+      --markdown) markdown_path="$2"; shift 2 ;;
       report|--json) shift ;;
       *) shift ;;
     esac
@@ -2510,6 +2548,9 @@ tool_conformance() {
   status="passed"
   if [[ "$declared" != "$integration" ]]; then status="failed"; fi
   if [[ "$require_ready" -eq 1 ]]; then status="failed"; fi
+  if [[ -n "$markdown_path" ]]; then
+    write_conformance_markdown "$markdown_path" "$status" "$schemas" "$contracts" "$accepted" "$rejected" "$smoke" "$examples" "$integration" "$declared"
+  fi
   jq -n \
     --arg schema "$SCHEMA_CONFORMANCE_REPORT" \
     --arg status "$status" \
