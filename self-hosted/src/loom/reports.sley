@@ -272,6 +272,28 @@ export task deploy_report_fields -> List<Text> {
   ]
 }
 
+export task deploy_artifacts_schema -> Text {
+  return "sley.deploy.artifacts.v0"
+}
+
+export task deploy_artifact_check_schema -> Text {
+  return "sley.deploy.artifact_check.v0"
+}
+
+export task deploy_artifact_check_fields -> List<Text> {
+  return [
+    "schema",
+    "status",
+    "validation_level",
+    "artifacts_dir",
+    "manifest_path",
+    "manifest_schema",
+    "summary",
+    "files",
+    "issues"
+  ]
+}
+
 export task self_hosting_status_schema -> Text {
   return "sley.self_hosting.status.v0"
 }
