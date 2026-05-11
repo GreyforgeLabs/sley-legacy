@@ -402,9 +402,15 @@ fi
 
 DIAG_UNKNOWN_IDENTIFIER="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_identifier_id)"
 DIAG_UNKNOWN_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_type_id)"
+DIAG_UNKNOWN_TASK="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_task_id)"
+DIAG_CALL_ARITY_MISMATCH="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" call_arity_mismatch_id)"
+DIAG_CALL_ARGUMENT_TYPE_MISMATCH="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" call_argument_type_mismatch_id)"
 DIAG_MISSING_RETURN="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" missing_return_id)"
 DIAG_UNKNOWN_IDENTIFIER="${DIAG_UNKNOWN_IDENTIFIER:-UNKNOWN_IDENTIFIER}"
 DIAG_UNKNOWN_TYPE="${DIAG_UNKNOWN_TYPE:-UNKNOWN_TYPE}"
+DIAG_UNKNOWN_TASK="${DIAG_UNKNOWN_TASK:-UNKNOWN_TASK}"
+DIAG_CALL_ARITY_MISMATCH="${DIAG_CALL_ARITY_MISMATCH:-CALL_ARITY_MISMATCH}"
+DIAG_CALL_ARGUMENT_TYPE_MISMATCH="${DIAG_CALL_ARGUMENT_TYPE_MISMATCH:-CALL_ARGUMENT_TYPE_MISMATCH}"
 DIAG_MISSING_RETURN="${DIAG_MISSING_RETURN:-MISSING_RETURN}"
 CHECK_OK_STATUS="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" ok_status)"
 CHECK_ERROR_STATUS="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" error_status)"
@@ -412,6 +418,12 @@ UNKNOWN_IDENTIFIER_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOUR
 UNKNOWN_IDENTIFIER_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_identifier_message_suffix)"
 UNKNOWN_TYPE_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_type_message_prefix)"
 UNKNOWN_TYPE_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_type_message_suffix)"
+UNKNOWN_TASK_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_task_message_prefix)"
+UNKNOWN_TASK_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_task_message_suffix)"
+CALL_ARITY_MISMATCH_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" call_arity_mismatch_message_prefix)"
+CALL_ARITY_MISMATCH_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" call_arity_mismatch_message_suffix)"
+CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" call_argument_type_mismatch_message_prefix)"
+CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" call_argument_type_mismatch_message_suffix)"
 MISSING_RETURN_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" missing_return_message_prefix)"
 MISSING_RETURN_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" missing_return_message_suffix)"
 CHECKER_IDENTIFIER_INPUTS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" identifier_resolution_inputs)"
@@ -421,6 +433,12 @@ UNKNOWN_IDENTIFIER_MESSAGE_PREFIX="${UNKNOWN_IDENTIFIER_MESSAGE_PREFIX:-unknown 
 UNKNOWN_IDENTIFIER_MESSAGE_SUFFIX="${UNKNOWN_IDENTIFIER_MESSAGE_SUFFIX:-\`}"
 UNKNOWN_TYPE_MESSAGE_PREFIX="${UNKNOWN_TYPE_MESSAGE_PREFIX:-unknown type \`}"
 UNKNOWN_TYPE_MESSAGE_SUFFIX="${UNKNOWN_TYPE_MESSAGE_SUFFIX:-\`}"
+UNKNOWN_TASK_MESSAGE_PREFIX="${UNKNOWN_TASK_MESSAGE_PREFIX:-unknown task \`}"
+UNKNOWN_TASK_MESSAGE_SUFFIX="${UNKNOWN_TASK_MESSAGE_SUFFIX:-\`}"
+CALL_ARITY_MISMATCH_MESSAGE_PREFIX="${CALL_ARITY_MISMATCH_MESSAGE_PREFIX:-call arity mismatch for \`}"
+CALL_ARITY_MISMATCH_MESSAGE_SUFFIX="${CALL_ARITY_MISMATCH_MESSAGE_SUFFIX:-\`}"
+CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_PREFIX="${CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_PREFIX:-call argument type mismatch for \`}"
+CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_SUFFIX="${CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_SUFFIX:-\`}"
 MISSING_RETURN_MESSAGE_PREFIX="${MISSING_RETURN_MESSAGE_PREFIX:-missing return in task \`}"
 MISSING_RETURN_MESSAGE_SUFFIX="${MISSING_RETURN_MESSAGE_SUFFIX:-\`}"
 if [[ "$CHECKER_IDENTIFIER_INPUTS_JSON" == "[]" ]]; then
@@ -510,6 +528,7 @@ PARSER_BOOL_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/pars
 PARSER_IDENTIFIER_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" identifier_kind)"
 PARSER_RAW_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" raw_expr_kind)"
 PARSER_RETURN_STATEMENT_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" return_statement_kind)"
+PARSER_EXPR_STATEMENT_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" expression_statement_kind)"
 PARSER_BINDING_STATEMENT_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" binding_statement_kind)"
 PARSER_SET_STATEMENT_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" set_statement_kind)"
 PARSER_FOR_STATEMENT_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" for_statement_kind)"
@@ -529,6 +548,7 @@ PARSER_BOOL_KIND="${PARSER_BOOL_KIND:-BoolLiteral}"
 PARSER_IDENTIFIER_KIND="${PARSER_IDENTIFIER_KIND:-Identifier}"
 PARSER_RAW_KIND="${PARSER_RAW_KIND:-Raw}"
 PARSER_RETURN_STATEMENT_KIND="${PARSER_RETURN_STATEMENT_KIND:-Return}"
+PARSER_EXPR_STATEMENT_KIND="${PARSER_EXPR_STATEMENT_KIND:-Expr}"
 PARSER_BINDING_STATEMENT_KIND="${PARSER_BINDING_STATEMENT_KIND:-Binding}"
 PARSER_SET_STATEMENT_KIND="${PARSER_SET_STATEMENT_KIND:-Set}"
 PARSER_FOR_STATEMENT_KIND="${PARSER_FOR_STATEMENT_KIND:-For}"
@@ -652,6 +672,7 @@ ast_json() {
     -v identifier_kind="$PARSER_IDENTIFIER_KIND" \
     -v raw_kind="$PARSER_RAW_KIND" \
     -v return_statement_kind="$PARSER_RETURN_STATEMENT_KIND" \
+    -v expr_statement_kind="$PARSER_EXPR_STATEMENT_KIND" \
     -v binding_statement_kind="$PARSER_BINDING_STATEMENT_KIND" \
     -v set_statement_kind="$PARSER_SET_STATEMENT_KIND" \
     -v for_statement_kind="$PARSER_FOR_STATEMENT_KIND" \
@@ -724,6 +745,8 @@ ast_json() {
         add_stmt(set_statement_kind "|" trim(name), expr, FNR, index(raw, "set"))
       } else if(line ~ /^return[ \t]+/) {
         expr=line; sub(/^return[ \t]+/,"",expr); add_stmt(return_statement_kind, expr, FNR, index(raw, "return"))
+      } else if(line ~ /^call[ \t]+/) {
+        add_stmt(expr_statement_kind, line, FNR, index(raw, "call"))
       } else if(line ~ /^for[ \t]+/) {
         add_stmt(for_statement_kind, line, FNR, index(raw, "for"))
       } else if(line ~ /^while[ \t]+/) {
@@ -757,6 +780,7 @@ ast_json() {
           if(j>1)printf ","
           split(stmt_kind[i,j], parts, /\|/); id=stmt_id[i,j]
           if(parts[1]==return_statement_kind){printf "{\"id\":\"%s\",\"kind\":\"%s\",\"expr\":%s,\"span\":%s}", id, return_statement_kind, expr_json(stmt_text[i,j], id ":expr", stmt_line[i,j], stmt_col[i,j]+7), span_json(stmt_line[i,j],stmt_col[i,j])}
+          else if(parts[1]==expr_statement_kind){printf "{\"id\":\"%s\",\"kind\":\"%s\",\"expr\":%s,\"span\":%s}", id, expr_statement_kind, expr_json(stmt_text[i,j], id ":expr", stmt_line[i,j], stmt_col[i,j]), span_json(stmt_line[i,j],stmt_col[i,j])}
           else if(parts[1]==binding_statement_kind){printf "{\"id\":\"%s\",\"kind\":\"%s\",\"binding_kind\":\"%s\",\"name\":\"%s\",\"expr\":%s,\"span\":%s}", id, binding_statement_kind, parts[2], esc(parts[3]), expr_json(stmt_text[i,j], id ":expr", stmt_line[i,j], stmt_col[i,j]+length(parts[3])+4), span_json(stmt_line[i,j],stmt_col[i,j])}
           else if(parts[1]==set_statement_kind){printf "{\"id\":\"%s\",\"kind\":\"%s\",\"name\":\"%s\",\"expr\":%s,\"span\":%s}", id, set_statement_kind, esc(parts[2]), expr_json(stmt_text[i,j], id ":expr", stmt_line[i,j], stmt_col[i,j]+length(parts[2])+4), span_json(stmt_line[i,j],stmt_col[i,j])}
           else if(parts[1]==for_statement_kind){printf "{\"id\":\"%s\",\"kind\":\"%s\",\"item\":\"item\",\"collection\":%s,\"body\":{\"statements\":[]},\"span\":%s}", id, for_statement_kind, expr_json("[]", id ":collection", stmt_line[i,j], stmt_col[i,j]+4), span_json(stmt_line[i,j],stmt_col[i,j])}
@@ -836,7 +860,7 @@ rejected_fixture_diagnostics_json() {
     *) return 1 ;;
   esac
   case "$abs" in
-    "$ROOT_DIR"/fixtures/corpus/rejected/unknown_identifier.sley|"$ROOT_DIR"/fixtures/corpus/rejected/unknown_type.sley|"$ROOT_DIR"/fixtures/corpus/rejected/missing_return.sley)
+    "$ROOT_DIR"/fixtures/corpus/rejected/unknown_identifier.sley|"$ROOT_DIR"/fixtures/corpus/rejected/unknown_type.sley|"$ROOT_DIR"/fixtures/corpus/rejected/unknown_task.sley|"$ROOT_DIR"/fixtures/corpus/rejected/call_arity_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/call_argument_type_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/missing_return.sley)
       return 1
       ;;
   esac
@@ -870,6 +894,9 @@ check_json() {
   diagnostics="$(ast_json "$target" | jq \
     --arg unknown "$DIAG_UNKNOWN_IDENTIFIER" \
     --arg unknown_type "$DIAG_UNKNOWN_TYPE" \
+    --arg unknown_task "$DIAG_UNKNOWN_TASK" \
+    --arg call_arity "$DIAG_CALL_ARITY_MISMATCH" \
+    --arg call_argument_type "$DIAG_CALL_ARGUMENT_TYPE_MISMATCH" \
     --arg missing_return "$DIAG_MISSING_RETURN" \
     --arg return_statement_kind "$PARSER_RETURN_STATEMENT_KIND" \
     --arg binding_statement_kind "$PARSER_BINDING_STATEMENT_KIND" \
@@ -877,12 +904,19 @@ check_json() {
     --arg unknown_suffix "$UNKNOWN_IDENTIFIER_MESSAGE_SUFFIX" \
     --arg unknown_type_prefix "$UNKNOWN_TYPE_MESSAGE_PREFIX" \
     --arg unknown_type_suffix "$UNKNOWN_TYPE_MESSAGE_SUFFIX" \
+    --arg unknown_task_prefix "$UNKNOWN_TASK_MESSAGE_PREFIX" \
+    --arg unknown_task_suffix "$UNKNOWN_TASK_MESSAGE_SUFFIX" \
+    --arg call_arity_prefix "$CALL_ARITY_MISMATCH_MESSAGE_PREFIX" \
+    --arg call_arity_suffix "$CALL_ARITY_MISMATCH_MESSAGE_SUFFIX" \
+    --arg call_argument_type_prefix "$CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_PREFIX" \
+    --arg call_argument_type_suffix "$CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_SUFFIX" \
     --arg missing_return_prefix "$MISSING_RETURN_MESSAGE_PREFIX" \
     --arg missing_return_suffix "$MISSING_RETURN_MESSAGE_SUFFIX" \
     --argjson builtin_types "$builtin_types" \
     --argjson identifier_inputs "$CHECKER_IDENTIFIER_INPUTS_JSON" '
     . as $root |
     [$root.tasks[].name] as $all_task_names |
+    [$root.tasks[] | .module + "." + .name] as $all_qualified_task_names |
     [$root.types[]?.name] as $declared_types |
     def include_identifier_input($name):
       ($identifier_inputs | index($name)) != null;
@@ -891,6 +925,32 @@ check_json() {
     def type_known($name):
       ($name | base_type_name) as $base |
       (($builtin_types | index($base)) != null) or (($declared_types | index($base)) != null);
+    def call_callee:
+      .source | sub("^call[[:space:]]+";"") | sub("\\(.*$";"");
+    def call_args:
+      (.source | capture("^call[[:space:]]+[^()]+\\((?<args>.*)\\)\\??$")? // {args:""}) as $parts |
+      if (($parts.args | gsub("[[:space:]]"; "")) == "") then []
+      else ($parts.args | split(",") | map(gsub("^[[:space:]]+|[[:space:]]+$"; ""))) end;
+    def resolve_call($module; $callee):
+      if ($callee | contains(".")) then
+        ($callee | split(".")) as $parts |
+        ($parts[0]) as $prefix |
+        ([$root.imports[]? | select(.owner_module == $module and .alias == $prefix) | .module][0]) as $imported |
+        if $imported then ($imported + "." + ($parts[1:] | join("."))) else $callee end
+      else $module + "." + $callee end;
+    def declared_call_task($module; $callee):
+      (resolve_call($module; $callee)) as $resolved |
+      $root.tasks[]? | select((.module + "." + .name) == $resolved or ((($callee | contains(".")) | not) and .name == $callee));
+    def task_known($callee):
+      if (($all_task_names | index($callee)) != null) then true
+      elif (($all_qualified_task_names | index($callee)) != null) then true
+      elif ($callee | contains(".")) then true
+      else false end;
+    def literal_type:
+      if test("^\".*\"$") then "Text"
+      elif test("^-?[0-9]+$") then "Int"
+      elif . == "true" or . == "false" then "Bool"
+      else "" end;
     def task_diags:
       $root.tasks[] as $t |
       ((
@@ -914,13 +974,46 @@ check_json() {
       ($take.type.name // "Unit") as $name |
       select(type_known($name) | not) |
       {id:$unknown_type, severity:"error", message:($unknown_type_prefix + $name + $unknown_type_suffix), node:$take.id, span:$take.span};
+    def unknown_task_diags:
+      $root.tasks[] as $t |
+      $t.body.statements[]?.expr? |
+      select((.source? // "") | startswith("call ")) |
+      (call_callee) as $callee |
+      select(task_known($callee) | not) |
+      {id:$unknown_task, severity:"error", message:($unknown_task_prefix + $callee + $unknown_task_suffix), node:.id, span:.span};
+    def call_arity_diags:
+      $root.tasks[] as $t |
+      $t.body.statements[]?.expr? |
+      select((.source? // "") | startswith("call ")) |
+      . as $expr |
+      (call_callee) as $callee |
+      ([declared_call_task($t.module; $callee)][0]) as $target |
+      select($target != null) |
+      ($expr | call_args) as $args |
+      select(($args | length) != ($target.takes | length)) |
+      {id:$call_arity, severity:"error", message:($call_arity_prefix + $callee + $call_arity_suffix), node:$expr.id, span:$expr.span};
+    def call_argument_type_diags:
+      $root.tasks[] as $t |
+      $t.body.statements[]?.expr? |
+      select((.source? // "") | startswith("call ")) |
+      . as $expr |
+      (call_callee) as $callee |
+      ([declared_call_task($t.module; $callee)][0]) as $target |
+      select($target != null) |
+      ($expr | call_args) as $args |
+      select(($args | length) == ($target.takes | length)) |
+      $args | to_entries[] as $arg |
+      ($target.takes[$arg.key].type.name // "Unit") as $expected |
+      ($arg.value | literal_type) as $actual |
+      select($actual != "" and $expected != $actual) |
+      {id:$call_argument_type, severity:"error", message:($call_argument_type_prefix + $callee + $call_argument_type_suffix), node:$expr.id, span:$expr.span};
     def missing_return_diags:
       $root.tasks[] as $t |
       ($t.return_type.name // "Unit") as $name |
       select($name != "Unit") |
       select(([$t.body.statements[]? | select(.kind == $return_statement_kind)] | length) == 0) |
       {id:$missing_return, severity:"error", message:($missing_return_prefix + $t.module + "." + $t.name + $missing_return_suffix), node:$t.id, span:$t.span};
-    [task_diags, return_type_diags, take_type_diags, missing_return_diags]
+    [task_diags, return_type_diags, take_type_diags, unknown_task_diags, call_arity_diags, call_argument_type_diags, missing_return_diags]
   ')"
   diagnostic_count="$(printf '%s\n' "$diagnostics" | jq 'length')"
   check_status="$(eval_checker_status_task "$diagnostic_count" || { if [[ "$diagnostic_count" -eq 0 ]]; then printf '%s\n' "$CHECK_OK_STATUS"; else printf '%s\n' "$CHECK_ERROR_STATUS"; fi; })"

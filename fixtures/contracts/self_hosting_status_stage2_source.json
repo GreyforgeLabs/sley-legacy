@@ -6,11 +6,11 @@
   "semantic_source_count": 6,
   "source_modules": [
     "loom.bootstrap",
+    "loom.parser",
     "loom.checker",
     "loom.lint",
-    "loom.parser",
-    "loom.reports",
-    "loom.runtime"
+    "loom.runtime",
+    "loom.reports"
   ],
   "bootstrap_owned_by_sley": [
     "implementation_version",
@@ -33,6 +33,7 @@
     "checker_status_task_execution",
     "checker_builtin_type_task_execution",
     "checker_unknown_type_diagnostics",
+    "checker_unknown_task_diagnostics",
     "checker_identifier_resolution_inputs",
     "lint_status_task_execution",
     "lint_report_shape",
