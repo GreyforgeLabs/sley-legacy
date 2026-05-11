@@ -294,6 +294,24 @@ export task deploy_artifact_check_fields -> List<Text> {
   ]
 }
 
+export task migrate_schema -> Text {
+  return "sley.migrate.report.v0"
+}
+
+export task migrate_report_fields -> List<Text> {
+  return [
+    "schema",
+    "status",
+    "target",
+    "source_schema",
+    "summary",
+    "migrations",
+    "schema_drift",
+    "diagnostics",
+    "issues"
+  ]
+}
+
 export task self_hosting_status_schema -> Text {
   return "sley.self_hosting.status.v0"
 }

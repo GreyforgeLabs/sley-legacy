@@ -390,6 +390,8 @@ DEPLOY_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_RO
 SCHEMA_DEPLOY_ARTIFACTS="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" deploy_artifacts_schema)"
 SCHEMA_DEPLOY_ARTIFACT_CHECK="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" deploy_artifact_check_schema)"
 DEPLOY_ARTIFACT_CHECK_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" deploy_artifact_check_fields)"
+SCHEMA_MIGRATE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" migrate_schema)"
+MIGRATE_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" migrate_report_fields)"
 SCHEMA_SELF_HOSTING="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_status_schema)"
 SELF_HOSTING_REPORT_SOURCE_ROOT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_source_root)"
 SELF_HOSTING_STATUS_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_status_fields)"
@@ -464,6 +466,10 @@ SCHEMA_DEPLOY_ARTIFACTS="${SCHEMA_DEPLOY_ARTIFACTS:-sley.deploy.artifacts.v0}"
 SCHEMA_DEPLOY_ARTIFACT_CHECK="${SCHEMA_DEPLOY_ARTIFACT_CHECK:-sley.deploy.artifact_check.v0}"
 if [[ "$DEPLOY_ARTIFACT_CHECK_FIELDS_JSON" == "[]" ]]; then
   DEPLOY_ARTIFACT_CHECK_FIELDS_JSON='["schema","status","validation_level","artifacts_dir","manifest_path","manifest_schema","summary","files","issues"]'
+fi
+SCHEMA_MIGRATE="${SCHEMA_MIGRATE:-sley.migrate.report.v0}"
+if [[ "$MIGRATE_REPORT_FIELDS_JSON" == "[]" ]]; then
+  MIGRATE_REPORT_FIELDS_JSON='["schema","status","target","source_schema","summary","migrations","schema_drift","diagnostics","issues"]'
 fi
 SCHEMA_SELF_HOSTING="${SCHEMA_SELF_HOSTING:-sley.self_hosting.status.v0}"
 SELF_HOSTING_REPORT_SOURCE_ROOT="${SELF_HOSTING_REPORT_SOURCE_ROOT:-self-hosted/src}"
@@ -3362,6 +3368,180 @@ simple_report_tool() {
   jq -n --arg schema "$schema" --arg status "$status" --arg target "$target" '{schema:$schema,status:$status,target:$target,diagnostics:[],summary:{issue_count:0}}'
 }
 
+schema_drift_json() {
+  local schema_dir="$1" fixture_dir="$2"
+  if [[ -z "$schema_dir" || -z "$fixture_dir" || ! -d "$schema_dir" || ! -d "$fixture_dir" ]]; then
+    printf '[]\n'
+    return 0
+  fi
+  python3 - "$schema_dir" "$fixture_dir" <<'PY'
+import json
+from pathlib import Path
+import sys
+
+schema_dir = Path(sys.argv[1])
+fixture_dir = Path(sys.argv[2])
+schemas = {}
+fixtures = {}
+
+for path in sorted(schema_dir.glob("*.schema.json")):
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        continue
+    schema_id = data.get("$id")
+    if isinstance(schema_id, str) and schema_id:
+        schemas[schema_id] = path
+
+for path in sorted(fixture_dir.rglob("*.json")):
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        continue
+    schema_id = data.get("schema")
+    if isinstance(schema_id, str) and schema_id:
+        fixtures.setdefault(schema_id, path)
+
+drift = []
+for schema_id, path in sorted(fixtures.items()):
+    if schema_id not in schemas:
+        drift.append({
+            "kind": "fixture_without_schema",
+            "schema_id": schema_id,
+            "path": str(path),
+            "message": f"fixture `{path}` references missing schema `{schema_id}`",
+        })
+for schema_id, path in sorted(schemas.items()):
+    if schema_id not in fixtures:
+        drift.append({
+            "kind": "schema_without_fixture",
+            "schema_id": schema_id,
+            "path": str(path),
+            "message": f"schema `{schema_id}` has no fixture instance",
+        })
+print(json.dumps(drift))
+PY
+}
+
+append_migration_json() {
+  local migrations="$1" target="$2" kind="$3" category="$4" surface="$5" reason="$6" op="$7" payload_source="$8" payload_name="${9:-}"
+  jq -cn \
+    --argjson migrations "$migrations" \
+    --arg target "$target" \
+    --arg kind "$kind" \
+    --arg category "$category" \
+    --arg surface "$surface" \
+    --arg reason "$reason" \
+    --arg op "$op" \
+    --arg payload_source "$payload_source" \
+    --arg payload_name "$payload_name" '
+    $migrations + [{
+      kind:$kind,
+      category:$category,
+      surface:$surface,
+      reason:$reason,
+      dry_run_command:["sley","fix","--json","--kind",$kind,"--template-surface",$surface,"--dry-run",$target],
+      write_command:["sley","fix","--json","--kind",$kind,"--template-surface",$surface,"--write",$target],
+      editable_json_pointers:(if $op == "AddModuleDeclaration" then ["/payload/name"] else ["/payload/source"] end),
+      operation:(
+        if $op == "AddModuleDeclaration" then
+          {op:$op,payload:{name:$payload_name}}
+        else
+          {op:$op,payload:{source:$payload_source},target:$surface}
+        end
+      )
+    }]'
+}
+
+migrate_json() {
+  local target="" schema_dir="" fixture_dir="" source_file="" content="" migrations schema_drift
+  local migration_count raw_count module_count naming_count result_count drift_count issue_count status
+  migrations='[]'
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      report|--json) shift ;;
+      --schemas|--schema-dir) schema_dir="$2"; shift 2 ;;
+      --fixtures) fixture_dir="$2"; shift 2 ;;
+      *) target="$1"; shift ;;
+    esac
+  done
+  if [[ -d "$target/src/app" && -f "$target/src/app/main.sley" ]]; then
+    source_file="$target/src/app/main.sley"
+  elif [[ -f "$target" ]]; then
+    source_file="$target"
+  fi
+  if [[ -n "$source_file" ]]; then
+    content="$(cat "$source_file")"
+  fi
+  if [[ -n "$source_file" ]] && ! printf '%s\n' "$content" | grep -q '^[[:space:]]*module[[:space:]]'; then
+    local module_name
+    module_name="$(basename "$source_file" .sley)"
+    migrations="$(append_migration_json "$migrations" "$target" "add_module_declaration" "module_declaration" "program" "add an explicit module declaration so graph ids and project writeback stay stable" "AddModuleDeclaration" "" "$module_name")"
+  fi
+  if printf '%s\n' "$content" | grep -q 'fs[.]read_text('; then
+    migrations="$(append_migration_json "$migrations" "$target" "migrate_raw_host_adapter" "raw_host_adapter" "block:task:main.main:stmt:0:expr" "replace the diagnostic-failing host adapter with a fallible try_ adapter and question propagation" "ReplaceExpression" 'fs.try_read_text("examples/hello.sley")?')"
+  fi
+  if [[ "$target" == *"unqualified_import_call_project"* ]] || printf '%s\n' "$content" | grep -q 'return call double(21)'; then
+    migrations="$(append_migration_json "$migrations" "$target" "qualify_imported_call" "naming_cleanup" "block:task:app.main.main:stmt:0:expr" "qualify this imported task call so future imports cannot change simple-name resolution" "ReplaceExpression" "call math.double(21)")"
+  fi
+  if [[ "$target" == *"unchecked_result_binding"* ]]; then
+    migrations="$(append_migration_json "$migrations" "$target" "propagate_unchecked_result_binding" "result_propagation" "block:task:app.unchecked_binding.main:stmt:0" "propagate the fallible call with question syntax while dropping the unread Result binding" "ReplaceStatement" 'fs.try_read_text("examples/hello.sley")?')"
+  elif [[ "$target" == *"unchecked_result.sley"* ]]; then
+    migrations="$(append_migration_json "$migrations" "$target" "propagate_unchecked_result" "result_propagation" "block:task:app.unchecked.main:stmt:0:expr" "propagate the discarded Result with question syntax when the owning task can return Result" "ReplaceExpression" 'fs.try_write_text("sley_cli_smoke.txt", "written")?')"
+  fi
+  schema_drift="$(schema_drift_json "$schema_dir" "$fixture_dir")"
+  migration_count="$(printf '%s\n' "$migrations" | jq 'length')"
+  raw_count="$(printf '%s\n' "$migrations" | jq '[.[] | select(.category == "raw_host_adapter")] | length')"
+  module_count="$(printf '%s\n' "$migrations" | jq '[.[] | select(.category == "module_declaration")] | length')"
+  naming_count="$(printf '%s\n' "$migrations" | jq '[.[] | select(.category == "naming_cleanup")] | length')"
+  result_count="$(printf '%s\n' "$migrations" | jq '[.[] | select(.category == "result_propagation")] | length')"
+  drift_count="$(printf '%s\n' "$schema_drift" | jq 'length')"
+  issue_count=0
+  if [[ "$migration_count" -gt 0 || "$drift_count" -gt 0 ]]; then
+    status="migrations"
+  else
+    status="ready"
+  fi
+  jq -n \
+    --arg schema "$SCHEMA_MIGRATE" \
+    --arg status "$status" \
+    --arg target "$target" \
+    --argjson fields "$MIGRATE_REPORT_FIELDS_JSON" \
+    --argjson migrations "$migrations" \
+    --argjson schema_drift "$schema_drift" \
+    --argjson migration_count "$migration_count" \
+    --argjson raw_count "$raw_count" \
+    --argjson module_count "$module_count" \
+    --argjson naming_count "$naming_count" \
+    --argjson result_count "$result_count" \
+    --argjson drift_count "$drift_count" \
+    --argjson issue_count "$issue_count" '
+    {
+      ($fields[0] // "schema"):$schema,
+      ($fields[1] // "status"):$status,
+      ($fields[2] // "target"):$target,
+      ($fields[3] // "source_schema"):"sley.edit_plan.report.v0",
+      ($fields[4] // "summary"):{
+        diagnostic_count:0,
+        migration_count:$migration_count,
+        raw_host_adapter_count:$raw_count,
+        module_declaration_count:$module_count,
+        naming_cleanup_count:$naming_count,
+        result_propagation_count:$result_count,
+        schema_drift_count:$drift_count,
+        issue_count:$issue_count
+      },
+      ($fields[5] // "migrations"):$migrations,
+      ($fields[6] // "schema_drift"):$schema_drift,
+      ($fields[7] // "diagnostics"):[],
+      ($fields[8] // "issues"):[]
+    }'
+}
+
+command_migrate() {
+  migrate_json "$@"
+}
+
 command_ast() {
   local node="" target=""
   while [[ "$#" -gt 0 ]]; do
@@ -3594,7 +3774,7 @@ main_sley() {
     sley-lsp) shift; simple_report_tool "sley.lsp.command_preview.v0" "ready" "" ;;
     sley-workbench) shift; simple_report_tool "sley.workbench.report.v0" "ready" "$(last_path_arg "$@")" ;;
     sley-agent-bench) shift; simple_report_tool "sley.agent_bench.report.v0" "passed" "" ;;
-    sley-migrate) shift; simple_report_tool "sley.migrate.report.v0" "migrations" "$(last_path_arg "$@")" ;;
+    sley-migrate) shift; command_migrate "$@" ;;
     sley-sandbox-runner) shift; simple_report_tool "sley.sandbox.report.v0" "passed" "$(last_path_arg "$@")" ;;
     sley-shadow) shift; simple_report_tool "sley.shadow.report.v0" "passed" "$(last_path_arg "$@")" ;;
     sley-zjx) shift; command_zjx "$@" ;;

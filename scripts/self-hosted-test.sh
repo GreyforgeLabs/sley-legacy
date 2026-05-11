@@ -17,7 +17,8 @@ json_field() {
 bool_literal_source="$(mktemp)"
 artifact_dir="$(mktemp -d)"
 artifact_check_report="$(mktemp)"
-trap 'rm -f "$bool_literal_source" "$artifact_check_report"; rm -rf "$artifact_dir"' EXIT
+migrate_report="$(mktemp)"
+trap 'rm -f "$bool_literal_source" "$artifact_check_report" "$migrate_report"; rm -rf "$artifact_dir"' EXIT
 printf '%s\n' \
   'module app.bool_literal' \
   '' \
@@ -63,6 +64,9 @@ bin/sley self-hosting-status --json \
 
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("deploy_artifact_check_report_shape"))'
+
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("migrate_report_shape"))'
 
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("diagnostics_report_shape"))'
@@ -310,6 +314,13 @@ json_field 'keys == (["schema","status","validation_level","artifacts_dir","mani
 
 bin/sley-contract validate --schema sley.deploy.artifact_check.v0 "$artifact_check_report" --schemas docs/schemas --json \
   | json_field '.schema == "sley.contract.validate.v0" and .status == "passed" and .requested_schema == "sley.deploy.artifact_check.v0" and .report_schema == "sley.deploy.artifact_check.v0"'
+
+bin/sley-migrate report --json examples/raw_host_migration.sley > "$migrate_report"
+json_field '.schema == "sley.migrate.report.v0" and .status == "migrations" and .source_schema == "sley.edit_plan.report.v0" and .summary.migration_count == 1 and .summary.raw_host_adapter_count == 1 and .migrations[0].kind == "migrate_raw_host_adapter" and .migrations[0].operation.op == "ReplaceExpression"' < "$migrate_report"
+json_field 'keys == (["schema","status","target","source_schema","summary","migrations","schema_drift","diagnostics","issues"] | sort)' < "$migrate_report"
+
+bin/sley-contract validate --schema sley.migrate.report.v0 "$migrate_report" --schemas docs/schemas --json \
+  | json_field '.schema == "sley.contract.validate.v0" and .status == "passed" and .requested_schema == "sley.migrate.report.v0" and .report_schema == "sley.migrate.report.v0"'
 
 bin/sley graft --json --dry-run fixtures/ci_smoke_probe/graft_target.sley fixtures/ci_smoke_probe/insert_statement.json \
   | json_field '.schema == "sley.graft.outcome.v0" and .status == "accepted"'
