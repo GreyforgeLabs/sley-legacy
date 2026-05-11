@@ -70,6 +70,18 @@ export task query_report_fields -> List<Text> {
   ]
 }
 
+export task symbol_graph_schema -> Text {
+  return "sley.symbol_graph.v0"
+}
+
+export task symbol_graph_report_fields -> List<Text> {
+  return [
+    "schema",
+    "entry_module",
+    "modules"
+  ]
+}
+
 export task run_schema -> Text {
   return "sley.run.report.v0"
 }

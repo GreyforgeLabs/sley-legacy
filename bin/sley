@@ -359,6 +359,8 @@ SCHEMA_DIAGNOSTICS="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/re
 DIAGNOSTICS_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" diagnostics_report_fields)"
 SCHEMA_QUERY="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" query_schema)"
 QUERY_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" query_report_fields)"
+SCHEMA_SYMBOL_GRAPH="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" symbol_graph_schema)"
+SYMBOL_GRAPH_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" symbol_graph_report_fields)"
 SCHEMA_LINT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" lint_schema)"
 LINT_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" lint_report_fields)"
 SCHEMA_DOCTOR="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" doctor_schema)"
@@ -380,6 +382,10 @@ fi
 SCHEMA_QUERY="${SCHEMA_QUERY:-sley.query.report.v0}"
 if [[ "$QUERY_REPORT_FIELDS_JSON" == "[]" ]]; then
   QUERY_REPORT_FIELDS_JSON='["schema","kind","entry_module","filters","modules","tasks","types","effects","calls"]'
+fi
+SCHEMA_SYMBOL_GRAPH="${SCHEMA_SYMBOL_GRAPH:-sley.symbol_graph.v0}"
+if [[ "$SYMBOL_GRAPH_REPORT_FIELDS_JSON" == "[]" ]]; then
+  SYMBOL_GRAPH_REPORT_FIELDS_JSON='["schema","entry_module","modules"]'
 fi
 SCHEMA_LINT="${SCHEMA_LINT:-sley.lint.report.v0}"
 if [[ "$LINT_REPORT_FIELDS_JSON" == "[]" ]]; then
@@ -3044,7 +3050,11 @@ command_query() {
 command_graph() {
   local target
   target="$(last_path_arg "$@")"
-  query_json "$target" all | jq '{schema:"sley.symbol_graph.v0", entry_module:.entry_module, modules:.modules, tasks:.tasks, calls:.calls}'
+  query_json "$target" all | jq --arg schema "$SCHEMA_SYMBOL_GRAPH" --argjson fields "$SYMBOL_GRAPH_REPORT_FIELDS_JSON" '{
+    ($fields[0] // "schema"):$schema,
+    ($fields[1] // "entry_module"):.entry_module,
+    ($fields[2] // "modules"):.modules
+  }'
 }
 
 command_plan() {

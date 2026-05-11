@@ -48,6 +48,9 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("query_report_shape"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("symbol_graph_report_shape"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("doctor_report_shape"))'
 
 bin/sley ast --json examples/hello.sley \
@@ -199,6 +202,12 @@ bin/sley query --json --kind calls examples/project \
 
 bin/sley query --json --kind calls examples/project \
   | json_field 'keys == (["schema","kind","entry_module","filters","modules","tasks","types","effects","calls"] | sort)'
+
+bin/sley graph --json examples/project \
+  | json_field '.schema == "sley.symbol_graph.v0" and .entry_module == "app.main" and .modules[0].imports[0].id == "import:app.main:app.math"'
+
+bin/sley graph --json examples/project \
+  | json_field 'keys == (["schema","entry_module","modules"] | sort)'
 
 bin/sley doctor --json examples/project \
   | json_field '.schema == "sley.doctor.report.v0" and .status == "ready" and .summary.task_count == 2'
