@@ -371,6 +371,8 @@ SCHEMA_VERIFY="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports
 VERIFY_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" verify_report_fields)"
 SCHEMA_GRAFT_OUTCOME="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" graft_outcome_schema)"
 GRAFT_OUTCOME_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" graft_outcome_report_fields)"
+SCHEMA_CLAIM_VERIFY="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" claim_verify_schema)"
+CLAIM_VERIFY_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" claim_verify_report_fields)"
 SCHEMA_SELF_HOSTING="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_status_schema)"
 SELF_HOSTING_REPORT_SOURCE_ROOT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_source_root)"
 SELF_HOSTING_STATUS_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_status_fields)"
@@ -409,8 +411,11 @@ SCHEMA_GRAFT_OUTCOME="${SCHEMA_GRAFT_OUTCOME:-sley.graft.outcome.v0}"
 if [[ "$GRAFT_OUTCOME_REPORT_FIELDS_JSON" == "[]" ]]; then
   GRAFT_OUTCOME_REPORT_FIELDS_JSON='["schema","status","source","diagnostics","provenance"]'
 fi
+SCHEMA_CLAIM_VERIFY="${SCHEMA_CLAIM_VERIFY:-sley.claim.verify.v0}"
+if [[ "$CLAIM_VERIFY_REPORT_FIELDS_JSON" == "[]" ]]; then
+  CLAIM_VERIFY_REPORT_FIELDS_JSON='["schema","status","target","manifest_schema","claim_id","check_count","passed_count","failed_count","checks","issues"]'
+fi
 SCHEMA_SELF_HOSTING="${SCHEMA_SELF_HOSTING:-sley.self_hosting.status.v0}"
-SCHEMA_CLAIM_VERIFY="sley.claim.verify.v0"
 SELF_HOSTING_REPORT_SOURCE_ROOT="${SELF_HOSTING_REPORT_SOURCE_ROOT:-self-hosted/src}"
 if [[ "$SELF_HOSTING_STATUS_FIELDS_JSON" == "[]" ]]; then
   SELF_HOSTING_STATUS_FIELDS_JSON='["schema","status","strict_self_hosted","source_root","semantic_source_count","source_modules","bootstrap_owned_by_sley","blockers"]'
@@ -1909,18 +1914,19 @@ claim_verify_json() {
     --arg target "$target" \
     --arg manifest_schema "$manifest_schema" \
     --arg claim_id "$claim_id" \
+    --argjson fields "$CLAIM_VERIFY_REPORT_FIELDS_JSON" \
     --argjson checks "$checks" '
     {
-      schema:$schema,
-      status:$status,
-      target:$target,
-      manifest_schema:$manifest_schema,
-      claim_id:$claim_id,
-      check_count:($checks | length),
-      passed_count:($checks | map(select(.status == "passed")) | length),
-      failed_count:($checks | map(select(.status == "failed")) | length),
-      checks:$checks,
-      issues:($checks | map(select(.status == "failed") | {code:.id,message:.message}))
+      ($fields[0] // "schema"):$schema,
+      ($fields[1] // "status"):$status,
+      ($fields[2] // "target"):$target,
+      ($fields[3] // "manifest_schema"):$manifest_schema,
+      ($fields[4] // "claim_id"):$claim_id,
+      ($fields[5] // "check_count"):($checks | length),
+      ($fields[6] // "passed_count"):($checks | map(select(.status == "passed")) | length),
+      ($fields[7] // "failed_count"):($checks | map(select(.status == "failed")) | length),
+      ($fields[8] // "checks"):$checks,
+      ($fields[9] // "issues"):($checks | map(select(.status == "failed") | {code:.id,message:.message}))
     }
   '
   [[ "$failed" -eq 0 ]]

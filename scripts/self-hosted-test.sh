@@ -42,6 +42,9 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("graft_outcome_report_shape"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("claim_verify_report_shape"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("diagnostics_report_shape"))'
 
 bin/sley self-hosting-status --json \
@@ -250,6 +253,12 @@ bin/sley graft --json --dry-run fixtures/ci_smoke_probe/graft_target.sley fixtur
 
 bin/sley graft --json --dry-run fixtures/ci_smoke_probe/graft_target.sley fixtures/ci_smoke_probe/insert_statement.json \
   | json_field 'keys == (["schema","status","source","diagnostics","provenance"] | sort)'
+
+bin/sley claim-verify --json docs/SleyClaimManifest.json \
+  | json_field '.schema == "sley.claim.verify.v0" and .status == "passed" and .failed_count == 0'
+
+bin/sley claim-verify --json docs/SleyClaimManifest.json \
+  | json_field 'keys == (["schema","status","target","manifest_schema","claim_id","check_count","passed_count","failed_count","checks","issues"] | sort)'
 
 bin/sley-contract inventory --json \
   | json_field '.schema == "sley.contract.inventory.v0" and .status == "passed" and .schema_count > 0'
