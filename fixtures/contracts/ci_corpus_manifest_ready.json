@@ -1709,8 +1709,8 @@
         {
           "id": "INDEX_NOT_INT",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic INDEX_NOT_INT",
-          "node": "fixture:fixtures/corpus/rejected/list_index_non_int.sley"
+          "message": "list index must be Int, got `Text`",
+          "node": "block:task:corpus.rejected.list_index_non_int.main:stmt:1:expr"
         }
       ]
     },
@@ -1739,8 +1739,8 @@
         {
           "id": "INDEX_KEY_TYPE_MISMATCH",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic INDEX_KEY_TYPE_MISMATCH",
-          "node": "fixture:fixtures/corpus/rejected/map_index_non_text.sley"
+          "message": "map index key must be Text, got `Int`",
+          "node": "block:task:corpus.rejected.map_index_non_text.main:stmt:1:expr"
         }
       ]
     },
@@ -1769,8 +1769,8 @@
         {
           "id": "LIST_ELEMENT_TYPE_MISMATCH",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic LIST_ELEMENT_TYPE_MISMATCH",
-          "node": "fixture:fixtures/corpus/rejected/list_element_type_mismatch.sley"
+          "message": "list element type mismatch `Text`",
+          "node": "block:task:corpus.rejected.list_element_type_mismatch.main:stmt:0:expr"
         }
       ]
     },
@@ -1799,8 +1799,8 @@
         {
           "id": "MAP_KEY_TYPE_MISMATCH",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic MAP_KEY_TYPE_MISMATCH",
-          "node": "fixture:fixtures/corpus/rejected/map_key_type_mismatch.sley"
+          "message": "map key type mismatch `Int`",
+          "node": "block:task:corpus.rejected.map_key_type_mismatch.main:stmt:0:expr"
         }
       ]
     },
@@ -1829,8 +1829,8 @@
         {
           "id": "MAP_VALUE_TYPE_MISMATCH",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic MAP_VALUE_TYPE_MISMATCH",
-          "node": "fixture:fixtures/corpus/rejected/map_value_type_mismatch.sley"
+          "message": "map value type mismatch `Text`",
+          "node": "block:task:corpus.rejected.map_value_type_mismatch.main:stmt:0:expr"
         }
       ]
     },
@@ -1859,8 +1859,8 @@
         {
           "id": "DUPLICATE_MAP_KEY",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic DUPLICATE_MAP_KEY",
-          "node": "fixture:fixtures/corpus/rejected/duplicate_map_key.sley"
+          "message": "duplicate map key `ada`",
+          "node": "block:task:corpus.rejected.duplicate_map_key.main:stmt:0:expr"
         }
       ]
     },
@@ -2039,8 +2039,8 @@
         {
           "id": "RECORD_FIELD_MISSING",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic RECORD_FIELD_MISSING",
-          "node": "fixture:fixtures/corpus/rejected/record_field_missing.sley"
+          "message": "record field missing `age`",
+          "node": "block:task:corpus.rejected.record_field_missing.main:stmt:0:expr"
         }
       ]
     },
@@ -2069,8 +2069,8 @@
         {
           "id": "RECORD_FIELD_UNKNOWN",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic RECORD_FIELD_UNKNOWN",
-          "node": "fixture:fixtures/corpus/rejected/record_field_unknown.sley"
+          "message": "record field unknown `active`",
+          "node": "block:task:corpus.rejected.record_field_unknown.main:stmt:0:expr"
         }
       ]
     },
@@ -2099,8 +2099,8 @@
         {
           "id": "RECORD_FIELD_TYPE_MISMATCH",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic RECORD_FIELD_TYPE_MISMATCH",
-          "node": "fixture:fixtures/corpus/rejected/record_field_type_mismatch.sley"
+          "message": "record field type mismatch `age`",
+          "node": "block:task:corpus.rejected.record_field_type_mismatch.main:stmt:0:expr"
         }
       ]
     },
@@ -2129,8 +2129,8 @@
         {
           "id": "UNKNOWN_RECORD_FIELD",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic UNKNOWN_RECORD_FIELD",
-          "node": "fixture:fixtures/corpus/rejected/unknown_record_field.sley"
+          "message": "unknown record field `email`",
+          "node": "block:task:corpus.rejected.unknown_record_field.main:stmt:1:expr"
         }
       ]
     },
@@ -2159,8 +2159,8 @@
         {
           "id": "RECORD_LITERAL_NON_RECORD_TYPE",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic RECORD_LITERAL_NON_RECORD_TYPE",
-          "node": "fixture:fixtures/corpus/rejected/record_literal_non_record_type.sley"
+          "message": "record literal type is not a record `UserId`",
+          "node": "block:task:corpus.rejected.record_literal_non_record_type.main:stmt:0:expr"
         }
       ]
     },

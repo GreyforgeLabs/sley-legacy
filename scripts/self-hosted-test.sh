@@ -142,6 +142,31 @@ if bin/sley check --json fixtures/corpus/rejected/duplicate_record_literal_field
 fi
 jq -er '.status == "error" and .diagnostics[0].id == "DUPLICATE_RECORD_LITERAL_FIELD" and .diagnostics[0].message == "duplicate record literal field `name`"' /tmp/sley-rejected-duplicate-record-literal-field-check.json >/dev/null
 
+if bin/sley check --json fixtures/corpus/rejected/record_field_missing.sley >/tmp/sley-rejected-record-field-missing-check.json; then
+  fail "rejected record_field_missing.sley passed check"
+fi
+jq -er '.status == "error" and .diagnostics[0].id == "RECORD_FIELD_MISSING" and .diagnostics[0].message == "record field missing `age`"' /tmp/sley-rejected-record-field-missing-check.json >/dev/null
+
+if bin/sley check --json fixtures/corpus/rejected/record_field_unknown.sley >/tmp/sley-rejected-record-field-unknown-check.json; then
+  fail "rejected record_field_unknown.sley passed check"
+fi
+jq -er '.status == "error" and .diagnostics[0].id == "RECORD_FIELD_UNKNOWN" and .diagnostics[0].message == "record field unknown `active`"' /tmp/sley-rejected-record-field-unknown-check.json >/dev/null
+
+if bin/sley check --json fixtures/corpus/rejected/record_field_type_mismatch.sley >/tmp/sley-rejected-record-field-type-check.json; then
+  fail "rejected record_field_type_mismatch.sley passed check"
+fi
+jq -er '.status == "error" and .diagnostics[0].id == "RECORD_FIELD_TYPE_MISMATCH" and .diagnostics[0].message == "record field type mismatch `age`"' /tmp/sley-rejected-record-field-type-check.json >/dev/null
+
+if bin/sley check --json fixtures/corpus/rejected/record_literal_non_record_type.sley >/tmp/sley-rejected-record-non-record-check.json; then
+  fail "rejected record_literal_non_record_type.sley passed check"
+fi
+jq -er '.status == "error" and .diagnostics[0].id == "RECORD_LITERAL_NON_RECORD_TYPE" and .diagnostics[0].message == "record literal type is not a record `UserId`"' /tmp/sley-rejected-record-non-record-check.json >/dev/null
+
+if bin/sley check --json fixtures/corpus/rejected/unknown_record_field.sley >/tmp/sley-rejected-unknown-record-field-check.json; then
+  fail "rejected unknown_record_field.sley passed check"
+fi
+jq -er '.status == "error" and .diagnostics[0].id == "UNKNOWN_RECORD_FIELD" and .diagnostics[0].message == "unknown record field `email`"' /tmp/sley-rejected-unknown-record-field-check.json >/dev/null
+
 bin/sley query --json --kind calls examples/project \
   | json_field '.schema == "sley.query.report.v0" and .calls[0].target == "app.math.double"'
 

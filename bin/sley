@@ -409,6 +409,11 @@ DIAG_DUPLICATE_TAKE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/c
 DIAG_DUPLICATE_MAP_KEY="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" duplicate_map_key_id)"
 DIAG_DUPLICATE_FIELD="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" duplicate_field_id)"
 DIAG_DUPLICATE_RECORD_LITERAL_FIELD="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" duplicate_record_literal_field_id)"
+DIAG_RECORD_FIELD_MISSING="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" record_field_missing_id)"
+DIAG_RECORD_FIELD_UNKNOWN="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" record_field_unknown_id)"
+DIAG_RECORD_FIELD_TYPE_MISMATCH="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" record_field_type_mismatch_id)"
+DIAG_UNKNOWN_RECORD_FIELD="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_record_field_id)"
+DIAG_RECORD_LITERAL_NON_RECORD_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" record_literal_non_record_type_id)"
 DIAG_LIST_ELEMENT_TYPE_MISMATCH="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" list_element_type_mismatch_id)"
 DIAG_INDEX_NOT_INT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" index_not_int_id)"
 DIAG_INDEX_KEY_TYPE_MISMATCH="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" index_key_type_mismatch_id)"
@@ -432,6 +437,11 @@ DIAG_DUPLICATE_TAKE="${DIAG_DUPLICATE_TAKE:-DUPLICATE_TAKE}"
 DIAG_DUPLICATE_MAP_KEY="${DIAG_DUPLICATE_MAP_KEY:-DUPLICATE_MAP_KEY}"
 DIAG_DUPLICATE_FIELD="${DIAG_DUPLICATE_FIELD:-DUPLICATE_FIELD}"
 DIAG_DUPLICATE_RECORD_LITERAL_FIELD="${DIAG_DUPLICATE_RECORD_LITERAL_FIELD:-DUPLICATE_RECORD_LITERAL_FIELD}"
+DIAG_RECORD_FIELD_MISSING="${DIAG_RECORD_FIELD_MISSING:-RECORD_FIELD_MISSING}"
+DIAG_RECORD_FIELD_UNKNOWN="${DIAG_RECORD_FIELD_UNKNOWN:-RECORD_FIELD_UNKNOWN}"
+DIAG_RECORD_FIELD_TYPE_MISMATCH="${DIAG_RECORD_FIELD_TYPE_MISMATCH:-RECORD_FIELD_TYPE_MISMATCH}"
+DIAG_UNKNOWN_RECORD_FIELD="${DIAG_UNKNOWN_RECORD_FIELD:-UNKNOWN_RECORD_FIELD}"
+DIAG_RECORD_LITERAL_NON_RECORD_TYPE="${DIAG_RECORD_LITERAL_NON_RECORD_TYPE:-RECORD_LITERAL_NON_RECORD_TYPE}"
 DIAG_LIST_ELEMENT_TYPE_MISMATCH="${DIAG_LIST_ELEMENT_TYPE_MISMATCH:-LIST_ELEMENT_TYPE_MISMATCH}"
 DIAG_INDEX_NOT_INT="${DIAG_INDEX_NOT_INT:-INDEX_NOT_INT}"
 DIAG_INDEX_KEY_TYPE_MISMATCH="${DIAG_INDEX_KEY_TYPE_MISMATCH:-INDEX_KEY_TYPE_MISMATCH}"
@@ -466,6 +476,16 @@ DUPLICATE_FIELD_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_
 DUPLICATE_FIELD_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" duplicate_field_message_suffix)"
 DUPLICATE_RECORD_LITERAL_FIELD_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" duplicate_record_literal_field_message_prefix)"
 DUPLICATE_RECORD_LITERAL_FIELD_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" duplicate_record_literal_field_message_suffix)"
+RECORD_FIELD_MISSING_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" record_field_missing_message_prefix)"
+RECORD_FIELD_MISSING_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" record_field_missing_message_suffix)"
+RECORD_FIELD_UNKNOWN_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" record_field_unknown_message_prefix)"
+RECORD_FIELD_UNKNOWN_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" record_field_unknown_message_suffix)"
+RECORD_FIELD_TYPE_MISMATCH_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" record_field_type_mismatch_message_prefix)"
+RECORD_FIELD_TYPE_MISMATCH_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" record_field_type_mismatch_message_suffix)"
+UNKNOWN_RECORD_FIELD_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_record_field_message_prefix)"
+UNKNOWN_RECORD_FIELD_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_record_field_message_suffix)"
+RECORD_LITERAL_NON_RECORD_TYPE_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" record_literal_non_record_type_message_prefix)"
+RECORD_LITERAL_NON_RECORD_TYPE_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" record_literal_non_record_type_message_suffix)"
 LIST_ELEMENT_TYPE_MISMATCH_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" list_element_type_mismatch_message_prefix)"
 LIST_ELEMENT_TYPE_MISMATCH_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" list_element_type_mismatch_message_suffix)"
 INDEX_NOT_INT_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" index_not_int_message_prefix)"
@@ -516,6 +536,16 @@ DUPLICATE_FIELD_MESSAGE_PREFIX="${DUPLICATE_FIELD_MESSAGE_PREFIX:-duplicate reco
 DUPLICATE_FIELD_MESSAGE_SUFFIX="${DUPLICATE_FIELD_MESSAGE_SUFFIX:-\`}"
 DUPLICATE_RECORD_LITERAL_FIELD_MESSAGE_PREFIX="${DUPLICATE_RECORD_LITERAL_FIELD_MESSAGE_PREFIX:-duplicate record literal field \`}"
 DUPLICATE_RECORD_LITERAL_FIELD_MESSAGE_SUFFIX="${DUPLICATE_RECORD_LITERAL_FIELD_MESSAGE_SUFFIX:-\`}"
+RECORD_FIELD_MISSING_MESSAGE_PREFIX="${RECORD_FIELD_MISSING_MESSAGE_PREFIX:-record field missing \`}"
+RECORD_FIELD_MISSING_MESSAGE_SUFFIX="${RECORD_FIELD_MISSING_MESSAGE_SUFFIX:-\`}"
+RECORD_FIELD_UNKNOWN_MESSAGE_PREFIX="${RECORD_FIELD_UNKNOWN_MESSAGE_PREFIX:-record field unknown \`}"
+RECORD_FIELD_UNKNOWN_MESSAGE_SUFFIX="${RECORD_FIELD_UNKNOWN_MESSAGE_SUFFIX:-\`}"
+RECORD_FIELD_TYPE_MISMATCH_MESSAGE_PREFIX="${RECORD_FIELD_TYPE_MISMATCH_MESSAGE_PREFIX:-record field type mismatch \`}"
+RECORD_FIELD_TYPE_MISMATCH_MESSAGE_SUFFIX="${RECORD_FIELD_TYPE_MISMATCH_MESSAGE_SUFFIX:-\`}"
+UNKNOWN_RECORD_FIELD_MESSAGE_PREFIX="${UNKNOWN_RECORD_FIELD_MESSAGE_PREFIX:-unknown record field \`}"
+UNKNOWN_RECORD_FIELD_MESSAGE_SUFFIX="${UNKNOWN_RECORD_FIELD_MESSAGE_SUFFIX:-\`}"
+RECORD_LITERAL_NON_RECORD_TYPE_MESSAGE_PREFIX="${RECORD_LITERAL_NON_RECORD_TYPE_MESSAGE_PREFIX:-record literal type is not a record \`}"
+RECORD_LITERAL_NON_RECORD_TYPE_MESSAGE_SUFFIX="${RECORD_LITERAL_NON_RECORD_TYPE_MESSAGE_SUFFIX:-\`}"
 LIST_ELEMENT_TYPE_MISMATCH_MESSAGE_PREFIX="${LIST_ELEMENT_TYPE_MISMATCH_MESSAGE_PREFIX:-list element type mismatch \`}"
 LIST_ELEMENT_TYPE_MISMATCH_MESSAGE_SUFFIX="${LIST_ELEMENT_TYPE_MISMATCH_MESSAGE_SUFFIX:-\`}"
 INDEX_NOT_INT_MESSAGE_PREFIX="${INDEX_NOT_INT_MESSAGE_PREFIX:-list index must be Int, got \`}"
@@ -968,7 +998,7 @@ rejected_fixture_diagnostics_json() {
     *) return 1 ;;
   esac
   case "$abs" in
-    "$ROOT_DIR"/fixtures/corpus/rejected/unknown_identifier.sley|"$ROOT_DIR"/fixtures/corpus/rejected/unknown_type.sley|"$ROOT_DIR"/fixtures/corpus/rejected/unknown_task.sley|"$ROOT_DIR"/fixtures/corpus/rejected/call_arity_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/call_argument_type_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/duplicate_take.sley|"$ROOT_DIR"/fixtures/corpus/rejected/duplicate_map_key.sley|"$ROOT_DIR"/fixtures/corpus/rejected/duplicate_record_field.sley|"$ROOT_DIR"/fixtures/corpus/rejected/duplicate_record_literal_field.sley|"$ROOT_DIR"/fixtures/corpus/rejected/list_element_type_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/list_index_non_int.sley|"$ROOT_DIR"/fixtures/corpus/rejected/map_index_non_text.sley|"$ROOT_DIR"/fixtures/corpus/rejected/map_key_type_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/map_value_type_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/module_namespace_conflict.sley|"$ROOT_DIR"/fixtures/corpus/rejected/unknown_effect.sley|"$ROOT_DIR"/fixtures/corpus/rejected/gate_take_type_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/gate_effect_undeclared.sley|"$ROOT_DIR"/fixtures/corpus/rejected/unauthorized_effect.sley|"$ROOT_DIR"/fixtures/corpus/rejected/authority/*.sley|"$ROOT_DIR"/fixtures/corpus/rejected/missing_return.sley|"$ROOT_DIR"/fixtures/corpus/rejected/question_requires_result.sley)
+    "$ROOT_DIR"/fixtures/corpus/rejected/unknown_identifier.sley|"$ROOT_DIR"/fixtures/corpus/rejected/unknown_type.sley|"$ROOT_DIR"/fixtures/corpus/rejected/unknown_task.sley|"$ROOT_DIR"/fixtures/corpus/rejected/call_arity_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/call_argument_type_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/duplicate_take.sley|"$ROOT_DIR"/fixtures/corpus/rejected/duplicate_map_key.sley|"$ROOT_DIR"/fixtures/corpus/rejected/duplicate_record_field.sley|"$ROOT_DIR"/fixtures/corpus/rejected/duplicate_record_literal_field.sley|"$ROOT_DIR"/fixtures/corpus/rejected/record_field_missing.sley|"$ROOT_DIR"/fixtures/corpus/rejected/record_field_unknown.sley|"$ROOT_DIR"/fixtures/corpus/rejected/record_field_type_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/record_literal_non_record_type.sley|"$ROOT_DIR"/fixtures/corpus/rejected/unknown_record_field.sley|"$ROOT_DIR"/fixtures/corpus/rejected/list_element_type_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/list_index_non_int.sley|"$ROOT_DIR"/fixtures/corpus/rejected/map_index_non_text.sley|"$ROOT_DIR"/fixtures/corpus/rejected/map_key_type_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/map_value_type_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/module_namespace_conflict.sley|"$ROOT_DIR"/fixtures/corpus/rejected/unknown_effect.sley|"$ROOT_DIR"/fixtures/corpus/rejected/gate_take_type_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/gate_effect_undeclared.sley|"$ROOT_DIR"/fixtures/corpus/rejected/unauthorized_effect.sley|"$ROOT_DIR"/fixtures/corpus/rejected/authority/*.sley|"$ROOT_DIR"/fixtures/corpus/rejected/missing_return.sley|"$ROOT_DIR"/fixtures/corpus/rejected/question_requires_result.sley)
       return 1
       ;;
   esac
@@ -1014,6 +1044,11 @@ check_json() {
     --arg duplicate_map_key "$DIAG_DUPLICATE_MAP_KEY" \
     --arg duplicate_field "$DIAG_DUPLICATE_FIELD" \
     --arg duplicate_record_literal_field "$DIAG_DUPLICATE_RECORD_LITERAL_FIELD" \
+    --arg record_field_missing "$DIAG_RECORD_FIELD_MISSING" \
+    --arg record_field_unknown "$DIAG_RECORD_FIELD_UNKNOWN" \
+    --arg record_field_type_mismatch "$DIAG_RECORD_FIELD_TYPE_MISMATCH" \
+    --arg unknown_record_field "$DIAG_UNKNOWN_RECORD_FIELD" \
+    --arg record_literal_non_record_type "$DIAG_RECORD_LITERAL_NON_RECORD_TYPE" \
     --arg list_element_type_mismatch "$DIAG_LIST_ELEMENT_TYPE_MISMATCH" \
     --arg index_not_int "$DIAG_INDEX_NOT_INT" \
     --arg index_key_type_mismatch "$DIAG_INDEX_KEY_TYPE_MISMATCH" \
@@ -1048,6 +1083,16 @@ check_json() {
     --arg duplicate_field_suffix "$DUPLICATE_FIELD_MESSAGE_SUFFIX" \
     --arg duplicate_record_literal_field_prefix "$DUPLICATE_RECORD_LITERAL_FIELD_MESSAGE_PREFIX" \
     --arg duplicate_record_literal_field_suffix "$DUPLICATE_RECORD_LITERAL_FIELD_MESSAGE_SUFFIX" \
+    --arg record_field_missing_prefix "$RECORD_FIELD_MISSING_MESSAGE_PREFIX" \
+    --arg record_field_missing_suffix "$RECORD_FIELD_MISSING_MESSAGE_SUFFIX" \
+    --arg record_field_unknown_prefix "$RECORD_FIELD_UNKNOWN_MESSAGE_PREFIX" \
+    --arg record_field_unknown_suffix "$RECORD_FIELD_UNKNOWN_MESSAGE_SUFFIX" \
+    --arg record_field_type_mismatch_prefix "$RECORD_FIELD_TYPE_MISMATCH_MESSAGE_PREFIX" \
+    --arg record_field_type_mismatch_suffix "$RECORD_FIELD_TYPE_MISMATCH_MESSAGE_SUFFIX" \
+    --arg unknown_record_field_prefix "$UNKNOWN_RECORD_FIELD_MESSAGE_PREFIX" \
+    --arg unknown_record_field_suffix "$UNKNOWN_RECORD_FIELD_MESSAGE_SUFFIX" \
+    --arg record_literal_non_record_type_prefix "$RECORD_LITERAL_NON_RECORD_TYPE_MESSAGE_PREFIX" \
+    --arg record_literal_non_record_type_suffix "$RECORD_LITERAL_NON_RECORD_TYPE_MESSAGE_SUFFIX" \
     --arg list_element_type_mismatch_prefix "$LIST_ELEMENT_TYPE_MISMATCH_MESSAGE_PREFIX" \
     --arg list_element_type_mismatch_suffix "$LIST_ELEMENT_TYPE_MISMATCH_MESSAGE_SUFFIX" \
     --arg index_not_int_prefix "$INDEX_NOT_INT_MESSAGE_PREFIX" \
@@ -1180,20 +1225,44 @@ check_json() {
           elif .in_type and ($line | test("^[[:space:]]*}")) then
             .in_type = false | .type_name = null | .type_key = null
           elif .in_type and ($line | test("^[[:space:]]*slot[[:space:]]+")) then
-            ($line | capture("^[[:space:]]*slot[[:space:]]+(?<name>[A-Za-z_][A-Za-z0-9_]*)[[:space:]]*:")) as $field_match |
-            .rows += [{type_name:.type_name, type_key:.type_key, name:$field_match.name, line:($i + 1)}]
+            ($line | capture("^[[:space:]]*slot[[:space:]]+(?<name>[A-Za-z_][A-Za-z0-9_]*)[[:space:]]*:[[:space:]]*(?<field_type>[A-Za-z_][A-Za-z0-9_]*(<[^>]+>)?)")?) as $field_match |
+            if $field_match == null then .
+            else .rows += [{type_name:.type_name, type_key:.type_key, name:$field_match.name, field_type:$field_match.field_type, line:($i + 1)}] end
           else . end
         ) | .rows;
-    def record_literal_entries($expr):
-      (($expr.source? // "") | capture("[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\{(?<body>[^}]*)\\}")? // {body:null}) as $literal |
+    def record_fields_for($type_name):
+      [record_type_fields[] | select(.type_name == $type_name)];
+    def record_type_known($type_name):
+      (record_fields_for($type_name) | length) > 0;
+    def type_decl_kind($type_name):
+      ([
+        range(0; ($source_lines | length)) as $i |
+        ($source_lines[$i]) as $line |
+        select($line | test("^[[:space:]]*(export[[:space:]]+)?type[[:space:]]+" + $type_name + "([[:space:]=]|$)")) |
+        if ($line | test("=[[:space:]]*\\{")) then "Record" else "Alias" end
+      ][0]) // null;
+    def record_literal_parts:
+      ((.source? // "") | capture("^(?<type>[A-Za-z_][A-Za-z0-9_]*)[[:space:]]*\\{(?<body>[^}]*)\\}$")? // {type:null, body:null});
+    def record_literal_type:
+      (record_literal_parts) as $literal | $literal.type;
+    def record_literal_entries:
+      (record_literal_parts) as $literal |
       if $literal.body == null then []
       else
         $literal.body
         | split(",")
         | map(trim)
         | map(select(test(":")))
-        | map((capture("^(?<key>[A-Za-z_][A-Za-z0-9_]*)[[:space:]]*:")? // {key:""}) | select(.key != ""))
+        | map((capture("^(?<key>[A-Za-z_][A-Za-z0-9_]*)[[:space:]]*:[[:space:]]*(?<value>.*)$")? // {key:"", value:""}) | select(.key != "") | .value = (.value | trim))
       end;
+    def record_binding_type($task; $name):
+      ([$task.takes[]? | select(.name == $name) | .type.name | select(record_type_known(.))][0]) as $take_type |
+      if $take_type != null then $take_type
+      else
+        ([$task.body.statements[]? | select(.kind==$binding_statement_kind and .name == $name) | (.expr | record_literal_type) | select(. != null and record_type_known(.))][0]) // null
+      end;
+    def field_access:
+      ((.source? // "") | capture("^(?<base>[A-Za-z_][A-Za-z0-9_]*)\\.(?<field>[A-Za-z_][A-Za-z0-9_]*)$")?) // {base:null, field:null};
     def binding_collection_kind($task; $name):
       ([$task.body.statements[]? | select(.kind==$binding_statement_kind and .name==$name) |
         (source_line(.span.line)) as $line |
@@ -1300,8 +1369,65 @@ check_json() {
     def duplicate_record_literal_field_diags:
       $root.tasks[] as $t |
       $t.body.statements[]?.expr? as $expr |
-      (record_literal_entries($expr) | group_by(.key)[] | select(length > 1) | .[1].key) as $key |
+      ($expr | record_literal_entries | group_by(.key)[] | select(length > 1) | .[1].key) as $key |
       {id:$duplicate_record_literal_field, severity:"error", message:($duplicate_record_literal_field_prefix + $key + $duplicate_record_literal_field_suffix), node:$expr.id, span:$expr.span};
+    def record_field_missing_diags:
+      $root.tasks[] as $t |
+      $t.body.statements[]? |
+      select(.kind==$binding_statement_kind) |
+      . as $stmt |
+      ($stmt.expr | record_literal_type) as $type_name |
+      select($type_name != null and record_type_known($type_name)) |
+      ($stmt.expr | record_literal_entries) as $entries |
+      ($entries | map(.key)) as $actual_fields |
+      (record_fields_for($type_name))[] as $field |
+      select(($actual_fields | index($field.name)) == null) |
+      {id:$record_field_missing, severity:"error", message:($record_field_missing_prefix + $field.name + $record_field_missing_suffix), node:$stmt.expr.id, span:$stmt.expr.span};
+    def record_field_unknown_diags:
+      $root.tasks[] as $t |
+      $t.body.statements[]? |
+      select(.kind==$binding_statement_kind) |
+      . as $stmt |
+      ($stmt.expr | record_literal_type) as $type_name |
+      select($type_name != null and record_type_known($type_name)) |
+      (record_fields_for($type_name) | map(.name)) as $known_fields |
+      ($stmt.expr | record_literal_entries)[] as $entry |
+      select(($known_fields | index($entry.key)) == null) |
+      {id:$record_field_unknown, severity:"error", message:($record_field_unknown_prefix + $entry.key + $record_field_unknown_suffix), node:$stmt.expr.id, span:$stmt.expr.span};
+    def record_field_type_mismatch_diags:
+      $root.tasks[] as $t |
+      $t.body.statements[]? |
+      select(.kind==$binding_statement_kind) |
+      . as $stmt |
+      ($stmt.expr | record_literal_type) as $type_name |
+      select($type_name != null and record_type_known($type_name)) |
+      (record_fields_for($type_name)) as $fields |
+      ($stmt.expr | record_literal_entries)[] as $entry |
+      ([$fields[] | select(.name == $entry.key)][0]) as $field |
+      select($field != null) |
+      ($entry.value | literal_type) as $actual |
+      ($field.field_type | base_type_name) as $expected |
+      select($actual != "" and $expected != "" and $actual != $expected) |
+      {id:$record_field_type_mismatch, severity:"error", message:($record_field_type_mismatch_prefix + $entry.key + $record_field_type_mismatch_suffix), node:$stmt.expr.id, span:$stmt.expr.span};
+    def record_literal_non_record_type_diags:
+      $root.tasks[] as $t |
+      $t.body.statements[]? |
+      select(.kind==$binding_statement_kind) |
+      . as $stmt |
+      ($stmt.expr | record_literal_type) as $type_name |
+      select($type_name != null) |
+      select(type_decl_kind($type_name) == "Alias") |
+      {id:$record_literal_non_record_type, severity:"error", message:($record_literal_non_record_type_prefix + $type_name + $record_literal_non_record_type_suffix), node:$stmt.expr.id, span:$stmt.expr.span};
+    def unknown_record_field_diags:
+      $root.tasks[] as $t |
+      $t.body.statements[]?.expr? as $expr |
+      ($expr | field_access) as $access |
+      select($access.base != null) |
+      (record_binding_type($t; $access.base)) as $type_name |
+      select($type_name != null) |
+      (record_fields_for($type_name) | map(.name)) as $known_fields |
+      select(($known_fields | index($access.field)) == null) |
+      {id:$unknown_record_field, severity:"error", message:($unknown_record_field_prefix + $access.field + $unknown_record_field_suffix), node:$expr.id, span:$expr.span};
     def list_element_type_diags:
       $root.tasks[] as $t |
       $t.body.statements[]? |
@@ -1393,7 +1519,7 @@ check_json() {
       select($name != "Unit") |
       select(([$t.body.statements[]? | select(.kind == $return_statement_kind)] | length) == 0) |
       {id:$missing_return, severity:"error", message:($missing_return_prefix + $t.module + "." + $t.name + $missing_return_suffix), node:$t.id, span:$t.span};
-    [duplicate_effect_diags, duplicate_type_diags, duplicate_task_diags, task_diags, return_type_diags, take_type_diags, unknown_effect_diags, gate_take_type_diags, gate_effect_diags, question_requires_result_diags, direct_effect_diags, transitive_effect_diags, unknown_task_diags, call_arity_diags, call_argument_type_diags, duplicate_take_diags, duplicate_map_key_diags, duplicate_record_field_diags, duplicate_record_literal_field_diags, list_element_type_diags, index_diags, map_key_type_diags, map_value_type_diags, missing_return_diags]
+    [duplicate_effect_diags, duplicate_type_diags, duplicate_task_diags, task_diags, return_type_diags, take_type_diags, unknown_effect_diags, gate_take_type_diags, gate_effect_diags, question_requires_result_diags, direct_effect_diags, transitive_effect_diags, unknown_task_diags, call_arity_diags, call_argument_type_diags, duplicate_take_diags, duplicate_map_key_diags, duplicate_record_field_diags, duplicate_record_literal_field_diags, record_field_missing_diags, record_field_unknown_diags, record_field_type_mismatch_diags, record_literal_non_record_type_diags, unknown_record_field_diags, list_element_type_diags, index_diags, map_key_type_diags, map_value_type_diags, missing_return_diags]
   ')"
   diagnostic_count="$(printf '%s\n' "$diagnostics" | jq 'length')"
   check_status="$(eval_checker_status_task "$diagnostic_count" || { if [[ "$diagnostic_count" -eq 0 ]]; then printf '%s\n' "$CHECK_OK_STATUS"; else printf '%s\n' "$CHECK_ERROR_STATUS"; fi; })"
