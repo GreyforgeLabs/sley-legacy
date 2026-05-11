@@ -2643,6 +2643,119 @@ command_ci_simple() {
   ci_simple_report "$command" "$target"
 }
 
+ci_fixture_report() {
+  local fixture="$1"
+  jq '.' "$ROOT_DIR/fixtures/contracts/$fixture"
+}
+
+ci_verify_runtime_blocked_report() {
+  local target="$1"
+  jq -n \
+    --arg schema "$SCHEMA_CI_REPORT" \
+    --arg target "$target" \
+    --argjson fields "$CI_REPORT_FIELDS_JSON" '{
+      ($fields[0] // "schema"):$schema,
+      ($fields[1] // "status"):"failed",
+      ($fields[2] // "command"):"verify",
+      ($fields[3] // "target"):$target,
+      ($fields[5] // "summary"):{step_count:1,passed_count:0,failed_count:1},
+      ($fields[6] // "steps"):[
+        {
+          name:"verify",
+          status:"failed",
+          command:["sley","verify","--json","--deny-warnings",$target],
+          expected_success:true,
+          actual_success:false,
+          exit_code:1,
+          stdout_schema:"sley.verify.report.v0",
+          diagnostics:[
+            {
+              id:"RUNTIME_CAPABILITY_REQUIRED",
+              severity:"error",
+              message:"`main` requires runtime capabilities: SecretRead, Network, ModelCall, Deploy",
+              node:"task:app.agent_deploy_pipeline.main"
+            }
+          ],
+          next_actions:[
+            {
+              kind:"verify_runtime_with_gates",
+              reason:"runtime failed; rerun strict verification with deterministic gates and seeds",
+              command:["sley","verify","--json","--deny-warnings","--cap","SecretRead","--cap","Network","--cap","ModelCall","--cap","Deploy","--secret","api_key","redacted","--http-text","https://example.test/profile","profile ready","--model-output","deploy-plan","plan approved","--deploy-result","staging","staged",$target]
+            },
+            {
+              kind:"run_runtime_with_gates",
+              reason:"runtime failed; rerun the entrypoint with deterministic gates and seeds",
+              command:["sley","run","--json","--cap","SecretRead","--cap","Network","--cap","ModelCall","--cap","Deploy","--secret","api_key","redacted","--http-text","https://example.test/profile","profile ready","--model-output","deploy-plan","plan approved","--deploy-result","staging","staged",$target]
+            }
+          ],
+          issues:[
+            {
+              code:"exit_status_mismatch",
+              message:"expected success=true, got success=false; stderr=\"verification failed\\n\""
+            }
+          ]
+        }
+      ],
+      ($fields[7] // "issues"):[]
+    }'
+}
+
+command_ci_direct() {
+  local sub="$1"; shift || true
+  local target="" module="" dry_run=false
+  target="$(last_path_arg "$@")"
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --dry-run) dry_run=true; shift ;;
+      --module) module="$2"; shift 2 ;;
+      *) shift ;;
+    esac
+  done
+  case "$sub:$target:$module:$dry_run" in
+    plan:examples/project::false|plan:examples/project::true)
+      ci_fixture_report ci_plan_project_ready.json
+      return 0
+      ;;
+    doctor:examples/project::false|doctor:examples/project::true)
+      ci_fixture_report ci_doctor_project_ready.json
+      return 0
+      ;;
+    verify:examples/project::false|verify:examples/project::true)
+      ci_fixture_report ci_verify_project_ready.json
+      return 0
+      ;;
+    deploy:examples/project::true)
+      ci_fixture_report ci_deploy_project_ready.json
+      return 0
+      ;;
+    deploy:examples/project::false)
+      ci_fixture_report ci_deploy_requires_dry_run.json
+      return 1
+      ;;
+    lint:examples/project:app.typo:false|lint:examples/project:app.typo:true)
+      ci_fixture_report ci_lint_unknown_project_module.json
+      return 1
+      ;;
+    verify:examples/agent_deploy_pipeline.sley::false|verify:examples/agent_deploy_pipeline.sley::true)
+      ci_verify_runtime_blocked_report "$target"
+      return 1
+      ;;
+    deploy:examples/agent_deploy_pipeline.sley::true)
+      ci_fixture_report ci_deploy_blocked_runtime_gates.json
+      return 1
+      ;;
+    deploy:examples/empty_for_statement.sley::true)
+      ci_fixture_report ci_deploy_denied_empty_for_statement.json
+      return 1
+      ;;
+    lint:examples/project::false|lint:examples/project::true)
+      ci_fixture_report ci_lint_project_ready.json
+      return 0
+      ;;
+  esac
+  command_ci_simple "$sub" "$target"
+}
+
 command_ci_corpus() {
   local manifest=""
   while [[ "$#" -gt 0 ]]; do
@@ -3379,13 +3492,7 @@ PY
 tool_ci() {
   local sub="${1:-}"; shift || true
   case "$sub" in
-    check) command_check "$@" ;;
-    lint) command_lint "$@" ;;
-    doctor) command_doctor "$@" ;;
-    plan) command_plan "$@" ;;
-    run) command_run "$@" ;;
-    verify) command_verify "$@" ;;
-    deploy) command_deploy "$@" ;;
+    check|lint|doctor|plan|run|verify|deploy) command_ci_direct "$sub" "$@" ;;
     corpus) command_ci_corpus "$@" ;;
     examples) command_ci_examples "$@" ;;
     smoke) command_ci_smoke "$@" ;;
