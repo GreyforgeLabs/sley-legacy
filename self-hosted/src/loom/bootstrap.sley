@@ -43,6 +43,7 @@ export task owned_bootstrap_values -> List<Text> {
     "checker_unknown_task_diagnostics",
     "checker_call_diagnostics",
     "checker_duplicate_take_diagnostics",
+    "checker_namespace_diagnostics",
     "checker_effect_diagnostics",
     "checker_identifier_resolution_inputs",
     "lint_status_task_execution",
