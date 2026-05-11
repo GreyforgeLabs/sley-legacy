@@ -366,6 +366,7 @@ DOCTOR_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_RO
 SCHEMA_RUN="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" run_schema)"
 RUN_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" run_report_fields)"
 SCHEMA_VERIFY="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" verify_schema)"
+VERIFY_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" verify_report_fields)"
 SCHEMA_SELF_HOSTING="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_status_schema)"
 SELF_HOSTING_REPORT_SOURCE_ROOT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_source_root)"
 SELF_HOSTING_STATUS_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_status_fields)"
@@ -393,6 +394,9 @@ if [[ "$RUN_REPORT_FIELDS_JSON" == "[]" ]]; then
   RUN_REPORT_FIELDS_JSON='["schema","status","target","value","diagnostics"]'
 fi
 SCHEMA_VERIFY="${SCHEMA_VERIFY:-sley.verify.report.v0}"
+if [[ "$VERIFY_REPORT_FIELDS_JSON" == "[]" ]]; then
+  VERIFY_REPORT_FIELDS_JSON='["schema","status","target","entry_module","summary","diagnostics","query","lint","runtime","next_actions"]'
+fi
 SCHEMA_SELF_HOSTING="${SCHEMA_SELF_HOSTING:-sley.self_hosting.status.v0}"
 SCHEMA_CLAIM_VERIFY="sley.claim.verify.v0"
 SELF_HOSTING_REPORT_SOURCE_ROOT="${SELF_HOSTING_REPORT_SOURCE_ROOT:-self-hosted/src}"
@@ -1756,14 +1760,19 @@ verify_json() {
   local target="$1" doctor runtime
   doctor="$(doctor_json "$target")"
   runtime="$(run_json "$target")"
-  jq -n --arg schema "$SCHEMA_VERIFY" --arg query_schema "$SCHEMA_QUERY" --argjson doctor "$doctor" --argjson runtime "$runtime" '
-    {schema:$schema, status:(if $doctor.status=="ready" then "passed" else "blocked" end), target:$doctor.target, entry_module:$doctor.entry_module,
-     summary:($doctor.summary + {runtime_status:(if $doctor.status=="ready" then "passed" else "skipped" end)}),
-     diagnostics:$doctor.diagnostics,
-     query:{source_schema:$query_schema, kind:"all", module_count:$doctor.summary.module_count, task_count:$doctor.summary.task_count, call_count:$doctor.summary.call_count},
-     lint:$doctor.lint,
-     runtime:{status:(if $doctor.status=="ready" then "passed" else "skipped" end), value:$runtime.value, diagnostics:[]},
-     next_actions:[{kind:"seal_verified_target", reason:"create a content-addressed review artifact after verification", command:["sley","seal","--json",$doctor.target]}]}
+  jq -n --arg schema "$SCHEMA_VERIFY" --arg query_schema "$SCHEMA_QUERY" --argjson fields "$VERIFY_REPORT_FIELDS_JSON" --argjson doctor "$doctor" --argjson runtime "$runtime" '
+    {
+      ($fields[0] // "schema"):$schema,
+      ($fields[1] // "status"):(if $doctor.status=="ready" then "passed" else "blocked" end),
+      ($fields[2] // "target"):$doctor.target,
+      ($fields[3] // "entry_module"):$doctor.entry_module,
+      ($fields[4] // "summary"):($doctor.summary + {runtime_status:(if $doctor.status=="ready" then "passed" else "skipped" end)}),
+      ($fields[5] // "diagnostics"):$doctor.diagnostics,
+      ($fields[6] // "query"):{source_schema:$query_schema, kind:"all", module_count:$doctor.summary.module_count, task_count:$doctor.summary.task_count, call_count:$doctor.summary.call_count},
+      ($fields[7] // "lint"):$doctor.lint,
+      ($fields[8] // "runtime"):{status:(if $doctor.status=="ready" then "passed" else "skipped" end), value:$runtime.value, diagnostics:[]},
+      ($fields[9] // "next_actions"):[{kind:"seal_verified_target", reason:"create a content-addressed review artifact after verification", command:["sley","seal","--json",$doctor.target]}]
+    }
   '
 }
 
