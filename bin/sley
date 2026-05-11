@@ -412,6 +412,7 @@ DIAG_DUPLICATE_TASK="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/c
 DIAG_UNKNOWN_EFFECT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_effect_id)"
 DIAG_GATE_TAKE_TYPE_MISMATCH="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" gate_take_type_mismatch_id)"
 DIAG_GATE_EFFECT_UNDECLARED="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" gate_effect_undeclared_id)"
+DIAG_EFFECT_UNAUTHORIZED="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" effect_unauthorized_id)"
 DIAG_MISSING_RETURN="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" missing_return_id)"
 DIAG_UNKNOWN_IDENTIFIER="${DIAG_UNKNOWN_IDENTIFIER:-UNKNOWN_IDENTIFIER}"
 DIAG_UNKNOWN_TYPE="${DIAG_UNKNOWN_TYPE:-UNKNOWN_TYPE}"
@@ -425,6 +426,7 @@ DIAG_DUPLICATE_TASK="${DIAG_DUPLICATE_TASK:-DUPLICATE_TASK}"
 DIAG_UNKNOWN_EFFECT="${DIAG_UNKNOWN_EFFECT:-UNKNOWN_EFFECT}"
 DIAG_GATE_TAKE_TYPE_MISMATCH="${DIAG_GATE_TAKE_TYPE_MISMATCH:-GATE_TAKE_TYPE_MISMATCH}"
 DIAG_GATE_EFFECT_UNDECLARED="${DIAG_GATE_EFFECT_UNDECLARED:-GATE_EFFECT_UNDECLARED}"
+DIAG_EFFECT_UNAUTHORIZED="${DIAG_EFFECT_UNAUTHORIZED:-EFFECT_UNAUTHORIZED}"
 DIAG_MISSING_RETURN="${DIAG_MISSING_RETURN:-MISSING_RETURN}"
 CHECK_OK_STATUS="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" ok_status)"
 CHECK_ERROR_STATUS="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" error_status)"
@@ -452,6 +454,8 @@ GATE_TAKE_TYPE_MISMATCH_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED
 GATE_TAKE_TYPE_MISMATCH_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" gate_take_type_mismatch_message_suffix)"
 GATE_EFFECT_UNDECLARED_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" gate_effect_undeclared_message_prefix)"
 GATE_EFFECT_UNDECLARED_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" gate_effect_undeclared_message_suffix)"
+EFFECT_UNAUTHORIZED_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" effect_unauthorized_message_prefix)"
+EFFECT_UNAUTHORIZED_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" effect_unauthorized_message_suffix)"
 MISSING_RETURN_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" missing_return_message_prefix)"
 MISSING_RETURN_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" missing_return_message_suffix)"
 CHECKER_IDENTIFIER_INPUTS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" identifier_resolution_inputs)"
@@ -482,6 +486,8 @@ GATE_TAKE_TYPE_MISMATCH_MESSAGE_PREFIX="${GATE_TAKE_TYPE_MISMATCH_MESSAGE_PREFIX
 GATE_TAKE_TYPE_MISMATCH_MESSAGE_SUFFIX="${GATE_TAKE_TYPE_MISMATCH_MESSAGE_SUFFIX:-\`}"
 GATE_EFFECT_UNDECLARED_MESSAGE_PREFIX="${GATE_EFFECT_UNDECLARED_MESSAGE_PREFIX:-gate effect undeclared \`}"
 GATE_EFFECT_UNDECLARED_MESSAGE_SUFFIX="${GATE_EFFECT_UNDECLARED_MESSAGE_SUFFIX:-\`}"
+EFFECT_UNAUTHORIZED_MESSAGE_PREFIX="${EFFECT_UNAUTHORIZED_MESSAGE_PREFIX:-effect unauthorized \`}"
+EFFECT_UNAUTHORIZED_MESSAGE_SUFFIX="${EFFECT_UNAUTHORIZED_MESSAGE_SUFFIX:-\`}"
 MISSING_RETURN_MESSAGE_PREFIX="${MISSING_RETURN_MESSAGE_PREFIX:-missing return in task \`}"
 MISSING_RETURN_MESSAGE_SUFFIX="${MISSING_RETURN_MESSAGE_SUFFIX:-\`}"
 if [[ "$CHECKER_IDENTIFIER_INPUTS_JSON" == "[]" ]]; then
@@ -906,7 +912,7 @@ rejected_fixture_diagnostics_json() {
     *) return 1 ;;
   esac
   case "$abs" in
-    "$ROOT_DIR"/fixtures/corpus/rejected/unknown_identifier.sley|"$ROOT_DIR"/fixtures/corpus/rejected/unknown_type.sley|"$ROOT_DIR"/fixtures/corpus/rejected/unknown_task.sley|"$ROOT_DIR"/fixtures/corpus/rejected/call_arity_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/call_argument_type_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/duplicate_take.sley|"$ROOT_DIR"/fixtures/corpus/rejected/module_namespace_conflict.sley|"$ROOT_DIR"/fixtures/corpus/rejected/unknown_effect.sley|"$ROOT_DIR"/fixtures/corpus/rejected/gate_take_type_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/gate_effect_undeclared.sley|"$ROOT_DIR"/fixtures/corpus/rejected/missing_return.sley)
+    "$ROOT_DIR"/fixtures/corpus/rejected/unknown_identifier.sley|"$ROOT_DIR"/fixtures/corpus/rejected/unknown_type.sley|"$ROOT_DIR"/fixtures/corpus/rejected/unknown_task.sley|"$ROOT_DIR"/fixtures/corpus/rejected/call_arity_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/call_argument_type_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/duplicate_take.sley|"$ROOT_DIR"/fixtures/corpus/rejected/module_namespace_conflict.sley|"$ROOT_DIR"/fixtures/corpus/rejected/unknown_effect.sley|"$ROOT_DIR"/fixtures/corpus/rejected/gate_take_type_mismatch.sley|"$ROOT_DIR"/fixtures/corpus/rejected/gate_effect_undeclared.sley|"$ROOT_DIR"/fixtures/corpus/rejected/unauthorized_effect.sley|"$ROOT_DIR"/fixtures/corpus/rejected/authority/*.sley|"$ROOT_DIR"/fixtures/corpus/rejected/missing_return.sley)
       return 1
       ;;
   esac
@@ -932,9 +938,14 @@ rejected_fixture_diagnostics_json() {
 }
 
 check_json() {
-  local target="$1" diagnostics diagnostic_count check_status builtin_types
+  local target="$1" diagnostics diagnostic_count check_status builtin_types source_text
   if rejected_fixture_diagnostics_json "$target"; then
     return 0
+  fi
+  if [[ -f "$target" ]]; then
+    source_text="$(<"$target")"
+  else
+    source_text=""
   fi
   builtin_types="$(eval_checker_builtin_types_json || printf '%s\n' '["Int","Text","Bool","Unit","Result","Error","Gate","List","Map"]')"
   diagnostics="$(ast_json "$target" | jq \
@@ -950,6 +961,7 @@ check_json() {
     --arg unknown_effect "$DIAG_UNKNOWN_EFFECT" \
     --arg gate_take_type "$DIAG_GATE_TAKE_TYPE_MISMATCH" \
     --arg gate_effect "$DIAG_GATE_EFFECT_UNDECLARED" \
+    --arg effect_unauthorized "$DIAG_EFFECT_UNAUTHORIZED" \
     --arg missing_return "$DIAG_MISSING_RETURN" \
     --arg return_statement_kind "$PARSER_RETURN_STATEMENT_KIND" \
     --arg binding_statement_kind "$PARSER_BINDING_STATEMENT_KIND" \
@@ -977,8 +989,11 @@ check_json() {
     --arg gate_take_type_suffix "$GATE_TAKE_TYPE_MISMATCH_MESSAGE_SUFFIX" \
     --arg gate_effect_prefix "$GATE_EFFECT_UNDECLARED_MESSAGE_PREFIX" \
     --arg gate_effect_suffix "$GATE_EFFECT_UNDECLARED_MESSAGE_SUFFIX" \
+    --arg effect_unauthorized_prefix "$EFFECT_UNAUTHORIZED_MESSAGE_PREFIX" \
+    --arg effect_unauthorized_suffix "$EFFECT_UNAUTHORIZED_MESSAGE_SUFFIX" \
     --arg missing_return_prefix "$MISSING_RETURN_MESSAGE_PREFIX" \
     --arg missing_return_suffix "$MISSING_RETURN_MESSAGE_SUFFIX" \
+    --arg source_text "$source_text" \
     --argjson builtin_types "$builtin_types" \
     --argjson builtin_effects "$CHECKER_BUILTIN_EFFECTS_JSON" \
     --argjson identifier_inputs "$CHECKER_IDENTIFIER_INPUTS_JSON" '
@@ -996,6 +1011,28 @@ check_json() {
       (($builtin_types | index($base)) != null) or (($declared_types | index($base)) != null);
     def effect_known($name):
       (($builtin_effects | index($name)) != null) or (($declared_effects | index($name)) != null);
+    def effect_authorized($effects; $effect):
+      (($effects | index($effect)) != null)
+      or ($effect == "DatabaseRead" and (($effects | index("DbRead")) != null))
+      or ($effect == "DatabaseWrite" and (($effects | index("DbWrite")) != null));
+    def source_line($line):
+      if $line == null then "" else (($source_text | split("\n"))[$line - 1]) // "" end;
+    def expr_text:
+      ((.source? // "") + " " + source_line(.span.line));
+    def required_host_effects:
+      (expr_text) as $source |
+      [
+        (if ($source | test("db\\.(query_one|try_query_one)")) then "DatabaseRead" else empty end),
+        (if ($source | test("db\\.try_insert")) then "DatabaseWrite" else empty end),
+        (if ($source | test("deploy\\.try_stage")) then "Deploy" else empty end),
+        (if ($source | test("fs\\.(read_text|try_read_text)")) then "FileRead" else empty end),
+        (if ($source | test("fs\\.try_write_text")) then "FileWrite" else empty end),
+        (if ($source | test("model\\.try_complete")) then "ModelCall" else empty end),
+        (if ($source | test("http\\.try_get_text")) then "Network" else empty end),
+        (if ($source | test("secrets\\.try_get")) then "SecretRead" else empty end),
+        (if ($source | test("shell\\.try_run")) then "Shell" else empty end),
+        (if ($source | test("spend\\.try_authorize")) then "Spend" else empty end)
+      ] | unique;
     def call_callee:
       .source | sub("^call[[:space:]]+";"") | sub("\\(.*$";"");
     def call_args:
@@ -1115,13 +1152,31 @@ check_json() {
     def duplicate_task_diags:
       ($root.tasks | group_by(.module + "." + .name)[] | select(length > 1) | .[1:])[] as $task |
       {id:$duplicate_task, severity:"error", message:($duplicate_task_prefix + $task.name + $duplicate_task_suffix), node:$task.id, span:$task.span};
+    def direct_effect_diags:
+      $root.tasks[] as $t |
+      $t.body.statements[]?.expr? |
+      . as $expr |
+      ($expr | required_host_effects)[] as $effect |
+      select(effect_authorized($t.effects; $effect) | not) |
+      {id:$effect_unauthorized, severity:"error", message:($effect_unauthorized_prefix + $effect + $effect_unauthorized_suffix), node:$expr.id, span:$expr.span};
+    def transitive_effect_diags:
+      $root.tasks[] as $t |
+      $t.body.statements[]?.expr? |
+      select((.source? // "") | startswith("call ")) |
+      . as $expr |
+      (call_callee) as $callee |
+      ([declared_call_task($t.module; $callee)][0]) as $target |
+      select($target != null) |
+      $target.effects[]? as $effect |
+      select(effect_authorized($t.effects; $effect) | not) |
+      {id:$effect_unauthorized, severity:"error", message:($effect_unauthorized_prefix + $effect + $effect_unauthorized_suffix), node:$expr.id, span:$expr.span};
     def missing_return_diags:
       $root.tasks[] as $t |
       ($t.return_type.name // "Unit") as $name |
       select($name != "Unit") |
       select(([$t.body.statements[]? | select(.kind == $return_statement_kind)] | length) == 0) |
       {id:$missing_return, severity:"error", message:($missing_return_prefix + $t.module + "." + $t.name + $missing_return_suffix), node:$t.id, span:$t.span};
-    [duplicate_effect_diags, duplicate_type_diags, duplicate_task_diags, task_diags, return_type_diags, take_type_diags, unknown_effect_diags, gate_take_type_diags, gate_effect_diags, unknown_task_diags, call_arity_diags, call_argument_type_diags, duplicate_take_diags, missing_return_diags]
+    [duplicate_effect_diags, duplicate_type_diags, duplicate_task_diags, task_diags, return_type_diags, take_type_diags, unknown_effect_diags, gate_take_type_diags, gate_effect_diags, direct_effect_diags, transitive_effect_diags, unknown_task_diags, call_arity_diags, call_argument_type_diags, duplicate_take_diags, missing_return_diags]
   ')"
   diagnostic_count="$(printf '%s\n' "$diagnostics" | jq 'length')"
   check_status="$(eval_checker_status_task "$diagnostic_count" || { if [[ "$diagnostic_count" -eq 0 ]]; then printf '%s\n' "$CHECK_OK_STATUS"; else printf '%s\n' "$CHECK_ERROR_STATUS"; fi; })"

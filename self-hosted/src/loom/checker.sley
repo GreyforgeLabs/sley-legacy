@@ -55,6 +55,10 @@ export task gate_effect_undeclared_id -> Text {
   return "GATE_EFFECT_UNDECLARED"
 }
 
+export task effect_unauthorized_id -> Text {
+  return "EFFECT_UNAUTHORIZED"
+}
+
 export task missing_return_id -> Text {
   return "MISSING_RETURN"
 }
@@ -160,6 +164,14 @@ export task gate_effect_undeclared_message_prefix -> Text {
 }
 
 export task gate_effect_undeclared_message_suffix -> Text {
+  return "`"
+}
+
+export task effect_unauthorized_message_prefix -> Text {
+  return "effect unauthorized `"
+}
+
+export task effect_unauthorized_message_suffix -> Text {
   return "`"
 }
 

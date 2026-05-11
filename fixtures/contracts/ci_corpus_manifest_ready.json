@@ -1069,8 +1069,8 @@
         {
           "id": "EFFECT_UNAUTHORIZED",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic EFFECT_UNAUTHORIZED",
-          "node": "fixture:fixtures/corpus/rejected/authority/missing_database_read_effect.sley"
+          "message": "effect unauthorized `DatabaseRead`",
+          "node": "block:task:corpus.rejected.authority.main:stmt:0:expr"
         }
       ]
     },
@@ -1100,10 +1100,16 @@
       "stdout_schema": "sley.diagnostics.report.v0",
       "diagnostics": [
         {
+          "id": "GATE_EFFECT_UNDECLARED",
+          "severity": "error",
+          "message": "gate effect undeclared `DatabaseRead`",
+          "node": "take:corpus.rejected.authority_gate.lookup_user.db"
+        },
+        {
           "id": "EFFECT_UNAUTHORIZED",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic EFFECT_UNAUTHORIZED",
-          "node": "fixture:fixtures/corpus/rejected/authority/missing_gate_take_effect.sley"
+          "message": "effect unauthorized `DatabaseRead`",
+          "node": "block:task:corpus.rejected.authority_gate.lookup_user:stmt:0:expr"
         }
       ]
     },
@@ -1133,8 +1139,8 @@
         {
           "id": "EFFECT_UNAUTHORIZED",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic EFFECT_UNAUTHORIZED",
-          "node": "fixture:fixtures/corpus/rejected/authority/missing_database_write_effect.sley"
+          "message": "effect unauthorized `DatabaseWrite`",
+          "node": "block:task:corpus.rejected.authority.main:stmt:0:expr"
         }
       ]
     },
@@ -1165,8 +1171,8 @@
         {
           "id": "EFFECT_UNAUTHORIZED",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic EFFECT_UNAUTHORIZED",
-          "node": "fixture:fixtures/corpus/rejected/authority/missing_database_alias_write_effect.sley"
+          "message": "effect unauthorized `DatabaseWrite`",
+          "node": "block:task:corpus.rejected.authority.main:stmt:0:expr"
         }
       ]
     },
@@ -1196,8 +1202,8 @@
         {
           "id": "EFFECT_UNAUTHORIZED",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic EFFECT_UNAUTHORIZED",
-          "node": "fixture:fixtures/corpus/rejected/authority/missing_deploy_effect.sley"
+          "message": "effect unauthorized `Deploy`",
+          "node": "block:task:corpus.rejected.authority.main:stmt:0:expr"
         }
       ]
     },
@@ -1227,8 +1233,8 @@
         {
           "id": "EFFECT_UNAUTHORIZED",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic EFFECT_UNAUTHORIZED",
-          "node": "fixture:fixtures/corpus/rejected/authority/missing_file_read_effect.sley"
+          "message": "effect unauthorized `FileRead`",
+          "node": "block:task:corpus.rejected.authority.main:stmt:0:expr"
         }
       ]
     },
@@ -1258,8 +1264,8 @@
         {
           "id": "EFFECT_UNAUTHORIZED",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic EFFECT_UNAUTHORIZED",
-          "node": "fixture:fixtures/corpus/rejected/authority/missing_file_write_effect.sley"
+          "message": "effect unauthorized `FileWrite`",
+          "node": "block:task:corpus.rejected.authority.main:stmt:0:expr"
         }
       ]
     },
@@ -1289,8 +1295,8 @@
         {
           "id": "EFFECT_UNAUTHORIZED",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic EFFECT_UNAUTHORIZED",
-          "node": "fixture:fixtures/corpus/rejected/authority/missing_model_effect.sley"
+          "message": "effect unauthorized `ModelCall`",
+          "node": "block:task:corpus.rejected.authority.main:stmt:0:expr"
         }
       ]
     },
@@ -1320,8 +1326,8 @@
         {
           "id": "EFFECT_UNAUTHORIZED",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic EFFECT_UNAUTHORIZED",
-          "node": "fixture:fixtures/corpus/rejected/authority/missing_network_effect.sley"
+          "message": "effect unauthorized `Network`",
+          "node": "block:task:corpus.rejected.authority.main:stmt:0:expr"
         }
       ]
     },
@@ -1351,8 +1357,8 @@
         {
           "id": "EFFECT_UNAUTHORIZED",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic EFFECT_UNAUTHORIZED",
-          "node": "fixture:fixtures/corpus/rejected/authority/missing_secret_effect.sley"
+          "message": "effect unauthorized `SecretRead`",
+          "node": "block:task:corpus.rejected.authority.main:stmt:0:expr"
         }
       ]
     },
@@ -1382,8 +1388,8 @@
         {
           "id": "EFFECT_UNAUTHORIZED",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic EFFECT_UNAUTHORIZED",
-          "node": "fixture:fixtures/corpus/rejected/authority/missing_shell_effect.sley"
+          "message": "effect unauthorized `Shell`",
+          "node": "block:task:corpus.rejected.authority.main:stmt:0:expr"
         }
       ]
     },
@@ -1413,8 +1419,8 @@
         {
           "id": "EFFECT_UNAUTHORIZED",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic EFFECT_UNAUTHORIZED",
-          "node": "fixture:fixtures/corpus/rejected/authority/missing_spend_effect.sley"
+          "message": "effect unauthorized `Spend`",
+          "node": "block:task:corpus.rejected.authority.main:stmt:0:expr"
         }
       ]
     },
@@ -1446,8 +1452,8 @@
         {
           "id": "EFFECT_UNAUTHORIZED",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic EFFECT_UNAUTHORIZED",
-          "node": "fixture:fixtures/corpus/rejected/authority/missing_transitive_agent_effect.sley"
+          "message": "effect unauthorized `Network`",
+          "node": "block:task:corpus.rejected.authority.main:stmt:0:expr"
         }
       ]
     },
@@ -1478,8 +1484,8 @@
         {
           "id": "EFFECT_UNAUTHORIZED",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic EFFECT_UNAUTHORIZED",
-          "node": "fixture:fixtures/corpus/rejected/authority/missing_transitive_spend_effect.sley"
+          "message": "effect unauthorized `Spend`",
+          "node": "block:task:corpus.rejected.authority.main:stmt:0:expr"
         }
       ]
     },
@@ -1511,8 +1517,8 @@
         {
           "id": "EFFECT_UNAUTHORIZED",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic EFFECT_UNAUTHORIZED",
-          "node": "fixture:fixtures/corpus/rejected/authority/missing_transitive_data_write_effect.sley"
+          "message": "effect unauthorized `DatabaseWrite`",
+          "node": "block:task:corpus.rejected.authority.main:stmt:0:expr"
         }
       ]
     },
@@ -2309,8 +2315,8 @@
         {
           "id": "EFFECT_UNAUTHORIZED",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic EFFECT_UNAUTHORIZED",
-          "node": "fixture:fixtures/corpus/rejected/unauthorized_effect.sley"
+          "message": "effect unauthorized `FileRead`",
+          "node": "block:task:corpus.rejected.main:stmt:0:expr"
         }
       ]
     },

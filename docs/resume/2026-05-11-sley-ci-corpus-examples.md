@@ -33,11 +33,11 @@ Rejected fixture enforcement is still partly a stage-1 bootstrap oracle:
 `UNKNOWN_IDENTIFIER`, `UNKNOWN_TYPE`, `UNKNOWN_TASK`, `CALL_ARITY_MISMATCH`,
 `CALL_ARGUMENT_TYPE_MISMATCH`, `DUPLICATE_TAKE`, `DUPLICATE_EFFECT`,
 `DUPLICATE_TYPE`, `DUPLICATE_TASK`, `UNKNOWN_EFFECT`,
-`GATE_TAKE_TYPE_MISMATCH`, `GATE_EFFECT_UNDECLARED`, and `MISSING_RETURN` now
-come from checker logic, while the remaining rejected fixtures emit expected
-diagnostic IDs from their sidecars. This turns the corpus gate into an
-executable manifest gate, but it is not yet a strict semantic checker
-implementation for every rejected language rule.
+`GATE_TAKE_TYPE_MISMATCH`, `GATE_EFFECT_UNDECLARED`, `EFFECT_UNAUTHORIZED`, and
+`MISSING_RETURN` now come from checker logic, while the remaining rejected
+fixtures emit expected diagnostic IDs from their sidecars. This turns the corpus
+gate into an executable manifest gate, but it is not yet a strict semantic
+checker implementation for every rejected language rule.
 
 ## Next Slice
 
