@@ -98,10 +98,10 @@ The repo currently proves these claims from a clean checkout:
   The checker report status now executes `loom.checker.diagnostic_status`.
   Builtin type recognition, unknown-type diagnostics, unqualified unknown-task
   diagnostics, simple declared-call arity/type diagnostics, duplicate-take
-  diagnostics, collection map/list/index diagnostics, namespace duplicate
-  diagnostics, effect/gate diagnostics, direct/transitive effect-propagation
-  diagnostics, and `?`-requires-`Result` diagnostics now execute from
-  Sley-owned checker source.
+  diagnostics, collection map/list/index diagnostics, duplicate record-field
+  diagnostics, namespace duplicate diagnostics, effect/gate diagnostics,
+  direct/transitive effect-propagation diagnostics, and `?`-requires-`Result`
+  diagnostics now execute from Sley-owned checker source.
   Identifier resolution input classes now read from
   `loom.checker.identifier_resolution_inputs`.
 - Lint finding statuses, messages, and hints are read from

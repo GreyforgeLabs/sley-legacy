@@ -1919,8 +1919,8 @@
         {
           "id": "DUPLICATE_FIELD",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic DUPLICATE_FIELD",
-          "node": "fixture:fixtures/corpus/rejected/duplicate_record_field.sley"
+          "message": "duplicate record field `name`",
+          "node": "type:corpus.rejected.duplicate_record_field.User"
         }
       ]
     },
@@ -1949,8 +1949,8 @@
         {
           "id": "DUPLICATE_RECORD_LITERAL_FIELD",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic DUPLICATE_RECORD_LITERAL_FIELD",
-          "node": "fixture:fixtures/corpus/rejected/duplicate_record_literal_field.sley"
+          "message": "duplicate record literal field `name`",
+          "node": "block:task:corpus.rejected.duplicate_record_literal_field.main:stmt:0:expr"
         }
       ]
     },

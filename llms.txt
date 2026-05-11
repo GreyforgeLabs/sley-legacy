@@ -23,10 +23,10 @@ including checker report status task execution, are read from
 `self-hosted/src/loom/checker.sley`. Builtin type recognition, unknown-type
 diagnostics, unqualified unknown-task diagnostics, simple declared-call
 arity/type diagnostics, duplicate-take diagnostics, collection map/list/index
-diagnostics, namespace duplicate diagnostics, effect/gate diagnostics,
-direct/transitive effect-propagation diagnostics, and `?`-requires-`Result`
-diagnostics execute from Sley-owned checker source; identifier resolution input
-classes are read from
+diagnostics, duplicate record-field diagnostics, namespace duplicate
+diagnostics, effect/gate diagnostics, direct/transitive effect-propagation
+diagnostics, and `?`-requires-`Result` diagnostics execute from Sley-owned
+checker source; identifier resolution input classes are read from
 `loom.checker.identifier_resolution_inputs`. Lint
 finding statuses, report status task execution, messages, and hints are read from
 `self-hosted/src/loom/lint.sley`; lint report field shape is read from

@@ -35,15 +35,16 @@ Status: local checkpoint from Codex resume `019e1799-3642-7dd0-b6c3-55a66d7df677
 Rejected fixture enforcement is still partly a stage-1 bootstrap oracle:
 `UNKNOWN_IDENTIFIER`, `UNKNOWN_TYPE`, `UNKNOWN_TASK`, `CALL_ARITY_MISMATCH`,
 `CALL_ARGUMENT_TYPE_MISMATCH`, `DUPLICATE_TAKE`, `DUPLICATE_EFFECT`,
-`DUPLICATE_MAP_KEY`, `DUPLICATE_TYPE`, `DUPLICATE_TASK`, `UNKNOWN_EFFECT`,
+`DUPLICATE_FIELD`, `DUPLICATE_MAP_KEY`, `DUPLICATE_RECORD_LITERAL_FIELD`,
+`DUPLICATE_TYPE`, `DUPLICATE_TASK`, `UNKNOWN_EFFECT`,
 `GATE_TAKE_TYPE_MISMATCH`, `GATE_EFFECT_UNDECLARED`, `EFFECT_UNAUTHORIZED`,
 `INDEX_NOT_INT`, `INDEX_KEY_TYPE_MISMATCH`, `LIST_ELEMENT_TYPE_MISMATCH`,
 `MAP_KEY_TYPE_MISMATCH`, `MAP_VALUE_TYPE_MISMATCH`, `MISSING_RETURN`, and
-`QUESTION_REQUIRES_RESULT` now come from checker logic, while record-shape and
-type-return rejected fixtures still emit expected diagnostic IDs from their
-sidecars. This turns the corpus gate into an executable manifest gate, but it is
-not yet a strict semantic checker implementation for every rejected language
-rule.
+`QUESTION_REQUIRES_RESULT` now come from checker logic, while record
+completion/field-access and type-return rejected fixtures still emit expected
+diagnostic IDs from their sidecars. This turns the corpus gate into an
+executable manifest gate, but it is not yet a strict semantic checker
+implementation for every rejected language rule.
 
 ## Next Slice
 
