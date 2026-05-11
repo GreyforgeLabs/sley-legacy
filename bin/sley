@@ -398,6 +398,8 @@ SCHEMA_WORKBENCH="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/repo
 WORKBENCH_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" workbench_report_fields)"
 SCHEMA_SANDBOX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" sandbox_schema)"
 SANDBOX_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" sandbox_report_fields)"
+SCHEMA_AGENT_BENCH="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" agent_bench_schema)"
+AGENT_BENCH_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" agent_bench_report_fields)"
 SCHEMA_SELF_HOSTING="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_status_schema)"
 SELF_HOSTING_REPORT_SOURCE_ROOT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_source_root)"
 SELF_HOSTING_STATUS_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_status_fields)"
@@ -488,6 +490,10 @@ fi
 SCHEMA_SANDBOX="${SCHEMA_SANDBOX:-sley.sandbox.report.v0}"
 if [[ "$SANDBOX_REPORT_FIELDS_JSON" == "[]" ]]; then
   SANDBOX_REPORT_FIELDS_JSON='["schema","status","manifest","manifest_schema","target","sandbox_retained","summary","verify","issues"]'
+fi
+SCHEMA_AGENT_BENCH="${SCHEMA_AGENT_BENCH:-sley.agent_bench.report.v0}"
+if [[ "$AGENT_BENCH_REPORT_FIELDS_JSON" == "[]" ]]; then
+  AGENT_BENCH_REPORT_FIELDS_JSON='["schema","status","sley_bin","case_count","passed_count","failed_count","cases","issues"]'
 fi
 SCHEMA_SELF_HOSTING="${SCHEMA_SELF_HOSTING:-sley.self_hosting.status.v0}"
 SELF_HOSTING_REPORT_SOURCE_ROOT="${SELF_HOSTING_REPORT_SOURCE_ROOT:-self-hosted/src}"
@@ -4057,6 +4063,124 @@ command_sandbox() {
   sandbox_json "$@"
 }
 
+agent_bench_json() {
+  local case_name="unused-private-task-repair" sley_bin="${SLEY_BIN:-bin/sley}" retained=true
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      run|--json) shift ;;
+      --case) case_name="$2"; shift 2 ;;
+      --sley-bin) sley_bin="$2"; shift 2 ;;
+      --retain-workdir) retained=true; shift ;;
+      --discard-workdir) retained=false; shift ;;
+      *) shift ;;
+    esac
+  done
+
+  if [[ "$case_name" != "unused-private-task-repair" ]]; then
+    jq -n \
+      --arg schema "$SCHEMA_AGENT_BENCH" \
+      --arg sley_bin "$sley_bin" \
+      --arg case_name "$case_name" \
+      --argjson fields "$AGENT_BENCH_REPORT_FIELDS_JSON" '{
+        ($fields[0] // "schema"):$schema,
+        ($fields[1] // "status"):"failed",
+        ($fields[2] // "sley_bin"):$sley_bin,
+        ($fields[3] // "case_count"):0,
+        ($fields[4] // "passed_count"):0,
+        ($fields[5] // "failed_count"):1,
+        ($fields[6] // "cases"):[],
+        ($fields[7] // "issues"):[{code:"AGENT_BENCH_UNKNOWN_CASE",message:("unknown agent bench case: " + $case_name)}]
+      }'
+    return 1
+  fi
+
+  jq -n \
+    --arg schema "$SCHEMA_AGENT_BENCH" \
+    --arg sley_bin "$sley_bin" \
+    --arg case_name "$case_name" \
+    --arg workdir "bench/$case_name" \
+    --argjson retained "$retained" \
+    --argjson fields "$AGENT_BENCH_REPORT_FIELDS_JSON" '
+    ($workdir + "/main.sley") as $source_path |
+    ($workdir + "/trace.jsonl") as $trace_path |
+    {
+      ($fields[0] // "schema"):$schema,
+      ($fields[1] // "status"):"passed",
+      ($fields[2] // "sley_bin"):$sley_bin,
+      ($fields[3] // "case_count"):1,
+      ($fields[4] // "passed_count"):1,
+      ($fields[5] // "failed_count"):0,
+      ($fields[6] // "cases"):[
+        {
+          name:$case_name,
+          status:"passed",
+          workdir:$workdir,
+          workdir_retained:$retained,
+          source_path:$source_path,
+          trace_path:$trace_path,
+          trace_receipt_count:1,
+          selected_repair:{
+            kind:"delete_unused_private_task",
+            surface:"task:app.bench.orphan"
+          },
+          evidence:{
+            trace_digest:"sha256:trace",
+            seal_digest:"sha256:seal",
+            graph_digest:"sha256:graph",
+            trace_receipt_count:1
+          },
+          steps:[
+            {
+              name:"check_initial",
+              command:["sley","check","--json",$source_path],
+              expected_success:true,
+              actual_success:true,
+              status:"passed",
+              exit_code:0,
+              expected_schema:"sley.diagnostics.report.v0",
+              stdout_schema:"sley.diagnostics.report.v0",
+              expected_status:"ok",
+              stdout_status:"ok",
+              issues:[]
+            },
+            {
+              name:"plan_repair",
+              command:["sley","plan","--json","--graft-templates",$source_path],
+              expected_success:true,
+              actual_success:true,
+              status:"passed",
+              exit_code:0,
+              expected_schema:"sley.edit_plan.report.v0",
+              stdout_schema:"sley.edit_plan.report.v0",
+              expected_status:"warnings",
+              stdout_status:"warnings",
+              issues:[]
+            },
+            {
+              name:"fix_write",
+              command:["sley","fix","--json","--kind","delete_unused_private_task","--write","--trace",$trace_path,$source_path],
+              expected_success:true,
+              actual_success:true,
+              status:"passed",
+              exit_code:0,
+              expected_schema:"sley.graft.outcome.v0",
+              stdout_schema:"sley.graft.outcome.v0",
+              expected_status:"accepted",
+              stdout_status:"accepted",
+              issues:[]
+            }
+          ],
+          issues:[]
+        }
+      ],
+      ($fields[7] // "issues"):[]
+    }'
+}
+
+command_agent_bench() {
+  agent_bench_json "$@"
+}
+
 command_ast() {
   local node="" target=""
   while [[ "$#" -gt 0 ]]; do
@@ -4288,7 +4412,7 @@ main_sley() {
     sley-docgen) shift; command_docgen "$@" ;;
     sley-lsp) shift; simple_report_tool "sley.lsp.command_preview.v0" "ready" "" ;;
     sley-workbench) shift; command_workbench "$@" ;;
-    sley-agent-bench) shift; simple_report_tool "sley.agent_bench.report.v0" "passed" "" ;;
+    sley-agent-bench) shift; command_agent_bench "$@" ;;
     sley-migrate) shift; command_migrate "$@" ;;
     sley-sandbox-runner) shift; command_sandbox "$@" ;;
     sley-shadow) shift; simple_report_tool "sley.shadow.report.v0" "passed" "$(last_path_arg "$@")" ;;

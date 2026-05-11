@@ -374,6 +374,23 @@ export task sandbox_report_fields -> List<Text> {
   ]
 }
 
+export task agent_bench_schema -> Text {
+  return "sley.agent_bench.report.v0"
+}
+
+export task agent_bench_report_fields -> List<Text> {
+  return [
+    "schema",
+    "status",
+    "sley_bin",
+    "case_count",
+    "passed_count",
+    "failed_count",
+    "cases",
+    "issues"
+  ]
+}
+
 export task self_hosting_status_schema -> Text {
   return "sley.self_hosting.status.v0"
 }
