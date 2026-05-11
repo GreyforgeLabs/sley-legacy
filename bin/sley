@@ -989,8 +989,9 @@ check_json() {
       (call_callee) as $callee |
       ([declared_call_task($t.module; $callee)][0]) as $target |
       select($target != null) |
+      ($target.takes | map(select(.binding_kind != "Gate"))) as $explicit_takes |
       ($expr | call_args) as $args |
-      select(($args | length) != ($target.takes | length)) |
+      select(($args | length) != ($explicit_takes | length)) |
       {id:$call_arity, severity:"error", message:($call_arity_prefix + $callee + $call_arity_suffix), node:$expr.id, span:$expr.span};
     def call_argument_type_diags:
       $root.tasks[] as $t |
@@ -1000,10 +1001,11 @@ check_json() {
       (call_callee) as $callee |
       ([declared_call_task($t.module; $callee)][0]) as $target |
       select($target != null) |
+      ($target.takes | map(select(.binding_kind != "Gate"))) as $explicit_takes |
       ($expr | call_args) as $args |
-      select(($args | length) == ($target.takes | length)) |
+      select(($args | length) == ($explicit_takes | length)) |
       $args | to_entries[] as $arg |
-      ($target.takes[$arg.key].type.name // "Unit") as $expected |
+      ($explicit_takes[$arg.key].type.name // "Unit") as $expected |
       ($arg.value | literal_type) as $actual |
       select($actual != "" and $expected != $actual) |
       {id:$call_argument_type, severity:"error", message:($call_argument_type_prefix + $callee + $call_argument_type_suffix), node:$expr.id, span:$expr.span};
