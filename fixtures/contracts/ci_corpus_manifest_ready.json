@@ -2368,8 +2368,8 @@
         {
           "id": "UNKNOWN_TASK",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic UNKNOWN_TASK",
-          "node": "fixture:fixtures/corpus/rejected/unknown_task.sley"
+          "message": "unknown task `missing`",
+          "node": "block:task:main.main:stmt:1:expr"
         }
       ]
     }

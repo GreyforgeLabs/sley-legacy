@@ -71,6 +71,10 @@ export task return_statement_kind -> Text {
   return "Return"
 }
 
+export task expression_statement_kind -> Text {
+  return "Expr"
+}
+
 export task binding_statement_kind -> Text {
   return "Binding"
 }

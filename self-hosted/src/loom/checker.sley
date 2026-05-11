@@ -15,6 +15,18 @@ export task unknown_type_id -> Text {
   return "UNKNOWN_TYPE"
 }
 
+export task unknown_task_id -> Text {
+  return "UNKNOWN_TASK"
+}
+
+export task call_arity_mismatch_id -> Text {
+  return "CALL_ARITY_MISMATCH"
+}
+
+export task call_argument_type_mismatch_id -> Text {
+  return "CALL_ARGUMENT_TYPE_MISMATCH"
+}
+
 export task missing_return_id -> Text {
   return "MISSING_RETURN"
 }
@@ -40,6 +52,30 @@ export task unknown_type_message_prefix -> Text {
 }
 
 export task unknown_type_message_suffix -> Text {
+  return "`"
+}
+
+export task unknown_task_message_prefix -> Text {
+  return "unknown task `"
+}
+
+export task unknown_task_message_suffix -> Text {
+  return "`"
+}
+
+export task call_arity_mismatch_message_prefix -> Text {
+  return "call arity mismatch for `"
+}
+
+export task call_arity_mismatch_message_suffix -> Text {
+  return "`"
+}
+
+export task call_argument_type_mismatch_message_prefix -> Text {
+  return "call argument type mismatch for `"
+}
+
+export task call_argument_type_mismatch_message_suffix -> Text {
   return "`"
 }
 
