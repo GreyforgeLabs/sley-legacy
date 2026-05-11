@@ -1878,6 +1878,23 @@ lint_json() {
       printf '%s\n' "{\"id\":\"$LINT_EMPTY_IF\",\"rule\":\"$LINT_EMPTY_IF_RULE\",\"severity\":\"warning\",\"message\":\"task \`$module.main\` $LINT_EMPTY_IF_MESSAGE\",\"node\":\"block:task:$module.main:stmt:1\",\"module\":\"$module\",\"hint\":\"$LINT_EMPTY_IF_HINT\"}" >> "$findings"
     fi
   done < <(collect_files "$target")
+  ast_json "$target" | jq -c '
+    ([.. | objects | .source? // empty | select(type == "string") |
+      capture("^call[[:space:]]+(?<callee>[A-Za-z_][A-Za-z0-9_.]*)")? |
+      .callee |
+      split(".")[-1]] | unique) as $called |
+    .tasks[]? as $task |
+    select(($task.exported | not) and $task.name != "main" and (($called | index($task.name)) == null)) |
+    {
+      id:"UNUSED_PRIVATE_TASK",
+      rule:"unused_private_task",
+      severity:"warning",
+      message:("private task `" + $task.module + "." + $task.name + "` is not called by any checked task"),
+      node:$task.id,
+      module:$task.module,
+      hint:"call it, export it, or delete it"
+    }
+  ' >> "$findings"
   if [[ -s "$findings" ]]; then
     finding_count="$(jq -s 'length' "$findings")"
   else
@@ -1908,20 +1925,42 @@ doctor_json() {
   jq -n --arg schema "$SCHEMA_DOCTOR" --arg query_schema "$SCHEMA_QUERY" --arg lint_schema "$SCHEMA_LINT" --arg target "$target" --argjson check "$check" --argjson query "$query" --argjson lint "$lint" --argjson rules "$DEFAULT_RULES_JSON" --argjson fields "$DOCTOR_REPORT_FIELDS_JSON" '
     ($check.diagnostics | length) as $errors |
     ($lint.findings | length) as $warnings |
+    def repair_kind($finding):
+      if $finding.rule == "unused_private_task" then "delete_unused_private_task"
+      elif $finding.rule == "empty_for_statement" then "delete_empty_for_statement"
+      elif $finding.rule == "empty_while_statement" then "delete_empty_while_statement"
+      elif $finding.rule == "empty_forge_statement" then "delete_empty_forge_statement"
+      elif $finding.rule == "empty_if_statement" then "delete_empty_if_statement"
+      else "delete_unused_private_task" end;
+    def lint_repair_actions:
+      ($lint.findings[0]) as $finding |
+      (repair_kind($finding)) as $kind |
+      [
+        {kind:"repair_lint_findings", reason:"warning-grade hygiene findings should be resolved or deliberately accepted", command:["sley","lint","--json",$target]},
+        {kind:"plan_lint_repairs", reason:"checked graft templates show which lint findings can be repaired structurally", command:["sley","plan","--json","--graft-templates",$target]},
+        {
+          kind:"preview_lint_repair",
+          reason:"exactly one checked lint repair is available; preview it before writing",
+          command:["sley","fix","--json","--kind",$kind,"--template-surface",$finding.node,"--dry-run",$target],
+          write_command:["sley","fix","--json","--kind",$kind,"--template-surface",$finding.node,"--write",$target]
+        }
+      ];
+    def standard_actions:
+      [
+        {kind:"inspect_tasks", reason:"query task facts before planning edits", command:["sley","query","--json","--kind","tasks",$target]},
+        {kind:"lint_gate", reason:"preserve the warning-grade lint gate after edits", command:["sley","lint","--json",$target]},
+        {kind:"verify_gate", reason:"strict verification should pass before deploy, seal, or package handoff", command:["sley","verify","--json",$target]}
+      ];
     {
       ($fields[0] // "schema"):$schema,
-      ($fields[1] // "status"):(if $errors > 0 then "blocked" elif $warnings > 0 then "blocked" else "ready" end),
+      ($fields[1] // "status"):(if $errors > 0 then "blocked" elif $warnings > 0 then "warnings" else "ready" end),
       ($fields[2] // "target"):$target,
       ($fields[3] // "entry_module"):$query.entry_module,
       ($fields[4] // "summary"):{error_count:$errors, warning_count:$warnings, module_count:($query.modules|length), task_count:($query.tasks|length), call_count:($query.calls|length), lint_finding_count:$warnings},
       ($fields[5] // "diagnostics"):$check.diagnostics,
       ($fields[6] // "query"):{source_schema:$query_schema, kind:"all", module_count:($query.modules|length), task_count:($query.tasks|length), call_count:($query.calls|length), entrypoints:($query.tasks|map(.qualified_name)), effectful_tasks:($query.tasks|map(select((.effects|length)>0)|{id,qualified_name,effects}))},
       ($fields[7] // "lint"):{source_schema:$lint_schema, status:$lint.status, rules:$rules, finding_count:$warnings, findings:$lint.findings},
-      ($fields[8] // "next_actions"):[
-        {kind:"inspect_tasks", reason:"query task facts before planning edits", command:["sley","query","--json","--kind","tasks",$target]},
-        {kind:"lint_gate", reason:"preserve the warning-grade lint gate after edits", command:["sley","lint","--json",$target]},
-        {kind:"verify_gate", reason:"strict verification should pass before deploy, seal, or package handoff", command:["sley","verify","--json",$target]}
-      ]
+      ($fields[8] // "next_actions"):(if $warnings > 0 then (lint_repair_actions + [standard_actions[0]]) else standard_actions end)
     }
   '
 }
@@ -2037,6 +2076,26 @@ verify_json() {
           command:["sley-ci","deploy","--json","--dry-run","--artifacts-dir",".sley/ci-deploy","--cap","Deploy","--deploy-result",$deploy_target,$deploy_text,$doctor.target]
         }
       ] else [] end);
+    def repair_kind($finding):
+      if $finding.rule == "unused_private_task" then "delete_unused_private_task"
+      elif $finding.rule == "empty_for_statement" then "delete_empty_for_statement"
+      elif $finding.rule == "empty_while_statement" then "delete_empty_while_statement"
+      elif $finding.rule == "empty_forge_statement" then "delete_empty_forge_statement"
+      elif $finding.rule == "empty_if_statement" then "delete_empty_if_statement"
+      else "delete_unused_private_task" end;
+    def lint_repair_actions:
+      ($doctor.lint.findings[0]) as $finding |
+      (repair_kind($finding)) as $kind |
+      [
+        {kind:"repair_lint_findings", reason:"warning-grade hygiene findings should be resolved or deliberately accepted", command:["sley","lint","--json",$doctor.target]},
+        {kind:"plan_lint_repairs", reason:"checked graft templates show which lint findings can be repaired structurally", command:["sley","plan","--json","--graft-templates",$doctor.target]},
+        {
+          kind:"preview_lint_repair",
+          reason:"exactly one checked lint repair is available; preview it before writing",
+          command:["sley","fix","--json","--kind",$kind,"--template-surface",$finding.node,"--dry-run",$doctor.target],
+          write_command:["sley","fix","--json","--kind",$kind,"--template-surface",$finding.node,"--write",$doctor.target]
+        }
+      ];
     {
       ($fields[0] // "schema"):$schema,
       ($fields[1] // "status"):(if $doctor.status=="ready" then "passed" else "blocked" end),
@@ -2047,7 +2106,7 @@ verify_json() {
       ($fields[6] // "query"):{source_schema:$query_schema, kind:"all", module_count:$doctor.summary.module_count, task_count:$doctor.summary.task_count, call_count:$doctor.summary.call_count},
       ($fields[7] // "lint"):$doctor.lint,
       ($fields[8] // "runtime"):{status:(if $doctor.status=="ready" then "passed" else "skipped" end), value:$runtime.value, diagnostics:[]},
-      ($fields[9] // "next_actions"):(if $doctor.status=="ready" then ready_actions else [{kind:"seal_verified_target", reason:"create a content-addressed review artifact after verification", command:["sley","seal","--json",$doctor.target]}] end)
+      ($fields[9] // "next_actions"):(if $doctor.status=="ready" then ready_actions elif ($doctor.lint.findings | length) > 0 then lint_repair_actions else [{kind:"seal_verified_target", reason:"create a content-addressed review artifact after verification", command:["sley","seal","--json",$doctor.target]}] end)
     }
   '
 }
@@ -4598,9 +4657,11 @@ command_plan() {
 }
 
 command_verify() {
-  local target
+  local target report
   target="$(last_path_arg "$@")"
-  verify_json "$target" "$@"
+  report="$(verify_json "$target" "$@")"
+  printf '%s\n' "$report"
+  [[ "$(printf '%s\n' "$report" | jq -r '.status')" == "passed" ]]
 }
 
 command_claim_verify() {
