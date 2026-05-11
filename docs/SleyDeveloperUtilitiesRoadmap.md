@@ -20,10 +20,11 @@ Current evidence base:
   `seal`, `zjx`, `graft`, and `new` already exist.
 - Stable JSON roots and JSON schemas live under `docs/schemas/`.
 - Contract snapshots live under `fixtures/contracts/`.
-- CLI smoke coverage is manifest-backed under `fixtures/cli_smokes/`, including
-  allowlisted sibling utility binary cases for `sley-ci`, `sley-conformance`,
-  `sley-contract`, `sley-migrate`, `sley-docgen`, `sley-workbench`,
-  `sley-sandbox-runner`, `sley-shadow`, `sley-agent-bench`, `sley-zjx`, and `sley-lsp`.
+- CLI smoke coverage is executable and manifest-backed under
+  `fixtures/ci_smoke_probe/`, including checked command exits, JSON pointer
+  assertions, temp setup support, and allowlisted utility binary dispatch. The
+  larger historical `fixtures/cli_smokes/` suite is schema-validated backlog
+  until its older expectations are rebaselined onto the shell bootstrap.
 - `sley new --json` already exposes typed next actions for first-run projects.
 - `sley plan --json --graft-templates` and `sley fix --dry-run` already expose
   non-mutating repair surfaces that editor and workbench tools can call.
@@ -103,7 +104,7 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
      - `sley-ci check .`
      - `sley-ci verify --deny-warnings .`
      - `sley-ci deploy --dry-run .`
-     - `sley-ci smoke fixtures/cli_smokes/manifest.json`
+     - `sley-ci smoke fixtures/ci_smoke_probe/manifest.json`
      - `sley-ci corpus fixtures/corpus/manifest.json`
      - `sley-ci examples examples`
    - Scaffold:
@@ -111,15 +112,14 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
      - `bin/sley-ci`;
      - `.pre-commit-config.yaml`;
      - default workflow under `.github/workflows/`.
-   - Current bootstrap: in-tree `src/bin/sley-ci.rs` exposes `check`, `lint`,
-     `doctor`, `plan`, `run`, `verify`, `deploy`, `smoke`, `corpus`, and `examples`
-     wrappers with
-     `schema: "sley.ci.report.v0"` output. `.github/actions/sley-v1/action.yml`,
-     `.github/workflows/v1.yml`, and `.pre-commit-config.yaml` now run the
-     repo-level `make v1` gate. The composite action installs stable Rust and
-     Node, and the syntax target bootstraps Tree-sitter npm dependencies with
-     `npm ci` when needed. A reusable standalone action package remains future
-     work.
+   - Current bootstrap: `bin/sley` exposes `sley-ci` compatibility wrappers for
+     `check`, `lint`, `doctor`, `plan`, `run`, `verify`, `deploy`, `smoke`,
+     `corpus`, and `examples`. `smoke` now executes the current probe manifest
+     and returns `schema: "sley.ci.report.v0"` with per-case steps.
+     `.github/actions/sley-v1/action.yml`, `.github/workflows/v1.yml`, and
+     `.pre-commit-config.yaml` now run the repo-level `make v1` gate. The
+     current shell bootstrap does not require Rust or Node for `make v1`;
+     syntax/provider package work remains separate.
    - Bootstrap done when generated `sley new --template deploy` and
      `sley new --template agent` projects can run seeded verify gates, local
      deploy dry-run package reports, a CLI smoke manifest, and the

@@ -165,6 +165,11 @@ Contract validation uses JSON Schema draft 2020-12. `validate` checks a single
 report against the requested schema, and `check-fixtures` checks every fixture
 against the schema named by its top-level `schema` field.
 
+`sley-ci smoke` executes the current probe manifest and emits
+`sley.ci.report.v0` with one step per case. The larger
+`fixtures/cli_smokes/manifest.json` remains schema-validated backlog until its
+older expectations are rebaselined.
+
 ## Claim Boundary
 
 Use:

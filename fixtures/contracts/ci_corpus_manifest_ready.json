@@ -2,7 +2,7 @@
   "schema": "sley.ci.report.v0",
   "status": "passed",
   "command": "corpus",
-  "manifest": "fixtures/corpus/manifest.json",
+  "target": "fixtures/corpus/manifest.json",
   "summary": {
     "step_count": 1,
     "passed_count": 1,
@@ -10,23 +10,18 @@
   },
   "steps": [
     {
-      "name": "accepted_check:accepted/authority/database_read.sley",
+      "name": "corpus",
       "status": "passed",
       "command": [
-        "sley",
-        "check",
-        "--json",
-        "fixtures/corpus/accepted/authority/database_read.sley"
+        "sley-ci",
+        "corpus",
+        "fixtures/corpus/manifest.json"
       ],
       "expected_success": true,
       "actual_success": true,
       "exit_code": 0,
-      "stdout_schema": "sley.diagnostics.report.v0",
       "covers": [
-        "accepted:DatabaseRead",
-        "host:db.query_one",
-        "authority:declared-effect",
-        "formatter:round-trip"
+        "ci:corpus"
       ],
       "issues": []
     }

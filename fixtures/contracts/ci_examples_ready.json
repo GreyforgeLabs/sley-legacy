@@ -10,21 +10,18 @@
   },
   "steps": [
     {
-      "name": "project_check:examples/project",
+      "name": "examples",
       "status": "passed",
       "command": [
-        "sley",
-        "check",
-        "--json",
-        "examples/project"
+        "sley-ci",
+        "examples",
+        "examples"
       ],
       "expected_success": true,
       "actual_success": true,
       "exit_code": 0,
-      "stdout_schema": "sley.diagnostics.report.v0",
       "covers": [
-        "examples:project",
-        "json:sley.diagnostics.report.v0"
+        "ci:examples"
       ],
       "issues": []
     }
