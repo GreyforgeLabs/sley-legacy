@@ -50,6 +50,7 @@
     "runtime_status_task_execution",
     "run_report_shape",
     "verify_report_shape",
+    "graft_outcome_report_shape",
     "pure_literal_runtime_execution",
     "bool_literal_runtime_execution",
     "seeded_agent_deploy_task_execution",

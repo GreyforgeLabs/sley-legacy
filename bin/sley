@@ -369,6 +369,8 @@ SCHEMA_RUN="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sl
 RUN_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" run_report_fields)"
 SCHEMA_VERIFY="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" verify_schema)"
 VERIFY_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" verify_report_fields)"
+SCHEMA_GRAFT_OUTCOME="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" graft_outcome_schema)"
+GRAFT_OUTCOME_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" graft_outcome_report_fields)"
 SCHEMA_SELF_HOSTING="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_status_schema)"
 SELF_HOSTING_REPORT_SOURCE_ROOT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_source_root)"
 SELF_HOSTING_STATUS_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_status_fields)"
@@ -402,6 +404,10 @@ fi
 SCHEMA_VERIFY="${SCHEMA_VERIFY:-sley.verify.report.v0}"
 if [[ "$VERIFY_REPORT_FIELDS_JSON" == "[]" ]]; then
   VERIFY_REPORT_FIELDS_JSON='["schema","status","target","entry_module","summary","diagnostics","query","lint","runtime","next_actions"]'
+fi
+SCHEMA_GRAFT_OUTCOME="${SCHEMA_GRAFT_OUTCOME:-sley.graft.outcome.v0}"
+if [[ "$GRAFT_OUTCOME_REPORT_FIELDS_JSON" == "[]" ]]; then
+  GRAFT_OUTCOME_REPORT_FIELDS_JSON='["schema","status","source","diagnostics","provenance"]'
 fi
 SCHEMA_SELF_HOSTING="${SCHEMA_SELF_HOSTING:-sley.self_hosting.status.v0}"
 SCHEMA_CLAIM_VERIFY="sley.claim.verify.v0"
@@ -3095,7 +3101,13 @@ command_deploy() {
 command_graft() {
   local source
   source="$(last_path_arg "$@")"
-  jq -n --arg source "$source" '{schema:"sley.graft.outcome.v0", status:"accepted", source:$source, diagnostics:[], provenance:[{graft_id:"stage1-dry-run",actor:"sley:stage1",timestamp:"2026-05-08T00:00:00Z",operation:"InsertStatement",targets:["block:task:app.graft_probe.main"],result:"accepted"}]}'
+  jq -n --arg schema "$SCHEMA_GRAFT_OUTCOME" --arg source "$source" --argjson fields "$GRAFT_OUTCOME_REPORT_FIELDS_JSON" '{
+    ($fields[0] // "schema"):$schema,
+    ($fields[1] // "status"):"accepted",
+    ($fields[2] // "source"):$source,
+    ($fields[3] // "diagnostics"):[],
+    ($fields[4] // "provenance"):[{graft_id:"stage1-dry-run",actor:"sley:stage1",timestamp:"2026-05-08T00:00:00Z",operation:"InsertStatement",targets:["block:task:app.graft_probe.main"],result:"accepted"}]
+  }'
 }
 
 command_new() {
