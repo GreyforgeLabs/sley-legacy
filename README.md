@@ -63,8 +63,9 @@ The repo currently proves these claims from a clean checkout:
   `bin/sley --version`
 - AST expression, statement, and binding kind names now use parser-owned
   declarations from
-  `self-hosted/src/loom/parser.sley`. Standalone `call` statements now enter
-  the AST as parser-owned `Expr` statements.
+  `self-hosted/src/loom/parser.sley`. Standalone `call` statements and
+  top-level fallible expression statements now enter the AST as parser-owned
+  `Expr` statements.
 - Sley-owned stage-2 source modules exist under `self-hosted/src/loom/`:
   `bin/sley self-hosting-status --json`
   The report reads the module list from `loom.bootstrap.source_modules`.
@@ -97,9 +98,10 @@ The repo currently proves these claims from a clean checkout:
   The checker report status now executes `loom.checker.diagnostic_status`.
   Builtin type recognition, unknown-type diagnostics, unqualified unknown-task
   diagnostics, simple declared-call arity/type diagnostics, duplicate-take
-  diagnostics, namespace duplicate diagnostics, effect/gate diagnostics, and
-  direct/transitive effect-propagation diagnostics now execute from Sley-owned
-  checker source.
+  diagnostics, collection map/list/index diagnostics, namespace duplicate
+  diagnostics, effect/gate diagnostics, direct/transitive effect-propagation
+  diagnostics, and `?`-requires-`Result` diagnostics now execute from
+  Sley-owned checker source.
   Identifier resolution input classes now read from
   `loom.checker.identifier_resolution_inputs`.
 - Lint finding statuses, messages, and hints are read from

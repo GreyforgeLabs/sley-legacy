@@ -1575,8 +1575,8 @@
         {
           "id": "QUESTION_REQUIRES_RESULT",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic QUESTION_REQUIRES_RESULT",
-          "node": "fixture:fixtures/corpus/rejected/question_requires_result.sley"
+          "message": "question operator requires Result return in task `corpus.rejected.question_requires_result.main`",
+          "node": "block:task:corpus.rejected.question_requires_result.main:stmt:0:expr"
         }
       ]
     },
