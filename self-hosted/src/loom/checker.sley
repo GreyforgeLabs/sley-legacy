@@ -15,6 +15,10 @@ export task unknown_type_id -> Text {
   return "UNKNOWN_TYPE"
 }
 
+export task missing_return_id -> Text {
+  return "MISSING_RETURN"
+}
+
 export task ok_status -> Text {
   return "ok"
 }
@@ -36,6 +40,14 @@ export task unknown_type_message_prefix -> Text {
 }
 
 export task unknown_type_message_suffix -> Text {
+  return "`"
+}
+
+export task missing_return_message_prefix -> Text {
+  return "missing return in task `"
+}
+
+export task missing_return_message_suffix -> Text {
   return "`"
 }
 

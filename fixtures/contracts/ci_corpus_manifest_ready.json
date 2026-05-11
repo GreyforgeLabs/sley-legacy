@@ -1540,8 +1540,8 @@
         {
           "id": "MISSING_RETURN",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic MISSING_RETURN",
-          "node": "fixture:fixtures/corpus/rejected/missing_return.sley"
+          "message": "missing return in task `corpus.rejected.main`",
+          "node": "task:corpus.rejected.main"
         }
       ]
     },
