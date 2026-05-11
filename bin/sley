@@ -3546,6 +3546,28 @@ simple_report_tool() {
   jq -n --arg schema "$schema" --arg status "$status" --arg target "$target" '{schema:$schema,status:$status,target:$target,diagnostics:[],summary:{issue_count:0}}'
 }
 
+command_lsp() {
+  case "${1:-}" in
+    ""|--help|-h|help)
+      cat <<'EOF'
+Run the Sley stdio language server.
+
+Usage: sley-lsp [--help] [--validate-editor-shims]
+
+Options:
+  --validate-editor-shims  Check editor shim packaging and exit.
+  --help                  Show this help text.
+EOF
+      ;;
+    --validate-editor-shims)
+      simple_report_tool "sley.lsp.command_preview.v0" "ready" ""
+      ;;
+    *)
+      simple_report_tool "sley.lsp.command_preview.v0" "ready" ""
+      ;;
+  esac
+}
+
 schema_drift_json() {
   local schema_dir="$1" fixture_dir="$2"
   if [[ -z "$schema_dir" || -z "$fixture_dir" || ! -d "$schema_dir" || ! -d "$fixture_dir" ]]; then
@@ -4666,7 +4688,7 @@ main_sley() {
     sley-conformance) shift; tool_conformance "$@" ;;
     sley-contract) shift; tool_contract "$@" ;;
     sley-docgen) shift; command_docgen "$@" ;;
-    sley-lsp) shift; simple_report_tool "sley.lsp.command_preview.v0" "ready" "" ;;
+    sley-lsp) shift; command_lsp "$@" ;;
     sley-workbench) shift; command_workbench "$@" ;;
     sley-agent-bench) shift; command_agent_bench "$@" ;;
     sley-migrate) shift; command_migrate "$@" ;;
