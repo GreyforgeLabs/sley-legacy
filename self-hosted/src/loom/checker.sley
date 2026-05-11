@@ -31,6 +31,18 @@ export task duplicate_take_id -> Text {
   return "DUPLICATE_TAKE"
 }
 
+export task unknown_effect_id -> Text {
+  return "UNKNOWN_EFFECT"
+}
+
+export task gate_take_type_mismatch_id -> Text {
+  return "GATE_TAKE_TYPE_MISMATCH"
+}
+
+export task gate_effect_undeclared_id -> Text {
+  return "GATE_EFFECT_UNDECLARED"
+}
+
 export task missing_return_id -> Text {
   return "MISSING_RETURN"
 }
@@ -91,6 +103,30 @@ export task duplicate_take_message_suffix -> Text {
   return "`"
 }
 
+export task unknown_effect_message_prefix -> Text {
+  return "unknown effect `"
+}
+
+export task unknown_effect_message_suffix -> Text {
+  return "`"
+}
+
+export task gate_take_type_mismatch_message_prefix -> Text {
+  return "gate take must use Gate<Effect>, got `"
+}
+
+export task gate_take_type_mismatch_message_suffix -> Text {
+  return "`"
+}
+
+export task gate_effect_undeclared_message_prefix -> Text {
+  return "gate effect undeclared `"
+}
+
+export task gate_effect_undeclared_message_suffix -> Text {
+  return "`"
+}
+
 export task missing_return_message_prefix -> Text {
   return "missing return in task `"
 }
@@ -104,6 +140,23 @@ export task identifier_resolution_inputs -> List<Text> {
     "task_names",
     "take_names",
     "binding_names"
+  ]
+}
+
+export task builtin_effects -> List<Text> {
+  return [
+    "DatabaseRead",
+    "DatabaseWrite",
+    "DbRead",
+    "DbWrite",
+    "Deploy",
+    "FileRead",
+    "FileWrite",
+    "ModelCall",
+    "Network",
+    "SecretRead",
+    "Shell",
+    "Spend"
   ]
 }
 

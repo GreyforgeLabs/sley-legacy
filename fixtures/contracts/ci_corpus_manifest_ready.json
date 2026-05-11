@@ -1643,8 +1643,8 @@
         {
           "id": "UNKNOWN_EFFECT",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic UNKNOWN_EFFECT",
-          "node": "fixture:fixtures/corpus/rejected/unknown_effect.sley"
+          "message": "unknown effect `MissingEffect`",
+          "node": "task:corpus.rejected.unknown_effect.main"
         }
       ]
     },
@@ -2183,8 +2183,8 @@
         {
           "id": "GATE_TAKE_TYPE_MISMATCH",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic GATE_TAKE_TYPE_MISMATCH",
-          "node": "fixture:fixtures/corpus/rejected/gate_take_type_mismatch.sley"
+          "message": "gate take must use Gate<Effect>, got `Int`",
+          "node": "take:corpus.rejected.gate_take_type_mismatch.main.files"
         }
       ]
     },
@@ -2213,8 +2213,8 @@
         {
           "id": "GATE_EFFECT_UNDECLARED",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic GATE_EFFECT_UNDECLARED",
-          "node": "fixture:fixtures/corpus/rejected/gate_effect_undeclared.sley"
+          "message": "gate effect undeclared `FileRead`",
+          "node": "take:corpus.rejected.gate_effect_undeclared.main.files"
         }
       ]
     },
