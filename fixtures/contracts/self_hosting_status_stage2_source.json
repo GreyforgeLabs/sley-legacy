@@ -54,6 +54,7 @@
     "claim_verify_report_shape",
     "conformance_report_shape",
     "conformance_coverage_report_shape",
+    "ci_report_shape",
     "pure_literal_runtime_execution",
     "bool_literal_runtime_execution",
     "seeded_agent_deploy_task_execution",

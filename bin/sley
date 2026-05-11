@@ -377,6 +377,8 @@ SCHEMA_CONFORMANCE_REPORT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/
 CONFORMANCE_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" conformance_report_fields)"
 SCHEMA_CONFORMANCE_COVERAGE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" conformance_coverage_schema)"
 CONFORMANCE_COVERAGE_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" conformance_coverage_fields)"
+SCHEMA_CI_REPORT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" ci_report_schema)"
+CI_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" ci_report_fields)"
 SCHEMA_SELF_HOSTING="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_status_schema)"
 SELF_HOSTING_REPORT_SOURCE_ROOT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_source_root)"
 SELF_HOSTING_STATUS_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_status_fields)"
@@ -426,6 +428,10 @@ fi
 SCHEMA_CONFORMANCE_COVERAGE="${SCHEMA_CONFORMANCE_COVERAGE:-sley.conformance.coverage.v0}"
 if [[ "$CONFORMANCE_COVERAGE_FIELDS_JSON" == "[]" ]]; then
   CONFORMANCE_COVERAGE_FIELDS_JSON='["schema","status","required_tags","missing_tags","tag_inventory","issues"]'
+fi
+SCHEMA_CI_REPORT="${SCHEMA_CI_REPORT:-sley.ci.report.v0}"
+if [[ "$CI_REPORT_FIELDS_JSON" == "[]" ]]; then
+  CI_REPORT_FIELDS_JSON='["schema","status","command","target","manifest","summary","steps","issues"]'
 fi
 SCHEMA_SELF_HOSTING="${SCHEMA_SELF_HOSTING:-sley.self_hosting.status.v0}"
 SELF_HOSTING_REPORT_SOURCE_ROOT="${SELF_HOSTING_REPORT_SOURCE_ROOT:-self-hosted/src}"
@@ -2320,16 +2326,18 @@ ci_simple_report() {
   local command_json
   command_json="$(jq -cn --arg command "sley-ci" --arg sub "$command" --arg target "$target" '[$command,$sub] + (if $target == "" then [] else [$target] end)')"
   jq -n \
+    --arg schema "$SCHEMA_CI_REPORT" \
     --arg command "$command" \
     --arg target "$target" \
-    --argjson command_json "$command_json" '
+    --argjson command_json "$command_json" \
+    --argjson fields "$CI_REPORT_FIELDS_JSON" '
     {
-      schema:"sley.ci.report.v0",
-      status:"passed",
-      command:$command,
-      target:(if $target == "" then empty else $target end),
-      summary:{step_count:1,passed_count:1,failed_count:0},
-      steps:[{
+      ($fields[0] // "schema"):$schema,
+      ($fields[1] // "status"):"passed",
+      ($fields[2] // "command"):$command,
+      ($fields[3] // "target"):(if $target == "" then empty else $target end),
+      ($fields[5] // "summary"):{step_count:1,passed_count:1,failed_count:0},
+      ($fields[6] // "steps"):[{
         name:$command,
         status:"passed",
         command:$command_json,
@@ -2339,7 +2347,7 @@ ci_simple_report() {
         covers:["ci:" + $command],
         issues:[]
       }],
-      issues:[]
+      ($fields[7] // "issues"):[]
     }'
 }
 
@@ -2364,7 +2372,7 @@ command_ci_corpus() {
     esac
   done
   [[ -n "$manifest" ]] || manifest="fixtures/corpus/manifest.json"
-  python3 - "$ROOT_DIR" "$manifest" <<'PY'
+  python3 - "$ROOT_DIR" "$manifest" "$SCHEMA_CI_REPORT" "$CI_REPORT_FIELDS_JSON" <<'PY'
 import json
 import os
 from pathlib import Path
@@ -2373,6 +2381,13 @@ import sys
 
 repo = Path(sys.argv[1]).resolve()
 manifest_arg = Path(sys.argv[2])
+CI_SCHEMA = sys.argv[3] if len(sys.argv) > 3 and sys.argv[3] else "sley.ci.report.v0"
+try:
+    CI_FIELDS = json.loads(sys.argv[4]) if len(sys.argv) > 4 else []
+except json.JSONDecodeError:
+    CI_FIELDS = []
+if not isinstance(CI_FIELDS, list):
+    CI_FIELDS = []
 manifest_path = manifest_arg if manifest_arg.is_absolute() else repo / manifest_arg
 if manifest_path.is_dir():
     manifest_path = manifest_path / "manifest.json"
@@ -2380,6 +2395,28 @@ if manifest_path.is_dir():
 
 def issue(code, message):
     return {"code": code, "message": message}
+
+
+def ci_field(index, default):
+    if index < len(CI_FIELDS) and isinstance(CI_FIELDS[index], str) and CI_FIELDS[index]:
+        return CI_FIELDS[index]
+    return default
+
+
+def ci_report(status, command, summary, steps, issues, target=None, manifest=None):
+    report = {
+        ci_field(0, "schema"): CI_SCHEMA,
+        ci_field(1, "status"): status,
+        ci_field(2, "command"): command,
+    }
+    if target is not None:
+        report[ci_field(3, "target")] = target
+    if manifest is not None:
+        report[ci_field(4, "manifest")] = manifest
+    report[ci_field(5, "summary")] = summary
+    report[ci_field(6, "steps")] = steps
+    report[ci_field(7, "issues")] = issues
+    return report
 
 
 def rel(path):
@@ -2540,15 +2577,14 @@ def rejected_step(case, path):
 try:
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
 except Exception as exc:
-    report = {
-        "schema": "sley.ci.report.v0",
-        "status": "failed",
-        "command": "corpus",
-        "manifest": rel(manifest_path),
-        "summary": {"step_count": 0, "passed_count": 0, "failed_count": 1},
-        "steps": [],
-        "issues": [issue("manifest_load_failed", str(exc))],
-    }
+    report = ci_report(
+        "failed",
+        "corpus",
+        {"step_count": 0, "passed_count": 0, "failed_count": 1},
+        [],
+        [issue("manifest_load_failed", str(exc))],
+        manifest=rel(manifest_path),
+    )
     print(json.dumps(report, indent=2))
     raise SystemExit(1)
 
@@ -2587,23 +2623,22 @@ for case in manifest.get("rejected", []):
     steps.append(rejected_step(case, path))
 
 failed_count = sum(1 for step in steps if step["status"] == "failed")
-report = {
-    "schema": "sley.ci.report.v0",
-    "status": "passed" if failed_count == 0 else "failed",
-    "command": "corpus",
-    "manifest": rel(manifest_path),
-    "summary": {
+report = ci_report(
+    "passed" if failed_count == 0 else "failed",
+    "corpus",
+    {
         "step_count": len(steps),
         "passed_count": len(steps) - failed_count,
         "failed_count": failed_count,
     },
-    "steps": steps,
-    "issues": [
+    steps,
+    [
         issue("corpus_step_failed", f"{step['name']} failed")
         for step in steps
         if step["status"] == "failed"
     ],
-}
+    manifest=rel(manifest_path),
+)
 print(json.dumps(report, indent=2))
 raise SystemExit(0 if failed_count == 0 else 1)
 PY
@@ -2617,7 +2652,7 @@ command_ci_examples() {
       *) target="$1"; shift ;;
     esac
   done
-  python3 - "$ROOT_DIR" "$target" <<'PY'
+  python3 - "$ROOT_DIR" "$target" "$SCHEMA_CI_REPORT" "$CI_REPORT_FIELDS_JSON" <<'PY'
 import json
 import os
 from pathlib import Path
@@ -2626,11 +2661,40 @@ import sys
 
 repo = Path(sys.argv[1]).resolve()
 target_arg = Path(sys.argv[2])
+CI_SCHEMA = sys.argv[3] if len(sys.argv) > 3 and sys.argv[3] else "sley.ci.report.v0"
+try:
+    CI_FIELDS = json.loads(sys.argv[4]) if len(sys.argv) > 4 else []
+except json.JSONDecodeError:
+    CI_FIELDS = []
+if not isinstance(CI_FIELDS, list):
+    CI_FIELDS = []
 target = target_arg if target_arg.is_absolute() else repo / target_arg
 
 
 def issue(code, message):
     return {"code": code, "message": message}
+
+
+def ci_field(index, default):
+    if index < len(CI_FIELDS) and isinstance(CI_FIELDS[index], str) and CI_FIELDS[index]:
+        return CI_FIELDS[index]
+    return default
+
+
+def ci_report(status, command, summary, steps, issues, target=None, manifest=None):
+    report = {
+        ci_field(0, "schema"): CI_SCHEMA,
+        ci_field(1, "status"): status,
+        ci_field(2, "command"): command,
+    }
+    if target is not None:
+        report[ci_field(3, "target")] = target
+    if manifest is not None:
+        report[ci_field(4, "manifest")] = manifest
+    report[ci_field(5, "summary")] = summary
+    report[ci_field(6, "steps")] = steps
+    report[ci_field(7, "issues")] = issues
+    return report
 
 
 def rel(path):
@@ -2736,15 +2800,14 @@ def format_step(path):
 
 
 if not target.exists():
-    report = {
-        "schema": "sley.ci.report.v0",
-        "status": "failed",
-        "command": "examples",
-        "target": rel(target),
-        "summary": {"step_count": 0, "passed_count": 0, "failed_count": 1},
-        "steps": [],
-        "issues": [issue("target_missing", f"{rel(target)} is missing")],
-    }
+    report = ci_report(
+        "failed",
+        "examples",
+        {"step_count": 0, "passed_count": 0, "failed_count": 1},
+        [],
+        [issue("target_missing", f"{rel(target)} is missing")],
+        target=rel(target),
+    )
     print(json.dumps(report, indent=2))
     raise SystemExit(1)
 
@@ -2772,23 +2835,22 @@ for path in sley_files:
     steps.append(format_step(path))
 
 failed_count = sum(1 for step in steps if step["status"] == "failed")
-report = {
-    "schema": "sley.ci.report.v0",
-    "status": "passed" if failed_count == 0 else "failed",
-    "command": "examples",
-    "target": rel(target),
-    "summary": {
+report = ci_report(
+    "passed" if failed_count == 0 else "failed",
+    "examples",
+    {
         "step_count": len(steps),
         "passed_count": len(steps) - failed_count,
         "failed_count": failed_count,
     },
-    "steps": steps,
-    "issues": [
+    steps,
+    [
         issue("example_step_failed", f"{step['name']} failed")
         for step in steps
         if step["status"] == "failed"
     ],
-}
+    target=rel(target),
+)
 print(json.dumps(report, indent=2))
 raise SystemExit(0 if failed_count == 0 else 1)
 PY
@@ -2804,7 +2866,7 @@ command_ci_smoke() {
     esac
   done
   [[ -n "$manifest" ]] || manifest="fixtures/ci_smoke_probe/manifest.json"
-  python3 - "$repo_root" "$manifest" <<'PY'
+  python3 - "$repo_root" "$manifest" "$SCHEMA_CI_REPORT" "$CI_REPORT_FIELDS_JSON" <<'PY'
 import json
 import os
 from pathlib import Path
@@ -2814,6 +2876,13 @@ import tempfile
 
 repo = Path(sys.argv[1]).resolve()
 manifest_arg = Path(sys.argv[2])
+CI_SCHEMA = sys.argv[3] if len(sys.argv) > 3 and sys.argv[3] else "sley.ci.report.v0"
+try:
+    CI_FIELDS = json.loads(sys.argv[4]) if len(sys.argv) > 4 else []
+except json.JSONDecodeError:
+    CI_FIELDS = []
+if not isinstance(CI_FIELDS, list):
+    CI_FIELDS = []
 manifest_path = manifest_arg if manifest_arg.is_absolute() else repo / manifest_arg
 if manifest_path.is_dir():
     manifest_path = manifest_path / "manifest.json"
@@ -2836,6 +2905,28 @@ allowed_bins = {
 
 def issue(code, message):
     return {"code": code, "message": message}
+
+
+def ci_field(index, default):
+    if index < len(CI_FIELDS) and isinstance(CI_FIELDS[index], str) and CI_FIELDS[index]:
+        return CI_FIELDS[index]
+    return default
+
+
+def ci_report(status, command, summary, steps, issues, target=None, manifest=None):
+    report = {
+        ci_field(0, "schema"): CI_SCHEMA,
+        ci_field(1, "status"): status,
+        ci_field(2, "command"): command,
+    }
+    if target is not None:
+        report[ci_field(3, "target")] = target
+    if manifest is not None:
+        report[ci_field(4, "manifest")] = manifest
+    report[ci_field(5, "summary")] = summary
+    report[ci_field(6, "steps")] = steps
+    report[ci_field(7, "issues")] = issues
+    return report
 
 
 def subst(value, tmp):
@@ -2964,15 +3055,14 @@ def run_case(case, tmp, env):
 try:
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
 except Exception as exc:
-    report = {
-        "schema": "sley.ci.report.v0",
-        "status": "failed",
-        "command": "smoke",
-        "manifest": str(manifest_path),
-        "summary": {"step_count": 0, "passed_count": 0, "failed_count": 1},
-        "steps": [],
-        "issues": [issue("manifest_load_failed", str(exc))],
-    }
+    report = ci_report(
+        "failed",
+        "smoke",
+        {"step_count": 0, "passed_count": 0, "failed_count": 1},
+        [],
+        [issue("manifest_load_failed", str(exc))],
+        manifest=str(manifest_path),
+    )
     print(json.dumps(report, indent=2))
     raise SystemExit(1)
 
@@ -2989,19 +3079,18 @@ issues = [
     for step in steps
     if step["status"] == "failed"
 ]
-report = {
-    "schema": "sley.ci.report.v0",
-    "status": "passed" if failed_count == 0 else "failed",
-    "command": "smoke",
-    "manifest": str(manifest_path.relative_to(repo) if manifest_path.is_relative_to(repo) else manifest_path),
-    "summary": {
+report = ci_report(
+    "passed" if failed_count == 0 else "failed",
+    "smoke",
+    {
         "step_count": len(steps),
         "passed_count": len(steps) - failed_count,
         "failed_count": failed_count,
     },
-    "steps": steps,
-    "issues": issues,
-}
+    steps,
+    issues,
+    manifest=str(manifest_path.relative_to(repo) if manifest_path.is_relative_to(repo) else manifest_path),
+)
 print(json.dumps(report, indent=2))
 raise SystemExit(0 if failed_count == 0 else 1)
 PY
