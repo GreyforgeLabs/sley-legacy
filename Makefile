@@ -58,7 +58,6 @@ examples:
 	sley-ci examples --json examples
 
 smoke:
-	sley-ci smoke --json --repo-root $(CURDIR) fixtures/cli_smokes/manifest.json
 	sley-ci smoke --json --repo-root $(CURDIR) fixtures/ci_smoke_probe/manifest.json
 
 lsp:

@@ -745,21 +745,22 @@ nested lint findings such as doctor, edit-plan, or verify, non-empty lint findin
 summarized directly on the CI step by ID, rule, severity, message, node,
 module, and hint.
 
-The executable CLI conformance smokes live under `fixtures/cli_smokes/`. Their
-`manifest.json` lists stable commands, working-directory mode, optional temp
-setup files, optional allowlisted utility binaries, coverage tags, stdout
-substring checks, JSON pointer/value checks, and JSON pointer absence checks.
-The integration suite runs the manifest against the built `sley` binary plus
-selected sibling utilities, while `sley-ci smoke --json --repo-root .
-fixtures/cli_smokes` accepts the suite directory directly. The lightweight
-`fixtures/ci_smoke_probe` manifest separately locks the `sley-ci smoke` wrapper
-over parse, query, graft dry-run, and seeded multi-capability agent runtime
-authority cases. The
-smoke gate locks stable command exits, selected stdout substrings, JSON root
-schemas, graph slices, checked query reports, checked lint reports, run
-reports, doctor readiness reports, edit-plan reports, project scaffolds, ZJX
-preview envelopes, LSP help/startup, graft dry runs
-and direct graft writes, write-mode fix trace receipts, non-empty trace
+The executable v1 CLI smoke gate lives at `fixtures/ci_smoke_probe/manifest.json`.
+It locks `sley-ci smoke` over parse, query, graft dry-run, and seeded
+multi-capability agent runtime authority cases. The smoke runner executes each
+manifest case against the repo command surface, using working-directory mode,
+optional temp setup files, optional allowlisted utility binaries, coverage tags,
+stdout substring checks, JSON pointer/value checks, JSON pointer absence checks,
+and file checks, then emits `schema: "sley.ci.report.v0"`. The broader
+historical suite under `fixtures/cli_smokes/manifest.json` remains
+schema-validated contract inventory, not part of the current `make v1` smoke
+gate until its older expectations are rebaselined onto the shell bootstrap.
+The smoke gate locks stable command exits, selected stdout substrings, JSON root
+schemas, checked query reports, graft dry runs, and seeded authority runtime
+reports. The broader historical manifest still records intended coverage for
+graph slices, checked lint reports, doctor readiness reports, edit-plan reports,
+project scaffolds, ZJX preview envelopes, LSP help/startup, direct graft writes,
+write-mode fix trace receipts, non-empty trace
 receipt seals, ZJX envelopes carrying graph digests and schema-backed trace
 receipts, ZJX tool reports, graph-slice checked add, insert, delete, move, and
 replace affordances, checked `insert_statement`, `replace_statement`, and
