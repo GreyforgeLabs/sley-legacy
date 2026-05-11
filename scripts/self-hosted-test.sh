@@ -20,7 +20,8 @@ artifact_check_report="$(mktemp)"
 migrate_report="$(mktemp)"
 docgen_report="$(mktemp)"
 workbench_report="$(mktemp)"
-trap 'rm -f "$bool_literal_source" "$artifact_check_report" "$migrate_report" "$docgen_report" "$workbench_report"; rm -rf "$artifact_dir"' EXIT
+sandbox_report="$(mktemp)"
+trap 'rm -f "$bool_literal_source" "$artifact_check_report" "$migrate_report" "$docgen_report" "$workbench_report" "$sandbox_report"; rm -rf "$artifact_dir"' EXIT
 printf '%s\n' \
   'module app.bool_literal' \
   '' \
@@ -75,6 +76,9 @@ bin/sley self-hosting-status --json \
 
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("workbench_report_shape"))'
+
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("sandbox_report_shape"))'
 
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("diagnostics_report_shape"))'
@@ -356,6 +360,12 @@ json_field '.schema == "sley.workbench.report.v0" and .status == "warnings" and 
 
 bin/sley-contract validate --schema sley.workbench.report.v0 "$workbench_report" --schemas docs/schemas --json \
   | json_field '.schema == "sley.contract.validate.v0" and .status == "passed" and .requested_schema == "sley.workbench.report.v0" and .report_schema == "sley.workbench.report.v0"'
+
+bin/sley-sandbox-runner run --json fixtures/contracts/sandbox_manifest_agent_pipeline.json > "$sandbox_report"
+json_field '.schema == "sley.sandbox.report.v0" and .status == "passed" and .manifest_schema == "sley.sandbox.manifest.v0" and .target == "examples/agent_deploy_pipeline.sley" and .summary.capability_count == 4 and .summary.seed_count == 4 and .verify.schema == "sley.verify.report.v0" and .verify.status == "passed"' < "$sandbox_report"
+
+bin/sley-contract validate --schema sley.sandbox.report.v0 "$sandbox_report" --schemas docs/schemas --json \
+  | json_field '.schema == "sley.contract.validate.v0" and .status == "passed" and .requested_schema == "sley.sandbox.report.v0" and .report_schema == "sley.sandbox.report.v0"'
 
 bin/sley graft --json --dry-run fixtures/ci_smoke_probe/graft_target.sley fixtures/ci_smoke_probe/insert_statement.json \
   | json_field '.schema == "sley.graft.outcome.v0" and .status == "accepted"'

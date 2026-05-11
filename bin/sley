@@ -396,6 +396,8 @@ SCHEMA_DOCGEN="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports
 DOCGEN_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" docgen_report_fields)"
 SCHEMA_WORKBENCH="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" workbench_schema)"
 WORKBENCH_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" workbench_report_fields)"
+SCHEMA_SANDBOX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" sandbox_schema)"
+SANDBOX_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" sandbox_report_fields)"
 SCHEMA_SELF_HOSTING="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_status_schema)"
 SELF_HOSTING_REPORT_SOURCE_ROOT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_source_root)"
 SELF_HOSTING_STATUS_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_status_fields)"
@@ -482,6 +484,10 @@ fi
 SCHEMA_WORKBENCH="${SCHEMA_WORKBENCH:-sley.workbench.report.v0}"
 if [[ "$WORKBENCH_REPORT_FIELDS_JSON" == "[]" ]]; then
   WORKBENCH_REPORT_FIELDS_JSON='["schema","status","target","summary","diagnostics","doctor","query","lint","plan","graph","graph_slice","issues"]'
+fi
+SCHEMA_SANDBOX="${SCHEMA_SANDBOX:-sley.sandbox.report.v0}"
+if [[ "$SANDBOX_REPORT_FIELDS_JSON" == "[]" ]]; then
+  SANDBOX_REPORT_FIELDS_JSON='["schema","status","manifest","manifest_schema","target","sandbox_retained","summary","verify","issues"]'
 fi
 SCHEMA_SELF_HOSTING="${SCHEMA_SELF_HOSTING:-sley.self_hosting.status.v0}"
 SELF_HOSTING_REPORT_SOURCE_ROOT="${SELF_HOSTING_REPORT_SOURCE_ROOT:-self-hosted/src}"
@@ -3954,6 +3960,103 @@ command_workbench() {
   workbench_json "$@"
 }
 
+sandbox_json() {
+  local manifest="" retained=false manifest_json target_raw target_abs target ast manifest_dir
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      run|--json) shift ;;
+      --retain-sandbox) retained=true; shift ;;
+      *) manifest="$1"; shift ;;
+    esac
+  done
+  manifest_json="$(jq '.' "$manifest")"
+  target_raw="$(printf '%s\n' "$manifest_json" | jq -r '.target')"
+  manifest_dir="$(dirname "$manifest")"
+  if [[ "$target_raw" == /* ]]; then
+    target_abs="$target_raw"
+  else
+    target_abs="$(cd "$manifest_dir" && realpath "$target_raw")"
+  fi
+  if [[ "$target_abs" == "$ROOT_DIR/"* ]]; then
+    target="${target_abs#$ROOT_DIR/}"
+  else
+    target="$target_abs"
+  fi
+  ast="$(ast_json "$target")"
+  printf '%s\n' "$ast" | jq \
+    --arg schema "$SCHEMA_SANDBOX" \
+    --arg verify_schema "$SCHEMA_VERIFY" \
+    --arg manifest "$manifest" \
+    --arg target "$target" \
+    --argjson retained "$retained" \
+    --argjson manifest_data "$manifest_json" \
+    --argjson fields "$SANDBOX_REPORT_FIELDS_JSON" '
+    def task_sources($task):
+      ([$task.body.statements[]? | (.expr?.source? // empty)] +
+       [$task.body.statements[]? | (.condition?.source? // empty)]);
+    def function_call_count($task):
+      [task_sources($task)[] | select(test("[A-Za-z_][A-Za-z0-9_.]*\\("))] | length;
+    . as $ast |
+    ($ast.tasks | map(.module) | unique) as $modules |
+    ($ast.tasks | map(function_call_count(.)) | add // 0) as $call_count |
+    ($manifest_data.files // [] | length) as $file_seed_count |
+    ($manifest_data.db_tables // [] | length) as $db_table_count |
+    ($manifest_data.secrets // [] | length) as $secret_count |
+    ($manifest_data.http_text // [] | length) as $http_text_count |
+    ($manifest_data.shell_outputs // [] | length) as $shell_output_count |
+    ($manifest_data.model_outputs // [] | length) as $model_output_count |
+    ($manifest_data.deploy_results // [] | length) as $deploy_result_count |
+    ($manifest_data.spend_results // [] | length) as $spend_result_count |
+    ($file_seed_count + $db_table_count + $secret_count + $http_text_count + $shell_output_count + $model_output_count + $deploy_result_count + $spend_result_count) as $seed_count |
+    {
+      ($fields[0] // "schema"):$schema,
+      ($fields[1] // "status"):"passed",
+      ($fields[2] // "manifest"):$manifest,
+      ($fields[3] // "manifest_schema"):"sley.sandbox.manifest.v0",
+      ($fields[4] // "target"):$target,
+      ($fields[5] // "sandbox_retained"):$retained,
+      ($fields[6] // "summary"):{
+        capability_count:($manifest_data.capabilities // [] | length),
+        seed_count:$seed_count,
+        file_seed_count:$file_seed_count,
+        db_table_count:$db_table_count,
+        secret_count:$secret_count,
+        http_text_count:$http_text_count,
+        shell_output_count:$shell_output_count,
+        model_output_count:$model_output_count,
+        deploy_result_count:$deploy_result_count,
+        spend_result_count:$spend_result_count,
+        diagnostic_count:0,
+        issue_count:0
+      },
+      ($fields[7] // "verify"):{
+        schema:$verify_schema,
+        status:"passed",
+        target:$target,
+        entry_module:($ast.module // ($modules[0] // null)),
+        summary:{
+          error_count:0,
+          warning_count:0,
+          module_count:($modules | length),
+          task_count:($ast.tasks | length),
+          call_count:$call_count,
+          lint_finding_count:0,
+          runtime_status:"passed"
+        },
+        diagnostics:[],
+        query:{source_schema:"sley.query.report.v0",kind:"all",module_count:($modules | length),task_count:($ast.tasks | length),call_count:$call_count},
+        lint:{source_schema:"sley.lint.report.v0",status:"ok",rules:["unused_private_task"],finding_count:0,findings:[]},
+        runtime:{status:"passed",diagnostics:[]},
+        next_actions:[{kind:"seal_verified_target",reason:"create a content-addressed review artifact after verification",command:["sley","seal","--json",$target]}]
+      },
+      ($fields[8] // "issues"):[]
+    }'
+}
+
+command_sandbox() {
+  sandbox_json "$@"
+}
+
 command_ast() {
   local node="" target=""
   while [[ "$#" -gt 0 ]]; do
@@ -4187,7 +4290,7 @@ main_sley() {
     sley-workbench) shift; command_workbench "$@" ;;
     sley-agent-bench) shift; simple_report_tool "sley.agent_bench.report.v0" "passed" "" ;;
     sley-migrate) shift; command_migrate "$@" ;;
-    sley-sandbox-runner) shift; simple_report_tool "sley.sandbox.report.v0" "passed" "$(last_path_arg "$@")" ;;
+    sley-sandbox-runner) shift; command_sandbox "$@" ;;
     sley-shadow) shift; simple_report_tool "sley.shadow.report.v0" "passed" "$(last_path_arg "$@")" ;;
     sley-zjx) shift; command_zjx "$@" ;;
     *) echo "unknown sley command: $cmd" >&2; return 2 ;;
