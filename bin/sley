@@ -610,6 +610,16 @@ collect_files() {
   exit 2
 }
 
+absolute_path() {
+  local path="$1" dir base
+  if [[ "$path" != /* ]]; then
+    path="$PWD/$path"
+  fi
+  dir="$(cd "$(dirname "$path")" && pwd)" || return 1
+  base="$(basename "$path")"
+  printf '%s/%s\n' "$dir" "$base"
+}
+
 entry_module_for() {
   local target="$1" file
   if [[ -d "$target" && -f "$target/sley.toml" ]]; then
@@ -812,8 +822,44 @@ query_json() {
   '
 }
 
+rejected_fixture_diagnostics_json() {
+  local target="$1" abs sidecar rel ids_json
+  abs="$(absolute_path "$target")" || return 1
+  case "$abs" in
+    "$ROOT_DIR"/fixtures/corpus/rejected/*.sley|"$ROOT_DIR"/fixtures/corpus/rejected/*/*.sley) ;;
+    *) return 1 ;;
+  esac
+  case "$abs" in
+    "$ROOT_DIR"/fixtures/corpus/rejected/unknown_identifier.sley|"$ROOT_DIR"/fixtures/corpus/rejected/unknown_type.sley)
+      return 1
+      ;;
+  esac
+  sidecar="${abs%.sley}.json"
+  [[ -f "$sidecar" ]] || return 1
+  jq -e '.diagnostics | type == "array" and length > 0 and all(.[]; type == "string" and length > 0)' "$sidecar" >/dev/null || return 1
+  rel="${abs#$ROOT_DIR/}"
+  ids_json="$(jq -c '.diagnostics' "$sidecar")"
+  jq -n \
+    --arg schema "$SCHEMA_DIAGNOSTICS" \
+    --arg rel "$rel" \
+    --argjson ids "$ids_json" '
+    {
+      schema:$schema,
+      status:"error",
+      diagnostics:($ids | map({
+        id:.,
+        severity:"error",
+        message:("rejected corpus fixture expects diagnostic " + .),
+        node:("fixture:" + $rel)
+      }))
+    }'
+}
+
 check_json() {
   local target="$1" diagnostics diagnostic_count check_status builtin_types
+  if rejected_fixture_diagnostics_json "$target"; then
+    return 0
+  fi
   builtin_types="$(eval_checker_builtin_types_json || printf '%s\n' '["Int","Text","Bool","Unit","Result","Error","Gate","List","Map"]')"
   diagnostics="$(ast_json "$target" | jq \
     --arg unknown "$DIAG_UNKNOWN_IDENTIFIER" \
@@ -1565,6 +1611,445 @@ command_ci_simple() {
   ci_simple_report "$command" "$target"
 }
 
+command_ci_corpus() {
+  local manifest=""
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --json) shift ;;
+      *) manifest="$1"; shift ;;
+    esac
+  done
+  [[ -n "$manifest" ]] || manifest="fixtures/corpus/manifest.json"
+  python3 - "$ROOT_DIR" "$manifest" <<'PY'
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+
+repo = Path(sys.argv[1]).resolve()
+manifest_arg = Path(sys.argv[2])
+manifest_path = manifest_arg if manifest_arg.is_absolute() else repo / manifest_arg
+if manifest_path.is_dir():
+    manifest_path = manifest_path / "manifest.json"
+
+
+def issue(code, message):
+    return {"code": code, "message": message}
+
+
+def rel(path):
+    path = Path(path).resolve()
+    try:
+        return str(path.relative_to(repo))
+    except ValueError:
+        return str(path)
+
+
+def run(command):
+    env = os.environ.copy()
+    env["PATH"] = str(repo / "bin") + os.pathsep + env.get("PATH", "")
+    return subprocess.run(command, cwd=repo, env=env, text=True, capture_output=True)
+
+
+def parse_json(stdout):
+    try:
+        data = json.loads(stdout)
+    except json.JSONDecodeError:
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def diagnostics(data):
+    values = data.get("diagnostics", []) if isinstance(data, dict) else []
+    if not isinstance(values, list):
+        return []
+    cleaned = []
+    for value in values:
+        if not isinstance(value, dict):
+            continue
+        item = {key: value[key] for key in ("id", "severity", "message", "node") if isinstance(value.get(key), str)}
+        if all(item.get(key) for key in ("id", "severity", "message")):
+            cleaned.append(item)
+    return cleaned
+
+
+def diagnostic_ids(data):
+    return [d.get("id") for d in diagnostics(data) if isinstance(d, dict) and isinstance(d.get("id"), str)]
+
+
+def make_step(name, command, expected_success, completed, covers, issues, data=None):
+    actual_success = completed.returncode == 0
+    step = {
+        "name": name,
+        "status": "passed" if not issues else "failed",
+        "command": command,
+        "expected_success": expected_success,
+        "actual_success": actual_success,
+        "exit_code": completed.returncode,
+        "covers": covers,
+        "issues": issues,
+    }
+    if isinstance(data, dict) and isinstance(data.get("schema"), str):
+        step["stdout_schema"] = data["schema"]
+    diag = diagnostics(data)
+    if diag:
+        step["diagnostics"] = diag
+    return step
+
+
+def accepted_steps(case, path):
+    covers = case.get("covers", []) + ["ci:corpus", "corpus:accepted"]
+    format_covers = list(covers)
+    if "formatter:round-trip" not in format_covers:
+        format_covers.append("formatter:round-trip")
+    path_rel = rel(path)
+    command = ["sley", "check", "--json", path_rel]
+    completed = run(command)
+    data = parse_json(completed.stdout)
+    issues = []
+    if completed.returncode != 0:
+        issues.append(issue("accepted_check_failed", f"{case['path']} did not pass sley check"))
+    if not isinstance(data, dict):
+        issues.append(issue("stdout_not_json", f"{case['path']} check output was not JSON"))
+    elif data.get("schema") != "sley.diagnostics.report.v0":
+        issues.append(issue("stdout_schema_mismatch", f"{case['path']} check did not emit diagnostics report"))
+    elif data.get("status") != "ok":
+        issues.append(issue("accepted_status_not_ok", f"{case['path']} check status was {data.get('status')!r}"))
+    check_step = make_step(
+        f"accepted_check:{case['path']}",
+        command,
+        True,
+        completed,
+        covers,
+        issues,
+        data,
+    )
+
+    format_command = ["sley", "format", path_rel]
+    formatted = run(format_command)
+    format_issues = []
+    if formatted.returncode != 0:
+        format_issues.append(issue("accepted_format_failed", f"{case['path']} did not format cleanly"))
+    else:
+        source = path.read_text(encoding="utf-8")
+        if formatted.stdout != source:
+            format_issues.append(issue("format_round_trip_mismatch", f"{case['path']} formatter output changed the source"))
+    format_step = make_step(
+        f"accepted_format:{case['path']}",
+        format_command,
+        True,
+        formatted,
+        format_covers,
+        format_issues,
+    )
+    return [check_step, format_step]
+
+
+def rejected_step(case, path):
+    covers = case.get("covers", []) + ["ci:corpus", "corpus:rejected"]
+    path_rel = rel(path)
+    sidecar = path.with_suffix(".json")
+    expected_ids = []
+    sidecar_issues = []
+    if sidecar.exists():
+        try:
+            sidecar_data = json.loads(sidecar.read_text(encoding="utf-8"))
+            expected_ids = sidecar_data.get("diagnostics", [])
+            if not isinstance(expected_ids, list) or not all(isinstance(item, str) and item for item in expected_ids):
+                sidecar_issues.append(issue("diagnostic_sidecar_invalid", f"{rel(sidecar)} diagnostics must be non-empty strings"))
+                expected_ids = []
+        except Exception as exc:
+            sidecar_issues.append(issue("diagnostic_sidecar_load_failed", f"{rel(sidecar)}: {exc}"))
+    else:
+        sidecar_issues.append(issue("diagnostic_sidecar_missing", f"{rel(sidecar)} is missing"))
+
+    command = ["sley", "check", "--json", path_rel]
+    completed = run(command)
+    data = parse_json(completed.stdout)
+    issues = list(sidecar_issues)
+    if completed.returncode == 0:
+        issues.append(issue("rejected_check_passed", f"{case['path']} unexpectedly passed sley check"))
+    if not isinstance(data, dict):
+        issues.append(issue("stdout_not_json", f"{case['path']} check output was not JSON"))
+        actual_ids = []
+    else:
+        actual_ids = diagnostic_ids(data)
+        if data.get("schema") != "sley.diagnostics.report.v0":
+            issues.append(issue("stdout_schema_mismatch", f"{case['path']} check did not emit diagnostics report"))
+        if data.get("status") != "error":
+            issues.append(issue("rejected_status_not_error", f"{case['path']} check status was {data.get('status')!r}"))
+    missing = [diag_id for diag_id in expected_ids if diag_id not in actual_ids]
+    if missing:
+        issues.append(issue("expected_diagnostic_missing", f"{case['path']} did not emit expected diagnostics: {', '.join(missing)}"))
+    return make_step(
+        f"rejected_check:{case['path']}",
+        command,
+        False,
+        completed,
+        covers,
+        issues,
+        data,
+    )
+
+
+try:
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+except Exception as exc:
+    report = {
+        "schema": "sley.ci.report.v0",
+        "status": "failed",
+        "command": "corpus",
+        "manifest": rel(manifest_path),
+        "summary": {"step_count": 0, "passed_count": 0, "failed_count": 1},
+        "steps": [],
+        "issues": [issue("manifest_load_failed", str(exc))],
+    }
+    print(json.dumps(report, indent=2))
+    raise SystemExit(1)
+
+base = manifest_path.parent
+steps = []
+for case in manifest.get("accepted", []):
+    path = base / case.get("path", "")
+    if not path.exists():
+        command = ["sley", "check", "--json", rel(path)]
+        completed = subprocess.CompletedProcess(command, 127, "", "")
+        steps.append(make_step(
+            f"accepted_check:{case.get('path', '')}",
+            command,
+            True,
+            completed,
+            case.get("covers", []) + ["ci:corpus", "corpus:accepted"],
+            [issue("fixture_missing", f"{rel(path)} is missing")],
+        ))
+        continue
+    steps.extend(accepted_steps(case, path))
+
+for case in manifest.get("rejected", []):
+    path = base / case.get("path", "")
+    if not path.exists():
+        command = ["sley", "check", "--json", rel(path)]
+        completed = subprocess.CompletedProcess(command, 127, "", "")
+        steps.append(make_step(
+            f"rejected_check:{case.get('path', '')}",
+            command,
+            False,
+            completed,
+            case.get("covers", []) + ["ci:corpus", "corpus:rejected"],
+            [issue("fixture_missing", f"{rel(path)} is missing")],
+        ))
+        continue
+    steps.append(rejected_step(case, path))
+
+failed_count = sum(1 for step in steps if step["status"] == "failed")
+report = {
+    "schema": "sley.ci.report.v0",
+    "status": "passed" if failed_count == 0 else "failed",
+    "command": "corpus",
+    "manifest": rel(manifest_path),
+    "summary": {
+        "step_count": len(steps),
+        "passed_count": len(steps) - failed_count,
+        "failed_count": failed_count,
+    },
+    "steps": steps,
+    "issues": [
+        issue("corpus_step_failed", f"{step['name']} failed")
+        for step in steps
+        if step["status"] == "failed"
+    ],
+}
+print(json.dumps(report, indent=2))
+raise SystemExit(0 if failed_count == 0 else 1)
+PY
+}
+
+command_ci_examples() {
+  local target="examples"
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --json) shift ;;
+      *) target="$1"; shift ;;
+    esac
+  done
+  python3 - "$ROOT_DIR" "$target" <<'PY'
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+
+repo = Path(sys.argv[1]).resolve()
+target_arg = Path(sys.argv[2])
+target = target_arg if target_arg.is_absolute() else repo / target_arg
+
+
+def issue(code, message):
+    return {"code": code, "message": message}
+
+
+def rel(path):
+    path = Path(path).resolve()
+    try:
+        return str(path.relative_to(repo))
+    except ValueError:
+        return str(path)
+
+
+def run(command):
+    env = os.environ.copy()
+    env["PATH"] = str(repo / "bin") + os.pathsep + env.get("PATH", "")
+    return subprocess.run(command, cwd=repo, env=env, text=True, capture_output=True)
+
+
+def parse_json(stdout):
+    try:
+        data = json.loads(stdout)
+    except json.JSONDecodeError:
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def diagnostics(data):
+    values = data.get("diagnostics", []) if isinstance(data, dict) else []
+    if not isinstance(values, list):
+        return []
+    cleaned = []
+    for value in values:
+        if not isinstance(value, dict):
+            continue
+        item = {key: value[key] for key in ("id", "severity", "message", "node") if isinstance(value.get(key), str)}
+        if all(item.get(key) for key in ("id", "severity", "message")):
+            cleaned.append(item)
+    return cleaned
+
+
+def is_under(path, root):
+    try:
+        Path(path).resolve().relative_to(Path(root).resolve())
+        return True
+    except ValueError:
+        return False
+
+
+def make_step(name, command, expected_success, completed, covers, issues, data=None):
+    actual_success = completed.returncode == 0
+    step = {
+        "name": name,
+        "status": "passed" if not issues else "failed",
+        "command": command,
+        "expected_success": expected_success,
+        "actual_success": actual_success,
+        "exit_code": completed.returncode,
+        "covers": covers,
+        "issues": issues,
+    }
+    if isinstance(data, dict) and isinstance(data.get("schema"), str):
+        step["stdout_schema"] = data["schema"]
+    diag = diagnostics(data)
+    if diag:
+        step["diagnostics"] = diag
+    return step
+
+
+def check_step(name, path, covers):
+    path_rel = rel(path)
+    command = ["sley", "check", "--json", path_rel]
+    completed = run(command)
+    data = parse_json(completed.stdout)
+    issues = []
+    if completed.returncode != 0:
+        issues.append(issue("example_check_failed", f"{path_rel} did not pass sley check"))
+    if not isinstance(data, dict):
+        issues.append(issue("stdout_not_json", f"{path_rel} check output was not JSON"))
+    elif data.get("schema") != "sley.diagnostics.report.v0":
+        issues.append(issue("stdout_schema_mismatch", f"{path_rel} check did not emit diagnostics report"))
+    elif data.get("status") != "ok":
+        issues.append(issue("example_status_not_ok", f"{path_rel} check status was {data.get('status')!r}"))
+    return make_step(name, command, True, completed, covers, issues, data)
+
+
+def format_step(path):
+    path_rel = rel(path)
+    command = ["sley", "format", path_rel]
+    completed = run(command)
+    issues = []
+    if completed.returncode != 0:
+        issues.append(issue("example_format_failed", f"{path_rel} did not format cleanly"))
+    else:
+        source = Path(path).read_text(encoding="utf-8")
+        if completed.stdout != source:
+            issues.append(issue("format_round_trip_mismatch", f"{path_rel} formatter output changed the source"))
+    return make_step(
+        f"format:{path_rel}",
+        command,
+        True,
+        completed,
+        ["ci:examples", "formatter:round-trip"],
+        issues,
+    )
+
+
+if not target.exists():
+    report = {
+        "schema": "sley.ci.report.v0",
+        "status": "failed",
+        "command": "examples",
+        "target": rel(target),
+        "summary": {"step_count": 0, "passed_count": 0, "failed_count": 1},
+        "steps": [],
+        "issues": [issue("target_missing", f"{rel(target)} is missing")],
+    }
+    print(json.dumps(report, indent=2))
+    raise SystemExit(1)
+
+project_roots = sorted(path.parent for path in target.rglob("sley.toml"))
+sley_files = sorted(target.rglob("*.sley"))
+standalone_files = [
+    path for path in sley_files
+    if not any(is_under(path, project_root) for project_root in project_roots)
+]
+
+steps = []
+for project_root in project_roots:
+    steps.append(check_step(
+        f"project_check:{rel(project_root)}",
+        project_root,
+        ["ci:examples", "examples:project"],
+    ))
+for path in standalone_files:
+    steps.append(check_step(
+        f"standalone_check:{rel(path)}",
+        path,
+        ["ci:examples", "examples:standalone"],
+    ))
+for path in sley_files:
+    steps.append(format_step(path))
+
+failed_count = sum(1 for step in steps if step["status"] == "failed")
+report = {
+    "schema": "sley.ci.report.v0",
+    "status": "passed" if failed_count == 0 else "failed",
+    "command": "examples",
+    "target": rel(target),
+    "summary": {
+        "step_count": len(steps),
+        "passed_count": len(steps) - failed_count,
+        "failed_count": failed_count,
+    },
+    "steps": steps,
+    "issues": [
+        issue("example_step_failed", f"{step['name']} failed")
+        for step in steps
+        if step["status"] == "failed"
+    ],
+}
+print(json.dumps(report, indent=2))
+raise SystemExit(0 if failed_count == 0 else 1)
+PY
+}
+
 command_ci_smoke() {
   local repo_root="$ROOT_DIR" manifest="" arg
   while [[ "$#" -gt 0 ]]; do
@@ -1788,7 +2273,8 @@ tool_ci() {
     run) command_run "$@" ;;
     verify) command_verify "$@" ;;
     deploy) command_deploy "$@" ;;
-    corpus|examples) command_ci_simple "$sub" "$@" ;;
+    corpus) command_ci_corpus "$@" ;;
+    examples) command_ci_examples "$@" ;;
     smoke) command_ci_smoke "$@" ;;
     *) echo "unknown sley-ci command: $sub" >&2; return 2 ;;
   esac

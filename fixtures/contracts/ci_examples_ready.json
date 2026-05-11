@@ -4,24 +4,2594 @@
   "command": "examples",
   "target": "examples",
   "summary": {
-    "step_count": 1,
-    "passed_count": 1,
+    "step_count": 144,
+    "passed_count": 144,
     "failed_count": 0
   },
   "steps": [
     {
-      "name": "examples",
+      "name": "project_check:examples/agent_project",
       "status": "passed",
       "command": [
-        "sley-ci",
-        "examples",
-        "examples"
+        "sley",
+        "check",
+        "--json",
+        "examples/agent_project"
       ],
       "expected_success": true,
       "actual_success": true,
       "exit_code": 0,
       "covers": [
-        "ci:examples"
+        "ci:examples",
+        "examples:project"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "project_check:examples/duplicate_import_project",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/duplicate_import_project"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:project"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "project_check:examples/project",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/project"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:project"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "project_check:examples/unqualified_import_call_project",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/unqualified_import_call_project"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:project"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "project_check:examples/unused_import_project",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/unused_import_project"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:project"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/absorbing_arithmetic_expression.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/absorbing_arithmetic_expression.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/absorbing_boolean_expression.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/absorbing_boolean_expression.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/agent_deploy_pipeline.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/agent_deploy_pipeline.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/collections.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/collections.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/compute.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/compute.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/constant_arithmetic_expression.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/constant_arithmetic_expression.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/constant_boolean_comparison_expression.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/constant_boolean_comparison_expression.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/constant_comparison_expression.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/constant_comparison_expression.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/constant_false_if_statement.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/constant_false_if_statement.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/constant_false_while_statement.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/constant_false_while_statement.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/constant_if_expression.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/constant_if_expression.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/constant_if_statement.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/constant_if_statement.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/constant_len_expression.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/constant_len_expression.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/constant_list_index_expression.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/constant_list_index_expression.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/constant_map_index_expression.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/constant_map_index_expression.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/constant_not_expression.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/constant_not_expression.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/constant_record_field_access_expression.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/constant_record_field_access_expression.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/constant_text_concatenation_expression.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/constant_text_concatenation_expression.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/db_gate.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/db_gate.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/db_write_gate.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/db_write_gate.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/dead_private_tasks.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/dead_private_tasks.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/declaration_hygiene.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/declaration_hygiene.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/deploy_gate.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/deploy_gate.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/double_negation_expression.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/double_negation_expression.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/empty_else_statement.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/empty_else_statement.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/empty_for_statement.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/empty_for_statement.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/empty_forge_statement.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/empty_forge_statement.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/empty_if_statement.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/empty_if_statement.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/empty_while_statement.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/empty_while_statement.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/file_gate.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/file_gate.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/file_write_gate.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/file_write_gate.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/hello.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/hello.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/host_fallibility.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/host_fallibility.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/idempotent_boolean_expression.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/idempotent_boolean_expression.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/identity_binary_expression.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/identity_binary_expression.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/maps_for.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/maps_for.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/model_gate.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/model_gate.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/mutable_binding_style.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/mutable_binding_style.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/negated_comparison_expression.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/negated_comparison_expression.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/network_gate.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/network_gate.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/overwritten_set_statement.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/overwritten_set_statement.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/profile_service.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/profile_service.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/raw_host_migration.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/raw_host_migration.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/redundant_boolean_comparison.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/redundant_boolean_comparison.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/redundant_boolean_if_expression.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/redundant_boolean_if_expression.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/redundant_boolean_if_statement.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/redundant_boolean_if_statement.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/redundant_initial_set_statement.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/redundant_initial_set_statement.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/redundant_initial_set_to_bind.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/redundant_initial_set_to_bind.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/result_flow.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/result_flow.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/same_branch_if_expression.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/same_branch_if_expression.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/same_branch_if_statement.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/same_branch_if_statement.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/secret_gate.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/secret_gate.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/self_assignment_statement.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/self_assignment_statement.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/self_comparison_expression.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/self_comparison_expression.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/shell_gate.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/shell_gate.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/spend_gate.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/spend_gate.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/unchecked_result.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/unchecked_result.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/unchecked_result_binding.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/unchecked_result_binding.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/unreachable_statement.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/unreachable_statement.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/unused_declared_effect.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/unused_declared_effect.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/unused_private_task.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/unused_private_task.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/unused_pure_binding.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/unused_pure_binding.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/unused_pure_expression_statement.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/unused_pure_expression_statement.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "standalone_check:examples/unused_take.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "examples/unused_take.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "examples:standalone"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "format:examples/absorbing_arithmetic_expression.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/absorbing_arithmetic_expression.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/absorbing_boolean_expression.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/absorbing_boolean_expression.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/agent_deploy_pipeline.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/agent_deploy_pipeline.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/agent_project/src/agent/main.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/agent_project/src/agent/main.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/agent_project/src/agent/pipeline.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/agent_project/src/agent/pipeline.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/collections.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/collections.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/compute.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/compute.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/constant_arithmetic_expression.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/constant_arithmetic_expression.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/constant_boolean_comparison_expression.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/constant_boolean_comparison_expression.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/constant_comparison_expression.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/constant_comparison_expression.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/constant_false_if_statement.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/constant_false_if_statement.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/constant_false_while_statement.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/constant_false_while_statement.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/constant_if_expression.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/constant_if_expression.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/constant_if_statement.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/constant_if_statement.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/constant_len_expression.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/constant_len_expression.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/constant_list_index_expression.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/constant_list_index_expression.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/constant_map_index_expression.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/constant_map_index_expression.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/constant_not_expression.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/constant_not_expression.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/constant_record_field_access_expression.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/constant_record_field_access_expression.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/constant_text_concatenation_expression.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/constant_text_concatenation_expression.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/db_gate.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/db_gate.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/db_write_gate.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/db_write_gate.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/dead_private_tasks.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/dead_private_tasks.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/declaration_hygiene.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/declaration_hygiene.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/deploy_gate.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/deploy_gate.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/double_negation_expression.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/double_negation_expression.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/duplicate_import_project/src/app/main.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/duplicate_import_project/src/app/main.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/duplicate_import_project/src/app/shared.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/duplicate_import_project/src/app/shared.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/empty_else_statement.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/empty_else_statement.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/empty_for_statement.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/empty_for_statement.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/empty_forge_statement.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/empty_forge_statement.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/empty_if_statement.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/empty_if_statement.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/empty_while_statement.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/empty_while_statement.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/file_gate.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/file_gate.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/file_write_gate.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/file_write_gate.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/hello.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/hello.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/host_fallibility.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/host_fallibility.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/idempotent_boolean_expression.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/idempotent_boolean_expression.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/identity_binary_expression.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/identity_binary_expression.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/maps_for.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/maps_for.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/model_gate.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/model_gate.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/mutable_binding_style.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/mutable_binding_style.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/negated_comparison_expression.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/negated_comparison_expression.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/network_gate.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/network_gate.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/overwritten_set_statement.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/overwritten_set_statement.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/profile_service.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/profile_service.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/project/src/app/main.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/project/src/app/main.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/project/src/app/math.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/project/src/app/math.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/raw_host_migration.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/raw_host_migration.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/redundant_boolean_comparison.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/redundant_boolean_comparison.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/redundant_boolean_if_expression.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/redundant_boolean_if_expression.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/redundant_boolean_if_statement.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/redundant_boolean_if_statement.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/redundant_initial_set_statement.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/redundant_initial_set_statement.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/redundant_initial_set_to_bind.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/redundant_initial_set_to_bind.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/result_flow.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/result_flow.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/same_branch_if_expression.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/same_branch_if_expression.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/same_branch_if_statement.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/same_branch_if_statement.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/secret_gate.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/secret_gate.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/self_assignment_statement.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/self_assignment_statement.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/self_comparison_expression.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/self_comparison_expression.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/shell_gate.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/shell_gate.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/spend_gate.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/spend_gate.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/unchecked_result.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/unchecked_result.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/unchecked_result_binding.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/unchecked_result_binding.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/unqualified_import_call_project/src/app/main.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/unqualified_import_call_project/src/app/main.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/unqualified_import_call_project/src/app/math.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/unqualified_import_call_project/src/app/math.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/unreachable_statement.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/unreachable_statement.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/unused_declared_effect.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/unused_declared_effect.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/unused_import_project/src/app/main.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/unused_import_project/src/app/main.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/unused_import_project/src/app/stale.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/unused_import_project/src/app/stale.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/unused_import_project/src/app/used.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/unused_import_project/src/app/used.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/unused_private_task.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/unused_private_task.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/unused_pure_binding.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/unused_pure_binding.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/unused_pure_expression_statement.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/unused_pure_expression_statement.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
+      ],
+      "issues": []
+    },
+    {
+      "name": "format:examples/unused_take.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "examples/unused_take.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "ci:examples",
+        "formatter:round-trip"
       ],
       "issues": []
     }

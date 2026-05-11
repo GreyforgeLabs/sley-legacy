@@ -114,8 +114,11 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
      - default workflow under `.github/workflows/`.
    - Current bootstrap: `bin/sley` exposes `sley-ci` compatibility wrappers for
      `check`, `lint`, `doctor`, `plan`, `run`, `verify`, `deploy`, `smoke`,
-     `corpus`, and `examples`. `smoke` now executes the current probe manifest
-     and returns `schema: "sley.ci.report.v0"` with per-case steps.
+     `corpus`, and `examples`. `smoke`, `corpus`, and `examples` now return
+     `schema: "sley.ci.report.v0"` with per-case steps. Corpus accepted cases
+     run strict check plus formatter round-trip checks, rejected cases enforce
+     their diagnostic sidecars, and examples cover project roots, standalone
+     sources, and formatter round trips for shipped `.sley` files.
      `.github/actions/sley-v1/action.yml`, `.github/workflows/v1.yml`, and
      `.pre-commit-config.yaml` now run the repo-level `make v1` gate. The
      current shell bootstrap does not require Rust or Node for `make v1`;
