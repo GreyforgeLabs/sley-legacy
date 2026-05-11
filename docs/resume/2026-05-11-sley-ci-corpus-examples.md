@@ -20,6 +20,9 @@ Status: local checkpoint from Codex resume `019e1799-3642-7dd0-b6c3-55a66d7df677
 - Binding and return type-flow fixtures now emit checker-owned `TYPE_MISMATCH`
   and `RETURN_TYPE_MISMATCH` diagnostics for the covered literal, identifier,
   list, and transparent alias shapes.
+- The former `sley check` fallback that manufactured rejected fixture
+  diagnostics from `.json` sidecars has been removed. Sidecars now serve only
+  as `sley-ci corpus` expected-ID metadata.
 - `sley-ci examples --json examples` now checks each example project root,
   checks standalone `.sley` files, and formatter-round-trips every shipped
   example source.
@@ -57,6 +60,6 @@ checker implementation for every rejected language rule.
 
 ## Next Slice
 
-The next useful hardening slice is to move another sidecar-backed rejected
-diagnostic family into real checker logic while keeping the corpus report shape
-stable from the outside.
+The next useful hardening slice is to move checker or report-builder behavior
+from shell/JQ execution into executable Sley source while keeping the corpus and
+contract report shapes stable from the outside.

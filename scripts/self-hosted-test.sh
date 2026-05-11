@@ -177,6 +177,20 @@ if bin/sley check --json fixtures/corpus/rejected/unknown_record_field.sley >/tm
 fi
 jq -er '.status == "error" and .diagnostics[0].id == "UNKNOWN_RECORD_FIELD" and .diagnostics[0].message == "unknown record field `email`"' /tmp/sley-rejected-unknown-record-field-check.json >/dev/null
 
+sidecar_oracle_hits="$(
+  find fixtures/corpus/rejected -name '*.sley' -print | sort | while read -r rejected_fixture; do
+    if bin/sley check --json "$rejected_fixture" >/tmp/sley-rejected-sidecar-oracle-check.json 2>/dev/null; then
+      :
+    fi
+    if jq -e '.diagnostics[]?.message | startswith("rejected corpus fixture expects diagnostic")' /tmp/sley-rejected-sidecar-oracle-check.json >/dev/null; then
+      printf '%s\n' "$rejected_fixture"
+    fi
+  done
+)"
+if [[ -n "$sidecar_oracle_hits" ]]; then
+  fail "rejected fixtures still use diagnostic sidecar oracle: $sidecar_oracle_hits"
+fi
+
 bin/sley query --json --kind calls examples/project \
   | json_field '.schema == "sley.query.report.v0" and .calls[0].target == "app.math.double"'
 
