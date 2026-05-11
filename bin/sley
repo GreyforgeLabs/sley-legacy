@@ -379,6 +379,12 @@ SCHEMA_CONFORMANCE_COVERAGE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROO
 CONFORMANCE_COVERAGE_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" conformance_coverage_fields)"
 SCHEMA_CI_REPORT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" ci_report_schema)"
 CI_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" ci_report_fields)"
+SCHEMA_CONTRACT_INVENTORY="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" contract_inventory_schema)"
+CONTRACT_INVENTORY_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" contract_inventory_fields)"
+SCHEMA_CONTRACT_VALIDATE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" contract_validate_schema)"
+CONTRACT_VALIDATE_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" contract_validate_fields)"
+SCHEMA_CONTRACT_FIXTURE_CHECK="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" contract_fixture_check_schema)"
+CONTRACT_FIXTURE_CHECK_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" contract_fixture_check_fields)"
 SCHEMA_SELF_HOSTING="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_status_schema)"
 SELF_HOSTING_REPORT_SOURCE_ROOT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_source_root)"
 SELF_HOSTING_STATUS_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_status_fields)"
@@ -432,6 +438,18 @@ fi
 SCHEMA_CI_REPORT="${SCHEMA_CI_REPORT:-sley.ci.report.v0}"
 if [[ "$CI_REPORT_FIELDS_JSON" == "[]" ]]; then
   CI_REPORT_FIELDS_JSON='["schema","status","command","target","manifest","summary","steps","issues"]'
+fi
+SCHEMA_CONTRACT_INVENTORY="${SCHEMA_CONTRACT_INVENTORY:-sley.contract.inventory.v0}"
+if [[ "$CONTRACT_INVENTORY_FIELDS_JSON" == "[]" ]]; then
+  CONTRACT_INVENTORY_FIELDS_JSON='["schema","status","schema_dir","schema_count","schemas"]'
+fi
+SCHEMA_CONTRACT_VALIDATE="${SCHEMA_CONTRACT_VALIDATE:-sley.contract.validate.v0}"
+if [[ "$CONTRACT_VALIDATE_FIELDS_JSON" == "[]" ]]; then
+  CONTRACT_VALIDATE_FIELDS_JSON='["schema","status","validation_level","requested_schema","report_path","schema_dir","report_schema","issues"]'
+fi
+SCHEMA_CONTRACT_FIXTURE_CHECK="${SCHEMA_CONTRACT_FIXTURE_CHECK:-sley.contract.fixture_check.v0}"
+if [[ "$CONTRACT_FIXTURE_CHECK_FIELDS_JSON" == "[]" ]]; then
+  CONTRACT_FIXTURE_CHECK_FIELDS_JSON='["schema","status","validation_level","schema_dir","fixtures_dir","fixture_count","passed_count","failed_count","fixtures"]'
 fi
 SCHEMA_SELF_HOSTING="${SCHEMA_SELF_HOSTING:-sley.self_hosting.status.v0}"
 SELF_HOSTING_REPORT_SOURCE_ROOT="${SELF_HOSTING_REPORT_SOURCE_ROOT:-self-hosted/src}"
@@ -1951,9 +1969,16 @@ claim_verify_json() {
 }
 
 contract_jsonschema() {
+  SLEY_CONTRACT_INVENTORY_SCHEMA="$SCHEMA_CONTRACT_INVENTORY" \
+  SLEY_CONTRACT_INVENTORY_FIELDS="$CONTRACT_INVENTORY_FIELDS_JSON" \
+  SLEY_CONTRACT_VALIDATE_SCHEMA="$SCHEMA_CONTRACT_VALIDATE" \
+  SLEY_CONTRACT_VALIDATE_FIELDS="$CONTRACT_VALIDATE_FIELDS_JSON" \
+  SLEY_CONTRACT_FIXTURE_CHECK_SCHEMA="$SCHEMA_CONTRACT_FIXTURE_CHECK" \
+  SLEY_CONTRACT_FIXTURE_CHECK_FIELDS="$CONTRACT_FIXTURE_CHECK_FIELDS_JSON" \
   python3 - "$@" <<'PY'
 import argparse
 import json
+import os
 from pathlib import Path
 import sys
 import warnings
@@ -1963,6 +1988,44 @@ VALIDATION_LEVEL = "json_schema_draft_2020_12"
 
 def issue(code, message):
     return {"code": code, "message": message}
+
+
+def env_list(name, default):
+    try:
+        value = json.loads(os.environ.get(name, "[]"))
+    except json.JSONDecodeError:
+        value = []
+    if not isinstance(value, list) or not all(isinstance(item, str) and item for item in value):
+        return default
+    return value
+
+
+CONTRACT_INVENTORY_SCHEMA = os.environ.get("SLEY_CONTRACT_INVENTORY_SCHEMA") or "sley.contract.inventory.v0"
+CONTRACT_INVENTORY_FIELDS = env_list(
+    "SLEY_CONTRACT_INVENTORY_FIELDS",
+    ["schema", "status", "schema_dir", "schema_count", "schemas"],
+)
+CONTRACT_VALIDATE_SCHEMA = os.environ.get("SLEY_CONTRACT_VALIDATE_SCHEMA") or "sley.contract.validate.v0"
+CONTRACT_VALIDATE_FIELDS = env_list(
+    "SLEY_CONTRACT_VALIDATE_FIELDS",
+    ["schema", "status", "validation_level", "requested_schema", "report_path", "schema_dir", "report_schema", "issues"],
+)
+CONTRACT_FIXTURE_CHECK_SCHEMA = os.environ.get("SLEY_CONTRACT_FIXTURE_CHECK_SCHEMA") or "sley.contract.fixture_check.v0"
+CONTRACT_FIXTURE_CHECK_FIELDS = env_list(
+    "SLEY_CONTRACT_FIXTURE_CHECK_FIELDS",
+    ["schema", "status", "validation_level", "schema_dir", "fixtures_dir", "fixture_count", "passed_count", "failed_count", "fixtures"],
+)
+
+
+def ordered_report(fields, values):
+    report = {}
+    for field in fields:
+        if field in values:
+            report[field] = values[field]
+    for key, value in values.items():
+        if key not in report:
+            report[key] = value
+    return report
 
 
 def load_json(path):
@@ -2038,13 +2101,13 @@ def command_inventory(args):
         for item in issues:
             print(f"{item['code']}: {item['message']}", file=sys.stderr)
         return 1
-    print(json.dumps({
-        "schema": "sley.contract.inventory.v0",
+    print(json.dumps(ordered_report(CONTRACT_INVENTORY_FIELDS, {
+        "schema": CONTRACT_INVENTORY_SCHEMA,
         "status": "passed",
         "schema_dir": args.schema_dir,
         "schema_count": len(inventory),
         "schemas": inventory,
-    }, indent=2))
+    }), indent=2))
     return 0
 
 
@@ -2058,8 +2121,8 @@ def command_validate(args):
     if instance is not None and not issues:
         issues.extend(validate_instance(args.requested_schema, instance, Path(args.schema_dir)))
     status = "passed" if not issues else "failed"
-    print(json.dumps({
-        "schema": "sley.contract.validate.v0",
+    print(json.dumps(ordered_report(CONTRACT_VALIDATE_FIELDS, {
+        "schema": CONTRACT_VALIDATE_SCHEMA,
         "status": status,
         "validation_level": VALIDATION_LEVEL,
         "requested_schema": args.requested_schema,
@@ -2067,7 +2130,7 @@ def command_validate(args):
         "schema_dir": args.schema_dir,
         "report_schema": report_schema,
         "issues": issues,
-    }, indent=2))
+    }), indent=2))
     return 0 if status == "passed" else 1
 
 
@@ -2097,8 +2160,8 @@ def command_check_fixtures(args):
             fixture["issues"] = issues
             fixtures.append(fixture)
     failed_count = sum(1 for fixture in fixtures if fixture["status"] == "failed")
-    print(json.dumps({
-        "schema": "sley.contract.fixture_check.v0",
+    print(json.dumps(ordered_report(CONTRACT_FIXTURE_CHECK_FIELDS, {
+        "schema": CONTRACT_FIXTURE_CHECK_SCHEMA,
         "status": "passed" if failed_count == 0 else "failed",
         "validation_level": VALIDATION_LEVEL,
         "schema_dir": args.schema_dir,
@@ -2107,7 +2170,7 @@ def command_check_fixtures(args):
         "passed_count": len(fixtures) - failed_count,
         "failed_count": failed_count,
         "fixtures": fixtures,
-    }, indent=2))
+    }), indent=2))
     return 0 if failed_count == 0 else 1
 
 

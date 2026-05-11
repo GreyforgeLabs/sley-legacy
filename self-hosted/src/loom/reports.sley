@@ -204,6 +204,55 @@ export task ci_report_fields -> List<Text> {
   ]
 }
 
+export task contract_inventory_schema -> Text {
+  return "sley.contract.inventory.v0"
+}
+
+export task contract_inventory_fields -> List<Text> {
+  return [
+    "schema",
+    "status",
+    "schema_dir",
+    "schema_count",
+    "schemas"
+  ]
+}
+
+export task contract_validate_schema -> Text {
+  return "sley.contract.validate.v0"
+}
+
+export task contract_validate_fields -> List<Text> {
+  return [
+    "schema",
+    "status",
+    "validation_level",
+    "requested_schema",
+    "report_path",
+    "schema_dir",
+    "report_schema",
+    "issues"
+  ]
+}
+
+export task contract_fixture_check_schema -> Text {
+  return "sley.contract.fixture_check.v0"
+}
+
+export task contract_fixture_check_fields -> List<Text> {
+  return [
+    "schema",
+    "status",
+    "validation_level",
+    "schema_dir",
+    "fixtures_dir",
+    "fixture_count",
+    "passed_count",
+    "failed_count",
+    "fixtures"
+  ]
+}
+
 export task self_hosting_status_schema -> Text {
   return "sley.self_hosting.status.v0"
 }
