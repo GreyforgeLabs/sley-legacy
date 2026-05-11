@@ -1883,8 +1883,8 @@
         {
           "id": "DUPLICATE_TAKE",
           "severity": "error",
-          "message": "rejected corpus fixture expects diagnostic DUPLICATE_TAKE",
-          "node": "fixture:fixtures/corpus/rejected/duplicate_take.sley"
+          "message": "duplicate take `value`",
+          "node": "take:corpus.rejected.duplicate_take.main.value"
         }
       ]
     },

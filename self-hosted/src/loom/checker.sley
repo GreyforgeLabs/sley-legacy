@@ -27,6 +27,10 @@ export task call_argument_type_mismatch_id -> Text {
   return "CALL_ARGUMENT_TYPE_MISMATCH"
 }
 
+export task duplicate_take_id -> Text {
+  return "DUPLICATE_TAKE"
+}
+
 export task missing_return_id -> Text {
   return "MISSING_RETURN"
 }
@@ -76,6 +80,14 @@ export task call_argument_type_mismatch_message_prefix -> Text {
 }
 
 export task call_argument_type_mismatch_message_suffix -> Text {
+  return "`"
+}
+
+export task duplicate_take_message_prefix -> Text {
+  return "duplicate take `"
+}
+
+export task duplicate_take_message_suffix -> Text {
   return "`"
 }
 

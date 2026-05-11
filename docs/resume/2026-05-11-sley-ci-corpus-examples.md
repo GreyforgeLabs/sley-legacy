@@ -31,11 +31,11 @@ Status: local checkpoint from Codex resume `019e1799-3642-7dd0-b6c3-55a66d7df677
 
 Rejected fixture enforcement is still partly a stage-1 bootstrap oracle:
 `UNKNOWN_IDENTIFIER`, `UNKNOWN_TYPE`, `UNKNOWN_TASK`, `CALL_ARITY_MISMATCH`,
-`CALL_ARGUMENT_TYPE_MISMATCH`, and `MISSING_RETURN` now come from checker
-logic, while the remaining rejected fixtures emit expected diagnostic IDs from
-their sidecars. This turns the corpus gate into an executable manifest gate, but
-it is not yet a strict semantic checker implementation for every rejected
-language rule.
+`CALL_ARGUMENT_TYPE_MISMATCH`, `DUPLICATE_TAKE`, and `MISSING_RETURN` now come
+from checker logic, while the remaining rejected fixtures emit expected
+diagnostic IDs from their sidecars. This turns the corpus gate into an
+executable manifest gate, but it is not yet a strict semantic checker
+implementation for every rejected language rule.
 
 ## Next Slice
 
