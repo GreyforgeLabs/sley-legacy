@@ -57,6 +57,7 @@
     "ci_report_shape",
     "contract_report_shapes",
     "deploy_report_shape",
+    "deploy_artifact_check_report_shape",
     "pure_literal_runtime_execution",
     "bool_literal_runtime_execution",
     "seeded_agent_deploy_task_execution",

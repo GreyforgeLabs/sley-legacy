@@ -387,6 +387,9 @@ SCHEMA_CONTRACT_FIXTURE_CHECK="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_R
 CONTRACT_FIXTURE_CHECK_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" contract_fixture_check_fields)"
 SCHEMA_DEPLOY_REPORT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" deploy_report_schema)"
 DEPLOY_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" deploy_report_fields)"
+SCHEMA_DEPLOY_ARTIFACTS="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" deploy_artifacts_schema)"
+SCHEMA_DEPLOY_ARTIFACT_CHECK="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" deploy_artifact_check_schema)"
+DEPLOY_ARTIFACT_CHECK_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" deploy_artifact_check_fields)"
 SCHEMA_SELF_HOSTING="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_status_schema)"
 SELF_HOSTING_REPORT_SOURCE_ROOT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_source_root)"
 SELF_HOSTING_STATUS_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_status_fields)"
@@ -456,6 +459,11 @@ fi
 SCHEMA_DEPLOY_REPORT="${SCHEMA_DEPLOY_REPORT:-sley.deploy.report.v0}"
 if [[ "$DEPLOY_REPORT_FIELDS_JSON" == "[]" ]]; then
   DEPLOY_REPORT_FIELDS_JSON='["schema","status","mode","target","environment","policy","summary","verify","artifacts","next_actions"]'
+fi
+SCHEMA_DEPLOY_ARTIFACTS="${SCHEMA_DEPLOY_ARTIFACTS:-sley.deploy.artifacts.v0}"
+SCHEMA_DEPLOY_ARTIFACT_CHECK="${SCHEMA_DEPLOY_ARTIFACT_CHECK:-sley.deploy.artifact_check.v0}"
+if [[ "$DEPLOY_ARTIFACT_CHECK_FIELDS_JSON" == "[]" ]]; then
+  DEPLOY_ARTIFACT_CHECK_FIELDS_JSON='["schema","status","validation_level","artifacts_dir","manifest_path","manifest_schema","summary","files","issues"]'
 fi
 SCHEMA_SELF_HOSTING="${SCHEMA_SELF_HOSTING:-sley.self_hosting.status.v0}"
 SELF_HOSTING_REPORT_SOURCE_ROOT="${SELF_HOSTING_REPORT_SOURCE_ROOT:-self-hosted/src}"
@@ -1981,8 +1989,12 @@ contract_jsonschema() {
   SLEY_CONTRACT_VALIDATE_FIELDS="$CONTRACT_VALIDATE_FIELDS_JSON" \
   SLEY_CONTRACT_FIXTURE_CHECK_SCHEMA="$SCHEMA_CONTRACT_FIXTURE_CHECK" \
   SLEY_CONTRACT_FIXTURE_CHECK_FIELDS="$CONTRACT_FIXTURE_CHECK_FIELDS_JSON" \
+  SLEY_DEPLOY_ARTIFACTS_SCHEMA="$SCHEMA_DEPLOY_ARTIFACTS" \
+  SLEY_DEPLOY_ARTIFACT_CHECK_SCHEMA="$SCHEMA_DEPLOY_ARTIFACT_CHECK" \
+  SLEY_DEPLOY_ARTIFACT_CHECK_FIELDS="$DEPLOY_ARTIFACT_CHECK_FIELDS_JSON" \
   python3 - "$@" <<'PY'
 import argparse
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -2021,6 +2033,19 @@ CONTRACT_FIXTURE_CHECK_FIELDS = env_list(
     "SLEY_CONTRACT_FIXTURE_CHECK_FIELDS",
     ["schema", "status", "validation_level", "schema_dir", "fixtures_dir", "fixture_count", "passed_count", "failed_count", "fixtures"],
 )
+DEPLOY_ARTIFACTS_SCHEMA = os.environ.get("SLEY_DEPLOY_ARTIFACTS_SCHEMA") or "sley.deploy.artifacts.v0"
+DEPLOY_ARTIFACT_CHECK_SCHEMA = os.environ.get("SLEY_DEPLOY_ARTIFACT_CHECK_SCHEMA") or "sley.deploy.artifact_check.v0"
+DEPLOY_ARTIFACT_CHECK_FIELDS = env_list(
+    "SLEY_DEPLOY_ARTIFACT_CHECK_FIELDS",
+    ["schema", "status", "validation_level", "artifacts_dir", "manifest_path", "manifest_schema", "summary", "files", "issues"],
+)
+
+DEPLOY_ARTIFACT_ROLES = {
+    "report": "sley.deploy.report.v0",
+    "seal": "sley.trace.seal.v0",
+    "package": "sley.zjx.envelope.v0",
+}
+EMPTY_SHA256 = "sha256:" + ("0" * 64)
 
 
 def ordered_report(fields, values):
@@ -2042,6 +2067,29 @@ def load_json(path):
         return None, [issue("file_missing", f"{path} does not exist")]
     except json.JSONDecodeError as exc:
         return None, [issue("invalid_json", f"{path}: {exc}")]
+
+
+def digest_file(path):
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return "sha256:" + digest.hexdigest()
+
+
+def resolve_artifact_path(artifacts_dir, declared_path):
+    declared = Path(declared_path)
+    if declared.is_absolute():
+        return declared
+    candidates = [
+        Path.cwd() / declared,
+        artifacts_dir / declared,
+        artifacts_dir / declared.name,
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return candidates[0]
 
 
 def load_schema_inventory(schema_dir):
@@ -2180,6 +2228,122 @@ def command_check_fixtures(args):
     return 0 if failed_count == 0 else 1
 
 
+def valid_digest(value):
+    return (
+        isinstance(value, str)
+        and value.startswith("sha256:")
+        and len(value) == len("sha256:") + 64
+        and all(char in "0123456789abcdef" for char in value[len("sha256:"):])
+    )
+
+
+def command_inspect_deploy_artifacts(args):
+    artifacts_dir = Path(args.artifacts_dir)
+    manifest_path = artifacts_dir / "manifest.json"
+    manifest, manifest_issues = load_json(manifest_path)
+    issues = list(manifest_issues)
+    files = []
+    manifest_schema = ""
+
+    if isinstance(manifest, dict):
+        value = manifest.get("schema")
+        manifest_schema = value if isinstance(value, str) else ""
+        if manifest_schema != DEPLOY_ARTIFACTS_SCHEMA:
+            issues.append(issue("manifest_schema_mismatch", f"{manifest_path} does not use {DEPLOY_ARTIFACTS_SCHEMA}"))
+        else:
+            issues.extend(validate_instance(DEPLOY_ARTIFACTS_SCHEMA, manifest, Path(args.schema_dir)))
+    elif manifest is not None:
+        issues.append(issue("manifest_not_object", f"{manifest_path} is not a JSON object"))
+
+    manifest_files = manifest.get("files", {}) if isinstance(manifest, dict) else {}
+    if isinstance(manifest_files, dict):
+        for role, default_schema in DEPLOY_ARTIFACT_ROLES.items():
+            entry = manifest_files.get(role, {})
+            file_issues = []
+            if not isinstance(entry, dict):
+                entry = {}
+                file_issues.append(issue("manifest_file_entry_missing", f"manifest has no object for {role}"))
+
+            declared_path = entry.get("path")
+            if not isinstance(declared_path, str) or not declared_path:
+                declared_path = str(artifacts_dir / {
+                    "report": "deploy-report.json",
+                    "seal": "seal.json",
+                    "package": "zjx-envelope.json",
+                }[role])
+                file_issues.append(issue("manifest_file_path_missing", f"manifest file entry for {role} has no path"))
+
+            expected_schema = entry.get("schema")
+            if expected_schema not in DEPLOY_ARTIFACT_ROLES.values():
+                expected_schema = default_schema
+                file_issues.append(issue("manifest_file_schema_missing", f"manifest file entry for {role} has no recognized schema"))
+
+            expected_digest = entry.get("digest")
+            if not valid_digest(expected_digest):
+                expected_digest = EMPTY_SHA256
+                file_issues.append(issue("manifest_file_digest_missing", f"manifest file entry for {role} has no valid digest"))
+
+            actual_path = resolve_artifact_path(artifacts_dir, declared_path)
+            file_report = {
+                "role": role,
+                "status": "passed",
+                "path": str(actual_path),
+                "manifest_path": declared_path,
+                "expected_schema": expected_schema,
+                "expected_digest": expected_digest,
+                "issues": file_issues,
+            }
+
+            if not actual_path.exists():
+                file_issues.append(issue("artifact_file_missing", f"{declared_path} does not exist"))
+            else:
+                actual_digest = digest_file(actual_path)
+                file_report["actual_digest"] = actual_digest
+                if actual_digest != expected_digest:
+                    file_issues.append(issue("artifact_digest_mismatch", f"{declared_path} digest does not match manifest"))
+                actual_doc, load_issues = load_json(actual_path)
+                file_issues.extend(load_issues)
+                if isinstance(actual_doc, dict):
+                    raw_schema = actual_doc.get("schema")
+                    if not isinstance(raw_schema, str):
+                        raw_schema = actual_doc.get("source_schema")
+                    if raw_schema in DEPLOY_ARTIFACT_ROLES.values():
+                        file_report["actual_schema"] = raw_schema
+                    if raw_schema != expected_schema:
+                        file_issues.append(issue("artifact_schema_mismatch", f"{declared_path} schema does not match manifest"))
+                elif actual_doc is not None:
+                    file_issues.append(issue("artifact_not_object", f"{declared_path} is not a JSON object"))
+
+            file_report["status"] = "passed" if not file_issues else "failed"
+            files.append(file_report)
+
+    for file_report in files:
+        for item in file_report["issues"]:
+            issues.append(issue(f"{file_report['role']}_{item['code']}", item["message"]))
+
+    failed_count = sum(1 for file_report in files if file_report["status"] == "failed")
+    status = "passed" if not issues and failed_count == 0 else "failed"
+    values = {
+        "schema": DEPLOY_ARTIFACT_CHECK_SCHEMA,
+        "status": status,
+        "validation_level": VALIDATION_LEVEL,
+        "artifacts_dir": args.artifacts_dir,
+        "manifest_path": str(manifest_path),
+        "summary": {
+            "file_count": len(files),
+            "passed_count": len(files) - failed_count,
+            "failed_count": failed_count,
+            "issue_count": len(issues),
+        },
+        "files": files,
+        "issues": issues,
+    }
+    if manifest_schema == DEPLOY_ARTIFACTS_SCHEMA:
+        values["manifest_schema"] = manifest_schema
+    print(json.dumps(ordered_report(DEPLOY_ARTIFACT_CHECK_FIELDS, values), indent=2))
+    return 0 if status == "passed" else 1
+
+
 parser = argparse.ArgumentParser()
 subparsers = parser.add_subparsers(dest="command", required=True)
 inventory = subparsers.add_parser("inventory")
@@ -2194,6 +2358,10 @@ check = subparsers.add_parser("check-fixtures")
 check.add_argument("--schema-dir", required=True)
 check.add_argument("fixtures_dir")
 check.set_defaults(func=command_check_fixtures)
+inspect = subparsers.add_parser("inspect-deploy-artifacts")
+inspect.add_argument("--schema-dir", required=True)
+inspect.add_argument("artifacts_dir")
+inspect.set_defaults(func=command_inspect_deploy_artifacts)
 args = parser.parse_args()
 raise SystemExit(args.func(args))
 PY
@@ -2242,8 +2410,15 @@ tool_contract() {
       contract_jsonschema check-fixtures --schema-dir "$schema_dir" "$fixture_dir"
       ;;
     inspect-deploy-artifacts)
-      target="${1:-.sley/deploy}"
-      jq -n --arg target "$target" '{schema:"sley.deploy.artifact_check.v0", status:"passed", artifacts_dir:$target, issue_count:0, issues:[]}'
+      target=".sley/deploy"
+      while [[ "$#" -gt 0 ]]; do
+        case "$1" in
+          --schemas|--schema-dir) schema_dir="$2"; shift 2 ;;
+          --json) shift ;;
+          *) target="$1"; shift ;;
+        esac
+      done
+      contract_jsonschema inspect-deploy-artifacts --schema-dir "$schema_dir" "$target"
       ;;
     *)
       echo "unknown sley-contract command: $sub" >&2

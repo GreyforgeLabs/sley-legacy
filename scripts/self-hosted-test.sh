@@ -15,7 +15,9 @@ json_field() {
 }
 
 bool_literal_source="$(mktemp)"
-trap 'rm -f "$bool_literal_source"' EXIT
+artifact_dir="$(mktemp -d)"
+artifact_check_report="$(mktemp)"
+trap 'rm -f "$bool_literal_source" "$artifact_check_report"; rm -rf "$artifact_dir"' EXIT
 printf '%s\n' \
   'module app.bool_literal' \
   '' \
@@ -58,6 +60,9 @@ bin/sley self-hosting-status --json \
 
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("deploy_report_shape"))'
+
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("deploy_artifact_check_report_shape"))'
 
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("diagnostics_report_shape"))'
@@ -268,6 +273,43 @@ bin/sley deploy --json --dry-run --artifacts-dir /tmp/sley-deploy-report-shape e
 
 bin/sley deploy --json --dry-run --artifacts-dir /tmp/sley-deploy-report-shape examples/hello.sley \
   | json_field 'keys == (["schema","status","mode","target","environment","policy","summary","verify","artifacts","next_actions"] | sort)'
+
+printf '%s\n' '{"schema":"sley.deploy.report.v0"}' > "$artifact_dir/deploy-report.json"
+printf '%s\n' '{"schema":"sley.trace.seal.v0"}' > "$artifact_dir/seal.json"
+printf '%s\n' '{"schema":"sley.zjx.envelope.v0"}' > "$artifact_dir/zjx-envelope.json"
+report_digest="sha256:$(sha256sum "$artifact_dir/deploy-report.json" | awk '{print $1}')"
+seal_digest="sha256:$(sha256sum "$artifact_dir/seal.json" | awk '{print $1}')"
+package_digest="sha256:$(sha256sum "$artifact_dir/zjx-envelope.json" | awk '{print $1}')"
+jq -n \
+  --arg artifact_dir "$artifact_dir" \
+  --arg report_digest "$report_digest" \
+  --arg seal_digest "$seal_digest" \
+  --arg package_digest "$package_digest" '
+  {
+    schema:"sley.deploy.artifacts.v0",
+    target:"examples/hello.sley",
+    environment:"staging",
+    mode:"dry_run",
+    policy:{
+      live_deploy_allowed:false,
+      external_mutations:false,
+      provider_calls:false,
+      requires_operator_approval:true
+    },
+    summary:{verify_status:"passed"},
+    files:{
+      report:{path:($artifact_dir + "/deploy-report.json"), schema:"sley.deploy.report.v0", digest:$report_digest},
+      seal:{path:($artifact_dir + "/seal.json"), schema:"sley.trace.seal.v0", digest:$seal_digest},
+      package:{path:($artifact_dir + "/zjx-envelope.json"), schema:"sley.zjx.envelope.v0", digest:$package_digest}
+    }
+  }' > "$artifact_dir/manifest.json"
+
+bin/sley-contract inspect-deploy-artifacts "$artifact_dir" --schemas docs/schemas --json > "$artifact_check_report"
+json_field '.schema == "sley.deploy.artifact_check.v0" and .status == "passed" and .validation_level == "json_schema_draft_2020_12" and .manifest_schema == "sley.deploy.artifacts.v0" and .summary.file_count == 3 and .summary.passed_count == 3 and .summary.failed_count == 0 and .summary.issue_count == 0' < "$artifact_check_report"
+json_field 'keys == (["schema","status","validation_level","artifacts_dir","manifest_path","manifest_schema","summary","files","issues"] | sort)' < "$artifact_check_report"
+
+bin/sley-contract validate --schema sley.deploy.artifact_check.v0 "$artifact_check_report" --schemas docs/schemas --json \
+  | json_field '.schema == "sley.contract.validate.v0" and .status == "passed" and .requested_schema == "sley.deploy.artifact_check.v0" and .report_schema == "sley.deploy.artifact_check.v0"'
 
 bin/sley graft --json --dry-run fixtures/ci_smoke_probe/graft_target.sley fixtures/ci_smoke_probe/insert_statement.json \
   | json_field '.schema == "sley.graft.outcome.v0" and .status == "accepted"'
