@@ -335,6 +335,27 @@ export task docgen_report_fields -> List<Text> {
   ]
 }
 
+export task workbench_schema -> Text {
+  return "sley.workbench.report.v0"
+}
+
+export task workbench_report_fields -> List<Text> {
+  return [
+    "schema",
+    "status",
+    "target",
+    "summary",
+    "diagnostics",
+    "doctor",
+    "query",
+    "lint",
+    "plan",
+    "graph",
+    "graph_slice",
+    "issues"
+  ]
+}
+
 export task self_hosting_status_schema -> Text {
   return "sley.self_hosting.status.v0"
 }

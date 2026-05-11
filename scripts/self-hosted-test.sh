@@ -19,7 +19,8 @@ artifact_dir="$(mktemp -d)"
 artifact_check_report="$(mktemp)"
 migrate_report="$(mktemp)"
 docgen_report="$(mktemp)"
-trap 'rm -f "$bool_literal_source" "$artifact_check_report" "$migrate_report" "$docgen_report"; rm -rf "$artifact_dir"' EXIT
+workbench_report="$(mktemp)"
+trap 'rm -f "$bool_literal_source" "$artifact_check_report" "$migrate_report" "$docgen_report" "$workbench_report"; rm -rf "$artifact_dir"' EXIT
 printf '%s\n' \
   'module app.bool_literal' \
   '' \
@@ -71,6 +72,9 @@ bin/sley self-hosting-status --json \
 
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("docgen_report_shape"))'
+
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("workbench_report_shape"))'
 
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("diagnostics_report_shape"))'
@@ -340,6 +344,18 @@ json_field '.schema == "sley.docgen.report.v0" and .status == "blocked" and .fil
 
 bin/sley-contract validate --schema sley.docgen.report.v0 "$docgen_report" --schemas docs/schemas --json \
   | json_field '.schema == "sley.contract.validate.v0" and .status == "passed" and .requested_schema == "sley.docgen.report.v0" and .report_schema == "sley.docgen.report.v0"'
+
+bin/sley-workbench --json --slice task:app.agent_deploy_pipeline.main examples/agent_deploy_pipeline.sley > "$workbench_report"
+json_field '.schema == "sley.workbench.report.v0" and .status == "ready" and .summary.module_count == 1 and .summary.call_count == 7 and .graph_slice.schema == "sley.symbol_graph.slice.v0" and .graph_slice.focus.id == "task:app.agent_deploy_pipeline.main"' < "$workbench_report"
+
+bin/sley-contract validate --schema sley.workbench.report.v0 "$workbench_report" --schemas docs/schemas --json \
+  | json_field '.schema == "sley.contract.validate.v0" and .status == "passed" and .requested_schema == "sley.workbench.report.v0" and .report_schema == "sley.workbench.report.v0"'
+
+bin/sley-workbench --json examples/unused_private_task.sley > "$workbench_report"
+json_field '.schema == "sley.workbench.report.v0" and .status == "warnings" and .lint.status == "findings" and .lint.findings[0].id == "UNUSED_PRIVATE_TASK" and .lint.findings[0].plan_command[1] == "plan" and .lint.findings[0].plan_command[5] == "task:app.tasks.orphan" and .lint.findings[0].plan_command[6] == "examples/unused_private_task.sley"' < "$workbench_report"
+
+bin/sley-contract validate --schema sley.workbench.report.v0 "$workbench_report" --schemas docs/schemas --json \
+  | json_field '.schema == "sley.contract.validate.v0" and .status == "passed" and .requested_schema == "sley.workbench.report.v0" and .report_schema == "sley.workbench.report.v0"'
 
 bin/sley graft --json --dry-run fixtures/ci_smoke_probe/graft_target.sley fixtures/ci_smoke_probe/insert_statement.json \
   | json_field '.schema == "sley.graft.outcome.v0" and .status == "accepted"'

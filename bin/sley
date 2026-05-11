@@ -394,6 +394,8 @@ SCHEMA_MIGRATE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/report
 MIGRATE_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" migrate_report_fields)"
 SCHEMA_DOCGEN="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" docgen_schema)"
 DOCGEN_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" docgen_report_fields)"
+SCHEMA_WORKBENCH="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" workbench_schema)"
+WORKBENCH_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" workbench_report_fields)"
 SCHEMA_SELF_HOSTING="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_status_schema)"
 SELF_HOSTING_REPORT_SOURCE_ROOT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_source_root)"
 SELF_HOSTING_STATUS_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_status_fields)"
@@ -476,6 +478,10 @@ fi
 SCHEMA_DOCGEN="${SCHEMA_DOCGEN:-sley.docgen.report.v0}"
 if [[ "$DOCGEN_REPORT_FIELDS_JSON" == "[]" ]]; then
   DOCGEN_REPORT_FIELDS_JSON='["schema","status","target","source_schema","summary","filters","documents","modules","tasks","types","effects","capabilities","diagnostics","issues"]'
+fi
+SCHEMA_WORKBENCH="${SCHEMA_WORKBENCH:-sley.workbench.report.v0}"
+if [[ "$WORKBENCH_REPORT_FIELDS_JSON" == "[]" ]]; then
+  WORKBENCH_REPORT_FIELDS_JSON='["schema","status","target","summary","diagnostics","doctor","query","lint","plan","graph","graph_slice","issues"]'
 fi
 SCHEMA_SELF_HOSTING="${SCHEMA_SELF_HOSTING:-sley.self_hosting.status.v0}"
 SELF_HOSTING_REPORT_SOURCE_ROOT="${SELF_HOSTING_REPORT_SOURCE_ROOT:-self-hosted/src}"
@@ -3757,6 +3763,197 @@ command_docgen() {
   [[ "$(printf '%s\n' "$report" | jq -r '.status')" != "blocked" ]]
 }
 
+workbench_json() {
+  local target="" slice="" ast
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --json) shift ;;
+      --slice) slice="$2"; shift 2 ;;
+      *) target="$1"; shift ;;
+    esac
+  done
+  ast="$(ast_json "$target")"
+  printf '%s\n' "$ast" | jq \
+    --arg schema "$SCHEMA_WORKBENCH" \
+    --arg target "$target" \
+    --arg slice "$slice" \
+    --argjson fields "$WORKBENCH_REPORT_FIELDS_JSON" '
+    def task_sources($task):
+      ([$task.body.statements[]? | (.expr?.source? // empty)] +
+       [$task.body.statements[]? | (.condition?.source? // empty)]);
+    def function_call_count($task):
+      [task_sources($task)[] | select(test("[A-Za-z_][A-Za-z0-9_.]*\\("))] | length;
+    def call_callee:
+      (.source // "") | sub("^call[[:space:]]+";"") | sub("\\(.*$";"");
+    def resolve_call($ast; $module; $callee):
+      if ($callee | contains(".")) then
+        ($callee | split(".")) as $parts |
+        ($parts[0]) as $prefix |
+        ([$ast.imports[]? | select(.owner_module == $module and .alias == $prefix) | .module][0]) as $imported |
+        if $imported then ($imported + "." + ($parts[1:] | join("."))) else $callee end
+      else $module + "." + $callee end;
+    def call_records($ast):
+      [
+        $ast.tasks[]? as $from |
+        $from.body.statements[]?.expr? |
+        select((.source? // "") | startswith("call ")) |
+        call_callee as $callee |
+        {
+          from:($from.module + "." + $from.name),
+          from_module:$from.module,
+          expr_id:.id,
+          source:.source,
+          callee:$callee,
+          status:"resolved",
+          target:resolve_call($ast; $from.module; $callee)
+        }
+      ];
+    def inbound_count($calls; $qualified):
+      [$calls[] | select(.target == $qualified)] | length;
+    def task_report($calls; $task):
+      ($task.module + "." + $task.name) as $qualified |
+      {
+        id:$task.id,
+        name:$task.name,
+        module:$task.module,
+        qualified_name:$qualified,
+        exported:$task.exported,
+        takes:($task.takes | map({
+          name,
+          binding_kind:(.binding_kind | ascii_downcase),
+          type:(.type.name // "Unit")
+        })),
+        return_type:($task.return_type.name // "Unit"),
+        effects:$task.effects,
+        outbound_call_count:function_call_count($task),
+        inbound_call_count:inbound_count($calls; $qualified)
+      };
+    def type_report:
+      {id,name,module,qualified_name:(.module + "." + .name),exported,value:(.value.name // "Unit"),fields:[]};
+    def module_summary($ast; $module):
+      {
+        module:$module,
+        imports:[$ast.imports[]? | select(.owner_module == $module) | {id,module} + (if .alias then {alias} else {} end)],
+        types:[$ast.types[]? | select(.module == $module) | {name,id,exported}],
+        effects:[$ast.effects[]? | select(.module == $module) | {name,id,exported}],
+        tasks:[$ast.tasks[]? | select(.module == $module) | {name,id,exported}]
+      };
+    def lint_finding($target; $task):
+      {
+        id:"UNUSED_PRIVATE_TASK",
+        rule:"unused_private_task",
+        severity:"warning",
+        message:("private task `" + $task.qualified_name + "` is not called by any checked task"),
+        node:$task.id,
+        module:$task.module,
+        hint:"call it, export it, or delete it",
+        plan_command:["sley","plan","--json","--graft-templates","--template-surface",$task.id,$target]
+      };
+    def graft_template($target; $finding):
+      {
+        kind:"delete_unused_private_task",
+        surface:$finding.node,
+        reason:"delete unused private task reported by lint",
+        editable_json_pointers:[],
+        payload:{op:"DeleteNode",target:$finding.node},
+        preview_command:["sley","fix","--json","--kind","delete_unused_private_task","--template-surface",$finding.node,"--dry-run",$target],
+        write_command:["sley","fix","--json","--kind","delete_unused_private_task","--template-surface",$finding.node,"--write",$target],
+        post_fix_gate_commands:[
+          ["sley","check","--json",$target],
+          ["sley","lint","--json","--deny-warnings",$target],
+          ["sley","verify","--json","--deny-warnings",$target]
+        ]
+      };
+    . as $ast |
+    ($ast.tasks | map(.module) | unique) as $modules |
+    (call_records($ast)) as $calls |
+    ($ast.tasks | map(task_report($calls; .))) as $task_reports |
+    ($ast.types | map(type_report)) as $type_reports |
+    ($task_reports | map(select((.exported | not) and .name != "main" and .inbound_call_count == 0))) as $unused_tasks |
+    ($unused_tasks | map(lint_finding($target; .))) as $lint_findings |
+    ($lint_findings | map(graft_template($target; .))) as $graft_templates |
+    (if ($lint_findings | length) > 0 then "warnings" else "ready" end) as $status |
+    ($modules | map(module_summary($ast; .))) as $graph_modules |
+    ([$ast.tasks[]? | select(.id == $slice)][0]) as $focus_task |
+    (if $slice == "" then null else (($focus_task // {id:$slice,module:($ast.module // "main"),name:$slice})) end) as $focus |
+    {
+      ($fields[0] // "schema"):$schema,
+      ($fields[1] // "status"):$status,
+      ($fields[2] // "target"):$target,
+      ($fields[3] // "summary"):{
+        module_count:($modules | length),
+        task_count:($task_reports | length),
+        type_count:($type_reports | length),
+        effect_count:($ast.effects | length),
+        call_count:($ast.tasks | map(function_call_count(.)) | add // 0),
+        lint_finding_count:($lint_findings | length),
+        graft_template_count:($graft_templates | length),
+        transaction_template_count:0,
+        diagnostic_count:0,
+        issue_count:0
+      },
+      ($fields[4] // "diagnostics"):[],
+      ($fields[5] // "doctor"):{
+        status:$status,
+        error_count:0,
+        warning_count:($lint_findings | length),
+        next_actions:[]
+      },
+      ($fields[6] // "query"):{
+        source_schema:"sley.query.report.v0",
+        entry_module:($ast.module // ($modules[0] // "main")),
+        modules:$modules,
+        tasks:$task_reports,
+        types:$type_reports,
+        calls:$calls
+      },
+      ($fields[7] // "lint"):{
+        source_schema:"sley.lint.report.v0",
+        status:(if ($lint_findings | length) > 0 then "findings" else "ok" end),
+        findings:$lint_findings
+      },
+      ($fields[8] // "plan"):{
+        source_schema:"sley.edit_plan.report.v0",
+        status:$status,
+        task_surfaces:[],
+        graft_templates:$graft_templates,
+        transaction_templates:[],
+        next_actions:[]
+      },
+      ($fields[9] // "graph"):{
+        source_schema:"sley.symbol_graph.v0",
+        entry_module:($ast.module // ($modules[0] // "main")),
+        module_count:($modules | length),
+        modules:$graph_modules
+      },
+      ($fields[11] // "issues"):[]
+    } + (if $focus == null then {} else {
+      ($fields[10] // "graph_slice"):{
+        schema:"sley.symbol_graph.slice.v0",
+        target:$target,
+        entry_module:($ast.module // ($modules[0] // "main")),
+        focus:{kind:"task",id:$focus.id,module:$focus.module,name:$focus.name},
+        imports:[$ast.imports[]? | select(.owner_module == $focus.module) | {id,module} + (if .alias then {alias} else {} end)],
+        types:[$ast.types[]? | select(.module == $focus.module) | {name,id,exported}],
+        effects:[$ast.effects[]? | select(.module == $focus.module) | {name,id,exported}],
+        tasks:[$ast.tasks[]? | select(.module == $focus.module) | {name,id,exported}],
+        add_affordances:[],
+        insert_affordances:[],
+        move_affordances:[],
+        delete_affordances:[],
+        replace_affordances:[],
+        call_site_affordances:[],
+        call_arg_affordances:[],
+        outbound_calls:[$calls[] | select(.from == ($focus.module + "." + $focus.name))],
+        inbound_calls:[$calls[] | select(.target == ($focus.module + "." + $focus.name))]
+      }
+    } end)'
+}
+
+command_workbench() {
+  workbench_json "$@"
+}
+
 command_ast() {
   local node="" target=""
   while [[ "$#" -gt 0 ]]; do
@@ -3987,7 +4184,7 @@ main_sley() {
     sley-contract) shift; tool_contract "$@" ;;
     sley-docgen) shift; command_docgen "$@" ;;
     sley-lsp) shift; simple_report_tool "sley.lsp.command_preview.v0" "ready" "" ;;
-    sley-workbench) shift; simple_report_tool "sley.workbench.report.v0" "ready" "$(last_path_arg "$@")" ;;
+    sley-workbench) shift; command_workbench "$@" ;;
     sley-agent-bench) shift; simple_report_tool "sley.agent_bench.report.v0" "passed" "" ;;
     sley-migrate) shift; command_migrate "$@" ;;
     sley-sandbox-runner) shift; simple_report_tool "sley.sandbox.report.v0" "passed" "$(last_path_arg "$@")" ;;
