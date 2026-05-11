@@ -43,6 +43,26 @@ export task duplicate_record_literal_field_id -> Text {
   return "DUPLICATE_RECORD_LITERAL_FIELD"
 }
 
+export task record_field_missing_id -> Text {
+  return "RECORD_FIELD_MISSING"
+}
+
+export task record_field_unknown_id -> Text {
+  return "RECORD_FIELD_UNKNOWN"
+}
+
+export task record_field_type_mismatch_id -> Text {
+  return "RECORD_FIELD_TYPE_MISMATCH"
+}
+
+export task unknown_record_field_id -> Text {
+  return "UNKNOWN_RECORD_FIELD"
+}
+
+export task record_literal_non_record_type_id -> Text {
+  return "RECORD_LITERAL_NON_RECORD_TYPE"
+}
+
 export task list_element_type_mismatch_id -> Text {
   return "LIST_ELEMENT_TYPE_MISMATCH"
 }
@@ -176,6 +196,46 @@ export task duplicate_record_literal_field_message_prefix -> Text {
 }
 
 export task duplicate_record_literal_field_message_suffix -> Text {
+  return "`"
+}
+
+export task record_field_missing_message_prefix -> Text {
+  return "record field missing `"
+}
+
+export task record_field_missing_message_suffix -> Text {
+  return "`"
+}
+
+export task record_field_unknown_message_prefix -> Text {
+  return "record field unknown `"
+}
+
+export task record_field_unknown_message_suffix -> Text {
+  return "`"
+}
+
+export task record_field_type_mismatch_message_prefix -> Text {
+  return "record field type mismatch `"
+}
+
+export task record_field_type_mismatch_message_suffix -> Text {
+  return "`"
+}
+
+export task unknown_record_field_message_prefix -> Text {
+  return "unknown record field `"
+}
+
+export task unknown_record_field_message_suffix -> Text {
+  return "`"
+}
+
+export task record_literal_non_record_type_message_prefix -> Text {
+  return "record literal type is not a record `"
+}
+
+export task record_literal_non_record_type_message_suffix -> Text {
   return "`"
 }
 

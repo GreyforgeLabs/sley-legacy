@@ -8,11 +8,15 @@ Status: local checkpoint from Codex resume `019e1799-3642-7dd0-b6c3-55a66d7df677
   `sley.ci.report.v0` steps instead of a one-step synthetic pass.
 - Corpus accepted fixtures run `sley check --json` and `sley format` round-trip
   checks.
-- Corpus rejected fixtures now fail through the stage-1 bootstrap by enforcing
-  their existing `.json` diagnostic sidecars.
+- Corpus rejected fixtures run through checker logic when the bootstrap can
+  prove the rule; only the remaining type-return fixtures still use their
+  `.json` diagnostic sidecars.
 - Top-level fallible expression statements now enter the AST as parser-owned
   `Expr` statements, and `QUESTION_REQUIRES_RESULT` is enforced by checker
   logic instead of its sidecar.
+- Record literals now emit checker-owned diagnostics for missing fields,
+  unknown fields, field type mismatches, non-record type literals, and simple
+  `value.field` misses.
 - `sley-ci examples --json examples` now checks each example project root,
   checks standalone `.sley` files, and formatter-round-trips every shipped
   example source.
@@ -36,15 +40,17 @@ Rejected fixture enforcement is still partly a stage-1 bootstrap oracle:
 `UNKNOWN_IDENTIFIER`, `UNKNOWN_TYPE`, `UNKNOWN_TASK`, `CALL_ARITY_MISMATCH`,
 `CALL_ARGUMENT_TYPE_MISMATCH`, `DUPLICATE_TAKE`, `DUPLICATE_EFFECT`,
 `DUPLICATE_FIELD`, `DUPLICATE_MAP_KEY`, `DUPLICATE_RECORD_LITERAL_FIELD`,
-`DUPLICATE_TYPE`, `DUPLICATE_TASK`, `UNKNOWN_EFFECT`,
+`DUPLICATE_TYPE`, `DUPLICATE_TASK`, `RECORD_FIELD_MISSING`,
+`RECORD_FIELD_UNKNOWN`, `RECORD_FIELD_TYPE_MISMATCH`,
+`RECORD_LITERAL_NON_RECORD_TYPE`, `UNKNOWN_RECORD_FIELD`, `UNKNOWN_EFFECT`,
 `GATE_TAKE_TYPE_MISMATCH`, `GATE_EFFECT_UNDECLARED`, `EFFECT_UNAUTHORIZED`,
 `INDEX_NOT_INT`, `INDEX_KEY_TYPE_MISMATCH`, `LIST_ELEMENT_TYPE_MISMATCH`,
 `MAP_KEY_TYPE_MISMATCH`, `MAP_VALUE_TYPE_MISMATCH`, `MISSING_RETURN`, and
-`QUESTION_REQUIRES_RESULT` now come from checker logic, while record
-completion/field-access and type-return rejected fixtures still emit expected
-diagnostic IDs from their sidecars. This turns the corpus gate into an
-executable manifest gate, but it is not yet a strict semantic checker
-implementation for every rejected language rule.
+`QUESTION_REQUIRES_RESULT` now come from checker logic, while `TYPE_MISMATCH`
+and `RETURN_TYPE_MISMATCH` rejected fixtures still emit expected diagnostic IDs
+from their sidecars. This turns the corpus gate into an executable manifest
+gate, but it is not yet a strict semantic checker implementation for every
+rejected language rule.
 
 ## Next Slice
 
