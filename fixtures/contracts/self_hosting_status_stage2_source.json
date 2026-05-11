@@ -38,6 +38,7 @@
     "checker_duplicate_take_diagnostics",
     "checker_namespace_diagnostics",
     "checker_effect_diagnostics",
+    "checker_effect_propagation_diagnostics",
     "checker_identifier_resolution_inputs",
     "lint_status_task_execution",
     "lint_report_shape",
