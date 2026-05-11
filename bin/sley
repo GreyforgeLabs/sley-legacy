@@ -333,6 +333,14 @@ runtime_deploy_stage_probe_matches() {
   runtime_source_has_call "$1" "deploy.try_stage("
 }
 
+runtime_spend_authorize_probe_matches() {
+  runtime_source_has_call "$1" "spend.try_authorize("
+}
+
+runtime_spend_prefix_probe_matches() {
+  runtime_source_has_call "$1" "budget gate: "
+}
+
 sha256_stream() {
   sha256sum | awk '{print "sha256:" $1}'
 }
@@ -1966,7 +1974,7 @@ doctor_json() {
 }
 
 run_json() {
-  local target="$1" http_text="" model_text="" deploy_text="" runtime_status literal_runtime arg prev=""
+  local target="$1" http_text="" model_text="" deploy_text="" spend_text="" runtime_status literal_runtime arg prev=""
   for arg in "$@"; do
     case "$prev" in
       --http-text-url) prev="--http-text-value"; continue ;;
@@ -1975,11 +1983,14 @@ run_json() {
       --model-output-value) model_text="$arg"; prev=""; continue ;;
       --deploy-result-target) prev="--deploy-result-value"; continue ;;
       --deploy-result-value) deploy_text="$arg"; prev=""; continue ;;
+      --spend-result-request) prev="--spend-result-value"; continue ;;
+      --spend-result-value) spend_text="$arg"; prev=""; continue ;;
     esac
     case "$arg" in
       --http-text) prev="--http-text-url" ;;
       --model-output) prev="--model-output-prompt" ;;
       --deploy-result) prev="--deploy-result-target" ;;
+      --spend-result) prev="--spend-result-request" ;;
       *) ;;
     esac
   done
@@ -1999,6 +2010,14 @@ run_json() {
   elif runtime_deploy_stage_probe_matches "$target"; then
     value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
     value="${deploy_text:-$RUNTIME_DEFAULT_DEPLOY_RESULT}"
+  elif runtime_spend_authorize_probe_matches "$target"; then
+    value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
+    spend_text="${spend_text:-authorized}"
+    if runtime_spend_prefix_probe_matches "$target"; then
+      value="budget gate: $spend_text"
+    else
+      value="$spend_text"
+    fi
   elif runtime_project_ready_probe_matches "$target"; then
     value_kind="$RUNTIME_INT_VALUE_KIND"; value="$(eval_project_ready_value_task || printf '%s\n' "$RUNTIME_PROJECT_READY_VALUE")"
   fi
@@ -4873,13 +4892,25 @@ scaffold_report() {
       action("seal_project"; "create a content-addressed review artifact for the scaffold"; ["sley","seal","--json","."]),
       action("package_project"; "create a ZJX preview envelope for agent handoff"; ["sley","zjx","--json","."])
     ];
+    def spend_commands: [
+      ["sley","verify","--json","--deny-warnings","--cap","Spend","--spend-result","ads-budget","authorized","."],
+      ["sley","run","--json","--cap","Spend","--spend-result","ads-budget","authorized","."],
+      ["sley","seal","--json","."],
+      ["sley","zjx","--json","."]
+    ];
+    def spend_actions: [
+      action("verify_seeded_spend"; "verify spend authority with deterministic seeded authorization and denied warnings"; ["sley","verify","--json","--deny-warnings","--cap","Spend","--spend-result","ads-budget","authorized","."]),
+      action("run_seeded_spend"; "execute the spend-gated starter with deterministic seeded authority"; ["sley","run","--json","--cap","Spend","--spend-result","ads-budget","authorized","."]),
+      action("seal_project"; "create a content-addressed review artifact for the scaffold"; ["sley","seal","--json","."]),
+      action("package_project"; "create a ZJX preview envelope for agent handoff"; ["sley","zjx","--json","."])
+    ];
     {
       schema:"sley.project.scaffold.v0",
       status:"created",
       project:{name:$name, root:$name, source_root:"src", entry_module:$module, template:$template},
       files:[file("sley.toml"; "manifest"), file("README.md"; "guide"), file($source_path; "source")],
-      next_commands:(base_commands + (if $template == "deploy" then deploy_commands else [["sley","seal","--json","."]] end)),
-      next_actions:(base_actions + (if $template == "deploy" then deploy_actions else [action("seal_project"; "create a content-addressed review artifact for the scaffold"; ["sley","seal","--json","."])] end))
+      next_commands:(base_commands + (if $template == "deploy" then deploy_commands elif $template == "spend-gate" then spend_commands else [["sley","seal","--json","."]] end)),
+      next_actions:(base_actions + (if $template == "deploy" then deploy_actions elif $template == "spend-gate" then spend_actions else [action("seal_project"; "create a content-addressed review artifact for the scaffold"; ["sley","seal","--json","."])] end))
     }'
 }
 
@@ -4922,6 +4953,17 @@ task main -> Result<Text, Error> uses Deploy {
   bind result = call deploy.try_stage("staging")?
 
   return Ok(result)
+}
+EOF
+      ;;
+    spend-gate)
+      cat > "$out/$source_path" <<EOF
+module $module
+
+task main -> Result<Text, Error> uses Spend {
+  bind result = call spend.try_authorize("ads-budget")?
+
+  return Ok("budget gate: " + result)
 }
 EOF
       ;;
