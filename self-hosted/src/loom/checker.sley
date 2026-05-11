@@ -31,6 +31,30 @@ export task duplicate_take_id -> Text {
   return "DUPLICATE_TAKE"
 }
 
+export task duplicate_map_key_id -> Text {
+  return "DUPLICATE_MAP_KEY"
+}
+
+export task list_element_type_mismatch_id -> Text {
+  return "LIST_ELEMENT_TYPE_MISMATCH"
+}
+
+export task index_not_int_id -> Text {
+  return "INDEX_NOT_INT"
+}
+
+export task index_key_type_mismatch_id -> Text {
+  return "INDEX_KEY_TYPE_MISMATCH"
+}
+
+export task map_key_type_mismatch_id -> Text {
+  return "MAP_KEY_TYPE_MISMATCH"
+}
+
+export task map_value_type_mismatch_id -> Text {
+  return "MAP_VALUE_TYPE_MISMATCH"
+}
+
 export task duplicate_effect_id -> Text {
   return "DUPLICATE_EFFECT"
 }
@@ -61,6 +85,10 @@ export task effect_unauthorized_id -> Text {
 
 export task missing_return_id -> Text {
   return "MISSING_RETURN"
+}
+
+export task question_requires_result_id -> Text {
+  return "QUESTION_REQUIRES_RESULT"
 }
 
 export task ok_status -> Text {
@@ -116,6 +144,54 @@ export task duplicate_take_message_prefix -> Text {
 }
 
 export task duplicate_take_message_suffix -> Text {
+  return "`"
+}
+
+export task duplicate_map_key_message_prefix -> Text {
+  return "duplicate map key `"
+}
+
+export task duplicate_map_key_message_suffix -> Text {
+  return "`"
+}
+
+export task list_element_type_mismatch_message_prefix -> Text {
+  return "list element type mismatch `"
+}
+
+export task list_element_type_mismatch_message_suffix -> Text {
+  return "`"
+}
+
+export task index_not_int_message_prefix -> Text {
+  return "list index must be Int, got `"
+}
+
+export task index_not_int_message_suffix -> Text {
+  return "`"
+}
+
+export task index_key_type_mismatch_message_prefix -> Text {
+  return "map index key must be Text, got `"
+}
+
+export task index_key_type_mismatch_message_suffix -> Text {
+  return "`"
+}
+
+export task map_key_type_mismatch_message_prefix -> Text {
+  return "map key type mismatch `"
+}
+
+export task map_key_type_mismatch_message_suffix -> Text {
+  return "`"
+}
+
+export task map_value_type_mismatch_message_prefix -> Text {
+  return "map value type mismatch `"
+}
+
+export task map_value_type_mismatch_message_suffix -> Text {
   return "`"
 }
 
@@ -180,6 +256,14 @@ export task missing_return_message_prefix -> Text {
 }
 
 export task missing_return_message_suffix -> Text {
+  return "`"
+}
+
+export task question_requires_result_message_prefix -> Text {
+  return "question operator requires Result return in task `"
+}
+
+export task question_requires_result_message_suffix -> Text {
   return "`"
 }
 

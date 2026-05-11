@@ -14,15 +14,17 @@ source. The self-hosting status source-root label and top-level report field
 shape plus diagnostics/doctor/query report field shapes are read from
 `self-hosted/src/loom/reports.sley`. AST expression, statement, and binding
 kind names are also read from
-`self-hosted/src/loom/parser.sley`; standalone `call` statements now enter the
-AST as parser-owned `Expr` statements. `sley run --json self-hosted` executes
+`self-hosted/src/loom/parser.sley`; standalone `call` statements and top-level
+fallible expression statements now enter the AST as parser-owned `Expr`
+statements. `sley run --json self-hosted` executes
 the `loom.bootstrap.smoke` source task over the Sley-owned lint-rule inventory.
 Checker diagnostic status and unknown-identifier message construction,
 including checker report status task execution, are read from
 `self-hosted/src/loom/checker.sley`. Builtin type recognition, unknown-type
 diagnostics, unqualified unknown-task diagnostics, simple declared-call
-arity/type diagnostics, duplicate-take diagnostics, namespace duplicate
-diagnostics, effect/gate diagnostics, and direct/transitive effect-propagation
+arity/type diagnostics, duplicate-take diagnostics, collection map/list/index
+diagnostics, namespace duplicate diagnostics, effect/gate diagnostics,
+direct/transitive effect-propagation diagnostics, and `?`-requires-`Result`
 diagnostics execute from Sley-owned checker source; identifier resolution input
 classes are read from
 `loom.checker.identifier_resolution_inputs`. Lint
