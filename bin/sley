@@ -4519,17 +4519,72 @@ command_graft() {
   }'
 }
 
+scaffold_report() {
+  local name="$1" module="$2" template="$3" out="$4" source_path="$5"
+  jq -n \
+    --arg name "$name" \
+    --arg module "$module" \
+    --arg template "$template" \
+    --arg out "$out" \
+    --arg source_path "$source_path" '
+    def file($path; $kind): {path:$path, kind:$kind};
+    def action($kind; $reason; $command): {kind:$kind, reason:$reason, command:$command};
+    def base_commands: [
+      ["sley","check","--json","."],
+      ["sley","doctor","--json","."],
+      ["sley","query","--json","--kind","tasks","."],
+      ["sley","plan","--json","."],
+      ["sley","lint","--json","--deny-warnings","."]
+    ];
+    def base_actions: [
+      action("check_project"; "confirm the scaffold parses and passes strict checks"; ["sley","check","--json","."]),
+      action("doctor_project"; "summarize strict checks, query facts, and lint gates in one readiness report"; ["sley","doctor","--json","."]),
+      action("inspect_tasks"; "read the entry task surface before editing"; ["sley","query","--json","--kind","tasks","."]),
+      action("plan_first_edit"; "ask Loom for ranked edit surfaces and post-edit gates"; ["sley","plan","--json","."]),
+      action("lint_gate"; "keep warning-grade hygiene strict before runtime work"; ["sley","lint","--json","--deny-warnings","."])
+    ];
+    def deploy_commands: [
+      ["sley","verify","--json","--deny-warnings","--cap","Deploy","--deploy-result","staging","staged","."],
+      ["sley","run","--json","--cap","Deploy","--deploy-result","staging","staged","."],
+      ["sley","deploy","--json","--dry-run","--artifacts-dir",".sley/deploy","--cap","Deploy","--deploy-result","staging","staged","."],
+      ["sley","seal","--json","."],
+      ["sley","zjx","--json","."]
+    ];
+    def deploy_actions: [
+      action("verify_seeded_deploy"; "verify deploy authority with a seeded provider result and denied warnings"; ["sley","verify","--json","--deny-warnings","--cap","Deploy","--deploy-result","staging","staged","."]),
+      action("run_seeded_deploy"; "execute the deploy-gated starter with deterministic seeded authority"; ["sley","run","--json","--cap","Deploy","--deploy-result","staging","staged","."]),
+      action("prepare_deploy_package"; "build the local dry-run deploy report after seeded verification"; ["sley","deploy","--json","--dry-run","--artifacts-dir",".sley/deploy","--cap","Deploy","--deploy-result","staging","staged","."]),
+      action("seal_project"; "create a content-addressed review artifact for the scaffold"; ["sley","seal","--json","."]),
+      action("package_project"; "create a ZJX preview envelope for agent handoff"; ["sley","zjx","--json","."])
+    ];
+    {
+      schema:"sley.project.scaffold.v0",
+      status:"created",
+      project:{name:$name, root:$name, source_root:"src", entry_module:$module, template:$template},
+      files:[file("sley.toml"; "manifest"), file("README.md"; "guide"), file($source_path; "source")],
+      next_commands:(base_commands + (if $template == "deploy" then deploy_commands else [["sley","seal","--json","."]] end)),
+      next_actions:(base_actions + (if $template == "deploy" then deploy_actions else [action("seal_project"; "create a content-addressed review artifact for the scaffold"; ["sley","seal","--json","."])] end))
+    }'
+}
+
 command_new() {
-  local name="" module="app.main" out=""
+  local name="" module="app.main" out="" template="hello"
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
       --name) name="$2"; shift 2 ;;
       --module) module="$2"; shift 2 ;;
-      --json|--template) shift 2 ;;
+      --template) template="$2"; shift 2 ;;
+      --json) shift ;;
       *) out="$1"; shift ;;
     esac
   done
   [[ -n "$out" ]] || out="$name"
+  if [[ -z "$name" ]]; then
+    local clean_out="${out%/}"
+    name="${clean_out##*/}"
+  fi
+  local module_dir="${module%.*}"
+  local source_path="src/${module_dir}/main.sley"
   mkdir -p "$out/src/${module%.*}"
   cat > "$out/sley.toml" <<EOF
 [project]
@@ -4537,14 +4592,34 @@ name = "$name"
 entry = "$module"
 source = "src"
 EOF
-  cat > "$out/src/${module%.*}/main.sley" <<EOF
+  cat > "$out/README.md" <<EOF
+# $name
+
+Generated Sley project scaffold.
+EOF
+  case "$template" in
+    deploy)
+      cat > "$out/$source_path" <<EOF
+module $module
+
+task main -> Result<Text, Error> uses Deploy {
+  bind result = call deploy.try_stage("staging")?
+
+  return Ok(result)
+}
+EOF
+      ;;
+    *)
+      cat > "$out/$source_path" <<EOF
 module $module
 
 task main -> Text {
   return "hello sley"
 }
 EOF
-  jq -n --arg out "$out" --arg module "$module" '{schema:"sley.project.scaffold.v0", status:"created", path:$out, module:$module}'
+      ;;
+  esac
+  scaffold_report "$name" "$module" "$template" "$out" "$source_path"
 }
 
 command_format() {
