@@ -23,6 +23,9 @@ Status: local checkpoint from Codex resume `019e1799-3642-7dd0-b6c3-55a66d7df677
 - The former `sley check` fallback that manufactured rejected fixture
   diagnostics from `.json` sidecars has been removed. Sidecars now serve only
   as `sley-ci corpus` expected-ID metadata.
+- `sley verify --json` now reads its top-level report field order from
+  `self-hosted/src/loom/reports.sley`, and self-hosting status records
+  `verify_report_shape` as Sley-owned bootstrap evidence.
 - `sley-ci examples --json examples` now checks each example project root,
   checks standalone `.sley` files, and formatter-round-trips every shipped
   example source.

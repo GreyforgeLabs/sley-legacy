@@ -88,6 +88,21 @@ export task verify_schema -> Text {
   return "sley.verify.report.v0"
 }
 
+export task verify_report_fields -> List<Text> {
+  return [
+    "schema",
+    "status",
+    "target",
+    "entry_module",
+    "summary",
+    "diagnostics",
+    "query",
+    "lint",
+    "runtime",
+    "next_actions"
+  ]
+}
+
 export task self_hosting_status_schema -> Text {
   return "sley.self_hosting.status.v0"
 }
