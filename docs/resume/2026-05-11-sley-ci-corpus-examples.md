@@ -56,6 +56,11 @@ Status: local checkpoint from Codex resume `019e1799-3642-7dd0-b6c3-55a66d7df677
   and top-level field order from `self-hosted/src/loom/reports.sley`, validates
   deploy artifact manifests and file digests, and self-hosting status records
   `deploy_artifact_check_report_shape` as Sley-owned bootstrap evidence.
+- `sley-migrate report --json` now reads its schema ID and top-level report
+  field order from `self-hosted/src/loom/reports.sley`, emits schema-valid
+  migration and schema-drift reports for the covered stage-1 cases, and
+  self-hosting status records `migrate_report_shape` as Sley-owned bootstrap
+  evidence.
 - `sley-ci examples --json examples` now checks each example project root,
   checks standalone `.sley` files, and formatter-round-trips every shipped
   example source.
