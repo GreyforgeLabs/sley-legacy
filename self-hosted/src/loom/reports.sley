@@ -356,6 +356,24 @@ export task workbench_report_fields -> List<Text> {
   ]
 }
 
+export task sandbox_schema -> Text {
+  return "sley.sandbox.report.v0"
+}
+
+export task sandbox_report_fields -> List<Text> {
+  return [
+    "schema",
+    "status",
+    "manifest",
+    "manifest_schema",
+    "target",
+    "sandbox_retained",
+    "summary",
+    "verify",
+    "issues"
+  ]
+}
+
 export task self_hosting_status_schema -> Text {
   return "sley.self_hosting.status.v0"
 }
