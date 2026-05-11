@@ -2,28 +2,2376 @@
   "schema": "sley.ci.report.v0",
   "status": "passed",
   "command": "corpus",
-  "target": "fixtures/corpus/manifest.json",
+  "manifest": "fixtures/corpus/manifest.json",
   "summary": {
-    "step_count": 1,
-    "passed_count": 1,
+    "step_count": 89,
+    "passed_count": 89,
     "failed_count": 0
   },
   "steps": [
     {
-      "name": "corpus",
+      "name": "accepted_check:accepted/authority/database_read.sley",
       "status": "passed",
       "command": [
-        "sley-ci",
-        "corpus",
-        "fixtures/corpus/manifest.json"
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/accepted/authority/database_read.sley"
       ],
       "expected_success": true,
       "actual_success": true,
       "exit_code": 0,
       "covers": [
-        "ci:corpus"
+        "accepted:DatabaseRead",
+        "host:db.query_one",
+        "authority:declared-effect",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "accepted_format:accepted/authority/database_read.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "fixtures/corpus/accepted/authority/database_read.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "accepted:DatabaseRead",
+        "host:db.query_one",
+        "authority:declared-effect",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
       ],
       "issues": []
+    },
+    {
+      "name": "accepted_check:accepted/authority/gate_take_database_read.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/accepted/authority/gate_take_database_read.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "accepted:GateTake",
+        "accepted:DatabaseRead",
+        "host:db.query_one",
+        "authority:gate-take",
+        "authority:declared-effect",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "accepted_format:accepted/authority/gate_take_database_read.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "fixtures/corpus/accepted/authority/gate_take_database_read.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "accepted:GateTake",
+        "accepted:DatabaseRead",
+        "host:db.query_one",
+        "authority:gate-take",
+        "authority:declared-effect",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": []
+    },
+    {
+      "name": "accepted_check:accepted/authority/database_write.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/accepted/authority/database_write.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "accepted:DatabaseWrite",
+        "host:db.try_insert",
+        "authority:declared-effect",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "accepted_format:accepted/authority/database_write.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "fixtures/corpus/accepted/authority/database_write.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "accepted:DatabaseWrite",
+        "host:db.try_insert",
+        "authority:declared-effect",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": []
+    },
+    {
+      "name": "accepted_check:accepted/authority/deploy_stage.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/accepted/authority/deploy_stage.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "accepted:Deploy",
+        "host:deploy.try_stage",
+        "authority:declared-effect",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "accepted_format:accepted/authority/deploy_stage.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "fixtures/corpus/accepted/authority/deploy_stage.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "accepted:Deploy",
+        "host:deploy.try_stage",
+        "authority:declared-effect",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": []
+    },
+    {
+      "name": "accepted_check:accepted/authority/file_read.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/accepted/authority/file_read.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "accepted:FileRead",
+        "host:fs.try_read_text",
+        "authority:declared-effect",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "accepted_format:accepted/authority/file_read.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "fixtures/corpus/accepted/authority/file_read.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "accepted:FileRead",
+        "host:fs.try_read_text",
+        "authority:declared-effect",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": []
+    },
+    {
+      "name": "accepted_check:accepted/authority/file_write.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/accepted/authority/file_write.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "accepted:FileWrite",
+        "host:fs.try_write_text",
+        "authority:declared-effect",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "accepted_format:accepted/authority/file_write.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "fixtures/corpus/accepted/authority/file_write.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "accepted:FileWrite",
+        "host:fs.try_write_text",
+        "authority:declared-effect",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": []
+    },
+    {
+      "name": "accepted_check:accepted/authority/model_complete.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/accepted/authority/model_complete.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "accepted:ModelCall",
+        "host:model.try_complete",
+        "authority:declared-effect",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "accepted_format:accepted/authority/model_complete.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "fixtures/corpus/accepted/authority/model_complete.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "accepted:ModelCall",
+        "host:model.try_complete",
+        "authority:declared-effect",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": []
+    },
+    {
+      "name": "accepted_check:accepted/authority/network_get_text.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/accepted/authority/network_get_text.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "accepted:Network",
+        "host:http.try_get_text",
+        "authority:declared-effect",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "accepted_format:accepted/authority/network_get_text.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "fixtures/corpus/accepted/authority/network_get_text.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "accepted:Network",
+        "host:http.try_get_text",
+        "authority:declared-effect",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": []
+    },
+    {
+      "name": "accepted_check:accepted/authority/secret_read.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/accepted/authority/secret_read.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "accepted:SecretRead",
+        "host:secrets.try_get",
+        "authority:declared-effect",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "accepted_format:accepted/authority/secret_read.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "fixtures/corpus/accepted/authority/secret_read.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "accepted:SecretRead",
+        "host:secrets.try_get",
+        "authority:declared-effect",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": []
+    },
+    {
+      "name": "accepted_check:accepted/authority/shell_run.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/accepted/authority/shell_run.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "accepted:Shell",
+        "host:shell.try_run",
+        "authority:declared-effect",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "accepted_format:accepted/authority/shell_run.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "fixtures/corpus/accepted/authority/shell_run.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "accepted:Shell",
+        "host:shell.try_run",
+        "authority:declared-effect",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": []
+    },
+    {
+      "name": "accepted_check:accepted/authority/spend_authorize.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/accepted/authority/spend_authorize.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "accepted:Spend",
+        "host:spend.try_authorize",
+        "authority:declared-effect",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "accepted_format:accepted/authority/spend_authorize.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "fixtures/corpus/accepted/authority/spend_authorize.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "accepted:Spend",
+        "host:spend.try_authorize",
+        "authority:declared-effect",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": []
+    },
+    {
+      "name": "accepted_check:accepted/agent_deploy_pipeline.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/accepted/agent_deploy_pipeline.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "accepted:agent-deploy-pipeline",
+        "host:secrets.try_get",
+        "host:http.try_get_text",
+        "host:model.try_complete",
+        "host:deploy.try_stage",
+        "authority:declared-effects",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "accepted_format:accepted/agent_deploy_pipeline.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "fixtures/corpus/accepted/agent_deploy_pipeline.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "accepted:agent-deploy-pipeline",
+        "host:secrets.try_get",
+        "host:http.try_get_text",
+        "host:model.try_complete",
+        "host:deploy.try_stage",
+        "authority:declared-effects",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": []
+    },
+    {
+      "name": "accepted_check:accepted/agent_split_authority.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/accepted/agent_split_authority.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "accepted:agent-split-authority",
+        "host:secrets.try_get",
+        "host:http.try_get_text",
+        "host:model.try_complete",
+        "host:deploy.try_stage",
+        "authority:declared-effects",
+        "authority:transitive-effects",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "accepted_format:accepted/agent_split_authority.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "fixtures/corpus/accepted/agent_split_authority.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "accepted:agent-split-authority",
+        "host:secrets.try_get",
+        "host:http.try_get_text",
+        "host:model.try_complete",
+        "host:deploy.try_stage",
+        "authority:declared-effects",
+        "authority:transitive-effects",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": []
+    },
+    {
+      "name": "accepted_check:accepted/agent_spend_authority.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/accepted/agent_spend_authority.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "accepted:agent-spend-authority",
+        "host:spend.try_authorize",
+        "authority:declared-effects",
+        "authority:transitive-effects",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "accepted_format:accepted/agent_spend_authority.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "fixtures/corpus/accepted/agent_spend_authority.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "accepted:agent-spend-authority",
+        "host:spend.try_authorize",
+        "authority:declared-effects",
+        "authority:transitive-effects",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": []
+    },
+    {
+      "name": "accepted_check:accepted/agent_data_authority.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/accepted/agent_data_authority.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "accepted:agent-data-authority",
+        "host:db.try_insert",
+        "host:db.try_query_one",
+        "authority:declared-effects",
+        "authority:transitive-effects",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "accepted_format:accepted/agent_data_authority.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "fixtures/corpus/accepted/agent_data_authority.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "accepted:agent-data-authority",
+        "host:db.try_insert",
+        "host:db.try_query_one",
+        "authority:declared-effects",
+        "authority:transitive-effects",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": []
+    },
+    {
+      "name": "accepted_check:accepted/mutable_sum.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/accepted/mutable_sum.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "language:mutable-loop",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "accepted_format:accepted/mutable_sum.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "fixtures/corpus/accepted/mutable_sum.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "language:mutable-loop",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": []
+    },
+    {
+      "name": "accepted_check:accepted/collections_indexing.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/accepted/collections_indexing.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "accepted:collections-indexing",
+        "language:list-index",
+        "language:map-index",
+        "language:map-literal",
+        "language:len",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "accepted_format:accepted/collections_indexing.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "fixtures/corpus/accepted/collections_indexing.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "accepted:collections-indexing",
+        "language:list-index",
+        "language:map-index",
+        "language:map-literal",
+        "language:len",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": []
+    },
+    {
+      "name": "accepted_check:accepted/module_namespace.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/accepted/module_namespace.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "language:module-namespace",
+        "language:exported-declarations",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "accepted_format:accepted/module_namespace.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "fixtures/corpus/accepted/module_namespace.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "language:module-namespace",
+        "language:exported-declarations",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": []
+    },
+    {
+      "name": "accepted_check:accepted/type_alias_transparency.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/accepted/type_alias_transparency.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "language:type-alias",
+        "language:type-alias-transparent",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "accepted_format:accepted/type_alias_transparency.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "fixtures/corpus/accepted/type_alias_transparency.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "language:type-alias",
+        "language:type-alias-transparent",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": []
+    },
+    {
+      "name": "accepted_check:accepted/records_and_calls.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/accepted/records_and_calls.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "accepted:records-and-calls",
+        "language:record-type",
+        "language:record-literal",
+        "language:record-field-access",
+        "language:task-call",
+        "language:task-takes",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "accepted_format:accepted/records_and_calls.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "fixtures/corpus/accepted/records_and_calls.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "accepted:records-and-calls",
+        "language:record-type",
+        "language:record-literal",
+        "language:record-field-access",
+        "language:task-call",
+        "language:task-takes",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": []
+    },
+    {
+      "name": "accepted_check:accepted/pure_main.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/accepted/pure_main.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "language:pure-task-call",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "accepted_format:accepted/pure_main.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "fixtures/corpus/accepted/pure_main.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "language:pure-task-call",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": []
+    },
+    {
+      "name": "accepted_check:accepted/result_flow.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/accepted/result_flow.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "language:result-flow",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "accepted_format:accepted/result_flow.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "fixtures/corpus/accepted/result_flow.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "language:result-flow",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": []
+    },
+    {
+      "name": "accepted_check:accepted/authority/database_aliases.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/accepted/authority/database_aliases.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "accepted:DatabaseAlias",
+        "host:db.query_one",
+        "host:db.try_insert",
+        "authority:declared-effect",
+        "authority:effect-alias",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0"
+    },
+    {
+      "name": "accepted_format:accepted/authority/database_aliases.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "format",
+        "fixtures/corpus/accepted/authority/database_aliases.sley"
+      ],
+      "expected_success": true,
+      "actual_success": true,
+      "exit_code": 0,
+      "covers": [
+        "accepted:DatabaseAlias",
+        "host:db.query_one",
+        "host:db.try_insert",
+        "authority:declared-effect",
+        "authority:effect-alias",
+        "formatter:round-trip",
+        "ci:corpus",
+        "corpus:accepted"
+      ],
+      "issues": []
+    },
+    {
+      "name": "rejected_check:rejected/authority/missing_database_read_effect.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/rejected/authority/missing_database_read_effect.sley"
+      ],
+      "expected_success": false,
+      "actual_success": false,
+      "exit_code": 1,
+      "covers": [
+        "rejected:DatabaseRead",
+        "host:db.query_one",
+        "authority:missing-effect",
+        "diagnostic:EFFECT_UNAUTHORIZED",
+        "ci:corpus",
+        "corpus:rejected"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "EFFECT_UNAUTHORIZED",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic EFFECT_UNAUTHORIZED",
+          "node": "fixture:fixtures/corpus/rejected/authority/missing_database_read_effect.sley"
+        }
+      ]
+    },
+    {
+      "name": "rejected_check:rejected/authority/missing_gate_take_effect.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/rejected/authority/missing_gate_take_effect.sley"
+      ],
+      "expected_success": false,
+      "actual_success": false,
+      "exit_code": 1,
+      "covers": [
+        "rejected:GateTake",
+        "rejected:DatabaseRead",
+        "host:db.query_one",
+        "authority:gate-take",
+        "authority:missing-effect",
+        "diagnostic:EFFECT_UNAUTHORIZED",
+        "ci:corpus",
+        "corpus:rejected"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "EFFECT_UNAUTHORIZED",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic EFFECT_UNAUTHORIZED",
+          "node": "fixture:fixtures/corpus/rejected/authority/missing_gate_take_effect.sley"
+        }
+      ]
+    },
+    {
+      "name": "rejected_check:rejected/authority/missing_database_write_effect.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/rejected/authority/missing_database_write_effect.sley"
+      ],
+      "expected_success": false,
+      "actual_success": false,
+      "exit_code": 1,
+      "covers": [
+        "rejected:DatabaseWrite",
+        "host:db.try_insert",
+        "authority:missing-effect",
+        "diagnostic:EFFECT_UNAUTHORIZED",
+        "ci:corpus",
+        "corpus:rejected"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "EFFECT_UNAUTHORIZED",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic EFFECT_UNAUTHORIZED",
+          "node": "fixture:fixtures/corpus/rejected/authority/missing_database_write_effect.sley"
+        }
+      ]
+    },
+    {
+      "name": "rejected_check:rejected/authority/missing_database_alias_write_effect.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/rejected/authority/missing_database_alias_write_effect.sley"
+      ],
+      "expected_success": false,
+      "actual_success": false,
+      "exit_code": 1,
+      "covers": [
+        "rejected:DatabaseAlias",
+        "host:db.try_insert",
+        "authority:effect-alias",
+        "authority:missing-effect",
+        "diagnostic:EFFECT_UNAUTHORIZED",
+        "ci:corpus",
+        "corpus:rejected"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "EFFECT_UNAUTHORIZED",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic EFFECT_UNAUTHORIZED",
+          "node": "fixture:fixtures/corpus/rejected/authority/missing_database_alias_write_effect.sley"
+        }
+      ]
+    },
+    {
+      "name": "rejected_check:rejected/authority/missing_deploy_effect.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/rejected/authority/missing_deploy_effect.sley"
+      ],
+      "expected_success": false,
+      "actual_success": false,
+      "exit_code": 1,
+      "covers": [
+        "rejected:Deploy",
+        "host:deploy.try_stage",
+        "authority:missing-effect",
+        "diagnostic:EFFECT_UNAUTHORIZED",
+        "ci:corpus",
+        "corpus:rejected"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "EFFECT_UNAUTHORIZED",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic EFFECT_UNAUTHORIZED",
+          "node": "fixture:fixtures/corpus/rejected/authority/missing_deploy_effect.sley"
+        }
+      ]
+    },
+    {
+      "name": "rejected_check:rejected/authority/missing_file_read_effect.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/rejected/authority/missing_file_read_effect.sley"
+      ],
+      "expected_success": false,
+      "actual_success": false,
+      "exit_code": 1,
+      "covers": [
+        "rejected:FileRead",
+        "host:fs.try_read_text",
+        "authority:missing-effect",
+        "diagnostic:EFFECT_UNAUTHORIZED",
+        "ci:corpus",
+        "corpus:rejected"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "EFFECT_UNAUTHORIZED",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic EFFECT_UNAUTHORIZED",
+          "node": "fixture:fixtures/corpus/rejected/authority/missing_file_read_effect.sley"
+        }
+      ]
+    },
+    {
+      "name": "rejected_check:rejected/authority/missing_file_write_effect.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/rejected/authority/missing_file_write_effect.sley"
+      ],
+      "expected_success": false,
+      "actual_success": false,
+      "exit_code": 1,
+      "covers": [
+        "rejected:FileWrite",
+        "host:fs.try_write_text",
+        "authority:missing-effect",
+        "diagnostic:EFFECT_UNAUTHORIZED",
+        "ci:corpus",
+        "corpus:rejected"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "EFFECT_UNAUTHORIZED",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic EFFECT_UNAUTHORIZED",
+          "node": "fixture:fixtures/corpus/rejected/authority/missing_file_write_effect.sley"
+        }
+      ]
+    },
+    {
+      "name": "rejected_check:rejected/authority/missing_model_effect.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/rejected/authority/missing_model_effect.sley"
+      ],
+      "expected_success": false,
+      "actual_success": false,
+      "exit_code": 1,
+      "covers": [
+        "rejected:ModelCall",
+        "host:model.try_complete",
+        "authority:missing-effect",
+        "diagnostic:EFFECT_UNAUTHORIZED",
+        "ci:corpus",
+        "corpus:rejected"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "EFFECT_UNAUTHORIZED",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic EFFECT_UNAUTHORIZED",
+          "node": "fixture:fixtures/corpus/rejected/authority/missing_model_effect.sley"
+        }
+      ]
+    },
+    {
+      "name": "rejected_check:rejected/authority/missing_network_effect.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/rejected/authority/missing_network_effect.sley"
+      ],
+      "expected_success": false,
+      "actual_success": false,
+      "exit_code": 1,
+      "covers": [
+        "rejected:Network",
+        "host:http.try_get_text",
+        "authority:missing-effect",
+        "diagnostic:EFFECT_UNAUTHORIZED",
+        "ci:corpus",
+        "corpus:rejected"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "EFFECT_UNAUTHORIZED",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic EFFECT_UNAUTHORIZED",
+          "node": "fixture:fixtures/corpus/rejected/authority/missing_network_effect.sley"
+        }
+      ]
+    },
+    {
+      "name": "rejected_check:rejected/authority/missing_secret_effect.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/rejected/authority/missing_secret_effect.sley"
+      ],
+      "expected_success": false,
+      "actual_success": false,
+      "exit_code": 1,
+      "covers": [
+        "rejected:SecretRead",
+        "host:secrets.try_get",
+        "authority:missing-effect",
+        "diagnostic:EFFECT_UNAUTHORIZED",
+        "ci:corpus",
+        "corpus:rejected"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "EFFECT_UNAUTHORIZED",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic EFFECT_UNAUTHORIZED",
+          "node": "fixture:fixtures/corpus/rejected/authority/missing_secret_effect.sley"
+        }
+      ]
+    },
+    {
+      "name": "rejected_check:rejected/authority/missing_shell_effect.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/rejected/authority/missing_shell_effect.sley"
+      ],
+      "expected_success": false,
+      "actual_success": false,
+      "exit_code": 1,
+      "covers": [
+        "rejected:Shell",
+        "host:shell.try_run",
+        "authority:missing-effect",
+        "diagnostic:EFFECT_UNAUTHORIZED",
+        "ci:corpus",
+        "corpus:rejected"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "EFFECT_UNAUTHORIZED",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic EFFECT_UNAUTHORIZED",
+          "node": "fixture:fixtures/corpus/rejected/authority/missing_shell_effect.sley"
+        }
+      ]
+    },
+    {
+      "name": "rejected_check:rejected/authority/missing_spend_effect.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/rejected/authority/missing_spend_effect.sley"
+      ],
+      "expected_success": false,
+      "actual_success": false,
+      "exit_code": 1,
+      "covers": [
+        "rejected:Spend",
+        "host:spend.try_authorize",
+        "authority:missing-effect",
+        "diagnostic:EFFECT_UNAUTHORIZED",
+        "ci:corpus",
+        "corpus:rejected"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "EFFECT_UNAUTHORIZED",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic EFFECT_UNAUTHORIZED",
+          "node": "fixture:fixtures/corpus/rejected/authority/missing_spend_effect.sley"
+        }
+      ]
+    },
+    {
+      "name": "rejected_check:rejected/authority/missing_transitive_agent_effect.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/rejected/authority/missing_transitive_agent_effect.sley"
+      ],
+      "expected_success": false,
+      "actual_success": false,
+      "exit_code": 1,
+      "covers": [
+        "rejected:agent-transitive-effect",
+        "host:secrets.try_get",
+        "host:http.try_get_text",
+        "authority:missing-effect",
+        "authority:transitive-effects",
+        "diagnostic:EFFECT_UNAUTHORIZED",
+        "ci:corpus",
+        "corpus:rejected"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "EFFECT_UNAUTHORIZED",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic EFFECT_UNAUTHORIZED",
+          "node": "fixture:fixtures/corpus/rejected/authority/missing_transitive_agent_effect.sley"
+        }
+      ]
+    },
+    {
+      "name": "rejected_check:rejected/authority/missing_transitive_spend_effect.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/rejected/authority/missing_transitive_spend_effect.sley"
+      ],
+      "expected_success": false,
+      "actual_success": false,
+      "exit_code": 1,
+      "covers": [
+        "rejected:spend-transitive-effect",
+        "host:spend.try_authorize",
+        "authority:missing-effect",
+        "authority:transitive-effects",
+        "diagnostic:EFFECT_UNAUTHORIZED",
+        "ci:corpus",
+        "corpus:rejected"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "EFFECT_UNAUTHORIZED",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic EFFECT_UNAUTHORIZED",
+          "node": "fixture:fixtures/corpus/rejected/authority/missing_transitive_spend_effect.sley"
+        }
+      ]
+    },
+    {
+      "name": "rejected_check:rejected/authority/missing_transitive_data_write_effect.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/rejected/authority/missing_transitive_data_write_effect.sley"
+      ],
+      "expected_success": false,
+      "actual_success": false,
+      "exit_code": 1,
+      "covers": [
+        "rejected:data-write-transitive-effect",
+        "host:db.try_insert",
+        "host:db.try_query_one",
+        "authority:missing-effect",
+        "authority:transitive-effects",
+        "diagnostic:EFFECT_UNAUTHORIZED",
+        "ci:corpus",
+        "corpus:rejected"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "EFFECT_UNAUTHORIZED",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic EFFECT_UNAUTHORIZED",
+          "node": "fixture:fixtures/corpus/rejected/authority/missing_transitive_data_write_effect.sley"
+        }
+      ]
+    },
+    {
+      "name": "rejected_check:rejected/missing_return.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/rejected/missing_return.sley"
+      ],
+      "expected_success": false,
+      "actual_success": false,
+      "exit_code": 1,
+      "covers": [
+        "language:missing-return",
+        "diagnostic:MISSING_RETURN",
+        "ci:corpus",
+        "corpus:rejected"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "MISSING_RETURN",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic MISSING_RETURN",
+          "node": "fixture:fixtures/corpus/rejected/missing_return.sley"
+        }
+      ]
+    },
+    {
+      "name": "rejected_check:rejected/question_requires_result.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/rejected/question_requires_result.sley"
+      ],
+      "expected_success": false,
+      "actual_success": false,
+      "exit_code": 1,
+      "covers": [
+        "language:result-flow",
+        "diagnostic:QUESTION_REQUIRES_RESULT",
+        "ci:corpus",
+        "corpus:rejected"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "QUESTION_REQUIRES_RESULT",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic QUESTION_REQUIRES_RESULT",
+          "node": "fixture:fixtures/corpus/rejected/question_requires_result.sley"
+        }
+      ]
+    },
+    {
+      "name": "rejected_check:rejected/module_namespace_conflict.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/rejected/module_namespace_conflict.sley"
+      ],
+      "expected_success": false,
+      "actual_success": false,
+      "exit_code": 1,
+      "covers": [
+        "language:module-namespace",
+        "language:namespace-conflict",
+        "diagnostic:DUPLICATE_EFFECT",
+        "diagnostic:DUPLICATE_TYPE",
+        "diagnostic:DUPLICATE_TASK",
+        "ci:corpus",
+        "corpus:rejected"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "DUPLICATE_EFFECT",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic DUPLICATE_EFFECT",
+          "node": "fixture:fixtures/corpus/rejected/module_namespace_conflict.sley"
+        },
+        {
+          "id": "DUPLICATE_TYPE",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic DUPLICATE_TYPE",
+          "node": "fixture:fixtures/corpus/rejected/module_namespace_conflict.sley"
+        },
+        {
+          "id": "DUPLICATE_TASK",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic DUPLICATE_TASK",
+          "node": "fixture:fixtures/corpus/rejected/module_namespace_conflict.sley"
+        }
+      ]
+    },
+    {
+      "name": "rejected_check:rejected/unknown_effect.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/rejected/unknown_effect.sley"
+      ],
+      "expected_success": false,
+      "actual_success": false,
+      "exit_code": 1,
+      "covers": [
+        "language:effect-resolution",
+        "rejected:unknown-effect",
+        "diagnostic:UNKNOWN_EFFECT",
+        "ci:corpus",
+        "corpus:rejected"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "UNKNOWN_EFFECT",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic UNKNOWN_EFFECT",
+          "node": "fixture:fixtures/corpus/rejected/unknown_effect.sley"
+        }
+      ]
+    },
+    {
+      "name": "rejected_check:rejected/unknown_type.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/rejected/unknown_type.sley"
+      ],
+      "expected_success": false,
+      "actual_success": false,
+      "exit_code": 1,
+      "covers": [
+        "language:type-resolution",
+        "rejected:unknown-type",
+        "diagnostic:UNKNOWN_TYPE",
+        "ci:corpus",
+        "corpus:rejected"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "UNKNOWN_TYPE",
+          "severity": "error",
+          "message": "unknown type `MissingType`",
+          "node": "task:corpus.rejected.unknown_type.main"
+        }
+      ]
+    },
+    {
+      "name": "rejected_check:rejected/list_index_non_int.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/rejected/list_index_non_int.sley"
+      ],
+      "expected_success": false,
+      "actual_success": false,
+      "exit_code": 1,
+      "covers": [
+        "language:list-index",
+        "rejected:list-index-type",
+        "diagnostic:INDEX_NOT_INT",
+        "ci:corpus",
+        "corpus:rejected"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "INDEX_NOT_INT",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic INDEX_NOT_INT",
+          "node": "fixture:fixtures/corpus/rejected/list_index_non_int.sley"
+        }
+      ]
+    },
+    {
+      "name": "rejected_check:rejected/map_index_non_text.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/rejected/map_index_non_text.sley"
+      ],
+      "expected_success": false,
+      "actual_success": false,
+      "exit_code": 1,
+      "covers": [
+        "language:map-index",
+        "rejected:map-index-key",
+        "diagnostic:INDEX_KEY_TYPE_MISMATCH",
+        "ci:corpus",
+        "corpus:rejected"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "INDEX_KEY_TYPE_MISMATCH",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic INDEX_KEY_TYPE_MISMATCH",
+          "node": "fixture:fixtures/corpus/rejected/map_index_non_text.sley"
+        }
+      ]
+    },
+    {
+      "name": "rejected_check:rejected/list_element_type_mismatch.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/rejected/list_element_type_mismatch.sley"
+      ],
+      "expected_success": false,
+      "actual_success": false,
+      "exit_code": 1,
+      "covers": [
+        "language:list-literal",
+        "rejected:list-element-type",
+        "diagnostic:LIST_ELEMENT_TYPE_MISMATCH",
+        "ci:corpus",
+        "corpus:rejected"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "LIST_ELEMENT_TYPE_MISMATCH",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic LIST_ELEMENT_TYPE_MISMATCH",
+          "node": "fixture:fixtures/corpus/rejected/list_element_type_mismatch.sley"
+        }
+      ]
+    },
+    {
+      "name": "rejected_check:rejected/map_key_type_mismatch.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/rejected/map_key_type_mismatch.sley"
+      ],
+      "expected_success": false,
+      "actual_success": false,
+      "exit_code": 1,
+      "covers": [
+        "language:map-literal",
+        "rejected:map-key-type",
+        "diagnostic:MAP_KEY_TYPE_MISMATCH",
+        "ci:corpus",
+        "corpus:rejected"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "MAP_KEY_TYPE_MISMATCH",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic MAP_KEY_TYPE_MISMATCH",
+          "node": "fixture:fixtures/corpus/rejected/map_key_type_mismatch.sley"
+        }
+      ]
+    },
+    {
+      "name": "rejected_check:rejected/map_value_type_mismatch.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/rejected/map_value_type_mismatch.sley"
+      ],
+      "expected_success": false,
+      "actual_success": false,
+      "exit_code": 1,
+      "covers": [
+        "language:map-literal",
+        "rejected:map-value-type",
+        "diagnostic:MAP_VALUE_TYPE_MISMATCH",
+        "ci:corpus",
+        "corpus:rejected"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "MAP_VALUE_TYPE_MISMATCH",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic MAP_VALUE_TYPE_MISMATCH",
+          "node": "fixture:fixtures/corpus/rejected/map_value_type_mismatch.sley"
+        }
+      ]
+    },
+    {
+      "name": "rejected_check:rejected/duplicate_map_key.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/rejected/duplicate_map_key.sley"
+      ],
+      "expected_success": false,
+      "actual_success": false,
+      "exit_code": 1,
+      "covers": [
+        "language:map-literal",
+        "rejected:duplicate-map-key",
+        "diagnostic:DUPLICATE_MAP_KEY",
+        "ci:corpus",
+        "corpus:rejected"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "DUPLICATE_MAP_KEY",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic DUPLICATE_MAP_KEY",
+          "node": "fixture:fixtures/corpus/rejected/duplicate_map_key.sley"
+        }
+      ]
+    },
+    {
+      "name": "rejected_check:rejected/duplicate_take.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/rejected/duplicate_take.sley"
+      ],
+      "expected_success": false,
+      "actual_success": false,
+      "exit_code": 1,
+      "covers": [
+        "language:task-takes",
+        "rejected:duplicate-take",
+        "diagnostic:DUPLICATE_TAKE",
+        "ci:corpus",
+        "corpus:rejected"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "DUPLICATE_TAKE",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic DUPLICATE_TAKE",
+          "node": "fixture:fixtures/corpus/rejected/duplicate_take.sley"
+        }
+      ]
+    },
+    {
+      "name": "rejected_check:rejected/duplicate_record_field.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/rejected/duplicate_record_field.sley"
+      ],
+      "expected_success": false,
+      "actual_success": false,
+      "exit_code": 1,
+      "covers": [
+        "language:record-type",
+        "rejected:duplicate-record-field",
+        "diagnostic:DUPLICATE_FIELD",
+        "ci:corpus",
+        "corpus:rejected"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "DUPLICATE_FIELD",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic DUPLICATE_FIELD",
+          "node": "fixture:fixtures/corpus/rejected/duplicate_record_field.sley"
+        }
+      ]
+    },
+    {
+      "name": "rejected_check:rejected/duplicate_record_literal_field.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/rejected/duplicate_record_literal_field.sley"
+      ],
+      "expected_success": false,
+      "actual_success": false,
+      "exit_code": 1,
+      "covers": [
+        "language:record-literal",
+        "rejected:duplicate-record-literal-field",
+        "diagnostic:DUPLICATE_RECORD_LITERAL_FIELD",
+        "ci:corpus",
+        "corpus:rejected"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "DUPLICATE_RECORD_LITERAL_FIELD",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic DUPLICATE_RECORD_LITERAL_FIELD",
+          "node": "fixture:fixtures/corpus/rejected/duplicate_record_literal_field.sley"
+        }
+      ]
+    },
+    {
+      "name": "rejected_check:rejected/call_arity_mismatch.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/rejected/call_arity_mismatch.sley"
+      ],
+      "expected_success": false,
+      "actual_success": false,
+      "exit_code": 1,
+      "covers": [
+        "language:task-call",
+        "rejected:call-arity",
+        "diagnostic:CALL_ARITY_MISMATCH",
+        "ci:corpus",
+        "corpus:rejected"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "CALL_ARITY_MISMATCH",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic CALL_ARITY_MISMATCH",
+          "node": "fixture:fixtures/corpus/rejected/call_arity_mismatch.sley"
+        }
+      ]
+    },
+    {
+      "name": "rejected_check:rejected/call_argument_type_mismatch.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/rejected/call_argument_type_mismatch.sley"
+      ],
+      "expected_success": false,
+      "actual_success": false,
+      "exit_code": 1,
+      "covers": [
+        "language:task-call",
+        "rejected:call-argument-type",
+        "diagnostic:CALL_ARGUMENT_TYPE_MISMATCH",
+        "ci:corpus",
+        "corpus:rejected"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "CALL_ARGUMENT_TYPE_MISMATCH",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic CALL_ARGUMENT_TYPE_MISMATCH",
+          "node": "fixture:fixtures/corpus/rejected/call_argument_type_mismatch.sley"
+        }
+      ]
+    },
+    {
+      "name": "rejected_check:rejected/record_field_missing.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/rejected/record_field_missing.sley"
+      ],
+      "expected_success": false,
+      "actual_success": false,
+      "exit_code": 1,
+      "covers": [
+        "language:record-literal",
+        "rejected:record-field-missing",
+        "diagnostic:RECORD_FIELD_MISSING",
+        "ci:corpus",
+        "corpus:rejected"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "RECORD_FIELD_MISSING",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic RECORD_FIELD_MISSING",
+          "node": "fixture:fixtures/corpus/rejected/record_field_missing.sley"
+        }
+      ]
+    },
+    {
+      "name": "rejected_check:rejected/record_field_unknown.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/rejected/record_field_unknown.sley"
+      ],
+      "expected_success": false,
+      "actual_success": false,
+      "exit_code": 1,
+      "covers": [
+        "language:record-literal",
+        "rejected:record-field-unknown",
+        "diagnostic:RECORD_FIELD_UNKNOWN",
+        "ci:corpus",
+        "corpus:rejected"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "RECORD_FIELD_UNKNOWN",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic RECORD_FIELD_UNKNOWN",
+          "node": "fixture:fixtures/corpus/rejected/record_field_unknown.sley"
+        }
+      ]
+    },
+    {
+      "name": "rejected_check:rejected/record_field_type_mismatch.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/rejected/record_field_type_mismatch.sley"
+      ],
+      "expected_success": false,
+      "actual_success": false,
+      "exit_code": 1,
+      "covers": [
+        "language:record-literal",
+        "rejected:record-field-type",
+        "diagnostic:RECORD_FIELD_TYPE_MISMATCH",
+        "ci:corpus",
+        "corpus:rejected"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "RECORD_FIELD_TYPE_MISMATCH",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic RECORD_FIELD_TYPE_MISMATCH",
+          "node": "fixture:fixtures/corpus/rejected/record_field_type_mismatch.sley"
+        }
+      ]
+    },
+    {
+      "name": "rejected_check:rejected/unknown_record_field.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/rejected/unknown_record_field.sley"
+      ],
+      "expected_success": false,
+      "actual_success": false,
+      "exit_code": 1,
+      "covers": [
+        "language:record-field-access",
+        "rejected:unknown-record-field",
+        "diagnostic:UNKNOWN_RECORD_FIELD",
+        "ci:corpus",
+        "corpus:rejected"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "UNKNOWN_RECORD_FIELD",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic UNKNOWN_RECORD_FIELD",
+          "node": "fixture:fixtures/corpus/rejected/unknown_record_field.sley"
+        }
+      ]
+    },
+    {
+      "name": "rejected_check:rejected/record_literal_non_record_type.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/rejected/record_literal_non_record_type.sley"
+      ],
+      "expected_success": false,
+      "actual_success": false,
+      "exit_code": 1,
+      "covers": [
+        "language:record-literal",
+        "rejected:record-literal-non-record-type",
+        "diagnostic:RECORD_LITERAL_NON_RECORD_TYPE",
+        "ci:corpus",
+        "corpus:rejected"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "RECORD_LITERAL_NON_RECORD_TYPE",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic RECORD_LITERAL_NON_RECORD_TYPE",
+          "node": "fixture:fixtures/corpus/rejected/record_literal_non_record_type.sley"
+        }
+      ]
+    },
+    {
+      "name": "rejected_check:rejected/gate_take_type_mismatch.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/rejected/gate_take_type_mismatch.sley"
+      ],
+      "expected_success": false,
+      "actual_success": false,
+      "exit_code": 1,
+      "covers": [
+        "authority:gate-take",
+        "rejected:gate-take-type",
+        "diagnostic:GATE_TAKE_TYPE_MISMATCH",
+        "ci:corpus",
+        "corpus:rejected"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "GATE_TAKE_TYPE_MISMATCH",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic GATE_TAKE_TYPE_MISMATCH",
+          "node": "fixture:fixtures/corpus/rejected/gate_take_type_mismatch.sley"
+        }
+      ]
+    },
+    {
+      "name": "rejected_check:rejected/gate_effect_undeclared.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/rejected/gate_effect_undeclared.sley"
+      ],
+      "expected_success": false,
+      "actual_success": false,
+      "exit_code": 1,
+      "covers": [
+        "authority:gate-take",
+        "rejected:gate-effect-undeclared",
+        "diagnostic:GATE_EFFECT_UNDECLARED",
+        "ci:corpus",
+        "corpus:rejected"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "GATE_EFFECT_UNDECLARED",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic GATE_EFFECT_UNDECLARED",
+          "node": "fixture:fixtures/corpus/rejected/gate_effect_undeclared.sley"
+        }
+      ]
+    },
+    {
+      "name": "rejected_check:rejected/type_mismatch.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/rejected/type_mismatch.sley"
+      ],
+      "expected_success": false,
+      "actual_success": false,
+      "exit_code": 1,
+      "covers": [
+        "language:type-mismatch",
+        "diagnostic:TYPE_MISMATCH",
+        "ci:corpus",
+        "corpus:rejected"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "TYPE_MISMATCH",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic TYPE_MISMATCH",
+          "node": "fixture:fixtures/corpus/rejected/type_mismatch.sley"
+        },
+        {
+          "id": "RETURN_TYPE_MISMATCH",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic RETURN_TYPE_MISMATCH",
+          "node": "fixture:fixtures/corpus/rejected/type_mismatch.sley"
+        }
+      ]
+    },
+    {
+      "name": "rejected_check:rejected/type_alias_mismatch.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/rejected/type_alias_mismatch.sley"
+      ],
+      "expected_success": false,
+      "actual_success": false,
+      "exit_code": 1,
+      "covers": [
+        "language:type-alias",
+        "language:type-alias-transparent",
+        "language:type-mismatch",
+        "diagnostic:RETURN_TYPE_MISMATCH",
+        "ci:corpus",
+        "corpus:rejected"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "RETURN_TYPE_MISMATCH",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic RETURN_TYPE_MISMATCH",
+          "node": "fixture:fixtures/corpus/rejected/type_alias_mismatch.sley"
+        }
+      ]
+    },
+    {
+      "name": "rejected_check:rejected/unauthorized_effect.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/rejected/unauthorized_effect.sley"
+      ],
+      "expected_success": false,
+      "actual_success": false,
+      "exit_code": 1,
+      "covers": [
+        "language:task-effect-propagation",
+        "authority:missing-effect",
+        "diagnostic:EFFECT_UNAUTHORIZED",
+        "ci:corpus",
+        "corpus:rejected"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "EFFECT_UNAUTHORIZED",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic EFFECT_UNAUTHORIZED",
+          "node": "fixture:fixtures/corpus/rejected/unauthorized_effect.sley"
+        }
+      ]
+    },
+    {
+      "name": "rejected_check:rejected/unknown_identifier.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/rejected/unknown_identifier.sley"
+      ],
+      "expected_success": false,
+      "actual_success": false,
+      "exit_code": 1,
+      "covers": [
+        "language:unknown-identifier",
+        "diagnostic:UNKNOWN_IDENTIFIER",
+        "ci:corpus",
+        "corpus:rejected"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "UNKNOWN_IDENTIFIER",
+          "severity": "error",
+          "message": "unknown identifier `missing`",
+          "node": "block:task:corpus.rejected.main:stmt:0:expr"
+        }
+      ]
+    },
+    {
+      "name": "rejected_check:rejected/unknown_task.sley",
+      "status": "passed",
+      "command": [
+        "sley",
+        "check",
+        "--json",
+        "fixtures/corpus/rejected/unknown_task.sley"
+      ],
+      "expected_success": false,
+      "actual_success": false,
+      "exit_code": 1,
+      "covers": [
+        "language:unknown-task",
+        "diagnostic:UNKNOWN_TASK",
+        "repair:declare-or-import-task",
+        "ci:corpus",
+        "corpus:rejected"
+      ],
+      "issues": [],
+      "stdout_schema": "sley.diagnostics.report.v0",
+      "diagnostics": [
+        {
+          "id": "UNKNOWN_TASK",
+          "severity": "error",
+          "message": "rejected corpus fixture expects diagnostic UNKNOWN_TASK",
+          "node": "fixture:fixtures/corpus/rejected/unknown_task.sley"
+        }
+      ]
     }
   ],
   "issues": []
