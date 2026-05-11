@@ -58,6 +58,7 @@ export task owned_bootstrap_values -> List<Text> {
     "run_report_shape",
     "verify_report_shape",
     "graft_outcome_report_shape",
+    "claim_verify_report_shape",
     "pure_literal_runtime_execution",
     "bool_literal_runtime_execution",
     "seeded_agent_deploy_task_execution",

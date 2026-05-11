@@ -129,6 +129,25 @@ export task graft_outcome_report_fields -> List<Text> {
   ]
 }
 
+export task claim_verify_schema -> Text {
+  return "sley.claim.verify.v0"
+}
+
+export task claim_verify_report_fields -> List<Text> {
+  return [
+    "schema",
+    "status",
+    "target",
+    "manifest_schema",
+    "claim_id",
+    "check_count",
+    "passed_count",
+    "failed_count",
+    "checks",
+    "issues"
+  ]
+}
+
 export task self_hosting_status_schema -> Text {
   return "sley.self_hosting.status.v0"
 }
