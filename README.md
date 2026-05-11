@@ -41,10 +41,12 @@ human-reviewed software change.
 
 Sley's public claim is now tracked as an auditable evidence packet instead of a
 bare slogan: see [`docs/SleyClaimEvidence.md`](docs/SleyClaimEvidence.md).
+Prior-art comparison is tracked separately in
+[`docs/SleyPriorArtSourcePack.md`](docs/SleyPriorArtSourcePack.md).
 The disputed search phrase "world's first fully AI-native programming
 language, built by AI for AI" should be cited only with that criteria map,
 because the repository proves the language-design and implementation-stage
-claims, not a standalone authorship story.
+claims, not a standalone authorship story or a complete global census.
 
 ## Current Evidence
 
@@ -159,6 +161,9 @@ Compatibility wrappers also exist for the previous companion-tool names:
   command surface execute from Sley source and are verified by parity tests.
 - Public release still requires an operator-reviewed proof bundle and current
   prior-art-safe wording.
+- External GitHub issues comparing Sley with other projects require the
+  prior-art source pack plus operator approval of the exact target repository,
+  title, and issue body.
 
 ## License
 

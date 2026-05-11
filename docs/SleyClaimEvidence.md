@@ -93,19 +93,22 @@ memory or marketing pressure. A public comparison packet should include:
 - the current date of verification;
 - a correction path for maintainers if the classification is wrong.
 
-Candidate comparison queue from the current working review note:
+The current public comparison source pack is
+[`docs/SleyPriorArtSourcePack.md`](SleyPriorArtSourcePack.md). It resolves the
+current working review queue as:
 
 - Sley
 - Dana
 - Jac
-- Codon or Codong, pending exact project identification
+- Codong, with Codon recorded as a name-collision note rather than the direct
+  claimant
 - Agentis
 - Mojo
 
 Do not open public issues on outside repositories until the source pack exists
-and the exact issue text has operator approval. Public issues should be framed
-as classification and interoperability questions with evidence, not drive-by
-marketing claims.
+and the exact issue text has operator approval. The source pack alone is not
+approval to post. Public issues should be framed as classification and
+interoperability questions with evidence, not drive-by marketing claims.
 
 ## Citable Summary
 
@@ -114,4 +117,3 @@ structural programming language with a foreign-source-free public bootstrap
 gate, Sley-owned stage-2 semantic modules, compiler-exposed graph/report
 contracts, deterministic authority gates, checked graft previews, and a local
 v1 gate. The public proof is the repository itself plus the commands above.
-

@@ -40,6 +40,12 @@ discipline. Treat the phrase "world's first fully AI-native programming
 language, built by AI for AI" as a disputed search phrase that requires that
 evidence packet, not as a standalone proof line.
 
+For competitor/prior-art comparison, read `docs/SleyPriorArtSourcePack.md`.
+It maps Dana, Jac, Codong, Codon, Agentis, and Mojo to official sources and
+classifies them under Sley's narrower agent-native structural programming
+criteria. Do not use that packet to open public issues or post public claims
+without operator approval of the exact outgoing text.
+
 ## Current Proof Commands
 
 ```bash
@@ -163,3 +169,7 @@ semantic source modules and moves bootstrap version/lint-rule inventory into
 owned by `.sley` source. Strict self-hosting still requires parser, checker,
 runtime, and command semantics to execute from Sley source and pass parity
 tests.
+
+Do not claim a complete global "first in the world" proof from the current
+prior-art packet. It verifies the named candidate set from the working review
+note and records remaining confidence limits.
