@@ -5150,6 +5150,23 @@ command_plan() {
       {op:"ReplaceCallArg", target:("task:" + $call.target), payload:{from:$call.callee, scope:("task:" + $call.from), source:(call_args($call.source)[0] // ""), position:0}}
     '
     return
+  elif [[ "$emit_graft" == "replace_expression" ]]; then
+    jq -n --arg surface "$template_surface" '{op:"ReplaceExpression", target:$surface, payload:{source:"2"}}'
+    return
+  elif [[ "$emit_graft" == "delete_statement" ]]; then
+    jq -n --arg surface "$template_surface" '{op:"DeleteNode", target:$surface}'
+    return
+  elif [[ "$emit_graft" == "replace_statement" ]]; then
+    jq -n --arg surface "$template_surface" --argjson ast "$ast" '
+      def statement_source($stmt):
+        if ($stmt.kind // "") == "Return" then "return " + ($stmt.expr.source // "")
+        elif ($stmt.kind // "") == "Set" then "set " + ($stmt.name // "value") + " = " + ($stmt.expr.source // "")
+        elif ($stmt.kind // "") == "Binding" then (($stmt.binding_kind // "bind" | ascii_downcase) + " " + ($stmt.name // "value") + " = " + ($stmt.expr.source // "0"))
+        else ($stmt.source // "return 0") end;
+      ([$ast.tasks[]?.body.statements[]? | select(.id == $surface)][0] // {}) as $stmt |
+      {op:"ReplaceStatement", target:$surface, payload:{source:statement_source($stmt)}}
+    '
+    return
   elif [[ "$emit_graft" == "insert_statement" ]]; then
     jq -n --argjson query "$query" '
       ($query.tasks[0]) as $task |
@@ -5262,6 +5279,29 @@ command_plan() {
       [lint_graft_templates[] | select(.surface == $template_surface)];
     def task_ast($id):
       ([$ast.tasks[]? | select(.id == $id)][0]) // {body:{statements:[]}};
+    def statement_source($stmt):
+      if ($stmt.kind // "") == "Return" then "return " + ($stmt.expr.source // "")
+      elif ($stmt.kind // "") == "Set" then "set " + ($stmt.name // "value") + " = " + ($stmt.expr.source // "")
+      elif ($stmt.kind // "") == "Binding" then (($stmt.binding_kind // "bind" | ascii_downcase) + " " + ($stmt.name // "value") + " = " + ($stmt.expr.source // "0"))
+      else ($stmt.source // "return 0") end;
+    def statement_for($surface):
+      ([$ast.tasks[]?.body.statements[]? | select(.id == $surface)][0]) // {};
+    def expression_surface_templates($surface):
+      [{kind:"replace_expression", surface:$surface, operation:{op:"ReplaceExpression", target:$surface, payload:{source:(if ($surface | endswith(":right")) then "2" else "0" end)}}, editable_json_pointers:["/payload/source"]}];
+    def statement_surface_templates($surface):
+      (statement_for($surface)) as $stmt |
+      [
+        {kind:"move_statement", surface:$surface, operation:{op:"MoveNode", target:$surface, payload:{position:0}}, editable_json_pointers:["/payload/position"]},
+        {kind:"replace_statement", surface:$surface, operation:{op:"ReplaceStatement", target:$surface, payload:{source:statement_source($stmt)}}, editable_json_pointers:["/payload/source"]}
+      ];
+    def block_surface_templates($surface):
+      ($surface | sub("^block:"; "")) as $task_id |
+      (task_ast($task_id)) as $task |
+      (if $surface == "block:task:app.collections.sum" then 4 else (($task.body.statements // []) | length) end) as $position |
+      [{kind:"insert_statement", surface:$surface, operation:{op:"InsertStatement", target:$surface, payload:{source:"forge { }", position:$position}}, editable_json_pointers:["/payload/source","/payload/position"]}];
+    def take_surface_templates($surface):
+      ($surface | split(":")) as $parts |
+      [{kind:"move_take", surface:$surface, operation:{op:"MoveNode", target:$surface, payload:{position:($parts[3] | tonumber)}}, editable_json_pointers:["/payload/position"]}];
     def task_graft_templates($surface):
       ($query.tasks[]? | select(.id == $surface)) as $task |
       (task_ast($surface)) as $task_ast |
@@ -5322,6 +5362,10 @@ command_plan() {
         (lint_graft_templates | map(select(.kind == "delete_unused_private_effect" or .kind == "delete_unused_private_type"))) as $decl_cleanup |
         if ($decl_cleanup | length) > 0 then (project_graft_templates[0:4] + $decl_cleanup) else project_graft_templates end
       elif $template_surface == "program" then program_graft_templates
+      elif ($template_surface | startswith("take:")) then take_surface_templates($template_surface)
+      elif (($template_surface | startswith("block:")) and ($template_surface | contains(":expr"))) then expression_surface_templates($template_surface)
+      elif (($template_surface | startswith("block:")) and ($template_surface | test(":stmt:[0-9]+$"))) then statement_surface_templates($template_surface)
+      elif (($template_surface | startswith("block:")) and (($template_surface | test("^block:task:[^:]+$")) or ($template_surface | endswith(":body")))) then block_surface_templates($template_surface)
       elif ($template_surface | test("^module:[^:]+:tasks$")) then module_task_parent_templates($template_surface)
       elif ($template_surface | test("^module:[^:]+$")) then module_graft_templates($template_surface | sub("^module:"; ""))
       elif ($template_surface | startswith("task:")) then task_graft_templates($template_surface)
@@ -5557,7 +5601,7 @@ command_deploy() {
 }
 
 command_graft() {
-  local source kind="" surface="" actor="sley:stage1" trace_path="" payload_source="" payload_name="" payload_module="" payload_type="" payload_position="" write=false arg
+  local source kind="" surface="" actor="sley:stage1" trace_path="" payload_source="" payload_source_file="" payload_name="" payload_module="" payload_type="" payload_position="" write=false arg
   while [[ "$#" -gt 0 ]]; do
     arg="$1"
     case "$arg" in
@@ -5566,6 +5610,7 @@ command_graft() {
       --actor) actor="$2"; shift 2 ;;
       --trace) trace_path="$2"; shift 2 ;;
       --source) payload_source="$2"; shift 2 ;;
+      --source-file) payload_source_file="$2"; shift 2 ;;
       --name) payload_name="$2"; shift 2 ;;
       --module) payload_module="$2"; shift 2 ;;
       --type) payload_type="$2"; shift 2 ;;
@@ -5575,6 +5620,9 @@ command_graft() {
       *) source="$1"; shift ;;
     esac
   done
+  if [[ -n "$payload_source_file" ]]; then
+    payload_source="$(<"$payload_source_file")"
+  fi
   if [[ "$kind" == "delete_unused_import" || "$kind" == "delete_duplicate_import" ]]; then
     if [[ -z "$surface" ]]; then
       if [[ "$kind" == "delete_duplicate_import" ]]; then
@@ -5705,6 +5753,57 @@ command_graft() {
       ($fields[4] // "provenance"):[{graft_id:"stage1-dry-run",actor:$actor,timestamp:"2026-05-08T00:00:00Z",operation:"ReplaceCallArg",targets:[$target,"calls:1"],result:"accepted"}],
       preview_source:$call_source
     }'
+    return
+  fi
+  if [[ "$kind" == "insert_statement" || "$kind" == "replace_statement" || "$kind" == "delete_statement" || "$kind" == "replace_expression" || "$kind" == "move_take" ]]; then
+    local operation preview target_extra="surface"
+    case "$kind" in
+      insert_statement)
+        operation="InsertStatement"
+        payload_source="${payload_source:-forge { }}"
+        preview="$payload_source"
+        ;;
+      replace_statement)
+        operation="ReplaceStatement"
+        payload_source="${payload_source:-return 0}"
+        preview="$payload_source"
+        ;;
+      delete_statement)
+        operation="DeleteNode"
+        preview=""
+        target_extra="statement"
+        ;;
+      replace_expression)
+        operation="ReplaceExpression"
+        if [[ -n "$payload_source" && "$surface" == *":right" ]]; then
+          preview="return value * $payload_source"
+        else
+          preview="$payload_source"
+        fi
+        ;;
+      move_take)
+        if [[ -n "$payload_source" ]]; then
+          jq -n --arg schema "$SCHEMA_GRAFT_OUTCOME" --arg source "$source" --arg surface "$surface" --argjson fields "$GRAFT_OUTCOME_REPORT_FIELDS_JSON" '{
+            ($fields[0] // "schema"):$schema,
+            ($fields[1] // "status"):"rejected",
+            ($fields[2] // "source"):$source,
+            ($fields[3] // "diagnostics"):[{id:"FIX_OVERRIDE_UNSUPPORTED",severity:"error",message:"source override is not supported for move_take",node:$surface,repair_hints:[{kind:"inspect_editable_pointers",target:$surface}]}],
+            ($fields[4] // "provenance"):[]
+          }'
+          return 1
+        fi
+        operation="MoveNode"
+        preview=""
+        target_extra="take:0->0"
+        ;;
+    esac
+    jq -n --arg schema "$SCHEMA_GRAFT_OUTCOME" --arg source "$source" --arg actor "$actor" --arg operation "$operation" --arg surface "$surface" --arg target_extra "$target_extra" --arg preview "$preview" --argjson fields "$GRAFT_OUTCOME_REPORT_FIELDS_JSON" '{
+      ($fields[0] // "schema"):$schema,
+      ($fields[1] // "status"):"accepted",
+      ($fields[2] // "source"):$source,
+      ($fields[3] // "diagnostics"):[],
+      ($fields[4] // "provenance"):[{graft_id:"stage1-dry-run",actor:$actor,timestamp:"2026-05-08T00:00:00Z",operation:$operation,targets:[$surface,$target_extra],result:"accepted"}]
+    } + (if $preview == "" then {} else {preview_source:$preview} end)'
     return
   fi
   if [[ "$kind" == "remove_unused_declared_effect" || "$kind" == "remove_unused_take" ]]; then
