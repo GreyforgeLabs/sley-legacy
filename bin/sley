@@ -2655,6 +2655,70 @@ lint_json() {
       replacement:(($m.left + $m.right) | @json)
     }
   ' >> "$findings"
+  ast_json "$target" | jq -c '
+    def trim: gsub("^[[:space:]]+|[[:space:]]+$"; "");
+    .tasks[]? as $task |
+    $task.body.statements[]?.expr? as $expr |
+    ($expr.source // "") as $source |
+    (($source | capture("^\\[(?<items>[^\\]]*)\\]\\[(?<index>[0-9]+)\\]$")? // null)) as $m |
+    select($m != null) |
+    (($m.items | split(",") | map(trim))[$m.index | tonumber] // null) as $replacement |
+    select($replacement != null and $replacement != "") |
+    {
+      id:"CONSTANT_LIST_INDEX_EXPRESSION",
+      rule:"constant_list_index_expression",
+      severity:"warning",
+      message:"list index expression is constant",
+      node:$expr.id,
+      module:$task.module,
+      hint:"replace the list index with the selected literal",
+      replacement:$replacement
+    }
+  ' >> "$findings"
+  ast_json "$target" | jq -c '
+    def trim: gsub("^[[:space:]]+|[[:space:]]+$"; "");
+    def map_pair:
+      (trim | capture("^\"(?<key>[^\"]+)\"[[:space:]]*:[[:space:]]*(?<value>.+)$")? // null);
+    .tasks[]? as $task |
+    $task.body.statements[]?.expr? as $expr |
+    ($expr.source // "") as $source |
+    (($source | capture("^map[[:space:]]*\\{[[:space:]]*(?<pairs>.*)[[:space:]]*\\}\\[\"(?<key>[^\"]+)\"\\]$")? // null)) as $m |
+    select($m != null) |
+    ([$m.pairs | split(",")[] | map_pair | select(. != null and .key == $m.key) | .value][0] // null) as $replacement |
+    select($replacement != null and $replacement != "") |
+    {
+      id:"CONSTANT_MAP_INDEX_EXPRESSION",
+      rule:"constant_map_index_expression",
+      severity:"warning",
+      message:"map index expression is constant",
+      node:$expr.id,
+      module:$task.module,
+      hint:"replace the map index with the selected literal",
+      replacement:($replacement | trim)
+    }
+  ' >> "$findings"
+  ast_json "$target" | jq -c '
+    def trim: gsub("^[[:space:]]+|[[:space:]]+$"; "");
+    def record_field_pair:
+      (trim | capture("^(?<field>[A-Za-z_][A-Za-z0-9_]*)[[:space:]]*:[[:space:]]*(?<value>.+)$")? // null);
+    .tasks[]? as $task |
+    $task.body.statements[]?.expr? as $expr |
+    ($expr.source // "") as $source |
+    (($source | capture("^[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\{[[:space:]]*(?<fields>.*)[[:space:]]*\\}\\.(?<field>[A-Za-z_][A-Za-z0-9_]*)$")? // null)) as $m |
+    select($m != null) |
+    ([$m.fields | split(",")[] | record_field_pair | select(. != null and .field == $m.field) | .value][0] // null) as $replacement |
+    select($replacement != null and $replacement != "") |
+    {
+      id:"CONSTANT_RECORD_FIELD_ACCESS_EXPRESSION",
+      rule:"constant_record_field_access_expression",
+      severity:"warning",
+      message:"record field access expression is constant",
+      node:$expr.id,
+      module:$task.module,
+      hint:"replace the record field access with the selected literal",
+      replacement:($replacement | trim)
+    }
+  ' >> "$findings"
   while IFS= read -r file; do
     local module
     module="$(awk '/^[[:space:]]*module[[:space:]]+/ {print $2; found=1; exit} END {if(!found) print "main"}' "$file")"
@@ -2767,6 +2831,9 @@ lint_json() {
       elif .rule == "constant_arithmetic_expression" then -1
       elif .rule == "absorbing_arithmetic_expression" then -1
       elif .rule == "constant_text_concatenation_expression" then -1
+      elif .rule == "constant_list_index_expression" then -1
+      elif .rule == "constant_map_index_expression" then -1
+      elif .rule == "constant_record_field_access_expression" then -1
       else 0 end
     )) as $findings |
     {
@@ -5959,6 +6026,12 @@ command_plan() {
         {kind:"simplify_absorbing_arithmetic_expression", surface:$finding.node, operation:{op:"ReplaceExpression", target:$finding.node, payload:{source:($finding.replacement // "0")}}, editable_json_pointers:["/payload/source"]}
       elif $finding.rule == "constant_text_concatenation_expression" then
         {kind:"simplify_constant_text_concatenation_expression", surface:$finding.node, operation:{op:"ReplaceExpression", target:$finding.node, payload:{source:($finding.replacement // "\"\"")}}, editable_json_pointers:["/payload/source"]}
+      elif $finding.rule == "constant_list_index_expression" then
+        {kind:"simplify_constant_list_index_expression", surface:$finding.node, operation:{op:"ReplaceExpression", target:$finding.node, payload:{source:($finding.replacement // "0")}}, editable_json_pointers:["/payload/source"]}
+      elif $finding.rule == "constant_map_index_expression" then
+        {kind:"simplify_constant_map_index_expression", surface:$finding.node, operation:{op:"ReplaceExpression", target:$finding.node, payload:{source:($finding.replacement // "\"\"")}}, editable_json_pointers:["/payload/source"]}
+      elif $finding.rule == "constant_record_field_access_expression" then
+        {kind:"simplify_constant_record_field_access_expression", surface:$finding.node, operation:{op:"ReplaceExpression", target:$finding.node, payload:{source:($finding.replacement // "\"\"")}}, editable_json_pointers:["/payload/source"]}
       else empty end;
     def lint_graft_templates:
       [$lint.findings[]? | lint_template(.)];
@@ -6922,7 +6995,7 @@ command_graft() {
     printf '%s\n' "$report"
     return
   fi
-  if [[ "$kind" == "simplify_constant_if_expression" || "$kind" == "simplify_constant_if_statement" || "$kind" == "delete_constant_false_if_statement" || "$kind" == "delete_constant_false_while_statement" || "$kind" == "simplify_constant_comparison_expression" || "$kind" == "simplify_constant_boolean_comparison_expression" || "$kind" == "simplify_constant_arithmetic_expression" || "$kind" == "simplify_absorbing_arithmetic_expression" || "$kind" == "simplify_constant_text_concatenation_expression" ]]; then
+  if [[ "$kind" == "simplify_constant_if_expression" || "$kind" == "simplify_constant_if_statement" || "$kind" == "delete_constant_false_if_statement" || "$kind" == "delete_constant_false_while_statement" || "$kind" == "simplify_constant_comparison_expression" || "$kind" == "simplify_constant_boolean_comparison_expression" || "$kind" == "simplify_constant_arithmetic_expression" || "$kind" == "simplify_absorbing_arithmetic_expression" || "$kind" == "simplify_constant_text_concatenation_expression" || "$kind" == "simplify_constant_list_index_expression" || "$kind" == "simplify_constant_map_index_expression" || "$kind" == "simplify_constant_record_field_access_expression" ]]; then
     local lint finding rule operation target_surface replacement report
     lint="$(lint_json "$source")"
     case "$kind" in
@@ -7020,6 +7093,39 @@ command_graft() {
         finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "constant_text_concatenation_expression" and (.node == $surface or $surface == ""))' | head -n 1)"
         [[ -n "$finding" ]] || finding='{}'
         target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.constant_text_concat_fix.main:stmt:0:expr"')}"
+        replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "\"\""')"
+        if [[ "$write" == true ]]; then
+          sley_rewrite_statement_surface "$source" "$target_surface" "$replacement"
+        fi
+        ;;
+      simplify_constant_list_index_expression)
+        rule="constant_list_index_expression"
+        operation="ReplaceExpression"
+        finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "constant_list_index_expression" and (.node == $surface or $surface == ""))' | head -n 1)"
+        [[ -n "$finding" ]] || finding='{}'
+        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.constant_list_index_fix.main:stmt:0:expr"')}"
+        replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "0"')"
+        if [[ "$write" == true ]]; then
+          sley_rewrite_statement_surface "$source" "$target_surface" "$replacement"
+        fi
+        ;;
+      simplify_constant_map_index_expression)
+        rule="constant_map_index_expression"
+        operation="ReplaceExpression"
+        finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "constant_map_index_expression" and (.node == $surface or $surface == ""))' | head -n 1)"
+        [[ -n "$finding" ]] || finding='{}'
+        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.constant_map_index_fix.main:stmt:0:expr"')}"
+        replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "\"\""')"
+        if [[ "$write" == true ]]; then
+          sley_rewrite_statement_surface "$source" "$target_surface" "$replacement"
+        fi
+        ;;
+      simplify_constant_record_field_access_expression)
+        rule="constant_record_field_access_expression"
+        operation="ReplaceExpression"
+        finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "constant_record_field_access_expression" and (.node == $surface or $surface == ""))' | head -n 1)"
+        [[ -n "$finding" ]] || finding='{}'
+        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.constant_record_field_access_fix.main:stmt:0:expr"')}"
         replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "\"\""')"
         if [[ "$write" == true ]]; then
           sley_rewrite_statement_surface "$source" "$target_surface" "$replacement"
