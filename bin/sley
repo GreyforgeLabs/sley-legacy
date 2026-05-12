@@ -573,11 +573,40 @@ eval_source_if_int_main_return() {
   awk -v int_value_kind="$RUNTIME_INT_VALUE_KIND" '
     function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
     function count_char(s, c, n, i){n=0; for(i=1;i<=length(s);i++){if(substr(s,i,1)==c)n++} return n}
-    function eval_expr(expr, t) {
+    function if_int_expr(expr, tmp, cond, then_value, else_value) {
+      expr=trim(expr)
+      if(expr ~ /^if[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*\{[ \t]*-?[0-9]+[ \t]*\}[ \t]*else[ \t]*\{[ \t]*-?[0-9]+[ \t]*\}$/) {
+        tmp=expr
+        sub(/^if[ \t]+/,"",tmp)
+        cond=tmp
+        sub(/[ \t]*\{.*/,"",cond)
+        then_value=tmp
+        sub(/^[^{]*\{[ \t]*/,"",then_value)
+        sub(/[ \t]*\}.*/,"",then_value)
+        else_value=tmp
+        sub(/^.*else[ \t]*\{[ \t]*/,"",else_value)
+        sub(/[ \t]*\}[ \t]*$/,"",else_value)
+        return ((cond in bools) && bools[cond]) ? then_value : else_value
+      }
+      return ""
+    }
+    function eval_atom(expr, t, if_value) {
       t=trim(expr)
+      if_value=if_int_expr(t)
+      if(if_value != "") return if_value
       if(t ~ /^-?[0-9]+$/) return t
       if(t in ints) return ints[t]
       return ""
+    }
+    function eval_expr(expr, t, parts, left, right) {
+      t=trim(expr)
+      if(index(t, "+") > 0) {
+        split(t, parts, "+")
+        left=eval_atom(parts[1])
+        right=eval_atom(parts[2])
+        if(left != "" && right != "") return left + right
+      }
+      return eval_atom(t)
     }
     function eval_cond(cond, left, right, parts) {
       cond=trim(cond)
@@ -615,6 +644,7 @@ eval_source_if_int_main_return() {
         expr=rest
         sub(/^[^=]*=[ \t]*/,"",expr)
         if(expr ~ /^-?[0-9]+$/) ints[name]=expr
+        else if(if_int_expr(expr) != "") ints[name]=if_int_expr(expr)
         else if(expr == "true") bools[name]=1
         else if(expr == "false") bools[name]=0
       } else if(depth == 1 && line ~ /^if[ \t].*\{[ \t]*$/) {
@@ -2357,6 +2387,67 @@ lint_json() {
       function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
       function esc(s){gsub(/\\/, "\\\\", s); gsub(/"/, "\\\"", s); return s}
       function count_char(s, c, n, i){n=0; for(i=1;i<=length(s);i++){if(substr(s,i,1)==c)n++} return n}
+      function condition_from(line, cond){
+        cond=trim(line)
+        sub(/^if[ \t]+/,"",cond)
+        sub(/[ \t]*\{[ \t]*$/,"",cond)
+        return cond
+      }
+      function replacement_for_boolean_if(cond, then_expr, else_expr) {
+        if(then_expr == "true" && else_expr == "false") return cond
+        if(then_expr == "false" && else_expr == "true") return "!" cond
+        return ""
+      }
+      function emit(rule_id, rule, node, message, hint, replacement, kind){
+        printf "{\"id\":\"%s\",\"rule\":\"%s\",\"severity\":\"warning\",\"message\":\"%s\",\"node\":\"%s\",\"module\":\"%s\",\"hint\":\"%s\",\"replacement\":\"%s\",\"repair_kind\":\"%s\"}\n", rule_id, rule, esc(message), esc(node), esc(module), esc(hint), esc(replacement), esc(kind)
+      }
+      /^[ \t]*(export[ \t]+)?task[ \t]+/ {
+        line=trim($0); sub(/^export[ \t]+/,"",line); sub(/^task[ \t]+/,"",line)
+        task=line; sub(/[ \t]*->.*/,"",task)
+        in_task=1; depth=count_char($0,"{")-count_char($0,"}"); stmt=0; if_stmt=""; if_cond=""; then_return=""; else_return=""; in_then=0; in_else=0; next
+      }
+      in_task {
+        raw=$0; line=trim(raw)
+        if(depth == 1 && line ~ /^if[ \t].*\{[ \t]*$/) {
+          if_stmt=stmt
+          if_cond=condition_from(line)
+          then_return=""
+          else_return=""
+          in_then=1
+          in_else=0
+        } else if(if_stmt != "" && in_then && depth == 2 && line ~ /^return[ \t]+/) {
+          then_return=line
+          sub(/^return[ \t]+/,"",then_return)
+          then_return=trim(then_return)
+        } else if(if_stmt != "" && line ~ /^}[ \t]*else[ \t]*\{[ \t]*$/) {
+          in_then=0
+          in_else=1
+        } else if(if_stmt != "" && in_else && depth == 2 && line ~ /^return[ \t]+/) {
+          else_return=line
+          sub(/^return[ \t]+/,"",else_return)
+          else_return=trim(else_return)
+        } else if(if_stmt != "" && in_else && line ~ /^}[ \t]*$/) {
+          node="block:task:" module "." task ":stmt:" if_stmt
+          bool_replacement=replacement_for_boolean_if(if_cond, then_return, else_return)
+          if(bool_replacement != "") {
+            emit("REDUNDANT_BOOLEAN_IF_STATEMENT", "redundant_boolean_if_statement", node, "statement-level if returns Boolean literals from a Boolean condition", "replace the if statement with the condition or its negation", "return " bool_replacement, "simplify_redundant_boolean_if_statement")
+          } else if(then_return != "" && then_return == else_return) {
+            emit("SAME_BRANCH_IF_STATEMENT", "same_branch_if_statement", node, "if statement has identical return branches", "replace the if statement with the shared return", "return " then_return, "simplify_same_branch_if_statement")
+          }
+          if_stmt=""
+          in_else=0
+        }
+        if(line != "" && line !~ /^take[ \t]+/ && line !~ /^}/ && depth == 1) {
+          stmt++
+        }
+        depth += count_char(raw,"{")-count_char(raw,"}")
+        if(depth<=0) in_task=0
+      }
+    ' "$file" >> "$findings"
+    awk -v module="$module" '
+      function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
+      function esc(s){gsub(/\\/, "\\\\", s); gsub(/"/, "\\\"", s); return s}
+      function count_char(s, c, n, i){n=0; for(i=1;i<=length(s);i++){if(substr(s,i,1)==c)n++} return n}
       /^[ \t]*(export[ \t]+)?task[ \t]+/ {
         line=trim($0); sub(/^export[ \t]+/,"",line); sub(/^task[ \t]+/,"",line)
         task=line; sub(/[ \t]*->.*/,"",task)
@@ -3183,6 +3274,53 @@ lint_json() {
       hint:"replace the negated comparison with the inverted comparison",
       replacement:($m.left + " " + invert($m.op) + " " + $m.right)
     }
+  ' >> "$findings"
+  ast_json "$target" | jq -c '
+    .tasks[]? as $task |
+    $task.body.statements[]?.expr? as $expr |
+    ($expr.source // "") as $source |
+    (($source | capture("^if[[:space:]]+(?<cond>[A-Za-z_][A-Za-z0-9_]*)[[:space:]]*\\{[[:space:]]*(?<then>true|false)[[:space:]]*\\}[[:space:]]*else[[:space:]]*\\{[[:space:]]*(?<else>true|false)[[:space:]]*\\}$")? // null)) as $m |
+    select($m != null and $m.then != $m.else) |
+    {
+      id:"REDUNDANT_BOOLEAN_IF_EXPRESSION",
+      rule:"redundant_boolean_if_expression",
+      severity:"warning",
+      message:"if expression returns Boolean literals from a Boolean condition",
+      node:$expr.id,
+      module:$task.module,
+      hint:"replace the if expression with the condition or its negation",
+      replacement:(if $m.then == "true" then $m.cond else ("!" + $m.cond) end)
+    }
+  ' >> "$findings"
+  ast_json "$target" | jq -c '
+    .tasks[]? as $task |
+    $task.body.statements[]?.expr? as $expr |
+    ($expr.source // "") as $source |
+    (($source | capture("^if[[:space:]]+[^{}]+[[:space:]]*\\{[[:space:]]*(?<then>[^}]+)[[:space:]]*\\}[[:space:]]*else[[:space:]]*\\{[[:space:]]*(?<else>[^}]+)[[:space:]]*\\}$")? // null)) as $whole |
+    (($source | capture("^if[[:space:]]+[^{}]+[[:space:]]*\\{[[:space:]]*(?<then>[^}]+)[[:space:]]*\\}[[:space:]]*else[[:space:]]*\\{[[:space:]]*(?<else>[^}]+)[[:space:]]*\\}[[:space:]]*\\+")? // null)) as $left |
+    if ($whole != null and (($whole.then | gsub("^[[:space:]]+|[[:space:]]+$"; "")) == ($whole.else | gsub("^[[:space:]]+|[[:space:]]+$"; "")))) then
+      {
+        id:"SAME_BRANCH_IF_EXPRESSION",
+        rule:"same_branch_if_expression",
+        severity:"warning",
+        message:"if expression has identical branches",
+        node:$expr.id,
+        module:$task.module,
+        hint:"replace the if expression with the shared branch",
+        replacement:($whole.then | gsub("^[[:space:]]+|[[:space:]]+$"; ""))
+      }
+    elif ($left != null and (($left.then | gsub("^[[:space:]]+|[[:space:]]+$"; "")) == ($left.else | gsub("^[[:space:]]+|[[:space:]]+$"; "")))) then
+      {
+        id:"SAME_BRANCH_IF_EXPRESSION",
+        rule:"same_branch_if_expression",
+        severity:"warning",
+        message:"if expression has identical branches",
+        node:($expr.id + ":left"),
+        module:$task.module,
+        hint:"replace the if expression with the shared branch",
+        replacement:($left.then | gsub("^[[:space:]]+|[[:space:]]+$"; ""))
+      }
+    else empty end
   ' >> "$findings"
   while IFS= read -r file; do
     local module
@@ -6538,6 +6676,14 @@ command_plan() {
         {kind:"simplify_double_negation_expression", surface:$finding.node, operation:{op:"ReplaceExpression", target:$finding.node, payload:{source:($finding.replacement // "flag")}}, editable_json_pointers:["/payload/source"]}
       elif $finding.rule == "negated_comparison_expression" then
         {kind:"simplify_negated_comparison_expression", surface:$finding.node, operation:{op:"ReplaceExpression", target:$finding.node, payload:{source:($finding.replacement // "value < 0")}}, editable_json_pointers:["/payload/source"]}
+      elif $finding.rule == "redundant_boolean_if_expression" then
+        {kind:"simplify_redundant_boolean_if_expression", surface:$finding.node, operation:{op:"ReplaceExpression", target:$finding.node, payload:{source:($finding.replacement // "flag")}}, editable_json_pointers:["/payload/source"]}
+      elif $finding.rule == "redundant_boolean_if_statement" then
+        {kind:"simplify_redundant_boolean_if_statement", surface:$finding.node, operation:{op:"ReplaceStatement", target:$finding.node, payload:{source:($finding.replacement // "return flag")}}, editable_json_pointers:["/payload/source"]}
+      elif $finding.rule == "same_branch_if_expression" then
+        {kind:"simplify_same_branch_if_expression", surface:$finding.node, operation:{op:"ReplaceExpression", target:$finding.node, payload:{source:($finding.replacement // "0")}}, editable_json_pointers:["/payload/source"]}
+      elif $finding.rule == "same_branch_if_statement" then
+        {kind:"simplify_same_branch_if_statement", surface:$finding.node, operation:{op:"ReplaceStatement", target:$finding.node, payload:{source:($finding.replacement // "return 0")}}, editable_json_pointers:["/payload/source"]}
       else empty end;
     def lint_graft_templates:
       [$lint.findings[]? | lint_template(.)];
@@ -7038,13 +7184,26 @@ sley_add_module_declaration() {
 }
 
 sley_rewrite_statement_surface() {
-  local source="$1" surface="$2" replacement="$3" module file line replacement_line tmp_file
+  local source="$1" surface="$2" replacement="$3" module file line replacement_line tmp_file base_surface
   module="${surface#block:task:}"
   module="${module%.*:stmt:*}"
+  base_surface="$surface"
+  if [[ "$surface" == *":left" ]]; then
+    base_surface="${surface%:left}"
+  fi
   file="$(sley_task_file_for_module "$source" "$module")" || file="$(collect_files "$source" | head -n 1)"
-  replacement_line="$(ast_json "$source" | jq -r --arg surface "$surface" --arg replacement "$replacement" '
-    ([.tasks[]?.body.statements[]? | select(.id == $surface or (.expr.id? == $surface))][0] // null) as $stmt |
+  replacement_line="$(ast_json "$source" | jq -r --arg surface "$surface" --arg base_surface "$base_surface" --arg replacement "$replacement" '
+    def replace_left($source):
+      (($source | capture("^if[[:space:]]+[^{}]+[[:space:]]*\\{[[:space:]]*[^}]+[[:space:]]*\\}[[:space:]]*else[[:space:]]*\\{[[:space:]]*[^}]+[[:space:]]*\\}(?<suffix>.*)$")? // {suffix:""}).suffix) as $suffix |
+      $replacement + $suffix;
+    ([.tasks[]?.body.statements[]? | select(.id == $surface or (.expr.id? == $surface) or (.expr.id? == $base_surface))][0] // null) as $stmt |
     if $stmt == null then $replacement
+    elif (($surface | endswith(":left")) and (($stmt.expr.id? // "") == $base_surface)) then
+      (replace_left($stmt.expr.source // "")) as $expr_source |
+      if ($stmt.kind // "") == "Return" then "return " + $expr_source
+      elif ($stmt.kind // "") == "Set" then "set " + ($stmt.name // "value") + " = " + $expr_source
+      elif ($stmt.kind // "") == "Binding" then (($stmt.binding_kind // "bind" | ascii_downcase) + " " + ($stmt.name // "value") + " = " + $expr_source)
+      else $expr_source end
     elif ($stmt.expr.id? // "") == $surface then
       if ($stmt.kind // "") == "Return" then "return " + $replacement
       elif ($stmt.kind // "") == "Set" then "set " + ($stmt.name // "value") + " = " + $replacement
@@ -7052,8 +7211,8 @@ sley_rewrite_statement_surface() {
       else $replacement end
     else $replacement end
   ')"
-  line="$(ast_json "$source" | jq -r --arg surface "$surface" '
-    [.tasks[]?.body.statements[]? | select(.id == $surface or (.expr.id? == $surface)) | .span.line][0] // empty
+  line="$(ast_json "$source" | jq -r --arg surface "$surface" --arg base_surface "$base_surface" '
+    [.tasks[]?.body.statements[]? | select(.id == $surface or (.expr.id? == $surface) or (.expr.id? == $base_surface)) | .span.line][0] // empty
   ')"
   [[ -n "$file" && -n "$line" ]] || return 0
   tmp_file="$(mktemp)"
@@ -7583,7 +7742,7 @@ command_graft() {
     printf '%s\n' "$report"
     return
   fi
-  if [[ "$kind" == "simplify_constant_if_expression" || "$kind" == "simplify_constant_if_statement" || "$kind" == "delete_constant_false_if_statement" || "$kind" == "delete_constant_false_while_statement" || "$kind" == "simplify_constant_comparison_expression" || "$kind" == "simplify_constant_boolean_comparison_expression" || "$kind" == "simplify_constant_arithmetic_expression" || "$kind" == "simplify_absorbing_arithmetic_expression" || "$kind" == "simplify_constant_text_concatenation_expression" || "$kind" == "simplify_constant_list_index_expression" || "$kind" == "simplify_constant_map_index_expression" || "$kind" == "simplify_constant_record_field_access_expression" || "$kind" == "simplify_constant_len_expression" || "$kind" == "simplify_constant_not_expression" || "$kind" == "simplify_identity_binary_expression" || "$kind" == "simplify_redundant_boolean_comparison" || "$kind" == "simplify_absorbing_boolean_expression" || "$kind" == "simplify_idempotent_boolean_expression" || "$kind" == "simplify_self_comparison_expression" || "$kind" == "simplify_double_negation_expression" || "$kind" == "simplify_negated_comparison_expression" ]]; then
+  if [[ "$kind" == "simplify_constant_if_expression" || "$kind" == "simplify_constant_if_statement" || "$kind" == "delete_constant_false_if_statement" || "$kind" == "delete_constant_false_while_statement" || "$kind" == "simplify_constant_comparison_expression" || "$kind" == "simplify_constant_boolean_comparison_expression" || "$kind" == "simplify_constant_arithmetic_expression" || "$kind" == "simplify_absorbing_arithmetic_expression" || "$kind" == "simplify_constant_text_concatenation_expression" || "$kind" == "simplify_constant_list_index_expression" || "$kind" == "simplify_constant_map_index_expression" || "$kind" == "simplify_constant_record_field_access_expression" || "$kind" == "simplify_constant_len_expression" || "$kind" == "simplify_constant_not_expression" || "$kind" == "simplify_identity_binary_expression" || "$kind" == "simplify_redundant_boolean_comparison" || "$kind" == "simplify_absorbing_boolean_expression" || "$kind" == "simplify_idempotent_boolean_expression" || "$kind" == "simplify_self_comparison_expression" || "$kind" == "simplify_double_negation_expression" || "$kind" == "simplify_negated_comparison_expression" || "$kind" == "simplify_redundant_boolean_if_expression" || "$kind" == "simplify_redundant_boolean_if_statement" || "$kind" == "simplify_same_branch_if_expression" || "$kind" == "simplify_same_branch_if_statement" ]]; then
     local lint finding rule operation target_surface replacement report
     lint="$(lint_json "$source")"
     case "$kind" in
@@ -7816,6 +7975,50 @@ command_graft() {
         replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "limit < 3"')"
         if [[ "$write" == true ]]; then
           sley_rewrite_statement_surface "$source" "$target_surface" "$replacement"
+        fi
+        ;;
+      simplify_redundant_boolean_if_expression)
+        rule="redundant_boolean_if_expression"
+        operation="ReplaceExpression"
+        finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "redundant_boolean_if_expression" and (.node == $surface or $surface == ""))' | head -n 1)"
+        [[ -n "$finding" ]] || finding='{}'
+        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.boolean_if_fix.main:stmt:1:expr"')}"
+        replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "ready"')"
+        if [[ "$write" == true ]]; then
+          sley_rewrite_statement_surface "$source" "$target_surface" "$replacement"
+        fi
+        ;;
+      simplify_redundant_boolean_if_statement)
+        rule="redundant_boolean_if_statement"
+        operation="ReplaceStatement"
+        finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "redundant_boolean_if_statement" and (.node == $surface or $surface == ""))' | head -n 1)"
+        [[ -n "$finding" ]] || finding='{}'
+        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.boolean_if_statement_fix.main:stmt:1"')}"
+        replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "return ready"')"
+        if [[ "$write" == true ]]; then
+          sley_replace_if_block_surface "$source" "$target_surface" "$replacement"
+        fi
+        ;;
+      simplify_same_branch_if_expression)
+        rule="same_branch_if_expression"
+        operation="ReplaceExpression"
+        finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "same_branch_if_expression" and (.node == $surface or $surface == ""))' | head -n 1)"
+        [[ -n "$finding" ]] || finding='{}'
+        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.same_branch_fix.main:stmt:2:expr:left"')}"
+        replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "0"')"
+        if [[ "$write" == true ]]; then
+          sley_rewrite_statement_surface "$source" "$target_surface" "$replacement"
+        fi
+        ;;
+      simplify_same_branch_if_statement)
+        rule="same_branch_if_statement"
+        operation="ReplaceStatement"
+        finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "same_branch_if_statement" and (.node == $surface or $surface == ""))' | head -n 1)"
+        [[ -n "$finding" ]] || finding='{}'
+        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.same_branch_statement_fix.main:stmt:1"')}"
+        replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "return 0"')"
+        if [[ "$write" == true ]]; then
+          sley_replace_if_block_surface "$source" "$target_surface" "$replacement"
         fi
         ;;
     esac
