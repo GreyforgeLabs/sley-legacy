@@ -2202,6 +2202,8 @@ lint_json() {
           node="block:task:" module "." task ":stmt:" pending_else
           printf "{\"id\":\"%s\",\"rule\":\"%s\",\"severity\":\"warning\",\"message\":\"task `%s.%s` %s\",\"node\":\"%s\",\"module\":\"%s\",\"hint\":\"%s\"}\n", esc(id), esc(rule), esc(module), esc(task), esc(message), esc(node), esc(module), esc(hint)
           pending_else=""
+        } else if(pending_else != "" && line != "") {
+          pending_else=""
         }
         if(depth == 1 && line ~ /^if[ \t].*\{[ \t]*$/) {
           if_stmt=stmt
@@ -6212,6 +6214,10 @@ command_plan() {
         {kind:"delete_constant_false_if_statement", surface:$finding.node, operation:{op:"DeleteNode", target:$finding.node}}
       elif $finding.rule == "constant_false_while_statement" then
         {kind:"delete_constant_false_while_statement", surface:$finding.node, operation:{op:"DeleteNode", target:$finding.node}}
+      elif $finding.rule == "empty_for_statement" then
+        {kind:"delete_empty_for_statement", surface:$finding.node, operation:{op:"DeleteNode", target:$finding.node}}
+      elif $finding.rule == "empty_forge_statement" then
+        {kind:"delete_empty_forge_statement", surface:$finding.node, operation:{op:"DeleteNode", target:$finding.node}}
       elif $finding.rule == "empty_if_statement" then
         {kind:"delete_empty_if_statement", surface:$finding.node, operation:{op:"DeleteNode", target:$finding.node}}
       elif $finding.rule == "empty_while_statement" then
@@ -7238,10 +7244,18 @@ command_graft() {
     printf '%s\n' "$report"
     return
   fi
-  if [[ "$kind" == "delete_empty_if_statement" || "$kind" == "delete_empty_while_statement" || "$kind" == "remove_empty_else_statement" ]]; then
+  if [[ "$kind" == "delete_empty_for_statement" || "$kind" == "delete_empty_forge_statement" || "$kind" == "delete_empty_if_statement" || "$kind" == "delete_empty_while_statement" || "$kind" == "remove_empty_else_statement" ]]; then
     local lint finding rule operation target_surface report
     lint="$(lint_json "$source")"
     case "$kind" in
+      delete_empty_for_statement)
+        rule="empty_for_statement"
+        operation="DeleteNode"
+        ;;
+      delete_empty_forge_statement)
+        rule="empty_forge_statement"
+        operation="DeleteNode"
+        ;;
       delete_empty_if_statement)
         rule="empty_if_statement"
         operation="DeleteNode"
@@ -7257,7 +7271,7 @@ command_graft() {
     esac
     finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" --arg rule "$rule" '.findings[]? | select(.rule == $rule and (.node == $surface or $surface == ""))' | head -n 1)"
     [[ -n "$finding" ]] || finding='{}'
-    target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r --arg rule "$rule" '.node // (if $rule == "empty_while_statement" then "block:task:app.empty_while.main:stmt:2" elif $rule == "empty_else_statement" then "block:task:app.empty_else.main:stmt:1" else "block:task:app.empty_if.main:stmt:1" end)')}"
+    target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r --arg rule "$rule" '.node // (if $rule == "empty_for_statement" then "block:task:app.empty_for.main:stmt:1" elif $rule == "empty_forge_statement" then "block:task:app.empty_forge.main:stmt:1" elif $rule == "empty_while_statement" then "block:task:app.empty_while.main:stmt:2" elif $rule == "empty_else_statement" then "block:task:app.empty_else.main:stmt:1" else "block:task:app.empty_if.main:stmt:1" end)')}"
     if [[ "$write" == true ]]; then
       if [[ "$kind" == "remove_empty_else_statement" ]]; then
         sley_remove_empty_else_surface "$source" "$target_surface"
