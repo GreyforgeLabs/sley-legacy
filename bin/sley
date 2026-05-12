@@ -2551,6 +2551,53 @@ lint_json() {
       replacement:((if $m.cond == "true" then $m.then else $m.else end) | gsub("^[[:space:]]+|[[:space:]]+$"; ""))
     }
   ' >> "$findings"
+  ast_json "$target" | jq -c '
+    def comparison_result($left; $op; $right):
+      if $op == "<" then $left < $right
+      elif $op == "<=" then $left <= $right
+      elif $op == ">" then $left > $right
+      elif $op == ">=" then $left >= $right
+      elif $op == "==" then $left == $right
+      elif $op == "!=" then $left != $right
+      else false end;
+    .tasks[]? as $task |
+    $task.body.statements[]?.expr? as $expr |
+    ($expr.source // "") as $source |
+    (($source | capture("^(?<left>-?[0-9]+)[[:space:]]*(?<op>==|!=|<=|>=|<|>)[[:space:]]*(?<right>-?[0-9]+)$")? // null)) as $m |
+    select($m != null) |
+    {
+      id:"CONSTANT_COMPARISON_EXPRESSION",
+      rule:"constant_comparison_expression",
+      severity:"warning",
+      message:"comparison expression is constant",
+      node:$expr.id,
+      module:$task.module,
+      hint:"replace the comparison with its Boolean result",
+      replacement:(comparison_result(($m.left | tonumber); $m.op; ($m.right | tonumber)) | tostring)
+    }
+  ' >> "$findings"
+  ast_json "$target" | jq -c '
+    def bool_value($source): $source == "true";
+    def comparison_result($left; $op; $right):
+      if $op == "==" then $left == $right
+      elif $op == "!=" then $left != $right
+      else false end;
+    .tasks[]? as $task |
+    $task.body.statements[]?.expr? as $expr |
+    ($expr.source // "") as $source |
+    (($source | capture("^(?<left>true|false)[[:space:]]*(?<op>==|!=)[[:space:]]*(?<right>true|false)$")? // null)) as $m |
+    select($m != null) |
+    {
+      id:"CONSTANT_BOOLEAN_COMPARISON_EXPRESSION",
+      rule:"constant_boolean_comparison_expression",
+      severity:"warning",
+      message:"Boolean comparison expression is constant",
+      node:$expr.id,
+      module:$task.module,
+      hint:"replace the comparison with its Boolean result",
+      replacement:(comparison_result(bool_value($m.left); $m.op; bool_value($m.right)) | tostring)
+    }
+  ' >> "$findings"
   while IFS= read -r file; do
     local module
     module="$(awk '/^[[:space:]]*module[[:space:]]+/ {print $2; found=1; exit} END {if(!found) print "main"}' "$file")"
@@ -2563,6 +2610,9 @@ lint_json() {
       }
       function emit_false_if(node){
         printf "{\"id\":\"CONSTANT_FALSE_IF_STATEMENT\",\"rule\":\"constant_false_if_statement\",\"severity\":\"warning\",\"message\":\"if false statement is unreachable\",\"node\":\"%s\",\"module\":\"%s\",\"hint\":\"delete the unreachable if statement\"}\n", esc(node), esc(module)
+      }
+      function emit_false_while(node){
+        printf "{\"id\":\"CONSTANT_FALSE_WHILE_STATEMENT\",\"rule\":\"constant_false_while_statement\",\"severity\":\"warning\",\"message\":\"while false statement is unreachable\",\"node\":\"%s\",\"module\":\"%s\",\"hint\":\"delete the unreachable while statement\"}\n", esc(node), esc(module)
       }
       function first_body_line(start, depth, raw, line, i){
         depth=0
@@ -2628,6 +2678,10 @@ lint_json() {
               else emit_false_if(node)
             }
           }
+          if(line !~ /^[ \t]*}/ && line ~ /^while[ \t]+false[ \t]*\{/) {
+            node="block:task:" module "." task ":stmt:" stmt
+            emit_false_while(node)
+          }
           if(line !~ /^[ \t]*}/) stmt++
           depth += count_char(raw,"{")-count_char(raw,"}")
           if(depth<=0) in_task=0
@@ -2650,6 +2704,9 @@ lint_json() {
       if .rule == "constant_if_expression" then -3
       elif .rule == "constant_if_statement" then -2
       elif .rule == "constant_false_if_statement" then -1
+      elif .rule == "constant_false_while_statement" then -1
+      elif .rule == "constant_comparison_expression" then -1
+      elif .rule == "constant_boolean_comparison_expression" then -1
       else 0 end
     )) as $findings |
     {
@@ -5830,6 +5887,12 @@ command_plan() {
         {kind:"simplify_constant_if_statement", surface:$finding.node, operation:{op:"ReplaceStatement", target:$finding.node, payload:{source:($finding.replacement // "return 0")}}, editable_json_pointers:["/payload/source"]}
       elif $finding.rule == "constant_false_if_statement" then
         {kind:"delete_constant_false_if_statement", surface:$finding.node, operation:{op:"DeleteNode", target:$finding.node}}
+      elif $finding.rule == "constant_false_while_statement" then
+        {kind:"delete_constant_false_while_statement", surface:$finding.node, operation:{op:"DeleteNode", target:$finding.node}}
+      elif $finding.rule == "constant_comparison_expression" then
+        {kind:"simplify_constant_comparison_expression", surface:$finding.node, operation:{op:"ReplaceExpression", target:$finding.node, payload:{source:($finding.replacement // "false")}}, editable_json_pointers:["/payload/source"]}
+      elif $finding.rule == "constant_boolean_comparison_expression" then
+        {kind:"simplify_constant_boolean_comparison_expression", surface:$finding.node, operation:{op:"ReplaceExpression", target:$finding.node, payload:{source:($finding.replacement // "false")}}, editable_json_pointers:["/payload/source"]}
       else empty end;
     def lint_graft_templates:
       [$lint.findings[]? | lint_template(.)];
@@ -6793,7 +6856,7 @@ command_graft() {
     printf '%s\n' "$report"
     return
   fi
-  if [[ "$kind" == "simplify_constant_if_expression" || "$kind" == "simplify_constant_if_statement" || "$kind" == "delete_constant_false_if_statement" ]]; then
+  if [[ "$kind" == "simplify_constant_if_expression" || "$kind" == "simplify_constant_if_statement" || "$kind" == "delete_constant_false_if_statement" || "$kind" == "delete_constant_false_while_statement" || "$kind" == "simplify_constant_comparison_expression" || "$kind" == "simplify_constant_boolean_comparison_expression" ]]; then
     local lint finding rule operation target_surface replacement report
     lint="$(lint_json "$source")"
     case "$kind" in
@@ -6828,6 +6891,39 @@ command_graft() {
         replacement=""
         if [[ "$write" == true ]]; then
           sley_delete_if_block_surface "$source" "$target_surface"
+        fi
+        ;;
+      delete_constant_false_while_statement)
+        rule="constant_false_while_statement"
+        operation="DeleteNode"
+        finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "constant_false_while_statement" and (.node == $surface or $surface == ""))' | head -n 1)"
+        [[ -n "$finding" ]] || finding='{}'
+        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.false_while_fix.main:stmt:1"')}"
+        replacement=""
+        if [[ "$write" == true ]]; then
+          sley_delete_if_block_surface "$source" "$target_surface"
+        fi
+        ;;
+      simplify_constant_comparison_expression)
+        rule="constant_comparison_expression"
+        operation="ReplaceExpression"
+        finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "constant_comparison_expression" and (.node == $surface or $surface == ""))' | head -n 1)"
+        [[ -n "$finding" ]] || finding='{}'
+        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.constant_compare_fix.main:stmt:0:expr"')}"
+        replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "false"')"
+        if [[ "$write" == true ]]; then
+          sley_rewrite_statement_surface "$source" "$target_surface" "$replacement"
+        fi
+        ;;
+      simplify_constant_boolean_comparison_expression)
+        rule="constant_boolean_comparison_expression"
+        operation="ReplaceExpression"
+        finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "constant_boolean_comparison_expression" and (.node == $surface or $surface == ""))' | head -n 1)"
+        [[ -n "$finding" ]] || finding='{}'
+        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.constant_bool_compare_fix.main:stmt:0:expr"')}"
+        replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "false"')"
+        if [[ "$write" == true ]]; then
+          sley_rewrite_statement_surface "$source" "$target_surface" "$replacement"
         fi
         ;;
     esac
