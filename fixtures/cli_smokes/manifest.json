@@ -429,12 +429,13 @@
         "success": true,
         "stdout_json": [
           { "pointer": "/schema", "value": "sley.sandbox.report.v0" },
-          { "pointer": "/status", "value": "passed" },
+          { "pointer": "/status", "value": "warnings" },
           { "pointer": "/manifest_schema", "value": "sley.sandbox.manifest.v0" },
           { "pointer": "/summary/capability_count", "value": 4 },
           { "pointer": "/summary/seed_count", "value": 4 },
           { "pointer": "/verify/schema", "value": "sley.verify.report.v0" },
-          { "pointer": "/verify/status", "value": "passed" }
+          { "pointer": "/verify/status", "value": "passed" },
+          { "pointer": "/issues/0/code", "value": "SANDBOX_OS_ISOLATION_NOT_ENFORCED" }
         ]
       }
     },
