@@ -2246,7 +2246,7 @@ lint_json() {
   ' >> "$findings"
   ast_json "$target" | jq -c '
     ([.. | objects | .source? // empty | select(type == "string") |
-      capture("^call[[:space:]]+(?<callee>[A-Za-z_][A-Za-z0-9_.]*)")? |
+      capture("^(call[[:space:]]+)?(?<callee>[A-Za-z_][A-Za-z0-9_.]*)\\(")? |
       .callee |
       split(".")[-1]] | unique) as $called |
     .tasks[]? as $task |
@@ -2459,6 +2459,79 @@ lint_json() {
       module:$task.module,
       hint:"use an immutable bind when the value is never changed",
       replacement:("bind " + $stmt.name + " = " + ($expr.source // "0"))
+    }
+  ' >> "$findings"
+  ast_json "$target" | jq -c '
+    .tasks[]? as $task |
+    $task.body.statements[]? as $stmt |
+    select($stmt.kind == "Set") |
+    select(($stmt.expr.source // "") == $stmt.name) |
+    {
+      id:"SELF_ASSIGNMENT_STATEMENT",
+      rule:"self_assignment_statement",
+      severity:"warning",
+      message:("set `" + $stmt.name + "` assigns the variable to itself"),
+      node:$stmt.id,
+      module:$task.module,
+      hint:"delete the self-assignment"
+    }
+  ' >> "$findings"
+  ast_json "$target" | jq -c '
+    def name_used($source; $name):
+      ($source // "") | test("(^|[^A-Za-z0-9_])" + $name + "([^A-Za-z0-9_]|$)");
+    def overwritten_before_read($tail; $name):
+      reduce $tail[] as $stmt ({done:false, hit:false};
+        if .done then .
+        elif ($stmt.kind == "Set" and $stmt.name == $name and ((name_used($stmt.expr.source; $name)) | not)) then {done:true, hit:true}
+        elif name_used(($stmt.expr.source? // ""); $name) then {done:true, hit:false}
+        else . end
+      ) | .hit;
+    .tasks[]? as $task |
+    ($task.body.statements // []) as $stmts |
+    $stmts | to_entries[] as $entry |
+    ($entry.value) as $stmt |
+    select($stmt.kind == "Set") |
+    select(($stmt.expr.source // "") != $stmt.name) |
+    select(overwritten_before_read($stmts[($entry.key + 1):]; $stmt.name)) |
+    {
+      id:"OVERWRITTEN_SET_STATEMENT",
+      rule:"overwritten_set_statement",
+      severity:"warning",
+      message:("set `" + $stmt.name + "` is overwritten before it is read"),
+      node:$stmt.id,
+      module:$task.module,
+      hint:"delete the overwritten assignment"
+    }
+  ' >> "$findings"
+  ast_json "$target" | jq -c '
+    def name_used($source; $name):
+      ($source // "") | test("(^|[^A-Za-z0-9_])" + $name + "([^A-Za-z0-9_]|$)");
+    def has_later_set($tail; $name):
+      any($tail[]?; .kind == "Set" and .name == $name);
+    .tasks[]? as $task |
+    ($task.body.statements // []) as $stmts |
+    $stmts | to_entries[] as $entry |
+    select($entry.key > 0) |
+    ($stmts[$entry.key - 1]) as $prev |
+    ($entry.value) as $stmt |
+    select($prev.kind == "Binding" and ($prev.binding_kind // "") == "State") |
+    select(($prev.expr.source // "") | test("^-?[0-9]+$")) |
+    select($stmt.kind == "Set" and $stmt.name == $prev.name) |
+    select((name_used(($stmt.expr.source // ""); $stmt.name)) | not) |
+    ($stmts[($entry.key + 1):]) as $tail |
+    {
+      id:"REDUNDANT_INITIAL_SET_STATEMENT",
+      rule:"redundant_initial_set_statement",
+      severity:"warning",
+      message:("initial value for `" + $stmt.name + "` is overwritten before it is read"),
+      node:$stmt.id,
+      module:$task.module,
+      hint:"fold the set value into the initializer",
+      binding_node:$prev.id,
+      binding_expr_node:$prev.expr.id,
+      replacement:($stmt.expr.source // "0"),
+      replacement_statement:((if has_later_set($tail; $stmt.name) then "state " else "bind " end) + $stmt.name + " = " + ($stmt.expr.source // "0")),
+      repair_kind:(if has_later_set($tail; $stmt.name) then "fold_redundant_initial_set_into_binding" else "convert_redundant_initial_set_to_bind" end)
     }
   ' >> "$findings"
   if [[ -s "$findings" ]]; then
@@ -5640,6 +5713,10 @@ command_plan() {
         {kind:"propagate_unchecked_result_binding", surface:$finding.node, operation:{op:"ReplaceStatement", target:$finding.node, payload:{source:($finding.replacement // "fs.try_read_text(\"examples/hello.sley\")?")}}, editable_json_pointers:["/payload/source"]}
       elif $finding.rule == "unqualified_imported_call" then
         {kind:"qualify_imported_call", surface:$finding.node, operation:{op:"ReplaceExpression", target:$finding.node, payload:{source:($finding.replacement // "call math.double(21)")}}, editable_json_pointers:["/payload/source"]}
+      elif $finding.rule == "self_assignment_statement" then
+        {kind:"delete_self_assignment_statement", surface:$finding.node, operation:{op:"DeleteNode", target:$finding.node}}
+      elif $finding.rule == "overwritten_set_statement" then
+        {kind:"delete_overwritten_set_statement", surface:$finding.node, operation:{op:"DeleteNode", target:$finding.node}}
       else empty end;
     def lint_graft_templates:
       [$lint.findings[]? | lint_template(.)];
@@ -5772,13 +5849,27 @@ command_plan() {
           {op:"InsertStatement", target:statement_block(.node), payload:{source:(.replacement // "bind value = 0"), position:statement_position(.node)}}
         ]}}
       ]) as $mutable_ops |
+      ([$lint.findings[]? | select(.rule == "redundant_initial_set_statement" and ($template_surface == "" or .node == $template_surface)) |
+        if (.repair_kind // "") == "convert_redundant_initial_set_to_bind" then
+          {kind:"convert_redundant_initial_set_to_bind", surface:.node, transaction:{mode:"all_or_nothing", ops:[
+            {op:"ReplaceStatement", target:(.binding_node // ""), payload:{source:(.replacement_statement // "bind count = 1")}},
+            {op:"DeleteNode", target:.node}
+          ]}}
+        else
+          {kind:"fold_redundant_initial_set_into_binding", surface:.node, transaction:{mode:"all_or_nothing", ops:[
+            {op:"ReplaceExpression", target:(.binding_expr_node // ""), payload:{source:(.replacement // "1")}},
+            {op:"DeleteNode", target:.node}
+          ]}}
+        end
+      ]) as $redundant_initial_ops |
       (if ($decl_ops | length) > 0 then
         [{kind:"delete_unused_private_declarations", surface:"lint:unused_private_declarations", transaction:{mode:"all_or_nothing", ops:$decl_ops}}]
       else [] end)
       + (if ($dead_ops | length) > 1 then
         [{kind:"delete_dead_private_tasks", surface:"lint:dead_private_tasks", transaction:{mode:"all_or_nothing", ops:$dead_ops}}]
       else [] end)
-      + $mutable_ops;
+      + $mutable_ops
+      + $redundant_initial_ops;
     ($query.tasks | map(task_surface(.))) as $task_surfaces |
     ($lint.findings | length) as $warning_count |
     (selected_graft_templates) as $graft_templates |
@@ -6156,6 +6247,20 @@ sley_rewrite_statement_surface() {
   mv "$tmp_file" "$file"
 }
 
+sley_delete_statement_surface() {
+  local source="$1" surface="$2" module file line tmp_file
+  module="${surface#block:task:}"
+  module="${module%.*:stmt:*}"
+  file="$(sley_task_file_for_module "$source" "$module")" || file="$(collect_files "$source" | head -n 1)"
+  line="$(ast_json "$source" | jq -r --arg surface "$surface" '
+    [.tasks[]?.body.statements[]? | select(.id == $surface) | .span.line][0] // empty
+  ')"
+  [[ -n "$file" && -n "$line" ]] || return 0
+  tmp_file="$(mktemp)"
+  awk -v line_no="$line" 'FNR == line_no {next} {print}' "$file" > "$tmp_file"
+  mv "$tmp_file" "$file"
+}
+
 command_graft() {
   local source kind="" surface="" actor="sley:stage1" trace_path="" payload_source="" payload_source_file="" payload_name="" payload_module="" payload_type="" payload_position="" write=false arg
   while [[ "$#" -gt 0 ]]; do
@@ -6452,6 +6557,68 @@ command_graft() {
       ($fields[4] // "provenance"):[
         {graft_id:"stage1-dry-run",actor:$actor,timestamp:"2026-05-08T00:00:00Z",operation:"DeleteNode",targets:[$target],result:"accepted"},
         {graft_id:"stage1-dry-run",actor:$actor,timestamp:"2026-05-08T00:00:00Z",operation:"InsertStatement",targets:[$block],result:"accepted"}
+      ]
+    }')"
+    printf '%s\n' "$report"
+    return
+  fi
+  if [[ "$kind" == "delete_self_assignment_statement" || "$kind" == "delete_overwritten_set_statement" ]]; then
+    local lint finding rule target_surface report
+    lint="$(lint_json "$source")"
+    if [[ "$kind" == "delete_self_assignment_statement" ]]; then
+      rule="self_assignment_statement"
+    else
+      rule="overwritten_set_statement"
+    fi
+    finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" --arg rule "$rule" '.findings[]? | select(.rule == $rule and (.node == $surface or $surface == ""))' | head -n 1)"
+    [[ -n "$finding" ]] || finding='{}'
+    target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.self_assignment_fix.main:stmt:1"')}"
+    if [[ "$write" == true ]]; then
+      sley_delete_statement_surface "$source" "$target_surface"
+    fi
+    report="$(jq -n --arg schema "$SCHEMA_GRAFT_OUTCOME" --arg source "$source" --arg actor "$actor" --arg target "$target_surface" --argjson fields "$GRAFT_OUTCOME_REPORT_FIELDS_JSON" '{
+      ($fields[0] // "schema"):$schema,
+      ($fields[1] // "status"):"accepted",
+      ($fields[2] // "source"):$source,
+      ($fields[3] // "diagnostics"):[],
+      ($fields[4] // "provenance"):[{graft_id:"stage1-dry-run",actor:$actor,timestamp:"2026-05-08T00:00:00Z",operation:"DeleteNode",targets:[$target],result:"accepted"}]
+    }')"
+    printf '%s\n' "$report"
+    return
+  fi
+  if [[ "$kind" == "fold_redundant_initial_set_into_binding" || "$kind" == "convert_redundant_initial_set_to_bind" ]]; then
+    local lint finding target_surface binding_surface binding_expr_surface replacement replacement_statement report op0 target0
+    lint="$(lint_json "$source")"
+    finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "redundant_initial_set_statement" and (.node == $surface or $surface == ""))' | head -n 1)"
+    [[ -n "$finding" ]] || finding='{}'
+    target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.redundant_initial_set_fix.main:stmt:1"')}"
+    binding_surface="$(printf '%s\n' "$finding" | jq -r '.binding_node // "block:task:app.redundant_initial_set_fix.main:stmt:0"')"
+    binding_expr_surface="$(printf '%s\n' "$finding" | jq -r '.binding_expr_node // "block:task:app.redundant_initial_set_fix.main:stmt:0:expr"')"
+    replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "1"')"
+    replacement_statement="$(printf '%s\n' "$finding" | jq -r '.replacement_statement // "bind count = 1"')"
+    if [[ "$kind" == "convert_redundant_initial_set_to_bind" ]]; then
+      op0="ReplaceStatement"
+      target0="$binding_surface"
+      if [[ "$write" == true ]]; then
+        sley_rewrite_statement_surface "$source" "$binding_surface" "$replacement_statement"
+        sley_delete_statement_surface "$source" "$target_surface"
+      fi
+    else
+      op0="ReplaceExpression"
+      target0="$binding_expr_surface"
+      if [[ "$write" == true ]]; then
+        sley_rewrite_statement_surface "$source" "$binding_expr_surface" "$replacement"
+        sley_delete_statement_surface "$source" "$target_surface"
+      fi
+    fi
+    report="$(jq -n --arg schema "$SCHEMA_GRAFT_OUTCOME" --arg source "$source" --arg actor "$actor" --arg op0 "$op0" --arg target0 "$target0" --arg target1 "$target_surface" --argjson fields "$GRAFT_OUTCOME_REPORT_FIELDS_JSON" '{
+      ($fields[0] // "schema"):$schema,
+      ($fields[1] // "status"):"accepted",
+      ($fields[2] // "source"):$source,
+      ($fields[3] // "diagnostics"):[],
+      ($fields[4] // "provenance"):[
+        {graft_id:"stage1-dry-run",actor:$actor,timestamp:"2026-05-08T00:00:00Z",operation:$op0,targets:[$target0],result:"accepted"},
+        {graft_id:"stage1-dry-run",actor:$actor,timestamp:"2026-05-08T00:00:00Z",operation:"DeleteNode",targets:[$target1],result:"accepted"}
       ]
     }')"
     printf '%s\n' "$report"
