@@ -1983,6 +1983,49 @@ lint_json() {
     fi
   done < <(collect_files "$target")
   ast_json "$target" | jq -c '
+    .imports
+    | group_by(.owner_module + ":" + .module)[]
+    | select(length > 1)
+    | .[1:][]
+    | {
+      id:"DUPLICATE_IMPORT",
+      rule:"duplicate_import",
+      severity:"warning",
+      message:("duplicate import `" + .module + "`"),
+      node:.id,
+      module:.owner_module,
+      hint:"delete the duplicate import"
+    }
+  ' >> "$findings"
+  ast_json "$target" | jq -c '
+    . as $root |
+    def type_used($type):
+      any($root.tasks[]?; ((.return_type.name // "Unit") == $type.name) or any(.takes[]?; ((.type.name // "Unit") == $type.name))) or
+      any($root.types[]?; ((.value.name // "Unit") == $type.name));
+    def effect_used($effect):
+      any($root.tasks[]?; any(.effects[]?; . == $effect.name));
+    ($root.effects[]? | select((.exported | not) and (effect_used(.) | not)) |
+      {
+        id:"UNUSED_PRIVATE_EFFECT",
+        rule:"unused_private_effect",
+        severity:"warning",
+        message:("private effect `" + .module + "." + .name + "` is not used"),
+        node:.id,
+        module:.module,
+        hint:"delete it or use it in a task"
+      }),
+    ($root.types[]? | select((.exported | not) and (type_used(.) | not)) |
+      {
+        id:"UNUSED_PRIVATE_TYPE",
+        rule:"unused_private_type",
+        severity:"warning",
+        message:("private type `" + .module + "." + .name + "` is not used"),
+        node:.id,
+        module:.module,
+        hint:"delete it or use it in a signature"
+      })
+  ' >> "$findings"
+  ast_json "$target" | jq -c '
     ([.. | objects | .source? // empty | select(type == "string")] | unique) as $sources |
     def import_prefix($import):
       ($import.alias // ($import.module | split(".")[-1]));
@@ -1999,6 +2042,37 @@ lint_json() {
       node:$import.id,
       module:$import.owner_module,
       hint:"delete the import or use it"
+    }
+  ' >> "$findings"
+  ast_json "$target" | jq -c '
+    . as $root |
+    def task_key($t): ($t.module + "." + $t.name);
+    def call_callee($expr):
+      ($expr.source | sub("^call[[:space:]]+";"") | sub("\\(.*$";""));
+    def call_target($module; $callee):
+      if ($callee | contains(".")) then $callee else ($module + "." + $callee) end;
+    def called_targets($task):
+      [$task.body.statements[]?.expr? | select((.source? // "") | startswith("call ")) | call_target($task.module; call_callee(.))];
+    def step($seen):
+      reduce ($root.tasks[]? as $candidate | select(($seen | index(task_key($candidate))) != null) | called_targets($candidate)[]) as $call
+        ($seen; if (. | index($call)) == null then . + [$call] else . end);
+    def closure($seed):
+      reduce range(0; (($root.tasks | length) + 1)) as $i ($seed; step(.));
+    def inbound_count($target):
+      [$root.tasks[]? | called_targets(.)[] | select(. == $target)] | length;
+    ([$root.tasks[]? | select(.name == "main") | task_key(.)]) as $roots |
+    (closure($roots)) as $reachable |
+    $root.tasks[]? as $task |
+    (task_key($task)) as $key |
+    select(($task.exported | not) and $task.name != "main" and (($reachable | index($key)) == null) and (inbound_count($key) > 0)) |
+    {
+      id:"UNREACHABLE_PRIVATE_TASK",
+      rule:"unreachable_private_task",
+      severity:"warning",
+      message:("private task `" + $key + "` is unreachable from main"),
+      node:$task.id,
+      module:$task.module,
+      hint:"delete it or call it from a reachable task"
     }
   ' >> "$findings"
   ast_json "$target" | jq -c '
@@ -4782,11 +4856,26 @@ command_check() {
 }
 
 command_lint() {
-  local target report
-  target="$(last_path_arg "$@")"
+  local target report rule_filter="" deny_warnings=false
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --rule) rule_filter="${2//-/_}"; shift 2 ;;
+      --deny-warnings) deny_warnings=true; shift ;;
+      --json) shift ;;
+      *) target="$1"; shift ;;
+    esac
+  done
   report="$(lint_json "$target")"
+  if [[ -n "$rule_filter" ]]; then
+    report="$(printf '%s\n' "$report" | jq --arg rule "$rule_filter" '
+      (.findings | map(select(.rule == $rule))) as $filtered |
+      .filters.rules = [$rule] |
+      .findings = $filtered |
+      .status = (if ($filtered | length) > 0 then "findings" else "ok" end)
+    ')"
+  fi
   printf '%s\n' "$report"
-  if printf '%s\n' "$*" | grep -q -- '--deny-warnings'; then
+  if [[ "$deny_warnings" == true ]]; then
     [[ "$(printf '%s\n' "$report" | jq -r '.status')" == "ok" ]]
   fi
 }
@@ -5022,6 +5111,12 @@ command_plan() {
       {op:"InsertStatement", target:("block:" + $task.id), payload:{source:"forge { }", position:0}}
     '
     return
+  elif [[ "$emit_graft" == "delete_unused_private_declarations" ]]; then
+    lint="$(lint_json "$target")"
+    jq -n --argjson lint "$lint" '
+      {mode:"all_or_nothing", ops:[$lint.findings[]? | select(.rule == "unused_private_effect" or .rule == "unused_private_type") | {op:"DeleteNode", target:.node}]}
+    '
+    return
   elif [[ "$emit_graft" == "add_task" ]]; then
     jq -n --argjson query "$query" '
       ($query.entry_module // $query.modules[0].module // "app.main") as $module |
@@ -5096,6 +5191,24 @@ command_plan() {
         ($surface | sub("^import:"; "") | split(":")[0]) as $module |
         [move_decl_template("move_import"; $surface; $surface; ("module:" + $module + ":imports"))]
       else [] end;
+    def lint_template($finding):
+      if $finding.rule == "unused_private_effect" then
+        {kind:"delete_unused_private_effect", surface:$finding.node, operation:{op:"DeleteNode", target:$finding.node}}
+      elif $finding.rule == "unused_private_type" then
+        {kind:"delete_unused_private_type", surface:$finding.node, operation:{op:"DeleteNode", target:$finding.node}}
+      elif $finding.rule == "unused_import" then
+        {kind:"delete_unused_import", surface:$finding.node, operation:{op:"DeleteNode", target:$finding.node}}
+      elif $finding.rule == "duplicate_import" then
+        {kind:"delete_duplicate_import", surface:$finding.node, operation:{op:"DeleteNode", target:$finding.node}}
+      elif $finding.rule == "unused_private_task" then
+        {kind:"delete_unused_private_task", surface:$finding.node, operation:{op:"DeleteNode", target:$finding.node}}
+      elif $finding.rule == "unreachable_private_task" then
+        {kind:"delete_unreachable_private_task", surface:$finding.node, operation:{op:"DeleteNode", target:$finding.node}}
+      else empty end;
+    def lint_graft_templates:
+      [$lint.findings[]? | lint_template(.)];
+    def lint_target_graft_templates:
+      [lint_graft_templates[] | select(.surface == $template_surface)];
     def task_ast($id):
       ([$ast.tasks[]? | select(.id == $id)][0]) // {body:{statements:[]}};
     def task_graft_templates($surface):
@@ -5153,7 +5266,10 @@ command_plan() {
         {kind:"replace_call_arg", surface:$task.id, operation:{op:"ReplaceCallArg", target:("task:" + $call.target), payload:{from:$call.callee, scope:("task:" + $call.from), source:(call_args($call.source)[0] // ""), position:0}}, editable_json_pointers:["/payload/source"]}
       ] end);
     def selected_graft_templates:
-      if $template_surface == "" then project_graft_templates
+      if (lint_target_graft_templates | length) > 0 then lint_target_graft_templates
+      elif $template_surface == "" then
+        (lint_graft_templates | map(select(.kind == "delete_unused_private_effect" or .kind == "delete_unused_private_type"))) as $decl_cleanup |
+        if ($decl_cleanup | length) > 0 then (project_graft_templates[0:4] + $decl_cleanup) else project_graft_templates end
       elif $template_surface == "program" then program_graft_templates
       elif ($template_surface | test("^module:[^:]+:tasks$")) then module_task_parent_templates($template_surface)
       elif ($template_surface | test("^module:[^:]+$")) then module_graft_templates($template_surface | sub("^module:"; ""))
@@ -5180,6 +5296,15 @@ command_plan() {
           ]
         end
       else [] end;
+    def lint_transaction_templates:
+      ([$lint.findings[]? | select(.rule == "unused_private_effect" or .rule == "unused_private_type") | {op:"DeleteNode", target:.node}]) as $decl_ops |
+      ([$lint.findings[]? | select(.rule == "unreachable_private_task" or .rule == "unused_private_task") | {op:"DeleteNode", target:.node}]) as $dead_ops |
+      (if ($decl_ops | length) > 0 then
+        [{kind:"delete_unused_private_declarations", surface:"lint:unused_private_declarations", transaction:{mode:"all_or_nothing", ops:$decl_ops}}]
+      else [] end)
+      + (if ($dead_ops | length) > 1 then
+        [{kind:"delete_dead_private_tasks", surface:"lint:dead_private_tasks", transaction:{mode:"all_or_nothing", ops:$dead_ops}}]
+      else [] end);
     ($query.tasks | map(task_surface(.))) as $task_surfaces |
     ($lint.findings | length) as $warning_count |
     (selected_graft_templates) as $graft_templates |
@@ -5201,7 +5326,7 @@ command_plan() {
       lint:($lint + {source_schema:($lint.schema // "sley.lint.report.v0")}),
       task_surfaces:$task_surfaces,
       graft_templates:$graft_templates,
-      transaction_templates:task_transaction_templates,
+      transaction_templates:(task_transaction_templates + lint_transaction_templates),
       next_actions:[
         {kind:"inspect_primary_surface", reason:"graph slice gives bounded AST and call context for the highest-ranked edit surface", command:["sley","graph","--json","--slice",($task_surfaces[0].id // "task:main.main"),$target]},
         {kind:"inspect_calls", reason:"strict call rows show caller/callee edges before rename, arity, or authority edits", command:["sley","query","--json","--kind","calls",$target]},
@@ -5399,9 +5524,13 @@ command_graft() {
       *) source="$1"; shift ;;
     esac
   done
-  if [[ "$kind" == "delete_unused_import" ]]; then
+  if [[ "$kind" == "delete_unused_import" || "$kind" == "delete_duplicate_import" ]]; then
     if [[ -z "$surface" ]]; then
-      surface="$(lint_json "$source" | jq -r '.findings[]? | select(.rule=="unused_import") | .node' | head -n 1)"
+      if [[ "$kind" == "delete_duplicate_import" ]]; then
+        surface="$(lint_json "$source" | jq -r '.findings[]? | select(.rule=="duplicate_import") | .node' | head -n 1)"
+      else
+        surface="$(lint_json "$source" | jq -r '.findings[]? | select(.rule=="unused_import") | .node' | head -n 1)"
+      fi
     fi
     if [[ -n "$surface" && "$write" == true ]]; then
       local rest owner imported file module tmp_file
@@ -5412,10 +5541,17 @@ command_graft() {
         module="$(awk '/^[[:space:]]*module[[:space:]]+/ {print $2; found=1; exit} END {if(!found) print "main"}' "$file")"
         if [[ "$module" == "$owner" ]]; then
           tmp_file="$(mktemp)"
-          awk -v imported="$imported" '
-            $0 ~ "^[[:space:]]*import[[:space:]]+" imported "([[:space:]]+as[[:space:]]+[A-Za-z_][A-Za-z0-9_]*)?[[:space:]]*$" {next}
-            {print}
-          ' "$file" > "$tmp_file"
+          if [[ "$kind" == "delete_duplicate_import" ]]; then
+            awk -v imported="$imported" '
+              $0 ~ "^[[:space:]]*import[[:space:]]+" imported "([[:space:]]+as[[:space:]]+[A-Za-z_][A-Za-z0-9_]*)?[[:space:]]*$" {seen++; if(seen>1) next}
+              {print}
+            ' "$file" > "$tmp_file"
+          else
+            awk -v imported="$imported" '
+              $0 ~ "^[[:space:]]*import[[:space:]]+" imported "([[:space:]]+as[[:space:]]+[A-Za-z_][A-Za-z0-9_]*)?[[:space:]]*$" {next}
+              {print}
+            ' "$file" > "$tmp_file"
+          fi
           mv "$tmp_file" "$file"
           break
         fi
@@ -5434,6 +5570,27 @@ command_graft() {
       printf '%s\n' "$report" | jq -c '{schema:"sley.trace.receipt.v0", provenance:.provenance}' >> "$trace_path"
     fi
     printf '%s\n' "$report"
+    return
+  fi
+  if [[ "$kind" == "delete_unused_private_declarations" || "$kind" == "delete_dead_private_tasks" ]]; then
+    local lint rules_filter
+    lint="$(lint_json "$source")"
+    if [[ "$kind" == "delete_unused_private_declarations" ]]; then
+      rules_filter='.rule == "unused_private_effect" or .rule == "unused_private_type"'
+    else
+      rules_filter='.rule == "unreachable_private_task" or .rule == "unused_private_task"'
+    fi
+    jq -n --arg schema "$SCHEMA_GRAFT_OUTCOME" --arg source "$source" --arg actor "$actor" --argjson lint "$lint" --arg rules_filter "$rules_filter" --argjson fields "$GRAFT_OUTCOME_REPORT_FIELDS_JSON" '{
+      ($fields[0] // "schema"):$schema,
+      ($fields[1] // "status"):"accepted",
+      ($fields[2] // "source"):$source,
+      ($fields[3] // "diagnostics"):[],
+      ($fields[4] // "provenance"):([
+        $lint.findings[]?
+        | select(if $rules_filter == ".rule == \"unused_private_effect\" or .rule == \"unused_private_type\"" then (.rule == "unused_private_effect" or .rule == "unused_private_type") else (.rule == "unreachable_private_task" or .rule == "unused_private_task") end)
+        | {graft_id:"stage1-dry-run",actor:$actor,timestamp:"2026-05-08T00:00:00Z",operation:"DeleteNode",targets:[.node],result:"accepted"}
+      ])
+    }'
     return
   fi
   if [[ "$kind" == "delete_unused_private_task" ]]; then
