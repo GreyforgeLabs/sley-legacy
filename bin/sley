@@ -2598,6 +2598,63 @@ lint_json() {
       replacement:(comparison_result(bool_value($m.left); $m.op; bool_value($m.right)) | tostring)
     }
   ' >> "$findings"
+  ast_json "$target" | jq -c '
+    def arithmetic_result($left; $op; $right):
+      if $op == "+" then $left + $right
+      elif $op == "-" then $left - $right
+      elif $op == "*" then $left * $right
+      else null end;
+    .tasks[]? as $task |
+    $task.body.statements[]?.expr? as $expr |
+    ($expr.source // "") as $source |
+    (($source | capture("^(?<left>-?[0-9]+)[[:space:]]*(?<op>\\+|-|\\*)[[:space:]]*(?<right>-?[0-9]+)$")? // null)) as $m |
+    select($m != null) |
+    (arithmetic_result(($m.left | tonumber); $m.op; ($m.right | tonumber))) as $result |
+    select($result != null) |
+    {
+      id:"CONSTANT_ARITHMETIC_EXPRESSION",
+      rule:"constant_arithmetic_expression",
+      severity:"warning",
+      message:"arithmetic expression is constant",
+      node:$expr.id,
+      module:$task.module,
+      hint:"replace the arithmetic expression with its constant value",
+      replacement:($result | tostring)
+    }
+  ' >> "$findings"
+  ast_json "$target" | jq -c '
+    .tasks[]? as $task |
+    $task.body.statements[]?.expr? as $expr |
+    ($expr.source // "") as $source |
+    select($source | test("(^|[[:space:](])0[[:space:]]*\\*|\\*[[:space:]]*0([[:space:])]|$)")) |
+    {
+      id:"ABSORBING_ARITHMETIC_EXPRESSION",
+      rule:"absorbing_arithmetic_expression",
+      severity:"warning",
+      message:"arithmetic expression is absorbed by zero",
+      node:$expr.id,
+      module:$task.module,
+      hint:"replace the multiplication by zero with 0",
+      replacement:"0"
+    }
+  ' >> "$findings"
+  ast_json "$target" | jq -c '
+    .tasks[]? as $task |
+    $task.body.statements[]?.expr? as $expr |
+    ($expr.source // "") as $source |
+    (($source | capture("^\"(?<left>[^\"]*)\"[[:space:]]*\\+[[:space:]]*\"(?<right>[^\"]*)\"$")? // null)) as $m |
+    select($m != null) |
+    {
+      id:"CONSTANT_TEXT_CONCATENATION_EXPRESSION",
+      rule:"constant_text_concatenation_expression",
+      severity:"warning",
+      message:"text concatenation expression is constant",
+      node:$expr.id,
+      module:$task.module,
+      hint:"replace the text concatenation with the combined literal",
+      replacement:(($m.left + $m.right) | @json)
+    }
+  ' >> "$findings"
   while IFS= read -r file; do
     local module
     module="$(awk '/^[[:space:]]*module[[:space:]]+/ {print $2; found=1; exit} END {if(!found) print "main"}' "$file")"
@@ -2707,6 +2764,9 @@ lint_json() {
       elif .rule == "constant_false_while_statement" then -1
       elif .rule == "constant_comparison_expression" then -1
       elif .rule == "constant_boolean_comparison_expression" then -1
+      elif .rule == "constant_arithmetic_expression" then -1
+      elif .rule == "absorbing_arithmetic_expression" then -1
+      elif .rule == "constant_text_concatenation_expression" then -1
       else 0 end
     )) as $findings |
     {
@@ -5893,6 +5953,12 @@ command_plan() {
         {kind:"simplify_constant_comparison_expression", surface:$finding.node, operation:{op:"ReplaceExpression", target:$finding.node, payload:{source:($finding.replacement // "false")}}, editable_json_pointers:["/payload/source"]}
       elif $finding.rule == "constant_boolean_comparison_expression" then
         {kind:"simplify_constant_boolean_comparison_expression", surface:$finding.node, operation:{op:"ReplaceExpression", target:$finding.node, payload:{source:($finding.replacement // "false")}}, editable_json_pointers:["/payload/source"]}
+      elif $finding.rule == "constant_arithmetic_expression" then
+        {kind:"simplify_constant_arithmetic_expression", surface:$finding.node, operation:{op:"ReplaceExpression", target:$finding.node, payload:{source:($finding.replacement // "0")}}, editable_json_pointers:["/payload/source"]}
+      elif $finding.rule == "absorbing_arithmetic_expression" then
+        {kind:"simplify_absorbing_arithmetic_expression", surface:$finding.node, operation:{op:"ReplaceExpression", target:$finding.node, payload:{source:($finding.replacement // "0")}}, editable_json_pointers:["/payload/source"]}
+      elif $finding.rule == "constant_text_concatenation_expression" then
+        {kind:"simplify_constant_text_concatenation_expression", surface:$finding.node, operation:{op:"ReplaceExpression", target:$finding.node, payload:{source:($finding.replacement // "\"\"")}}, editable_json_pointers:["/payload/source"]}
       else empty end;
     def lint_graft_templates:
       [$lint.findings[]? | lint_template(.)];
@@ -6856,7 +6922,7 @@ command_graft() {
     printf '%s\n' "$report"
     return
   fi
-  if [[ "$kind" == "simplify_constant_if_expression" || "$kind" == "simplify_constant_if_statement" || "$kind" == "delete_constant_false_if_statement" || "$kind" == "delete_constant_false_while_statement" || "$kind" == "simplify_constant_comparison_expression" || "$kind" == "simplify_constant_boolean_comparison_expression" ]]; then
+  if [[ "$kind" == "simplify_constant_if_expression" || "$kind" == "simplify_constant_if_statement" || "$kind" == "delete_constant_false_if_statement" || "$kind" == "delete_constant_false_while_statement" || "$kind" == "simplify_constant_comparison_expression" || "$kind" == "simplify_constant_boolean_comparison_expression" || "$kind" == "simplify_constant_arithmetic_expression" || "$kind" == "simplify_absorbing_arithmetic_expression" || "$kind" == "simplify_constant_text_concatenation_expression" ]]; then
     local lint finding rule operation target_surface replacement report
     lint="$(lint_json "$source")"
     case "$kind" in
@@ -6922,6 +6988,39 @@ command_graft() {
         [[ -n "$finding" ]] || finding='{}'
         target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.constant_bool_compare_fix.main:stmt:0:expr"')}"
         replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "false"')"
+        if [[ "$write" == true ]]; then
+          sley_rewrite_statement_surface "$source" "$target_surface" "$replacement"
+        fi
+        ;;
+      simplify_constant_arithmetic_expression)
+        rule="constant_arithmetic_expression"
+        operation="ReplaceExpression"
+        finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "constant_arithmetic_expression" and (.node == $surface or $surface == ""))' | head -n 1)"
+        [[ -n "$finding" ]] || finding='{}'
+        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.constant_arithmetic_fix.main:stmt:0:expr"')}"
+        replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "0"')"
+        if [[ "$write" == true ]]; then
+          sley_rewrite_statement_surface "$source" "$target_surface" "$replacement"
+        fi
+        ;;
+      simplify_absorbing_arithmetic_expression)
+        rule="absorbing_arithmetic_expression"
+        operation="ReplaceExpression"
+        finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "absorbing_arithmetic_expression" and (.node == $surface or $surface == ""))' | head -n 1)"
+        [[ -n "$finding" ]] || finding='{}'
+        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.absorbing_arithmetic_fix.main:stmt:0:expr"')}"
+        replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "0"')"
+        if [[ "$write" == true ]]; then
+          sley_rewrite_statement_surface "$source" "$target_surface" "$replacement"
+        fi
+        ;;
+      simplify_constant_text_concatenation_expression)
+        rule="constant_text_concatenation_expression"
+        operation="ReplaceExpression"
+        finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "constant_text_concatenation_expression" and (.node == $surface or $surface == ""))' | head -n 1)"
+        [[ -n "$finding" ]] || finding='{}'
+        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.constant_text_concat_fix.main:stmt:0:expr"')}"
+        replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "\"\""')"
         if [[ "$write" == true ]]; then
           sley_rewrite_statement_surface "$source" "$target_surface" "$replacement"
         fi
