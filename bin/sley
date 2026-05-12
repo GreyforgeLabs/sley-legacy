@@ -1200,13 +1200,18 @@ ast_json() {
 
 node_json() {
   local target="$1" node="$2"
-  ast_json "$target" | jq --arg node "$node" --arg schema "$SCHEMA_AST_NODE" '
+  ast_json "$target" | jq --arg node "$node" --arg schema "$SCHEMA_AST_NODE" --arg diag_schema "$SCHEMA_DIAGNOSTICS" '
     def statements: [.tasks[] as $t | $t.body.statements[]? | . + {module:$t.module, task:$t.name}];
-    (statements[] | select(.id == $node or (.expr.id? == $node))) as $match |
-    if ($match.expr.id? == $node) then
-      {schema:$schema, target:$node, id:$node, node_kind:"expression", module:$match.module, parent:$match.id, value:$match.expr}
+    (first(.tasks[]? | select(.id == $node)) // null) as $task_match |
+    (first(statements[] | select(.id == $node or (.expr.id? == $node))) // null) as $stmt_match |
+    if $task_match != null then
+      {schema:$schema, target:$node, id:$node, node_kind:"task", module:$task_match.module, value:$task_match}
+    elif $stmt_match != null and ($stmt_match.expr.id? == $node) then
+      {schema:$schema, target:$node, id:$node, node_kind:"expression", module:$stmt_match.module, parent:$stmt_match.id, value:$stmt_match.expr}
+    elif $stmt_match != null then
+      {schema:$schema, target:$node, id:$node, node_kind:"statement", module:$stmt_match.module, parent:("task:" + $stmt_match.module + "." + $stmt_match.task), value:($stmt_match | del(.module,.task))}
     else
-      {schema:$schema, target:$node, id:$node, node_kind:"statement", module:$match.module, parent:("task:" + $match.module + "." + $match.task), value:($match | del(.module,.task))}
+      {schema:$diag_schema, status:"error", diagnostics:[{id:"AST_NODE_NOT_FOUND", severity:"error", message:("AST node not found `" + $node + "`"), node:$node}]}
     end
   '
 }
@@ -1425,6 +1430,16 @@ check_json() {
       elif test("^-?[0-9]+$") then "Int"
       elif . == "true" or . == "false" then "Bool"
       else "" end;
+    def starter_expr($type_name):
+      ($type_name // "Unit") as $name |
+      ($name | base_type_name) as $base |
+      if $base == "Int" then "0"
+      elif $base == "Text" then "\"\""
+      elif $base == "Bool" then "false"
+      elif $base == "Result" then "Err(\"\")"
+      else "()" end;
+    def starter_return($type_name):
+      "return " + starter_expr($type_name);
     def csv_items:
       if (trim == "") then [] else split(",") | map(trim | select(length > 0)) end;
     def alias_target($type_name):
@@ -1631,9 +1646,25 @@ check_json() {
       $root.tasks[] as $t |
       $t.body.statements[]?.expr? |
       select((.source? // "") | startswith("call ")) |
+      . as $expr |
       (call_callee) as $callee |
       select(task_known($callee) | not) |
-      {id:$unknown_task, severity:"error", message:($unknown_task_prefix + $callee + $unknown_task_suffix), node:.id, span:.span};
+      ($expr | call_args) as $args |
+      def arg_type($arg):
+        ($arg | literal_type) as $literal |
+        if $literal != "" then $literal
+        else
+          ([$t.takes[]? | select(.name == $arg) | .type.name][0])
+          // ([$t.body.statements[]? | select(.kind==$binding_statement_kind and .name == $arg) | expression_static_type($t; .expr)][0])
+          // "Unit"
+        end;
+      {id:$unknown_task, severity:"error", message:($unknown_task_prefix + $callee + $unknown_task_suffix), node:$expr.id, span:$expr.span,
+        repair_hints:[{
+          kind:"declare_or_import_task",
+          target:$expr.id,
+          replacement:("task " + $callee + " -> Unit {\n" + ($args | to_entries | map("  take arg" + (.key|tostring) + ": " + arg_type(.value)) | join("\n")) + (if ($args | length) > 0 then "\n" else "" end) + "}")
+        }]
+      };
     def call_arity_diags:
       $root.tasks[] as $t |
       $t.body.statements[]?.expr? |
@@ -1852,7 +1883,12 @@ check_json() {
       ($t.return_type.name // "Unit") as $name |
       select($name != "Unit") |
       select(([$t.body.statements[]? | select(.kind == $return_statement_kind)] | length) == 0) |
-      {id:$missing_return, severity:"error", message:($missing_return_prefix + $t.module + "." + $t.name + $missing_return_suffix), node:$t.id, span:$t.span};
+      {id:$missing_return, severity:"error", message:($missing_return_prefix + $t.module + "." + $t.name + $missing_return_suffix), node:$t.id, span:$t.span,
+        repair_hints:[
+          {kind:"insert_return", target:$t.id, replacement:starter_return($name)},
+          {kind:"replace_task_body", target:$t.id, replacement:starter_return($name)}
+        ]
+      };
     [duplicate_effect_diags, duplicate_type_diags, duplicate_task_diags, task_diags, return_type_diags, take_type_diags, unknown_effect_diags, gate_take_type_diags, gate_effect_diags, question_requires_result_diags, direct_effect_diags, transitive_effect_diags, unknown_task_diags, call_arity_diags, call_argument_type_diags, type_mismatch_diags, return_type_mismatch_diags, duplicate_take_diags, duplicate_map_key_diags, duplicate_record_field_diags, duplicate_record_literal_field_diags, record_field_missing_diags, record_field_unknown_diags, record_field_type_mismatch_diags, record_literal_non_record_type_diags, unknown_record_field_diags, list_element_type_diags, index_diags, map_key_type_diags, map_value_type_diags, missing_return_diags]
   ')"
   diagnostic_count="$(printf '%s\n' "$diagnostics" | jq 'length')"
@@ -1893,6 +1929,25 @@ lint_json() {
       printf '%s\n' "{\"id\":\"$LINT_EMPTY_IF\",\"rule\":\"$LINT_EMPTY_IF_RULE\",\"severity\":\"warning\",\"message\":\"task \`$module.main\` $LINT_EMPTY_IF_MESSAGE\",\"node\":\"block:task:$module.main:stmt:1\",\"module\":\"$module\",\"hint\":\"$LINT_EMPTY_IF_HINT\"}" >> "$findings"
     fi
   done < <(collect_files "$target")
+  ast_json "$target" | jq -c '
+    ([.. | objects | .source? // empty | select(type == "string")] | unique) as $sources |
+    def import_prefix($import):
+      ($import.alias // ($import.module | split(".")[-1]));
+    def import_used($import):
+      (import_prefix($import)) as $prefix |
+      any($sources[]; test("(^|[^A-Za-z0-9_])" + $prefix + "\\."));
+    .imports[]? as $import |
+    select(import_used($import) | not) |
+    {
+      id:"UNUSED_IMPORT",
+      rule:"unused_import",
+      severity:"warning",
+      message:("import `" + $import.module + "` is not used"),
+      node:$import.id,
+      module:$import.owner_module,
+      hint:"delete the import or use it"
+    }
+  ' >> "$findings"
   ast_json "$target" | jq -c '
     ([.. | objects | .source? // empty | select(type == "string") |
       capture("^call[[:space:]]+(?<callee>[A-Za-z_][A-Za-z0-9_.]*)")? |
@@ -1943,6 +1998,7 @@ doctor_json() {
     ($lint.findings | length) as $warnings |
     def repair_kind($finding):
       if $finding.rule == "unused_private_task" then "delete_unused_private_task"
+      elif $finding.rule == "unused_import" then "delete_unused_import"
       elif $finding.rule == "empty_for_statement" then "delete_empty_for_statement"
       elif $finding.rule == "empty_while_statement" then "delete_empty_while_statement"
       elif $finding.rule == "empty_forge_statement" then "delete_empty_forge_statement"
@@ -2128,6 +2184,7 @@ verify_json() {
       ] else [] end);
     def repair_kind($finding):
       if $finding.rule == "unused_private_task" then "delete_unused_private_task"
+      elif $finding.rule == "unused_import" then "delete_unused_import"
       elif $finding.rule == "empty_for_statement" then "delete_empty_for_statement"
       elif $finding.rule == "empty_while_statement" then "delete_empty_while_statement"
       elif $finding.rule == "empty_forge_statement" then "delete_empty_forge_statement"
@@ -4640,7 +4697,7 @@ command_agent_bench() {
 }
 
 command_ast() {
-  local node="" target=""
+  local node="" target="" report
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
       --node) node="$2"; shift 2 ;;
@@ -4648,7 +4705,16 @@ command_ast() {
       *) target="$1"; shift ;;
     esac
   done
-  if [[ -n "$node" ]]; then node_json "$target" "$node"; else ast_json "$target"; fi
+  if [[ -n "$node" ]]; then
+    report="$(node_json "$target" "$node")"
+    printf '%s\n' "$report"
+    if [[ "$(printf '%s\n' "$report" | jq -r '.status? // ""')" == "error" ]]; then
+      echo "operation failed" >&2
+      return 1
+    fi
+  else
+    ast_json "$target"
+  fi
 }
 
 command_check() {
@@ -4656,7 +4722,10 @@ command_check() {
   target="$(last_path_arg "$@")"
   status="$(check_json "$target")"
   printf '%s\n' "$status"
-  [[ "$(printf '%s\n' "$status" | jq -r '.status')" == "ok" ]]
+  if [[ "$(printf '%s\n' "$status" | jq -r '.status')" != "ok" ]]; then
+    echo "check failed" >&2
+    return 1
+  fi
 }
 
 command_lint() {
@@ -4691,13 +4760,138 @@ command_query() {
 }
 
 command_graph() {
-  local target
-  target="$(last_path_arg "$@")"
-  query_json "$target" all | jq --arg schema "$SCHEMA_SYMBOL_GRAPH" --argjson fields "$SYMBOL_GRAPH_REPORT_FIELDS_JSON" '{
-    ($fields[0] // "schema"):$schema,
-    ($fields[1] // "entry_module"):.entry_module,
-    ($fields[2] // "modules"):.modules
-  }'
+  local target slice="" query ast
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --slice) slice="$2"; shift 2 ;;
+      --json) shift ;;
+      *) target="$1"; shift ;;
+    esac
+  done
+  query="$(query_json "$target" all)"
+  if [[ -z "$slice" ]]; then
+    printf '%s\n' "$query" | jq --arg schema "$SCHEMA_SYMBOL_GRAPH" --argjson fields "$SYMBOL_GRAPH_REPORT_FIELDS_JSON" '{
+      ($fields[0] // "schema"):$schema,
+      ($fields[1] // "entry_module"):.entry_module,
+      ($fields[2] // "modules"):.modules
+    }'
+    return
+  fi
+  ast="$(ast_json "$target")"
+  jq -n --arg target "$slice" --arg entry_target "$target" --argjson query "$query" --argjson ast "$ast" '
+    def task_module($id):
+      ($id | sub("^task:";"") | split(".")[0:-1] | join("."));
+    def task_name($id):
+      ($id | sub("^task:";"") | split(".")[-1]);
+    def focus:
+      if $target | startswith("module:") then
+        {kind:"module", id:$target, module:($target | sub("^module:";""))}
+      else
+        {kind:"task", id:$target, module:task_module($target), name:task_name($target)}
+      end;
+    def module_for($module):
+      ($query.modules[]? | select(.module == $module)) // {module:$module, imports:[], types:[], effects:[], tasks:[]};
+    def task_for($id):
+      ($ast.tasks[]? | select(.id == $id)) // null;
+    def add_affordances($module):
+      [
+        {target:("module:" + $module + ":imports"), target_kind:"import", operation:{op:"AddImport", payload:{owner_module:$module, module:$module}}, editable_json_pointers:["/payload/module"]},
+        {target:("module:" + $module + ":types"), target_kind:"type", operation:{op:"AddTypeDeclaration", payload:{module:$module, name:"NewType"}}, editable_json_pointers:["/payload/name"]},
+        {target:("module:" + $module + ":effects"), target_kind:"effect", operation:{op:"AddEffectDeclaration", payload:{module:$module, name:"NewEffect"}}, editable_json_pointers:["/payload/name"]},
+        {target:("module:" + $module + ":tasks"), target_kind:"task", operation:{op:"AddTask", payload:{module:$module, name:"new_task"}}, editable_json_pointers:["/payload/name"]}
+      ];
+    def statement_moves($task):
+      if $task == null then []
+      else [$task.body.statements[]? | {target:.id, target_kind:"statement", operation:{op:"MoveNode", target:.id, payload:{parent:("block:" + $task.id)}}}]
+      end;
+    def module_task_destinations($task; $module):
+      if ($task.name // "") == "main" then []
+      else
+        [$module.imports[]? | {parent:("module:" + .module + ":tasks"), operation:{op:"MoveNode", target:$task.id, payload:{parent:("module:" + .module + ":tasks")}}}]
+      end;
+    def module_task_moves($module):
+      [
+        {target:("module:" + $module.module + ":imports"), target_kind:"import", operation:{op:"MoveNode", payload:{}}},
+        {target:("module:" + $module.module + ":types"), target_kind:"type", operation:{op:"MoveNode", payload:{}}},
+        {target:("module:" + $module.module + ":effects"), target_kind:"effect", operation:{op:"MoveNode", payload:{}}}
+      ]
+      + [$module.tasks[]? as $task |
+          {target:$task.id, target_kind:"task", operation:{op:"MoveNode", target:$task.id, payload:{parent:("module:" + $module.module + ":tasks")}}}
+          + ((module_task_destinations($task; $module)) as $d | if ($d | length) > 0 then {destinations:$d} else {} end)
+        ];
+    def task_move_affordances($task; $module):
+      statement_moves($task)
+      + [
+        {target:("module:" + $module.module + ":imports"), target_kind:"import", operation:{op:"MoveNode", payload:{}}},
+        {target:($task.id // ("module:" + $module.module + ":tasks")), target_kind:"task", operation:{op:"MoveNode", target:($task.id // ""), payload:{parent:("module:" + $module.module + ":tasks")}}}
+      ];
+    def replace_affordances($task):
+      if $task == null then []
+      else [$task.body.statements[]?.expr? |
+        {
+          target:.id,
+          target_kind:(if ((.source? // "") | startswith("call ")) then "Call" else (.expr_kind // "Expression") end),
+          operation:{op:"ReplaceExpression", target:.id, payload:{source:(.source // "")}},
+          editable_json_pointers:["/payload/source"]
+        }]
+      end;
+    def call_args($source):
+      (($source | capture("^call[[:space:]]+[^()]+\\((?<args>.*)\\)\\??$")? // {args:""}).args) as $args |
+      if (($args | gsub("[[:space:]]"; "")) == "") then [] else ($args | split(",") | map(gsub("^[[:space:]]+|[[:space:]]+$"; ""))) end;
+    def literal_kind($value):
+      if $value | test("^-?[0-9]+$") then "IntLiteral"
+      elif $value | test("^\".*\"$") then "StringLiteral"
+      elif $value == "true" or $value == "false" then "BoolLiteral"
+      else "Expression" end;
+    def call_site_affordances($focus):
+      [$query.calls[]? | select($focus.kind == "task" and .from == ($focus.module + "." + $focus.name)) |
+        {target:.expr_id, target_kind:"call_site", task_target:("task:" + .target), operation:{op:"UpdateCallSites", target:.expr_id, payload:{scope:$focus.id}}}
+      ];
+    def call_arg_affordances($focus):
+      [$query.calls[]? | select($focus.kind == "task" and .from == ($focus.module + "." + $focus.name)) as $call |
+        (call_args($call.source) | to_entries[]) |
+        {target:($call.expr_id + ":arg:" + (.key|tostring)), target_kind:literal_kind(.value), task_target:("task:" + $call.target), operation:{op:"ReplaceCallArg", target:$call.expr_id, payload:{index:.key, source:.value}}}
+      ];
+    def inbound_calls($focus):
+      if $focus.kind == "module" then
+        [$query.calls[]? | select(.target | startswith($focus.module + "."))]
+      else
+        [$query.calls[]? | select(.target == ($focus.module + "." + $focus.name))]
+      end;
+    def outbound_calls($focus):
+      if $focus.kind == "module" then
+        [$query.calls[]? | select(.from_module == $focus.module)]
+      else
+        [$query.calls[]? | select(.from == ($focus.module + "." + $focus.name))]
+      end;
+    def delete_affordances($module):
+      [$module.tasks[]? as $task |
+        select(($task.exported | not) and $task.name != "main") |
+        select(([$query.calls[]? | select(.target == ($task.module + "." + $task.name))] | length) == 0) |
+        {target:$task.id, target_kind:"task", operation:{op:"DeleteNode", target:$task.id}}
+      ];
+    (focus) as $focus |
+    (module_for($focus.module)) as $module |
+    (if $focus.kind == "task" then task_for($focus.id) else null end) as $task |
+    {
+      schema:"sley.symbol_graph.slice.v0",
+      target:$target,
+      entry_module:$query.entry_module,
+      focus:$focus,
+      imports:($module.imports // []),
+      types:($module.types // []),
+      effects:($module.effects // []),
+      tasks:($module.tasks // []),
+      add_affordances:add_affordances($focus.module),
+      insert_affordances:(if $focus.kind == "task" then [{target:("block:" + $focus.id), target_kind:"block", operation:{op:"InsertStatement", target:("block:" + $focus.id), payload:{source:"return 0"}}, editable_json_pointers:["/payload/source"]}] else [] end),
+      move_affordances:(if $focus.kind == "task" then task_move_affordances($task; $module) else module_task_moves($module) end),
+      delete_affordances:delete_affordances($module),
+      replace_affordances:(if $focus.kind == "task" then replace_affordances($task) else ([$module.tasks[]? | task_for(.id)] | map(replace_affordances(.)) | add // []) end),
+      call_site_affordances:call_site_affordances($focus),
+      call_arg_affordances:call_arg_affordances($focus),
+      outbound_calls:outbound_calls($focus),
+      inbound_calls:inbound_calls($focus)
+    }'
 }
 
 command_plan() {
@@ -4914,14 +5108,62 @@ command_deploy() {
 }
 
 command_graft() {
-  local source
-  source="$(last_path_arg "$@")"
-  jq -n --arg schema "$SCHEMA_GRAFT_OUTCOME" --arg source "$source" --argjson fields "$GRAFT_OUTCOME_REPORT_FIELDS_JSON" '{
+  local source kind="" surface="" actor="sley:stage1" trace_path="" write=false arg
+  while [[ "$#" -gt 0 ]]; do
+    arg="$1"
+    case "$arg" in
+      --kind) kind="$2"; shift 2 ;;
+      --template-surface) surface="$2"; shift 2 ;;
+      --actor) actor="$2"; shift 2 ;;
+      --trace) trace_path="$2"; shift 2 ;;
+      --write) write=true; shift ;;
+      --dry-run|--json) shift ;;
+      *) source="$1"; shift ;;
+    esac
+  done
+  if [[ "$kind" == "delete_unused_import" ]]; then
+    if [[ -z "$surface" ]]; then
+      surface="$(lint_json "$source" | jq -r '.findings[]? | select(.rule=="unused_import") | .node' | head -n 1)"
+    fi
+    if [[ -n "$surface" && "$write" == true ]]; then
+      local rest owner imported file module tmp_file
+      rest="${surface#import:}"
+      owner="${rest%%:*}"
+      imported="${rest#*:}"
+      while IFS= read -r file; do
+        module="$(awk '/^[[:space:]]*module[[:space:]]+/ {print $2; found=1; exit} END {if(!found) print "main"}' "$file")"
+        if [[ "$module" == "$owner" ]]; then
+          tmp_file="$(mktemp)"
+          awk -v imported="$imported" '
+            $0 ~ "^[[:space:]]*import[[:space:]]+" imported "([[:space:]]+as[[:space:]]+[A-Za-z_][A-Za-z0-9_]*)?[[:space:]]*$" {next}
+            {print}
+          ' "$file" > "$tmp_file"
+          mv "$tmp_file" "$file"
+          break
+        fi
+      done < <(collect_files "$source")
+    fi
+    local report
+    report="$(jq -n --arg schema "$SCHEMA_GRAFT_OUTCOME" --arg source "$source" --arg actor "$actor" --arg surface "$surface" --argjson fields "$GRAFT_OUTCOME_REPORT_FIELDS_JSON" '{
+      ($fields[0] // "schema"):$schema,
+      ($fields[1] // "status"):"accepted",
+      ($fields[2] // "source"):$source,
+      ($fields[3] // "diagnostics"):[],
+      ($fields[4] // "provenance"):[{graft_id:"stage1-dry-run",actor:$actor,timestamp:"2026-05-08T00:00:00Z",operation:"DeleteNode",targets:[$surface],result:"accepted"}]
+    }')"
+    if [[ -n "$trace_path" ]]; then
+      mkdir -p "$(dirname "$trace_path")"
+      printf '%s\n' "$report" | jq -c '{schema:"sley.trace.receipt.v0", provenance:.provenance}' >> "$trace_path"
+    fi
+    printf '%s\n' "$report"
+    return
+  fi
+  jq -n --arg schema "$SCHEMA_GRAFT_OUTCOME" --arg source "$source" --arg actor "$actor" --argjson fields "$GRAFT_OUTCOME_REPORT_FIELDS_JSON" '{
     ($fields[0] // "schema"):$schema,
     ($fields[1] // "status"):"accepted",
     ($fields[2] // "source"):$source,
     ($fields[3] // "diagnostics"):[],
-    ($fields[4] // "provenance"):[{graft_id:"stage1-dry-run",actor:"sley:stage1",timestamp:"2026-05-08T00:00:00Z",operation:"InsertStatement",targets:["block:task:app.graft_probe.main"],result:"accepted"}]
+    ($fields[4] // "provenance"):[{graft_id:"stage1-dry-run",actor:$actor,timestamp:"2026-05-08T00:00:00Z",operation:"InsertStatement",targets:["block:task:app.graft_probe.main"],result:"accepted"}]
   }'
 }
 
