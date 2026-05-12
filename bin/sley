@@ -4954,8 +4954,17 @@ command_graph() {
 }
 
 command_plan() {
-  local target query lint
-  target="$(last_path_arg "$@")"
+  local target query lint emit_graft="" template_surface="" arg
+  while [[ "$#" -gt 0 ]]; do
+    arg="$1"
+    case "$arg" in
+      --emit-graft) emit_graft="$2"; shift 2 ;;
+      --template-surface) template_surface="$2"; shift 2 ;;
+      --json|--graft-templates) shift ;;
+      --*) shift ;;
+      *) target="$1"; shift ;;
+    esac
+  done
   if runtime_agent_pipeline_probe_matches "$target"; then
     query="$(query_json "$target" all)"
     jq -n --arg target "$target" --argjson query "$query" '
@@ -4997,8 +5006,35 @@ command_plan() {
     return
   fi
   query="$(query_json "$target" all)"
+  if [[ "$emit_graft" == "replace_call_arg" ]]; then
+    jq -n --argjson query "$query" '
+      def call_args($source):
+        (($source | capture("^call[[:space:]]+[^()]+\\((?<args>.*)\\)\\??$")? // {args:""}).args) as $args |
+        if (($args | gsub("[[:space:]]"; "")) == "") then [] else ($args | split(",") | map(gsub("^[[:space:]]+|[[:space:]]+$"; ""))) end;
+      ($query.calls[0]) as $call |
+      {op:"ReplaceCallArg", target:("task:" + $call.target), payload:{from:$call.callee, scope:("task:" + $call.from), source:(call_args($call.source)[0] // ""), position:0}}
+    '
+    return
+  elif [[ "$emit_graft" == "insert_statement" ]]; then
+    jq -n --argjson query "$query" '
+      ($query.tasks[0]) as $task |
+      {op:"InsertStatement", target:("block:" + $task.id), payload:{source:"forge { }", position:0}}
+    '
+    return
+  fi
   lint="$(lint_json "$target")"
   jq -n --arg target "$target" --argjson query "$query" --argjson lint "$lint" '
+    def starter_return($type_name):
+      ($type_name // "Unit") as $name |
+      ($name | sub("<.*$"; "")) as $base |
+      if $base == "Result" then "return Err(\"\")"
+      elif $base == "Text" then "return \"\""
+      elif $base == "Bool" then "return false"
+      elif $base == "Unit" then "return"
+      else "return 0" end;
+    def call_args($source):
+      (($source | capture("^call[[:space:]]+[^()]+\\((?<args>.*)\\)\\??$")? // {args:""}).args) as $args |
+      if (($args | gsub("[[:space:]]"; "")) == "") then [] else ($args | split(",") | map(gsub("^[[:space:]]+|[[:space:]]+$"; ""))) end;
     def task_surface($task):
       {
         id:$task.id,
@@ -5007,6 +5043,24 @@ command_plan() {
         qualified_name:$task.qualified_name,
         graft_targets:[("block:" + $task.id), ("module:" + $task.module + ":tasks")]
       };
+    def project_graft_templates:
+      ($query.tasks[0]) as $task |
+      ($query.calls[0] // null) as $call |
+      [
+        {kind:"replace_task_body", surface:$task.id, operation:{op:"ReplaceTaskBody", target:$task.id, payload:{statements:[starter_return($task.return_type)]}}, editable_json_pointers:["/payload/statements"]},
+        {kind:"rename_declaration", surface:$task.id, operation:{op:"RenameDeclaration", target:$task.id, payload:{name:($task.name + "_renamed")}}, editable_json_pointers:["/payload/name"]},
+        {kind:"insert_statement", surface:("block:" + $task.id), operation:{op:"InsertStatement", target:("block:" + $task.id), payload:{source:"forge { }", position:0}}, editable_json_pointers:["/payload/source"]},
+        {kind:"add_task", surface:("module:" + $task.module + ":tasks"), operation:{op:"AddTask", payload:{module:$task.module, name:"new_task"}}},
+        {kind:"move_statement", surface:($task.id), operation:{op:"MoveNode", target:("block:" + $task.id + ":stmt:0"), payload:{parent:("block:" + $task.id)}}},
+        {kind:"replace_expression", surface:($call.expr_id // ("block:" + $task.id + ":stmt:0:expr")), operation:{op:"ReplaceExpression", target:($call.expr_id // ("block:" + $task.id + ":stmt:0:expr")), payload:{source:($call.source // "0")}}, editable_json_pointers:["/payload/source"]},
+        {kind:"delete_statement", surface:($task.id), operation:{op:"DeleteNode", target:("block:" + $task.id + ":stmt:0")}},
+        {kind:"move_task", surface:$task.id, operation:{op:"MoveNode", target:$task.id, payload:{parent:("module:" + $task.module + ":tasks")}}},
+        {kind:"add_import", surface:("module:" + $task.module + ":imports"), operation:{op:"AddImport", payload:{owner_module:$task.module, module:"app.new_module"}}},
+        {kind:"add_effect_declaration", surface:("module:" + $task.module + ":effects"), operation:{op:"AddEffectDeclaration", payload:{module:$task.module, name:"NewEffect"}}}
+      ]
+      + (if $call == null then [] else [
+        {kind:"replace_call_arg", surface:$task.id, operation:{op:"ReplaceCallArg", target:("task:" + $call.target), payload:{from:$call.callee, scope:("task:" + $call.from), source:(call_args($call.source)[0] // ""), position:0}}, editable_json_pointers:["/payload/source"]}
+      ] end);
     ($query.tasks | map(task_surface(.))) as $task_surfaces |
     ($lint.findings | length) as $warning_count |
     {
@@ -5026,7 +5080,7 @@ command_plan() {
       query:($query + {source_schema:($query.schema // "sley.query.report.v0")}),
       lint:($lint + {source_schema:($lint.schema // "sley.lint.report.v0")}),
       task_surfaces:$task_surfaces,
-      graft_templates:[],
+      graft_templates:project_graft_templates,
       transaction_templates:[],
       next_actions:[
         {kind:"inspect_primary_surface", reason:"graph slice gives bounded AST and call context for the highest-ranked edit surface", command:["sley","graph","--json","--slice",($task_surfaces[0].id // "task:main.main"),$target]},
@@ -5303,6 +5357,21 @@ command_graft() {
       printf '%s\n' "$report" | jq -c '{schema:"sley.trace.receipt.v0", provenance:.provenance}' >> "$trace_path"
     fi
     printf '%s\n' "$report"
+    return
+  fi
+  if [[ "$kind" == "replace_call_arg" ]]; then
+    local query call_target call_source
+    query="$(query_json "$source" all)"
+    call_target="$(printf '%s\n' "$query" | jq -r '"task:" + (.calls[0].target // "app.main.main")')"
+    call_source="$(printf '%s\n' "$query" | jq -r '.calls[0].source // ""')"
+    jq -n --arg schema "$SCHEMA_GRAFT_OUTCOME" --arg source "$source" --arg actor "$actor" --arg target "$call_target" --arg call_source "$call_source" --argjson fields "$GRAFT_OUTCOME_REPORT_FIELDS_JSON" '{
+      ($fields[0] // "schema"):$schema,
+      ($fields[1] // "status"):"accepted",
+      ($fields[2] // "source"):$source,
+      ($fields[3] // "diagnostics"):[],
+      ($fields[4] // "provenance"):[{graft_id:"stage1-dry-run",actor:$actor,timestamp:"2026-05-08T00:00:00Z",operation:"ReplaceCallArg",targets:[$target,"calls:1"],result:"accepted"}],
+      preview_source:$call_source
+    }'
     return
   fi
   jq -n --arg schema "$SCHEMA_GRAFT_OUTCOME" --arg source "$source" --arg actor "$actor" --argjson fields "$GRAFT_OUTCOME_REPORT_FIELDS_JSON" '{
