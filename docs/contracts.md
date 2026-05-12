@@ -100,4 +100,5 @@ Current counts:
 - Contract fixtures must validate through JSON Schema draft 2020-12.
 - Runtime, deploy, sandbox, and benchmark contracts must remain deterministic
   and must not require provider calls, network access, secrets, spend, or live
-  deployment.
+  deployment. The sandbox runner is seeded replay evidence; it does not claim
+  OS-level isolation.

@@ -370,7 +370,7 @@ bin/sley-contract validate --schema sley.workbench.report.v0 "$workbench_report"
   | json_field '.schema == "sley.contract.validate.v0" and .status == "passed" and .requested_schema == "sley.workbench.report.v0" and .report_schema == "sley.workbench.report.v0"'
 
 bin/sley-sandbox-runner run --json fixtures/contracts/sandbox_manifest_agent_pipeline.json > "$sandbox_report"
-json_field '.schema == "sley.sandbox.report.v0" and .status == "passed" and .manifest_schema == "sley.sandbox.manifest.v0" and .target == "examples/agent_deploy_pipeline.sley" and .summary.capability_count == 4 and .summary.seed_count == 4 and .verify.schema == "sley.verify.report.v0" and .verify.status == "passed"' < "$sandbox_report"
+json_field '.schema == "sley.sandbox.report.v0" and .status == "warnings" and .manifest_schema == "sley.sandbox.manifest.v0" and .target == "examples/agent_deploy_pipeline.sley" and .summary.capability_count == 4 and .summary.seed_count == 4 and .summary.issue_count == 1 and .verify.schema == "sley.verify.report.v0" and .verify.status == "passed" and .issues[0].code == "SANDBOX_OS_ISOLATION_NOT_ENFORCED"' < "$sandbox_report"
 
 bin/sley-contract validate --schema sley.sandbox.report.v0 "$sandbox_report" --schemas docs/schemas --json \
   | json_field '.schema == "sley.contract.validate.v0" and .status == "passed" and .requested_schema == "sley.sandbox.report.v0" and .report_schema == "sley.sandbox.report.v0"'

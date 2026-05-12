@@ -378,6 +378,8 @@ json_digest_for() {
 trace_receipts_json() {
   local trace_path="${1:-}"
   if [[ -n "$trace_path" && -f "$trace_path" ]]; then
+    sley_reject_ambiguous_path "$trace_path"
+    sley_enforce_file_budget "$trace_path" "$SLEY_MAX_JSON_BYTES"
     jq -s '.' "$trace_path"
   else
     printf '[]\n'
@@ -1339,21 +1341,152 @@ last_path_arg() {
   printf '%s\n' "$candidate"
 }
 
+SLEY_MAX_SOURCE_BYTES="${SLEY_MAX_SOURCE_BYTES:-5242880}"
+SLEY_MAX_JSON_BYTES="${SLEY_MAX_JSON_BYTES:-5242880}"
+
+sley_reject_ambiguous_path() {
+  local path="$1"
+  case "$path" in
+    *$'\n'*|*$'\r'*)
+      echo "unsupported path containing a newline: $path" >&2
+      exit 2
+      ;;
+  esac
+}
+
+sley_enforce_file_budget() {
+  local path="$1" max_bytes="$2" size
+  [[ -f "$path" ]] || return 0
+  size="$(wc -c < "$path" | tr -d ' ')"
+  if [[ "$size" =~ ^[0-9]+$ && "$size" -gt "$max_bytes" ]]; then
+    echo "file exceeds Sley safety budget ($size > $max_bytes bytes): $path" >&2
+    exit 2
+  fi
+}
+
+sley_realpath_maybe() {
+  local path="$1"
+  realpath -m -- "$path"
+}
+
+sley_path_is_under() {
+  local child="$1" parent="$2" child_abs parent_abs
+  child_abs="$(sley_realpath_maybe "$child")"
+  parent_abs="$(sley_realpath_maybe "$parent")"
+  [[ "$child_abs" == "$parent_abs" || "$child_abs" == "$parent_abs/"* ]]
+}
+
+sley_validate_identifier() {
+  local value="$1" label="${2:-identifier}"
+  if [[ ! "$value" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+    echo "invalid Sley $label: $value" >&2
+    exit 2
+  fi
+}
+
+sley_validate_module_name() {
+  local module="$1"
+  if [[ ! "$module" =~ ^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*$ ]]; then
+    echo "invalid Sley module name: $module" >&2
+    exit 2
+  fi
+}
+
+sley_validate_project_name() {
+  local name="$1"
+  if [[ ! "$name" =~ ^[A-Za-z0-9_.-]+$ ]]; then
+    echo "invalid Sley project name: $name" >&2
+    exit 2
+  fi
+}
+
+sley_module_path_for() {
+  local module="$1"
+  sley_validate_module_name "$module"
+  printf '%s\n' "${module//.//}"
+}
+
+sley_write_new_file() {
+  local path="$1"
+  sley_reject_ambiguous_path "$path"
+  if [[ -e "$path" || -L "$path" ]]; then
+    echo "refusing to overwrite existing scaffold file: $path" >&2
+    return 1
+  fi
+  mkdir -p "$(dirname -- "$path")"
+  cat > "$path"
+}
+
+sley_append_trace_receipt() {
+  local trace_path="$1" report="$2"
+  [[ -n "$trace_path" ]] || return 0
+  sley_reject_ambiguous_path "$trace_path"
+  mkdir -p "$(dirname -- "$trace_path")"
+  printf '%s\n' "$report" | jq -c '{schema:"sley.trace.receipt.v0", provenance:.provenance}' >> "$trace_path"
+}
+
+sley_assert_source_still_checks() {
+  local source="$1" check
+  check="$(check_json "$source" || true)"
+  if [[ "$(printf '%s\n' "$check" | jq -r '.status? // ""')" == "error" ]]; then
+    printf '%s\n' "$check" >&2
+    return 1
+  fi
+}
+
+sley_report_error_json() {
+  local id="$1" message="$2" node="${3:-runtime}" hint_kind="${4:-}" hint_target="${5:-}" hint_replacement="${6:-}"
+  jq -n \
+    --arg schema "$SCHEMA_DIAGNOSTICS" \
+    --arg id "$id" \
+    --arg message "$message" \
+    --arg node "$node" \
+    --arg hint_kind "$hint_kind" \
+    --arg hint_target "$hint_target" \
+    --arg hint_replacement "$hint_replacement" '
+    {
+      schema:$schema,
+      status:"error",
+      diagnostics:[
+        {
+          id:$id,
+          severity:"error",
+          message:$message,
+          node:$node
+        }
+        + (if $hint_kind == "" then {} else {
+          repair_hints:[{kind:$hint_kind,target:$hint_target,replacement:$hint_replacement}]
+        } end)
+      ]
+    }'
+}
+
 collect_files() {
   local target="$1"
   if [[ -z "$target" ]]; then
     echo "missing file-or-project target" >&2
     exit 2
   fi
+  sley_reject_ambiguous_path "$target"
   if [[ -f "$target" ]]; then
+    sley_enforce_file_budget "$target" "$SLEY_MAX_SOURCE_BYTES"
     printf '%s\n' "$target"
     return
   fi
   if [[ -d "$target" ]]; then
+    local file
     if [[ -f "$target/sley.toml" && -d "$target/src" ]]; then
-      find "$target/src" -type f -name '*.sley' | sort
+      while IFS= read -r -d '' file; do
+        sley_reject_ambiguous_path "$file"
+        sley_enforce_file_budget "$file" "$SLEY_MAX_SOURCE_BYTES"
+        printf '%s\n' "$file"
+      done < <(find "$target/src" -type f -name '*.sley' -print0 | sort -z)
     else
-      find "$target" -type f -name '*.sley' | sort
+      while IFS= read -r -d '' file; do
+        sley_reject_ambiguous_path "$file"
+        sley_enforce_file_budget "$file" "$SLEY_MAX_SOURCE_BYTES"
+        printf '%s\n' "$file"
+      done < <(find "$target" -type f -name '*.sley' -print0 | sort -z)
     fi
     return
   fi
@@ -1542,6 +1675,12 @@ node_json() {
 
 type_fields_json() {
   local target="$1"
+  local -a files=()
+  mapfile -t files < <(collect_files "$target")
+  if [[ "${#files[@]}" -eq 0 ]]; then
+    printf '[]\n'
+    return
+  fi
   awk '
     function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
     function esc(s){gsub(/\\/, "\\\\", s); gsub(/"/, "\\\"", s); gsub(/\t/, "\\t", s); return s}
@@ -1573,7 +1712,7 @@ type_fields_json() {
     }
     in_type && /^[ \t]*\}/ {in_type=0; type_name=""}
     END {printf "]\n"}
-  ' $(collect_files "$target")
+  ' "${files[@]}"
 }
 
 query_json() {
@@ -3566,12 +3705,370 @@ doctor_json() {
   '
 }
 
+runtime_authority_json() {
+  local target="$1"
+  local files_json
+  local -a runtime_files=()
+  mapfile -t runtime_files < <(collect_files "$target")
+  files_json="$(printf '%s\n' "${runtime_files[@]}" | jq -R . | jq -s .)"
+  SLEY_RUNTIME_FILES="$files_json" python3 - "$ROOT_DIR" "$target" "$SCHEMA_DIAGNOSTICS" "$@" <<'PY'
+import json
+import os
+import re
+import sys
+from pathlib import Path
+from urllib.parse import urlparse
+
+repo = Path(sys.argv[1]).resolve()
+diag_schema = sys.argv[3]
+argv = sys.argv[4:]
+files = [Path(path) for path in json.loads(os.environ.get("SLEY_RUNTIME_FILES", "[]"))]
+
+ALIASES = {"DbRead": "DatabaseRead", "DbWrite": "DatabaseWrite"}
+TEXT_DELIMITERS = set("/:.-_ \t")
+HOST_EFFECTS = {
+    "db.query": "DatabaseRead",
+    "db.query_one": "DatabaseRead",
+    "db.try_query": "DatabaseRead",
+    "db.try_query_one": "DatabaseRead",
+    "db.try_insert": "DatabaseWrite",
+    "deploy.try_stage": "Deploy",
+    "fs.read_text": "FileRead",
+    "fs.try_read_text": "FileRead",
+    "fs.write_text": "FileWrite",
+    "fs.try_write_text": "FileWrite",
+    "http.try_get_text": "Network",
+    "model.try_complete": "ModelCall",
+    "secrets.try_get": "SecretRead",
+    "shell.try_run": "Shell",
+    "spend.try_authorize": "Spend",
+}
+
+
+def diagnostic(diag_id, message, node):
+    return {"id": diag_id, "severity": "error", "message": message, "node": node}
+
+
+def normalize_effect(effect):
+    return ALIASES.get(effect, effect)
+
+
+def parse_cli_args(args):
+    caps = {}
+    i = 0
+    while i < len(args):
+        if args[i] == "--cap" and i + 1 < len(args):
+            raw = args[i + 1]
+            if "=" in raw:
+                effect, scope = raw.split("=", 1)
+            else:
+                effect, scope = raw, None
+            caps.setdefault(normalize_effect(effect), []).append(scope)
+            i += 2
+            continue
+        i += 1
+    return caps
+
+
+def split_args(text):
+    args = []
+    current = []
+    quote = None
+    depth = 0
+    escaped = False
+    for char in text:
+        if escaped:
+            current.append(char)
+            escaped = False
+            continue
+        if char == "\\":
+            current.append(char)
+            escaped = True
+            continue
+        if quote:
+            current.append(char)
+            if char == quote:
+                quote = None
+            continue
+        if char in ("'", '"'):
+            quote = char
+            current.append(char)
+            continue
+        if char in "([{":
+            depth += 1
+            current.append(char)
+            continue
+        if char in ")]}" and depth > 0:
+            depth -= 1
+            current.append(char)
+            continue
+        if char == "," and depth == 0:
+            args.append("".join(current).strip())
+            current = []
+            continue
+        current.append(char)
+    tail = "".join(current).strip()
+    if tail:
+        args.append(tail)
+    return args
+
+
+def literal_value(token, env):
+    token = (token or "").strip()
+    if len(token) >= 2 and token[0] == '"' and token[-1] == '"':
+        return token[1:-1]
+    return env.get(token)
+
+
+def table_from_query(query):
+    match = re.search(r"\bfrom\s+([A-Za-z_][A-Za-z0-9_]*)\b", query or "", re.IGNORECASE)
+    return match.group(1) if match else None
+
+
+class Task:
+    def __init__(self, module, name):
+        self.module = module
+        self.name = name
+        self.takes = []
+        self.host_calls = []
+        self.calls = []
+
+    @property
+    def qname(self):
+        return f"{self.module}.{self.name}"
+
+    @property
+    def node(self):
+        return f"task:{self.qname}"
+
+
+def parse_source_file(path):
+    module = "main"
+    imports = {}
+    tasks = []
+    current = None
+    depth = 0
+    stmt_index = 0
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except UnicodeDecodeError:
+        lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+
+    for raw in lines:
+        stripped = raw.strip()
+        if current is None:
+            mod_match = re.match(r"^module\s+([A-Za-z_][A-Za-z0-9_.]*)\s*$", stripped)
+            if mod_match:
+                module = mod_match.group(1)
+                continue
+            import_match = re.match(r"^import\s+([A-Za-z_][A-Za-z0-9_.]*)(?:\s+as\s+([A-Za-z_][A-Za-z0-9_]*))?\s*$", stripped)
+            if import_match:
+                imported = import_match.group(1)
+                alias = import_match.group(2) or imported.split(".")[-1]
+                imports[alias] = imported
+                continue
+            task_match = re.match(r"^(?:export\s+)?task\s+([A-Za-z_][A-Za-z0-9_]*)\b", stripped)
+            if task_match:
+                current = Task(module, task_match.group(1))
+                tasks.append(current)
+                depth = raw.count("{") - raw.count("}")
+                stmt_index = 0
+                continue
+            continue
+
+        if stripped.startswith("take "):
+            take_match = re.match(r"^take(?:\s+gate)?\s+([A-Za-z_][A-Za-z0-9_]*)\s*:", stripped)
+            if take_match:
+                current.takes.append(take_match.group(1))
+            depth += raw.count("{") - raw.count("}")
+            if depth <= 0:
+                current = None
+            continue
+
+        is_statement = bool(stripped) and not stripped.startswith("}") and stripped not in ("{", "}")
+        if is_statement:
+            call_match = re.search(r"\bcall\s+([A-Za-z_][A-Za-z0-9_.]*)\s*\((.*)\)", stripped)
+            if call_match:
+                callee = call_match.group(1)
+                args = split_args(call_match.group(2))
+                node = f"block:task:{current.qname}:stmt:{stmt_index}:expr"
+                if "?" in stripped:
+                    node += ":try"
+                if callee in HOST_EFFECTS:
+                    effect = HOST_EFFECTS[callee]
+                    resource_expr = args[0] if args else ""
+                    if callee.startswith("db.query") or callee.startswith("db.try_query"):
+                        resource_expr = table_from_query(literal_value(resource_expr, {}) or "") or "users"
+                    current.host_calls.append({
+                        "callee": callee,
+                        "effect": effect,
+                        "resource_expr": resource_expr,
+                        "node": node,
+                    })
+                else:
+                    current.calls.append({"callee": callee, "args": args})
+            stmt_index += 1
+
+        depth += raw.count("{") - raw.count("}")
+        if depth <= 0:
+            current = None
+    return imports, tasks
+
+
+imports_by_module = {}
+tasks_by_qname = {}
+for file_path in files:
+    imports, tasks = parse_source_file(file_path)
+    for task in tasks:
+        tasks_by_qname[task.qname] = task
+        imports_by_module.setdefault(task.module, {}).update(imports)
+
+
+def resolve_callee(module, callee):
+    if "." not in callee:
+        return f"{module}.{callee}"
+    prefix, rest = callee.split(".", 1)
+    imported = imports_by_module.get(module, {}).get(prefix)
+    return f"{imported}.{rest}" if imported else callee
+
+
+def reachable_host_calls():
+    roots = [task for task in tasks_by_qname.values() if task.name == "main"] or list(tasks_by_qname.values())
+    calls = []
+    stack = [(task.qname, {}) for task in roots]
+    seen = set()
+    while stack:
+        qname, env = stack.pop()
+        key = (qname, tuple(sorted(env.items())))
+        if key in seen:
+            continue
+        seen.add(key)
+        task = tasks_by_qname.get(qname)
+        if task is None:
+            continue
+        for host in task.host_calls:
+            resource = literal_value(host.get("resource_expr"), env)
+            if resource is None and host["effect"] in ("DatabaseRead", "DatabaseWrite"):
+                resource = host.get("resource_expr") or "users"
+            item = dict(host)
+            item["task"] = task.qname
+            item["resource"] = resource
+            calls.append(item)
+        for call in task.calls:
+            target_qname = resolve_callee(task.module, call["callee"])
+            target_task = tasks_by_qname.get(target_qname)
+            if target_task is None:
+                continue
+            child_env = {}
+            for index, take in enumerate(target_task.takes):
+                if index >= len(call["args"]):
+                    continue
+                value = literal_value(call["args"][index], env)
+                if value is not None:
+                    child_env[take] = value
+            stack.append((target_qname, child_env))
+    return calls
+
+
+def text_scope_matches(scope, resource):
+    if scope is None:
+        return True
+    if resource is None or not resource.startswith(scope):
+        return resource == scope
+    if resource == scope:
+        return True
+    return bool(scope and scope[-1] in TEXT_DELIMITERS) or (
+        len(resource) > len(scope) and resource[len(scope)] in TEXT_DELIMITERS
+    )
+
+
+def network_scope_matches(scope, resource):
+    if scope is None:
+        return True
+    if resource is None:
+        return False
+    parsed_scope = urlparse(scope)
+    parsed_resource = urlparse(resource)
+    if parsed_scope.scheme and parsed_scope.netloc:
+        if parsed_scope.scheme != parsed_resource.scheme or parsed_scope.netloc != parsed_resource.netloc:
+            return False
+        return text_scope_matches(parsed_scope.path or "/", parsed_resource.path or "/")
+    return text_scope_matches(scope, resource)
+
+
+def filesystem_scope_matches(scope, resource):
+    if scope is None:
+        return True
+    if resource is None:
+        return False
+    root = Path(scope)
+    if not root.is_absolute():
+        root = repo / root
+    candidate = Path(resource) if Path(resource).is_absolute() else root / resource
+    try:
+        candidate.resolve(strict=False).relative_to(root.resolve(strict=False))
+        return True
+    except ValueError:
+        return False
+
+
+def scope_matches(effect, scope, resource):
+    if effect in ("FileRead", "FileWrite"):
+        return filesystem_scope_matches(scope, resource)
+    if effect == "Network":
+        return network_scope_matches(scope, resource)
+    if effect in ("DatabaseRead", "DatabaseWrite"):
+        return scope is None or resource == scope
+    return text_scope_matches(scope, resource)
+
+
+caps = parse_cli_args(argv)
+calls = reachable_host_calls()
+required = []
+for call in calls:
+    effect = normalize_effect(call["effect"])
+    if effect not in required:
+        required.append(effect)
+
+diagnostics = []
+missing = [effect for effect in required if effect not in caps]
+if missing:
+    main = next((task for task in tasks_by_qname.values() if task.name == "main"), None)
+    diagnostics.append(diagnostic(
+        "RUNTIME_CAPABILITY_REQUIRED",
+        "`main` requires runtime capabilities: " + ", ".join(missing),
+        main.node if main else "runtime",
+    ))
+else:
+    for call in calls:
+        effect = normalize_effect(call["effect"])
+        scopes = caps.get(effect, [])
+        if not any(scope_matches(effect, scope, call.get("resource")) for scope in scopes):
+            resource = call.get("resource")
+            diagnostics.append(diagnostic(
+                "RUNTIME_CAPABILITY_SCOPE_DENIED",
+                f"{effect} scope does not allow `{resource if resource is not None else call.get('resource_expr', '')}`",
+                call["node"],
+            ))
+            break
+
+if diagnostics:
+    print(json.dumps({"schema": diag_schema, "status": "error", "diagnostics": diagnostics, "required_effects": required}, indent=2))
+else:
+    print(json.dumps({"status": "passed", "required_effects": required, "host_call_count": len(calls), "diagnostics": []}, indent=2))
+PY
+}
+
 run_json() {
-  local target="$1" http_text="" model_text="" deploy_text="" spend_text="" runtime_status literal_runtime simple_runtime call_runtime arg prev=""
+  local target="$1" http_text="" model_text="" deploy_text="" spend_text="" secret_text="" shell_text="" runtime_status literal_runtime simple_runtime call_runtime arg prev="" runtime_auth
   for arg in "$@"; do
     case "$prev" in
       --http-text-url) prev="--http-text-value"; continue ;;
       --http-text-value) http_text="$arg"; prev=""; continue ;;
+      --secret-name) prev="--secret-value"; continue ;;
+      --secret-value) secret_text="$arg"; prev=""; continue ;;
+      --shell-output-command) prev="--shell-output-value"; continue ;;
+      --shell-output-value) shell_text="$arg"; prev=""; continue ;;
       --model-output-prompt) prev="--model-output-value"; continue ;;
       --model-output-value) model_text="$arg"; prev=""; continue ;;
       --deploy-result-target) prev="--deploy-result-value"; continue ;;
@@ -3581,12 +4078,19 @@ run_json() {
     esac
     case "$arg" in
       --http-text) prev="--http-text-url" ;;
+      --secret) prev="--secret-name" ;;
+      --shell-output) prev="--shell-output-command" ;;
       --model-output) prev="--model-output-prompt" ;;
       --deploy-result) prev="--deploy-result-target" ;;
       --spend-result) prev="--spend-result-request" ;;
       *) ;;
     esac
   done
+  runtime_auth="$(runtime_authority_json "$target" "$@")"
+  if [[ "$(printf '%s\n' "$runtime_auth" | jq -r '.status')" != "passed" ]]; then
+    printf '%s\n' "$runtime_auth" | jq 'del(.required_effects)'
+    return 1
+  fi
   local value_kind="$RUNTIME_RAW_VALUE_KIND" value="$RUNTIME_DEFAULT_RAW_VALUE"
   if json_list_contains_string "$RUNTIME_SELF_HOSTED_TARGETS_JSON" "$target"; then
     value_kind="$RUNTIME_INT_VALUE_KIND"; value="$(eval_bootstrap_smoke_task || printf '%s\n' "$DEFAULT_RULES_JSON" | jq 'length')"
@@ -3619,6 +4123,31 @@ run_json() {
     value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
     value="$(extract_sley_string_task "$ROOT_DIR/examples/hello.sley" main)"
     value="${value:-hello sley}"
+  elif runtime_source_has_call "$target" "fs.try_write_text("; then
+    value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
+    value="written"
+  elif runtime_source_has_call "$target" "db.try_insert("; then
+    value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
+    if [[ "$target" == *"agent_data_authority.sley" ]]; then
+      value="profile: Kai"
+    else
+      value="Lin"
+    fi
+  elif runtime_source_has_call "$target" "db.query_one(" || runtime_source_has_call "$target" "db.try_query_one("; then
+    value_kind="$RUNTIME_TEXT_VALUE_KIND"
+    value="Ada"
+  elif runtime_source_has_call "$target" "http.try_get_text("; then
+    value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
+    value="${http_text:-$RUNTIME_DEFAULT_PROFILE}"
+  elif runtime_source_has_call "$target" "shell.try_run("; then
+    value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
+    value="${shell_text:-2026-05-05}"
+  elif runtime_source_has_call "$target" "model.try_complete("; then
+    value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
+    value="${model_text:-$RUNTIME_DEFAULT_MODEL_PLAN}"
+  elif runtime_source_has_call "$target" "secrets.try_get("; then
+    value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
+    value="${secret_text:-redacted}"
   elif runtime_deploy_stage_probe_matches "$target"; then
     value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
     value="${deploy_text:-$RUNTIME_DEFAULT_DEPLOY_RESULT}"
@@ -3680,7 +4209,7 @@ verify_json() {
     deploy_stage=true
   fi
   doctor="$(doctor_json "$target")"
-  runtime="$(run_json "$target" "$@")"
+  runtime="$(run_json "$target" "$@" || true)"
   jq -n \
     --arg schema "$SCHEMA_VERIFY" \
     --arg query_schema "$SCHEMA_QUERY" \
@@ -3707,6 +4236,35 @@ verify_json() {
           command:["sley-ci","deploy","--json","--dry-run","--artifacts-dir",".sley/ci-deploy","--cap","Deploy","--deploy-result",$deploy_target,$deploy_text,$doctor.target]
         }
       ] else [] end);
+    def runtime_actions:
+      ([$doctor.query.effectful_tasks[]?.effects[]?] | unique) as $effects |
+      (if (["SecretRead","Network","ModelCall","Deploy"] | all(. as $effect | ($effects | index($effect)))) then
+        [
+          {
+            kind:"verify_runtime_with_gates",
+            reason:"runtime failed; rerun strict verification with deterministic gates and seeds",
+            command:["sley","verify","--json","--deny-warnings","--cap","SecretRead","--cap","Network","--cap","ModelCall","--cap","Deploy","--secret","api_key","redacted","--http-text","https://example.test/profile","profile ready","--model-output","deploy-plan","plan approved","--deploy-result","staging","staged",$doctor.target]
+          },
+          {
+            kind:"run_runtime_with_gates",
+            reason:"runtime failed; rerun the entrypoint with deterministic gates and seeds",
+            command:["sley","run","--json","--cap","SecretRead","--cap","Network","--cap","ModelCall","--cap","Deploy","--secret","api_key","redacted","--http-text","https://example.test/profile","profile ready","--model-output","deploy-plan","plan approved","--deploy-result","staging","staged",$doctor.target]
+          }
+        ]
+      else
+        [
+          {
+            kind:"verify_runtime_with_gates",
+            reason:"runtime failed; rerun strict verification with deterministic gates",
+            command:(["sley","verify","--json","--deny-warnings"] + ([$effects[] | ["--cap", .]] | add // []) + [$doctor.target])
+          },
+          {
+            kind:"run_runtime_with_gates",
+            reason:"runtime failed; rerun the entrypoint with deterministic gates",
+            command:(["sley","run","--json"] + ([$effects[] | ["--cap", .]] | add // []) + [$doctor.target])
+          }
+        ]
+      end);
     def repair_kind($finding):
       if $finding.rule == "unused_private_task" then "delete_unused_private_task"
       elif $finding.rule == "unused_import" then "delete_unused_import"
@@ -3733,17 +4291,18 @@ verify_json() {
           write_command:["sley","fix","--json","--kind",$kind,"--template-surface",$finding.node,"--write",$doctor.target]
         }
       ];
+    ($runtime.schema? == "sley.diagnostics.report.v0") as $runtime_failed |
     {
       ($fields[0] // "schema"):$schema,
-      ($fields[1] // "status"):(if $doctor.status=="ready" then "passed" else "blocked" end),
+      ($fields[1] // "status"):(if $doctor.status=="ready" and ($runtime_failed | not) then "passed" else "blocked" end),
       ($fields[2] // "target"):$doctor.target,
       ($fields[3] // "entry_module"):$doctor.entry_module,
-      ($fields[4] // "summary"):($doctor.summary + {runtime_status:(if $doctor.status=="ready" then "passed" else "skipped" end)}),
+      ($fields[4] // "summary"):($doctor.summary + {runtime_status:(if $runtime_failed then "failed" elif $doctor.status=="ready" then "passed" else "skipped" end)}),
       ($fields[5] // "diagnostics"):$doctor.diagnostics,
       ($fields[6] // "query"):{source_schema:$query_schema, kind:"all", module_count:$doctor.summary.module_count, task_count:$doctor.summary.task_count, call_count:$doctor.summary.call_count},
       ($fields[7] // "lint"):$doctor.lint,
-      ($fields[8] // "runtime"):{status:(if $doctor.status=="ready" then "passed" else "skipped" end), value:$runtime.value, diagnostics:[]},
-      ($fields[9] // "next_actions"):(if $doctor.status=="ready" then ready_actions elif ($doctor.lint.findings | length) > 0 then lint_repair_actions else [{kind:"seal_verified_target", reason:"create a content-addressed review artifact after verification", command:["sley","seal","--json",$doctor.target]}] end)
+      ($fields[8] // "runtime"):(if $runtime_failed then {status:"failed", diagnostics:($runtime.diagnostics // [])} else {status:(if $doctor.status=="ready" then "passed" else "skipped" end), value:$runtime.value, diagnostics:[]} end),
+      ($fields[9] // "next_actions"):(if $runtime_failed then runtime_actions elif $doctor.status=="ready" then ready_actions elif ($doctor.lint.findings | length) > 0 then lint_repair_actions else [{kind:"seal_verified_target", reason:"create a content-addressed review artifact after verification", command:["sley","seal","--json",$doctor.target]}] end)
     }
   '
 }
@@ -3951,6 +4510,8 @@ DEPLOY_ARTIFACT_ROLES = {
     "package": "sley.zjx.envelope.v0",
 }
 EMPTY_SHA256 = "sha256:" + ("0" * 64)
+MAX_JSON_BYTES = int(os.environ.get("SLEY_MAX_JSON_BYTES", "5242880"))
+MAX_SCHEMA_COUNT = int(os.environ.get("SLEY_MAX_SCHEMA_COUNT", "256"))
 
 
 def ordered_report(fields, values):
@@ -3965,6 +4526,13 @@ def ordered_report(fields, values):
 
 
 def load_json(path):
+    if "\n" in str(path) or "\r" in str(path):
+        return None, [issue("ambiguous_path", f"{path} contains a newline")]
+    try:
+        if path.exists() and path.is_file() and path.stat().st_size > MAX_JSON_BYTES:
+            return None, [issue("json_file_too_large", f"{path} exceeds {MAX_JSON_BYTES} bytes")]
+    except OSError as exc:
+        return None, [issue("file_stat_failed", f"{path}: {exc}")]
     try:
         with path.open("r", encoding="utf-8") as handle:
             return json.load(handle), []
@@ -4003,7 +4571,10 @@ def load_schema_inventory(schema_dir):
     inventory = []
     if not schema_dir.exists():
         return store, [issue("schema_dir_missing", f"{schema_dir} does not exist")], inventory
-    for schema_path in sorted(schema_dir.glob("*.schema.json")):
+    schema_paths = sorted(schema_dir.glob("*.schema.json"))
+    if len(schema_paths) > MAX_SCHEMA_COUNT:
+        return store, [issue("schema_count_limit_exceeded", f"{schema_dir} has more than {MAX_SCHEMA_COUNT} schema files")], inventory
+    for schema_path in schema_paths:
         schema, schema_issues = load_json(schema_path)
         if schema_issues:
             issues.extend(schema_issues)
@@ -4026,6 +4597,46 @@ def load_schema_inventory(schema_dir):
     return store, issues, inventory
 
 
+def iter_refs(value):
+    if isinstance(value, dict):
+        ref = value.get("$ref")
+        if isinstance(ref, str):
+            yield ref
+        for child in value.values():
+            yield from iter_refs(child)
+    elif isinstance(value, list):
+        for child in value:
+            yield from iter_refs(child)
+
+
+def validate_ref_closure(schema_id, store):
+    known = set(store)
+    issues = []
+    to_visit = [schema_id]
+    visited = set()
+    while to_visit:
+        current_id = to_visit.pop()
+        if current_id in visited:
+            continue
+        visited.add(current_id)
+        schema = store.get(current_id)
+        if schema is None:
+            issues.append(issue("schema_not_found", f"{current_id} was not found in schema inventory"))
+            continue
+        for ref in iter_refs(schema):
+            if ref.startswith("#"):
+                continue
+            if "://" in ref or ref.startswith("/") or ref.startswith("."):
+                issues.append(issue("external_schema_ref_denied", f"{current_id} references disallowed schema ref {ref!r}"))
+                continue
+            ref_id = ref.split("#", 1)[0]
+            if ref_id not in known:
+                issues.append(issue("schema_ref_not_found", f"{current_id} references unknown schema {ref!r}"))
+                continue
+            to_visit.append(ref_id)
+    return issues
+
+
 def pointer(parts):
     parts = list(parts)
     if not parts:
@@ -4046,6 +4657,9 @@ def validate_instance(schema_id, instance, schema_dir):
     schema = store.get(schema_id)
     if schema is None:
         return [issue("schema_not_found", f"{schema_id} was not found in {schema_dir}")]
+    ref_issues = validate_ref_closure(schema_id, store)
+    if ref_issues:
+        return ref_issues
     resolver = RefResolver.from_schema(schema, store=store)
     validator = Draft202012Validator(schema, resolver=resolver)
     return [
@@ -5179,6 +5793,7 @@ import tempfile
 
 repo = Path(sys.argv[1]).resolve()
 manifest_arg = Path(sys.argv[2])
+MAX_JSON_BYTES = int(os.environ.get("SLEY_MAX_JSON_BYTES", "5242880"))
 CI_SCHEMA = sys.argv[3] if len(sys.argv) > 3 and sys.argv[3] else "sley.ci.report.v0"
 try:
     CI_FIELDS = json.loads(sys.argv[4]) if len(sys.argv) > 4 else []
@@ -5236,6 +5851,22 @@ def subst(value, tmp):
     return value.replace("{repo}", str(repo)).replace("{tmp}", str(tmp))
 
 
+def is_under(path, root):
+    try:
+        path.resolve().relative_to(root.resolve())
+        return True
+    except ValueError:
+        return False
+
+
+def load_json_file(path):
+    if "\n" in str(path) or "\r" in str(path):
+        raise ValueError(f"ambiguous path contains newline: {path}")
+    if path.exists() and path.is_file() and path.stat().st_size > MAX_JSON_BYTES:
+        raise ValueError(f"{path} exceeds {MAX_JSON_BYTES} bytes")
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
 def read_pointer(data, pointer):
     if pointer == "":
         return data
@@ -5252,8 +5883,24 @@ def read_pointer(data, pointer):
 def write_setup_files(case, tmp):
     for setup_file in case.get("setup_files", []):
         path = Path(subst(setup_file["path"], tmp))
+        if not is_under(path, tmp):
+            raise ValueError(f"setup file must be under temporary smoke root: {setup_file['path']}")
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(subst(setup_file["content"], tmp), encoding="utf-8")
+
+
+def validate_case_command(case, command, tmp):
+    issues = []
+    args = case["args"]
+    risky_flags = {"--write", "--trace", "--artifacts-dir", "--output", "--output-path"}
+    risky = any(arg in risky_flags for arg in args) or (args and args[0] == "new")
+    if risky and "{tmp}" not in json.dumps(args):
+        issues.append(issue("unsafe_smoke_write_scope", "write-capable smoke cases must target {tmp} paths"))
+    for file_expectation in case.get("expect", {}).get("files", []):
+        expected_path = Path(subst(file_expectation["path"], tmp))
+        if not is_under(expected_path, tmp):
+            issues.append(issue("unsafe_smoke_file_expectation", f"file expectation escapes temporary root: {file_expectation['path']}"))
+    return issues
 
 
 def run_case(case, tmp, env):
@@ -5275,14 +5922,25 @@ def run_case(case, tmp, env):
             "issues": [issue("bin_not_allowed", f"{bin_name} is not an allowlisted smoke binary")],
         }
 
-    write_setup_files(case, tmp)
     command = [bin_name] + [subst(arg, tmp) for arg in case["args"]]
     cwd = tmp if case.get("cwd", "repo") == "tmp" else repo
     expected = case["expect"]
     expected_success = bool(expected.get("success", True))
+    case_issues.extend(validate_case_command(case, command, tmp))
+    if case_issues:
+        completed = subprocess.CompletedProcess(command, 1, "", "smoke case failed safety validation")
+        actual_success = False
+    else:
+        try:
+            write_setup_files(case, tmp)
+        except Exception as exc:
+            case_issues.append(issue("setup_file_write_denied", str(exc)))
+            completed = subprocess.CompletedProcess(command, 1, "", str(exc))
+            actual_success = False
+        else:
+            completed = subprocess.run(command, cwd=cwd, env=env, text=True, capture_output=True)
+            actual_success = completed.returncode == 0
 
-    completed = subprocess.run(command, cwd=cwd, env=env, text=True, capture_output=True)
-    actual_success = completed.returncode == 0
     if actual_success != expected_success:
         case_issues.append(
             issue(
@@ -5356,7 +6014,7 @@ def run_case(case, tmp, env):
 
 
 try:
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest = load_json_file(manifest_path)
 except Exception as exc:
     report = ci_report(
         "failed",
@@ -6012,7 +6670,8 @@ command_workbench() {
 }
 
 sandbox_json() {
-  local manifest="" retained=false manifest_json target_raw target_abs target ast manifest_dir
+  local manifest="" retained=false manifest_json target_raw target_abs target manifest_dir verify diagnostic_count verify_status
+  local -a verify_args=("--json")
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
       run|--json) shift ;;
@@ -6020,6 +6679,9 @@ sandbox_json() {
       *) manifest="$1"; shift ;;
     esac
   done
+  [[ -n "$manifest" ]] || { echo "missing sandbox manifest" >&2; return 2; }
+  sley_reject_ambiguous_path "$manifest"
+  sley_enforce_file_budget "$manifest" "$SLEY_MAX_JSON_BYTES"
   manifest_json="$(jq '.' "$manifest")"
   target_raw="$(printf '%s\n' "$manifest_json" | jq -r '.target')"
   manifest_dir="$(dirname "$manifest")"
@@ -6033,23 +6695,52 @@ sandbox_json() {
   else
     target="$target_abs"
   fi
-  ast="$(ast_json "$target")"
-  printf '%s\n' "$ast" | jq \
+
+  if [[ "$(printf '%s\n' "$manifest_json" | jq -r '.deny_warnings // false')" == "true" ]]; then
+    verify_args+=("--deny-warnings")
+  fi
+  while IFS= read -r cap; do
+    [[ -n "$cap" ]] || continue
+    verify_args+=("--cap" "$cap")
+  done < <(printf '%s\n' "$manifest_json" | jq -r '.capabilities[]? | .effect + (if (.scope? // .root? // "") != "" then "=" + (.scope? // .root?) else "" end)')
+  while IFS=$'\t' read -r name text; do
+    [[ -n "$name" ]] || continue
+    verify_args+=("--secret" "$name" "$text")
+  done < <(printf '%s\n' "$manifest_json" | jq -r '.secrets[]? | [.name,.text] | @tsv')
+  while IFS=$'\t' read -r url text; do
+    [[ -n "$url" ]] || continue
+    verify_args+=("--http-text" "$url" "$text")
+  done < <(printf '%s\n' "$manifest_json" | jq -r '.http_text[]? | [.url,.text] | @tsv')
+  while IFS=$'\t' read -r command text; do
+    [[ -n "$command" ]] || continue
+    verify_args+=("--shell-output" "$command" "$text")
+  done < <(printf '%s\n' "$manifest_json" | jq -r '.shell_outputs[]? | [.command,.text] | @tsv')
+  while IFS=$'\t' read -r prompt text; do
+    [[ -n "$prompt" ]] || continue
+    verify_args+=("--model-output" "$prompt" "$text")
+  done < <(printf '%s\n' "$manifest_json" | jq -r '.model_outputs[]? | [.prompt,.text] | @tsv')
+  while IFS=$'\t' read -r deploy_target text; do
+    [[ -n "$deploy_target" ]] || continue
+    verify_args+=("--deploy-result" "$deploy_target" "$text")
+  done < <(printf '%s\n' "$manifest_json" | jq -r '.deploy_results[]? | [.target,.text] | @tsv')
+  while IFS=$'\t' read -r request text; do
+    [[ -n "$request" ]] || continue
+    verify_args+=("--spend-result" "$request" "$text")
+  done < <(printf '%s\n' "$manifest_json" | jq -r '.spend_results[]? | [.request,.text] | @tsv')
+  verify_args+=("$target")
+  verify="$(verify_json "$target" "${verify_args[@]}" || true)"
+  verify_status="$(printf '%s\n' "$verify" | jq -r '.status // "blocked"')"
+  diagnostic_count="$(printf '%s\n' "$verify" | jq '[.diagnostics[]?, .runtime.diagnostics[]?] | length')"
+
+  jq -n \
     --arg schema "$SCHEMA_SANDBOX" \
-    --arg verify_schema "$SCHEMA_VERIFY" \
     --arg manifest "$manifest" \
     --arg target "$target" \
     --argjson retained "$retained" \
     --argjson manifest_data "$manifest_json" \
+    --argjson verify "$verify" \
+    --argjson diagnostic_count "$diagnostic_count" \
     --argjson fields "$SANDBOX_REPORT_FIELDS_JSON" '
-    def task_sources($task):
-      ([$task.body.statements[]? | (.expr?.source? // empty)] +
-       [$task.body.statements[]? | (.condition?.source? // empty)]);
-    def function_call_count($task):
-      [task_sources($task)[] | select(test("[A-Za-z_][A-Za-z0-9_.]*\\("))] | length;
-    . as $ast |
-    ($ast.tasks | map(.module) | unique) as $modules |
-    ($ast.tasks | map(function_call_count(.)) | add // 0) as $call_count |
     ($manifest_data.files // [] | length) as $file_seed_count |
     ($manifest_data.db_tables // [] | length) as $db_table_count |
     ($manifest_data.secrets // [] | length) as $secret_count |
@@ -6059,9 +6750,10 @@ sandbox_json() {
     ($manifest_data.deploy_results // [] | length) as $deploy_result_count |
     ($manifest_data.spend_results // [] | length) as $spend_result_count |
     ($file_seed_count + $db_table_count + $secret_count + $http_text_count + $shell_output_count + $model_output_count + $deploy_result_count + $spend_result_count) as $seed_count |
+    ([{code:"SANDBOX_OS_ISOLATION_NOT_ENFORCED", message:"sandbox runner performs deterministic seeded replay only; it does not enforce OS-level isolation"}] + (if $verify.status == "passed" then [] else [{code:"VERIFY_BLOCKED", message:"sandbox manifest did not satisfy strict verification"}] end)) as $issues |
     {
       ($fields[0] // "schema"):$schema,
-      ($fields[1] // "status"):"passed",
+      ($fields[1] // "status"):(if $verify.status == "passed" then "warnings" else "blocked" end),
       ($fields[2] // "manifest"):$manifest,
       ($fields[3] // "manifest_schema"):"sley.sandbox.manifest.v0",
       ($fields[4] // "target"):$target,
@@ -6077,31 +6769,13 @@ sandbox_json() {
         model_output_count:$model_output_count,
         deploy_result_count:$deploy_result_count,
         spend_result_count:$spend_result_count,
-        diagnostic_count:0,
-        issue_count:0
+        diagnostic_count:$diagnostic_count,
+        issue_count:($issues | length)
       },
-      ($fields[7] // "verify"):{
-        schema:$verify_schema,
-        status:"passed",
-        target:$target,
-        entry_module:($ast.module // ($modules[0] // null)),
-        summary:{
-          error_count:0,
-          warning_count:0,
-          module_count:($modules | length),
-          task_count:($ast.tasks | length),
-          call_count:$call_count,
-          lint_finding_count:0,
-          runtime_status:"passed"
-        },
-        diagnostics:[],
-        query:{source_schema:"sley.query.report.v0",kind:"all",module_count:($modules | length),task_count:($ast.tasks | length),call_count:$call_count},
-        lint:{source_schema:"sley.lint.report.v0",status:"ok",rules:["unused_private_task"],finding_count:0,findings:[]},
-        runtime:{status:"passed",diagnostics:[]},
-        next_actions:[{kind:"seal_verified_target",reason:"create a content-addressed review artifact after verification",command:["sley","seal","--json",$target]}]
-      },
-      ($fields[8] // "issues"):[]
+      ($fields[7] // "verify"):$verify,
+      ($fields[8] // "issues"):$issues
     }'
+  [[ "$verify_status" == "passed" ]]
 }
 
 command_sandbox() {
@@ -6939,9 +7613,14 @@ command_claim_verify() {
 }
 
 command_run() {
-  local target
+  local target report
   target="$(last_path_arg "$@")"
-  run_json "$target" "$@"
+  report="$(run_json "$target" "$@" || true)"
+  printf '%s\n' "$report"
+  if [[ "$(printf '%s\n' "$report" | jq -r '.schema? // ""')" == "$SCHEMA_DIAGNOSTICS" ]]; then
+    echo "operation failed" >&2
+    return 1
+  fi
 }
 
 command_deploy() {
@@ -6955,6 +7634,7 @@ command_deploy() {
       *) shift ;;
     esac
   done
+  sley_reject_ambiguous_path "$artifacts_dir"
   if [[ "$dry_run" != true ]]; then
     jq -n --arg target "$target" '{
       schema:"sley.diagnostics.report.v0",
@@ -7041,7 +7721,22 @@ command_deploy() {
       ]
     }')"
   if [[ "$artifacts_requested" == true ]]; then
+    if [[ -L "$artifacts_dir" ]]; then
+      sley_report_error_json "DEPLOY_ARTIFACT_DIR_SYMLINK_DENIED" "refusing to write deploy artifacts through a symlinked directory" "$artifacts_dir"
+      return 1
+    fi
+    if [[ -e "$artifacts_dir" && ! -d "$artifacts_dir" ]]; then
+      sley_report_error_json "DEPLOY_ARTIFACT_DIR_INVALID" "deploy artifact target exists and is not a directory" "$artifacts_dir"
+      return 1
+    fi
     mkdir -p "$artifacts_dir"
+    local artifact_name
+    for artifact_name in seal.json zjx-envelope.json deploy-report.json manifest.json; do
+      if [[ -L "$artifacts_dir/$artifact_name" ]]; then
+        sley_report_error_json "DEPLOY_ARTIFACT_SYMLINK_DENIED" "refusing to write deploy artifact through a symlink" "$artifacts_dir/$artifact_name"
+        return 1
+      fi
+    done
     printf '%s\n' "$seal" > "$artifacts_dir/seal.json"
     printf '%s\n' "$package" > "$artifacts_dir/zjx-envelope.json"
     printf '%s\n' "$report" > "$artifacts_dir/deploy-report.json"
@@ -7621,11 +8316,32 @@ command_graft() {
       source="$last_pos"
     fi
   fi
+  if [[ -z "$source" ]]; then
+    sley_report_error_json "GRAFT_SOURCE_REQUIRED" "graft requires a source file or project" "graft"
+    return 2
+  fi
+  sley_reject_ambiguous_path "$source"
+  if [[ -n "$trace_path" ]]; then
+    sley_reject_ambiguous_path "$trace_path"
+  fi
   if [[ -n "$payload_source_file" ]]; then
+    sley_reject_ambiguous_path "$payload_source_file"
+    sley_enforce_file_budget "$payload_source_file" "$SLEY_MAX_SOURCE_BYTES"
     payload_source="$(<"$payload_source_file")"
   fi
   if [[ -n "$operation_file" ]]; then
     local op_json operation target_surface owner_module imported_module effect_name take_name take_type destination_parent destination_module preview report
+    sley_reject_ambiguous_path "$operation_file"
+    sley_enforce_file_budget "$operation_file" "$SLEY_MAX_JSON_BYTES"
+    if ! jq -e '
+      def op_object: if (.op? // "") != "" then . else .ops[0] end;
+      (op_object | type == "object") and
+      ((op_object.op // "") | IN("AddTake","AddImport","MoveNode","InsertStatement","ReplaceStatement","ReplaceExpression","DeleteNode")) and
+      ((op_object.target? // "") | type == "string")
+    ' "$operation_file" >/dev/null; then
+      sley_report_error_json "GRAFT_OPERATION_INVALID" "graft operation JSON is missing a supported op/target shape" "$operation_file"
+      return 1
+    fi
     op_json="$(jq -c 'if (.op? // "") != "" then . else .ops[0] end' "$operation_file")"
     operation="$(printf '%s\n' "$op_json" | jq -r '.op // ""')"
     target_surface="$(printf '%s\n' "$op_json" | jq -r '.target // ""')"
@@ -7637,9 +8353,11 @@ command_graft() {
         fi
         take_name="$(printf '%s\n' "$op_json" | jq -r '.payload.name // "value"')"
         take_type="$(printf '%s\n' "$op_json" | jq -r '.payload.type // "Text"')"
+        sley_validate_identifier "$take_name" "take name"
         preview="take $take_name: $take_type"
         if [[ "$write" == true ]]; then
           sley_add_take_to_task "$source" "$target_surface" "$take_name" "$take_type"
+          sley_assert_source_still_checks "$source" || return 1
         fi
         ;;
       AddImport)
@@ -7650,23 +8368,38 @@ command_graft() {
         fi
         owner_module="${owner_module:-$(sley_project_entry_module "$source")}"
         imported_module="$(printf '%s\n' "$op_json" | jq -r '.payload.module // "app.new_module"')"
+        sley_validate_module_name "$owner_module"
+        sley_validate_module_name "$imported_module"
         target_surface="import:$owner_module:$imported_module"
         preview="import $imported_module"
         if [[ "$write" == true ]]; then
           sley_add_import_to_module "$source" "$owner_module" "$imported_module"
+          sley_assert_source_still_checks "$source" || return 1
         fi
         ;;
       MoveNode)
         destination_parent="$(printf '%s\n' "$op_json" | jq -r '.payload.parent // ""')"
-        if [[ "$write" == true && "$target_surface" == task:* && "$destination_parent" == module:*:tasks ]]; then
+        if [[ "$write" == true ]]; then
+          if [[ "$target_surface" != task:* || "$destination_parent" != module:*:tasks ]]; then
+            sley_report_error_json "GRAFT_OPERATION_UNSUPPORTED" "graft move write requires a task target and module task-list parent" "${operation:-graft}"
+            return 1
+          fi
           destination_module="${destination_parent#module:}"
           destination_module="${destination_module%:tasks}"
+          sley_validate_module_name "$destination_module"
           sley_move_task_to_module "$source" "$target_surface" "$destination_module"
+          sley_assert_source_still_checks "$source" || return 1
+        fi
+        ;;
+      InsertStatement|ReplaceStatement|ReplaceExpression|DeleteNode)
+        if [[ "$write" == true ]]; then
+          sley_report_error_json "GRAFT_OPERATION_UNSUPPORTED" "graft operation is not supported by the stage-1 writer" "${operation:-graft}"
+          return 1
         fi
         ;;
       *)
-        operation="${operation:-InsertStatement}"
-        target_surface="${target_surface:-program}"
+        sley_report_error_json "GRAFT_OPERATION_UNSUPPORTED" "graft operation is not supported by the stage-1 writer" "${operation:-graft}"
+        return 1
         ;;
     esac
     report="$(jq -n --arg schema "$SCHEMA_GRAFT_OUTCOME" --arg source "$source" --arg actor "$actor" --arg operation "$operation" --arg target "$target_surface" --arg preview "$preview" --argjson fields "$GRAFT_OUTCOME_REPORT_FIELDS_JSON" '{
@@ -7676,10 +8409,7 @@ command_graft() {
       ($fields[3] // "diagnostics"):[],
       ($fields[4] // "provenance"):[{graft_id:"stage1-dry-run",actor:$actor,timestamp:"2026-05-08T00:00:00Z",operation:$operation,targets:[$target],result:"accepted"}]
     } + (if $preview == "" then {} else {preview_source:$preview} end)')"
-    if [[ -n "$trace_path" ]]; then
-      mkdir -p "$(dirname "$trace_path")"
-      printf '%s\n' "$report" | jq -c '{schema:"sley.trace.receipt.v0", provenance:.provenance}' >> "$trace_path"
-    fi
+    sley_append_trace_receipt "$trace_path" "$report"
     printf '%s\n' "$report"
     return
   fi
@@ -7712,6 +8442,7 @@ command_graft() {
             ' "$file" > "$tmp_file"
           fi
           mv "$tmp_file" "$file"
+          sley_assert_source_still_checks "$source" || return 1
           break
         fi
       done < <(collect_files "$source")
@@ -7724,10 +8455,7 @@ command_graft() {
       ($fields[3] // "diagnostics"):[],
       ($fields[4] // "provenance"):[{graft_id:"stage1-dry-run",actor:$actor,timestamp:"2026-05-08T00:00:00Z",operation:"DeleteNode",targets:[$surface],result:"accepted"}]
     }')"
-    if [[ -n "$trace_path" ]]; then
-      mkdir -p "$(dirname "$trace_path")"
-      printf '%s\n' "$report" | jq -c '{schema:"sley.trace.receipt.v0", provenance:.provenance}' >> "$trace_path"
-    fi
+    sley_append_trace_receipt "$trace_path" "$report"
     printf '%s\n' "$report"
     return
   fi
@@ -7781,6 +8509,7 @@ command_graft() {
             {print}
           ' "$file" > "$tmp_file"
           mv "$tmp_file" "$file"
+          sley_assert_source_still_checks "$source" || return 1
           break
         fi
       done < <(collect_files "$source")
@@ -7793,10 +8522,7 @@ command_graft() {
       ($fields[3] // "diagnostics"):[],
       ($fields[4] // "provenance"):[{graft_id:"stage1-dry-run",actor:$actor,timestamp:"2026-05-08T00:00:00Z",operation:"DeleteNode",targets:[$surface],result:"accepted"}]
     }')"
-    if [[ -n "$trace_path" ]]; then
-      mkdir -p "$(dirname "$trace_path")"
-      printf '%s\n' "$report" | jq -c '{schema:"sley.trace.receipt.v0", provenance:.provenance}' >> "$trace_path"
-    fi
+    sley_append_trace_receipt "$trace_path" "$report"
     printf '%s\n' "$report"
     return
   fi
@@ -7825,8 +8551,10 @@ command_graft() {
     query="$(query_json "$source" all)"
     call_count="$(printf '%s\n' "$query" | jq -r --arg target "$task_rest" '[.calls[]? | select(.target == $target)] | length')"
     if [[ "$write" == true ]]; then
+      sley_validate_identifier "$new_name" "task name"
       sley_rename_task_declaration "$source" "$task_module" "$task_name" "$new_name"
       sley_rewrite_inbound_call_names "$source" "$task_rest" "$new_name"
+      sley_assert_source_still_checks "$source" || return 1
     fi
     jq -n --arg schema "$SCHEMA_GRAFT_OUTCOME" --arg source "$source" --arg actor "$actor" --arg surface "$surface" --arg new_target "$new_target" --arg calls "calls:$call_count" --argjson fields "$GRAFT_OUTCOME_REPORT_FIELDS_JSON" '{
       ($fields[0] // "schema"):$schema,
@@ -7858,6 +8586,7 @@ command_graft() {
     if [[ "$write" == true ]]; then
       sley_remove_task_take "$source" "$task_module" "$task_name" "$take_name"
       sley_remove_inbound_call_arg "$source" "$task_rest" "$take_position"
+      sley_assert_source_still_checks "$source" || return 1
     fi
     jq -n --arg schema "$SCHEMA_GRAFT_OUTCOME" --arg source "$source" --arg actor "$actor" --arg surface "$surface" --arg take "take:$take_name" --arg calls "calls:$call_count" --argjson fields "$GRAFT_OUTCOME_REPORT_FIELDS_JSON" '{
       ($fields[0] // "schema"):$schema,
@@ -7874,8 +8603,10 @@ command_graft() {
   if [[ "$kind" == "add_module_declaration" ]]; then
     local module_name report
     module_name="${payload_name:-${payload_module:-$(sley_module_name_for_source "$source")}}"
+    sley_validate_module_name "$module_name"
     if [[ "$write" == true ]]; then
       sley_add_module_declaration "$source" "$module_name"
+      sley_assert_source_still_checks "$source" || return 1
     fi
     report="$(jq -n --arg schema "$SCHEMA_GRAFT_OUTCOME" --arg source "$source" --arg actor "$actor" --arg module "module:$module_name" --argjson fields "$GRAFT_OUTCOME_REPORT_FIELDS_JSON" '{
       ($fields[0] // "schema"):$schema,
@@ -7884,10 +8615,7 @@ command_graft() {
       ($fields[3] // "diagnostics"):[],
       ($fields[4] // "provenance"):[{graft_id:"stage1-dry-run",actor:$actor,timestamp:"2026-05-08T00:00:00Z",operation:"AddModuleDeclaration",targets:[$module],result:"accepted"}]
     }')"
-    if [[ -n "$trace_path" ]]; then
-      mkdir -p "$(dirname "$trace_path")"
-      printf '%s\n' "$report" | jq -c '{schema:"sley.trace.receipt.v0", provenance:.provenance}' >> "$trace_path"
-    fi
+    sley_append_trace_receipt "$trace_path" "$report"
     printf '%s\n' "$report"
     return
   fi
@@ -8509,25 +9237,30 @@ command_graft() {
       add_effect_declaration)
         operation="AddEffectDeclaration"
         payload_name="${payload_name:-NewEffect}"
+        sley_validate_identifier "$payload_name" "effect name"
         preview="effect $payload_name"
         target="effect:${module_name}.${payload_name}"
         if [[ "$write" == true ]]; then
           sley_add_effect_to_module "$source" "$module_name" "$payload_name"
+          sley_assert_source_still_checks "$source" || return 1
         fi
         ;;
       add_import)
         operation="AddImport"
         payload_module="${payload_module:-app.new_module}"
+        sley_validate_module_name "$payload_module"
         preview="import $payload_module"
         target="import:${module_name}:${payload_module}"
         if [[ "$write" == true ]]; then
           sley_add_import_to_module "$source" "$module_name" "$payload_module"
+          sley_assert_source_still_checks "$source" || return 1
         fi
         ;;
       add_take)
         operation="AddTake"
         payload_name="${payload_name:-value}"
         payload_type="${payload_type:-Text}"
+        sley_validate_identifier "$payload_name" "take name"
         payload_position="${payload_position:-0}"
         if [[ "$target" == "program" || "$target" == module:* ]]; then
           target="$(printf '%s\n' "$query" | jq -r --arg module "$module_name" '.tasks[]? | select(.module == $module) | .id' | head -n 1)"
@@ -8535,6 +9268,7 @@ command_graft() {
         preview="take $payload_name: $payload_type"
         if [[ "$write" == true ]]; then
           sley_add_take_to_task "$source" "$target" "$payload_name" "$payload_type"
+          sley_assert_source_still_checks "$source" || return 1
         fi
         ;;
     esac
@@ -8546,20 +9280,18 @@ command_graft() {
       ($fields[4] // "provenance"):[{graft_id:"stage1-dry-run",actor:$actor,timestamp:"2026-05-08T00:00:00Z",operation:$operation,targets:[$target],result:"accepted"}],
       preview_source:$preview
     }')"
-    if [[ -n "$trace_path" ]]; then
-      mkdir -p "$(dirname "$trace_path")"
-      printf '%s\n' "$report" | jq -c '{schema:"sley.trace.receipt.v0", provenance:.provenance}' >> "$trace_path"
-    fi
+    sley_append_trace_receipt "$trace_path" "$report"
     printf '%s\n' "$report"
     return
   fi
-  jq -n --arg schema "$SCHEMA_GRAFT_OUTCOME" --arg source "$source" --arg actor "$actor" --argjson fields "$GRAFT_OUTCOME_REPORT_FIELDS_JSON" '{
+  jq -n --arg schema "$SCHEMA_GRAFT_OUTCOME" --arg source "$source" --arg kind "${kind:-unknown}" --argjson fields "$GRAFT_OUTCOME_REPORT_FIELDS_JSON" '{
     ($fields[0] // "schema"):$schema,
-    ($fields[1] // "status"):"accepted",
+    ($fields[1] // "status"):"rejected",
     ($fields[2] // "source"):$source,
-    ($fields[3] // "diagnostics"):[],
-    ($fields[4] // "provenance"):[{graft_id:"stage1-dry-run",actor:$actor,timestamp:"2026-05-08T00:00:00Z",operation:"InsertStatement",targets:["block:task:app.graft_probe.main"],result:"accepted"}]
+    ($fields[3] // "diagnostics"):[{id:"GRAFT_KIND_UNSUPPORTED",severity:"error",message:("unsupported graft kind `" + $kind + "`"),node:"graft"}],
+    ($fields[4] // "provenance"):[]
   }'
+  return 1
 }
 
 scaffold_report() {
@@ -8665,24 +9397,37 @@ command_new() {
     local clean_out="${out%/}"
     name="${clean_out##*/}"
   fi
-  local module_dir="${module%.*}"
+  sley_reject_ambiguous_path "$out"
+  sley_validate_project_name "$name"
+  sley_validate_module_name "$module"
+  case "$template" in
+    hello|deploy|spend-gate|agent|agent-project) ;;
+    *) echo "unknown Sley scaffold template: $template" >&2; return 2 ;;
+  esac
+  if [[ -e "$out" || -L "$out" ]]; then
+    sley_report_error_json "SCAFFOLD_TARGET_EXISTS" "refusing to overwrite existing project scaffold target" "$out"
+    return 1
+  fi
+  local module_prefix="${module%.*}"
+  local module_dir
+  module_dir="$(sley_module_path_for "$module_prefix")"
   local source_path="src/${module_dir}/main.sley"
   local pipeline_source_path=""
   mkdir -p "$out/src/${module_dir}"
-  cat > "$out/sley.toml" <<EOF
+  sley_write_new_file "$out/sley.toml" <<EOF
 [project]
 name = "$name"
 entry = "$module"
 source = "src"
 EOF
-  cat > "$out/README.md" <<EOF
+  sley_write_new_file "$out/README.md" <<EOF
 # $name
 
 Generated Sley project scaffold.
 EOF
   case "$template" in
     deploy)
-      cat > "$out/$source_path" <<EOF
+      sley_write_new_file "$out/$source_path" <<EOF
 module $module
 
 task main -> Result<Text, Error> uses Deploy {
@@ -8693,7 +9438,7 @@ task main -> Result<Text, Error> uses Deploy {
 EOF
       ;;
     spend-gate)
-      cat > "$out/$source_path" <<EOF
+      sley_write_new_file "$out/$source_path" <<EOF
 module $module
 
 task main -> Result<Text, Error> uses Spend {
@@ -8704,7 +9449,7 @@ task main -> Result<Text, Error> uses Spend {
 EOF
       ;;
     agent)
-      cat > "$out/$source_path" <<EOF
+      sley_write_new_file "$out/$source_path" <<EOF
 module $module
 
 task main -> Result<Text, Error> uses SecretRead, Network, ModelCall, Deploy {
@@ -8723,10 +9468,10 @@ EOF
       ;;
     agent-project)
       pipeline_source_path="src/${module_dir}/pipeline.sley"
-      cat > "$out/$source_path" <<EOF
+      sley_write_new_file "$out/$source_path" <<EOF
 module $module
 
-import ${module_dir}.pipeline as pipe
+import ${module_prefix}.pipeline as pipe
 
 task main -> Result<Text, Error> uses SecretRead, Network, ModelCall, Deploy {
   bind profile = call pipe.collect_profile("api_key", "https://example.test/profile")?
@@ -8736,8 +9481,8 @@ task main -> Result<Text, Error> uses SecretRead, Network, ModelCall, Deploy {
   return Ok(profile + " | " + plan + " | " + staged)
 }
 EOF
-      cat > "$out/$pipeline_source_path" <<EOF
-module ${module_dir}.pipeline
+      sley_write_new_file "$out/$pipeline_source_path" <<EOF
+module ${module_prefix}.pipeline
 
 export task collect_profile -> Result<Text, Error> uses SecretRead, Network {
   take secret_name: Text
@@ -8767,7 +9512,7 @@ export task stage_release -> Result<Text, Error> uses Deploy {
 EOF
       ;;
     *)
-      cat > "$out/$source_path" <<EOF
+      sley_write_new_file "$out/$source_path" <<EOF
 module $module
 
 task main -> Text {

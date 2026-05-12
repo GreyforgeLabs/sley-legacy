@@ -1,6 +1,6 @@
 {
   "schema": "sley.sandbox.report.v0",
-  "status": "passed",
+  "status": "warnings",
   "manifest": "fixtures/contracts/sandbox_manifest_agent_pipeline.json",
   "manifest_schema": "sley.sandbox.manifest.v0",
   "target": "examples/agent_deploy_pipeline.sley",
@@ -18,7 +18,7 @@
     "deploy_result_count": 1,
     "spend_result_count": 0,
     "diagnostic_count": 0,
-    "issue_count": 0
+    "issue_count": 1
   },
   "verify": {
     "schema": "sley.verify.report.v0",
@@ -68,5 +68,10 @@
       }
     ]
   },
-  "issues": []
+  "issues": [
+    {
+      "code": "SANDBOX_OS_ISOLATION_NOT_ENFORCED",
+      "message": "sandbox runner performs deterministic seeded replay only; it does not enforce OS-level isolation"
+    }
+  ]
 }
