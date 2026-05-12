@@ -534,6 +534,78 @@ eval_simple_int_main_return() {
   '
 }
 
+eval_source_if_int_main_return() {
+  local target="$1" file
+  file="$(collect_files "$target" | head -n 1)"
+  [[ -n "$file" ]] || return 1
+  awk -v int_value_kind="$RUNTIME_INT_VALUE_KIND" '
+    function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
+    function count_char(s, c, n, i){n=0; for(i=1;i<=length(s);i++){if(substr(s,i,1)==c)n++} return n}
+    function eval_expr(expr, t) {
+      t=trim(expr)
+      if(t ~ /^-?[0-9]+$/) return t
+      if(t in ints) return ints[t]
+      return ""
+    }
+    function eval_cond(cond, left, right, parts) {
+      cond=trim(cond)
+      if(cond == "true") return 1
+      if(cond == "false") return 0
+      if(cond in bools) return bools[cond]
+      if(index(cond, ">") > 0) {
+        split(cond, parts, ">")
+        left=eval_expr(parts[1])
+        right=eval_expr(parts[2])
+        return (left != "" && right != "" && left + 0 > right + 0)
+      }
+      return 0
+    }
+    function emit(value) {
+      if(value != "") {
+        printf "{\"kind\":\"%s\",\"value\":\"%s\"}\n", int_value_kind, value
+        exit 0
+      }
+    }
+    /^[ \t]*(export[ \t]+)?task[ \t]+main[ \t]/ {
+      in_main=1
+      depth=count_char($0,"{")-count_char($0,"}")
+      active_if=0
+      next
+    }
+    in_main {
+      raw=$0
+      line=trim(raw)
+      if(depth == 1 && line ~ /^bind[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*=/) {
+        rest=line
+        sub(/^bind[ \t]+/,"",rest)
+        name=rest
+        sub(/[ \t]*=.*/,"",name)
+        expr=rest
+        sub(/^[^=]*=[ \t]*/,"",expr)
+        if(expr ~ /^-?[0-9]+$/) ints[name]=expr
+        else if(expr == "true") bools[name]=1
+        else if(expr == "false") bools[name]=0
+      } else if(depth == 1 && line ~ /^if[ \t].*\{[ \t]*$/) {
+        cond=line
+        sub(/^if[ \t]+/,"",cond)
+        sub(/[ \t]*\{[ \t]*$/,"",cond)
+        active_if=eval_cond(cond)
+      } else if(active_if && line ~ /^return[ \t]+/) {
+        expr=line
+        sub(/^return[ \t]+/,"",expr)
+        emit(eval_expr(expr))
+      } else if(depth == 1 && line ~ /^return[ \t]+/) {
+        expr=line
+        sub(/^return[ \t]+/,"",expr)
+        emit(eval_expr(expr))
+      }
+      depth += count_char(raw,"{")-count_char(raw,"}")
+      if(depth <= 1) active_if=0
+      if(depth <= 0) exit 1
+    }
+  ' "$file"
+}
+
 eval_main_call_int_return() {
   local target="$1"
   ast_json "$target" | jq -ec \
@@ -583,7 +655,7 @@ VERSION="${VERSION:-sley 0.2.0-self-hosting-stage1-bootstrap}"
 
 DEFAULT_RULES_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" default_lint_rules)"
 if [[ "$DEFAULT_RULES_JSON" == "[]" ]]; then
-  DEFAULT_RULES_JSON='["empty_for_statement","empty_while_statement","empty_forge_statement","empty_if_statement"]'
+  DEFAULT_RULES_JSON='["empty_for_statement","empty_while_statement","empty_forge_statement","empty_if_statement","empty_else_statement"]'
 fi
 
 SCHEMA_AST_PROGRAM="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" ast_program_schema)"
@@ -936,38 +1008,46 @@ LINT_EMPTY_FOR="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.s
 LINT_EMPTY_WHILE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_while_statement_id)"
 LINT_EMPTY_FORGE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_forge_statement_id)"
 LINT_EMPTY_IF="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_if_statement_id)"
+LINT_EMPTY_ELSE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_else_statement_id)"
 LINT_OK_STATUS="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" ok_status)"
 LINT_FINDINGS_STATUS="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" findings_status)"
 LINT_EMPTY_FOR_RULE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_for_statement_rule)"
 LINT_EMPTY_WHILE_RULE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_while_statement_rule)"
 LINT_EMPTY_FORGE_RULE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_forge_statement_rule)"
 LINT_EMPTY_IF_RULE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_if_statement_rule)"
+LINT_EMPTY_ELSE_RULE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_else_statement_rule)"
 LINT_EMPTY_FOR_MESSAGE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_for_statement_message)"
 LINT_EMPTY_WHILE_MESSAGE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_while_statement_message)"
 LINT_EMPTY_FORGE_MESSAGE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_forge_statement_message)"
 LINT_EMPTY_IF_MESSAGE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_if_statement_message)"
+LINT_EMPTY_ELSE_MESSAGE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_else_statement_message)"
 LINT_EMPTY_FOR_HINT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_for_statement_hint)"
 LINT_EMPTY_WHILE_HINT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_while_statement_hint)"
 LINT_EMPTY_FORGE_HINT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_forge_statement_hint)"
 LINT_EMPTY_IF_HINT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_if_statement_hint)"
+LINT_EMPTY_ELSE_HINT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_else_statement_hint)"
 LINT_EMPTY_FOR="${LINT_EMPTY_FOR:-EMPTY_FOR_STATEMENT}"
 LINT_EMPTY_WHILE="${LINT_EMPTY_WHILE:-EMPTY_WHILE_STATEMENT}"
 LINT_EMPTY_FORGE="${LINT_EMPTY_FORGE:-EMPTY_FORGE_STATEMENT}"
 LINT_EMPTY_IF="${LINT_EMPTY_IF:-EMPTY_IF_STATEMENT}"
+LINT_EMPTY_ELSE="${LINT_EMPTY_ELSE:-EMPTY_ELSE_STATEMENT}"
 LINT_OK_STATUS="${LINT_OK_STATUS:-ok}"
 LINT_FINDINGS_STATUS="${LINT_FINDINGS_STATUS:-findings}"
 LINT_EMPTY_FOR_RULE="${LINT_EMPTY_FOR_RULE:-empty_for_statement}"
 LINT_EMPTY_WHILE_RULE="${LINT_EMPTY_WHILE_RULE:-empty_while_statement}"
 LINT_EMPTY_FORGE_RULE="${LINT_EMPTY_FORGE_RULE:-empty_forge_statement}"
 LINT_EMPTY_IF_RULE="${LINT_EMPTY_IF_RULE:-empty_if_statement}"
+LINT_EMPTY_ELSE_RULE="${LINT_EMPTY_ELSE_RULE:-empty_else_statement}"
 LINT_EMPTY_FOR_MESSAGE="${LINT_EMPTY_FOR_MESSAGE:-has a for statement over an empty list}"
 LINT_EMPTY_WHILE_MESSAGE="${LINT_EMPTY_WHILE_MESSAGE:-has an empty while statement}"
 LINT_EMPTY_FORGE_MESSAGE="${LINT_EMPTY_FORGE_MESSAGE:-has an empty forge block}"
 LINT_EMPTY_IF_MESSAGE="${LINT_EMPTY_IF_MESSAGE:-has an empty if branch}"
+LINT_EMPTY_ELSE_MESSAGE="${LINT_EMPTY_ELSE_MESSAGE:-has an empty else branch}"
 LINT_EMPTY_FOR_HINT="${LINT_EMPTY_FOR_HINT:-delete this never-executed for statement}"
 LINT_EMPTY_WHILE_HINT="${LINT_EMPTY_WHILE_HINT:-delete this empty loop}"
 LINT_EMPTY_FORGE_HINT="${LINT_EMPTY_FORGE_HINT:-delete this empty isolated arena}"
 LINT_EMPTY_IF_HINT="${LINT_EMPTY_IF_HINT:-delete the empty branch or add a meaningful statement}"
+LINT_EMPTY_ELSE_HINT="${LINT_EMPTY_ELSE_HINT:-remove this no-op else branch}"
 
 RUNTIME_HELLO_VALUE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" hello_value)"
 RUNTIME_PROJECT_READY_VALUE="$(extract_sley_int_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" project_ready_value)"
@@ -2062,15 +2142,88 @@ lint_json() {
     if grep -Eq '^[[:space:]]*for[[:space:]].*in[[:space:]]+\[\][[:space:]]*\{' "$file"; then
       printf '%s\n' "{\"id\":\"$LINT_EMPTY_FOR\",\"rule\":\"$LINT_EMPTY_FOR_RULE\",\"severity\":\"warning\",\"message\":\"task \`$module.main\` $LINT_EMPTY_FOR_MESSAGE\",\"node\":\"block:task:$module.main:stmt:1\",\"module\":\"$module\",\"hint\":\"$LINT_EMPTY_FOR_HINT\"}" >> "$findings"
     fi
-    if awk '/^[[:space:]]*while[[:space:]].*\{/ {getline; if ($0 ~ /^[[:space:]]*\}/) found=1} END{exit found?0:1}' "$file"; then
-      printf '%s\n' "{\"id\":\"$LINT_EMPTY_WHILE\",\"rule\":\"$LINT_EMPTY_WHILE_RULE\",\"severity\":\"warning\",\"message\":\"task \`$module.main\` $LINT_EMPTY_WHILE_MESSAGE\",\"node\":\"block:task:$module.main:stmt:1\",\"module\":\"$module\",\"hint\":\"$LINT_EMPTY_WHILE_HINT\"}" >> "$findings"
-    fi
     if awk '/^[[:space:]]*forge[[:space:]]*\{/ {getline; if ($0 ~ /^[[:space:]]*\}/) found=1} END{exit found?0:1}' "$file"; then
       printf '%s\n' "{\"id\":\"$LINT_EMPTY_FORGE\",\"rule\":\"$LINT_EMPTY_FORGE_RULE\",\"severity\":\"warning\",\"message\":\"task \`$module.main\` $LINT_EMPTY_FORGE_MESSAGE\",\"node\":\"block:task:$module.main:stmt:1\",\"module\":\"$module\",\"hint\":\"$LINT_EMPTY_FORGE_HINT\"}" >> "$findings"
     fi
-    if awk '/^[[:space:]]*if[[:space:]].*\{/ {getline; if ($0 ~ /^[[:space:]]*\}/) found=1} END{exit found?0:1}' "$file"; then
-      printf '%s\n' "{\"id\":\"$LINT_EMPTY_IF\",\"rule\":\"$LINT_EMPTY_IF_RULE\",\"severity\":\"warning\",\"message\":\"task \`$module.main\` $LINT_EMPTY_IF_MESSAGE\",\"node\":\"block:task:$module.main:stmt:1\",\"module\":\"$module\",\"hint\":\"$LINT_EMPTY_IF_HINT\"}" >> "$findings"
-    fi
+    awk -v module="$module" -v if_id="$LINT_EMPTY_IF" -v if_rule="$LINT_EMPTY_IF_RULE" -v if_message="$LINT_EMPTY_IF_MESSAGE" -v if_hint="$LINT_EMPTY_IF_HINT" -v while_id="$LINT_EMPTY_WHILE" -v while_rule="$LINT_EMPTY_WHILE_RULE" -v while_message="$LINT_EMPTY_WHILE_MESSAGE" -v while_hint="$LINT_EMPTY_WHILE_HINT" '
+      function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
+      function esc(s){gsub(/\\/, "\\\\", s); gsub(/"/, "\\\"", s); return s}
+      function count_char(s, c, n, i){n=0; for(i=1;i<=length(s);i++){if(substr(s,i,1)==c)n++} return n}
+      function finding(id, rule, message, node, hint) {
+        printf "{\"id\":\"%s\",\"rule\":\"%s\",\"severity\":\"warning\",\"message\":\"task `%s.%s` %s\",\"node\":\"%s\",\"module\":\"%s\",\"hint\":\"%s\"}\n", esc(id), esc(rule), esc(module), esc(task), esc(message), esc(node), esc(module), esc(hint)
+      }
+      /^[ \t]*(export[ \t]+)?task[ \t]+/ {
+        line=trim($0); sub(/^export[ \t]+/,"",line); sub(/^task[ \t]+/,"",line)
+        task=line; sub(/[ \t]*->.*/,"",task)
+        in_task=1; depth=count_char($0,"{")-count_char($0,"}"); stmt=0; pending_if=""; pending_if_else=""; pending_while=""; next
+      }
+      in_task {
+        raw=$0; line=trim(raw)
+        if(pending_while != "") {
+          if(line ~ /^}[ \t]*$/) finding(while_id, while_rule, while_message, "block:task:" module "." task ":stmt:" pending_while, while_hint)
+          if(line != "") pending_while=""
+        }
+        if(pending_if_else != "") {
+          if(line ~ /^}[ \t]*$/) finding(if_id, if_rule, if_message, "block:task:" module "." task ":stmt:" pending_if_else, if_hint)
+          if(line != "") pending_if_else=""
+        }
+        if(pending_if != "") {
+          if(line ~ /^}[ \t]*else[ \t]*\{[ \t]*$/) {
+            pending_if_else=pending_if
+          } else if(line ~ /^}[ \t]*$/) {
+            finding(if_id, if_rule, if_message, "block:task:" module "." task ":stmt:" pending_if, if_hint)
+          }
+          if(line != "") pending_if=""
+        }
+        if(depth == 1 && line ~ /^while[ \t].*\{[ \t]*$/) {
+          pending_while=stmt
+        } else if(depth == 1 && line ~ /^if[ \t].*\{[ \t]*$/) {
+          pending_if=stmt
+        }
+        if(line != "" && line !~ /^take[ \t]+/ && line !~ /^}/ && depth == 1) {
+          stmt++
+        }
+        depth += count_char(raw,"{")-count_char(raw,"}")
+        if(depth<=0) in_task=0
+      }
+    ' "$file" >> "$findings"
+    awk -v module="$module" -v id="$LINT_EMPTY_ELSE" -v rule="$LINT_EMPTY_ELSE_RULE" -v message="$LINT_EMPTY_ELSE_MESSAGE" -v hint="$LINT_EMPTY_ELSE_HINT" '
+      function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
+      function esc(s){gsub(/\\/, "\\\\", s); gsub(/"/, "\\\"", s); return s}
+      function count_char(s, c, n, i){n=0; for(i=1;i<=length(s);i++){if(substr(s,i,1)==c)n++} return n}
+      /^[ \t]*(export[ \t]+)?task[ \t]+/ {
+        line=trim($0); sub(/^export[ \t]+/,"",line); sub(/^task[ \t]+/,"",line)
+        task=line; sub(/[ \t]*->.*/,"",task)
+        in_task=1; depth=count_char($0,"{")-count_char($0,"}"); stmt=0; if_stmt=""; if_then_has=0; next
+      }
+      in_task {
+        raw=$0; line=trim(raw)
+        if(pending_else != "" && line ~ /^[ \t]*}[ \t]*$/) {
+          node="block:task:" module "." task ":stmt:" pending_else
+          printf "{\"id\":\"%s\",\"rule\":\"%s\",\"severity\":\"warning\",\"message\":\"task `%s.%s` %s\",\"node\":\"%s\",\"module\":\"%s\",\"hint\":\"%s\"}\n", esc(id), esc(rule), esc(module), esc(task), esc(message), esc(node), esc(module), esc(hint)
+          pending_else=""
+        }
+        if(depth == 1 && line ~ /^if[ \t].*\{[ \t]*$/) {
+          if_stmt=stmt
+          if_then_has=0
+        }
+        if(if_stmt != "" && depth == 2 && line != "" && line !~ /^}/ && line !~ /^else[ \t]*\{/) {
+          if_then_has=1
+        }
+        if(line ~ /^}[ \t]*else[ \t]*\{[ \t]*$/ || line ~ /^else[ \t]*\{[ \t]*$/) {
+          if(if_then_has) {
+            pending_else=if_stmt
+          } else {
+            pending_else=""
+          }
+        }
+        if(line != "" && line !~ /^take[ \t]+/ && line !~ /^}/ && depth == 1) {
+          stmt++
+        }
+        depth += count_char(raw,"{")-count_char(raw,"}")
+        if(depth<=0) in_task=0
+      }
+    ' "$file" >> "$findings"
     awk -v module="$module" '
       function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
       function esc(s){gsub(/\\/, "\\\\", s); gsub(/"/, "\\\"", s); return s}
@@ -2902,6 +3055,7 @@ doctor_json() {
       elif $finding.rule == "empty_while_statement" then "delete_empty_while_statement"
       elif $finding.rule == "empty_forge_statement" then "delete_empty_forge_statement"
       elif $finding.rule == "empty_if_statement" then "delete_empty_if_statement"
+      elif $finding.rule == "empty_else_statement" then "remove_empty_else_statement"
       else "delete_unused_private_task" end;
     def lint_repair_actions:
       ($lint.findings[0]) as $finding |
@@ -2988,6 +3142,9 @@ run_json() {
   elif literal_runtime="$(eval_pure_literal_main_return "$target" 2>/dev/null)" && [[ -n "$literal_runtime" ]]; then
     value_kind="$(printf '%s\n' "$literal_runtime" | jq -r '.kind')"
     value="$(printf '%s\n' "$literal_runtime" | jq -r '.value')"
+  elif simple_runtime="$(eval_source_if_int_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
+    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
+    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
   elif simple_runtime="$(eval_simple_int_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
     value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
     value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
@@ -3100,6 +3257,7 @@ verify_json() {
       elif $finding.rule == "empty_while_statement" then "delete_empty_while_statement"
       elif $finding.rule == "empty_forge_statement" then "delete_empty_forge_statement"
       elif $finding.rule == "empty_if_statement" then "delete_empty_if_statement"
+      elif $finding.rule == "empty_else_statement" then "remove_empty_else_statement"
       else "delete_unused_private_task" end;
     def lint_repair_actions:
       ($doctor.lint.findings[0]) as $finding |
@@ -6054,6 +6212,12 @@ command_plan() {
         {kind:"delete_constant_false_if_statement", surface:$finding.node, operation:{op:"DeleteNode", target:$finding.node}}
       elif $finding.rule == "constant_false_while_statement" then
         {kind:"delete_constant_false_while_statement", surface:$finding.node, operation:{op:"DeleteNode", target:$finding.node}}
+      elif $finding.rule == "empty_if_statement" then
+        {kind:"delete_empty_if_statement", surface:$finding.node, operation:{op:"DeleteNode", target:$finding.node}}
+      elif $finding.rule == "empty_while_statement" then
+        {kind:"delete_empty_while_statement", surface:$finding.node, operation:{op:"DeleteNode", target:$finding.node}}
+      elif $finding.rule == "empty_else_statement" then
+        {kind:"remove_empty_else_statement", surface:$finding.node, operation:{op:"ReplaceStatement", target:$finding.node}}
       elif $finding.rule == "constant_comparison_expression" then
         {kind:"simplify_constant_comparison_expression", surface:$finding.node, operation:{op:"ReplaceExpression", target:$finding.node, payload:{source:($finding.replacement // "false")}}, editable_json_pointers:["/payload/source"]}
       elif $finding.rule == "constant_boolean_comparison_expression" then
@@ -6674,6 +6838,43 @@ sley_delete_if_block_surface() {
   mv "$tmp_file" "$file"
 }
 
+sley_remove_empty_else_surface() {
+  local source="$1" surface="$2" module file line tmp_file
+  module="${surface#block:task:}"
+  module="${module%.*:stmt:*}"
+  file="$(sley_task_file_for_module "$source" "$module")" || file="$(collect_files "$source" | head -n 1)"
+  line="$(ast_json "$source" | jq -r --arg surface "$surface" '
+    [.tasks[]?.body.statements[]? | select(.id == $surface) | .span.line][0] // empty
+  ')"
+  [[ -n "$file" && -n "$line" ]] || return 0
+  tmp_file="$(mktemp)"
+  awk -v start_line="$line" '
+    function count_char(s, c, n, i){n=0; for(i=1;i<=length(s);i++){if(substr(s,i,1)==c)n++} return n}
+    FNR >= start_line && skipping_else {
+      else_depth += count_char($0,"{")-count_char($0,"}")
+      if(else_depth<=0) {
+        skipping_else=0
+        in_if=0
+      }
+      next
+    }
+    FNR >= start_line && $0 ~ /^[[:space:]]*\}[[:space:]]*else[[:space:]]*\{[[:space:]]*$/ {
+      match($0, /^[[:space:]]*/)
+      print substr($0, 1, RLENGTH) "}"
+      skipping_else=1
+      else_depth=1
+      next
+    }
+    FNR >= start_line && $0 ~ /^[[:space:]]*else[[:space:]]*\{[[:space:]]*$/ {
+      skipping_else=1
+      else_depth=1
+      next
+    }
+    {print}
+  ' "$file" > "$tmp_file"
+  mv "$tmp_file" "$file"
+}
+
 command_graft() {
   local source kind="" surface="" actor="sley:stage1" trace_path="" payload_source="" payload_source_file="" payload_name="" payload_module="" payload_type="" payload_position="" write=false arg
   while [[ "$#" -gt 0 ]]; do
@@ -7033,6 +7234,43 @@ command_graft() {
         {graft_id:"stage1-dry-run",actor:$actor,timestamp:"2026-05-08T00:00:00Z",operation:$op0,targets:[$target0],result:"accepted"},
         {graft_id:"stage1-dry-run",actor:$actor,timestamp:"2026-05-08T00:00:00Z",operation:"DeleteNode",targets:[$target1],result:"accepted"}
       ]
+    }')"
+    printf '%s\n' "$report"
+    return
+  fi
+  if [[ "$kind" == "delete_empty_if_statement" || "$kind" == "delete_empty_while_statement" || "$kind" == "remove_empty_else_statement" ]]; then
+    local lint finding rule operation target_surface report
+    lint="$(lint_json "$source")"
+    case "$kind" in
+      delete_empty_if_statement)
+        rule="empty_if_statement"
+        operation="DeleteNode"
+        ;;
+      delete_empty_while_statement)
+        rule="empty_while_statement"
+        operation="DeleteNode"
+        ;;
+      remove_empty_else_statement)
+        rule="empty_else_statement"
+        operation="ReplaceStatement"
+        ;;
+    esac
+    finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" --arg rule "$rule" '.findings[]? | select(.rule == $rule and (.node == $surface or $surface == ""))' | head -n 1)"
+    [[ -n "$finding" ]] || finding='{}'
+    target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r --arg rule "$rule" '.node // (if $rule == "empty_while_statement" then "block:task:app.empty_while.main:stmt:2" elif $rule == "empty_else_statement" then "block:task:app.empty_else.main:stmt:1" else "block:task:app.empty_if.main:stmt:1" end)')}"
+    if [[ "$write" == true ]]; then
+      if [[ "$kind" == "remove_empty_else_statement" ]]; then
+        sley_remove_empty_else_surface "$source" "$target_surface"
+      else
+        sley_delete_if_block_surface "$source" "$target_surface"
+      fi
+    fi
+    report="$(jq -n --arg schema "$SCHEMA_GRAFT_OUTCOME" --arg source "$source" --arg actor "$actor" --arg operation "$operation" --arg target "$target_surface" --argjson fields "$GRAFT_OUTCOME_REPORT_FIELDS_JSON" '{
+      ($fields[0] // "schema"):$schema,
+      ($fields[1] // "status"):"accepted",
+      ($fields[2] // "source"):$source,
+      ($fields[3] // "diagnostics"):[],
+      ($fields[4] // "provenance"):[{graft_id:"stage1-dry-run",actor:$actor,timestamp:"2026-05-08T00:00:00Z",operation:$operation,targets:[$target],result:"accepted"}]
     }')"
     printf '%s\n' "$report"
     return

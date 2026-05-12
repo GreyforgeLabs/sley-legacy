@@ -136,3 +136,19 @@ export task empty_if_statement_message -> Text {
 export task empty_if_statement_hint -> Text {
   return "delete the empty branch or add a meaningful statement"
 }
+
+export task empty_else_statement_id -> Text {
+  return "EMPTY_ELSE_STATEMENT"
+}
+
+export task empty_else_statement_rule -> Text {
+  return "empty_else_statement"
+}
+
+export task empty_else_statement_message -> Text {
+  return "has an empty else branch"
+}
+
+export task empty_else_statement_hint -> Text {
+  return "remove this no-op else branch"
+}
