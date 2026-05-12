@@ -534,6 +534,38 @@ eval_simple_int_main_return() {
   '
 }
 
+eval_simple_scalar_main_return() {
+  local target="$1"
+  ast_json "$target" | jq -ec \
+    --arg return_kind "$PARSER_RETURN_STATEMENT_KIND" \
+    --arg binding_kind "$PARSER_BINDING_STATEMENT_KIND" \
+    --arg string_kind "$PARSER_STRING_KIND" \
+    --arg bool_kind "$PARSER_BOOL_KIND" \
+    --arg text_value_kind "$RUNTIME_TEXT_VALUE_KIND" \
+    --arg bool_value_kind "$RUNTIME_BOOL_VALUE_KIND" '
+    ([.tasks[]? | select(.name == "main")][0] // empty) as $task |
+    (reduce ($task.body.statements[]?) as $stmt ({text:{}, bool:{}, result:null};
+      if (($stmt.kind == $binding_kind) and ($stmt.name? // "") != "") then
+        if $stmt.expr.expr_kind == $string_kind then .text[$stmt.name] = $stmt.expr.value
+        elif $stmt.expr.expr_kind == $bool_kind then .bool[$stmt.name] = $stmt.expr.value
+        else . end
+      elif $stmt.kind == $return_kind then
+        ($stmt.expr.source // "") as $source |
+        if (($stmt.expr.name? // "") != "" and (.text | has($stmt.expr.name))) then
+          .result = {kind:$text_value_kind, value:.text[$stmt.expr.name]}
+        elif (($stmt.expr.name? // "") != "" and (.bool | has($stmt.expr.name))) then
+          .result = {kind:$bool_value_kind, value:(if .bool[$stmt.expr.name] then "true" else "false" end)}
+        elif ($source | test("^![[:space:]]*[A-Za-z_][A-Za-z0-9_]*$")) then
+          ($source | capture("^![[:space:]]*(?<name>[A-Za-z_][A-Za-z0-9_]*)$").name) as $name |
+          if (.bool | has($name)) then .result = {kind:$bool_value_kind, value:(if (.bool[$name] | not) then "true" else "false" end)} else . end
+        else . end
+      else . end
+    )) as $state |
+    select($state.result != null) |
+    $state.result
+  '
+}
+
 eval_source_if_int_main_return() {
   local target="$1" file
   file="$(collect_files "$target" | head -n 1)"
@@ -2910,6 +2942,74 @@ lint_json() {
       replacement:(if $m.value == "true" then "false" else "true" end)
     }
   ' >> "$findings"
+  ast_json "$target" | jq -c '
+    .tasks[]? as $task |
+    $task.body.statements[]?.expr? as $expr |
+    ($expr.source // "") as $source |
+    (($source | capture("^(?<left>[A-Za-z_][A-Za-z0-9_]*|\"\"|true|false)[[:space:]]*(?<op>\\+|\\*|&&|\\|\\|)[[:space:]]*(?<right>[A-Za-z_][A-Za-z0-9_]*|\"\"|true|false|0|1)$")? // null)) as $m |
+    select($m != null) |
+    (if ($m.op == "+" and $m.right == "0") then $m.left
+     elif ($m.op == "+" and $m.left == "0") then $m.right
+     elif ($m.op == "*" and $m.right == "1") then $m.left
+     elif ($m.op == "*" and $m.left == "1") then $m.right
+     elif ($m.op == "+" and $m.left == "\"\"") then $m.right
+     elif ($m.op == "+" and $m.right == "\"\"") then $m.left
+     elif ($m.op == "&&" and $m.right == "true") then $m.left
+     elif ($m.op == "&&" and $m.left == "true") then $m.right
+     elif ($m.op == "||" and $m.right == "false") then $m.left
+     elif ($m.op == "||" and $m.left == "false") then $m.right
+     else null end) as $replacement |
+    select($replacement != null) |
+    {
+      id:"IDENTITY_BINARY_EXPRESSION",
+      rule:"identity_binary_expression",
+      severity:"warning",
+      message:"binary expression has an identity operand",
+      node:$expr.id,
+      module:$task.module,
+      hint:"replace the expression with the non-identity side",
+      replacement:$replacement
+    }
+  ' >> "$findings"
+  ast_json "$target" | jq -c '
+    .tasks[]? as $task |
+    $task.body.statements[]?.expr? as $expr |
+    ($expr.source // "") as $source |
+    (($source | capture("^(?<name>[A-Za-z_][A-Za-z0-9_]*)[[:space:]]*(?<op>==|!=)[[:space:]]*(?<value>true|false)$")? // null)) as $m |
+    select($m != null) |
+    (if (($m.op == "==" and $m.value == "true") or ($m.op == "!=" and $m.value == "false")) then $m.name else ("!" + $m.name) end) as $replacement |
+    {
+      id:"REDUNDANT_BOOLEAN_COMPARISON",
+      rule:"redundant_boolean_comparison",
+      severity:"warning",
+      message:"Boolean comparison can be simplified",
+      node:$expr.id,
+      module:$task.module,
+      hint:"replace the comparison with the Boolean expression",
+      replacement:$replacement
+    }
+  ' >> "$findings"
+  ast_json "$target" | jq -c '
+    .tasks[]? as $task |
+    $task.body.statements[]?.expr? as $expr |
+    ($expr.source // "") as $source |
+    (($source | capture("^(?<left>[A-Za-z_][A-Za-z0-9_]*|true|false)[[:space:]]*(?<op>&&|\\|\\|)[[:space:]]*(?<right>[A-Za-z_][A-Za-z0-9_]*|true|false)$")? // null)) as $m |
+    select($m != null) |
+    (if ($m.op == "&&" and ($m.left == "false" or $m.right == "false")) then "false"
+     elif ($m.op == "||" and ($m.left == "true" or $m.right == "true")) then "true"
+     else null end) as $replacement |
+    select($replacement != null) |
+    {
+      id:"ABSORBING_BOOLEAN_EXPRESSION",
+      rule:"absorbing_boolean_expression",
+      severity:"warning",
+      message:"Boolean expression is absorbed by a literal operand",
+      node:$expr.id,
+      module:$task.module,
+      hint:"replace the expression with the absorbing Boolean literal",
+      replacement:$replacement
+    }
+  ' >> "$findings"
   while IFS= read -r file; do
     local module
     module="$(awk '/^[[:space:]]*module[[:space:]]+/ {print $2; found=1; exit} END {if(!found) print "main"}' "$file")"
@@ -3144,6 +3244,9 @@ run_json() {
   elif literal_runtime="$(eval_pure_literal_main_return "$target" 2>/dev/null)" && [[ -n "$literal_runtime" ]]; then
     value_kind="$(printf '%s\n' "$literal_runtime" | jq -r '.kind')"
     value="$(printf '%s\n' "$literal_runtime" | jq -r '.value')"
+  elif simple_runtime="$(eval_simple_scalar_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
+    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
+    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
   elif simple_runtime="$(eval_source_if_int_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
     value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
     value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
@@ -6244,6 +6347,12 @@ command_plan() {
         {kind:"simplify_constant_len_expression", surface:$finding.node, operation:{op:"ReplaceExpression", target:$finding.node, payload:{source:($finding.replacement // "0")}}, editable_json_pointers:["/payload/source"]}
       elif $finding.rule == "constant_not_expression" then
         {kind:"simplify_constant_not_expression", surface:$finding.node, operation:{op:"ReplaceExpression", target:$finding.node, payload:{source:($finding.replacement // "false")}}, editable_json_pointers:["/payload/source"]}
+      elif $finding.rule == "identity_binary_expression" then
+        {kind:"simplify_identity_binary_expression", surface:$finding.node, operation:{op:"ReplaceExpression", target:$finding.node, payload:{source:($finding.replacement // "value")}}, editable_json_pointers:["/payload/source"]}
+      elif $finding.rule == "redundant_boolean_comparison" then
+        {kind:"simplify_redundant_boolean_comparison", surface:$finding.node, operation:{op:"ReplaceExpression", target:$finding.node, payload:{source:($finding.replacement // "flag")}}, editable_json_pointers:["/payload/source"]}
+      elif $finding.rule == "absorbing_boolean_expression" then
+        {kind:"simplify_absorbing_boolean_expression", surface:$finding.node, operation:{op:"ReplaceExpression", target:$finding.node, payload:{source:($finding.replacement // "false")}}, editable_json_pointers:["/payload/source"]}
       else empty end;
     def lint_graft_templates:
       [$lint.findings[]? | lint_template(.)];
@@ -7289,7 +7398,7 @@ command_graft() {
     printf '%s\n' "$report"
     return
   fi
-  if [[ "$kind" == "simplify_constant_if_expression" || "$kind" == "simplify_constant_if_statement" || "$kind" == "delete_constant_false_if_statement" || "$kind" == "delete_constant_false_while_statement" || "$kind" == "simplify_constant_comparison_expression" || "$kind" == "simplify_constant_boolean_comparison_expression" || "$kind" == "simplify_constant_arithmetic_expression" || "$kind" == "simplify_absorbing_arithmetic_expression" || "$kind" == "simplify_constant_text_concatenation_expression" || "$kind" == "simplify_constant_list_index_expression" || "$kind" == "simplify_constant_map_index_expression" || "$kind" == "simplify_constant_record_field_access_expression" || "$kind" == "simplify_constant_len_expression" || "$kind" == "simplify_constant_not_expression" ]]; then
+  if [[ "$kind" == "simplify_constant_if_expression" || "$kind" == "simplify_constant_if_statement" || "$kind" == "delete_constant_false_if_statement" || "$kind" == "delete_constant_false_while_statement" || "$kind" == "simplify_constant_comparison_expression" || "$kind" == "simplify_constant_boolean_comparison_expression" || "$kind" == "simplify_constant_arithmetic_expression" || "$kind" == "simplify_absorbing_arithmetic_expression" || "$kind" == "simplify_constant_text_concatenation_expression" || "$kind" == "simplify_constant_list_index_expression" || "$kind" == "simplify_constant_map_index_expression" || "$kind" == "simplify_constant_record_field_access_expression" || "$kind" == "simplify_constant_len_expression" || "$kind" == "simplify_constant_not_expression" || "$kind" == "simplify_identity_binary_expression" || "$kind" == "simplify_redundant_boolean_comparison" || "$kind" == "simplify_absorbing_boolean_expression" ]]; then
     local lint finding rule operation target_surface replacement report
     lint="$(lint_json "$source")"
     case "$kind" in
@@ -7442,6 +7551,39 @@ command_graft() {
         finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "constant_not_expression" and (.node == $surface or $surface == ""))' | head -n 1)"
         [[ -n "$finding" ]] || finding='{}'
         target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.constant_not_fix.main:stmt:0:expr"')}"
+        replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "false"')"
+        if [[ "$write" == true ]]; then
+          sley_rewrite_statement_surface "$source" "$target_surface" "$replacement"
+        fi
+        ;;
+      simplify_identity_binary_expression)
+        rule="identity_binary_expression"
+        operation="ReplaceExpression"
+        finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "identity_binary_expression" and (.node == $surface or $surface == ""))' | head -n 1)"
+        [[ -n "$finding" ]] || finding='{}'
+        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.identity_fix.main:stmt:1:expr"')}"
+        replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "base"')"
+        if [[ "$write" == true ]]; then
+          sley_rewrite_statement_surface "$source" "$target_surface" "$replacement"
+        fi
+        ;;
+      simplify_redundant_boolean_comparison)
+        rule="redundant_boolean_comparison"
+        operation="ReplaceExpression"
+        finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "redundant_boolean_comparison" and (.node == $surface or $surface == ""))' | head -n 1)"
+        [[ -n "$finding" ]] || finding='{}'
+        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.boolean_fix.main:stmt:1:expr"')}"
+        replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "ready"')"
+        if [[ "$write" == true ]]; then
+          sley_rewrite_statement_surface "$source" "$target_surface" "$replacement"
+        fi
+        ;;
+      simplify_absorbing_boolean_expression)
+        rule="absorbing_boolean_expression"
+        operation="ReplaceExpression"
+        finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "absorbing_boolean_expression" and (.node == $surface or $surface == ""))' | head -n 1)"
+        [[ -n "$finding" ]] || finding='{}'
+        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.absorbing_boolean_fix.main:stmt:0:expr"')}"
         replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "false"')"
         if [[ "$write" == true ]]; then
           sley_rewrite_statement_surface "$source" "$target_surface" "$replacement"
