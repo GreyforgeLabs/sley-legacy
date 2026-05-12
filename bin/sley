@@ -2046,6 +2046,51 @@ lint_json() {
   ' >> "$findings"
   ast_json "$target" | jq -c '
     . as $root |
+    ([.. | objects | .source? // empty | select(type == "string")] | unique) as $sources |
+    def effect_used($effect):
+      if $effect == "DatabaseRead" then any($sources[]; test("db\\.(query|query_one|try_query|try_query_one)\\("))
+      elif $effect == "DatabaseWrite" then any($sources[]; test("db\\.(try_insert)\\("))
+      elif $effect == "Deploy" then any($sources[]; test("deploy\\.(try_stage)\\("))
+      elif $effect == "FileRead" then any($sources[]; test("fs\\.(read_text|try_read_text)\\("))
+      elif $effect == "FileWrite" then any($sources[]; test("fs\\.(write_text|try_write_text)\\("))
+      elif $effect == "ModelCall" then any($sources[]; test("model\\.(try_complete)\\("))
+      elif $effect == "Network" then any($sources[]; test("http\\.(try_get_text)\\("))
+      elif $effect == "SecretRead" then any($sources[]; test("secrets\\.(try_get)\\("))
+      elif $effect == "Shell" then any($sources[]; test("shell\\.(try_run)\\("))
+      elif $effect == "Spend" then any($sources[]; test("spend\\.(try_authorize)\\("))
+      else true end;
+    $root.tasks[]? as $task |
+    $task.effects | to_entries[] |
+    select(effect_used(.value) | not) |
+    {
+      id:"UNUSED_DECLARED_EFFECT",
+      rule:"unused_declared_effect",
+      severity:"warning",
+      message:("declared effect `" + .value + "` is not required by the task body"),
+      node:("effect-use:" + $task.id + ":" + (.key|tostring) + ":" + .value),
+      module:$task.module,
+      hint:"remove the effect from the task signature"
+    }
+  ' >> "$findings"
+  ast_json "$target" | jq -c '
+    . as $root |
+    def source_uses($task; $name):
+      any([$task.body.statements[]? | .. | objects | .source? // empty | select(type == "string")][]; test("(^|[^A-Za-z0-9_])" + $name + "([^A-Za-z0-9_]|$)"));
+    $root.tasks[]? as $task |
+    $task.takes | to_entries[] |
+    select(source_uses($task; .value.name) | not) |
+    {
+      id:"UNUSED_TAKE",
+      rule:"unused_take",
+      severity:"warning",
+      message:("take `" + .value.name + "` is not used"),
+      node:("take:" + $task.id + ":" + (.key|tostring) + ":" + .value.name),
+      module:$task.module,
+      hint:"remove the take or use it in the task body"
+    }
+  ' >> "$findings"
+  ast_json "$target" | jq -c '
+    . as $root |
     def task_key($t): ($t.module + "." + $t.name);
     def call_callee($expr):
       ($expr.source | sub("^call[[:space:]]+";"") | sub("\\(.*$";""));
@@ -5204,6 +5249,12 @@ command_plan() {
         {kind:"delete_unused_private_task", surface:$finding.node, operation:{op:"DeleteNode", target:$finding.node}}
       elif $finding.rule == "unreachable_private_task" then
         {kind:"delete_unreachable_private_task", surface:$finding.node, operation:{op:"DeleteNode", target:$finding.node}}
+      elif $finding.rule == "unused_declared_effect" then
+        ($finding.node | split(":")) as $parts |
+        {kind:"remove_unused_declared_effect", surface:$finding.node, operation:{op:"RemoveTaskEffect", target:($parts[1] + ":" + $parts[2]), payload:{name:$parts[4]}}}
+      elif $finding.rule == "unused_take" then
+        ($finding.node | split(":")) as $parts |
+        {kind:"remove_unused_take", surface:$finding.node, operation:{op:"RemoveTake", target:($parts[1] + ":" + $parts[2]), payload:{name:$parts[4]}}}
       else empty end;
     def lint_graft_templates:
       [$lint.findings[]? | lint_template(.)];
@@ -5653,6 +5704,34 @@ command_graft() {
       ($fields[3] // "diagnostics"):[],
       ($fields[4] // "provenance"):[{graft_id:"stage1-dry-run",actor:$actor,timestamp:"2026-05-08T00:00:00Z",operation:"ReplaceCallArg",targets:[$target,"calls:1"],result:"accepted"}],
       preview_source:$call_source
+    }'
+    return
+  fi
+  if [[ "$kind" == "remove_unused_declared_effect" || "$kind" == "remove_unused_take" ]]; then
+    local target extra operation
+    if [[ "$kind" == "remove_unused_declared_effect" ]]; then
+      local rest effect_name
+      rest="${surface#effect-use:}"
+      effect_name="${rest##*:}"
+      rest="${rest%:*}"
+      target="${rest%:*}"
+      extra="effect:$effect_name"
+      operation="RemoveTaskEffect"
+    else
+      local rest take_name
+      rest="${surface#take:}"
+      take_name="${rest##*:}"
+      rest="${rest%:*}"
+      target="${rest%:*}"
+      extra="take:$take_name"
+      operation="RemoveTake"
+    fi
+    jq -n --arg schema "$SCHEMA_GRAFT_OUTCOME" --arg source "$source" --arg actor "$actor" --arg operation "$operation" --arg target "$target" --arg extra "$extra" --argjson fields "$GRAFT_OUTCOME_REPORT_FIELDS_JSON" '{
+      ($fields[0] // "schema"):$schema,
+      ($fields[1] // "status"):"accepted",
+      ($fields[2] // "source"):$source,
+      ($fields[3] // "diagnostics"):[],
+      ($fields[4] // "provenance"):[{graft_id:"stage1-dry-run",actor:$actor,timestamp:"2026-05-08T00:00:00Z",operation:$operation,targets:[$target,$extra],result:"accepted"}]
     }'
     return
   fi
