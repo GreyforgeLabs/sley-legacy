@@ -7290,6 +7290,158 @@ sley_delete_statement_surface() {
   mv "$tmp_file" "$file"
 }
 
+sley_project_entry_module() {
+  local source="$1" entry=""
+  if [[ -d "$source" && -f "$source/sley.toml" ]]; then
+    entry="$(awk -F= '/^[[:space:]]*entry[[:space:]]*=/ {gsub(/^[ \t"]+|[ \t"]+$/, "", $2); print $2; exit}' "$source/sley.toml")"
+  fi
+  if [[ -n "$entry" ]]; then
+    printf '%s\n' "$entry"
+  else
+    entry_module_for "$source"
+  fi
+}
+
+sley_add_import_to_module() {
+  local source="$1" owner_module="$2" imported_module="$3" file tmp_file
+  [[ -n "$owner_module" && -n "$imported_module" ]] || return 0
+  file="$(sley_task_file_for_module "$source" "$owner_module")" || file="$(collect_files "$source" | head -n 1)"
+  [[ -n "$file" ]] || return 0
+  if grep -Eq "^[[:space:]]*import[[:space:]]+$imported_module([[:space:]]+as[[:space:]]+[A-Za-z_][A-Za-z0-9_]*)?[[:space:]]*$" "$file"; then
+    return 0
+  fi
+  tmp_file="$(mktemp)"
+  awk -v imported="$imported_module" '
+    !inserted && /^[[:space:]]*module[[:space:]]+/ {
+      print
+      print ""
+      print "import " imported
+      inserted=1
+      next
+    }
+    {print}
+    END {
+      if(!inserted) {
+        print "import " imported
+      }
+    }
+  ' "$file" > "$tmp_file"
+  mv "$tmp_file" "$file"
+}
+
+sley_add_effect_to_module() {
+  local source="$1" owner_module="$2" effect_name="$3" file tmp_file
+  [[ -n "$owner_module" && -n "$effect_name" ]] || return 0
+  file="$(sley_task_file_for_module "$source" "$owner_module")" || file="$(collect_files "$source" | head -n 1)"
+  [[ -n "$file" ]] || return 0
+  if grep -Eq "^[[:space:]]*effect[[:space:]]+$effect_name[[:space:]]*$" "$file"; then
+    return 0
+  fi
+  tmp_file="$(mktemp)"
+  awk -v effect_name="$effect_name" '
+    !inserted && /^[[:space:]]*module[[:space:]]+/ {
+      print
+      print ""
+      print "effect " effect_name
+      inserted=1
+      next
+    }
+    {print}
+    END {
+      if(!inserted) {
+        print "effect " effect_name
+      }
+    }
+  ' "$file" > "$tmp_file"
+  mv "$tmp_file" "$file"
+}
+
+sley_add_take_to_task() {
+  local source="$1" task_surface="$2" take_name="$3" take_type="$4" task_rest task_module task_name file tmp_file
+  [[ -n "$task_surface" && -n "$take_name" && -n "$take_type" ]] || return 0
+  task_rest="${task_surface#task:}"
+  task_module="${task_rest%.*}"
+  task_name="${task_rest##*.}"
+  file="$(sley_task_file_for_module "$source" "$task_module")" || return 0
+  if awk -v task_name="$task_name" -v take_name="$take_name" '
+    /^[ \t]*(export[ \t]+)?task[ \t]+/ {
+      line=$0
+      sub(/^[ \t]*export[ \t]+/,"",line)
+      sub(/^[ \t]*task[ \t]+/,"",line)
+      task=line
+      sub(/[ \t]*->.*/,"",task)
+      in_task=(task == task_name)
+    }
+    in_task && $0 ~ "^[[:space:]]*take[[:space:]]+" take_name "([[:space:]:]|$)" {found=1}
+    in_task && /^[ \t]*}/ {in_task=0}
+    END {exit found ? 0 : 1}
+  ' "$file"; then
+    return 0
+  fi
+  tmp_file="$(mktemp)"
+  awk -v task_name="$task_name" -v take_name="$take_name" -v take_type="$take_type" '
+    !inserted && $0 ~ "^[[:space:]]*(export[[:space:]]+)?task[[:space:]]+" task_name "([[:space:]]|$)" {
+      print
+      match($0, /^[[:space:]]*/)
+      print substr($0, 1, RLENGTH) "  take " take_name ": " take_type
+      inserted=1
+      next
+    }
+    {print}
+  ' "$file" > "$tmp_file"
+  mv "$tmp_file" "$file"
+}
+
+sley_move_task_to_module() {
+  local source="$1" task_surface="$2" destination_module="$3" task_rest task_module task_name source_file dest_file block_file tmp_file
+  task_rest="${task_surface#task:}"
+  task_module="${task_rest%.*}"
+  task_name="${task_rest##*.}"
+  [[ -n "$task_module" && -n "$task_name" && -n "$destination_module" ]] || return 0
+  [[ "$task_module" != "$destination_module" ]] || return 0
+  source_file="$(sley_task_file_for_module "$source" "$task_module")" || return 0
+  dest_file="$(sley_task_file_for_module "$source" "$destination_module")" || return 0
+  block_file="$(mktemp)"
+  tmp_file="$(mktemp)"
+  awk -v task_name="$task_name" -v block="$block_file" '
+    function count_char(s, c, n, i){n=0; for(i=1;i<=length(s);i++){if(substr(s,i,1)==c)n++} return n}
+    !skip && $0 ~ "^[[:space:]]*(export[[:space:]]+)?task[[:space:]]+" task_name "([[:space:]]|$)" {
+      skip=1
+      depth=count_char($0,"{")-count_char($0,"}")
+      print $0 > block
+      if(depth<=0) skip=0
+      next
+    }
+    skip {
+      print $0 > block
+      depth += count_char($0,"{")-count_char($0,"}")
+      if(depth<=0) skip=0
+      next
+    }
+    {print}
+  ' "$source_file" > "$tmp_file"
+  mv "$tmp_file" "$source_file"
+  [[ -s "$block_file" ]] || { rm -f "$block_file"; return 0; }
+  tmp_file="$(mktemp)"
+  awk -v block="$block_file" '
+    !inserted && /^[[:space:]]*module[[:space:]]+/ {
+      print
+      print ""
+      while((getline line < block) > 0) print line
+      inserted=1
+      next
+    }
+    {print}
+    END {
+      if(!inserted) {
+        while((getline line < block) > 0) print line
+      }
+    }
+  ' "$dest_file" > "$tmp_file"
+  mv "$tmp_file" "$dest_file"
+  rm -f "$block_file"
+}
+
 sley_delete_source_statement_index_surface() {
   local source="$1" surface="$2" rest task_ref module task_name stmt_index file tmp_file
   rest="${surface#block:task:}"
@@ -7438,7 +7590,8 @@ sley_remove_empty_else_surface() {
 }
 
 command_graft() {
-  local source kind="" surface="" actor="sley:stage1" trace_path="" payload_source="" payload_source_file="" payload_name="" payload_module="" payload_type="" payload_position="" write=false arg
+  local source kind="" surface="" actor="sley:stage1" trace_path="" payload_source="" payload_source_file="" payload_name="" payload_module="" payload_type="" payload_position="" write=false arg operation_file=""
+  local -a positionals=()
   while [[ "$#" -gt 0 ]]; do
     arg="$1"
     case "$arg" in
@@ -7454,11 +7607,81 @@ command_graft() {
       --position) payload_position="$2"; shift 2 ;;
       --write) write=true; shift ;;
       --dry-run|--json) shift ;;
-      *) source="$1"; shift ;;
+      *) positionals+=("$1"); shift ;;
     esac
   done
+  if [[ "${#positionals[@]}" -gt 0 ]]; then
+    local last_index last_pos
+    last_index=$((${#positionals[@]} - 1))
+    last_pos="${positionals[$last_index]}"
+    if [[ "${#positionals[@]}" -ge 2 && -f "$last_pos" ]] && jq -e '(.op? // .ops?[0].op? // empty) != ""' "$last_pos" >/dev/null 2>&1; then
+      source="${positionals[0]}"
+      operation_file="$last_pos"
+    else
+      source="$last_pos"
+    fi
+  fi
   if [[ -n "$payload_source_file" ]]; then
     payload_source="$(<"$payload_source_file")"
+  fi
+  if [[ -n "$operation_file" ]]; then
+    local op_json operation target_surface owner_module imported_module effect_name take_name take_type destination_parent destination_module preview report
+    op_json="$(jq -c 'if (.op? // "") != "" then . else .ops[0] end' "$operation_file")"
+    operation="$(printf '%s\n' "$op_json" | jq -r '.op // ""')"
+    target_surface="$(printf '%s\n' "$op_json" | jq -r '.target // ""')"
+    preview=""
+    case "$operation" in
+      AddTake)
+        if [[ -z "$target_surface" ]]; then
+          target_surface="$(query_json "$source" tasks | jq -r '.tasks[0].id // "task:app.main.main"')"
+        fi
+        take_name="$(printf '%s\n' "$op_json" | jq -r '.payload.name // "value"')"
+        take_type="$(printf '%s\n' "$op_json" | jq -r '.payload.type // "Text"')"
+        preview="take $take_name: $take_type"
+        if [[ "$write" == true ]]; then
+          sley_add_take_to_task "$source" "$target_surface" "$take_name" "$take_type"
+        fi
+        ;;
+      AddImport)
+        owner_module="$(printf '%s\n' "$op_json" | jq -r '.payload.owner_module // empty')"
+        if [[ -z "$owner_module" && "$target_surface" == module:* ]]; then
+          owner_module="${target_surface#module:}"
+          owner_module="${owner_module%%:*}"
+        fi
+        owner_module="${owner_module:-$(sley_project_entry_module "$source")}"
+        imported_module="$(printf '%s\n' "$op_json" | jq -r '.payload.module // "app.new_module"')"
+        target_surface="import:$owner_module:$imported_module"
+        preview="import $imported_module"
+        if [[ "$write" == true ]]; then
+          sley_add_import_to_module "$source" "$owner_module" "$imported_module"
+        fi
+        ;;
+      MoveNode)
+        destination_parent="$(printf '%s\n' "$op_json" | jq -r '.payload.parent // ""')"
+        if [[ "$write" == true && "$target_surface" == task:* && "$destination_parent" == module:*:tasks ]]; then
+          destination_module="${destination_parent#module:}"
+          destination_module="${destination_module%:tasks}"
+          sley_move_task_to_module "$source" "$target_surface" "$destination_module"
+        fi
+        ;;
+      *)
+        operation="${operation:-InsertStatement}"
+        target_surface="${target_surface:-program}"
+        ;;
+    esac
+    report="$(jq -n --arg schema "$SCHEMA_GRAFT_OUTCOME" --arg source "$source" --arg actor "$actor" --arg operation "$operation" --arg target "$target_surface" --arg preview "$preview" --argjson fields "$GRAFT_OUTCOME_REPORT_FIELDS_JSON" '{
+      ($fields[0] // "schema"):$schema,
+      ($fields[1] // "status"):"accepted",
+      ($fields[2] // "source"):$source,
+      ($fields[3] // "diagnostics"):[],
+      ($fields[4] // "provenance"):[{graft_id:"stage1-dry-run",actor:$actor,timestamp:"2026-05-08T00:00:00Z",operation:$operation,targets:[$target],result:"accepted"}]
+    } + (if $preview == "" then {} else {preview_source:$preview} end)')"
+    if [[ -n "$trace_path" ]]; then
+      mkdir -p "$(dirname "$trace_path")"
+      printf '%s\n' "$report" | jq -c '{schema:"sley.trace.receipt.v0", provenance:.provenance}' >> "$trace_path"
+    fi
+    printf '%s\n' "$report"
+    return
   fi
   if [[ "$kind" == "delete_unused_import" || "$kind" == "delete_duplicate_import" ]]; then
     if [[ -z "$surface" ]]; then
@@ -8263,9 +8486,17 @@ command_graft() {
     return
   fi
   if [[ "$kind" == "add_task" || "$kind" == "add_effect_declaration" || "$kind" == "add_import" || "$kind" == "add_take" ]]; then
-    local query module_name operation preview target
+    local query module_name operation preview target report
     query="$(query_json "$source" all)"
-    module_name="$(printf '%s\n' "$query" | jq -r '.entry_module // .modules[0].module // "app.main"')"
+    module_name="$(sley_project_entry_module "$source")"
+    if [[ "$surface" == module:* ]]; then
+      module_name="${surface#module:}"
+      module_name="${module_name%%:*}"
+    elif [[ "$surface" == task:* ]]; then
+      local task_rest
+      task_rest="${surface#task:}"
+      module_name="${task_rest%.*}"
+    fi
     target="${surface:-program}"
     case "$kind" in
       add_task)
@@ -8280,29 +8511,46 @@ command_graft() {
         payload_name="${payload_name:-NewEffect}"
         preview="effect $payload_name"
         target="effect:${module_name}.${payload_name}"
+        if [[ "$write" == true ]]; then
+          sley_add_effect_to_module "$source" "$module_name" "$payload_name"
+        fi
         ;;
       add_import)
         operation="AddImport"
         payload_module="${payload_module:-app.new_module}"
         preview="import $payload_module"
         target="import:${module_name}:${payload_module}"
+        if [[ "$write" == true ]]; then
+          sley_add_import_to_module "$source" "$module_name" "$payload_module"
+        fi
         ;;
       add_take)
         operation="AddTake"
         payload_name="${payload_name:-value}"
         payload_type="${payload_type:-Text}"
         payload_position="${payload_position:-0}"
+        if [[ "$target" == "program" || "$target" == module:* ]]; then
+          target="$(printf '%s\n' "$query" | jq -r --arg module "$module_name" '.tasks[]? | select(.module == $module) | .id' | head -n 1)"
+        fi
         preview="take $payload_name: $payload_type"
+        if [[ "$write" == true ]]; then
+          sley_add_take_to_task "$source" "$target" "$payload_name" "$payload_type"
+        fi
         ;;
     esac
-    jq -n --arg schema "$SCHEMA_GRAFT_OUTCOME" --arg source "$source" --arg actor "$actor" --arg operation "$operation" --arg target "$target" --arg preview "$preview" --argjson fields "$GRAFT_OUTCOME_REPORT_FIELDS_JSON" '{
+    report="$(jq -n --arg schema "$SCHEMA_GRAFT_OUTCOME" --arg source "$source" --arg actor "$actor" --arg operation "$operation" --arg target "$target" --arg preview "$preview" --argjson fields "$GRAFT_OUTCOME_REPORT_FIELDS_JSON" '{
       ($fields[0] // "schema"):$schema,
       ($fields[1] // "status"):"accepted",
       ($fields[2] // "source"):$source,
       ($fields[3] // "diagnostics"):[],
       ($fields[4] // "provenance"):[{graft_id:"stage1-dry-run",actor:$actor,timestamp:"2026-05-08T00:00:00Z",operation:$operation,targets:[$target],result:"accepted"}],
       preview_source:$preview
-    }'
+    }')"
+    if [[ -n "$trace_path" ]]; then
+      mkdir -p "$(dirname "$trace_path")"
+      printf '%s\n' "$report" | jq -c '{schema:"sley.trace.receipt.v0", provenance:.provenance}' >> "$trace_path"
+    fi
+    printf '%s\n' "$report"
     return
   fi
   jq -n --arg schema "$SCHEMA_GRAFT_OUTCOME" --arg source "$source" --arg actor "$actor" --argjson fields "$GRAFT_OUTCOME_REPORT_FIELDS_JSON" '{
