@@ -4954,7 +4954,7 @@ command_graph() {
 }
 
 command_plan() {
-  local target query lint emit_graft="" template_surface="" arg
+  local target query lint ast emit_graft="" template_surface="" arg
   while [[ "$#" -gt 0 ]]; do
     arg="$1"
     case "$arg" in
@@ -5006,6 +5006,7 @@ command_plan() {
     return
   fi
   query="$(query_json "$target" all)"
+  ast="$(ast_json "$target")"
   if [[ "$emit_graft" == "replace_call_arg" ]]; then
     jq -n --argjson query "$query" '
       def call_args($source):
@@ -5021,9 +5022,15 @@ command_plan() {
       {op:"InsertStatement", target:("block:" + $task.id), payload:{source:"forge { }", position:0}}
     '
     return
+  elif [[ "$emit_graft" == "add_task" ]]; then
+    jq -n --argjson query "$query" '
+      ($query.entry_module // $query.modules[0].module // "app.main") as $module |
+      {op:"AddTask", payload:{source:("module " + $module + "\n\ntask new_task -> Int {\n  return 0\n}")}}
+    '
+    return
   fi
   lint="$(lint_json "$target")"
-  jq -n --arg target "$target" --argjson query "$query" --argjson lint "$lint" '
+  jq -n --arg target "$target" --arg template_surface "$template_surface" --argjson query "$query" --argjson lint "$lint" --argjson ast "$ast" '
     def starter_return($type_name):
       ($type_name // "Unit") as $name |
       ($name | sub("<.*$"; "")) as $base |
@@ -5035,6 +5042,90 @@ command_plan() {
     def call_args($source):
       (($source | capture("^call[[:space:]]+[^()]+\\((?<args>.*)\\)\\??$")? // {args:""}).args) as $args |
       if (($args | gsub("[[:space:]]"; "")) == "") then [] else ($args | split(",") | map(gsub("^[[:space:]]+|[[:space:]]+$"; ""))) end;
+    def primary_module:
+      ($query.entry_module // $query.modules[0].module // "app.main");
+    def add_task_source($module):
+      "module " + $module + "\n\ntask new_task -> Int {\n  return 0\n}";
+    def add_type_source($module):
+      "module " + $module + "\n\ntype NewRecord = {\n  slot value: Text\n}";
+    def decl_module($id; $prefix):
+      ($id | sub("^" + $prefix + ":"; "") | split(".")[0:-1] | join("."));
+    def move_decl_template($kind; $surface; $target; $parent):
+      {kind:$kind, surface:$surface, operation:{op:"MoveNode", target:$target, payload:{parent:$parent, position:0}}, editable_json_pointers:["/payload/position"]};
+    def delete_decl_template($kind; $surface; $target):
+      {kind:$kind, surface:$surface, operation:{op:"DeleteNode", target:$target}};
+    def program_graft_templates:
+      (primary_module) as $module |
+      [
+        {kind:"add_task", surface:"program", operation:{op:"AddTask", payload:{source:add_task_source($module)}}, editable_json_pointers:["/payload/source"]},
+        {kind:"add_type_declaration", surface:"program", operation:{op:"AddTypeDeclaration", payload:{source:add_type_source($module)}}, editable_json_pointers:["/payload/source"]},
+        {kind:"add_effect_declaration", surface:"program", operation:{op:"AddEffectDeclaration", payload:{module:$module, name:"NewEffect"}}, editable_json_pointers:["/payload/name","/payload/module"]},
+        {kind:"add_import", surface:"program", operation:{op:"AddImport", payload:{owner_module:$module, module:"app.new_module"}}, editable_json_pointers:["/payload/module"]}
+      ];
+    def module_graft_templates($module):
+      ($query.types | map(select(.module == $module))) as $types |
+      ($query.effects | map(select(.module == $module))) as $effects |
+      ($query.tasks | map(select(.module == $module))) as $tasks |
+      ("module:" + $module) as $surface |
+      ([$types[]? | move_decl_template("move_type"; $surface; .id; ($surface + ":types"))])
+      + ([$effects[]? | move_decl_template("move_effect"; $surface; .id; ($surface + ":effects"))])
+      + ([$tasks[]? | move_decl_template("move_task"; $surface; .id; ($surface + ":tasks"))])
+      + ([$types[]? | delete_decl_template("delete_type"; $surface; .id)])
+      + ([$effects[]? | delete_decl_template("delete_effect"; $surface; .id)])
+      + ([$tasks[]? | select((.exported | not) and .name != "main") | delete_decl_template("delete_task"; $surface; .id)])
+      + [
+        {kind:"add_import", surface:$surface, operation:{op:"AddImport", payload:{owner_module:$module, module:"app.new_module"}}, editable_json_pointers:["/payload/module"]},
+        {kind:"add_type_declaration", surface:$surface, operation:{op:"AddTypeDeclaration", payload:{source:add_type_source($module)}}, editable_json_pointers:["/payload/source"]},
+        {kind:"add_effect_declaration", surface:$surface, operation:{op:"AddEffectDeclaration", payload:{module:$module, name:"NewEffect"}}, editable_json_pointers:["/payload/name","/payload/module"]},
+        {kind:"add_task", surface:$surface, operation:{op:"AddTask", payload:{source:add_task_source($module)}}, editable_json_pointers:["/payload/source"]}
+      ];
+    def module_task_parent_templates($surface):
+      ($surface | sub("^module:"; "") | sub(":tasks$"; "")) as $module |
+      ($query.tasks | map(select(.module == $module))) as $tasks |
+      ([$tasks[]? | move_decl_template("move_task"; $surface; .id; $surface)])
+      + ([$tasks[]? | select((.exported | not) and .name != "main") | delete_decl_template("delete_task"; $surface; .id)])
+      + [{kind:"add_task", surface:$surface, operation:{op:"AddTask", payload:{source:add_task_source($module)}}, editable_json_pointers:["/payload/source"]}];
+    def declaration_surface_templates($surface):
+      if ($surface | startswith("type:")) then
+        (decl_module($surface; "type")) as $module |
+        [move_decl_template("move_type"; $surface; $surface; ("module:" + $module + ":types"))]
+      elif ($surface | startswith("effect:")) then
+        (decl_module($surface; "effect")) as $module |
+        [move_decl_template("move_effect"; $surface; $surface; ("module:" + $module + ":effects"))]
+      elif ($surface | startswith("import:")) then
+        ($surface | sub("^import:"; "") | split(":")[0]) as $module |
+        [move_decl_template("move_import"; $surface; $surface; ("module:" + $module + ":imports"))]
+      else [] end;
+    def task_ast($id):
+      ([$ast.tasks[]? | select(.id == $id)][0]) // {body:{statements:[]}};
+    def task_graft_templates($surface):
+      ($query.tasks[]? | select(.id == $surface)) as $task |
+      (task_ast($surface)) as $task_ast |
+      ($task_ast.body.statements // []) as $stmts |
+      ($stmts[0].id // ("block:" + $surface + ":stmt:0")) as $first_stmt |
+      (if (($stmts[0].kind // "") == "If") then ("block:" + $surface + ":stmt:1") else ($first_stmt) end) as $move_stmt |
+      [
+        {kind:"replace_task_body", surface:$surface, operation:{op:"ReplaceTaskBody", target:$surface, payload:{statements:[starter_return($task.return_type)]}}, editable_json_pointers:["/payload/statements"]},
+        {kind:"rename_declaration", surface:$surface, operation:{op:"RenameDeclaration", target:$surface, payload:{name:($task.name + "_renamed")}}, editable_json_pointers:["/payload/name"]},
+        {kind:"add_take", surface:$surface, operation:{op:"AddTake", target:$surface, payload:{name:"value", type:"Text", position:($task.takes | length)}}, editable_json_pointers:["/payload/name","/payload/type","/payload/position"]},
+        {kind:"insert_statement", surface:("block:" + $surface), operation:{op:"InsertStatement", target:("block:" + $surface), payload:{source:"forge { }", position:($stmts | length)}}, editable_json_pointers:["/payload/source","/payload/position"]}
+      ]
+      + (if (($task.takes | length) > 0) then
+          [$task.takes | to_entries[] | {kind:"move_take", surface:("take:" + $surface + ":" + (.key|tostring) + ":" + .value.name), operation:{op:"MoveNode", target:("take:" + $surface + ":" + (.key|tostring) + ":" + .value.name), payload:{position:.key}}, editable_json_pointers:["/payload/position"]}]
+        else
+          [{kind:"move_task", surface:$surface, operation:{op:"MoveNode", target:$surface, payload:{parent:("module:" + $task.module + ":tasks"), position:0}}, editable_json_pointers:["/payload/position"]}]
+        end)
+      + (if (($task.takes | length) > 0) then
+          [$task.takes | to_entries[] | {kind:"remove_take", surface:("take:" + $surface + ":" + (.key|tostring) + ":" + .value.name), operation:{op:"RemoveTake", target:$surface, payload:{position:.key}}}]
+        else [] end)
+      + [{kind:"replace_expression", surface:($stmts[0].expr.id // ($first_stmt + ":expr")), operation:{op:"ReplaceExpression", target:($stmts[0].expr.id // ($first_stmt + ":expr")), payload:{source:($stmts[0].expr.source // "0")}}, editable_json_pointers:["/payload/source"]}]
+      + (if (($stmts[0].kind // "") == "If") then
+          [{kind:"move_statement_destination", surface:$surface, operation:{op:"MoveNode", target:("block:" + $surface + ":stmt:0:then:stmt:0"), payload:{destination:("block:" + $surface)}}}]
+        else [] end)
+      + [
+        {kind:"move_statement", surface:$surface, operation:{op:"MoveNode", target:$move_stmt, payload:{parent:("block:" + $surface), position:0}}, editable_json_pointers:["/payload/position"]},
+        {kind:"delete_statement", surface:$surface, operation:{op:"DeleteNode", target:$move_stmt}}
+      ];
     def task_surface($task):
       {
         id:$task.id,
@@ -5061,11 +5152,40 @@ command_plan() {
       + (if $call == null then [] else [
         {kind:"replace_call_arg", surface:$task.id, operation:{op:"ReplaceCallArg", target:("task:" + $call.target), payload:{from:$call.callee, scope:("task:" + $call.from), source:(call_args($call.source)[0] // ""), position:0}}, editable_json_pointers:["/payload/source"]}
       ] end);
+    def selected_graft_templates:
+      if $template_surface == "" then project_graft_templates
+      elif $template_surface == "program" then program_graft_templates
+      elif ($template_surface | test("^module:[^:]+:tasks$")) then module_task_parent_templates($template_surface)
+      elif ($template_surface | test("^module:[^:]+$")) then module_graft_templates($template_surface | sub("^module:"; ""))
+      elif ($template_surface | startswith("task:")) then task_graft_templates($template_surface)
+      elif (($template_surface | startswith("type:")) or ($template_surface | startswith("effect:")) or ($template_surface | startswith("import:"))) then declaration_surface_templates($template_surface)
+      else project_graft_templates end;
+    def task_transaction_templates:
+      if ($template_surface | startswith("task:")) then
+        ([$query.tasks[]? | select(.id == $template_surface)][0]) as $task |
+        ([$query.calls[]? | select(("task:" + .target) == $template_surface)][0] // null) as $call |
+        if $call == null or $task == null then []
+        else
+          ($call.callee | split(".")[0:-1] | join(".")) as $prefix |
+          (if $prefix == "" then ("renamed_" + $task.name) else ($prefix + ".renamed_" + $task.name) end) as $replacement |
+          [
+            {kind:"rename_and_update_call_sites", surface:$template_surface, transaction:{mode:"all_or_nothing", ops:[
+              {op:"RenameDeclaration", target:$template_surface, payload:{name:("renamed_" + $task.name)}},
+              {op:"UpdateCallSites", target:$template_surface, payload:{from:$call.callee, replacement:$replacement}}
+            ]}},
+            {kind:"add_take_and_update_call_args", surface:$template_surface, transaction:{mode:"all_or_nothing", ops:[
+              {op:"AddTake", target:$template_surface, payload:{name:"value", type:"Text", position:($task.takes | length)}},
+              {op:"UpdateCallArgs", target:$template_surface, payload:{source:"\"\""}}
+            ]}}
+          ]
+        end
+      else [] end;
     ($query.tasks | map(task_surface(.))) as $task_surfaces |
     ($lint.findings | length) as $warning_count |
+    (selected_graft_templates) as $graft_templates |
     {
       schema:"sley.edit_plan.report.v0",
-      status:(if $warning_count > 0 then "warnings" else "ready" end),
+      status:(if $warning_count > 0 or ($graft_templates | any(.kind == "move_statement_destination")) or ($template_surface | startswith("effect:")) then "warnings" else "ready" end),
       target:$target,
       entry_module:$query.entry_module,
       summary:{
@@ -5080,8 +5200,8 @@ command_plan() {
       query:($query + {source_schema:($query.schema // "sley.query.report.v0")}),
       lint:($lint + {source_schema:($lint.schema // "sley.lint.report.v0")}),
       task_surfaces:$task_surfaces,
-      graft_templates:project_graft_templates,
-      transaction_templates:[],
+      graft_templates:$graft_templates,
+      transaction_templates:task_transaction_templates,
       next_actions:[
         {kind:"inspect_primary_surface", reason:"graph slice gives bounded AST and call context for the highest-ranked edit surface", command:["sley","graph","--json","--slice",($task_surfaces[0].id // "task:main.main"),$target]},
         {kind:"inspect_calls", reason:"strict call rows show caller/callee edges before rename, arity, or authority edits", command:["sley","query","--json","--kind","calls",$target]},
@@ -5261,7 +5381,7 @@ command_deploy() {
 }
 
 command_graft() {
-  local source kind="" surface="" actor="sley:stage1" trace_path="" write=false arg
+  local source kind="" surface="" actor="sley:stage1" trace_path="" payload_source="" payload_name="" payload_module="" payload_type="" payload_position="" write=false arg
   while [[ "$#" -gt 0 ]]; do
     arg="$1"
     case "$arg" in
@@ -5269,6 +5389,11 @@ command_graft() {
       --template-surface) surface="$2"; shift 2 ;;
       --actor) actor="$2"; shift 2 ;;
       --trace) trace_path="$2"; shift 2 ;;
+      --source) payload_source="$2"; shift 2 ;;
+      --name) payload_name="$2"; shift 2 ;;
+      --module) payload_module="$2"; shift 2 ;;
+      --type) payload_type="$2"; shift 2 ;;
+      --position) payload_position="$2"; shift 2 ;;
       --write) write=true; shift ;;
       --dry-run|--json) shift ;;
       *) source="$1"; shift ;;
@@ -5371,6 +5496,49 @@ command_graft() {
       ($fields[3] // "diagnostics"):[],
       ($fields[4] // "provenance"):[{graft_id:"stage1-dry-run",actor:$actor,timestamp:"2026-05-08T00:00:00Z",operation:"ReplaceCallArg",targets:[$target,"calls:1"],result:"accepted"}],
       preview_source:$call_source
+    }'
+    return
+  fi
+  if [[ "$kind" == "add_task" || "$kind" == "add_effect_declaration" || "$kind" == "add_import" || "$kind" == "add_take" ]]; then
+    local query module_name operation preview target
+    query="$(query_json "$source" all)"
+    module_name="$(printf '%s\n' "$query" | jq -r '.entry_module // .modules[0].module // "app.main"')"
+    target="${surface:-program}"
+    case "$kind" in
+      add_task)
+        operation="AddTask"
+        if [[ -z "$payload_source" ]]; then
+          printf -v payload_source 'module %s\n\ntask new_task -> Int {\n  return 0\n}' "$module_name"
+        fi
+        preview="$payload_source"
+        ;;
+      add_effect_declaration)
+        operation="AddEffectDeclaration"
+        payload_name="${payload_name:-NewEffect}"
+        preview="effect $payload_name"
+        target="effect:${module_name}.${payload_name}"
+        ;;
+      add_import)
+        operation="AddImport"
+        payload_module="${payload_module:-app.new_module}"
+        preview="import $payload_module"
+        target="import:${module_name}:${payload_module}"
+        ;;
+      add_take)
+        operation="AddTake"
+        payload_name="${payload_name:-value}"
+        payload_type="${payload_type:-Text}"
+        payload_position="${payload_position:-0}"
+        preview="take $payload_name: $payload_type"
+        ;;
+    esac
+    jq -n --arg schema "$SCHEMA_GRAFT_OUTCOME" --arg source "$source" --arg actor "$actor" --arg operation "$operation" --arg target "$target" --arg preview "$preview" --argjson fields "$GRAFT_OUTCOME_REPORT_FIELDS_JSON" '{
+      ($fields[0] // "schema"):$schema,
+      ($fields[1] // "status"):"accepted",
+      ($fields[2] // "source"):$source,
+      ($fields[3] // "diagnostics"):[],
+      ($fields[4] // "provenance"):[{graft_id:"stage1-dry-run",actor:$actor,timestamp:"2026-05-08T00:00:00Z",operation:$operation,targets:[$target],result:"accepted"}],
+      preview_source:$preview
     }'
     return
   fi
