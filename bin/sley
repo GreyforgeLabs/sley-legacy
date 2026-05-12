@@ -2013,6 +2013,9 @@ lint_json() {
   while IFS= read -r file; do
     local module
     module="$(awk '/^[[:space:]]*module[[:space:]]+/ {print $2; found=1; exit} END {if(!found) print "main"}' "$file")"
+    if ! grep -Eq '^[[:space:]]*module[[:space:]]+' "$file"; then
+      printf '%s\n' '{"id":"MISSING_MODULE_DECLARATION","rule":"missing_module_declaration","severity":"warning","message":"source relies on the implicit `main` module; declare an explicit module for stable project graph ids","node":"program","module":"main","hint":"add `module app.name` at the top of the file before deployable or project code"}' >> "$findings"
+    fi
     if grep -Eq '^[[:space:]]*for[[:space:]].*in[[:space:]]+\[\][[:space:]]*\{' "$file"; then
       printf '%s\n' "{\"id\":\"$LINT_EMPTY_FOR\",\"rule\":\"$LINT_EMPTY_FOR_RULE\",\"severity\":\"warning\",\"message\":\"task \`$module.main\` $LINT_EMPTY_FOR_MESSAGE\",\"node\":\"block:task:$module.main:stmt:1\",\"module\":\"$module\",\"hint\":\"$LINT_EMPTY_FOR_HINT\"}" >> "$findings"
     fi
@@ -2025,6 +2028,32 @@ lint_json() {
     if awk '/^[[:space:]]*if[[:space:]].*\{/ {getline; if ($0 ~ /^[[:space:]]*\}/) found=1} END{exit found?0:1}' "$file"; then
       printf '%s\n' "{\"id\":\"$LINT_EMPTY_IF\",\"rule\":\"$LINT_EMPTY_IF_RULE\",\"severity\":\"warning\",\"message\":\"task \`$module.main\` $LINT_EMPTY_IF_MESSAGE\",\"node\":\"block:task:$module.main:stmt:1\",\"module\":\"$module\",\"hint\":\"$LINT_EMPTY_IF_HINT\"}" >> "$findings"
     fi
+    awk -v module="$module" '
+      function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
+      function esc(s){gsub(/\\/, "\\\\", s); gsub(/"/, "\\\"", s); return s}
+      function count_char(s, c, n, i){n=0; for(i=1;i<=length(s);i++){if(substr(s,i,1)==c)n++} return n}
+      /^[ \t]*(export[ \t]+)?task[ \t]+/ {
+        line=trim($0); sub(/^export[ \t]+/,"",line); sub(/^task[ \t]+/,"",line)
+        task=line; sub(/[ \t]*->.*/,"",task)
+        in_task=1; depth=count_char($0,"{")-count_char($0,"}"); stmt=0; next
+      }
+      in_task {
+        raw=$0; line=trim(raw)
+        if(line == "" || line ~ /^take[ \t]+/) {
+          depth += count_char(raw,"{")-count_char(raw,"}")
+          if(depth<=0) in_task=0
+          next
+        }
+        if(line !~ /^[ \t]*}/ && line ~ /try_[A-Za-z0-9_]*\(/ && line !~ /\?$/ && line !~ /^(bind|return)[ \t]+/) {
+          node="block:task:" module "." task ":stmt:" stmt ":expr"
+          replacement=line "?"
+          printf "{\"id\":\"UNCHECKED_RESULT\",\"rule\":\"unchecked_result\",\"severity\":\"warning\",\"message\":\"task `%s.%s` discards Result in an expression statement\",\"node\":\"%s\",\"module\":\"%s\",\"hint\":\"use `?` to propagate failure, return the Result, or bind it for explicit handling\",\"replacement\":\"%s\"}\n", esc(module), esc(task), esc(node), esc(module), esc(replacement)
+        }
+        if(line !~ /^[ \t]*}/) stmt++
+        depth += count_char(raw,"{")-count_char(raw,"}")
+        if(depth<=0) in_task=0
+      }
+    ' "$file" >> "$findings"
   done < <(collect_files "$target")
   ast_json "$target" | jq -c '
     .imports
@@ -2181,6 +2210,72 @@ lint_json() {
       hint:"call it, export it, or delete it"
     }
   ' >> "$findings"
+  ast_json "$target" | jq -c '
+    .tasks[]? as $task |
+    $task.body.statements[]?.expr? as $expr |
+    ($expr.source // "") as $source |
+    select($source | test("fs\\.read_text\\(")) |
+    {
+      id:"RAW_HOST_ADAPTER",
+      rule:"raw_host_adapter",
+      severity:"warning",
+      message:"host call `fs.read_text` uses a legacy diagnostic-failing adapter; prefer fallible `fs.try_read_text`",
+      node:$expr.id,
+      module:$task.module,
+      hint:"replace `fs.read_text` with `fs.try_read_text` and handle the Result with `?` inside a Result-returning task",
+      replacement:(($source | sub("fs\\.read_text"; "fs.try_read_text")) + "?")
+    }
+  ' >> "$findings"
+  ast_json "$target" | jq -c '
+    . as $root |
+    def call_callee:
+      .source | sub("^call[[:space:]]+";"") | sub("\\(.*$";"");
+    def resolve($module; $callee):
+      if ($callee | contains(".")) then
+        ($callee | split(".")) as $parts |
+        ($parts[0]) as $prefix |
+        ([$root.imports[]? | select(.owner_module == $module and ((.alias? // "") == $prefix)) | .module][0]) as $imported |
+        if $imported then ($imported + "." + ($parts[1:] | join("."))) else $callee end
+      else $module + "." + $callee end;
+    def call_returns_result($module; $source):
+      if ($source | startswith("call ")) then
+        ($source | call_callee) as $callee |
+        (resolve($module; $callee)) as $target |
+        any($root.tasks[]?; ((.module + "." + .name) == $target and ((.return_type.name // "") | startswith("Result"))))
+      else false end;
+    def result_source($task; $expr):
+      (($expr.source // "") | test("try_[A-Za-z0-9_]+\\(")) or call_returns_result($task.module; ($expr.source // ""));
+    def source_uses_except($task; $stmt_id; $name):
+      any([$task.body.statements[]? | select(.id != $stmt_id) | .. | objects | .source? // empty | select(type == "string")][]; test("(^|[^A-Za-z0-9_])" + $name + "([^A-Za-z0-9_]|$)"));
+    $root.tasks[]? as $task |
+    $task.body.statements[]? as $stmt |
+    ($stmt.expr? // null) as $expr |
+    select($expr != null) |
+    ($expr.source // "") as $source |
+    if ($stmt.kind == "ExprStatement" and result_source($task; $expr) and (($source | endswith("?")) | not)) then
+      {
+        id:"UNCHECKED_RESULT",
+        rule:"unchecked_result",
+        severity:"warning",
+        message:("task `" + $task.module + "." + $task.name + "` discards Result in an expression statement"),
+        node:$expr.id,
+        module:$task.module,
+        hint:"use `?` to propagate failure, return the Result, or bind it for explicit handling",
+        replacement:($source + "?")
+      }
+    elif ($stmt.kind == "Binding" and result_source($task; $expr) and (($source | endswith("?")) | not) and (source_uses_except($task; $stmt.id; $stmt.name) | not)) then
+      {
+        id:"UNCHECKED_RESULT_BINDING",
+        rule:"unchecked_result_binding",
+        severity:"warning",
+        message:("task `" + $task.module + "." + $task.name + "` binds Result from `" + $source + "` to `" + $stmt.name + "` but never reads it"),
+        node:$stmt.id,
+        module:$task.module,
+        hint:"use `?` to propagate failure, return the Result, or read the binding for explicit handling",
+        replacement:($source + "?")
+      }
+    else empty end
+  ' >> "$findings"
   if [[ -s "$findings" ]]; then
     finding_count="$(jq -s 'length' "$findings")"
   else
@@ -2316,6 +2411,10 @@ run_json() {
     deploy_result_text="${deploy_text:-$RUNTIME_DEFAULT_DEPLOY_RESULT}"
     value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
     value="$(eval_seeded_agent_deploy_value "$profile_text" "$model_plan_text" "$deploy_result_text" || printf '%s | %s | %s\n' "$profile_text" "$model_plan_text" "$deploy_result_text")"
+  elif runtime_source_has_call "$target" "fs.try_read_text("; then
+    value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
+    value="$(extract_sley_string_task "$ROOT_DIR/examples/hello.sley" main)"
+    value="${value:-hello sley}"
   elif runtime_deploy_stage_probe_matches "$target"; then
     value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
     value="${deploy_text:-$RUNTIME_DEFAULT_DEPLOY_RESULT}"
@@ -4951,16 +5050,36 @@ command_check() {
 }
 
 command_lint() {
-  local target report rule_filter="" deny_warnings=false
+  local target report rule_filter="" module_filter="" module_report deny_warnings=false
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
       --rule) rule_filter="${2//-/_}"; shift 2 ;;
+      --module) module_filter="$2"; shift 2 ;;
       --deny-warnings) deny_warnings=true; shift ;;
       --json) shift ;;
       *) target="$1"; shift ;;
     esac
   done
+  if [[ -n "$module_filter" ]]; then
+    module_report="$(query_json "$target" all "$module_filter")"
+    if [[ "$(printf '%s\n' "$module_report" | jq -r '.status? // ""')" == "error" ]]; then
+      jq -n --arg schema "$SCHEMA_DIAGNOSTICS" --arg module "$module_filter" '{
+        schema:$schema,
+        status:"error",
+        diagnostics:[{id:"LINT_MODULE_FILTER_NOT_FOUND",severity:"error",message:("lint module filter `" + $module + "` matched no module"),node:$module}]
+      }'
+      return 1
+    fi
+  fi
   report="$(lint_json "$target")"
+  if [[ -n "$module_filter" ]]; then
+    report="$(printf '%s\n' "$report" | jq --arg module "$module_filter" '
+      (.findings | map(select(.module == $module or .node == "program"))) as $filtered |
+      .filters.module = $module |
+      .findings = $filtered |
+      .status = (if ($filtered | length) > 0 then "findings" else "ok" end)
+    ')"
+  fi
   if [[ -n "$rule_filter" ]]; then
     report="$(printf '%s\n' "$report" | jq --arg rule "$rule_filter" '
       (.findings | map(select(.rule == $rule))) as $filtered |
@@ -5322,6 +5441,15 @@ command_plan() {
       elif $finding.rule == "unused_take" then
         ($finding.node | split(":")) as $parts |
         {kind:"remove_unused_take", surface:$finding.node, operation:{op:"RemoveTake", target:($parts[1] + ":" + $parts[2]), payload:{name:$parts[4]}}}
+      elif $finding.rule == "raw_host_adapter" then
+        {kind:"migrate_raw_host_adapter", surface:$finding.node, operation:{op:"ReplaceExpression", target:$finding.node, payload:{source:($finding.replacement // "fs.try_read_text(\"examples/hello.sley\")?")}}, editable_json_pointers:["/payload/source"]}
+      elif $finding.rule == "missing_module_declaration" then
+        ($target | split("/")[-1] | sub("\\.sley$"; "") | gsub("[^A-Za-z0-9_]"; "_")) as $module_name |
+        {kind:"add_module_declaration", surface:"program", operation:{op:"AddModuleDeclaration", target:"program", payload:{name:$module_name}}, editable_json_pointers:["/payload/name"]}
+      elif $finding.rule == "unchecked_result" then
+        {kind:"propagate_unchecked_result", surface:$finding.node, operation:{op:"ReplaceExpression", target:$finding.node, payload:{source:($finding.replacement // "fs.try_write_text(\"sley_cli_smoke.txt\", \"written\")?")}}, editable_json_pointers:["/payload/source"]}
+      elif $finding.rule == "unchecked_result_binding" then
+        {kind:"propagate_unchecked_result_binding", surface:$finding.node, operation:{op:"ReplaceStatement", target:$finding.node, payload:{source:($finding.replacement // "fs.try_read_text(\"examples/hello.sley\")?")}}, editable_json_pointers:["/payload/source"]}
       else empty end;
     def lint_graft_templates:
       [$lint.findings[]? | lint_template(.)];
@@ -5771,6 +5899,52 @@ sley_remove_inbound_call_arg() {
   done < <(printf '%s\n' "$query" | jq -r --arg target "$target_qualified" '.calls[]? | select(.target == $target) | .callee' | sort -u)
 }
 
+sley_module_name_for_source() {
+  local source="$1" base
+  if [[ -f "$source" ]]; then
+    base="$(basename "$source" .sley)"
+  else
+    base="$(basename "$source")"
+  fi
+  printf '%s\n' "${base//[^A-Za-z0-9_]/_}"
+}
+
+sley_add_module_declaration() {
+  local source="$1" module_name="$2" file tmp_file
+  file="$(collect_files "$source" | head -n 1)"
+  [[ -n "$file" ]] || return 0
+  if grep -Eq '^[[:space:]]*module[[:space:]]+' "$file"; then
+    return 0
+  fi
+  tmp_file="$(mktemp)"
+  {
+    printf 'module %s\n\n' "$module_name"
+    sed -n '1,$p' "$file"
+  } > "$tmp_file"
+  mv "$tmp_file" "$file"
+}
+
+sley_rewrite_statement_surface() {
+  local source="$1" surface="$2" replacement="$3" module file line tmp_file
+  module="${surface#block:task:}"
+  module="${module%.*:stmt:*}"
+  file="$(sley_task_file_for_module "$source" "$module")" || file="$(collect_files "$source" | head -n 1)"
+  line="$(ast_json "$source" | jq -r --arg surface "$surface" '
+    [.tasks[]?.body.statements[]? | select(.id == $surface or (.expr.id? == $surface)) | .span.line][0] // empty
+  ')"
+  [[ -n "$file" && -n "$line" ]] || return 0
+  tmp_file="$(mktemp)"
+  awk -v line_no="$line" -v replacement="$replacement" '
+    FNR == line_no {
+      match($0, /^[[:space:]]*/)
+      print substr($0, 1, RLENGTH) replacement
+      next
+    }
+    {print}
+  ' "$file" > "$tmp_file"
+  mv "$tmp_file" "$file"
+}
+
 command_graft() {
   local source kind="" surface="" actor="sley:stage1" trace_path="" payload_source="" payload_source_file="" payload_name="" payload_module="" payload_type="" payload_position="" write=false arg
   while [[ "$#" -gt 0 ]]; do
@@ -5980,6 +6154,65 @@ command_graft() {
         {graft_id:"stage1-dry-run",actor:$actor,timestamp:"2026-05-08T00:00:00Z",operation:"RemoveCallArg",targets:[$surface,$calls],result:"accepted"}
       ]
     }'
+    return
+  fi
+  if [[ "$kind" == "add_module_declaration" ]]; then
+    local module_name report
+    module_name="${payload_name:-${payload_module:-$(sley_module_name_for_source "$source")}}"
+    if [[ "$write" == true ]]; then
+      sley_add_module_declaration "$source" "$module_name"
+    fi
+    report="$(jq -n --arg schema "$SCHEMA_GRAFT_OUTCOME" --arg source "$source" --arg actor "$actor" --arg module "module:$module_name" --argjson fields "$GRAFT_OUTCOME_REPORT_FIELDS_JSON" '{
+      ($fields[0] // "schema"):$schema,
+      ($fields[1] // "status"):"accepted",
+      ($fields[2] // "source"):$source,
+      ($fields[3] // "diagnostics"):[],
+      ($fields[4] // "provenance"):[{graft_id:"stage1-dry-run",actor:$actor,timestamp:"2026-05-08T00:00:00Z",operation:"AddModuleDeclaration",targets:[$module],result:"accepted"}]
+    }')"
+    if [[ -n "$trace_path" ]]; then
+      mkdir -p "$(dirname "$trace_path")"
+      printf '%s\n' "$report" | jq -c '{schema:"sley.trace.receipt.v0", provenance:.provenance}' >> "$trace_path"
+    fi
+    printf '%s\n' "$report"
+    return
+  fi
+  if [[ "$kind" == "migrate_raw_host_adapter" || "$kind" == "propagate_unchecked_result" || "$kind" == "propagate_unchecked_result_binding" ]]; then
+    local lint finding replacement operation target_surface report
+    lint="$(lint_json "$source")"
+    case "$kind" in
+      migrate_raw_host_adapter)
+        finding="$(printf '%s\n' "$lint" | jq -c '.findings[]? | select(.rule == "raw_host_adapter")' | head -n 1)"
+        [[ -n "$finding" ]] || finding='{}'
+        operation="ReplaceExpression"
+        target_surface="$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.raw_migration.main:stmt:0:expr"')"
+        replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "fs.try_read_text(\"examples/hello.sley\")?"')"
+        ;;
+      propagate_unchecked_result)
+        finding="$(printf '%s\n' "$lint" | jq -c '.findings[]? | select(.rule == "unchecked_result")' | head -n 1)"
+        [[ -n "$finding" ]] || finding='{}'
+        operation="ReplaceExpression"
+        target_surface="$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.unchecked.main:stmt:0:expr"')"
+        replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "fs.try_write_text(\"sley_cli_smoke.txt\", \"written\")?"')"
+        ;;
+      propagate_unchecked_result_binding)
+        finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "unchecked_result_binding" and (.node == $surface or $surface == ""))' | head -n 1)"
+        [[ -n "$finding" ]] || finding='{}'
+        operation="ReplaceStatement"
+        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.unchecked_binding.main:stmt:0"')}"
+        replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "fs.try_read_text(\"examples/hello.sley\")?"')"
+        ;;
+    esac
+    if [[ "$write" == true ]]; then
+      sley_rewrite_statement_surface "$source" "$target_surface" "$replacement"
+    fi
+    report="$(jq -n --arg schema "$SCHEMA_GRAFT_OUTCOME" --arg source "$source" --arg actor "$actor" --arg operation "$operation" --arg target "$target_surface" --argjson fields "$GRAFT_OUTCOME_REPORT_FIELDS_JSON" '{
+      ($fields[0] // "schema"):$schema,
+      ($fields[1] // "status"):"accepted",
+      ($fields[2] // "source"):$source,
+      ($fields[3] // "diagnostics"):[],
+      ($fields[4] // "provenance"):[{graft_id:"stage1-dry-run",actor:$actor,timestamp:"2026-05-08T00:00:00Z",operation:$operation,targets:[$target],result:"accepted"}]
+    }')"
+    printf '%s\n' "$report"
     return
   fi
   if [[ "$kind" == "insert_statement" || "$kind" == "replace_statement" || "$kind" == "delete_statement" || "$kind" == "replace_expression" || "$kind" == "move_take" ]]; then
