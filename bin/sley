@@ -2719,6 +2719,42 @@ lint_json() {
       replacement:($replacement | trim)
     }
   ' >> "$findings"
+  ast_json "$target" | jq -c '
+    def trim: gsub("^[[:space:]]+|[[:space:]]+$"; "");
+    .tasks[]? as $task |
+    $task.body.statements[]?.expr? as $expr |
+    ($expr.source // "") as $source |
+    (($source | capture("^len\\(\\[(?<items>.*)\\]\\)$")? // null)) as $m |
+    select($m != null) |
+    (if ($m.items | trim) == "" then 0 else ($m.items | split(",") | length) end) as $count |
+    {
+      id:"CONSTANT_LEN_EXPRESSION",
+      rule:"constant_len_expression",
+      severity:"warning",
+      message:"len expression is constant",
+      node:$expr.id,
+      module:$task.module,
+      hint:"replace len with the collection length",
+      replacement:($count | tostring)
+    }
+  ' >> "$findings"
+  ast_json "$target" | jq -c '
+    .tasks[]? as $task |
+    $task.body.statements[]?.expr? as $expr |
+    ($expr.source // "") as $source |
+    (($source | capture("^![[:space:]]*(?<value>true|false)$")? // null)) as $m |
+    select($m != null) |
+    {
+      id:"CONSTANT_NOT_EXPRESSION",
+      rule:"constant_not_expression",
+      severity:"warning",
+      message:"not expression is constant",
+      node:$expr.id,
+      module:$task.module,
+      hint:"replace not with its Boolean result",
+      replacement:(if $m.value == "true" then "false" else "true" end)
+    }
+  ' >> "$findings"
   while IFS= read -r file; do
     local module
     module="$(awk '/^[[:space:]]*module[[:space:]]+/ {print $2; found=1; exit} END {if(!found) print "main"}' "$file")"
@@ -2834,6 +2870,8 @@ lint_json() {
       elif .rule == "constant_list_index_expression" then -1
       elif .rule == "constant_map_index_expression" then -1
       elif .rule == "constant_record_field_access_expression" then -1
+      elif .rule == "constant_len_expression" then -1
+      elif .rule == "constant_not_expression" then -1
       else 0 end
     )) as $findings |
     {
@@ -6032,6 +6070,10 @@ command_plan() {
         {kind:"simplify_constant_map_index_expression", surface:$finding.node, operation:{op:"ReplaceExpression", target:$finding.node, payload:{source:($finding.replacement // "\"\"")}}, editable_json_pointers:["/payload/source"]}
       elif $finding.rule == "constant_record_field_access_expression" then
         {kind:"simplify_constant_record_field_access_expression", surface:$finding.node, operation:{op:"ReplaceExpression", target:$finding.node, payload:{source:($finding.replacement // "\"\"")}}, editable_json_pointers:["/payload/source"]}
+      elif $finding.rule == "constant_len_expression" then
+        {kind:"simplify_constant_len_expression", surface:$finding.node, operation:{op:"ReplaceExpression", target:$finding.node, payload:{source:($finding.replacement // "0")}}, editable_json_pointers:["/payload/source"]}
+      elif $finding.rule == "constant_not_expression" then
+        {kind:"simplify_constant_not_expression", surface:$finding.node, operation:{op:"ReplaceExpression", target:$finding.node, payload:{source:($finding.replacement // "false")}}, editable_json_pointers:["/payload/source"]}
       else empty end;
     def lint_graft_templates:
       [$lint.findings[]? | lint_template(.)];
@@ -6995,7 +7037,7 @@ command_graft() {
     printf '%s\n' "$report"
     return
   fi
-  if [[ "$kind" == "simplify_constant_if_expression" || "$kind" == "simplify_constant_if_statement" || "$kind" == "delete_constant_false_if_statement" || "$kind" == "delete_constant_false_while_statement" || "$kind" == "simplify_constant_comparison_expression" || "$kind" == "simplify_constant_boolean_comparison_expression" || "$kind" == "simplify_constant_arithmetic_expression" || "$kind" == "simplify_absorbing_arithmetic_expression" || "$kind" == "simplify_constant_text_concatenation_expression" || "$kind" == "simplify_constant_list_index_expression" || "$kind" == "simplify_constant_map_index_expression" || "$kind" == "simplify_constant_record_field_access_expression" ]]; then
+  if [[ "$kind" == "simplify_constant_if_expression" || "$kind" == "simplify_constant_if_statement" || "$kind" == "delete_constant_false_if_statement" || "$kind" == "delete_constant_false_while_statement" || "$kind" == "simplify_constant_comparison_expression" || "$kind" == "simplify_constant_boolean_comparison_expression" || "$kind" == "simplify_constant_arithmetic_expression" || "$kind" == "simplify_absorbing_arithmetic_expression" || "$kind" == "simplify_constant_text_concatenation_expression" || "$kind" == "simplify_constant_list_index_expression" || "$kind" == "simplify_constant_map_index_expression" || "$kind" == "simplify_constant_record_field_access_expression" || "$kind" == "simplify_constant_len_expression" || "$kind" == "simplify_constant_not_expression" ]]; then
     local lint finding rule operation target_surface replacement report
     lint="$(lint_json "$source")"
     case "$kind" in
@@ -7127,6 +7169,28 @@ command_graft() {
         [[ -n "$finding" ]] || finding='{}'
         target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.constant_record_field_access_fix.main:stmt:0:expr"')}"
         replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "\"\""')"
+        if [[ "$write" == true ]]; then
+          sley_rewrite_statement_surface "$source" "$target_surface" "$replacement"
+        fi
+        ;;
+      simplify_constant_len_expression)
+        rule="constant_len_expression"
+        operation="ReplaceExpression"
+        finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "constant_len_expression" and (.node == $surface or $surface == ""))' | head -n 1)"
+        [[ -n "$finding" ]] || finding='{}'
+        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.constant_len_fix.main:stmt:0:expr"')}"
+        replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "0"')"
+        if [[ "$write" == true ]]; then
+          sley_rewrite_statement_surface "$source" "$target_surface" "$replacement"
+        fi
+        ;;
+      simplify_constant_not_expression)
+        rule="constant_not_expression"
+        operation="ReplaceExpression"
+        finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "constant_not_expression" and (.node == $surface or $surface == ""))' | head -n 1)"
+        [[ -n "$finding" ]] || finding='{}'
+        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.constant_not_fix.main:stmt:0:expr"')}"
+        replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "false"')"
         if [[ "$write" == true ]]; then
           sley_rewrite_statement_surface "$source" "$target_surface" "$replacement"
         fi
