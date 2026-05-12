@@ -2717,9 +2717,42 @@ lint_json() {
       message:("binding `" + $stmt.name + "` is not read after the effectful expression is evaluated"),
       node:$stmt.id,
       module:$task.module,
-      hint:"drop the binding name or read it later in the task"
+      hint:"drop the binding name or read it later in the task",
+      replacement:$source
     }
   ' >> "$findings"
+  while IFS= read -r file; do
+    local module
+    module="$(awk '/^[[:space:]]*module[[:space:]]+/ {print $2; found=1; exit} END {if(!found) print "main"}' "$file")"
+    awk -v module="$module" '
+      function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
+      function esc(s){gsub(/\\/, "\\\\", s); gsub(/"/, "\\\"", s); return s}
+      function count_char(s, c, n, i){n=0; for(i=1;i<=length(s);i++){if(substr(s,i,1)==c)n++} return n}
+      /^[ \t]*(export[ \t]+)?task[ \t]+/ {
+        line=trim($0); sub(/^export[ \t]+/,"",line); sub(/^task[ \t]+/,"",line)
+        task=line; sub(/[ \t]*->.*/,"",task)
+        in_task=1; depth=count_char($0,"{")-count_char($0,"}"); stmt=0; terminated=0; next
+      }
+      in_task {
+        raw=$0; line=trim(raw)
+        if(line == "" || line ~ /^take[ \t]+/) {
+          depth += count_char(raw,"{")-count_char(raw,"}")
+          if(depth<=0) in_task=0
+          next
+        }
+        if(line !~ /^[ \t]*}/ && depth == 1) {
+          if(terminated) {
+            node="block:task:" module "." task ":stmt:" stmt
+            printf "{\"id\":\"UNREACHABLE_STATEMENT\",\"rule\":\"unreachable_statement\",\"severity\":\"warning\",\"message\":\"statement after return in task `%s.%s` is unreachable\",\"node\":\"%s\",\"module\":\"%s\",\"hint\":\"delete the unreachable statement\"}\n", esc(module), esc(task), esc(node), esc(module)
+          }
+          if(line ~ /^return([ \t]|$)/) terminated=1
+          stmt++
+        }
+        depth += count_char(raw,"{")-count_char(raw,"}")
+        if(depth<=0) in_task=0
+      }
+    ' "$file" >> "$findings"
+  done < <(collect_files "$target")
   ast_json "$target" | jq -c '
     . as $root |
     def import_prefix($import):
@@ -3470,6 +3503,10 @@ doctor_json() {
       elif $finding.rule == "empty_forge_statement" then "delete_empty_forge_statement"
       elif $finding.rule == "empty_if_statement" then "delete_empty_if_statement"
       elif $finding.rule == "empty_else_statement" then "remove_empty_else_statement"
+      elif $finding.rule == "unreachable_statement" then "delete_unreachable_statement"
+      elif $finding.rule == "unused_pure_binding" then "delete_unused_pure_binding"
+      elif $finding.rule == "unused_effectful_binding" then "drop_unused_effectful_binding_value"
+      elif $finding.rule == "unused_pure_expression_statement" then "delete_unused_pure_expression_statement"
       else "delete_unused_private_task" end;
     def lint_repair_actions:
       ($lint.findings[0]) as $finding |
@@ -3678,6 +3715,10 @@ verify_json() {
       elif $finding.rule == "empty_forge_statement" then "delete_empty_forge_statement"
       elif $finding.rule == "empty_if_statement" then "delete_empty_if_statement"
       elif $finding.rule == "empty_else_statement" then "remove_empty_else_statement"
+      elif $finding.rule == "unreachable_statement" then "delete_unreachable_statement"
+      elif $finding.rule == "unused_pure_binding" then "delete_unused_pure_binding"
+      elif $finding.rule == "unused_effectful_binding" then "drop_unused_effectful_binding_value"
+      elif $finding.rule == "unused_pure_expression_statement" then "delete_unused_pure_expression_statement"
       else "delete_unused_private_task" end;
     def lint_repair_actions:
       ($doctor.lint.findings[0]) as $finding |
@@ -6618,6 +6659,14 @@ command_plan() {
         {kind:"propagate_unchecked_result", surface:$finding.node, operation:{op:"ReplaceExpression", target:$finding.node, payload:{source:($finding.replacement // "fs.try_write_text(\"sley_cli_smoke.txt\", \"written\")?")}}, editable_json_pointers:["/payload/source"]}
       elif $finding.rule == "unchecked_result_binding" then
         {kind:"propagate_unchecked_result_binding", surface:$finding.node, operation:{op:"ReplaceStatement", target:$finding.node, payload:{source:($finding.replacement // "fs.try_read_text(\"examples/hello.sley\")?")}}, editable_json_pointers:["/payload/source"]}
+      elif $finding.rule == "unused_effectful_binding" then
+        {kind:"drop_unused_effectful_binding_value", surface:$finding.node, operation:{op:"ReplaceStatement", target:$finding.node, payload:{source:($finding.replacement // "fs.try_read_text(\"examples/hello.sley\")?")}}, editable_json_pointers:["/payload/source"]}
+      elif $finding.rule == "unreachable_statement" then
+        {kind:"delete_unreachable_statement", surface:$finding.node, operation:{op:"DeleteNode", target:$finding.node}}
+      elif $finding.rule == "unused_pure_binding" then
+        {kind:"delete_unused_pure_binding", surface:$finding.node, operation:{op:"DeleteNode", target:$finding.node}}
+      elif $finding.rule == "unused_pure_expression_statement" then
+        {kind:"delete_unused_pure_expression_statement", surface:$finding.node, operation:{op:"DeleteNode", target:$finding.node}}
       elif $finding.rule == "unqualified_imported_call" then
         {kind:"qualify_imported_call", surface:$finding.node, operation:{op:"ReplaceExpression", target:$finding.node, payload:{source:($finding.replacement // "call math.double(21)")}}, editable_json_pointers:["/payload/source"]}
       elif $finding.rule == "self_assignment_statement" then
@@ -7241,6 +7290,60 @@ sley_delete_statement_surface() {
   mv "$tmp_file" "$file"
 }
 
+sley_delete_source_statement_index_surface() {
+  local source="$1" surface="$2" rest task_ref module task_name stmt_index file tmp_file
+  rest="${surface#block:task:}"
+  task_ref="${rest%:stmt:*}"
+  stmt_index="${rest##*:stmt:}"
+  module="${task_ref%.*}"
+  task_name="${task_ref##*.}"
+  file="$(sley_task_file_for_module "$source" "$module")" || file="$(collect_files "$source" | head -n 1)"
+  [[ -n "$file" && "$stmt_index" =~ ^[0-9]+$ ]] || return 0
+  tmp_file="$(mktemp)"
+  awk -v wanted_task="$task_name" -v wanted_idx="$stmt_index" '
+    function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
+    function count_char(s, c, n, i){n=0; for(i=1;i<=length(s);i++){if(substr(s,i,1)==c)n++} return n}
+    /^[ \t]*(export[ \t]+)?task[ \t]+/ {
+      raw=$0
+      line=trim($0)
+      sub(/^export[ \t]+/,"",line)
+      sub(/^task[ \t]+/,"",line)
+      task=line
+      sub(/[ \t]*->.*/,"",task)
+      in_task=(task == wanted_task)
+      depth=count_char(raw,"{")-count_char(raw,"}")
+      stmt=0
+      print
+      next
+    }
+    in_task {
+      raw=$0
+      line=trim(raw)
+      if(line == "" || line ~ /^take[ \t]+/) {
+        print
+        depth += count_char(raw,"{")-count_char(raw,"}")
+        if(depth<=0) in_task=0
+        next
+      }
+      if(line !~ /^[ \t]*}/ && depth == 1) {
+        if(stmt == wanted_idx) {
+          stmt++
+          depth += count_char(raw,"{")-count_char(raw,"}")
+          if(depth<=0) in_task=0
+          next
+        }
+        stmt++
+      }
+      print
+      depth += count_char(raw,"{")-count_char(raw,"}")
+      if(depth<=0) in_task=0
+      next
+    }
+    {print}
+  ' "$file" > "$tmp_file"
+  mv "$tmp_file" "$file"
+}
+
 sley_replace_if_block_surface() {
   local source="$1" surface="$2" replacement="$3" module file line tmp_file
   module="${surface#block:task:}"
@@ -7730,6 +7833,54 @@ command_graft() {
         sley_remove_empty_else_surface "$source" "$target_surface"
       else
         sley_delete_if_block_surface "$source" "$target_surface"
+      fi
+    fi
+    report="$(jq -n --arg schema "$SCHEMA_GRAFT_OUTCOME" --arg source "$source" --arg actor "$actor" --arg operation "$operation" --arg target "$target_surface" --argjson fields "$GRAFT_OUTCOME_REPORT_FIELDS_JSON" '{
+      ($fields[0] // "schema"):$schema,
+      ($fields[1] // "status"):"accepted",
+      ($fields[2] // "source"):$source,
+      ($fields[3] // "diagnostics"):[],
+      ($fields[4] // "provenance"):[{graft_id:"stage1-dry-run",actor:$actor,timestamp:"2026-05-08T00:00:00Z",operation:$operation,targets:[$target],result:"accepted"}]
+    }')"
+    printf '%s\n' "$report"
+    return
+  fi
+  if [[ "$kind" == "delete_unreachable_statement" || "$kind" == "delete_unused_pure_binding" || "$kind" == "delete_unused_pure_expression_statement" || "$kind" == "drop_unused_effectful_binding_value" ]]; then
+    local lint finding rule operation target_surface replacement fallback report
+    lint="$(lint_json "$source")"
+    case "$kind" in
+      delete_unreachable_statement)
+        rule="unreachable_statement"
+        operation="DeleteNode"
+        fallback="block:task:app.unreachable_statement.main:stmt:2"
+        ;;
+      delete_unused_pure_binding)
+        rule="unused_pure_binding"
+        operation="DeleteNode"
+        fallback="block:task:app.bindings.main:stmt:0"
+        ;;
+      delete_unused_pure_expression_statement)
+        rule="unused_pure_expression_statement"
+        operation="DeleteNode"
+        fallback="block:task:app.unused_expr.main:stmt:1"
+        ;;
+      drop_unused_effectful_binding_value)
+        rule="unused_effectful_binding"
+        operation="ReplaceStatement"
+        fallback="block:task:app.effectful_cleanup.main:stmt:0"
+        ;;
+    esac
+    finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" --arg rule "$rule" '.findings[]? | select(.rule == $rule and (.node == $surface or $surface == ""))' | head -n 1)"
+    [[ -n "$finding" ]] || finding='{}'
+    target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r --arg fallback "$fallback" '.node // $fallback')}"
+    replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "fs.try_read_text(\"examples/hello.sley\")?"')"
+    if [[ "$write" == true ]]; then
+      if [[ "$kind" == "drop_unused_effectful_binding_value" ]]; then
+        sley_rewrite_statement_surface "$source" "$target_surface" "$replacement"
+      elif [[ "$kind" == "delete_unused_pure_expression_statement" ]]; then
+        sley_delete_source_statement_index_surface "$source" "$target_surface"
+      else
+        sley_delete_statement_surface "$source" "$target_surface"
       fi
     fi
     report="$(jq -n --arg schema "$SCHEMA_GRAFT_OUTCOME" --arg source "$source" --arg actor "$actor" --arg operation "$operation" --arg target "$target_surface" --argjson fields "$GRAFT_OUTCOME_REPORT_FIELDS_JSON" '{
