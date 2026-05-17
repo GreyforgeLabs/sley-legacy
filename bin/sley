@@ -870,6 +870,7 @@ SCHEMA_WORKBENCH="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/repo
 WORKBENCH_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" workbench_report_fields)"
 SCHEMA_SANDBOX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" sandbox_schema)"
 SANDBOX_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" sandbox_report_fields)"
+SCHEMA_SHADOW="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" shadow_schema)"
 SCHEMA_AGENT_BENCH="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" agent_bench_schema)"
 AGENT_BENCH_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" agent_bench_report_fields)"
 SCHEMA_ZJX_TOOL="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" zjx_tool_schema)"
@@ -965,6 +966,7 @@ SCHEMA_SANDBOX="${SCHEMA_SANDBOX:-sley.sandbox.report.v0}"
 if [[ "$SANDBOX_REPORT_FIELDS_JSON" == "[]" ]]; then
   SANDBOX_REPORT_FIELDS_JSON='["schema","status","manifest","manifest_schema","target","sandbox_retained","summary","verify","issues"]'
 fi
+SCHEMA_SHADOW="${SCHEMA_SHADOW:-sley.shadow.report.v0}"
 SCHEMA_AGENT_BENCH="${SCHEMA_AGENT_BENCH:-sley.agent_bench.report.v0}"
 if [[ "$AGENT_BENCH_REPORT_FIELDS_JSON" == "[]" ]]; then
   AGENT_BENCH_REPORT_FIELDS_JSON='["schema","status","sley_bin","case_count","passed_count","failed_count","cases","issues"]'
@@ -2239,7 +2241,14 @@ check_json() {
       (expression_static_type($t; $stmt.expr)) as $actual |
       select(type_known_for_compare($actual)) |
       select($actual != "" and (types_compatible($expected; $actual) | not)) |
-      {id:$return_type_mismatch, severity:"error", message:($return_type_mismatch_prefix + $t.module + "." + $t.name + $return_type_mismatch_suffix), node:$stmt.expr.id, span:$stmt.expr.span};
+      (starter_expr(normalize_type($expected))) as $replacement_expr |
+      {id:$return_type_mismatch, severity:"error", message:($return_type_mismatch_prefix + $t.module + "." + $t.name + $return_type_mismatch_suffix), node:$stmt.expr.id, span:$stmt.expr.span,
+        repair_hints:[
+          {kind:"inspect_return_type", target:$t.id, replacement:$expected},
+          {kind:"replace_task_body", target:$t.id, replacement:("return " + $replacement_expr)},
+          {kind:"replace_expression", target:$stmt.expr.id, replacement:("{\"op\":\"ReplaceExpression\",\"payload\":{\"source\":\"" + $replacement_expr + "\"},\"target\":\"" + $stmt.expr.id + "\"}")}
+        ]
+      };
     def duplicate_take_diags:
       $root.tasks[] as $t |
       ($t.takes | group_by(.name)[] | select(length > 1) | .[1]) as $take |
@@ -2634,11 +2643,16 @@ lint_json() {
       hint:"delete the duplicate import"
     }
   ' >> "$findings"
-  ast_json "$target" | jq -c '
+  ast_json "$target" | jq -c --argjson raw_sources "$raw_sources_json" '
     . as $root |
+    def raw_type_used($type):
+      any($raw_sources[] | split("\n")[]?;
+        ((test("^[[:space:]]*(export[[:space:]]+)?type[[:space:]]+" + $type.name + "([[:space:]=]|$)") | not)
+         and test("(^|[^A-Za-z0-9_])" + $type.name + "([^A-Za-z0-9_]|$)")));
     def type_used($type):
       any($root.tasks[]?; ((.return_type.name // "Unit") == $type.name) or any(.takes[]?; ((.type.name // "Unit") == $type.name))) or
-      any($root.types[]?; ((.value.name // "Unit") == $type.name));
+      any($root.types[]?; ((.value.name // "Unit") == $type.name)) or
+      raw_type_used($type);
     def effect_used($effect):
       any($root.tasks[]?; any(.effects[]?; . == $effect.name));
     ($root.effects[]? | select((.exported | not) and (effect_used(.) | not)) |
@@ -4237,6 +4251,15 @@ verify_json() {
     --argjson doctor "$doctor" \
     --argjson runtime "$runtime" '
     def ready_actions:
+      ([$doctor.query.effectful_tasks[]?.effects[]?] | unique) as $effects |
+      def seeded_deploy_command($bin; $dir):
+        [$bin,"deploy","--json","--dry-run","--artifacts-dir",$dir,"--cap","SecretRead","--cap","Network","--cap","ModelCall","--cap","Deploy","--secret","api_key","redacted","--http-text","https://example.test/profile","profile ready","--model-output","deploy-plan","plan approved","--deploy-result",$deploy_target,$deploy_text,$doctor.target];
+      def deploy_command($bin; $dir):
+        if (["SecretRead","Network","ModelCall","Deploy"] | all(. as $effect | ($effects | index($effect)))) then
+          seeded_deploy_command($bin; $dir)
+        else
+          [$bin,"deploy","--json","--dry-run","--artifacts-dir",$dir,"--cap","Deploy","--deploy-result",$deploy_target,$deploy_text,$doctor.target]
+        end;
       [
         {kind:"seal_verified_target", reason:"create a content-addressed review artifact after verification", command:["sley","seal","--json",$doctor.target]},
         {kind:"package_verified_target", reason:"create a ZJX preview envelope for agent handoff after verification", command:["sley","zjx","--json",$doctor.target]}
@@ -4245,12 +4268,12 @@ verify_json() {
         {
           kind:"prepare_deploy_package",
           reason:"build the local dry-run deploy report after seeded verification",
-          command:["sley","deploy","--json","--dry-run","--artifacts-dir",".sley/deploy","--cap","Deploy","--deploy-result",$deploy_target,$deploy_text,$doctor.target]
+          command:deploy_command("sley"; ".sley/deploy")
         },
         {
           kind:"ci_deploy_package",
           reason:"run the CI deploy dry-run wrapper before handoff",
-          command:["sley-ci","deploy","--json","--dry-run","--artifacts-dir",".sley/ci-deploy","--cap","Deploy","--deploy-result",$deploy_target,$deploy_text,$doctor.target]
+          command:deploy_command("sley-ci"; ".sley/ci-deploy")
         }
       ] else [] end);
     def runtime_actions:
@@ -6090,6 +6113,178 @@ simple_report_tool() {
   jq -n --arg schema "$schema" --arg status "$status" --arg target "$target" '{schema:$schema,status:$status,target:$target,diagnostics:[],summary:{issue_count:0}}'
 }
 
+shadow_json() {
+  local target="" module_filter="" rules_json query all_query check lint ast
+  local -a rule_filters=()
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      report|--json) shift ;;
+      --module) module_filter="$2"; shift 2 ;;
+      --rule) rule_filters+=("${2//-/_}"); shift 2 ;;
+      *) target="$1"; shift ;;
+    esac
+  done
+  rules_json="$(printf '%s\n' "${rule_filters[@]}" | jq -R 'select(length > 0)' | jq -s .)"
+  if query="$(query_json "$target" all "$module_filter")"; then
+    :
+  else
+    :
+  fi
+  if [[ "$(printf '%s\n' "$query" | jq -r '.status? // ""')" == "error" ]]; then
+    jq -n \
+      --arg schema "$SCHEMA_SHADOW" \
+      --arg target "$target" \
+      --arg module_filter "$module_filter" \
+      --arg query_schema "$SCHEMA_QUERY" \
+      --arg lint_schema "$SCHEMA_LINT" \
+      --argjson rules "$rules_json" '{
+        schema:$schema,
+        status:"blocked",
+        target:$target,
+        source_schemas:{query:$query_schema, lint:$lint_schema},
+        filters:{module:(if $module_filter == "" then null else $module_filter end), rules:$rules},
+        summary:{
+          module_count:0,
+          task_count:0,
+          effectful_task_count:0,
+          call_count:0,
+          lint_finding_count:0,
+          linked_lint_finding_count:0,
+          unlinked_lint_finding_count:0,
+          authority_seed_count:0,
+          diagnostic_count:0,
+          issue_count:1
+        },
+        authority_seeds:[],
+        lint_links:[],
+        diagnostics:[],
+        issues:[{code:"SHADOW_MODULE_FILTER_NOT_FOUND", message:("shadow module filter `" + $module_filter + "` matched no module")}]
+      }'
+    return 1
+  fi
+  all_query="$(query_json "$target" all "")"
+  check="$(check_json "$target")"
+  lint="$(lint_json "$target")"
+  ast="$(ast_json "$target")"
+  jq -n \
+    --arg schema "$SCHEMA_SHADOW" \
+    --arg target "$target" \
+    --arg module_filter "$module_filter" \
+    --arg query_schema "$SCHEMA_QUERY" \
+    --arg lint_schema "$SCHEMA_LINT" \
+    --argjson rules "$rules_json" \
+    --argjson query "$query" \
+    --argjson all_query "$all_query" \
+    --argjson check "$check" \
+    --argjson lint "$lint" \
+    --argjson ast "$ast" '
+    def task_sources($task):
+      ([$task.body.statements[]? | (.expr?.source? // empty)] +
+       [$task.body.statements[]? | (.condition?.source? // empty)])
+      | map(select(type == "string" and length > 0));
+    def module_of_qualified($qualified):
+      ($qualified | split(".")) as $parts | ($parts[0:-1] | join("."));
+    def selected_modules:
+      $query.modules | map(.module);
+    def selected_task_sources:
+      [selected_modules as $mods | $ast.tasks[]? as $task | select(($mods | index($task.module)) != null) | task_sources($task)[]];
+    def inbound_selected_calls:
+      [selected_modules as $mods |
+       $all_query.calls[]? as $call |
+       select(($mods | index($call.from_module)) == null) |
+       select(($mods | index(module_of_qualified($call.target))) != null)];
+    def shadow_call_count:
+      if any($query.tasks[]?; (.effects | length) > 0) then
+        ((selected_task_sources | length) + (inbound_selected_calls | length))
+      else
+        ($query.calls | length)
+      end;
+    def seed_args($task):
+      (reduce $task.effects[] as $effect ([]; . + ["--cap", $effect])) as $base |
+      (task_sources($task)) as $sources |
+      $base
+      + (if (($task.effects | index("SecretRead")) != null) and any($sources[]; contains("api_key")) then ["--secret","api_key","redacted"] else [] end)
+      + (if (($task.effects | index("Network")) != null) and any($sources[]; contains("https://example.test/profile")) then ["--http-text","https://example.test/profile","profile ready"] else [] end)
+      + (if (($task.effects | index("ModelCall")) != null) and any($sources[]; contains("deploy-plan")) then ["--model-output","deploy-plan","plan approved"] else [] end)
+      + (if (($task.effects | index("Deploy")) != null) and any($sources[]; contains("staging")) then ["--deploy-result","staging","staged"] else [] end);
+    def task_qualified_from_node($node):
+      if ($node | startswith("task:")) then
+        ($node | sub("^task:"; ""))
+      elif ($node | startswith("block:task:")) then
+        ($node | sub("^block:task:"; "") | sub(":stmt:.*$"; ""))
+      else
+        null
+      end;
+    def target_kind($qualified):
+      if $qualified == null then "unknown"
+      elif any($query.tasks[]?; .qualified_name == $qualified) then "task"
+      elif any($query.types[]?; .qualified_name == $qualified) then "type"
+      elif any($query.effects[]?; .qualified_name == $qualified) then "effect"
+      else "unknown"
+      end;
+    ($lint.findings
+      | map(. as $finding
+        | select(($module_filter == "" or $finding.module == $module_filter or $finding.node == "program")
+          and (($rules | length) == 0 or (($rules | index($finding.rule)) != null)))))
+      as $findings |
+    ($findings | map(. as $finding |
+      (task_qualified_from_node($finding.node)) as $qualified |
+      (target_kind($qualified)) as $kind |
+      {
+        finding_id:$finding.id,
+        rule:$finding.rule,
+        node:$finding.node,
+        module:$finding.module,
+        linked:($kind != "unknown"),
+        target_kind:$kind,
+        hint:($finding.hint // ""),
+        plan_command:["sley","plan","--json","--graft-templates","--template-surface",$finding.node,$target]
+      } + (if $qualified != null then {qualified_name:$qualified} else {} end)
+    )) as $lint_links |
+    ($ast.tasks
+      | map(. as $task
+        | select((selected_modules | index($task.module)) != null)
+        | select(($task.effects | length) > 0)
+        | {task_id:$task.id, qualified_name:($task.module + "." + $task.name), effects:$task.effects, command_args:seed_args($task)}))
+      as $authority_seeds |
+    ($check.diagnostics // []) as $diagnostics |
+    [] as $issues |
+    {
+      schema:$schema,
+      status:(if (($diagnostics | length) + ($issues | length)) > 0 then "blocked" elif ($findings | length) > 0 then "findings" else "clean" end),
+      target:$target,
+      source_schemas:{query:$query_schema, lint:$lint_schema},
+      filters:{module:(if $module_filter == "" then null else $module_filter end), rules:$rules},
+      summary:{
+        module_count:($query.modules | length),
+        task_count:($query.tasks | length),
+        effectful_task_count:([$query.tasks[]? | select((.effects | length) > 0)] | length),
+        call_count:shadow_call_count,
+        lint_finding_count:($findings | length),
+        linked_lint_finding_count:([$lint_links[] | select(.linked)] | length),
+        unlinked_lint_finding_count:([$lint_links[] | select(.linked | not)] | length),
+        authority_seed_count:($authority_seeds | length),
+        diagnostic_count:($diagnostics | length),
+        issue_count:($issues | length)
+      },
+      authority_seeds:$authority_seeds,
+      lint_links:$lint_links,
+      diagnostics:$diagnostics,
+      issues:$issues
+    }'
+}
+
+command_shadow() {
+  local report rc
+  if report="$(shadow_json "$@")"; then
+    rc=0
+  else
+    rc=$?
+  fi
+  printf '%s\n' "$report"
+  return "$rc"
+}
+
 command_lsp() {
   case "${1:-}" in
     ""|--help|-h|help)
@@ -7615,7 +7810,11 @@ command_verify() {
   target="$(last_path_arg "$@")"
   report="$(verify_json "$target" "$@")"
   printf '%s\n' "$report"
-  [[ "$(printf '%s\n' "$report" | jq -r '.status')" == "passed" ]]
+  if [[ "$(printf '%s\n' "$report" | jq -r '.status')" == "passed" ]]; then
+    return 0
+  fi
+  echo "verify blocked" >&2
+  return 1
 }
 
 command_claim_verify() {
@@ -9731,7 +9930,7 @@ main_sley() {
     sley-agent-bench) shift; command_agent_bench "$@" ;;
     sley-migrate) shift; command_migrate "$@" ;;
     sley-sandbox-runner) shift; command_sandbox "$@" ;;
-    sley-shadow) shift; simple_report_tool "sley.shadow.report.v0" "passed" "$(last_path_arg "$@")" ;;
+    sley-shadow) shift; command_shadow "$@" ;;
     sley-zjx) shift; command_zjx_tool "$@" ;;
     *) echo "unknown sley command: $cmd" >&2; return 2 ;;
   esac

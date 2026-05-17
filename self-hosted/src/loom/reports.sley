@@ -374,6 +374,10 @@ export task sandbox_report_fields -> List<Text> {
   ]
 }
 
+export task shadow_schema -> Text {
+  return "sley.shadow.report.v0"
+}
+
 export task agent_bench_schema -> Text {
   return "sley.agent_bench.report.v0"
 }
