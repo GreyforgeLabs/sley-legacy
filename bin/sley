@@ -198,6 +198,53 @@ eval_parser_id_template() {
   '
 }
 
+eval_checker_message_template() {
+  local task="$1" arg_name="$2"
+  local checker_file="$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley"
+  local body expr token out callee value
+  body="$(extract_sley_task_body "$checker_file" "$task")"
+  [[ -n "$body" ]] || return 1
+  expr="$(printf '%s\n' "$body" | awk '
+    /^[ \t]*return[ \t]+/ {
+      line=$0
+      sub(/^[ \t]*return[ \t]+/, "", line)
+      print line
+      exit
+    }
+  ')"
+  [[ -n "$expr" ]] || return 1
+  out=""
+  while IFS= read -r token; do
+    [[ -n "$token" ]] || continue
+    if [[ "$token" == call* ]]; then
+      callee="$token"
+      callee="${callee#call }"
+      callee="${callee%%()*}"
+      value="$(extract_sley_string_task "$checker_file" "$callee")"
+      [[ -n "$value" ]] || return 1
+      out+="$value"
+    elif [[ "$token" == \"* ]]; then
+      value="${token#\"}"
+      value="${value%\"}"
+      out+="$value"
+    elif [[ "$token" == "$arg_name" ]]; then
+      out+="::$arg_name::"
+    else
+      return 1
+    fi
+  done < <(printf '%s\n' "$expr" | awk '
+    {
+      line=$0
+      while (match(line, /call[ \t]+[A-Za-z_][A-Za-z0-9_]*\(\)|"[^"]*"|[A-Za-z_][A-Za-z0-9_]*/)) {
+        print substr(line, RSTART, RLENGTH)
+        line=substr(line, RSTART + RLENGTH)
+      }
+    }
+  ')
+  [[ -n "$out" ]] || return 1
+  printf '%s\n' "$out"
+}
+
 eval_bootstrap_smoke_task() {
   local bootstrap_file="$SELF_HOSTED_SOURCE_ROOT/loom/bootstrap.sley"
   local body bind_name callee alias task module source_file return_var rules_json
@@ -1183,6 +1230,7 @@ UNKNOWN_TYPE_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROO
 UNKNOWN_TYPE_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_type_message_suffix)"
 UNKNOWN_TASK_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_task_message_prefix)"
 UNKNOWN_TASK_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_task_message_suffix)"
+UNKNOWN_TASK_MESSAGE_TEMPLATE="$(eval_checker_message_template unknown_task_message task_name || printf 'unknown task `::task_name::`\n')"
 CALL_ARITY_MISMATCH_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" call_arity_mismatch_message_prefix)"
 CALL_ARITY_MISMATCH_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" call_arity_mismatch_message_suffix)"
 CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" call_argument_type_mismatch_message_prefix)"
@@ -1247,6 +1295,9 @@ UNKNOWN_TYPE_MESSAGE_PREFIX="${UNKNOWN_TYPE_MESSAGE_PREFIX:-unknown type \`}"
 UNKNOWN_TYPE_MESSAGE_SUFFIX="${UNKNOWN_TYPE_MESSAGE_SUFFIX:-\`}"
 UNKNOWN_TASK_MESSAGE_PREFIX="${UNKNOWN_TASK_MESSAGE_PREFIX:-unknown task \`}"
 UNKNOWN_TASK_MESSAGE_SUFFIX="${UNKNOWN_TASK_MESSAGE_SUFFIX:-\`}"
+if [[ -z "$UNKNOWN_TASK_MESSAGE_TEMPLATE" ]]; then
+  UNKNOWN_TASK_MESSAGE_TEMPLATE='unknown task `::task_name::`'
+fi
 CALL_ARITY_MISMATCH_MESSAGE_PREFIX="${CALL_ARITY_MISMATCH_MESSAGE_PREFIX:-call arity mismatch for \`}"
 CALL_ARITY_MISMATCH_MESSAGE_SUFFIX="${CALL_ARITY_MISMATCH_MESSAGE_SUFFIX:-\`}"
 CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_PREFIX="${CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_PREFIX:-call argument type mismatch for \`}"
@@ -1998,6 +2049,7 @@ check_json() {
     --arg unknown_type_suffix "$UNKNOWN_TYPE_MESSAGE_SUFFIX" \
     --arg unknown_task_prefix "$UNKNOWN_TASK_MESSAGE_PREFIX" \
     --arg unknown_task_suffix "$UNKNOWN_TASK_MESSAGE_SUFFIX" \
+    --arg unknown_task_message_template "$UNKNOWN_TASK_MESSAGE_TEMPLATE" \
     --arg call_arity_prefix "$CALL_ARITY_MISMATCH_MESSAGE_PREFIX" \
     --arg call_arity_suffix "$CALL_ARITY_MISMATCH_MESSAGE_SUFFIX" \
     --arg call_argument_type_prefix "$CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_PREFIX" \
@@ -2133,6 +2185,8 @@ check_json() {
       "return " + starter_expr($type_name);
     def csv_items:
       if (trim == "") then [] else split(",") | map(trim | select(length > 0)) end;
+    def render_arg($template; $name; $value):
+      $template | split("::" + $name + "::") | join($value);
     def alias_target($type_name):
       ([
         range(0; ($source_lines | length)) as $i |
@@ -2349,7 +2403,7 @@ check_json() {
           // ([$t.body.statements[]? | select(.kind==$binding_statement_kind and .name == $arg) | expression_static_type($t; .expr)][0])
           // "Unit"
         end;
-      {id:$unknown_task, severity:"error", message:($unknown_task_prefix + $callee + $unknown_task_suffix), node:$expr.id, span:$expr.span,
+      {id:$unknown_task, severity:"error", message:render_arg($unknown_task_message_template; "task_name"; $callee), node:$expr.id, span:$expr.span,
         repair_hints:[{
           kind:"declare_or_import_task",
           target:$expr.id,

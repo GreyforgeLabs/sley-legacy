@@ -35,6 +35,7 @@
     "checker_diagnostic_status",
     "checker_status_task_execution",
     "checker_builtin_type_task_execution",
+    "checker_message_task_execution",
     "checker_unknown_type_diagnostics",
     "checker_unknown_task_diagnostics",
     "checker_call_diagnostics",
