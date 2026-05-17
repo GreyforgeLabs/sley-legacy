@@ -576,6 +576,61 @@ eval_simple_scalar_main_return() {
   '
 }
 
+eval_text_concat_main_return() {
+  local target="$1"
+  ast_json "$target" | jq -ec \
+    --arg return_kind "$PARSER_RETURN_STATEMENT_KIND" \
+    --arg binding_kind "$PARSER_BINDING_STATEMENT_KIND" \
+    --arg string_kind "$PARSER_STRING_KIND" \
+    --arg int_expr_kind "$PARSER_INT_KIND" \
+    --arg bool_kind "$PARSER_BOOL_KIND" \
+    --arg text_value_kind "$RUNTIME_TEXT_VALUE_KIND" '
+    def trim: gsub("^[[:space:]]+|[[:space:]]+$"; "");
+    def string_literal_source:
+      test("^\"[^\"]*\"$");
+    def unquote:
+      sub("^\""; "") | sub("\"$"; "");
+    def token_value($token; $env):
+      ($token | trim) as $t |
+      if ($t | string_literal_source) then {value:($t | unquote), text:true}
+      elif ($t | test("^-?[0-9]+$")) then {value:$t, text:false}
+      elif ($t == "true" or $t == "false") then {value:$t, text:false}
+      else ($env[$t] // null) end;
+    def concat_value($source; $env):
+      ($source | split("+") | map(trim)) as $parts |
+      if ($parts | length) < 2 then null
+      else
+        (reduce $parts[] as $part ({ok:true, value:"", text:false};
+          if .ok then
+            (token_value($part; $env)) as $token |
+            if $token == null then .ok = false
+            else .value += ($token.value | tostring) | .text = (.text or $token.text)
+            end
+          else . end
+        )) as $result |
+        if $result.ok and $result.text then {value:$result.value, text:true} else null end
+      end;
+    def expr_value($expr; $env):
+      ($expr.name? // null) as $name |
+      if $expr.expr_kind == $string_kind then {value:$expr.value, text:true}
+      elif $expr.expr_kind == $int_expr_kind then {value:($expr.value | tostring), text:false}
+      elif $expr.expr_kind == $bool_kind then {value:($expr.value | tostring), text:false}
+      elif $name != null then (($env[$name] // null) as $bound | if $bound != null then $bound else concat_value($expr.source // ""; $env) end)
+      else concat_value($expr.source // ""; $env) end;
+    ([.tasks[]? | select(.name == "main")][0] // empty) as $task |
+    (reduce ($task.body.statements[]?) as $stmt ({env:{}, result:null};
+      if (($stmt.kind == $binding_kind) and ($stmt.name? // "") != "") then
+        (expr_value($stmt.expr; .env)) as $value |
+        if $value == null then . else .env[$stmt.name] = $value end
+      elif $stmt.kind == $return_kind then
+        .result = expr_value($stmt.expr; .env)
+      else . end
+    )) as $state |
+    select($state.result != null and $state.result.text) |
+    {kind:$text_value_kind, value:$state.result.value}
+  '
+}
+
 eval_source_if_int_main_return() {
   local target="$1" file
   file="$(collect_files "$target" | head -n 1)"
@@ -1560,7 +1615,7 @@ ast_json() {
     function expr_json(expr, id, line, col, value){
       expr=trim(expr)
       if(expr ~ int_pattern){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" int_kind "\",\"value\":" expr ",\"span\":" span_json(line,col) "}"}
-      if(expr ~ /^"(.*)"$/){value=expr; sub(/^"/,"",value); sub(/"$/,"",value); return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" string_kind "\",\"value\":\"" esc(value) "\",\"span\":" span_json(line,col) "}"}
+      if(expr ~ /^"[^"]*"$/){value=expr; sub(/^"/,"",value); sub(/"$/,"",value); return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" string_kind "\",\"value\":\"" esc(value) "\",\"span\":" span_json(line,col) "}"}
       if(expr=="true" || expr=="false"){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" bool_kind "\",\"value\":" expr ",\"span\":" span_json(line,col) "}"}
       if(expr ~ identifier_pattern){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" identifier_kind "\",\"name\":\"" esc(expr) "\",\"span\":" span_json(line,col) "}"}
       return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" raw_kind "\",\"fallible\":" (expr ~ /\?$/ ? "true" : "false") ",\"span\":" span_json(line,col) "}"
@@ -4138,6 +4193,9 @@ run_json() {
     value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
     value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
   elif simple_runtime="$(eval_simple_int_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
+    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
+    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
+  elif simple_runtime="$(eval_text_concat_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
     value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
     value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
   elif call_runtime="$(eval_main_call_int_return "$target" 2>/dev/null)" && [[ -n "$call_runtime" ]]; then

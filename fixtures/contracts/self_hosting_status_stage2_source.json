@@ -66,6 +66,7 @@
     "zjx_tool_report_shape",
     "pure_literal_runtime_execution",
     "bool_literal_runtime_execution",
+    "text_concat_runtime_execution",
     "seeded_agent_deploy_task_execution",
     "project_ready_task_execution",
     "ast_runtime_probe_dispatch",
