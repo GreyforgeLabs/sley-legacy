@@ -76,7 +76,6 @@
     "execute parser semantics from Sley source",
     "execute checker semantics from Sley source",
     "execute runtime semantics from Sley source",
-    "replace shell JSON shaping with Sley-owned report builders",
-    "prove parity against public fixtures and command manifests"
+    "replace shell JSON shaping with Sley-owned report builders"
   ]
 }
