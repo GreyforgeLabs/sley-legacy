@@ -159,6 +159,12 @@ export task unknown_task_message_suffix -> Text {
   return "`"
 }
 
+export task unknown_task_message -> Text {
+  take task_name: Text
+
+  return "unknown task `" + task_name + "`"
+}
+
 export task call_arity_mismatch_message_prefix -> Text {
   return "call arity mismatch for `"
 }
