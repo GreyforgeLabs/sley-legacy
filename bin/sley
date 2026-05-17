@@ -324,9 +324,17 @@ runtime_project_ready_probe_matches() {
 
 runtime_source_has_call() {
   local target="$1" needle="$2"
-  ast_json "$target" | jq -e --arg needle "$needle" '
+  if ast_json "$target" | jq -e --arg needle "$needle" '
     .. | objects | .source? // empty | select(contains($needle))
-  ' >/dev/null
+  ' >/dev/null; then
+    return 0
+  fi
+  while IFS= read -r file; do
+    if grep -Fq -- "$needle" "$file"; then
+      return 0
+    fi
+  done < <(collect_files "$target")
+  return 1
 }
 
 runtime_deploy_stage_probe_matches() {
@@ -2425,7 +2433,7 @@ check_json() {
 }
 
 lint_json() {
-  local target="$1" entry findings finding_count lint_status
+  local target="$1" entry findings finding_count lint_status raw_sources_json
   entry="$(entry_module_for "$target")"
   findings="$(mktemp)"
   : > "$findings"
@@ -2610,6 +2618,7 @@ lint_json() {
       }
     ' "$file" >> "$findings"
   done < <(collect_files "$target")
+  raw_sources_json="$(while IFS= read -r file; do jq -Rs . < "$file"; done < <(collect_files "$target") | jq -s .)"
   ast_json "$target" | jq -c '
     .imports
     | group_by(.owner_module + ":" + .module)[]
@@ -2680,9 +2689,9 @@ lint_json() {
       hint:"delete the import or use it"
     }
   ' >> "$findings"
-  ast_json "$target" | jq -c '
+  ast_json "$target" | jq -c --argjson raw_sources "$raw_sources_json" '
     . as $root |
-    ([.. | objects | .source? // empty | select(type == "string")] | unique) as $sources |
+    (([.. | objects | .source? // empty | select(type == "string")] + $raw_sources) | unique) as $sources |
     def effect_used($effect):
       if $effect == "DatabaseRead" then any($sources[]; test("db\\.(query|query_one|try_query|try_query_one)\\("))
       elif $effect == "DatabaseWrite" then any($sources[]; test("db\\.(try_insert)\\("))
@@ -2792,7 +2801,7 @@ lint_json() {
   ast_json "$target" | jq -c '
     . as $root |
     def call_callee:
-      .source | sub("^call[[:space:]]+";"") | sub("\\(.*$";"");
+      sub("^call[[:space:]]+";"") | sub("\\(.*$";"");
     def resolve($module; $callee):
       if ($callee | contains(".")) then
         ($callee | split(".")) as $parts |
@@ -2813,7 +2822,7 @@ lint_json() {
     $root.tasks[]? as $task |
     $task.body.statements[]? as $stmt |
     ($stmt.expr? // null) as $expr |
-    select($expr != null) |
+    select(($expr | type) == "object") |
     ($expr.source // "") as $source |
     if ($stmt.kind == "ExprStatement" and result_source($task; $expr) and (($source | endswith("?")) | not)) then
       {
@@ -2846,7 +2855,7 @@ lint_json() {
     $root.tasks[]? as $task |
     $task.body.statements[]? as $stmt |
     ($stmt.expr? // null) as $expr |
-    select($stmt.kind == "Binding" and ($stmt.binding_kind // "") == "Bind" and $expr != null) |
+    select($stmt.kind == "Binding" and ($stmt.binding_kind // "") == "Bind" and (($expr | type) == "object")) |
     ($expr.source // "") as $source |
     select(($source | endswith("?")) and (source_uses_except($task; $stmt.id; $stmt.name) | not)) |
     {
@@ -3753,6 +3762,14 @@ def normalize_effect(effect):
     return ALIASES.get(effect, effect)
 
 
+def display_effect(effect):
+    if effect == "DatabaseRead":
+        return "DatabaseRead/DbRead"
+    if effect == "DatabaseWrite":
+        return "DatabaseWrite/DbWrite"
+    return effect
+
+
 def parse_cli_args(args):
     caps = {}
     i = 0
@@ -3892,7 +3909,7 @@ def parse_source_file(path):
                 callee = call_match.group(1)
                 args = split_args(call_match.group(2))
                 node = f"block:task:{current.qname}:stmt:{stmt_index}:expr"
-                if "?" in stripped:
+                if re.search(r"\)\?\s*$", stripped):
                     node += ":try"
                 if callee in HOST_EFFECTS:
                     effect = HOST_EFFECTS[callee]
@@ -4047,7 +4064,7 @@ else:
             resource = call.get("resource")
             diagnostics.append(diagnostic(
                 "RUNTIME_CAPABILITY_SCOPE_DENIED",
-                f"{effect} scope does not allow `{resource if resource is not None else call.get('resource_expr', '')}`",
+                f"{display_effect(effect)} scope does not allow `{resource if resource is not None else call.get('resource_expr', '')}`",
                 call["node"],
             ))
             break
