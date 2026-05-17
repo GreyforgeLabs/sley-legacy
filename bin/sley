@@ -158,6 +158,46 @@ eval_parser_expression_classifiers_json() {
   done <<< "$rows" | jq -s 'from_entries'
 }
 
+eval_parser_id_template() {
+  local task="$1"
+  local parser_file="$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley"
+  local body expr
+  body="$(extract_sley_task_body "$parser_file" "$task")"
+  [[ -n "$body" ]] || return 1
+  expr="$(printf '%s\n' "$body" | awk '
+    /^[ \t]*return[ \t]+/ {
+      line=$0
+      sub(/^[ \t]*return[ \t]+/, "", line)
+      print line
+      exit
+    }
+  ')"
+  [[ -n "$expr" ]] || return 1
+  printf '%s\n' "$expr" | awk '
+    function unquote(s){sub(/^"/, "", s); sub(/"$/, "", s); return s}
+    function token_value(token) {
+      if (token ~ /^"/) return unquote(token)
+      if (token == "module_name") return "{{module}}"
+      if (token == "task_name") return "{{task}}"
+      if (token == "index") return "{{index}}"
+      exit 7
+    }
+    {
+      line=$0
+      out=""
+      seen=0
+      while (match(line, /"[^"]*"|[A-Za-z_][A-Za-z0-9_]*/)) {
+        token=substr(line, RSTART, RLENGTH)
+        out=out token_value(token)
+        seen=1
+        line=substr(line, RSTART + RLENGTH)
+      }
+      if (!seen) exit 7
+      print out
+    }
+  '
+}
+
 eval_bootstrap_smoke_task() {
   local bootstrap_file="$SELF_HOSTED_SOURCE_ROOT/loom/bootstrap.sley"
   local body bind_name callee alias task module source_file return_var rules_json
@@ -1364,6 +1404,8 @@ PARSER_TRUE_KIND="$(printf '%s\n' "$PARSER_CLASSIFIERS_JSON" | jq -r '."true" //
 PARSER_FALSE_KIND="$(printf '%s\n' "$PARSER_CLASSIFIERS_JSON" | jq -r '."false" // empty')"
 PARSER_EMPTY_LIST_KIND="$(printf '%s\n' "$PARSER_CLASSIFIERS_JSON" | jq -r '."[]" // empty')"
 PARSER_FALLBACK_KIND="$(printf '%s\n' "$PARSER_CLASSIFIERS_JSON" | jq -r '.__fallback__ // empty')"
+PARSER_TASK_ID_TEMPLATE="$(eval_parser_id_template task_id || printf 'task:{{module}}.{{task}}\n')"
+PARSER_STATEMENT_ID_TEMPLATE="$(eval_parser_id_template statement_id || printf 'block:task:{{module}}.{{task}}:stmt:{{index}}\n')"
 PARSER_RETURN_STATEMENT_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" return_statement_kind)"
 PARSER_EXPR_STATEMENT_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" expression_statement_kind)"
 PARSER_BINDING_STATEMENT_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" binding_statement_kind)"
@@ -1389,6 +1431,12 @@ PARSER_TRUE_KIND="${PARSER_TRUE_KIND:-$PARSER_BOOL_KIND}"
 PARSER_FALSE_KIND="${PARSER_FALSE_KIND:-$PARSER_BOOL_KIND}"
 PARSER_EMPTY_LIST_KIND="${PARSER_EMPTY_LIST_KIND:-$PARSER_LIST_KIND}"
 PARSER_FALLBACK_KIND="${PARSER_FALLBACK_KIND:-$PARSER_RAW_KIND}"
+if [[ -z "$PARSER_TASK_ID_TEMPLATE" ]]; then
+  PARSER_TASK_ID_TEMPLATE='task:{{module}}.{{task}}'
+fi
+if [[ -z "$PARSER_STATEMENT_ID_TEMPLATE" ]]; then
+  PARSER_STATEMENT_ID_TEMPLATE='block:task:{{module}}.{{task}}:stmt:{{index}}'
+fi
 PARSER_RETURN_STATEMENT_KIND="${PARSER_RETURN_STATEMENT_KIND:-Return}"
 PARSER_EXPR_STATEMENT_KIND="${PARSER_EXPR_STATEMENT_KIND:-Expr}"
 PARSER_BINDING_STATEMENT_KIND="${PARSER_BINDING_STATEMENT_KIND:-Binding}"
@@ -1648,6 +1696,8 @@ ast_json() {
     -v true_kind="$PARSER_TRUE_KIND" \
     -v false_kind="$PARSER_FALSE_KIND" \
     -v fallback_kind="$PARSER_FALLBACK_KIND" \
+    -v task_id_template="$PARSER_TASK_ID_TEMPLATE" \
+    -v statement_id_template="$PARSER_STATEMENT_ID_TEMPLATE" \
     -v return_statement_kind="$PARSER_RETURN_STATEMENT_KIND" \
     -v expr_statement_kind="$PARSER_EXPR_STATEMENT_KIND" \
     -v binding_statement_kind="$PARSER_BINDING_STATEMENT_KIND" \
@@ -1666,6 +1716,9 @@ ast_json() {
     function count_char(s, c, n, i){n=0; for(i=1;i<=length(s);i++){if(substr(s,i,1)==c)n++} return n}
     function type_json(s){s=trim(s); if(s=="")s="Unit"; return "{\"kind\":\"Named\",\"name\":\"" esc(s) "\"}"}
     function span_json(line, col){if(col<1)col=1; return "{\"line\":" line ",\"column\":" col "}"}
+    function replace_all(source, needle, replacement, pos){while((pos=index(source, needle))>0){source=substr(source,1,pos-1) replacement substr(source,pos+length(needle))} return source}
+    function instantiate_task_id(mod_name, task_label, id){id=task_id_template; id=replace_all(id, "{{module}}", mod_name); id=replace_all(id, "{{task}}", task_label); return id}
+    function instantiate_statement_id(mod_name, task_label, stmt_index, id){id=statement_id_template; id=replace_all(id, "{{module}}", mod_name); id=replace_all(id, "{{task}}", task_label); id=replace_all(id, "{{index}}", stmt_index); return id}
     function expr_json(expr, id, line, col, value){
       expr=trim(expr)
       if(expr ~ int_pattern){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" int_kind "\",\"value\":" expr ",\"span\":" span_json(line,col) "}"}
@@ -1679,7 +1732,7 @@ ast_json() {
     function binding_kind(k){return k=="state" ? state_binding_kind : (k=="tally" ? tally_binding_kind : bind_binding_kind)}
     function add_stmt(kind, txt, line, col, id){
       stmt_count[current]++
-      id="block:task:" task_module[current] "." task_name[current] ":stmt:" (stmt_count[current]-1)
+      id=instantiate_statement_id(task_module[current], task_name[current], stmt_count[current]-1)
       stmt_kind[current,stmt_count[current]]=kind
       stmt_text[current,stmt_count[current]]=txt
       stmt_line[current,stmt_count[current]]=line
@@ -1752,7 +1805,8 @@ ast_json() {
       printf "\n  ],\n  \"tasks\": ["
       for(i=1;i<=task_count;i++){
         if(i>1)printf ","
-        printf "\n    {\"id\":\"task:%s.%s\",\"module\":\"%s\",\"exported\":%s,\"name\":\"%s\",\"takes\":[", esc(task_module[i]), esc(task_name[i]), esc(task_module[i]), task_exported[i]?"true":"false", esc(task_name[i])
+        task_id_value=instantiate_task_id(task_module[i], task_name[i])
+        printf "\n    {\"id\":\"%s\",\"module\":\"%s\",\"exported\":%s,\"name\":\"%s\",\"takes\":[", esc(task_id_value), esc(task_module[i]), task_exported[i]?"true":"false", esc(task_name[i])
         for(j=1;j<=take_count[i];j++){if(j>1)printf ","; printf "{\"id\":\"take:%s.%s.%s\",\"name\":\"%s\",\"binding_kind\":\"%s\",\"type\":%s,\"span\":%s}", esc(task_module[i]), esc(task_name[i]), esc(take_name[i,j]), esc(take_name[i,j]), take_kind[i,j], type_json(take_type[i,j]), span_json(take_line[i,j],1)}
         printf "],\"return_type\":%s,\"effects\":[", type_json(task_return[i])
         n=split(task_effects[i], effs, /[ \t,]+/); first=1; for(e=1;e<=n;e++){if(effs[e]!=""){if(!first)printf ","; printf "\"%s\"", esc(effs[e]); first=0}}
