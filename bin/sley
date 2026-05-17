@@ -119,6 +119,45 @@ module_source_file() {
   printf '%s/%s.sley\n' "$SELF_HOSTED_SOURCE_ROOT" "${module//.//}"
 }
 
+eval_parser_expression_classifiers_json() {
+  local parser_file="$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley"
+  local body rows
+  body="$(extract_sley_task_body "$parser_file" classify_expression)"
+  [[ -n "$body" ]] || return 1
+  rows="$(printf '%s\n' "$body" | awk '
+    /^[ \t]*if[ \t]+source[ \t]*==[ \t]*"/ {
+      source=$0
+      sub(/^.*==[ \t]*"/, "", source)
+      sub(/".*$/, "", source)
+      in_if=1
+      next
+    }
+    in_if && /^[ \t]*return[ \t]+call[ \t]+[A-Za-z_][A-Za-z0-9_]*\(\)/ {
+      task=$0
+      sub(/^.*return[ \t]+call[ \t]+/, "", task)
+      sub(/\(\).*/, "", task)
+      print source "\t" task
+      in_if=0
+      next
+    }
+    /^[ \t]*return[ \t]+call[ \t]+[A-Za-z_][A-Za-z0-9_]*\(\)/ {
+      task=$0
+      sub(/^.*return[ \t]+call[ \t]+/, "", task)
+      sub(/\(\).*/, "", task)
+      print "__fallback__\t" task
+      exit
+    }
+  ')"
+  [[ -n "$rows" ]] || return 1
+  while IFS=$'\t' read -r source task; do
+    [[ -n "$source" && -n "$task" ]] || continue
+    local kind
+    kind="$(extract_sley_string_task "$parser_file" "$task")"
+    [[ -n "$kind" ]] || return 1
+    jq -cn --arg key "$source" --arg value "$kind" '{key:$key,value:$value}'
+  done <<< "$rows" | jq -s 'from_entries'
+}
+
 eval_bootstrap_smoke_task() {
   local bootstrap_file="$SELF_HOSTED_SOURCE_ROOT/loom/bootstrap.sley"
   local body bind_name callee alias task module source_file return_var rules_json
@@ -1318,7 +1357,13 @@ PARSER_INT_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parse
 PARSER_STRING_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" string_literal_kind)"
 PARSER_BOOL_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" bool_literal_kind)"
 PARSER_IDENTIFIER_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" identifier_kind)"
+PARSER_LIST_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" list_literal_kind)"
 PARSER_RAW_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" raw_expr_kind)"
+PARSER_CLASSIFIERS_JSON="$(eval_parser_expression_classifiers_json || printf '{}\n')"
+PARSER_TRUE_KIND="$(printf '%s\n' "$PARSER_CLASSIFIERS_JSON" | jq -r '."true" // empty')"
+PARSER_FALSE_KIND="$(printf '%s\n' "$PARSER_CLASSIFIERS_JSON" | jq -r '."false" // empty')"
+PARSER_EMPTY_LIST_KIND="$(printf '%s\n' "$PARSER_CLASSIFIERS_JSON" | jq -r '."[]" // empty')"
+PARSER_FALLBACK_KIND="$(printf '%s\n' "$PARSER_CLASSIFIERS_JSON" | jq -r '.__fallback__ // empty')"
 PARSER_RETURN_STATEMENT_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" return_statement_kind)"
 PARSER_EXPR_STATEMENT_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" expression_statement_kind)"
 PARSER_BINDING_STATEMENT_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" binding_statement_kind)"
@@ -1338,7 +1383,12 @@ PARSER_INT_KIND="${PARSER_INT_KIND:-IntLiteral}"
 PARSER_STRING_KIND="${PARSER_STRING_KIND:-StringLiteral}"
 PARSER_BOOL_KIND="${PARSER_BOOL_KIND:-BoolLiteral}"
 PARSER_IDENTIFIER_KIND="${PARSER_IDENTIFIER_KIND:-Identifier}"
+PARSER_LIST_KIND="${PARSER_LIST_KIND:-ListLiteral}"
 PARSER_RAW_KIND="${PARSER_RAW_KIND:-Raw}"
+PARSER_TRUE_KIND="${PARSER_TRUE_KIND:-$PARSER_BOOL_KIND}"
+PARSER_FALSE_KIND="${PARSER_FALSE_KIND:-$PARSER_BOOL_KIND}"
+PARSER_EMPTY_LIST_KIND="${PARSER_EMPTY_LIST_KIND:-$PARSER_LIST_KIND}"
+PARSER_FALLBACK_KIND="${PARSER_FALLBACK_KIND:-$PARSER_RAW_KIND}"
 PARSER_RETURN_STATEMENT_KIND="${PARSER_RETURN_STATEMENT_KIND:-Return}"
 PARSER_EXPR_STATEMENT_KIND="${PARSER_EXPR_STATEMENT_KIND:-Expr}"
 PARSER_BINDING_STATEMENT_KIND="${PARSER_BINDING_STATEMENT_KIND:-Binding}"
@@ -1593,7 +1643,11 @@ ast_json() {
     -v string_kind="$PARSER_STRING_KIND" \
     -v bool_kind="$PARSER_BOOL_KIND" \
     -v identifier_kind="$PARSER_IDENTIFIER_KIND" \
+    -v list_kind="$PARSER_EMPTY_LIST_KIND" \
     -v raw_kind="$PARSER_RAW_KIND" \
+    -v true_kind="$PARSER_TRUE_KIND" \
+    -v false_kind="$PARSER_FALSE_KIND" \
+    -v fallback_kind="$PARSER_FALLBACK_KIND" \
     -v return_statement_kind="$PARSER_RETURN_STATEMENT_KIND" \
     -v expr_statement_kind="$PARSER_EXPR_STATEMENT_KIND" \
     -v binding_statement_kind="$PARSER_BINDING_STATEMENT_KIND" \
@@ -1616,9 +1670,11 @@ ast_json() {
       expr=trim(expr)
       if(expr ~ int_pattern){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" int_kind "\",\"value\":" expr ",\"span\":" span_json(line,col) "}"}
       if(expr ~ /^"[^"]*"$/){value=expr; sub(/^"/,"",value); sub(/"$/,"",value); return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" string_kind "\",\"value\":\"" esc(value) "\",\"span\":" span_json(line,col) "}"}
-      if(expr=="true" || expr=="false"){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" bool_kind "\",\"value\":" expr ",\"span\":" span_json(line,col) "}"}
+      if(expr=="true"){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" true_kind "\",\"value\":true,\"span\":" span_json(line,col) "}"}
+      if(expr=="false"){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" false_kind "\",\"value\":false,\"span\":" span_json(line,col) "}"}
+      if(expr=="[]"){return "{\"id\":\"" id "\",\"source\":\"[]\",\"expr_kind\":\"" list_kind "\",\"items\":[],\"span\":" span_json(line,col) "}"}
       if(expr ~ identifier_pattern){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" identifier_kind "\",\"name\":\"" esc(expr) "\",\"span\":" span_json(line,col) "}"}
-      return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" raw_kind "\",\"fallible\":" (expr ~ /\?$/ ? "true" : "false") ",\"span\":" span_json(line,col) "}"
+      return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" fallback_kind "\",\"fallible\":" (expr ~ /\?$/ ? "true" : "false") ",\"span\":" span_json(line,col) "}"
     }
     function binding_kind(k){return k=="state" ? state_binding_kind : (k=="tally" ? tally_binding_kind : bind_binding_kind)}
     function add_stmt(kind, txt, line, col, id){
