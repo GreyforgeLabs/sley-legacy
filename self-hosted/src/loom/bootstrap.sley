@@ -35,6 +35,7 @@ export task owned_bootstrap_values -> List<Text> {
     "runtime_seed_values",
     "parser_expression_classifiers",
     "parser_classifier_task_execution",
+    "parser_id_task_execution",
     "parser_statement_and_binding_kinds",
     "bootstrap_smoke_runtime",
     "bootstrap_smoke_task_execution",
