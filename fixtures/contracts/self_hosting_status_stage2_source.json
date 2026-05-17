@@ -27,6 +27,7 @@
     "symbol_graph_report_shape",
     "runtime_seed_values",
     "parser_expression_classifiers",
+    "parser_classifier_task_execution",
     "parser_statement_and_binding_kinds",
     "bootstrap_smoke_runtime",
     "bootstrap_smoke_task_execution",
