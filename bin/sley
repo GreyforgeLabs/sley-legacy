@@ -1239,8 +1239,10 @@ CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HO
 CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_TEMPLATE="$(eval_checker_message_template call_argument_type_mismatch_message task_name || printf 'call argument type mismatch for `::task_name::`\n')"
 TYPE_MISMATCH_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" type_mismatch_message_prefix)"
 TYPE_MISMATCH_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" type_mismatch_message_suffix)"
+TYPE_MISMATCH_MESSAGE_TEMPLATE="$(eval_checker_message_template type_mismatch_message binding_name || printf 'type mismatch `::binding_name::`\n')"
 RETURN_TYPE_MISMATCH_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" return_type_mismatch_message_prefix)"
 RETURN_TYPE_MISMATCH_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" return_type_mismatch_message_suffix)"
+RETURN_TYPE_MISMATCH_MESSAGE_TEMPLATE="$(eval_checker_message_template return_type_mismatch_message task_name || printf 'return type mismatch `::task_name::`\n')"
 DUPLICATE_TAKE_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" duplicate_take_message_prefix)"
 DUPLICATE_TAKE_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" duplicate_take_message_suffix)"
 DUPLICATE_MAP_KEY_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" duplicate_map_key_message_prefix)"
@@ -1312,8 +1314,14 @@ if [[ -z "$CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_TEMPLATE" ]]; then
 fi
 TYPE_MISMATCH_MESSAGE_PREFIX="${TYPE_MISMATCH_MESSAGE_PREFIX:-type mismatch \`}"
 TYPE_MISMATCH_MESSAGE_SUFFIX="${TYPE_MISMATCH_MESSAGE_SUFFIX:-\`}"
+if [[ -z "$TYPE_MISMATCH_MESSAGE_TEMPLATE" ]]; then
+  TYPE_MISMATCH_MESSAGE_TEMPLATE='type mismatch `::binding_name::`'
+fi
 RETURN_TYPE_MISMATCH_MESSAGE_PREFIX="${RETURN_TYPE_MISMATCH_MESSAGE_PREFIX:-return type mismatch \`}"
 RETURN_TYPE_MISMATCH_MESSAGE_SUFFIX="${RETURN_TYPE_MISMATCH_MESSAGE_SUFFIX:-\`}"
+if [[ -z "$RETURN_TYPE_MISMATCH_MESSAGE_TEMPLATE" ]]; then
+  RETURN_TYPE_MISMATCH_MESSAGE_TEMPLATE='return type mismatch `::task_name::`'
+fi
 DUPLICATE_TAKE_MESSAGE_PREFIX="${DUPLICATE_TAKE_MESSAGE_PREFIX:-duplicate take \`}"
 DUPLICATE_TAKE_MESSAGE_SUFFIX="${DUPLICATE_TAKE_MESSAGE_SUFFIX:-\`}"
 DUPLICATE_MAP_KEY_MESSAGE_PREFIX="${DUPLICATE_MAP_KEY_MESSAGE_PREFIX:-duplicate map key \`}"
@@ -2066,8 +2074,10 @@ check_json() {
     --arg call_argument_type_message_template "$CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_TEMPLATE" \
     --arg type_mismatch_prefix "$TYPE_MISMATCH_MESSAGE_PREFIX" \
     --arg type_mismatch_suffix "$TYPE_MISMATCH_MESSAGE_SUFFIX" \
+    --arg type_mismatch_message_template "$TYPE_MISMATCH_MESSAGE_TEMPLATE" \
     --arg return_type_mismatch_prefix "$RETURN_TYPE_MISMATCH_MESSAGE_PREFIX" \
     --arg return_type_mismatch_suffix "$RETURN_TYPE_MISMATCH_MESSAGE_SUFFIX" \
+    --arg return_type_mismatch_message_template "$RETURN_TYPE_MISMATCH_MESSAGE_TEMPLATE" \
     --arg duplicate_take_prefix "$DUPLICATE_TAKE_MESSAGE_PREFIX" \
     --arg duplicate_take_suffix "$DUPLICATE_TAKE_MESSAGE_SUFFIX" \
     --arg duplicate_map_key_prefix "$DUPLICATE_MAP_KEY_MESSAGE_PREFIX" \
@@ -2459,7 +2469,7 @@ check_json() {
       (expression_static_type($t; $stmt.expr)) as $actual |
       select(type_known_for_compare($actual)) |
       select($actual != "" and (types_compatible($expected; $actual) | not)) |
-      {id:$type_mismatch, severity:"error", message:($type_mismatch_prefix + $stmt.name + $type_mismatch_suffix), node:$stmt.id, span:$stmt.span};
+      {id:$type_mismatch, severity:"error", message:render_arg($type_mismatch_message_template; "binding_name"; $stmt.name), node:$stmt.id, span:$stmt.span};
     def return_type_mismatch_diags:
       $root.tasks[] as $t |
       ($t.return_type.name // "Unit") as $expected |
@@ -2471,7 +2481,7 @@ check_json() {
       select(type_known_for_compare($actual)) |
       select($actual != "" and (types_compatible($expected; $actual) | not)) |
       (starter_expr(normalize_type($expected))) as $replacement_expr |
-      {id:$return_type_mismatch, severity:"error", message:($return_type_mismatch_prefix + $t.module + "." + $t.name + $return_type_mismatch_suffix), node:$stmt.expr.id, span:$stmt.expr.span,
+      {id:$return_type_mismatch, severity:"error", message:render_arg($return_type_mismatch_message_template; "task_name"; ($t.module + "." + $t.name)), node:$stmt.expr.id, span:$stmt.expr.span,
         repair_hints:[
           {kind:"inspect_return_type", target:$t.id, replacement:$expected},
           {kind:"replace_task_body", target:$t.id, replacement:("return " + $replacement_expr)},
