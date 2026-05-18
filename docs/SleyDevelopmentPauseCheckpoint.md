@@ -2,7 +2,7 @@
 
 Date: 2026-05-18
 Branch: public
-Latest code checkpoint: 2f127e4
+Latest code checkpoint: b5e3224
 Latest packet-sync documentation checkpoint before this note: 26e7417
 Current pause document status: committed on `public`; use `git log` for exact
 branch head
@@ -50,6 +50,10 @@ The current local checkpoint advances the public branch to:
   `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
   `bootstrap_owned_by_sley=190`; remaining blockers are still parser, checker,
   and runtime semantics from Sley source
+- self-hosting status after the parser AST missing-node message slice:
+  `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=191`; remaining blockers are still parser, checker,
+  and runtime semantics from Sley source
 - latest V1 log from this pause checkpoint: `/tmp/sley-make-v1-ok-text.log`
 - latest verification refresh on 2026-05-18: `make v1` passed again after the
   public-action packet was finalized and after the WebForge / sleylang.org
@@ -64,6 +68,7 @@ The tracked code checkpoint is:
 - 53c0fe6 fix: route ast node reports through sley builders
 - 307569e fix: source ast declaration ids from parser
 - 2f127e4 fix: source ast expression ids from parser
+- b5e3224 fix: source ast node miss messages from parser
 
 The tracked pause documentation checkpoints are:
 
@@ -102,6 +107,8 @@ Recent self-hosting slices added:
   those source templates during bootstrap
 - AST expression child identifiers for ordinary expression, collection, and
   condition nodes now use Sley-owned parser ID tasks from `loom.parser`
+- AST missing-node diagnostics now use the diagnostic id and message template
+  sourced from `loom.parser`
 - diagnostics and run report root layouts moved into Sley-owned report-builder
   declarations, with the shell bootstrap supplying computed values to those
   builders
@@ -236,10 +243,18 @@ The latest continuation audit reconfirmed:
   slice: `bootstrap`, `strict_self_hosted=false`,
   `semantic_source_count=6`, `bootstrap_owned_by_sley=190`; remaining blockers
   are parser, checker, and runtime semantics from Sley source
+- focused AST missing-node message probe:
+  `bin/sley ast --json --node missing examples/hello.sley` returned diagnostic
+  id `AST_NODE_NOT_FOUND` and message ``AST node not found `missing` `` from the
+  Sley-owned parser message template
+- Sley self-hosting status after the parser AST missing-node message proof
+  slice: `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=191`; remaining blockers
+  are parser, checker, and runtime semantics from Sley source
 
 ## Dirty State Notes
 
-Tracked code was committed at 2f127e4 before this pause document was updated.
+Tracked code was committed at b5e3224 before this pause document was updated.
 Tracked pause documentation was refreshed through 26e7417 with the external
 comparison approval gate, fork audit, and helper evidence.
 
