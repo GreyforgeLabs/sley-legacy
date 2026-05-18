@@ -1259,14 +1259,19 @@ DUPLICATE_RECORD_LITERAL_FIELD_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF
 DUPLICATE_RECORD_LITERAL_FIELD_MESSAGE_TEMPLATE="$(eval_checker_message_template duplicate_record_literal_field_message field_name || printf 'duplicate record literal field `::field_name::`\n')"
 RECORD_FIELD_MISSING_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" record_field_missing_message_prefix)"
 RECORD_FIELD_MISSING_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" record_field_missing_message_suffix)"
+RECORD_FIELD_MISSING_MESSAGE_TEMPLATE="$(eval_checker_message_template record_field_missing_message field_name || printf 'record field missing `::field_name::`\n')"
 RECORD_FIELD_UNKNOWN_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" record_field_unknown_message_prefix)"
 RECORD_FIELD_UNKNOWN_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" record_field_unknown_message_suffix)"
+RECORD_FIELD_UNKNOWN_MESSAGE_TEMPLATE="$(eval_checker_message_template record_field_unknown_message field_name || printf 'record field unknown `::field_name::`\n')"
 RECORD_FIELD_TYPE_MISMATCH_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" record_field_type_mismatch_message_prefix)"
 RECORD_FIELD_TYPE_MISMATCH_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" record_field_type_mismatch_message_suffix)"
+RECORD_FIELD_TYPE_MISMATCH_MESSAGE_TEMPLATE="$(eval_checker_message_template record_field_type_mismatch_message field_name || printf 'record field type mismatch `::field_name::`\n')"
 UNKNOWN_RECORD_FIELD_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_record_field_message_prefix)"
 UNKNOWN_RECORD_FIELD_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_record_field_message_suffix)"
+UNKNOWN_RECORD_FIELD_MESSAGE_TEMPLATE="$(eval_checker_message_template unknown_record_field_message field_name || printf 'unknown record field `::field_name::`\n')"
 RECORD_LITERAL_NON_RECORD_TYPE_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" record_literal_non_record_type_message_prefix)"
 RECORD_LITERAL_NON_RECORD_TYPE_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" record_literal_non_record_type_message_suffix)"
+RECORD_LITERAL_NON_RECORD_TYPE_MESSAGE_TEMPLATE="$(eval_checker_message_template record_literal_non_record_type_message type_name || printf 'record literal type is not a record `::type_name::`\n')"
 LIST_ELEMENT_TYPE_MISMATCH_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" list_element_type_mismatch_message_prefix)"
 LIST_ELEMENT_TYPE_MISMATCH_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" list_element_type_mismatch_message_suffix)"
 INDEX_NOT_INT_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" index_not_int_message_prefix)"
@@ -1360,14 +1365,29 @@ if [[ -z "$DUPLICATE_RECORD_LITERAL_FIELD_MESSAGE_TEMPLATE" ]]; then
 fi
 RECORD_FIELD_MISSING_MESSAGE_PREFIX="${RECORD_FIELD_MISSING_MESSAGE_PREFIX:-record field missing \`}"
 RECORD_FIELD_MISSING_MESSAGE_SUFFIX="${RECORD_FIELD_MISSING_MESSAGE_SUFFIX:-\`}"
+if [[ -z "$RECORD_FIELD_MISSING_MESSAGE_TEMPLATE" ]]; then
+  RECORD_FIELD_MISSING_MESSAGE_TEMPLATE='record field missing `::field_name::`'
+fi
 RECORD_FIELD_UNKNOWN_MESSAGE_PREFIX="${RECORD_FIELD_UNKNOWN_MESSAGE_PREFIX:-record field unknown \`}"
 RECORD_FIELD_UNKNOWN_MESSAGE_SUFFIX="${RECORD_FIELD_UNKNOWN_MESSAGE_SUFFIX:-\`}"
+if [[ -z "$RECORD_FIELD_UNKNOWN_MESSAGE_TEMPLATE" ]]; then
+  RECORD_FIELD_UNKNOWN_MESSAGE_TEMPLATE='record field unknown `::field_name::`'
+fi
 RECORD_FIELD_TYPE_MISMATCH_MESSAGE_PREFIX="${RECORD_FIELD_TYPE_MISMATCH_MESSAGE_PREFIX:-record field type mismatch \`}"
 RECORD_FIELD_TYPE_MISMATCH_MESSAGE_SUFFIX="${RECORD_FIELD_TYPE_MISMATCH_MESSAGE_SUFFIX:-\`}"
+if [[ -z "$RECORD_FIELD_TYPE_MISMATCH_MESSAGE_TEMPLATE" ]]; then
+  RECORD_FIELD_TYPE_MISMATCH_MESSAGE_TEMPLATE='record field type mismatch `::field_name::`'
+fi
 UNKNOWN_RECORD_FIELD_MESSAGE_PREFIX="${UNKNOWN_RECORD_FIELD_MESSAGE_PREFIX:-unknown record field \`}"
 UNKNOWN_RECORD_FIELD_MESSAGE_SUFFIX="${UNKNOWN_RECORD_FIELD_MESSAGE_SUFFIX:-\`}"
+if [[ -z "$UNKNOWN_RECORD_FIELD_MESSAGE_TEMPLATE" ]]; then
+  UNKNOWN_RECORD_FIELD_MESSAGE_TEMPLATE='unknown record field `::field_name::`'
+fi
 RECORD_LITERAL_NON_RECORD_TYPE_MESSAGE_PREFIX="${RECORD_LITERAL_NON_RECORD_TYPE_MESSAGE_PREFIX:-record literal type is not a record \`}"
 RECORD_LITERAL_NON_RECORD_TYPE_MESSAGE_SUFFIX="${RECORD_LITERAL_NON_RECORD_TYPE_MESSAGE_SUFFIX:-\`}"
+if [[ -z "$RECORD_LITERAL_NON_RECORD_TYPE_MESSAGE_TEMPLATE" ]]; then
+  RECORD_LITERAL_NON_RECORD_TYPE_MESSAGE_TEMPLATE='record literal type is not a record `::type_name::`'
+fi
 LIST_ELEMENT_TYPE_MISMATCH_MESSAGE_PREFIX="${LIST_ELEMENT_TYPE_MISMATCH_MESSAGE_PREFIX:-list element type mismatch \`}"
 LIST_ELEMENT_TYPE_MISMATCH_MESSAGE_SUFFIX="${LIST_ELEMENT_TYPE_MISMATCH_MESSAGE_SUFFIX:-\`}"
 INDEX_NOT_INT_MESSAGE_PREFIX="${INDEX_NOT_INT_MESSAGE_PREFIX:-list index must be Int, got \`}"
@@ -2134,14 +2154,19 @@ check_json() {
     --arg duplicate_record_literal_field_message_template "$DUPLICATE_RECORD_LITERAL_FIELD_MESSAGE_TEMPLATE" \
     --arg record_field_missing_prefix "$RECORD_FIELD_MISSING_MESSAGE_PREFIX" \
     --arg record_field_missing_suffix "$RECORD_FIELD_MISSING_MESSAGE_SUFFIX" \
+    --arg record_field_missing_message_template "$RECORD_FIELD_MISSING_MESSAGE_TEMPLATE" \
     --arg record_field_unknown_prefix "$RECORD_FIELD_UNKNOWN_MESSAGE_PREFIX" \
     --arg record_field_unknown_suffix "$RECORD_FIELD_UNKNOWN_MESSAGE_SUFFIX" \
+    --arg record_field_unknown_message_template "$RECORD_FIELD_UNKNOWN_MESSAGE_TEMPLATE" \
     --arg record_field_type_mismatch_prefix "$RECORD_FIELD_TYPE_MISMATCH_MESSAGE_PREFIX" \
     --arg record_field_type_mismatch_suffix "$RECORD_FIELD_TYPE_MISMATCH_MESSAGE_SUFFIX" \
+    --arg record_field_type_mismatch_message_template "$RECORD_FIELD_TYPE_MISMATCH_MESSAGE_TEMPLATE" \
     --arg unknown_record_field_prefix "$UNKNOWN_RECORD_FIELD_MESSAGE_PREFIX" \
     --arg unknown_record_field_suffix "$UNKNOWN_RECORD_FIELD_MESSAGE_SUFFIX" \
+    --arg unknown_record_field_message_template "$UNKNOWN_RECORD_FIELD_MESSAGE_TEMPLATE" \
     --arg record_literal_non_record_type_prefix "$RECORD_LITERAL_NON_RECORD_TYPE_MESSAGE_PREFIX" \
     --arg record_literal_non_record_type_suffix "$RECORD_LITERAL_NON_RECORD_TYPE_MESSAGE_SUFFIX" \
+    --arg record_literal_non_record_type_message_template "$RECORD_LITERAL_NON_RECORD_TYPE_MESSAGE_TEMPLATE" \
     --arg list_element_type_mismatch_prefix "$LIST_ELEMENT_TYPE_MISMATCH_MESSAGE_PREFIX" \
     --arg list_element_type_mismatch_suffix "$LIST_ELEMENT_TYPE_MISMATCH_MESSAGE_SUFFIX" \
     --arg index_not_int_prefix "$INDEX_NOT_INT_MESSAGE_PREFIX" \
@@ -2569,7 +2594,7 @@ check_json() {
       ($entries | map(.key)) as $actual_fields |
       (record_fields_for($type_name))[] as $field |
       select(($actual_fields | index($field.name)) == null) |
-      {id:$record_field_missing, severity:"error", message:($record_field_missing_prefix + $field.name + $record_field_missing_suffix), node:$stmt.expr.id, span:$stmt.expr.span};
+      {id:$record_field_missing, severity:"error", message:render_arg($record_field_missing_message_template; "field_name"; $field.name), node:$stmt.expr.id, span:$stmt.expr.span};
     def record_field_unknown_diags:
       $root.tasks[] as $t |
       $t.body.statements[]? |
@@ -2580,7 +2605,7 @@ check_json() {
       (record_fields_for($type_name) | map(.name)) as $known_fields |
       ($stmt.expr | record_literal_entries)[] as $entry |
       select(($known_fields | index($entry.key)) == null) |
-      {id:$record_field_unknown, severity:"error", message:($record_field_unknown_prefix + $entry.key + $record_field_unknown_suffix), node:$stmt.expr.id, span:$stmt.expr.span};
+      {id:$record_field_unknown, severity:"error", message:render_arg($record_field_unknown_message_template; "field_name"; $entry.key), node:$stmt.expr.id, span:$stmt.expr.span};
     def record_field_type_mismatch_diags:
       $root.tasks[] as $t |
       $t.body.statements[]? |
@@ -2595,7 +2620,7 @@ check_json() {
       ($entry.value | literal_type) as $actual |
       ($field.field_type | base_type_name) as $expected |
       select($actual != "" and $expected != "" and $actual != $expected) |
-      {id:$record_field_type_mismatch, severity:"error", message:($record_field_type_mismatch_prefix + $entry.key + $record_field_type_mismatch_suffix), node:$stmt.expr.id, span:$stmt.expr.span};
+      {id:$record_field_type_mismatch, severity:"error", message:render_arg($record_field_type_mismatch_message_template; "field_name"; $entry.key), node:$stmt.expr.id, span:$stmt.expr.span};
     def record_literal_non_record_type_diags:
       $root.tasks[] as $t |
       $t.body.statements[]? |
@@ -2604,7 +2629,7 @@ check_json() {
       ($stmt.expr | record_literal_type) as $type_name |
       select($type_name != null) |
       select(type_decl_kind($type_name) == "Alias") |
-      {id:$record_literal_non_record_type, severity:"error", message:($record_literal_non_record_type_prefix + $type_name + $record_literal_non_record_type_suffix), node:$stmt.expr.id, span:$stmt.expr.span};
+      {id:$record_literal_non_record_type, severity:"error", message:render_arg($record_literal_non_record_type_message_template; "type_name"; $type_name), node:$stmt.expr.id, span:$stmt.expr.span};
     def unknown_record_field_diags:
       $root.tasks[] as $t |
       $t.body.statements[]?.expr? as $expr |
@@ -2614,7 +2639,7 @@ check_json() {
       select($type_name != null) |
       (record_fields_for($type_name) | map(.name)) as $known_fields |
       select(($known_fields | index($access.field)) == null) |
-      {id:$unknown_record_field, severity:"error", message:($unknown_record_field_prefix + $access.field + $unknown_record_field_suffix), node:$expr.id, span:$expr.span};
+      {id:$unknown_record_field, severity:"error", message:render_arg($unknown_record_field_message_template; "field_name"; $access.field), node:$expr.id, span:$expr.span};
     def list_element_type_diags:
       $root.tasks[] as $t |
       $t.body.statements[]? |

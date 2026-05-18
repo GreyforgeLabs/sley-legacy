@@ -297,12 +297,24 @@ export task record_field_missing_message_suffix -> Text {
   return "`"
 }
 
+export task record_field_missing_message -> Text {
+  take field_name: Text
+
+  return "record field missing `" + field_name + "`"
+}
+
 export task record_field_unknown_message_prefix -> Text {
   return "record field unknown `"
 }
 
 export task record_field_unknown_message_suffix -> Text {
   return "`"
+}
+
+export task record_field_unknown_message -> Text {
+  take field_name: Text
+
+  return "record field unknown `" + field_name + "`"
 }
 
 export task record_field_type_mismatch_message_prefix -> Text {
@@ -313,6 +325,12 @@ export task record_field_type_mismatch_message_suffix -> Text {
   return "`"
 }
 
+export task record_field_type_mismatch_message -> Text {
+  take field_name: Text
+
+  return "record field type mismatch `" + field_name + "`"
+}
+
 export task unknown_record_field_message_prefix -> Text {
   return "unknown record field `"
 }
@@ -321,12 +339,24 @@ export task unknown_record_field_message_suffix -> Text {
   return "`"
 }
 
+export task unknown_record_field_message -> Text {
+  take field_name: Text
+
+  return "unknown record field `" + field_name + "`"
+}
+
 export task record_literal_non_record_type_message_prefix -> Text {
   return "record literal type is not a record `"
 }
 
 export task record_literal_non_record_type_message_suffix -> Text {
   return "`"
+}
+
+export task record_literal_non_record_type_message -> Text {
+  take type_name: Text
+
+  return "record literal type is not a record `" + type_name + "`"
 }
 
 export task list_element_type_mismatch_message_prefix -> Text {
