@@ -1233,8 +1233,10 @@ UNKNOWN_TASK_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROO
 UNKNOWN_TASK_MESSAGE_TEMPLATE="$(eval_checker_message_template unknown_task_message task_name || printf 'unknown task `::task_name::`\n')"
 CALL_ARITY_MISMATCH_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" call_arity_mismatch_message_prefix)"
 CALL_ARITY_MISMATCH_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" call_arity_mismatch_message_suffix)"
+CALL_ARITY_MISMATCH_MESSAGE_TEMPLATE="$(eval_checker_message_template call_arity_mismatch_message task_name || printf 'call arity mismatch for `::task_name::`\n')"
 CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" call_argument_type_mismatch_message_prefix)"
 CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" call_argument_type_mismatch_message_suffix)"
+CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_TEMPLATE="$(eval_checker_message_template call_argument_type_mismatch_message task_name || printf 'call argument type mismatch for `::task_name::`\n')"
 TYPE_MISMATCH_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" type_mismatch_message_prefix)"
 TYPE_MISMATCH_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" type_mismatch_message_suffix)"
 RETURN_TYPE_MISMATCH_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" return_type_mismatch_message_prefix)"
@@ -1300,8 +1302,14 @@ if [[ -z "$UNKNOWN_TASK_MESSAGE_TEMPLATE" ]]; then
 fi
 CALL_ARITY_MISMATCH_MESSAGE_PREFIX="${CALL_ARITY_MISMATCH_MESSAGE_PREFIX:-call arity mismatch for \`}"
 CALL_ARITY_MISMATCH_MESSAGE_SUFFIX="${CALL_ARITY_MISMATCH_MESSAGE_SUFFIX:-\`}"
+if [[ -z "$CALL_ARITY_MISMATCH_MESSAGE_TEMPLATE" ]]; then
+  CALL_ARITY_MISMATCH_MESSAGE_TEMPLATE='call arity mismatch for `::task_name::`'
+fi
 CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_PREFIX="${CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_PREFIX:-call argument type mismatch for \`}"
 CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_SUFFIX="${CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_SUFFIX:-\`}"
+if [[ -z "$CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_TEMPLATE" ]]; then
+  CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_TEMPLATE='call argument type mismatch for `::task_name::`'
+fi
 TYPE_MISMATCH_MESSAGE_PREFIX="${TYPE_MISMATCH_MESSAGE_PREFIX:-type mismatch \`}"
 TYPE_MISMATCH_MESSAGE_SUFFIX="${TYPE_MISMATCH_MESSAGE_SUFFIX:-\`}"
 RETURN_TYPE_MISMATCH_MESSAGE_PREFIX="${RETURN_TYPE_MISMATCH_MESSAGE_PREFIX:-return type mismatch \`}"
@@ -2052,8 +2060,10 @@ check_json() {
     --arg unknown_task_message_template "$UNKNOWN_TASK_MESSAGE_TEMPLATE" \
     --arg call_arity_prefix "$CALL_ARITY_MISMATCH_MESSAGE_PREFIX" \
     --arg call_arity_suffix "$CALL_ARITY_MISMATCH_MESSAGE_SUFFIX" \
+    --arg call_arity_message_template "$CALL_ARITY_MISMATCH_MESSAGE_TEMPLATE" \
     --arg call_argument_type_prefix "$CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_PREFIX" \
     --arg call_argument_type_suffix "$CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_SUFFIX" \
+    --arg call_argument_type_message_template "$CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_TEMPLATE" \
     --arg type_mismatch_prefix "$TYPE_MISMATCH_MESSAGE_PREFIX" \
     --arg type_mismatch_suffix "$TYPE_MISMATCH_MESSAGE_SUFFIX" \
     --arg return_type_mismatch_prefix "$RETURN_TYPE_MISMATCH_MESSAGE_PREFIX" \
@@ -2421,7 +2431,7 @@ check_json() {
       ($target.takes | map(select(.binding_kind != "Gate"))) as $explicit_takes |
       ($expr | call_args) as $args |
       select(($args | length) != ($explicit_takes | length)) |
-      {id:$call_arity, severity:"error", message:($call_arity_prefix + $callee + $call_arity_suffix), node:$expr.id, span:$expr.span};
+      {id:$call_arity, severity:"error", message:render_arg($call_arity_message_template; "task_name"; $callee), node:$expr.id, span:$expr.span};
     def call_argument_type_diags:
       $root.tasks[] as $t |
       $t.body.statements[]?.expr? |
@@ -2437,7 +2447,7 @@ check_json() {
       ($explicit_takes[$arg.key].type.name // "Unit") as $expected |
       ($arg.value | literal_type) as $actual |
       select($actual != "" and $expected != $actual) |
-      {id:$call_argument_type, severity:"error", message:($call_argument_type_prefix + $callee + $call_argument_type_suffix), node:$expr.id, span:$expr.span};
+      {id:$call_argument_type, severity:"error", message:render_arg($call_argument_type_message_template; "task_name"; $callee), node:$expr.id, span:$expr.span};
     def type_mismatch_diags:
       $root.tasks[] as $t |
       $t.body.statements[]? |
