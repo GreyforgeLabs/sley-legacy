@@ -7412,6 +7412,66 @@ else:
 PY
 }
 
+runtime_main_take_json() {
+  local target="$1" files_json
+  local -a runtime_files=()
+  mapfile -t runtime_files < <(runtime_context_files "$target")
+  files_json="$(printf '%s\n' "${runtime_files[@]}" | jq -R . | jq -s .)"
+  SLEY_RUNTIME_FILES="$files_json" python3 - "$SCHEMA_DIAGNOSTICS" <<'PY'
+import json
+import os
+import re
+import sys
+from pathlib import Path
+
+diag_schema = sys.argv[1]
+files = [Path(path) for path in json.loads(os.environ.get("SLEY_RUNTIME_FILES", "[]"))]
+
+for path in files:
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except UnicodeDecodeError:
+        lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+    module = "main"
+    current = None
+    depth = 0
+    for raw in lines:
+        stripped = raw.strip()
+        if current is None:
+            module_match = re.match(r"^module\s+([A-Za-z_][A-Za-z0-9_.]*)\s*$", stripped)
+            if module_match:
+                module = module_match.group(1)
+                continue
+            task_match = re.match(r"^(?:export\s+)?task\s+([A-Za-z_][A-Za-z0-9_]*)\b", stripped)
+            if task_match:
+                current = task_match.group(1)
+                depth = raw.count("{") - raw.count("}")
+                if depth <= 0:
+                    current = None
+                continue
+            continue
+        take_match = re.match(r"^take\s+(?!gate\b)([A-Za-z_][A-Za-z0-9_]*)\s*:", stripped)
+        if current == "main" and take_match:
+            take_name = take_match.group(1)
+            print(json.dumps({
+                "schema": diag_schema,
+                "status": "error",
+                "diagnostics": [{
+                    "id": "RUNTIME_TAKE_REQUIRED",
+                    "severity": "error",
+                    "message": f"`main` requires unsupported runtime take `{take_name}`",
+                    "node": f"take:task:{module}.main:{take_name}",
+                }],
+            }, indent=2))
+            raise SystemExit(0)
+        depth += raw.count("{") - raw.count("}")
+        if depth <= 0:
+            current = None
+
+print(json.dumps({"status": "passed", "diagnostics": []}, indent=2))
+PY
+}
+
 run_json() {
   local target="$1" http_text="" model_text="" deploy_text="" spend_text="" secret_text="" shell_text="" runtime_status literal_runtime simple_runtime call_runtime arg prev="" runtime_auth
   for arg in "$@"; do
@@ -7442,6 +7502,11 @@ run_json() {
   runtime_auth="$(runtime_authority_json "$target" "$@")"
   if [[ "$(printf '%s\n' "$runtime_auth" | jq -r '.status')" != "passed" ]]; then
     printf '%s\n' "$runtime_auth" | jq 'del(.required_effects)'
+    return 1
+  fi
+  runtime_status="$(runtime_main_take_json "$target")"
+  if [[ "$(printf '%s\n' "$runtime_status" | jq -r '.status')" != "passed" ]]; then
+    printf '%s\n' "$runtime_status"
     return 1
   fi
   local value_kind="$RUNTIME_RAW_VALUE_KIND" value="$RUNTIME_DEFAULT_RAW_VALUE"

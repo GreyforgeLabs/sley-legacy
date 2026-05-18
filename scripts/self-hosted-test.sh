@@ -54,6 +54,14 @@ bin/sley run --json examples/declaration_hygiene.sley \
   | json_field '.status == "passed" and .value.kind == "Unit" and (.value | has("value") | not)'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("main_take_runtime_diagnostic"))'
+
+if bin/sley run --json examples/unused_take.sley > "$runtime_report"; then
+  fail "main with ordinary runtime takes should not execute without arguments"
+fi
+jq -er '.schema == "sley.diagnostics.report.v0" and .status == "error" and .diagnostics[0].id == "RUNTIME_TAKE_REQUIRED" and .diagnostics[0].message == "`main` requires unsupported runtime take `value`"' "$runtime_report" >/dev/null
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("verify_report_shape"))'
 
 bin/sley self-hosting-status --json \
