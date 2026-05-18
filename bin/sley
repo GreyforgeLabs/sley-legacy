@@ -526,6 +526,24 @@ eval_runtime_int_less_than_value_task() {
   fi
 }
 
+eval_runtime_int_equal_value_task() {
+  local left="$1" right="$2"
+  local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
+  local body left_take right_take return_expr
+  [[ "$left" =~ ^-?[0-9]+$ && "$right" =~ ^-?[0-9]+$ ]] || return 1
+  body="$(extract_sley_task_body "$runtime_file" int_equal_value)"
+  [[ -n "$body" ]] || return 1
+  left_take="$(printf '%s\n' "$body" | awk '/^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Int/ {line=$0; sub(/^[ \t]*take[ \t]+/, "", line); sub(/[ \t]*:.*/, "", line); print line; exit}')"
+  right_take="$(printf '%s\n' "$body" | awk 'seen && /^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Int/ {line=$0; sub(/^[ \t]*take[ \t]+/, "", line); sub(/[ \t]*:.*/, "", line); print line; exit} /^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Int/ {seen=1}')"
+  return_expr="$(printf '%s\n' "$body" | awk '/^[ \t]*return[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*==[ \t]*[A-Za-z_][A-Za-z0-9_]*[ \t]*$/ {line=$0; sub(/^[ \t]*return[ \t]+/, "", line); gsub(/[ \t]+/, "", line); print line; exit}')"
+  [[ -n "$left_take" && -n "$right_take" && "$return_expr" == "$left_take==$right_take" ]] || return 1
+  if (( left == right )); then
+    printf 'true\n'
+  else
+    printf 'false\n'
+  fi
+}
+
 eval_runtime_list_index_int_value_task() {
   local values_source="$1" index="$2"
   local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
@@ -2342,6 +2360,163 @@ eval_source_each_map_sum_int_main_return() {
     total_value="$(eval_runtime_int_binary_value_task int_add_value "+" "$total_value" "$map_value")" || return 1
   done
   runtime_value="$(eval_runtime_int_identity_value_task "$total_value")" || return 1
+  printf '{"kind":"%s","value":"%s"}\n' "$RUNTIME_INT_VALUE_KIND" "$runtime_value"
+}
+
+eval_source_while_list_sum_int_main_return() {
+  local target="$1" file main_info list_values expected_count callee else_value body sum_info list_count condition index total item runtime_value
+  file="$(collect_files "$target" | head -n 1)"
+  [[ -n "$file" ]] || return 1
+  main_info="$(awk '
+    function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
+    function count_char(s, c, n, i){n=0; for(i=1;i<=length(s);i++){if(substr(s,i,1)==c)n++} return n}
+    /^[ \t]*(export[ \t]+)?task[ \t]+main[ \t]/ {
+      in_main=1
+      depth=count_char($0,"{")-count_char($0,"}")
+      next
+    }
+    in_main {
+      raw=$0
+      line=trim(raw)
+      if(depth == 1 && line ~ /^bind[ \t]+[A-Za-z_][A-Za-z0-9_]*([ \t]*:[^=]+)?[ \t]*=[ \t]*\[[^]]+\][ \t]*$/) {
+        rest=line
+        sub(/^bind[ \t]+/, "", rest)
+        list_name=rest
+        sub(/[ \t]*:.*/, "", list_name)
+        sub(/[ \t]*=.*/, "", list_name)
+        list_name=trim(list_name)
+        values=rest
+        sub(/^[^=]*=[ \t]*\[/, "", values)
+        sub(/\][ \t]*$/, "", values)
+      } else if(depth == 1 && line ~ /^if[ \t]+len\([A-Za-z_][A-Za-z0-9_]*\)[ \t]*==[ \t]*[0-9]+[ \t]*[{][ \t]*$/) {
+        cond=line
+        sub(/^if[ \t]+len\(/, "", cond)
+        cond_name=cond
+        sub(/\).*/, "", cond_name)
+        expected=cond
+        sub(/^.*==[ \t]*/, "", expected)
+        sub(/[ \t]*[{][ \t]*$/, "", expected)
+        cond_name=trim(cond_name)
+        expected=trim(expected)
+        in_if=1
+      } else if(in_if && depth == 2 && line ~ /^return[ \t]+call[ \t]+[A-Za-z_][A-Za-z0-9_]*\([A-Za-z_][A-Za-z0-9_]*\)[ \t]*$/) {
+        expr=line
+        sub(/^return[ \t]+call[ \t]+/, "", expr)
+        callee=expr
+        sub(/\(.*/, "", callee)
+        call_arg=expr
+        sub(/^[^(]*\(/, "", call_arg)
+        sub(/\)[ \t]*$/, "", call_arg)
+      } else if(in_if && depth == 2 && line ~ /^return[ \t]+-?[0-9]+[ \t]*$/) {
+        fallback=line
+        sub(/^return[ \t]+/, "", fallback)
+        fallback=trim(fallback)
+      }
+      depth += count_char(raw,"{")-count_char(raw,"}")
+      if(in_if && depth <= 1) in_if=0
+      if(depth <= 0) {
+        if(values != "" && expected != "" && callee != "" && fallback != "" && cond_name == list_name && call_arg == list_name) {
+          print values "\t" expected "\t" callee "\t" fallback
+          exit 0
+        }
+        exit 1
+      }
+    }
+    END { if(!in_main) exit 1 }
+  ' "$file")" || return 1
+  list_values="$(printf '%s\n' "$main_info" | cut -f1)"
+  expected_count="$(printf '%s\n' "$main_info" | cut -f2)"
+  callee="$(printf '%s\n' "$main_info" | cut -f3)"
+  else_value="$(printf '%s\n' "$main_info" | cut -f4)"
+  [[ -n "$list_values" && "$expected_count" =~ ^[0-9]+$ && -n "$callee" && "$else_value" =~ ^-?[0-9]+$ ]] || return 1
+  body="$(extract_sley_task_body "$file" "$callee")"
+  [[ -n "$body" ]] || return 1
+  sum_info="$(printf '%s\n' "$body" | awk '
+    function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
+    {
+      line=trim($0)
+      if(line ~ /^take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*List<Int>[ \t]*$/) {
+        take=line
+        sub(/^take[ \t]+/, "", take)
+        sub(/[ \t]*:.*/, "", take)
+      } else if(line ~ /^state[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*=[ \t]*0[ \t]*$/) {
+        rest=line
+        sub(/^state[ \t]+/, "", rest)
+        name=rest
+        sub(/[ \t]*=.*/, "", name)
+        name=trim(name)
+        if(index_name == "") index_name=name
+        else if(total_name == "") total_name=name
+      } else if(line ~ /^while[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*<[ \t]*len\([A-Za-z_][A-Za-z0-9_]*\)[ \t]*[{][ \t]*$/) {
+        cond=line
+        sub(/^while[ \t]+/, "", cond)
+        while_left=cond
+        sub(/[ \t]*<.*/, "", while_left)
+        while_values=cond
+        sub(/^.*len\(/, "", while_values)
+        sub(/\).*/, "", while_values)
+        while_left=trim(while_left)
+        while_values=trim(while_values)
+      } else if(line ~ /^set[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*=[ \t]*[A-Za-z_][A-Za-z0-9_]*[ \t]*\+[ \t]*[A-Za-z_][A-Za-z0-9_]*\[[A-Za-z_][A-Za-z0-9_]*\][ \t]*$/) {
+        rest=line
+        sub(/^set[ \t]+/, "", rest)
+        sum_target=rest
+        sub(/[ \t]*=.*/, "", sum_target)
+        expr=rest
+        sub(/^[^=]*=[ \t]*/, "", expr)
+        gsub(/[ \t]+/, "", expr)
+        split(expr, parts, "+")
+        sum_left=parts[1]
+        list_ref=parts[2]
+        sum_list=list_ref
+        sub(/\[.*/, "", sum_list)
+        sum_index=list_ref
+        sub(/^[^[]*\[/, "", sum_index)
+        sub(/\]$/, "", sum_index)
+        sum_target=trim(sum_target)
+      } else if(line ~ /^set[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*=[ \t]*[A-Za-z_][A-Za-z0-9_]*[ \t]*\+[ \t]*1[ \t]*$/) {
+        rest=line
+        sub(/^set[ \t]+/, "", rest)
+        inc_target=rest
+        sub(/[ \t]*=.*/, "", inc_target)
+        expr=rest
+        sub(/^[^=]*=[ \t]*/, "", expr)
+        gsub(/[ \t]+/, "", expr)
+        split(expr, parts, "+")
+        inc_left=parts[1]
+        inc_right=parts[2]
+        inc_target=trim(inc_target)
+      } else if(line ~ /^return[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*$/) {
+        return_name=line
+        sub(/^return[ \t]+/, "", return_name)
+        return_name=trim(return_name)
+      }
+    }
+    END {
+      if(take != "" && index_name != "" && total_name != "" && while_left == index_name && while_values == take && sum_target == total_name && sum_left == total_name && sum_list == take && sum_index == index_name && inc_target == index_name && inc_left == index_name && inc_right == "1" && return_name == total_name) {
+        print index_name "\t" total_name
+        exit 0
+      }
+      exit 1
+    }
+  ')" || return 1
+  [[ -n "$sum_info" ]] || return 1
+  list_count="$(printf '%s\n' "$list_values" | count_top_level_list_items)"
+  [[ "$list_count" =~ ^[0-9]+$ ]] || return 1
+  condition="$(eval_runtime_int_equal_value_task "$list_count" "$expected_count")" || return 1
+  if [[ "$condition" != "true" ]]; then
+    runtime_value="$(eval_runtime_int_identity_value_task "$else_value")" || return 1
+    printf '{"kind":"%s","value":"%s"}\n' "$RUNTIME_INT_VALUE_KIND" "$runtime_value"
+    return 0
+  fi
+  index=0
+  total=0
+  while [[ "$(eval_runtime_int_less_than_value_task "$index" "$list_count")" == "true" ]]; do
+    item="$(eval_runtime_list_index_int_value_task "$list_values" "$index")" || return 1
+    total="$(eval_runtime_int_binary_value_task int_add_value "+" "$total" "$item")" || return 1
+    index="$(eval_runtime_int_binary_value_task int_add_value "+" "$index" "1")" || return 1
+  done
+  runtime_value="$(eval_runtime_int_identity_value_task "$total")" || return 1
   printf '{"kind":"%s","value":"%s"}\n' "$RUNTIME_INT_VALUE_KIND" "$runtime_value"
 }
 
@@ -6657,6 +6832,9 @@ run_json() {
   local value_kind="$RUNTIME_RAW_VALUE_KIND" value="$RUNTIME_DEFAULT_RAW_VALUE"
   if json_list_contains_string "$RUNTIME_SELF_HOSTED_TARGETS_JSON" "$target"; then
     value_kind="$RUNTIME_INT_VALUE_KIND"; value="$(eval_bootstrap_smoke_task || printf '%s\n' "$DEFAULT_RULES_JSON" | jq 'length')"
+  elif simple_runtime="$(eval_source_while_list_sum_int_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
+    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
+    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
   elif simple_runtime="$(eval_source_state_set_int_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
     value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
     value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"

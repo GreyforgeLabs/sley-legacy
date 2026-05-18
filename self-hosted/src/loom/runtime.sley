@@ -119,6 +119,13 @@ export task int_less_than_value -> Bool {
   return left < right
 }
 
+export task int_equal_value -> Bool {
+  take left: Int
+  take right: Int
+
+  return left == right
+}
+
 export task list_index_int_value -> Int {
   take values: List<Int>
   take index: Int
