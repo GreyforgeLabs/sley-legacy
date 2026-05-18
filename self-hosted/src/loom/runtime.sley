@@ -112,6 +112,13 @@ export task record_name_text_value -> Text {
   return user.name
 }
 
+export task bool_equal_value -> Bool {
+  take left: Bool
+  take right: Bool
+
+  return left == right
+}
+
 export task seeded_agent_deploy_value -> Text {
   take profile: Text
   take model_plan: Text

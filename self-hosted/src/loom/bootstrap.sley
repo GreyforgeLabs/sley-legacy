@@ -86,6 +86,8 @@ export task owned_bootstrap_values -> List<Text> {
     "map_index_expression_runtime_execution",
     "record_field_runtime_task_execution",
     "record_field_expression_runtime_execution",
+    "bool_comparison_runtime_task_execution",
+    "bool_comparison_runtime_execution",
     "if_expression_runtime_execution",
     "if_statement_runtime_execution",
     "seeded_agent_deploy_task_execution",
