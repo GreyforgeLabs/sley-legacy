@@ -116,6 +116,21 @@ bin/sley run --json fixtures/corpus/accepted/result_flow.sley \
   | json_field '.status == "passed" and .value.kind == "Ok" and .value.value.kind == "Int" and .value.value.value == 42'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("text_identity_runtime_task_execution"))'
+
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("direct_file_read_runtime_execution"))'
+
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("direct_file_read_result_runtime_execution"))'
+
+bin/sley run --json examples/file_gate.sley \
+  | json_field '.status == "passed" and .value.kind == "Text" and .value.value == "hello sley"'
+
+bin/sley run --json examples/raw_host_migration.sley \
+  | json_field '.status == "passed" and .value.kind == "Ok" and .value.value.kind == "Text" and .value.value.value == "hello sley"'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("list_index_runtime_task_execution"))'
 
 bin/sley self-hosting-status --json \
