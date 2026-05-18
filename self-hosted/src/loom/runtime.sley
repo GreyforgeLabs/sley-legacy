@@ -87,6 +87,13 @@ export task list_len_value -> Int {
   return item_count
 }
 
+export task list_index_int_value -> Int {
+  take values: List<Int>
+  take index: Int
+
+  return values[index]
+}
+
 export task seeded_agent_deploy_value -> Text {
   take profile: Text
   take model_plan: Text
