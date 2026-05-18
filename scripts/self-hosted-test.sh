@@ -191,6 +191,15 @@ bin/sley run --json examples/dead_private_tasks.sley \
   | json_field '.status == "passed" and .value.kind == "Int" and .value.value == 1'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("zero_arg_project_call_runtime_execution"))'
+
+bin/sley run --json examples/unused_import_project \
+  | json_field '.status == "passed" and .value.kind == "Int" and .value.value == 7'
+
+bin/sley run --json examples/duplicate_import_project \
+  | json_field '.status == "passed" and .value.kind == "Text" and .value.value == "ready"'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("bool_comparison_runtime_task_execution"))'
 
 bin/sley self-hosting-status --json \
