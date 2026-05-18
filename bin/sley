@@ -4015,6 +4015,7 @@ SCHEMA_AST_PROGRAM="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/re
 SCHEMA_AST_NODE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" ast_node_schema)"
 SCHEMA_DIAGNOSTICS="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" diagnostics_schema)"
 DIAGNOSTICS_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" diagnostics_report_fields)"
+DIAGNOSTICS_REPORT_BUILDER_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" diagnostics_report_builder)"
 SCHEMA_QUERY="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" query_schema)"
 QUERY_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" query_report_fields)"
 SCHEMA_SYMBOL_GRAPH="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" symbol_graph_schema)"
@@ -4025,6 +4026,7 @@ SCHEMA_DOCTOR="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports
 DOCTOR_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" doctor_report_fields)"
 SCHEMA_RUN="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" run_schema)"
 RUN_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" run_report_fields)"
+RUN_REPORT_BUILDER_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" run_report_builder)"
 SCHEMA_VERIFY="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" verify_schema)"
 VERIFY_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" verify_report_fields)"
 SCHEMA_GRAFT_OUTCOME="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" graft_outcome_schema)"
@@ -4072,6 +4074,9 @@ SCHEMA_DIAGNOSTICS="${SCHEMA_DIAGNOSTICS:-sley.diagnostics.report.v0}"
 if [[ "$DIAGNOSTICS_REPORT_FIELDS_JSON" == "[]" ]]; then
   DIAGNOSTICS_REPORT_FIELDS_JSON='["schema","status","diagnostics"]'
 fi
+if [[ "$DIAGNOSTICS_REPORT_BUILDER_JSON" == "[]" ]]; then
+  DIAGNOSTICS_REPORT_BUILDER_JSON='["schema|reports.diagnostics_schema|Text","status|diagnostics.status|Text","diagnostics|diagnostics.diagnostics|List<Json>"]'
+fi
 SCHEMA_QUERY="${SCHEMA_QUERY:-sley.query.report.v0}"
 if [[ "$QUERY_REPORT_FIELDS_JSON" == "[]" ]]; then
   QUERY_REPORT_FIELDS_JSON='["schema","kind","entry_module","filters","modules","tasks","types","effects","calls"]'
@@ -4091,6 +4096,9 @@ fi
 SCHEMA_RUN="${SCHEMA_RUN:-sley.run.report.v0}"
 if [[ "$RUN_REPORT_FIELDS_JSON" == "[]" ]]; then
   RUN_REPORT_FIELDS_JSON='["schema","status","target","value","diagnostics"]'
+fi
+if [[ "$RUN_REPORT_BUILDER_JSON" == "[]" ]]; then
+  RUN_REPORT_BUILDER_JSON='["schema|reports.run_schema|Text","status|runtime.runtime_status|Text","target|runtime.target|Text","value|runtime.value|Json","diagnostics|runtime.diagnostics|List<Json>"]'
 fi
 SCHEMA_VERIFY="${SCHEMA_VERIFY:-sley.verify.report.v0}"
 if [[ "$VERIFY_REPORT_FIELDS_JSON" == "[]" ]]; then
@@ -4777,31 +4785,82 @@ sley_assert_source_still_checks() {
   fi
 }
 
+sley_report_builder_json() {
+  local builder_json="$1" values_json="$2"
+  jq -n \
+    --argjson values "$values_json" \
+    --argjson builder "$builder_json" \
+    '
+    def builder_slot($spec):
+      ($spec | split("|")) as $parts |
+      if ($parts | length) != 3 then
+        error("invalid report builder slot: " + $spec)
+      else
+        {field:$parts[0], source:$parts[1], value_type:$parts[2]}
+      end;
+    def source_value($source):
+      ($source | split(".")) as $parts |
+      if ($parts | length) != 2 then
+        error("invalid report builder source: " + $source)
+      else
+        ($values[$parts[0]][$parts[1]]) as $value |
+        if $value == null then
+          error("unknown report builder source: " + $source)
+        else
+          $value
+        end
+      end;
+    def type_ok($value_type; $value):
+      if $value_type == "Json" then true
+      elif $value_type == "Text" then ($value | type) == "string"
+      elif $value_type == "Bool" then ($value | type) == "boolean"
+      elif $value_type == "Int" then ($value | type) == "number"
+      elif $value_type == "List<Text>" then
+        (($value | type) == "array" and all($value[]; type == "string"))
+      elif $value_type == "List<Json>" then
+        ($value | type) == "array"
+      else false end;
+    reduce ($builder[] | builder_slot(.)) as $slot
+      ({};
+       (source_value($slot.source)) as $value |
+       if type_ok($slot.value_type; $value) then
+         . + {($slot.field):$value}
+       else
+         error("report builder type mismatch for field: " + $slot.field)
+       end)
+    '
+}
+
 sley_report_error_json() {
   local id="$1" message="$2" node="${3:-runtime}" hint_kind="${4:-}" hint_target="${5:-}" hint_replacement="${6:-}"
-  jq -n \
-    --arg schema "$SCHEMA_DIAGNOSTICS" \
+  local diagnostics values_json
+  diagnostics="$(jq -n \
     --arg id "$id" \
     --arg message "$message" \
     --arg node "$node" \
     --arg hint_kind "$hint_kind" \
     --arg hint_target "$hint_target" \
     --arg hint_replacement "$hint_replacement" '
+    [
+      {
+        id:$id,
+        severity:"error",
+        message:$message,
+        node:$node
+      }
+      + (if $hint_kind == "" then {} else {
+        repair_hints:[{kind:$hint_kind,target:$hint_target,replacement:$hint_replacement}]
+      } end)
+    ]')"
+  values_json="$(jq -n \
+    --arg schema "$SCHEMA_DIAGNOSTICS" \
+    --arg status "error" \
+    --argjson diagnostics "$diagnostics" '
     {
-      schema:$schema,
-      status:"error",
-      diagnostics:[
-        {
-          id:$id,
-          severity:"error",
-          message:$message,
-          node:$node
-        }
-        + (if $hint_kind == "" then {} else {
-          repair_hints:[{kind:$hint_kind,target:$hint_target,replacement:$hint_replacement}]
-        } end)
-      ]
-    }'
+      reports:{diagnostics_schema:$schema},
+      diagnostics:{status:$status, diagnostics:$diagnostics}
+    }')"
+  sley_report_builder_json "$DIAGNOSTICS_REPORT_BUILDER_JSON" "$values_json"
 }
 
 collect_files() {
@@ -5132,7 +5191,7 @@ query_json() {
 }
 
 check_json() {
-  local target="$1" diagnostics diagnostic_count check_status builtin_types source_text
+  local target="$1" diagnostics diagnostic_count check_status builtin_types source_text values_json
   if [[ -f "$target" ]]; then
     source_text="$(<"$target")"
   else
@@ -5806,16 +5865,15 @@ check_json() {
   if [[ -z "$check_status" ]]; then
     if [[ "$diagnostic_count" -eq 0 ]]; then check_status="$CHECK_OK_STATUS"; else check_status="$CHECK_ERROR_STATUS"; fi
   fi
-  jq -n \
+  values_json="$(jq -n \
     --arg schema "$SCHEMA_DIAGNOSTICS" \
     --arg status "$check_status" \
     --argjson diagnostics "$diagnostics" \
-    --argjson fields "$DIAGNOSTICS_REPORT_FIELDS_JSON" \
     '{
-      ($fields[0] // "schema"):$schema,
-      ($fields[1] // "status"):$status,
-      ($fields[2] // "diagnostics"):$diagnostics
-    }'
+      reports:{diagnostics_schema:$schema},
+      diagnostics:{status:$status, diagnostics:$diagnostics}
+    }')"
+  sley_report_builder_json "$DIAGNOSTICS_REPORT_BUILDER_JSON" "$values_json"
 }
 
 lint_json() {
@@ -7528,7 +7586,7 @@ PY
 }
 
 run_json() {
-  local target="$1" http_text="" model_text="" deploy_text="" spend_text="" secret_text="" shell_text="" runtime_status literal_runtime simple_runtime call_runtime arg prev="" runtime_auth
+  local target="$1" http_text="" model_text="" deploy_text="" spend_text="" secret_text="" shell_text="" runtime_status literal_runtime simple_runtime call_runtime arg prev="" runtime_auth run_value_json values_json
   for arg in "$@"; do
     case "$prev" in
       --http-text-url) prev="--http-text-value"; continue ;;
@@ -7752,20 +7810,16 @@ run_json() {
   fi
   runtime_status="$(eval_runtime_status_task 0 || printf '%s\n' "$RUNTIME_PASSED_STATUS")"
   [[ -n "$runtime_status" ]] || runtime_status="$RUNTIME_PASSED_STATUS"
-  jq -n \
-    --arg schema "$SCHEMA_RUN" \
-    --arg target "$target" \
+  run_value_json="$(jq -n \
     --arg kind "$value_kind" \
     --arg value "$value" \
-    --arg runtime_status "$runtime_status" \
     --arg int_kind "$RUNTIME_INT_VALUE_KIND" \
     --arg text_kind "$RUNTIME_TEXT_VALUE_KIND" \
     --arg bool_kind "$RUNTIME_BOOL_VALUE_KIND" \
     --arg unit_kind "$RUNTIME_UNIT_VALUE_KIND" \
     --arg ok_text_kind "$RUNTIME_OK_TEXT_VALUE_KIND" \
     --arg ok_int_kind "$RUNTIME_OK_INT_VALUE_KIND" \
-    --arg raw_kind "$RUNTIME_RAW_VALUE_KIND" \
-    --argjson fields "$RUN_REPORT_FIELDS_JSON" '
+    --arg raw_kind "$RUNTIME_RAW_VALUE_KIND" '
     def val:
       if $kind == $int_kind then {kind:$int_kind, value:($value|tonumber)}
       elif $kind == $text_kind then {kind:$text_kind, value:$value}
@@ -7774,14 +7828,17 @@ run_json() {
       elif $kind == $ok_text_kind then {kind:"Ok", value:{kind:$text_kind, value:$value}}
       elif $kind == $ok_int_kind then {kind:"Ok", value:{kind:$int_kind, value:($value|tonumber)}}
       else {kind:$raw_kind, value:$value} end;
-    {
-      ($fields[0] // "schema"):$schema,
-      ($fields[1] // "status"):$runtime_status,
-      ($fields[2] // "target"):$target,
-      ($fields[3] // "value"):val,
-      ($fields[4] // "diagnostics"):[]
-    }
-  '
+    val')"
+  values_json="$(jq -n \
+    --arg schema "$SCHEMA_RUN" \
+    --arg target "$target" \
+    --arg runtime_status "$runtime_status" \
+    --argjson value "$run_value_json" \
+    '{
+      reports:{run_schema:$schema},
+      runtime:{runtime_status:$runtime_status, target:$target, value:$value, diagnostics:[]}
+    }')"
+  sley_report_builder_json "$RUN_REPORT_BUILDER_JSON" "$values_json"
 }
 
 verify_json() {
@@ -8730,45 +8787,7 @@ self_hosting_status_json() {
         remaining_strict_self_hosting_blockers:$blockers
       }
     }')"
-  jq -n \
-    --argjson values "$values_json" \
-    --argjson builder "$SELF_HOSTING_STATUS_BUILDER_JSON" \
-    '
-    def builder_slot($spec):
-      ($spec | split("|")) as $parts |
-      if ($parts | length) != 3 then
-        error("invalid self-hosting builder slot: " + $spec)
-      else
-        {field:$parts[0], source:$parts[1], value_type:$parts[2]}
-      end;
-    def source_value($source):
-      ($source | split(".")) as $parts |
-      if ($parts | length) != 2 then
-        error("invalid self-hosting builder source: " + $source)
-      else
-        ($values[$parts[0]][$parts[1]]) as $value |
-        if $value == null then
-          error("unknown self-hosting builder source: " + $source)
-        else
-          $value
-        end
-      end;
-    def type_ok($value_type; $value):
-      if $value_type == "Text" then ($value | type) == "string"
-      elif $value_type == "Bool" then ($value | type) == "boolean"
-      elif $value_type == "Int" then ($value | type) == "number"
-      elif $value_type == "List<Text>" then
-        (($value | type) == "array" and all($value[]; type == "string"))
-      else false end;
-    reduce ($builder[] | builder_slot(.)) as $slot
-      ({};
-       (source_value($slot.source)) as $value |
-       if type_ok($slot.value_type; $value) then
-         . + {($slot.field):$value}
-       else
-         error("self-hosting builder type mismatch for field: " + $slot.field)
-       end)
-    '
+  sley_report_builder_json "$SELF_HOSTING_STATUS_BUILDER_JSON" "$values_json"
 }
 
 ci_simple_report() {
