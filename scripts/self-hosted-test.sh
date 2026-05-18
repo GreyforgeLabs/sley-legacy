@@ -182,6 +182,9 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("int_if_statement_runtime_execution"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("literal_if_statement_runtime_execution"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("state_set_runtime_execution"))'
 
 bin/sley self-hosting-status --json \
@@ -443,6 +446,9 @@ bin/sley run --json examples/same_branch_if_expression.sley \
   | json_field '.schema == "sley.run.report.v0" and .value.kind == "Int" and .value.value == 42'
 
 bin/sley run --json examples/constant_if_statement.sley \
+  | json_field '.schema == "sley.run.report.v0" and .value.kind == "Int" and .value.value == 42'
+
+bin/sley run --json examples/constant_false_if_statement.sley \
   | json_field '.schema == "sley.run.report.v0" and .value.kind == "Int" and .value.value == 42'
 
 bin/sley run --json examples/redundant_initial_set_statement.sley \
