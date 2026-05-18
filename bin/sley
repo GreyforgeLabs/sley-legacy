@@ -1811,6 +1811,62 @@ eval_source_state_set_int_main_return() {
   return 1
 }
 
+eval_source_tally_set_int_main_return() {
+  local target="$1" file raw line depth=0 in_main=false saw_tally=false saw_set=false rest prefix name expr value runtime_value
+  declare -A tally_env=()
+  file="$(collect_files "$target" | head -n 1)"
+  [[ -n "$file" ]] || return 1
+  while IFS= read -r raw; do
+    line="$(printf '%s\n' "$raw" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+    if ! "$in_main"; then
+      if [[ "$line" =~ ^(export[[:space:]]+)?task[[:space:]]+main[[:space:]] ]]; then
+        in_main=true
+        depth=$(( $(sley_count_char_text "$raw" "{") - $(sley_count_char_text "$raw" "}") ))
+      fi
+      continue
+    fi
+    if (( depth == 1 )); then
+      if [[ "$line" =~ ^(bind|state|tally)[[:space:]]+[A-Za-z_][A-Za-z0-9_]*[[:space:]]*= ]]; then
+        prefix="${BASH_REMATCH[1]}"
+        rest="$line"
+        rest="${rest#"$prefix"}"
+        rest="$(printf '%s\n' "$rest" | sed 's/^[[:space:]]*//')"
+        name="${rest%%=*}"
+        name="$(printf '%s\n' "$name" | sed 's/[[:space:]]*$//')"
+        expr="${rest#*=}"
+        value="$(eval_state_set_int_expr "$expr" tally_env)" || return 1
+        tally_env["$name"]="$value"
+        [[ "$prefix" == "tally" ]] && saw_tally=true
+      elif [[ "$line" =~ ^set[[:space:]]+[A-Za-z_][A-Za-z0-9_]*[[:space:]]*= ]]; then
+        rest="${line#set}"
+        rest="$(printf '%s\n' "$rest" | sed 's/^[[:space:]]*//')"
+        name="${rest%%=*}"
+        name="$(printf '%s\n' "$name" | sed 's/[[:space:]]*$//')"
+        expr="${rest#*=}"
+        value="$(eval_state_set_int_expr "$expr" tally_env)" || return 1
+        tally_env["$name"]="$value"
+        saw_set=true
+      elif [[ "$line" =~ ^return[[:space:]]+ ]]; then
+        "$saw_tally" && "$saw_set" || return 1
+        expr="${line#return}"
+        value="$(eval_state_set_int_expr "$expr" tally_env)" || return 1
+        runtime_value="$(eval_runtime_int_identity_value_task "$value")" || return 1
+        printf '{"kind":"%s","value":"%s"}\n' "$RUNTIME_INT_VALUE_KIND" "$runtime_value"
+        return 0
+      elif [[ -z "$line" || "$line" == "}" ]]; then
+        :
+      else
+        return 1
+      fi
+    fi
+    depth=$(( depth + $(sley_count_char_text "$raw" "{") - $(sley_count_char_text "$raw" "}") ))
+    if (( depth <= 0 )); then
+      break
+    fi
+  done < "$file"
+  return 1
+}
+
 eval_source_bound_int_main_return() {
   local target="$1" file raw line depth=0 in_main=false rest prefix name expr value runtime_value
   declare -A int_env=()
@@ -6016,6 +6072,9 @@ run_json() {
   if json_list_contains_string "$RUNTIME_SELF_HOSTED_TARGETS_JSON" "$target"; then
     value_kind="$RUNTIME_INT_VALUE_KIND"; value="$(eval_bootstrap_smoke_task || printf '%s\n' "$DEFAULT_RULES_JSON" | jq 'length')"
   elif simple_runtime="$(eval_source_state_set_int_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
+    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
+    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
+  elif simple_runtime="$(eval_source_tally_set_int_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
     value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
     value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
   elif simple_runtime="$(eval_source_bound_int_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
