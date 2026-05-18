@@ -60,6 +60,8 @@ export task owned_bootstrap_values -> List<Text> {
     "lint_finding_messages",
     "runtime_status_task_execution",
     "run_report_shape",
+    "unit_runtime_task_execution",
+    "unit_main_runtime_execution",
     "verify_report_shape",
     "graft_outcome_report_shape",
     "claim_verify_report_shape",
