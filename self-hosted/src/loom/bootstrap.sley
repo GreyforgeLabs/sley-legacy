@@ -82,6 +82,8 @@ export task owned_bootstrap_values -> List<Text> {
     "len_expression_runtime_execution",
     "int_arithmetic_runtime_task_execution",
     "absorbing_arithmetic_runtime_execution",
+    "int_comparison_runtime_task_execution",
+    "constant_comparison_runtime_execution",
     "list_index_runtime_task_execution",
     "list_index_expression_runtime_execution",
     "map_index_runtime_task_execution",
