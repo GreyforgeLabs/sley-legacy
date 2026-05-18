@@ -4,6 +4,28 @@ export task ast_program_schema -> Text {
   return "sley.ast.program.v0"
 }
 
+export task ast_program_report_fields -> List<Text> {
+  return [
+    "schema",
+    "module",
+    "imports",
+    "types",
+    "effects",
+    "tasks"
+  ]
+}
+
+export task ast_program_report_builder -> List<Text> {
+  return [
+    "schema|reports.ast_program_schema|Text",
+    "module|ast_program.module|Text",
+    "imports|ast_program.imports|List<Json>",
+    "types|ast_program.types|List<Json>",
+    "effects|ast_program.effects|List<Json>",
+    "tasks|ast_program.tasks|List<Json>"
+  ]
+}
+
 export task ast_node_schema -> Text {
   return "sley.ast.node.v0"
 }
