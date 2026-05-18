@@ -160,6 +160,17 @@ export task bool_if_value -> Bool {
   return else_value
 }
 
+export task int_if_value -> Int {
+  take condition: Bool
+  take then_value: Int
+  take else_value: Int
+
+  if condition {
+    return then_value
+  }
+  return else_value
+}
+
 export task seeded_agent_deploy_value -> Text {
   take profile: Text
   take model_plan: Text
