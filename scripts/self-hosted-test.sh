@@ -24,7 +24,8 @@ sandbox_report="$(mktemp)"
 agent_bench_report="$(mktemp)"
 zjx_tool_report="$(mktemp)"
 runtime_report="$(mktemp)"
-trap 'rm -f "$bool_literal_source" "$artifact_check_report" "$migrate_report" "$docgen_report" "$workbench_report" "$sandbox_report" "$agent_bench_report" "$zjx_tool_report" "$runtime_report"; rm -rf "$artifact_dir"' EXIT
+ast_missing_report="$(mktemp)"
+trap 'rm -f "$bool_literal_source" "$artifact_check_report" "$migrate_report" "$docgen_report" "$workbench_report" "$sandbox_report" "$agent_bench_report" "$zjx_tool_report" "$runtime_report" "$ast_missing_report"; rm -rf "$artifact_dir"' EXIT
 printf '%s\n' \
   'module app.bool_literal' \
   '' \
@@ -61,6 +62,9 @@ bin/sley self-hosting-status --json \
 
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_ast_node_report_builder")) and (.bootstrap_owned_by_sley | index("parser_ast_node_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("parser_ast_node_kind_task_execution")) and (.bootstrap_owned_by_sley | index("parser_ast_node_not_found_diagnostic"))'
+
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("parser_ast_node_not_found_message"))'
 
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("symbol_graph_report_builder")) and (.bootstrap_owned_by_sley | index("symbol_graph_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("claim_verify_report_builder")) and (.bootstrap_owned_by_sley | index("claim_verify_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("migrate_report_builder")) and (.bootstrap_owned_by_sley | index("migrate_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("docgen_report_builder")) and (.bootstrap_owned_by_sley | index("docgen_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("sandbox_report_builder")) and (.bootstrap_owned_by_sley | index("sandbox_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("agent_bench_report_builder")) and (.bootstrap_owned_by_sley | index("agent_bench_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("deploy_report_builder")) and (.bootstrap_owned_by_sley | index("deploy_report_builder_task_execution"))'
@@ -429,6 +433,11 @@ bin/sley ast --json --node block:task:app.hello.main:stmt:0:expr examples/hello.
 
 bin/sley ast --json --node task:app.hello.main examples/hello.sley \
   | json_field '.schema == "sley.ast.node.v0" and .node_kind == "task" and (.parent | not)'
+
+if bin/sley ast --json --node missing examples/hello.sley > "$ast_missing_report"; then
+  fail "missing AST node unexpectedly succeeded"
+fi
+jq -er '.schema == "sley.diagnostics.report.v0" and .diagnostics[0].id == "AST_NODE_NOT_FOUND" and .diagnostics[0].message == "AST node not found `missing`"' "$ast_missing_report" >/dev/null
 
 bin/sley ast --json fixtures/corpus/rejected/question_requires_result.sley \
   | json_field '.tasks[0].body.statements[0].kind == "Expr" and .tasks[0].body.statements[0].expr.fallible == true'
