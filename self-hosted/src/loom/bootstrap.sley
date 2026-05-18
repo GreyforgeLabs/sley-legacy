@@ -115,6 +115,7 @@ export task owned_bootstrap_values -> List<Text> {
     "constant_false_while_runtime_execution",
     "state_set_runtime_execution",
     "tally_set_runtime_execution",
+    "each_sum_runtime_execution",
     "if_expression_runtime_execution",
     "if_statement_runtime_execution",
     "project_call_runtime_execution",
