@@ -155,6 +155,14 @@ export task take_id -> Text {
   return "take:" + module_name + "." + task_name + "." + take_name
 }
 
+export task take_surface_id -> Text {
+  take task_id: Text
+  take index: Int
+  take take_name: Text
+
+  return "take:" + task_id + ":" + index + ":" + take_name
+}
+
 export task statement_id -> Text {
   take module_name: Text
   take task_name: Text

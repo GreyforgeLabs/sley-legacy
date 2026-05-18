@@ -49,6 +49,9 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_declaration_id_task_execution")) and (.bootstrap_owned_by_sley | index("parser_take_id_task_execution"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("parser_take_surface_id_task_execution"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_expression_id_task_execution")) and (.bootstrap_owned_by_sley | index("parser_control_expression_id_task_execution"))'
 
 bin/sley self-hosting-status --json \
@@ -421,6 +424,9 @@ bin/sley ast --json examples/declaration_hygiene.sley \
 
 bin/sley ast --json examples/unused_take.sley \
   | json_field '.tasks[0].takes[0].id == "take:app.takes.main.value" and .tasks[0].takes[1].id == "take:app.takes.main.unused"'
+
+bin/sley lint --json --rule unused_take examples/unused_take.sley \
+  | json_field '.schema == "sley.lint.report.v0" and .findings[0].node == "take:task:app.takes.main:1:unused"'
 
 bin/sley ast --json examples/constant_text_concatenation_expression.sley \
   | json_field '.schema == "sley.ast.program.v0" and .tasks[0].body.statements[0].expr.expr_kind == "Raw" and .tasks[0].body.statements[0].expr.source == "\"Sley \" + \"agents\""'
