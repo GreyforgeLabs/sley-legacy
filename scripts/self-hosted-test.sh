@@ -178,6 +178,12 @@ bin/sley self-hosting-status --json \
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("state_set_runtime_execution"))'
 
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("int_identity_runtime_task_execution"))'
+
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("bound_int_return_runtime_execution"))'
+
 bin/sley ast --json examples/hello.sley \
   | json_field '.schema == "sley.ast.program.v0" and .module == "app.hello" and .tasks[0].id == "task:app.hello.main" and .tasks[0].name == "main" and .tasks[0].body.statements[0].id == "block:task:app.hello.main:stmt:0" and .tasks[0].body.statements[0].expr.expr_kind == "StringLiteral"'
 
@@ -374,6 +380,12 @@ bin/sley run --json examples/absorbing_arithmetic_expression.sley \
   | json_field '.schema == "sley.run.report.v0" and .value.kind == "Int" and .value.value == 0'
 
 bin/sley run --json examples/identity_binary_expression.sley \
+  | json_field '.schema == "sley.run.report.v0" and .value.kind == "Int" and .value.value == 41'
+
+bin/sley run --json examples/unreachable_statement.sley \
+  | json_field '.schema == "sley.run.report.v0" and .value.kind == "Int" and .value.value == 41'
+
+bin/sley run --json examples/unused_pure_expression_statement.sley \
   | json_field '.schema == "sley.run.report.v0" and .value.kind == "Int" and .value.value == 41'
 
 bin/sley run --json examples/constant_list_index_expression.sley \
