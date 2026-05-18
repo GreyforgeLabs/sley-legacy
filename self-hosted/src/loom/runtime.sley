@@ -256,6 +256,12 @@ export task ok_int_value -> Int {
   return value
 }
 
+export task ok_text_value -> Text {
+  take value: Text
+
+  return value
+}
+
 export task seeded_agent_deploy_value -> Text {
   take profile: Text
   take model_plan: Text
