@@ -241,12 +241,24 @@ export task duplicate_take_message_suffix -> Text {
   return "`"
 }
 
+export task duplicate_take_message -> Text {
+  take take_name: Text
+
+  return "duplicate take `" + take_name + "`"
+}
+
 export task duplicate_map_key_message_prefix -> Text {
   return "duplicate map key `"
 }
 
 export task duplicate_map_key_message_suffix -> Text {
   return "`"
+}
+
+export task duplicate_map_key_message -> Text {
+  take key_name: Text
+
+  return "duplicate map key `" + key_name + "`"
 }
 
 export task duplicate_field_message_prefix -> Text {
@@ -257,12 +269,24 @@ export task duplicate_field_message_suffix -> Text {
   return "`"
 }
 
+export task duplicate_field_message -> Text {
+  take field_name: Text
+
+  return "duplicate record field `" + field_name + "`"
+}
+
 export task duplicate_record_literal_field_message_prefix -> Text {
   return "duplicate record literal field `"
 }
 
 export task duplicate_record_literal_field_message_suffix -> Text {
   return "`"
+}
+
+export task duplicate_record_literal_field_message -> Text {
+  take field_name: Text
+
+  return "duplicate record literal field `" + field_name + "`"
 }
 
 export task record_field_missing_message_prefix -> Text {
@@ -353,6 +377,12 @@ export task duplicate_effect_message_suffix -> Text {
   return "`"
 }
 
+export task duplicate_effect_message -> Text {
+  take effect_name: Text
+
+  return "duplicate effect `" + effect_name + "`"
+}
+
 export task duplicate_type_message_prefix -> Text {
   return "duplicate type `"
 }
@@ -361,12 +391,24 @@ export task duplicate_type_message_suffix -> Text {
   return "`"
 }
 
+export task duplicate_type_message -> Text {
+  take type_name: Text
+
+  return "duplicate type `" + type_name + "`"
+}
+
 export task duplicate_task_message_prefix -> Text {
   return "duplicate task `"
 }
 
 export task duplicate_task_message_suffix -> Text {
   return "`"
+}
+
+export task duplicate_task_message -> Text {
+  take task_name: Text
+
+  return "duplicate task `" + task_name + "`"
 }
 
 export task unknown_effect_message_prefix -> Text {
