@@ -177,6 +177,7 @@ eval_parser_id_template() {
     function unquote(s){sub(/^"/, "", s); sub(/"$/, "", s); return s}
     function token_value(token) {
       if (token ~ /^"/) return unquote(token)
+      if (token == "task_id") return "{{task_id}}"
       if (token == "module_name") return "{{module}}"
       if (token == "import_module") return "{{import_module}}"
       if (token == "task_name") return "{{task}}"
@@ -4749,6 +4750,7 @@ PARSER_IMPORT_ID_TEMPLATE="$(eval_parser_id_template import_id || printf 'import
 PARSER_TYPE_ID_TEMPLATE="$(eval_parser_id_template type_id || printf 'type:{{module}}.{{type}}\n')"
 PARSER_EFFECT_ID_TEMPLATE="$(eval_parser_id_template effect_id || printf 'effect:{{module}}.{{effect}}\n')"
 PARSER_TAKE_ID_TEMPLATE="$(eval_parser_id_template take_id || printf 'take:{{module}}.{{task}}.{{take}}\n')"
+PARSER_TAKE_SURFACE_ID_TEMPLATE="$(eval_parser_id_template take_surface_id || printf 'take:{{task_id}}:{{index}}:{{take}}\n')"
 PARSER_STATEMENT_ID_TEMPLATE="$(eval_parser_id_template statement_id || printf 'block:task:{{module}}.{{task}}:stmt:{{index}}\n')"
 PARSER_EXPRESSION_ID_TEMPLATE="$(eval_parser_id_template expression_id || printf '{{statement}}:expr\n')"
 PARSER_COLLECTION_EXPRESSION_ID_TEMPLATE="$(eval_parser_id_template collection_expression_id || printf '{{statement}}:collection\n')"
@@ -4792,6 +4794,9 @@ if [[ -z "$PARSER_EFFECT_ID_TEMPLATE" ]]; then
 fi
 if [[ -z "$PARSER_TAKE_ID_TEMPLATE" ]]; then
   PARSER_TAKE_ID_TEMPLATE='take:{{module}}.{{task}}.{{take}}'
+fi
+if [[ -z "$PARSER_TAKE_SURFACE_ID_TEMPLATE" ]]; then
+  PARSER_TAKE_SURFACE_ID_TEMPLATE='take:{{task_id}}:{{index}}:{{take}}'
 fi
 if [[ -z "$PARSER_STATEMENT_ID_TEMPLATE" ]]; then
   PARSER_STATEMENT_ID_TEMPLATE='block:task:{{module}}.{{task}}:stmt:{{index}}'
@@ -6498,8 +6503,14 @@ lint_json() {
       hint:"remove the effect from the task signature"
     }
   ' >> "$findings"
-  ast_json "$target" | jq -c '
+  ast_json "$target" | jq -c --arg take_surface_id_template "$PARSER_TAKE_SURFACE_ID_TEMPLATE" '
     . as $root |
+    def replace_all($needle; $replacement): split($needle) | join($replacement);
+    def take_surface_id($task_id; $index; $take_name):
+      $take_surface_id_template
+      | replace_all("{{task_id}}"; $task_id)
+      | replace_all("{{index}}"; $index)
+      | replace_all("{{take}}"; $take_name);
     def source_uses($task; $name):
       any([$task.body.statements[]? | .. | objects | .source? // empty | select(type == "string")][]; test("(^|[^A-Za-z0-9_])" + $name + "([^A-Za-z0-9_]|$)"));
     $root.tasks[]? as $task |
@@ -6510,7 +6521,7 @@ lint_json() {
       rule:"unused_take",
       severity:"warning",
       message:("take `" + .value.name + "` is not used"),
-      node:("take:" + $task.id + ":" + (.key|tostring) + ":" + .value.name),
+      node:take_surface_id($task.id; (.key|tostring); .value.name),
       module:$task.module,
       hint:"remove the take or use it in the task body"
     }
@@ -11499,7 +11510,13 @@ command_plan() {
     return
   fi
   lint="$(lint_json "$target")"
-  jq -n --arg target "$target" --arg template_surface "$template_surface" --argjson query "$query" --argjson lint "$lint" --argjson ast "$ast" '
+  jq -n --arg target "$target" --arg template_surface "$template_surface" --arg take_surface_id_template "$PARSER_TAKE_SURFACE_ID_TEMPLATE" --argjson query "$query" --argjson lint "$lint" --argjson ast "$ast" '
+    def replace_all($needle; $replacement): split($needle) | join($replacement);
+    def take_surface_id($task_id; $index; $take_name):
+      $take_surface_id_template
+      | replace_all("{{task_id}}"; $task_id)
+      | replace_all("{{index}}"; $index)
+      | replace_all("{{take}}"; $take_name);
     def starter_return($type_name):
       ($type_name // "Unit") as $name |
       ($name | sub("<.*$"; "")) as $base |
@@ -11710,12 +11727,12 @@ command_plan() {
         {kind:"insert_statement", surface:("block:" + $surface), operation:{op:"InsertStatement", target:("block:" + $surface), payload:{source:"forge { }", position:($stmts | length)}}, editable_json_pointers:["/payload/source","/payload/position"]}
       ]
       + (if (($task.takes | length) > 0) then
-          [$task.takes | to_entries[] | {kind:"move_take", surface:("take:" + $surface + ":" + (.key|tostring) + ":" + .value.name), operation:{op:"MoveNode", target:("take:" + $surface + ":" + (.key|tostring) + ":" + .value.name), payload:{position:.key}}, editable_json_pointers:["/payload/position"]}]
+          [$task.takes | to_entries[] | (take_surface_id($surface; (.key|tostring); .value.name)) as $take_surface | {kind:"move_take", surface:$take_surface, operation:{op:"MoveNode", target:$take_surface, payload:{position:.key}}, editable_json_pointers:["/payload/position"]}]
         else
           [{kind:"move_task", surface:$surface, operation:{op:"MoveNode", target:$surface, payload:{parent:("module:" + $task.module + ":tasks"), position:0}}, editable_json_pointers:["/payload/position"]}]
         end)
       + (if (($task.takes | length) > 0) then
-          [$task.takes | to_entries[] | {kind:"remove_take", surface:("take:" + $surface + ":" + (.key|tostring) + ":" + .value.name), operation:{op:"RemoveTake", target:$surface, payload:{position:.key}}}]
+          [$task.takes | to_entries[] | {kind:"remove_take", surface:take_surface_id($surface; (.key|tostring); .value.name), operation:{op:"RemoveTake", target:$surface, payload:{position:.key}}}]
         else [] end)
       + [{kind:"replace_expression", surface:($stmts[0].expr.id // ($first_stmt + ":expr")), operation:{op:"ReplaceExpression", target:($stmts[0].expr.id // ($first_stmt + ":expr")), payload:{source:($stmts[0].expr.source // "0")}}, editable_json_pointers:["/payload/source"]}]
       + (if (($stmts[0].kind // "") == "If") then
@@ -12842,7 +12859,15 @@ command_graft_raw() {
     lint="$(lint_json "$source")"
     take_node="$(printf '%s\n' "$lint" | jq -r --arg surface "$surface" '.findings[]? | select(.rule == "unused_take" and (.node | startswith("take:" + $surface + ":"))) | .node' | head -n 1)"
     if [[ -z "$take_node" ]]; then
-      take_node="$(ast_json "$source" | jq -r --arg surface "$surface" '.tasks[]? | select(.id == $surface) | .takes | to_entries[-1] | "take:" + $surface + ":" + (.key|tostring) + ":" + .value.name' | head -n 1)"
+      take_node="$(ast_json "$source" | jq -r --arg surface "$surface" --arg take_surface_id_template "$PARSER_TAKE_SURFACE_ID_TEMPLATE" '
+        def replace_all($needle; $replacement): split($needle) | join($replacement);
+        def take_surface_id($task_id; $index; $take_name):
+          $take_surface_id_template
+          | replace_all("{{task_id}}"; $task_id)
+          | replace_all("{{index}}"; $index)
+          | replace_all("{{take}}"; $take_name);
+        .tasks[]? | select(.id == $surface) | .takes | to_entries[-1] | take_surface_id($surface; (.key|tostring); .value.name)
+      ' | head -n 1)"
     fi
     take_name="${take_node##*:}"
     take_position="${take_node%:*}"
