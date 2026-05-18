@@ -98,6 +98,8 @@ export task owned_bootstrap_values -> List<Text> {
     "negated_comparison_runtime_execution",
     "bool_if_runtime_task_execution",
     "bool_if_expression_runtime_execution",
+    "int_if_runtime_task_execution",
+    "int_if_expression_runtime_execution",
     "if_expression_runtime_execution",
     "if_statement_runtime_execution",
     "seeded_agent_deploy_task_execution",
