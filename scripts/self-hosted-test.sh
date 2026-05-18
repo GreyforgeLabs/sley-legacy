@@ -137,6 +137,12 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("bool_not_runtime_task_execution"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("not_expression_runtime_execution"))'
+
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("double_not_expression_runtime_execution"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("negated_comparison_runtime_execution"))'
 
 bin/sley self-hosting-status --json \
@@ -365,6 +371,12 @@ bin/sley run --json examples/absorbing_boolean_expression.sley \
   | json_field '.schema == "sley.run.report.v0" and .value.kind == "Bool" and .value.value == false'
 
 bin/sley run --json examples/idempotent_boolean_expression.sley \
+  | json_field '.schema == "sley.run.report.v0" and .value.kind == "Bool" and .value.value == true'
+
+bin/sley run --json examples/constant_not_expression.sley \
+  | json_field '.schema == "sley.run.report.v0" and .value.kind == "Bool" and .value.value == false'
+
+bin/sley run --json examples/double_negation_expression.sley \
   | json_field '.schema == "sley.run.report.v0" and .value.kind == "Bool" and .value.value == true'
 
 bin/sley run --json examples/negated_comparison_expression.sley \
