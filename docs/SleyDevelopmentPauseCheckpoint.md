@@ -2,11 +2,12 @@
 
 Date: 2026-05-18
 Branch: public
-Latest code checkpoint: 642c9ed
+Latest code checkpoint: bbaa921
 Latest packet-sync documentation checkpoint before this note: 26e7417
 Current pause document status: committed on `public`; use `git log` for exact
 branch head
-Remote status: `public` is aligned with `origin/public`
+Remote status: `public` is ahead of `origin/public` with local self-hosting
+proof commits
 
 ## Operator Instruction
 
@@ -26,9 +27,13 @@ The current local checkpoint advances the public branch to:
 - self-hosting status before the resumed local slice: `bootstrap`,
   `strict_self_hosted=false`, `semantic_source_count=6`,
   `bootstrap_owned_by_sley=132`
-- self-hosting status after the resumed report-builder slices: `bootstrap`,
+- self-hosting status after the first resumed report-builder slices: `bootstrap`,
   `strict_self_hosted=false`, `semantic_source_count=6`,
   `bootstrap_owned_by_sley=164`
+- self-hosting status after the final resumed report-builder slice:
+  `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=180`; remaining blockers are parser, checker, and
+  runtime semantics from Sley source
 - latest V1 log from this pause checkpoint: `/tmp/sley-make-v1-ok-text.log`
 - latest verification refresh on 2026-05-18: `make v1` passed again after the
   public-action packet was finalized and after the WebForge / sleylang.org
@@ -38,6 +43,7 @@ The tracked code checkpoint is:
 
 - 41b739e fix: execute host text outputs from source
 - 642c9ed fix: execute ok text results from source
+- bbaa921 fix: route remaining reports through sley builders
 
 The tracked pause documentation checkpoints are:
 
@@ -61,6 +67,10 @@ Recent self-hosting slices added:
 - conformance report and conformance coverage root layouts moved into
   Sley-owned report-builder declarations while preserving the local V1 and
   public-release gate payloads
+- remaining command-report roots for graft outcome, CI, contract inventory,
+  contract validation, contract fixture checks, deploy artifact checks,
+  workbench, and ZJX tool outputs moved into Sley-owned report-builder
+  declarations; optional report slots are now skipped when absent
 - diagnostics and run report root layouts moved into Sley-owned report-builder
   declarations, with the shell bootstrap supplying computed values to those
   builders
@@ -80,13 +90,9 @@ are:
 - execute parser semantics from Sley source
 - execute checker semantics from Sley source
 - execute runtime semantics from Sley source
-- extend Sley-owned report builders across remaining command reports
 
 Expected next investigation area, once development resumes:
 
-- report-builder ownership for remaining JSON roots beyond diagnostics, query,
-  lint, doctor, run, verify, symbol graph, claim verify, conformance, migrate,
-  docgen, sandbox, agent bench, deploy, and self-hosting status
 - broader runtime expression execution from Sley source
 - parser/checker parity coverage that does not rely on shell/JQ semantics
 
@@ -146,16 +152,26 @@ The latest continuation audit reconfirmed:
 
 - public-action packet verifier: passed
 - live Zero target verifier: passed
+- focused report probes for CI, contract, workbench, graft, and ZJX report
+  routing: passed
+- `scripts/self-hosted-test.sh`: passed
+- `bin/sley-contract check-fixtures fixtures/contracts --schemas docs/schemas
+  --json`: passed with `failed_count=0`
+- `git diff --check`: passed
+- `make v1`: passed
 - Sley self-hosting status before resumed local proof work: `bootstrap`,
   `strict_self_hosted=false`, `semantic_source_count=6`,
   `bootstrap_owned_by_sley=132`
 - Sley self-hosting status after report-builder proof slices:
   `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
   `bootstrap_owned_by_sley=164`
+- Sley self-hosting status after the final report-builder proof slice:
+  `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=180`; the report-builder blocker is removed
 
 ## Dirty State Notes
 
-Tracked code was committed at 642c9ed before this pause document was updated.
+Tracked code was committed at bbaa921 before this pause document was updated.
 Tracked pause documentation was refreshed through 26e7417 with the external
 comparison approval gate, fork audit, and helper evidence.
 
