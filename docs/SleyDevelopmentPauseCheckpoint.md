@@ -2,7 +2,7 @@
 
 Date: 2026-05-18
 Branch: public
-Latest code checkpoint: 87b8670
+Latest code checkpoint: 91aa718
 Latest packet-sync documentation checkpoint before this note: 26e7417
 Current pause document status: committed on `public`; use `git log` for exact
 branch head
@@ -86,6 +86,10 @@ The current local checkpoint advances the public branch to:
   `bootstrap`, `strict_self_hosted=false`,
   `semantic_source_count=6`, `bootstrap_owned_by_sley=199`; remaining blockers
   are still parser, checker, and runtime semantics from Sley source
+- self-hosting status after the parser statement surface ID slice:
+  `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=200`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
 - latest V1 log from this pause checkpoint: `/tmp/sley-make-v1-ok-text.log`
 - latest verification refresh on 2026-05-18: `make v1` passed again after the
   public-action packet was finalized and after the WebForge / sleylang.org
@@ -109,6 +113,7 @@ The tracked code checkpoint is:
 - 2d6b263 fix: source call target task surfaces from parser
 - d0d5024 fix: source module edit surfaces from parser
 - 87b8670 fix: source call argument surfaces from parser
+- 91aa718 fix: source statement surfaces from parser
 
 The tracked pause documentation checkpoints are:
 
@@ -122,6 +127,7 @@ The tracked pause documentation checkpoints are:
 - f8b4173 docs: record block task surface self-hosting slice
 - a2d23c4 docs: record call target surface self-hosting slice
 - be892c7 docs: record module edit surface self-hosting slice
+- 472562b docs: record call argument surface self-hosting slice
 
 Recent self-hosting slices added:
 
@@ -176,6 +182,9 @@ Recent self-hosting slices added:
 - call-argument edit surfaces used by graph call-argument affordances now use a
   Sley-owned parser template while preserving the existing external
   `block:...:expr:arg:<index>` surface shape
+- statement edit surfaces used by edit-plan fallback templates now use a
+  Sley-owned parser template while preserving the existing external
+  `block:task:<module>.<task>:stmt:<index>` surface shape
 - diagnostics and run report root layouts moved into Sley-owned report-builder
   declarations, with the shell bootstrap supplying computed values to those
   builders
@@ -391,11 +400,19 @@ The latest continuation audit reconfirmed:
   slice: `bootstrap`, `strict_self_hosted=false`,
   `semantic_source_count=6`, `bootstrap_owned_by_sley=199`; remaining blockers
   are parser, checker, and runtime semantics from Sley source
+- focused statement surface probe:
+  `bin/sley plan --json --graft-templates examples/project` preserved
+  `block:task:app.main.main:stmt:0` for move/delete statement template targets
+  while preserving `block:task:app.main.main` as the block parent
+- Sley self-hosting status after the parser statement surface ID proof slice:
+  `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=200`; remaining blockers
+  are parser, checker, and runtime semantics from Sley source
 
 ## Dirty State Notes
 
-Tracked code was committed at 87b8670 before this pause document was updated.
-Tracked pause documentation before this update was refreshed through be892c7
+Tracked code was committed at 91aa718 before this pause document was updated.
+Tracked pause documentation before this update was refreshed through 472562b
 with parser surface evidence, and through 26e7417 with the external comparison
 approval gate, fork audit, and helper evidence.
 
