@@ -94,6 +94,13 @@ export task list_index_int_value -> Int {
   return values[index]
 }
 
+export task map_index_text_value -> Text {
+  take values: Map<Text, Text>
+  take key: Text
+
+  return values[key]
+}
+
 export task seeded_agent_deploy_value -> Text {
   take profile: Text
   take model_plan: Text

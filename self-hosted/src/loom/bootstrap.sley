@@ -82,6 +82,8 @@ export task owned_bootstrap_values -> List<Text> {
     "len_expression_runtime_execution",
     "list_index_runtime_task_execution",
     "list_index_expression_runtime_execution",
+    "map_index_runtime_task_execution",
+    "map_index_expression_runtime_execution",
     "if_expression_runtime_execution",
     "if_statement_runtime_execution",
     "seeded_agent_deploy_task_execution",
