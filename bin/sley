@@ -5368,8 +5368,14 @@ node_json() {
     --arg task_kind "$PARSER_AST_TASK_NODE_KIND" \
     --arg statement_kind "$PARSER_AST_STATEMENT_NODE_KIND" \
     --arg expression_kind "$PARSER_AST_EXPRESSION_NODE_KIND" \
+    --arg task_id_template "$PARSER_TASK_ID_TEMPLATE" \
     --arg not_found_id "$PARSER_AST_NODE_NOT_FOUND_ID" \
     --arg not_found_message_template "$PARSER_AST_NODE_NOT_FOUND_MESSAGE_TEMPLATE" '
+    def replace_all($needle; $replacement): split($needle) | join($replacement);
+    def ast_task_id($module_name; $task_name):
+      $task_id_template
+      | replace_all("{{module}}"; $module_name)
+      | replace_all("{{task}}"; $task_name);
     def ast_not_found_message($node_id): $not_found_message_template | gsub("::node_id::"; $node_id);
     def statements: [.tasks[] as $t | $t.body.statements[]? | . + {module:$t.module, task:$t.name}];
     (first(.tasks[]? | select(.id == $node)) // null) as $task_match |
@@ -5379,7 +5385,7 @@ node_json() {
     elif $stmt_match != null and ($stmt_match.expr.id? == $node) then
       {schema:$schema, target:$node, id:$node, node_kind:$expression_kind, module:$stmt_match.module, parent:$stmt_match.id, value:$stmt_match.expr}
     elif $stmt_match != null then
-      {schema:$schema, target:$node, id:$node, node_kind:$statement_kind, module:$stmt_match.module, parent:("task:" + $stmt_match.module + "." + $stmt_match.task), value:($stmt_match | del(.module,.task))}
+      {schema:$schema, target:$node, id:$node, node_kind:$statement_kind, module:$stmt_match.module, parent:ast_task_id($stmt_match.module; $stmt_match.task), value:($stmt_match | del(.module,.task))}
     else
       {schema:$diag_schema, status:"error", diagnostics:[{id:$not_found_id, severity:"error", message:ast_not_found_message($node), node:$node}]}
     end

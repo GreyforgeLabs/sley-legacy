@@ -55,6 +55,7 @@ export task owned_bootstrap_values -> List<Text> {
     "parser_ast_node_report_builder",
     "parser_ast_node_report_builder_task_execution",
     "parser_ast_node_kind_task_execution",
+    "parser_ast_node_parent_id_task_execution",
     "parser_ast_node_not_found_diagnostic",
     "parser_ast_node_not_found_message",
     "bootstrap_smoke_runtime",
