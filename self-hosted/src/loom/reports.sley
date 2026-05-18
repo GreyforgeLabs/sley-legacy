@@ -20,6 +20,14 @@ export task diagnostics_report_fields -> List<Text> {
   ]
 }
 
+export task diagnostics_report_builder -> List<Text> {
+  return [
+    "schema|reports.diagnostics_schema|Text",
+    "status|diagnostics.status|Text",
+    "diagnostics|diagnostics.diagnostics|List<Json>"
+  ]
+}
+
 export task doctor_schema -> Text {
   return "sley.doctor.report.v0"
 }
@@ -93,6 +101,16 @@ export task run_report_fields -> List<Text> {
     "target",
     "value",
     "diagnostics"
+  ]
+}
+
+export task run_report_builder -> List<Text> {
+  return [
+    "schema|reports.run_schema|Text",
+    "status|runtime.runtime_status|Text",
+    "target|runtime.target|Text",
+    "value|runtime.value|Json",
+    "diagnostics|runtime.diagnostics|List<Json>"
   ]
 }
 

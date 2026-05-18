@@ -26,6 +26,9 @@ The current local checkpoint advances the public branch to:
 - self-hosting status before the resumed local slice: `bootstrap`,
   `strict_self_hosted=false`, `semantic_source_count=6`,
   `bootstrap_owned_by_sley=132`
+- self-hosting status after the resumed report-builder slices: `bootstrap`,
+  `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=138`
 - latest V1 log from this pause checkpoint: `/tmp/sley-make-v1-ok-text.log`
 - latest verification refresh on 2026-05-18: `make v1` passed again after the
   public-action packet was finalized and after the WebForge / sleylang.org
@@ -49,6 +52,9 @@ Recent self-hosting slices added:
 - self-hosting status object layout moved into a Sley-owned report-builder
   declaration, with the shell bootstrap reduced to primitive value collection
   and serialization for that report
+- diagnostics and run report root layouts moved into Sley-owned report-builder
+  declarations, with the shell bootstrap supplying computed values to those
+  builders
 - deterministic host-gate text outputs routed through Sley-owned runtime text
   tasks
 - spend-prefixed output routed through a Sley-owned runtime task
@@ -132,7 +138,9 @@ The latest continuation audit reconfirmed:
 - Sley self-hosting status before resumed local proof work: `bootstrap`,
   `strict_self_hosted=false`, `semantic_source_count=6`,
   `bootstrap_owned_by_sley=132`
-- Sley strict self-hosting blockers were unchanged at that checkpoint
+- Sley self-hosting status after report-builder proof slices:
+  `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=138`
 
 ## Dirty State Notes
 
