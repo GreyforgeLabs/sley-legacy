@@ -107,6 +107,9 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("list_index_runtime_task_execution"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("list_index_text_runtime_task_execution"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("list_index_expression_runtime_execution"))'
 
 bin/sley self-hosting-status --json \
@@ -119,7 +122,16 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("map_index_runtime_task_execution"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("map_index_int_runtime_task_execution"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("map_index_expression_runtime_execution"))'
+
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("collection_index_sum_runtime_execution"))'
+
+bin/sley run --json fixtures/corpus/accepted/collections_indexing.sley \
+  | json_field '.status == "passed" and .value.kind == "Int" and .value.value == 8'
 
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("record_field_runtime_task_execution"))'

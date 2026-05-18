@@ -126,8 +126,22 @@ export task list_index_int_value -> Int {
   return values[index]
 }
 
+export task list_index_text_value -> Text {
+  take values: List<Text>
+  take index: Int
+
+  return values[index]
+}
+
 export task map_index_text_value -> Text {
   take values: Map<Text, Text>
+  take key: Text
+
+  return values[key]
+}
+
+export task map_index_int_value -> Int {
+  take values: Map<Text, Int>
   take key: Text
 
   return values[key]
