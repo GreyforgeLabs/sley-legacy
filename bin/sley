@@ -2537,7 +2537,7 @@ eval_source_bool_main_return() {
 }
 
 eval_source_project_call_int_main_return() {
-  local target="$1" file call_info main_module import_alias import_module callee arg callee_module callee_name callee_file="" body take_name return_expr op right runtime_value
+  local target="$1" file call_info main_module import_alias import_module callee arg callee_module callee_name callee_file="" body task_body candidate_file="" candidate_count=0 take_name return_expr op right runtime_value
   local -a files=()
   mapfile -t files < <(collect_files "$target")
   [[ "${#files[@]}" -gt 0 ]] || return 1
@@ -2602,6 +2602,18 @@ eval_source_project_call_int_main_return() {
   done
   [[ -n "$callee_file" ]] || return 1
   body="$(extract_sley_task_body "$callee_file" "$callee_name")"
+  if [[ -z "$body" && "$callee" != *.* ]]; then
+    for file in "${files[@]}"; do
+      [[ "$file" == "$callee_file" ]] && continue
+      task_body="$(extract_sley_task_body "$file" "$callee_name")"
+      [[ -n "$task_body" ]] || continue
+      candidate_count=$((candidate_count + 1))
+      candidate_file="$file"
+      body="$task_body"
+    done
+    [[ "$candidate_count" -eq 1 && -n "$candidate_file" ]] || return 1
+    callee_file="$candidate_file"
+  fi
   [[ -n "$body" ]] || return 1
   take_name="$(printf '%s\n' "$body" | awk '/^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Int/ {line=$0; sub(/^[ \t]*take[ \t]+/, "", line); sub(/[ \t]*:.*/, "", line); print line; exit}')"
   return_expr="$(printf '%s\n' "$body" | awk '/^[ \t]*return[ \t]+/ {line=$0; sub(/^[ \t]*return[ \t]+/, "", line); sub(/[ \t]*$/, "", line); print line; exit}')"
