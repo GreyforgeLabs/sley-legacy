@@ -110,6 +110,12 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("list_index_expression_runtime_execution"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("bound_list_index_sum_runtime_execution"))'
+
+bin/sley run --json fixtures/corpus/accepted/type_alias_transparency.sley \
+  | json_field '.status == "passed" and .value.kind == "Int" and .value.value == 42'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("map_index_runtime_task_execution"))'
 
 bin/sley self-hosting-status --json \
