@@ -67,6 +67,9 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_call_target_task_id_task_execution"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("parser_call_argument_surface_id_task_execution"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_expression_id_task_execution")) and (.bootstrap_owned_by_sley | index("parser_control_expression_id_task_execution"))'
 
 bin/sley self-hosting-status --json \
@@ -623,7 +626,7 @@ bin/sley graph --json --slice task:app.main.main examples/project \
   | json_field '([.insert_affordances[]? | .target] | index("block:task:app.main.main")) and ([.insert_affordances[]? | .operation.target] | index("block:task:app.main.main")) and ([.move_affordances[]? | select(.target_kind == "statement") | .operation.payload.parent] | index("block:task:app.main.main"))'
 
 bin/sley graph --json --slice task:app.main.main examples/project \
-  | json_field '([.call_site_affordances[]? | .task_target] | index("task:app.math.double")) and ([.call_arg_affordances[]? | .task_target] | index("task:app.math.double"))'
+  | json_field '([.call_site_affordances[]? | .task_target] | index("task:app.math.double")) and ([.call_arg_affordances[]? | .task_target] | index("task:app.math.double")) and ([.call_arg_affordances[]? | .target] | index("block:task:app.main.main:stmt:0:expr:arg:0"))'
 
 bin/sley plan --json --graft-templates examples/project \
   | json_field '([.graft_templates[]? | select(.kind == "add_task") | .surface] | index("module:app.main:tasks")) and ([.graft_templates[]? | select(.kind == "move_task") | .operation.payload.parent] | index("module:app.main:tasks"))'
