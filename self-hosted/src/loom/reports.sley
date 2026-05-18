@@ -266,6 +266,26 @@ export task conformance_report_fields -> List<Text> {
   ]
 }
 
+export task conformance_report_builder -> List<Text> {
+  return [
+    "schema|reports.conformance_report_schema|Text",
+    "status|conformance.status|Text",
+    "summary|conformance.summary|Json",
+    "validation|conformance.validation|Json",
+    "schemas|conformance.schemas|Json",
+    "corpus|conformance.corpus|Json",
+    "smoke|conformance.smoke|Json",
+    "onboarding|conformance.onboarding|Json",
+    "examples|conformance.examples|Json",
+    "tests|conformance.tests|Json",
+    "editor_shims|conformance.editor_shims|Json",
+    "v1_gate|conformance.v1_gate|Json",
+    "readiness|conformance.readiness|Json",
+    "release|conformance.release|Json",
+    "issues|conformance.issues|List<Json>"
+  ]
+}
+
 export task conformance_coverage_schema -> Text {
   return "sley.conformance.coverage.v0"
 }
@@ -278,6 +298,17 @@ export task conformance_coverage_fields -> List<Text> {
     "missing_tags",
     "tag_inventory",
     "issues"
+  ]
+}
+
+export task conformance_coverage_builder -> List<Text> {
+  return [
+    "schema|reports.conformance_coverage_schema|Text",
+    "status|conformance_coverage.status|Text",
+    "required_tags|conformance_coverage.required_tags|List<Text>",
+    "missing_tags|conformance_coverage.missing_tags|List<Text>",
+    "tag_inventory|conformance_coverage.tag_inventory|List<Json>",
+    "issues|conformance_coverage.issues|List<Json>"
   ]
 }
 

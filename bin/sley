@@ -4041,8 +4041,10 @@ CLAIM_VERIFY_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOU
 CLAIM_VERIFY_REPORT_BUILDER_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" claim_verify_report_builder)"
 SCHEMA_CONFORMANCE_REPORT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" conformance_report_schema)"
 CONFORMANCE_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" conformance_report_fields)"
+CONFORMANCE_REPORT_BUILDER_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" conformance_report_builder)"
 SCHEMA_CONFORMANCE_COVERAGE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" conformance_coverage_schema)"
 CONFORMANCE_COVERAGE_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" conformance_coverage_fields)"
+CONFORMANCE_COVERAGE_BUILDER_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" conformance_coverage_builder)"
 SCHEMA_CI_REPORT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" ci_report_schema)"
 CI_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" ci_report_fields)"
 SCHEMA_CONTRACT_INVENTORY="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" contract_inventory_schema)"
@@ -4145,9 +4147,15 @@ SCHEMA_CONFORMANCE_REPORT="${SCHEMA_CONFORMANCE_REPORT:-sley.conformance.report.
 if [[ "$CONFORMANCE_REPORT_FIELDS_JSON" == "[]" ]]; then
   CONFORMANCE_REPORT_FIELDS_JSON='["schema","status","summary","validation","schemas","corpus","smoke","onboarding","examples","tests","editor_shims","v1_gate","readiness","release","issues"]'
 fi
+if [[ "$CONFORMANCE_REPORT_BUILDER_JSON" == "[]" ]]; then
+  CONFORMANCE_REPORT_BUILDER_JSON='["schema|reports.conformance_report_schema|Text","status|conformance.status|Text","summary|conformance.summary|Json","validation|conformance.validation|Json","schemas|conformance.schemas|Json","corpus|conformance.corpus|Json","smoke|conformance.smoke|Json","onboarding|conformance.onboarding|Json","examples|conformance.examples|Json","tests|conformance.tests|Json","editor_shims|conformance.editor_shims|Json","v1_gate|conformance.v1_gate|Json","readiness|conformance.readiness|Json","release|conformance.release|Json","issues|conformance.issues|List<Json>"]'
+fi
 SCHEMA_CONFORMANCE_COVERAGE="${SCHEMA_CONFORMANCE_COVERAGE:-sley.conformance.coverage.v0}"
 if [[ "$CONFORMANCE_COVERAGE_FIELDS_JSON" == "[]" ]]; then
   CONFORMANCE_COVERAGE_FIELDS_JSON='["schema","status","required_tags","missing_tags","tag_inventory","issues"]'
+fi
+if [[ "$CONFORMANCE_COVERAGE_BUILDER_JSON" == "[]" ]]; then
+  CONFORMANCE_COVERAGE_BUILDER_JSON='["schema|reports.conformance_coverage_schema|Text","status|conformance_coverage.status|Text","required_tags|conformance_coverage.required_tags|List<Text>","missing_tags|conformance_coverage.missing_tags|List<Text>","tag_inventory|conformance_coverage.tag_inventory|List<Json>","issues|conformance_coverage.issues|List<Json>"]'
 fi
 SCHEMA_CI_REPORT="${SCHEMA_CI_REPORT:-sley.ci.report.v0}"
 if [[ "$CI_REPORT_FIELDS_JSON" == "[]" ]]; then
@@ -8770,7 +8778,7 @@ EOF
 
 tool_conformance() {
   local accepted rejected schemas contracts smoke examples integration declared status require_ready=0 markdown_path=""
-  local v1_targets_json
+  local v1_targets_json report
   v1_targets_json='["fmt","diff-check","test","contracts","conformance","claim-audit","corpus","examples","smoke","lsp","editor-shims","workbench","agent-bench","migrate","docgen","sandbox-runner","shadow","zjx-tools","syntax"]'
   if [[ "${1:-}" == "coverage" ]]; then
     shift
@@ -8786,14 +8794,15 @@ tool_conformance() {
         *) shift ;;
       esac
     done
-    jq -n --arg schema "$SCHEMA_CONFORMANCE_COVERAGE" --argjson fields "$CONFORMANCE_COVERAGE_FIELDS_JSON" --argjson tags "$tags_json" '{
+    report="$(jq -n --arg schema "$SCHEMA_CONFORMANCE_COVERAGE" --argjson fields "$CONFORMANCE_COVERAGE_FIELDS_JSON" --argjson tags "$tags_json" '{
       ($fields[0] // "schema"):$schema,
       ($fields[1] // "status"):"passed",
       ($fields[2] // "required_tags"):$tags,
       ($fields[3] // "missing_tags"):[],
       ($fields[4] // "tag_inventory"):($tags|map({tag:.,count:1})),
       ($fields[5] // "issues"):[]
-    }'
+    }')"
+    sley_report_builder_from_report_json "$CONFORMANCE_COVERAGE_BUILDER_JSON" "conformance_coverage" "conformance_coverage_schema" "$SCHEMA_CONFORMANCE_COVERAGE" "$report"
     return 0
   fi
   while [[ "$#" -gt 0 ]]; do
@@ -8819,7 +8828,7 @@ tool_conformance() {
   if [[ -n "$markdown_path" ]]; then
     write_conformance_markdown "$markdown_path" "$status" "$schemas" "$contracts" "$accepted" "$rejected" "$smoke" "$examples" "$integration" "$declared"
   fi
-  jq -n \
+  report="$(jq -n \
     --arg schema "$SCHEMA_CONFORMANCE_REPORT" \
     --arg status "$status" \
     --argjson schemas "$schemas" \
@@ -8852,7 +8861,8 @@ tool_conformance() {
       },
       ($fields[13] // "release"):{public_release_ready:false,blocker_count:1,blockers:[{code:"PUBLIC_RELEASE_BLOCKED",message:"public release requires operator approval, strict Sley-written parity, and a published proof bundle"}],next_actions:[{blocker_code:"PUBLIC_RELEASE_BLOCKED",owner:"operator",approval_required:true,action:"approve public release only after strict Sley-written parity and a published proof bundle are present",paths:["docs/PublicReleaseChecklist.md","docs/SleyClaimManifest.json"]}],cargo_package:{manifest:"Cargo.toml",name:null,version:null,edition:null,rust_version:null,description_present:false,readme_present:true,repository_present:false,license:null,license_file:null,publish:null,publish_restricted:true},tree_sitter_package:{package_json:"tree-sitter-sley/package.json",config:"tree-sitter-sley/tree-sitter.json",name:null,version:null,private:null,package_license:null,package_description_present:false,config_license:null,config_description_present:false},license:{file:"LICENSE",present:true,operator_decision_required:false}},
       ($fields[14] // "issues"):(if $status=="passed" then [] elif $require_ready==1 then [{code:"PUBLIC_RELEASE_BLOCKED",message:"public release requires operator approval, strict Sley-written parity, and a published proof bundle"}] else [{code:"CONFORMANCE_DECLARATION_MISMATCH",message:"declared integration test count does not match generated stage-1 count"}] end)
-    }'
+    }')"
+  sley_report_builder_from_report_json "$CONFORMANCE_REPORT_BUILDER_JSON" "conformance" "conformance_report_schema" "$SCHEMA_CONFORMANCE_REPORT" "$report"
   [[ "$status" == "passed" ]]
 }
 
