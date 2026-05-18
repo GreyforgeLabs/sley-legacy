@@ -2,7 +2,7 @@
 
 Date: 2026-05-18
 Branch: public
-Latest code checkpoint: c54b1d7
+Latest code checkpoint: 30b73ad
 Latest packet-sync documentation checkpoint before this note: 26e7417
 Current pause document status: committed on `public`; use `git log` for exact
 branch head
@@ -66,6 +66,10 @@ The current local checkpoint advances the public branch to:
   `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
   `bootstrap_owned_by_sley=194`; remaining blockers are still parser, checker,
   and runtime semantics from Sley source
+- self-hosting status after the parser module declaration-list surface ID
+  slice: `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=195`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
 - latest V1 log from this pause checkpoint: `/tmp/sley-make-v1-ok-text.log`
 - latest verification refresh on 2026-05-18: `make v1` passed again after the
   public-action packet was finalized and after the WebForge / sleylang.org
@@ -84,6 +88,7 @@ The tracked code checkpoint is:
 - 2dca7cb fix: source ast node parent ids from parser
 - 783f05d fix: source take edit surfaces from parser
 - c54b1d7 fix: source module task surfaces from parser
+- 30b73ad fix: source module declaration surfaces from parser
 
 The tracked pause documentation checkpoints are:
 
@@ -131,6 +136,9 @@ Recent self-hosting slices added:
 - module task-list edit surfaces used by graph slices and edit plans now use a
   Sley-owned parser template while preserving the existing external
   `module:<module>:tasks` surface shape
+- module import, type, and effect list edit surfaces used by graph slices and
+  edit plans now use Sley-owned parser templates while preserving their
+  existing external `module:<module>:imports|types|effects` surface shapes
 - diagnostics and run report root layouts moved into Sley-owned report-builder
   declarations, with the shell bootstrap supplying computed values to those
   builders
@@ -299,10 +307,20 @@ The latest continuation audit reconfirmed:
   slice: `bootstrap`, `strict_self_hosted=false`,
   `semantic_source_count=6`, `bootstrap_owned_by_sley=194`; remaining blockers
   are parser, checker, and runtime semantics from Sley source
+- focused module declaration-list surface probes:
+  `bin/sley graph --json --slice module:app.math examples/project` preserved
+  `module:app.math:imports`, `module:app.math:types`, and
+  `module:app.math:effects`; targeted plan probes for
+  `module:app.hygiene` preserved type/effect move parents while sourcing the
+  templates from `loom.parser`
+- Sley self-hosting status after the parser module declaration-list surface ID
+  proof slice: `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=195`; remaining blockers
+  are parser, checker, and runtime semantics from Sley source
 
 ## Dirty State Notes
 
-Tracked code was committed at c54b1d7 before this pause document was updated.
+Tracked code was committed at 30b73ad before this pause document was updated.
 Tracked pause documentation before this update was refreshed through 26e7417
 with the external comparison approval gate, fork audit, and helper evidence.
 
