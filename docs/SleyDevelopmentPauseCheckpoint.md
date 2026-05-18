@@ -2,7 +2,7 @@
 
 Date: 2026-05-18
 Branch: public
-Latest code checkpoint: 307569e
+Latest code checkpoint: 2f127e4
 Latest packet-sync documentation checkpoint before this note: 26e7417
 Current pause document status: committed on `public`; use `git log` for exact
 branch head
@@ -46,6 +46,10 @@ The current local checkpoint advances the public branch to:
   `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
   `bootstrap_owned_by_sley=188`; remaining blockers are still parser, checker,
   and runtime semantics from Sley source
+- self-hosting status after the parser AST expression child ID slice:
+  `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=190`; remaining blockers are still parser, checker,
+  and runtime semantics from Sley source
 - latest V1 log from this pause checkpoint: `/tmp/sley-make-v1-ok-text.log`
 - latest verification refresh on 2026-05-18: `make v1` passed again after the
   public-action packet was finalized and after the WebForge / sleylang.org
@@ -59,6 +63,7 @@ The tracked code checkpoint is:
 - f7d05f2 fix: route ast programs through sley builder
 - 53c0fe6 fix: route ast node reports through sley builders
 - 307569e fix: source ast declaration ids from parser
+- 2f127e4 fix: source ast expression ids from parser
 
 The tracked pause documentation checkpoints are:
 
@@ -95,6 +100,8 @@ Recent self-hosting slices added:
 - AST import, type, effect, and take identifiers now use Sley-owned parser ID
   tasks from `loom.parser`, with shell code limited to extracting and applying
   those source templates during bootstrap
+- AST expression child identifiers for ordinary expression, collection, and
+  condition nodes now use Sley-owned parser ID tasks from `loom.parser`
 - diagnostics and run report root layouts moved into Sley-owned report-builder
   declarations, with the shell bootstrap supplying computed values to those
   builders
@@ -218,10 +225,21 @@ The latest continuation audit reconfirmed:
   slice: `bootstrap`, `strict_self_hosted=false`,
   `semantic_source_count=6`, `bootstrap_owned_by_sley=188`; remaining blockers
   are parser, checker, and runtime semantics from Sley source
+- focused AST expression child ID probes:
+  `bin/sley ast --json examples/hello.sley` returned
+  `block:task:app.hello.main:stmt:0:expr`,
+  `bin/sley ast --json examples/empty_for_statement.sley` returned
+  `block:task:app.empty_for.main:stmt:1:collection`, and
+  `bin/sley ast --json examples/empty_while_statement.sley` returned
+  `block:task:app.empty_while.main:stmt:2:condition`
+- Sley self-hosting status after the parser AST expression child ID proof
+  slice: `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=190`; remaining blockers
+  are parser, checker, and runtime semantics from Sley source
 
 ## Dirty State Notes
 
-Tracked code was committed at 307569e before this pause document was updated.
+Tracked code was committed at 2f127e4 before this pause document was updated.
 Tracked pause documentation was refreshed through 26e7417 with the external
 comparison approval gate, fork audit, and helper evidence.
 
