@@ -90,6 +90,7 @@ export task owned_bootstrap_values -> List<Text> {
     "constant_comparison_runtime_execution",
     "list_index_runtime_task_execution",
     "list_index_expression_runtime_execution",
+    "bound_list_index_sum_runtime_execution",
     "map_index_runtime_task_execution",
     "map_index_expression_runtime_execution",
     "record_field_runtime_task_execution",
