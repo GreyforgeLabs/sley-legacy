@@ -966,7 +966,7 @@ runtime_source_has_call() {
     if grep -Fq -- "$needle" "$file"; then
       return 0
     fi
-  done < <(collect_files "$target")
+  done < <(runtime_context_files "$target")
   return 1
 }
 
@@ -7054,7 +7054,7 @@ runtime_authority_json() {
   local target="$1"
   local files_json
   local -a runtime_files=()
-  mapfile -t runtime_files < <(collect_files "$target")
+  mapfile -t runtime_files < <(runtime_context_files "$target")
   files_json="$(printf '%s\n' "${runtime_files[@]}" | jq -R . | jq -s .)"
   SLEY_RUNTIME_FILES="$files_json" python3 - "$ROOT_DIR" "$target" "$SCHEMA_DIAGNOSTICS" "$@" <<'PY'
 import json

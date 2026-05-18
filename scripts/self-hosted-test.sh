@@ -23,7 +23,8 @@ workbench_report="$(mktemp)"
 sandbox_report="$(mktemp)"
 agent_bench_report="$(mktemp)"
 zjx_tool_report="$(mktemp)"
-trap 'rm -f "$bool_literal_source" "$artifact_check_report" "$migrate_report" "$docgen_report" "$workbench_report" "$sandbox_report" "$agent_bench_report" "$zjx_tool_report"; rm -rf "$artifact_dir"' EXIT
+runtime_report="$(mktemp)"
+trap 'rm -f "$bool_literal_source" "$artifact_check_report" "$migrate_report" "$docgen_report" "$workbench_report" "$sandbox_report" "$agent_bench_report" "$zjx_tool_report" "$runtime_report"; rm -rf "$artifact_dir"' EXIT
 printf '%s\n' \
   'module app.bool_literal' \
   '' \
@@ -323,6 +324,9 @@ bin/sley run --json examples/unqualified_import_call_project/src/app/main.sley \
   | json_field '.status == "passed" and .value.kind == "Int" and .value.value == 42'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("file_entry_runtime_authority_execution"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("bound_local_call_runtime_execution"))'
 
 bin/sley run --json fixtures/corpus/accepted/pure_main.sley \
@@ -614,6 +618,17 @@ bin/sley run --json examples/project \
   | json_field '.schema == "sley.run.report.v0" and .value.kind == "Int" and .value.value == 42'
 
 bin/sley run --json --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "owned profile" --cap ModelCall --model-output deploy-plan "owned plan" --cap Deploy --deploy-result staging "owned stage" fixtures/corpus/accepted/agent_deploy_pipeline.sley \
+  | json_field '.schema == "sley.run.report.v0" and .value.kind == "Ok" and .value.value.value == "owned profile | owned plan | owned stage"'
+
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("file_entry_agent_pipeline_runtime_execution"))'
+
+if bin/sley run --json examples/agent_project/src/agent/main.sley > "$runtime_report"; then
+  fail "file entry agent project should require seeded runtime authority"
+fi
+jq -er '.status == "error" and .diagnostics[0].id == "RUNTIME_CAPABILITY_REQUIRED" and (.diagnostics[0].message | contains("SecretRead")) and (.diagnostics[0].message | contains("Network")) and (.diagnostics[0].message | contains("ModelCall")) and (.diagnostics[0].message | contains("Deploy"))' "$runtime_report" >/dev/null
+
+bin/sley run --json --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "owned profile" --cap ModelCall --model-output deploy-plan "owned plan" --cap Deploy --deploy-result staging "owned stage" examples/agent_project/src/agent/main.sley \
   | json_field '.schema == "sley.run.report.v0" and .value.kind == "Ok" and .value.value.value == "owned profile | owned plan | owned stage"'
 
 bin/sley verify --json examples/project \
