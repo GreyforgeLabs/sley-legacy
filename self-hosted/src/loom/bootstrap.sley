@@ -46,6 +46,8 @@ export task owned_bootstrap_values -> List<Text> {
     "parser_classifier_task_execution",
     "parser_id_task_execution",
     "parser_statement_and_binding_kinds",
+    "parser_ast_program_report_builder",
+    "parser_ast_program_report_builder_task_execution",
     "bootstrap_smoke_runtime",
     "bootstrap_smoke_task_execution",
     "checker_diagnostic_status",

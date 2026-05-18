@@ -4012,6 +4012,8 @@ if [[ "$DEFAULT_RULES_JSON" == "[]" ]]; then
 fi
 
 SCHEMA_AST_PROGRAM="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" ast_program_schema)"
+AST_PROGRAM_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" ast_program_report_fields)"
+AST_PROGRAM_REPORT_BUILDER_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" ast_program_report_builder)"
 SCHEMA_AST_NODE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" ast_node_schema)"
 SCHEMA_DIAGNOSTICS="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" diagnostics_schema)"
 DIAGNOSTICS_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" diagnostics_report_fields)"
@@ -4092,6 +4094,12 @@ SELF_HOSTING_STATUS_BUILDER_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SO
 SCHEMA_AST_PROGRAM="${SCHEMA_AST_PROGRAM:-sley.ast.program.v0}"
 SCHEMA_AST_NODE="${SCHEMA_AST_NODE:-sley.ast.node.v0}"
 SCHEMA_DIAGNOSTICS="${SCHEMA_DIAGNOSTICS:-sley.diagnostics.report.v0}"
+if [[ "$AST_PROGRAM_REPORT_FIELDS_JSON" == "[]" ]]; then
+  AST_PROGRAM_REPORT_FIELDS_JSON='["schema","module","imports","types","effects","tasks"]'
+fi
+if [[ "$AST_PROGRAM_REPORT_BUILDER_JSON" == "[]" ]]; then
+  AST_PROGRAM_REPORT_BUILDER_JSON='["schema|reports.ast_program_schema|Text","module|ast_program.module|Text","imports|ast_program.imports|List<Json>","types|ast_program.types|List<Json>","effects|ast_program.effects|List<Json>","tasks|ast_program.tasks|List<Json>"]'
+fi
 if [[ "$DIAGNOSTICS_REPORT_FIELDS_JSON" == "[]" ]]; then
   DIAGNOSTICS_REPORT_FIELDS_JSON='["schema","status","diagnostics"]'
 fi
@@ -4943,6 +4951,11 @@ sley_report_builder_from_report_json() {
   sley_report_builder_json "$builder_json" "$values_json"
 }
 
+ast_program_report_from_json() {
+  local report_json="$1"
+  sley_report_builder_from_report_json "$AST_PROGRAM_REPORT_BUILDER_JSON" "ast_program" "ast_program_schema" "$SCHEMA_AST_PROGRAM" "$report_json"
+}
+
 graft_outcome_report_from_json() {
   local report_json="$1"
   sley_report_builder_from_report_json "$GRAFT_OUTCOME_REPORT_BUILDER_JSON" "graft_outcome" "graft_outcome_schema" "$SCHEMA_GRAFT_OUTCOME" "$report_json"
@@ -5071,13 +5084,13 @@ entry_module_for() {
 }
 
 ast_json() {
-  local target="$1"
+  local target="$1" raw_ast
   mapfile -t files < <(collect_files "$target")
   if [[ "${#files[@]}" -eq 0 ]]; then
     echo "no .sley files found under: $target" >&2
     exit 2
   fi
-  awk -v schema="$SCHEMA_AST_PROGRAM" \
+  raw_ast="$(awk -v schema="$SCHEMA_AST_PROGRAM" \
     -v int_pattern="$PARSER_INT_PATTERN" \
     -v identifier_pattern="$PARSER_IDENTIFIER_PATTERN" \
     -v int_kind="$PARSER_INT_KIND" \
@@ -5220,7 +5233,8 @@ ast_json() {
       }
       printf "\n  ]\n}\n"
     }
-  ' "${files[@]}"
+  ' "${files[@]}")"
+  ast_program_report_from_json "$raw_ast"
 }
 
 node_json() {
