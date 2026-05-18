@@ -28,7 +28,7 @@ The current local checkpoint advances the public branch to:
   `bootstrap_owned_by_sley=132`
 - self-hosting status after the resumed report-builder slices: `bootstrap`,
   `strict_self_hosted=false`, `semantic_source_count=6`,
-  `bootstrap_owned_by_sley=138`
+  `bootstrap_owned_by_sley=146`
 - latest V1 log from this pause checkpoint: `/tmp/sley-make-v1-ok-text.log`
 - latest verification refresh on 2026-05-18: `make v1` passed again after the
   public-action packet was finalized and after the WebForge / sleylang.org
@@ -52,6 +52,9 @@ Recent self-hosting slices added:
 - self-hosting status object layout moved into a Sley-owned report-builder
   declaration, with the shell bootstrap reduced to primitive value collection
   and serialization for that report
+- query, lint, doctor, and verify report root layouts moved into Sley-owned
+  report-builder declarations, with the shell bootstrap supplying computed
+  values to those builders
 - diagnostics and run report root layouts moved into Sley-owned report-builder
   declarations, with the shell bootstrap supplying computed values to those
   builders
@@ -75,7 +78,8 @@ are:
 
 Expected next investigation area, once development resumes:
 
-- report-builder ownership for run/diagnostic and other JSON roots
+- report-builder ownership for remaining JSON roots beyond diagnostics, query,
+  lint, doctor, run, verify, and self-hosting status
 - broader runtime expression execution from Sley source
 - parser/checker parity coverage that does not rely on shell/JQ semantics
 
@@ -140,7 +144,7 @@ The latest continuation audit reconfirmed:
   `bootstrap_owned_by_sley=132`
 - Sley self-hosting status after report-builder proof slices:
   `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
-  `bootstrap_owned_by_sley=138`
+  `bootstrap_owned_by_sley=146`
 
 ## Dirty State Notes
 
