@@ -208,6 +208,16 @@ export task graft_outcome_report_fields -> List<Text> {
   ]
 }
 
+export task graft_outcome_report_builder -> List<Text> {
+  return [
+    "schema|reports.graft_outcome_schema|Text",
+    "status|graft_outcome.status|Text",
+    "source|graft_outcome.source|Optional<Text>",
+    "diagnostics|graft_outcome.diagnostics|List<Json>",
+    "provenance|graft_outcome.provenance|List<Json>"
+  ]
+}
+
 export task claim_verify_schema -> Text {
   return "sley.claim.verify.v0"
 }
@@ -329,6 +339,19 @@ export task ci_report_fields -> List<Text> {
   ]
 }
 
+export task ci_report_builder -> List<Text> {
+  return [
+    "schema|reports.ci_report_schema|Text",
+    "status|ci.status|Text",
+    "command|ci.command|Text",
+    "target|ci.target|Optional<Text>",
+    "manifest|ci.manifest|Optional<Text>",
+    "summary|ci.summary|Json",
+    "steps|ci.steps|List<Json>",
+    "issues|ci.issues|List<Json>"
+  ]
+}
+
 export task contract_inventory_schema -> Text {
   return "sley.contract.inventory.v0"
 }
@@ -340,6 +363,16 @@ export task contract_inventory_fields -> List<Text> {
     "schema_dir",
     "schema_count",
     "schemas"
+  ]
+}
+
+export task contract_inventory_builder -> List<Text> {
+  return [
+    "schema|reports.contract_inventory_schema|Text",
+    "status|contract_inventory.status|Text",
+    "schema_dir|contract_inventory.schema_dir|Text",
+    "schema_count|contract_inventory.schema_count|Int",
+    "schemas|contract_inventory.schemas|List<Json>"
   ]
 }
 
@@ -360,6 +393,19 @@ export task contract_validate_fields -> List<Text> {
   ]
 }
 
+export task contract_validate_builder -> List<Text> {
+  return [
+    "schema|reports.contract_validate_schema|Text",
+    "status|contract_validate.status|Text",
+    "validation_level|contract_validate.validation_level|Text",
+    "requested_schema|contract_validate.requested_schema|Text",
+    "report_path|contract_validate.report_path|Text",
+    "schema_dir|contract_validate.schema_dir|Text",
+    "report_schema|contract_validate.report_schema|Optional<Text>",
+    "issues|contract_validate.issues|List<Json>"
+  ]
+}
+
 export task contract_fixture_check_schema -> Text {
   return "sley.contract.fixture_check.v0"
 }
@@ -375,6 +421,20 @@ export task contract_fixture_check_fields -> List<Text> {
     "passed_count",
     "failed_count",
     "fixtures"
+  ]
+}
+
+export task contract_fixture_check_builder -> List<Text> {
+  return [
+    "schema|reports.contract_fixture_check_schema|Text",
+    "status|contract_fixture_check.status|Text",
+    "validation_level|contract_fixture_check.validation_level|Text",
+    "schema_dir|contract_fixture_check.schema_dir|Text",
+    "fixtures_dir|contract_fixture_check.fixtures_dir|Text",
+    "fixture_count|contract_fixture_check.fixture_count|Int",
+    "passed_count|contract_fixture_check.passed_count|Int",
+    "failed_count|contract_fixture_check.failed_count|Int",
+    "fixtures|contract_fixture_check.fixtures|List<Json>"
   ]
 }
 
@@ -433,6 +493,20 @@ export task deploy_artifact_check_fields -> List<Text> {
     "summary",
     "files",
     "issues"
+  ]
+}
+
+export task deploy_artifact_check_builder -> List<Text> {
+  return [
+    "schema|reports.deploy_artifact_check_schema|Text",
+    "status|deploy_artifact_check.status|Text",
+    "validation_level|deploy_artifact_check.validation_level|Text",
+    "artifacts_dir|deploy_artifact_check.artifacts_dir|Text",
+    "manifest_path|deploy_artifact_check.manifest_path|Text",
+    "manifest_schema|deploy_artifact_check.manifest_schema|Optional<Text>",
+    "summary|deploy_artifact_check.summary|Json",
+    "files|deploy_artifact_check.files|List<Json>",
+    "issues|deploy_artifact_check.issues|List<Json>"
   ]
 }
 
@@ -531,6 +605,23 @@ export task workbench_report_fields -> List<Text> {
   ]
 }
 
+export task workbench_report_builder -> List<Text> {
+  return [
+    "schema|reports.workbench_schema|Text",
+    "status|workbench.status|Text",
+    "target|workbench.target|Text",
+    "summary|workbench.summary|Json",
+    "diagnostics|workbench.diagnostics|List<Json>",
+    "doctor|workbench.doctor|Json",
+    "query|workbench.query|Json",
+    "lint|workbench.lint|Json",
+    "plan|workbench.plan|Json",
+    "graph|workbench.graph|Json",
+    "graph_slice|workbench.graph_slice|Optional<Json>",
+    "issues|workbench.issues|List<Json>"
+  ]
+}
+
 export task sandbox_schema -> Text {
   return "sley.sandbox.report.v0"
 }
@@ -612,6 +703,20 @@ export task zjx_tool_report_fields -> List<Text> {
     "output_path",
     "graph",
     "issues"
+  ]
+}
+
+export task zjx_tool_report_builder -> List<Text> {
+  return [
+    "schema|reports.zjx_tool_schema|Text",
+    "status|zjx_tool.status|Text",
+    "command|zjx_tool.command|Text",
+    "envelopes|zjx_tool.envelopes|List<Json>",
+    "digest|zjx_tool.digest|Optional<Json>",
+    "diff|zjx_tool.diff|Optional<Json>",
+    "output_path|zjx_tool.output_path|Optional<Text>",
+    "graph|zjx_tool.graph|Optional<Json>",
+    "issues|zjx_tool.issues|List<Json>"
   ]
 }
 
