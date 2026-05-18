@@ -115,6 +115,7 @@ export task owned_bootstrap_values -> List<Text> {
     "tally_set_runtime_execution",
     "if_expression_runtime_execution",
     "if_statement_runtime_execution",
+    "project_call_runtime_execution",
     "seeded_agent_deploy_task_execution",
     "project_ready_task_execution",
     "ast_runtime_probe_dispatch",
