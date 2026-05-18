@@ -4746,6 +4746,7 @@ PARSER_FALSE_KIND="$(printf '%s\n' "$PARSER_CLASSIFIERS_JSON" | jq -r '."false" 
 PARSER_EMPTY_LIST_KIND="$(printf '%s\n' "$PARSER_CLASSIFIERS_JSON" | jq -r '."[]" // empty')"
 PARSER_FALLBACK_KIND="$(printf '%s\n' "$PARSER_CLASSIFIERS_JSON" | jq -r '.__fallback__ // empty')"
 PARSER_TASK_ID_TEMPLATE="$(eval_parser_id_template task_id || printf 'task:{{module}}.{{task}}\n')"
+PARSER_CALL_TARGET_TASK_ID_TEMPLATE="$(eval_parser_id_template call_target_task_id || printf 'task:{{module}}.{{task}}\n')"
 PARSER_IMPORT_ID_TEMPLATE="$(eval_parser_id_template import_id || printf 'import:{{module}}:{{import_module}}\n')"
 PARSER_TYPE_ID_TEMPLATE="$(eval_parser_id_template type_id || printf 'type:{{module}}.{{type}}\n')"
 PARSER_EFFECT_ID_TEMPLATE="$(eval_parser_id_template effect_id || printf 'effect:{{module}}.{{effect}}\n')"
@@ -4787,6 +4788,9 @@ PARSER_EMPTY_LIST_KIND="${PARSER_EMPTY_LIST_KIND:-$PARSER_LIST_KIND}"
 PARSER_FALLBACK_KIND="${PARSER_FALLBACK_KIND:-$PARSER_RAW_KIND}"
 if [[ -z "$PARSER_TASK_ID_TEMPLATE" ]]; then
   PARSER_TASK_ID_TEMPLATE='task:{{module}}.{{task}}'
+fi
+if [[ -z "$PARSER_CALL_TARGET_TASK_ID_TEMPLATE" ]]; then
+  PARSER_CALL_TARGET_TASK_ID_TEMPLATE='task:{{module}}.{{task}}'
 fi
 if [[ -z "$PARSER_IMPORT_ID_TEMPLATE" ]]; then
   PARSER_IMPORT_ID_TEMPLATE='import:{{module}}:{{import_module}}'
@@ -11313,7 +11317,7 @@ command_graph() {
     return
   fi
   ast="$(ast_json "$target")"
-  jq -n --arg target "$slice" --arg entry_target "$target" --arg module_task_list_surface_id_template "$PARSER_MODULE_TASK_LIST_SURFACE_ID_TEMPLATE" --arg module_import_list_surface_id_template "$PARSER_MODULE_IMPORT_LIST_SURFACE_ID_TEMPLATE" --arg module_type_list_surface_id_template "$PARSER_MODULE_TYPE_LIST_SURFACE_ID_TEMPLATE" --arg module_effect_list_surface_id_template "$PARSER_MODULE_EFFECT_LIST_SURFACE_ID_TEMPLATE" --arg block_task_surface_id_template "$PARSER_BLOCK_TASK_SURFACE_ID_TEMPLATE" --argjson query "$query" --argjson ast "$ast" '
+  jq -n --arg target "$slice" --arg entry_target "$target" --arg module_task_list_surface_id_template "$PARSER_MODULE_TASK_LIST_SURFACE_ID_TEMPLATE" --arg module_import_list_surface_id_template "$PARSER_MODULE_IMPORT_LIST_SURFACE_ID_TEMPLATE" --arg module_type_list_surface_id_template "$PARSER_MODULE_TYPE_LIST_SURFACE_ID_TEMPLATE" --arg module_effect_list_surface_id_template "$PARSER_MODULE_EFFECT_LIST_SURFACE_ID_TEMPLATE" --arg block_task_surface_id_template "$PARSER_BLOCK_TASK_SURFACE_ID_TEMPLATE" --arg call_target_task_id_template "$PARSER_CALL_TARGET_TASK_ID_TEMPLATE" --argjson query "$query" --argjson ast "$ast" '
     def replace_all($needle; $replacement): split($needle) | join($replacement);
     def module_task_list_surface_id($module_name):
       $module_task_list_surface_id_template
@@ -11330,6 +11334,17 @@ command_graph() {
     def block_task_surface_id($task_id):
       $block_task_surface_id_template
       | replace_all("{{task_id}}"; $task_id);
+    def call_target_task_id($module_name; $task_name):
+      $call_target_task_id_template
+      | replace_all("{{module}}"; $module_name)
+      | replace_all("{{task}}"; $task_name);
+    def qualified_task_id($qualified; $fallback_module):
+      ($qualified | split(".")) as $parts |
+      if ($parts | length) > 1 then
+        call_target_task_id(($parts[0:-1] | join(".")); $parts[-1])
+      else
+        call_target_task_id($fallback_module; $qualified)
+      end;
     def task_module($id):
       ($id | sub("^task:";"") | split(".")[0:-1] | join("."));
     def task_name($id):
@@ -11396,12 +11411,12 @@ command_graph() {
       else "Expression" end;
     def call_site_affordances($focus):
       [$query.calls[]? | select($focus.kind == "task" and .from == ($focus.module + "." + $focus.name)) |
-        {target:.expr_id, target_kind:"call_site", task_target:("task:" + .target), operation:{op:"UpdateCallSites", target:.expr_id, payload:{scope:$focus.id}}}
+        {target:.expr_id, target_kind:"call_site", task_target:qualified_task_id(.target; $focus.module), operation:{op:"UpdateCallSites", target:.expr_id, payload:{scope:$focus.id}}}
       ];
     def call_arg_affordances($focus):
       [$query.calls[]? | select($focus.kind == "task" and .from == ($focus.module + "." + $focus.name)) as $call |
         (call_args($call.source) | to_entries[]) |
-        {target:($call.expr_id + ":arg:" + (.key|tostring)), target_kind:literal_kind(.value), task_target:("task:" + $call.target), operation:{op:"ReplaceCallArg", target:$call.expr_id, payload:{index:.key, source:.value}}}
+        {target:($call.expr_id + ":arg:" + (.key|tostring)), target_kind:literal_kind(.value), task_target:qualified_task_id($call.target; $focus.module), operation:{op:"ReplaceCallArg", target:$call.expr_id, payload:{index:.key, source:.value}}}
       ];
     def inbound_calls($focus):
       if $focus.kind == "module" then
@@ -11501,12 +11516,24 @@ command_plan() {
   query="$(query_json "$target" all)"
   ast="$(ast_json "$target")"
   if [[ "$emit_graft" == "replace_call_arg" ]]; then
-    jq -n --argjson query "$query" '
+    jq -n --arg call_target_task_id_template "$PARSER_CALL_TARGET_TASK_ID_TEMPLATE" --argjson query "$query" '
+      def replace_all($needle; $replacement): split($needle) | join($replacement);
+      def call_target_task_id($module_name; $task_name):
+        $call_target_task_id_template
+        | replace_all("{{module}}"; $module_name)
+        | replace_all("{{task}}"; $task_name);
+      def qualified_task_id($qualified; $fallback_module):
+        ($qualified | split(".")) as $parts |
+        if ($parts | length) > 1 then
+          call_target_task_id(($parts[0:-1] | join(".")); $parts[-1])
+        else
+          call_target_task_id($fallback_module; $qualified)
+        end;
       def call_args($source):
         (($source | capture("^call[[:space:]]+[^()]+\\((?<args>.*)\\)\\??$")? // {args:""}).args) as $args |
         if (($args | gsub("[[:space:]]"; "")) == "") then [] else ($args | split(",") | map(gsub("^[[:space:]]+|[[:space:]]+$"; ""))) end;
       ($query.calls[0]) as $call |
-      {op:"ReplaceCallArg", target:("task:" + $call.target), payload:{from:$call.callee, scope:("task:" + $call.from), source:(call_args($call.source)[0] // ""), position:0}}
+      {op:"ReplaceCallArg", target:qualified_task_id($call.target; ($query.entry_module // "")), payload:{from:$call.callee, scope:qualified_task_id($call.from; ($query.entry_module // "")), source:(call_args($call.source)[0] // ""), position:0}}
     '
     return
   elif [[ "$emit_graft" == "replace_expression" ]]; then
@@ -11550,7 +11577,7 @@ command_plan() {
     return
   fi
   lint="$(lint_json "$target")"
-  jq -n --arg target "$target" --arg template_surface "$template_surface" --arg take_surface_id_template "$PARSER_TAKE_SURFACE_ID_TEMPLATE" --arg module_task_list_surface_id_template "$PARSER_MODULE_TASK_LIST_SURFACE_ID_TEMPLATE" --arg module_import_list_surface_id_template "$PARSER_MODULE_IMPORT_LIST_SURFACE_ID_TEMPLATE" --arg module_type_list_surface_id_template "$PARSER_MODULE_TYPE_LIST_SURFACE_ID_TEMPLATE" --arg module_effect_list_surface_id_template "$PARSER_MODULE_EFFECT_LIST_SURFACE_ID_TEMPLATE" --arg block_task_surface_id_template "$PARSER_BLOCK_TASK_SURFACE_ID_TEMPLATE" --argjson query "$query" --argjson lint "$lint" --argjson ast "$ast" '
+  jq -n --arg target "$target" --arg template_surface "$template_surface" --arg take_surface_id_template "$PARSER_TAKE_SURFACE_ID_TEMPLATE" --arg module_task_list_surface_id_template "$PARSER_MODULE_TASK_LIST_SURFACE_ID_TEMPLATE" --arg module_import_list_surface_id_template "$PARSER_MODULE_IMPORT_LIST_SURFACE_ID_TEMPLATE" --arg module_type_list_surface_id_template "$PARSER_MODULE_TYPE_LIST_SURFACE_ID_TEMPLATE" --arg module_effect_list_surface_id_template "$PARSER_MODULE_EFFECT_LIST_SURFACE_ID_TEMPLATE" --arg block_task_surface_id_template "$PARSER_BLOCK_TASK_SURFACE_ID_TEMPLATE" --arg call_target_task_id_template "$PARSER_CALL_TARGET_TASK_ID_TEMPLATE" --argjson query "$query" --argjson lint "$lint" --argjson ast "$ast" '
     def replace_all($needle; $replacement): split($needle) | join($replacement);
     def take_surface_id($task_id; $index; $take_name):
       $take_surface_id_template
@@ -11572,6 +11599,17 @@ command_plan() {
     def block_task_surface_id($task_id):
       $block_task_surface_id_template
       | replace_all("{{task_id}}"; $task_id);
+    def call_target_task_id($module_name; $task_name):
+      $call_target_task_id_template
+      | replace_all("{{module}}"; $module_name)
+      | replace_all("{{task}}"; $task_name);
+    def qualified_task_id($qualified; $fallback_module):
+      ($qualified | split(".")) as $parts |
+      if ($parts | length) > 1 then
+        call_target_task_id(($parts[0:-1] | join(".")); $parts[-1])
+      else
+        call_target_task_id($fallback_module; $qualified)
+      end;
     def starter_return($type_name):
       ($type_name // "Unit") as $name |
       ($name | sub("<.*$"; "")) as $base |
@@ -11822,7 +11860,7 @@ command_plan() {
         {kind:"add_effect_declaration", surface:module_effect_list_surface_id($task.module), operation:{op:"AddEffectDeclaration", payload:{module:$task.module, name:"NewEffect"}}}
       ]
       + (if $call == null then [] else [
-        {kind:"replace_call_arg", surface:$task.id, operation:{op:"ReplaceCallArg", target:("task:" + $call.target), payload:{from:$call.callee, scope:("task:" + $call.from), source:(call_args($call.source)[0] // ""), position:0}}, editable_json_pointers:["/payload/source"]}
+        {kind:"replace_call_arg", surface:$task.id, operation:{op:"ReplaceCallArg", target:qualified_task_id($call.target; ($task.module // primary_module)), payload:{from:$call.callee, scope:qualified_task_id($call.from; ($task.module // primary_module)), source:(call_args($call.source)[0] // ""), position:0}}, editable_json_pointers:["/payload/source"]}
       ] end);
     def selected_graft_templates:
       if (lint_target_graft_templates | length) > 0 then lint_target_graft_templates
@@ -11842,7 +11880,7 @@ command_plan() {
     def task_transaction_templates:
       if ($template_surface | startswith("task:")) then
         ([$query.tasks[]? | select(.id == $template_surface)][0]) as $task |
-        ([$query.calls[]? | select(("task:" + .target) == $template_surface)][0] // null) as $call |
+        ([$query.calls[]? | select(qualified_task_id(.target; ($task.module // primary_module)) == $template_surface)][0] // null) as $call |
         if $call == null or $task == null then []
         else
           ($call.callee | split(".")[0:-1] | join(".")) as $prefix |
@@ -12867,7 +12905,21 @@ command_graft_raw() {
   if [[ "$kind" == "replace_call_arg" ]]; then
     local query call_target call_source
     query="$(query_json "$source" all)"
-    call_target="$(printf '%s\n' "$query" | jq -r '"task:" + (.calls[0].target // "app.main.main")')"
+    call_target="$(printf '%s\n' "$query" | jq -r --arg call_target_task_id_template "$PARSER_CALL_TARGET_TASK_ID_TEMPLATE" '
+      def replace_all($needle; $replacement): split($needle) | join($replacement);
+      def call_target_task_id($module_name; $task_name):
+        $call_target_task_id_template
+        | replace_all("{{module}}"; $module_name)
+        | replace_all("{{task}}"; $task_name);
+      def qualified_task_id($qualified; $fallback_module):
+        ($qualified | split(".")) as $parts |
+        if ($parts | length) > 1 then
+          call_target_task_id(($parts[0:-1] | join(".")); $parts[-1])
+        else
+          call_target_task_id($fallback_module; $qualified)
+        end;
+      qualified_task_id((.calls[0].target // "app.main.main"); (.entry_module // "app.main"))
+    ')"
     call_source="$(printf '%s\n' "$query" | jq -r '.calls[0].source // ""')"
     jq -n --arg schema "$SCHEMA_GRAFT_OUTCOME" --arg source "$source" --arg actor "$actor" --arg target "$call_target" --arg call_source "$call_source" --argjson fields "$GRAFT_OUTCOME_REPORT_FIELDS_JSON" '{
       ($fields[0] // "schema"):$schema,
@@ -12885,7 +12937,12 @@ command_graft_raw() {
     task_module="${task_rest%.*}"
     task_name="${task_rest##*.}"
     new_name="${payload_name:-renamed_${task_name}}"
-    new_target="task:${task_module}.${new_name}"
+    new_target="$(jq -rn --arg call_target_task_id_template "$PARSER_CALL_TARGET_TASK_ID_TEMPLATE" --arg module "$task_module" --arg task "$new_name" '
+      def replace_all($needle; $replacement): split($needle) | join($replacement);
+      $call_target_task_id_template
+      | replace_all("{{module}}"; $module)
+      | replace_all("{{task}}"; $task)
+    ')"
     query="$(query_json "$source" all)"
     call_count="$(printf '%s\n' "$query" | jq -r --arg target "$task_rest" '[.calls[]? | select(.target == $target)] | length')"
     if [[ "$write" == true ]]; then

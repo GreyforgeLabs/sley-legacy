@@ -126,6 +126,13 @@ export task task_id -> Text {
   return "task:" + module_name + "." + task_name
 }
 
+export task call_target_task_id -> Text {
+  take module_name: Text
+  take task_name: Text
+
+  return "task:" + module_name + "." + task_name
+}
+
 export task import_id -> Text {
   take module_name: Text
   take import_module: Text
