@@ -2052,6 +2052,69 @@ eval_source_bool_if_statement_main_return() {
   return 1
 }
 
+eval_source_literal_if_int_statement_main_return() {
+  local target="$1" file raw line depth=0 in_main=false in_if=false saw_if=false rest prefix name expr value condition_value then_value="" else_value="" runtime_value
+  declare -A int_env=()
+  file="$(collect_files "$target" | head -n 1)"
+  [[ -n "$file" ]] || return 1
+  while IFS= read -r raw; do
+    line="$(printf '%s\n' "$raw" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+    if ! "$in_main"; then
+      if [[ "$line" =~ ^(export[[:space:]]+)?task[[:space:]]+main[[:space:]] ]]; then
+        in_main=true
+        depth=$(( $(sley_count_char_text "$raw" "{") - $(sley_count_char_text "$raw" "}") ))
+      fi
+      continue
+    fi
+    if (( depth == 1 )); then
+      if [[ "$line" =~ ^(bind|state)[[:space:]]+[A-Za-z_][A-Za-z0-9_]*[[:space:]]*= ]]; then
+        prefix="${BASH_REMATCH[1]}"
+        rest="$line"
+        rest="${rest#"$prefix"}"
+        rest="$(printf '%s\n' "$rest" | sed 's/^[[:space:]]*//')"
+        name="${rest%%=*}"
+        name="$(printf '%s\n' "$name" | sed 's/[[:space:]]*$//')"
+        expr="${rest#*=}"
+        value="$(eval_state_set_int_expr "$expr" int_env)" || return 1
+        int_env["$name"]="$value"
+      elif [[ "$line" =~ ^if[[:space:]]+(true|false)[[:space:]]*\{[[:space:]]*$ ]]; then
+        condition_value="${BASH_REMATCH[1]}"
+        in_if=true
+      elif [[ "$line" =~ ^return[[:space:]]+ ]]; then
+        "$saw_if" || return 1
+        expr="${line#return}"
+        else_value="$(eval_state_set_int_expr "$expr" int_env)" || return 1
+        runtime_value="$(eval_runtime_int_if_value_task "$condition_value" "$then_value" "$else_value")" || return 1
+        printf '{"kind":"%s","value":"%s"}\n' "$RUNTIME_INT_VALUE_KIND" "$runtime_value"
+        return 0
+      elif [[ -z "$line" || "$line" == "}" ]]; then
+        :
+      else
+        return 1
+      fi
+    elif "$in_if" && (( depth == 2 )); then
+      if [[ "$line" =~ ^return[[:space:]]+ ]]; then
+        expr="${line#return}"
+        then_value="$(eval_state_set_int_expr "$expr" int_env)" || return 1
+      elif [[ -z "$line" || "$line" == "}" ]]; then
+        :
+      else
+        return 1
+      fi
+    fi
+    depth=$(( depth + $(sley_count_char_text "$raw" "{") - $(sley_count_char_text "$raw" "}") ))
+    if "$in_if" && (( depth <= 1 )); then
+      [[ -n "$then_value" ]] || return 1
+      in_if=false
+      saw_if=true
+    fi
+    if (( depth <= 0 )); then
+      break
+    fi
+  done < "$file"
+  return 1
+}
+
 eval_source_if_int_main_return() {
   local target="$1" file
   file="$(collect_files "$target" | head -n 1)"
@@ -5809,6 +5872,9 @@ run_json() {
     value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
     value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
   elif simple_runtime="$(eval_source_state_if_set_int_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
+    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
+    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
+  elif simple_runtime="$(eval_source_literal_if_int_statement_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
     value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
     value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
   elif simple_runtime="$(eval_source_if_int_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
