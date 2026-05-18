@@ -2558,14 +2558,25 @@ eval_source_project_call_int_main_return() {
       in_main {
         raw=$0
         line=trim(raw)
-        if(depth == 1 && line ~ /^return[ \t]+call[ \t]+[A-Za-z_][A-Za-z0-9_.]*\(-?[0-9]+\)[ \t]*$/) {
+        if(depth == 1 && line ~ /^(bind|state)[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*=[ \t]*-?[0-9]+[ \t]*$/) {
+          rest=line
+          sub(/^(bind|state)[ \t]+/, "", rest)
+          name=rest
+          sub(/[ \t]*=.*/, "", name)
+          value=rest
+          sub(/^[^=]*=[ \t]*/, "", value)
+          ints[name]=trim(value)
+        } else if(depth == 1 && line ~ /^return[ \t]+call[ \t]+[A-Za-z_][A-Za-z0-9_.]*\((-?[0-9]+|[A-Za-z_][A-Za-z0-9_]*)\)[ \t]*$/) {
           expr=line
           sub(/^return[ \t]+call[ \t]+/, "", expr)
           callee=expr
           sub(/\(.*/, "", callee)
-          arg=expr
-          sub(/^[^(]*\(/, "", arg)
-          sub(/\)[ \t]*$/, "", arg)
+          raw_arg=expr
+          sub(/^[^(]*\(/, "", raw_arg)
+          sub(/\)[ \t]*$/, "", raw_arg)
+          if(raw_arg ~ /^-?[0-9]+$/) arg=raw_arg
+          else if(raw_arg in ints) arg=ints[raw_arg]
+          else exit 1
           print module "\t" import_alias "\t" import_module "\t" callee "\t" arg
           exit 0
         }
