@@ -178,7 +178,11 @@ eval_parser_id_template() {
     function token_value(token) {
       if (token ~ /^"/) return unquote(token)
       if (token == "module_name") return "{{module}}"
+      if (token == "import_module") return "{{import_module}}"
       if (token == "task_name") return "{{task}}"
+      if (token == "type_name") return "{{type}}"
+      if (token == "effect_name") return "{{effect}}"
+      if (token == "take_name") return "{{take}}"
       if (token == "index") return "{{index}}"
       exit 7
     }
@@ -4693,6 +4697,10 @@ PARSER_FALSE_KIND="$(printf '%s\n' "$PARSER_CLASSIFIERS_JSON" | jq -r '."false" 
 PARSER_EMPTY_LIST_KIND="$(printf '%s\n' "$PARSER_CLASSIFIERS_JSON" | jq -r '."[]" // empty')"
 PARSER_FALLBACK_KIND="$(printf '%s\n' "$PARSER_CLASSIFIERS_JSON" | jq -r '.__fallback__ // empty')"
 PARSER_TASK_ID_TEMPLATE="$(eval_parser_id_template task_id || printf 'task:{{module}}.{{task}}\n')"
+PARSER_IMPORT_ID_TEMPLATE="$(eval_parser_id_template import_id || printf 'import:{{module}}:{{import_module}}\n')"
+PARSER_TYPE_ID_TEMPLATE="$(eval_parser_id_template type_id || printf 'type:{{module}}.{{type}}\n')"
+PARSER_EFFECT_ID_TEMPLATE="$(eval_parser_id_template effect_id || printf 'effect:{{module}}.{{effect}}\n')"
+PARSER_TAKE_ID_TEMPLATE="$(eval_parser_id_template take_id || printf 'take:{{module}}.{{task}}.{{take}}\n')"
 PARSER_STATEMENT_ID_TEMPLATE="$(eval_parser_id_template statement_id || printf 'block:task:{{module}}.{{task}}:stmt:{{index}}\n')"
 PARSER_RETURN_STATEMENT_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" return_statement_kind)"
 PARSER_EXPR_STATEMENT_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" expression_statement_kind)"
@@ -4721,6 +4729,18 @@ PARSER_EMPTY_LIST_KIND="${PARSER_EMPTY_LIST_KIND:-$PARSER_LIST_KIND}"
 PARSER_FALLBACK_KIND="${PARSER_FALLBACK_KIND:-$PARSER_RAW_KIND}"
 if [[ -z "$PARSER_TASK_ID_TEMPLATE" ]]; then
   PARSER_TASK_ID_TEMPLATE='task:{{module}}.{{task}}'
+fi
+if [[ -z "$PARSER_IMPORT_ID_TEMPLATE" ]]; then
+  PARSER_IMPORT_ID_TEMPLATE='import:{{module}}:{{import_module}}'
+fi
+if [[ -z "$PARSER_TYPE_ID_TEMPLATE" ]]; then
+  PARSER_TYPE_ID_TEMPLATE='type:{{module}}.{{type}}'
+fi
+if [[ -z "$PARSER_EFFECT_ID_TEMPLATE" ]]; then
+  PARSER_EFFECT_ID_TEMPLATE='effect:{{module}}.{{effect}}'
+fi
+if [[ -z "$PARSER_TAKE_ID_TEMPLATE" ]]; then
+  PARSER_TAKE_ID_TEMPLATE='take:{{module}}.{{task}}.{{take}}'
 fi
 if [[ -z "$PARSER_STATEMENT_ID_TEMPLATE" ]]; then
   PARSER_STATEMENT_ID_TEMPLATE='block:task:{{module}}.{{task}}:stmt:{{index}}'
@@ -5129,6 +5149,10 @@ ast_json() {
     -v false_kind="$PARSER_FALSE_KIND" \
     -v fallback_kind="$PARSER_FALLBACK_KIND" \
     -v task_id_template="$PARSER_TASK_ID_TEMPLATE" \
+    -v import_id_template="$PARSER_IMPORT_ID_TEMPLATE" \
+    -v type_id_template="$PARSER_TYPE_ID_TEMPLATE" \
+    -v effect_id_template="$PARSER_EFFECT_ID_TEMPLATE" \
+    -v take_id_template="$PARSER_TAKE_ID_TEMPLATE" \
     -v statement_id_template="$PARSER_STATEMENT_ID_TEMPLATE" \
     -v return_statement_kind="$PARSER_RETURN_STATEMENT_KIND" \
     -v expr_statement_kind="$PARSER_EXPR_STATEMENT_KIND" \
@@ -5150,6 +5174,10 @@ ast_json() {
     function span_json(line, col){if(col<1)col=1; return "{\"line\":" line ",\"column\":" col "}"}
     function replace_all(source, needle, replacement, pos){while((pos=index(source, needle))>0){source=substr(source,1,pos-1) replacement substr(source,pos+length(needle))} return source}
     function instantiate_task_id(mod_name, task_label, id){id=task_id_template; id=replace_all(id, "{{module}}", mod_name); id=replace_all(id, "{{task}}", task_label); return id}
+    function instantiate_import_id(mod_name, import_label, id){id=import_id_template; id=replace_all(id, "{{module}}", mod_name); id=replace_all(id, "{{import_module}}", import_label); return id}
+    function instantiate_type_id(mod_name, type_label, id){id=type_id_template; id=replace_all(id, "{{module}}", mod_name); id=replace_all(id, "{{type}}", type_label); return id}
+    function instantiate_effect_id(mod_name, effect_label, id){id=effect_id_template; id=replace_all(id, "{{module}}", mod_name); id=replace_all(id, "{{effect}}", effect_label); return id}
+    function instantiate_take_id(mod_name, task_label, take_label, id){id=take_id_template; id=replace_all(id, "{{module}}", mod_name); id=replace_all(id, "{{task}}", task_label); id=replace_all(id, "{{take}}", take_label); return id}
     function instantiate_statement_id(mod_name, task_label, stmt_index, id){id=statement_id_template; id=replace_all(id, "{{module}}", mod_name); id=replace_all(id, "{{task}}", task_label); id=replace_all(id, "{{index}}", stmt_index); return id}
     function expr_json(expr, id, line, col, value){
       expr=trim(expr)
@@ -5229,17 +5257,17 @@ ast_json() {
     END {
       if(entry=="") entry=module
       printf "{\n  \"schema\": \"%s\",\n  \"module\": \"%s\",\n  \"imports\": [", schema, esc(entry)
-      for(i=1;i<=import_count;i++){if(i>1)printf ","; printf "\n    {\"id\":\"import:%s:%s\",\"owner_module\":\"%s\",\"module\":\"%s\"", esc(import_owner[i]), esc(import_module[i]), esc(import_owner[i]), esc(import_module[i]); if(import_alias[i]!="")printf ",\"alias\":\"%s\"", esc(import_alias[i]); printf ",\"span\":%s}", span_json(import_line[i],1)}
+      for(i=1;i<=import_count;i++){if(i>1)printf ","; import_id_value=instantiate_import_id(import_owner[i], import_module[i]); printf "\n    {\"id\":\"%s\",\"owner_module\":\"%s\",\"module\":\"%s\"", esc(import_id_value), esc(import_owner[i]), esc(import_module[i]); if(import_alias[i]!="")printf ",\"alias\":\"%s\"", esc(import_alias[i]); printf ",\"span\":%s}", span_json(import_line[i],1)}
       printf "\n  ],\n  \"types\": ["
-      for(i=1;i<=type_count;i++){if(i>1)printf ","; printf "\n    {\"id\":\"type:%s.%s\",\"module\":\"%s\",\"exported\":%s,\"name\":\"%s\",\"value\":%s,\"span\":%s}", esc(type_module[i]), esc(type_name[i]), esc(type_module[i]), type_exported[i]?"true":"false", esc(type_name[i]), type_json("Unit"), span_json(type_line[i],1)}
+      for(i=1;i<=type_count;i++){if(i>1)printf ","; type_id_value=instantiate_type_id(type_module[i], type_name[i]); printf "\n    {\"id\":\"%s\",\"module\":\"%s\",\"exported\":%s,\"name\":\"%s\",\"value\":%s,\"span\":%s}", esc(type_id_value), esc(type_module[i]), type_exported[i]?"true":"false", esc(type_name[i]), type_json("Unit"), span_json(type_line[i],1)}
       printf "\n  ],\n  \"effects\": ["
-      for(i=1;i<=effect_count;i++){if(i>1)printf ","; printf "\n    {\"id\":\"effect:%s.%s\",\"module\":\"%s\",\"exported\":%s,\"name\":\"%s\",\"span\":%s}", esc(effect_module[i]), esc(effect_name[i]), esc(effect_module[i]), effect_exported[i]?"true":"false", esc(effect_name[i]), span_json(effect_line[i],1)}
+      for(i=1;i<=effect_count;i++){if(i>1)printf ","; effect_id_value=instantiate_effect_id(effect_module[i], effect_name[i]); printf "\n    {\"id\":\"%s\",\"module\":\"%s\",\"exported\":%s,\"name\":\"%s\",\"span\":%s}", esc(effect_id_value), esc(effect_module[i]), effect_exported[i]?"true":"false", esc(effect_name[i]), span_json(effect_line[i],1)}
       printf "\n  ],\n  \"tasks\": ["
       for(i=1;i<=task_count;i++){
         if(i>1)printf ","
         task_id_value=instantiate_task_id(task_module[i], task_name[i])
         printf "\n    {\"id\":\"%s\",\"module\":\"%s\",\"exported\":%s,\"name\":\"%s\",\"takes\":[", esc(task_id_value), esc(task_module[i]), task_exported[i]?"true":"false", esc(task_name[i])
-        for(j=1;j<=take_count[i];j++){if(j>1)printf ","; printf "{\"id\":\"take:%s.%s.%s\",\"name\":\"%s\",\"binding_kind\":\"%s\",\"type\":%s,\"span\":%s}", esc(task_module[i]), esc(task_name[i]), esc(take_name[i,j]), esc(take_name[i,j]), take_kind[i,j], type_json(take_type[i,j]), span_json(take_line[i,j],1)}
+        for(j=1;j<=take_count[i];j++){if(j>1)printf ","; take_id_value=instantiate_take_id(task_module[i], task_name[i], take_name[i,j]); printf "{\"id\":\"%s\",\"name\":\"%s\",\"binding_kind\":\"%s\",\"type\":%s,\"span\":%s}", esc(take_id_value), esc(take_name[i,j]), take_kind[i,j], type_json(take_type[i,j]), span_json(take_line[i,j],1)}
         printf "],\"return_type\":%s,\"effects\":[", type_json(task_return[i])
         n=split(task_effects[i], effs, /[ \t,]+/); first=1; for(e=1;e<=n;e++){if(effs[e]!=""){if(!first)printf ","; printf "\"%s\"", esc(effs[e]); first=0}}
         printf "],\"body\":{\"statements\":["
