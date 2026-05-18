@@ -4018,17 +4018,21 @@ DIAGNOSTICS_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOUR
 DIAGNOSTICS_REPORT_BUILDER_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" diagnostics_report_builder)"
 SCHEMA_QUERY="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" query_schema)"
 QUERY_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" query_report_fields)"
+QUERY_REPORT_BUILDER_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" query_report_builder)"
 SCHEMA_SYMBOL_GRAPH="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" symbol_graph_schema)"
 SYMBOL_GRAPH_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" symbol_graph_report_fields)"
 SCHEMA_LINT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" lint_schema)"
 LINT_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" lint_report_fields)"
+LINT_REPORT_BUILDER_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" lint_report_builder)"
 SCHEMA_DOCTOR="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" doctor_schema)"
 DOCTOR_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" doctor_report_fields)"
+DOCTOR_REPORT_BUILDER_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" doctor_report_builder)"
 SCHEMA_RUN="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" run_schema)"
 RUN_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" run_report_fields)"
 RUN_REPORT_BUILDER_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" run_report_builder)"
 SCHEMA_VERIFY="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" verify_schema)"
 VERIFY_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" verify_report_fields)"
+VERIFY_REPORT_BUILDER_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" verify_report_builder)"
 SCHEMA_GRAFT_OUTCOME="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" graft_outcome_schema)"
 GRAFT_OUTCOME_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" graft_outcome_report_fields)"
 SCHEMA_CLAIM_VERIFY="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" claim_verify_schema)"
@@ -4081,6 +4085,9 @@ SCHEMA_QUERY="${SCHEMA_QUERY:-sley.query.report.v0}"
 if [[ "$QUERY_REPORT_FIELDS_JSON" == "[]" ]]; then
   QUERY_REPORT_FIELDS_JSON='["schema","kind","entry_module","filters","modules","tasks","types","effects","calls"]'
 fi
+if [[ "$QUERY_REPORT_BUILDER_JSON" == "[]" ]]; then
+  QUERY_REPORT_BUILDER_JSON='["schema|reports.query_schema|Text","kind|query.kind|Text","entry_module|query.entry_module|Text","filters|query.filters|Json","modules|query.modules|List<Json>","tasks|query.tasks|List<Json>","types|query.types|List<Json>","effects|query.effects|List<Json>","calls|query.calls|List<Json>"]'
+fi
 SCHEMA_SYMBOL_GRAPH="${SCHEMA_SYMBOL_GRAPH:-sley.symbol_graph.v0}"
 if [[ "$SYMBOL_GRAPH_REPORT_FIELDS_JSON" == "[]" ]]; then
   SYMBOL_GRAPH_REPORT_FIELDS_JSON='["schema","entry_module","modules"]'
@@ -4089,9 +4096,15 @@ SCHEMA_LINT="${SCHEMA_LINT:-sley.lint.report.v0}"
 if [[ "$LINT_REPORT_FIELDS_JSON" == "[]" ]]; then
   LINT_REPORT_FIELDS_JSON='["schema","status","entry_module","filters","findings"]'
 fi
+if [[ "$LINT_REPORT_BUILDER_JSON" == "[]" ]]; then
+  LINT_REPORT_BUILDER_JSON='["schema|reports.lint_schema|Text","status|lint.status|Text","entry_module|lint.entry_module|Text","filters|lint.filters|Json","findings|lint.findings|List<Json>"]'
+fi
 SCHEMA_DOCTOR="${SCHEMA_DOCTOR:-sley.doctor.report.v0}"
 if [[ "$DOCTOR_REPORT_FIELDS_JSON" == "[]" ]]; then
   DOCTOR_REPORT_FIELDS_JSON='["schema","status","target","entry_module","summary","diagnostics","query","lint","next_actions"]'
+fi
+if [[ "$DOCTOR_REPORT_BUILDER_JSON" == "[]" ]]; then
+  DOCTOR_REPORT_BUILDER_JSON='["schema|reports.doctor_schema|Text","status|doctor.status|Text","target|doctor.target|Text","entry_module|doctor.entry_module|Text","summary|doctor.summary|Json","diagnostics|doctor.diagnostics|List<Json>","query|doctor.query|Json","lint|doctor.lint|Json","next_actions|doctor.next_actions|List<Json>"]'
 fi
 SCHEMA_RUN="${SCHEMA_RUN:-sley.run.report.v0}"
 if [[ "$RUN_REPORT_FIELDS_JSON" == "[]" ]]; then
@@ -4103,6 +4116,9 @@ fi
 SCHEMA_VERIFY="${SCHEMA_VERIFY:-sley.verify.report.v0}"
 if [[ "$VERIFY_REPORT_FIELDS_JSON" == "[]" ]]; then
   VERIFY_REPORT_FIELDS_JSON='["schema","status","target","entry_module","summary","diagnostics","query","lint","runtime","next_actions"]'
+fi
+if [[ "$VERIFY_REPORT_BUILDER_JSON" == "[]" ]]; then
+  VERIFY_REPORT_BUILDER_JSON='["schema|reports.verify_schema|Text","status|verify.status|Text","target|verify.target|Text","entry_module|verify.entry_module|Text","summary|verify.summary|Json","diagnostics|verify.diagnostics|List<Json>","query|verify.query|Json","lint|verify.lint|Json","runtime|verify.runtime|Json","next_actions|verify.next_actions|List<Json>"]'
 fi
 SCHEMA_GRAFT_OUTCOME="${SCHEMA_GRAFT_OUTCOME:-sley.graft.outcome.v0}"
 if [[ "$GRAFT_OUTCOME_REPORT_FIELDS_JSON" == "[]" ]]; then
@@ -5130,9 +5146,9 @@ type_fields_json() {
 }
 
 query_json() {
-  local target="$1" kind="${2:-all}" module_filter="${3:-}" exported_only="${4:-false}" type_fields
+  local target="$1" kind="${2:-all}" module_filter="${3:-}" exported_only="${4:-false}" type_fields report values_json
   type_fields="$(type_fields_json "$target")"
-  ast_json "$target" | jq --arg kind "$kind" --arg module_filter "$module_filter" --argjson exported_only "$exported_only" --arg schema "$SCHEMA_QUERY" --arg diag_schema "$SCHEMA_DIAGNOSTICS" --argjson fields "$QUERY_REPORT_FIELDS_JSON" --argjson type_fields "$type_fields" '
+  report="$(ast_json "$target" | jq --arg kind "$kind" --arg module_filter "$module_filter" --argjson exported_only "$exported_only" --arg schema "$SCHEMA_QUERY" --arg diag_schema "$SCHEMA_DIAGNOSTICS" --argjson fields "$QUERY_REPORT_FIELDS_JSON" --argjson type_fields "$type_fields" '
     def call_callee:
       .source | sub("^call[[:space:]]+";"") | sub("\\(.*$";"");
     def resolve($ast; $module; $callee):
@@ -5187,7 +5203,28 @@ query_json() {
         ($fields[8] // "calls"):(if $kind == "calls" or $kind == "all" then $call_reports else [] end)
       }
     end
-  '
+  ')"
+  if [[ "$(printf '%s\n' "$report" | jq -r '.schema? // ""')" == "$SCHEMA_DIAGNOSTICS" ]]; then
+    printf '%s\n' "$report"
+    return
+  fi
+  values_json="$(jq -n \
+    --arg schema "$SCHEMA_QUERY" \
+    --argjson report "$report" \
+    '{
+      reports:{query_schema:$schema},
+      query:{
+        kind:$report.kind,
+        entry_module:$report.entry_module,
+        filters:$report.filters,
+        modules:$report.modules,
+        tasks:$report.tasks,
+        types:$report.types,
+        effects:$report.effects,
+        calls:$report.calls
+      }
+    }')"
+  sley_report_builder_json "$QUERY_REPORT_BUILDER_JSON" "$values_json"
 }
 
 check_json() {
@@ -5877,7 +5914,7 @@ check_json() {
 }
 
 lint_json() {
-  local target="$1" entry findings finding_count lint_status raw_sources_json
+  local target="$1" entry findings finding_count lint_status raw_sources_json report values_json
   entry="$(entry_module_for "$target")"
   findings="$(mktemp)"
   : > "$findings"
@@ -7052,7 +7089,7 @@ lint_json() {
   if [[ -z "$lint_status" ]]; then
     if [[ "$finding_count" -eq 0 ]]; then lint_status="$LINT_OK_STATUS"; else lint_status="$LINT_FINDINGS_STATUS"; fi
   fi
-  jq -n --arg schema "$SCHEMA_LINT" --arg entry "$entry" --arg lint_status "$lint_status" --argjson rules "$DEFAULT_RULES_JSON" --argjson fields "$LINT_REPORT_FIELDS_JSON" --slurpfile raw <(if [[ -s "$findings" ]]; then jq -s '.' "$findings"; else printf '[]\n'; fi) '
+  report="$(jq -n --arg schema "$SCHEMA_LINT" --arg entry "$entry" --arg lint_status "$lint_status" --argjson rules "$DEFAULT_RULES_JSON" --argjson fields "$LINT_REPORT_FIELDS_JSON" --slurpfile raw <(if [[ -s "$findings" ]]; then jq -s '.' "$findings"; else printf '[]\n'; fi) '
     ($raw[0] // []) as $raw_findings |
     ($raw_findings | sort_by(
       if .rule == "constant_if_expression" then -3
@@ -7078,18 +7115,31 @@ lint_json() {
       ($fields[3] // "filters"):{module:null, rules:$rules},
       ($fields[4] // "findings"):$findings
     }
-  '
+  ')"
   rm -f "$findings"
+  values_json="$(jq -n \
+    --arg schema "$SCHEMA_LINT" \
+    --argjson report "$report" \
+    '{
+      reports:{lint_schema:$schema},
+      lint:{
+        status:$report.status,
+        entry_module:$report.entry_module,
+        filters:$report.filters,
+        findings:$report.findings
+      }
+    }')"
+  sley_report_builder_json "$LINT_REPORT_BUILDER_JSON" "$values_json"
 }
 
 doctor_json() {
-  local target="$1" check query lint source_count call_count
+  local target="$1" check query lint source_count call_count report values_json
   check="$(check_json "$target")"
   query="$(query_json "$target" all)"
   lint="$(lint_json "$target")"
   source_count="$(ast_json "$target" | jq '[.. | objects | .source? // empty | select(type == "string")] | length')"
   call_count="$(printf '%s\n' "$query" | jq '.calls | length')"
-  jq -n --arg schema "$SCHEMA_DOCTOR" --arg query_schema "$SCHEMA_QUERY" --arg lint_schema "$SCHEMA_LINT" --arg target "$target" --argjson check "$check" --argjson query "$query" --argjson lint "$lint" --argjson source_count "$source_count" --argjson call_count "$call_count" --argjson rules "$DEFAULT_RULES_JSON" --argjson fields "$DOCTOR_REPORT_FIELDS_JSON" '
+  report="$(jq -n --arg schema "$SCHEMA_DOCTOR" --arg query_schema "$SCHEMA_QUERY" --arg lint_schema "$SCHEMA_LINT" --arg target "$target" --argjson check "$check" --argjson query "$query" --argjson lint "$lint" --argjson source_count "$source_count" --argjson call_count "$call_count" --argjson rules "$DEFAULT_RULES_JSON" --argjson fields "$DOCTOR_REPORT_FIELDS_JSON" '
     ($check.diagnostics | length) as $errors |
     ($lint.findings | length) as $warnings |
     def repair_kind($finding):
@@ -7160,7 +7210,24 @@ doctor_json() {
       ($fields[7] // "lint"):{source_schema:$lint_schema, status:$lint.status, rules:$rules, finding_count:$warnings, findings:$lint.findings},
       ($fields[8] // "next_actions"):(if $warnings > 0 then (lint_repair_actions + [standard_actions[0]]) elif agent_like then agent_actions else standard_actions end)
     }
-  '
+  ')"
+  values_json="$(jq -n \
+    --arg schema "$SCHEMA_DOCTOR" \
+    --argjson report "$report" \
+    '{
+      reports:{doctor_schema:$schema},
+      doctor:{
+        status:$report.status,
+        target:$report.target,
+        entry_module:$report.entry_module,
+        summary:$report.summary,
+        diagnostics:$report.diagnostics,
+        query:$report.query,
+        lint:$report.lint,
+        next_actions:$report.next_actions
+      }
+    }')"
+  sley_report_builder_json "$DOCTOR_REPORT_BUILDER_JSON" "$values_json"
 }
 
 runtime_authority_json() {
@@ -7842,7 +7909,7 @@ run_json() {
 }
 
 verify_json() {
-  local target="$1" doctor runtime deploy_stage=false deploy_target="staging" deploy_text="$RUNTIME_DEFAULT_DEPLOY_RESULT" arg prev=""
+  local target="$1" doctor runtime deploy_stage=false deploy_target="staging" deploy_text="$RUNTIME_DEFAULT_DEPLOY_RESULT" arg prev="" report values_json
   shift || true
   for arg in "$@"; do
     case "$prev" in
@@ -7859,7 +7926,7 @@ verify_json() {
   fi
   doctor="$(doctor_json "$target")"
   runtime="$(run_json "$target" "$@" || true)"
-  jq -n \
+  report="$(jq -n \
     --arg schema "$SCHEMA_VERIFY" \
     --arg query_schema "$SCHEMA_QUERY" \
     --arg deploy_stage "$deploy_stage" \
@@ -7962,7 +8029,25 @@ verify_json() {
       ($fields[8] // "runtime"):(if $runtime_failed then {status:"failed", diagnostics:($runtime.diagnostics // [])} else {status:(if $doctor.status=="ready" then "passed" else "skipped" end), value:$runtime.value, diagnostics:[]} end),
       ($fields[9] // "next_actions"):(if $runtime_failed then runtime_actions elif $doctor.status=="ready" then ready_actions elif ($doctor.lint.findings | length) > 0 then lint_repair_actions else [{kind:"seal_verified_target", reason:"create a content-addressed review artifact after verification", command:["sley","seal","--json",$doctor.target]}] end)
     }
-  '
+  ')"
+  values_json="$(jq -n \
+    --arg schema "$SCHEMA_VERIFY" \
+    --argjson report "$report" \
+    '{
+      reports:{verify_schema:$schema},
+      verify:{
+        status:$report.status,
+        target:$report.target,
+        entry_module:$report.entry_module,
+        summary:$report.summary,
+        diagnostics:$report.diagnostics,
+        query:$report.query,
+        lint:$report.lint,
+        runtime:$report.runtime,
+        next_actions:$report.next_actions
+      }
+    }')"
+  sley_report_builder_json "$VERIFY_REPORT_BUILDER_JSON" "$values_json"
 }
 
 append_claim_check() {

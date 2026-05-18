@@ -48,6 +48,9 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("diagnostics_report_builder")) and (.bootstrap_owned_by_sley | index("diagnostics_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("run_report_builder")) and (.bootstrap_owned_by_sley | index("run_report_builder_task_execution"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("query_report_builder")) and (.bootstrap_owned_by_sley | index("query_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("lint_report_builder")) and (.bootstrap_owned_by_sley | index("lint_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("doctor_report_builder")) and (.bootstrap_owned_by_sley | index("doctor_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("verify_report_builder")) and (.bootstrap_owned_by_sley | index("verify_report_builder_task_execution"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("run_report_shape"))'
 
 bin/sley self-hosting-status --json \

@@ -46,6 +46,20 @@ export task doctor_report_fields -> List<Text> {
   ]
 }
 
+export task doctor_report_builder -> List<Text> {
+  return [
+    "schema|reports.doctor_schema|Text",
+    "status|doctor.status|Text",
+    "target|doctor.target|Text",
+    "entry_module|doctor.entry_module|Text",
+    "summary|doctor.summary|Json",
+    "diagnostics|doctor.diagnostics|List<Json>",
+    "query|doctor.query|Json",
+    "lint|doctor.lint|Json",
+    "next_actions|doctor.next_actions|List<Json>"
+  ]
+}
+
 export task lint_schema -> Text {
   return "sley.lint.report.v0"
 }
@@ -57,6 +71,16 @@ export task lint_report_fields -> List<Text> {
     "entry_module",
     "filters",
     "findings"
+  ]
+}
+
+export task lint_report_builder -> List<Text> {
+  return [
+    "schema|reports.lint_schema|Text",
+    "status|lint.status|Text",
+    "entry_module|lint.entry_module|Text",
+    "filters|lint.filters|Json",
+    "findings|lint.findings|List<Json>"
   ]
 }
 
@@ -75,6 +99,20 @@ export task query_report_fields -> List<Text> {
     "types",
     "effects",
     "calls"
+  ]
+}
+
+export task query_report_builder -> List<Text> {
+  return [
+    "schema|reports.query_schema|Text",
+    "kind|query.kind|Text",
+    "entry_module|query.entry_module|Text",
+    "filters|query.filters|Json",
+    "modules|query.modules|List<Json>",
+    "tasks|query.tasks|List<Json>",
+    "types|query.types|List<Json>",
+    "effects|query.effects|List<Json>",
+    "calls|query.calls|List<Json>"
   ]
 }
 
@@ -130,6 +168,21 @@ export task verify_report_fields -> List<Text> {
     "lint",
     "runtime",
     "next_actions"
+  ]
+}
+
+export task verify_report_builder -> List<Text> {
+  return [
+    "schema|reports.verify_schema|Text",
+    "status|verify.status|Text",
+    "target|verify.target|Text",
+    "entry_module|verify.entry_module|Text",
+    "summary|verify.summary|Json",
+    "diagnostics|verify.diagnostics|List<Json>",
+    "query|verify.query|Json",
+    "lint|verify.lint|Json",
+    "runtime|verify.runtime|Json",
+    "next_actions|verify.next_actions|List<Json>"
   ]
 }
 
