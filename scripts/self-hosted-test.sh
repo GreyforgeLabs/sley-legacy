@@ -52,6 +52,9 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_take_surface_id_task_execution"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("parser_module_surface_id_task_execution"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_module_task_list_surface_id_task_execution"))'
 
 bin/sley self-hosting-status --json \
@@ -638,7 +641,7 @@ bin/sley graph --json --slice module:app.math examples/project \
   | json_field '([.add_affordances[]? | .target] | index("module:app.math:imports")) and ([.add_affordances[]? | .target] | index("module:app.math:types")) and ([.add_affordances[]? | .target] | index("module:app.math:effects"))'
 
 bin/sley plan --json --graft-templates --template-surface module:app.hygiene examples/declaration_hygiene.sley \
-  | json_field '([.graft_templates[]? | select(.kind == "move_type") | .operation.payload.parent] | index("module:app.hygiene:types")) and ([.graft_templates[]? | select(.kind == "move_effect") | .operation.payload.parent] | index("module:app.hygiene:effects"))'
+  | json_field '([.graft_templates[]? | .surface] | index("module:app.hygiene")) and ([.graft_templates[]? | select(.kind == "move_type") | .operation.payload.parent] | index("module:app.hygiene:types")) and ([.graft_templates[]? | select(.kind == "move_effect") | .operation.payload.parent] | index("module:app.hygiene:effects"))'
 
 bin/sley doctor --json examples/project \
   | json_field '.schema == "sley.doctor.report.v0" and .status == "ready" and .summary.task_count == 2'

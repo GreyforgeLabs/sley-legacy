@@ -4752,6 +4752,7 @@ PARSER_TYPE_ID_TEMPLATE="$(eval_parser_id_template type_id || printf 'type:{{mod
 PARSER_EFFECT_ID_TEMPLATE="$(eval_parser_id_template effect_id || printf 'effect:{{module}}.{{effect}}\n')"
 PARSER_TAKE_ID_TEMPLATE="$(eval_parser_id_template take_id || printf 'take:{{module}}.{{task}}.{{take}}\n')"
 PARSER_TAKE_SURFACE_ID_TEMPLATE="$(eval_parser_id_template take_surface_id || printf 'take:{{task_id}}:{{index}}:{{take}}\n')"
+PARSER_MODULE_SURFACE_ID_TEMPLATE="$(eval_parser_id_template module_surface_id || printf 'module:{{module}}\n')"
 PARSER_MODULE_TASK_LIST_SURFACE_ID_TEMPLATE="$(eval_parser_id_template module_task_list_surface_id || printf 'module:{{module}}:tasks\n')"
 PARSER_MODULE_IMPORT_LIST_SURFACE_ID_TEMPLATE="$(eval_parser_id_template module_import_list_surface_id || printf 'module:{{module}}:imports\n')"
 PARSER_MODULE_TYPE_LIST_SURFACE_ID_TEMPLATE="$(eval_parser_id_template module_type_list_surface_id || printf 'module:{{module}}:types\n')"
@@ -4806,6 +4807,9 @@ if [[ -z "$PARSER_TAKE_ID_TEMPLATE" ]]; then
 fi
 if [[ -z "$PARSER_TAKE_SURFACE_ID_TEMPLATE" ]]; then
   PARSER_TAKE_SURFACE_ID_TEMPLATE='take:{{task_id}}:{{index}}:{{take}}'
+fi
+if [[ -z "$PARSER_MODULE_SURFACE_ID_TEMPLATE" ]]; then
+  PARSER_MODULE_SURFACE_ID_TEMPLATE='module:{{module}}'
 fi
 if [[ -z "$PARSER_MODULE_TASK_LIST_SURFACE_ID_TEMPLATE" ]]; then
   PARSER_MODULE_TASK_LIST_SURFACE_ID_TEMPLATE='module:{{module}}:tasks'
@@ -11577,13 +11581,16 @@ command_plan() {
     return
   fi
   lint="$(lint_json "$target")"
-  jq -n --arg target "$target" --arg template_surface "$template_surface" --arg take_surface_id_template "$PARSER_TAKE_SURFACE_ID_TEMPLATE" --arg module_task_list_surface_id_template "$PARSER_MODULE_TASK_LIST_SURFACE_ID_TEMPLATE" --arg module_import_list_surface_id_template "$PARSER_MODULE_IMPORT_LIST_SURFACE_ID_TEMPLATE" --arg module_type_list_surface_id_template "$PARSER_MODULE_TYPE_LIST_SURFACE_ID_TEMPLATE" --arg module_effect_list_surface_id_template "$PARSER_MODULE_EFFECT_LIST_SURFACE_ID_TEMPLATE" --arg block_task_surface_id_template "$PARSER_BLOCK_TASK_SURFACE_ID_TEMPLATE" --arg call_target_task_id_template "$PARSER_CALL_TARGET_TASK_ID_TEMPLATE" --argjson query "$query" --argjson lint "$lint" --argjson ast "$ast" '
+  jq -n --arg target "$target" --arg template_surface "$template_surface" --arg take_surface_id_template "$PARSER_TAKE_SURFACE_ID_TEMPLATE" --arg module_surface_id_template "$PARSER_MODULE_SURFACE_ID_TEMPLATE" --arg module_task_list_surface_id_template "$PARSER_MODULE_TASK_LIST_SURFACE_ID_TEMPLATE" --arg module_import_list_surface_id_template "$PARSER_MODULE_IMPORT_LIST_SURFACE_ID_TEMPLATE" --arg module_type_list_surface_id_template "$PARSER_MODULE_TYPE_LIST_SURFACE_ID_TEMPLATE" --arg module_effect_list_surface_id_template "$PARSER_MODULE_EFFECT_LIST_SURFACE_ID_TEMPLATE" --arg block_task_surface_id_template "$PARSER_BLOCK_TASK_SURFACE_ID_TEMPLATE" --arg call_target_task_id_template "$PARSER_CALL_TARGET_TASK_ID_TEMPLATE" --argjson query "$query" --argjson lint "$lint" --argjson ast "$ast" '
     def replace_all($needle; $replacement): split($needle) | join($replacement);
     def take_surface_id($task_id; $index; $take_name):
       $take_surface_id_template
       | replace_all("{{task_id}}"; $task_id)
       | replace_all("{{index}}"; $index)
       | replace_all("{{take}}"; $take_name);
+    def module_surface_id($module_name):
+      $module_surface_id_template
+      | replace_all("{{module}}"; $module_name);
     def module_task_list_surface_id($module_name):
       $module_task_list_surface_id_template
       | replace_all("{{module}}"; $module_name);
@@ -11645,7 +11652,7 @@ command_plan() {
       ($query.types | map(select(.module == $module))) as $types |
       ($query.effects | map(select(.module == $module))) as $effects |
       ($query.tasks | map(select(.module == $module))) as $tasks |
-      ("module:" + $module) as $surface |
+      (module_surface_id($module)) as $surface |
       ([$types[]? | move_decl_template("move_type"; $surface; .id; module_type_list_surface_id($module))])
       + ([$effects[]? | move_decl_template("move_effect"; $surface; .id; module_effect_list_surface_id($module))])
       + ([$tasks[]? | move_decl_template("move_task"; $surface; .id; module_task_list_surface_id($module))])
