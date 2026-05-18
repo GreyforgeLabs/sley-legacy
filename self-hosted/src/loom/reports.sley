@@ -433,3 +433,16 @@ export task self_hosting_status_fields -> List<Text> {
     "blockers"
   ]
 }
+
+export task self_hosting_status_builder -> List<Text> {
+  return [
+    "schema|reports.self_hosting_status_schema|Text",
+    "status|bootstrap.self_hosting_status|Text",
+    "strict_self_hosted|bootstrap.strict_self_hosted|Bool",
+    "source_root|reports.self_hosting_source_root|Text",
+    "semantic_source_count|bootstrap.semantic_source_count|Int",
+    "source_modules|bootstrap.source_modules|List<Text>",
+    "bootstrap_owned_by_sley|bootstrap.owned_bootstrap_values|List<Text>",
+    "blockers|bootstrap.remaining_strict_self_hosting_blockers|List<Text>"
+  ]
+}
