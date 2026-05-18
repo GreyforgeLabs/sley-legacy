@@ -170,6 +170,9 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("bool_if_expression_runtime_execution"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("bool_if_statement_runtime_execution"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("int_if_runtime_task_execution"))'
 
 bin/sley self-hosting-status --json \
@@ -428,6 +431,9 @@ bin/sley run --json examples/negated_comparison_expression.sley \
   | json_field '.schema == "sley.run.report.v0" and .value.kind == "Bool" and .value.value == false'
 
 bin/sley run --json examples/redundant_boolean_if_expression.sley \
+  | json_field '.schema == "sley.run.report.v0" and .value.kind == "Bool" and .value.value == true'
+
+bin/sley run --json examples/redundant_boolean_if_statement.sley \
   | json_field '.schema == "sley.run.report.v0" and .value.kind == "Bool" and .value.value == true'
 
 bin/sley run --json examples/constant_if_expression.sley \
