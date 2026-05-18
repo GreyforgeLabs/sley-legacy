@@ -70,11 +70,12 @@ Current status:
 - ForgeHub candidate 124 for `vercel-labs/zero#4` was checked and rejected;
   no eligible ForgeHub public action remains in the packet.
 - Zero fork outreach was narrowed to avoid spam and duplicate/disabled targets.
-- Latest fork audit inspected 129 forks: 5 ahead/diverged, 124 passive,
+- Latest fork audit inspected 130 forks: 5 ahead/diverged, 125 passive,
   identical, or behind, with snapshot SHA-256
-  `cdf5b9e11addec37273ff5be2b0196013597e9a8485afb545debd98595f8732b`.
-- The added fork after the 128-fork packet was `Pvmsirish/zero`; it compared
-  identical to upstream and did not change the recommendation.
+  `10969d8d29094839496819ebc19d9d000e476a6cd41ff4bc5a53090a71e55f1b`.
+- The added forks after the 128-fork packet were `Pvmsirish/zero` and
+  `mathieuflamant/zero`; both compared identical to upstream and did not
+  change the recommendation.
 - Future fork-count drift can be refreshed locally with
   `/home/greyforge/sley-zero-public-actions/refresh-fork-audit.sh`; the helper
   was exercised against a temporary snapshot and reproduced the pinned hash.
