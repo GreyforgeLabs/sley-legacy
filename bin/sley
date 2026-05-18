@@ -1226,8 +1226,10 @@ CHECK_OK_STATUS="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/check
 CHECK_ERROR_STATUS="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" error_status)"
 UNKNOWN_IDENTIFIER_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_identifier_message_prefix)"
 UNKNOWN_IDENTIFIER_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_identifier_message_suffix)"
+UNKNOWN_IDENTIFIER_MESSAGE_TEMPLATE="$(eval_checker_message_template unknown_identifier_message identifier_name || printf 'unknown identifier `::identifier_name::`\n')"
 UNKNOWN_TYPE_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_type_message_prefix)"
 UNKNOWN_TYPE_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_type_message_suffix)"
+UNKNOWN_TYPE_MESSAGE_TEMPLATE="$(eval_checker_message_template unknown_type_message type_name || printf 'unknown type `::type_name::`\n')"
 UNKNOWN_TASK_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_task_message_prefix)"
 UNKNOWN_TASK_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_task_message_suffix)"
 UNKNOWN_TASK_MESSAGE_TEMPLATE="$(eval_checker_message_template unknown_task_message task_name || printf 'unknown task `::task_name::`\n')"
@@ -1279,6 +1281,7 @@ DUPLICATE_TASK_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_R
 DUPLICATE_TASK_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" duplicate_task_message_suffix)"
 UNKNOWN_EFFECT_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_effect_message_prefix)"
 UNKNOWN_EFFECT_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_effect_message_suffix)"
+UNKNOWN_EFFECT_MESSAGE_TEMPLATE="$(eval_checker_message_template unknown_effect_message effect_name || printf 'unknown effect `::effect_name::`\n')"
 GATE_TAKE_TYPE_MISMATCH_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" gate_take_type_mismatch_message_prefix)"
 GATE_TAKE_TYPE_MISMATCH_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" gate_take_type_mismatch_message_suffix)"
 GATE_EFFECT_UNDECLARED_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" gate_effect_undeclared_message_prefix)"
@@ -1295,8 +1298,14 @@ CHECK_OK_STATUS="${CHECK_OK_STATUS:-ok}"
 CHECK_ERROR_STATUS="${CHECK_ERROR_STATUS:-error}"
 UNKNOWN_IDENTIFIER_MESSAGE_PREFIX="${UNKNOWN_IDENTIFIER_MESSAGE_PREFIX:-unknown identifier \`}"
 UNKNOWN_IDENTIFIER_MESSAGE_SUFFIX="${UNKNOWN_IDENTIFIER_MESSAGE_SUFFIX:-\`}"
+if [[ -z "$UNKNOWN_IDENTIFIER_MESSAGE_TEMPLATE" ]]; then
+  UNKNOWN_IDENTIFIER_MESSAGE_TEMPLATE='unknown identifier `::identifier_name::`'
+fi
 UNKNOWN_TYPE_MESSAGE_PREFIX="${UNKNOWN_TYPE_MESSAGE_PREFIX:-unknown type \`}"
 UNKNOWN_TYPE_MESSAGE_SUFFIX="${UNKNOWN_TYPE_MESSAGE_SUFFIX:-\`}"
+if [[ -z "$UNKNOWN_TYPE_MESSAGE_TEMPLATE" ]]; then
+  UNKNOWN_TYPE_MESSAGE_TEMPLATE='unknown type `::type_name::`'
+fi
 UNKNOWN_TASK_MESSAGE_PREFIX="${UNKNOWN_TASK_MESSAGE_PREFIX:-unknown task \`}"
 UNKNOWN_TASK_MESSAGE_SUFFIX="${UNKNOWN_TASK_MESSAGE_SUFFIX:-\`}"
 if [[ -z "$UNKNOWN_TASK_MESSAGE_TEMPLATE" ]]; then
@@ -1358,6 +1367,9 @@ DUPLICATE_TASK_MESSAGE_PREFIX="${DUPLICATE_TASK_MESSAGE_PREFIX:-duplicate task \
 DUPLICATE_TASK_MESSAGE_SUFFIX="${DUPLICATE_TASK_MESSAGE_SUFFIX:-\`}"
 UNKNOWN_EFFECT_MESSAGE_PREFIX="${UNKNOWN_EFFECT_MESSAGE_PREFIX:-unknown effect \`}"
 UNKNOWN_EFFECT_MESSAGE_SUFFIX="${UNKNOWN_EFFECT_MESSAGE_SUFFIX:-\`}"
+if [[ -z "$UNKNOWN_EFFECT_MESSAGE_TEMPLATE" ]]; then
+  UNKNOWN_EFFECT_MESSAGE_TEMPLATE='unknown effect `::effect_name::`'
+fi
 GATE_TAKE_TYPE_MISMATCH_MESSAGE_PREFIX="${GATE_TAKE_TYPE_MISMATCH_MESSAGE_PREFIX:-gate take must use Gate<Effect>, got \`}"
 GATE_TAKE_TYPE_MISMATCH_MESSAGE_SUFFIX="${GATE_TAKE_TYPE_MISMATCH_MESSAGE_SUFFIX:-\`}"
 GATE_EFFECT_UNDECLARED_MESSAGE_PREFIX="${GATE_EFFECT_UNDECLARED_MESSAGE_PREFIX:-gate effect undeclared \`}"
@@ -2061,8 +2073,10 @@ check_json() {
     --arg binding_statement_kind "$PARSER_BINDING_STATEMENT_KIND" \
     --arg unknown_prefix "$UNKNOWN_IDENTIFIER_MESSAGE_PREFIX" \
     --arg unknown_suffix "$UNKNOWN_IDENTIFIER_MESSAGE_SUFFIX" \
+    --arg unknown_message_template "$UNKNOWN_IDENTIFIER_MESSAGE_TEMPLATE" \
     --arg unknown_type_prefix "$UNKNOWN_TYPE_MESSAGE_PREFIX" \
     --arg unknown_type_suffix "$UNKNOWN_TYPE_MESSAGE_SUFFIX" \
+    --arg unknown_type_message_template "$UNKNOWN_TYPE_MESSAGE_TEMPLATE" \
     --arg unknown_task_prefix "$UNKNOWN_TASK_MESSAGE_PREFIX" \
     --arg unknown_task_suffix "$UNKNOWN_TASK_MESSAGE_SUFFIX" \
     --arg unknown_task_message_template "$UNKNOWN_TASK_MESSAGE_TEMPLATE" \
@@ -2114,6 +2128,7 @@ check_json() {
     --arg duplicate_task_suffix "$DUPLICATE_TASK_MESSAGE_SUFFIX" \
     --arg unknown_effect_prefix "$UNKNOWN_EFFECT_MESSAGE_PREFIX" \
     --arg unknown_effect_suffix "$UNKNOWN_EFFECT_MESSAGE_SUFFIX" \
+    --arg unknown_effect_message_template "$UNKNOWN_EFFECT_MESSAGE_TEMPLATE" \
     --arg gate_take_type_prefix "$GATE_TAKE_TYPE_MISMATCH_MESSAGE_PREFIX" \
     --arg gate_take_type_suffix "$GATE_TAKE_TYPE_MISMATCH_MESSAGE_SUFFIX" \
     --arg gate_effect_prefix "$GATE_EFFECT_UNDECLARED_MESSAGE_PREFIX" \
@@ -2375,23 +2390,23 @@ check_json() {
       . as $stmt |
       select(.expr.expr_kind? == "Identifier") |
       select(($known | index($stmt.expr.name)) == null) |
-      {id:$unknown, severity:"error", message:($unknown_prefix + .expr.name + $unknown_suffix), node:.expr.id, span:.expr.span};
+      {id:$unknown, severity:"error", message:render_arg($unknown_message_template; "identifier_name"; .expr.name), node:.expr.id, span:.expr.span};
     def return_type_diags:
       $root.tasks[] as $t |
       ($t.return_type.name // "Unit") as $name |
       select(type_known($name) | not) |
-      {id:$unknown_type, severity:"error", message:($unknown_type_prefix + $name + $unknown_type_suffix), node:$t.id, span:$t.span};
+      {id:$unknown_type, severity:"error", message:render_arg($unknown_type_message_template; "type_name"; $name), node:$t.id, span:$t.span};
     def take_type_diags:
       $root.tasks[] as $t |
       $t.takes[]? as $take |
       ($take.type.name // "Unit") as $name |
       select(type_known($name) | not) |
-      {id:$unknown_type, severity:"error", message:($unknown_type_prefix + $name + $unknown_type_suffix), node:$take.id, span:$take.span};
+      {id:$unknown_type, severity:"error", message:render_arg($unknown_type_message_template; "type_name"; $name), node:$take.id, span:$take.span};
     def unknown_effect_diags:
       $root.tasks[] as $t |
       $t.effects[]? as $effect |
       select(effect_known($effect) | not) |
-      {id:$unknown_effect, severity:"error", message:($unknown_effect_prefix + $effect + $unknown_effect_suffix), node:$t.id, span:$t.span};
+      {id:$unknown_effect, severity:"error", message:render_arg($unknown_effect_message_template; "effect_name"; $effect), node:$t.id, span:$t.span};
     def gate_take_type_diags:
       $root.tasks[] as $t |
       $t.takes[]? as $take |
