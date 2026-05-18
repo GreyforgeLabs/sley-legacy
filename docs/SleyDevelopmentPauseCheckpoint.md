@@ -1,69 +1,55 @@
 # Sley Development Pause Checkpoint
 
-Date: 2026-05-12
+Date: 2026-05-18
 Branch: public
-Latest code checkpoint: 81225e8
-Remote status: local checkpoint is not pushed
+Latest code checkpoint: 642c9ed
+Remote status: checkpoint prepared for push to `origin/public`
 
 ## Operator Instruction
 
-Sley development is paused. Do not continue repair slices until the operator
-explicitly resumes Sley development.
+Sley development is paused at the latest checkpoint. Do not continue repair
+slices until the operator explicitly resumes Sley development.
 
 ## Current State
 
-The current local checkpoint advances the CLI smoke manifest to:
+The current local checkpoint advances the public branch to:
 
-- full smoke: 464/481 passing
-- latest full smoke report path from this session: /tmp/sley-full-smoke.Dn2kTy.json
+- full smoke: 481/481 passing
 - local V1 gate: `make v1` passed with `rc=0`
+- self-hosting status: `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=132`
+- latest V1 log from this pause checkpoint: `/tmp/sley-make-v1-ok-text.log`
 
 The tracked code checkpoint is:
 
-- 369bceb feat: add unreachable and unused value repairs
-- 5ae5050 feat: add graft operation write support
-- 81225e8 fix: harden Sley local gate handling
+- 41b739e fix: execute host text outputs from source
+- 642c9ed fix: execute ok text results from source
 
-The code slice in 81225e8 added:
+Recent self-hosting slices added:
 
-- path newline rejection and size budgets for source, JSON, trace, schema,
-  smoke, scaffold, and artifact paths
-- post-write source checks for graft/fix writers
-- stricter runtime authority and scope diagnostics for seeded host adapters
-- scaffold overwrite refusal and deploy artifact symlink/write-target checks
-- low-privilege GitHub Actions defaults
-- sandbox replay reporting as `warnings`, with explicit evidence that it is not
-  OS-level isolation
+- deterministic host-gate text outputs routed through Sley-owned runtime text
+  tasks
+- spend-prefixed output routed through a Sley-owned runtime task
+- `Result<Text>` runtime value projection routed through a Sley-owned runtime
+  task before shell report wrapping
+- ownership evidence updated to include the new host-call and `Ok<Text>`
+  runtime paths
 
 ## Next Frontier
 
-The remaining full-smoke failures are:
+The public smoke manifest is green. The remaining strict self-hosting blockers
+are:
 
-- run_database_read_json
-- run_database_read_scoped_json
-- run_database_read_scope_denied_json
-- run_database_read_alias_json
-- run_database_read_alias_scope_denied_json
-- run_database_write_alias_scope_denied_json
-- verify_agent_data_authority_json
-- shadow_agent_deploy_pipeline_json
-- verify_agent_deploy_pipeline_missing_runtime_gates_json
-- shadow_agent_project_json
-- shadow_agent_project_pipeline_module_json
-- shadow_unknown_project_module_json
-- shadow_unused_private_task_rule_json
-- shadow_empty_while_statement_rule_json
-- verify_agent_project_json
-- plan_type_alias_replace_task_body_json
-- check_type_alias_mismatch_repair_json
+- execute parser semantics from Sley source
+- execute checker semantics from Sley source
+- execute runtime semantics from Sley source
+- replace shell JSON shaping with Sley-owned report builders
 
-Expected next investigation area:
+Expected next investigation area, once development resumes:
 
-- `run_json`
-- database read/write seeded runtime behavior
-- `sley-shadow` report fidelity
-- verify/deploy next-action command shape for agent projects
-- type-alias repair hints and replace-task-body planning
+- report-builder ownership for run/diagnostic/self-hosting JSON roots
+- broader runtime expression execution from Sley source
+- parser/checker parity coverage that does not rely on shell/JQ semantics
 
 ## Verification Evidence
 
@@ -73,14 +59,13 @@ Completed before pausing:
 - `git diff --check`
 - `scripts/self-hosted-test.sh`
 - `make v1`
-- `bin/sley-contract check-fixtures fixtures/contracts --schemas docs/schemas --json`: 127/127 passing
-- `bin/sley-contract validate --schema sley.cli_smoke.manifest.v0 fixtures/cli_smokes/manifest.json --schemas docs/schemas --json`
-- `bin/sley-sandbox-runner run --json fixtures/contracts/sandbox_manifest_agent_pipeline.json`: `warnings`, nested verify passed
-- full CLI smoke: 464/481 passing, 17 failing
+- `bin/sley check --json self-hosted`
+- `bin/sley self-hosting-status --json`
+- full CLI smoke: 481/481 passing through `make v1`
 
 ## Dirty State Notes
 
-Tracked code was committed at 81225e8 before this pause document was updated.
+Tracked code was committed at 642c9ed before this pause document was updated.
 
 Pre-existing untracked docs were not touched and should remain outside future
 commits unless the operator explicitly asks to include them:
@@ -97,7 +82,7 @@ When development resumes:
 1. Check `git status --short --branch`.
 2. Confirm the branch is `public`; note whether local pause commits are still
    ahead of `origin/public`.
-3. Re-run a compact full-smoke summary before editing:
-   `bin/sley-ci smoke --json --repo-root "$PWD" fixtures/cli_smokes/manifest.json`.
-4. Start with `run_database_read_json`, not another lint/graft slice.
+3. Re-run `make v1` before editing.
+4. Start with report-builder or parser/checker/runtime source execution, not
+   another already-covered host-gate value slice.
 5. Commit each coherent repair slice separately and push for continuity.

@@ -89,6 +89,10 @@ The repo currently proves these claims from a clean checkout:
   `self-hosted/src/loom/reports.sley`.
   Pure `main` string, integer, and boolean literal returns now execute through
   the AST-backed runtime path.
+  `Result<Int>` and `Result<Text>` report values now pass through Sley-owned
+  runtime tasks before shell report wrapping.
+  Deterministic host-gate text outputs now route through Sley-owned runtime
+  text tasks, including spend-prefixed output.
   Seeded agent-deploy text results now execute the
   `loom.runtime.seeded_agent_deploy_value` source task.
   Project-ready integer results now execute the
