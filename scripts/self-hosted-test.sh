@@ -176,6 +176,9 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("int_if_expression_runtime_execution"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("int_if_statement_runtime_execution"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("state_set_runtime_execution"))'
 
 bin/sley self-hosting-status --json \
