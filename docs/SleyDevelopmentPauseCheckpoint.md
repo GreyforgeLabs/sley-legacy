@@ -3,7 +3,9 @@
 Date: 2026-05-18
 Branch: public
 Latest code checkpoint: 642c9ed
-Latest documentation checkpoint: 26e7417
+Latest packet-sync documentation checkpoint before this note: 26e7417
+Current pause document status: committed on `public`; use `git log` for exact
+branch head
 Remote status: `public` is aligned with `origin/public`
 
 ## Operator Instruction
@@ -15,7 +17,8 @@ slices until the operator explicitly resumes Sley development.
 
 The current local checkpoint advances the public branch to:
 
-- latest pushed checkpoint: `26e7417 docs: refresh sley zero fork count`
+- latest packet-sync checkpoint before this note:
+  `26e7417 docs: refresh sley zero fork count`
 - full smoke: 481/481 passing
 - local V1 gate: `make v1` passed with `rc=0`
 - self-hosting status: `bootstrap`, `strict_self_hosted=false`,
