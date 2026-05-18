@@ -155,6 +155,9 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("absorbing_arithmetic_runtime_execution"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("bound_arithmetic_runtime_execution"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("int_comparison_runtime_task_execution"))'
 
 bin/sley self-hosting-status --json \
@@ -366,6 +369,9 @@ bin/sley run --json examples/constant_arithmetic_expression.sley \
 
 bin/sley run --json examples/absorbing_arithmetic_expression.sley \
   | json_field '.schema == "sley.run.report.v0" and .value.kind == "Int" and .value.value == 0'
+
+bin/sley run --json examples/identity_binary_expression.sley \
+  | json_field '.schema == "sley.run.report.v0" and .value.kind == "Int" and .value.value == 41'
 
 bin/sley run --json examples/constant_list_index_expression.sley \
   | json_field '.schema == "sley.run.report.v0" and .value.kind == "Int" and .value.value == 20'
