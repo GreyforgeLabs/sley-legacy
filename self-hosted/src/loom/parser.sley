@@ -196,3 +196,9 @@ export task ast_expression_node_kind -> Text {
 export task ast_node_not_found_id -> Text {
   return "AST_NODE_NOT_FOUND"
 }
+
+export task ast_node_not_found_message -> Text {
+  take node_id: Text
+
+  return "AST node not found `" + node_id + "`"
+}

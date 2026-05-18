@@ -203,6 +203,53 @@ eval_parser_id_template() {
   '
 }
 
+eval_parser_message_template() {
+  local task="$1" arg_name="$2"
+  local parser_file="$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley"
+  local body expr token out callee value
+  body="$(extract_sley_task_body "$parser_file" "$task")"
+  [[ -n "$body" ]] || return 1
+  expr="$(printf '%s\n' "$body" | awk '
+    /^[ \t]*return[ \t]+/ {
+      line=$0
+      sub(/^[ \t]*return[ \t]+/, "", line)
+      print line
+      exit
+    }
+  ')"
+  [[ -n "$expr" ]] || return 1
+  out=""
+  while IFS= read -r token; do
+    [[ -n "$token" ]] || continue
+    if [[ "$token" == call* ]]; then
+      callee="$token"
+      callee="${callee#call }"
+      callee="${callee%%()*}"
+      value="$(extract_sley_string_task "$parser_file" "$callee")"
+      [[ -n "$value" ]] || return 1
+      out+="$value"
+    elif [[ "$token" == \"* ]]; then
+      value="${token#\"}"
+      value="${value%\"}"
+      out+="$value"
+    elif [[ "$token" == "$arg_name" ]]; then
+      out+="::$arg_name::"
+    else
+      return 1
+    fi
+  done < <(printf '%s\n' "$expr" | awk '
+    {
+      line=$0
+      while (match(line, /call[ \t]+[A-Za-z_][A-Za-z0-9_]*\(\)|"[^"]*"|[A-Za-z_][A-Za-z0-9_]*/)) {
+        print substr(line, RSTART, RLENGTH)
+        line=substr(line, RSTART + RLENGTH)
+      }
+    }
+  ')
+  [[ -n "$out" ]] || return 1
+  printf '%s\n' "$out"
+}
+
 eval_checker_message_template() {
   local task="$1" arg_name="$2"
   local checker_file="$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley"
@@ -4775,10 +4822,12 @@ PARSER_AST_TASK_NODE_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/
 PARSER_AST_STATEMENT_NODE_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" ast_statement_node_kind)"
 PARSER_AST_EXPRESSION_NODE_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" ast_expression_node_kind)"
 PARSER_AST_NODE_NOT_FOUND_ID="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" ast_node_not_found_id)"
+PARSER_AST_NODE_NOT_FOUND_MESSAGE_TEMPLATE="$(eval_parser_message_template ast_node_not_found_message node_id || printf 'AST node not found `::node_id::`\n')"
 PARSER_AST_TASK_NODE_KIND="${PARSER_AST_TASK_NODE_KIND:-task}"
 PARSER_AST_STATEMENT_NODE_KIND="${PARSER_AST_STATEMENT_NODE_KIND:-statement}"
 PARSER_AST_EXPRESSION_NODE_KIND="${PARSER_AST_EXPRESSION_NODE_KIND:-expression}"
 PARSER_AST_NODE_NOT_FOUND_ID="${PARSER_AST_NODE_NOT_FOUND_ID:-AST_NODE_NOT_FOUND}"
+PARSER_AST_NODE_NOT_FOUND_MESSAGE_TEMPLATE="${PARSER_AST_NODE_NOT_FOUND_MESSAGE_TEMPLATE:-AST node not found \`::node_id::\`}"
 
 usage() {
   cat <<'EOF'
@@ -5319,7 +5368,9 @@ node_json() {
     --arg task_kind "$PARSER_AST_TASK_NODE_KIND" \
     --arg statement_kind "$PARSER_AST_STATEMENT_NODE_KIND" \
     --arg expression_kind "$PARSER_AST_EXPRESSION_NODE_KIND" \
-    --arg not_found_id "$PARSER_AST_NODE_NOT_FOUND_ID" '
+    --arg not_found_id "$PARSER_AST_NODE_NOT_FOUND_ID" \
+    --arg not_found_message_template "$PARSER_AST_NODE_NOT_FOUND_MESSAGE_TEMPLATE" '
+    def ast_not_found_message($node_id): $not_found_message_template | gsub("::node_id::"; $node_id);
     def statements: [.tasks[] as $t | $t.body.statements[]? | . + {module:$t.module, task:$t.name}];
     (first(.tasks[]? | select(.id == $node)) // null) as $task_match |
     (first(statements[] | select(.id == $node or (.expr.id? == $node))) // null) as $stmt_match |
@@ -5330,7 +5381,7 @@ node_json() {
     elif $stmt_match != null then
       {schema:$schema, target:$node, id:$node, node_kind:$statement_kind, module:$stmt_match.module, parent:("task:" + $stmt_match.module + "." + $stmt_match.task), value:($stmt_match | del(.module,.task))}
     else
-      {schema:$diag_schema, status:"error", diagnostics:[{id:$not_found_id, severity:"error", message:("AST node not found `" + $node + "`"), node:$node}]}
+      {schema:$diag_schema, status:"error", diagnostics:[{id:$not_found_id, severity:"error", message:ast_not_found_message($node), node:$node}]}
     end
   ')"
   report_schema="$(printf '%s\n' "$report_json" | jq -r '.schema? // ""')"
