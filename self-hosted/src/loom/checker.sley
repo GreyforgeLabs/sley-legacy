@@ -201,12 +201,24 @@ export task type_mismatch_message_suffix -> Text {
   return "`"
 }
 
+export task type_mismatch_message -> Text {
+  take binding_name: Text
+
+  return "type mismatch `" + binding_name + "`"
+}
+
 export task return_type_mismatch_message_prefix -> Text {
   return "return type mismatch `"
 }
 
 export task return_type_mismatch_message_suffix -> Text {
   return "`"
+}
+
+export task return_type_mismatch_message -> Text {
+  take task_name: Text
+
+  return "return type mismatch `" + task_name + "`"
 }
 
 export task duplicate_take_message_prefix -> Text {
