@@ -44,6 +44,15 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("run_report_shape"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("unit_runtime_task_execution"))'
+
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("unit_main_runtime_execution"))'
+
+bin/sley run --json examples/declaration_hygiene.sley \
+  | json_field '.status == "passed" and .value.kind == "Unit" and (.value | has("value") | not)'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("verify_report_shape"))'
 
 bin/sley self-hosting-status --json \

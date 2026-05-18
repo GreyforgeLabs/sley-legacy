@@ -62,6 +62,10 @@ export task raw_value_kind -> Text {
   return "Raw"
 }
 
+export task unit_value_kind -> Text {
+  return "Unit"
+}
+
 export task ok_text_value_kind -> Text {
   return "OkText"
 }
