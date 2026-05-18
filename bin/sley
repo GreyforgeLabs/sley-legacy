@@ -477,6 +477,24 @@ eval_runtime_list_len_value_task() {
   printf '%s\n' "$item_count"
 }
 
+eval_runtime_int_binary_value_task() {
+  local task_name="$1" op="$2" left="$3" right="$4"
+  local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
+  local body left_take right_take return_expr
+  [[ "$left" =~ ^-?[0-9]+$ && "$right" =~ ^-?[0-9]+$ ]] || return 1
+  body="$(extract_sley_task_body "$runtime_file" "$task_name")"
+  [[ -n "$body" ]] || return 1
+  left_take="$(printf '%s\n' "$body" | awk '/^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Int/ {line=$0; sub(/^[ \t]*take[ \t]+/, "", line); sub(/[ \t]*:.*/, "", line); print line; exit}')"
+  right_take="$(printf '%s\n' "$body" | awk 'seen && /^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Int/ {line=$0; sub(/^[ \t]*take[ \t]+/, "", line); sub(/[ \t]*:.*/, "", line); print line; exit} /^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Int/ {seen=1}')"
+  return_expr="$(printf '%s\n' "$body" | awk '/^[ \t]*return[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*[+*][ \t]*[A-Za-z_][A-Za-z0-9_]*[ \t]*$/ {line=$0; sub(/^[ \t]*return[ \t]+/, "", line); gsub(/[ \t]+/, "", line); print line; exit}')"
+  [[ -n "$left_take" && -n "$right_take" && "$return_expr" == "$left_take$op$right_take" ]] || return 1
+  case "$op" in
+    "+") printf '%s\n' "$((left + right))" ;;
+    "*") printf '%s\n' "$((left * right))" ;;
+    *) return 1 ;;
+  esac
+}
+
 eval_runtime_list_index_int_value_task() {
   local values_source="$1" index="$2"
   local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
@@ -1024,6 +1042,24 @@ eval_source_len_int_main_return() {
   item_count="$(printf '%s\n' "$inner" | count_top_level_list_items)"
   [[ "$item_count" =~ ^[0-9]+$ ]] || return 1
   runtime_value="$(eval_runtime_list_len_value_task "$item_count")"
+  [[ -n "$runtime_value" ]] || return 1
+  printf '{"kind":"%s","value":"%s"}\n' "$RUNTIME_INT_VALUE_KIND" "$runtime_value"
+}
+
+eval_source_parenthesized_arithmetic_int_main_return() {
+  local target="$1" source left right factor sum runtime_value
+  source="$(ast_json "$target" | jq -er \
+    --arg return_kind "$PARSER_RETURN_STATEMENT_KIND" '
+    ([.tasks[]? | select(.name == "main") | .body.statements[]? | select(.kind == $return_kind) | .expr.source?][0] // empty)
+  ')" || return 1
+  source="$(printf '%s\n' "$source" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+  [[ "$source" =~ ^\((-?[0-9]+)[[:space:]]*\+[[:space:]]*(-?[0-9]+)\)[[:space:]]*\*[[:space:]]*(-?[0-9]+)$ ]] || return 1
+  left="${BASH_REMATCH[1]}"
+  right="${BASH_REMATCH[2]}"
+  factor="${BASH_REMATCH[3]}"
+  sum="$(eval_runtime_int_binary_value_task int_add_value "+" "$left" "$right")"
+  [[ -n "$sum" ]] || return 1
+  runtime_value="$(eval_runtime_int_binary_value_task int_multiply_value "*" "$sum" "$factor")"
   [[ -n "$runtime_value" ]] || return 1
   printf '{"kind":"%s","value":"%s"}\n' "$RUNTIME_INT_VALUE_KIND" "$runtime_value"
 }
@@ -5036,6 +5072,9 @@ run_json() {
     value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
     value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
   elif simple_runtime="$(eval_source_len_int_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
+    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
+    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
+  elif simple_runtime="$(eval_source_parenthesized_arithmetic_int_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
     value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
     value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
   elif simple_runtime="$(eval_source_list_index_int_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then

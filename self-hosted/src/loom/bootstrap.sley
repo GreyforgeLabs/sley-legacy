@@ -80,6 +80,8 @@ export task owned_bootstrap_values -> List<Text> {
     "text_concat_runtime_execution",
     "list_len_runtime_task_execution",
     "len_expression_runtime_execution",
+    "int_arithmetic_runtime_task_execution",
+    "absorbing_arithmetic_runtime_execution",
     "list_index_runtime_task_execution",
     "list_index_expression_runtime_execution",
     "map_index_runtime_task_execution",

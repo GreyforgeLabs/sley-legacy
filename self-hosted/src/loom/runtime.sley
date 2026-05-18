@@ -92,6 +92,20 @@ export task list_len_value -> Int {
   return item_count
 }
 
+export task int_add_value -> Int {
+  take left: Int
+  take right: Int
+
+  return left + right
+}
+
+export task int_multiply_value -> Int {
+  take left: Int
+  take right: Int
+
+  return left * right
+}
+
 export task list_index_int_value -> Int {
   take values: List<Int>
   take index: Int
