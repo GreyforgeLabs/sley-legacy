@@ -30,6 +30,30 @@ export task ast_node_schema -> Text {
   return "sley.ast.node.v0"
 }
 
+export task ast_node_report_fields -> List<Text> {
+  return [
+    "schema",
+    "target",
+    "id",
+    "node_kind",
+    "module",
+    "parent",
+    "value"
+  ]
+}
+
+export task ast_node_report_builder -> List<Text> {
+  return [
+    "schema|reports.ast_node_schema|Text",
+    "target|ast_node.target|Text",
+    "id|ast_node.id|Text",
+    "node_kind|ast_node.node_kind|Text",
+    "module|ast_node.module|Text",
+    "parent|ast_node.parent|Optional<Text>",
+    "value|ast_node.value|Json"
+  ]
+}
+
 export task diagnostics_schema -> Text {
   return "sley.diagnostics.report.v0"
 }

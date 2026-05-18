@@ -133,3 +133,19 @@ export task statement_id -> Text {
 
   return "block:task:" + module_name + "." + task_name + ":stmt:" + index
 }
+
+export task ast_task_node_kind -> Text {
+  return "task"
+}
+
+export task ast_statement_node_kind -> Text {
+  return "statement"
+}
+
+export task ast_expression_node_kind -> Text {
+  return "expression"
+}
+
+export task ast_node_not_found_id -> Text {
+  return "AST_NODE_NOT_FOUND"
+}

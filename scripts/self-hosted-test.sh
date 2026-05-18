@@ -54,6 +54,9 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_ast_program_report_builder")) and (.bootstrap_owned_by_sley | index("parser_ast_program_report_builder_task_execution"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("parser_ast_node_report_builder")) and (.bootstrap_owned_by_sley | index("parser_ast_node_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("parser_ast_node_kind_task_execution")) and (.bootstrap_owned_by_sley | index("parser_ast_node_not_found_diagnostic"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("symbol_graph_report_builder")) and (.bootstrap_owned_by_sley | index("symbol_graph_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("claim_verify_report_builder")) and (.bootstrap_owned_by_sley | index("claim_verify_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("migrate_report_builder")) and (.bootstrap_owned_by_sley | index("migrate_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("docgen_report_builder")) and (.bootstrap_owned_by_sley | index("docgen_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("sandbox_report_builder")) and (.bootstrap_owned_by_sley | index("sandbox_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("agent_bench_report_builder")) and (.bootstrap_owned_by_sley | index("agent_bench_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("deploy_report_builder")) and (.bootstrap_owned_by_sley | index("deploy_report_builder_task_execution"))'
 
 bin/sley self-hosting-status --json \
@@ -408,6 +411,9 @@ bin/sley ast --json examples/empty_for_statement.sley \
 
 bin/sley ast --json --node block:task:app.hello.main:stmt:0:expr examples/hello.sley \
   | json_field '.schema == "sley.ast.node.v0" and .node_kind == "expression"'
+
+bin/sley ast --json --node task:app.hello.main examples/hello.sley \
+  | json_field '.schema == "sley.ast.node.v0" and .node_kind == "task" and (.parent | not)'
 
 bin/sley ast --json fixtures/corpus/rejected/question_requires_result.sley \
   | json_field '.tasks[0].body.statements[0].kind == "Expr" and .tasks[0].body.statements[0].expr.fallible == true'
