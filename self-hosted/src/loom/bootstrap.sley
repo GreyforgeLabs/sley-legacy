@@ -93,6 +93,8 @@ export task owned_bootstrap_values -> List<Text> {
     "bool_and_runtime_task_execution",
     "bool_and_expression_runtime_execution",
     "bool_not_runtime_task_execution",
+    "not_expression_runtime_execution",
+    "double_not_expression_runtime_execution",
     "negated_comparison_runtime_execution",
     "bool_if_runtime_task_execution",
     "bool_if_expression_runtime_execution",
