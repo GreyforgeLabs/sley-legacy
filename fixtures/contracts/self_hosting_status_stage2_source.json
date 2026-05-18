@@ -74,12 +74,14 @@
     "project_ready_task_execution",
     "ast_runtime_probe_dispatch",
     "self_hosting_report_shape",
+    "self_hosting_report_builder",
+    "self_hosting_report_builder_task_execution",
     "runtime_report_status_and_dispatch"
   ],
   "blockers": [
     "execute parser semantics from Sley source",
     "execute checker semantics from Sley source",
     "execute runtime semantics from Sley source",
-    "replace shell JSON shaping with Sley-owned report builders"
+    "extend Sley-owned report builders across remaining command reports"
   ]
 }

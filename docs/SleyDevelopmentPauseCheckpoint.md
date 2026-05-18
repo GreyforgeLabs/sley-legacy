@@ -10,8 +10,10 @@ Remote status: `public` is aligned with `origin/public`
 
 ## Operator Instruction
 
-Sley development is paused at the latest checkpoint. Do not continue repair
-slices until the operator explicitly resumes Sley development.
+Sley development was paused at the latest checkpoint. On 2026-05-18, the
+operator resumed local self-hosting proof work only and added a stricter public
+gate: do not submit outside issues until Sley has demonstrated technical
+superiority and strict self-hosting.
 
 ## Current State
 
@@ -21,8 +23,9 @@ The current local checkpoint advances the public branch to:
   `26e7417 docs: refresh sley zero fork count`
 - full smoke: 481/481 passing
 - local V1 gate: `make v1` passed with `rc=0`
-- self-hosting status: `bootstrap`, `strict_self_hosted=false`,
-  `semantic_source_count=6`, `bootstrap_owned_by_sley=132`
+- self-hosting status before the resumed local slice: `bootstrap`,
+  `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=132`
 - latest V1 log from this pause checkpoint: `/tmp/sley-make-v1-ok-text.log`
 - latest verification refresh on 2026-05-18: `make v1` passed again after the
   public-action packet was finalized and after the WebForge / sleylang.org
@@ -43,6 +46,9 @@ The tracked pause documentation checkpoints are:
 
 Recent self-hosting slices added:
 
+- self-hosting status object layout moved into a Sley-owned report-builder
+  declaration, with the shell bootstrap reduced to primitive value collection
+  and serialization for that report
 - deterministic host-gate text outputs routed through Sley-owned runtime text
   tasks
 - spend-prefixed output routed through a Sley-owned runtime task
@@ -59,11 +65,11 @@ are:
 - execute parser semantics from Sley source
 - execute checker semantics from Sley source
 - execute runtime semantics from Sley source
-- replace shell JSON shaping with Sley-owned report builders
+- extend Sley-owned report builders across remaining command reports
 
 Expected next investigation area, once development resumes:
 
-- report-builder ownership for run/diagnostic/self-hosting JSON roots
+- report-builder ownership for run/diagnostic and other JSON roots
 - broader runtime expression execution from Sley source
 - parser/checker parity coverage that does not rely on shell/JQ semantics
 
@@ -75,7 +81,8 @@ The Sley / Zero comparison packet is prepared outside this repository at:
 
 Current status:
 
-- Zero upstream issue draft is approval-ready but not posted.
+- Zero upstream issue draft exists but is no longer approval-ready under the
+  stricter operator gate; strict Sley self-hosting proof must come first.
 - ForgeHub candidate 124 for `vercel-labs/zero#4` was checked and rejected;
   no eligible ForgeHub public action remains in the packet.
 - Zero fork outreach was narrowed to avoid spam and duplicate/disabled targets.
@@ -94,7 +101,8 @@ Current status:
 - No public GitHub, ForgeHub, or social write is authorized without exact
   operator approval of the target and body.
 
-Current exact approval gate for the next public action:
+Previous exact approval phrase, now insufficient without strict self-hosting
+proof:
 
 - `Approve posting the upstream Zero issue exactly as drafted.`
 
@@ -121,9 +129,10 @@ The latest continuation audit reconfirmed:
 
 - public-action packet verifier: passed
 - live Zero target verifier: passed
-- Sley self-hosting status: `bootstrap`, `strict_self_hosted=false`,
-  `semantic_source_count=6`, `bootstrap_owned_by_sley=132`
-- Sley strict self-hosting blockers are unchanged
+- Sley self-hosting status before resumed local proof work: `bootstrap`,
+  `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=132`
+- Sley strict self-hosting blockers were unchanged at that checkpoint
 
 ## Dirty State Notes
 

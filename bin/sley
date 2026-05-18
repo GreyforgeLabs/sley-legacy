@@ -4064,6 +4064,7 @@ ZJX_TOOL_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_
 SCHEMA_SELF_HOSTING="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_status_schema)"
 SELF_HOSTING_REPORT_SOURCE_ROOT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_source_root)"
 SELF_HOSTING_STATUS_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_status_fields)"
+SELF_HOSTING_STATUS_BUILDER_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_status_builder)"
 
 SCHEMA_AST_PROGRAM="${SCHEMA_AST_PROGRAM:-sley.ast.program.v0}"
 SCHEMA_AST_NODE="${SCHEMA_AST_NODE:-sley.ast.node.v0}"
@@ -4165,6 +4166,9 @@ SCHEMA_SELF_HOSTING="${SCHEMA_SELF_HOSTING:-sley.self_hosting.status.v0}"
 SELF_HOSTING_REPORT_SOURCE_ROOT="${SELF_HOSTING_REPORT_SOURCE_ROOT:-self-hosted/src}"
 if [[ "$SELF_HOSTING_STATUS_FIELDS_JSON" == "[]" ]]; then
   SELF_HOSTING_STATUS_FIELDS_JSON='["schema","status","strict_self_hosted","source_root","semantic_source_count","source_modules","bootstrap_owned_by_sley","blockers"]'
+fi
+if [[ "$SELF_HOSTING_STATUS_BUILDER_JSON" == "[]" ]]; then
+  SELF_HOSTING_STATUS_BUILDER_JSON='["schema|reports.self_hosting_status_schema|Text","status|bootstrap.self_hosting_status|Text","strict_self_hosted|bootstrap.strict_self_hosted|Bool","source_root|reports.self_hosting_source_root|Text","semantic_source_count|bootstrap.semantic_source_count|Int","source_modules|bootstrap.source_modules|List<Text>","bootstrap_owned_by_sley|bootstrap.owned_bootstrap_values|List<Text>","blockers|bootstrap.remaining_strict_self_hosting_blockers|List<Text>"]'
 fi
 
 DIAG_UNKNOWN_IDENTIFIER="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_identifier_id)"
@@ -8687,7 +8691,7 @@ source_modules_json() {
 }
 
 self_hosting_status_json() {
-  local modules_json blockers_json owned_json status strict count
+  local modules_json blockers_json owned_json status strict count values_json
   modules_json="$(source_modules_json)"
   blockers_json="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/bootstrap.sley" remaining_strict_self_hosting_blockers)"
   owned_json="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/bootstrap.sley" owned_bootstrap_values)"
@@ -8703,7 +8707,7 @@ self_hosting_status_json() {
   if [[ -z "$count" ]]; then
     count="$(find "$SELF_HOSTED_SOURCE_ROOT" -type f -name '*.sley' 2>/dev/null | wc -l | tr -d ' ')"
   fi
-  jq -n \
+  values_json="$(jq -n \
     --arg schema "$SCHEMA_SELF_HOSTING" \
     --arg status "$status" \
     --arg root "$SELF_HOSTING_REPORT_SOURCE_ROOT" \
@@ -8712,17 +8716,59 @@ self_hosting_status_json() {
     --argjson modules "$modules_json" \
     --argjson owned "$owned_json" \
     --argjson blockers "$blockers_json" \
-    --argjson fields "$SELF_HOSTING_STATUS_FIELDS_JSON" \
     '{
-      ($fields[0] // "schema"):$schema,
-      ($fields[1] // "status"):$status,
-      ($fields[2] // "strict_self_hosted"):$strict,
-      ($fields[3] // "source_root"):$root,
-      ($fields[4] // "semantic_source_count"):$count,
-      ($fields[5] // "source_modules"):$modules,
-      ($fields[6] // "bootstrap_owned_by_sley"):$owned,
-      ($fields[7] // "blockers"):$blockers
-    }'
+      reports:{
+        self_hosting_status_schema:$schema,
+        self_hosting_source_root:$root
+      },
+      bootstrap:{
+        self_hosting_status:$status,
+        strict_self_hosted:$strict,
+        semantic_source_count:$count,
+        source_modules:$modules,
+        owned_bootstrap_values:$owned,
+        remaining_strict_self_hosting_blockers:$blockers
+      }
+    }')"
+  jq -n \
+    --argjson values "$values_json" \
+    --argjson builder "$SELF_HOSTING_STATUS_BUILDER_JSON" \
+    '
+    def builder_slot($spec):
+      ($spec | split("|")) as $parts |
+      if ($parts | length) != 3 then
+        error("invalid self-hosting builder slot: " + $spec)
+      else
+        {field:$parts[0], source:$parts[1], value_type:$parts[2]}
+      end;
+    def source_value($source):
+      ($source | split(".")) as $parts |
+      if ($parts | length) != 2 then
+        error("invalid self-hosting builder source: " + $source)
+      else
+        ($values[$parts[0]][$parts[1]]) as $value |
+        if $value == null then
+          error("unknown self-hosting builder source: " + $source)
+        else
+          $value
+        end
+      end;
+    def type_ok($value_type; $value):
+      if $value_type == "Text" then ($value | type) == "string"
+      elif $value_type == "Bool" then ($value | type) == "boolean"
+      elif $value_type == "Int" then ($value | type) == "number"
+      elif $value_type == "List<Text>" then
+        (($value | type) == "array" and all($value[]; type == "string"))
+      else false end;
+    reduce ($builder[] | builder_slot(.)) as $slot
+      ({};
+       (source_value($slot.source)) as $value |
+       if type_ok($slot.value_type; $value) then
+         . + {($slot.field):$value}
+       else
+         error("self-hosting builder type mismatch for field: " + $slot.field)
+       end)
+    '
 }
 
 ci_simple_report() {
