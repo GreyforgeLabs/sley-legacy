@@ -66,6 +66,10 @@ export task ok_text_value_kind -> Text {
   return "OkText"
 }
 
+export task ok_int_value_kind -> Text {
+  return "OkInt"
+}
+
 export task self_hosted_target_aliases -> List<Text> {
   return [
     "self-hosted",
@@ -221,6 +225,19 @@ export task text_if_value -> Text {
     return then_value
   }
   return else_value
+}
+
+export task text_equal_value -> Bool {
+  take left: Text
+  take right: Text
+
+  return left == right
+}
+
+export task ok_int_value -> Int {
+  take value: Int
+
+  return value
 }
 
 export task seeded_agent_deploy_value -> Text {
