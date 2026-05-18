@@ -2,7 +2,7 @@
 
 Date: 2026-05-18
 Branch: public
-Latest code checkpoint: b5e3224
+Latest code checkpoint: 2dca7cb
 Latest packet-sync documentation checkpoint before this note: 26e7417
 Current pause document status: committed on `public`; use `git log` for exact
 branch head
@@ -54,6 +54,10 @@ The current local checkpoint advances the public branch to:
   `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
   `bootstrap_owned_by_sley=191`; remaining blockers are still parser, checker,
   and runtime semantics from Sley source
+- self-hosting status after the parser AST statement parent ID slice:
+  `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=192`; remaining blockers are still parser, checker,
+  and runtime semantics from Sley source
 - latest V1 log from this pause checkpoint: `/tmp/sley-make-v1-ok-text.log`
 - latest verification refresh on 2026-05-18: `make v1` passed again after the
   public-action packet was finalized and after the WebForge / sleylang.org
@@ -69,6 +73,7 @@ The tracked code checkpoint is:
 - 307569e fix: source ast declaration ids from parser
 - 2f127e4 fix: source ast expression ids from parser
 - b5e3224 fix: source ast node miss messages from parser
+- 2dca7cb fix: source ast node parent ids from parser
 
 The tracked pause documentation checkpoints are:
 
@@ -109,6 +114,8 @@ Recent self-hosting slices added:
   condition nodes now use Sley-owned parser ID tasks from `loom.parser`
 - AST missing-node diagnostics now use the diagnostic id and message template
   sourced from `loom.parser`
+- AST statement-node parent identifiers now use the Sley-owned parser task ID
+  template instead of direct shell-side task ID synthesis
 - diagnostics and run report root layouts moved into Sley-owned report-builder
   declarations, with the shell bootstrap supplying computed values to those
   builders
@@ -251,12 +258,20 @@ The latest continuation audit reconfirmed:
   slice: `bootstrap`, `strict_self_hosted=false`,
   `semantic_source_count=6`, `bootstrap_owned_by_sley=191`; remaining blockers
   are parser, checker, and runtime semantics from Sley source
+- focused AST statement parent ID probe:
+  `bin/sley ast --json --node block:task:app.hello.main:stmt:0
+  examples/hello.sley` returned `node_kind == "statement"` and parent
+  `task:app.hello.main` through the Sley-owned parser task ID template
+- Sley self-hosting status after the parser AST statement parent ID proof
+  slice: `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=192`; remaining blockers
+  are parser, checker, and runtime semantics from Sley source
 
 ## Dirty State Notes
 
-Tracked code was committed at b5e3224 before this pause document was updated.
-Tracked pause documentation was refreshed through 26e7417 with the external
-comparison approval gate, fork audit, and helper evidence.
+Tracked code was committed at 2dca7cb before this pause document was updated.
+Tracked pause documentation before this update was refreshed through 26e7417
+with the external comparison approval gate, fork audit, and helper evidence.
 
 Pre-existing untracked docs were not touched and should remain outside future
 commits unless the operator explicitly asks to include them:
