@@ -126,6 +126,13 @@ export task int_equal_value -> Bool {
   return left == right
 }
 
+export task int_greater_equal_value -> Bool {
+  take left: Int
+  take right: Int
+
+  return left >= right
+}
+
 export task list_index_int_value -> Int {
   take values: List<Int>
   take index: Int
@@ -198,6 +205,17 @@ export task int_if_value -> Int {
   take condition: Bool
   take then_value: Int
   take else_value: Int
+
+  if condition {
+    return then_value
+  }
+  return else_value
+}
+
+export task text_if_value -> Text {
+  take condition: Bool
+  take then_value: Text
+  take else_value: Text
 
   if condition {
     return then_value
