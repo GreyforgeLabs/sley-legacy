@@ -143,12 +143,24 @@ export task unknown_identifier_message_suffix -> Text {
   return "`"
 }
 
+export task unknown_identifier_message -> Text {
+  take identifier_name: Text
+
+  return "unknown identifier `" + identifier_name + "`"
+}
+
 export task unknown_type_message_prefix -> Text {
   return "unknown type `"
 }
 
 export task unknown_type_message_suffix -> Text {
   return "`"
+}
+
+export task unknown_type_message -> Text {
+  take type_name: Text
+
+  return "unknown type `" + type_name + "`"
 }
 
 export task unknown_task_message_prefix -> Text {
@@ -363,6 +375,12 @@ export task unknown_effect_message_prefix -> Text {
 
 export task unknown_effect_message_suffix -> Text {
   return "`"
+}
+
+export task unknown_effect_message -> Text {
+  take effect_name: Text
+
+  return "unknown effect `" + effect_name + "`"
 }
 
 export task gate_take_type_mismatch_message_prefix -> Text {
