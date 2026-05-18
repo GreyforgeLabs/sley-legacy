@@ -227,6 +227,12 @@ bin/sley run --json fixtures/corpus/accepted/mutable_sum.sley \
   | json_field '.status == "passed" and .value.kind == "Int" and .value.value == 10'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("each_map_sum_runtime_execution"))'
+
+bin/sley run --json examples/maps_for.sley \
+  | json_field '.status == "passed" and .value.kind == "Int" and .value.value == 15'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("project_call_runtime_execution"))'
 
 bin/sley self-hosting-status --json \
