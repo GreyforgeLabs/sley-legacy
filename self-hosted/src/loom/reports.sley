@@ -128,6 +128,14 @@ export task symbol_graph_report_fields -> List<Text> {
   ]
 }
 
+export task symbol_graph_report_builder -> List<Text> {
+  return [
+    "schema|reports.symbol_graph_schema|Text",
+    "entry_module|symbol_graph.entry_module|Text",
+    "modules|symbol_graph.modules|List<Json>"
+  ]
+}
+
 export task run_schema -> Text {
   return "sley.run.report.v0"
 }
@@ -216,6 +224,21 @@ export task claim_verify_report_fields -> List<Text> {
     "failed_count",
     "checks",
     "issues"
+  ]
+}
+
+export task claim_verify_report_builder -> List<Text> {
+  return [
+    "schema|reports.claim_verify_schema|Text",
+    "status|claim_verify.status|Text",
+    "target|claim_verify.target|Text",
+    "manifest_schema|claim_verify.manifest_schema|Text",
+    "claim_id|claim_verify.claim_id|Text",
+    "check_count|claim_verify.check_count|Int",
+    "passed_count|claim_verify.passed_count|Int",
+    "failed_count|claim_verify.failed_count|Int",
+    "checks|claim_verify.checks|List<Json>",
+    "issues|claim_verify.issues|List<Json>"
   ]
 }
 
@@ -343,6 +366,23 @@ export task deploy_report_fields -> List<Text> {
   ]
 }
 
+export task deploy_report_builder -> List<Text> {
+  return [
+    "schema|reports.deploy_report_schema|Text",
+    "status|deploy.status|Text",
+    "mode|deploy.mode|Text",
+    "target|deploy.target|Text",
+    "environment|deploy.environment|Text",
+    "policy|deploy.policy|Json",
+    "summary|deploy.summary|Json",
+    "verify|deploy.verify|Json",
+    "seal|deploy.seal|Json",
+    "package|deploy.package|Json",
+    "artifacts|deploy.artifacts|Json",
+    "next_actions|deploy.next_actions|List<Json>"
+  ]
+}
+
 export task deploy_artifacts_schema -> Text {
   return "sley.deploy.artifacts.v0"
 }
@@ -383,6 +423,20 @@ export task migrate_report_fields -> List<Text> {
   ]
 }
 
+export task migrate_report_builder -> List<Text> {
+  return [
+    "schema|reports.migrate_schema|Text",
+    "status|migrate.status|Text",
+    "target|migrate.target|Text",
+    "source_schema|migrate.source_schema|Text",
+    "summary|migrate.summary|Json",
+    "migrations|migrate.migrations|List<Json>",
+    "schema_drift|migrate.schema_drift|List<Json>",
+    "diagnostics|migrate.diagnostics|List<Json>",
+    "issues|migrate.issues|List<Json>"
+  ]
+}
+
 export task docgen_schema -> Text {
   return "sley.docgen.report.v0"
 }
@@ -403,6 +457,25 @@ export task docgen_report_fields -> List<Text> {
     "capabilities",
     "diagnostics",
     "issues"
+  ]
+}
+
+export task docgen_report_builder -> List<Text> {
+  return [
+    "schema|reports.docgen_schema|Text",
+    "status|docgen.status|Text",
+    "target|docgen.target|Text",
+    "source_schema|docgen.source_schema|Text",
+    "summary|docgen.summary|Json",
+    "filters|docgen.filters|Json",
+    "documents|docgen.documents|List<Json>",
+    "modules|docgen.modules|List<Json>",
+    "tasks|docgen.tasks|List<Json>",
+    "types|docgen.types|List<Json>",
+    "effects|docgen.effects|List<Json>",
+    "capabilities|docgen.capabilities|List<Json>",
+    "diagnostics|docgen.diagnostics|List<Json>",
+    "issues|docgen.issues|List<Json>"
   ]
 }
 
@@ -445,6 +518,20 @@ export task sandbox_report_fields -> List<Text> {
   ]
 }
 
+export task sandbox_report_builder -> List<Text> {
+  return [
+    "schema|reports.sandbox_schema|Text",
+    "status|sandbox.status|Text",
+    "manifest|sandbox.manifest|Text",
+    "manifest_schema|sandbox.manifest_schema|Text",
+    "target|sandbox.target|Text",
+    "sandbox_retained|sandbox.sandbox_retained|Bool",
+    "summary|sandbox.summary|Json",
+    "verify|sandbox.verify|Json",
+    "issues|sandbox.issues|List<Json>"
+  ]
+}
+
 export task shadow_schema -> Text {
   return "sley.shadow.report.v0"
 }
@@ -463,6 +550,19 @@ export task agent_bench_report_fields -> List<Text> {
     "failed_count",
     "cases",
     "issues"
+  ]
+}
+
+export task agent_bench_report_builder -> List<Text> {
+  return [
+    "schema|reports.agent_bench_schema|Text",
+    "status|agent_bench.status|Text",
+    "sley_bin|agent_bench.sley_bin|Text",
+    "case_count|agent_bench.case_count|Int",
+    "passed_count|agent_bench.passed_count|Int",
+    "failed_count|agent_bench.failed_count|Int",
+    "cases|agent_bench.cases|List<Json>",
+    "issues|agent_bench.issues|List<Json>"
   ]
 }
 
