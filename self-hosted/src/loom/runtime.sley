@@ -102,6 +102,12 @@ export task int_identity_value -> Int {
   return value
 }
 
+export task text_identity_value -> Text {
+  take value: Text
+
+  return value
+}
+
 export task int_add_value -> Int {
   take left: Int
   take right: Int
