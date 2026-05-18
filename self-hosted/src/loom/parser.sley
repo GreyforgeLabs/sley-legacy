@@ -163,6 +163,24 @@ export task statement_id -> Text {
   return "block:task:" + module_name + "." + task_name + ":stmt:" + index
 }
 
+export task expression_id -> Text {
+  take statement_id: Text
+
+  return statement_id + ":expr"
+}
+
+export task collection_expression_id -> Text {
+  take statement_id: Text
+
+  return statement_id + ":collection"
+}
+
+export task condition_expression_id -> Text {
+  take statement_id: Text
+
+  return statement_id + ":condition"
+}
+
 export task ast_task_node_kind -> Text {
   return "task"
 }
