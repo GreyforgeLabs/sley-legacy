@@ -112,6 +112,12 @@ export task text_identity_value -> Text {
   return value
 }
 
+export task spend_prefixed_value -> Text {
+  take authorization: Text
+
+  return "budget gate: " + authorization
+}
+
 export task int_add_value -> Int {
   take left: Int
   take right: Int

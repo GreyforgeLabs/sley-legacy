@@ -137,6 +137,12 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("text_identity_runtime_task_execution"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("host_call_text_runtime_execution"))'
+
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("spend_prefix_runtime_task_execution"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("direct_file_read_runtime_execution"))'
 
 bin/sley self-hosting-status --json \
@@ -147,6 +153,27 @@ bin/sley run --json examples/file_gate.sley \
 
 bin/sley run --json examples/raw_host_migration.sley \
   | json_field '.status == "passed" and .value.kind == "Ok" and .value.value.kind == "Text" and .value.value.value == "hello sley"'
+
+bin/sley run --json --cap Network --http-text https://example.test/profile "owned profile" examples/network_gate.sley \
+  | json_field '.status == "passed" and .value.kind == "Ok" and .value.value.value == "owned profile"'
+
+bin/sley run --json --cap Shell --shell-output date "owned date" examples/shell_gate.sley \
+  | json_field '.status == "passed" and .value.kind == "Ok" and .value.value.value == "owned date"'
+
+bin/sley run --json --cap ModelCall --model-output name "owned model" examples/model_gate.sley \
+  | json_field '.status == "passed" and .value.kind == "Ok" and .value.value.value == "owned model"'
+
+bin/sley run --json --cap SecretRead --secret api_key "owned secret" examples/secret_gate.sley \
+  | json_field '.status == "passed" and .value.kind == "Ok" and .value.value.value == "owned secret"'
+
+bin/sley run --json --cap Deploy --deploy-result staging "owned stage" examples/deploy_gate.sley \
+  | json_field '.status == "passed" and .value.kind == "Ok" and .value.value.value == "owned stage"'
+
+bin/sley run --json --cap Spend --spend-result ads-budget authorized examples/spend_gate.sley \
+  | json_field '.status == "passed" and .value.kind == "Ok" and .value.value.value == "authorized"'
+
+bin/sley run --json --cap Spend --spend-result ads-budget authorized fixtures/corpus/accepted/agent_spend_authority.sley \
+  | json_field '.status == "passed" and .value.kind == "Ok" and .value.value.value == "budget gate: authorized"'
 
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("list_index_runtime_task_execution"))'
