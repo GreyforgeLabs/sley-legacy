@@ -79,6 +79,8 @@ export task owned_bootstrap_values -> List<Text> {
     "verify_report_builder",
     "verify_report_builder_task_execution",
     "graft_outcome_report_shape",
+    "graft_outcome_report_builder",
+    "graft_outcome_report_builder_task_execution",
     "claim_verify_report_shape",
     "claim_verify_report_builder",
     "claim_verify_report_builder_task_execution",
@@ -89,11 +91,21 @@ export task owned_bootstrap_values -> List<Text> {
     "conformance_coverage_report_builder",
     "conformance_coverage_report_builder_task_execution",
     "ci_report_shape",
+    "ci_report_builder",
+    "ci_report_builder_task_execution",
     "contract_report_shapes",
+    "contract_inventory_report_builder",
+    "contract_inventory_report_builder_task_execution",
+    "contract_validate_report_builder",
+    "contract_validate_report_builder_task_execution",
+    "contract_fixture_check_report_builder",
+    "contract_fixture_check_report_builder_task_execution",
     "deploy_report_shape",
     "deploy_report_builder",
     "deploy_report_builder_task_execution",
     "deploy_artifact_check_report_shape",
+    "deploy_artifact_check_report_builder",
+    "deploy_artifact_check_report_builder_task_execution",
     "migrate_report_shape",
     "migrate_report_builder",
     "migrate_report_builder_task_execution",
@@ -101,6 +113,8 @@ export task owned_bootstrap_values -> List<Text> {
     "docgen_report_builder",
     "docgen_report_builder_task_execution",
     "workbench_report_shape",
+    "workbench_report_builder",
+    "workbench_report_builder_task_execution",
     "sandbox_report_shape",
     "sandbox_report_builder",
     "sandbox_report_builder_task_execution",
@@ -108,6 +122,8 @@ export task owned_bootstrap_values -> List<Text> {
     "agent_bench_report_builder",
     "agent_bench_report_builder_task_execution",
     "zjx_tool_report_shape",
+    "zjx_tool_report_builder",
+    "zjx_tool_report_builder_task_execution",
     "pure_literal_runtime_execution",
     "bool_literal_runtime_execution",
     "text_concat_runtime_execution",
@@ -208,8 +224,7 @@ export task remaining_strict_self_hosting_blockers -> List<Text> {
   return [
     "execute parser semantics from Sley source",
     "execute checker semantics from Sley source",
-    "execute runtime semantics from Sley source",
-    "extend Sley-owned report builders across remaining command reports"
+    "execute runtime semantics from Sley source"
   ]
 }
 

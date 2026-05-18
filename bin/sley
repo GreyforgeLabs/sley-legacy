@@ -4036,6 +4036,7 @@ VERIFY_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_RO
 VERIFY_REPORT_BUILDER_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" verify_report_builder)"
 SCHEMA_GRAFT_OUTCOME="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" graft_outcome_schema)"
 GRAFT_OUTCOME_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" graft_outcome_report_fields)"
+GRAFT_OUTCOME_REPORT_BUILDER_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" graft_outcome_report_builder)"
 SCHEMA_CLAIM_VERIFY="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" claim_verify_schema)"
 CLAIM_VERIFY_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" claim_verify_report_fields)"
 CLAIM_VERIFY_REPORT_BUILDER_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" claim_verify_report_builder)"
@@ -4047,18 +4048,23 @@ CONFORMANCE_COVERAGE_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SO
 CONFORMANCE_COVERAGE_BUILDER_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" conformance_coverage_builder)"
 SCHEMA_CI_REPORT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" ci_report_schema)"
 CI_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" ci_report_fields)"
+CI_REPORT_BUILDER_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" ci_report_builder)"
 SCHEMA_CONTRACT_INVENTORY="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" contract_inventory_schema)"
 CONTRACT_INVENTORY_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" contract_inventory_fields)"
+CONTRACT_INVENTORY_BUILDER_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" contract_inventory_builder)"
 SCHEMA_CONTRACT_VALIDATE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" contract_validate_schema)"
 CONTRACT_VALIDATE_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" contract_validate_fields)"
+CONTRACT_VALIDATE_BUILDER_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" contract_validate_builder)"
 SCHEMA_CONTRACT_FIXTURE_CHECK="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" contract_fixture_check_schema)"
 CONTRACT_FIXTURE_CHECK_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" contract_fixture_check_fields)"
+CONTRACT_FIXTURE_CHECK_BUILDER_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" contract_fixture_check_builder)"
 SCHEMA_DEPLOY_REPORT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" deploy_report_schema)"
 DEPLOY_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" deploy_report_fields)"
 DEPLOY_REPORT_BUILDER_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" deploy_report_builder)"
 SCHEMA_DEPLOY_ARTIFACTS="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" deploy_artifacts_schema)"
 SCHEMA_DEPLOY_ARTIFACT_CHECK="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" deploy_artifact_check_schema)"
 DEPLOY_ARTIFACT_CHECK_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" deploy_artifact_check_fields)"
+DEPLOY_ARTIFACT_CHECK_BUILDER_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" deploy_artifact_check_builder)"
 SCHEMA_MIGRATE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" migrate_schema)"
 MIGRATE_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" migrate_report_fields)"
 MIGRATE_REPORT_BUILDER_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" migrate_report_builder)"
@@ -4067,6 +4073,7 @@ DOCGEN_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_RO
 DOCGEN_REPORT_BUILDER_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" docgen_report_builder)"
 SCHEMA_WORKBENCH="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" workbench_schema)"
 WORKBENCH_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" workbench_report_fields)"
+WORKBENCH_REPORT_BUILDER_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" workbench_report_builder)"
 SCHEMA_SANDBOX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" sandbox_schema)"
 SANDBOX_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" sandbox_report_fields)"
 SANDBOX_REPORT_BUILDER_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" sandbox_report_builder)"
@@ -4076,6 +4083,7 @@ AGENT_BENCH_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOUR
 AGENT_BENCH_REPORT_BUILDER_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" agent_bench_report_builder)"
 SCHEMA_ZJX_TOOL="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" zjx_tool_schema)"
 ZJX_TOOL_REPORT_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" zjx_tool_report_fields)"
+ZJX_TOOL_REPORT_BUILDER_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" zjx_tool_report_builder)"
 SCHEMA_SELF_HOSTING="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_status_schema)"
 SELF_HOSTING_REPORT_SOURCE_ROOT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_source_root)"
 SELF_HOSTING_STATUS_FIELDS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley" self_hosting_status_fields)"
@@ -4136,6 +4144,9 @@ SCHEMA_GRAFT_OUTCOME="${SCHEMA_GRAFT_OUTCOME:-sley.graft.outcome.v0}"
 if [[ "$GRAFT_OUTCOME_REPORT_FIELDS_JSON" == "[]" ]]; then
   GRAFT_OUTCOME_REPORT_FIELDS_JSON='["schema","status","source","diagnostics","provenance"]'
 fi
+if [[ "$GRAFT_OUTCOME_REPORT_BUILDER_JSON" == "[]" ]]; then
+  GRAFT_OUTCOME_REPORT_BUILDER_JSON='["schema|reports.graft_outcome_schema|Text","status|graft_outcome.status|Text","source|graft_outcome.source|Optional<Text>","diagnostics|graft_outcome.diagnostics|List<Json>","provenance|graft_outcome.provenance|List<Json>"]'
+fi
 SCHEMA_CLAIM_VERIFY="${SCHEMA_CLAIM_VERIFY:-sley.claim.verify.v0}"
 if [[ "$CLAIM_VERIFY_REPORT_FIELDS_JSON" == "[]" ]]; then
   CLAIM_VERIFY_REPORT_FIELDS_JSON='["schema","status","target","manifest_schema","claim_id","check_count","passed_count","failed_count","checks","issues"]'
@@ -4161,17 +4172,29 @@ SCHEMA_CI_REPORT="${SCHEMA_CI_REPORT:-sley.ci.report.v0}"
 if [[ "$CI_REPORT_FIELDS_JSON" == "[]" ]]; then
   CI_REPORT_FIELDS_JSON='["schema","status","command","target","manifest","summary","steps","issues"]'
 fi
+if [[ "$CI_REPORT_BUILDER_JSON" == "[]" ]]; then
+  CI_REPORT_BUILDER_JSON='["schema|reports.ci_report_schema|Text","status|ci.status|Text","command|ci.command|Text","target|ci.target|Optional<Text>","manifest|ci.manifest|Optional<Text>","summary|ci.summary|Json","steps|ci.steps|List<Json>","issues|ci.issues|List<Json>"]'
+fi
 SCHEMA_CONTRACT_INVENTORY="${SCHEMA_CONTRACT_INVENTORY:-sley.contract.inventory.v0}"
 if [[ "$CONTRACT_INVENTORY_FIELDS_JSON" == "[]" ]]; then
   CONTRACT_INVENTORY_FIELDS_JSON='["schema","status","schema_dir","schema_count","schemas"]'
+fi
+if [[ "$CONTRACT_INVENTORY_BUILDER_JSON" == "[]" ]]; then
+  CONTRACT_INVENTORY_BUILDER_JSON='["schema|reports.contract_inventory_schema|Text","status|contract_inventory.status|Text","schema_dir|contract_inventory.schema_dir|Text","schema_count|contract_inventory.schema_count|Int","schemas|contract_inventory.schemas|List<Json>"]'
 fi
 SCHEMA_CONTRACT_VALIDATE="${SCHEMA_CONTRACT_VALIDATE:-sley.contract.validate.v0}"
 if [[ "$CONTRACT_VALIDATE_FIELDS_JSON" == "[]" ]]; then
   CONTRACT_VALIDATE_FIELDS_JSON='["schema","status","validation_level","requested_schema","report_path","schema_dir","report_schema","issues"]'
 fi
+if [[ "$CONTRACT_VALIDATE_BUILDER_JSON" == "[]" ]]; then
+  CONTRACT_VALIDATE_BUILDER_JSON='["schema|reports.contract_validate_schema|Text","status|contract_validate.status|Text","validation_level|contract_validate.validation_level|Text","requested_schema|contract_validate.requested_schema|Text","report_path|contract_validate.report_path|Text","schema_dir|contract_validate.schema_dir|Text","report_schema|contract_validate.report_schema|Optional<Text>","issues|contract_validate.issues|List<Json>"]'
+fi
 SCHEMA_CONTRACT_FIXTURE_CHECK="${SCHEMA_CONTRACT_FIXTURE_CHECK:-sley.contract.fixture_check.v0}"
 if [[ "$CONTRACT_FIXTURE_CHECK_FIELDS_JSON" == "[]" ]]; then
   CONTRACT_FIXTURE_CHECK_FIELDS_JSON='["schema","status","validation_level","schema_dir","fixtures_dir","fixture_count","passed_count","failed_count","fixtures"]'
+fi
+if [[ "$CONTRACT_FIXTURE_CHECK_BUILDER_JSON" == "[]" ]]; then
+  CONTRACT_FIXTURE_CHECK_BUILDER_JSON='["schema|reports.contract_fixture_check_schema|Text","status|contract_fixture_check.status|Text","validation_level|contract_fixture_check.validation_level|Text","schema_dir|contract_fixture_check.schema_dir|Text","fixtures_dir|contract_fixture_check.fixtures_dir|Text","fixture_count|contract_fixture_check.fixture_count|Int","passed_count|contract_fixture_check.passed_count|Int","failed_count|contract_fixture_check.failed_count|Int","fixtures|contract_fixture_check.fixtures|List<Json>"]'
 fi
 SCHEMA_DEPLOY_REPORT="${SCHEMA_DEPLOY_REPORT:-sley.deploy.report.v0}"
 if [[ "$DEPLOY_REPORT_FIELDS_JSON" == "[]" ]]; then
@@ -4184,6 +4207,9 @@ SCHEMA_DEPLOY_ARTIFACTS="${SCHEMA_DEPLOY_ARTIFACTS:-sley.deploy.artifacts.v0}"
 SCHEMA_DEPLOY_ARTIFACT_CHECK="${SCHEMA_DEPLOY_ARTIFACT_CHECK:-sley.deploy.artifact_check.v0}"
 if [[ "$DEPLOY_ARTIFACT_CHECK_FIELDS_JSON" == "[]" ]]; then
   DEPLOY_ARTIFACT_CHECK_FIELDS_JSON='["schema","status","validation_level","artifacts_dir","manifest_path","manifest_schema","summary","files","issues"]'
+fi
+if [[ "$DEPLOY_ARTIFACT_CHECK_BUILDER_JSON" == "[]" ]]; then
+  DEPLOY_ARTIFACT_CHECK_BUILDER_JSON='["schema|reports.deploy_artifact_check_schema|Text","status|deploy_artifact_check.status|Text","validation_level|deploy_artifact_check.validation_level|Text","artifacts_dir|deploy_artifact_check.artifacts_dir|Text","manifest_path|deploy_artifact_check.manifest_path|Text","manifest_schema|deploy_artifact_check.manifest_schema|Optional<Text>","summary|deploy_artifact_check.summary|Json","files|deploy_artifact_check.files|List<Json>","issues|deploy_artifact_check.issues|List<Json>"]'
 fi
 SCHEMA_MIGRATE="${SCHEMA_MIGRATE:-sley.migrate.report.v0}"
 if [[ "$MIGRATE_REPORT_FIELDS_JSON" == "[]" ]]; then
@@ -4203,6 +4229,9 @@ SCHEMA_WORKBENCH="${SCHEMA_WORKBENCH:-sley.workbench.report.v0}"
 if [[ "$WORKBENCH_REPORT_FIELDS_JSON" == "[]" ]]; then
   WORKBENCH_REPORT_FIELDS_JSON='["schema","status","target","summary","diagnostics","doctor","query","lint","plan","graph","graph_slice","issues"]'
 fi
+if [[ "$WORKBENCH_REPORT_BUILDER_JSON" == "[]" ]]; then
+  WORKBENCH_REPORT_BUILDER_JSON='["schema|reports.workbench_schema|Text","status|workbench.status|Text","target|workbench.target|Text","summary|workbench.summary|Json","diagnostics|workbench.diagnostics|List<Json>","doctor|workbench.doctor|Json","query|workbench.query|Json","lint|workbench.lint|Json","plan|workbench.plan|Json","graph|workbench.graph|Json","graph_slice|workbench.graph_slice|Optional<Json>","issues|workbench.issues|List<Json>"]'
+fi
 SCHEMA_SANDBOX="${SCHEMA_SANDBOX:-sley.sandbox.report.v0}"
 if [[ "$SANDBOX_REPORT_FIELDS_JSON" == "[]" ]]; then
   SANDBOX_REPORT_FIELDS_JSON='["schema","status","manifest","manifest_schema","target","sandbox_retained","summary","verify","issues"]'
@@ -4221,6 +4250,9 @@ fi
 SCHEMA_ZJX_TOOL="${SCHEMA_ZJX_TOOL:-sley.zjx.tool.report.v0}"
 if [[ "$ZJX_TOOL_REPORT_FIELDS_JSON" == "[]" ]]; then
   ZJX_TOOL_REPORT_FIELDS_JSON='["schema","status","command","envelopes","digest","diff","output_path","graph","issues"]'
+fi
+if [[ "$ZJX_TOOL_REPORT_BUILDER_JSON" == "[]" ]]; then
+  ZJX_TOOL_REPORT_BUILDER_JSON='["schema|reports.zjx_tool_schema|Text","status|zjx_tool.status|Text","command|zjx_tool.command|Text","envelopes|zjx_tool.envelopes|List<Json>","digest|zjx_tool.digest|Optional<Json>","diff|zjx_tool.diff|Optional<Json>","output_path|zjx_tool.output_path|Optional<Text>","graph|zjx_tool.graph|Optional<Json>","issues|zjx_tool.issues|List<Json>"]'
 fi
 SCHEMA_SELF_HOSTING="${SCHEMA_SELF_HOSTING:-sley.self_hosting.status.v0}"
 SELF_HOSTING_REPORT_SOURCE_ROOT="${SELF_HOSTING_REPORT_SOURCE_ROOT:-self-hosted/src}"
@@ -4848,18 +4880,25 @@ sley_report_builder_json() {
       if ($parts | length) != 3 then
         error("invalid report builder slot: " + $spec)
       else
-        {field:$parts[0], source:$parts[1], value_type:$parts[2]}
+        ($parts[2]) as $raw_type |
+        (($raw_type | startswith("Optional<")) and ($raw_type | endswith(">"))) as $optional |
+        {
+          field:$parts[0],
+          source:$parts[1],
+          optional:$optional,
+          value_type:(if $optional then ($raw_type | sub("^Optional<"; "") | sub(">$"; "")) else $raw_type end)
+        }
       end;
-    def source_value($source):
+    def source_lookup($source):
       ($source | split(".")) as $parts |
       if ($parts | length) != 2 then
         error("invalid report builder source: " + $source)
       else
-        ($values[$parts[0]][$parts[1]]) as $value |
-        if $value == null then
-          error("unknown report builder source: " + $source)
+        ($values[$parts[0]] // {}) as $scope |
+        if ($scope | type) != "object" then
+          {found:false, value:null}
         else
-          $value
+          {found:($scope | has($parts[1])), value:$scope[$parts[1]]}
         end
       end;
     def type_ok($value_type; $value):
@@ -4872,11 +4911,19 @@ sley_report_builder_json() {
       elif $value_type == "List<Json>" then
         ($value | type) == "array"
       else false end;
+    def optional_skip($slot; $found; $value):
+      $slot.optional and
+      (($found | not) or $value == null or
+       ($slot.value_type == "Text" and ($value | type) == "string" and $value == ""));
     reduce ($builder[] | builder_slot(.)) as $slot
       ({};
-       (source_value($slot.source)) as $value |
-       if type_ok($slot.value_type; $value) then
-         . + {($slot.field):$value}
+       (source_lookup($slot.source)) as $source |
+       if optional_skip($slot; $source.found; $source.value) then
+         .
+       elif (($source.found | not) or $source.value == null) then
+         error("unknown report builder source: " + $slot.source)
+       elif type_ok($slot.value_type; $source.value) then
+         . + {($slot.field):$source.value}
        else
          error("report builder type mismatch for field: " + $slot.field)
        end)
@@ -4894,6 +4941,48 @@ sley_report_builder_from_report_json() {
     {reports:{($schema_name):$schema}} + {($namespace):$report}
   ')"
   sley_report_builder_json "$builder_json" "$values_json"
+}
+
+graft_outcome_report_from_json() {
+  local report_json="$1"
+  sley_report_builder_from_report_json "$GRAFT_OUTCOME_REPORT_BUILDER_JSON" "graft_outcome" "graft_outcome_schema" "$SCHEMA_GRAFT_OUTCOME" "$report_json"
+}
+
+ci_report_from_json() {
+  local report_json="$1"
+  sley_report_builder_from_report_json "$CI_REPORT_BUILDER_JSON" "ci" "ci_report_schema" "$SCHEMA_CI_REPORT" "$report_json"
+}
+
+contract_report_from_json() {
+  local report_json="$1" schema
+  schema="$(printf '%s\n' "$report_json" | jq -r '.schema? // empty' 2>/dev/null || true)"
+  case "$schema" in
+    "$SCHEMA_CONTRACT_INVENTORY")
+      sley_report_builder_from_report_json "$CONTRACT_INVENTORY_BUILDER_JSON" "contract_inventory" "contract_inventory_schema" "$SCHEMA_CONTRACT_INVENTORY" "$report_json"
+      ;;
+    "$SCHEMA_CONTRACT_VALIDATE")
+      sley_report_builder_from_report_json "$CONTRACT_VALIDATE_BUILDER_JSON" "contract_validate" "contract_validate_schema" "$SCHEMA_CONTRACT_VALIDATE" "$report_json"
+      ;;
+    "$SCHEMA_CONTRACT_FIXTURE_CHECK")
+      sley_report_builder_from_report_json "$CONTRACT_FIXTURE_CHECK_BUILDER_JSON" "contract_fixture_check" "contract_fixture_check_schema" "$SCHEMA_CONTRACT_FIXTURE_CHECK" "$report_json"
+      ;;
+    "$SCHEMA_DEPLOY_ARTIFACT_CHECK")
+      sley_report_builder_from_report_json "$DEPLOY_ARTIFACT_CHECK_BUILDER_JSON" "deploy_artifact_check" "deploy_artifact_check_schema" "$SCHEMA_DEPLOY_ARTIFACT_CHECK" "$report_json"
+      ;;
+    *)
+      printf '%s\n' "$report_json"
+      ;;
+  esac
+}
+
+workbench_report_from_json() {
+  local report_json="$1"
+  sley_report_builder_from_report_json "$WORKBENCH_REPORT_BUILDER_JSON" "workbench" "workbench_schema" "$SCHEMA_WORKBENCH" "$report_json"
+}
+
+zjx_tool_report_from_json() {
+  local report_json="$1"
+  sley_report_builder_from_report_json "$ZJX_TOOL_REPORT_BUILDER_JSON" "zjx_tool" "zjx_tool_schema" "$SCHEMA_ZJX_TOOL" "$report_json"
 }
 
 sley_report_error_json() {
@@ -8679,7 +8768,7 @@ raise SystemExit(args.func(args))
 PY
 }
 
-tool_contract() {
+tool_contract_raw() {
   local sub="${1:-}"; shift || true
   local schema_dir fixture_dir="" requested="" target=""
   if [[ -d "docs/schemas" ]]; then
@@ -8737,6 +8826,21 @@ tool_contract() {
       return 2
       ;;
   esac
+}
+
+tool_contract() {
+  local report rc
+  if report="$(tool_contract_raw "$@")"; then
+    rc=0
+  else
+    rc=$?
+  fi
+  if [[ -n "$report" ]] && printf '%s\n' "$report" | jq -e '(.schema? // "") as $schema | (($schema | startswith("sley.contract.")) or $schema == "sley.deploy.artifact_check.v0")' >/dev/null 2>&1; then
+    contract_report_from_json "$report"
+  elif [[ -n "$report" ]]; then
+    printf '%s\n' "$report"
+  fi
+  return "$rc"
 }
 
 write_conformance_markdown() {
@@ -9859,7 +9963,7 @@ raise SystemExit(0 if failed_count == 0 else 1)
 PY
 }
 
-tool_ci() {
+tool_ci_raw() {
   local sub="${1:-}"; shift || true
   case "$sub" in
     check|lint|doctor|plan|run|verify|deploy) command_ci_direct "$sub" "$@" ;;
@@ -9868,6 +9972,21 @@ tool_ci() {
     smoke) command_ci_smoke "$@" ;;
     *) echo "unknown sley-ci command: $sub" >&2; return 2 ;;
   esac
+}
+
+tool_ci() {
+  local report rc
+  if report="$(tool_ci_raw "$@")"; then
+    rc=0
+  else
+    rc=$?
+  fi
+  if [[ -n "$report" ]] && printf '%s\n' "$report" | jq -e --arg schema "$SCHEMA_CI_REPORT" '.schema == $schema' >/dev/null 2>&1; then
+    ci_report_from_json "$report"
+  elif [[ -n "$report" ]]; then
+    printf '%s\n' "$report"
+  fi
+  return "$rc"
 }
 
 simple_report_tool() {
@@ -10642,7 +10761,9 @@ workbench_json() {
 }
 
 command_workbench() {
-  workbench_json "$@"
+  local report
+  report="$(workbench_json "$@")"
+  workbench_report_from_json "$report"
 }
 
 sandbox_json() {
@@ -12271,7 +12392,7 @@ sley_remove_empty_else_surface() {
   mv "$tmp_file" "$file"
 }
 
-command_graft() {
+command_graft_raw() {
   local source kind="" surface="" actor="sley:stage1" trace_path="" payload_source="" payload_source_file="" payload_name="" payload_module="" payload_type="" payload_position="" write=false arg operation_file=""
   local -a positionals=()
   while [[ "$#" -gt 0 ]]; do
@@ -13281,6 +13402,21 @@ command_graft() {
   return 1
 }
 
+command_graft() {
+  local report rc
+  if report="$(command_graft_raw "$@")"; then
+    rc=0
+  else
+    rc=$?
+  fi
+  if [[ -n "$report" ]] && printf '%s\n' "$report" | jq -e --arg schema "$SCHEMA_GRAFT_OUTCOME" '.schema == $schema' >/dev/null 2>&1; then
+    graft_outcome_report_from_json "$report"
+  elif [[ -n "$report" ]]; then
+    printf '%s\n' "$report"
+  fi
+  return "$rc"
+}
+
 scaffold_report() {
   local name="$1" module="$2" template="$3" out="$4" source_path="$5" pipeline_source_path="${6:-}"
   jq -n \
@@ -13517,7 +13653,7 @@ command_format() {
   cat "$target"
 }
 
-command_zjx_tool() {
+command_zjx_tool_raw() {
   local command="inspect" left_path="" right_path="" output_path="" arg
   while [[ "$#" -gt 0 ]]; do
     arg="$1"
@@ -13617,6 +13753,21 @@ command_zjx_tool() {
     } end)
     + (if $command == "extract-graph" then {($fields[7] // "graph"):$left_env.graph} else {} end)
     + (if $output_path != "" then {($fields[6] // "output_path"):$output_path} else {} end)'
+}
+
+command_zjx_tool() {
+  local report rc
+  if report="$(command_zjx_tool_raw "$@")"; then
+    rc=0
+  else
+    rc=$?
+  fi
+  if [[ -n "$report" ]] && printf '%s\n' "$report" | jq -e --arg schema "$SCHEMA_ZJX_TOOL" '.schema == $schema' >/dev/null 2>&1; then
+    zjx_tool_report_from_json "$report"
+  elif [[ -n "$report" ]]; then
+    printf '%s\n' "$report"
+  fi
+  return "$rc"
 }
 
 command_trace() {
