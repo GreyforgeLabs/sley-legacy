@@ -104,6 +104,18 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("doctor_report_shape"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("ok_int_runtime_task_execution"))'
+
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("text_equal_runtime_task_execution"))'
+
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("result_flow_runtime_execution"))'
+
+bin/sley run --json fixtures/corpus/accepted/result_flow.sley \
+  | json_field '.status == "passed" and .value.kind == "Ok" and .value.value.kind == "Int" and .value.value.value == 42'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("list_index_runtime_task_execution"))'
 
 bin/sley self-hosting-status --json \

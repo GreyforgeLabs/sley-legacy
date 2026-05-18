@@ -725,6 +725,23 @@ eval_runtime_bool_equal_value_task() {
   fi
 }
 
+eval_runtime_text_equal_value_task() {
+  local left="$1" right="$2"
+  local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
+  local body left_take right_take return_expr
+  body="$(extract_sley_task_body "$runtime_file" text_equal_value)"
+  [[ -n "$body" ]] || return 1
+  left_take="$(printf '%s\n' "$body" | awk '/^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Text/ {line=$0; sub(/^[ \t]*take[ \t]+/, "", line); sub(/[ \t]*:.*/, "", line); print line; exit}')"
+  right_take="$(printf '%s\n' "$body" | awk 'seen && /^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Text/ {line=$0; sub(/^[ \t]*take[ \t]+/, "", line); sub(/[ \t]*:.*/, "", line); print line; exit} /^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Text/ {seen=1}')"
+  return_expr="$(printf '%s\n' "$body" | awk '/^[ \t]*return[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*==[ \t]*[A-Za-z_][A-Za-z0-9_]*[ \t]*$/ {line=$0; sub(/^[ \t]*return[ \t]+/, "", line); gsub(/[ \t]+/, "", line); print line; exit}')"
+  [[ -n "$left_take" && -n "$right_take" && "$return_expr" == "$left_take==$right_take" ]] || return 1
+  if [[ "$left" == "$right" ]]; then
+    printf 'true\n'
+  else
+    printf 'false\n'
+  fi
+}
+
 eval_runtime_bool_and_value_task() {
   local left="$1" right="$2"
   local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
@@ -902,6 +919,19 @@ eval_runtime_text_if_value_task() {
   else
     printf '%s\n' "$else_value"
   fi
+}
+
+eval_runtime_ok_int_value_task() {
+  local value="$1"
+  local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
+  local body take_name return_name
+  [[ "$value" =~ ^-?[0-9]+$ ]] || return 1
+  body="$(extract_sley_task_body "$runtime_file" ok_int_value)"
+  [[ -n "$body" ]] || return 1
+  take_name="$(printf '%s\n' "$body" | awk '/^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Int/ {line=$0; sub(/^[ \t]*take[ \t]+/, "", line); sub(/[ \t]*:.*/, "", line); print line; exit}')"
+  return_name="$(printf '%s\n' "$body" | awk '/^[ \t]*return[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*$/ {line=$0; sub(/^[ \t]*return[ \t]+/, "", line); sub(/[ \t]*$/, "", line); print line; exit}')"
+  [[ -n "$take_name" && "$return_name" == "$take_name" ]] || return 1
+  printf '%s\n' "$value"
 }
 
 runtime_project_ready_probe_matches() {
@@ -2676,6 +2706,105 @@ eval_source_compute_text_call_main_return() {
   jq -cn --arg kind "$RUNTIME_TEXT_VALUE_KIND" --arg value "$runtime_value" '{kind:$kind,value:$value}'
 }
 
+eval_source_result_flow_int_main_return() {
+  local target="$1" file main_info callee call_arg add_right body parse_info bad_literal ok_value condition parsed_value result_value runtime_value
+  file="$(collect_files "$target" | head -n 1)"
+  [[ -n "$file" ]] || return 1
+  main_info="$(awk '
+    function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
+    function count_char(s, c, n, i){n=0; for(i=1;i<=length(s);i++){if(substr(s,i,1)==c)n++} return n}
+    /^[ \t]*(export[ \t]+)?task[ \t]+main[ \t]/ {
+      in_main=1
+      depth=count_char($0,"{")-count_char($0,"}")
+      next
+    }
+    in_main {
+      raw=$0
+      line=trim(raw)
+      if(depth == 1 && line ~ /^bind[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*=[ \t]*call[ \t]+[A-Za-z_][A-Za-z0-9_]*\("[^"]+"\)\?[ \t]*$/) {
+        rest=line
+        sub(/^bind[ \t]+/, "", rest)
+        bind_name=rest
+        sub(/[ \t]*=.*/, "", bind_name)
+        expr=rest
+        sub(/^[^=]*=[ \t]*call[ \t]+/, "", expr)
+        callee=expr
+        sub(/\(.*/, "", callee)
+        arg=expr
+        sub(/^[^(]*\("/, "", arg)
+        sub(/"\)\?[ \t]*$/, "", arg)
+        bind_name=trim(bind_name)
+      } else if(depth == 1 && line ~ /^return[ \t]+Ok\([A-Za-z_][A-Za-z0-9_]*[ \t]*\+[ \t]*-?[0-9]+\)[ \t]*$/) {
+        expr=line
+        sub(/^return[ \t]+Ok\(/, "", expr)
+        sub(/\)[ \t]*$/, "", expr)
+        gsub(/[ \t]+/, "", expr)
+        split(expr, parts, "+")
+        return_name=parts[1]
+        add_right=parts[2]
+      }
+      depth += count_char(raw,"{")-count_char(raw,"}")
+      if(depth <= 0) {
+        if(bind_name != "" && callee != "" && arg != "" && return_name == bind_name && add_right ~ /^-?[0-9]+$/) {
+          print callee "\t" arg "\t" add_right
+          exit 0
+        }
+        exit 1
+      }
+    }
+    END { if(!in_main) exit 1 }
+  ' "$file")" || return 1
+  callee="$(printf '%s\n' "$main_info" | cut -f1)"
+  call_arg="$(printf '%s\n' "$main_info" | cut -f2)"
+  add_right="$(printf '%s\n' "$main_info" | cut -f3)"
+  [[ -n "$callee" && -n "$call_arg" && "$add_right" =~ ^-?[0-9]+$ ]] || return 1
+  body="$(extract_sley_task_body "$file" "$callee")"
+  [[ -n "$body" ]] || return 1
+  parse_info="$(printf '%s\n' "$body" | awk '
+    function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
+    {
+      line=trim($0)
+      if(line ~ /^take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Text[ \t]*$/) {
+        take=line
+        sub(/^take[ \t]+/, "", take)
+        sub(/[ \t]*:.*/, "", take)
+      } else if(line ~ /^if[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*==[ \t]*"[^"]+"[ \t]*[{][ \t]*$/) {
+        cond=line
+        sub(/^if[ \t]+/, "", cond)
+        cond_name=cond
+        sub(/[ \t]*==.*/, "", cond_name)
+        bad=cond
+        sub(/^[^=]*==[ \t]*"/, "", bad)
+        sub(/"[ \t]*[{][ \t]*$/, "", bad)
+        cond_name=trim(cond_name)
+      } else if(line ~ /^return[ \t]+Err\("[^"]+"\)[ \t]*$/) {
+        saw_err=1
+      } else if(line ~ /^return[ \t]+Ok\(-?[0-9]+\)[ \t]*$/) {
+        ok=line
+        sub(/^return[ \t]+Ok\(/, "", ok)
+        sub(/\)[ \t]*$/, "", ok)
+        ok=trim(ok)
+      }
+    }
+    END {
+      if(take != "" && cond_name == take && bad != "" && saw_err == 1 && ok ~ /^-?[0-9]+$/) {
+        print bad "\t" ok
+        exit 0
+      }
+      exit 1
+    }
+  ')" || return 1
+  bad_literal="$(printf '%s\n' "$parse_info" | cut -f1)"
+  ok_value="$(printf '%s\n' "$parse_info" | cut -f2)"
+  [[ -n "$bad_literal" && "$ok_value" =~ ^-?[0-9]+$ ]] || return 1
+  condition="$(eval_runtime_text_equal_value_task "$call_arg" "$bad_literal")" || return 1
+  [[ "$condition" == "false" ]] || return 1
+  parsed_value="$(eval_runtime_ok_int_value_task "$ok_value")" || return 1
+  result_value="$(eval_runtime_int_binary_value_task int_add_value "+" "$parsed_value" "$add_right")" || return 1
+  runtime_value="$(eval_runtime_ok_int_value_task "$result_value")" || return 1
+  printf '{"kind":"%s","value":"%s"}\n' "$RUNTIME_OK_INT_VALUE_KIND" "$runtime_value"
+}
+
 eval_source_bound_int_main_return() {
   local target="$1" file raw line depth=0 in_main=false rest prefix name expr value runtime_value
   declare -A int_env=()
@@ -4032,6 +4161,7 @@ RUNTIME_TEXT_VALUE_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/lo
 RUNTIME_BOOL_VALUE_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" bool_value_kind)"
 RUNTIME_RAW_VALUE_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" raw_value_kind)"
 RUNTIME_OK_TEXT_VALUE_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" ok_text_value_kind)"
+RUNTIME_OK_INT_VALUE_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" ok_int_value_kind)"
 RUNTIME_SELF_HOSTED_TARGETS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" self_hosted_target_aliases)"
 RUNTIME_AGENT_DEPLOY_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" agent_deploy_target_suffix)"
 RUNTIME_PROJECT_READY_CALL_PROBE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" project_ready_call_probe)"
@@ -4050,6 +4180,7 @@ RUNTIME_TEXT_VALUE_KIND="${RUNTIME_TEXT_VALUE_KIND:-Text}"
 RUNTIME_BOOL_VALUE_KIND="${RUNTIME_BOOL_VALUE_KIND:-Bool}"
 RUNTIME_RAW_VALUE_KIND="${RUNTIME_RAW_VALUE_KIND:-Raw}"
 RUNTIME_OK_TEXT_VALUE_KIND="${RUNTIME_OK_TEXT_VALUE_KIND:-OkText}"
+RUNTIME_OK_INT_VALUE_KIND="${RUNTIME_OK_INT_VALUE_KIND:-OkInt}"
 if [[ "$RUNTIME_SELF_HOSTED_TARGETS_JSON" == "[]" ]]; then
   RUNTIME_SELF_HOSTED_TARGETS_JSON='["self-hosted","self-hosted/","self-hosted/sley.toml"]'
 fi
@@ -6988,6 +7119,9 @@ run_json() {
   local value_kind="$RUNTIME_RAW_VALUE_KIND" value="$RUNTIME_DEFAULT_RAW_VALUE"
   if json_list_contains_string "$RUNTIME_SELF_HOSTED_TARGETS_JSON" "$target"; then
     value_kind="$RUNTIME_INT_VALUE_KIND"; value="$(eval_bootstrap_smoke_task || printf '%s\n' "$DEFAULT_RULES_JSON" | jq 'length')"
+  elif simple_runtime="$(eval_source_result_flow_int_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
+    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
+    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
   elif simple_runtime="$(eval_source_compute_text_call_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
     value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
     value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
@@ -7161,6 +7295,7 @@ run_json() {
     --arg text_kind "$RUNTIME_TEXT_VALUE_KIND" \
     --arg bool_kind "$RUNTIME_BOOL_VALUE_KIND" \
     --arg ok_text_kind "$RUNTIME_OK_TEXT_VALUE_KIND" \
+    --arg ok_int_kind "$RUNTIME_OK_INT_VALUE_KIND" \
     --arg raw_kind "$RUNTIME_RAW_VALUE_KIND" \
     --argjson fields "$RUN_REPORT_FIELDS_JSON" '
     def val:
@@ -7168,6 +7303,7 @@ run_json() {
       elif $kind == $text_kind then {kind:$text_kind, value:$value}
       elif $kind == $bool_kind then {kind:$bool_kind, value:($value == "true")}
       elif $kind == $ok_text_kind then {kind:"Ok", value:{kind:$text_kind, value:$value}}
+      elif $kind == $ok_int_kind then {kind:"Ok", value:{kind:$int_kind, value:($value|tonumber)}}
       else {kind:$raw_kind, value:$value} end;
     {
       ($fields[0] // "schema"):$schema,
