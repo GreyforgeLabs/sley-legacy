@@ -119,6 +119,15 @@ export task bool_equal_value -> Bool {
   return left == right
 }
 
+export task bool_not_value -> Bool {
+  take value: Bool
+
+  if value {
+    return false
+  }
+  return true
+}
+
 export task seeded_agent_deploy_value -> Text {
   take profile: Text
   take model_plan: Text
