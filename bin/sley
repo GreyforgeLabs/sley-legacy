@@ -1294,6 +1294,62 @@ eval_source_record_field_text_main_return() {
   jq -cn --arg kind "$RUNTIME_TEXT_VALUE_KIND" --arg value "$runtime_value" '{kind:$kind,value:$value}'
 }
 
+eval_source_record_field_call_text_main_return() {
+  local target="$1" file call_info callee arg record_fields body take_name return_expr field runtime_value
+  file="$(collect_files "$target" | head -n 1)"
+  [[ -n "$file" ]] || return 1
+  call_info="$(awk '
+    function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
+    function count_char(s, c, n, i){n=0; for(i=1;i<=length(s);i++){if(substr(s,i,1)==c)n++} return n}
+    /^[ \t]*(export[ \t]+)?task[ \t]+main[ \t]/ {
+      in_main=1
+      depth=count_char($0,"{")-count_char($0,"}")
+      next
+    }
+    in_main {
+      raw=$0
+      line=trim(raw)
+      if(depth == 1 && line ~ /^bind[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*=[ \t]*[A-Za-z_][A-Za-z0-9_]*[ \t]*\{.*\}[ \t]*$/) {
+        rest=line
+        sub(/^bind[ \t]+/, "", rest)
+        name=rest
+        sub(/[ \t]*=.*/, "", name)
+        fields=rest
+        sub(/^[^{]*\{[ \t]*/, "", fields)
+        sub(/[ \t]*\}[ \t]*$/, "", fields)
+        records[name]=fields
+      } else if(depth == 1 && line ~ /^return[ \t]+call[ \t]+[A-Za-z_][A-Za-z0-9_]*\([A-Za-z_][A-Za-z0-9_]*\)[ \t]*$/) {
+        expr=line
+        sub(/^return[ \t]+call[ \t]+/, "", expr)
+        callee=expr
+        sub(/\(.*/, "", callee)
+        arg=expr
+        sub(/^[^(]*\(/, "", arg)
+        sub(/\)[ \t]*$/, "", arg)
+        if(!(arg in records)) exit 1
+        print callee "\t" arg "\t" records[arg]
+        exit 0
+      }
+      depth += count_char(raw,"{")-count_char(raw,"}")
+      if(depth <= 0) exit 1
+    }
+    END { if(!in_main) exit 1 }
+  ' "$file")" || return 1
+  callee="$(printf '%s\n' "$call_info" | cut -f1)"
+  arg="$(printf '%s\n' "$call_info" | cut -f2)"
+  record_fields="$(printf '%s\n' "$call_info" | cut -f3)"
+  [[ -n "$callee" && -n "$arg" && -n "$record_fields" ]] || return 1
+  body="$(extract_sley_task_body "$file" "$callee")"
+  [[ -n "$body" ]] || return 1
+  take_name="$(printf '%s\n' "$body" | awk '/^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:/ {line=$0; sub(/^[ \t]*take[ \t]+/, "", line); sub(/[ \t]*:.*/, "", line); print line; exit}')"
+  return_expr="$(printf '%s\n' "$body" | awk '/^[ \t]*return[ \t]+[A-Za-z_][A-Za-z0-9_]*\.[A-Za-z_][A-Za-z0-9_]*[ \t]*$/ {line=$0; sub(/^[ \t]*return[ \t]+/, "", line); sub(/[ \t]*$/, "", line); print line; exit}')"
+  [[ -n "$take_name" && "$return_expr" == "$take_name".* ]] || return 1
+  field="${return_expr#*.}"
+  runtime_value="$(eval_runtime_record_field_text_value_task "$record_fields" "$field")"
+  [[ -n "$runtime_value" ]] || return 1
+  jq -cn --arg kind "$RUNTIME_TEXT_VALUE_KIND" --arg value "$runtime_value" '{kind:$kind,value:$value}'
+}
+
 eval_source_bool_equal_main_return() {
   local target="$1" file values left right runtime_value
   file="$(collect_files "$target" | head -n 1)"
@@ -6261,6 +6317,9 @@ run_json() {
     value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
     value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
   elif simple_runtime="$(eval_source_record_field_text_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
+    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
+    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
+  elif simple_runtime="$(eval_source_record_field_call_text_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
     value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
     value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
   elif call_runtime="$(eval_source_project_call_int_main_return "$target" 2>/dev/null)" && [[ -n "$call_runtime" ]]; then
