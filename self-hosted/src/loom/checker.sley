@@ -173,12 +173,24 @@ export task call_arity_mismatch_message_suffix -> Text {
   return "`"
 }
 
+export task call_arity_mismatch_message -> Text {
+  take task_name: Text
+
+  return "call arity mismatch for `" + task_name + "`"
+}
+
 export task call_argument_type_mismatch_message_prefix -> Text {
   return "call argument type mismatch for `"
 }
 
 export task call_argument_type_mismatch_message_suffix -> Text {
   return "`"
+}
+
+export task call_argument_type_mismatch_message -> Text {
+  take task_name: Text
+
+  return "call argument type mismatch for `" + task_name + "`"
 }
 
 export task type_mismatch_message_prefix -> Text {
