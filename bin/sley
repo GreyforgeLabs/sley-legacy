@@ -185,6 +185,7 @@ eval_parser_id_template() {
       if (token == "effect_name") return "{{effect}}"
       if (token == "take_name") return "{{take}}"
       if (token == "statement_id") return "{{statement}}"
+      if (token == "expression_id") return "{{expression}}"
       if (token == "index") return "{{index}}"
       exit 7
     }
@@ -4762,6 +4763,7 @@ PARSER_STATEMENT_ID_TEMPLATE="$(eval_parser_id_template statement_id || printf '
 PARSER_EXPRESSION_ID_TEMPLATE="$(eval_parser_id_template expression_id || printf '{{statement}}:expr\n')"
 PARSER_COLLECTION_EXPRESSION_ID_TEMPLATE="$(eval_parser_id_template collection_expression_id || printf '{{statement}}:collection\n')"
 PARSER_CONDITION_EXPRESSION_ID_TEMPLATE="$(eval_parser_id_template condition_expression_id || printf '{{statement}}:condition\n')"
+PARSER_CALL_ARGUMENT_SURFACE_ID_TEMPLATE="$(eval_parser_id_template call_argument_surface_id || printf '{{expression}}:arg:{{index}}\n')"
 PARSER_RETURN_STATEMENT_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" return_statement_kind)"
 PARSER_EXPR_STATEMENT_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" expression_statement_kind)"
 PARSER_BINDING_STATEMENT_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" binding_statement_kind)"
@@ -4837,6 +4839,9 @@ if [[ -z "$PARSER_COLLECTION_EXPRESSION_ID_TEMPLATE" ]]; then
 fi
 if [[ -z "$PARSER_CONDITION_EXPRESSION_ID_TEMPLATE" ]]; then
   PARSER_CONDITION_EXPRESSION_ID_TEMPLATE='{{statement}}:condition'
+fi
+if [[ -z "$PARSER_CALL_ARGUMENT_SURFACE_ID_TEMPLATE" ]]; then
+  PARSER_CALL_ARGUMENT_SURFACE_ID_TEMPLATE='{{expression}}:arg:{{index}}'
 fi
 PARSER_RETURN_STATEMENT_KIND="${PARSER_RETURN_STATEMENT_KIND:-Return}"
 PARSER_EXPR_STATEMENT_KIND="${PARSER_EXPR_STATEMENT_KIND:-Expr}"
@@ -11321,7 +11326,7 @@ command_graph() {
     return
   fi
   ast="$(ast_json "$target")"
-  jq -n --arg target "$slice" --arg entry_target "$target" --arg module_task_list_surface_id_template "$PARSER_MODULE_TASK_LIST_SURFACE_ID_TEMPLATE" --arg module_import_list_surface_id_template "$PARSER_MODULE_IMPORT_LIST_SURFACE_ID_TEMPLATE" --arg module_type_list_surface_id_template "$PARSER_MODULE_TYPE_LIST_SURFACE_ID_TEMPLATE" --arg module_effect_list_surface_id_template "$PARSER_MODULE_EFFECT_LIST_SURFACE_ID_TEMPLATE" --arg block_task_surface_id_template "$PARSER_BLOCK_TASK_SURFACE_ID_TEMPLATE" --arg call_target_task_id_template "$PARSER_CALL_TARGET_TASK_ID_TEMPLATE" --argjson query "$query" --argjson ast "$ast" '
+  jq -n --arg target "$slice" --arg entry_target "$target" --arg module_task_list_surface_id_template "$PARSER_MODULE_TASK_LIST_SURFACE_ID_TEMPLATE" --arg module_import_list_surface_id_template "$PARSER_MODULE_IMPORT_LIST_SURFACE_ID_TEMPLATE" --arg module_type_list_surface_id_template "$PARSER_MODULE_TYPE_LIST_SURFACE_ID_TEMPLATE" --arg module_effect_list_surface_id_template "$PARSER_MODULE_EFFECT_LIST_SURFACE_ID_TEMPLATE" --arg block_task_surface_id_template "$PARSER_BLOCK_TASK_SURFACE_ID_TEMPLATE" --arg call_target_task_id_template "$PARSER_CALL_TARGET_TASK_ID_TEMPLATE" --arg call_argument_surface_id_template "$PARSER_CALL_ARGUMENT_SURFACE_ID_TEMPLATE" --argjson query "$query" --argjson ast "$ast" '
     def replace_all($needle; $replacement): split($needle) | join($replacement);
     def module_task_list_surface_id($module_name):
       $module_task_list_surface_id_template
@@ -11342,6 +11347,10 @@ command_graph() {
       $call_target_task_id_template
       | replace_all("{{module}}"; $module_name)
       | replace_all("{{task}}"; $task_name);
+    def call_argument_surface_id($expression_id; $index):
+      $call_argument_surface_id_template
+      | replace_all("{{expression}}"; $expression_id)
+      | replace_all("{{index}}"; $index);
     def qualified_task_id($qualified; $fallback_module):
       ($qualified | split(".")) as $parts |
       if ($parts | length) > 1 then
@@ -11420,7 +11429,7 @@ command_graph() {
     def call_arg_affordances($focus):
       [$query.calls[]? | select($focus.kind == "task" and .from == ($focus.module + "." + $focus.name)) as $call |
         (call_args($call.source) | to_entries[]) |
-        {target:($call.expr_id + ":arg:" + (.key|tostring)), target_kind:literal_kind(.value), task_target:qualified_task_id($call.target; $focus.module), operation:{op:"ReplaceCallArg", target:$call.expr_id, payload:{index:.key, source:.value}}}
+        {target:call_argument_surface_id($call.expr_id; (.key|tostring)), target_kind:literal_kind(.value), task_target:qualified_task_id($call.target; $focus.module), operation:{op:"ReplaceCallArg", target:$call.expr_id, payload:{index:.key, source:.value}}}
       ];
     def inbound_calls($focus):
       if $focus.kind == "module" then

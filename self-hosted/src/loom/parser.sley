@@ -232,6 +232,13 @@ export task condition_expression_id -> Text {
   return statement_id + ":condition"
 }
 
+export task call_argument_surface_id -> Text {
+  take expression_id: Text
+  take index: Int
+
+  return expression_id + ":arg:" + index
+}
+
 export task ast_task_node_kind -> Text {
   return "task"
 }
