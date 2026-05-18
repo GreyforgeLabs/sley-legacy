@@ -2,7 +2,7 @@
 
 Date: 2026-05-18
 Branch: public
-Latest code checkpoint: 91aa718
+Latest code checkpoint: fb80869
 Latest packet-sync documentation checkpoint before this note: 26e7417
 Current pause document status: committed on `public`; use `git log` for exact
 branch head
@@ -90,6 +90,10 @@ The current local checkpoint advances the public branch to:
   `bootstrap`, `strict_self_hosted=false`,
   `semantic_source_count=6`, `bootstrap_owned_by_sley=200`; remaining blockers
   are still parser, checker, and runtime semantics from Sley source
+- self-hosting status after the parser branch statement/expression surface ID
+  slice: `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=201`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
 - latest V1 log from this pause checkpoint: `/tmp/sley-make-v1-ok-text.log`
 - latest verification refresh on 2026-05-18: `make v1` passed again after the
   public-action packet was finalized and after the WebForge / sleylang.org
@@ -114,6 +118,7 @@ The tracked code checkpoint is:
 - d0d5024 fix: source module edit surfaces from parser
 - 87b8670 fix: source call argument surfaces from parser
 - 91aa718 fix: source statement surfaces from parser
+- fb80869 fix: source branch statement surfaces from parser
 
 The tracked pause documentation checkpoints are:
 
@@ -128,6 +133,7 @@ The tracked pause documentation checkpoints are:
 - a2d23c4 docs: record call target surface self-hosting slice
 - be892c7 docs: record module edit surface self-hosting slice
 - 472562b docs: record call argument surface self-hosting slice
+- 3fb10c7 docs: record statement surface self-hosting slice
 
 Recent self-hosting slices added:
 
@@ -185,6 +191,9 @@ Recent self-hosting slices added:
 - statement edit surfaces used by edit-plan fallback templates now use a
   Sley-owned parser template while preserving the existing external
   `block:task:<module>.<task>:stmt:<index>` surface shape
+- branch statement surfaces and expression fallback surfaces used by edit plans
+  now use Sley-owned parser templates while preserving the existing external
+  `block:...:then:stmt:<index>` and `block:...:expr` surface shapes
 - diagnostics and run report root layouts moved into Sley-owned report-builder
   declarations, with the shell bootstrap supplying computed values to those
   builders
@@ -408,11 +417,22 @@ The latest continuation audit reconfirmed:
   `bootstrap`, `strict_self_hosted=false`,
   `semantic_source_count=6`, `bootstrap_owned_by_sley=200`; remaining blockers
   are parser, checker, and runtime semantics from Sley source
+- focused branch statement/expression surface probe:
+  `bin/sley plan --json --graft-templates --template-surface
+  task:app.constant_false_if.main examples/constant_false_if_statement.sley`
+  preserved `block:task:app.constant_false_if.main:stmt:0:then:stmt:0` for the
+  nested branch statement move destination and
+  `block:task:app.constant_false_if.main:stmt:0:expr` for the replacement
+  expression fallback surface
+- Sley self-hosting status after the parser branch statement/expression
+  surface ID proof slice: `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=201`; remaining blockers
+  are parser, checker, and runtime semantics from Sley source
 
 ## Dirty State Notes
 
-Tracked code was committed at 91aa718 before this pause document was updated.
-Tracked pause documentation before this update was refreshed through 472562b
+Tracked code was committed at fb80869 before this pause document was updated.
+Tracked pause documentation before this update was refreshed through 3fb10c7
 with parser surface evidence, and through 26e7417 with the external comparison
 approval gate, fork audit, and helper evidence.
 
