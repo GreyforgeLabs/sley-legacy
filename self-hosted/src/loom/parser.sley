@@ -206,6 +206,13 @@ export task block_task_surface_id -> Text {
   return "block:" + task_id
 }
 
+export task task_statement_surface_id -> Text {
+  take task_id: Text
+  take index: Int
+
+  return "block:" + task_id + ":stmt:" + index
+}
+
 export task statement_id -> Text {
   take module_name: Text
   take task_name: Text

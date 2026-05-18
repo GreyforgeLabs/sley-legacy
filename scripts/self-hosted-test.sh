@@ -70,6 +70,9 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_call_argument_surface_id_task_execution"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("parser_task_statement_surface_id_task_execution"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_expression_id_task_execution")) and (.bootstrap_owned_by_sley | index("parser_control_expression_id_task_execution"))'
 
 bin/sley self-hosting-status --json \
@@ -632,7 +635,7 @@ bin/sley plan --json --graft-templates examples/project \
   | json_field '([.graft_templates[]? | select(.kind == "add_task") | .surface] | index("module:app.main:tasks")) and ([.graft_templates[]? | select(.kind == "move_task") | .operation.payload.parent] | index("module:app.main:tasks"))'
 
 bin/sley plan --json --graft-templates examples/project \
-  | json_field '([.task_surfaces[]?.graft_targets[]?] | index("block:task:app.main.main")) and ([.graft_templates[]? | select(.kind == "insert_statement") | .surface] | index("block:task:app.main.main")) and ([.graft_templates[]? | select(.kind == "move_statement") | .operation.payload.parent] | index("block:task:app.main.main"))'
+  | json_field '([.task_surfaces[]?.graft_targets[]?] | index("block:task:app.main.main")) and ([.graft_templates[]? | select(.kind == "insert_statement") | .surface] | index("block:task:app.main.main")) and ([.graft_templates[]? | select(.kind == "move_statement") | .operation.payload.parent] | index("block:task:app.main.main")) and ([.graft_templates[]? | select(.kind == "move_statement") | .operation.target] | index("block:task:app.main.main:stmt:0")) and ([.graft_templates[]? | select(.kind == "delete_statement") | .operation.target] | index("block:task:app.main.main:stmt:0"))'
 
 bin/sley plan --json --graft-templates examples/project \
   | json_field '([.graft_templates[]? | select(.kind == "replace_call_arg") | .operation.target] | index("task:app.math.double")) and ([.graft_templates[]? | select(.kind == "replace_call_arg") | .operation.payload.scope] | index("task:app.main.main"))'
