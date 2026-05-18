@@ -2,7 +2,7 @@
 
 Date: 2026-05-18
 Branch: public
-Latest code checkpoint: f7d05f2
+Latest code checkpoint: 53c0fe6
 Latest packet-sync documentation checkpoint before this note: 26e7417
 Current pause document status: committed on `public`; use `git log` for exact
 branch head
@@ -38,6 +38,10 @@ The current local checkpoint advances the public branch to:
   `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
   `bootstrap_owned_by_sley=182`; remaining blockers are still parser, checker,
   and runtime semantics from Sley source
+- self-hosting status after the parser AST node builder slice:
+  `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=186`; remaining blockers are still parser, checker,
+  and runtime semantics from Sley source
 - latest V1 log from this pause checkpoint: `/tmp/sley-make-v1-ok-text.log`
 - latest verification refresh on 2026-05-18: `make v1` passed again after the
   public-action packet was finalized and after the WebForge / sleylang.org
@@ -49,6 +53,7 @@ The tracked code checkpoint is:
 - 642c9ed fix: execute ok text results from source
 - bbaa921 fix: route remaining reports through sley builders
 - f7d05f2 fix: route ast programs through sley builder
+- 53c0fe6 fix: route ast node reports through sley builders
 
 The tracked pause documentation checkpoints are:
 
@@ -79,6 +84,9 @@ Recent self-hosting slices added:
 - AST program roots now pass through a Sley-owned report-builder declaration
   before `ast_json` returns to downstream checker, query, lint, graph, and
   runtime consumers
+- AST node projections now pass through Sley-owned report-builder declarations;
+  node-kind labels and the missing-node diagnostic id are sourced from
+  `loom.parser`
 - diagnostics and run report root layouts moved into Sley-owned report-builder
   declarations, with the shell bootstrap supplying computed values to those
   builders
@@ -184,10 +192,19 @@ The latest continuation audit reconfirmed:
   `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
   `bootstrap_owned_by_sley=182`; remaining blockers are parser, checker, and
   runtime semantics from Sley source
+- focused AST node builder probes:
+  `bin/sley ast --json --node task:app.hello.main examples/hello.sley`,
+  `bin/sley ast --json --node block:task:app.hello.main:stmt:0:expr
+  examples/hello.sley`, and the missing-node negative path preserved their
+  expected `sley.ast.node.v0` / diagnostics output
+- Sley self-hosting status after the AST node builder proof slice:
+  `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=186`; remaining blockers are parser, checker, and
+  runtime semantics from Sley source
 
 ## Dirty State Notes
 
-Tracked code was committed at f7d05f2 before this pause document was updated.
+Tracked code was committed at 53c0fe6 before this pause document was updated.
 Tracked pause documentation was refreshed through 26e7417 with the external
 comparison approval gate, fork audit, and helper evidence.
 
