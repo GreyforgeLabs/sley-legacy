@@ -3,7 +3,8 @@
 Date: 2026-05-18
 Branch: public
 Latest code checkpoint: 642c9ed
-Remote status: checkpoint prepared for push to `origin/public`
+Latest documentation checkpoint: dac6544
+Remote status: `public` is aligned with `origin/public`
 
 ## Operator Instruction
 
@@ -19,11 +20,17 @@ The current local checkpoint advances the public branch to:
 - self-hosting status: `bootstrap`, `strict_self_hosted=false`,
   `semantic_source_count=6`, `bootstrap_owned_by_sley=132`
 - latest V1 log from this pause checkpoint: `/tmp/sley-make-v1-ok-text.log`
+- latest verification refresh on 2026-05-18: `make v1` passed again after the
+  public-action packet was finalized
 
 The tracked code checkpoint is:
 
 - 41b739e fix: execute host text outputs from source
 - 642c9ed fix: execute ok text results from source
+
+The tracked pause documentation checkpoint is:
+
+- dac6544 docs: update sley pause checkpoint
 
 Recent self-hosting slices added:
 
@@ -51,6 +58,26 @@ Expected next investigation area, once development resumes:
 - broader runtime expression execution from Sley source
 - parser/checker parity coverage that does not rely on shell/JQ semantics
 
+## External Comparison State
+
+The Sley / Zero comparison packet is prepared outside this repository at:
+
+- `/home/greyforge/sley-zero-public-actions/`
+
+Current status:
+
+- Zero upstream issue draft is approval-ready but not posted.
+- ForgeHub candidate 124 for `vercel-labs/zero#4` was checked and rejected;
+  no eligible ForgeHub public action remains in the packet.
+- Zero fork outreach was narrowed to avoid spam and duplicate/disabled targets.
+- X/social copy is drafted only and remains unposted.
+- No public GitHub, ForgeHub, or social write is authorized without exact
+  operator approval of the target and body.
+
+Current exact approval gate for the next public action:
+
+- `Approve posting the upstream Zero issue exactly as drafted.`
+
 ## Verification Evidence
 
 Completed before pausing:
@@ -63,9 +90,18 @@ Completed before pausing:
 - `bin/sley self-hosting-status --json`
 - full CLI smoke: 481/481 passing through `make v1`
 
+Completed during the latest non-development verification refresh:
+
+- `/home/greyforge/sley-zero-public-actions/verify-public-actions.sh`
+- `/home/greyforge/sley-zero-public-actions/verify-live-targets.sh`
+- `make v1`
+- `bin/sley self-hosting-status --json`
+
 ## Dirty State Notes
 
 Tracked code was committed at 642c9ed before this pause document was updated.
+Tracked pause documentation was committed at dac6544 and then refreshed with
+the external comparison approval gate.
 
 Pre-existing untracked docs were not touched and should remain outside future
 commits unless the operator explicitly asks to include them:
