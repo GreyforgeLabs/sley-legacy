@@ -2,7 +2,7 @@
 
 Date: 2026-05-18
 Branch: public
-Latest code checkpoint: bbaa921
+Latest code checkpoint: f7d05f2
 Latest packet-sync documentation checkpoint before this note: 26e7417
 Current pause document status: committed on `public`; use `git log` for exact
 branch head
@@ -34,6 +34,10 @@ The current local checkpoint advances the public branch to:
   `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
   `bootstrap_owned_by_sley=180`; remaining blockers are parser, checker, and
   runtime semantics from Sley source
+- self-hosting status after the parser AST program builder slice:
+  `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=182`; remaining blockers are still parser, checker,
+  and runtime semantics from Sley source
 - latest V1 log from this pause checkpoint: `/tmp/sley-make-v1-ok-text.log`
 - latest verification refresh on 2026-05-18: `make v1` passed again after the
   public-action packet was finalized and after the WebForge / sleylang.org
@@ -44,6 +48,7 @@ The tracked code checkpoint is:
 - 41b739e fix: execute host text outputs from source
 - 642c9ed fix: execute ok text results from source
 - bbaa921 fix: route remaining reports through sley builders
+- f7d05f2 fix: route ast programs through sley builder
 
 The tracked pause documentation checkpoints are:
 
@@ -71,6 +76,9 @@ Recent self-hosting slices added:
   contract validation, contract fixture checks, deploy artifact checks,
   workbench, and ZJX tool outputs moved into Sley-owned report-builder
   declarations; optional report slots are now skipped when absent
+- AST program roots now pass through a Sley-owned report-builder declaration
+  before `ast_json` returns to downstream checker, query, lint, graph, and
+  runtime consumers
 - diagnostics and run report root layouts moved into Sley-owned report-builder
   declarations, with the shell bootstrap supplying computed values to those
   builders
@@ -168,10 +176,18 @@ The latest continuation audit reconfirmed:
 - Sley self-hosting status after the final report-builder proof slice:
   `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
   `bootstrap_owned_by_sley=180`; the report-builder blocker is removed
+- focused AST builder probe:
+  `bin/sley ast --json examples/declaration_hygiene.sley` preserved schema
+  `sley.ast.program.v0` and returned the expected one task, one type, and one
+  effect summary
+- Sley self-hosting status after the AST program builder proof slice:
+  `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=182`; remaining blockers are parser, checker, and
+  runtime semantics from Sley source
 
 ## Dirty State Notes
 
-Tracked code was committed at bbaa921 before this pause document was updated.
+Tracked code was committed at f7d05f2 before this pause document was updated.
 Tracked pause documentation was refreshed through 26e7417 with the external
 comparison approval gate, fork audit, and helper evidence.
 
