@@ -453,6 +453,45 @@ eval_seeded_agent_deploy_value() {
       if (!seen) exit 7
       print out
     }
+	  '
+}
+
+eval_runtime_spend_prefixed_value_task() {
+  local authorization="$1"
+  local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
+  local body expr
+  body="$(extract_sley_task_body "$runtime_file" spend_prefixed_value)"
+  [[ -n "$body" ]] || return 1
+  expr="$(printf '%s\n' "$body" | awk '
+    /^[ \t]*return[ \t]+/ {
+      line=$0
+      sub(/^[ \t]*return[ \t]+/, "", line)
+      print line
+      exit
+    }
+  ')"
+  [[ -n "$expr" ]] || return 1
+  printf '%s\n' "$expr" | awk \
+    -v authorization="$authorization" '
+    function unquote(s){sub(/^"/, "", s); sub(/"$/, "", s); return s}
+    function token_value(token) {
+      if (token ~ /^"/) return unquote(token)
+      if (token == "authorization") return authorization
+      exit 7
+    }
+    {
+      line=$0
+      out=""
+      seen=0
+      while (match(line, /"[^"]*"|[A-Za-z_][A-Za-z0-9_]*/)) {
+        token=substr(line, RSTART, RLENGTH)
+        out=out token_value(token)
+        seen=1
+        line=substr(line, RSTART + RLENGTH)
+      }
+      if (!seen) exit 7
+      print out
+    }
   '
 }
 
@@ -7652,41 +7691,42 @@ run_json() {
     value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
     value="$(extract_sley_string_task "$ROOT_DIR/examples/hello.sley" main)"
     value="${value:-hello sley}"
+    value="$(eval_runtime_text_identity_value_task "$value" || printf '%s\n' "$value")"
   elif runtime_source_has_call "$target" "fs.try_write_text("; then
     value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
-    value="written"
+    value="$(eval_runtime_text_identity_value_task "written" || printf '%s\n' "written")"
   elif runtime_source_has_call "$target" "db.try_insert("; then
     value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
     if [[ "$target" == *"agent_data_authority.sley" ]]; then
-      value="profile: Kai"
+      value="$(eval_runtime_text_identity_value_task "profile: Kai" || printf '%s\n' "profile: Kai")"
     else
-      value="Lin"
+      value="$(eval_runtime_text_identity_value_task "Lin" || printf '%s\n' "Lin")"
     fi
   elif runtime_source_has_call "$target" "db.query_one(" || runtime_source_has_call "$target" "db.try_query_one("; then
     value_kind="$RUNTIME_TEXT_VALUE_KIND"
-    value="Ada"
+    value="$(eval_runtime_text_identity_value_task "Ada" || printf '%s\n' "Ada")"
   elif runtime_source_has_call "$target" "http.try_get_text("; then
     value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
-    value="${http_text:-$RUNTIME_DEFAULT_PROFILE}"
+    value="$(eval_runtime_text_identity_value_task "${http_text:-$RUNTIME_DEFAULT_PROFILE}" || printf '%s\n' "${http_text:-$RUNTIME_DEFAULT_PROFILE}")"
   elif runtime_source_has_call "$target" "shell.try_run("; then
     value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
-    value="${shell_text:-2026-05-05}"
+    value="$(eval_runtime_text_identity_value_task "${shell_text:-2026-05-05}" || printf '%s\n' "${shell_text:-2026-05-05}")"
   elif runtime_source_has_call "$target" "model.try_complete("; then
     value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
-    value="${model_text:-$RUNTIME_DEFAULT_MODEL_PLAN}"
+    value="$(eval_runtime_text_identity_value_task "${model_text:-$RUNTIME_DEFAULT_MODEL_PLAN}" || printf '%s\n' "${model_text:-$RUNTIME_DEFAULT_MODEL_PLAN}")"
   elif runtime_source_has_call "$target" "secrets.try_get("; then
     value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
-    value="${secret_text:-redacted}"
+    value="$(eval_runtime_text_identity_value_task "${secret_text:-redacted}" || printf '%s\n' "${secret_text:-redacted}")"
   elif runtime_deploy_stage_probe_matches "$target"; then
     value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
-    value="${deploy_text:-$RUNTIME_DEFAULT_DEPLOY_RESULT}"
+    value="$(eval_runtime_text_identity_value_task "${deploy_text:-$RUNTIME_DEFAULT_DEPLOY_RESULT}" || printf '%s\n' "${deploy_text:-$RUNTIME_DEFAULT_DEPLOY_RESULT}")"
   elif runtime_spend_authorize_probe_matches "$target"; then
     value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
     spend_text="${spend_text:-authorized}"
     if runtime_spend_prefix_probe_matches "$target"; then
-      value="budget gate: $spend_text"
+      value="$(eval_runtime_spend_prefixed_value_task "$spend_text" || printf 'budget gate: %s\n' "$spend_text")"
     else
-      value="$spend_text"
+      value="$(eval_runtime_text_identity_value_task "$spend_text" || printf '%s\n' "$spend_text")"
     fi
   elif runtime_project_ready_probe_matches "$target"; then
     value_kind="$RUNTIME_INT_VALUE_KIND"; value="$(eval_project_ready_value_task || printf '%s\n' "$RUNTIME_PROJECT_READY_VALUE")"
