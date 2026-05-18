@@ -2,7 +2,7 @@
 
 Date: 2026-05-18
 Branch: public
-Latest code checkpoint: 2dca7cb
+Latest code checkpoint: 783f05d
 Latest packet-sync documentation checkpoint before this note: 26e7417
 Current pause document status: committed on `public`; use `git log` for exact
 branch head
@@ -58,6 +58,10 @@ The current local checkpoint advances the public branch to:
   `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
   `bootstrap_owned_by_sley=192`; remaining blockers are still parser, checker,
   and runtime semantics from Sley source
+- self-hosting status after the parser take edit-surface ID slice:
+  `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=193`; remaining blockers are still parser, checker,
+  and runtime semantics from Sley source
 - latest V1 log from this pause checkpoint: `/tmp/sley-make-v1-ok-text.log`
 - latest verification refresh on 2026-05-18: `make v1` passed again after the
   public-action packet was finalized and after the WebForge / sleylang.org
@@ -74,6 +78,7 @@ The tracked code checkpoint is:
 - 2f127e4 fix: source ast expression ids from parser
 - b5e3224 fix: source ast node miss messages from parser
 - 2dca7cb fix: source ast node parent ids from parser
+- 783f05d fix: source take edit surfaces from parser
 
 The tracked pause documentation checkpoints are:
 
@@ -116,6 +121,8 @@ Recent self-hosting slices added:
   sourced from `loom.parser`
 - AST statement-node parent identifiers now use the Sley-owned parser task ID
   template instead of direct shell-side task ID synthesis
+- take edit surfaces now use a Sley-owned parser template while preserving the
+  existing external `take:task:...:index:name` edit-surface shape
 - diagnostics and run report root layouts moved into Sley-owned report-builder
   declarations, with the shell bootstrap supplying computed values to those
   builders
@@ -266,10 +273,19 @@ The latest continuation audit reconfirmed:
   slice: `bootstrap`, `strict_self_hosted=false`,
   `semantic_source_count=6`, `bootstrap_owned_by_sley=192`; remaining blockers
   are parser, checker, and runtime semantics from Sley source
+- focused take edit-surface probes:
+  `bin/sley lint --json --rule unused_take examples/unused_take.sley`
+  returned `take:task:app.takes.main:1:unused`; targeted graft-template and
+  dry-run fix probes preserved the same take edit-surface shape for move and
+  remove operations
+- Sley self-hosting status after the parser take edit-surface ID proof slice:
+  `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=193`; remaining blockers are parser, checker, and
+  runtime semantics from Sley source
 
 ## Dirty State Notes
 
-Tracked code was committed at 2dca7cb before this pause document was updated.
+Tracked code was committed at 783f05d before this pause document was updated.
 Tracked pause documentation before this update was refreshed through 26e7417
 with the external comparison approval gate, fork audit, and helper evidence.
 
