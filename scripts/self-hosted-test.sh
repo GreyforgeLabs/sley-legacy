@@ -52,6 +52,9 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_take_surface_id_task_execution"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("parser_module_task_list_surface_id_task_execution"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_expression_id_task_execution")) and (.bootstrap_owned_by_sley | index("parser_control_expression_id_task_execution"))'
 
 bin/sley self-hosting-status --json \
@@ -600,6 +603,12 @@ bin/sley graph --json examples/project \
 
 bin/sley graph --json examples/project \
   | json_field 'keys == (["schema","entry_module","modules"] | sort)'
+
+bin/sley graph --json --slice task:app.main.main examples/project \
+  | json_field '([.add_affordances[]? | select(.target_kind == "task") | .target] | index("module:app.main:tasks")) and ([.move_affordances[]? | select(.target_kind == "task") | .operation.payload.parent] | index("module:app.main:tasks"))'
+
+bin/sley plan --json --graft-templates examples/project \
+  | json_field '([.graft_templates[]? | select(.kind == "add_task") | .surface] | index("module:app.main:tasks")) and ([.graft_templates[]? | select(.kind == "move_task") | .operation.payload.parent] | index("module:app.main:tasks"))'
 
 bin/sley doctor --json examples/project \
   | json_field '.schema == "sley.doctor.report.v0" and .status == "ready" and .summary.task_count == 2'
