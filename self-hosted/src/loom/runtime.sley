@@ -133,6 +133,13 @@ export task bool_equal_value -> Bool {
   return left == right
 }
 
+export task bool_and_value -> Bool {
+  take left: Bool
+  take right: Bool
+
+  return left && right
+}
+
 export task bool_not_value -> Bool {
   take value: Bool
 
