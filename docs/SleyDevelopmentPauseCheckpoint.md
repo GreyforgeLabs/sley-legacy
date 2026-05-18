@@ -3,7 +3,7 @@
 Date: 2026-05-18
 Branch: public
 Latest code checkpoint: 642c9ed
-Latest documentation checkpoint: dac6544
+Latest documentation checkpoint: 26e7417
 Remote status: `public` is aligned with `origin/public`
 
 ## Operator Instruction
@@ -15,22 +15,28 @@ slices until the operator explicitly resumes Sley development.
 
 The current local checkpoint advances the public branch to:
 
+- latest pushed checkpoint: `26e7417 docs: refresh sley zero fork count`
 - full smoke: 481/481 passing
 - local V1 gate: `make v1` passed with `rc=0`
 - self-hosting status: `bootstrap`, `strict_self_hosted=false`,
   `semantic_source_count=6`, `bootstrap_owned_by_sley=132`
 - latest V1 log from this pause checkpoint: `/tmp/sley-make-v1-ok-text.log`
 - latest verification refresh on 2026-05-18: `make v1` passed again after the
-  public-action packet was finalized
+  public-action packet was finalized and after the WebForge / sleylang.org
+  deploy closeout
 
 The tracked code checkpoint is:
 
 - 41b739e fix: execute host text outputs from source
 - 642c9ed fix: execute ok text results from source
 
-The tracked pause documentation checkpoint is:
+The tracked pause documentation checkpoints are:
 
 - dac6544 docs: update sley pause checkpoint
+- 3bd6a67 docs: record sley zero approval gate
+- 94f7aa2 docs: refresh sley zero fork audit handoff
+- 6096366 docs: note sley zero fork refresh helper
+- 26e7417 docs: refresh sley zero fork count
 
 Recent self-hosting slices added:
 
@@ -108,11 +114,19 @@ Completed during the latest non-development verification refresh:
 - `make v1`
 - `bin/sley self-hosting-status --json`
 
+The latest continuation audit reconfirmed:
+
+- public-action packet verifier: passed
+- live Zero target verifier: passed
+- Sley self-hosting status: `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=132`
+- Sley strict self-hosting blockers are unchanged
+
 ## Dirty State Notes
 
 Tracked code was committed at 642c9ed before this pause document was updated.
-Tracked pause documentation was committed at dac6544 and then refreshed with
-the external comparison approval gate.
+Tracked pause documentation was refreshed through 26e7417 with the external
+comparison approval gate, fork audit, and helper evidence.
 
 Pre-existing untracked docs were not touched and should remain outside future
 commits unless the operator explicitly asks to include them:
