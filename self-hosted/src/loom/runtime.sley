@@ -5,6 +5,11 @@ export type RuntimeValue = {
   slot value: Text
 }
 
+export type RuntimeUser = {
+  slot name: Text
+  slot age: Int
+}
+
 export task hello_value -> Text {
   return "hello sley"
 }
@@ -99,6 +104,12 @@ export task map_index_text_value -> Text {
   take key: Text
 
   return values[key]
+}
+
+export task record_name_text_value -> Text {
+  take user: RuntimeUser
+
+  return user.name
 }
 
 export task seeded_agent_deploy_value -> Text {
