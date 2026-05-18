@@ -75,6 +75,9 @@ Current status:
   `cdf5b9e11addec37273ff5be2b0196013597e9a8485afb545debd98595f8732b`.
 - The added fork after the 128-fork packet was `Pvmsirish/zero`; it compared
   identical to upstream and did not change the recommendation.
+- Future fork-count drift can be refreshed locally with
+  `/home/greyforge/sley-zero-public-actions/refresh-fork-audit.sh`; the helper
+  was exercised against a temporary snapshot and reproduced the pinned hash.
 - Doctrine, privacy/secrets, executor-guard, and GitHub-mechanics packet
   reviews are recorded in the external packet.
 - X/social copy is drafted only and remains unposted.
