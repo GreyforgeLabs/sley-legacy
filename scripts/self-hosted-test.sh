@@ -73,6 +73,9 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_task_statement_surface_id_task_execution"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("parser_branch_statement_surface_id_task_execution"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_expression_id_task_execution")) and (.bootstrap_owned_by_sley | index("parser_control_expression_id_task_execution"))'
 
 bin/sley self-hosting-status --json \
@@ -636,6 +639,9 @@ bin/sley plan --json --graft-templates examples/project \
 
 bin/sley plan --json --graft-templates examples/project \
   | json_field '([.task_surfaces[]?.graft_targets[]?] | index("block:task:app.main.main")) and ([.graft_templates[]? | select(.kind == "insert_statement") | .surface] | index("block:task:app.main.main")) and ([.graft_templates[]? | select(.kind == "move_statement") | .operation.payload.parent] | index("block:task:app.main.main")) and ([.graft_templates[]? | select(.kind == "move_statement") | .operation.target] | index("block:task:app.main.main:stmt:0")) and ([.graft_templates[]? | select(.kind == "delete_statement") | .operation.target] | index("block:task:app.main.main:stmt:0"))'
+
+bin/sley plan --json --graft-templates --template-surface task:app.constant_false_if.main examples/constant_false_if_statement.sley \
+  | json_field '([.graft_templates[]? | select(.kind == "move_statement_destination") | .operation.target] | index("block:task:app.constant_false_if.main:stmt:0:then:stmt:0")) and ([.graft_templates[]? | select(.kind == "replace_expression") | .surface] | index("block:task:app.constant_false_if.main:stmt:0:expr"))'
 
 bin/sley plan --json --graft-templates examples/project \
   | json_field '([.graft_templates[]? | select(.kind == "replace_call_arg") | .operation.target] | index("task:app.math.double")) and ([.graft_templates[]? | select(.kind == "replace_call_arg") | .operation.payload.scope] | index("task:app.main.main"))'
