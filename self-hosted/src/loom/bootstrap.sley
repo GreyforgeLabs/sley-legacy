@@ -102,6 +102,7 @@ export task owned_bootstrap_values -> List<Text> {
     "record_field_runtime_task_execution",
     "record_field_expression_runtime_execution",
     "record_field_call_runtime_execution",
+    "local_call_runtime_execution",
     "text_equal_runtime_task_execution",
     "result_flow_runtime_execution",
     "bool_comparison_runtime_task_execution",
