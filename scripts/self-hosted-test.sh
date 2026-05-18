@@ -48,6 +48,9 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_declaration_id_task_execution")) and (.bootstrap_owned_by_sley | index("parser_take_id_task_execution"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("parser_expression_id_task_execution")) and (.bootstrap_owned_by_sley | index("parser_control_expression_id_task_execution"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("diagnostics_report_builder")) and (.bootstrap_owned_by_sley | index("diagnostics_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("run_report_builder")) and (.bootstrap_owned_by_sley | index("run_report_builder_task_execution"))'
 
 bin/sley self-hosting-status --json \
@@ -404,7 +407,7 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("bound_int_return_runtime_execution"))'
 
 bin/sley ast --json examples/hello.sley \
-  | json_field '.schema == "sley.ast.program.v0" and .module == "app.hello" and .tasks[0].id == "task:app.hello.main" and .tasks[0].name == "main" and .tasks[0].body.statements[0].id == "block:task:app.hello.main:stmt:0" and .tasks[0].body.statements[0].expr.expr_kind == "StringLiteral"'
+  | json_field '.schema == "sley.ast.program.v0" and .module == "app.hello" and .tasks[0].id == "task:app.hello.main" and .tasks[0].name == "main" and .tasks[0].body.statements[0].id == "block:task:app.hello.main:stmt:0" and .tasks[0].body.statements[0].expr.id == "block:task:app.hello.main:stmt:0:expr" and .tasks[0].body.statements[0].expr.expr_kind == "StringLiteral"'
 
 bin/sley ast --json examples/declaration_hygiene.sley \
   | json_field '.types[0].id == "type:app.hygiene.Orphan" and .effects[0].id == "effect:app.hygiene.OrphanEffect"'
@@ -416,7 +419,10 @@ bin/sley ast --json examples/constant_text_concatenation_expression.sley \
   | json_field '.schema == "sley.ast.program.v0" and .tasks[0].body.statements[0].expr.expr_kind == "Raw" and .tasks[0].body.statements[0].expr.source == "\"Sley \" + \"agents\""'
 
 bin/sley ast --json examples/empty_for_statement.sley \
-  | json_field '.schema == "sley.ast.program.v0" and .tasks[0].body.statements[1].collection.expr_kind == "ListLiteral" and .tasks[0].body.statements[1].collection.items == []'
+  | json_field '.schema == "sley.ast.program.v0" and .tasks[0].body.statements[1].collection.id == "block:task:app.empty_for.main:stmt:1:collection" and .tasks[0].body.statements[1].collection.expr_kind == "ListLiteral" and .tasks[0].body.statements[1].collection.items == []'
+
+bin/sley ast --json examples/empty_while_statement.sley \
+  | json_field '.tasks[0].body.statements[2].condition.id == "block:task:app.empty_while.main:stmt:2:condition"'
 
 bin/sley ast --json --node block:task:app.hello.main:stmt:0:expr examples/hello.sley \
   | json_field '.schema == "sley.ast.node.v0" and .node_kind == "expression"'
