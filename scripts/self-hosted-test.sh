@@ -317,6 +317,12 @@ bin/sley run --json examples/unqualified_import_call_project \
   | json_field '.status == "passed" and .value.kind == "Int" and .value.value == 42'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("file_entry_project_call_runtime_execution"))'
+
+bin/sley run --json examples/unqualified_import_call_project/src/app/main.sley \
+  | json_field '.status == "passed" and .value.kind == "Int" and .value.value == 42'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("bound_local_call_runtime_execution"))'
 
 bin/sley run --json fixtures/corpus/accepted/pure_main.sley \

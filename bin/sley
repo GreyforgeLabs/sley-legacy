@@ -3799,7 +3799,11 @@ eval_source_zero_arg_project_call_main_return() {
 eval_source_project_call_int_main_return() {
   local target="$1" file call_info main_module import_alias import_module callee arg callee_module callee_name callee_file="" body task_body candidate_file="" candidate_count=0 take_name return_expr op right runtime_value
   local -a files=()
-  mapfile -t files < <(collect_files "$target")
+  if [[ -f "$target" ]] && ! awk '/^[ \t]*(export[ \t]+)?task[ \t]+main[ \t]/ {found=1} END{exit found ? 0 : 1}' "$target"; then
+    mapfile -t files < <(collect_files "$target")
+  else
+    mapfile -t files < <(runtime_context_files "$target")
+  fi
   [[ "${#files[@]}" -gt 0 ]] || return 1
   for file in "${files[@]}"; do
     call_info="$(awk '

@@ -139,6 +139,7 @@ export task owned_bootstrap_values -> List<Text> {
     "if_statement_runtime_execution",
     "project_call_runtime_execution",
     "unqualified_project_call_runtime_execution",
+    "file_entry_project_call_runtime_execution",
     "bound_local_call_runtime_execution",
     "seeded_agent_deploy_task_execution",
     "project_ready_task_execution",
