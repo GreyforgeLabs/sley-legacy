@@ -54,6 +54,9 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("symbol_graph_report_builder")) and (.bootstrap_owned_by_sley | index("symbol_graph_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("claim_verify_report_builder")) and (.bootstrap_owned_by_sley | index("claim_verify_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("migrate_report_builder")) and (.bootstrap_owned_by_sley | index("migrate_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("docgen_report_builder")) and (.bootstrap_owned_by_sley | index("docgen_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("sandbox_report_builder")) and (.bootstrap_owned_by_sley | index("sandbox_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("agent_bench_report_builder")) and (.bootstrap_owned_by_sley | index("agent_bench_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("deploy_report_builder")) and (.bootstrap_owned_by_sley | index("deploy_report_builder_task_execution"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("conformance_report_builder")) and (.bootstrap_owned_by_sley | index("conformance_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("conformance_coverage_report_builder")) and (.bootstrap_owned_by_sley | index("conformance_coverage_report_builder_task_execution"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("run_report_shape"))'
 
 bin/sley self-hosting-status --json \
