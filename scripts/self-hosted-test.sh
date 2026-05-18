@@ -152,6 +152,12 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("absorbing_arithmetic_runtime_execution"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("int_comparison_runtime_task_execution"))'
+
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("constant_comparison_runtime_execution"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("bool_if_runtime_task_execution"))'
 
 bin/sley self-hosting-status --json \
@@ -366,6 +372,9 @@ bin/sley run --json examples/constant_record_field_access_expression.sley \
 
 bin/sley run --json examples/constant_boolean_comparison_expression.sley \
   | json_field '.schema == "sley.run.report.v0" and .value.kind == "Bool" and .value.value == false'
+
+bin/sley run --json examples/constant_comparison_expression.sley \
+  | json_field '.schema == "sley.run.report.v0" and .value.kind == "Bool" and .value.value == true'
 
 bin/sley run --json examples/redundant_boolean_comparison.sley \
   | json_field '.schema == "sley.run.report.v0" and .value.kind == "Bool" and .value.value == true'
