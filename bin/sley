@@ -4751,6 +4751,7 @@ PARSER_TYPE_ID_TEMPLATE="$(eval_parser_id_template type_id || printf 'type:{{mod
 PARSER_EFFECT_ID_TEMPLATE="$(eval_parser_id_template effect_id || printf 'effect:{{module}}.{{effect}}\n')"
 PARSER_TAKE_ID_TEMPLATE="$(eval_parser_id_template take_id || printf 'take:{{module}}.{{task}}.{{take}}\n')"
 PARSER_TAKE_SURFACE_ID_TEMPLATE="$(eval_parser_id_template take_surface_id || printf 'take:{{task_id}}:{{index}}:{{take}}\n')"
+PARSER_MODULE_TASK_LIST_SURFACE_ID_TEMPLATE="$(eval_parser_id_template module_task_list_surface_id || printf 'module:{{module}}:tasks\n')"
 PARSER_STATEMENT_ID_TEMPLATE="$(eval_parser_id_template statement_id || printf 'block:task:{{module}}.{{task}}:stmt:{{index}}\n')"
 PARSER_EXPRESSION_ID_TEMPLATE="$(eval_parser_id_template expression_id || printf '{{statement}}:expr\n')"
 PARSER_COLLECTION_EXPRESSION_ID_TEMPLATE="$(eval_parser_id_template collection_expression_id || printf '{{statement}}:collection\n')"
@@ -4797,6 +4798,9 @@ if [[ -z "$PARSER_TAKE_ID_TEMPLATE" ]]; then
 fi
 if [[ -z "$PARSER_TAKE_SURFACE_ID_TEMPLATE" ]]; then
   PARSER_TAKE_SURFACE_ID_TEMPLATE='take:{{task_id}}:{{index}}:{{take}}'
+fi
+if [[ -z "$PARSER_MODULE_TASK_LIST_SURFACE_ID_TEMPLATE" ]]; then
+  PARSER_MODULE_TASK_LIST_SURFACE_ID_TEMPLATE='module:{{module}}:tasks'
 fi
 if [[ -z "$PARSER_STATEMENT_ID_TEMPLATE" ]]; then
   PARSER_STATEMENT_ID_TEMPLATE='block:task:{{module}}.{{task}}:stmt:{{index}}'
@@ -11293,7 +11297,11 @@ command_graph() {
     return
   fi
   ast="$(ast_json "$target")"
-  jq -n --arg target "$slice" --arg entry_target "$target" --argjson query "$query" --argjson ast "$ast" '
+  jq -n --arg target "$slice" --arg entry_target "$target" --arg module_task_list_surface_id_template "$PARSER_MODULE_TASK_LIST_SURFACE_ID_TEMPLATE" --argjson query "$query" --argjson ast "$ast" '
+    def replace_all($needle; $replacement): split($needle) | join($replacement);
+    def module_task_list_surface_id($module_name):
+      $module_task_list_surface_id_template
+      | replace_all("{{module}}"; $module_name);
     def task_module($id):
       ($id | sub("^task:";"") | split(".")[0:-1] | join("."));
     def task_name($id):
@@ -11313,7 +11321,7 @@ command_graph() {
         {target:("module:" + $module + ":imports"), target_kind:"import", operation:{op:"AddImport", payload:{owner_module:$module, module:$module}}, editable_json_pointers:["/payload/module"]},
         {target:("module:" + $module + ":types"), target_kind:"type", operation:{op:"AddTypeDeclaration", payload:{module:$module, name:"NewType"}}, editable_json_pointers:["/payload/name"]},
         {target:("module:" + $module + ":effects"), target_kind:"effect", operation:{op:"AddEffectDeclaration", payload:{module:$module, name:"NewEffect"}}, editable_json_pointers:["/payload/name"]},
-        {target:("module:" + $module + ":tasks"), target_kind:"task", operation:{op:"AddTask", payload:{module:$module, name:"new_task"}}, editable_json_pointers:["/payload/name"]}
+        {target:module_task_list_surface_id($module), target_kind:"task", operation:{op:"AddTask", payload:{module:$module, name:"new_task"}}, editable_json_pointers:["/payload/name"]}
       ];
     def statement_moves($task):
       if $task == null then []
@@ -11322,7 +11330,7 @@ command_graph() {
     def module_task_destinations($task; $module):
       if ($task.name // "") == "main" then []
       else
-        [$module.imports[]? | {parent:("module:" + .module + ":tasks"), operation:{op:"MoveNode", target:$task.id, payload:{parent:("module:" + .module + ":tasks")}}}]
+        [$module.imports[]? | (module_task_list_surface_id(.module)) as $task_list | {parent:$task_list, operation:{op:"MoveNode", target:$task.id, payload:{parent:$task_list}}}]
       end;
     def module_task_moves($module):
       [
@@ -11331,14 +11339,14 @@ command_graph() {
         {target:("module:" + $module.module + ":effects"), target_kind:"effect", operation:{op:"MoveNode", payload:{}}}
       ]
       + [$module.tasks[]? as $task |
-          {target:$task.id, target_kind:"task", operation:{op:"MoveNode", target:$task.id, payload:{parent:("module:" + $module.module + ":tasks")}}}
+          {target:$task.id, target_kind:"task", operation:{op:"MoveNode", target:$task.id, payload:{parent:module_task_list_surface_id($module.module)}}}
           + ((module_task_destinations($task; $module)) as $d | if ($d | length) > 0 then {destinations:$d} else {} end)
         ];
     def task_move_affordances($task; $module):
       statement_moves($task)
       + [
         {target:("module:" + $module.module + ":imports"), target_kind:"import", operation:{op:"MoveNode", payload:{}}},
-        {target:($task.id // ("module:" + $module.module + ":tasks")), target_kind:"task", operation:{op:"MoveNode", target:($task.id // ""), payload:{parent:("module:" + $module.module + ":tasks")}}}
+        {target:($task.id // module_task_list_surface_id($module.module)), target_kind:"task", operation:{op:"MoveNode", target:($task.id // ""), payload:{parent:module_task_list_surface_id($module.module)}}}
       ];
     def replace_affordances($task):
       if $task == null then []
@@ -11510,13 +11518,16 @@ command_plan() {
     return
   fi
   lint="$(lint_json "$target")"
-  jq -n --arg target "$target" --arg template_surface "$template_surface" --arg take_surface_id_template "$PARSER_TAKE_SURFACE_ID_TEMPLATE" --argjson query "$query" --argjson lint "$lint" --argjson ast "$ast" '
+  jq -n --arg target "$target" --arg template_surface "$template_surface" --arg take_surface_id_template "$PARSER_TAKE_SURFACE_ID_TEMPLATE" --arg module_task_list_surface_id_template "$PARSER_MODULE_TASK_LIST_SURFACE_ID_TEMPLATE" --argjson query "$query" --argjson lint "$lint" --argjson ast "$ast" '
     def replace_all($needle; $replacement): split($needle) | join($replacement);
     def take_surface_id($task_id; $index; $take_name):
       $take_surface_id_template
       | replace_all("{{task_id}}"; $task_id)
       | replace_all("{{index}}"; $index)
       | replace_all("{{take}}"; $take_name);
+    def module_task_list_surface_id($module_name):
+      $module_task_list_surface_id_template
+      | replace_all("{{module}}"; $module_name);
     def starter_return($type_name):
       ($type_name // "Unit") as $name |
       ($name | sub("<.*$"; "")) as $base |
@@ -11555,7 +11566,7 @@ command_plan() {
       ("module:" + $module) as $surface |
       ([$types[]? | move_decl_template("move_type"; $surface; .id; ($surface + ":types"))])
       + ([$effects[]? | move_decl_template("move_effect"; $surface; .id; ($surface + ":effects"))])
-      + ([$tasks[]? | move_decl_template("move_task"; $surface; .id; ($surface + ":tasks"))])
+      + ([$tasks[]? | move_decl_template("move_task"; $surface; .id; module_task_list_surface_id($module))])
       + ([$types[]? | delete_decl_template("delete_type"; $surface; .id)])
       + ([$effects[]? | delete_decl_template("delete_effect"; $surface; .id)])
       + ([$tasks[]? | select((.exported | not) and .name != "main") | delete_decl_template("delete_task"; $surface; .id)])
@@ -11729,7 +11740,7 @@ command_plan() {
       + (if (($task.takes | length) > 0) then
           [$task.takes | to_entries[] | (take_surface_id($surface; (.key|tostring); .value.name)) as $take_surface | {kind:"move_take", surface:$take_surface, operation:{op:"MoveNode", target:$take_surface, payload:{position:.key}}, editable_json_pointers:["/payload/position"]}]
         else
-          [{kind:"move_task", surface:$surface, operation:{op:"MoveNode", target:$surface, payload:{parent:("module:" + $task.module + ":tasks"), position:0}}, editable_json_pointers:["/payload/position"]}]
+          [{kind:"move_task", surface:$surface, operation:{op:"MoveNode", target:$surface, payload:{parent:module_task_list_surface_id($task.module), position:0}}, editable_json_pointers:["/payload/position"]}]
         end)
       + (if (($task.takes | length) > 0) then
           [$task.takes | to_entries[] | {kind:"remove_take", surface:take_surface_id($surface; (.key|tostring); .value.name), operation:{op:"RemoveTake", target:$surface, payload:{position:.key}}}]
@@ -11748,7 +11759,7 @@ command_plan() {
         module:$task.module,
         name:$task.name,
         qualified_name:$task.qualified_name,
-        graft_targets:[("block:" + $task.id), ("module:" + $task.module + ":tasks")]
+        graft_targets:[("block:" + $task.id), module_task_list_surface_id($task.module)]
       };
     def project_graft_templates:
       ($query.tasks[0]) as $task |
@@ -11757,11 +11768,11 @@ command_plan() {
         {kind:"replace_task_body", surface:$task.id, operation:{op:"ReplaceTaskBody", target:$task.id, payload:{statements:[starter_return($task.return_type)]}}, editable_json_pointers:["/payload/statements"]},
         {kind:"rename_declaration", surface:$task.id, operation:{op:"RenameDeclaration", target:$task.id, payload:{name:($task.name + "_renamed")}}, editable_json_pointers:["/payload/name"]},
         {kind:"insert_statement", surface:("block:" + $task.id), operation:{op:"InsertStatement", target:("block:" + $task.id), payload:{source:"forge { }", position:0}}, editable_json_pointers:["/payload/source"]},
-        {kind:"add_task", surface:("module:" + $task.module + ":tasks"), operation:{op:"AddTask", payload:{module:$task.module, name:"new_task"}}},
+        {kind:"add_task", surface:module_task_list_surface_id($task.module), operation:{op:"AddTask", payload:{module:$task.module, name:"new_task"}}},
         {kind:"move_statement", surface:($task.id), operation:{op:"MoveNode", target:("block:" + $task.id + ":stmt:0"), payload:{parent:("block:" + $task.id)}}},
         {kind:"replace_expression", surface:($call.expr_id // ("block:" + $task.id + ":stmt:0:expr")), operation:{op:"ReplaceExpression", target:($call.expr_id // ("block:" + $task.id + ":stmt:0:expr")), payload:{source:($call.source // "0")}}, editable_json_pointers:["/payload/source"]},
         {kind:"delete_statement", surface:($task.id), operation:{op:"DeleteNode", target:("block:" + $task.id + ":stmt:0")}},
-        {kind:"move_task", surface:$task.id, operation:{op:"MoveNode", target:$task.id, payload:{parent:("module:" + $task.module + ":tasks")}}},
+        {kind:"move_task", surface:$task.id, operation:{op:"MoveNode", target:$task.id, payload:{parent:module_task_list_surface_id($task.module)}}},
         {kind:"add_import", surface:("module:" + $task.module + ":imports"), operation:{op:"AddImport", payload:{owner_module:$task.module, module:"app.new_module"}}},
         {kind:"add_effect_declaration", surface:("module:" + $task.module + ":effects"), operation:{op:"AddEffectDeclaration", payload:{module:$task.module, name:"NewEffect"}}}
       ]
