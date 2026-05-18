@@ -188,6 +188,9 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("int_equal_runtime_task_execution"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("int_greater_equal_runtime_task_execution"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("constant_comparison_runtime_execution"))'
 
 bin/sley self-hosting-status --json \
@@ -198,6 +201,15 @@ bin/sley self-hosting-status --json \
 
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("bool_if_statement_runtime_execution"))'
+
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("text_if_runtime_task_execution"))'
+
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("compute_text_call_runtime_execution"))'
+
+bin/sley run --json examples/compute.sley \
+  | json_field '.status == "passed" and .value.kind == "Text" and .value.value == "excellent"'
 
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("int_if_runtime_task_execution"))'
