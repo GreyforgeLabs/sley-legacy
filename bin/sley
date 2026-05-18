@@ -477,6 +477,31 @@ eval_runtime_list_len_value_task() {
   printf '%s\n' "$item_count"
 }
 
+eval_runtime_list_index_int_value_task() {
+  local values_source="$1" index="$2"
+  local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
+  local body values_take index_take return_expr
+  [[ "$index" =~ ^[0-9]+$ ]] || return 1
+  body="$(extract_sley_task_body "$runtime_file" list_index_int_value)"
+  [[ -n "$body" ]] || return 1
+  values_take="$(printf '%s\n' "$body" | awk '/^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*List<Int>/ {line=$0; sub(/^[ \t]*take[ \t]+/, "", line); sub(/[ \t]*:.*/, "", line); print line; exit}')"
+  index_take="$(printf '%s\n' "$body" | awk '/^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Int/ {line=$0; sub(/^[ \t]*take[ \t]+/, "", line); sub(/[ \t]*:.*/, "", line); print line; exit}')"
+  return_expr="$(printf '%s\n' "$body" | awk '/^[ \t]*return[ \t]+[A-Za-z_][A-Za-z0-9_]*\[[A-Za-z_][A-Za-z0-9_]*\][ \t]*$/ {line=$0; sub(/^[ \t]*return[ \t]+/, "", line); sub(/[ \t]*$/, "", line); print line; exit}')"
+  [[ -n "$values_take" && -n "$index_take" && "$return_expr" == "$values_take[$index_take]" ]] || return 1
+  printf '%s\n' "$values_source" | awk -v idx="$index" '
+    function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
+    {
+      item_count=split($0, items, ",")
+      if(idx < 0 || idx >= item_count) exit 1
+      for(i=1; i<=item_count; i++) {
+        items[i]=trim(items[i])
+        if(items[i] !~ /^-?[0-9]+$/) exit 1
+      }
+      print items[idx + 1]
+    }
+  '
+}
+
 runtime_project_ready_probe_matches() {
   local target="$1"
   ast_json "$target" | jq -e \
@@ -839,6 +864,21 @@ eval_source_len_int_main_return() {
   item_count="$(printf '%s\n' "$inner" | count_top_level_list_items)"
   [[ "$item_count" =~ ^[0-9]+$ ]] || return 1
   runtime_value="$(eval_runtime_list_len_value_task "$item_count")"
+  [[ -n "$runtime_value" ]] || return 1
+  printf '{"kind":"%s","value":"%s"}\n' "$RUNTIME_INT_VALUE_KIND" "$runtime_value"
+}
+
+eval_source_list_index_int_main_return() {
+  local target="$1" source values_source index runtime_value
+  source="$(ast_json "$target" | jq -er \
+    --arg return_kind "$PARSER_RETURN_STATEMENT_KIND" '
+    ([.tasks[]? | select(.name == "main") | .body.statements[]? | select(.kind == $return_kind) | .expr.source?][0] // empty)
+  ')" || return 1
+  source="$(printf '%s\n' "$source" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+  [[ "$source" =~ ^\[(.*)\]\[([0-9]+)\]$ ]] || return 1
+  values_source="${BASH_REMATCH[1]}"
+  index="${BASH_REMATCH[2]}"
+  runtime_value="$(eval_runtime_list_index_int_value_task "$values_source" "$index")"
   [[ -n "$runtime_value" ]] || return 1
   printf '{"kind":"%s","value":"%s"}\n' "$RUNTIME_INT_VALUE_KIND" "$runtime_value"
 }
@@ -4609,6 +4649,9 @@ run_json() {
     value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
     value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
   elif simple_runtime="$(eval_source_len_int_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
+    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
+    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
+  elif simple_runtime="$(eval_source_list_index_int_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
     value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
     value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
   elif call_runtime="$(eval_main_call_int_return "$target" 2>/dev/null)" && [[ -n "$call_runtime" ]]; then
