@@ -25,6 +25,7 @@ export task owned_bootstrap_values -> List<Text> {
     "self_hosting_status",
     "strict_self_hosted",
     "source_modules",
+    "semantic_source_count_task_execution",
     "default_lint_rules",
     "core_report_schema_ids",
     "doctor_report_shape",
@@ -94,6 +95,12 @@ export task source_modules -> List<Text> {
     "loom.runtime",
     "loom.reports"
   ]
+}
+
+export task semantic_source_count -> Int {
+  bind modules = call source_modules()
+
+  return len(modules)
 }
 
 export task remaining_strict_self_hosting_blockers -> List<Text> {
