@@ -194,6 +194,9 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("state_set_runtime_execution"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("tally_set_runtime_execution"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("int_identity_runtime_task_execution"))'
 
 bin/sley self-hosting-status --json \
@@ -468,6 +471,9 @@ bin/sley run --json examples/redundant_initial_set_statement.sley \
 
 bin/sley run --json examples/self_assignment_statement.sley \
   | json_field '.schema == "sley.run.report.v0" and .value.kind == "Int" and .value.value == 2'
+
+bin/sley run --json examples/mutable_binding_style.sley \
+  | json_field '.schema == "sley.run.report.v0" and .value.kind == "Int" and .value.value == 21'
 
 bin/sley run --json self-hosted \
   | json_field '.schema == "sley.run.report.v0" and .value.kind == "Int" and .value.value == 51'
