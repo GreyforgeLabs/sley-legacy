@@ -81,6 +81,12 @@ export task project_ready_binding_probe -> Text {
   return "call double(base)"
 }
 
+export task list_len_value -> Int {
+  take item_count: Int
+
+  return item_count
+}
+
 export task seeded_agent_deploy_value -> Text {
   take profile: Text
   take model_plan: Text
