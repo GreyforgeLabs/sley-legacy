@@ -49,6 +49,7 @@ export task owned_bootstrap_values -> List<Text> {
     "parser_declaration_id_task_execution",
     "parser_take_id_task_execution",
     "parser_take_surface_id_task_execution",
+    "parser_module_surface_id_task_execution",
     "parser_module_task_list_surface_id_task_execution",
     "parser_module_declaration_list_surface_id_task_execution",
     "parser_block_task_surface_id_task_execution",
