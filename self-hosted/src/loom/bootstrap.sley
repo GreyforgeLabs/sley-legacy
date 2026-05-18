@@ -82,6 +82,7 @@ export task owned_bootstrap_values -> List<Text> {
     "bool_literal_runtime_execution",
     "text_concat_runtime_execution",
     "ok_int_runtime_task_execution",
+    "ok_text_runtime_task_execution",
     "list_len_runtime_task_execution",
     "len_expression_runtime_execution",
     "int_identity_runtime_task_execution",
