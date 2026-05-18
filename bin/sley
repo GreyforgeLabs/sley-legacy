@@ -1274,14 +1274,19 @@ RECORD_LITERAL_NON_RECORD_TYPE_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF
 RECORD_LITERAL_NON_RECORD_TYPE_MESSAGE_TEMPLATE="$(eval_checker_message_template record_literal_non_record_type_message type_name || printf 'record literal type is not a record `::type_name::`\n')"
 LIST_ELEMENT_TYPE_MISMATCH_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" list_element_type_mismatch_message_prefix)"
 LIST_ELEMENT_TYPE_MISMATCH_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" list_element_type_mismatch_message_suffix)"
+LIST_ELEMENT_TYPE_MISMATCH_MESSAGE_TEMPLATE="$(eval_checker_message_template list_element_type_mismatch_message actual_type || printf 'list element type mismatch `::actual_type::`\n')"
 INDEX_NOT_INT_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" index_not_int_message_prefix)"
 INDEX_NOT_INT_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" index_not_int_message_suffix)"
+INDEX_NOT_INT_MESSAGE_TEMPLATE="$(eval_checker_message_template index_not_int_message actual_type || printf 'list index must be Int, got `::actual_type::`\n')"
 INDEX_KEY_TYPE_MISMATCH_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" index_key_type_mismatch_message_prefix)"
 INDEX_KEY_TYPE_MISMATCH_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" index_key_type_mismatch_message_suffix)"
+INDEX_KEY_TYPE_MISMATCH_MESSAGE_TEMPLATE="$(eval_checker_message_template index_key_type_mismatch_message actual_type || printf 'map index key must be Text, got `::actual_type::`\n')"
 MAP_KEY_TYPE_MISMATCH_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" map_key_type_mismatch_message_prefix)"
 MAP_KEY_TYPE_MISMATCH_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" map_key_type_mismatch_message_suffix)"
+MAP_KEY_TYPE_MISMATCH_MESSAGE_TEMPLATE="$(eval_checker_message_template map_key_type_mismatch_message actual_type || printf 'map key type mismatch `::actual_type::`\n')"
 MAP_VALUE_TYPE_MISMATCH_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" map_value_type_mismatch_message_prefix)"
 MAP_VALUE_TYPE_MISMATCH_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" map_value_type_mismatch_message_suffix)"
+MAP_VALUE_TYPE_MISMATCH_MESSAGE_TEMPLATE="$(eval_checker_message_template map_value_type_mismatch_message actual_type || printf 'map value type mismatch `::actual_type::`\n')"
 DUPLICATE_EFFECT_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" duplicate_effect_message_prefix)"
 DUPLICATE_EFFECT_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" duplicate_effect_message_suffix)"
 DUPLICATE_EFFECT_MESSAGE_TEMPLATE="$(eval_checker_message_template duplicate_effect_message effect_name || printf 'duplicate effect `::effect_name::`\n')"
@@ -1390,14 +1395,29 @@ if [[ -z "$RECORD_LITERAL_NON_RECORD_TYPE_MESSAGE_TEMPLATE" ]]; then
 fi
 LIST_ELEMENT_TYPE_MISMATCH_MESSAGE_PREFIX="${LIST_ELEMENT_TYPE_MISMATCH_MESSAGE_PREFIX:-list element type mismatch \`}"
 LIST_ELEMENT_TYPE_MISMATCH_MESSAGE_SUFFIX="${LIST_ELEMENT_TYPE_MISMATCH_MESSAGE_SUFFIX:-\`}"
+if [[ -z "$LIST_ELEMENT_TYPE_MISMATCH_MESSAGE_TEMPLATE" ]]; then
+  LIST_ELEMENT_TYPE_MISMATCH_MESSAGE_TEMPLATE='list element type mismatch `::actual_type::`'
+fi
 INDEX_NOT_INT_MESSAGE_PREFIX="${INDEX_NOT_INT_MESSAGE_PREFIX:-list index must be Int, got \`}"
 INDEX_NOT_INT_MESSAGE_SUFFIX="${INDEX_NOT_INT_MESSAGE_SUFFIX:-\`}"
+if [[ -z "$INDEX_NOT_INT_MESSAGE_TEMPLATE" ]]; then
+  INDEX_NOT_INT_MESSAGE_TEMPLATE='list index must be Int, got `::actual_type::`'
+fi
 INDEX_KEY_TYPE_MISMATCH_MESSAGE_PREFIX="${INDEX_KEY_TYPE_MISMATCH_MESSAGE_PREFIX:-map index key must be Text, got \`}"
 INDEX_KEY_TYPE_MISMATCH_MESSAGE_SUFFIX="${INDEX_KEY_TYPE_MISMATCH_MESSAGE_SUFFIX:-\`}"
+if [[ -z "$INDEX_KEY_TYPE_MISMATCH_MESSAGE_TEMPLATE" ]]; then
+  INDEX_KEY_TYPE_MISMATCH_MESSAGE_TEMPLATE='map index key must be Text, got `::actual_type::`'
+fi
 MAP_KEY_TYPE_MISMATCH_MESSAGE_PREFIX="${MAP_KEY_TYPE_MISMATCH_MESSAGE_PREFIX:-map key type mismatch \`}"
 MAP_KEY_TYPE_MISMATCH_MESSAGE_SUFFIX="${MAP_KEY_TYPE_MISMATCH_MESSAGE_SUFFIX:-\`}"
+if [[ -z "$MAP_KEY_TYPE_MISMATCH_MESSAGE_TEMPLATE" ]]; then
+  MAP_KEY_TYPE_MISMATCH_MESSAGE_TEMPLATE='map key type mismatch `::actual_type::`'
+fi
 MAP_VALUE_TYPE_MISMATCH_MESSAGE_PREFIX="${MAP_VALUE_TYPE_MISMATCH_MESSAGE_PREFIX:-map value type mismatch \`}"
 MAP_VALUE_TYPE_MISMATCH_MESSAGE_SUFFIX="${MAP_VALUE_TYPE_MISMATCH_MESSAGE_SUFFIX:-\`}"
+if [[ -z "$MAP_VALUE_TYPE_MISMATCH_MESSAGE_TEMPLATE" ]]; then
+  MAP_VALUE_TYPE_MISMATCH_MESSAGE_TEMPLATE='map value type mismatch `::actual_type::`'
+fi
 DUPLICATE_EFFECT_MESSAGE_PREFIX="${DUPLICATE_EFFECT_MESSAGE_PREFIX:-duplicate effect \`}"
 DUPLICATE_EFFECT_MESSAGE_SUFFIX="${DUPLICATE_EFFECT_MESSAGE_SUFFIX:-\`}"
 if [[ -z "$DUPLICATE_EFFECT_MESSAGE_TEMPLATE" ]]; then
@@ -2169,14 +2189,19 @@ check_json() {
     --arg record_literal_non_record_type_message_template "$RECORD_LITERAL_NON_RECORD_TYPE_MESSAGE_TEMPLATE" \
     --arg list_element_type_mismatch_prefix "$LIST_ELEMENT_TYPE_MISMATCH_MESSAGE_PREFIX" \
     --arg list_element_type_mismatch_suffix "$LIST_ELEMENT_TYPE_MISMATCH_MESSAGE_SUFFIX" \
+    --arg list_element_type_mismatch_message_template "$LIST_ELEMENT_TYPE_MISMATCH_MESSAGE_TEMPLATE" \
     --arg index_not_int_prefix "$INDEX_NOT_INT_MESSAGE_PREFIX" \
     --arg index_not_int_suffix "$INDEX_NOT_INT_MESSAGE_SUFFIX" \
+    --arg index_not_int_message_template "$INDEX_NOT_INT_MESSAGE_TEMPLATE" \
     --arg index_key_type_mismatch_prefix "$INDEX_KEY_TYPE_MISMATCH_MESSAGE_PREFIX" \
     --arg index_key_type_mismatch_suffix "$INDEX_KEY_TYPE_MISMATCH_MESSAGE_SUFFIX" \
+    --arg index_key_type_mismatch_message_template "$INDEX_KEY_TYPE_MISMATCH_MESSAGE_TEMPLATE" \
     --arg map_key_type_mismatch_prefix "$MAP_KEY_TYPE_MISMATCH_MESSAGE_PREFIX" \
     --arg map_key_type_mismatch_suffix "$MAP_KEY_TYPE_MISMATCH_MESSAGE_SUFFIX" \
+    --arg map_key_type_mismatch_message_template "$MAP_KEY_TYPE_MISMATCH_MESSAGE_TEMPLATE" \
     --arg map_value_type_mismatch_prefix "$MAP_VALUE_TYPE_MISMATCH_MESSAGE_PREFIX" \
     --arg map_value_type_mismatch_suffix "$MAP_VALUE_TYPE_MISMATCH_MESSAGE_SUFFIX" \
+    --arg map_value_type_mismatch_message_template "$MAP_VALUE_TYPE_MISMATCH_MESSAGE_TEMPLATE" \
     --arg duplicate_effect_prefix "$DUPLICATE_EFFECT_MESSAGE_PREFIX" \
     --arg duplicate_effect_suffix "$DUPLICATE_EFFECT_MESSAGE_SUFFIX" \
     --arg duplicate_effect_message_template "$DUPLICATE_EFFECT_MESSAGE_TEMPLATE" \
@@ -2651,7 +2676,7 @@ check_json() {
       ($list.items | csv_items)[] as $item |
       ($item | literal_type) as $actual |
       select($actual != "" and $actual != $expected) |
-      {id:$list_element_type_mismatch, severity:"error", message:($list_element_type_mismatch_prefix + $actual + $list_element_type_mismatch_suffix), node:$stmt.expr.id, span:$stmt.expr.span};
+      {id:$list_element_type_mismatch, severity:"error", message:render_arg($list_element_type_mismatch_message_template; "actual_type"; $actual), node:$stmt.expr.id, span:$stmt.expr.span};
     def index_diags:
       $root.tasks[] as $t |
       $t.body.statements[]?.expr? |
@@ -2662,9 +2687,9 @@ check_json() {
       ($idx.index | literal_type) as $actual |
       select($actual != "") |
       if ($kind == "List" and $actual != "Int") then
-        {id:$index_not_int, severity:"error", message:($index_not_int_prefix + $actual + $index_not_int_suffix), node:$expr.id, span:$expr.span}
+        {id:$index_not_int, severity:"error", message:render_arg($index_not_int_message_template; "actual_type"; $actual), node:$expr.id, span:$expr.span}
       elif ($kind == "Map" and $actual != "Text") then
-        {id:$index_key_type_mismatch, severity:"error", message:($index_key_type_mismatch_prefix + $actual + $index_key_type_mismatch_suffix), node:$expr.id, span:$expr.span}
+        {id:$index_key_type_mismatch, severity:"error", message:render_arg($index_key_type_mismatch_message_template; "actual_type"; $actual), node:$expr.id, span:$expr.span}
       else empty end;
     def map_key_type_diags:
       $root.tasks[] as $t |
@@ -2676,7 +2701,7 @@ check_json() {
       (map_entries($stmt))[] as $entry |
       ($entry.key | literal_type) as $actual |
       select($actual != "" and $actual != $expected) |
-      {id:$map_key_type_mismatch, severity:"error", message:($map_key_type_mismatch_prefix + $actual + $map_key_type_mismatch_suffix), node:$stmt.expr.id, span:$stmt.expr.span};
+      {id:$map_key_type_mismatch, severity:"error", message:render_arg($map_key_type_mismatch_message_template; "actual_type"; $actual), node:$stmt.expr.id, span:$stmt.expr.span};
     def map_value_type_diags:
       $root.tasks[] as $t |
       $t.body.statements[]? |
@@ -2690,7 +2715,7 @@ check_json() {
       $entries[] as $entry |
       ($entry.value | literal_type) as $actual |
       select($actual != "" and $actual != $expected) |
-      {id:$map_value_type_mismatch, severity:"error", message:($map_value_type_mismatch_prefix + $actual + $map_value_type_mismatch_suffix), node:$stmt.expr.id, span:$stmt.expr.span};
+      {id:$map_value_type_mismatch, severity:"error", message:render_arg($map_value_type_mismatch_message_template; "actual_type"; $actual), node:$stmt.expr.id, span:$stmt.expr.span};
     def duplicate_effect_diags:
       ($root.effects | group_by(.module + "." + .name)[] | select(length > 1) | .[1:])[] as $effect |
       {id:$duplicate_effect, severity:"error", message:render_arg($duplicate_effect_message_template; "effect_name"; $effect.name), node:$effect.id, span:$effect.span};

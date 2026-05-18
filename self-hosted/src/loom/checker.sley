@@ -367,12 +367,24 @@ export task list_element_type_mismatch_message_suffix -> Text {
   return "`"
 }
 
+export task list_element_type_mismatch_message -> Text {
+  take actual_type: Text
+
+  return "list element type mismatch `" + actual_type + "`"
+}
+
 export task index_not_int_message_prefix -> Text {
   return "list index must be Int, got `"
 }
 
 export task index_not_int_message_suffix -> Text {
   return "`"
+}
+
+export task index_not_int_message -> Text {
+  take actual_type: Text
+
+  return "list index must be Int, got `" + actual_type + "`"
 }
 
 export task index_key_type_mismatch_message_prefix -> Text {
@@ -383,6 +395,12 @@ export task index_key_type_mismatch_message_suffix -> Text {
   return "`"
 }
 
+export task index_key_type_mismatch_message -> Text {
+  take actual_type: Text
+
+  return "map index key must be Text, got `" + actual_type + "`"
+}
+
 export task map_key_type_mismatch_message_prefix -> Text {
   return "map key type mismatch `"
 }
@@ -391,12 +409,24 @@ export task map_key_type_mismatch_message_suffix -> Text {
   return "`"
 }
 
+export task map_key_type_mismatch_message -> Text {
+  take actual_type: Text
+
+  return "map key type mismatch `" + actual_type + "`"
+}
+
 export task map_value_type_mismatch_message_prefix -> Text {
   return "map value type mismatch `"
 }
 
 export task map_value_type_mismatch_message_suffix -> Text {
   return "`"
+}
+
+export task map_value_type_mismatch_message -> Text {
+  take actual_type: Text
+
+  return "map value type mismatch `" + actual_type + "`"
 }
 
 export task duplicate_effect_message_prefix -> Text {
