@@ -493,12 +493,24 @@ export task gate_take_type_mismatch_message_suffix -> Text {
   return "`"
 }
 
+export task gate_take_type_mismatch_message -> Text {
+  take actual_type: Text
+
+  return "gate take must use Gate<Effect>, got `" + actual_type + "`"
+}
+
 export task gate_effect_undeclared_message_prefix -> Text {
   return "gate effect undeclared `"
 }
 
 export task gate_effect_undeclared_message_suffix -> Text {
   return "`"
+}
+
+export task gate_effect_undeclared_message -> Text {
+  take effect_name: Text
+
+  return "gate effect undeclared `" + effect_name + "`"
 }
 
 export task effect_unauthorized_message_prefix -> Text {
@@ -509,6 +521,12 @@ export task effect_unauthorized_message_suffix -> Text {
   return "`"
 }
 
+export task effect_unauthorized_message -> Text {
+  take effect_name: Text
+
+  return "effect unauthorized `" + effect_name + "`"
+}
+
 export task missing_return_message_prefix -> Text {
   return "missing return in task `"
 }
@@ -517,12 +535,24 @@ export task missing_return_message_suffix -> Text {
   return "`"
 }
 
+export task missing_return_message -> Text {
+  take task_name: Text
+
+  return "missing return in task `" + task_name + "`"
+}
+
 export task question_requires_result_message_prefix -> Text {
   return "question operator requires Result return in task `"
 }
 
 export task question_requires_result_message_suffix -> Text {
   return "`"
+}
+
+export task question_requires_result_message -> Text {
+  take task_name: Text
+
+  return "question operator requires Result return in task `" + task_name + "`"
 }
 
 export task identifier_resolution_inputs -> List<Text> {

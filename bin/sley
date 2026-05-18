@@ -1301,14 +1301,19 @@ UNKNOWN_EFFECT_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_R
 UNKNOWN_EFFECT_MESSAGE_TEMPLATE="$(eval_checker_message_template unknown_effect_message effect_name || printf 'unknown effect `::effect_name::`\n')"
 GATE_TAKE_TYPE_MISMATCH_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" gate_take_type_mismatch_message_prefix)"
 GATE_TAKE_TYPE_MISMATCH_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" gate_take_type_mismatch_message_suffix)"
+GATE_TAKE_TYPE_MISMATCH_MESSAGE_TEMPLATE="$(eval_checker_message_template gate_take_type_mismatch_message actual_type || printf 'gate take must use Gate<Effect>, got `::actual_type::`\n')"
 GATE_EFFECT_UNDECLARED_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" gate_effect_undeclared_message_prefix)"
 GATE_EFFECT_UNDECLARED_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" gate_effect_undeclared_message_suffix)"
+GATE_EFFECT_UNDECLARED_MESSAGE_TEMPLATE="$(eval_checker_message_template gate_effect_undeclared_message effect_name || printf 'gate effect undeclared `::effect_name::`\n')"
 EFFECT_UNAUTHORIZED_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" effect_unauthorized_message_prefix)"
 EFFECT_UNAUTHORIZED_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" effect_unauthorized_message_suffix)"
+EFFECT_UNAUTHORIZED_MESSAGE_TEMPLATE="$(eval_checker_message_template effect_unauthorized_message effect_name || printf 'effect unauthorized `::effect_name::`\n')"
 MISSING_RETURN_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" missing_return_message_prefix)"
 MISSING_RETURN_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" missing_return_message_suffix)"
+MISSING_RETURN_MESSAGE_TEMPLATE="$(eval_checker_message_template missing_return_message task_name || printf 'missing return in task `::task_name::`\n')"
 QUESTION_REQUIRES_RESULT_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" question_requires_result_message_prefix)"
 QUESTION_REQUIRES_RESULT_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" question_requires_result_message_suffix)"
+QUESTION_REQUIRES_RESULT_MESSAGE_TEMPLATE="$(eval_checker_message_template question_requires_result_message task_name || printf 'question operator requires Result return in task `::task_name::`\n')"
 CHECKER_IDENTIFIER_INPUTS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" identifier_resolution_inputs)"
 CHECKER_BUILTIN_EFFECTS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" builtin_effects)"
 CHECK_OK_STATUS="${CHECK_OK_STATUS:-ok}"
@@ -1440,14 +1445,29 @@ if [[ -z "$UNKNOWN_EFFECT_MESSAGE_TEMPLATE" ]]; then
 fi
 GATE_TAKE_TYPE_MISMATCH_MESSAGE_PREFIX="${GATE_TAKE_TYPE_MISMATCH_MESSAGE_PREFIX:-gate take must use Gate<Effect>, got \`}"
 GATE_TAKE_TYPE_MISMATCH_MESSAGE_SUFFIX="${GATE_TAKE_TYPE_MISMATCH_MESSAGE_SUFFIX:-\`}"
+if [[ -z "$GATE_TAKE_TYPE_MISMATCH_MESSAGE_TEMPLATE" ]]; then
+  GATE_TAKE_TYPE_MISMATCH_MESSAGE_TEMPLATE='gate take must use Gate<Effect>, got `::actual_type::`'
+fi
 GATE_EFFECT_UNDECLARED_MESSAGE_PREFIX="${GATE_EFFECT_UNDECLARED_MESSAGE_PREFIX:-gate effect undeclared \`}"
 GATE_EFFECT_UNDECLARED_MESSAGE_SUFFIX="${GATE_EFFECT_UNDECLARED_MESSAGE_SUFFIX:-\`}"
+if [[ -z "$GATE_EFFECT_UNDECLARED_MESSAGE_TEMPLATE" ]]; then
+  GATE_EFFECT_UNDECLARED_MESSAGE_TEMPLATE='gate effect undeclared `::effect_name::`'
+fi
 EFFECT_UNAUTHORIZED_MESSAGE_PREFIX="${EFFECT_UNAUTHORIZED_MESSAGE_PREFIX:-effect unauthorized \`}"
 EFFECT_UNAUTHORIZED_MESSAGE_SUFFIX="${EFFECT_UNAUTHORIZED_MESSAGE_SUFFIX:-\`}"
+if [[ -z "$EFFECT_UNAUTHORIZED_MESSAGE_TEMPLATE" ]]; then
+  EFFECT_UNAUTHORIZED_MESSAGE_TEMPLATE='effect unauthorized `::effect_name::`'
+fi
 MISSING_RETURN_MESSAGE_PREFIX="${MISSING_RETURN_MESSAGE_PREFIX:-missing return in task \`}"
 MISSING_RETURN_MESSAGE_SUFFIX="${MISSING_RETURN_MESSAGE_SUFFIX:-\`}"
+if [[ -z "$MISSING_RETURN_MESSAGE_TEMPLATE" ]]; then
+  MISSING_RETURN_MESSAGE_TEMPLATE='missing return in task `::task_name::`'
+fi
 QUESTION_REQUIRES_RESULT_MESSAGE_PREFIX="${QUESTION_REQUIRES_RESULT_MESSAGE_PREFIX:-question operator requires Result return in task \`}"
 QUESTION_REQUIRES_RESULT_MESSAGE_SUFFIX="${QUESTION_REQUIRES_RESULT_MESSAGE_SUFFIX:-\`}"
+if [[ -z "$QUESTION_REQUIRES_RESULT_MESSAGE_TEMPLATE" ]]; then
+  QUESTION_REQUIRES_RESULT_MESSAGE_TEMPLATE='question operator requires Result return in task `::task_name::`'
+fi
 if [[ "$CHECKER_IDENTIFIER_INPUTS_JSON" == "[]" ]]; then
   CHECKER_IDENTIFIER_INPUTS_JSON='["task_names","take_names","binding_names"]'
 fi
@@ -2216,14 +2236,19 @@ check_json() {
     --arg unknown_effect_message_template "$UNKNOWN_EFFECT_MESSAGE_TEMPLATE" \
     --arg gate_take_type_prefix "$GATE_TAKE_TYPE_MISMATCH_MESSAGE_PREFIX" \
     --arg gate_take_type_suffix "$GATE_TAKE_TYPE_MISMATCH_MESSAGE_SUFFIX" \
+    --arg gate_take_type_message_template "$GATE_TAKE_TYPE_MISMATCH_MESSAGE_TEMPLATE" \
     --arg gate_effect_prefix "$GATE_EFFECT_UNDECLARED_MESSAGE_PREFIX" \
     --arg gate_effect_suffix "$GATE_EFFECT_UNDECLARED_MESSAGE_SUFFIX" \
+    --arg gate_effect_message_template "$GATE_EFFECT_UNDECLARED_MESSAGE_TEMPLATE" \
     --arg effect_unauthorized_prefix "$EFFECT_UNAUTHORIZED_MESSAGE_PREFIX" \
     --arg effect_unauthorized_suffix "$EFFECT_UNAUTHORIZED_MESSAGE_SUFFIX" \
+    --arg effect_unauthorized_message_template "$EFFECT_UNAUTHORIZED_MESSAGE_TEMPLATE" \
     --arg missing_return_prefix "$MISSING_RETURN_MESSAGE_PREFIX" \
     --arg missing_return_suffix "$MISSING_RETURN_MESSAGE_SUFFIX" \
+    --arg missing_return_message_template "$MISSING_RETURN_MESSAGE_TEMPLATE" \
     --arg question_requires_result_prefix "$QUESTION_REQUIRES_RESULT_MESSAGE_PREFIX" \
     --arg question_requires_result_suffix "$QUESTION_REQUIRES_RESULT_MESSAGE_SUFFIX" \
+    --arg question_requires_result_message_template "$QUESTION_REQUIRES_RESULT_MESSAGE_TEMPLATE" \
     --arg source_text "$source_text" \
     --argjson builtin_types "$builtin_types" \
     --argjson builtin_effects "$CHECKER_BUILTIN_EFFECTS_JSON" \
@@ -2498,7 +2523,7 @@ check_json() {
       select($take.binding_kind == "Gate") |
       ($take.type.name // "Unit") as $name |
       select(($name | gate_effect_name) == null) |
-      {id:$gate_take_type, severity:"error", message:($gate_take_type_prefix + $name + $gate_take_type_suffix), node:$take.id, span:$take.span};
+      {id:$gate_take_type, severity:"error", message:render_arg($gate_take_type_message_template; "actual_type"; $name), node:$take.id, span:$take.span};
     def gate_effect_diags:
       $root.tasks[] as $t |
       $t.takes[]? as $take |
@@ -2506,7 +2531,7 @@ check_json() {
       (($take.type.name // "Unit") | gate_effect_name) as $effect |
       select($effect != null) |
       select(($t.effects | index($effect)) == null) |
-      {id:$gate_effect, severity:"error", message:($gate_effect_prefix + $effect + $gate_effect_suffix), node:$take.id, span:$take.span};
+      {id:$gate_effect, severity:"error", message:render_arg($gate_effect_message_template; "effect_name"; $effect), node:$take.id, span:$take.span};
     def unknown_task_diags:
       $root.tasks[] as $t |
       $t.body.statements[]?.expr? |
@@ -2731,14 +2756,14 @@ check_json() {
       select($return_base != "Result") |
       $t.body.statements[]?.expr? |
       select(.fallible? == true) |
-      {id:$question_requires_result, severity:"error", message:($question_requires_result_prefix + $t.module + "." + $t.name + $question_requires_result_suffix), node:.id, span:.span};
+      {id:$question_requires_result, severity:"error", message:render_arg($question_requires_result_message_template; "task_name"; ($t.module + "." + $t.name)), node:.id, span:.span};
     def direct_effect_diags:
       $root.tasks[] as $t |
       $t.body.statements[]?.expr? |
       . as $expr |
       ($expr | required_host_effects)[] as $effect |
       select(effect_authorized($t.effects; $effect) | not) |
-      {id:$effect_unauthorized, severity:"error", message:($effect_unauthorized_prefix + $effect + $effect_unauthorized_suffix), node:$expr.id, span:$expr.span};
+      {id:$effect_unauthorized, severity:"error", message:render_arg($effect_unauthorized_message_template; "effect_name"; $effect), node:$expr.id, span:$expr.span};
     def transitive_effect_diags:
       $root.tasks[] as $t |
       $t.body.statements[]?.expr? |
@@ -2749,13 +2774,13 @@ check_json() {
       select($target != null) |
       $target.effects[]? as $effect |
       select(effect_authorized($t.effects; $effect) | not) |
-      {id:$effect_unauthorized, severity:"error", message:($effect_unauthorized_prefix + $effect + $effect_unauthorized_suffix), node:$expr.id, span:$expr.span};
+      {id:$effect_unauthorized, severity:"error", message:render_arg($effect_unauthorized_message_template; "effect_name"; $effect), node:$expr.id, span:$expr.span};
     def missing_return_diags:
       $root.tasks[] as $t |
       ($t.return_type.name // "Unit") as $name |
       select($name != "Unit") |
       select(([$t.body.statements[]? | select(.kind == $return_statement_kind)] | length) == 0) |
-      {id:$missing_return, severity:"error", message:($missing_return_prefix + $t.module + "." + $t.name + $missing_return_suffix), node:$t.id, span:$t.span,
+      {id:$missing_return, severity:"error", message:render_arg($missing_return_message_template; "task_name"; ($t.module + "." + $t.name)), node:$t.id, span:$t.span,
         repair_hints:[
           {kind:"insert_return", target:$t.id, replacement:starter_return($name)},
           {kind:"replace_task_body", target:$t.id, replacement:starter_return($name)}
