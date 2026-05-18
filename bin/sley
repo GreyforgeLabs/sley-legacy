@@ -1697,6 +1697,107 @@ eval_source_if_int_expression_main_return() {
   printf '{"kind":"%s","value":"%s"}\n' "$RUNTIME_INT_VALUE_KIND" "$runtime_value"
 }
 
+eval_state_set_int_expr() {
+  local expr="$1" env_name="$2" left_token op right_token left right task_name
+  local -n env_ref="$env_name"
+  expr="$(printf '%s\n' "$expr" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+  if [[ "$expr" =~ ^-?[0-9]+$ ]]; then
+    printf '%s\n' "$expr"
+    return 0
+  fi
+  if [[ "$expr" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+    [[ -n "${env_ref[$expr]+set}" ]] || return 1
+    printf '%s\n' "${env_ref[$expr]}"
+    return 0
+  fi
+  if [[ "$expr" =~ ^([A-Za-z_][A-Za-z0-9_]*|-?[0-9]+)[[:space:]]*([+*])[[:space:]]*([A-Za-z_][A-Za-z0-9_]*|-?[0-9]+)$ ]]; then
+    left_token="${BASH_REMATCH[1]}"
+    op="${BASH_REMATCH[2]}"
+    right_token="${BASH_REMATCH[3]}"
+    if [[ "$left_token" =~ ^-?[0-9]+$ ]]; then
+      left="$left_token"
+    else
+      [[ -n "${env_ref[$left_token]+set}" ]] || return 1
+      left="${env_ref[$left_token]}"
+    fi
+    if [[ "$right_token" =~ ^-?[0-9]+$ ]]; then
+      right="$right_token"
+    else
+      [[ -n "${env_ref[$right_token]+set}" ]] || return 1
+      right="${env_ref[$right_token]}"
+    fi
+    case "$op" in
+      "+") task_name="int_add_value" ;;
+      "*") task_name="int_multiply_value" ;;
+      *) return 1 ;;
+    esac
+    eval_runtime_int_binary_value_task "$task_name" "$op" "$left" "$right"
+    return
+  fi
+  return 1
+}
+
+sley_count_char_text() {
+  local text="$1" char="$2" without
+  without="${text//"$char"/}"
+  printf '%s\n' "$(( ${#text} - ${#without} ))"
+}
+
+eval_source_state_set_int_main_return() {
+  local target="$1" file raw line depth=0 in_main=false saw_set=false rest prefix name expr value
+  declare -A state_env=()
+  file="$(collect_files "$target" | head -n 1)"
+  [[ -n "$file" ]] || return 1
+  while IFS= read -r raw; do
+    line="$(printf '%s\n' "$raw" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+    if ! "$in_main"; then
+      if [[ "$line" =~ ^(export[[:space:]]+)?task[[:space:]]+main[[:space:]] ]]; then
+        in_main=true
+        depth=$(( $(sley_count_char_text "$raw" "{") - $(sley_count_char_text "$raw" "}") ))
+      fi
+      continue
+    fi
+    if (( depth == 1 )); then
+      if [[ "$line" =~ ^(bind|state)[[:space:]]+[A-Za-z_][A-Za-z0-9_]*[[:space:]]*= ]]; then
+        prefix="${BASH_REMATCH[1]}"
+        rest="$line"
+        rest="${rest#"$prefix"}"
+        rest="$(printf '%s\n' "$rest" | sed 's/^[[:space:]]*//')"
+        name="${rest%%=*}"
+        name="$(printf '%s\n' "$name" | sed 's/[[:space:]]*$//')"
+        expr="${rest#*=}"
+        if value="$(eval_state_set_int_expr "$expr" state_env 2>/dev/null)"; then
+          state_env["$name"]="$value"
+        fi
+      elif [[ "$line" =~ ^set[[:space:]]+[A-Za-z_][A-Za-z0-9_]*[[:space:]]*= ]]; then
+        rest="${line#set}"
+        rest="$(printf '%s\n' "$rest" | sed 's/^[[:space:]]*//')"
+        name="${rest%%=*}"
+        name="$(printf '%s\n' "$name" | sed 's/[[:space:]]*$//')"
+        expr="${rest#*=}"
+        value="$(eval_state_set_int_expr "$expr" state_env)" || return 1
+        state_env["$name"]="$value"
+        saw_set=true
+      elif [[ "$line" =~ ^return[[:space:]]+ ]]; then
+        "$saw_set" || return 1
+        expr="${line#return}"
+        value="$(eval_state_set_int_expr "$expr" state_env)" || return 1
+        printf '{"kind":"%s","value":"%s"}\n' "$RUNTIME_INT_VALUE_KIND" "$value"
+        return 0
+      elif [[ -z "$line" || "$line" == "}" ]]; then
+        :
+      elif [[ "$line" =~ ^(if|while|for|forge)[[:space:]] ]]; then
+        return 1
+      fi
+    fi
+    depth=$(( depth + $(sley_count_char_text "$raw" "{") - $(sley_count_char_text "$raw" "}") ))
+    if (( depth <= 0 )); then
+      break
+    fi
+  done < "$file"
+  return 1
+}
+
 eval_source_if_int_main_return() {
   local target="$1" file
   file="$(collect_files "$target" | head -n 1)"
@@ -5444,6 +5545,9 @@ run_json() {
   local value_kind="$RUNTIME_RAW_VALUE_KIND" value="$RUNTIME_DEFAULT_RAW_VALUE"
   if json_list_contains_string "$RUNTIME_SELF_HOSTED_TARGETS_JSON" "$target"; then
     value_kind="$RUNTIME_INT_VALUE_KIND"; value="$(eval_bootstrap_smoke_task || printf '%s\n' "$DEFAULT_RULES_JSON" | jq 'length')"
+  elif simple_runtime="$(eval_source_state_set_int_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
+    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
+    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
   elif simple_runtime="$(eval_source_if_int_expression_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
     value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
     value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"

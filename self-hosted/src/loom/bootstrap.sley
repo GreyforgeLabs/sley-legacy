@@ -104,6 +104,7 @@ export task owned_bootstrap_values -> List<Text> {
     "bool_if_expression_runtime_execution",
     "int_if_runtime_task_execution",
     "int_if_expression_runtime_execution",
+    "state_set_runtime_execution",
     "if_expression_runtime_execution",
     "if_statement_runtime_execution",
     "seeded_agent_deploy_task_execution",
