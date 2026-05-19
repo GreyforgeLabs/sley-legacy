@@ -2,8 +2,8 @@
 
 Date: 2026-05-19
 Branch: public
-Latest code checkpoint: 800b952
-Latest pause documentation checkpoint before this note: ad34013
+Latest code checkpoint: 44e7bbd
+Latest pause documentation checkpoint before this note: bead55f
 Current pause document status: committed on `public`; use `git log` for exact
 branch head
 Remote status: verify current `origin/public` head with
@@ -299,8 +299,12 @@ The current local checkpoint advances the public branch to:
   `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
   `bootstrap_owned_by_sley=271`; remaining blockers are still parser, checker,
   and runtime semantics from Sley source
+- self-hosting status after the runtime status-name source slice:
+  `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=272`; remaining blockers are still parser, checker,
+  and runtime semantics from Sley source
 - latest verification refresh on 2026-05-19: `make v1` passed after the
-  runtime self-hosted target alias source slice
+  runtime status-name source slice
 
 The tracked code checkpoint is:
 
@@ -373,6 +377,7 @@ The tracked code checkpoint is:
 - c32ea0b fix: source runtime database table from sley
 - 21a3a9d fix: source runtime value kinds from sley
 - 800b952 fix: source self-hosted runtime targets from sley
+- 44e7bbd fix: source runtime status names from sley
 
 The tracked pause documentation checkpoints are:
 
@@ -439,6 +444,7 @@ The tracked pause documentation checkpoints are:
 - a4595a9 docs: record runtime diagnostic slice
 - d270b71 docs: record runtime database table slice
 - ad34013 docs: record runtime value kind slice
+- bead55f docs: record runtime self-hosted target slice
 
 Recent self-hosting slices added:
 
@@ -661,6 +667,8 @@ Recent self-hosting slices added:
 - Runtime self-hosted dispatch target aliases now come from `loom.runtime`
   instead of a shell fallback list, while preserving the `self-hosted`,
   `self-hosted/`, and `self-hosted/sley.toml` entry targets
+- Runtime report status names now come from `loom.runtime` tasks instead of
+  shell fallback literals, while preserving the `passed` run-report status
 
 ## Next Frontier
 
@@ -1706,10 +1714,26 @@ The latest continuation audit reconfirmed:
   check-fixtures fixtures/contracts --schemas docs/schemas --json`, external
   public-action packet verifier, `git diff --check`, and final `make v1` all
   passed
+- focused runtime status-name source probes:
+  `bin/sley self-hosting-status --json` reported
+  `runtime_status_names_task_execution` and `bootstrap_owned_by_sley=272`;
+  `bin/sley run --json examples/hello.sley` preserved status `passed` and
+  `Text("hello sley")`; a focused grep found no shell fallback status-name
+  literals for `passed`, `failed`, or `skipped`
+- Sley self-hosting status after the runtime status-name source slice:
+  `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=272`; remaining blockers are still parser, checker,
+  and runtime semantics from Sley source
+- latest runtime status-name source verification:
+  `bash -n bin/sley`, `bash -n scripts/self-hosted-test.sh`, focused runtime
+  status-name probes, `scripts/self-hosted-test.sh`, `bin/sley-contract
+  check-fixtures fixtures/contracts --schemas docs/schemas --json`, external
+  public-action packet verifier, `git diff --check`, and final `make v1` all
+  passed
 
 ## Dirty State Notes
 
-Tracked code was committed at 800b952 before this pause document was updated.
+Tracked code was committed at 44e7bbd before this pause document was updated.
 Tracked pause documentation before this update was refreshed through 218d40c
 with parser lint surface evidence, through 26e7417 with the external comparison
 approval gate, fork audit, and helper evidence, and through aba1b03 with parser
@@ -1756,6 +1780,7 @@ bef77d3 with lint effect-alias checker source evidence, and through eb3b0f9
 with runtime host default-text source evidence, and through a4595a9 with
 runtime diagnostic source evidence, and through d270b71 with runtime database
 default-table source evidence, and through ad34013 with runtime value-kind
+source evidence, and through bead55f with runtime self-hosted target alias
 source evidence.
 
 Pre-existing untracked files were not touched and should remain outside future
