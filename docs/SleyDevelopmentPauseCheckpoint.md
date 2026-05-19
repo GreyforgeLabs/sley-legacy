@@ -2,8 +2,8 @@
 
 Date: 2026-05-19
 Branch: public
-Latest code checkpoint: d602889
-Latest pause documentation checkpoint before this note: 64026ae
+Latest code checkpoint: c2f4b01
+Latest pause documentation checkpoint before this note: ab2f7e8
 Current pause document status: committed on `public`; use `git log` for exact
 branch head
 Remote status: verify current `origin/public` head with
@@ -319,8 +319,12 @@ The current local checkpoint advances the public branch to:
   `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
   `bootstrap_owned_by_sley=276`; remaining blockers are still parser, checker,
   and runtime semantics from Sley source
+- self-hosting status after the checker built-in type fallback-removal slice:
+  `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=277`; remaining blockers are still parser, checker,
+  and runtime semantics from Sley source
 - latest verification refresh on 2026-05-19: `make v1` passed after the
-  lint empty-finding fallback-removal slice
+  checker built-in type fallback-removal slice
 
 The tracked code checkpoint is:
 
@@ -398,6 +402,7 @@ The tracked code checkpoint is:
 - b5c5b8a fix: source runtime default values from sley
 - 95bf81e fix: require sley runtime diagnostics
 - d602889 fix: require sley lint empty findings
+- c2f4b01 fix: require sley checker builtin types
 
 The tracked pause documentation checkpoints are:
 
@@ -469,6 +474,7 @@ The tracked pause documentation checkpoints are:
 - 1a60bd7 docs: record runtime target probe slice
 - 5abc5e8 docs: record runtime default value slice
 - 64026ae docs: record runtime diagnostic fallback slice
+- ab2f7e8 docs: record lint empty finding slice
 
 Recent self-hosting slices added:
 
@@ -707,6 +713,9 @@ Recent self-hosting slices added:
 - Lint empty-statement finding IDs, rule names, messages, hints, and status
   names now come from `loom.lint` without shell fallback literals, while
   preserving all empty `for`, `while`, `forge`, `if`, and `else` findings
+- Checker built-in type names and the built-in type list now come from
+  `loom.checker` without shell or JSON fallback literals, while preserving
+  accepted `Result` flow and rejected type mismatch diagnostics
 
 ## Next Frontier
 
@@ -1845,10 +1854,27 @@ The latest continuation audit reconfirmed:
   check-fixtures fixtures/contracts --schemas docs/schemas --json`, external
   public-action packet verifier, `git diff --check`, and final `make v1` all
   passed
+- focused checker built-in type fallback-removal probes:
+  `bin/sley self-hosting-status --json` reported
+  `checker_builtin_type_fallback_removal_task_execution` and
+  `bootstrap_owned_by_sley=277`; `examples/result_flow.sley` checked cleanly
+  with no diagnostics; `fixtures/corpus/rejected/type_mismatch.sley`
+  preserved `TYPE_MISMATCH` and `RETURN_TYPE_MISMATCH`; focused grep found no
+  checker built-in type shell fallbacks or built-in type JSON fallback
+- Sley self-hosting status after the checker built-in type fallback-removal
+  slice: `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=277`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
+- latest checker built-in type fallback-removal verification:
+  `bash -n bin/sley`, `bash -n scripts/self-hosted-test.sh`, focused checker
+  built-in type probes, `scripts/self-hosted-test.sh`, `bin/sley-contract
+  check-fixtures fixtures/contracts --schemas docs/schemas --json`, external
+  public-action packet verifier, `git diff --check`, and final `make v1` all
+  passed
 
 ## Dirty State Notes
 
-Tracked code was committed at d602889 before this pause document was updated.
+Tracked code was committed at c2f4b01 before this pause document was updated.
 Tracked pause documentation before this update was refreshed through 218d40c
 with parser lint surface evidence, through 26e7417 with the external comparison
 approval gate, fork audit, and helper evidence, and through aba1b03 with parser
@@ -1898,8 +1924,9 @@ default-table source evidence, and through ad34013 with runtime value-kind
 source evidence, and through bead55f with runtime self-hosted target alias
 source evidence, and through df39353 with runtime status-name source evidence,
 through 1a60bd7 with runtime target/probe source evidence, through 5abc5e8
-with runtime default-value source evidence, and through 64026ae with runtime
-diagnostic fallback-removal evidence.
+with runtime default-value source evidence, through 64026ae with runtime
+diagnostic fallback-removal evidence, and through ab2f7e8 with lint
+empty-finding fallback-removal evidence.
 
 Pre-existing untracked files were not touched and should remain outside future
 commits unless the operator explicitly asks to include them:
