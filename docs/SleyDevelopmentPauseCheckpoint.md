@@ -2,8 +2,8 @@
 
 Date: 2026-05-19
 Branch: public
-Latest code checkpoint: 44e7bbd
-Latest pause documentation checkpoint before this note: bead55f
+Latest code checkpoint: 2019668
+Latest pause documentation checkpoint before this note: df39353
 Current pause document status: committed on `public`; use `git log` for exact
 branch head
 Remote status: verify current `origin/public` head with
@@ -303,8 +303,12 @@ The current local checkpoint advances the public branch to:
   `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
   `bootstrap_owned_by_sley=272`; remaining blockers are still parser, checker,
   and runtime semantics from Sley source
+- self-hosting status after the runtime target/probe source slice:
+  `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=273`; remaining blockers are still parser, checker,
+  and runtime semantics from Sley source
 - latest verification refresh on 2026-05-19: `make v1` passed after the
-  runtime status-name source slice
+  runtime target/probe source slice
 
 The tracked code checkpoint is:
 
@@ -378,6 +382,7 @@ The tracked code checkpoint is:
 - 21a3a9d fix: source runtime value kinds from sley
 - 800b952 fix: source self-hosted runtime targets from sley
 - 44e7bbd fix: source runtime status names from sley
+- 2019668 fix: source runtime target probes from sley
 
 The tracked pause documentation checkpoints are:
 
@@ -445,6 +450,7 @@ The tracked pause documentation checkpoints are:
 - d270b71 docs: record runtime database table slice
 - ad34013 docs: record runtime value kind slice
 - bead55f docs: record runtime self-hosted target slice
+- df39353 docs: record runtime status name slice
 
 Recent self-hosting slices added:
 
@@ -669,6 +675,10 @@ Recent self-hosting slices added:
   `self-hosted/`, and `self-hosted/sley.toml` entry targets
 - Runtime report status names now come from `loom.runtime` tasks instead of
   shell fallback literals, while preserving the `passed` run-report status
+- Runtime target/probe sources for the agent deploy target suffix and
+  project-ready call probes now come from `loom.runtime` instead of shell
+  fallback literals/functions, while preserving project runtime `Int(42)` and
+  capability-seeded agent deploy output
 
 ## Next Frontier
 
@@ -1730,10 +1740,29 @@ The latest continuation audit reconfirmed:
   check-fixtures fixtures/contracts --schemas docs/schemas --json`, external
   public-action packet verifier, `git diff --check`, and final `make v1` all
   passed
+- focused runtime target/probe source probes:
+  `bin/sley self-hosting-status --json` reported
+  `runtime_target_probe_sources_task_execution` and
+  `bootstrap_owned_by_sley=273`; `bin/sley run --json examples/project`
+  preserved `Int(42)`; capability-seeded
+  `bin/sley run --json --cap SecretRead --cap Network --cap ModelCall --cap
+  Deploy examples/agent_deploy_pipeline.sley` preserved
+  `Ok<Text>("profile ready | plan approved | staged")`; a focused grep found
+  no shell fallback target/probe literals for the moved runtime values
+- Sley self-hosting status after the runtime target/probe source slice:
+  `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=273`; remaining blockers are still parser, checker,
+  and runtime semantics from Sley source
+- latest runtime target/probe source verification:
+  `bash -n bin/sley`, `bash -n scripts/self-hosted-test.sh`, focused runtime
+  target/probe source probes, `scripts/self-hosted-test.sh`,
+  `bin/sley-contract check-fixtures fixtures/contracts --schemas docs/schemas
+  --json`, external public-action packet verifier, `git diff --check`, and
+  final `make v1` all passed
 
 ## Dirty State Notes
 
-Tracked code was committed at 44e7bbd before this pause document was updated.
+Tracked code was committed at 2019668 before this pause document was updated.
 Tracked pause documentation before this update was refreshed through 218d40c
 with parser lint surface evidence, through 26e7417 with the external comparison
 approval gate, fork audit, and helper evidence, and through aba1b03 with parser
@@ -1781,7 +1810,7 @@ with runtime host default-text source evidence, and through a4595a9 with
 runtime diagnostic source evidence, and through d270b71 with runtime database
 default-table source evidence, and through ad34013 with runtime value-kind
 source evidence, and through bead55f with runtime self-hosted target alias
-source evidence.
+source evidence, and through df39353 with runtime status-name source evidence.
 
 Pre-existing untracked files were not touched and should remain outside future
 commits unless the operator explicitly asks to include them:
