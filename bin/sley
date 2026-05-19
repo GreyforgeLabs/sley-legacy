@@ -4918,7 +4918,7 @@ Usage:
 Commands:
   parse, ast, check, doctor, graph, query, lint, plan, verify, run
   deploy, trace, seal, zjx, graft, fix, format, new, self-hosting-status
-  claim-verify
+  claim-verify, arena
 
 Companion tools:
   sley-ci, sley-conformance, sley-contract, sley-docgen, sley-lsp,
@@ -14243,6 +14243,15 @@ command_zjx() {
   zjx_envelope_json "$target" "$trace_path" "$slice"
 }
 
+command_arena() {
+  local arena_bin="$ROOT_DIR/bin/sley-arena"
+  if [[ ! -x "$arena_bin" ]]; then
+    echo "sley arena requires executable bin/sley-arena" >&2
+    return 127
+  fi
+  exec "$arena_bin" "$@"
+}
+
 main_sley() {
   need_jq
   local cmd="${1:-}"
@@ -14263,6 +14272,7 @@ main_sley() {
     trace) shift; command_trace "$@" ;;
     seal) shift; command_seal "$@" ;;
     zjx) shift; command_zjx "$@" ;;
+    arena) shift; command_arena "$@" ;;
     graft) shift; command_graft "$@" ;;
     fix) shift; command_graft "$@" ;;
     self-hosting|self-hosting-status) shift; self_hosting_status_json "$@" ;;

@@ -149,6 +149,21 @@ sley run --json examples/hello.sley
 sley verify --json examples/project
 ```
 
+## Sley Arena
+
+`Sley Arena` is a playable local demo: 50 agents have 3 ticks to split 10,000
+Compute Ore before the room explodes. It runs without model calls, provider
+spend, or network access while Sley's stricter self-hosting work continues.
+
+```bash
+sley arena
+sley arena --json --fast --no-color
+sley-arena --mode standoff
+```
+
+See [`docs/SleyArena.md`](docs/SleyArena.md) and
+[`examples/sley_arena/sley_dream.sley`](examples/sley_arena/sley_dream.sley).
+
 ## Command Surface
 
 Stage-1 executable commands:
@@ -163,6 +178,7 @@ Stage-1 executable commands:
 - `sley verify --json <file-or-project>`
 - `sley self-hosting-status --json`
 - `sley claim-verify --json docs/SleyClaimManifest.json`
+- `sley arena`
 - `sley graft --json --dry-run <file> <graft.json>`
 - `sley-contract inventory --json`
 - `sley-contract check-fixtures fixtures/contracts --schemas docs/schemas --json`
