@@ -4876,6 +4876,12 @@ parser_task_id_value() {
   sley_template_replace "$PARSER_TASK_ID_TEMPLATE" module "$module_name" task "$task_name"
 }
 
+parser_block_task_surface_value() {
+  local module_name="$1" task_name="$2" task_id
+  task_id="$(parser_task_id_value "$module_name" "$task_name")"
+  sley_template_replace "$PARSER_BLOCK_TASK_SURFACE_ID_TEMPLATE" task_id "$task_id"
+}
+
 parser_task_statement_surface_value() {
   local module_name="$1" task_name="$2" index="$3" task_id
   task_id="$(parser_task_id_value "$module_name" "$task_name")"
@@ -9350,10 +9356,12 @@ ci_fixture_report() {
 }
 
 ci_verify_runtime_blocked_report() {
-  local target="$1"
+  local target="$1" blocked_node
+  blocked_node="$(parser_task_id_value app.agent_deploy_pipeline main)"
   jq -n \
     --arg schema "$SCHEMA_CI_REPORT" \
     --arg target "$target" \
+    --arg node "$blocked_node" \
     --argjson fields "$CI_REPORT_FIELDS_JSON" '{
       ($fields[0] // "schema"):$schema,
       ($fields[1] // "status"):"failed",
@@ -9374,7 +9382,7 @@ ci_verify_runtime_blocked_report() {
               id:"RUNTIME_CAPABILITY_REQUIRED",
               severity:"error",
               message:"`main` requires runtime capabilities: SecretRead, Network, ModelCall, Deploy",
-              node:"task:app.agent_deploy_pipeline.main"
+              node:$node
             }
           ],
           next_actions:[
@@ -11158,7 +11166,7 @@ command_sandbox() {
 }
 
 agent_bench_json() {
-  local case_name="unused-private-task-repair" sley_bin="${SLEY_BIN:-bin/sley}" retained=true
+  local case_name="unused-private-task-repair" sley_bin="${SLEY_BIN:-bin/sley}" retained=true selected_repair_surface
   local report
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
@@ -11170,6 +11178,7 @@ agent_bench_json() {
       *) shift ;;
     esac
   done
+  selected_repair_surface="$(parser_task_id_value app.bench orphan)"
 
   if [[ "$case_name" != "unused-private-task-repair" ]]; then
     report="$(jq -n \
@@ -11195,6 +11204,7 @@ agent_bench_json() {
     --arg sley_bin "$sley_bin" \
     --arg case_name "$case_name" \
     --arg workdir "bench/$case_name" \
+    --arg repair_surface "$selected_repair_surface" \
     --argjson retained "$retained" \
     --argjson fields "$AGENT_BENCH_REPORT_FIELDS_JSON" '
     ($workdir + "/main.sley") as $source_path |
@@ -11217,7 +11227,7 @@ agent_bench_json() {
           trace_receipt_count:1,
           selected_repair:{
             kind:"delete_unused_private_task",
-            surface:"task:app.bench.orphan"
+            surface:$repair_surface
           },
           evidence:{
             trace_digest:"sha256:trace",
@@ -11551,6 +11561,7 @@ command_graph() {
 
 command_plan() {
   local target query lint ast emit_graft="" template_surface="" arg
+  local agent_main_task_fallback main_task_fallback collections_sum_block_surface
   while [[ "$#" -gt 0 ]]; do
     arg="$1"
     case "$arg" in
@@ -11561,9 +11572,12 @@ command_plan() {
       *) target="$1"; shift ;;
     esac
   done
+  agent_main_task_fallback="$(parser_task_id_value agent.main main)"
+  main_task_fallback="$(parser_task_id_value main main)"
+  collections_sum_block_surface="$(parser_block_task_surface_value app.collections sum)"
   if runtime_agent_pipeline_probe_matches "$target"; then
     query="$(query_json "$target" all)"
-    jq -n --arg target "$target" --argjson query "$query" '
+    jq -n --arg target "$target" --arg primary_task_fallback "$agent_main_task_fallback" --argjson query "$query" '
       def seeded_verify_command($bin):
         [$bin,"verify","--json","--deny-warnings","SecretRead","--cap","Network","--cap","ModelCall","--cap","Deploy","--secret","api_key","redacted","--http-text","https://example.test/profile","profile ready","--model-output","deploy-plan","plan approved","--deploy-result","staging","staged",$target];
       {
@@ -11583,15 +11597,15 @@ command_plan() {
         graft_templates:[
           {
             kind:"replace_task_body",
-            surface:($query.tasks[0].id // "task:agent.main.main"),
+            surface:($query.tasks[0].id // $primary_task_fallback),
             reason:"replace the primary agent task body with a checked starter body",
             editable_json_pointers:["/payload/statements"],
-            operation:{op:"ReplaceTaskBody", target:($query.tasks[0].id // "task:agent.main.main"), payload:{statements:["return Err(\"\")"]}}
+            operation:{op:"ReplaceTaskBody", target:($query.tasks[0].id // $primary_task_fallback), payload:{statements:["return Err(\"\")"]}}
           }
         ],
         transaction_templates:[],
         next_actions:[
-          {kind:"inspect_primary_surface", reason:"graph slice gives bounded AST and call context for the highest-ranked edit surface", command:["sley","graph","--json","--slice",($query.tasks[0].id // "task:agent.main.main"),$target]},
+          {kind:"inspect_primary_surface", reason:"graph slice gives bounded AST and call context for the highest-ranked edit surface", command:["sley","graph","--json","--slice",($query.tasks[0].id // $primary_task_fallback),$target]},
           {kind:"inspect_calls", reason:"strict call rows show caller/callee edges before rename, arity, or authority edits", command:["sley","query","--json","--kind","calls",$target]},
           {kind:"post_edit_doctor", reason:"preserve strict diagnostics and lint readiness after structural edits", command:["sley","doctor","--json","--deny-warnings",$target]},
           {kind:"post_edit_ci_doctor", reason:"run the same strict post-edit readiness check through the CI wrapper", command:["sley-ci","doctor","--json","--deny-warnings",$target]},
@@ -11665,7 +11679,7 @@ command_plan() {
     return
   fi
   lint="$(lint_json "$target")"
-  jq -n --arg target "$target" --arg template_surface "$template_surface" --arg take_surface_id_template "$PARSER_TAKE_SURFACE_ID_TEMPLATE" --arg module_surface_id_template "$PARSER_MODULE_SURFACE_ID_TEMPLATE" --arg module_task_list_surface_id_template "$PARSER_MODULE_TASK_LIST_SURFACE_ID_TEMPLATE" --arg module_import_list_surface_id_template "$PARSER_MODULE_IMPORT_LIST_SURFACE_ID_TEMPLATE" --arg module_type_list_surface_id_template "$PARSER_MODULE_TYPE_LIST_SURFACE_ID_TEMPLATE" --arg module_effect_list_surface_id_template "$PARSER_MODULE_EFFECT_LIST_SURFACE_ID_TEMPLATE" --arg block_task_surface_id_template "$PARSER_BLOCK_TASK_SURFACE_ID_TEMPLATE" --arg task_statement_surface_id_template "$PARSER_TASK_STATEMENT_SURFACE_ID_TEMPLATE" --arg branch_statement_surface_id_template "$PARSER_BRANCH_STATEMENT_SURFACE_ID_TEMPLATE" --arg expression_id_template "$PARSER_EXPRESSION_ID_TEMPLATE" --arg call_target_task_id_template "$PARSER_CALL_TARGET_TASK_ID_TEMPLATE" --argjson query "$query" --argjson lint "$lint" --argjson ast "$ast" '
+  jq -n --arg target "$target" --arg template_surface "$template_surface" --arg primary_task_fallback "$main_task_fallback" --arg collections_sum_block_surface "$collections_sum_block_surface" --arg take_surface_id_template "$PARSER_TAKE_SURFACE_ID_TEMPLATE" --arg module_surface_id_template "$PARSER_MODULE_SURFACE_ID_TEMPLATE" --arg module_task_list_surface_id_template "$PARSER_MODULE_TASK_LIST_SURFACE_ID_TEMPLATE" --arg module_import_list_surface_id_template "$PARSER_MODULE_IMPORT_LIST_SURFACE_ID_TEMPLATE" --arg module_type_list_surface_id_template "$PARSER_MODULE_TYPE_LIST_SURFACE_ID_TEMPLATE" --arg module_effect_list_surface_id_template "$PARSER_MODULE_EFFECT_LIST_SURFACE_ID_TEMPLATE" --arg block_task_surface_id_template "$PARSER_BLOCK_TASK_SURFACE_ID_TEMPLATE" --arg task_statement_surface_id_template "$PARSER_TASK_STATEMENT_SURFACE_ID_TEMPLATE" --arg branch_statement_surface_id_template "$PARSER_BRANCH_STATEMENT_SURFACE_ID_TEMPLATE" --arg expression_id_template "$PARSER_EXPRESSION_ID_TEMPLATE" --arg call_target_task_id_template "$PARSER_CALL_TARGET_TASK_ID_TEMPLATE" --argjson query "$query" --argjson lint "$lint" --argjson ast "$ast" '
     def replace_all($needle; $replacement): split($needle) | join($replacement);
     def take_surface_id($task_id; $index; $take_name):
       $take_surface_id_template
@@ -11905,7 +11919,7 @@ command_plan() {
     def block_surface_templates($surface):
       ($surface | sub("^block:"; "")) as $task_id |
       (task_ast($task_id)) as $task |
-      (if $surface == "block:task:app.collections.sum" then 4 else (($task.body.statements // []) | length) end) as $position |
+      (if $surface == $collections_sum_block_surface then 4 else (($task.body.statements // []) | length) end) as $position |
       [{kind:"insert_statement", surface:$surface, operation:{op:"InsertStatement", target:$surface, payload:{source:"forge { }", position:$position}}, editable_json_pointers:["/payload/source","/payload/position"]}];
     def take_surface_templates($surface):
       ($surface | split(":")) as $parts |
@@ -12058,7 +12072,7 @@ command_plan() {
       graft_templates:$graft_templates,
       transaction_templates:(task_transaction_templates + lint_transaction_templates),
       next_actions:[
-        {kind:"inspect_primary_surface", reason:"graph slice gives bounded AST and call context for the highest-ranked edit surface", command:["sley","graph","--json","--slice",($task_surfaces[0].id // "task:main.main"),$target]},
+        {kind:"inspect_primary_surface", reason:"graph slice gives bounded AST and call context for the highest-ranked edit surface", command:["sley","graph","--json","--slice",($task_surfaces[0].id // $primary_task_fallback),$target]},
         {kind:"inspect_calls", reason:"strict call rows show caller/callee edges before rename, arity, or authority edits", command:["sley","query","--json","--kind","calls",$target]},
         {kind:"post_edit_doctor", reason:"preserve strict diagnostics and lint readiness after structural edits", command:["sley","doctor","--json","--deny-warnings",$target]},
         {kind:"post_edit_ci_doctor", reason:"run the same strict post-edit readiness check through the CI wrapper", command:["sley-ci","doctor","--json","--deny-warnings",$target]},
@@ -12810,7 +12824,7 @@ command_graft_raw() {
     payload_source="$(<"$payload_source_file")"
   fi
   if [[ -n "$operation_file" ]]; then
-    local op_json operation target_surface owner_module imported_module effect_name take_name take_type destination_parent destination_module preview report
+    local op_json operation target_surface owner_module imported_module effect_name take_name take_type destination_parent destination_module preview report default_task_surface
     sley_reject_ambiguous_path "$operation_file"
     sley_enforce_file_budget "$operation_file" "$SLEY_MAX_JSON_BYTES"
     if ! jq -e '
@@ -12829,7 +12843,8 @@ command_graft_raw() {
     case "$operation" in
       AddTake)
         if [[ -z "$target_surface" ]]; then
-          target_surface="$(query_json "$source" tasks | jq -r '.tasks[0].id // "task:app.main.main"')"
+          default_task_surface="$(parser_task_id_value app.main main)"
+          target_surface="$(query_json "$source" tasks | jq -r --arg fallback "$default_task_surface" '.tasks[0].id // $fallback')"
         fi
         take_name="$(printf '%s\n' "$op_json" | jq -r '.payload.name // "value"')"
         take_type="$(printf '%s\n' "$op_json" | jq -r '.payload.type // "Text"')"
