@@ -105,6 +105,8 @@ export task owned_bootstrap_values -> List<Text> {
     "checker_static_type_names_task_execution",
     "checker_effect_aliases_task_execution",
     "checker_host_effect_needles_task_execution",
+    "runtime_host_effect_needles_dispatch_execution",
+    "runtime_authority_host_effect_needles_execution",
     "checker_gate_binding_kind_task_execution",
     "checker_repair_hint_kind_task_execution",
     "checker_identifier_expr_kind_task_execution",

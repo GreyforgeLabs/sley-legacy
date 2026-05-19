@@ -589,12 +589,15 @@ export task effect_authorization_aliases -> List<Text> {
 
 export task host_effect_needles -> List<Text> {
   return [
+    "DatabaseRead|db.query(",
     "DatabaseRead|db.query_one(",
+    "DatabaseRead|db.try_query(",
     "DatabaseRead|db.try_query_one(",
     "DatabaseWrite|db.try_insert(",
     "Deploy|deploy.try_stage(",
     "FileRead|fs.read_text(",
     "FileRead|fs.try_read_text(",
+    "FileWrite|fs.write_text(",
     "FileWrite|fs.try_write_text(",
     "ModelCall|model.try_complete(",
     "Network|http.try_get_text(",
