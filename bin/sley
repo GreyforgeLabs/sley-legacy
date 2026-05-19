@@ -5047,6 +5047,14 @@ RUNTIME_DEFAULT_SPEND_AUTHORIZATION_TEXT="$(extract_sley_string_task "$SELF_HOST
 RUNTIME_PASSED_STATUS="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" passed_status)"
 RUNTIME_FAILED_STATUS="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" failed_status)"
 RUNTIME_SKIPPED_STATUS="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" skipped_status)"
+RUNTIME_CAPABILITY_REQUIRED_ID="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" capability_required_diagnostic_id)"
+RUNTIME_CAPABILITY_SCOPE_DENIED_ID="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" capability_scope_denied_diagnostic_id)"
+RUNTIME_TAKE_REQUIRED_ID="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" main_take_required_diagnostic_id)"
+RUNTIME_CAPABILITY_REQUIRED_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" capability_required_message_prefix)"
+RUNTIME_CAPABILITY_SCOPE_DENIED_MESSAGE_MIDDLE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" capability_scope_denied_message_middle)"
+RUNTIME_CAPABILITY_SCOPE_DENIED_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" capability_scope_denied_message_suffix)"
+RUNTIME_TAKE_REQUIRED_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" main_take_required_message_prefix)"
+RUNTIME_TAKE_REQUIRED_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" main_take_required_message_suffix)"
 RUNTIME_INT_VALUE_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" int_value_kind)"
 RUNTIME_TEXT_VALUE_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" text_value_kind)"
 RUNTIME_BOOL_VALUE_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" bool_value_kind)"
@@ -5074,6 +5082,14 @@ RUNTIME_DEFAULT_SPEND_AUTHORIZATION_TEXT="${RUNTIME_DEFAULT_SPEND_AUTHORIZATION_
 RUNTIME_PASSED_STATUS="${RUNTIME_PASSED_STATUS:-passed}"
 RUNTIME_FAILED_STATUS="${RUNTIME_FAILED_STATUS:-failed}"
 RUNTIME_SKIPPED_STATUS="${RUNTIME_SKIPPED_STATUS:-skipped}"
+RUNTIME_CAPABILITY_REQUIRED_ID="${RUNTIME_CAPABILITY_REQUIRED_ID:-RUNTIME_CAPABILITY_REQUIRED}"
+RUNTIME_CAPABILITY_SCOPE_DENIED_ID="${RUNTIME_CAPABILITY_SCOPE_DENIED_ID:-RUNTIME_CAPABILITY_SCOPE_DENIED}"
+RUNTIME_TAKE_REQUIRED_ID="${RUNTIME_TAKE_REQUIRED_ID:-RUNTIME_TAKE_REQUIRED}"
+RUNTIME_CAPABILITY_REQUIRED_MESSAGE_PREFIX="${RUNTIME_CAPABILITY_REQUIRED_MESSAGE_PREFIX:-\`main\` requires runtime capabilities: }"
+RUNTIME_CAPABILITY_SCOPE_DENIED_MESSAGE_MIDDLE="${RUNTIME_CAPABILITY_SCOPE_DENIED_MESSAGE_MIDDLE:- scope does not allow \`}"
+RUNTIME_CAPABILITY_SCOPE_DENIED_MESSAGE_SUFFIX="${RUNTIME_CAPABILITY_SCOPE_DENIED_MESSAGE_SUFFIX:-\`}"
+RUNTIME_TAKE_REQUIRED_MESSAGE_PREFIX="${RUNTIME_TAKE_REQUIRED_MESSAGE_PREFIX:-\`main\` requires unsupported runtime take \`}"
+RUNTIME_TAKE_REQUIRED_MESSAGE_SUFFIX="${RUNTIME_TAKE_REQUIRED_MESSAGE_SUFFIX:-\`}"
 RUNTIME_INT_VALUE_KIND="${RUNTIME_INT_VALUE_KIND:-Int}"
 RUNTIME_TEXT_VALUE_KIND="${RUNTIME_TEXT_VALUE_KIND:-Text}"
 RUNTIME_BOOL_VALUE_KIND="${RUNTIME_BOOL_VALUE_KIND:-Bool}"
@@ -8035,7 +8051,15 @@ runtime_authority_json() {
   local -a runtime_files=()
   mapfile -t runtime_files < <(runtime_context_files "$target")
   files_json="$(printf '%s\n' "${runtime_files[@]}" | jq -R . | jq -s .)"
-  SLEY_RUNTIME_FILES="$files_json" SLEY_HOST_EFFECT_NEEDLES="$CHECKER_HOST_EFFECT_NEEDLES_JSON" SLEY_EFFECT_ALIASES="$CHECKER_EFFECT_ALIASES_JSON" python3 - "$ROOT_DIR" "$target" "$SCHEMA_DIAGNOSTICS" "$@" <<'PY'
+  SLEY_RUNTIME_FILES="$files_json" \
+  SLEY_HOST_EFFECT_NEEDLES="$CHECKER_HOST_EFFECT_NEEDLES_JSON" \
+  SLEY_EFFECT_ALIASES="$CHECKER_EFFECT_ALIASES_JSON" \
+  SLEY_RUNTIME_CAPABILITY_REQUIRED_ID="$RUNTIME_CAPABILITY_REQUIRED_ID" \
+  SLEY_RUNTIME_CAPABILITY_SCOPE_DENIED_ID="$RUNTIME_CAPABILITY_SCOPE_DENIED_ID" \
+  SLEY_RUNTIME_CAPABILITY_REQUIRED_MESSAGE_PREFIX="$RUNTIME_CAPABILITY_REQUIRED_MESSAGE_PREFIX" \
+  SLEY_RUNTIME_CAPABILITY_SCOPE_DENIED_MESSAGE_MIDDLE="$RUNTIME_CAPABILITY_SCOPE_DENIED_MESSAGE_MIDDLE" \
+  SLEY_RUNTIME_CAPABILITY_SCOPE_DENIED_MESSAGE_SUFFIX="$RUNTIME_CAPABILITY_SCOPE_DENIED_MESSAGE_SUFFIX" \
+  python3 - "$ROOT_DIR" "$target" "$SCHEMA_DIAGNOSTICS" "$@" <<'PY'
 import json
 import os
 import re
@@ -8047,6 +8071,11 @@ repo = Path(sys.argv[1]).resolve()
 diag_schema = sys.argv[3]
 argv = sys.argv[4:]
 files = [Path(path) for path in json.loads(os.environ.get("SLEY_RUNTIME_FILES", "[]"))]
+capability_required_id = os.environ.get("SLEY_RUNTIME_CAPABILITY_REQUIRED_ID", "RUNTIME_CAPABILITY_REQUIRED")
+capability_scope_denied_id = os.environ.get("SLEY_RUNTIME_CAPABILITY_SCOPE_DENIED_ID", "RUNTIME_CAPABILITY_SCOPE_DENIED")
+capability_required_prefix = os.environ.get("SLEY_RUNTIME_CAPABILITY_REQUIRED_MESSAGE_PREFIX", "`main` requires runtime capabilities: ")
+capability_scope_denied_middle = os.environ.get("SLEY_RUNTIME_CAPABILITY_SCOPE_DENIED_MESSAGE_MIDDLE", " scope does not allow `")
+capability_scope_denied_suffix = os.environ.get("SLEY_RUNTIME_CAPABILITY_SCOPE_DENIED_MESSAGE_SUFFIX", "`")
 
 TEXT_DELIMITERS = set("/:.-_ \t")
 
@@ -8373,8 +8402,8 @@ missing = [effect for effect in required if effect not in caps]
 if missing:
     main = next((task for task in tasks_by_qname.values() if task.name == "main"), None)
     diagnostics.append(diagnostic(
-        "RUNTIME_CAPABILITY_REQUIRED",
-        "`main` requires runtime capabilities: " + ", ".join(missing),
+        capability_required_id,
+        capability_required_prefix + ", ".join(missing),
         main.node if main else "runtime",
     ))
 else:
@@ -8384,8 +8413,8 @@ else:
         if not any(scope_matches(effect, scope, call.get("resource")) for scope in scopes):
             resource = call.get("resource")
             diagnostics.append(diagnostic(
-                "RUNTIME_CAPABILITY_SCOPE_DENIED",
-                f"{display_effect(effect)} scope does not allow `{resource if resource is not None else call.get('resource_expr', '')}`",
+                capability_scope_denied_id,
+                f"{display_effect(effect)}{capability_scope_denied_middle}{resource if resource is not None else call.get('resource_expr', '')}{capability_scope_denied_suffix}",
                 call["node"],
             ))
             break
@@ -8402,7 +8431,11 @@ runtime_main_take_json() {
   local -a runtime_files=()
   mapfile -t runtime_files < <(runtime_context_files "$target")
   files_json="$(printf '%s\n' "${runtime_files[@]}" | jq -R . | jq -s .)"
-  SLEY_RUNTIME_FILES="$files_json" python3 - "$SCHEMA_DIAGNOSTICS" <<'PY'
+  SLEY_RUNTIME_FILES="$files_json" \
+  SLEY_RUNTIME_TAKE_REQUIRED_ID="$RUNTIME_TAKE_REQUIRED_ID" \
+  SLEY_RUNTIME_TAKE_REQUIRED_MESSAGE_PREFIX="$RUNTIME_TAKE_REQUIRED_MESSAGE_PREFIX" \
+  SLEY_RUNTIME_TAKE_REQUIRED_MESSAGE_SUFFIX="$RUNTIME_TAKE_REQUIRED_MESSAGE_SUFFIX" \
+  python3 - "$SCHEMA_DIAGNOSTICS" <<'PY'
 import json
 import os
 import re
@@ -8411,6 +8444,9 @@ from pathlib import Path
 
 diag_schema = sys.argv[1]
 files = [Path(path) for path in json.loads(os.environ.get("SLEY_RUNTIME_FILES", "[]"))]
+take_required_id = os.environ.get("SLEY_RUNTIME_TAKE_REQUIRED_ID", "RUNTIME_TAKE_REQUIRED")
+take_required_prefix = os.environ.get("SLEY_RUNTIME_TAKE_REQUIRED_MESSAGE_PREFIX", "`main` requires unsupported runtime take `")
+take_required_suffix = os.environ.get("SLEY_RUNTIME_TAKE_REQUIRED_MESSAGE_SUFFIX", "`")
 
 for path in files:
     try:
@@ -8442,9 +8478,9 @@ for path in files:
                 "schema": diag_schema,
                 "status": "error",
                 "diagnostics": [{
-                    "id": "RUNTIME_TAKE_REQUIRED",
+                    "id": take_required_id,
                     "severity": "error",
-                    "message": f"`main` requires unsupported runtime take `{take_name}`",
+                    "message": f"{take_required_prefix}{take_name}{take_required_suffix}",
                     "node": f"take:task:{module}.main:{take_name}",
                 }],
             }, indent=2))
@@ -9752,6 +9788,8 @@ ci_verify_runtime_blocked_report() {
     --arg schema "$SCHEMA_CI_REPORT" \
     --arg target "$target" \
     --arg node "$blocked_node" \
+    --arg runtime_capability_required "$RUNTIME_CAPABILITY_REQUIRED_ID" \
+    --arg runtime_capability_required_message "${RUNTIME_CAPABILITY_REQUIRED_MESSAGE_PREFIX}SecretRead, Network, ModelCall, Deploy" \
     --argjson fields "$CI_REPORT_FIELDS_JSON" '{
       ($fields[0] // "schema"):$schema,
       ($fields[1] // "status"):"failed",
@@ -9769,9 +9807,9 @@ ci_verify_runtime_blocked_report() {
           stdout_schema:"sley.verify.report.v0",
           diagnostics:[
             {
-              id:"RUNTIME_CAPABILITY_REQUIRED",
+              id:$runtime_capability_required,
               severity:"error",
-              message:"`main` requires runtime capabilities: SecretRead, Network, ModelCall, Deploy",
+              message:$runtime_capability_required_message,
               node:$node
             }
           ],

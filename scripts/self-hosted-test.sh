@@ -56,6 +56,9 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("runtime_authority_effect_aliases_task_execution"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("runtime_diagnostic_messages_task_execution"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("lint_declared_effect_aliases_task_execution"))'
 
 bin/sley self-hosting-status --json \
