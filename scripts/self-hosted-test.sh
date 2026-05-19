@@ -839,6 +839,25 @@ if grep -Fq 'if [[ "$CHECKER_BUILTIN_EFFECTS_JSON" == "[]" ]]' bin/sley; then
   fail "checker builtin effects must not fall back when loom.checker extraction is empty"
 fi
 
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("checker_effect_alias_fallback_removal_task_execution"))'
+
+bin/sley check --json fixtures/corpus/accepted/authority/database_aliases.sley \
+  | json_field '.status == "ok" and (.diagnostics | length) == 0'
+
+if bin/sley check --json fixtures/corpus/rejected/authority/missing_database_alias_write_effect.sley >/tmp/sley-rejected-missing-db-alias-write-effect-check.json; then
+  fail "rejected missing_database_alias_write_effect.sley passed check"
+fi
+jq -er '.status == "error" and .diagnostics[0].id == "EFFECT_UNAUTHORIZED" and .diagnostics[0].message == "effect unauthorized `DatabaseWrite`"' /tmp/sley-rejected-missing-db-alias-write-effect-check.json >/dev/null
+
+if grep -Fq "CHECKER_EFFECT_ALIASES_JSON='[\"DatabaseRead|DbRead\",\"DatabaseWrite|DbWrite\"]'" bin/sley; then
+  fail "checker effect aliases must come from loom.checker without shell fallback JSON"
+fi
+
+if grep -Fq 'if [[ "$CHECKER_EFFECT_ALIASES_JSON" == "[]" ]]' bin/sley; then
+  fail "checker effect aliases must not fall back when loom.checker extraction is empty"
+fi
+
 if bin/sley check --json fixtures/corpus/rejected/gate_take_type_mismatch.sley >/tmp/sley-rejected-gate-take-type-check.json; then
   fail "rejected gate_take_type_mismatch.sley passed check"
 fi
