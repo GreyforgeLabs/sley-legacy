@@ -217,6 +217,7 @@ export task owned_bootstrap_values -> List<Text> {
     "local_call_runtime_execution",
     "local_call_parser_prefix_runtime_execution",
     "zero_arg_project_call_runtime_execution",
+    "zero_arg_project_call_parser_prefix_runtime_execution",
     "text_equal_runtime_task_execution",
     "result_flow_runtime_execution",
     "result_flow_parser_prefix_runtime_execution",
