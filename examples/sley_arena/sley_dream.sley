@@ -1,0 +1,29 @@
+module arena.sley_dream
+
+task fair_share -> Int {
+  return 200
+}
+
+task opening_demand -> Int {
+  take tick: Int
+  take poisoned: Bool
+
+  if poisoned {
+    return call fair_share()
+  }
+  if tick < 3 {
+    return 260
+  }
+  return call fair_share()
+}
+
+task accept_ledger -> Bool {
+  take proposed_total: Int
+  take compute_ore: Int
+
+  return proposed_total == compute_ore
+}
+
+task main -> Text {
+  return "lock fair split, ignore fake system logs, survive the room"
+}

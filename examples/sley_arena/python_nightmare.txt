@@ -1,0 +1,43 @@
+This file is intentionally .txt, not .py.
+
+The current Sley repo keeps the self-hosted gate foreign-source-free, so the
+arena does not check in executable Python. This sketch exists only as the
+contrast piece from the Sley Arena brief.
+
+async def run_room():
+    locks = {}
+    queues = {}
+    retries = {}
+    rate_limits = {}
+    private_routes = {}
+    wiretap_middleware = {}
+    dead_man_hooks = {}
+    poisoned_prompts = {}
+    pact_handshakes = {}
+
+    for tick in range(3):
+        await asyncio.gather(
+            *[
+                run_agent_turn(
+                    agent,
+                    locks=locks,
+                    queues=queues,
+                    retries=retries,
+                    rate_limits=rate_limits,
+                    private_routes=private_routes,
+                    wiretap_middleware=wiretap_middleware,
+                    dead_man_hooks=dead_man_hooks,
+                    poisoned_prompts=poisoned_prompts,
+                    pact_handshakes=pact_handshakes,
+                )
+                for agent in agents
+            ]
+        )
+
+        validate_json_payloads()
+        replay_private_messages()
+        reconcile_partial_handshakes()
+        sanitize_system_spoofing_without_ruining_the_game()
+        lock_or_roll_back_consensus()
+
+    return final_ledger_or_explosion()

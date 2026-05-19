@@ -103,6 +103,27 @@
           { "pointer": "/value/value/value", "value": "profile ready | plan approved | staged" }
         ]
       }
+    },
+    {
+      "name": "arena_showcase_json",
+      "args": ["arena", "--json", "--fast", "--no-color"],
+      "covers": [
+        "cli:sley-arena",
+        "cli:sley-arena-wrapper",
+        "arena:showcase",
+        "json:sley.arena.report.v0"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.arena.report.v0" },
+          { "pointer": "/status", "value": "consensus" },
+          { "pointer": "/agent_count", "value": 50 },
+          { "pointer": "/compute_ore", "value": 10000 },
+          { "pointer": "/final_split_total", "value": 10000 },
+          { "pointer": "/poisoned_count", "value": 1 }
+        ]
+      }
     }
   ]
 }

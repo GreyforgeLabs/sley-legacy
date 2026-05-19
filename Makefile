@@ -1,10 +1,11 @@
-.PHONY: fmt diff-check build-cli build-bins test contracts conformance public-release-check claim-audit corpus examples smoke lsp editor-shims workbench agent-bench migrate docgen sandbox-runner shadow zjx-tools syntax self-hosted-cli v1
+.PHONY: fmt diff-check build-cli build-bins test contracts conformance public-release-check claim-audit corpus examples smoke lsp editor-shims workbench agent-bench migrate docgen sandbox-runner shadow zjx-tools arena syntax self-hosted-cli v1
 
 SELF_HOSTED_ARGS := --help
 export PATH := $(CURDIR)/bin:$(PATH)
 
 fmt:
 	bash -n bin/sley
+	bash -n bin/sley-arena
 	bash -n bin/sley-ci
 	bash -n bin/sley-conformance
 	bash -n bin/sley-contract
@@ -17,6 +18,7 @@ diff-check:
 
 build-cli:
 	test -x bin/sley
+	test -x bin/sley-arena
 	bin/sley --version
 
 build-bins:
@@ -97,10 +99,14 @@ zjx-tools:
 	sley-zjx extract-graph --json fixtures/contracts/zjx_hello_ready.json
 	sley-zjx diff-envelope --json fixtures/contracts/zjx_hello_ready.json fixtures/contracts/zjx_hello_ready.json
 
+arena:
+	sley-arena --json --fast --no-color | jq -e '.schema == "sley.arena.report.v0" and .status == "consensus" and .agent_count == 50'
+	sley arena --json --fast --no-color --mode standoff | jq -e '.schema == "sley.arena.report.v0" and .status == "exploded"'
+
 syntax:
 	scripts/check-self-hosted-code.sh
 
 self-hosted-cli:
 	bin/sley $(SELF_HOSTED_ARGS)
 
-v1: fmt diff-check test contracts conformance claim-audit corpus examples smoke lsp editor-shims workbench agent-bench migrate docgen sandbox-runner shadow zjx-tools syntax
+v1: fmt diff-check test contracts conformance claim-audit corpus examples smoke lsp editor-shims workbench agent-bench migrate docgen sandbox-runner shadow zjx-tools arena syntax
