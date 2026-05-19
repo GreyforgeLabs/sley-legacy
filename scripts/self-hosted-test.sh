@@ -69,6 +69,19 @@ if grep -Eq 'RUNTIME_(INT|TEXT|BOOL|RAW|UNIT|OK_TEXT|OK_INT)_VALUE_KIND="\$\{RUN
 fi
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("runtime_self_hosted_target_aliases_task_execution"))'
+
+bin/sley run --json self-hosted/ \
+  | json_field '.status == "passed" and .value.kind == "Int" and .value.value >= 1'
+
+bin/sley run --json self-hosted/sley.toml \
+  | json_field '.status == "passed" and .value.kind == "Int" and .value.value >= 1'
+
+if grep -Fq "RUNTIME_SELF_HOSTED_TARGETS_JSON='[\"self-hosted\"" bin/sley; then
+  fail "self-hosted runtime target aliases must come from loom.runtime without shell fallback literals"
+fi
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("lint_declared_effect_aliases_task_execution"))'
 
 bin/sley self-hosting-status --json \
