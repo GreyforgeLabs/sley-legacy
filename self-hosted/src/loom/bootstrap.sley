@@ -42,6 +42,7 @@ export task owned_bootstrap_values -> List<Text> {
     "symbol_graph_report_shape",
     "symbol_graph_report_builder",
     "symbol_graph_report_builder_task_execution",
+    "symbol_graph_call_expression_prefix_task_execution",
     "runtime_seed_values",
     "parser_expression_classifiers",
     "parser_classifier_task_execution",
