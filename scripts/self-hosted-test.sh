@@ -369,6 +369,9 @@ bin/sley run --json fixtures/corpus/accepted/records_and_calls.sley \
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("local_call_runtime_execution"))'
 
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("local_call_parser_prefix_runtime_execution"))'
+
 bin/sley run --json examples/unused_private_task.sley \
   | json_field '.status == "passed" and .value.kind == "Int" and .value.value == 1'
 
