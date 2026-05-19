@@ -4494,6 +4494,8 @@ QUESTION_REQUIRES_RESULT_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTE
 QUESTION_REQUIRES_RESULT_MESSAGE_TEMPLATE="$(eval_checker_message_template question_requires_result_message task_name || printf 'question operator requires Result return in task `::task_name::`\n')"
 CHECKER_IDENTIFIER_INPUTS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" identifier_resolution_inputs)"
 CHECKER_BUILTIN_EFFECTS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" builtin_effects)"
+CHECKER_EFFECT_ALIASES_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" effect_authorization_aliases)"
+CHECKER_HOST_EFFECT_NEEDLES_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" host_effect_needles)"
 CHECKER_INT_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" int_type_name)"
 CHECKER_TEXT_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" text_type_name)"
 CHECKER_BOOL_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" bool_type_name)"
@@ -4660,6 +4662,12 @@ if [[ "$CHECKER_IDENTIFIER_INPUTS_JSON" == "[]" ]]; then
 fi
 if [[ "$CHECKER_BUILTIN_EFFECTS_JSON" == "[]" ]]; then
   CHECKER_BUILTIN_EFFECTS_JSON='["DatabaseRead","DatabaseWrite","DbRead","DbWrite","Deploy","FileRead","FileWrite","ModelCall","Network","SecretRead","Shell","Spend"]'
+fi
+if [[ "$CHECKER_EFFECT_ALIASES_JSON" == "[]" ]]; then
+  CHECKER_EFFECT_ALIASES_JSON='["DatabaseRead|DbRead","DatabaseWrite|DbWrite"]'
+fi
+if [[ "$CHECKER_HOST_EFFECT_NEEDLES_JSON" == "[]" ]]; then
+  CHECKER_HOST_EFFECT_NEEDLES_JSON='["DatabaseRead|db.query_one(","DatabaseRead|db.try_query_one(","DatabaseWrite|db.try_insert(","Deploy|deploy.try_stage(","FileRead|fs.read_text(","FileRead|fs.try_read_text(","FileWrite|fs.try_write_text(","ModelCall|model.try_complete(","Network|http.try_get_text(","SecretRead|secrets.try_get(","Shell|shell.try_run(","Spend|spend.try_authorize("]'
 fi
 CHECKER_INT_TYPE="${CHECKER_INT_TYPE:-Int}"
 CHECKER_TEXT_TYPE="${CHECKER_TEXT_TYPE:-Text}"
@@ -5782,6 +5790,8 @@ check_json() {
     --arg checker_map_type "$CHECKER_MAP_TYPE" \
     --argjson builtin_types "$builtin_types" \
     --argjson builtin_effects "$CHECKER_BUILTIN_EFFECTS_JSON" \
+    --argjson effect_aliases "$CHECKER_EFFECT_ALIASES_JSON" \
+    --argjson host_effect_needles "$CHECKER_HOST_EFFECT_NEEDLES_JSON" \
     --argjson identifier_inputs "$CHECKER_IDENTIFIER_INPUTS_JSON" '
     . as $root |
     [$root.tasks[].name] as $all_task_names |
@@ -5798,10 +5808,13 @@ check_json() {
       (($builtin_types | index($base)) != null) or (($declared_types | index($base)) != null);
     def effect_known($name):
       (($builtin_effects | index($name)) != null) or (($declared_effects | index($name)) != null);
+    def table_left:
+      split("|")[0] // "";
+    def table_right:
+      split("|")[1] // "";
     def effect_authorized($effects; $effect):
       (($effects | index($effect)) != null)
-      or ($effect == "DatabaseRead" and (($effects | index("DbRead")) != null))
-      or ($effect == "DatabaseWrite" and (($effects | index("DbWrite")) != null));
+      or any($effect_aliases[]?; (table_left as $canonical | table_right as $alias | (($canonical == $effect) and (($effects | index($alias)) != null))));
     def source_line($line):
       if $line == null then "" else ($source_lines[$line - 1]) // "" end;
     def trim:
@@ -5810,18 +5823,7 @@ check_json() {
       ((.source? // "") + " " + source_line(.span.line));
     def required_host_effects:
       (expr_text) as $source |
-      [
-        (if ($source | test("db\\.(query_one|try_query_one)")) then "DatabaseRead" else empty end),
-        (if ($source | test("db\\.try_insert")) then "DatabaseWrite" else empty end),
-        (if ($source | test("deploy\\.try_stage")) then "Deploy" else empty end),
-        (if ($source | test("fs\\.(read_text|try_read_text)")) then "FileRead" else empty end),
-        (if ($source | test("fs\\.try_write_text")) then "FileWrite" else empty end),
-        (if ($source | test("model\\.try_complete")) then "ModelCall" else empty end),
-        (if ($source | test("http\\.try_get_text")) then "Network" else empty end),
-        (if ($source | test("secrets\\.try_get")) then "SecretRead" else empty end),
-        (if ($source | test("shell\\.try_run")) then "Shell" else empty end),
-        (if ($source | test("spend\\.try_authorize")) then "Spend" else empty end)
-      ] | unique;
+      [$host_effect_needles[]? | (table_left as $effect | table_right as $needle | select($source | contains($needle)) | $effect)] | unique;
     def call_callee:
       .source | sub("^call[[:space:]]+";"") | sub("\\(.*$";"");
     def call_args:

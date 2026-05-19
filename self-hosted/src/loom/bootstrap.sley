@@ -88,6 +88,8 @@ export task owned_bootstrap_values -> List<Text> {
     "checker_builtin_type_task_execution",
     "checker_builtin_types_task_execution",
     "checker_static_type_names_task_execution",
+    "checker_effect_aliases_task_execution",
+    "checker_host_effect_needles_task_execution",
     "checker_message_task_execution",
     "checker_unknown_type_diagnostics",
     "checker_unknown_task_diagnostics",
