@@ -63,6 +63,7 @@ export task owned_bootstrap_values -> List<Text> {
     "parser_fix_empty_surface_id_task_execution",
     "parser_fix_unused_unreachable_surface_id_task_execution",
     "parser_fix_constant_control_surface_id_task_execution",
+    "parser_fix_constant_scalar_surface_id_task_execution",
     "parser_expression_id_task_execution",
     "parser_control_expression_id_task_execution",
     "parser_statement_and_binding_kinds",
