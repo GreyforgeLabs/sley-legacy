@@ -4958,9 +4958,6 @@ QUESTION_REQUIRES_RESULT_MESSAGE_SUFFIX="${QUESTION_REQUIRES_RESULT_MESSAGE_SUFF
 if [[ -z "$QUESTION_REQUIRES_RESULT_MESSAGE_TEMPLATE" ]]; then
   QUESTION_REQUIRES_RESULT_MESSAGE_TEMPLATE='question operator requires Result return in task `::task_name::`'
 fi
-if [[ "$CHECKER_IDENTIFIER_INPUTS_JSON" == "[]" ]]; then
-  CHECKER_IDENTIFIER_INPUTS_JSON='["task_names","take_names","binding_names"]'
-fi
 if [[ "$CHECKER_BUILTIN_EFFECTS_JSON" == "[]" ]]; then
   CHECKER_BUILTIN_EFFECTS_JSON='["DatabaseRead","DatabaseWrite","DbRead","DbWrite","Deploy","FileRead","FileWrite","ModelCall","Network","SecretRead","Shell","Spend"]'
 fi

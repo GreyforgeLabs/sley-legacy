@@ -734,6 +734,23 @@ if bin/sley check --json fixtures/corpus/rejected/unknown_identifier.sley >/tmp/
 fi
 jq -er '.status == "error" and .diagnostics[0].id == "UNKNOWN_IDENTIFIER"' /tmp/sley-rejected-check.json >/dev/null
 
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("checker_identifier_input_fallback_removal_task_execution"))'
+
+bin/sley check --json examples/unused_take.sley \
+  | json_field '.status == "ok" and (.diagnostics | length) == 0'
+
+bin/sley check --json fixtures/corpus/accepted/mutable_sum.sley \
+  | json_field '.status == "ok" and (.diagnostics | length) == 0'
+
+if grep -Fq "CHECKER_IDENTIFIER_INPUTS_JSON='[\"task_names\",\"take_names\",\"binding_names\"]'" bin/sley; then
+  fail "checker identifier inputs must come from loom.checker without shell fallback JSON"
+fi
+
+if grep -Fq 'if [[ "$CHECKER_IDENTIFIER_INPUTS_JSON" == "[]" ]]' bin/sley; then
+  fail "checker identifier inputs must not fall back when loom.checker extraction is empty"
+fi
+
 if bin/sley check --json fixtures/corpus/rejected/unknown_type.sley >/tmp/sley-rejected-type-check.json; then
   fail "rejected unknown_type.sley passed check"
 fi
