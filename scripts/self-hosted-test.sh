@@ -273,6 +273,9 @@ bin/sley self-hosting-status --json \
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("result_flow_runtime_execution"))'
 
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("result_flow_parser_prefix_runtime_execution"))'
+
 bin/sley run --json fixtures/corpus/accepted/result_flow.sley \
   | json_field '.status == "passed" and .value.kind == "Ok" and .value.value.kind == "Int" and .value.value.value == 42'
 
