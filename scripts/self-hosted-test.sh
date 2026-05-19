@@ -76,6 +76,9 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_branch_statement_surface_id_task_execution"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("parser_lint_statement_surface_id_task_execution"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_expression_id_task_execution")) and (.bootstrap_owned_by_sley | index("parser_control_expression_id_task_execution"))'
 
 bin/sley self-hosting-status --json \
@@ -663,6 +666,18 @@ bin/sley doctor --json examples/project \
 
 bin/sley lint --json examples/empty_for_statement.sley \
   | json_field '.schema == "sley.lint.report.v0" and .status == "findings" and .findings[0].id == "EMPTY_FOR_STATEMENT" and (.filters.rules | index("empty_for_statement"))'
+
+bin/sley lint --json --rule empty_for_statement examples/empty_for_statement.sley \
+  | json_field '([.findings[]? | select(.rule == "empty_for_statement") | .node] | index("block:task:app.empty_for.main:stmt:1"))'
+
+bin/sley lint --json --rule unchecked_result examples/unchecked_result.sley \
+  | json_field '([.findings[]? | select(.rule == "unchecked_result") | .node] | index("block:task:app.unchecked.main:stmt:0:expr"))'
+
+bin/sley lint --json --rule unreachable_statement examples/unreachable_statement.sley \
+  | json_field '([.findings[]? | select(.rule == "unreachable_statement") | .node] | index("block:task:app.unreachable_statement.main:stmt:2"))'
+
+bin/sley lint --json --rule unused_pure_expression_statement examples/unused_pure_expression_statement.sley \
+  | json_field '([.findings[]? | select(.rule == "unused_pure_expression_statement") | .node] | index("block:task:app.unused_expr.main:stmt:1"))'
 
 bin/sley lint --json examples/empty_for_statement.sley \
   | json_field 'keys == (["schema","status","entry_module","filters","findings"] | sort)'
