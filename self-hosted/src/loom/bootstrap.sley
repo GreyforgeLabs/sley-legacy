@@ -105,6 +105,7 @@ export task owned_bootstrap_values -> List<Text> {
     "checker_builtin_types_task_execution",
     "checker_builtin_type_fallback_removal_task_execution",
     "checker_static_type_names_task_execution",
+    "checker_builtin_effect_fallback_removal_task_execution",
     "checker_effect_aliases_task_execution",
     "checker_host_effect_needles_task_execution",
     "lint_declared_effect_aliases_task_execution",

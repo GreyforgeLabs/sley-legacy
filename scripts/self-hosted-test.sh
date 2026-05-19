@@ -822,6 +822,23 @@ if bin/sley check --json fixtures/corpus/rejected/unknown_effect.sley >/tmp/sley
 fi
 jq -er '.status == "error" and .diagnostics[0].id == "UNKNOWN_EFFECT" and .diagnostics[0].message == "unknown effect `MissingEffect`"' /tmp/sley-rejected-unknown-effect-check.json >/dev/null
 
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("checker_builtin_effect_fallback_removal_task_execution"))'
+
+bin/sley check --json fixtures/corpus/accepted/authority/shell_run.sley \
+  | json_field '.status == "ok" and (.diagnostics | length) == 0'
+
+bin/sley check --json fixtures/corpus/accepted/authority/spend_authorize.sley \
+  | json_field '.status == "ok" and (.diagnostics | length) == 0'
+
+if grep -Fq "CHECKER_BUILTIN_EFFECTS_JSON='[\"DatabaseRead\",\"DatabaseWrite\",\"DbRead\",\"DbWrite\",\"Deploy\",\"FileRead\",\"FileWrite\",\"ModelCall\",\"Network\",\"SecretRead\",\"Shell\",\"Spend\"]'" bin/sley; then
+  fail "checker builtin effects must come from loom.checker without shell fallback JSON"
+fi
+
+if grep -Fq 'if [[ "$CHECKER_BUILTIN_EFFECTS_JSON" == "[]" ]]' bin/sley; then
+  fail "checker builtin effects must not fall back when loom.checker extraction is empty"
+fi
+
 if bin/sley check --json fixtures/corpus/rejected/gate_take_type_mismatch.sley >/tmp/sley-rejected-gate-take-type-check.json; then
   fail "rejected gate_take_type_mismatch.sley passed check"
 fi
