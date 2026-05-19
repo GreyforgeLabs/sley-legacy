@@ -76,6 +76,38 @@ export task skipped_status -> Text {
   return "skipped"
 }
 
+export task capability_required_diagnostic_id -> Text {
+  return "RUNTIME_CAPABILITY_REQUIRED"
+}
+
+export task capability_scope_denied_diagnostic_id -> Text {
+  return "RUNTIME_CAPABILITY_SCOPE_DENIED"
+}
+
+export task main_take_required_diagnostic_id -> Text {
+  return "RUNTIME_TAKE_REQUIRED"
+}
+
+export task capability_required_message_prefix -> Text {
+  return "`main` requires runtime capabilities: "
+}
+
+export task capability_scope_denied_message_middle -> Text {
+  return " scope does not allow `"
+}
+
+export task capability_scope_denied_message_suffix -> Text {
+  return "`"
+}
+
+export task main_take_required_message_prefix -> Text {
+  return "`main` requires unsupported runtime take `"
+}
+
+export task main_take_required_message_suffix -> Text {
+  return "`"
+}
+
 export task int_value_kind -> Text {
   return "Int"
 }
