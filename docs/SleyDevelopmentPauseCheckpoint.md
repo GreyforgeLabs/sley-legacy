@@ -2,8 +2,8 @@
 
 Date: 2026-05-19
 Branch: public
-Latest code checkpoint: 890edc3
-Latest pause documentation checkpoint before this note: c4b32e5
+Latest code checkpoint: 6a599f3
+Latest pause documentation checkpoint before this note: c7ece51
 Current pause document status: committed on `public`; use `git log` for exact
 branch head
 Remote status: verify current `origin/public` head with
@@ -271,8 +271,12 @@ The current local checkpoint advances the public branch to:
   `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
   `bootstrap_owned_by_sley=264`; remaining blockers are still parser, checker,
   and runtime semantics from Sley source
+- self-hosting status after the runtime effect-alias checker source slice:
+  `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=265`; remaining blockers are still parser, checker,
+  and runtime semantics from Sley source
 - latest verification refresh on 2026-05-19: `make v1` passed after the
-  docgen capabilities checker source slice
+  runtime effect-alias checker source slice
 
 The tracked code checkpoint is:
 
@@ -338,6 +342,7 @@ The tracked code checkpoint is:
 - f026fd3 fix: source runtime host effects from checker
 - c6c478e fix: source lint host effects from checker
 - 890edc3 fix: source docgen capabilities from checker
+- 6a599f3 fix: source runtime effect aliases from checker
 
 The tracked pause documentation checkpoints are:
 
@@ -397,6 +402,7 @@ The tracked pause documentation checkpoints are:
 - 3ec0ff2 docs: record remaining call parser slice
 - 8ec3e49 docs: record runtime host effect slice
 - c4b32e5 docs: record lint host effect slice
+- c7ece51 docs: record docgen host effect slice
 
 Recent self-hosting slices added:
 
@@ -595,6 +601,10 @@ Recent self-hosting slices added:
   checker-owned `host_effect_needles` and `effect_authorization_aliases`
   tables instead of a hardcoded capability JSON literal, while preserving the
   existing ten capability entries and generated reference output
+- Runtime authority now sources effect alias normalization and alias display
+  strings from the checker-owned `effect_authorization_aliases` table instead
+  of Python-local `DbRead`/`DbWrite` literals, while preserving scoped database
+  read/write authorization and denial diagnostics
 
 ## Next Frontier
 
@@ -1515,10 +1525,30 @@ The latest continuation audit reconfirmed:
   check-fixtures fixtures/contracts --schemas docs/schemas --json`, external
   public-action packet verifier, `git diff --check`, and final `make v1` all
   passed
+- focused runtime effect-alias checker-source probes:
+  `bin/sley self-hosting-status --json` reported
+  `runtime_authority_effect_aliases_task_execution` and
+  `bootstrap_owned_by_sley=265`; `bin/sley run --json --cap DbRead=users
+  --cap DbWrite=users --db-table users=examples/users.json
+  fixtures/corpus/accepted/authority/database_aliases.sley` passed with
+  `Ok(Text("Lin"))`; scoped denial probes for `DbRead=tenant_` and
+  `DbWrite=tenant_` preserved `RUNTIME_CAPABILITY_SCOPE_DENIED` with
+  `DatabaseRead/DbRead` and `DatabaseWrite/DbWrite` display text; a focused
+  grep found no remaining Python-local `DbRead`/`DbWrite` runtime alias table
+- Sley self-hosting status after the runtime effect-alias checker source slice:
+  `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=265`; remaining blockers are still parser, checker,
+  and runtime semantics from Sley source
+- latest runtime effect-alias checker-source verification:
+  `bash -n bin/sley`, `bash -n scripts/self-hosted-test.sh`, focused runtime
+  effect-alias probes, `scripts/self-hosted-test.sh`, `bin/sley-contract
+  check-fixtures fixtures/contracts --schemas docs/schemas --json`, external
+  public-action packet verifier, `git diff --check`, and final `make v1` all
+  passed
 
 ## Dirty State Notes
 
-Tracked code was committed at 890edc3 before this pause document was updated.
+Tracked code was committed at 6a599f3 before this pause document was updated.
 Tracked pause documentation before this update was refreshed through 218d40c
 with parser lint surface evidence, through 26e7417 with the external comparison
 approval gate, fork audit, and helper evidence, and through aba1b03 with parser
@@ -1559,6 +1589,7 @@ fallback parser-prefix evidence, and through 62a39f1 with runtime project probe
 parser-prefix evidence, and through 3ec0ff2 with remaining call-parser
 parser-prefix evidence, and through 8ec3e49 with runtime host-effect checker
 source evidence, and through c4b32e5 with lint host-effect checker source
+evidence, and through c7ece51 with docgen capabilities checker source
 evidence.
 
 Pre-existing untracked files were not touched and should remain outside future
