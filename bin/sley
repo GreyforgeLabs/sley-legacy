@@ -5846,10 +5846,13 @@ check_json() {
     def required_host_effects:
       (expr_text) as $source |
       [$host_effect_needles[]? | (table_left as $effect | table_right as $needle | select($source | contains($needle)) | $effect)] | unique;
+    def call_source_tail($source):
+      if ($source | startswith($call_expression_prefix)) then $source[($call_expression_prefix | length):]
+      else "" end;
     def call_callee:
-      .source | sub("^call[[:space:]]+";"") | sub("\\(.*$";"");
+      call_source_tail(.source // "") | sub("\\(.*$";"");
     def call_args:
-      (.source | capture("^call[[:space:]]+[^()]+\\((?<args>.*)\\)\\??$")? // {args:""}) as $parts |
+      (call_source_tail(.source // "") | capture("^[^()]+\\((?<args>.*)\\)\\??$")? // {args:""}) as $parts |
       if (($parts.args | gsub("[[:space:]]"; "")) == "") then []
       else ($parts.args | split(",") | map(gsub("^[[:space:]]+|[[:space:]]+$"; ""))) end;
     def resolve_call($module; $callee):
