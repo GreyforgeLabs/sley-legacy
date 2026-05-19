@@ -444,26 +444,42 @@ eval_runtime_status_task() {
   local body failed_task passed_task
   body="$(extract_sley_task_body "$runtime_file" runtime_status)"
   [[ -n "$body" ]] || return 1
-  failed_task="$(printf '%s\n' "$body" | awk '
+  failed_task="$(printf '%s\n' "$body" | awk -v call_prefix="$PARSER_CALL_EXPRESSION_PREFIX" '
+    function return_call_task(line) {
+      sub(/^[ \t]*return[ \t]+/, "", line)
+      if (index(line, call_prefix) != 1) return ""
+      line=substr(line, length(call_prefix) + 1)
+      if (line !~ /^[A-Za-z_][A-Za-z0-9_]*\(\)[ \t]*$/) return ""
+      sub(/\(\).*/, "", line)
+      return line
+    }
     /^[ \t]*if[ \t]+diagnostic_count[ \t]*>[ \t]*0[ \t]*\{/ {in_if=1; next}
     in_if && /^[ \t]*}/ {in_if=0}
-    in_if && /^[ \t]*return[ \t]+call[ \t]+[A-Za-z_][A-Za-z0-9_]*\(\)/ {
-      line=$0
-      sub(/^.*return[ \t]+call[ \t]+/, "", line)
-      sub(/\(\).*/, "", line)
-      print line
-      exit
+    in_if && /^[ \t]*return[ \t]+/ {
+      task=return_call_task($0)
+      if (task != "") {
+        print task
+        exit
+      }
     }
   ')"
-  passed_task="$(printf '%s\n' "$body" | awk '
+  passed_task="$(printf '%s\n' "$body" | awk -v call_prefix="$PARSER_CALL_EXPRESSION_PREFIX" '
+    function return_call_task(line) {
+      sub(/^[ \t]*return[ \t]+/, "", line)
+      if (index(line, call_prefix) != 1) return ""
+      line=substr(line, length(call_prefix) + 1)
+      if (line !~ /^[A-Za-z_][A-Za-z0-9_]*\(\)[ \t]*$/) return ""
+      sub(/\(\).*/, "", line)
+      return line
+    }
     /^[ \t]*if[ \t]+/ {in_if=1}
     in_if && /^[ \t]*}/ {in_if=0; next}
-    !in_if && /^[ \t]*return[ \t]+call[ \t]+[A-Za-z_][A-Za-z0-9_]*\(\)/ {
-      line=$0
-      sub(/^.*return[ \t]+call[ \t]+/, "", line)
-      sub(/\(\).*/, "", line)
-      print line
-      exit
+    !in_if && /^[ \t]*return[ \t]+/ {
+      task=return_call_task($0)
+      if (task != "") {
+        print task
+        exit
+      }
     }
   ')"
   [[ -n "$failed_task" && -n "$passed_task" ]] || return 1
