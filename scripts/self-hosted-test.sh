@@ -70,6 +70,9 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_call_argument_surface_id_task_execution"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("parser_expression_side_surface_id_task_execution"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_task_statement_surface_id_task_execution"))'
 
 bin/sley self-hosting-status --json \
@@ -104,6 +107,9 @@ bin/sley self-hosting-status --json \
 
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_fix_algebra_boolean_surface_id_task_execution"))'
+
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("parser_fix_boolean_branch_surface_id_task_execution"))'
 
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_expression_id_task_execution")) and (.bootstrap_owned_by_sley | index("parser_control_expression_id_task_execution"))'
@@ -1001,6 +1007,18 @@ bin/sley fix --json --kind simplify_double_negation_expression --dry-run example
 
 bin/sley fix --json --kind simplify_negated_comparison_expression --dry-run examples/hello.sley \
   | json_field '([.provenance[]?.targets[]?] | index("block:task:app.negated_compare_fix.main:stmt:1:expr"))'
+
+bin/sley fix --json --kind simplify_redundant_boolean_if_expression --dry-run examples/hello.sley \
+  | json_field '([.provenance[]?.targets[]?] | index("block:task:app.boolean_if_fix.main:stmt:1:expr"))'
+
+bin/sley fix --json --kind simplify_redundant_boolean_if_statement --dry-run examples/hello.sley \
+  | json_field '([.provenance[]?.targets[]?] | index("block:task:app.boolean_if_statement_fix.main:stmt:1"))'
+
+bin/sley fix --json --kind simplify_same_branch_if_expression --dry-run examples/hello.sley \
+  | json_field '([.provenance[]?.targets[]?] | index("block:task:app.same_branch_fix.main:stmt:2:expr:left"))'
+
+bin/sley fix --json --kind simplify_same_branch_if_statement --dry-run examples/hello.sley \
+  | json_field '([.provenance[]?.targets[]?] | index("block:task:app.same_branch_statement_fix.main:stmt:1"))'
 
 bin/sley-contract validate --schema sley.migrate.report.v0 "$migrate_report" --schemas docs/schemas --json \
   | json_field '.schema == "sley.contract.validate.v0" and .status == "passed" and .requested_schema == "sley.migrate.report.v0" and .report_schema == "sley.migrate.report.v0"'
