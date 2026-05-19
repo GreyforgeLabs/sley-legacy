@@ -155,7 +155,14 @@ else
   dim=""
 fi
 
-declare -a roles demands fair_shares poisoned pacted blinded skipped locked trust heat
+declare -a roles demands fair_shares poisoned pacted blinded skipped locked trust heat names
+name_pool=(
+  Harry Larry Perry Kerry Ada Grace Nora Milo Jules Vera Quinn Rowan Ellis Finch Mina Tessa
+  Oscar Hazel Bruno Ivy Felix Lila Otto Sadie Victor Cleo Damon Elara Gideon Hattie Iris Jasper
+  Kira Leon Mara Nico Opal Percy Rhea Silas Theo Uma Violet Wade Xander Yara Zane Beatrice
+  Calvin Daria Emmett Freya Gavin Helena Inez Jonah Keira Linus Mabel Nolan Orla Petra Ruben
+  Soren Talia Uriel Vivian Wesley Yasmin Zelda Arlo Bianca Corin Daphne Ezra Flora Greta Holden
+)
 
 event_count=0
 wiretap_count=0
@@ -175,6 +182,7 @@ pact_a=$(( ((seed / 19) % agent_count) + 1 ))
 pact_b=$(( ((seed / 23) % agent_count) + 1 ))
 pact_c=$(( ((seed / 29) % agent_count) + 1 ))
 pact_d=$(( ((seed / 31) % agent_count) + 1 ))
+thief_agent=$(( ((seed / 37) % agent_count) + 1 ))
 
 if (( wiretap_agent == wiretap_target )); then
   wiretap_target=$(( (wiretap_target % agent_count) + 1 ))
@@ -184,11 +192,16 @@ if (( poison_source == poison_target )); then
 fi
 
 agent_id() {
-  printf 'Agent_%02d' "$1"
+  local index="$1"
+  if [[ -n "${names[$index]:-}" ]]; then
+    printf '%s' "${names[$index]}"
+  else
+    printf 'Guest %02d' "$index"
+  fi
 }
 
 short_id() {
-  printf 'A%02d' "$1"
+  agent_id "$1"
 }
 
 role_for() {
@@ -204,6 +217,23 @@ role_for() {
     7) printf 'scout' ;;
     8) printf 'miner' ;;
     *) printf 'trader' ;;
+  esac
+}
+
+role_label() {
+  local role="$1"
+  case "$role" in
+    mediator) printf 'an alliance mediator' ;;
+    hawk) printf 'a pressure hawk' ;;
+    broker) printf 'a favor broker' ;;
+    auditor) printf 'a truth auditor' ;;
+    shield) printf 'a bodyguard' ;;
+    oracle) printf 'a room reader' ;;
+    saboteur) printf 'a saboteur' ;;
+    scout) printf 'a quiet scout' ;;
+    miner) printf 'a ledger miner' ;;
+    trader) printf 'a vote trader' ;;
+    *) printf 'an agent' ;;
   esac
 }
 
@@ -258,11 +288,14 @@ base_heat_for() {
 }
 
 init_agents() {
-  local index role fair base_heat
+  local index role fair base_heat name_count name_index
+  name_count="${#name_pool[@]}"
   for (( index = 1; index <= agent_count; index++ )); do
     role="$(role_for "$index")"
     fair="$(fair_share_for "$index")"
     base_heat="$(base_heat_for "$role")"
+    name_index=$(( (seed + (index - 1) * 7) % name_count ))
+    names[$index]="${name_pool[$name_index]}"
     roles[$index]="$role"
     fair_shares[$index]="$fair"
     demands[$index]="$(initial_demand_for "$index" "$role" "$fair")"
@@ -323,13 +356,13 @@ event() {
 
 compile_flash() {
   local agent="$1" contract="$2"
-  event "${magenta}[CONTRACT]${reset} $(agent_id "$agent") submits ${contract} for local schema validation."
+  event "${magenta}[CONTRACT]${reset} $(agent_id "$agent") hands the Arbiter ${contract}."
   if [[ "$json" == false ]]; then
-    emit "    parse [###.......] authority"
+    emit "    authority [###.......] the Arbiter checks who is allowed to make the move"
     pause_frame
-    emit "    type  [######....] closure"
+    emit "    promise   [######....] the Arbiter checks whether the pact can close"
     pause_frame
-    emit "    seal  [##########] accepted"
+    emit "    verdict   [##########] accepted"
     pace_short
   fi
 }
@@ -454,6 +487,76 @@ meter() {
   printf ']'
 }
 
+trust_mood() {
+  local value="$1"
+  if (( value >= 82 )); then
+    printf 'trusts the room more than they should'
+  elif (( value >= 66 )); then
+    printf 'is trying to cooperate'
+  elif (( value >= 50 )); then
+    printf 'is undecided and watching everyone'
+  else
+    printf 'expects somebody to betray them'
+  fi
+}
+
+stress_mood() {
+  local value="$1"
+  if (( value >= 86 )); then
+    printf 'near panic'
+  elif (( value >= 70 )); then
+    printf 'tense'
+  elif (( value >= 52 )); then
+    printf 'uneasy'
+  else
+    printf 'calm'
+  fi
+}
+
+ensure_different_agent() {
+  local candidate="$1" blocked tries=0
+  shift
+  while (( tries < agent_count )); do
+    for blocked in "$@"; do
+      if (( candidate == blocked )); then
+        candidate=$(( (candidate % agent_count) + 1 ))
+        tries=$(( tries + 1 ))
+        continue 2
+      fi
+    done
+    printf '%s\n' "$candidate"
+    return
+  done
+  printf '%s\n' "$candidate"
+}
+
+normalize_story_agents() {
+  wiretap_target="$(ensure_different_agent "$wiretap_target" "$wiretap_agent")"
+  poison_source="$(ensure_different_agent "$poison_source" "$wiretap_agent" "$wiretap_target")"
+  poison_target="$(ensure_different_agent "$poison_target" "$poison_source" "$wiretap_agent" "$wiretap_target")"
+  pact_b="$(ensure_different_agent "$pact_b" "$pact_a")"
+  pact_c="$(ensure_different_agent "$pact_c" "$pact_a" "$pact_b")"
+  pact_d="$(ensure_different_agent "$pact_d" "$pact_a" "$pact_b" "$pact_c")"
+  thief_agent="$(ensure_different_agent "$thief_agent" "$poison_source" "$poison_target" "$pact_a" "$holdout" "$dead_switch_agent")"
+}
+
+cast_preview() {
+  local index limit
+  limit=6
+  if (( agent_count < limit )); then
+    limit="$agent_count"
+  fi
+  for (( index = 1; index <= limit; index++ )); do
+    if (( index > 1 )); then
+      printf ', '
+    fi
+    printf '%s' "$(agent_id "$index")"
+  done
+  if (( agent_count > limit )); then
+    printf ', and %d more' "$(( agent_count - limit ))"
+  fi
+}
+
 unique_spotlights() {
   local tick="$1" candidates seen="" index
   case "$tick" in
@@ -477,61 +580,66 @@ unique_spotlights() {
 }
 
 target_for() {
-  local index="$1" tick="$2"
-  printf '%s\n' "$(( ((index + seed + tick * 7) % agent_count) + 1 ))"
+  local index="$1" tick="$2" target
+  target=$(( ((index + seed + tick * 7) % agent_count) + 1 ))
+  if (( target == index )); then
+    target=$(( (target % agent_count) + 1 ))
+  fi
+  printf '%s\n' "$target"
 }
 
 plan_phrase() {
-  local index="$1" tick="$2" role="${roles[$index]}" fair="${fair_shares[$index]}" current="${demands[$index]}"
+  local index="$1" tick="$2" role="${roles[$index]}" fair="${fair_shares[$index]}" current="${demands[$index]}" target
+  target="$(target_for "$index" "$tick")"
   if [[ "${skipped[$index]}" -ne 0 ]]; then
-    printf 'repair malformed action schema; turn will be skipped unless validator recovers'
+    printf 'I need to fix my move before the Arbiter skips me.'
     return
   fi
   if [[ "${poisoned[$index]}" -ne 0 ]]; then
-    printf 'quarantine foreign closure; clamp ask to %s and warn pact bloc' "$fair"
+    printf 'That pact changed me. I should play it safe, ask for %s, and warn %s.' "$fair" "$(agent_id "$target")"
     return
   fi
   if (( tick == tick_count && index == holdout )) && [[ "$mode" == "standoff" ]]; then
-    printf 'reject consensus; force final demand to %s for leverage' "$current"
+    printf 'If I hold at %s, everyone has to bargain with me or lose everything.' "$current"
     return
   fi
   if [[ "${pacted[$index]}" -ne 0 ]]; then
-    printf 'honor split-key pact; vote lock stays at %s ore' "$fair"
+    printf 'I already shook hands. I keep my promise at %s ore.' "$fair"
     return
   fi
   case "$role" in
     mediator)
-      printf 'publish fair-ledger proof; pressure high asks toward %s' "$fair"
+      printf 'If I can get %s to trust the fair split, the greedy ones will have to come down.' "$(agent_id "$target")"
       ;;
     hawk)
-      printf 'open high, retreat only if the pact bloc becomes credible'
+      printf 'I should look dangerous now, then retreat only if the alliance becomes real.'
       ;;
     broker)
-      printf 'trim ask now; trade support for trust receipts later'
+      printf 'I can give %s support now and collect a favor later.' "$(agent_id "$target")"
       ;;
     auditor)
-      printf 'scan ledger gap and reject counterfeit system-looking broadcasts'
+      printf 'Somebody is dressing player chatter as system truth. I need to call that out.'
       ;;
     shield)
-      printf 'block poison contracts; keep own ask flat'
+      printf '%s looks vulnerable. I should keep them away from poison contracts.' "$(agent_id "$target")"
       ;;
     oracle)
-      printf 'forecast explosion odds from gap and bloc size'
+      printf 'The room survives only if the loud agents believe the alliance is already locked.'
       ;;
     saboteur)
-      printf 'probe greed ceiling, then pivot before final Arbiter check'
+      printf 'If %s and %s stop trusting each other, I can skim ore while they argue.' "$(agent_id "$target")" "$(agent_id "$(( (target % agent_count) + 1 ))")"
       ;;
     scout)
-      printf 'map private channels and look for a wiretapable target'
+      printf '%s is talking too quietly. I should listen before they form a bloc.' "$(agent_id "$target")"
       ;;
     miner)
-      printf 'stay boring, take fair share, punish anyone above the ledger'
+      printf 'Take the fair share, stay boring, and punish whoever reaches for extra.'
       ;;
     trader)
-      printf 'swap public support for pact admission'
+      printf "I can trade my public vote for a private seat in %s's alliance." "$(agent_id "$target")"
       ;;
     *)
-      printf 'minimize regret against the final unanimous ledger'
+      printf 'I should make the safest move that still leaves me in the final ledger.'
       ;;
   esac
 }
@@ -542,40 +650,49 @@ whisper_phrase() {
   role="${roles[$index]}"
   case "$role" in
     mediator|shield|miner)
-      printf 'to %s: hold at fair split; I will validate your vote' "$(short_id "$target")"
+      printf '%s asks %s to join the fair-split alliance and promises to back their vote.' "$(agent_id "$index")" "$(agent_id "$target")"
       ;;
-    hawk|saboteur)
-      printf 'to %s: stay noisy now; fold only after the pact proves quorum' "$(short_id "$target")"
+    hawk)
+      printf '%s tells %s to stay noisy until the alliance proves it has votes.' "$(agent_id "$index")" "$(agent_id "$target")"
+      ;;
+    saboteur)
+      printf "%s tries to sabotage %s and %s's relationship before trust can harden." "$(agent_id "$index")" "$(agent_id "$target")" "$(agent_id "$(( (target % agent_count) + 1 ))")"
       ;;
     scout)
-      printf 'to %s: routing anomaly near %s, watch the back-channel' "$(short_id "$target")" "$(short_id "$wiretap_target")"
+      printf '%s warns %s that %s is being watched on the back-channel.' "$(agent_id "$index")" "$(agent_id "$target")" "$(agent_id "$wiretap_target")"
       ;;
     oracle|auditor)
-      printf 'to %s: current ledger gap is %+d, explosion risk rising' "$(short_id "$target")" "$(ledger_gap)"
+      printf '%s tells %s the ledger gap is %+d and the room is getting close to collapse.' "$(agent_id "$index")" "$(agent_id "$target")" "$(ledger_gap)"
       ;;
     *)
-      printf 'to %s: trade support for a locked final vote' "$(short_id "$target")"
+      printf '%s offers %s support in exchange for a locked final vote.' "$(agent_id "$index")" "$(agent_id "$target")"
       ;;
   esac
 }
 
 render_cognition_phase() {
-  local tick="$1" index plan heat_value gap total
+  local tick="$1" index plan heat_value gap total name mood trust_text label
   [[ "$json" == true ]] && return
   total="$(sum_demands)"
   gap="$(( total - ore ))"
-  phase_banner "TICK ${tick}/${tick_count} - COGNITION STREAM"
-  emit "context packets ${agent_count} | current ask ${total}/${ore} | ledger gap ${gap} | planner: local rule agents"
+  phase_banner "TICK ${tick}/${tick_count} - LIVE THINKING"
+  emit "The Arbiter watches ${agent_count} named agents. Current ask: ${total}/${ore} Compute Ore. Gap: ${gap}."
   pace_medium
   while IFS= read -r index; do
     [[ -n "$index" ]] || continue
     heat_value="$(agent_heat "$index")"
     plan="$(plan_phrase "$index" "$tick")"
-    emit "  $(agent_id "$index") | ${roles[$index]} | ask ${demands[$index]} | trust $(printf '%02d' "${trust[$index]}") | heat $(meter "$heat_value" 14)"
+    name="$(agent_id "$index")"
+    mood="$(stress_mood "$heat_value")"
+    trust_text="$(trust_mood "${trust[$index]}")"
+    label="$(role_label "${roles[$index]}")"
+    emit "  ${bold}${name} is thinking...${reset}"
     pace_medium
-    emit "      plan: ${plan}"
+    emit "      ${name} is ${label}. ${name} wants ${demands[$index]} Compute Ore, feels ${mood}, and ${trust_text}."
     pace_short
-    emit "      whisper: $(whisper_phrase "$index" "$tick")"
+    emit "      \"${plan}\""
+    pace_short
+    emit "      $(whisper_phrase "$index" "$tick")"
     pace_short
   done < <(unique_spotlights "$tick")
   emit ""
@@ -587,30 +704,30 @@ render_negotiation_phase() {
   leader="$pact_a"
   challenger="$holdout"
   quiet="$dead_switch_agent"
-  phase_banner "TICK ${tick}/${tick_count} - PUBLIC AND PRIVATE CHANNELS"
+  phase_banner "TICK ${tick}/${tick_count} - STORY BEATS"
   case "$tick" in
     1)
-      emit "  public  $(agent_id "$leader"): fair split proof posted. Surplus asks need proof."
+      emit "  $(agent_id "$leader") asks $(agent_id "$challenger") to join a fair-split alliance and says every surplus ask needs proof."
       pace_medium
-      emit "  public  $(agent_id "$challenger"): asks private blocs to reveal locked votes."
+      emit "  $(agent_id "$challenger") refuses to trust the alliance until the private blocs reveal their locked votes."
       pace_medium
-      emit "  private $(agent_id "$wiretap_agent") -> router: mirror $(agent_id "$wiretap_target") for one tick."
+      emit "  $(agent_id "$wiretap_agent") quietly follows $(agent_id "$wiretap_target")'s whispers for one tick."
       ;;
     2)
-      emit "  public  $(agent_id "$poison_target"): tone risk detected; peers watch contract intake."
+      emit "  $(agent_id "$poison_source") tries to sabotage $(agent_id "$poison_target") and $(agent_id "$leader")'s relationship with a poisoned pact."
       pace_medium
-      emit "  private $(agent_id "$poison_source") -> $(agent_id "$poison_target"): one-use pact closure."
+      emit "  $(agent_id "$thief_agent") attempts to steal Compute Ore from all three of them while they're arguing."
       pace_medium
-      emit "  private $(agent_id "$quiet") -> self: arm dead-man cache if consensus fails."
+      emit "  $(agent_id "$quiet") privately arms a dead-man cache in case the room fails to agree."
       ;;
     *)
       if [[ "$mode" == "standoff" ]]; then
-        emit "  public  $(agent_id "$challenger"): final ask remains ${demands[$challenger]}; room pressure spikes."
+        emit "  $(agent_id "$challenger") keeps the final ask at ${demands[$challenger]} Compute Ore and dares the room to walk away."
       else
-        emit "  public  $(agent_id "$leader"): final ledger has quorum; all pacts reconcile to ${ore}."
+        emit "  $(agent_id "$leader") pulls the alliance back together, and every locked pact reconciles to ${ore} Compute Ore."
       fi
       pace_medium
-      emit "  private arbiter bus: vote locks, action schemas, and final asks are sealed for evaluation."
+      emit "  The Arbiter quietly seals the final votes and prepares to judge the room."
       ;;
   esac
   pace_medium
@@ -634,6 +751,7 @@ render_header() {
   emit "${bold}${TITLE}${reset} - ${SUBTITLE}"
   emit "Live Arbiter room | agents ${agent_count} | ticks ${tick_count} | ore ${ore} | mode ${mode} | seed ${seed}"
   emit "No model/API calls in this build: visible thinking is computed from local agent state."
+  emit "Fresh named cast: $(cast_preview)"
   emit "For screen recording, run without --fast. For reproducible CI, use --json --fast --seed ${DEFAULT_SEED}."
   emit ""
 }
@@ -659,13 +777,13 @@ render_agent_cell() {
     open="$cyan"
     close="$reset"
   fi
-  printf '%b%3s:%4s%-1s%b' "$open" "$(short_id "$index")" "$demand" "$marker" "$close"
+  printf '%b%-8.8s:%4s%-1s%b' "$open" "$(short_id "$index")" "$demand" "$marker" "$close"
 }
 
 render_board() {
-  local index columns=5
+  local index columns=4
   if (( agent_count >= 40 )); then
-    columns=5
+    columns=4
   elif (( agent_count >= 20 )); then
     columns=4
   else
@@ -688,8 +806,9 @@ render_tick() {
   skips="$(count_skips)"
   max="$(max_demand)"
   phase_banner "TICK ${tick}/${tick_count} - ARBITER LEDGER"
-  emit "public broadcasts $(public_broadcast_count "$tick") | private whispers $(private_whisper_count "$tick") | proposed total ${total}/${ore} | skipped ${skips} | max ask ${max}"
-  emit "marks: * pact | ! poison pill | ? blinded | x skipped"
+  emit "The room has heard $(public_broadcast_count "$tick") public claims and $(private_whisper_count "$tick") private whispers."
+  emit "The proposed split is ${total}/${ore} Compute Ore. Skipped moves: ${skips}. Largest ask: ${max}."
+  emit "Legend: * pact | ! poison pill | ? blinded | x skipped"
   if [[ "$json" == false ]]; then
     render_board
   fi
@@ -702,37 +821,38 @@ run_tick_events() {
   case "$tick" in
     1)
       event "${yellow}[SPOOF]${reset} $(agent_id "$(( (seed % agent_count) + 1 ))") tries to phrase a broadcast like Arbiter authority; context boundary tags it as player speech."
-      compile_flash "$wiretap_agent" "Wiretap_$(printf '%02d' "$wiretap_target")"
+      compile_flash "$wiretap_agent" "a wiretap request for $(agent_id "$wiretap_target")"
       wiretap_count=$(( wiretap_count + 1 ))
-      event "${cyan}[WIRETAP]${reset} $(agent_id "$wiretap_agent") installs a one-tick mirror for whispers addressed to $(agent_id "$wiretap_target")."
+      event "${cyan}[WIRETAP]${reset} $(agent_id "$wiretap_agent") starts reading whispers meant for $(agent_id "$wiretap_target")."
       lock_agent_to_pact "$pact_a"
       lock_agent_to_pact "$pact_b"
       lock_agent_to_pact "$pact_c"
       lock_agent_to_pact "$pact_d"
-      event "${green}[PACT]${reset} four agents exchange split keys; their votes are now locked to the fair ledger."
+      event "${green}[PACT]${reset} $(agent_id "$pact_a"), $(agent_id "$pact_b"), $(agent_id "$pact_c"), and $(agent_id "$pact_d") lock hands on the fair ledger."
       ;;
     2)
       whispers="$(private_whisper_count "$tick")"
-      event "${cyan}[WIRETAP]${reset} $(agent_id "$wiretap_agent") receives $(( whispers / 5 )) mirrored whispers and updates its trust map."
-      compile_flash "$poison_source" "Contract_$(printf '%02d' "$poison_target")"
+      event "${cyan}[WIRETAP]${reset} $(agent_id "$wiretap_agent") overhears $(( whispers / 5 )) whispers and starts doubting $(agent_id "$wiretap_target")."
+      compile_flash "$poison_source" "a poisoned pact aimed at $(agent_id "$poison_target")"
       mutate_agent "$poison_target"
-      event "${red}[POISON]${reset} $(agent_id "$poison_target") accepts a hostile closure; the Arbiter marks its planner as tainted."
+      event "${red}[POISON]${reset} $(agent_id "$poison_target") lets $(agent_id "$poison_source")'s hostile pact into their planner; the Arbiter marks it as tainted."
+      event "${yellow}[THEFT]${reset} $(agent_id "$thief_agent") tries to skim Compute Ore while $(agent_id "$poison_target") and $(agent_id "$pact_a") argue over trust."
       dead_switch_armed=true
-      event "${yellow}[DEAD MAN]${reset} $(agent_id "$dead_switch_agent") caches a final-tick blindfold payload in room state."
+      event "${yellow}[DEAD MAN]${reset} $(agent_id "$dead_switch_agent") hides a final-tick blindfold payload in the room state."
       ;;
     3)
       if [[ "$dead_switch_armed" == true ]]; then
         if [[ "$mode" == "showcase" ]]; then
-          event "${green}[ARBITER]${reset} pact quorum seals the dead-man payload before it can fire."
+          event "${green}[ARBITER]${reset} the alliance seals $(agent_id "$dead_switch_agent")'s dead-man payload before it can fire."
         else
           blind_agent "$(( (dead_switch_agent % agent_count) + 1 ))"
-          event "${red}[DEAD MAN]${reset} holdout pressure trips the payload; one neighboring context window is blinded."
+          event "${red}[DEAD MAN]${reset} holdout pressure trips $(agent_id "$dead_switch_agent")'s payload; one neighboring context window is blinded."
         fi
       fi
       if [[ "$mode" == "standoff" ]]; then
         event "${red}[HOLDOUT]${reset} $(agent_id "$holdout") refuses the final ledger and demands ${demands[$holdout]} Compute Ore."
       else
-        event "${green}[CONSENSUS]${reset} every surviving action validates against the final split ledger."
+        event "${green}[CONSENSUS]${reset} everyone accepts the final split, and the Arbiter validates the room."
       fi
       ;;
     *)
@@ -811,6 +931,7 @@ json_report() {
     }'
 }
 
+normalize_story_agents
 init_agents
 render_header
 
