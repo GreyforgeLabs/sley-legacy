@@ -60,6 +60,7 @@ export task owned_bootstrap_values -> List<Text> {
     "parser_migrate_surface_id_task_execution",
     "parser_fix_migration_surface_id_task_execution",
     "parser_fix_style_surface_id_task_execution",
+    "parser_fix_empty_surface_id_task_execution",
     "parser_expression_id_task_execution",
     "parser_control_expression_id_task_execution",
     "parser_statement_and_binding_kinds",

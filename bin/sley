@@ -13259,33 +13259,38 @@ command_graft_raw() {
     return
   fi
   if [[ "$kind" == "delete_empty_for_statement" || "$kind" == "delete_empty_forge_statement" || "$kind" == "delete_empty_if_statement" || "$kind" == "delete_empty_while_statement" || "$kind" == "remove_empty_else_statement" ]]; then
-    local lint finding rule operation target_surface report
+    local lint finding rule operation target_surface fallback report
     lint="$(lint_json "$source")"
     case "$kind" in
       delete_empty_for_statement)
         rule="empty_for_statement"
         operation="DeleteNode"
+        fallback="$(parser_task_statement_surface_value app.empty_for main 1)"
         ;;
       delete_empty_forge_statement)
         rule="empty_forge_statement"
         operation="DeleteNode"
+        fallback="$(parser_task_statement_surface_value app.empty_forge main 1)"
         ;;
       delete_empty_if_statement)
         rule="empty_if_statement"
         operation="DeleteNode"
+        fallback="$(parser_task_statement_surface_value app.empty_if main 1)"
         ;;
       delete_empty_while_statement)
         rule="empty_while_statement"
         operation="DeleteNode"
+        fallback="$(parser_task_statement_surface_value app.empty_while main 2)"
         ;;
       remove_empty_else_statement)
         rule="empty_else_statement"
         operation="ReplaceStatement"
+        fallback="$(parser_task_statement_surface_value app.empty_else main 1)"
         ;;
     esac
     finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" --arg rule "$rule" '.findings[]? | select(.rule == $rule and (.node == $surface or $surface == ""))' | head -n 1)"
     [[ -n "$finding" ]] || finding='{}'
-    target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r --arg rule "$rule" '.node // (if $rule == "empty_for_statement" then "block:task:app.empty_for.main:stmt:1" elif $rule == "empty_forge_statement" then "block:task:app.empty_forge.main:stmt:1" elif $rule == "empty_while_statement" then "block:task:app.empty_while.main:stmt:2" elif $rule == "empty_else_statement" then "block:task:app.empty_else.main:stmt:1" else "block:task:app.empty_if.main:stmt:1" end)')}"
+    target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r --arg fallback "$fallback" '.node // $fallback')}"
     if [[ "$write" == true ]]; then
       if [[ "$kind" == "remove_empty_else_statement" ]]; then
         sley_remove_empty_else_surface "$source" "$target_surface"
