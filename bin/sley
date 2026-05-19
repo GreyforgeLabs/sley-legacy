@@ -13471,9 +13471,10 @@ command_graft_raw() {
       simplify_constant_list_index_expression)
         rule="constant_list_index_expression"
         operation="ReplaceExpression"
+        fallback="$(parser_task_expression_surface_value app.constant_list_index_fix main 0)"
         finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "constant_list_index_expression" and (.node == $surface or $surface == ""))' | head -n 1)"
         [[ -n "$finding" ]] || finding='{}'
-        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.constant_list_index_fix.main:stmt:0:expr"')}"
+        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r --arg fallback "$fallback" '.node // $fallback')}"
         replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "0"')"
         if [[ "$write" == true ]]; then
           sley_rewrite_statement_surface "$source" "$target_surface" "$replacement"
@@ -13482,9 +13483,10 @@ command_graft_raw() {
       simplify_constant_map_index_expression)
         rule="constant_map_index_expression"
         operation="ReplaceExpression"
+        fallback="$(parser_task_expression_surface_value app.constant_map_index_fix main 0)"
         finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "constant_map_index_expression" and (.node == $surface or $surface == ""))' | head -n 1)"
         [[ -n "$finding" ]] || finding='{}'
-        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.constant_map_index_fix.main:stmt:0:expr"')}"
+        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r --arg fallback "$fallback" '.node // $fallback')}"
         replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "\"\""')"
         if [[ "$write" == true ]]; then
           sley_rewrite_statement_surface "$source" "$target_surface" "$replacement"
@@ -13493,9 +13495,10 @@ command_graft_raw() {
       simplify_constant_record_field_access_expression)
         rule="constant_record_field_access_expression"
         operation="ReplaceExpression"
+        fallback="$(parser_task_expression_surface_value app.constant_record_field_access_fix main 0)"
         finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "constant_record_field_access_expression" and (.node == $surface or $surface == ""))' | head -n 1)"
         [[ -n "$finding" ]] || finding='{}'
-        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.constant_record_field_access_fix.main:stmt:0:expr"')}"
+        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r --arg fallback "$fallback" '.node // $fallback')}"
         replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "\"\""')"
         if [[ "$write" == true ]]; then
           sley_rewrite_statement_surface "$source" "$target_surface" "$replacement"
@@ -13504,9 +13507,10 @@ command_graft_raw() {
       simplify_constant_len_expression)
         rule="constant_len_expression"
         operation="ReplaceExpression"
+        fallback="$(parser_task_expression_surface_value app.constant_len_fix main 0)"
         finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "constant_len_expression" and (.node == $surface or $surface == ""))' | head -n 1)"
         [[ -n "$finding" ]] || finding='{}'
-        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.constant_len_fix.main:stmt:0:expr"')}"
+        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r --arg fallback "$fallback" '.node // $fallback')}"
         replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "0"')"
         if [[ "$write" == true ]]; then
           sley_rewrite_statement_surface "$source" "$target_surface" "$replacement"
@@ -13515,9 +13519,10 @@ command_graft_raw() {
       simplify_constant_not_expression)
         rule="constant_not_expression"
         operation="ReplaceExpression"
+        fallback="$(parser_task_expression_surface_value app.constant_not_fix main 0)"
         finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "constant_not_expression" and (.node == $surface or $surface == ""))' | head -n 1)"
         [[ -n "$finding" ]] || finding='{}'
-        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.constant_not_fix.main:stmt:0:expr"')}"
+        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r --arg fallback "$fallback" '.node // $fallback')}"
         replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "false"')"
         if [[ "$write" == true ]]; then
           sley_rewrite_statement_surface "$source" "$target_surface" "$replacement"
