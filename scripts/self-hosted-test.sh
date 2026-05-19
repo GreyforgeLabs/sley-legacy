@@ -79,6 +79,9 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_lint_statement_surface_id_task_execution"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("parser_migrate_surface_id_task_execution"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_expression_id_task_execution")) and (.bootstrap_owned_by_sley | index("parser_control_expression_id_task_execution"))'
 
 bin/sley self-hosting-status --json \
@@ -849,7 +852,17 @@ bin/sley-contract validate --schema sley.deploy.artifact_check.v0 "$artifact_che
 
 bin/sley-migrate report --json examples/raw_host_migration.sley > "$migrate_report"
 json_field '.schema == "sley.migrate.report.v0" and .status == "migrations" and .source_schema == "sley.edit_plan.report.v0" and .summary.migration_count == 1 and .summary.raw_host_adapter_count == 1 and .migrations[0].kind == "migrate_raw_host_adapter" and .migrations[0].operation.op == "ReplaceExpression"' < "$migrate_report"
+json_field '([.migrations[]? | select(.kind == "migrate_raw_host_adapter") | .surface] | index("block:task:main.main:stmt:0:expr"))' < "$migrate_report"
 json_field 'keys == (["schema","status","target","source_schema","summary","migrations","schema_drift","diagnostics","issues"] | sort)' < "$migrate_report"
+
+bin/sley-migrate report --json examples/unqualified_import_call_project \
+  | json_field '([.migrations[]? | select(.kind == "qualify_imported_call") | .surface] | index("block:task:app.main.main:stmt:0:expr"))'
+
+bin/sley-migrate report --json examples/unchecked_result_binding.sley \
+  | json_field '([.migrations[]? | select(.kind == "propagate_unchecked_result_binding") | .surface] | index("block:task:app.unchecked_binding.main:stmt:0"))'
+
+bin/sley-migrate report --json examples/unchecked_result.sley \
+  | json_field '([.migrations[]? | select(.kind == "propagate_unchecked_result") | .surface] | index("block:task:app.unchecked.main:stmt:0:expr"))'
 
 bin/sley-contract validate --schema sley.migrate.report.v0 "$migrate_report" --schemas docs/schemas --json \
   | json_field '.schema == "sley.contract.validate.v0" and .status == "passed" and .requested_schema == "sley.migrate.report.v0" and .report_schema == "sley.migrate.report.v0"'
