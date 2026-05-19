@@ -2,8 +2,8 @@
 
 Date: 2026-05-19
 Branch: public
-Latest code checkpoint: f026fd3
-Latest pause documentation checkpoint before this note: 3ec0ff2
+Latest code checkpoint: c6c478e
+Latest pause documentation checkpoint before this note: 8ec3e49
 Current pause document status: committed on `public`; use `git log` for exact
 branch head
 Remote status: verify current `origin/public` head with
@@ -263,8 +263,12 @@ The current local checkpoint advances the public branch to:
   `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
   `bootstrap_owned_by_sley=262`; remaining blockers are still parser, checker,
   and runtime semantics from Sley source
+- self-hosting status after the lint host-effect checker source slice:
+  `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=263`; remaining blockers are still parser, checker,
+  and runtime semantics from Sley source
 - latest verification refresh on 2026-05-19: `make v1` passed after the
-  runtime host-effect checker source slice
+  lint host-effect checker source slice
 
 The tracked code checkpoint is:
 
@@ -328,6 +332,7 @@ The tracked code checkpoint is:
 - 742d887 fix: source runtime probes from parser
 - c45c14b fix: source remaining call parsers from parser
 - f026fd3 fix: source runtime host effects from checker
+- c6c478e fix: source lint host effects from checker
 
 The tracked pause documentation checkpoints are:
 
@@ -385,6 +390,7 @@ The tracked pause documentation checkpoints are:
 - fc22378 docs: record call fallback parser slice
 - 62a39f1 docs: record runtime probe parser slice
 - 3ec0ff2 docs: record remaining call parser slice
+- 8ec3e49 docs: record runtime host effect slice
 
 Recent self-hosting slices added:
 
@@ -574,6 +580,10 @@ Recent self-hosting slices added:
   `fs.write_text(` alongside the existing fallible host adapters while
   preserving agent pipeline, spend, file, database, and capability-gate
   behavior
+- Lint unused-declared-effect analysis now consumes the same checker-owned
+  `host_effect_needles` table instead of a hardcoded host-call regex ladder,
+  including alias normalization for `DbRead`/`DbWrite` while preserving the
+  `UNUSED_DECLARED_EFFECT` warning and database alias behavior
 
 ## Next Frontier
 
@@ -1455,10 +1465,30 @@ The latest continuation audit reconfirmed:
   check-fixtures fixtures/contracts --schemas docs/schemas --json`, external
   public-action packet verifier, `git diff --check`, and final `make v1` all
   passed
+- focused lint host-effect checker-source probes:
+  `bin/sley self-hosting-status --json` reported
+  `lint_declared_effect_host_needles_task_execution` and
+  `bootstrap_owned_by_sley=263`; `bin/sley lint --json --rule
+  unused_declared_effect examples/unused_declared_effect.sley` still reported
+  `UNUSED_DECLARED_EFFECT`; `fixtures/corpus/accepted/authority/database_aliases.sley`
+  stayed clean for `DbRead`/`DbWrite`; the missing alias write-effect rejected
+  fixture still reported `effect unauthorized DatabaseWrite`; a focused grep
+  found no remaining hardcoded host-call regex ladder in that lint
+  `effect_used` path
+- Sley self-hosting status after the lint host-effect checker source slice:
+  `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=263`; remaining blockers are still parser, checker,
+  and runtime semantics from Sley source
+- latest lint host-effect checker-source verification:
+  `bash -n bin/sley`, `bash -n scripts/self-hosted-test.sh`, focused lint
+  host-effect probes, `scripts/self-hosted-test.sh`, `bin/sley-contract
+  check-fixtures fixtures/contracts --schemas docs/schemas --json`, external
+  public-action packet verifier, `git diff --check`, and final `make v1` all
+  passed
 
 ## Dirty State Notes
 
-Tracked code was committed at f026fd3 before this pause document was updated.
+Tracked code was committed at c6c478e before this pause document was updated.
 Tracked pause documentation before this update was refreshed through 218d40c
 with parser lint surface evidence, through 26e7417 with the external comparison
 approval gate, fork audit, and helper evidence, and through aba1b03 with parser
@@ -1497,7 +1527,8 @@ parser-prefix evidence, and through ff4ce3f with call-site rewrite
 parser-prefix evidence, and through fc22378 with runtime/docgen/workbench call
 fallback parser-prefix evidence, and through 62a39f1 with runtime project probe
 parser-prefix evidence, and through 3ec0ff2 with remaining call-parser
-parser-prefix evidence.
+parser-prefix evidence, and through 8ec3e49 with runtime host-effect checker
+source evidence.
 
 Pre-existing untracked files were not touched and should remain outside future
 commits unless the operator explicitly asks to include them:
