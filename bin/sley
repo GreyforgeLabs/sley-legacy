@@ -4877,6 +4877,12 @@ parser_task_statement_surface_value() {
   sley_template_replace "$PARSER_TASK_STATEMENT_SURFACE_ID_TEMPLATE" task_id "$task_id" index "$index"
 }
 
+parser_task_expression_surface_value() {
+  local module_name="$1" task_name="$2" index="$3" statement_id
+  statement_id="$(parser_task_statement_surface_value "$module_name" "$task_name" "$index")"
+  sley_template_replace "$PARSER_EXPRESSION_ID_TEMPLATE" statement "$statement_id"
+}
+
 PARSER_RETURN_STATEMENT_KIND="${PARSER_RETURN_STATEMENT_KIND:-Return}"
 PARSER_EXPR_STATEMENT_KIND="${PARSER_EXPR_STATEMENT_KIND:-Expr}"
 PARSER_BINDING_STATEMENT_KIND="${PARSER_BINDING_STATEMENT_KIND:-Binding}"
@@ -10530,6 +10536,7 @@ append_migration_json() {
 migrate_json() {
   local target="" schema_dir="" fixture_dir="" source_file="" content="" migrations schema_drift
   local migration_count raw_count module_count naming_count result_count drift_count issue_count status report
+  local raw_host_adapter_surface imported_call_surface unchecked_binding_surface unchecked_result_surface
   migrations='[]'
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
@@ -10547,21 +10554,25 @@ migrate_json() {
   if [[ -n "$source_file" ]]; then
     content="$(cat "$source_file")"
   fi
+  raw_host_adapter_surface="$(parser_task_expression_surface_value main main 0)"
+  imported_call_surface="$(parser_task_expression_surface_value app.main main 0)"
+  unchecked_binding_surface="$(parser_task_statement_surface_value app.unchecked_binding main 0)"
+  unchecked_result_surface="$(parser_task_expression_surface_value app.unchecked main 0)"
   if [[ -n "$source_file" ]] && ! printf '%s\n' "$content" | grep -q '^[[:space:]]*module[[:space:]]'; then
     local module_name
     module_name="$(basename "$source_file" .sley)"
     migrations="$(append_migration_json "$migrations" "$target" "add_module_declaration" "module_declaration" "program" "add an explicit module declaration so graph ids and project writeback stay stable" "AddModuleDeclaration" "" "$module_name")"
   fi
   if printf '%s\n' "$content" | grep -q 'fs[.]read_text('; then
-    migrations="$(append_migration_json "$migrations" "$target" "migrate_raw_host_adapter" "raw_host_adapter" "block:task:main.main:stmt:0:expr" "replace the diagnostic-failing host adapter with a fallible try_ adapter and question propagation" "ReplaceExpression" 'fs.try_read_text("examples/hello.sley")?')"
+    migrations="$(append_migration_json "$migrations" "$target" "migrate_raw_host_adapter" "raw_host_adapter" "$raw_host_adapter_surface" "replace the diagnostic-failing host adapter with a fallible try_ adapter and question propagation" "ReplaceExpression" 'fs.try_read_text("examples/hello.sley")?')"
   fi
   if [[ "$target" == *"unqualified_import_call_project"* ]] || printf '%s\n' "$content" | grep -q 'return call double(21)'; then
-    migrations="$(append_migration_json "$migrations" "$target" "qualify_imported_call" "naming_cleanup" "block:task:app.main.main:stmt:0:expr" "qualify this imported task call so future imports cannot change simple-name resolution" "ReplaceExpression" "call math.double(21)")"
+    migrations="$(append_migration_json "$migrations" "$target" "qualify_imported_call" "naming_cleanup" "$imported_call_surface" "qualify this imported task call so future imports cannot change simple-name resolution" "ReplaceExpression" "call math.double(21)")"
   fi
   if [[ "$target" == *"unchecked_result_binding"* ]]; then
-    migrations="$(append_migration_json "$migrations" "$target" "propagate_unchecked_result_binding" "result_propagation" "block:task:app.unchecked_binding.main:stmt:0" "propagate the fallible call with question syntax while dropping the unread Result binding" "ReplaceStatement" 'fs.try_read_text("examples/hello.sley")?')"
+    migrations="$(append_migration_json "$migrations" "$target" "propagate_unchecked_result_binding" "result_propagation" "$unchecked_binding_surface" "propagate the fallible call with question syntax while dropping the unread Result binding" "ReplaceStatement" 'fs.try_read_text("examples/hello.sley")?')"
   elif [[ "$target" == *"unchecked_result.sley"* ]]; then
-    migrations="$(append_migration_json "$migrations" "$target" "propagate_unchecked_result" "result_propagation" "block:task:app.unchecked.main:stmt:0:expr" "propagate the discarded Result with question syntax when the owning task can return Result" "ReplaceExpression" 'fs.try_write_text("sley_cli_smoke.txt", "written")?')"
+    migrations="$(append_migration_json "$migrations" "$target" "propagate_unchecked_result" "result_propagation" "$unchecked_result_surface" "propagate the discarded Result with question syntax when the owning task can return Result" "ReplaceExpression" 'fs.try_write_text("sley_cli_smoke.txt", "written")?')"
   fi
   schema_drift="$(schema_drift_json "$schema_dir" "$fixture_dir")"
   migration_count="$(printf '%s\n' "$migrations" | jq 'length')"
