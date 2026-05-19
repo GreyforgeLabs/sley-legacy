@@ -85,6 +85,9 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_fix_migration_surface_id_task_execution"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("parser_fix_style_surface_id_task_execution"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_expression_id_task_execution")) and (.bootstrap_owned_by_sley | index("parser_control_expression_id_task_execution"))'
 
 bin/sley self-hosting-status --json \
@@ -878,6 +881,18 @@ bin/sley fix --json --kind propagate_unchecked_result_binding --dry-run examples
 
 bin/sley fix --json --kind propagate_unchecked_result --dry-run examples/hello.sley \
   | json_field '([.provenance[]?.targets[]?] | index("block:task:app.unchecked.main:stmt:0:expr"))'
+
+bin/sley fix --json --kind convert_mutable_binding_to_bind --dry-run examples/hello.sley \
+  | json_field '([.provenance[]?.targets[]?] | index("block:task:app.mutable_fix.main:stmt:0")) and ([.provenance[]?.targets[]?] | index("block:task:app.mutable_fix.main"))'
+
+bin/sley fix --json --kind delete_self_assignment_statement --dry-run examples/hello.sley \
+  | json_field '([.provenance[]?.targets[]?] | index("block:task:app.self_assignment_fix.main:stmt:1"))'
+
+bin/sley fix --json --kind convert_redundant_initial_set_to_bind --dry-run examples/hello.sley \
+  | json_field '([.provenance[]?.targets[]?] | index("block:task:app.redundant_initial_set_fix.main:stmt:0")) and ([.provenance[]?.targets[]?] | index("block:task:app.redundant_initial_set_fix.main:stmt:1"))'
+
+bin/sley fix --json --kind fold_redundant_initial_set_into_binding --dry-run examples/hello.sley \
+  | json_field '([.provenance[]?.targets[]?] | index("block:task:app.redundant_initial_set_fix.main:stmt:0:expr")) and ([.provenance[]?.targets[]?] | index("block:task:app.redundant_initial_set_fix.main:stmt:1"))'
 
 bin/sley-contract validate --schema sley.migrate.report.v0 "$migrate_report" --schemas docs/schemas --json \
   | json_field '.schema == "sley.contract.validate.v0" and .status == "passed" and .requested_schema == "sley.migrate.report.v0" and .report_schema == "sley.migrate.report.v0"'

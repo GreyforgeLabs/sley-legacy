@@ -13167,11 +13167,12 @@ command_graft_raw() {
     return
   fi
   if [[ "$kind" == "convert_mutable_binding_to_bind" ]]; then
-    local lint finding replacement target_surface block_surface report
+    local lint finding replacement target_surface block_surface report mutable_binding_fallback
+    mutable_binding_fallback="$(parser_task_statement_surface_value app.mutable_fix main 0)"
     lint="$(lint_json "$source")"
     finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "mutable_binding_never_set" and (.node == $surface or $surface == ""))' | head -n 1)"
     [[ -n "$finding" ]] || finding='{}'
-    target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.mutable_fix.main:stmt:0"')}"
+    target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r --arg fallback "$mutable_binding_fallback" '.node // $fallback')}"
     replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "bind base = 21"')"
     block_surface="${target_surface%:stmt:*}"
     if [[ "$write" == true ]]; then
@@ -13191,7 +13192,8 @@ command_graft_raw() {
     return
   fi
   if [[ "$kind" == "delete_self_assignment_statement" || "$kind" == "delete_overwritten_set_statement" ]]; then
-    local lint finding rule target_surface report
+    local lint finding rule target_surface report self_assignment_fallback
+    self_assignment_fallback="$(parser_task_statement_surface_value app.self_assignment_fix main 1)"
     lint="$(lint_json "$source")"
     if [[ "$kind" == "delete_self_assignment_statement" ]]; then
       rule="self_assignment_statement"
@@ -13200,7 +13202,7 @@ command_graft_raw() {
     fi
     finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" --arg rule "$rule" '.findings[]? | select(.rule == $rule and (.node == $surface or $surface == ""))' | head -n 1)"
     [[ -n "$finding" ]] || finding='{}'
-    target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.self_assignment_fix.main:stmt:1"')}"
+    target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r --arg fallback "$self_assignment_fallback" '.node // $fallback')}"
     if [[ "$write" == true ]]; then
       sley_delete_statement_surface "$source" "$target_surface"
     fi
@@ -13216,12 +13218,16 @@ command_graft_raw() {
   fi
   if [[ "$kind" == "fold_redundant_initial_set_into_binding" || "$kind" == "convert_redundant_initial_set_to_bind" ]]; then
     local lint finding target_surface binding_surface binding_expr_surface replacement replacement_statement report op0 target0
+    local redundant_set_fallback redundant_binding_fallback redundant_binding_expr_fallback
+    redundant_set_fallback="$(parser_task_statement_surface_value app.redundant_initial_set_fix main 1)"
+    redundant_binding_fallback="$(parser_task_statement_surface_value app.redundant_initial_set_fix main 0)"
+    redundant_binding_expr_fallback="$(parser_task_expression_surface_value app.redundant_initial_set_fix main 0)"
     lint="$(lint_json "$source")"
     finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "redundant_initial_set_statement" and (.node == $surface or $surface == ""))' | head -n 1)"
     [[ -n "$finding" ]] || finding='{}'
-    target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.redundant_initial_set_fix.main:stmt:1"')}"
-    binding_surface="$(printf '%s\n' "$finding" | jq -r '.binding_node // "block:task:app.redundant_initial_set_fix.main:stmt:0"')"
-    binding_expr_surface="$(printf '%s\n' "$finding" | jq -r '.binding_expr_node // "block:task:app.redundant_initial_set_fix.main:stmt:0:expr"')"
+    target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r --arg fallback "$redundant_set_fallback" '.node // $fallback')}"
+    binding_surface="$(printf '%s\n' "$finding" | jq -r --arg fallback "$redundant_binding_fallback" '.binding_node // $fallback')"
+    binding_expr_surface="$(printf '%s\n' "$finding" | jq -r --arg fallback "$redundant_binding_expr_fallback" '.binding_expr_node // $fallback')"
     replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "1"')"
     replacement_statement="$(printf '%s\n' "$finding" | jq -r '.replacement_statement // "bind count = 1"')"
     if [[ "$kind" == "convert_redundant_initial_set_to_bind" ]]; then
