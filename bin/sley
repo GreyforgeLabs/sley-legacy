@@ -6937,20 +6937,21 @@ lint_json() {
       hint:"delete the import or use it"
     }
   ' >> "$findings"
-  ast_json "$target" | jq -c --argjson raw_sources "$raw_sources_json" '
+  ast_json "$target" | jq -c --argjson raw_sources "$raw_sources_json" --argjson host_effect_needles "$CHECKER_HOST_EFFECT_NEEDLES_JSON" '
     . as $root |
     (([.. | objects | .source? // empty | select(type == "string")] + $raw_sources) | unique) as $sources |
+    def table_left:
+      split("|")[0] // "";
+    def table_right:
+      split("|")[1] // "";
+    def canonical_effect($effect):
+      if $effect == "DbRead" then "DatabaseRead"
+      elif $effect == "DbWrite" then "DatabaseWrite"
+      else $effect end;
     def effect_used($effect):
-      if $effect == "DatabaseRead" then any($sources[]; test("db\\.(query|query_one|try_query|try_query_one)\\("))
-      elif $effect == "DatabaseWrite" then any($sources[]; test("db\\.(try_insert)\\("))
-      elif $effect == "Deploy" then any($sources[]; test("deploy\\.(try_stage)\\("))
-      elif $effect == "FileRead" then any($sources[]; test("fs\\.(read_text|try_read_text)\\("))
-      elif $effect == "FileWrite" then any($sources[]; test("fs\\.(write_text|try_write_text)\\("))
-      elif $effect == "ModelCall" then any($sources[]; test("model\\.(try_complete)\\("))
-      elif $effect == "Network" then any($sources[]; test("http\\.(try_get_text)\\("))
-      elif $effect == "SecretRead" then any($sources[]; test("secrets\\.(try_get)\\("))
-      elif $effect == "Shell" then any($sources[]; test("shell\\.(try_run)\\("))
-      elif $effect == "Spend" then any($sources[]; test("spend\\.(try_authorize)\\("))
+      (canonical_effect($effect)) as $canonical |
+      if any($host_effect_needles[]?; table_left == $canonical) then
+        any($host_effect_needles[]?; (table_left == $canonical) and (table_right as $needle | any($sources[]; contains($needle))))
       else true end;
     $root.tasks[]? as $task |
     $task.effects | to_entries[] |
