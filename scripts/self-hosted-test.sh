@@ -53,6 +53,9 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("checker_call_parser_prefix_task_execution"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("checker_message_parser_prefix_task_execution"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("checker_status_parser_prefix_task_execution"))'
 
 bin/sley self-hosting-status --json \
@@ -156,6 +159,9 @@ bin/sley self-hosting-status --json \
 
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_ast_node_not_found_message"))'
+
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("parser_message_parser_prefix_task_execution"))'
 
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("symbol_graph_report_builder")) and (.bootstrap_owned_by_sley | index("symbol_graph_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("claim_verify_report_builder")) and (.bootstrap_owned_by_sley | index("claim_verify_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("migrate_report_builder")) and (.bootstrap_owned_by_sley | index("migrate_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("docgen_report_builder")) and (.bootstrap_owned_by_sley | index("docgen_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("sandbox_report_builder")) and (.bootstrap_owned_by_sley | index("sandbox_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("agent_bench_report_builder")) and (.bootstrap_owned_by_sley | index("agent_bench_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("deploy_report_builder")) and (.bootstrap_owned_by_sley | index("deploy_report_builder_task_execution"))'
