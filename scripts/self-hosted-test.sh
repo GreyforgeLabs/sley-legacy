@@ -62,6 +62,13 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("runtime_default_database_table_task_execution"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("runtime_value_kinds_task_execution"))'
+
+if grep -Eq 'RUNTIME_(INT|TEXT|BOOL|RAW|UNIT|OK_TEXT|OK_INT)_VALUE_KIND="\$\{RUNTIME_[A-Z_]+:-' bin/sley; then
+  fail "runtime value-kind names must come from loom.runtime without shell fallback literals"
+fi
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("lint_declared_effect_aliases_task_execution"))'
 
 bin/sley self-hosting-status --json \
