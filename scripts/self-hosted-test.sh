@@ -208,7 +208,13 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("docgen_report_shape"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("docgen_call_expression_prefix_task_execution"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("workbench_report_shape"))'
+
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("workbench_call_expression_prefix_task_execution"))'
 
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("sandbox_report_shape"))'
@@ -1046,7 +1052,7 @@ bin/sley-contract validate --schema sley.migrate.report.v0 "$migrate_report" --s
   | json_field '.schema == "sley.contract.validate.v0" and .status == "passed" and .requested_schema == "sley.migrate.report.v0" and .report_schema == "sley.migrate.report.v0"'
 
 bin/sley-docgen reference --json --module agent.pipeline examples/agent_project > "$docgen_report"
-json_field '.schema == "sley.docgen.report.v0" and .status == "generated" and .source_schema == "sley.query.report.v0" and .filters.module == "agent.pipeline" and .filters.exported_only == false and .summary.module_count == 1 and .summary.task_count == 3 and .summary.capability_count == 10 and .documents[0].title == "Sley Reference: agent.pipeline" and .tasks[0].qualified_name == "agent.pipeline.collect_profile" and .tasks[0].inbound_call_count == 1' < "$docgen_report"
+json_field '.schema == "sley.docgen.report.v0" and .status == "generated" and .source_schema == "sley.query.report.v0" and .filters.module == "agent.pipeline" and .filters.exported_only == false and .summary.module_count == 1 and .summary.task_count == 3 and .summary.capability_count == 10 and .documents[0].title == "Sley Reference: agent.pipeline" and .tasks[0].qualified_name == "agent.pipeline.collect_profile" and .tasks[0].inbound_call_count == 1 and .tasks[1].inbound_call_count == 1 and .tasks[2].inbound_call_count == 1' < "$docgen_report"
 json_field 'keys == (["schema","status","target","source_schema","summary","filters","documents","modules","tasks","types","effects","capabilities","diagnostics","issues"] | sort)' < "$docgen_report"
 
 bin/sley-contract validate --schema sley.docgen.report.v0 "$docgen_report" --schemas docs/schemas --json \
@@ -1061,7 +1067,7 @@ bin/sley-contract validate --schema sley.docgen.report.v0 "$docgen_report" --sch
   | json_field '.schema == "sley.contract.validate.v0" and .status == "passed" and .requested_schema == "sley.docgen.report.v0" and .report_schema == "sley.docgen.report.v0"'
 
 bin/sley-workbench --json --slice task:app.agent_deploy_pipeline.main examples/agent_deploy_pipeline.sley > "$workbench_report"
-json_field '.schema == "sley.workbench.report.v0" and .status == "ready" and .summary.module_count == 1 and .summary.call_count == 7 and .graph_slice.schema == "sley.symbol_graph.slice.v0" and .graph_slice.focus.id == "task:app.agent_deploy_pipeline.main"' < "$workbench_report"
+json_field '.schema == "sley.workbench.report.v0" and .status == "ready" and .summary.module_count == 1 and .summary.call_count == 7 and (.query.calls | length) == 4 and .query.calls[0].source == "call secrets.try_get(\"api_key\")?" and .graph_slice.schema == "sley.symbol_graph.slice.v0" and .graph_slice.focus.id == "task:app.agent_deploy_pipeline.main" and (.graph_slice.outbound_calls | length) == 4' < "$workbench_report"
 
 bin/sley-contract validate --schema sley.workbench.report.v0 "$workbench_report" --schemas docs/schemas --json \
   | json_field '.schema == "sley.contract.validate.v0" and .status == "passed" and .requested_schema == "sley.workbench.report.v0" and .report_schema == "sley.workbench.report.v0"'

@@ -10789,19 +10789,23 @@ docgen_json() {
   done
   ast="$(ast_json "$target")"
   capabilities="$(docgen_capabilities_json)"
-  report="$(printf '%s\n' "$ast" | jq \
-    --arg schema "$SCHEMA_DOCGEN" \
-    --arg target "$target" \
-    --arg source_schema "$SCHEMA_QUERY" \
-    --arg module_filter "$module_filter" \
-    --argjson exported_only "$exported_only" \
-    --argjson fields "$DOCGEN_REPORT_FIELDS_JSON" \
-    --argjson capabilities "$capabilities" '
+	report="$(printf '%s\n' "$ast" | jq \
+	  --arg schema "$SCHEMA_DOCGEN" \
+	  --arg target "$target" \
+	  --arg source_schema "$SCHEMA_QUERY" \
+	  --arg module_filter "$module_filter" \
+	  --arg call_expression_prefix "$PARSER_CALL_EXPRESSION_PREFIX" \
+	  --argjson exported_only "$exported_only" \
+	  --argjson fields "$DOCGEN_REPORT_FIELDS_JSON" \
+	  --argjson capabilities "$capabilities" '
     def task_sources($task):
       ([$task.body.statements[]? | (.expr?.source? // empty)] +
        [$task.body.statements[]? | (.condition?.source? // empty)]);
+    def call_source_tail($source):
+      if ($source | startswith($call_expression_prefix)) then $source[($call_expression_prefix | length):]
+      else ($source | sub("^call[[:space:]]+";"")) end;
     def call_callee:
-      (.source // "") | sub("^call[[:space:]]+";"") | sub("\\(.*$";"");
+      call_source_tail(.source // "") | sub("\\(.*$";"");
     def resolve_call($ast; $module; $callee):
       if ($callee | contains(".")) then
         ($callee | split(".")) as $parts |
@@ -10813,7 +10817,7 @@ docgen_json() {
       [
         $ast.tasks[]? as $from |
         $from.body.statements[]?.expr? |
-        select((.source? // "") | startswith("call ")) |
+        select((.source? // "") | startswith($call_expression_prefix)) |
         select(resolve_call($ast; $from.module; call_callee) == $qualified)
       ] | length;
     . as $ast |
@@ -10922,18 +10926,22 @@ workbench_json() {
     esac
   done
   ast="$(ast_json "$target")"
-  printf '%s\n' "$ast" | jq \
-    --arg schema "$SCHEMA_WORKBENCH" \
-    --arg target "$target" \
-    --arg slice "$slice" \
-    --argjson fields "$WORKBENCH_REPORT_FIELDS_JSON" '
+	printf '%s\n' "$ast" | jq \
+	  --arg schema "$SCHEMA_WORKBENCH" \
+	  --arg target "$target" \
+	  --arg slice "$slice" \
+	  --arg call_expression_prefix "$PARSER_CALL_EXPRESSION_PREFIX" \
+	  --argjson fields "$WORKBENCH_REPORT_FIELDS_JSON" '
     def task_sources($task):
       ([$task.body.statements[]? | (.expr?.source? // empty)] +
        [$task.body.statements[]? | (.condition?.source? // empty)]);
     def function_call_count($task):
       [task_sources($task)[] | select(test("[A-Za-z_][A-Za-z0-9_.]*\\("))] | length;
+    def call_source_tail($source):
+      if ($source | startswith($call_expression_prefix)) then $source[($call_expression_prefix | length):]
+      else ($source | sub("^call[[:space:]]+";"")) end;
     def call_callee:
-      (.source // "") | sub("^call[[:space:]]+";"") | sub("\\(.*$";"");
+      call_source_tail(.source // "") | sub("\\(.*$";"");
     def resolve_call($ast; $module; $callee):
       if ($callee | contains(".")) then
         ($callee | split(".")) as $parts |
@@ -10945,7 +10953,7 @@ workbench_json() {
       [
         $ast.tasks[]? as $from |
         $from.body.statements[]?.expr? |
-        select((.source? // "") | startswith("call ")) |
+        select((.source? // "") | startswith($call_expression_prefix)) |
         call_callee as $callee |
         {
           from:($from.module + "." + $from.name),
