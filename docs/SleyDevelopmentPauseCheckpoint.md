@@ -2,8 +2,8 @@
 
 Date: 2026-05-19
 Branch: public
-Latest code checkpoint: 18600a3
-Latest pause documentation checkpoint before this note: 0cfd03b
+Latest code checkpoint: 1beed84
+Latest pause documentation checkpoint before this note: ff4ce3f
 Current pause document status: committed on `public`; use `git log` for exact
 branch head
 Remote status: verify current `origin/public` head with
@@ -247,8 +247,12 @@ The current local checkpoint advances the public branch to:
   `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
   `bootstrap_owned_by_sley=251`; remaining blockers are still parser, checker,
   and runtime semantics from Sley source
+- self-hosting status after the runtime/docgen/workbench call fallback
+  parser-prefix source slice: `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=255`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
 - latest verification refresh on 2026-05-19: `make v1` passed after the
-  call-site rewrite parser-prefix source slice
+  runtime/docgen/workbench call fallback parser-prefix source slice
 
 The tracked code checkpoint is:
 
@@ -308,6 +312,7 @@ The tracked code checkpoint is:
 - 18600a3 fix: source qualify call fallbacks from parser
 - e650abc fix: source plan call args from parser
 - 50f9c59 fix: source call site rewrites from parser
+- 1beed84 fix: source remaining call fallbacks from parser
 
 The tracked pause documentation checkpoints are:
 
@@ -359,6 +364,9 @@ The tracked pause documentation checkpoints are:
 - 82ce059 docs: record project zero arg runtime parser slice
 - 25cc748 docs: record project runtime parser slice
 - 0cfd03b docs: record message template parser slice
+- ae61afe docs: record qualify call fallback parser slice
+- c58fc6e docs: record plan call arg parser slice
+- ff4ce3f docs: record call site rewrite parser slice
 
 Recent self-hosting slices added:
 
@@ -528,6 +536,11 @@ Recent self-hosting slices added:
   parser-owned call expression prefix instead of hardcoded `call ` needles
   while preserving checked project rewrites for `math.twice` and
   `math.adjust(41)`
+- runtime project-ready fallback probes now build default `math.double(21)` and
+  `double(base)` call sources from the parser-owned call expression prefix;
+  docgen and workbench call-tail fallback handling no longer strips hardcoded
+  `^call...` text when a source does not use the configured parser prefix,
+  while preserving generated reference and workbench call counts
 
 ## Next Frontier
 
@@ -1336,10 +1349,28 @@ The latest continuation audit reconfirmed:
   probes, `scripts/self-hosted-test.sh`, `bin/sley-contract check-fixtures
   fixtures/contracts --schemas docs/schemas --json`, external public-action
   packet verifier, `git diff --check`, and final `make v1` all passed
+- focused runtime/docgen/workbench call fallback parser-prefix probes:
+  `bin/sley self-hosting-status --json` reported the four new ownership
+  markers and `bootstrap_owned_by_sley=255`; `bin/sley run --json
+  examples/project` still returned `Int(42)`; `bin/sley-docgen reference
+  --json examples/agent_deploy_pipeline.sley` still reported one task with
+  seven outbound calls; `bin/sley-workbench --json --slice
+  task:app.agent_deploy_pipeline.main examples/agent_deploy_pipeline.sley`
+  still reported seven calls with four query call records
+- Sley self-hosting status after the runtime/docgen/workbench call fallback
+  parser-prefix source slice: `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=255`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
+- latest runtime/docgen/workbench call fallback parser-prefix verification:
+  `bash -n bin/sley`, `bash -n scripts/self-hosted-test.sh`, focused
+  runtime/docgen/workbench probes, `scripts/self-hosted-test.sh`,
+  `bin/sley-contract check-fixtures fixtures/contracts --schemas docs/schemas
+  --json`, external public-action packet verifier, `git diff --check`, and
+  final `make v1` all passed
 
 ## Dirty State Notes
 
-Tracked code was committed at 18600a3 before this pause document was updated.
+Tracked code was committed at 1beed84 before this pause document was updated.
 Tracked pause documentation before this update was refreshed through 218d40c
 with parser lint surface evidence, through 26e7417 with the external comparison
 approval gate, fork audit, and helper evidence, and through aba1b03 with parser
@@ -1372,7 +1403,10 @@ through a390dd9 with record-field runtime parser-prefix evidence, and through
 304e5d0 with local runtime parser-prefix evidence, and through 82ce059 with
 project zero-arg runtime parser-prefix evidence, and through 25cc748 with
 project runtime parser-prefix evidence, and through 0cfd03b with
-message-template parser-prefix evidence.
+message-template parser-prefix evidence, through ae61afe with qualify-call
+fallback parser-prefix evidence, through c58fc6e with graph/plan call-argument
+parser-prefix evidence, and through ff4ce3f with call-site rewrite
+parser-prefix evidence.
 
 Pre-existing untracked files were not touched and should remain outside future
 commits unless the operator explicitly asks to include them:
