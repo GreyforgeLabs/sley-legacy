@@ -15,6 +15,8 @@ json_field() {
 }
 
 bool_literal_source="$(mktemp)"
+empty_module_source="$(mktemp)"
+add_take_operation="$(mktemp)"
 artifact_dir="$(mktemp -d)"
 artifact_check_report="$(mktemp)"
 migrate_report="$(mktemp)"
@@ -25,13 +27,18 @@ agent_bench_report="$(mktemp)"
 zjx_tool_report="$(mktemp)"
 runtime_report="$(mktemp)"
 ast_missing_report="$(mktemp)"
-trap 'rm -f "$bool_literal_source" "$artifact_check_report" "$migrate_report" "$docgen_report" "$workbench_report" "$sandbox_report" "$agent_bench_report" "$zjx_tool_report" "$runtime_report" "$ast_missing_report"; rm -rf "$artifact_dir"' EXIT
+ci_report="$(mktemp)"
+trap 'rm -f "$bool_literal_source" "$empty_module_source" "$add_take_operation" "$artifact_check_report" "$migrate_report" "$docgen_report" "$workbench_report" "$sandbox_report" "$agent_bench_report" "$zjx_tool_report" "$runtime_report" "$ast_missing_report" "$ci_report"; rm -rf "$artifact_dir"' EXIT
 printf '%s\n' \
   'module app.bool_literal' \
   '' \
   'task main -> Bool {' \
   '  return true' \
   '}' > "$bool_literal_source"
+printf '%s\n' \
+  'module app.empty' > "$empty_module_source"
+printf '%s\n' \
+  '{"op":"AddTake","target":"","payload":{"name":"value","type":"Text"}}' > "$add_take_operation"
 
 bash -n bin/sley
 ./scripts/check-self-hosted-code.sh
@@ -64,6 +71,9 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_block_task_surface_id_task_execution"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("parser_block_fallback_surface_id_task_execution"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_call_target_task_id_task_execution"))'
 
 bin/sley self-hosting-status --json \
@@ -74,6 +84,9 @@ bin/sley self-hosting-status --json \
 
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_task_statement_surface_id_task_execution"))'
+
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("parser_task_fallback_surface_id_task_execution"))'
 
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_branch_statement_surface_id_task_execution"))'
@@ -676,6 +689,12 @@ bin/sley plan --json --graft-templates examples/project \
 bin/sley plan --json --graft-templates examples/project \
   | json_field '([.task_surfaces[]?.graft_targets[]?] | index("block:task:app.main.main")) and ([.graft_templates[]? | select(.kind == "insert_statement") | .surface] | index("block:task:app.main.main")) and ([.graft_templates[]? | select(.kind == "move_statement") | .operation.payload.parent] | index("block:task:app.main.main")) and ([.graft_templates[]? | select(.kind == "move_statement") | .operation.target] | index("block:task:app.main.main:stmt:0")) and ([.graft_templates[]? | select(.kind == "delete_statement") | .operation.target] | index("block:task:app.main.main:stmt:0"))'
 
+bin/sley plan --json --graft-templates --template-surface block:task:app.collections.sum examples/collections.sley \
+  | json_field '([.graft_templates[]? | select(.kind == "insert_statement" and .surface == "block:task:app.collections.sum" and .operation.target == "block:task:app.collections.sum") | .operation.payload.position] | index(4))'
+
+bin/sley plan --json --graft-templates examples/agent_deploy_pipeline.sley \
+  | json_field '.graft_templates[0].surface == "task:app.agent_deploy_pipeline.main" and .graft_templates[0].operation.target == "task:app.agent_deploy_pipeline.main" and .next_actions[0].command[4] == "task:app.agent_deploy_pipeline.main"'
+
 bin/sley plan --json --graft-templates --template-surface task:app.constant_false_if.main examples/constant_false_if_statement.sley \
   | json_field '([.graft_templates[]? | select(.kind == "move_statement_destination") | .operation.target] | index("block:task:app.constant_false_if.main:stmt:0:then:stmt:0")) and ([.graft_templates[]? | select(.kind == "replace_expression") | .surface] | index("block:task:app.constant_false_if.main:stmt:0:expr"))'
 
@@ -684,6 +703,9 @@ bin/sley plan --json --graft-templates examples/project \
 
 bin/sley plan --json --emit-graft replace_call_arg examples/project \
   | json_field '.target == "task:app.math.double" and .payload.scope == "task:app.main.main"'
+
+bin/sley graft --json --dry-run "$empty_module_source" "$add_take_operation" \
+  | json_field '([.provenance[]?.targets[]?] | index("task:app.main.main"))'
 
 bin/sley graph --json --slice module:app.math examples/project \
   | json_field '([.add_affordances[]? | .target] | index("module:app.math:imports")) and ([.add_affordances[]? | .target] | index("module:app.math:types")) and ([.add_affordances[]? | .target] | index("module:app.math:effects"))'
@@ -1050,6 +1072,14 @@ json_field '.schema == "sley.workbench.report.v0" and .status == "warnings" and 
 bin/sley-contract validate --schema sley.workbench.report.v0 "$workbench_report" --schemas docs/schemas --json \
   | json_field '.schema == "sley.contract.validate.v0" and .status == "passed" and .requested_schema == "sley.workbench.report.v0" and .report_schema == "sley.workbench.report.v0"'
 
+if bin/sley-ci verify --json examples/agent_deploy_pipeline.sley > "$ci_report"; then
+  fail "ci verify agent deploy pipeline passed without runtime gates"
+fi
+json_field '.schema == "sley.ci.report.v0" and .status == "failed" and .steps[0].diagnostics[0].node == "task:app.agent_deploy_pipeline.main"' < "$ci_report"
+
+bin/sley-contract validate --schema sley.ci.report.v0 "$ci_report" --schemas docs/schemas --json \
+  | json_field '.schema == "sley.contract.validate.v0" and .status == "passed" and .requested_schema == "sley.ci.report.v0" and .report_schema == "sley.ci.report.v0"'
+
 bin/sley-sandbox-runner run --json fixtures/contracts/sandbox_manifest_agent_pipeline.json > "$sandbox_report"
 json_field '.schema == "sley.sandbox.report.v0" and .status == "warnings" and .manifest_schema == "sley.sandbox.manifest.v0" and .target == "examples/agent_deploy_pipeline.sley" and .summary.capability_count == 4 and .summary.seed_count == 4 and .summary.issue_count == 1 and .verify.schema == "sley.verify.report.v0" and .verify.status == "passed" and .issues[0].code == "SANDBOX_OS_ISOLATION_NOT_ENFORCED"' < "$sandbox_report"
 
@@ -1057,7 +1087,7 @@ bin/sley-contract validate --schema sley.sandbox.report.v0 "$sandbox_report" --s
   | json_field '.schema == "sley.contract.validate.v0" and .status == "passed" and .requested_schema == "sley.sandbox.report.v0" and .report_schema == "sley.sandbox.report.v0"'
 
 bin/sley-agent-bench run --json --case unused-private-task-repair > "$agent_bench_report"
-json_field '.schema == "sley.agent_bench.report.v0" and .status == "passed" and .case_count == 1 and .passed_count == 1 and .failed_count == 0 and .cases[0].name == "unused-private-task-repair" and .cases[0].status == "passed" and .cases[0].trace_receipt_count == 1' < "$agent_bench_report"
+json_field '.schema == "sley.agent_bench.report.v0" and .status == "passed" and .case_count == 1 and .passed_count == 1 and .failed_count == 0 and .cases[0].name == "unused-private-task-repair" and .cases[0].status == "passed" and .cases[0].trace_receipt_count == 1 and .cases[0].selected_repair.surface == "task:app.bench.orphan"' < "$agent_bench_report"
 
 bin/sley-contract validate --schema sley.agent_bench.report.v0 "$agent_bench_report" --schemas docs/schemas --json \
   | json_field '.schema == "sley.contract.validate.v0" and .status == "passed" and .requested_schema == "sley.agent_bench.report.v0" and .report_schema == "sley.agent_bench.report.v0"'
