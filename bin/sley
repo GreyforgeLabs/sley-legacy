@@ -6606,9 +6606,12 @@ lint_json() {
         hint:"delete it or use it in a signature"
       })
   ' >> "$findings"
-  ast_json "$target" | jq -c '
+  ast_json "$target" | jq -c --arg call_expression_prefix "$PARSER_CALL_EXPRESSION_PREFIX" '
     . as $root |
     ([.. | objects | .source? // empty | select(type == "string")] | unique) as $sources |
+    def call_source_tail($source):
+      if ($source | startswith($call_expression_prefix)) then $source[($call_expression_prefix | length):]
+      else "" end;
     def import_prefix($import):
       ($import.alias // ($import.module | split(".")[-1]));
     def import_task_names($import):
@@ -6618,7 +6621,7 @@ lint_json() {
       (import_task_names($import)) as $task_names |
       any($sources[]; test("(^|[^A-Za-z0-9_])" + $prefix + "\\.")) or
       any($sources[]; . as $source |
-        ($source | capture("^call[[:space:]]+(?<callee>[A-Za-z_][A-Za-z0-9_]*)\\(")? // null) as $call |
+        (call_source_tail($source) | capture("^(?<callee>[A-Za-z_][A-Za-z0-9_]*)\\(")? // null) as $call |
         ($call != null and (($task_names | index($call.callee)) != null))
       );
     .imports[]? as $import |
@@ -6684,15 +6687,18 @@ lint_json() {
       hint:"remove the take or use it in the task body"
     }
   ' >> "$findings"
-  ast_json "$target" | jq -c '
+  ast_json "$target" | jq -c --arg call_expression_prefix "$PARSER_CALL_EXPRESSION_PREFIX" '
     . as $root |
+    def call_source_tail($source):
+      if ($source | startswith($call_expression_prefix)) then $source[($call_expression_prefix | length):]
+      else "" end;
     def task_key($t): ($t.module + "." + $t.name);
     def call_callee($expr):
-      ($expr.source | sub("^call[[:space:]]+";"") | sub("\\(.*$";""));
+      (call_source_tail($expr.source // "") | sub("\\(.*$";""));
     def call_target($module; $callee):
       if ($callee | contains(".")) then $callee else ($module + "." + $callee) end;
     def called_targets($task):
-      [$task.body.statements[]?.expr? | select((.source? // "") | startswith("call ")) | call_target($task.module; call_callee(.))];
+      [$task.body.statements[]?.expr? | select((.source? // "") | startswith($call_expression_prefix)) | call_target($task.module; call_callee(.))];
     def step($seen):
       reduce ($root.tasks[]? as $candidate | select(($seen | index(task_key($candidate))) != null) | called_targets($candidate)[]) as $call
         ($seen; if (. | index($call)) == null then . + [$call] else . end);
@@ -6748,10 +6754,13 @@ lint_json() {
       replacement:(($source | sub("fs\\.read_text"; "fs.try_read_text")) + "?")
     }
   ' >> "$findings"
-  ast_json "$target" | jq -c '
+  ast_json "$target" | jq -c --arg call_expression_prefix "$PARSER_CALL_EXPRESSION_PREFIX" '
     . as $root |
+    def call_source_tail($source):
+      if ($source | startswith($call_expression_prefix)) then $source[($call_expression_prefix | length):]
+      else "" end;
     def call_callee:
-      sub("^call[[:space:]]+";"") | sub("\\(.*$";"");
+      call_source_tail(.) | sub("\\(.*$";"");
     def resolve($module; $callee):
       if ($callee | contains(".")) then
         ($callee | split(".")) as $parts |
@@ -6760,7 +6769,7 @@ lint_json() {
         if $imported then ($imported + "." + ($parts[1:] | join("."))) else $callee end
       else $module + "." + $callee end;
     def call_returns_result($module; $source):
-      if ($source | startswith("call ")) then
+      if ($source | startswith($call_expression_prefix)) then
         ($source | call_callee) as $callee |
         (resolve($module; $callee)) as $target |
         any($root.tasks[]?; ((.module + "." + .name) == $target and ((.return_type.name // "") | startswith("Result"))))
@@ -6853,16 +6862,19 @@ lint_json() {
       }
     ' "$file" >> "$findings"
   done < <(collect_files "$target")
-  ast_json "$target" | jq -c '
+  ast_json "$target" | jq -c --arg call_expression_prefix "$PARSER_CALL_EXPRESSION_PREFIX" '
     . as $root |
+    def call_source_tail($source):
+      if ($source | startswith($call_expression_prefix)) then $source[($call_expression_prefix | length):]
+      else "" end;
     def import_prefix($import):
       ($import.alias // ($import.module | split(".")[-1]));
     def call_callee($source):
-      (($source | capture("^call[[:space:]]+(?<callee>[A-Za-z_][A-Za-z0-9_]*)\\(")? // {callee:""}).callee);
+      ((call_source_tail($source) | capture("^(?<callee>[A-Za-z_][A-Za-z0-9_]*)\\(")? // {callee:""}).callee);
     $root.tasks[]? as $task |
     $task.body.statements[]?.expr? as $expr |
     ($expr.source // "") as $source |
-    select($source | startswith("call ")) |
+    select($source | startswith($call_expression_prefix)) |
     (call_callee($source)) as $callee |
     select($callee != "") |
     $root.imports[]? as $import |
@@ -6877,13 +6889,16 @@ lint_json() {
       node:$expr.id,
       module:$task.module,
       hint:"qualify the call through the import alias",
-      replacement:("call " + $prefix + "." + ($source | sub("^call[[:space:]]+"; "")))
+      replacement:($call_expression_prefix + $prefix + "." + call_source_tail($source))
     }
   ' >> "$findings"
-  ast_json "$target" | jq -c '
+  ast_json "$target" | jq -c --arg call_expression_prefix "$PARSER_CALL_EXPRESSION_PREFIX" '
     . as $root |
+    def call_source_tail($source):
+      if ($source | startswith($call_expression_prefix)) then $source[($call_expression_prefix | length):]
+      else "" end;
     def call_callee($source):
-      (($source | capture("^call[[:space:]]+(?<callee>[A-Za-z_][A-Za-z0-9_.]*)\\(")? // {callee:""}).callee);
+      ((call_source_tail($source) | capture("^(?<callee>[A-Za-z_][A-Za-z0-9_.]*)\\(")? // {callee:""}).callee);
     def resolve($module; $callee):
       if ($callee | contains(".")) then
         ($callee | split(".")) as $parts |
@@ -6892,7 +6907,7 @@ lint_json() {
         if $imported then ($imported + "." + ($parts[1:] | join("."))) else $callee end
       else $module + "." + $callee end;
     def call_returns_result($module; $source):
-      if ($source | startswith("call ")) then
+      if ($source | startswith($call_expression_prefix)) then
         (call_callee($source)) as $callee |
         (resolve($module; $callee)) as $target |
         any($root.tasks[]?; ((.module + "." + .name) == $target and ((.return_type.name // "") | startswith("Result"))))

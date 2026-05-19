@@ -232,6 +232,9 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("lint_report_shape"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("lint_call_expression_prefix_task_execution"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("query_report_shape"))'
 
 bin/sley self-hosting-status --json \
@@ -733,6 +736,15 @@ bin/sley lint --json --rule empty_for_statement examples/empty_for_statement.sle
 
 bin/sley lint --json --rule unchecked_result examples/unchecked_result.sley \
   | json_field '([.findings[]? | select(.rule == "unchecked_result") | .node] | index("block:task:app.unchecked.main:stmt:0:expr"))'
+
+bin/sley lint --json --rule unchecked_result examples/result_flow.sley \
+  | json_field '.status == "ok" and (.findings | length) == 0'
+
+bin/sley lint --json --rule unused_import examples/unused_import_project \
+  | json_field '([.findings[]? | select(.rule == "unused_import") | .node] | index("import:app.main:app.stale"))'
+
+bin/sley lint --json --rule unqualified_imported_call examples/unqualified_import_call_project \
+  | json_field '([.findings[]? | select(.rule == "unqualified_imported_call") | .replacement] | index("call math.double(21)"))'
 
 bin/sley lint --json --rule unreachable_statement examples/unreachable_statement.sley \
   | json_field '([.findings[]? | select(.rule == "unreachable_statement") | .node] | index("block:task:app.unreachable_statement.main:stmt:2"))'
