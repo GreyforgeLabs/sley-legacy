@@ -13531,9 +13531,10 @@ command_graft_raw() {
       simplify_identity_binary_expression)
         rule="identity_binary_expression"
         operation="ReplaceExpression"
+        fallback="$(parser_task_expression_surface_value app.identity_fix main 1)"
         finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "identity_binary_expression" and (.node == $surface or $surface == ""))' | head -n 1)"
         [[ -n "$finding" ]] || finding='{}'
-        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.identity_fix.main:stmt:1:expr"')}"
+        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r --arg fallback "$fallback" '.node // $fallback')}"
         replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "base"')"
         if [[ "$write" == true ]]; then
           sley_rewrite_statement_surface "$source" "$target_surface" "$replacement"
@@ -13542,9 +13543,10 @@ command_graft_raw() {
       simplify_redundant_boolean_comparison)
         rule="redundant_boolean_comparison"
         operation="ReplaceExpression"
+        fallback="$(parser_task_expression_surface_value app.boolean_fix main 1)"
         finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "redundant_boolean_comparison" and (.node == $surface or $surface == ""))' | head -n 1)"
         [[ -n "$finding" ]] || finding='{}'
-        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.boolean_fix.main:stmt:1:expr"')}"
+        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r --arg fallback "$fallback" '.node // $fallback')}"
         replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "ready"')"
         if [[ "$write" == true ]]; then
           sley_rewrite_statement_surface "$source" "$target_surface" "$replacement"
@@ -13553,9 +13555,10 @@ command_graft_raw() {
       simplify_absorbing_boolean_expression)
         rule="absorbing_boolean_expression"
         operation="ReplaceExpression"
+        fallback="$(parser_task_expression_surface_value app.absorbing_boolean_fix main 0)"
         finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "absorbing_boolean_expression" and (.node == $surface or $surface == ""))' | head -n 1)"
         [[ -n "$finding" ]] || finding='{}'
-        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.absorbing_boolean_fix.main:stmt:0:expr"')}"
+        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r --arg fallback "$fallback" '.node // $fallback')}"
         replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "false"')"
         if [[ "$write" == true ]]; then
           sley_rewrite_statement_surface "$source" "$target_surface" "$replacement"
@@ -13564,9 +13567,10 @@ command_graft_raw() {
       simplify_idempotent_boolean_expression)
         rule="idempotent_boolean_expression"
         operation="ReplaceExpression"
+        fallback="$(parser_task_expression_surface_value app.idempotent_boolean_fix main 1)"
         finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "idempotent_boolean_expression" and (.node == $surface or $surface == ""))' | head -n 1)"
         [[ -n "$finding" ]] || finding='{}'
-        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.idempotent_boolean_fix.main:stmt:1:expr"')}"
+        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r --arg fallback "$fallback" '.node // $fallback')}"
         replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "ready"')"
         if [[ "$write" == true ]]; then
           sley_rewrite_statement_surface "$source" "$target_surface" "$replacement"
@@ -13575,9 +13579,10 @@ command_graft_raw() {
       simplify_self_comparison_expression)
         rule="self_comparison_expression"
         operation="ReplaceExpression"
+        fallback="$(parser_task_expression_surface_value app.self_compare_fix main 0)"
         finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "self_comparison_expression" and (.node == $surface or $surface == ""))' | head -n 1)"
         [[ -n "$finding" ]] || finding='{}'
-        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.self_compare_fix.main:stmt:0:expr"')}"
+        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r --arg fallback "$fallback" '.node // $fallback')}"
         replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "true"')"
         if [[ "$write" == true ]]; then
           sley_rewrite_statement_surface "$source" "$target_surface" "$replacement"
@@ -13586,9 +13591,10 @@ command_graft_raw() {
       simplify_double_negation_expression)
         rule="double_negation_expression"
         operation="ReplaceExpression"
+        fallback="$(parser_task_expression_surface_value app.double_fix main 1)"
         finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "double_negation_expression" and (.node == $surface or $surface == ""))' | head -n 1)"
         [[ -n "$finding" ]] || finding='{}'
-        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.double_fix.main:stmt:1:expr"')}"
+        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r --arg fallback "$fallback" '.node // $fallback')}"
         replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "ready"')"
         if [[ "$write" == true ]]; then
           sley_rewrite_statement_surface "$source" "$target_surface" "$replacement"
@@ -13597,9 +13603,10 @@ command_graft_raw() {
       simplify_negated_comparison_expression)
         rule="negated_comparison_expression"
         operation="ReplaceExpression"
+        fallback="$(parser_task_expression_surface_value app.negated_compare_fix main 1)"
         finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "negated_comparison_expression" and (.node == $surface or $surface == ""))' | head -n 1)"
         [[ -n "$finding" ]] || finding='{}'
-        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.negated_compare_fix.main:stmt:1:expr"')}"
+        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r --arg fallback "$fallback" '.node // $fallback')}"
         replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "limit < 3"')"
         if [[ "$write" == true ]]; then
           sley_rewrite_statement_surface "$source" "$target_surface" "$replacement"
