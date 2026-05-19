@@ -71,6 +71,8 @@ export task owned_bootstrap_values -> List<Text> {
     "migrate_qualify_call_parser_prefix_task_execution",
     "fix_qualify_call_parser_prefix_task_execution",
     "plan_call_arg_parser_prefix_task_execution",
+    "fix_update_call_sites_parser_prefix_task_execution",
+    "fix_remove_call_arg_parser_prefix_task_execution",
     "parser_fix_style_surface_id_task_execution",
     "parser_fix_empty_surface_id_task_execution",
     "parser_fix_unused_unreachable_surface_id_task_execution",
