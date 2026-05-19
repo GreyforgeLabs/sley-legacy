@@ -5700,6 +5700,7 @@ check_json() {
     --arg return_statement_kind "$PARSER_RETURN_STATEMENT_KIND" \
     --arg binding_statement_kind "$PARSER_BINDING_STATEMENT_KIND" \
     --arg gate_binding_kind "$PARSER_GATE_BINDING_KIND" \
+    --arg identifier_expr_kind "$PARSER_IDENTIFIER_KIND" \
     --arg unknown_prefix "$UNKNOWN_IDENTIFIER_MESSAGE_PREFIX" \
     --arg unknown_suffix "$UNKNOWN_IDENTIFIER_MESSAGE_SUFFIX" \
     --arg unknown_message_template "$UNKNOWN_IDENTIFIER_MESSAGE_TEMPLATE" \
@@ -6046,7 +6047,7 @@ check_json() {
       ) | unique) as $known |
       $t.body.statements[]? |
       . as $stmt |
-      select(.expr.expr_kind? == "Identifier") |
+      select(.expr.expr_kind? == $identifier_expr_kind) |
       select(($known | index($stmt.expr.name)) == null) |
       {id:$unknown, severity:"error", message:render_arg($unknown_message_template; "identifier_name"; .expr.name), node:.expr.id, span:.expr.span};
     def return_type_diags:

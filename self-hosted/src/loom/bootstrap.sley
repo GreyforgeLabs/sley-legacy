@@ -92,6 +92,7 @@ export task owned_bootstrap_values -> List<Text> {
     "checker_host_effect_needles_task_execution",
     "checker_gate_binding_kind_task_execution",
     "checker_repair_hint_kind_task_execution",
+    "checker_identifier_expr_kind_task_execution",
     "checker_message_task_execution",
     "checker_unknown_type_diagnostics",
     "checker_unknown_task_diagnostics",
