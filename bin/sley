@@ -4024,10 +4024,14 @@ eval_main_call_int_return() {
   local target="$1"
   ast_json "$target" | jq -ec \
     --arg return_kind "$PARSER_RETURN_STATEMENT_KIND" \
+    --arg call_expression_prefix "$PARSER_CALL_EXPRESSION_PREFIX" \
     --arg int_value_kind "$RUNTIME_INT_VALUE_KIND" '
     def trim: gsub("^[[:space:]]+|[[:space:]]+$"; "");
+    def call_source_tail($source):
+      if ($source | startswith($call_expression_prefix)) then $source[($call_expression_prefix | length):]
+      else "" end;
     def call_parts($source):
-      $source | capture("^call[[:space:]]+(?<callee>[A-Za-z_][A-Za-z0-9_.]*)\\((?<args>.*)\\)\\??$")?;
+      call_source_tail($source) | capture("^(?<callee>[A-Za-z_][A-Za-z0-9_.]*)\\((?<args>.*)\\)\\??$")?;
     def call_args($args):
       if (($args | gsub("[[:space:]]"; "")) == "") then []
       else ($args | split(",") | map(trim)) end;
@@ -4050,7 +4054,7 @@ eval_main_call_int_return() {
       else empty end;
     ([$root.tasks[]? as $task |
       $task.body.statements[]? |
-      select(.kind == $return_kind and ((.expr.source? // "") | startswith("call "))) |
+      select(.kind == $return_kind and ((.expr.source? // "") | startswith($call_expression_prefix))) |
       {module:$task.module, expr:.expr}
     ][0] // empty) as $main_call |
     (call_parts($main_call.expr.source)) as $call |
