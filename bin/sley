@@ -187,6 +187,7 @@ eval_parser_id_template() {
       if (token == "statement_id") return "{{statement}}"
       if (token == "expression_id") return "{{expression}}"
       if (token == "branch_name") return "{{branch}}"
+      if (token == "side_name") return "{{side}}"
       if (token == "index") return "{{index}}"
       exit 7
     }
@@ -4767,6 +4768,7 @@ PARSER_EXPRESSION_ID_TEMPLATE="$(eval_parser_id_template expression_id || printf
 PARSER_COLLECTION_EXPRESSION_ID_TEMPLATE="$(eval_parser_id_template collection_expression_id || printf '{{statement}}:collection\n')"
 PARSER_CONDITION_EXPRESSION_ID_TEMPLATE="$(eval_parser_id_template condition_expression_id || printf '{{statement}}:condition\n')"
 PARSER_CALL_ARGUMENT_SURFACE_ID_TEMPLATE="$(eval_parser_id_template call_argument_surface_id || printf '{{expression}}:arg:{{index}}\n')"
+PARSER_EXPRESSION_SIDE_SURFACE_ID_TEMPLATE="$(eval_parser_id_template expression_side_surface_id || printf '{{expression}}:{{side}}\n')"
 PARSER_RETURN_STATEMENT_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" return_statement_kind)"
 PARSER_EXPR_STATEMENT_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" expression_statement_kind)"
 PARSER_BINDING_STATEMENT_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" binding_statement_kind)"
@@ -4852,6 +4854,9 @@ fi
 if [[ -z "$PARSER_CALL_ARGUMENT_SURFACE_ID_TEMPLATE" ]]; then
   PARSER_CALL_ARGUMENT_SURFACE_ID_TEMPLATE='{{expression}}:arg:{{index}}'
 fi
+if [[ -z "$PARSER_EXPRESSION_SIDE_SURFACE_ID_TEMPLATE" ]]; then
+  PARSER_EXPRESSION_SIDE_SURFACE_ID_TEMPLATE='{{expression}}:{{side}}'
+fi
 
 sley_template_replace() {
   local out="$1" key value needle
@@ -4881,6 +4886,12 @@ parser_task_expression_surface_value() {
   local module_name="$1" task_name="$2" index="$3" statement_id
   statement_id="$(parser_task_statement_surface_value "$module_name" "$task_name" "$index")"
   sley_template_replace "$PARSER_EXPRESSION_ID_TEMPLATE" statement "$statement_id"
+}
+
+parser_task_expression_side_surface_value() {
+  local module_name="$1" task_name="$2" index="$3" side_name="$4" expression_id
+  expression_id="$(parser_task_expression_surface_value "$module_name" "$task_name" "$index")"
+  sley_template_replace "$PARSER_EXPRESSION_SIDE_SURFACE_ID_TEMPLATE" expression "$expression_id" side "$side_name"
 }
 
 PARSER_RETURN_STATEMENT_KIND="${PARSER_RETURN_STATEMENT_KIND:-Return}"
@@ -13615,9 +13626,10 @@ command_graft_raw() {
       simplify_redundant_boolean_if_expression)
         rule="redundant_boolean_if_expression"
         operation="ReplaceExpression"
+        fallback="$(parser_task_expression_surface_value app.boolean_if_fix main 1)"
         finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "redundant_boolean_if_expression" and (.node == $surface or $surface == ""))' | head -n 1)"
         [[ -n "$finding" ]] || finding='{}'
-        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.boolean_if_fix.main:stmt:1:expr"')}"
+        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r --arg fallback "$fallback" '.node // $fallback')}"
         replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "ready"')"
         if [[ "$write" == true ]]; then
           sley_rewrite_statement_surface "$source" "$target_surface" "$replacement"
@@ -13626,9 +13638,10 @@ command_graft_raw() {
       simplify_redundant_boolean_if_statement)
         rule="redundant_boolean_if_statement"
         operation="ReplaceStatement"
+        fallback="$(parser_task_statement_surface_value app.boolean_if_statement_fix main 1)"
         finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "redundant_boolean_if_statement" and (.node == $surface or $surface == ""))' | head -n 1)"
         [[ -n "$finding" ]] || finding='{}'
-        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.boolean_if_statement_fix.main:stmt:1"')}"
+        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r --arg fallback "$fallback" '.node // $fallback')}"
         replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "return ready"')"
         if [[ "$write" == true ]]; then
           sley_replace_if_block_surface "$source" "$target_surface" "$replacement"
@@ -13637,9 +13650,10 @@ command_graft_raw() {
       simplify_same_branch_if_expression)
         rule="same_branch_if_expression"
         operation="ReplaceExpression"
+        fallback="$(parser_task_expression_side_surface_value app.same_branch_fix main 2 left)"
         finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "same_branch_if_expression" and (.node == $surface or $surface == ""))' | head -n 1)"
         [[ -n "$finding" ]] || finding='{}'
-        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.same_branch_fix.main:stmt:2:expr:left"')}"
+        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r --arg fallback "$fallback" '.node // $fallback')}"
         replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "0"')"
         if [[ "$write" == true ]]; then
           sley_rewrite_statement_surface "$source" "$target_surface" "$replacement"
@@ -13648,9 +13662,10 @@ command_graft_raw() {
       simplify_same_branch_if_statement)
         rule="same_branch_if_statement"
         operation="ReplaceStatement"
+        fallback="$(parser_task_statement_surface_value app.same_branch_statement_fix main 1)"
         finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "same_branch_if_statement" and (.node == $surface or $surface == ""))' | head -n 1)"
         [[ -n "$finding" ]] || finding='{}'
-        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.same_branch_statement_fix.main:stmt:1"')}"
+        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r --arg fallback "$fallback" '.node // $fallback')}"
         replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "return 0"')"
         if [[ "$write" == true ]]; then
           sley_replace_if_block_surface "$source" "$target_surface" "$replacement"

@@ -254,6 +254,13 @@ export task call_argument_surface_id -> Text {
   return expression_id + ":arg:" + index
 }
 
+export task expression_side_surface_id -> Text {
+  take expression_id: Text
+  take side_name: Text
+
+  return expression_id + ":" + side_name
+}
+
 export task ast_task_node_kind -> Text {
   return "task"
 }
