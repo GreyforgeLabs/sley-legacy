@@ -67,6 +67,8 @@ export task owned_bootstrap_values -> List<Text> {
     "parser_lint_statement_surface_id_task_execution",
     "parser_migrate_surface_id_task_execution",
     "parser_fix_migration_surface_id_task_execution",
+    "migrate_qualify_call_parser_prefix_task_execution",
+    "fix_qualify_call_parser_prefix_task_execution",
     "parser_fix_style_surface_id_task_execution",
     "parser_fix_empty_surface_id_task_execution",
     "parser_fix_unused_unreachable_surface_id_task_execution",

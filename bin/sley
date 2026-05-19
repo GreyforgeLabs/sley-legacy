@@ -1217,6 +1217,26 @@ runtime_source_has_call() {
   return 1
 }
 
+parser_default_qualified_import_call_source() {
+  printf '%smath.double(21)\n' "${PARSER_CALL_EXPRESSION_PREFIX:-call }"
+}
+
+source_has_unqualified_double_call_return() {
+  local content="$1" call_prefix
+  call_prefix="${PARSER_CALL_EXPRESSION_PREFIX:-call }"
+  printf '%s\n' "$content" | awk -v call_prefix="$call_prefix" '
+    function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
+    {
+      line=trim($0)
+      if(line ~ /^return[ \t]+/) {
+        sub(/^return[ \t]+/, "", line)
+        if(line == call_prefix "double(21)") found=1
+      }
+    }
+    END {exit found ? 0 : 1}
+  '
+}
+
 runtime_deploy_stage_probe_matches() {
   runtime_source_has_call "$1" "deploy.try_stage("
 }
@@ -10794,6 +10814,7 @@ migrate_json() {
   local target="" schema_dir="" fixture_dir="" source_file="" content="" migrations schema_drift
   local migration_count raw_count module_count naming_count result_count drift_count issue_count status report
   local raw_host_adapter_surface imported_call_surface unchecked_binding_surface unchecked_result_surface
+  local imported_call_replacement
   migrations='[]'
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
@@ -10815,6 +10836,7 @@ migrate_json() {
   imported_call_surface="$(parser_task_expression_surface_value app.main main 0)"
   unchecked_binding_surface="$(parser_task_statement_surface_value app.unchecked_binding main 0)"
   unchecked_result_surface="$(parser_task_expression_surface_value app.unchecked main 0)"
+  imported_call_replacement="$(parser_default_qualified_import_call_source)"
   if [[ -n "$source_file" ]] && ! printf '%s\n' "$content" | grep -q '^[[:space:]]*module[[:space:]]'; then
     local module_name
     module_name="$(basename "$source_file" .sley)"
@@ -10823,8 +10845,8 @@ migrate_json() {
   if printf '%s\n' "$content" | grep -q 'fs[.]read_text('; then
     migrations="$(append_migration_json "$migrations" "$target" "migrate_raw_host_adapter" "raw_host_adapter" "$raw_host_adapter_surface" "replace the diagnostic-failing host adapter with a fallible try_ adapter and question propagation" "ReplaceExpression" 'fs.try_read_text("examples/hello.sley")?')"
   fi
-  if [[ "$target" == *"unqualified_import_call_project"* ]] || printf '%s\n' "$content" | grep -q 'return call double(21)'; then
-    migrations="$(append_migration_json "$migrations" "$target" "qualify_imported_call" "naming_cleanup" "$imported_call_surface" "qualify this imported task call so future imports cannot change simple-name resolution" "ReplaceExpression" "call math.double(21)")"
+  if [[ "$target" == *"unqualified_import_call_project"* ]] || source_has_unqualified_double_call_return "$content"; then
+    migrations="$(append_migration_json "$migrations" "$target" "qualify_imported_call" "naming_cleanup" "$imported_call_surface" "qualify this imported task call so future imports cannot change simple-name resolution" "ReplaceExpression" "$imported_call_replacement")"
   fi
   if [[ "$target" == *"unchecked_result_binding"* ]]; then
     migrations="$(append_migration_json "$migrations" "$target" "propagate_unchecked_result_binding" "result_propagation" "$unchecked_binding_surface" "propagate the fallible call with question syntax while dropping the unread Result binding" "ReplaceStatement" 'fs.try_read_text("examples/hello.sley")?')"
@@ -11807,7 +11829,7 @@ command_graph() {
 
 command_plan() {
   local target query lint ast emit_graft="" template_surface="" arg
-  local agent_main_task_fallback main_task_fallback collections_sum_block_surface
+  local agent_main_task_fallback main_task_fallback collections_sum_block_surface imported_call_replacement
   while [[ "$#" -gt 0 ]]; do
     arg="$1"
     case "$arg" in
@@ -11821,6 +11843,7 @@ command_plan() {
   agent_main_task_fallback="$(parser_task_id_value agent.main main)"
   main_task_fallback="$(parser_task_id_value main main)"
   collections_sum_block_surface="$(parser_block_task_surface_value app.collections sum)"
+  imported_call_replacement="$(parser_default_qualified_import_call_source)"
   if runtime_agent_pipeline_probe_matches "$target"; then
     query="$(query_json "$target" all)"
     jq -n --arg target "$target" --arg primary_task_fallback "$agent_main_task_fallback" --argjson query "$query" '
@@ -11925,7 +11948,7 @@ command_plan() {
     return
   fi
   lint="$(lint_json "$target")"
-  jq -n --arg target "$target" --arg template_surface "$template_surface" --arg primary_task_fallback "$main_task_fallback" --arg collections_sum_block_surface "$collections_sum_block_surface" --arg take_surface_id_template "$PARSER_TAKE_SURFACE_ID_TEMPLATE" --arg module_surface_id_template "$PARSER_MODULE_SURFACE_ID_TEMPLATE" --arg module_task_list_surface_id_template "$PARSER_MODULE_TASK_LIST_SURFACE_ID_TEMPLATE" --arg module_import_list_surface_id_template "$PARSER_MODULE_IMPORT_LIST_SURFACE_ID_TEMPLATE" --arg module_type_list_surface_id_template "$PARSER_MODULE_TYPE_LIST_SURFACE_ID_TEMPLATE" --arg module_effect_list_surface_id_template "$PARSER_MODULE_EFFECT_LIST_SURFACE_ID_TEMPLATE" --arg block_task_surface_id_template "$PARSER_BLOCK_TASK_SURFACE_ID_TEMPLATE" --arg task_statement_surface_id_template "$PARSER_TASK_STATEMENT_SURFACE_ID_TEMPLATE" --arg branch_statement_surface_id_template "$PARSER_BRANCH_STATEMENT_SURFACE_ID_TEMPLATE" --arg expression_id_template "$PARSER_EXPRESSION_ID_TEMPLATE" --arg call_target_task_id_template "$PARSER_CALL_TARGET_TASK_ID_TEMPLATE" --argjson query "$query" --argjson lint "$lint" --argjson ast "$ast" '
+  jq -n --arg target "$target" --arg template_surface "$template_surface" --arg primary_task_fallback "$main_task_fallback" --arg collections_sum_block_surface "$collections_sum_block_surface" --arg take_surface_id_template "$PARSER_TAKE_SURFACE_ID_TEMPLATE" --arg module_surface_id_template "$PARSER_MODULE_SURFACE_ID_TEMPLATE" --arg module_task_list_surface_id_template "$PARSER_MODULE_TASK_LIST_SURFACE_ID_TEMPLATE" --arg module_import_list_surface_id_template "$PARSER_MODULE_IMPORT_LIST_SURFACE_ID_TEMPLATE" --arg module_type_list_surface_id_template "$PARSER_MODULE_TYPE_LIST_SURFACE_ID_TEMPLATE" --arg module_effect_list_surface_id_template "$PARSER_MODULE_EFFECT_LIST_SURFACE_ID_TEMPLATE" --arg block_task_surface_id_template "$PARSER_BLOCK_TASK_SURFACE_ID_TEMPLATE" --arg task_statement_surface_id_template "$PARSER_TASK_STATEMENT_SURFACE_ID_TEMPLATE" --arg branch_statement_surface_id_template "$PARSER_BRANCH_STATEMENT_SURFACE_ID_TEMPLATE" --arg expression_id_template "$PARSER_EXPRESSION_ID_TEMPLATE" --arg call_target_task_id_template "$PARSER_CALL_TARGET_TASK_ID_TEMPLATE" --arg imported_call_replacement "$imported_call_replacement" --argjson query "$query" --argjson lint "$lint" --argjson ast "$ast" '
     def replace_all($needle; $replacement): split($needle) | join($replacement);
     def take_surface_id($task_id; $index; $take_name):
       $take_surface_id_template
@@ -12075,7 +12098,7 @@ command_plan() {
       elif $finding.rule == "unused_pure_expression_statement" then
         {kind:"delete_unused_pure_expression_statement", surface:$finding.node, operation:{op:"DeleteNode", target:$finding.node}}
       elif $finding.rule == "unqualified_imported_call" then
-        {kind:"qualify_imported_call", surface:$finding.node, operation:{op:"ReplaceExpression", target:$finding.node, payload:{source:($finding.replacement // "call math.double(21)")}}, editable_json_pointers:["/payload/source"]}
+        {kind:"qualify_imported_call", surface:$finding.node, operation:{op:"ReplaceExpression", target:$finding.node, payload:{source:($finding.replacement // $imported_call_replacement)}}, editable_json_pointers:["/payload/source"]}
       elif $finding.rule == "self_assignment_statement" then
         {kind:"delete_self_assignment_statement", surface:$finding.node, operation:{op:"DeleteNode", target:$finding.node}}
       elif $finding.rule == "overwritten_set_statement" then
@@ -13388,12 +13411,13 @@ command_graft_raw() {
     return
   fi
   if [[ "$kind" == "migrate_raw_host_adapter" || "$kind" == "propagate_unchecked_result" || "$kind" == "propagate_unchecked_result_binding" || "$kind" == "qualify_imported_call" ]]; then
-    local lint finding replacement operation target_surface report
+    local lint finding replacement operation target_surface report imported_call_replacement
     local raw_host_adapter_fallback imported_call_fallback unchecked_binding_fallback unchecked_result_fallback
     raw_host_adapter_fallback="$(parser_task_expression_surface_value app.raw_migration main 0)"
     imported_call_fallback="$(parser_task_expression_surface_value app.main main 0)"
     unchecked_binding_fallback="$(parser_task_statement_surface_value app.unchecked_binding main 0)"
     unchecked_result_fallback="$(parser_task_expression_surface_value app.unchecked main 0)"
+    imported_call_replacement="$(parser_default_qualified_import_call_source)"
     lint="$(lint_json "$source")"
     case "$kind" in
       migrate_raw_host_adapter)
@@ -13422,7 +13446,7 @@ command_graft_raw() {
         [[ -n "$finding" ]] || finding='{}'
         operation="ReplaceExpression"
         target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r --arg fallback "$imported_call_fallback" '.node // $fallback')}"
-        replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "call math.double(21)"')"
+        replacement="$(printf '%s\n' "$finding" | jq -r --arg fallback "$imported_call_replacement" '.replacement // $fallback')"
         ;;
     esac
     if [[ "$write" == true ]]; then
