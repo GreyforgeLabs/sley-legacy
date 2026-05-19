@@ -2,7 +2,7 @@
 
 Date: 2026-05-19
 Branch: public
-Latest code checkpoint: 6938670
+Latest code checkpoint: 350dbd7
 Latest pause documentation checkpoint before this note: bef77d3
 Current pause document status: committed on `public`; use `git log` for exact
 branch head
@@ -283,8 +283,12 @@ The current local checkpoint advances the public branch to:
   `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
   `bootstrap_owned_by_sley=267`; remaining blockers are still parser, checker,
   and runtime semantics from Sley source
+- self-hosting status after the runtime diagnostic source slice:
+  `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=268`; remaining blockers are still parser, checker,
+  and runtime semantics from Sley source
 - latest verification refresh on 2026-05-19: `make v1` passed after the
-  runtime host default-text source slice
+  runtime diagnostic source slice
 
 The tracked code checkpoint is:
 
@@ -353,6 +357,7 @@ The tracked code checkpoint is:
 - 6a599f3 fix: source runtime effect aliases from checker
 - 2177696 fix: source lint effect aliases from checker
 - 6938670 fix: source runtime host defaults from sley
+- 350dbd7 fix: source runtime diagnostics from sley
 
 The tracked pause documentation checkpoints are:
 
@@ -415,6 +420,7 @@ The tracked pause documentation checkpoints are:
 - c7ece51 docs: record docgen host effect slice
 - 7e16daf docs: record runtime effect alias slice
 - bef77d3 docs: record lint effect alias slice
+- eb3b0f9 docs: record runtime host default slice
 
 Recent self-hosting slices added:
 
@@ -625,6 +631,9 @@ Recent self-hosting slices added:
   reads/writes, agent data writes, shell output, secret reads, and spend
   authorization now come from `loom.runtime` tasks instead of inline shell
   literals, while preserving seeded host-adapter behavior
+- Runtime capability-required, scope-denied, and unsupported-`main`-take
+  diagnostic IDs and message parts now come from `loom.runtime` tasks instead
+  of Python-local literals, while preserving runtime and CI diagnostic output
 
 ## Next Frontier
 
@@ -1602,10 +1611,27 @@ The latest continuation audit reconfirmed:
   check-fixtures fixtures/contracts --schemas docs/schemas --json`, external
   public-action packet verifier, `git diff --check`, and final `make v1` all
   passed
+- focused runtime diagnostic source probes:
+  `bin/sley self-hosting-status --json` reported
+  `runtime_diagnostic_messages_task_execution` and
+  `bootstrap_owned_by_sley=268`; unsupported `main` take, missing runtime
+  capability, scope-denied secret, and CI blocked-runtime probes preserved the
+  existing diagnostic IDs and messages while sourcing the values from
+  `loom.runtime`
+- Sley self-hosting status after the runtime diagnostic source slice:
+  `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=268`; remaining blockers are still parser, checker,
+  and runtime semantics from Sley source
+- latest runtime diagnostic source verification:
+  `bash -n bin/sley`, `bash -n scripts/self-hosted-test.sh`, focused runtime
+  diagnostic probes, `scripts/self-hosted-test.sh`, `bin/sley-contract
+  check-fixtures fixtures/contracts --schemas docs/schemas --json`, external
+  public-action packet verifier, `git diff --check`, and final `make v1` all
+  passed
 
 ## Dirty State Notes
 
-Tracked code was committed at 6938670 before this pause document was updated.
+Tracked code was committed at 350dbd7 before this pause document was updated.
 Tracked pause documentation before this update was refreshed through 218d40c
 with parser lint surface evidence, through 26e7417 with the external comparison
 approval gate, fork audit, and helper evidence, and through aba1b03 with parser
@@ -1648,7 +1674,8 @@ parser-prefix evidence, and through 8ec3e49 with runtime host-effect checker
 source evidence, and through c4b32e5 with lint host-effect checker source
 evidence, through c7ece51 with docgen capabilities checker source evidence,
 through 7e16daf with runtime effect-alias checker source evidence, and through
-bef77d3 with lint effect-alias checker source evidence.
+bef77d3 with lint effect-alias checker source evidence, and through eb3b0f9
+with runtime host default-text source evidence.
 
 Pre-existing untracked files were not touched and should remain outside future
 commits unless the operator explicitly asks to include them:
