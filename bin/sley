@@ -8023,7 +8023,7 @@ runtime_authority_json() {
   local -a runtime_files=()
   mapfile -t runtime_files < <(runtime_context_files "$target")
   files_json="$(printf '%s\n' "${runtime_files[@]}" | jq -R . | jq -s .)"
-  SLEY_RUNTIME_FILES="$files_json" SLEY_HOST_EFFECT_NEEDLES="$CHECKER_HOST_EFFECT_NEEDLES_JSON" python3 - "$ROOT_DIR" "$target" "$SCHEMA_DIAGNOSTICS" "$@" <<'PY'
+  SLEY_RUNTIME_FILES="$files_json" SLEY_HOST_EFFECT_NEEDLES="$CHECKER_HOST_EFFECT_NEEDLES_JSON" SLEY_EFFECT_ALIASES="$CHECKER_EFFECT_ALIASES_JSON" python3 - "$ROOT_DIR" "$target" "$SCHEMA_DIAGNOSTICS" "$@" <<'PY'
 import json
 import os
 import re
@@ -8037,7 +8037,6 @@ argv = sys.argv[4:]
 files = [Path(path) for path in json.loads(os.environ.get("SLEY_RUNTIME_FILES", "[]"))]
 
 TEXT_DELIMITERS = set("/:.-_ \t")
-ALIASES = {"DbRead": "DatabaseRead", "DbWrite": "DatabaseWrite"}
 
 
 def host_effects_from_needles():
@@ -8052,7 +8051,19 @@ def host_effects_from_needles():
     return effects
 
 
+def effect_aliases_from_table():
+    aliases = {}
+    for entry in json.loads(os.environ.get("SLEY_EFFECT_ALIASES", "[]")):
+        if not isinstance(entry, str) or "|" not in entry:
+            continue
+        canonical, alias = entry.split("|", 1)
+        if canonical and alias:
+            aliases[alias] = canonical
+    return aliases
+
+
 HOST_EFFECTS = host_effects_from_needles()
+ALIASES = effect_aliases_from_table()
 
 
 def diagnostic(diag_id, message, node):
@@ -8064,11 +8075,8 @@ def normalize_effect(effect):
 
 
 def display_effect(effect):
-    if effect == "DatabaseRead":
-        return "DatabaseRead/DbRead"
-    if effect == "DatabaseWrite":
-        return "DatabaseWrite/DbWrite"
-    return effect
+    aliases = [alias for alias, canonical in ALIASES.items() if canonical == effect]
+    return "/".join([effect] + aliases) if aliases else effect
 
 
 def parse_cli_args(args):

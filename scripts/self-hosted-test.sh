@@ -53,6 +53,9 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("runtime_host_effect_needles_dispatch_execution")) and (.bootstrap_owned_by_sley | index("runtime_authority_host_effect_needles_execution"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("runtime_authority_effect_aliases_task_execution"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("checker_call_parser_prefix_task_execution"))'
 
 bin/sley self-hosting-status --json \
