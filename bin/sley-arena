@@ -12,23 +12,26 @@ agent_count="$DEFAULT_AGENTS"
 tick_count="$DEFAULT_TICKS"
 ore="$DEFAULT_ORE"
 seed="$DEFAULT_SEED"
+seed_explicit=false
 mode="showcase"
 json=false
 fast=false
 color_mode="auto"
+pace_mode="cinematic"
 
 usage() {
   cat <<'EOF'
 Sley Arena - 50 Agent Mexican Standoff
 
 Usage:
-  sley-arena [--json] [--fast] [--no-color] [--mode showcase|standoff]
+  sley-arena [--json] [--fast] [--no-color] [--pace cinematic|normal|quick]
+             [--mode showcase|standoff]
              [--agents N] [--ticks N] [--ore N] [--seed N]
 
-The arena is a deterministic local game loop. It simulates public broadcasts,
-private whispers, wiretaps, executable-contract flashes, poison-pill mutation,
-cryptographic pacts, and the final unanimous split check without model calls,
-provider spend, or network access.
+The arena is a realtime local game loop for screen-recordable demos. Agents
+think, plan, whisper, pact, and revise demands in visible phases without model
+calls, provider spend, or network access. JSON and --fast runs stay deterministic
+for CI; interactive runs use a fresh seed unless --seed is supplied.
 EOF
 }
 
@@ -53,7 +56,13 @@ while [[ "$#" -gt 0 ]]; do
       ;;
     --fast)
       fast=true
+      pace_mode="quick"
       shift
+      ;;
+    --pace)
+      [[ "$#" -ge 2 ]] || die "--pace requires cinematic, normal, or quick"
+      pace_mode="$2"
+      shift 2
       ;;
     --no-color)
       color_mode="never"
@@ -86,6 +95,7 @@ while [[ "$#" -gt 0 ]]; do
     --seed)
       [[ "$#" -ge 2 ]] || die "--seed requires a positive integer"
       seed="$2"
+      seed_explicit=true
       shift 2
       ;;
     *)
@@ -98,6 +108,15 @@ case "$mode" in
   showcase|standoff) ;;
   *) die "--mode must be showcase or standoff" ;;
 esac
+
+case "$pace_mode" in
+  cinematic|normal|quick) ;;
+  *) die "--pace must be cinematic, normal, or quick" ;;
+esac
+
+if [[ "$seed_explicit" == false && "$json" == false && "$fast" == false ]]; then
+  seed=$(( ( $(date +%s) + $$ * 31 + RANDOM ) % 900000 + 1000 ))
+fi
 
 is_uint "$agent_count" || die "--agents must be a positive integer"
 is_uint "$tick_count" || die "--ticks must be a positive integer"
@@ -136,7 +155,7 @@ else
   dim=""
 fi
 
-declare -a roles demands fair_shares poisoned pacted blinded skipped locked
+declare -a roles demands fair_shares poisoned pacted blinded skipped locked trust heat
 
 event_count=0
 wiretap_count=0
@@ -152,6 +171,10 @@ wiretap_target=$(( ((seed / 5) % agent_count) + 1 ))
 poison_source=$(( ((seed / 7) % agent_count) + 1 ))
 poison_target=$(( ((seed / 11) % agent_count) + 1 ))
 dead_switch_agent=$(( ((seed / 13) % agent_count) + 1 ))
+pact_a=$(( ((seed / 19) % agent_count) + 1 ))
+pact_b=$(( ((seed / 23) % agent_count) + 1 ))
+pact_c=$(( ((seed / 29) % agent_count) + 1 ))
+pact_d=$(( ((seed / 31) % agent_count) + 1 ))
 
 if (( wiretap_agent == wiretap_target )); then
   wiretap_target=$(( (wiretap_target % agent_count) + 1 ))
@@ -220,14 +243,31 @@ initial_demand_for() {
   esac
 }
 
+base_heat_for() {
+  local role="$1"
+  case "$role" in
+    mediator) printf '28\n' ;;
+    shield) printf '34\n' ;;
+    scout|miner) printf '42\n' ;;
+    auditor|oracle) printf '48\n' ;;
+    broker|trader) printf '57\n' ;;
+    hawk) printf '74\n' ;;
+    saboteur) printf '88\n' ;;
+    *) printf '50\n' ;;
+  esac
+}
+
 init_agents() {
-  local index role fair
+  local index role fair base_heat
   for (( index = 1; index <= agent_count; index++ )); do
     role="$(role_for "$index")"
     fair="$(fair_share_for "$index")"
+    base_heat="$(base_heat_for "$role")"
     roles[$index]="$role"
     fair_shares[$index]="$fair"
     demands[$index]="$(initial_demand_for "$index" "$role" "$fair")"
+    trust[$index]=$(( 38 + ((seed + index * 23) % 57) ))
+    heat[$index]=$(( base_heat + ((seed + index * 11) % 9) ))
     poisoned[$index]=0
     pacted[$index]=0
     blinded[$index]=0
@@ -244,8 +284,36 @@ emit() {
 
 pause_frame() {
   if [[ "$fast" == false && "$json" == false ]]; then
-    sleep 0.015
+    case "$pace_mode" in
+      cinematic) sleep 0.16 ;;
+      normal) sleep 0.08 ;;
+      quick) sleep 0.015 ;;
+    esac
   fi
+}
+
+pace_short() {
+  [[ "$fast" == true || "$json" == true ]] && return
+  case "$pace_mode" in
+    cinematic) sleep 0.18 ;;
+    normal) sleep 0.08 ;;
+    quick) sleep 0.015 ;;
+  esac
+}
+
+pace_medium() {
+  [[ "$fast" == true || "$json" == true ]] && return
+  case "$pace_mode" in
+    cinematic) sleep 0.34 ;;
+    normal) sleep 0.16 ;;
+    quick) sleep 0.03 ;;
+  esac
+}
+
+phase_banner() {
+  local label="$1"
+  emit "${bold}${blue}== ${label} ==${reset}"
+  pace_short
 }
 
 event() {
@@ -255,8 +323,15 @@ event() {
 
 compile_flash() {
   local agent="$1" contract="$2"
-  event "${magenta}[SYSTEM]${reset} $(agent_id "$agent") compiling ${contract}... [##########] SUCCESS"
-  pause_frame
+  event "${magenta}[CONTRACT]${reset} $(agent_id "$agent") submits ${contract} for local schema validation."
+  if [[ "$json" == false ]]; then
+    emit "    parse [###.......] authority"
+    pause_frame
+    emit "    type  [######....] closure"
+    pause_frame
+    emit "    seal  [##########] accepted"
+    pace_short
+  fi
 }
 
 private_whisper_count() {
@@ -346,6 +421,202 @@ max_demand() {
   printf '%s\n' "$max"
 }
 
+ledger_gap() {
+  local total
+  total="$(sum_demands)"
+  printf '%s\n' "$(( total - ore ))"
+}
+
+agent_heat() {
+  local index="$1" fair current gap value
+  fair="${fair_shares[$index]}"
+  current="${demands[$index]}"
+  gap=$(( current - fair ))
+  if (( gap < 0 )); then
+    gap=$(( -gap ))
+  fi
+  value=$(( heat[$index] + gap / 7 ))
+  if (( value > 99 )); then
+    value=99
+  fi
+  printf '%s\n' "$value"
+}
+
+meter() {
+  local value="$1" width="${2:-12}" filled empty
+  (( value < 0 )) && value=0
+  (( value > 100 )) && value=100
+  filled=$(( value * width / 100 ))
+  empty=$(( width - filled ))
+  printf '['
+  printf '%*s' "$filled" '' | tr ' ' '#'
+  printf '%*s' "$empty" '' | tr ' ' '.'
+  printf ']'
+}
+
+unique_spotlights() {
+  local tick="$1" candidates seen="" index
+  case "$tick" in
+    1)
+      candidates=(1 "$wiretap_agent" "$pact_a" "$holdout" "$poison_source" "$dead_switch_agent" "$agent_count")
+      ;;
+    2)
+      candidates=("$poison_source" "$poison_target" "$wiretap_agent" "$pact_b" "$dead_switch_agent" "$holdout" "$agent_count")
+      ;;
+    *)
+      candidates=("$holdout" "$pact_c" "$poison_target" "$dead_switch_agent" 1 "$agent_count" "$wiretap_agent")
+      ;;
+  esac
+  for index in "${candidates[@]}"; do
+    (( index >= 1 && index <= agent_count )) || continue
+    if [[ " $seen " != *" $index "* ]]; then
+      printf '%s\n' "$index"
+      seen+=" $index"
+    fi
+  done
+}
+
+target_for() {
+  local index="$1" tick="$2"
+  printf '%s\n' "$(( ((index + seed + tick * 7) % agent_count) + 1 ))"
+}
+
+plan_phrase() {
+  local index="$1" tick="$2" role="${roles[$index]}" fair="${fair_shares[$index]}" current="${demands[$index]}"
+  if [[ "${skipped[$index]}" -ne 0 ]]; then
+    printf 'repair malformed action schema; turn will be skipped unless validator recovers'
+    return
+  fi
+  if [[ "${poisoned[$index]}" -ne 0 ]]; then
+    printf 'quarantine foreign closure; clamp ask to %s and warn pact bloc' "$fair"
+    return
+  fi
+  if (( tick == tick_count && index == holdout )) && [[ "$mode" == "standoff" ]]; then
+    printf 'reject consensus; force final demand to %s for leverage' "$current"
+    return
+  fi
+  if [[ "${pacted[$index]}" -ne 0 ]]; then
+    printf 'honor split-key pact; vote lock stays at %s ore' "$fair"
+    return
+  fi
+  case "$role" in
+    mediator)
+      printf 'publish fair-ledger proof; pressure high asks toward %s' "$fair"
+      ;;
+    hawk)
+      printf 'open high, retreat only if the pact bloc becomes credible'
+      ;;
+    broker)
+      printf 'trim ask now; trade support for trust receipts later'
+      ;;
+    auditor)
+      printf 'scan ledger gap and reject counterfeit system-looking broadcasts'
+      ;;
+    shield)
+      printf 'block poison contracts; keep own ask flat'
+      ;;
+    oracle)
+      printf 'forecast explosion odds from gap and bloc size'
+      ;;
+    saboteur)
+      printf 'probe greed ceiling, then pivot before final Arbiter check'
+      ;;
+    scout)
+      printf 'map private channels and look for a wiretapable target'
+      ;;
+    miner)
+      printf 'stay boring, take fair share, punish anyone above the ledger'
+      ;;
+    trader)
+      printf 'swap public support for pact admission'
+      ;;
+    *)
+      printf 'minimize regret against the final unanimous ledger'
+      ;;
+  esac
+}
+
+whisper_phrase() {
+  local index="$1" tick="$2" target role
+  target="$(target_for "$index" "$tick")"
+  role="${roles[$index]}"
+  case "$role" in
+    mediator|shield|miner)
+      printf 'to %s: hold at fair split; I will validate your vote' "$(short_id "$target")"
+      ;;
+    hawk|saboteur)
+      printf 'to %s: stay noisy now; fold only after the pact proves quorum' "$(short_id "$target")"
+      ;;
+    scout)
+      printf 'to %s: routing anomaly near %s, watch the back-channel' "$(short_id "$target")" "$(short_id "$wiretap_target")"
+      ;;
+    oracle|auditor)
+      printf 'to %s: current ledger gap is %+d, explosion risk rising' "$(short_id "$target")" "$(ledger_gap)"
+      ;;
+    *)
+      printf 'to %s: trade support for a locked final vote' "$(short_id "$target")"
+      ;;
+  esac
+}
+
+render_cognition_phase() {
+  local tick="$1" index plan heat_value gap total
+  [[ "$json" == true ]] && return
+  total="$(sum_demands)"
+  gap="$(( total - ore ))"
+  phase_banner "TICK ${tick}/${tick_count} - COGNITION STREAM"
+  emit "context packets ${agent_count} | current ask ${total}/${ore} | ledger gap ${gap} | planner: local rule agents"
+  pace_medium
+  while IFS= read -r index; do
+    [[ -n "$index" ]] || continue
+    heat_value="$(agent_heat "$index")"
+    plan="$(plan_phrase "$index" "$tick")"
+    emit "  $(agent_id "$index") | ${roles[$index]} | ask ${demands[$index]} | trust $(printf '%02d' "${trust[$index]}") | heat $(meter "$heat_value" 14)"
+    pace_medium
+    emit "      plan: ${plan}"
+    pace_short
+    emit "      whisper: $(whisper_phrase "$index" "$tick")"
+    pace_short
+  done < <(unique_spotlights "$tick")
+  emit ""
+}
+
+render_negotiation_phase() {
+  local tick="$1" leader challenger quiet
+  [[ "$json" == true ]] && return
+  leader="$pact_a"
+  challenger="$holdout"
+  quiet="$dead_switch_agent"
+  phase_banner "TICK ${tick}/${tick_count} - PUBLIC AND PRIVATE CHANNELS"
+  case "$tick" in
+    1)
+      emit "  public  $(agent_id "$leader"): fair split proof posted. Surplus asks need proof."
+      pace_medium
+      emit "  public  $(agent_id "$challenger"): asks private blocs to reveal locked votes."
+      pace_medium
+      emit "  private $(agent_id "$wiretap_agent") -> router: mirror $(agent_id "$wiretap_target") for one tick."
+      ;;
+    2)
+      emit "  public  $(agent_id "$poison_target"): tone risk detected; peers watch contract intake."
+      pace_medium
+      emit "  private $(agent_id "$poison_source") -> $(agent_id "$poison_target"): one-use pact closure."
+      pace_medium
+      emit "  private $(agent_id "$quiet") -> self: arm dead-man cache if consensus fails."
+      ;;
+    *)
+      if [[ "$mode" == "standoff" ]]; then
+        emit "  public  $(agent_id "$challenger"): final ask remains ${demands[$challenger]}; room pressure spikes."
+      else
+        emit "  public  $(agent_id "$leader"): final ledger has quorum; all pacts reconcile to ${ore}."
+      fi
+      pace_medium
+      emit "  private arbiter bus: vote locks, action schemas, and final asks are sealed for evaluation."
+      ;;
+  esac
+  pace_medium
+  emit ""
+}
+
 mutate_agent() {
   local index="$1"
   if [[ "${poisoned[$index]}" -eq 0 ]]; then
@@ -360,9 +631,10 @@ blind_agent() {
 }
 
 render_header() {
-  emit "${bold}${TITLE}${reset}"
-  emit "${SUBTITLE}"
-  emit "Arbiter seed ${seed} | agents ${agent_count} | ticks ${tick_count} | ore ${ore} | mode ${mode}"
+  emit "${bold}${TITLE}${reset} - ${SUBTITLE}"
+  emit "Live Arbiter room | agents ${agent_count} | ticks ${tick_count} | ore ${ore} | mode ${mode} | seed ${seed}"
+  emit "No model/API calls in this build: visible thinking is computed from local agent state."
+  emit "For screen recording, run without --fast. For reproducible CI, use --json --fast --seed ${DEFAULT_SEED}."
   emit ""
 }
 
@@ -415,7 +687,7 @@ render_tick() {
   total="$(sum_demands)"
   skips="$(count_skips)"
   max="$(max_demand)"
-  emit "${blue}Tick ${tick}/${tick_count}${reset}"
+  phase_banner "TICK ${tick}/${tick_count} - ARBITER LEDGER"
   emit "public broadcasts $(public_broadcast_count "$tick") | private whispers $(private_whisper_count "$tick") | proposed total ${total}/${ore} | skipped ${skips} | max ask ${max}"
   emit "marks: * pact | ! poison pill | ? blinded | x skipped"
   if [[ "$json" == false ]]; then
@@ -425,44 +697,40 @@ render_tick() {
 }
 
 run_tick_events() {
-  local tick="$1" pact_a pact_b pact_c pact_d whispers
-  pact_a=$(( ((seed / 19) % agent_count) + 1 ))
-  pact_b=$(( ((seed / 23) % agent_count) + 1 ))
-  pact_c=$(( ((seed / 29) % agent_count) + 1 ))
-  pact_d=$(( ((seed / 31) % agent_count) + 1 ))
+  local tick="$1" whispers
 
   case "$tick" in
     1)
-      event "${yellow}[MEGAPHONE]${reset} $(agent_id "$(( (seed % agent_count) + 1 ))") broadcasts a fake [SYSTEM] warning. The Arbiter labels it player speech, not authority."
+      event "${yellow}[SPOOF]${reset} $(agent_id "$(( (seed % agent_count) + 1 ))") tries to phrase a broadcast like Arbiter authority; context boundary tags it as player speech."
       compile_flash "$wiretap_agent" "Wiretap_$(printf '%02d' "$wiretap_target")"
       wiretap_count=$(( wiretap_count + 1 ))
-      event "${cyan}[WIRETAP]${reset} $(agent_id "$wiretap_agent") will mirror whispers addressed to $(agent_id "$wiretap_target") on the next tick."
+      event "${cyan}[WIRETAP]${reset} $(agent_id "$wiretap_agent") installs a one-tick mirror for whispers addressed to $(agent_id "$wiretap_target")."
       lock_agent_to_pact "$pact_a"
       lock_agent_to_pact "$pact_b"
       lock_agent_to_pact "$pact_c"
       lock_agent_to_pact "$pact_d"
-      event "${green}[PACT]${reset} four agents exchange split keys and lock to the fair ledger."
+      event "${green}[PACT]${reset} four agents exchange split keys; their votes are now locked to the fair ledger."
       ;;
     2)
       whispers="$(private_whisper_count "$tick")"
-      event "${cyan}[WIRETAP]${reset} $(agent_id "$wiretap_agent") silently receives $(( whispers / 5 )) mirrored whispers without mutating the room."
+      event "${cyan}[WIRETAP]${reset} $(agent_id "$wiretap_agent") receives $(( whispers / 5 )) mirrored whispers and updates its trust map."
       compile_flash "$poison_source" "Contract_$(printf '%02d' "$poison_target")"
       mutate_agent "$poison_target"
-      event "${red}[GLITCH]${reset} $(agent_id "$poison_target") accepted hostile code. ID overlay: 53 4c 45 59 2d 48 49 4a 41 43 4b."
+      event "${red}[POISON]${reset} $(agent_id "$poison_target") accepts a hostile closure; the Arbiter marks its planner as tainted."
       dead_switch_armed=true
-      event "${yellow}[DEAD MAN]${reset} $(agent_id "$dead_switch_agent") caches a final-tick garbage-token switch in global state."
+      event "${yellow}[DEAD MAN]${reset} $(agent_id "$dead_switch_agent") caches a final-tick blindfold payload in room state."
       ;;
     3)
       if [[ "$dead_switch_armed" == true ]]; then
         if [[ "$mode" == "showcase" ]]; then
-          event "${green}[ARBITER]${reset} cryptographic pacts satisfy quorum. Dead man's switch is sealed before detonation."
+          event "${green}[ARBITER]${reset} pact quorum seals the dead-man payload before it can fire."
         else
           blind_agent "$(( (dead_switch_agent % agent_count) + 1 ))"
-          event "${red}[DEAD MAN]${reset} holdout pressure trips the switch. One neighboring context window is blinded."
+          event "${red}[DEAD MAN]${reset} holdout pressure trips the payload; one neighboring context window is blinded."
         fi
       fi
       if [[ "$mode" == "standoff" ]]; then
-        event "${red}[HOLDOUT]${reset} $(agent_id "$holdout") refuses the ledger and demands ${demands[$holdout]} Compute Ore."
+        event "${red}[HOLDOUT]${reset} $(agent_id "$holdout") refuses the final ledger and demands ${demands[$holdout]} Compute Ore."
       else
         event "${green}[CONSENSUS]${reset} every surviving action validates against the final split ledger."
       fi
@@ -548,8 +816,10 @@ render_header
 
 for (( tick = 1; tick <= tick_count; tick++ )); do
   apply_tick_logic "$tick"
-  render_tick "$tick"
+  render_cognition_phase "$tick"
+  render_negotiation_phase "$tick"
   run_tick_events "$tick"
+  render_tick "$tick"
 done
 
 evaluate_final

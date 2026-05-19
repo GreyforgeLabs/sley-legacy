@@ -152,11 +152,14 @@ sley verify --json examples/project
 ## Sley Arena
 
 `Sley Arena` is a playable local demo: 50 agents have 3 ticks to split 10,000
-Compute Ore before the room explodes. It runs without model calls, provider
+Compute Ore before the room explodes. The default run is paced for screen
+recordings: agents visibly think, plan, whisper, pact, and revise demands before
+the Arbiter seals each ledger snapshot. It runs without model calls, provider
 spend, or network access while Sley's stricter self-hosting work continues.
 
 ```bash
 sley arena
+sley arena --pace normal
 sley arena --json --fast --no-color
 sley-arena --mode standoff
 ```

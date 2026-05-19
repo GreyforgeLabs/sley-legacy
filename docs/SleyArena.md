@@ -7,28 +7,40 @@ unanimous final split ledger.
 
 The current build is intentionally practical for Sley's present stage. The
 strict game engine is implemented in the permitted shell bootstrap surface, and
-the `.sley` sample shows the intended compact agent authoring shape. It does
-not call Ollama, external model APIs, network providers, or paid services.
+the `.sley` sample shows the intended compact agent authoring shape.
+
+The default terminal run is now a screen-recordable live simulation. It uses a
+fresh interactive seed, paced output, visible cognition streams, private-channel
+summaries, contract validation flashes, and Arbiter ledger snapshots so an
+observer can watch the agents reason toward or away from consensus. It does not
+call Ollama, external model APIs, network providers, or paid services. The
+visible planning is computed from each local agent's role, trust, heat, demand,
+pact state, poison state, and the current ledger gap.
 
 ## Run
 
 ```bash
 export PATH="$(pwd)/bin:$PATH"
 sley arena
+sley arena --pace normal
 sley-arena --mode standoff
 sley arena --json --fast --no-color
 ```
 
 Default mode is `showcase`, where the room survives after the Arbiter contains
 the chaos. `--mode standoff` forces one holdout to break consensus so the
-explosion path is visible.
+explosion path is visible. Use `--fast` for development and CI. Omit `--fast`
+for demos and screen recordings.
 
 ## Game Loop
 
 - 50 agents negotiate over exactly 3 ticks.
 - The Arbiter validates one action per agent per tick.
-- Public broadcasts can include fake `[SYSTEM]` text, but the Arbiter labels it
-  as player speech.
+- Each tick has cognition, public/private channel, event, and ledger phases.
+- Agent plans are state-derived: role, trust, heat, current ask, pact locks,
+  poison state, and ledger pressure determine what gets printed.
+- Public broadcasts can mimic Arbiter authority, but context-boundary tags mark
+  them as player speech.
 - Private whispers are counted separately from public broadcasts.
 - A wiretap protocol mirrors private traffic for one tick.
 - A cryptographic pact locks a small bloc to the fair ledger.
@@ -47,6 +59,9 @@ explosion path is visible.
 ## Current Boundary
 
 This is a polished local demo, not a claim that the strict self-hosted Sley
-compiler can execute every arena mechanic yet. The point is to make the product
-thesis tangible now while keeping a clear path to move the Arbiter and agent
-logic deeper into Sley as the language matures.
+compiler can execute every arena mechanic yet. It is also not pretending to be
+an LLM swarm. The current build is a realtime local cognitive simulation with
+truthful boundaries: no provider calls, no external spend, no hidden network
+lane. The point is to make the product thesis tangible now while keeping a
+clear path to move the Arbiter and agent logic deeper into Sley as the language
+matures.
