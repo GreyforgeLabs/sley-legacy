@@ -2,7 +2,7 @@
 
 Date: 2026-05-18
 Branch: public
-Latest code checkpoint: fb80869
+Latest code checkpoint: c78c777
 Latest packet-sync documentation checkpoint before this note: 26e7417
 Current pause document status: committed on `public`; use `git log` for exact
 branch head
@@ -94,6 +94,10 @@ The current local checkpoint advances the public branch to:
   slice: `bootstrap`, `strict_self_hosted=false`,
   `semantic_source_count=6`, `bootstrap_owned_by_sley=201`; remaining blockers
   are still parser, checker, and runtime semantics from Sley source
+- self-hosting status after the parser lint statement surface ID slice:
+  `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=202`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
 - latest V1 log from this pause checkpoint: `/tmp/sley-make-v1-ok-text.log`
 - latest verification refresh on 2026-05-18: `make v1` passed again after the
   public-action packet was finalized and after the WebForge / sleylang.org
@@ -119,6 +123,7 @@ The tracked code checkpoint is:
 - 87b8670 fix: source call argument surfaces from parser
 - 91aa718 fix: source statement surfaces from parser
 - fb80869 fix: source branch statement surfaces from parser
+- c78c777 fix: source lint statement surfaces from parser
 
 The tracked pause documentation checkpoints are:
 
@@ -134,6 +139,7 @@ The tracked pause documentation checkpoints are:
 - be892c7 docs: record module edit surface self-hosting slice
 - 472562b docs: record call argument surface self-hosting slice
 - 3fb10c7 docs: record statement surface self-hosting slice
+- b11171a docs: record branch statement surface self-hosting slice
 
 Recent self-hosting slices added:
 
@@ -194,6 +200,9 @@ Recent self-hosting slices added:
 - branch statement surfaces and expression fallback surfaces used by edit plans
   now use Sley-owned parser templates while preserving the existing external
   `block:...:then:stmt:<index>` and `block:...:expr` surface shapes
+- raw-source lint statement and expression nodes now use Sley-owned parser
+  templates while preserving the existing external `block:...:stmt:<index>`
+  and `block:...:expr` surface shapes
 - diagnostics and run report root layouts moved into Sley-owned report-builder
   declarations, with the shell bootstrap supplying computed values to those
   builders
@@ -428,11 +437,27 @@ The latest continuation audit reconfirmed:
   surface ID proof slice: `bootstrap`, `strict_self_hosted=false`,
   `semantic_source_count=6`, `bootstrap_owned_by_sley=201`; remaining blockers
   are parser, checker, and runtime semantics from Sley source
+- focused raw-source lint surface probes:
+  `bin/sley lint --json --rule empty_for_statement
+  examples/empty_for_statement.sley` preserved
+  `block:task:app.empty_for.main:stmt:1`;
+  `bin/sley lint --json --rule unchecked_result examples/unchecked_result.sley`
+  preserved `block:task:app.unchecked.main:stmt:0:expr`;
+  `bin/sley lint --json --rule unreachable_statement
+  examples/unreachable_statement.sley` preserved
+  `block:task:app.unreachable_statement.main:stmt:2`; and
+  `bin/sley lint --json --rule unused_pure_expression_statement
+  examples/unused_pure_expression_statement.sley` preserved
+  `block:task:app.unused_expr.main:stmt:1`
+- Sley self-hosting status after the parser lint statement surface ID proof
+  slice: `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=202`; remaining blockers
+  are parser, checker, and runtime semantics from Sley source
 
 ## Dirty State Notes
 
-Tracked code was committed at fb80869 before this pause document was updated.
-Tracked pause documentation before this update was refreshed through 3fb10c7
+Tracked code was committed at c78c777 before this pause document was updated.
+Tracked pause documentation before this update was refreshed through b11171a
 with parser surface evidence, and through 26e7417 with the external comparison
 approval gate, fork audit, and helper evidence.
 
