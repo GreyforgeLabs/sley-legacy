@@ -4977,15 +4977,6 @@ CHECKER_INSPECT_RETURN_TYPE_HINT_KIND="${CHECKER_INSPECT_RETURN_TYPE_HINT_KIND:-
 CHECKER_INSERT_RETURN_HINT_KIND="${CHECKER_INSERT_RETURN_HINT_KIND:-insert_return}"
 CHECKER_REPLACE_TASK_BODY_HINT_KIND="${CHECKER_REPLACE_TASK_BODY_HINT_KIND:-replace_task_body}"
 CHECKER_REPLACE_EXPRESSION_HINT_KIND="${CHECKER_REPLACE_EXPRESSION_HINT_KIND:-replace_expression}"
-CHECKER_INT_TYPE="${CHECKER_INT_TYPE:-Int}"
-CHECKER_TEXT_TYPE="${CHECKER_TEXT_TYPE:-Text}"
-CHECKER_BOOL_TYPE="${CHECKER_BOOL_TYPE:-Bool}"
-CHECKER_UNIT_TYPE="${CHECKER_UNIT_TYPE:-Unit}"
-CHECKER_RESULT_TYPE="${CHECKER_RESULT_TYPE:-Result}"
-CHECKER_ERROR_TYPE="${CHECKER_ERROR_TYPE:-Error}"
-CHECKER_GATE_TYPE="${CHECKER_GATE_TYPE:-Gate}"
-CHECKER_LIST_TYPE="${CHECKER_LIST_TYPE:-List}"
-CHECKER_MAP_TYPE="${CHECKER_MAP_TYPE:-Map}"
 LINT_EMPTY_FOR="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_for_statement_id)"
 LINT_EMPTY_WHILE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_while_statement_id)"
 LINT_EMPTY_FORGE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_forge_statement_id)"
@@ -5938,7 +5929,7 @@ check_json() {
   else
     source_text=""
   fi
-  builtin_types="$(eval_checker_builtin_types_json || printf '%s\n' '["Int","Text","Bool","Unit","Result","Error","Gate","List","Map"]')"
+  builtin_types="$(eval_checker_builtin_types_json)"
   diagnostics="$(ast_json "$target" | jq \
     --arg unknown "$DIAG_UNKNOWN_IDENTIFIER" \
     --arg unknown_type "$DIAG_UNKNOWN_TYPE" \
