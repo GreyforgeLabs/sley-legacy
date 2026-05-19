@@ -114,6 +114,7 @@ export task owned_bootstrap_values -> List<Text> {
     "runtime_value_kinds_task_execution",
     "runtime_self_hosted_target_aliases_task_execution",
     "runtime_status_names_task_execution",
+    "runtime_target_probe_sources_task_execution",
     "checker_gate_binding_kind_task_execution",
     "checker_repair_hint_kind_task_execution",
     "checker_identifier_expr_kind_task_execution",

@@ -92,6 +92,21 @@ if grep -Eq 'RUNTIME_(PASSED|FAILED|SKIPPED)_STATUS="\$\{RUNTIME_(PASSED|FAILED|
 fi
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("runtime_target_probe_sources_task_execution"))'
+
+bin/sley run --json examples/project \
+  | json_field '.status == "passed" and .value.kind == "Int" and .value.value == 42'
+
+bin/sley run --json --cap SecretRead --cap Network --cap ModelCall --cap Deploy examples/agent_deploy_pipeline.sley \
+  | json_field '.status == "passed" and .value.kind == "Ok" and .value.value.kind == "Text" and .value.value.value == "profile ready | plan approved | staged"'
+
+if grep -Fq 'RUNTIME_AGENT_DEPLOY_SUFFIX="${RUNTIME_AGENT_DEPLOY_SUFFIX:-' bin/sley \
+  || grep -Fq 'RUNTIME_PROJECT_READY_CALL_PROBE="${RUNTIME_PROJECT_READY_CALL_PROBE:-' bin/sley \
+  || grep -Fq 'RUNTIME_PROJECT_READY_BINDING_PROBE="${RUNTIME_PROJECT_READY_BINDING_PROBE:-' bin/sley; then
+  fail "runtime target probes must come from loom.runtime without shell fallback literals"
+fi
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("lint_declared_effect_aliases_task_execution"))'
 
 bin/sley self-hosting-status --json \
