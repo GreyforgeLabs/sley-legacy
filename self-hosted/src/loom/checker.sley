@@ -580,6 +580,30 @@ export task builtin_effects -> List<Text> {
   ]
 }
 
+export task effect_authorization_aliases -> List<Text> {
+  return [
+    "DatabaseRead|DbRead",
+    "DatabaseWrite|DbWrite"
+  ]
+}
+
+export task host_effect_needles -> List<Text> {
+  return [
+    "DatabaseRead|db.query_one(",
+    "DatabaseRead|db.try_query_one(",
+    "DatabaseWrite|db.try_insert(",
+    "Deploy|deploy.try_stage(",
+    "FileRead|fs.read_text(",
+    "FileRead|fs.try_read_text(",
+    "FileWrite|fs.try_write_text(",
+    "ModelCall|model.try_complete(",
+    "Network|http.try_get_text(",
+    "SecretRead|secrets.try_get(",
+    "Shell|shell.try_run(",
+    "Spend|spend.try_authorize("
+  ]
+}
+
 export task int_type_name -> Text {
   return "Int"
 }
