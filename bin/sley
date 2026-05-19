@@ -4496,6 +4496,11 @@ CHECKER_IDENTIFIER_INPUTS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOUR
 CHECKER_BUILTIN_EFFECTS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" builtin_effects)"
 CHECKER_EFFECT_ALIASES_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" effect_authorization_aliases)"
 CHECKER_HOST_EFFECT_NEEDLES_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" host_effect_needles)"
+CHECKER_DECLARE_OR_IMPORT_TASK_HINT_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" declare_or_import_task_hint_kind)"
+CHECKER_INSPECT_RETURN_TYPE_HINT_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" inspect_return_type_hint_kind)"
+CHECKER_INSERT_RETURN_HINT_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" insert_return_hint_kind)"
+CHECKER_REPLACE_TASK_BODY_HINT_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" replace_task_body_hint_kind)"
+CHECKER_REPLACE_EXPRESSION_HINT_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" replace_expression_hint_kind)"
 CHECKER_INT_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" int_type_name)"
 CHECKER_TEXT_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" text_type_name)"
 CHECKER_BOOL_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" bool_type_name)"
@@ -4669,6 +4674,11 @@ fi
 if [[ "$CHECKER_HOST_EFFECT_NEEDLES_JSON" == "[]" ]]; then
   CHECKER_HOST_EFFECT_NEEDLES_JSON='["DatabaseRead|db.query_one(","DatabaseRead|db.try_query_one(","DatabaseWrite|db.try_insert(","Deploy|deploy.try_stage(","FileRead|fs.read_text(","FileRead|fs.try_read_text(","FileWrite|fs.try_write_text(","ModelCall|model.try_complete(","Network|http.try_get_text(","SecretRead|secrets.try_get(","Shell|shell.try_run(","Spend|spend.try_authorize("]'
 fi
+CHECKER_DECLARE_OR_IMPORT_TASK_HINT_KIND="${CHECKER_DECLARE_OR_IMPORT_TASK_HINT_KIND:-declare_or_import_task}"
+CHECKER_INSPECT_RETURN_TYPE_HINT_KIND="${CHECKER_INSPECT_RETURN_TYPE_HINT_KIND:-inspect_return_type}"
+CHECKER_INSERT_RETURN_HINT_KIND="${CHECKER_INSERT_RETURN_HINT_KIND:-insert_return}"
+CHECKER_REPLACE_TASK_BODY_HINT_KIND="${CHECKER_REPLACE_TASK_BODY_HINT_KIND:-replace_task_body}"
+CHECKER_REPLACE_EXPRESSION_HINT_KIND="${CHECKER_REPLACE_EXPRESSION_HINT_KIND:-replace_expression}"
 CHECKER_INT_TYPE="${CHECKER_INT_TYPE:-Int}"
 CHECKER_TEXT_TYPE="${CHECKER_TEXT_TYPE:-Text}"
 CHECKER_BOOL_TYPE="${CHECKER_BOOL_TYPE:-Bool}"
@@ -5780,6 +5790,11 @@ check_json() {
     --arg question_requires_result_prefix "$QUESTION_REQUIRES_RESULT_MESSAGE_PREFIX" \
     --arg question_requires_result_suffix "$QUESTION_REQUIRES_RESULT_MESSAGE_SUFFIX" \
     --arg question_requires_result_message_template "$QUESTION_REQUIRES_RESULT_MESSAGE_TEMPLATE" \
+    --arg declare_or_import_task_hint_kind "$CHECKER_DECLARE_OR_IMPORT_TASK_HINT_KIND" \
+    --arg inspect_return_type_hint_kind "$CHECKER_INSPECT_RETURN_TYPE_HINT_KIND" \
+    --arg insert_return_hint_kind "$CHECKER_INSERT_RETURN_HINT_KIND" \
+    --arg replace_task_body_hint_kind "$CHECKER_REPLACE_TASK_BODY_HINT_KIND" \
+    --arg replace_expression_hint_kind "$CHECKER_REPLACE_EXPRESSION_HINT_KIND" \
     --arg source_text "$source_text" \
     --arg checker_int_type "$CHECKER_INT_TYPE" \
     --arg checker_text_type "$CHECKER_TEXT_TYPE" \
@@ -6083,7 +6098,7 @@ check_json() {
         end;
       {id:$unknown_task, severity:"error", message:render_arg($unknown_task_message_template; "task_name"; $callee), node:$expr.id, span:$expr.span,
         repair_hints:[{
-          kind:"declare_or_import_task",
+          kind:$declare_or_import_task_hint_kind,
           target:$expr.id,
           replacement:("task " + $callee + " -> " + $checker_unit_type + " {\n" + ($args | to_entries | map("  take arg" + (.key|tostring) + ": " + arg_type(.value)) | join("\n")) + (if ($args | length) > 0 then "\n" else "" end) + "}")
         }]
@@ -6141,9 +6156,9 @@ check_json() {
       (starter_expr(normalize_type($expected))) as $replacement_expr |
       {id:$return_type_mismatch, severity:"error", message:render_arg($return_type_mismatch_message_template; "task_name"; ($t.module + "." + $t.name)), node:$stmt.expr.id, span:$stmt.expr.span,
         repair_hints:[
-          {kind:"inspect_return_type", target:$t.id, replacement:$expected},
-          {kind:"replace_task_body", target:$t.id, replacement:("return " + $replacement_expr)},
-          {kind:"replace_expression", target:$stmt.expr.id, replacement:("{\"op\":\"ReplaceExpression\",\"payload\":{\"source\":\"" + $replacement_expr + "\"},\"target\":\"" + $stmt.expr.id + "\"}")}
+          {kind:$inspect_return_type_hint_kind, target:$t.id, replacement:$expected},
+          {kind:$replace_task_body_hint_kind, target:$t.id, replacement:("return " + $replacement_expr)},
+          {kind:$replace_expression_hint_kind, target:$stmt.expr.id, replacement:("{\"op\":\"ReplaceExpression\",\"payload\":{\"source\":\"" + $replacement_expr + "\"},\"target\":\"" + $stmt.expr.id + "\"}")}
         ]
       };
     def duplicate_take_diags:
@@ -6315,8 +6330,8 @@ check_json() {
       select(([$t.body.statements[]? | select(.kind == $return_statement_kind)] | length) == 0) |
       {id:$missing_return, severity:"error", message:render_arg($missing_return_message_template; "task_name"; ($t.module + "." + $t.name)), node:$t.id, span:$t.span,
         repair_hints:[
-          {kind:"insert_return", target:$t.id, replacement:starter_return($name)},
-          {kind:"replace_task_body", target:$t.id, replacement:starter_return($name)}
+          {kind:$insert_return_hint_kind, target:$t.id, replacement:starter_return($name)},
+          {kind:$replace_task_body_hint_kind, target:$t.id, replacement:starter_return($name)}
         ]
       };
     [duplicate_effect_diags, duplicate_type_diags, duplicate_task_diags, task_diags, return_type_diags, take_type_diags, unknown_effect_diags, gate_take_type_diags, gate_effect_diags, question_requires_result_diags, direct_effect_diags, transitive_effect_diags, unknown_task_diags, call_arity_diags, call_argument_type_diags, type_mismatch_diags, return_type_mismatch_diags, duplicate_take_diags, duplicate_map_key_diags, duplicate_record_field_diags, duplicate_record_literal_field_diags, record_field_missing_diags, record_field_unknown_diags, record_field_type_mismatch_diags, record_literal_non_record_type_diags, unknown_record_field_diags, list_element_type_diags, index_diags, map_key_type_diags, map_value_type_diags, missing_return_diags]

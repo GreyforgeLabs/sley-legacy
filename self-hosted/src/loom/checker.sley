@@ -604,6 +604,26 @@ export task host_effect_needles -> List<Text> {
   ]
 }
 
+export task declare_or_import_task_hint_kind -> Text {
+  return "declare_or_import_task"
+}
+
+export task inspect_return_type_hint_kind -> Text {
+  return "inspect_return_type"
+}
+
+export task insert_return_hint_kind -> Text {
+  return "insert_return"
+}
+
+export task replace_task_body_hint_kind -> Text {
+  return "replace_task_body"
+}
+
+export task replace_expression_hint_kind -> Text {
+  return "replace_expression"
+}
+
 export task int_type_name -> Text {
   return "Int"
 }
