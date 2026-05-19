@@ -11466,7 +11466,7 @@ command_graph() {
     return
   fi
   ast="$(ast_json "$target")"
-  jq -n --arg target "$slice" --arg entry_target "$target" --arg module_task_list_surface_id_template "$PARSER_MODULE_TASK_LIST_SURFACE_ID_TEMPLATE" --arg module_import_list_surface_id_template "$PARSER_MODULE_IMPORT_LIST_SURFACE_ID_TEMPLATE" --arg module_type_list_surface_id_template "$PARSER_MODULE_TYPE_LIST_SURFACE_ID_TEMPLATE" --arg module_effect_list_surface_id_template "$PARSER_MODULE_EFFECT_LIST_SURFACE_ID_TEMPLATE" --arg block_task_surface_id_template "$PARSER_BLOCK_TASK_SURFACE_ID_TEMPLATE" --arg call_target_task_id_template "$PARSER_CALL_TARGET_TASK_ID_TEMPLATE" --arg call_argument_surface_id_template "$PARSER_CALL_ARGUMENT_SURFACE_ID_TEMPLATE" --argjson query "$query" --argjson ast "$ast" '
+  jq -n --arg target "$slice" --arg entry_target "$target" --arg module_task_list_surface_id_template "$PARSER_MODULE_TASK_LIST_SURFACE_ID_TEMPLATE" --arg module_import_list_surface_id_template "$PARSER_MODULE_IMPORT_LIST_SURFACE_ID_TEMPLATE" --arg module_type_list_surface_id_template "$PARSER_MODULE_TYPE_LIST_SURFACE_ID_TEMPLATE" --arg module_effect_list_surface_id_template "$PARSER_MODULE_EFFECT_LIST_SURFACE_ID_TEMPLATE" --arg block_task_surface_id_template "$PARSER_BLOCK_TASK_SURFACE_ID_TEMPLATE" --arg call_target_task_id_template "$PARSER_CALL_TARGET_TASK_ID_TEMPLATE" --arg call_argument_surface_id_template "$PARSER_CALL_ARGUMENT_SURFACE_ID_TEMPLATE" --arg call_expression_prefix "$PARSER_CALL_EXPRESSION_PREFIX" --argjson query "$query" --argjson ast "$ast" '
     def replace_all($needle; $replacement): split($needle) | join($replacement);
     def module_task_list_surface_id($module_name):
       $module_task_list_surface_id_template
@@ -11549,7 +11549,7 @@ command_graph() {
       else [$task.body.statements[]?.expr? |
         {
           target:.id,
-          target_kind:(if ((.source? // "") | startswith("call ")) then "Call" else (.expr_kind // "Expression") end),
+          target_kind:(if ((.source? // "") | startswith($call_expression_prefix)) then "Call" else (.expr_kind // "Expression") end),
           operation:{op:"ReplaceExpression", target:.id, payload:{source:(.source // "")}},
           editable_json_pointers:["/payload/source"]
         }]
