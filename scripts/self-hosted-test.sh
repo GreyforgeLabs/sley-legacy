@@ -161,6 +161,9 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_ast_program_report_builder")) and (.bootstrap_owned_by_sley | index("parser_ast_program_report_builder_task_execution"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("parser_expression_statement_parser_prefix_task_execution"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_ast_node_report_builder")) and (.bootstrap_owned_by_sley | index("parser_ast_node_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("parser_ast_node_kind_task_execution")) and (.bootstrap_owned_by_sley | index("parser_ast_node_not_found_diagnostic"))'
 
 bin/sley self-hosting-status --json \
@@ -317,6 +320,9 @@ bin/sley self-hosting-status --json \
 
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("direct_file_read_runtime_execution"))'
+
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("direct_file_read_parser_prefix_runtime_execution"))'
 
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("direct_file_read_result_runtime_execution"))'
@@ -506,6 +512,9 @@ bin/sley self-hosting-status --json \
 
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("while_list_sum_runtime_execution"))'
+
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("while_list_sum_parser_prefix_runtime_execution"))'
 
 bin/sley run --json examples/collections.sley \
   | json_field '.status == "passed" and .value.kind == "Int" and .value.value == 10'
