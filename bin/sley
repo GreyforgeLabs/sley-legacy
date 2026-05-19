@@ -420,7 +420,12 @@ eval_checker_status_task() {
 
 eval_checker_builtin_types_json() {
   local checker_file="$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley"
-  local body
+  local body builtin_types
+  builtin_types="$(extract_sley_list_task_json "$checker_file" builtin_types)"
+  if [[ "$builtin_types" != "[]" ]]; then
+    printf '%s\n' "$builtin_types"
+    return 0
+  fi
   body="$(extract_sley_task_body "$checker_file" is_builtin_type)"
   [[ -n "$body" ]] || return 1
   printf '%s\n' "$body" | awk '
@@ -4489,6 +4494,15 @@ QUESTION_REQUIRES_RESULT_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTE
 QUESTION_REQUIRES_RESULT_MESSAGE_TEMPLATE="$(eval_checker_message_template question_requires_result_message task_name || printf 'question operator requires Result return in task `::task_name::`\n')"
 CHECKER_IDENTIFIER_INPUTS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" identifier_resolution_inputs)"
 CHECKER_BUILTIN_EFFECTS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" builtin_effects)"
+CHECKER_INT_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" int_type_name)"
+CHECKER_TEXT_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" text_type_name)"
+CHECKER_BOOL_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" bool_type_name)"
+CHECKER_UNIT_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unit_type_name)"
+CHECKER_RESULT_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" result_type_name)"
+CHECKER_ERROR_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" error_type_name)"
+CHECKER_GATE_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" gate_type_name)"
+CHECKER_LIST_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" list_type_name)"
+CHECKER_MAP_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" map_type_name)"
 CHECK_OK_STATUS="${CHECK_OK_STATUS:-ok}"
 CHECK_ERROR_STATUS="${CHECK_ERROR_STATUS:-error}"
 UNKNOWN_IDENTIFIER_MESSAGE_PREFIX="${UNKNOWN_IDENTIFIER_MESSAGE_PREFIX:-unknown identifier \`}"
@@ -4647,6 +4661,15 @@ fi
 if [[ "$CHECKER_BUILTIN_EFFECTS_JSON" == "[]" ]]; then
   CHECKER_BUILTIN_EFFECTS_JSON='["DatabaseRead","DatabaseWrite","DbRead","DbWrite","Deploy","FileRead","FileWrite","ModelCall","Network","SecretRead","Shell","Spend"]'
 fi
+CHECKER_INT_TYPE="${CHECKER_INT_TYPE:-Int}"
+CHECKER_TEXT_TYPE="${CHECKER_TEXT_TYPE:-Text}"
+CHECKER_BOOL_TYPE="${CHECKER_BOOL_TYPE:-Bool}"
+CHECKER_UNIT_TYPE="${CHECKER_UNIT_TYPE:-Unit}"
+CHECKER_RESULT_TYPE="${CHECKER_RESULT_TYPE:-Result}"
+CHECKER_ERROR_TYPE="${CHECKER_ERROR_TYPE:-Error}"
+CHECKER_GATE_TYPE="${CHECKER_GATE_TYPE:-Gate}"
+CHECKER_LIST_TYPE="${CHECKER_LIST_TYPE:-List}"
+CHECKER_MAP_TYPE="${CHECKER_MAP_TYPE:-Map}"
 LINT_EMPTY_FOR="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_for_statement_id)"
 LINT_EMPTY_WHILE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_while_statement_id)"
 LINT_EMPTY_FORGE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_forge_statement_id)"
@@ -5749,6 +5772,14 @@ check_json() {
     --arg question_requires_result_suffix "$QUESTION_REQUIRES_RESULT_MESSAGE_SUFFIX" \
     --arg question_requires_result_message_template "$QUESTION_REQUIRES_RESULT_MESSAGE_TEMPLATE" \
     --arg source_text "$source_text" \
+    --arg checker_int_type "$CHECKER_INT_TYPE" \
+    --arg checker_text_type "$CHECKER_TEXT_TYPE" \
+    --arg checker_bool_type "$CHECKER_BOOL_TYPE" \
+    --arg checker_unit_type "$CHECKER_UNIT_TYPE" \
+    --arg checker_result_type "$CHECKER_RESULT_TYPE" \
+    --arg checker_gate_type "$CHECKER_GATE_TYPE" \
+    --arg checker_list_type "$CHECKER_LIST_TYPE" \
+    --arg checker_map_type "$CHECKER_MAP_TYPE" \
     --argjson builtin_types "$builtin_types" \
     --argjson builtin_effects "$CHECKER_BUILTIN_EFFECTS_JSON" \
     --argjson identifier_inputs "$CHECKER_IDENTIFIER_INPUTS_JSON" '
@@ -5761,7 +5792,7 @@ check_json() {
     def include_identifier_input($name):
       ($identifier_inputs | index($name)) != null;
     def base_type_name:
-      (. // "Unit") | sub("<.*$"; "");
+      (. // $checker_unit_type) | sub("<.*$"; "");
     def type_known($name):
       ($name | base_type_name) as $base |
       (($builtin_types | index($base)) != null) or (($declared_types | index($base)) != null);
@@ -5813,17 +5844,17 @@ check_json() {
       elif ($callee | contains(".")) then true
       else false end;
     def literal_type:
-      if test("^\".*\"$") then "Text"
-      elif test("^-?[0-9]+$") then "Int"
-      elif . == "true" or . == "false" then "Bool"
+      if test("^\".*\"$") then $checker_text_type
+      elif test("^-?[0-9]+$") then $checker_int_type
+      elif . == "true" or . == "false" then $checker_bool_type
       else "" end;
     def starter_expr($type_name):
-      ($type_name // "Unit") as $name |
+      ($type_name // $checker_unit_type) as $name |
       ($name | base_type_name) as $base |
-      if $base == "Int" then "0"
-      elif $base == "Text" then "\"\""
-      elif $base == "Bool" then "false"
-      elif $base == "Result" then "Err(\"\")"
+      if $base == $checker_int_type then "0"
+      elif $base == $checker_text_type then "\"\""
+      elif $base == $checker_bool_type then "false"
+      elif $base == $checker_result_type then "Err(\"\")"
       else "()" end;
     def starter_return($type_name):
       "return " + starter_expr($type_name);
@@ -5842,9 +5873,9 @@ check_json() {
       ($type_name | trim) as $name |
       (alias_target($name)) as $target |
       ($target | trim) as $resolved |
-      if ($resolved | test("^List<[^>]+>$")) then
-        (($resolved | capture("^List<(?<element>[^>]+)>$")) | .element | trim) as $element |
-        "List<" + (alias_target($element) | trim) + ">"
+      if ($resolved | test("^" + $checker_list_type + "<[^>]+>$")) then
+        (($resolved | capture("^" + $checker_list_type + "<(?<element>[^>]+)>$")) | .element | trim) as $element |
+        $checker_list_type + "<" + (alias_target($element) | trim) + ">"
       elif $resolved == $name then $name
       else
         (alias_target($resolved)) as $second |
@@ -5855,10 +5886,10 @@ check_json() {
     def type_known_for_compare($name):
       (normalize_type($name)) as $normalized |
       type_known($name) and
-      if ($normalized | test("^List<[^>]+>$")) then
-        (($normalized | capture("^List<(?<element>[^>]+)>$")) | .element | trim | type_known(.))
-      elif ($normalized | test("^Map<[^,>]+,[^>]+>$")) then
-        ($normalized | capture("^Map<(?<key>[^,>]+),[[:space:]]*(?<value>[^>]+)>$")) as $map |
+      if ($normalized | test("^" + $checker_list_type + "<[^>]+>$")) then
+        (($normalized | capture("^" + $checker_list_type + "<(?<element>[^>]+)>$")) | .element | trim | type_known(.))
+      elif ($normalized | test("^" + $checker_map_type + "<[^,>]+,[^>]+>$")) then
+        ($normalized | capture("^" + $checker_map_type + "<(?<key>[^,>]+),[[:space:]]*(?<value>[^>]+)>$")) as $map |
         (($map.key | trim | type_known(.)) and ($map.value | trim | type_known(.)))
       else type_known($normalized) end;
     def list_literal_type:
@@ -5866,7 +5897,7 @@ check_json() {
       if $list.items == null then ""
       else
         ($list.items | csv_items | map(literal_type) | map(select(. != "")) | unique) as $types |
-        if (($list.items | csv_items | length) > 0) and (($types | length) == 1) then "List<" + $types[0] + ">" else "" end
+        if (($list.items | csv_items | length) > 0) and (($types | length) == 1) then $checker_list_type + "<" + $types[0] + ">" else "" end
       end;
     def indexed_list_literal_element_type:
       (capture("^\\[(?<items>[^\\[\\]]*)\\]\\[[^\\[\\]]+\\]$")? // {items:null}) as $list |
@@ -5883,7 +5914,7 @@ check_json() {
       if $take_type != null then $take_type
       else ([$task.body.statements[]? | select(.kind==$binding_statement_kind and .name == $name) | declared_binding_type(.) | select(. != null)][0]) // null end;
     def list_element_type($type_name):
-      ((normalize_type($type_name)) | capture("^List<(?<element>[^>]+)>$")? // {element:null}) | .element | if . == null then null else trim end;
+      ((normalize_type($type_name)) | capture("^" + $checker_list_type + "<(?<element>[^>]+)>$")? // {element:null}) | .element | if . == null then null else trim end;
     def expression_static_type($task; $expr):
       ($expr.source? // "") as $source |
       ($source | literal_type) as $literal |
@@ -5908,11 +5939,11 @@ check_json() {
         end
       end;
     def line_list_element_type:
-      ((. | capture(":\\s*List<(?<element>[^>]+)>\\s*=")?) // {element:null}) | .element;
+      ((. | capture(":\\s*" + $checker_list_type + "<(?<element>[^>]+)>\\s*=")?) // {element:null}) | .element;
     def line_map_key_type:
-      ((. | capture(":\\s*Map<(?<key>[^,>]+),\\s*(?<value>[^>]+)>\\s*=")?) // {key:null}) | .key | if . == null then null else trim end;
+      ((. | capture(":\\s*" + $checker_map_type + "<(?<key>[^,>]+),\\s*(?<value>[^>]+)>\\s*=")?) // {key:null}) | .key | if . == null then null else trim end;
     def line_map_value_type:
-      ((. | capture(":\\s*Map<(?<key>[^,>]+),\\s*(?<value>[^>]+)>\\s*=")?) // {value:null}) | .value | if . == null then null else trim end;
+      ((. | capture(":\\s*" + $checker_map_type + "<(?<key>[^,>]+),\\s*(?<value>[^>]+)>\\s*=")?) // {value:null}) | .value | if . == null then null else trim end;
     def map_block_lines($start):
       if $start == null then []
       else
@@ -5981,13 +6012,13 @@ check_json() {
     def binding_collection_kind($task; $name):
       ([$task.body.statements[]? | select(.kind==$binding_statement_kind and .name==$name) |
         (source_line(.span.line)) as $line |
-        if ($line | test(":\\s*Map<")) or ((.expr.source? // "") | test("^map[[:space:]]*\\{")) then "Map"
-        elif ($line | test(":\\s*List<")) or ((.expr.source? // "") | test("^\\[")) then "List"
+        if ($line | test(":\\s*" + $checker_map_type + "<")) or ((.expr.source? // "") | test("^map[[:space:]]*\\{")) then $checker_map_type
+        elif ($line | test(":\\s*" + $checker_list_type + "<")) or ((.expr.source? // "") | test("^\\[")) then $checker_list_type
         else empty end][0]) // null;
     def simple_index:
       ((.source? // "") | capture("^(?<name>[A-Za-z_][A-Za-z0-9_]*)\\[(?<index>[^\\[\\]]+)\\]$")?) // {name:null,index:null};
     def gate_effect_name:
-      ((. | capture("^Gate<(?<effect>[^>]+)>$")?) // {effect:null}) | .effect;
+      ((. | capture("^" + $checker_gate_type + "<(?<effect>[^>]+)>$")?) // {effect:null}) | .effect;
     def task_diags:
       $root.tasks[] as $t |
       ((
@@ -6002,13 +6033,13 @@ check_json() {
       {id:$unknown, severity:"error", message:render_arg($unknown_message_template; "identifier_name"; .expr.name), node:.expr.id, span:.expr.span};
     def return_type_diags:
       $root.tasks[] as $t |
-      ($t.return_type.name // "Unit") as $name |
+      ($t.return_type.name // $checker_unit_type) as $name |
       select(type_known($name) | not) |
       {id:$unknown_type, severity:"error", message:render_arg($unknown_type_message_template; "type_name"; $name), node:$t.id, span:$t.span};
     def take_type_diags:
       $root.tasks[] as $t |
       $t.takes[]? as $take |
-      ($take.type.name // "Unit") as $name |
+      ($take.type.name // $checker_unit_type) as $name |
       select(type_known($name) | not) |
       {id:$unknown_type, severity:"error", message:render_arg($unknown_type_message_template; "type_name"; $name), node:$take.id, span:$take.span};
     def unknown_effect_diags:
@@ -6020,14 +6051,14 @@ check_json() {
       $root.tasks[] as $t |
       $t.takes[]? as $take |
       select($take.binding_kind == "Gate") |
-      ($take.type.name // "Unit") as $name |
+      ($take.type.name // $checker_unit_type) as $name |
       select(($name | gate_effect_name) == null) |
       {id:$gate_take_type, severity:"error", message:render_arg($gate_take_type_message_template; "actual_type"; $name), node:$take.id, span:$take.span};
     def gate_effect_diags:
       $root.tasks[] as $t |
       $t.takes[]? as $take |
       select($take.binding_kind == "Gate") |
-      (($take.type.name // "Unit") | gate_effect_name) as $effect |
+      (($take.type.name // $checker_unit_type) | gate_effect_name) as $effect |
       select($effect != null) |
       select(($t.effects | index($effect)) == null) |
       {id:$gate_effect, severity:"error", message:render_arg($gate_effect_message_template; "effect_name"; $effect), node:$take.id, span:$take.span};
@@ -6045,13 +6076,13 @@ check_json() {
         else
           ([$t.takes[]? | select(.name == $arg) | .type.name][0])
           // ([$t.body.statements[]? | select(.kind==$binding_statement_kind and .name == $arg) | expression_static_type($t; .expr)][0])
-          // "Unit"
+          // $checker_unit_type
         end;
       {id:$unknown_task, severity:"error", message:render_arg($unknown_task_message_template; "task_name"; $callee), node:$expr.id, span:$expr.span,
         repair_hints:[{
           kind:"declare_or_import_task",
           target:$expr.id,
-          replacement:("task " + $callee + " -> Unit {\n" + ($args | to_entries | map("  take arg" + (.key|tostring) + ": " + arg_type(.value)) | join("\n")) + (if ($args | length) > 0 then "\n" else "" end) + "}")
+          replacement:("task " + $callee + " -> " + $checker_unit_type + " {\n" + ($args | to_entries | map("  take arg" + (.key|tostring) + ": " + arg_type(.value)) | join("\n")) + (if ($args | length) > 0 then "\n" else "" end) + "}")
         }]
       };
     def call_arity_diags:
@@ -6078,7 +6109,7 @@ check_json() {
       ($expr | call_args) as $args |
       select(($args | length) == ($explicit_takes | length)) |
       $args | to_entries[] as $arg |
-      ($explicit_takes[$arg.key].type.name // "Unit") as $expected |
+      ($explicit_takes[$arg.key].type.name // $checker_unit_type) as $expected |
       ($arg.value | literal_type) as $actual |
       select($actual != "" and $expected != $actual) |
       {id:$call_argument_type, severity:"error", message:render_arg($call_argument_type_message_template; "task_name"; $callee), node:$expr.id, span:$expr.span};
@@ -6096,7 +6127,7 @@ check_json() {
       {id:$type_mismatch, severity:"error", message:render_arg($type_mismatch_message_template; "binding_name"; $stmt.name), node:$stmt.id, span:$stmt.span};
     def return_type_mismatch_diags:
       $root.tasks[] as $t |
-      ($t.return_type.name // "Unit") as $expected |
+      ($t.return_type.name // $checker_unit_type) as $expected |
       select(type_known_for_compare($expected)) |
       $t.body.statements[]? |
       select(.kind == $return_statement_kind) |
@@ -6210,9 +6241,9 @@ check_json() {
       (binding_collection_kind($t; $idx.name)) as $kind |
       ($idx.index | literal_type) as $actual |
       select($actual != "") |
-      if ($kind == "List" and $actual != "Int") then
+      if ($kind == $checker_list_type and $actual != $checker_int_type) then
         {id:$index_not_int, severity:"error", message:render_arg($index_not_int_message_template; "actual_type"; $actual), node:$expr.id, span:$expr.span}
-      elif ($kind == "Map" and $actual != "Text") then
+      elif ($kind == $checker_map_type and $actual != $checker_text_type) then
         {id:$index_key_type_mismatch, severity:"error", message:render_arg($index_key_type_mismatch_message_template; "actual_type"; $actual), node:$expr.id, span:$expr.span}
       else empty end;
     def map_key_type_diags:
@@ -6251,8 +6282,8 @@ check_json() {
       {id:$duplicate_task, severity:"error", message:render_arg($duplicate_task_message_template; "task_name"; $task.name), node:$task.id, span:$task.span};
     def question_requires_result_diags:
       $root.tasks[] as $t |
-      ($t.return_type.name // "Unit" | base_type_name) as $return_base |
-      select($return_base != "Result") |
+      ($t.return_type.name // $checker_unit_type | base_type_name) as $return_base |
+      select($return_base != $checker_result_type) |
       $t.body.statements[]?.expr? |
       select(.fallible? == true) |
       {id:$question_requires_result, severity:"error", message:render_arg($question_requires_result_message_template; "task_name"; ($t.module + "." + $t.name)), node:.id, span:.span};
@@ -6276,8 +6307,8 @@ check_json() {
       {id:$effect_unauthorized, severity:"error", message:render_arg($effect_unauthorized_message_template; "effect_name"; $effect), node:$expr.id, span:$expr.span};
     def missing_return_diags:
       $root.tasks[] as $t |
-      ($t.return_type.name // "Unit") as $name |
-      select($name != "Unit") |
+      ($t.return_type.name // $checker_unit_type) as $name |
+      select($name != $checker_unit_type) |
       select(([$t.body.statements[]? | select(.kind == $return_statement_kind)] | length) == 0) |
       {id:$missing_return, severity:"error", message:render_arg($missing_return_message_template; "task_name"; ($t.module + "." + $t.name)), node:$t.id, span:$t.span,
         repair_hints:[

@@ -580,6 +580,56 @@ export task builtin_effects -> List<Text> {
   ]
 }
 
+export task int_type_name -> Text {
+  return "Int"
+}
+
+export task text_type_name -> Text {
+  return "Text"
+}
+
+export task bool_type_name -> Text {
+  return "Bool"
+}
+
+export task unit_type_name -> Text {
+  return "Unit"
+}
+
+export task result_type_name -> Text {
+  return "Result"
+}
+
+export task error_type_name -> Text {
+  return "Error"
+}
+
+export task gate_type_name -> Text {
+  return "Gate"
+}
+
+export task list_type_name -> Text {
+  return "List"
+}
+
+export task map_type_name -> Text {
+  return "Map"
+}
+
+export task builtin_types -> List<Text> {
+  return [
+    "Int",
+    "Text",
+    "Bool",
+    "Unit",
+    "Result",
+    "Error",
+    "Gate",
+    "List",
+    "Map"
+  ]
+}
+
 export task diagnostic_status -> Text {
   take error_count: Int
 
