@@ -492,6 +492,9 @@ bin/sley self-hosting-status --json \
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("bound_local_call_runtime_execution"))'
 
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("runtime_main_call_parser_prefix_task_execution"))'
+
 bin/sley run --json fixtures/corpus/accepted/pure_main.sley \
   | json_field '.status == "passed" and .value.kind == "Int" and .value.value == 42'
 
