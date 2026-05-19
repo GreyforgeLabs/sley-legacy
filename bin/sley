@@ -13315,22 +13315,22 @@ command_graft_raw() {
       delete_unreachable_statement)
         rule="unreachable_statement"
         operation="DeleteNode"
-        fallback="block:task:app.unreachable_statement.main:stmt:2"
+        fallback="$(parser_task_statement_surface_value app.unreachable_statement main 2)"
         ;;
       delete_unused_pure_binding)
         rule="unused_pure_binding"
         operation="DeleteNode"
-        fallback="block:task:app.bindings.main:stmt:0"
+        fallback="$(parser_task_statement_surface_value app.bindings main 0)"
         ;;
       delete_unused_pure_expression_statement)
         rule="unused_pure_expression_statement"
         operation="DeleteNode"
-        fallback="block:task:app.unused_expr.main:stmt:1"
+        fallback="$(parser_task_statement_surface_value app.unused_expr main 1)"
         ;;
       drop_unused_effectful_binding_value)
         rule="unused_effectful_binding"
         operation="ReplaceStatement"
-        fallback="block:task:app.effectful_cleanup.main:stmt:0"
+        fallback="$(parser_task_statement_surface_value app.effectful_cleanup main 0)"
         ;;
     esac
     finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" --arg rule "$rule" '.findings[]? | select(.rule == $rule and (.node == $surface or $surface == ""))' | head -n 1)"
