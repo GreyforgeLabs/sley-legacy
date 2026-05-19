@@ -12580,7 +12580,8 @@ sley_rename_task_declaration() {
 }
 
 sley_rewrite_inbound_call_names() {
-  local source="$1" old_qualified="$2" new_name="$3" query callee new_callee file tmp_file
+  local source="$1" old_qualified="$2" new_name="$3" query callee new_callee file tmp_file call_prefix
+  call_prefix="${PARSER_CALL_EXPRESSION_PREFIX:-call }"
   query="$(query_json "$source" all)"
   while IFS= read -r callee; do
     [[ -n "$callee" ]] || continue
@@ -12591,11 +12592,11 @@ sley_rewrite_inbound_call_names() {
     fi
     while IFS= read -r file; do
       tmp_file="$(mktemp)"
-      awk -v old_callee="$callee" -v new_callee="$new_callee" '
+      awk -v old_callee="$callee" -v new_callee="$new_callee" -v call_prefix="$call_prefix" '
         {
           line=$0
-          needle="call " old_callee "("
-          repl="call " new_callee "("
+          needle=call_prefix old_callee "("
+          repl=call_prefix new_callee "("
           if ((pos=index(line, needle)) > 0) {
             line=substr(line, 1, pos - 1) repl substr(line, pos + length(needle))
           }
@@ -12635,17 +12636,18 @@ sley_remove_task_take() {
 }
 
 sley_remove_inbound_call_arg() {
-  local source="$1" target_qualified="$2" position="$3" query callee file tmp_file
+  local source="$1" target_qualified="$2" position="$3" query callee file tmp_file call_prefix
+  call_prefix="${PARSER_CALL_EXPRESSION_PREFIX:-call }"
   query="$(query_json "$source" all)"
   while IFS= read -r callee; do
     [[ -n "$callee" ]] || continue
     while IFS= read -r file; do
       tmp_file="$(mktemp)"
-      awk -v callee="$callee" -v remove_position="$position" '
+      awk -v callee="$callee" -v remove_position="$position" -v call_prefix="$call_prefix" '
         function trim(s){gsub(/^[[:space:]]+|[[:space:]]+$/, "", s); return s}
         {
           line=$0
-          needle="call " callee "("
+          needle=call_prefix callee "("
           if ((pos=index(line, needle)) > 0) {
             start=pos + length(needle)
             rest=substr(line, start)

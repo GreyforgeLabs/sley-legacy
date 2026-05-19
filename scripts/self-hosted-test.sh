@@ -122,6 +122,9 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("symbol_graph_call_arg_parser_prefix_task_execution")) and (.bootstrap_owned_by_sley | index("plan_call_arg_parser_prefix_task_execution"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("fix_update_call_sites_parser_prefix_task_execution")) and (.bootstrap_owned_by_sley | index("fix_remove_call_arg_parser_prefix_task_execution"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_fix_style_surface_id_task_execution"))'
 
 bin/sley self-hosting-status --json \
