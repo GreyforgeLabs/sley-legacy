@@ -103,6 +103,9 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_fix_constant_derived_surface_id_task_execution"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("parser_fix_algebra_boolean_surface_id_task_execution"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_expression_id_task_execution")) and (.bootstrap_owned_by_sley | index("parser_control_expression_id_task_execution"))'
 
 bin/sley self-hosting-status --json \
@@ -977,6 +980,27 @@ bin/sley fix --json --kind simplify_constant_len_expression --dry-run examples/h
 
 bin/sley fix --json --kind simplify_constant_not_expression --dry-run examples/hello.sley \
   | json_field '([.provenance[]?.targets[]?] | index("block:task:app.constant_not_fix.main:stmt:0:expr"))'
+
+bin/sley fix --json --kind simplify_identity_binary_expression --dry-run examples/hello.sley \
+  | json_field '([.provenance[]?.targets[]?] | index("block:task:app.identity_fix.main:stmt:1:expr"))'
+
+bin/sley fix --json --kind simplify_redundant_boolean_comparison --dry-run examples/hello.sley \
+  | json_field '([.provenance[]?.targets[]?] | index("block:task:app.boolean_fix.main:stmt:1:expr"))'
+
+bin/sley fix --json --kind simplify_absorbing_boolean_expression --dry-run examples/hello.sley \
+  | json_field '([.provenance[]?.targets[]?] | index("block:task:app.absorbing_boolean_fix.main:stmt:0:expr"))'
+
+bin/sley fix --json --kind simplify_idempotent_boolean_expression --dry-run examples/hello.sley \
+  | json_field '([.provenance[]?.targets[]?] | index("block:task:app.idempotent_boolean_fix.main:stmt:1:expr"))'
+
+bin/sley fix --json --kind simplify_self_comparison_expression --dry-run examples/hello.sley \
+  | json_field '([.provenance[]?.targets[]?] | index("block:task:app.self_compare_fix.main:stmt:0:expr"))'
+
+bin/sley fix --json --kind simplify_double_negation_expression --dry-run examples/hello.sley \
+  | json_field '([.provenance[]?.targets[]?] | index("block:task:app.double_fix.main:stmt:1:expr"))'
+
+bin/sley fix --json --kind simplify_negated_comparison_expression --dry-run examples/hello.sley \
+  | json_field '([.provenance[]?.targets[]?] | index("block:task:app.negated_compare_fix.main:stmt:1:expr"))'
 
 bin/sley-contract validate --schema sley.migrate.report.v0 "$migrate_report" --schemas docs/schemas --json \
   | json_field '.schema == "sley.contract.validate.v0" and .status == "passed" and .requested_schema == "sley.migrate.report.v0" and .report_schema == "sley.migrate.report.v0"'
