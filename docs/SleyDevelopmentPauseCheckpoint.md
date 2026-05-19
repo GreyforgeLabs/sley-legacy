@@ -2,8 +2,8 @@
 
 Date: 2026-05-19
 Branch: public
-Latest code checkpoint: b5c5b8a
-Latest pause documentation checkpoint before this note: 1a60bd7
+Latest code checkpoint: 95bf81e
+Latest pause documentation checkpoint before this note: 5abc5e8
 Current pause document status: committed on `public`; use `git log` for exact
 branch head
 Remote status: verify current `origin/public` head with
@@ -311,8 +311,12 @@ The current local checkpoint advances the public branch to:
   `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
   `bootstrap_owned_by_sley=274`; remaining blockers are still parser, checker,
   and runtime semantics from Sley source
+- self-hosting status after the runtime diagnostic fallback-removal slice:
+  `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=275`; remaining blockers are still parser, checker,
+  and runtime semantics from Sley source
 - latest verification refresh on 2026-05-19: `make v1` passed after the
-  runtime default-value source slice
+  runtime diagnostic fallback-removal slice
 
 The tracked code checkpoint is:
 
@@ -388,6 +392,7 @@ The tracked code checkpoint is:
 - 44e7bbd fix: source runtime status names from sley
 - 2019668 fix: source runtime target probes from sley
 - b5c5b8a fix: source runtime default values from sley
+- 95bf81e fix: require sley runtime diagnostics
 
 The tracked pause documentation checkpoints are:
 
@@ -457,6 +462,7 @@ The tracked pause documentation checkpoints are:
 - bead55f docs: record runtime self-hosted target slice
 - df39353 docs: record runtime status name slice
 - 1a60bd7 docs: record runtime target probe slice
+- 5abc5e8 docs: record runtime default value slice
 
 Recent self-hosting slices added:
 
@@ -688,6 +694,10 @@ Recent self-hosting slices added:
 - Runtime default seed and host texts now come from `loom.runtime` without
   shell fallback literals, while preserving `Text("hello sley")`,
   `Ok<Text>("hello sley")`, and capability-seeded shell output
+- Runtime capability-required, scope-denied, unsupported-`main`-take, and
+  runtime authority default-table values are now required Sley-sourced
+  environment inputs without shell or Python host-literal fallbacks, while
+  preserving capability-required, scope-denied, and unsupported-take diagnostics
 
 ## Next Frontier
 
@@ -1788,10 +1798,30 @@ The latest continuation audit reconfirmed:
   check-fixtures fixtures/contracts --schemas docs/schemas --json`, external
   public-action packet verifier, `git diff --check`, and final `make v1` all
   passed
+- focused runtime diagnostic fallback-removal probes:
+  `bin/sley self-hosting-status --json` reported
+  `runtime_diagnostic_fallback_removal_task_execution` and
+  `bootstrap_owned_by_sley=275`; scope-denied database read preserved
+  `RUNTIME_CAPABILITY_SCOPE_DENIED` with
+  `DatabaseRead/DbRead scope does not allow \`users\``; capability-required
+  agent project runtime preserved `RUNTIME_CAPABILITY_REQUIRED`;
+  ordinary-`main` take runtime preserved `RUNTIME_TAKE_REQUIRED`; focused grep
+  found no shell or Python host fallback literals for the moved runtime
+  diagnostic/default-table values
+- Sley self-hosting status after the runtime diagnostic fallback-removal slice:
+  `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=275`; remaining blockers are still parser, checker,
+  and runtime semantics from Sley source
+- latest runtime diagnostic fallback-removal verification:
+  `bash -n bin/sley`, `bash -n scripts/self-hosted-test.sh`, focused runtime
+  diagnostic fallback-removal probes, `scripts/self-hosted-test.sh`,
+  `bin/sley-contract check-fixtures fixtures/contracts --schemas docs/schemas
+  --json`, external public-action packet verifier, `git diff --check`, and
+  final `make v1` all passed
 
 ## Dirty State Notes
 
-Tracked code was committed at b5c5b8a before this pause document was updated.
+Tracked code was committed at 95bf81e before this pause document was updated.
 Tracked pause documentation before this update was refreshed through 218d40c
 with parser lint surface evidence, through 26e7417 with the external comparison
 approval gate, fork audit, and helper evidence, and through aba1b03 with parser
@@ -1840,7 +1870,8 @@ runtime diagnostic source evidence, and through d270b71 with runtime database
 default-table source evidence, and through ad34013 with runtime value-kind
 source evidence, and through bead55f with runtime self-hosted target alias
 source evidence, and through df39353 with runtime status-name source evidence,
-and through 1a60bd7 with runtime target/probe source evidence.
+through 1a60bd7 with runtime target/probe source evidence, and through 5abc5e8
+with runtime default-value source evidence.
 
 Pre-existing untracked files were not touched and should remain outside future
 commits unless the operator explicitly asks to include them:
