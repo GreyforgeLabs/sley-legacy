@@ -4784,6 +4784,7 @@ PARSER_BOOL_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/pars
 PARSER_IDENTIFIER_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" identifier_kind)"
 PARSER_LIST_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" list_literal_kind)"
 PARSER_RAW_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" raw_expr_kind)"
+PARSER_CALL_EXPRESSION_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" call_expression_prefix)"
 PARSER_CLASSIFIERS_JSON="$(eval_parser_expression_classifiers_json || printf '{}\n')"
 PARSER_TRUE_KIND="$(printf '%s\n' "$PARSER_CLASSIFIERS_JSON" | jq -r '."true" // empty')"
 PARSER_FALSE_KIND="$(printf '%s\n' "$PARSER_CLASSIFIERS_JSON" | jq -r '."false" // empty')"
@@ -4831,6 +4832,7 @@ PARSER_BOOL_KIND="${PARSER_BOOL_KIND:-BoolLiteral}"
 PARSER_IDENTIFIER_KIND="${PARSER_IDENTIFIER_KIND:-Identifier}"
 PARSER_LIST_KIND="${PARSER_LIST_KIND:-ListLiteral}"
 PARSER_RAW_KIND="${PARSER_RAW_KIND:-Raw}"
+PARSER_CALL_EXPRESSION_PREFIX="${PARSER_CALL_EXPRESSION_PREFIX:-call }"
 PARSER_TRUE_KIND="${PARSER_TRUE_KIND:-$PARSER_BOOL_KIND}"
 PARSER_FALSE_KIND="${PARSER_FALSE_KIND:-$PARSER_BOOL_KIND}"
 PARSER_EMPTY_LIST_KIND="${PARSER_EMPTY_LIST_KIND:-$PARSER_LIST_KIND}"
@@ -5701,6 +5703,7 @@ check_json() {
     --arg binding_statement_kind "$PARSER_BINDING_STATEMENT_KIND" \
     --arg gate_binding_kind "$PARSER_GATE_BINDING_KIND" \
     --arg identifier_expr_kind "$PARSER_IDENTIFIER_KIND" \
+    --arg call_expression_prefix "$PARSER_CALL_EXPRESSION_PREFIX" \
     --arg unknown_prefix "$UNKNOWN_IDENTIFIER_MESSAGE_PREFIX" \
     --arg unknown_suffix "$UNKNOWN_IDENTIFIER_MESSAGE_SUFFIX" \
     --arg unknown_message_template "$UNKNOWN_IDENTIFIER_MESSAGE_TEMPLATE" \
@@ -6084,7 +6087,7 @@ check_json() {
     def unknown_task_diags:
       $root.tasks[] as $t |
       $t.body.statements[]?.expr? |
-      select((.source? // "") | startswith("call ")) |
+      select((.source? // "") | startswith($call_expression_prefix)) |
       . as $expr |
       (call_callee) as $callee |
       select(task_known($callee) | not) |
@@ -6107,7 +6110,7 @@ check_json() {
     def call_arity_diags:
       $root.tasks[] as $t |
       $t.body.statements[]?.expr? |
-      select((.source? // "") | startswith("call ")) |
+      select((.source? // "") | startswith($call_expression_prefix)) |
       . as $expr |
       (call_callee) as $callee |
       ([declared_call_task($t.module; $callee)][0]) as $target |
@@ -6119,7 +6122,7 @@ check_json() {
     def call_argument_type_diags:
       $root.tasks[] as $t |
       $t.body.statements[]?.expr? |
-      select((.source? // "") | startswith("call ")) |
+      select((.source? // "") | startswith($call_expression_prefix)) |
       . as $expr |
       (call_callee) as $callee |
       ([declared_call_task($t.module; $callee)][0]) as $target |
@@ -6316,7 +6319,7 @@ check_json() {
     def transitive_effect_diags:
       $root.tasks[] as $t |
       $t.body.statements[]?.expr? |
-      select((.source? // "") | startswith("call ")) |
+      select((.source? // "") | startswith($call_expression_prefix)) |
       . as $expr |
       (call_callee) as $callee |
       ([declared_call_task($t.module; $callee)][0]) as $target |

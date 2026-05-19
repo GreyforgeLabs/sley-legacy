@@ -67,6 +67,10 @@ export task raw_expr_kind -> Text {
   return "Raw"
 }
 
+export task call_expression_prefix -> Text {
+  return "call "
+}
+
 export task return_statement_kind -> Text {
   return "Return"
 }
