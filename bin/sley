@@ -4022,8 +4022,9 @@ eval_source_zero_arg_project_call_main_return() {
 }
 
 eval_source_project_call_int_main_return() {
-  local target="$1" file call_info main_module import_alias import_module callee arg callee_module callee_name callee_file="" body task_body candidate_file="" candidate_count=0 take_name return_expr op right runtime_value
+  local target="$1" file call_info main_module import_alias import_module callee arg callee_module callee_name callee_file="" body task_body candidate_file="" candidate_count=0 take_name return_expr op right runtime_value call_prefix
   local -a files=()
+  call_prefix="${PARSER_CALL_EXPRESSION_PREFIX:-call }"
   if [[ -f "$target" ]] && ! awk '/^[ \t]*(export[ \t]+)?task[ \t]+main[ \t]/ {found=1} END{exit found ? 0 : 1}' "$target"; then
     mapfile -t files < <(collect_files "$target")
   else
@@ -4031,7 +4032,7 @@ eval_source_project_call_int_main_return() {
   fi
   [[ "${#files[@]}" -gt 0 ]] || return 1
   for file in "${files[@]}"; do
-    call_info="$(awk '
+    call_info="$(awk -v call_prefix="$call_prefix" '
       function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
       function count_char(s, c, n, i){n=0; for(i=1;i<=length(s);i++){if(substr(s,i,1)==c)n++} return n}
       /^[ \t]*module[ \t]+/ { module=$2 }
@@ -4055,9 +4056,12 @@ eval_source_project_call_int_main_return() {
           value=rest
           sub(/^[^=]*=[ \t]*/, "", value)
           ints[name]=trim(value)
-        } else if(depth == 1 && line ~ /^return[ \t]+call[ \t]+[A-Za-z_][A-Za-z0-9_.]*\((-?[0-9]+|[A-Za-z_][A-Za-z0-9_]*)\)[ \t]*$/) {
+        } else if(depth == 1 && line ~ /^return[ \t]+/) {
           expr=line
-          sub(/^return[ \t]+call[ \t]+/, "", expr)
+          sub(/^return[ \t]+/, "", expr)
+          if (index(expr, call_prefix) != 1) next
+          expr=substr(expr, length(call_prefix) + 1)
+          if (expr !~ /^[A-Za-z_][A-Za-z0-9_.]*\((-?[0-9]+|[A-Za-z_][A-Za-z0-9_]*)\)[ \t]*$/) next
           callee=expr
           sub(/\(.*/, "", callee)
           raw_arg=expr
