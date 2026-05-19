@@ -6937,7 +6937,7 @@ lint_json() {
       hint:"delete the import or use it"
     }
   ' >> "$findings"
-  ast_json "$target" | jq -c --argjson raw_sources "$raw_sources_json" --argjson host_effect_needles "$CHECKER_HOST_EFFECT_NEEDLES_JSON" '
+  ast_json "$target" | jq -c --argjson raw_sources "$raw_sources_json" --argjson host_effect_needles "$CHECKER_HOST_EFFECT_NEEDLES_JSON" --argjson effect_aliases "$CHECKER_EFFECT_ALIASES_JSON" '
     . as $root |
     (([.. | objects | .source? // empty | select(type == "string")] + $raw_sources) | unique) as $sources |
     def table_left:
@@ -6945,9 +6945,7 @@ lint_json() {
     def table_right:
       split("|")[1] // "";
     def canonical_effect($effect):
-      if $effect == "DbRead" then "DatabaseRead"
-      elif $effect == "DbWrite" then "DatabaseWrite"
-      else $effect end;
+      ([$effect_aliases[]? | select(table_right == $effect) | table_left][0] // $effect);
     def effect_used($effect):
       (canonical_effect($effect)) as $canonical |
       if any($host_effect_needles[]?; table_left == $canonical) then
