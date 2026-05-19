@@ -2,8 +2,8 @@
 
 Date: 2026-05-19
 Branch: public
-Latest code checkpoint: 1beed84
-Latest pause documentation checkpoint before this note: ff4ce3f
+Latest code checkpoint: 742d887
+Latest pause documentation checkpoint before this note: fc22378
 Current pause document status: committed on `public`; use `git log` for exact
 branch head
 Remote status: verify current `origin/public` head with
@@ -251,8 +251,12 @@ The current local checkpoint advances the public branch to:
   parser-prefix source slice: `bootstrap`, `strict_self_hosted=false`,
   `semantic_source_count=6`, `bootstrap_owned_by_sley=255`; remaining blockers
   are still parser, checker, and runtime semantics from Sley source
+- self-hosting status after the runtime project probe parser-prefix source
+  slice: `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=257`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
 - latest verification refresh on 2026-05-19: `make v1` passed after the
-  runtime/docgen/workbench call fallback parser-prefix source slice
+  runtime project probe parser-prefix source slice
 
 The tracked code checkpoint is:
 
@@ -313,6 +317,7 @@ The tracked code checkpoint is:
 - e650abc fix: source plan call args from parser
 - 50f9c59 fix: source call site rewrites from parser
 - 1beed84 fix: source remaining call fallbacks from parser
+- 742d887 fix: source runtime probes from parser
 
 The tracked pause documentation checkpoints are:
 
@@ -367,6 +372,7 @@ The tracked pause documentation checkpoints are:
 - ae61afe docs: record qualify call fallback parser slice
 - c58fc6e docs: record plan call arg parser slice
 - ff4ce3f docs: record call site rewrite parser slice
+- fc22378 docs: record call fallback parser slice
 
 Recent self-hosting slices added:
 
@@ -541,6 +547,10 @@ Recent self-hosting slices added:
   docgen and workbench call-tail fallback handling no longer strips hardcoded
   `^call...` text when a source does not use the configured parser prefix,
   while preserving generated reference and workbench call counts
+- runtime project-ready probe tasks now import `loom.parser` and compose their
+  returned call sources from `parser.call_expression_prefix()`, with the shell
+  bootstrap evaluating that Sley-level text expression instead of reading a
+  hardcoded literal from `loom.runtime`
 
 ## Next Frontier
 
@@ -1367,10 +1377,25 @@ The latest continuation audit reconfirmed:
   `bin/sley-contract check-fixtures fixtures/contracts --schemas docs/schemas
   --json`, external public-action packet verifier, `git diff --check`, and
   final `make v1` all passed
+- focused runtime project probe parser-prefix probes:
+  `bin/sley self-hosting-status --json` reported the two new runtime project
+  probe markers and `bootstrap_owned_by_sley=257`; `bin/sley run --json
+  examples/project` and `bin/sley run --json
+  examples/unqualified_import_call_project` both still returned `Int(42)`
+- Sley self-hosting status after the runtime project probe parser-prefix source
+  slice: `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=257`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
+- latest runtime project probe parser-prefix verification:
+  `bash -n bin/sley`, `bash -n scripts/self-hosted-test.sh`, focused runtime
+  project probes, `scripts/self-hosted-test.sh`, `bin/sley-contract
+  check-fixtures fixtures/contracts --schemas docs/schemas --json`, external
+  public-action packet verifier, `git diff --check`, and final `make v1` all
+  passed
 
 ## Dirty State Notes
 
-Tracked code was committed at 1beed84 before this pause document was updated.
+Tracked code was committed at 742d887 before this pause document was updated.
 Tracked pause documentation before this update was refreshed through 218d40c
 with parser lint surface evidence, through 26e7417 with the external comparison
 approval gate, fork audit, and helper evidence, and through aba1b03 with parser
@@ -1406,7 +1431,8 @@ project runtime parser-prefix evidence, and through 0cfd03b with
 message-template parser-prefix evidence, through ae61afe with qualify-call
 fallback parser-prefix evidence, through c58fc6e with graph/plan call-argument
 parser-prefix evidence, and through ff4ce3f with call-site rewrite
-parser-prefix evidence.
+parser-prefix evidence, and through fc22378 with runtime/docgen/workbench call
+fallback parser-prefix evidence.
 
 Pre-existing untracked files were not touched and should remain outside future
 commits unless the operator explicitly asks to include them:
