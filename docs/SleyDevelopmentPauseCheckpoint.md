@@ -2,8 +2,8 @@
 
 Date: 2026-05-19
 Branch: public
-Latest code checkpoint: b9cd2c2
-Latest pause documentation checkpoint before this note: b2da63e
+Latest code checkpoint: 5d790ec
+Latest pause documentation checkpoint before this note: 71a768f
 Current pause document status: committed on `public`; use `git log` for exact
 branch head
 Remote status: `public` is ahead of `origin/public` with local self-hosting
@@ -182,9 +182,13 @@ The current local checkpoint advances the public branch to:
   `bootstrap`, `strict_self_hosted=false`,
   `semantic_source_count=6`, `bootstrap_owned_by_sley=229`; remaining blockers
   are still parser, checker, and runtime semantics from Sley source
+- self-hosting status after the checker call parser-prefix source slice:
+  `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=230`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
 - latest V1 log from this pause checkpoint: `/tmp/sley-make-v1-ok-text.log`
 - latest verification refresh on 2026-05-19: `make v1` passed after the
-  lint call expression-prefix source slice
+  checker call parser-prefix source slice
 
 The tracked code checkpoint is:
 
@@ -228,6 +232,7 @@ The tracked code checkpoint is:
 - b92f300 fix: source graph call prefix from parser
 - 98e8051 fix: source docgen workbench call prefix from parser
 - b9cd2c2 fix: source lint call prefix from parser
+- 5d790ec fix: source checker call parser from parser
 
 The tracked pause documentation checkpoints are:
 
@@ -265,6 +270,7 @@ The tracked pause documentation checkpoints are:
 - bda30f3 docs: record query call prefix self-hosting slice
 - ddbbbf3 docs: record graph call prefix self-hosting slice
 - b2da63e docs: record docgen workbench call prefix slice
+- 71a768f docs: record lint call prefix self-hosting slice
 
 Recent self-hosting slices added:
 
@@ -382,6 +388,9 @@ Recent self-hosting slices added:
   unqualified-imported-call, and unused-pure-binding call detection now use the
   parser-owned call expression prefix while preserving existing findings and
   replacement strings
+- checker call callee and argument parsing now strips the parser-owned call
+  expression prefix instead of a shell/JQ literal while preserving unknown-task,
+  call-arity, and call-argument-type diagnostics
 
 ## Next Frontier
 
@@ -919,10 +928,29 @@ The latest continuation audit reconfirmed:
   `scripts/self-hosted-test.sh`, `bin/sley-contract check-fixtures
   fixtures/contracts --schemas docs/schemas --json`, external public-action
   packet verifier, `git diff --check`, and `make v1` all passed
+- focused checker call parser-prefix probes:
+  `bin/sley check --json fixtures/corpus/rejected/unknown_task.sley` still
+  emitted `UNKNOWN_TASK` for `missing` and preserved generated repair takes
+  `arg0: Int` and `arg1: Text`; `bin/sley check --json
+  fixtures/corpus/rejected/call_arity_mismatch.sley` still emitted
+  `CALL_ARITY_MISMATCH`; and `bin/sley check --json
+  fixtures/corpus/rejected/call_argument_type_mismatch.sley` still emitted
+  `CALL_ARGUMENT_TYPE_MISMATCH` after checker callee and argument parsing
+  moved from literal `^call...` handling to the parser-owned call expression
+  prefix
+- Sley self-hosting status after the checker call parser-prefix source slice:
+  `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=230`; remaining blockers are still parser, checker,
+  and runtime semantics from Sley source
+- latest checker call parser-prefix verification: `bash -n bin/sley`,
+  `bash -n scripts/self-hosted-test.sh`, focused checker diagnostics probes,
+  `scripts/self-hosted-test.sh`, `bin/sley-contract check-fixtures
+  fixtures/contracts --schemas docs/schemas --json`, external public-action
+  packet verifier, `git diff --check`, and final `make v1` all passed
 
 ## Dirty State Notes
 
-Tracked code was committed at b9cd2c2 before this pause document was updated.
+Tracked code was committed at 5d790ec before this pause document was updated.
 Tracked pause documentation before this update was refreshed through 218d40c
 with parser lint surface evidence, through 26e7417 with the external comparison
 approval gate, fork audit, and helper evidence, and through aba1b03 with parser
@@ -942,6 +970,7 @@ bcbd217 with checker identifier expression-kind evidence, and through 9bc2a63
 with checker call expression-prefix evidence, and through bda30f3 with query
 call expression-prefix evidence, through ddbbbf3 with symbol graph call
 expression-prefix evidence, and through b2da63e with docgen/workbench call
+expression-prefix evidence, and through 71a768f with lint call
 expression-prefix evidence.
 
 Pre-existing untracked files were not touched and should remain outside future
