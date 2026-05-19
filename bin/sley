@@ -1221,6 +1221,10 @@ parser_default_qualified_import_call_source() {
   printf '%smath.double(21)\n' "${PARSER_CALL_EXPRESSION_PREFIX:-call }"
 }
 
+parser_default_project_ready_binding_call_source() {
+  printf '%sdouble(base)\n' "${PARSER_CALL_EXPRESSION_PREFIX:-call }"
+}
+
 source_has_unqualified_double_call_return() {
   local content="$1" call_prefix
   call_prefix="${PARSER_CALL_EXPRESSION_PREFIX:-call }"
@@ -4959,8 +4963,8 @@ if [[ "$RUNTIME_SELF_HOSTED_TARGETS_JSON" == "[]" ]]; then
   RUNTIME_SELF_HOSTED_TARGETS_JSON='["self-hosted","self-hosted/","self-hosted/sley.toml"]'
 fi
 RUNTIME_AGENT_DEPLOY_SUFFIX="${RUNTIME_AGENT_DEPLOY_SUFFIX:-agent_deploy_pipeline.sley}"
-RUNTIME_PROJECT_READY_CALL_PROBE="${RUNTIME_PROJECT_READY_CALL_PROBE:-call math.double(21)}"
-RUNTIME_PROJECT_READY_BINDING_PROBE="${RUNTIME_PROJECT_READY_BINDING_PROBE:-call double(base)}"
+RUNTIME_PROJECT_READY_CALL_PROBE="${RUNTIME_PROJECT_READY_CALL_PROBE:-$(parser_default_qualified_import_call_source)}"
+RUNTIME_PROJECT_READY_BINDING_PROBE="${RUNTIME_PROJECT_READY_BINDING_PROBE:-$(parser_default_project_ready_binding_call_source)}"
 
 PARSER_INT_PATTERN="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" int_literal_pattern)"
 PARSER_IDENTIFIER_PATTERN="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" identifier_pattern)"
@@ -11008,7 +11012,7 @@ docgen_json() {
        [$task.body.statements[]? | (.condition?.source? // empty)]);
     def call_source_tail($source):
       if ($source | startswith($call_expression_prefix)) then $source[($call_expression_prefix | length):]
-      else ($source | sub("^call[[:space:]]+";"")) end;
+      else $source end;
     def call_callee:
       call_source_tail(.source // "") | sub("\\(.*$";"");
     def resolve_call($ast; $module; $callee):
@@ -11144,7 +11148,7 @@ workbench_json() {
       [task_sources($task)[] | select(test("[A-Za-z_][A-Za-z0-9_.]*\\("))] | length;
     def call_source_tail($source):
       if ($source | startswith($call_expression_prefix)) then $source[($call_expression_prefix | length):]
-      else ($source | sub("^call[[:space:]]+";"")) end;
+      else $source end;
     def call_callee:
       call_source_tail(.source // "") | sub("\\(.*$";"");
     def resolve_call($ast; $module; $callee):
