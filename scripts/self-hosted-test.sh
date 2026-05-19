@@ -731,7 +731,7 @@ jq -er '.status == "error" and .diagnostics[0].id == "UNKNOWN_TYPE"' /tmp/sley-r
 if bin/sley check --json fixtures/corpus/rejected/unknown_task.sley >/tmp/sley-rejected-task-check.json; then
   fail "rejected unknown_task.sley passed check"
 fi
-jq -er '.status == "error" and .diagnostics[0].id == "UNKNOWN_TASK" and .diagnostics[0].message == "unknown task `missing`" and (.diagnostics[0].repair_hints[0].replacement | contains("take arg0: Int")) and (.diagnostics[0].repair_hints[0].replacement | contains("take arg1: Text"))' /tmp/sley-rejected-task-check.json >/dev/null
+jq -er '.status == "error" and .diagnostics[0].id == "UNKNOWN_TASK" and .diagnostics[0].message == "unknown task `missing`" and .diagnostics[0].repair_hints[0].kind == "declare_or_import_task" and (.diagnostics[0].repair_hints[0].replacement | contains("take arg0: Int")) and (.diagnostics[0].repair_hints[0].replacement | contains("take arg1: Text"))' /tmp/sley-rejected-task-check.json >/dev/null
 
 if bin/sley check --json fixtures/corpus/rejected/call_arity_mismatch.sley >/tmp/sley-rejected-call-arity-check.json; then
   fail "rejected call_arity_mismatch.sley passed check"
@@ -746,7 +746,19 @@ jq -er '.status == "error" and .diagnostics[0].id == "CALL_ARGUMENT_TYPE_MISMATC
 if bin/sley check --json fixtures/corpus/rejected/type_mismatch.sley >/tmp/sley-rejected-type-mismatch-check.json; then
   fail "rejected type_mismatch.sley passed check"
 fi
-jq -er '.status == "error" and [.diagnostics[].id] == ["TYPE_MISMATCH", "RETURN_TYPE_MISMATCH"] and .diagnostics[0].message == "type mismatch `label`" and .diagnostics[1].message == "return type mismatch `corpus.rejected.main`"' /tmp/sley-rejected-type-mismatch-check.json >/dev/null
+jq -er '.status == "error" and [.diagnostics[].id] == ["TYPE_MISMATCH", "RETURN_TYPE_MISMATCH"] and .diagnostics[0].message == "type mismatch `label`" and .diagnostics[1].message == "return type mismatch `corpus.rejected.main`" and [.diagnostics[1].repair_hints[].kind] == ["inspect_return_type", "replace_task_body", "replace_expression"]' /tmp/sley-rejected-type-mismatch-check.json >/dev/null
+
+if bin/sley check --json fixtures/corpus/rejected/missing_return.sley >/tmp/sley-rejected-missing-return-check.json; then
+  fail "rejected missing_return.sley passed check"
+fi
+jq -er '.status == "error" and .diagnostics[0].id == "MISSING_RETURN" and [.diagnostics[0].repair_hints[].kind] == ["insert_return", "replace_task_body"]' /tmp/sley-rejected-missing-return-check.json >/dev/null
+
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("checker_repair_hint_fallback_removal_task_execution"))'
+
+if grep -Eq 'CHECKER_(DECLARE_OR_IMPORT_TASK|INSPECT_RETURN_TYPE|INSERT_RETURN|REPLACE_TASK_BODY|REPLACE_EXPRESSION)_HINT_KIND="\$\{CHECKER_[A-Z_]+:-' bin/sley; then
+  fail "checker repair hint kinds must come from loom.checker without shell fallback literals"
+fi
 
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("checker_builtin_type_fallback_removal_task_execution"))'
