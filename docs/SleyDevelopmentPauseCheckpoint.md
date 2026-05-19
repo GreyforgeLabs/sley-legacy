@@ -2,8 +2,8 @@
 
 Date: 2026-05-19
 Branch: public
-Latest code checkpoint: 2019668
-Latest pause documentation checkpoint before this note: df39353
+Latest code checkpoint: b5c5b8a
+Latest pause documentation checkpoint before this note: 1a60bd7
 Current pause document status: committed on `public`; use `git log` for exact
 branch head
 Remote status: verify current `origin/public` head with
@@ -307,8 +307,12 @@ The current local checkpoint advances the public branch to:
   `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
   `bootstrap_owned_by_sley=273`; remaining blockers are still parser, checker,
   and runtime semantics from Sley source
+- self-hosting status after the runtime default-value source slice:
+  `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=274`; remaining blockers are still parser, checker,
+  and runtime semantics from Sley source
 - latest verification refresh on 2026-05-19: `make v1` passed after the
-  runtime target/probe source slice
+  runtime default-value source slice
 
 The tracked code checkpoint is:
 
@@ -383,6 +387,7 @@ The tracked code checkpoint is:
 - 800b952 fix: source self-hosted runtime targets from sley
 - 44e7bbd fix: source runtime status names from sley
 - 2019668 fix: source runtime target probes from sley
+- b5c5b8a fix: source runtime default values from sley
 
 The tracked pause documentation checkpoints are:
 
@@ -451,6 +456,7 @@ The tracked pause documentation checkpoints are:
 - ad34013 docs: record runtime value kind slice
 - bead55f docs: record runtime self-hosted target slice
 - df39353 docs: record runtime status name slice
+- 1a60bd7 docs: record runtime target probe slice
 
 Recent self-hosting slices added:
 
@@ -679,6 +685,9 @@ Recent self-hosting slices added:
   project-ready call probes now come from `loom.runtime` instead of shell
   fallback literals/functions, while preserving project runtime `Int(42)` and
   capability-seeded agent deploy output
+- Runtime default seed and host texts now come from `loom.runtime` without
+  shell fallback literals, while preserving `Text("hello sley")`,
+  `Ok<Text>("hello sley")`, and capability-seeded shell output
 
 ## Next Frontier
 
@@ -1759,10 +1768,30 @@ The latest continuation audit reconfirmed:
   `bin/sley-contract check-fixtures fixtures/contracts --schemas docs/schemas
   --json`, external public-action packet verifier, `git diff --check`, and
   final `make v1` all passed
+- focused runtime default-value source probes:
+  `bin/sley self-hosting-status --json` reported
+  `runtime_default_value_sources_task_execution` and
+  `bootstrap_owned_by_sley=274`; `bin/sley run --json examples/hello.sley`
+  preserved `Text("hello sley")`; `bin/sley run --json
+  examples/raw_host_migration.sley` preserved `Ok<Text>("hello sley")`;
+  capability-seeded `bin/sley run --json --cap Shell --shell-output date
+  "owned date" examples/shell_gate.sley` preserved `Ok<Text>("owned date")`;
+  a focused grep found no shell fallback default-value literals for the moved
+  runtime values
+- Sley self-hosting status after the runtime default-value source slice:
+  `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=274`; remaining blockers are still parser, checker,
+  and runtime semantics from Sley source
+- latest runtime default-value source verification:
+  `bash -n bin/sley`, `bash -n scripts/self-hosted-test.sh`, focused runtime
+  default-value probes, `scripts/self-hosted-test.sh`, `bin/sley-contract
+  check-fixtures fixtures/contracts --schemas docs/schemas --json`, external
+  public-action packet verifier, `git diff --check`, and final `make v1` all
+  passed
 
 ## Dirty State Notes
 
-Tracked code was committed at 2019668 before this pause document was updated.
+Tracked code was committed at b5c5b8a before this pause document was updated.
 Tracked pause documentation before this update was refreshed through 218d40c
 with parser lint surface evidence, through 26e7417 with the external comparison
 approval gate, fork audit, and helper evidence, and through aba1b03 with parser
@@ -1810,7 +1839,8 @@ with runtime host default-text source evidence, and through a4595a9 with
 runtime diagnostic source evidence, and through d270b71 with runtime database
 default-table source evidence, and through ad34013 with runtime value-kind
 source evidence, and through bead55f with runtime self-hosted target alias
-source evidence, and through df39353 with runtime status-name source evidence.
+source evidence, and through df39353 with runtime status-name source evidence,
+and through 1a60bd7 with runtime target/probe source evidence.
 
 Pre-existing untracked files were not touched and should remain outside future
 commits unless the operator explicitly asks to include them:
