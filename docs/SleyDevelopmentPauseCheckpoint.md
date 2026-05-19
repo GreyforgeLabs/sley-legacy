@@ -2,7 +2,7 @@
 
 Date: 2026-05-18
 Branch: public
-Latest code checkpoint: ebd9874
+Latest code checkpoint: a552b8a
 Latest packet-sync documentation checkpoint before this note: 26e7417
 Current pause document status: committed on `public`; use `git log` for exact
 branch head
@@ -106,6 +106,10 @@ The current local checkpoint advances the public branch to:
   `bootstrap`, `strict_self_hosted=false`,
   `semantic_source_count=6`, `bootstrap_owned_by_sley=204`; remaining blockers
   are still parser, checker, and runtime semantics from Sley source
+- self-hosting status after the parser fix-style fallback surface ID slice:
+  `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=205`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
 - latest V1 log from this pause checkpoint: `/tmp/sley-make-v1-ok-text.log`
 - latest verification refresh on 2026-05-18: `make v1` passed again after the
   public-action packet was finalized and after the WebForge / sleylang.org
@@ -134,6 +138,7 @@ The tracked code checkpoint is:
 - c78c777 fix: source lint statement surfaces from parser
 - b741574 fix: source migration surfaces from parser
 - ebd9874 fix: source fix migration fallbacks from parser
+- a552b8a fix: source fix style fallbacks from parser
 
 The tracked pause documentation checkpoints are:
 
@@ -151,6 +156,8 @@ The tracked pause documentation checkpoints are:
 - 3fb10c7 docs: record statement surface self-hosting slice
 - b11171a docs: record branch statement surface self-hosting slice
 - 218d40c docs: record lint surface self-hosting slice
+- 41d5460 docs: record migration surface self-hosting slice
+- aba1b03 docs: record fix migration fallback self-hosting slice
 
 Recent self-hosting slices added:
 
@@ -218,6 +225,9 @@ Recent self-hosting slices added:
   existing external surfaces for raw host adapter replacement, imported-call
   qualification, and unchecked Result propagation
 - fix migration fallback surfaces now use Sley-owned parser templates while
+  preserving the existing dry-run target surfaces when no lint finding is
+  present
+- fix style fallback surfaces now use Sley-owned parser templates while
   preserving the existing dry-run target surfaces when no lint finding is
   present
 - diagnostics and run report root layouts moved into Sley-owned report-builder
@@ -499,13 +509,34 @@ The latest continuation audit reconfirmed:
   proof slice: `bootstrap`, `strict_self_hosted=false`,
   `semantic_source_count=6`, `bootstrap_owned_by_sley=204`; remaining blockers
   are parser, checker, and runtime semantics from Sley source
+- focused fix style fallback probes against `examples/hello.sley`:
+  `bin/sley fix --json --kind convert_mutable_binding_to_bind --dry-run
+  examples/hello.sley` preserved
+  `block:task:app.mutable_fix.main:stmt:0` and
+  `block:task:app.mutable_fix.main`;
+  `bin/sley fix --json --kind delete_self_assignment_statement --dry-run
+  examples/hello.sley` preserved
+  `block:task:app.self_assignment_fix.main:stmt:1`;
+  `bin/sley fix --json --kind convert_redundant_initial_set_to_bind --dry-run
+  examples/hello.sley` preserved
+  `block:task:app.redundant_initial_set_fix.main:stmt:0` and
+  `block:task:app.redundant_initial_set_fix.main:stmt:1`; and
+  `bin/sley fix --json --kind fold_redundant_initial_set_into_binding
+  --dry-run examples/hello.sley` preserved
+  `block:task:app.redundant_initial_set_fix.main:stmt:0:expr` and
+  `block:task:app.redundant_initial_set_fix.main:stmt:1`
+- Sley self-hosting status after the parser fix-style fallback surface ID proof
+  slice: `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=205`; remaining blockers
+  are parser, checker, and runtime semantics from Sley source
 
 ## Dirty State Notes
 
-Tracked code was committed at ebd9874 before this pause document was updated.
+Tracked code was committed at a552b8a before this pause document was updated.
 Tracked pause documentation before this update was refreshed through 218d40c
-with parser lint surface evidence, and through 26e7417 with the external
-comparison approval gate, fork audit, and helper evidence.
+with parser lint surface evidence, through 26e7417 with the external comparison
+approval gate, fork audit, and helper evidence, and through aba1b03 with parser
+fix-migration fallback evidence.
 
 Pre-existing untracked docs were not touched and should remain outside future
 commits unless the operator explicitly asks to include them:
