@@ -2,8 +2,8 @@
 
 Date: 2026-05-19
 Branch: public
-Latest code checkpoint: e96aca7
-Latest pause documentation checkpoint before this note: 48facb4
+Latest code checkpoint: fe456c0
+Latest pause documentation checkpoint before this note: eefadcc
 Current pause document status: committed on `public`; use `git log` for exact
 branch head
 Remote status: `public` is ahead of `origin/public` with local self-hosting
@@ -138,6 +138,10 @@ The current local checkpoint advances the public branch to:
   slice: `bootstrap`, `strict_self_hosted=false`,
   `semantic_source_count=6`, `bootstrap_owned_by_sley=213`; remaining blockers
   are still parser, checker, and runtime semantics from Sley source
+- self-hosting status after the parser static task/block fallback surface ID
+  slice: `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=215`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
 - latest V1 log from this pause checkpoint: `/tmp/sley-make-v1-ok-text.log`
 - latest verification refresh on 2026-05-18: `make v1` passed again after the
   public-action packet was finalized and after the WebForge / sleylang.org
@@ -174,6 +178,7 @@ The tracked code checkpoint is:
 - 42558ca fix: source constant derived fix fallbacks from parser
 - 8c62e71 fix: source algebra boolean fix fallbacks from parser
 - e96aca7 fix: source boolean branch fix fallbacks from parser
+- fe456c0 fix: source static task fallbacks from parser
 
 The tracked pause documentation checkpoints are:
 
@@ -200,6 +205,7 @@ The tracked pause documentation checkpoints are:
 - 086fbee docs: record constant scalar fallback self-hosting slice
 - 8dc35fc docs: record constant derived fallback self-hosting slice
 - 48facb4 docs: record algebra boolean fallback self-hosting slice
+- eefadcc docs: record boolean branch fallback self-hosting slice
 
 Recent self-hosting slices added:
 
@@ -293,6 +299,10 @@ Recent self-hosting slices added:
 - boolean branch fix fallback surfaces and expression-side surface IDs now use
   Sley-owned parser templates while preserving the existing dry-run target
   surfaces when no lint finding is present
+- static task and block fallback surfaces in CI runtime diagnostics, agent
+  bench repair selection, plan next-actions, targeted collection block insert
+  templates, and empty-task `AddTake` dry runs now use Sley-owned parser
+  templates
 - diagnostics and run report root layouts moved into Sley-owned report-builder
   declarations, with the shell bootstrap supplying computed values to those
   builders
@@ -718,10 +728,27 @@ The latest continuation audit reconfirmed:
   surface ID proof slice: `bootstrap`, `strict_self_hosted=false`,
   `semantic_source_count=6`, `bootstrap_owned_by_sley=213`; remaining blockers
   are parser, checker, and runtime semantics from Sley source
+- focused static task/block fallback probes:
+  `bin/sley plan --json --graft-templates --template-surface
+  block:task:app.collections.sum examples/collections.sley` preserved
+  `block:task:app.collections.sum` with insert position `4`; `bin/sley plan
+  --json --graft-templates examples/agent_deploy_pipeline.sley` preserved
+  `task:app.agent_deploy_pipeline.main` in the primary graft template and
+  first graph-slice next action; `bin/sley graft --json --dry-run` against a
+  module-only temp source and targetless `AddTake` operation preserved fallback
+  `task:app.main.main`; `bin/sley-ci verify --json
+  examples/agent_deploy_pipeline.sley` failed as expected without runtime
+  gates and preserved diagnostic node `task:app.agent_deploy_pipeline.main`;
+  and `bin/sley-agent-bench run --json --case unused-private-task-repair`
+  preserved selected repair surface `task:app.bench.orphan`
+- Sley self-hosting status after the parser static task/block fallback surface
+  ID proof slice: `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=215`; remaining blockers
+  are parser, checker, and runtime semantics from Sley source
 
 ## Dirty State Notes
 
-Tracked code was committed at e96aca7 before this pause document was updated.
+Tracked code was committed at fe456c0 before this pause document was updated.
 Tracked pause documentation before this update was refreshed through 218d40c
 with parser lint surface evidence, through 26e7417 with the external comparison
 approval gate, fork audit, and helper evidence, and through aba1b03 with parser
@@ -731,7 +758,8 @@ through 72fe387 with parser fix-unused/unreachable fallback evidence, and
 through 5f3efde with parser fix-constant-control fallback evidence, and
 through 086fbee with parser fix-constant-scalar fallback evidence, and through
 8dc35fc with parser fix-constant-derived fallback evidence, and through
-48facb4 with parser fix-algebra/boolean fallback evidence.
+48facb4 with parser fix-algebra/boolean fallback evidence, and through
+eefadcc with parser fix-boolean-branch fallback evidence.
 
 Pre-existing untracked files were not touched and should remain outside future
 commits unless the operator explicitly asks to include them:
