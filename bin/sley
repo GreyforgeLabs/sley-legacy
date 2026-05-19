@@ -352,26 +352,42 @@ eval_lint_status_task() {
   local body findings_task ok_task
   body="$(extract_sley_task_body "$lint_file" lint_status)"
   [[ -n "$body" ]] || return 1
-  findings_task="$(printf '%s\n' "$body" | awk '
+  findings_task="$(printf '%s\n' "$body" | awk -v call_prefix="$PARSER_CALL_EXPRESSION_PREFIX" '
+    function return_call_task(line) {
+      sub(/^[ \t]*return[ \t]+/, "", line)
+      if (index(line, call_prefix) != 1) return ""
+      line=substr(line, length(call_prefix) + 1)
+      if (line !~ /^[A-Za-z_][A-Za-z0-9_]*\(\)[ \t]*$/) return ""
+      sub(/\(\).*/, "", line)
+      return line
+    }
     /^[ \t]*if[ \t]+finding_count[ \t]*>[ \t]*0[ \t]*\{/ {in_if=1; next}
     in_if && /^[ \t]*}/ {in_if=0}
-    in_if && /^[ \t]*return[ \t]+call[ \t]+[A-Za-z_][A-Za-z0-9_]*\(\)/ {
-      line=$0
-      sub(/^.*return[ \t]+call[ \t]+/, "", line)
-      sub(/\(\).*/, "", line)
-      print line
-      exit
+    in_if && /^[ \t]*return[ \t]+/ {
+      task=return_call_task($0)
+      if (task != "") {
+        print task
+        exit
+      }
     }
   ')"
-  ok_task="$(printf '%s\n' "$body" | awk '
+  ok_task="$(printf '%s\n' "$body" | awk -v call_prefix="$PARSER_CALL_EXPRESSION_PREFIX" '
+    function return_call_task(line) {
+      sub(/^[ \t]*return[ \t]+/, "", line)
+      if (index(line, call_prefix) != 1) return ""
+      line=substr(line, length(call_prefix) + 1)
+      if (line !~ /^[A-Za-z_][A-Za-z0-9_]*\(\)[ \t]*$/) return ""
+      sub(/\(\).*/, "", line)
+      return line
+    }
     /^[ \t]*if[ \t]+/ {in_if=1}
     in_if && /^[ \t]*}/ {in_if=0; next}
-    !in_if && /^[ \t]*return[ \t]+call[ \t]+[A-Za-z_][A-Za-z0-9_]*\(\)/ {
-      line=$0
-      sub(/^.*return[ \t]+call[ \t]+/, "", line)
-      sub(/\(\).*/, "", line)
-      print line
-      exit
+    !in_if && /^[ \t]*return[ \t]+/ {
+      task=return_call_task($0)
+      if (task != "") {
+        print task
+        exit
+      }
     }
   ')"
   [[ -n "$findings_task" && -n "$ok_task" ]] || return 1
@@ -388,26 +404,42 @@ eval_checker_status_task() {
   local body error_task ok_task
   body="$(extract_sley_task_body "$checker_file" diagnostic_status)"
   [[ -n "$body" ]] || return 1
-  error_task="$(printf '%s\n' "$body" | awk '
+  error_task="$(printf '%s\n' "$body" | awk -v call_prefix="$PARSER_CALL_EXPRESSION_PREFIX" '
+    function return_call_task(line) {
+      sub(/^[ \t]*return[ \t]+/, "", line)
+      if (index(line, call_prefix) != 1) return ""
+      line=substr(line, length(call_prefix) + 1)
+      if (line !~ /^[A-Za-z_][A-Za-z0-9_]*\(\)[ \t]*$/) return ""
+      sub(/\(\).*/, "", line)
+      return line
+    }
     /^[ \t]*if[ \t]+error_count[ \t]*>[ \t]*0[ \t]*\{/ {in_if=1; next}
     in_if && /^[ \t]*}/ {in_if=0}
-    in_if && /^[ \t]*return[ \t]+call[ \t]+[A-Za-z_][A-Za-z0-9_]*\(\)/ {
-      line=$0
-      sub(/^.*return[ \t]+call[ \t]+/, "", line)
-      sub(/\(\).*/, "", line)
-      print line
-      exit
+    in_if && /^[ \t]*return[ \t]+/ {
+      task=return_call_task($0)
+      if (task != "") {
+        print task
+        exit
+      }
     }
   ')"
-  ok_task="$(printf '%s\n' "$body" | awk '
+  ok_task="$(printf '%s\n' "$body" | awk -v call_prefix="$PARSER_CALL_EXPRESSION_PREFIX" '
+    function return_call_task(line) {
+      sub(/^[ \t]*return[ \t]+/, "", line)
+      if (index(line, call_prefix) != 1) return ""
+      line=substr(line, length(call_prefix) + 1)
+      if (line !~ /^[A-Za-z_][A-Za-z0-9_]*\(\)[ \t]*$/) return ""
+      sub(/\(\).*/, "", line)
+      return line
+    }
     /^[ \t]*if[ \t]+/ {in_if=1}
     in_if && /^[ \t]*}/ {in_if=0; next}
-    !in_if && /^[ \t]*return[ \t]+call[ \t]+[A-Za-z_][A-Za-z0-9_]*\(\)/ {
-      line=$0
-      sub(/^.*return[ \t]+call[ \t]+/, "", line)
-      sub(/\(\).*/, "", line)
-      print line
-      exit
+    !in_if && /^[ \t]*return[ \t]+/ {
+      task=return_call_task($0)
+      if (task != "") {
+        print task
+        exit
+      }
     }
   ')"
   [[ -n "$error_task" && -n "$ok_task" ]] || return 1
