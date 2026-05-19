@@ -2,8 +2,8 @@
 
 Date: 2026-05-19
 Branch: public
-Latest code checkpoint: 686e039
-Latest pause documentation checkpoint before this note: d9c6ec5
+Latest code checkpoint: 364e287
+Latest pause documentation checkpoint before this note: a390dd9
 Current pause document status: committed on `public`; use `git log` for exact
 branch head
 Remote status: `public` is ahead of `origin/public` with local self-hosting
@@ -218,9 +218,13 @@ The current local checkpoint advances the public branch to:
   slice: `bootstrap`, `strict_self_hosted=false`,
   `semantic_source_count=6`, `bootstrap_owned_by_sley=240`; remaining blockers
   are still parser, checker, and runtime semantics from Sley source
+- self-hosting status after the local runtime call parser-prefix source slice:
+  `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=241`; remaining blockers are still parser, checker,
+  and runtime semantics from Sley source
 - latest V1 log from this pause checkpoint: `/tmp/sley-make-v1-ok-text.log`
 - latest verification refresh on 2026-05-19: `make v1` passed after the
-  record-field runtime call parser-prefix source slice
+  local runtime call parser-prefix source slice
 
 The tracked code checkpoint is:
 
@@ -273,6 +277,7 @@ The tracked code checkpoint is:
 - e840383 fix: source compute runtime call from parser
 - 601ca7d fix: source result flow runtime call from parser
 - 686e039 fix: source record field runtime call from parser
+- 364e287 fix: source local runtime call from parser
 
 The tracked pause documentation checkpoints are:
 
@@ -319,6 +324,7 @@ The tracked pause documentation checkpoints are:
 - 6069e6c docs: record bootstrap parser prefix slice
 - 9c8d29e docs: record compute runtime parser slice
 - d9c6ec5 docs: record result flow runtime parser slice
+- a390dd9 docs: record record field runtime parser slice
 
 Recent self-hosting slices added:
 
@@ -463,6 +469,9 @@ Recent self-hosting slices added:
 - record-field runtime main-return call extraction now strips the parser-owned
   call expression prefix instead of shell/AWK literals while preserving
   `Text("Ada")` projection for `fixtures/corpus/accepted/records_and_calls.sley`
+- local zero-argument runtime call extraction now strips the parser-owned call
+  expression prefix instead of shell/AWK literals while preserving
+  `examples/unused_private_task.sley` returning `Int(1)`
 
 ## Next Frontier
 
@@ -1152,10 +1161,25 @@ The latest continuation audit reconfirmed:
   `bin/sley-contract check-fixtures fixtures/contracts --schemas docs/schemas
   --json`, external public-action packet verifier, `git diff --check`, and
   final `make v1` all passed
+- focused local runtime call parser-prefix probe:
+  `bin/sley run --json examples/unused_private_task.sley` still returned
+  `status == "passed"`, `value.kind == "Int"`, and `value.value == 1` after
+  local zero-argument main-return call extraction moved from literal
+  `return call ...` handling to the parser-owned call expression prefix
+- Sley self-hosting status after the local runtime call parser-prefix source
+  slice: `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=241`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
+- latest local runtime call parser-prefix verification:
+  `bash -n bin/sley`, `bash -n scripts/self-hosted-test.sh`, focused local
+  runtime probe, `scripts/self-hosted-test.sh`, `bin/sley-contract
+  check-fixtures fixtures/contracts --schemas docs/schemas --json`, external
+  public-action packet verifier, `git diff --check`, and final `make v1` all
+  passed
 
 ## Dirty State Notes
 
-Tracked code was committed at 686e039 before this pause document was updated.
+Tracked code was committed at 364e287 before this pause document was updated.
 Tracked pause documentation before this update was refreshed through 218d40c
 with parser lint surface evidence, through 26e7417 with the external comparison
 approval gate, fork audit, and helper evidence, and through aba1b03 with parser
@@ -1183,7 +1207,8 @@ parser-prefix evidence, and through a680ce9 with checker/lint status
 parser-prefix evidence, and through f470a5b with parser classifier
 parser-prefix evidence, and through 6069e6c with bootstrap bind-call
 parser-prefix evidence, and through 9c8d29e with compute runtime parser-prefix
-evidence, and through d9c6ec5 with result-flow runtime parser-prefix evidence.
+evidence, through d9c6ec5 with result-flow runtime parser-prefix evidence, and
+through a390dd9 with record-field runtime parser-prefix evidence.
 
 Pre-existing untracked files were not touched and should remain outside future
 commits unless the operator explicitly asks to include them:
