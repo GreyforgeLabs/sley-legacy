@@ -2,8 +2,8 @@
 
 Date: 2026-05-19
 Branch: public
-Latest code checkpoint: 5638d09
-Latest pause documentation checkpoint before this note: 5e4bec6
+Latest code checkpoint: 5b3c368
+Latest pause documentation checkpoint before this note: 117ffad
 Current pause document status: committed on `public`; use `git log` for exact
 branch head
 Remote status: `public` is ahead of `origin/public` with local self-hosting
@@ -158,9 +158,13 @@ The current local checkpoint advances the public branch to:
   `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
   `bootstrap_owned_by_sley=221`; remaining blockers are still parser, checker,
   and runtime semantics from Sley source
+- self-hosting status after the checker identifier expression-kind source
+  slice: `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=222`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
 - latest V1 log from this pause checkpoint: `/tmp/sley-make-v1-ok-text.log`
 - latest verification refresh on 2026-05-19: `make v1` passed after the
-  checker repair hint-kind source slice
+  checker identifier expression-kind source slice
 
 The tracked code checkpoint is:
 
@@ -198,6 +202,7 @@ The tracked code checkpoint is:
 - df81546 fix: source checker host effect tables from checker
 - 7991b7b fix: source checker gate binding kind from parser
 - 5638d09 fix: source checker repair hint kinds from checker
+- 5b3c368 fix: source checker identifier expression kind from parser
 
 The tracked pause documentation checkpoints are:
 
@@ -229,6 +234,7 @@ The tracked pause documentation checkpoints are:
 - b508d9a docs: record checker static type self-hosting slice
 - 1c5cca9 docs: record checker host effect self-hosting slice
 - 5e4bec6 docs: record checker gate binding self-hosting slice
+- 117ffad docs: record checker repair hint self-hosting slice
 
 Recent self-hosting slices added:
 
@@ -802,10 +808,19 @@ The latest continuation audit reconfirmed:
   `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
   `bootstrap_owned_by_sley=221`; remaining blockers are still parser,
   checker, and runtime semantics from Sley source
+- focused checker identifier expression-kind probe:
+  `fixtures/corpus/rejected/unknown_identifier.sley` still emitted
+  `UNKNOWN_IDENTIFIER` at `block:task:corpus.rejected.main:stmt:0:expr` after
+  the checker comparison moved from literal `"Identifier"` to the parser-owned
+  identifier expression kind
+- Sley self-hosting status after the checker identifier expression-kind source
+  slice: `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=222`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
 
 ## Dirty State Notes
 
-Tracked code was committed at 5638d09 before this pause document was updated.
+Tracked code was committed at 5b3c368 before this pause document was updated.
 Tracked pause documentation before this update was refreshed through 218d40c
 with parser lint surface evidence, through 26e7417 with the external comparison
 approval gate, fork audit, and helper evidence, and through aba1b03 with parser
@@ -820,7 +835,7 @@ eefadcc with parser fix-boolean-branch fallback evidence, and through 395066b
 with parser static task/block fallback evidence, and through b508d9a with
 checker static type-name evidence, and through 1c5cca9 with checker
 host-effect table evidence, and through 5e4bec6 with checker gate binding-kind
-evidence.
+evidence, and through 117ffad with checker repair hint-kind evidence.
 
 Pre-existing untracked files were not touched and should remain outside future
 commits unless the operator explicitly asks to include them:
