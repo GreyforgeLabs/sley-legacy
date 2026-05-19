@@ -381,6 +381,9 @@ bin/sley run --json examples/dead_private_tasks.sley \
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("zero_arg_project_call_runtime_execution"))'
 
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("zero_arg_project_call_parser_prefix_runtime_execution"))'
+
 bin/sley run --json examples/unused_import_project \
   | json_field '.status == "passed" and .value.kind == "Int" and .value.value == 7'
 
