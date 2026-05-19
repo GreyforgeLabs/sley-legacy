@@ -94,6 +94,9 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_fix_unused_unreachable_surface_id_task_execution"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("parser_fix_constant_control_surface_id_task_execution"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_expression_id_task_execution")) and (.bootstrap_owned_by_sley | index("parser_control_expression_id_task_execution"))'
 
 bin/sley self-hosting-status --json \
@@ -926,6 +929,18 @@ bin/sley fix --json --kind delete_unused_pure_expression_statement --dry-run exa
 
 bin/sley fix --json --kind drop_unused_effectful_binding_value --dry-run examples/hello.sley \
   | json_field '([.provenance[]?.targets[]?] | index("block:task:app.effectful_cleanup.main:stmt:0"))'
+
+bin/sley fix --json --kind simplify_constant_if_expression --dry-run examples/hello.sley \
+  | json_field '([.provenance[]?.targets[]?] | index("block:task:app.constant_fix.main:stmt:0:expr"))'
+
+bin/sley fix --json --kind simplify_constant_if_statement --dry-run examples/hello.sley \
+  | json_field '([.provenance[]?.targets[]?] | index("block:task:app.constant_if_statement_fix.main:stmt:1"))'
+
+bin/sley fix --json --kind delete_constant_false_if_statement --dry-run examples/hello.sley \
+  | json_field '([.provenance[]?.targets[]?] | index("block:task:app.constant_false_if_fix.main:stmt:0"))'
+
+bin/sley fix --json --kind delete_constant_false_while_statement --dry-run examples/hello.sley \
+  | json_field '([.provenance[]?.targets[]?] | index("block:task:app.false_while_fix.main:stmt:1"))'
 
 bin/sley-contract validate --schema sley.migrate.report.v0 "$migrate_report" --schemas docs/schemas --json \
   | json_field '.schema == "sley.contract.validate.v0" and .status == "passed" and .requested_schema == "sley.migrate.report.v0" and .report_schema == "sley.migrate.report.v0"'
