@@ -4808,8 +4808,6 @@ CHECKER_ERROR_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/ch
 CHECKER_GATE_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" gate_type_name)"
 CHECKER_LIST_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" list_type_name)"
 CHECKER_MAP_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" map_type_name)"
-CHECK_OK_STATUS="${CHECK_OK_STATUS:-ok}"
-CHECK_ERROR_STATUS="${CHECK_ERROR_STATUS:-error}"
 UNKNOWN_IDENTIFIER_MESSAGE_PREFIX="${UNKNOWN_IDENTIFIER_MESSAGE_PREFIX:-unknown identifier \`}"
 UNKNOWN_IDENTIFIER_MESSAGE_SUFFIX="${UNKNOWN_IDENTIFIER_MESSAGE_SUFFIX:-\`}"
 if [[ -z "$UNKNOWN_IDENTIFIER_MESSAGE_TEMPLATE" ]]; then
@@ -6601,10 +6599,8 @@ check_json() {
     [duplicate_effect_diags, duplicate_type_diags, duplicate_task_diags, task_diags, return_type_diags, take_type_diags, unknown_effect_diags, gate_take_type_diags, gate_effect_diags, question_requires_result_diags, direct_effect_diags, transitive_effect_diags, unknown_task_diags, call_arity_diags, call_argument_type_diags, type_mismatch_diags, return_type_mismatch_diags, duplicate_take_diags, duplicate_map_key_diags, duplicate_record_field_diags, duplicate_record_literal_field_diags, record_field_missing_diags, record_field_unknown_diags, record_field_type_mismatch_diags, record_literal_non_record_type_diags, unknown_record_field_diags, list_element_type_diags, index_diags, map_key_type_diags, map_value_type_diags, missing_return_diags]
   ')"
   diagnostic_count="$(printf '%s\n' "$diagnostics" | jq 'length')"
-  check_status="$(eval_checker_status_task "$diagnostic_count" || { if [[ "$diagnostic_count" -eq 0 ]]; then printf '%s\n' "$CHECK_OK_STATUS"; else printf '%s\n' "$CHECK_ERROR_STATUS"; fi; })"
-  if [[ -z "$check_status" ]]; then
-    if [[ "$diagnostic_count" -eq 0 ]]; then check_status="$CHECK_OK_STATUS"; else check_status="$CHECK_ERROR_STATUS"; fi
-  fi
+  check_status="$(eval_checker_status_task "$diagnostic_count")"
+  [[ -n "$check_status" ]]
   values_json="$(jq -n \
     --arg schema "$SCHEMA_DIAGNOSTICS" \
     --arg status "$check_status" \

@@ -718,6 +718,17 @@ bin/sley check --json examples/hello.sley \
 bin/sley check --json examples/hello.sley \
   | json_field 'keys == (["schema","status","diagnostics"] | sort)'
 
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("checker_status_fallback_removal_task_execution"))'
+
+if grep -Eq 'CHECK_(OK|ERROR)_STATUS="\$\{CHECK_(OK|ERROR)_STATUS:-' bin/sley; then
+  fail "checker status names must come from loom.checker without shell fallback literals"
+fi
+
+if grep -Fq 'eval_checker_status_task "$diagnostic_count" ||' bin/sley; then
+  fail "checker status selection must not fall back to shell-side status logic"
+fi
+
 if bin/sley check --json fixtures/corpus/rejected/unknown_identifier.sley >/tmp/sley-rejected-check.json; then
   fail "rejected unknown_identifier.sley passed check"
 fi
