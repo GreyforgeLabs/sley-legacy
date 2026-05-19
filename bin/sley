@@ -219,9 +219,10 @@ eval_parser_id_template() {
 eval_parser_message_template() {
   local task="$1" arg_name="$2"
   local parser_file="$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley"
-  local body expr token out callee value
+  local body expr token out callee value call_prefix
   body="$(extract_sley_task_body "$parser_file" "$task")"
   [[ -n "$body" ]] || return 1
+  call_prefix="${PARSER_CALL_EXPRESSION_PREFIX:-call }"
   expr="$(printf '%s\n' "$body" | awk '
     /^[ \t]*return[ \t]+/ {
       line=$0
@@ -234,10 +235,8 @@ eval_parser_message_template() {
   out=""
   while IFS= read -r token; do
     [[ -n "$token" ]] || continue
-    if [[ "$token" == call* ]]; then
-      callee="$token"
-      callee="${callee#call }"
-      callee="${callee%%()*}"
+    if [[ "$token" == CALL:* ]]; then
+      callee="${token#CALL:}"
       value="$(extract_sley_string_task "$parser_file" "$callee")"
       [[ -n "$value" ]] || return 1
       out+="$value"
@@ -250,12 +249,34 @@ eval_parser_message_template() {
     else
       return 1
     fi
-  done < <(printf '%s\n' "$expr" | awk '
+  done < <(printf '%s\n' "$expr" | awk -v call_prefix="$call_prefix" '
+    function ltrim(s){sub(/^[ \t]+/, "", s); return s}
     {
       line=$0
-      while (match(line, /call[ \t]+[A-Za-z_][A-Za-z0-9_]*\(\)|"[^"]*"|[A-Za-z_][A-Za-z0-9_]*/)) {
-        print substr(line, RSTART, RLENGTH)
-        line=substr(line, RSTART + RLENGTH)
+      while (length(line) > 0) {
+        line=ltrim(line)
+        if(line == "") break
+        if(index(line, call_prefix) == 1) {
+          tail=substr(line, length(call_prefix) + 1)
+          if(match(tail, /^[A-Za-z_][A-Za-z0-9_]*\(\)/)) {
+            callee=substr(tail, RSTART, RLENGTH)
+            sub(/\(\)$/, "", callee)
+            print "CALL:" callee
+            line=substr(tail, RSTART + RLENGTH)
+            continue
+          }
+        }
+        if(match(line, /^"[^"]*"/)) {
+          print substr(line, RSTART, RLENGTH)
+          line=substr(line, RSTART + RLENGTH)
+          continue
+        }
+        if(match(line, /^[A-Za-z_][A-Za-z0-9_]*/)) {
+          print substr(line, RSTART, RLENGTH)
+          line=substr(line, RSTART + RLENGTH)
+          continue
+        }
+        line=substr(line, 2)
       }
     }
   ')
@@ -266,9 +287,10 @@ eval_parser_message_template() {
 eval_checker_message_template() {
   local task="$1" arg_name="$2"
   local checker_file="$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley"
-  local body expr token out callee value
+  local body expr token out callee value call_prefix
   body="$(extract_sley_task_body "$checker_file" "$task")"
   [[ -n "$body" ]] || return 1
+  call_prefix="${PARSER_CALL_EXPRESSION_PREFIX:-call }"
   expr="$(printf '%s\n' "$body" | awk '
     /^[ \t]*return[ \t]+/ {
       line=$0
@@ -281,10 +303,8 @@ eval_checker_message_template() {
   out=""
   while IFS= read -r token; do
     [[ -n "$token" ]] || continue
-    if [[ "$token" == call* ]]; then
-      callee="$token"
-      callee="${callee#call }"
-      callee="${callee%%()*}"
+    if [[ "$token" == CALL:* ]]; then
+      callee="${token#CALL:}"
       value="$(extract_sley_string_task "$checker_file" "$callee")"
       [[ -n "$value" ]] || return 1
       out+="$value"
@@ -297,12 +317,34 @@ eval_checker_message_template() {
     else
       return 1
     fi
-  done < <(printf '%s\n' "$expr" | awk '
+  done < <(printf '%s\n' "$expr" | awk -v call_prefix="$call_prefix" '
+    function ltrim(s){sub(/^[ \t]+/, "", s); return s}
     {
       line=$0
-      while (match(line, /call[ \t]+[A-Za-z_][A-Za-z0-9_]*\(\)|"[^"]*"|[A-Za-z_][A-Za-z0-9_]*/)) {
-        print substr(line, RSTART, RLENGTH)
-        line=substr(line, RSTART + RLENGTH)
+      while (length(line) > 0) {
+        line=ltrim(line)
+        if(line == "") break
+        if(index(line, call_prefix) == 1) {
+          tail=substr(line, length(call_prefix) + 1)
+          if(match(tail, /^[A-Za-z_][A-Za-z0-9_]*\(\)/)) {
+            callee=substr(tail, RSTART, RLENGTH)
+            sub(/\(\)$/, "", callee)
+            print "CALL:" callee
+            line=substr(tail, RSTART + RLENGTH)
+            continue
+          }
+        }
+        if(match(line, /^"[^"]*"/)) {
+          print substr(line, RSTART, RLENGTH)
+          line=substr(line, RSTART + RLENGTH)
+          continue
+        }
+        if(match(line, /^[A-Za-z_][A-Za-z0-9_]*/)) {
+          print substr(line, RSTART, RLENGTH)
+          line=substr(line, RSTART + RLENGTH)
+          continue
+        }
+        line=substr(line, 2)
       }
     }
   ')
@@ -4461,6 +4503,9 @@ if [[ "$SELF_HOSTING_STATUS_BUILDER_JSON" == "[]" ]]; then
   SELF_HOSTING_STATUS_BUILDER_JSON='["schema|reports.self_hosting_status_schema|Text","status|bootstrap.self_hosting_status|Text","strict_self_hosted|bootstrap.strict_self_hosted|Bool","source_root|reports.self_hosting_source_root|Text","semantic_source_count|bootstrap.semantic_source_count|Int","source_modules|bootstrap.source_modules|List<Text>","bootstrap_owned_by_sley|bootstrap.owned_bootstrap_values|List<Text>","blockers|bootstrap.remaining_strict_self_hosting_blockers|List<Text>"]'
 fi
 
+PARSER_CALL_EXPRESSION_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" call_expression_prefix)"
+PARSER_CALL_EXPRESSION_PREFIX="${PARSER_CALL_EXPRESSION_PREFIX:-call }"
+
 DIAG_UNKNOWN_IDENTIFIER="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_identifier_id)"
 DIAG_UNKNOWN_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_type_id)"
 DIAG_UNKNOWN_TASK="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_task_id)"
@@ -4905,7 +4950,6 @@ PARSER_BOOL_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/pars
 PARSER_IDENTIFIER_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" identifier_kind)"
 PARSER_LIST_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" list_literal_kind)"
 PARSER_RAW_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" raw_expr_kind)"
-PARSER_CALL_EXPRESSION_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" call_expression_prefix)"
 PARSER_CLASSIFIERS_JSON="$(eval_parser_expression_classifiers_json || printf '{}\n')"
 PARSER_TRUE_KIND="$(printf '%s\n' "$PARSER_CLASSIFIERS_JSON" | jq -r '."true" // empty')"
 PARSER_FALSE_KIND="$(printf '%s\n' "$PARSER_CLASSIFIERS_JSON" | jq -r '."false" // empty')"
