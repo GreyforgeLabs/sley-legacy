@@ -2,8 +2,8 @@
 
 Date: 2026-05-19
 Branch: public
-Latest code checkpoint: 0db7fec
-Latest pause documentation checkpoint before this note: de4bcb6
+Latest code checkpoint: e74481e
+Latest pause documentation checkpoint before this note: a680ce9
 Current pause document status: committed on `public`; use `git log` for exact
 branch head
 Remote status: `public` is ahead of `origin/public` with local self-hosting
@@ -198,9 +198,13 @@ The current local checkpoint advances the public branch to:
   `bootstrap`, `strict_self_hosted=false`,
   `semantic_source_count=6`, `bootstrap_owned_by_sley=234`; remaining blockers
   are still parser, checker, and runtime semantics from Sley source
+- self-hosting status after the parser classifier parser-prefix source slice:
+  `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=235`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
 - latest V1 log from this pause checkpoint: `/tmp/sley-make-v1-ok-text.log`
 - latest verification refresh on 2026-05-19: `make v1` passed after the
-  checker/lint status parser-prefix source slice
+  parser classifier parser-prefix source slice
 
 The tracked code checkpoint is:
 
@@ -248,6 +252,7 @@ The tracked code checkpoint is:
 - 6d27016 fix: source runtime call parser from parser
 - dcb4c2b fix: source runtime status calls from parser
 - 0db7fec fix: source checker lint status calls from parser
+- e74481e fix: source parser classifier calls from parser
 
 The tracked pause documentation checkpoints are:
 
@@ -289,6 +294,7 @@ The tracked pause documentation checkpoints are:
 - 05e1d77 docs: record checker call parser self-hosting slice
 - 1396712 docs: record runtime call parser self-hosting slice
 - de4bcb6 docs: record runtime status parser self-hosting slice
+- a680ce9 docs: record checker lint status parser slice
 
 Recent self-hosting slices added:
 
@@ -418,6 +424,9 @@ Recent self-hosting slices added:
 - checker and lint status task-call extraction now strips the parser-owned call
   expression prefix instead of shell/AWK literals while preserving diagnostics
   ok/error and lint ok/findings statuses
+- parser expression-classifier task-call extraction now strips the parser-owned
+  call expression prefix instead of shell/AWK literals while preserving
+  BoolLiteral, ListLiteral, and Raw classification
 
 ## Next Frontier
 
@@ -1024,10 +1033,27 @@ The latest continuation audit reconfirmed:
   `bin/sley-contract check-fixtures fixtures/contracts --schemas docs/schemas
   --json`, external public-action packet verifier, `git diff --check`, and
   final `make v1` all passed
+- focused parser classifier parser-prefix probes:
+  `bin/sley ast --json examples/redundant_boolean_if_statement.sley` preserved
+  `BoolLiteral` classification for `true` and `Raw` classification for the
+  raw `if ready {` condition expression, and a temp source with `return []`
+  preserved `ListLiteral` classification after parser classifier task-call
+  extraction moved from literal `return call ...` handling to the parser-owned
+  call expression prefix
+- Sley self-hosting status after the parser classifier parser-prefix source
+  slice: `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=235`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
+- latest parser classifier parser-prefix verification:
+  `bash -n bin/sley`, `bash -n scripts/self-hosted-test.sh`, focused parser
+  classifier probes, `scripts/self-hosted-test.sh`, `bin/sley-contract
+  check-fixtures fixtures/contracts --schemas docs/schemas --json`, external
+  public-action packet verifier, `git diff --check`, and final `make v1` all
+  passed
 
 ## Dirty State Notes
 
-Tracked code was committed at 0db7fec before this pause document was updated.
+Tracked code was committed at e74481e before this pause document was updated.
 Tracked pause documentation before this update was refreshed through 218d40c
 with parser lint surface evidence, through 26e7417 with the external comparison
 approval gate, fork audit, and helper evidence, and through aba1b03 with parser
@@ -1051,6 +1077,7 @@ expression-prefix evidence, and through 71a768f with lint call
 expression-prefix evidence, and through 05e1d77 with checker call
 parser-prefix evidence, and through 1396712 with runtime main-call
 parser-prefix evidence, and through de4bcb6 with runtime status
+parser-prefix evidence, and through a680ce9 with checker/lint status
 parser-prefix evidence.
 
 Pre-existing untracked files were not touched and should remain outside future
