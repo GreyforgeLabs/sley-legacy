@@ -283,6 +283,9 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("lint_report_shape"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("lint_declared_effect_host_needles_task_execution"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("lint_call_expression_prefix_task_execution"))'
 
 bin/sley self-hosting-status --json \
