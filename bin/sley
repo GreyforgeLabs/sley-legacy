@@ -4970,7 +4970,7 @@ if [[ "$CHECKER_EFFECT_ALIASES_JSON" == "[]" ]]; then
   CHECKER_EFFECT_ALIASES_JSON='["DatabaseRead|DbRead","DatabaseWrite|DbWrite"]'
 fi
 if [[ "$CHECKER_HOST_EFFECT_NEEDLES_JSON" == "[]" ]]; then
-  CHECKER_HOST_EFFECT_NEEDLES_JSON='["DatabaseRead|db.query(","DatabaseRead|db.query_one(","DatabaseRead|db.try_query(","DatabaseRead|db.try_query_one(","DatabaseWrite|db.try_insert(","Deploy|deploy.try_stage(","FileRead|fs.read_text(","FileRead|fs.try_read_text(","FileWrite|fs.write_text(","FileWrite|fs.try_write_text(","ModelCall|model.try_complete(","Network|http.try_get_text(","SecretRead|secrets.try_get(","Shell|shell.try_run(","Spend|spend.try_authorize("]'
+  CHECKER_HOST_EFFECT_NEEDLES_JSON='["DatabaseRead|db.query(","DatabaseRead|db.query_one(","DatabaseRead|db.try_query(","DatabaseRead|db.try_query_one(","DatabaseWrite|db.try_insert(","Deploy|deploy.try_stage(","FileRead|fs.read_text(","FileRead|fs.try_read_text(","FileWrite|fs.try_write_text(","FileWrite|fs.write_text(","ModelCall|model.try_complete(","Network|http.try_get_text(","SecretRead|secrets.try_get(","Shell|shell.try_run(","Spend|spend.try_authorize("]'
 fi
 CHECKER_DECLARE_OR_IMPORT_TASK_HINT_KIND="${CHECKER_DECLARE_OR_IMPORT_TASK_HINT_KIND:-declare_or_import_task}"
 CHECKER_INSPECT_RETURN_TYPE_HINT_KIND="${CHECKER_INSPECT_RETURN_TYPE_HINT_KIND:-inspect_return_type}"
@@ -11020,78 +11020,26 @@ command_migrate() {
 }
 
 docgen_capabilities_json() {
-  jq -cn '[
-    {
-      effect:"DatabaseRead",
-      aliases:["DbRead"],
-      seed_capability_args:["--cap","DatabaseRead"],
-      host_calls:["db.query","db.query_one","db.try_query","db.try_query_one"],
-      source_needles:["db.query(","db.query_one(","db.try_query(","db.try_query_one("]
-    },
-    {
-      effect:"DatabaseWrite",
-      aliases:["DbWrite"],
-      seed_capability_args:["--cap","DatabaseWrite"],
-      host_calls:["db.try_insert"],
-      source_needles:["db.try_insert("]
-    },
-    {
-      effect:"Deploy",
-      aliases:[],
-      seed_capability_args:["--cap","Deploy"],
-      host_calls:["deploy.try_stage"],
-      source_needles:["deploy.try_stage("]
-    },
-    {
-      effect:"FileRead",
-      aliases:[],
-      seed_capability_args:["--cap","FileRead"],
-      host_calls:["fs.read_text","fs.try_read_text"],
-      source_needles:["fs.read_text(","fs.try_read_text("]
-    },
-    {
-      effect:"FileWrite",
-      aliases:[],
-      seed_capability_args:["--cap","FileWrite"],
-      host_calls:["fs.try_write_text","fs.write_text"],
-      source_needles:["fs.try_write_text(","fs.write_text("]
-    },
-    {
-      effect:"ModelCall",
-      aliases:[],
-      seed_capability_args:["--cap","ModelCall"],
-      host_calls:["model.try_complete"],
-      source_needles:["model.try_complete("]
-    },
-    {
-      effect:"Network",
-      aliases:[],
-      seed_capability_args:["--cap","Network"],
-      host_calls:["http.try_get_text"],
-      source_needles:["http.try_get_text("]
-    },
-    {
-      effect:"SecretRead",
-      aliases:[],
-      seed_capability_args:["--cap","SecretRead"],
-      host_calls:["secrets.try_get"],
-      source_needles:["secrets.try_get("]
-    },
-    {
-      effect:"Shell",
-      aliases:[],
-      seed_capability_args:["--cap","Shell"],
-      host_calls:["shell.try_run"],
-      source_needles:["shell.try_run("]
-    },
-    {
-      effect:"Spend",
-      aliases:[],
-      seed_capability_args:["--cap","Spend"],
-      host_calls:["spend.try_authorize"],
-      source_needles:["spend.try_authorize("]
-    }
-  ]'
+  jq -cn \
+    --argjson host_effect_needles "$CHECKER_HOST_EFFECT_NEEDLES_JSON" \
+    --argjson effect_aliases "$CHECKER_EFFECT_ALIASES_JSON" '
+    def table_left:
+      split("|")[0] // "";
+    def table_right:
+      split("|")[1] // "";
+    def strip_call_open:
+      if endswith("(") then .[0:-1] else . end;
+    (reduce ($host_effect_needles[]? | table_left) as $effect
+      ([]; if (. | index($effect)) == null then . + [$effect] else . end)) as $effects |
+    [$effects[] as $effect |
+      {
+        effect:$effect,
+        aliases:[$effect_aliases[]? | select(table_left == $effect) | table_right],
+        seed_capability_args:["--cap",$effect],
+        host_calls:[$host_effect_needles[]? | select(table_left == $effect) | table_right | strip_call_open],
+        source_needles:[$host_effect_needles[]? | select(table_left == $effect) | table_right]
+      }]
+  '
 }
 
 docgen_json() {

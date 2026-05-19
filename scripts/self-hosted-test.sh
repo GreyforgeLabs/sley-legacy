@@ -250,6 +250,9 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("docgen_report_shape"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("docgen_capabilities_host_effect_needles_task_execution"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("docgen_call_expression_prefix_task_execution"))'
 
 bin/sley self-hosting-status --json \

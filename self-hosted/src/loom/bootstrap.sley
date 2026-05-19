@@ -182,6 +182,7 @@ export task owned_bootstrap_values -> List<Text> {
     "docgen_report_shape",
     "docgen_report_builder",
     "docgen_report_builder_task_execution",
+    "docgen_capabilities_host_effect_needles_task_execution",
     "docgen_call_expression_prefix_task_execution",
     "docgen_call_tail_parser_prefix_task_execution",
     "workbench_report_shape",
