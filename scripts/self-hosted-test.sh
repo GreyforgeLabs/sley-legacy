@@ -907,8 +907,27 @@ bin/sley doctor --json examples/project \
 bin/sley lint --json examples/empty_for_statement.sley \
   | json_field '.schema == "sley.lint.report.v0" and .status == "findings" and .findings[0].id == "EMPTY_FOR_STATEMENT" and (.filters.rules | index("empty_for_statement"))'
 
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("lint_empty_finding_fallback_removal_task_execution"))'
+
 bin/sley lint --json --rule empty_for_statement examples/empty_for_statement.sley \
-  | json_field '([.findings[]? | select(.rule == "empty_for_statement") | .node] | index("block:task:app.empty_for.main:stmt:1"))'
+  | json_field '([.findings[]? | select(.id == "EMPTY_FOR_STATEMENT" and .rule == "empty_for_statement" and .message == "task `app.empty_for.main` has a for statement over an empty list" and .hint == "delete this never-executed for statement") | .node] | index("block:task:app.empty_for.main:stmt:1"))'
+
+bin/sley lint --json --rule empty_while_statement examples/empty_while_statement.sley \
+  | json_field '([.findings[]? | select(.id == "EMPTY_WHILE_STATEMENT" and .rule == "empty_while_statement" and .message == "task `app.empty_while.main` has an empty while statement" and .hint == "delete this empty loop") | .node] | index("block:task:app.empty_while.main:stmt:2"))'
+
+bin/sley lint --json --rule empty_forge_statement examples/empty_forge_statement.sley \
+  | json_field '([.findings[]? | select(.id == "EMPTY_FORGE_STATEMENT" and .rule == "empty_forge_statement" and .message == "task `app.empty_forge.main` has an empty forge block" and .hint == "delete this empty isolated arena") | .node] | index("block:task:app.empty_forge.main:stmt:1"))'
+
+bin/sley lint --json --rule empty_if_statement examples/empty_if_statement.sley \
+  | json_field '([.findings[]? | select(.id == "EMPTY_IF_STATEMENT" and .rule == "empty_if_statement" and .message == "task `app.empty_if.main` has an empty if branch" and .hint == "delete the empty branch or add a meaningful statement") | .node] | index("block:task:app.empty_if.main:stmt:1"))'
+
+bin/sley lint --json --rule empty_else_statement examples/empty_else_statement.sley \
+  | json_field '([.findings[]? | select(.id == "EMPTY_ELSE_STATEMENT" and .rule == "empty_else_statement" and .message == "task `app.empty_else.main` has an empty else branch" and .hint == "remove this no-op else branch") | .node] | index("block:task:app.empty_else.main:stmt:1"))'
+
+if grep -Eq 'LINT_(EMPTY_FOR|EMPTY_WHILE|EMPTY_FORGE|EMPTY_IF|EMPTY_ELSE|OK_STATUS|FINDINGS_STATUS|EMPTY_FOR_RULE|EMPTY_WHILE_RULE|EMPTY_FORGE_RULE|EMPTY_IF_RULE|EMPTY_ELSE_RULE|EMPTY_FOR_MESSAGE|EMPTY_WHILE_MESSAGE|EMPTY_FORGE_MESSAGE|EMPTY_IF_MESSAGE|EMPTY_ELSE_MESSAGE|EMPTY_FOR_HINT|EMPTY_WHILE_HINT|EMPTY_FORGE_HINT|EMPTY_IF_HINT|EMPTY_ELSE_HINT)="\$\{LINT_' bin/sley; then
+  fail "lint empty finding values must come from loom.lint without shell fallback literals"
+fi
 
 bin/sley lint --json --rule unchecked_result examples/unchecked_result.sley \
   | json_field '([.findings[]? | select(.rule == "unchecked_result") | .node] | index("block:task:app.unchecked.main:stmt:0:expr"))'

@@ -141,6 +141,7 @@ export task owned_bootstrap_values -> List<Text> {
     "lint_report_builder",
     "lint_report_builder_task_execution",
     "lint_finding_messages",
+    "lint_empty_finding_fallback_removal_task_execution",
     "lint_declared_effect_host_needles_task_execution",
     "lint_call_expression_prefix_task_execution",
     "runtime_status_task_execution",
