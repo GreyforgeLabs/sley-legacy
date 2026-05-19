@@ -5041,6 +5041,7 @@ RUNTIME_DEFAULT_FILE_WRITE_TEXT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE
 RUNTIME_DEFAULT_DATABASE_WRITE_TEXT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" default_database_write_text)"
 RUNTIME_DEFAULT_AGENT_DATA_WRITE_TEXT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" default_agent_data_write_text)"
 RUNTIME_DEFAULT_DATABASE_READ_TEXT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" default_database_read_text)"
+RUNTIME_DEFAULT_DATABASE_TABLE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" default_database_table)"
 RUNTIME_DEFAULT_SHELL_TEXT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" default_shell_text)"
 RUNTIME_DEFAULT_SECRET_TEXT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" default_secret_text)"
 RUNTIME_DEFAULT_SPEND_AUTHORIZATION_TEXT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" default_spend_authorization_text)"
@@ -5076,6 +5077,7 @@ RUNTIME_DEFAULT_FILE_WRITE_TEXT="${RUNTIME_DEFAULT_FILE_WRITE_TEXT:-written}"
 RUNTIME_DEFAULT_DATABASE_WRITE_TEXT="${RUNTIME_DEFAULT_DATABASE_WRITE_TEXT:-Lin}"
 RUNTIME_DEFAULT_AGENT_DATA_WRITE_TEXT="${RUNTIME_DEFAULT_AGENT_DATA_WRITE_TEXT:-profile: Kai}"
 RUNTIME_DEFAULT_DATABASE_READ_TEXT="${RUNTIME_DEFAULT_DATABASE_READ_TEXT:-Ada}"
+RUNTIME_DEFAULT_DATABASE_TABLE="${RUNTIME_DEFAULT_DATABASE_TABLE:-users}"
 RUNTIME_DEFAULT_SHELL_TEXT="${RUNTIME_DEFAULT_SHELL_TEXT:-2026-05-05}"
 RUNTIME_DEFAULT_SECRET_TEXT="${RUNTIME_DEFAULT_SECRET_TEXT:-redacted}"
 RUNTIME_DEFAULT_SPEND_AUTHORIZATION_TEXT="${RUNTIME_DEFAULT_SPEND_AUTHORIZATION_TEXT:-authorized}"
@@ -8054,6 +8056,7 @@ runtime_authority_json() {
   SLEY_RUNTIME_FILES="$files_json" \
   SLEY_HOST_EFFECT_NEEDLES="$CHECKER_HOST_EFFECT_NEEDLES_JSON" \
   SLEY_EFFECT_ALIASES="$CHECKER_EFFECT_ALIASES_JSON" \
+  SLEY_RUNTIME_DEFAULT_DATABASE_TABLE="$RUNTIME_DEFAULT_DATABASE_TABLE" \
   SLEY_RUNTIME_CAPABILITY_REQUIRED_ID="$RUNTIME_CAPABILITY_REQUIRED_ID" \
   SLEY_RUNTIME_CAPABILITY_SCOPE_DENIED_ID="$RUNTIME_CAPABILITY_SCOPE_DENIED_ID" \
   SLEY_RUNTIME_CAPABILITY_REQUIRED_MESSAGE_PREFIX="$RUNTIME_CAPABILITY_REQUIRED_MESSAGE_PREFIX" \
@@ -8071,6 +8074,7 @@ repo = Path(sys.argv[1]).resolve()
 diag_schema = sys.argv[3]
 argv = sys.argv[4:]
 files = [Path(path) for path in json.loads(os.environ.get("SLEY_RUNTIME_FILES", "[]"))]
+default_database_table = os.environ.get("SLEY_RUNTIME_DEFAULT_DATABASE_TABLE", "users")
 capability_required_id = os.environ.get("SLEY_RUNTIME_CAPABILITY_REQUIRED_ID", "RUNTIME_CAPABILITY_REQUIRED")
 capability_scope_denied_id = os.environ.get("SLEY_RUNTIME_CAPABILITY_SCOPE_DENIED_ID", "RUNTIME_CAPABILITY_SCOPE_DENIED")
 capability_required_prefix = os.environ.get("SLEY_RUNTIME_CAPABILITY_REQUIRED_MESSAGE_PREFIX", "`main` requires runtime capabilities: ")
@@ -8265,7 +8269,7 @@ def parse_source_file(path):
                     effect = HOST_EFFECTS[callee]
                     resource_expr = args[0] if args else ""
                     if callee.startswith("db.query") or callee.startswith("db.try_query"):
-                        resource_expr = table_from_query(literal_value(resource_expr, {}) or "") or "users"
+                        resource_expr = table_from_query(literal_value(resource_expr, {}) or "") or default_database_table
                     current.host_calls.append({
                         "callee": callee,
                         "effect": effect,
@@ -8316,7 +8320,7 @@ def reachable_host_calls():
         for host in task.host_calls:
             resource = literal_value(host.get("resource_expr"), env)
             if resource is None and host["effect"] in ("DatabaseRead", "DatabaseWrite"):
-                resource = host.get("resource_expr") or "users"
+                resource = host.get("resource_expr") or default_database_table
             item = dict(host)
             item["task"] = task.qname
             item["resource"] = resource
