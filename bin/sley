@@ -5037,6 +5037,13 @@ RUNTIME_DEFAULT_PROFILE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/lo
 RUNTIME_DEFAULT_MODEL_PLAN="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" default_model_plan_text)"
 RUNTIME_DEFAULT_DEPLOY_RESULT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" default_deploy_result_text)"
 RUNTIME_DEFAULT_RAW_VALUE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" default_raw_value)"
+RUNTIME_DEFAULT_FILE_WRITE_TEXT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" default_file_write_text)"
+RUNTIME_DEFAULT_DATABASE_WRITE_TEXT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" default_database_write_text)"
+RUNTIME_DEFAULT_AGENT_DATA_WRITE_TEXT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" default_agent_data_write_text)"
+RUNTIME_DEFAULT_DATABASE_READ_TEXT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" default_database_read_text)"
+RUNTIME_DEFAULT_SHELL_TEXT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" default_shell_text)"
+RUNTIME_DEFAULT_SECRET_TEXT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" default_secret_text)"
+RUNTIME_DEFAULT_SPEND_AUTHORIZATION_TEXT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" default_spend_authorization_text)"
 RUNTIME_PASSED_STATUS="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" passed_status)"
 RUNTIME_FAILED_STATUS="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" failed_status)"
 RUNTIME_SKIPPED_STATUS="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" skipped_status)"
@@ -5057,6 +5064,13 @@ RUNTIME_DEFAULT_PROFILE="${RUNTIME_DEFAULT_PROFILE:-profile ready}"
 RUNTIME_DEFAULT_MODEL_PLAN="${RUNTIME_DEFAULT_MODEL_PLAN:-plan approved}"
 RUNTIME_DEFAULT_DEPLOY_RESULT="${RUNTIME_DEFAULT_DEPLOY_RESULT:-staged}"
 RUNTIME_DEFAULT_RAW_VALUE="${RUNTIME_DEFAULT_RAW_VALUE:-stage1 runtime result}"
+RUNTIME_DEFAULT_FILE_WRITE_TEXT="${RUNTIME_DEFAULT_FILE_WRITE_TEXT:-written}"
+RUNTIME_DEFAULT_DATABASE_WRITE_TEXT="${RUNTIME_DEFAULT_DATABASE_WRITE_TEXT:-Lin}"
+RUNTIME_DEFAULT_AGENT_DATA_WRITE_TEXT="${RUNTIME_DEFAULT_AGENT_DATA_WRITE_TEXT:-profile: Kai}"
+RUNTIME_DEFAULT_DATABASE_READ_TEXT="${RUNTIME_DEFAULT_DATABASE_READ_TEXT:-Ada}"
+RUNTIME_DEFAULT_SHELL_TEXT="${RUNTIME_DEFAULT_SHELL_TEXT:-2026-05-05}"
+RUNTIME_DEFAULT_SECRET_TEXT="${RUNTIME_DEFAULT_SECRET_TEXT:-redacted}"
+RUNTIME_DEFAULT_SPEND_AUTHORIZATION_TEXT="${RUNTIME_DEFAULT_SPEND_AUTHORIZATION_TEXT:-authorized}"
 RUNTIME_PASSED_STATUS="${RUNTIME_PASSED_STATUS:-passed}"
 RUNTIME_FAILED_STATUS="${RUNTIME_FAILED_STATUS:-failed}"
 RUNTIME_SKIPPED_STATUS="${RUNTIME_SKIPPED_STATUS:-skipped}"
@@ -8626,35 +8640,35 @@ run_json() {
     value="$(eval_runtime_text_identity_value_task "$value" || printf '%s\n' "$value")"
   elif runtime_source_has_host_effect "$target" "FileWrite"; then
     value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
-    value="$(eval_runtime_text_identity_value_task "written" || printf '%s\n' "written")"
+    value="$(eval_runtime_text_identity_value_task "$RUNTIME_DEFAULT_FILE_WRITE_TEXT" || printf '%s\n' "$RUNTIME_DEFAULT_FILE_WRITE_TEXT")"
   elif runtime_source_has_host_effect "$target" "DatabaseWrite"; then
     value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
     if [[ "$target" == *"agent_data_authority.sley" ]]; then
-      value="$(eval_runtime_text_identity_value_task "profile: Kai" || printf '%s\n' "profile: Kai")"
+      value="$(eval_runtime_text_identity_value_task "$RUNTIME_DEFAULT_AGENT_DATA_WRITE_TEXT" || printf '%s\n' "$RUNTIME_DEFAULT_AGENT_DATA_WRITE_TEXT")"
     else
-      value="$(eval_runtime_text_identity_value_task "Lin" || printf '%s\n' "Lin")"
+      value="$(eval_runtime_text_identity_value_task "$RUNTIME_DEFAULT_DATABASE_WRITE_TEXT" || printf '%s\n' "$RUNTIME_DEFAULT_DATABASE_WRITE_TEXT")"
     fi
   elif runtime_source_has_host_effect "$target" "DatabaseRead"; then
     value_kind="$RUNTIME_TEXT_VALUE_KIND"
-    value="$(eval_runtime_text_identity_value_task "Ada" || printf '%s\n' "Ada")"
+    value="$(eval_runtime_text_identity_value_task "$RUNTIME_DEFAULT_DATABASE_READ_TEXT" || printf '%s\n' "$RUNTIME_DEFAULT_DATABASE_READ_TEXT")"
   elif runtime_source_has_host_effect "$target" "Network"; then
     value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
     value="$(eval_runtime_text_identity_value_task "${http_text:-$RUNTIME_DEFAULT_PROFILE}" || printf '%s\n' "${http_text:-$RUNTIME_DEFAULT_PROFILE}")"
   elif runtime_source_has_host_effect "$target" "Shell"; then
     value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
-    value="$(eval_runtime_text_identity_value_task "${shell_text:-2026-05-05}" || printf '%s\n' "${shell_text:-2026-05-05}")"
+    value="$(eval_runtime_text_identity_value_task "${shell_text:-$RUNTIME_DEFAULT_SHELL_TEXT}" || printf '%s\n' "${shell_text:-$RUNTIME_DEFAULT_SHELL_TEXT}")"
   elif runtime_source_has_host_effect "$target" "ModelCall"; then
     value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
     value="$(eval_runtime_text_identity_value_task "${model_text:-$RUNTIME_DEFAULT_MODEL_PLAN}" || printf '%s\n' "${model_text:-$RUNTIME_DEFAULT_MODEL_PLAN}")"
   elif runtime_source_has_host_effect "$target" "SecretRead"; then
     value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
-    value="$(eval_runtime_text_identity_value_task "${secret_text:-redacted}" || printf '%s\n' "${secret_text:-redacted}")"
+    value="$(eval_runtime_text_identity_value_task "${secret_text:-$RUNTIME_DEFAULT_SECRET_TEXT}" || printf '%s\n' "${secret_text:-$RUNTIME_DEFAULT_SECRET_TEXT}")"
   elif runtime_deploy_stage_probe_matches "$target"; then
     value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
     value="$(eval_runtime_text_identity_value_task "${deploy_text:-$RUNTIME_DEFAULT_DEPLOY_RESULT}" || printf '%s\n' "${deploy_text:-$RUNTIME_DEFAULT_DEPLOY_RESULT}")"
   elif runtime_spend_authorize_probe_matches "$target"; then
     value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
-    spend_text="${spend_text:-authorized}"
+    spend_text="${spend_text:-$RUNTIME_DEFAULT_SPEND_AUTHORIZATION_TEXT}"
     if runtime_spend_prefix_probe_matches "$target"; then
       value="$(eval_runtime_spend_prefixed_value_task "$spend_text" || printf 'budget gate: %s\n' "$spend_text")"
     else

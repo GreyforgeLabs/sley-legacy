@@ -36,6 +36,34 @@ export task default_raw_value -> Text {
   return "stage1 runtime result"
 }
 
+export task default_file_write_text -> Text {
+  return "written"
+}
+
+export task default_database_write_text -> Text {
+  return "Lin"
+}
+
+export task default_agent_data_write_text -> Text {
+  return "profile: Kai"
+}
+
+export task default_database_read_text -> Text {
+  return "Ada"
+}
+
+export task default_shell_text -> Text {
+  return "2026-05-05"
+}
+
+export task default_secret_text -> Text {
+  return "redacted"
+}
+
+export task default_spend_authorization_text -> Text {
+  return "authorized"
+}
+
 export task passed_status -> Text {
   return "passed"
 }
