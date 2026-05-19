@@ -2,8 +2,8 @@
 
 Date: 2026-05-19
 Branch: public
-Latest code checkpoint: c45c14b
-Latest pause documentation checkpoint before this note: 62a39f1
+Latest code checkpoint: f026fd3
+Latest pause documentation checkpoint before this note: 3ec0ff2
 Current pause document status: committed on `public`; use `git log` for exact
 branch head
 Remote status: verify current `origin/public` head with
@@ -259,8 +259,12 @@ The current local checkpoint advances the public branch to:
   slice: `bootstrap`, `strict_self_hosted=false`,
   `semantic_source_count=6`, `bootstrap_owned_by_sley=260`; remaining blockers
   are still parser, checker, and runtime semantics from Sley source
+- self-hosting status after the runtime host-effect checker source slice:
+  `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=262`; remaining blockers are still parser, checker,
+  and runtime semantics from Sley source
 - latest verification refresh on 2026-05-19: `make v1` passed after the
-  remaining call-parser parser-prefix source slice
+  runtime host-effect checker source slice
 
 The tracked code checkpoint is:
 
@@ -323,6 +327,7 @@ The tracked code checkpoint is:
 - 1beed84 fix: source remaining call fallbacks from parser
 - 742d887 fix: source runtime probes from parser
 - c45c14b fix: source remaining call parsers from parser
+- f026fd3 fix: source runtime host effects from checker
 
 The tracked pause documentation checkpoints are:
 
@@ -379,6 +384,7 @@ The tracked pause documentation checkpoints are:
 - ff4ce3f docs: record call site rewrite parser slice
 - fc22378 docs: record call fallback parser slice
 - 62a39f1 docs: record runtime probe parser slice
+- 3ec0ff2 docs: record remaining call parser slice
 
 Recent self-hosting slices added:
 
@@ -562,6 +568,12 @@ Recent self-hosting slices added:
   call expression prefix instead of hardcoded `^call...` shell/AWK patterns,
   while preserving expression-statement AST rows, `examples/collections.sley`,
   `examples/file_gate.sley`, and `examples/raw_host_migration.sley`
+- Runtime host-effect dispatch now consumes the checker-owned
+  `host_effect_needles` table for runtime probes and runtime authority mapping,
+  with the table expanded to cover `db.query(`, `db.try_query(`, and
+  `fs.write_text(` alongside the existing fallible host adapters while
+  preserving agent pipeline, spend, file, database, and capability-gate
+  behavior
 
 ## Next Frontier
 
@@ -1423,10 +1435,30 @@ The latest continuation audit reconfirmed:
   `bin/sley-contract check-fixtures fixtures/contracts --schemas docs/schemas
   --json`, external public-action packet verifier, `git diff --check`, and
   final `make v1` all passed
+- focused runtime host-effect checker-source probes:
+  `bin/sley self-hosting-status --json` reported the two new runtime
+  host-effect ownership markers and `bootstrap_owned_by_sley=262`;
+  `bin/sley run --json` still preserved file reads, raw host migration,
+  network seed output, database read output, agent deploy pipeline seeded
+  output, agent data authority output, and spend-prefixed authorization; the
+  no-capability agent pipeline path still returned
+  `RUNTIME_CAPABILITY_REQUIRED`; a focused grep found no remaining runtime
+  dispatch calls that pass hardcoded host adapter needles to
+  `runtime_source_has_call`
+- Sley self-hosting status after the runtime host-effect checker source slice:
+  `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=262`; remaining blockers are still parser, checker,
+  and runtime semantics from Sley source
+- latest runtime host-effect checker-source verification:
+  `bash -n bin/sley`, `bash -n scripts/self-hosted-test.sh`, focused runtime
+  host-effect probes, `scripts/self-hosted-test.sh`, `bin/sley-contract
+  check-fixtures fixtures/contracts --schemas docs/schemas --json`, external
+  public-action packet verifier, `git diff --check`, and final `make v1` all
+  passed
 
 ## Dirty State Notes
 
-Tracked code was committed at c45c14b before this pause document was updated.
+Tracked code was committed at f026fd3 before this pause document was updated.
 Tracked pause documentation before this update was refreshed through 218d40c
 with parser lint surface evidence, through 26e7417 with the external comparison
 approval gate, fork audit, and helper evidence, and through aba1b03 with parser
@@ -1464,6 +1496,7 @@ fallback parser-prefix evidence, through c58fc6e with graph/plan call-argument
 parser-prefix evidence, and through ff4ce3f with call-site rewrite
 parser-prefix evidence, and through fc22378 with runtime/docgen/workbench call
 fallback parser-prefix evidence, and through 62a39f1 with runtime project probe
+parser-prefix evidence, and through 3ec0ff2 with remaining call-parser
 parser-prefix evidence.
 
 Pre-existing untracked files were not touched and should remain outside future
