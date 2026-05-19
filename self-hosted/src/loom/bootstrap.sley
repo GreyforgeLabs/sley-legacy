@@ -114,6 +114,7 @@ export task owned_bootstrap_values -> List<Text> {
     "lint_report_builder",
     "lint_report_builder_task_execution",
     "lint_finding_messages",
+    "lint_call_expression_prefix_task_execution",
     "runtime_status_task_execution",
     "run_report_shape",
     "run_report_builder",
