@@ -2,8 +2,8 @@
 
 Date: 2026-05-19
 Branch: public
-Latest code checkpoint: 9d63fe3
-Latest pause documentation checkpoint before this note: 9bc2a63
+Latest code checkpoint: b92f300
+Latest pause documentation checkpoint before this note: bda30f3
 Current pause document status: committed on `public`; use `git log` for exact
 branch head
 Remote status: `public` is ahead of `origin/public` with local self-hosting
@@ -170,9 +170,13 @@ The current local checkpoint advances the public branch to:
   `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
   `bootstrap_owned_by_sley=225`; remaining blockers are still parser, checker,
   and runtime semantics from Sley source
+- self-hosting status after the symbol graph call expression-prefix source slice:
+  `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=226`; remaining blockers are still parser, checker,
+  and runtime semantics from Sley source
 - latest V1 log from this pause checkpoint: `/tmp/sley-make-v1-ok-text.log`
 - latest verification refresh on 2026-05-19: `make v1` passed after the
-  query call expression-prefix source slice
+  symbol graph call expression-prefix source slice
 
 The tracked code checkpoint is:
 
@@ -213,6 +217,7 @@ The tracked code checkpoint is:
 - 5b3c368 fix: source checker identifier expression kind from parser
 - 08bfaf6 fix: source checker call prefix from parser
 - 9d63fe3 fix: source query call prefix from parser
+- b92f300 fix: source graph call prefix from parser
 
 The tracked pause documentation checkpoints are:
 
@@ -247,6 +252,7 @@ The tracked pause documentation checkpoints are:
 - 117ffad docs: record checker repair hint self-hosting slice
 - bcbd217 docs: record checker identifier kind self-hosting slice
 - 9bc2a63 docs: record checker call prefix self-hosting slice
+- bda30f3 docs: record query call prefix self-hosting slice
 
 Recent self-hosting slices added:
 
@@ -354,6 +360,9 @@ Recent self-hosting slices added:
   task before shell report wrapping
 - ownership evidence updated to include the new host-call and `Ok<Text>`
   runtime paths
+- symbol graph replace-affordance call detection now uses the parser-owned call
+  expression prefix while preserving the existing graph call-site and
+  call-argument affordances
 
 ## Next Frontier
 
@@ -849,10 +858,21 @@ The latest continuation audit reconfirmed:
   slice: `bootstrap`, `strict_self_hosted=false`,
   `semantic_source_count=6`, `bootstrap_owned_by_sley=225`; remaining blockers
   are still parser, checker, and runtime semantics from Sley source
+- focused symbol graph call expression-prefix probes:
+  `bin/sley graph --json --slice task:app.main.main examples/project` preserved
+  the replacement affordance target `block:task:app.main.main:stmt:0:expr` as
+  `target_kind == "Call"`, while preserving call-site and call-argument
+  affordances targeting `task:app.math.double`, after graph replace-affordance
+  call detection moved from literal `"call "` to the parser-owned call
+  expression prefix
+- Sley self-hosting status after the symbol graph call expression-prefix source
+  slice: `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=226`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
 
 ## Dirty State Notes
 
-Tracked code was committed at 9d63fe3 before this pause document was updated.
+Tracked code was committed at b92f300 before this pause document was updated.
 Tracked pause documentation before this update was refreshed through 218d40c
 with parser lint surface evidence, through 26e7417 with the external comparison
 approval gate, fork audit, and helper evidence, and through aba1b03 with parser
@@ -869,7 +889,8 @@ checker static type-name evidence, and through 1c5cca9 with checker
 host-effect table evidence, and through 5e4bec6 with checker gate binding-kind
 evidence, through 117ffad with checker repair hint-kind evidence, and through
 bcbd217 with checker identifier expression-kind evidence, and through 9bc2a63
-with checker call expression-prefix evidence.
+with checker call expression-prefix evidence, and through bda30f3 with query
+call expression-prefix evidence.
 
 Pre-existing untracked files were not touched and should remain outside future
 commits unless the operator explicitly asks to include them:
