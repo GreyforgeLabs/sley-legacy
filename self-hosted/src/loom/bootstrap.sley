@@ -131,6 +131,8 @@ export task owned_bootstrap_values -> List<Text> {
     "lint_call_expression_prefix_task_execution",
     "runtime_status_task_execution",
     "runtime_status_parser_prefix_task_execution",
+    "runtime_project_probe_parser_prefix_task_execution",
+    "runtime_project_binding_parser_prefix_task_execution",
     "runtime_project_probe_fallback_parser_prefix_task_execution",
     "runtime_project_binding_fallback_parser_prefix_task_execution",
     "run_report_shape",

@@ -609,6 +609,77 @@ eval_runtime_status_task() {
   fi
 }
 
+eval_runtime_text_probe_task() {
+  local task_name="$1"
+  local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
+  local body expr token out callee value alias callee_task module source_file call_prefix
+  body="$(extract_sley_task_body "$runtime_file" "$task_name")"
+  [[ -n "$body" ]] || return 1
+  expr="$(printf '%s\n' "$body" | awk '
+    /^[ \t]*return[ \t]+/ {
+      line=$0
+      sub(/^[ \t]*return[ \t]+/, "", line)
+      print line
+      exit
+    }
+  ')"
+  [[ -n "$expr" ]] || return 1
+  call_prefix="${PARSER_CALL_EXPRESSION_PREFIX:-call }"
+  out=""
+  while IFS= read -r token; do
+    [[ -n "$token" ]] || continue
+    if [[ "$token" == CALL:* ]]; then
+      callee="${token#CALL:}"
+      if [[ "$callee" == *.* ]]; then
+        alias="${callee%%.*}"
+        callee_task="${callee#*.}"
+        module="$(resolve_sley_import_alias "$runtime_file" "$alias")"
+        [[ -n "$module" ]] || return 1
+        source_file="$(module_source_file "$module")"
+      else
+        callee_task="$callee"
+        source_file="$runtime_file"
+      fi
+      value="$(extract_sley_string_task "$source_file" "$callee_task")"
+      [[ -n "$value" ]] || return 1
+      out+="$value"
+    elif [[ "$token" == \"* ]]; then
+      value="${token#\"}"
+      value="${value%\"}"
+      out+="$value"
+    else
+      return 1
+    fi
+  done < <(printf '%s\n' "$expr" | awk -v call_prefix="$call_prefix" '
+    function ltrim(s){sub(/^[ \t]+/, "", s); return s}
+    {
+      line=$0
+      while (length(line) > 0) {
+        line=ltrim(line)
+        if(line == "") break
+        if(index(line, call_prefix) == 1) {
+          tail=substr(line, length(call_prefix) + 1)
+          if(match(tail, /^[A-Za-z_][A-Za-z0-9_.]*\(\)/)) {
+            callee=substr(tail, RSTART, RLENGTH)
+            sub(/\(\)$/, "", callee)
+            print "CALL:" callee
+            line=substr(tail, RSTART + RLENGTH)
+            continue
+          }
+        }
+        if(match(line, /^"[^"]*"/)) {
+          print substr(line, RSTART, RLENGTH)
+          line=substr(line, RSTART + RLENGTH)
+          continue
+        }
+        line=substr(line, 2)
+      }
+    }
+  ')
+  [[ -n "$out" ]] || return 1
+  printf '%s\n' "$out"
+}
+
 eval_seeded_agent_deploy_value() {
   local profile="$1" model_plan="$2" deploy_result="$3"
   local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
@@ -4941,8 +5012,8 @@ RUNTIME_OK_TEXT_VALUE_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT
 RUNTIME_OK_INT_VALUE_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" ok_int_value_kind)"
 RUNTIME_SELF_HOSTED_TARGETS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" self_hosted_target_aliases)"
 RUNTIME_AGENT_DEPLOY_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" agent_deploy_target_suffix)"
-RUNTIME_PROJECT_READY_CALL_PROBE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" project_ready_call_probe)"
-RUNTIME_PROJECT_READY_BINDING_PROBE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" project_ready_binding_probe)"
+RUNTIME_PROJECT_READY_CALL_PROBE="$(eval_runtime_text_probe_task project_ready_call_probe || extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" project_ready_call_probe)"
+RUNTIME_PROJECT_READY_BINDING_PROBE="$(eval_runtime_text_probe_task project_ready_binding_probe || extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" project_ready_binding_probe)"
 RUNTIME_HELLO_VALUE="${RUNTIME_HELLO_VALUE:-hello sley}"
 RUNTIME_PROJECT_READY_VALUE="${RUNTIME_PROJECT_READY_VALUE:-42}"
 RUNTIME_DEFAULT_PROFILE="${RUNTIME_DEFAULT_PROFILE:-profile ready}"
