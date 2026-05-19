@@ -188,6 +188,9 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("runtime_status_parser_prefix_task_execution"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("runtime_project_probe_parser_prefix_task_execution")) and (.bootstrap_owned_by_sley | index("runtime_project_binding_parser_prefix_task_execution"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("runtime_project_probe_fallback_parser_prefix_task_execution")) and (.bootstrap_owned_by_sley | index("runtime_project_binding_fallback_parser_prefix_task_execution"))'
 
 bin/sley self-hosting-status --json \

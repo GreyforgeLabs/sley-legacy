@@ -1,5 +1,7 @@
 module loom.runtime
 
+import loom.parser as parser
+
 export type RuntimeValue = {
   slot kind: Text
   slot value: Text
@@ -87,11 +89,11 @@ export task agent_deploy_target_suffix -> Text {
 }
 
 export task project_ready_call_probe -> Text {
-  return "call math.double(21)"
+  return call parser.call_expression_prefix() + "math.double(21)"
 }
 
 export task project_ready_binding_probe -> Text {
-  return "call double(base)"
+  return call parser.call_expression_prefix() + "double(base)"
 }
 
 export task list_len_value -> Int {
