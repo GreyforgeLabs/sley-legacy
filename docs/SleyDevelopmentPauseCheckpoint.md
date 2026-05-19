@@ -2,7 +2,7 @@
 
 Date: 2026-05-18
 Branch: public
-Latest code checkpoint: c78c777
+Latest code checkpoint: b741574
 Latest packet-sync documentation checkpoint before this note: 26e7417
 Current pause document status: committed on `public`; use `git log` for exact
 branch head
@@ -98,6 +98,10 @@ The current local checkpoint advances the public branch to:
   `bootstrap`, `strict_self_hosted=false`,
   `semantic_source_count=6`, `bootstrap_owned_by_sley=202`; remaining blockers
   are still parser, checker, and runtime semantics from Sley source
+- self-hosting status after the parser migration surface ID slice:
+  `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=203`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
 - latest V1 log from this pause checkpoint: `/tmp/sley-make-v1-ok-text.log`
 - latest verification refresh on 2026-05-18: `make v1` passed again after the
   public-action packet was finalized and after the WebForge / sleylang.org
@@ -124,6 +128,7 @@ The tracked code checkpoint is:
 - 91aa718 fix: source statement surfaces from parser
 - fb80869 fix: source branch statement surfaces from parser
 - c78c777 fix: source lint statement surfaces from parser
+- b741574 fix: source migration surfaces from parser
 
 The tracked pause documentation checkpoints are:
 
@@ -140,6 +145,7 @@ The tracked pause documentation checkpoints are:
 - 472562b docs: record call argument surface self-hosting slice
 - 3fb10c7 docs: record statement surface self-hosting slice
 - b11171a docs: record branch statement surface self-hosting slice
+- 218d40c docs: record lint surface self-hosting slice
 
 Recent self-hosting slices added:
 
@@ -203,6 +209,9 @@ Recent self-hosting slices added:
 - raw-source lint statement and expression nodes now use Sley-owned parser
   templates while preserving the existing external `block:...:stmt:<index>`
   and `block:...:expr` surface shapes
+- migration report surfaces now use Sley-owned parser templates while preserving
+  existing external surfaces for raw host adapter replacement, imported-call
+  qualification, and unchecked Result propagation
 - diagnostics and run report root layouts moved into Sley-owned report-builder
   declarations, with the shell bootstrap supplying computed values to those
   builders
@@ -453,13 +462,26 @@ The latest continuation audit reconfirmed:
   slice: `bootstrap`, `strict_self_hosted=false`,
   `semantic_source_count=6`, `bootstrap_owned_by_sley=202`; remaining blockers
   are parser, checker, and runtime semantics from Sley source
+- focused migration surface probes:
+  `bin/sley sley-migrate report --json examples/raw_host_migration.sley`
+  preserved `block:task:main.main:stmt:0:expr`;
+  `bin/sley sley-migrate report --json examples/unqualified_import_call_project`
+  preserved `block:task:app.main.main:stmt:0:expr`;
+  `bin/sley sley-migrate report --json examples/unchecked_result_binding.sley`
+  preserved `block:task:app.unchecked_binding.main:stmt:0`; and
+  `bin/sley sley-migrate report --json examples/unchecked_result.sley`
+  preserved `block:task:app.unchecked.main:stmt:0:expr`
+- Sley self-hosting status after the parser migration surface ID proof slice:
+  `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=203`; remaining blockers
+  are parser, checker, and runtime semantics from Sley source
 
 ## Dirty State Notes
 
-Tracked code was committed at c78c777 before this pause document was updated.
-Tracked pause documentation before this update was refreshed through b11171a
-with parser surface evidence, and through 26e7417 with the external comparison
-approval gate, fork audit, and helper evidence.
+Tracked code was committed at b741574 before this pause document was updated.
+Tracked pause documentation before this update was refreshed through 218d40c
+with parser lint surface evidence, and through 26e7417 with the external
+comparison approval gate, fork audit, and helper evidence.
 
 Pre-existing untracked docs were not touched and should remain outside future
 commits unless the operator explicitly asks to include them:
