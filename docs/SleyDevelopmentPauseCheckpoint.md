@@ -239,8 +239,12 @@ The current local checkpoint advances the public branch to:
   slice: `bootstrap`, `strict_self_hosted=false`,
   `semantic_source_count=6`, `bootstrap_owned_by_sley=247`; remaining blockers
   are still parser, checker, and runtime semantics from Sley source
+- self-hosting status after the graph/plan call-argument parser-prefix source
+  slice: `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=249`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
 - latest verification refresh on 2026-05-19: `make v1` passed after the
-  qualify-call fallback parser-prefix source slice
+  graph/plan call-argument parser-prefix source slice
 
 The tracked code checkpoint is:
 
@@ -298,6 +302,7 @@ The tracked code checkpoint is:
 - 7e9a047 fix: source project runtime call from parser
 - 4b297fc fix: source message template calls from parser
 - 18600a3 fix: source qualify call fallbacks from parser
+- e650abc fix: source plan call args from parser
 
 The tracked pause documentation checkpoints are:
 
@@ -510,6 +515,10 @@ Recent self-hosting slices added:
 - migration, plan, and fix fallbacks for imported-call qualification now build
   the default replacement from the parser-owned call expression prefix while
   preserving the visible `call math.double(21)` replacement
+- graph call-argument affordances plus plan `replace_call_arg` templates and
+  emitted graft operations now strip the parser-owned call expression prefix
+  instead of hardcoded `^call...` handling while preserving `21` argument
+  extraction for `examples/project`
 
 ## Next Frontier
 
@@ -1283,6 +1292,23 @@ The latest continuation audit reconfirmed:
 - latest qualify-call fallback parser-prefix verification:
   `bash -n bin/sley`, `bash -n scripts/self-hosted-test.sh`, focused
   qualify-call fallback probes, `scripts/self-hosted-test.sh`,
+  `bin/sley-contract check-fixtures fixtures/contracts --schemas docs/schemas
+  --json`, external public-action packet verifier, `git diff --check`, and
+  final `make v1` all passed
+- focused graph/plan call-argument parser-prefix probes:
+  `bin/sley graph --json --slice task:app.main.main examples/project`,
+  `bin/sley plan --json --graft-templates examples/project`, and
+  `bin/sley plan --json --emit-graft replace_call_arg examples/project` all
+  still extracted source `21` after call-argument parsing moved to the
+  parser-owned call expression prefix; `bin/sley fix --json --kind
+  replace_call_arg --dry-run examples/project` still accepted the target
+- Sley self-hosting status after the graph/plan call-argument parser-prefix
+  source slice: `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=249`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
+- latest graph/plan call-argument parser-prefix verification:
+  `bash -n bin/sley`, `bash -n scripts/self-hosted-test.sh`, focused
+  graph/plan call-argument probes, `scripts/self-hosted-test.sh`,
   `bin/sley-contract check-fixtures fixtures/contracts --schemas docs/schemas
   --json`, external public-action packet verifier, `git diff --check`, and
   final `make v1` all passed
