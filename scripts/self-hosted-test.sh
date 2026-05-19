@@ -82,6 +82,9 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_migrate_surface_id_task_execution"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("parser_fix_migration_surface_id_task_execution"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_expression_id_task_execution")) and (.bootstrap_owned_by_sley | index("parser_control_expression_id_task_execution"))'
 
 bin/sley self-hosting-status --json \
@@ -863,6 +866,18 @@ bin/sley-migrate report --json examples/unchecked_result_binding.sley \
 
 bin/sley-migrate report --json examples/unchecked_result.sley \
   | json_field '([.migrations[]? | select(.kind == "propagate_unchecked_result") | .surface] | index("block:task:app.unchecked.main:stmt:0:expr"))'
+
+bin/sley fix --json --kind migrate_raw_host_adapter --dry-run examples/hello.sley \
+  | json_field '([.provenance[]?.targets[]?] | index("block:task:app.raw_migration.main:stmt:0:expr"))'
+
+bin/sley fix --json --kind qualify_imported_call --dry-run examples/hello.sley \
+  | json_field '([.provenance[]?.targets[]?] | index("block:task:app.main.main:stmt:0:expr"))'
+
+bin/sley fix --json --kind propagate_unchecked_result_binding --dry-run examples/hello.sley \
+  | json_field '([.provenance[]?.targets[]?] | index("block:task:app.unchecked_binding.main:stmt:0"))'
+
+bin/sley fix --json --kind propagate_unchecked_result --dry-run examples/hello.sley \
+  | json_field '([.provenance[]?.targets[]?] | index("block:task:app.unchecked.main:stmt:0:expr"))'
 
 bin/sley-contract validate --schema sley.migrate.report.v0 "$migrate_report" --schemas docs/schemas --json \
   | json_field '.schema == "sley.contract.validate.v0" and .status == "passed" and .requested_schema == "sley.migrate.report.v0" and .report_schema == "sley.migrate.report.v0"'
