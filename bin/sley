@@ -13117,34 +13117,39 @@ command_graft_raw() {
   fi
   if [[ "$kind" == "migrate_raw_host_adapter" || "$kind" == "propagate_unchecked_result" || "$kind" == "propagate_unchecked_result_binding" || "$kind" == "qualify_imported_call" ]]; then
     local lint finding replacement operation target_surface report
+    local raw_host_adapter_fallback imported_call_fallback unchecked_binding_fallback unchecked_result_fallback
+    raw_host_adapter_fallback="$(parser_task_expression_surface_value app.raw_migration main 0)"
+    imported_call_fallback="$(parser_task_expression_surface_value app.main main 0)"
+    unchecked_binding_fallback="$(parser_task_statement_surface_value app.unchecked_binding main 0)"
+    unchecked_result_fallback="$(parser_task_expression_surface_value app.unchecked main 0)"
     lint="$(lint_json "$source")"
     case "$kind" in
       migrate_raw_host_adapter)
         finding="$(printf '%s\n' "$lint" | jq -c '.findings[]? | select(.rule == "raw_host_adapter")' | head -n 1)"
         [[ -n "$finding" ]] || finding='{}'
         operation="ReplaceExpression"
-        target_surface="$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.raw_migration.main:stmt:0:expr"')"
+        target_surface="$(printf '%s\n' "$finding" | jq -r --arg fallback "$raw_host_adapter_fallback" '.node // $fallback')"
         replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "fs.try_read_text(\"examples/hello.sley\")?"')"
         ;;
       propagate_unchecked_result)
         finding="$(printf '%s\n' "$lint" | jq -c '.findings[]? | select(.rule == "unchecked_result")' | head -n 1)"
         [[ -n "$finding" ]] || finding='{}'
         operation="ReplaceExpression"
-        target_surface="$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.unchecked.main:stmt:0:expr"')"
+        target_surface="$(printf '%s\n' "$finding" | jq -r --arg fallback "$unchecked_result_fallback" '.node // $fallback')"
         replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "fs.try_write_text(\"sley_cli_smoke.txt\", \"written\")?"')"
         ;;
       propagate_unchecked_result_binding)
         finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "unchecked_result_binding" and (.node == $surface or $surface == ""))' | head -n 1)"
         [[ -n "$finding" ]] || finding='{}'
         operation="ReplaceStatement"
-        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.unchecked_binding.main:stmt:0"')}"
+        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r --arg fallback "$unchecked_binding_fallback" '.node // $fallback')}"
         replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "fs.try_read_text(\"examples/hello.sley\")?"')"
         ;;
       qualify_imported_call)
         finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "unqualified_imported_call" and (.node == $surface or $surface == ""))' | head -n 1)"
         [[ -n "$finding" ]] || finding='{}'
         operation="ReplaceExpression"
-        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.main.main:stmt:0:expr"')}"
+        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r --arg fallback "$imported_call_fallback" '.node // $fallback')}"
         replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "call math.double(21)"')"
         ;;
     esac
