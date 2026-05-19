@@ -1288,6 +1288,36 @@ runtime_source_has_call() {
   return 1
 }
 
+checker_host_effect_needles_for() {
+  local effect="$1"
+  printf '%s\n' "$CHECKER_HOST_EFFECT_NEEDLES_JSON" | jq -r --arg effect "$effect" '
+    .[]? |
+    split("|") as $parts |
+    select(($parts | length) >= 2 and $parts[0] == $effect) |
+    $parts[1]
+  '
+}
+
+runtime_source_has_host_effect() {
+  local target="$1" effect="$2" needle
+  while IFS= read -r needle; do
+    [[ -n "$needle" ]] || continue
+    if runtime_source_has_call "$target" "$needle"; then
+      return 0
+    fi
+  done < <(checker_host_effect_needles_for "$effect")
+  return 1
+}
+
+runtime_source_has_host_effects() {
+  local target="$1" effect
+  shift
+  for effect in "$@"; do
+    runtime_source_has_host_effect "$target" "$effect" || return 1
+  done
+  return 0
+}
+
 parser_default_qualified_import_call_source() {
   printf '%smath.double(21)\n' "${PARSER_CALL_EXPRESSION_PREFIX:-call }"
 }
@@ -1313,18 +1343,15 @@ source_has_unqualified_double_call_return() {
 }
 
 runtime_deploy_stage_probe_matches() {
-  runtime_source_has_call "$1" "deploy.try_stage("
+  runtime_source_has_host_effect "$1" "Deploy"
 }
 
 runtime_agent_pipeline_probe_matches() {
-  runtime_source_has_call "$1" "secrets.try_get(" &&
-    runtime_source_has_call "$1" "http.try_get_text(" &&
-    runtime_source_has_call "$1" "model.try_complete(" &&
-    runtime_source_has_call "$1" "deploy.try_stage("
+  runtime_source_has_host_effects "$1" "SecretRead" "Network" "ModelCall" "Deploy"
 }
 
 runtime_spend_authorize_probe_matches() {
-  runtime_source_has_call "$1" "spend.try_authorize("
+  runtime_source_has_host_effect "$1" "Spend"
 }
 
 runtime_spend_prefix_probe_matches() {
@@ -4943,7 +4970,7 @@ if [[ "$CHECKER_EFFECT_ALIASES_JSON" == "[]" ]]; then
   CHECKER_EFFECT_ALIASES_JSON='["DatabaseRead|DbRead","DatabaseWrite|DbWrite"]'
 fi
 if [[ "$CHECKER_HOST_EFFECT_NEEDLES_JSON" == "[]" ]]; then
-  CHECKER_HOST_EFFECT_NEEDLES_JSON='["DatabaseRead|db.query_one(","DatabaseRead|db.try_query_one(","DatabaseWrite|db.try_insert(","Deploy|deploy.try_stage(","FileRead|fs.read_text(","FileRead|fs.try_read_text(","FileWrite|fs.try_write_text(","ModelCall|model.try_complete(","Network|http.try_get_text(","SecretRead|secrets.try_get(","Shell|shell.try_run(","Spend|spend.try_authorize("]'
+  CHECKER_HOST_EFFECT_NEEDLES_JSON='["DatabaseRead|db.query(","DatabaseRead|db.query_one(","DatabaseRead|db.try_query(","DatabaseRead|db.try_query_one(","DatabaseWrite|db.try_insert(","Deploy|deploy.try_stage(","FileRead|fs.read_text(","FileRead|fs.try_read_text(","FileWrite|fs.write_text(","FileWrite|fs.try_write_text(","ModelCall|model.try_complete(","Network|http.try_get_text(","SecretRead|secrets.try_get(","Shell|shell.try_run(","Spend|spend.try_authorize("]'
 fi
 CHECKER_DECLARE_OR_IMPORT_TASK_HINT_KIND="${CHECKER_DECLARE_OR_IMPORT_TASK_HINT_KIND:-declare_or_import_task}"
 CHECKER_INSPECT_RETURN_TYPE_HINT_KIND="${CHECKER_INSPECT_RETURN_TYPE_HINT_KIND:-inspect_return_type}"
@@ -7995,7 +8022,7 @@ runtime_authority_json() {
   local -a runtime_files=()
   mapfile -t runtime_files < <(runtime_context_files "$target")
   files_json="$(printf '%s\n' "${runtime_files[@]}" | jq -R . | jq -s .)"
-  SLEY_RUNTIME_FILES="$files_json" python3 - "$ROOT_DIR" "$target" "$SCHEMA_DIAGNOSTICS" "$@" <<'PY'
+  SLEY_RUNTIME_FILES="$files_json" SLEY_HOST_EFFECT_NEEDLES="$CHECKER_HOST_EFFECT_NEEDLES_JSON" python3 - "$ROOT_DIR" "$target" "$SCHEMA_DIAGNOSTICS" "$@" <<'PY'
 import json
 import os
 import re
@@ -8008,25 +8035,23 @@ diag_schema = sys.argv[3]
 argv = sys.argv[4:]
 files = [Path(path) for path in json.loads(os.environ.get("SLEY_RUNTIME_FILES", "[]"))]
 
-ALIASES = {"DbRead": "DatabaseRead", "DbWrite": "DatabaseWrite"}
 TEXT_DELIMITERS = set("/:.-_ \t")
-HOST_EFFECTS = {
-    "db.query": "DatabaseRead",
-    "db.query_one": "DatabaseRead",
-    "db.try_query": "DatabaseRead",
-    "db.try_query_one": "DatabaseRead",
-    "db.try_insert": "DatabaseWrite",
-    "deploy.try_stage": "Deploy",
-    "fs.read_text": "FileRead",
-    "fs.try_read_text": "FileRead",
-    "fs.write_text": "FileWrite",
-    "fs.try_write_text": "FileWrite",
-    "http.try_get_text": "Network",
-    "model.try_complete": "ModelCall",
-    "secrets.try_get": "SecretRead",
-    "shell.try_run": "Shell",
-    "spend.try_authorize": "Spend",
-}
+ALIASES = {"DbRead": "DatabaseRead", "DbWrite": "DatabaseWrite"}
+
+
+def host_effects_from_needles():
+    effects = {}
+    for entry in json.loads(os.environ.get("SLEY_HOST_EFFECT_NEEDLES", "[]")):
+        if not isinstance(entry, str) or "|" not in entry:
+            continue
+        effect, needle = entry.split("|", 1)
+        callee = needle[:-1] if needle.endswith("(") else needle
+        if effect and callee:
+            effects[callee] = effect
+    return effects
+
+
+HOST_EFFECTS = host_effects_from_needles()
 
 
 def diagnostic(diag_id, message, node):
@@ -8587,34 +8612,34 @@ run_json() {
     deploy_result_text="${deploy_text:-$RUNTIME_DEFAULT_DEPLOY_RESULT}"
     value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
     value="$(eval_seeded_agent_deploy_value "$profile_text" "$model_plan_text" "$deploy_result_text" || printf '%s | %s | %s\n' "$profile_text" "$model_plan_text" "$deploy_result_text")"
-  elif runtime_source_has_call "$target" "fs.try_read_text("; then
+  elif runtime_source_has_host_effect "$target" "FileRead"; then
     value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
     value="$(extract_sley_string_task "$ROOT_DIR/examples/hello.sley" main)"
     value="${value:-hello sley}"
     value="$(eval_runtime_text_identity_value_task "$value" || printf '%s\n' "$value")"
-  elif runtime_source_has_call "$target" "fs.try_write_text("; then
+  elif runtime_source_has_host_effect "$target" "FileWrite"; then
     value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
     value="$(eval_runtime_text_identity_value_task "written" || printf '%s\n' "written")"
-  elif runtime_source_has_call "$target" "db.try_insert("; then
+  elif runtime_source_has_host_effect "$target" "DatabaseWrite"; then
     value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
     if [[ "$target" == *"agent_data_authority.sley" ]]; then
       value="$(eval_runtime_text_identity_value_task "profile: Kai" || printf '%s\n' "profile: Kai")"
     else
       value="$(eval_runtime_text_identity_value_task "Lin" || printf '%s\n' "Lin")"
     fi
-  elif runtime_source_has_call "$target" "db.query_one(" || runtime_source_has_call "$target" "db.try_query_one("; then
+  elif runtime_source_has_host_effect "$target" "DatabaseRead"; then
     value_kind="$RUNTIME_TEXT_VALUE_KIND"
     value="$(eval_runtime_text_identity_value_task "Ada" || printf '%s\n' "Ada")"
-  elif runtime_source_has_call "$target" "http.try_get_text("; then
+  elif runtime_source_has_host_effect "$target" "Network"; then
     value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
     value="$(eval_runtime_text_identity_value_task "${http_text:-$RUNTIME_DEFAULT_PROFILE}" || printf '%s\n' "${http_text:-$RUNTIME_DEFAULT_PROFILE}")"
-  elif runtime_source_has_call "$target" "shell.try_run("; then
+  elif runtime_source_has_host_effect "$target" "Shell"; then
     value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
     value="$(eval_runtime_text_identity_value_task "${shell_text:-2026-05-05}" || printf '%s\n' "${shell_text:-2026-05-05}")"
-  elif runtime_source_has_call "$target" "model.try_complete("; then
+  elif runtime_source_has_host_effect "$target" "ModelCall"; then
     value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
     value="$(eval_runtime_text_identity_value_task "${model_text:-$RUNTIME_DEFAULT_MODEL_PLAN}" || printf '%s\n' "${model_text:-$RUNTIME_DEFAULT_MODEL_PLAN}")"
-  elif runtime_source_has_call "$target" "secrets.try_get("; then
+  elif runtime_source_has_host_effect "$target" "SecretRead"; then
     value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
     value="$(eval_runtime_text_identity_value_task "${secret_text:-redacted}" || printf '%s\n' "${secret_text:-redacted}")"
   elif runtime_deploy_stage_probe_matches "$target"; then
