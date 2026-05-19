@@ -2,7 +2,7 @@
 
 Date: 2026-05-18
 Branch: public
-Latest code checkpoint: a552b8a
+Latest code checkpoint: 97162a6
 Latest packet-sync documentation checkpoint before this note: 26e7417
 Current pause document status: committed on `public`; use `git log` for exact
 branch head
@@ -110,6 +110,10 @@ The current local checkpoint advances the public branch to:
   `bootstrap`, `strict_self_hosted=false`,
   `semantic_source_count=6`, `bootstrap_owned_by_sley=205`; remaining blockers
   are still parser, checker, and runtime semantics from Sley source
+- self-hosting status after the parser fix-empty fallback surface ID slice:
+  `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=206`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
 - latest V1 log from this pause checkpoint: `/tmp/sley-make-v1-ok-text.log`
 - latest verification refresh on 2026-05-18: `make v1` passed again after the
   public-action packet was finalized and after the WebForge / sleylang.org
@@ -139,6 +143,7 @@ The tracked code checkpoint is:
 - b741574 fix: source migration surfaces from parser
 - ebd9874 fix: source fix migration fallbacks from parser
 - a552b8a fix: source fix style fallbacks from parser
+- 97162a6 fix: source empty fix fallbacks from parser
 
 The tracked pause documentation checkpoints are:
 
@@ -158,6 +163,7 @@ The tracked pause documentation checkpoints are:
 - 218d40c docs: record lint surface self-hosting slice
 - 41d5460 docs: record migration surface self-hosting slice
 - aba1b03 docs: record fix migration fallback self-hosting slice
+- d20433f docs: record fix style fallback self-hosting slice
 
 Recent self-hosting slices added:
 
@@ -229,6 +235,9 @@ Recent self-hosting slices added:
   present
 - fix style fallback surfaces now use Sley-owned parser templates while
   preserving the existing dry-run target surfaces when no lint finding is
+  present
+- empty-statement fix fallback surfaces now use Sley-owned parser templates
+  while preserving the existing dry-run target surfaces when no lint finding is
   present
 - diagnostics and run report root layouts moved into Sley-owned report-builder
   declarations, with the shell bootstrap supplying computed values to those
@@ -529,14 +538,30 @@ The latest continuation audit reconfirmed:
   slice: `bootstrap`, `strict_self_hosted=false`,
   `semantic_source_count=6`, `bootstrap_owned_by_sley=205`; remaining blockers
   are parser, checker, and runtime semantics from Sley source
+- focused empty-statement fix fallback probes against `examples/hello.sley`:
+  `bin/sley fix --json --kind delete_empty_for_statement --dry-run
+  examples/hello.sley` preserved `block:task:app.empty_for.main:stmt:1`;
+  `bin/sley fix --json --kind delete_empty_forge_statement --dry-run
+  examples/hello.sley` preserved `block:task:app.empty_forge.main:stmt:1`;
+  `bin/sley fix --json --kind delete_empty_if_statement --dry-run
+  examples/hello.sley` preserved `block:task:app.empty_if.main:stmt:1`;
+  `bin/sley fix --json --kind delete_empty_while_statement --dry-run
+  examples/hello.sley` preserved `block:task:app.empty_while.main:stmt:2`;
+  and `bin/sley fix --json --kind remove_empty_else_statement --dry-run
+  examples/hello.sley` preserved `block:task:app.empty_else.main:stmt:1`
+- Sley self-hosting status after the parser fix-empty fallback surface ID proof
+  slice: `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=206`; remaining blockers
+  are parser, checker, and runtime semantics from Sley source
 
 ## Dirty State Notes
 
-Tracked code was committed at a552b8a before this pause document was updated.
+Tracked code was committed at 97162a6 before this pause document was updated.
 Tracked pause documentation before this update was refreshed through 218d40c
 with parser lint surface evidence, through 26e7417 with the external comparison
 approval gate, fork audit, and helper evidence, and through aba1b03 with parser
-fix-migration fallback evidence.
+fix-migration fallback evidence, and through d20433f with parser fix-style
+fallback evidence.
 
 Pre-existing untracked docs were not touched and should remain outside future
 commits unless the operator explicitly asks to include them:
