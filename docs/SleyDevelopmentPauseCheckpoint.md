@@ -243,8 +243,12 @@ The current local checkpoint advances the public branch to:
   slice: `bootstrap`, `strict_self_hosted=false`,
   `semantic_source_count=6`, `bootstrap_owned_by_sley=249`; remaining blockers
   are still parser, checker, and runtime semantics from Sley source
+- self-hosting status after the call-site rewrite parser-prefix source slice:
+  `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=251`; remaining blockers are still parser, checker,
+  and runtime semantics from Sley source
 - latest verification refresh on 2026-05-19: `make v1` passed after the
-  graph/plan call-argument parser-prefix source slice
+  call-site rewrite parser-prefix source slice
 
 The tracked code checkpoint is:
 
@@ -303,6 +307,7 @@ The tracked code checkpoint is:
 - 4b297fc fix: source message template calls from parser
 - 18600a3 fix: source qualify call fallbacks from parser
 - e650abc fix: source plan call args from parser
+- 50f9c59 fix: source call site rewrites from parser
 
 The tracked pause documentation checkpoints are:
 
@@ -519,6 +524,10 @@ Recent self-hosting slices added:
   emitted graft operations now strip the parser-owned call expression prefix
   instead of hardcoded `^call...` handling while preserving `21` argument
   extraction for `examples/project`
+- write-mode call-site rename and remove-call-argument rewrites now use the
+  parser-owned call expression prefix instead of hardcoded `call ` needles
+  while preserving checked project rewrites for `math.twice` and
+  `math.adjust(41)`
 
 ## Next Frontier
 
@@ -1312,6 +1321,21 @@ The latest continuation audit reconfirmed:
   `bin/sley-contract check-fixtures fixtures/contracts --schemas docs/schemas
   --json`, external public-action packet verifier, `git diff --check`, and
   final `make v1` all passed
+- focused call-site rewrite parser-prefix probes:
+  a temp copy of `examples/project` accepted write-mode
+  `rename_and_update_call_sites` for `task:app.math.double` and query reported
+  `math.twice`; a temp remove-take project accepted write-mode
+  `remove_take_and_remove_call_arg` and query reported
+  `call math.adjust(41)`
+- Sley self-hosting status after the call-site rewrite parser-prefix source
+  slice: `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=251`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
+- latest call-site rewrite parser-prefix verification:
+  `bash -n bin/sley`, `bash -n scripts/self-hosted-test.sh`, focused write
+  probes, `scripts/self-hosted-test.sh`, `bin/sley-contract check-fixtures
+  fixtures/contracts --schemas docs/schemas --json`, external public-action
+  packet verifier, `git diff --check`, and final `make v1` all passed
 
 ## Dirty State Notes
 
