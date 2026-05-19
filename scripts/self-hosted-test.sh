@@ -505,6 +505,9 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("project_call_runtime_execution"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("project_call_parser_prefix_runtime_execution"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("unqualified_project_call_runtime_execution"))'
 
 bin/sley run --json examples/unqualified_import_call_project \
