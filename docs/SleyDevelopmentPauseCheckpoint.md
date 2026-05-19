@@ -2,8 +2,8 @@
 
 Date: 2026-05-19
 Branch: public
-Latest code checkpoint: 7464268
-Latest pause documentation checkpoint before this note: 2e42da6
+Latest code checkpoint: 83a2757
+Latest pause documentation checkpoint before this note: f6ab6dd
 Current pause document status: committed on `public`; use `git log` for exact
 branch head
 Remote status: verify current `origin/public` head with
@@ -339,8 +339,12 @@ The current local checkpoint advances the public branch to:
   `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
   `bootstrap_owned_by_sley=281`; remaining blockers are still parser, checker,
   and runtime semantics from Sley source
+- self-hosting status after the checker effect-alias fallback-removal slice:
+  `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=282`; remaining blockers are still parser, checker,
+  and runtime semantics from Sley source
 - latest verification refresh on 2026-05-19: `make v1` passed after the
-  checker built-in effect fallback-removal slice
+  checker effect-alias fallback-removal slice
 
 The tracked code checkpoint is:
 
@@ -423,6 +427,7 @@ The tracked code checkpoint is:
 - 8ee342a fix: require sley checker status
 - f712d0b fix: require sley checker identifier inputs
 - 7464268 fix: require sley checker builtin effects
+- 83a2757 fix: require sley checker effect aliases
 
 The tracked pause documentation checkpoints are:
 
@@ -499,6 +504,7 @@ The tracked pause documentation checkpoints are:
 - ce7b4a3 docs: record checker repair hint slice
 - 86292f3 docs: record checker status slice
 - 2e42da6 docs: record checker identifier input slice
+- f6ab6dd docs: record checker builtin effect slice
 
 Recent self-hosting slices added:
 
@@ -751,6 +757,9 @@ Recent self-hosting slices added:
 - Checker built-in effects now come from `loom.checker` without shell fallback
   JSON, while preserving unknown-effect rejection and accepted Shell/Spend
   authority fixtures
+- Checker effect aliases now come from `loom.checker` without shell fallback
+  JSON, while preserving DbRead/DbWrite alias acceptance and DatabaseWrite
+  authorization rejection when only DbRead is declared
 
 ## Next Frontier
 
@@ -1977,10 +1986,28 @@ The latest continuation audit reconfirmed:
   `bin/sley-contract check-fixtures fixtures/contracts --schemas docs/schemas
   --json`, external public-action packet verifier, `git diff --check`, and
   final `make v1` all passed
+- focused checker effect-alias fallback-removal probes:
+  `bin/sley self-hosting-status --json` reported
+  `checker_effect_alias_fallback_removal_task_execution` and
+  `bootstrap_owned_by_sley=282`;
+  `fixtures/corpus/accepted/authority/database_aliases.sley` checked cleanly;
+  `fixtures/corpus/rejected/authority/missing_database_alias_write_effect.sley`
+  preserved `EFFECT_UNAUTHORIZED` for `DatabaseWrite`; focused grep found no
+  checker effect-alias fallback JSON or empty-list fallback branch
+- Sley self-hosting status after the checker effect-alias fallback-removal
+  slice: `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=282`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
+- latest checker effect-alias fallback-removal verification:
+  `bash -n bin/sley`, `bash -n scripts/self-hosted-test.sh`, focused checker
+  effect-alias probes, `scripts/self-hosted-test.sh`,
+  `bin/sley-contract check-fixtures fixtures/contracts --schemas docs/schemas
+  --json`, external public-action packet verifier, `git diff --check`, and
+  final `make v1` all passed
 
 ## Dirty State Notes
 
-Tracked code was committed at 7464268 before this pause document was updated.
+Tracked code was committed at 83a2757 before this pause document was updated.
 Tracked pause documentation before this update was refreshed through 218d40c
 with parser lint surface evidence, through 26e7417 with the external comparison
 approval gate, fork audit, and helper evidence, and through aba1b03 with parser
@@ -2036,6 +2063,7 @@ empty-finding fallback-removal evidence, and through a9ea43f with checker
 built-in type fallback-removal evidence, and through ce7b4a3 with checker
 repair-hint fallback-removal evidence, and through 86292f3 with checker status
 fallback-removal evidence, and through 2e42da6 with checker identifier-input
+fallback-removal evidence, and through f6ab6dd with checker built-in effect
 fallback-removal evidence.
 
 Pre-existing untracked files were not touched and should remain outside future
