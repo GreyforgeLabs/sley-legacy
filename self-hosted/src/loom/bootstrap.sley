@@ -110,6 +110,7 @@ export task owned_bootstrap_values -> List<Text> {
     "runtime_authority_host_effect_needles_execution",
     "runtime_authority_effect_aliases_task_execution",
     "runtime_diagnostic_messages_task_execution",
+    "runtime_diagnostic_fallback_removal_task_execution",
     "runtime_default_database_table_task_execution",
     "runtime_value_kinds_task_execution",
     "runtime_self_hosted_target_aliases_task_execution",
