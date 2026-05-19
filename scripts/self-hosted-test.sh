@@ -59,6 +59,22 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("runtime_diagnostic_messages_task_execution"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("runtime_diagnostic_fallback_removal_task_execution"))'
+
+if bin/sley run --json --cap DbRead=orders --db-table users=examples/users.json examples/db_gate.sley > "$runtime_report"; then
+  fail "database read with a denied runtime scope should fail"
+fi
+jq -er '.status == "error" and .diagnostics[0].id == "RUNTIME_CAPABILITY_SCOPE_DENIED" and .diagnostics[0].message == "DatabaseRead/DbRead scope does not allow `users`"' "$runtime_report" >/dev/null
+
+if grep -Eq 'RUNTIME_(CAPABILITY_REQUIRED_ID|CAPABILITY_SCOPE_DENIED_ID|TAKE_REQUIRED_ID|CAPABILITY_REQUIRED_MESSAGE_PREFIX|CAPABILITY_SCOPE_DENIED_MESSAGE_MIDDLE|CAPABILITY_SCOPE_DENIED_MESSAGE_SUFFIX|TAKE_REQUIRED_MESSAGE_PREFIX|TAKE_REQUIRED_MESSAGE_SUFFIX)="\$\{RUNTIME_' bin/sley; then
+  fail "runtime diagnostic messages must come from loom.runtime without shell fallback literals"
+fi
+
+if grep -Eq 'os\.environ\.get\("SLEY_RUNTIME_(DEFAULT_DATABASE_TABLE|CAPABILITY_REQUIRED_ID|CAPABILITY_SCOPE_DENIED_ID|CAPABILITY_REQUIRED_MESSAGE_PREFIX|CAPABILITY_SCOPE_DENIED_MESSAGE_MIDDLE|CAPABILITY_SCOPE_DENIED_MESSAGE_SUFFIX|TAKE_REQUIRED_ID|TAKE_REQUIRED_MESSAGE_PREFIX|TAKE_REQUIRED_MESSAGE_SUFFIX)",' bin/sley; then
+  fail "runtime diagnostic values must not fall back to Python host literals"
+fi
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("runtime_default_database_table_task_execution"))'
 
 bin/sley self-hosting-status --json \

@@ -5067,14 +5067,6 @@ RUNTIME_SELF_HOSTED_TARGETS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SO
 RUNTIME_AGENT_DEPLOY_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" agent_deploy_target_suffix)"
 RUNTIME_PROJECT_READY_CALL_PROBE="$(eval_runtime_text_probe_task project_ready_call_probe || extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" project_ready_call_probe)"
 RUNTIME_PROJECT_READY_BINDING_PROBE="$(eval_runtime_text_probe_task project_ready_binding_probe || extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" project_ready_binding_probe)"
-RUNTIME_CAPABILITY_REQUIRED_ID="${RUNTIME_CAPABILITY_REQUIRED_ID:-RUNTIME_CAPABILITY_REQUIRED}"
-RUNTIME_CAPABILITY_SCOPE_DENIED_ID="${RUNTIME_CAPABILITY_SCOPE_DENIED_ID:-RUNTIME_CAPABILITY_SCOPE_DENIED}"
-RUNTIME_TAKE_REQUIRED_ID="${RUNTIME_TAKE_REQUIRED_ID:-RUNTIME_TAKE_REQUIRED}"
-RUNTIME_CAPABILITY_REQUIRED_MESSAGE_PREFIX="${RUNTIME_CAPABILITY_REQUIRED_MESSAGE_PREFIX:-\`main\` requires runtime capabilities: }"
-RUNTIME_CAPABILITY_SCOPE_DENIED_MESSAGE_MIDDLE="${RUNTIME_CAPABILITY_SCOPE_DENIED_MESSAGE_MIDDLE:- scope does not allow \`}"
-RUNTIME_CAPABILITY_SCOPE_DENIED_MESSAGE_SUFFIX="${RUNTIME_CAPABILITY_SCOPE_DENIED_MESSAGE_SUFFIX:-\`}"
-RUNTIME_TAKE_REQUIRED_MESSAGE_PREFIX="${RUNTIME_TAKE_REQUIRED_MESSAGE_PREFIX:-\`main\` requires unsupported runtime take \`}"
-RUNTIME_TAKE_REQUIRED_MESSAGE_SUFFIX="${RUNTIME_TAKE_REQUIRED_MESSAGE_SUFFIX:-\`}"
 PARSER_INT_PATTERN="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" int_literal_pattern)"
 PARSER_IDENTIFIER_PATTERN="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" identifier_pattern)"
 PARSER_INT_KIND="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" int_literal_kind)"
@@ -8043,12 +8035,21 @@ repo = Path(sys.argv[1]).resolve()
 diag_schema = sys.argv[3]
 argv = sys.argv[4:]
 files = [Path(path) for path in json.loads(os.environ.get("SLEY_RUNTIME_FILES", "[]"))]
-default_database_table = os.environ.get("SLEY_RUNTIME_DEFAULT_DATABASE_TABLE", "users")
-capability_required_id = os.environ.get("SLEY_RUNTIME_CAPABILITY_REQUIRED_ID", "RUNTIME_CAPABILITY_REQUIRED")
-capability_scope_denied_id = os.environ.get("SLEY_RUNTIME_CAPABILITY_SCOPE_DENIED_ID", "RUNTIME_CAPABILITY_SCOPE_DENIED")
-capability_required_prefix = os.environ.get("SLEY_RUNTIME_CAPABILITY_REQUIRED_MESSAGE_PREFIX", "`main` requires runtime capabilities: ")
-capability_scope_denied_middle = os.environ.get("SLEY_RUNTIME_CAPABILITY_SCOPE_DENIED_MESSAGE_MIDDLE", " scope does not allow `")
-capability_scope_denied_suffix = os.environ.get("SLEY_RUNTIME_CAPABILITY_SCOPE_DENIED_MESSAGE_SUFFIX", "`")
+
+
+def required_env(name):
+    value = os.environ.get(name)
+    if value is None:
+        raise SystemExit(f"missing required runtime source value: {name}")
+    return value
+
+
+default_database_table = required_env("SLEY_RUNTIME_DEFAULT_DATABASE_TABLE")
+capability_required_id = required_env("SLEY_RUNTIME_CAPABILITY_REQUIRED_ID")
+capability_scope_denied_id = required_env("SLEY_RUNTIME_CAPABILITY_SCOPE_DENIED_ID")
+capability_required_prefix = required_env("SLEY_RUNTIME_CAPABILITY_REQUIRED_MESSAGE_PREFIX")
+capability_scope_denied_middle = required_env("SLEY_RUNTIME_CAPABILITY_SCOPE_DENIED_MESSAGE_MIDDLE")
+capability_scope_denied_suffix = required_env("SLEY_RUNTIME_CAPABILITY_SCOPE_DENIED_MESSAGE_SUFFIX")
 
 TEXT_DELIMITERS = set("/:.-_ \t")
 
@@ -8417,9 +8418,18 @@ from pathlib import Path
 
 diag_schema = sys.argv[1]
 files = [Path(path) for path in json.loads(os.environ.get("SLEY_RUNTIME_FILES", "[]"))]
-take_required_id = os.environ.get("SLEY_RUNTIME_TAKE_REQUIRED_ID", "RUNTIME_TAKE_REQUIRED")
-take_required_prefix = os.environ.get("SLEY_RUNTIME_TAKE_REQUIRED_MESSAGE_PREFIX", "`main` requires unsupported runtime take `")
-take_required_suffix = os.environ.get("SLEY_RUNTIME_TAKE_REQUIRED_MESSAGE_SUFFIX", "`")
+
+
+def required_env(name):
+    value = os.environ.get(name)
+    if value is None:
+        raise SystemExit(f"missing required runtime source value: {name}")
+    return value
+
+
+take_required_id = required_env("SLEY_RUNTIME_TAKE_REQUIRED_ID")
+take_required_prefix = required_env("SLEY_RUNTIME_TAKE_REQUIRED_MESSAGE_PREFIX")
+take_required_suffix = required_env("SLEY_RUNTIME_TAKE_REQUIRED_MESSAGE_SUFFIX")
 
 for path in files:
     try:
