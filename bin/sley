@@ -5581,9 +5581,11 @@ type_fields_json() {
 query_json() {
   local target="$1" kind="${2:-all}" module_filter="${3:-}" exported_only="${4:-false}" type_fields report values_json
   type_fields="$(type_fields_json "$target")"
-  report="$(ast_json "$target" | jq --arg kind "$kind" --arg module_filter "$module_filter" --argjson exported_only "$exported_only" --arg schema "$SCHEMA_QUERY" --arg diag_schema "$SCHEMA_DIAGNOSTICS" --argjson fields "$QUERY_REPORT_FIELDS_JSON" --argjson type_fields "$type_fields" '
+  report="$(ast_json "$target" | jq --arg kind "$kind" --arg module_filter "$module_filter" --argjson exported_only "$exported_only" --arg schema "$SCHEMA_QUERY" --arg diag_schema "$SCHEMA_DIAGNOSTICS" --arg call_expression_prefix "$PARSER_CALL_EXPRESSION_PREFIX" --argjson fields "$QUERY_REPORT_FIELDS_JSON" --argjson type_fields "$type_fields" '
     def call_callee:
-      .source | sub("^call[[:space:]]+";"") | sub("\\(.*$";"");
+      .source
+      | if startswith($call_expression_prefix) then .[($call_expression_prefix | length):] else . end
+      | sub("\\(.*$";"");
     def resolve($ast; $module; $callee):
       if ($callee | contains(".")) then
         ($callee | split(".")) as $parts |
@@ -5598,7 +5600,7 @@ query_json() {
       {schema:$diag_schema, status:"error", diagnostics:[{id:"QUERY_MODULE_FILTER_NOT_FOUND", severity:"error", message:("query module filter `" + $module_filter + "` matched no module"), node:$module_filter}]}
     else
     (if $module_filter == "" then $mods else [$module_filter] end) as $selected_modules |
-    ([$ast.tasks[] as $t | $t.body.statements[]?.expr? | select((.source? // "") | startswith("call ")) |
+    ([$ast.tasks[] as $t | $t.body.statements[]?.expr? | select((.source? // "") | startswith($call_expression_prefix)) |
       (call_callee) as $callee |
       {from:($t.module + "." + $t.name), from_module:$t.module, expr_id:.id, source:.source, callee:$callee, status:"resolved", target:resolve($ast; $t.module; $callee)}
     ]) as $all_calls |
@@ -5609,7 +5611,7 @@ query_json() {
         takes:(.takes | map({name, binding_kind, type:(.type.name // "Unit")})),
         return_type:(.return_type.name // "Unit"),
         effects,
-        outbound_call_count:([.body.statements[]?.expr? | select((.source? // "") | startswith("call "))] | length),
+        outbound_call_count:([.body.statements[]?.expr? | select((.source? // "") | startswith($call_expression_prefix))] | length),
         inbound_call_count:([$all_calls[] | select(.target == ($task.module + "." + $task.name))] | length)
       }]) as $task_reports |
     ([$ast.types[]? as $type | select(($selected_modules | index($type.module)) != null) | select(($exported_only | not) or $type.exported) |
