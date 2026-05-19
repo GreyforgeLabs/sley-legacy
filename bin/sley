@@ -121,10 +121,19 @@ module_source_file() {
 
 eval_parser_expression_classifiers_json() {
   local parser_file="$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley"
-  local body rows
+  local body rows call_prefix
   body="$(extract_sley_task_body "$parser_file" classify_expression)"
   [[ -n "$body" ]] || return 1
-  rows="$(printf '%s\n' "$body" | awk '
+  call_prefix="${PARSER_CALL_EXPRESSION_PREFIX:-call }"
+  rows="$(printf '%s\n' "$body" | awk -v call_prefix="$call_prefix" '
+    function return_call_task(line) {
+      sub(/^[ \t]*return[ \t]+/, "", line)
+      if (index(line, call_prefix) != 1) return ""
+      line=substr(line, length(call_prefix) + 1)
+      if (line !~ /^[A-Za-z_][A-Za-z0-9_]*\(\)[ \t]*$/) return ""
+      sub(/\(\).*/, "", line)
+      return line
+    }
     /^[ \t]*if[ \t]+source[ \t]*==[ \t]*"/ {
       source=$0
       sub(/^.*==[ \t]*"/, "", source)
@@ -132,20 +141,20 @@ eval_parser_expression_classifiers_json() {
       in_if=1
       next
     }
-    in_if && /^[ \t]*return[ \t]+call[ \t]+[A-Za-z_][A-Za-z0-9_]*\(\)/ {
-      task=$0
-      sub(/^.*return[ \t]+call[ \t]+/, "", task)
-      sub(/\(\).*/, "", task)
-      print source "\t" task
-      in_if=0
-      next
+    in_if && /^[ \t]*return[ \t]+/ {
+      task=return_call_task($0)
+      if (task != "") {
+        print source "\t" task
+        in_if=0
+        next
+      }
     }
-    /^[ \t]*return[ \t]+call[ \t]+[A-Za-z_][A-Za-z0-9_]*\(\)/ {
-      task=$0
-      sub(/^.*return[ \t]+call[ \t]+/, "", task)
-      sub(/\(\).*/, "", task)
-      print "__fallback__\t" task
-      exit
+    /^[ \t]*return[ \t]+/ {
+      task=return_call_task($0)
+      if (task != "") {
+        print "__fallback__\t" task
+        exit
+      }
     }
   ')"
   [[ -n "$rows" ]] || return 1

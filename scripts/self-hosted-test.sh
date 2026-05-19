@@ -56,6 +56,9 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("checker_status_parser_prefix_task_execution"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("parser_classifier_parser_prefix_task_execution"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("self_hosting_report_builder")) and (.bootstrap_owned_by_sley | index("self_hosting_report_builder_task_execution")) and ((.blockers | index("extend Sley-owned report builders across remaining command reports")) == null) and ((.blockers | index("replace shell JSON shaping with Sley-owned report builders")) == null)'
 
 bin/sley self-hosting-status --json \
