@@ -13357,15 +13357,16 @@ command_graft_raw() {
     return
   fi
   if [[ "$kind" == "simplify_constant_if_expression" || "$kind" == "simplify_constant_if_statement" || "$kind" == "delete_constant_false_if_statement" || "$kind" == "delete_constant_false_while_statement" || "$kind" == "simplify_constant_comparison_expression" || "$kind" == "simplify_constant_boolean_comparison_expression" || "$kind" == "simplify_constant_arithmetic_expression" || "$kind" == "simplify_absorbing_arithmetic_expression" || "$kind" == "simplify_constant_text_concatenation_expression" || "$kind" == "simplify_constant_list_index_expression" || "$kind" == "simplify_constant_map_index_expression" || "$kind" == "simplify_constant_record_field_access_expression" || "$kind" == "simplify_constant_len_expression" || "$kind" == "simplify_constant_not_expression" || "$kind" == "simplify_identity_binary_expression" || "$kind" == "simplify_redundant_boolean_comparison" || "$kind" == "simplify_absorbing_boolean_expression" || "$kind" == "simplify_idempotent_boolean_expression" || "$kind" == "simplify_self_comparison_expression" || "$kind" == "simplify_double_negation_expression" || "$kind" == "simplify_negated_comparison_expression" || "$kind" == "simplify_redundant_boolean_if_expression" || "$kind" == "simplify_redundant_boolean_if_statement" || "$kind" == "simplify_same_branch_if_expression" || "$kind" == "simplify_same_branch_if_statement" ]]; then
-    local lint finding rule operation target_surface replacement report
+    local lint finding rule operation target_surface replacement fallback report
     lint="$(lint_json "$source")"
     case "$kind" in
       simplify_constant_if_expression)
         rule="constant_if_expression"
         operation="ReplaceExpression"
+        fallback="$(parser_task_expression_surface_value app.constant_fix main 0)"
         finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "constant_if_expression" and (.node == $surface or $surface == ""))' | head -n 1)"
         [[ -n "$finding" ]] || finding='{}'
-        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.constant_fix.main:stmt:0:expr"')}"
+        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r --arg fallback "$fallback" '.node // $fallback')}"
         replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "0"')"
         if [[ "$write" == true ]]; then
           sley_rewrite_statement_surface "$source" "$target_surface" "$replacement"
@@ -13374,9 +13375,10 @@ command_graft_raw() {
       simplify_constant_if_statement)
         rule="constant_if_statement"
         operation="ReplaceStatement"
+        fallback="$(parser_task_statement_surface_value app.constant_if_statement_fix main 1)"
         finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "constant_if_statement" and (.node == $surface or $surface == ""))' | head -n 1)"
         [[ -n "$finding" ]] || finding='{}'
-        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.constant_if_statement_fix.main:stmt:1"')}"
+        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r --arg fallback "$fallback" '.node // $fallback')}"
         replacement="$(printf '%s\n' "$finding" | jq -r '.replacement // "set value = 0"')"
         if [[ "$write" == true ]]; then
           sley_replace_if_block_surface "$source" "$target_surface" "$replacement"
@@ -13385,9 +13387,10 @@ command_graft_raw() {
       delete_constant_false_if_statement)
         rule="constant_false_if_statement"
         operation="DeleteNode"
+        fallback="$(parser_task_statement_surface_value app.constant_false_if_fix main 0)"
         finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "constant_false_if_statement" and (.node == $surface or $surface == ""))' | head -n 1)"
         [[ -n "$finding" ]] || finding='{}'
-        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.constant_false_if_fix.main:stmt:0"')}"
+        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r --arg fallback "$fallback" '.node // $fallback')}"
         replacement=""
         if [[ "$write" == true ]]; then
           sley_delete_if_block_surface "$source" "$target_surface"
@@ -13396,9 +13399,10 @@ command_graft_raw() {
       delete_constant_false_while_statement)
         rule="constant_false_while_statement"
         operation="DeleteNode"
+        fallback="$(parser_task_statement_surface_value app.false_while_fix main 1)"
         finding="$(printf '%s\n' "$lint" | jq -c --arg surface "$surface" '.findings[]? | select(.rule == "constant_false_while_statement" and (.node == $surface or $surface == ""))' | head -n 1)"
         [[ -n "$finding" ]] || finding='{}'
-        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r '.node // "block:task:app.false_while_fix.main:stmt:1"')}"
+        target_surface="${surface:-$(printf '%s\n' "$finding" | jq -r --arg fallback "$fallback" '.node // $fallback')}"
         replacement=""
         if [[ "$write" == true ]]; then
           sley_delete_if_block_surface "$source" "$target_surface"
