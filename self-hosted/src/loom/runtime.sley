@@ -52,6 +52,10 @@ export task default_database_read_text -> Text {
   return "Ada"
 }
 
+export task default_database_table -> Text {
+  return "users"
+}
+
 export task default_shell_text -> Text {
   return "2026-05-05"
 }
