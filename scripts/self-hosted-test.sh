@@ -748,6 +748,20 @@ if bin/sley check --json fixtures/corpus/rejected/type_mismatch.sley >/tmp/sley-
 fi
 jq -er '.status == "error" and [.diagnostics[].id] == ["TYPE_MISMATCH", "RETURN_TYPE_MISMATCH"] and .diagnostics[0].message == "type mismatch `label`" and .diagnostics[1].message == "return type mismatch `corpus.rejected.main`"' /tmp/sley-rejected-type-mismatch-check.json >/dev/null
 
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("checker_builtin_type_fallback_removal_task_execution"))'
+
+bin/sley check --json examples/result_flow.sley \
+  | json_field '.status == "ok" and (.diagnostics | length) == 0'
+
+if grep -Eq 'CHECKER_(INT|TEXT|BOOL|UNIT|RESULT|ERROR|GATE|LIST|MAP)_TYPE="\$\{CHECKER_[A-Z_]+:-' bin/sley; then
+  fail "checker builtin type names must come from loom.checker without shell fallback literals"
+fi
+
+if grep -Fq 'eval_checker_builtin_types_json || printf' bin/sley; then
+  fail "checker builtin type list must come from loom.checker without shell fallback JSON"
+fi
+
 if bin/sley check --json fixtures/corpus/rejected/type_alias_mismatch.sley >/tmp/sley-rejected-type-alias-mismatch-check.json; then
   fail "rejected type_alias_mismatch.sley passed check"
 fi
