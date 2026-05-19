@@ -1,8 +1,8 @@
 # Sley Development Pause Checkpoint
 
-Date: 2026-05-18
+Date: 2026-05-19
 Branch: public
-Latest code checkpoint: 3543464
+Latest code checkpoint: 0dcf32a
 Latest packet-sync documentation checkpoint before this note: 26e7417
 Current pause document status: committed on `public`; use `git log` for exact
 branch head
@@ -122,6 +122,10 @@ The current local checkpoint advances the public branch to:
   slice: `bootstrap`, `strict_self_hosted=false`,
   `semantic_source_count=6`, `bootstrap_owned_by_sley=208`; remaining blockers
   are still parser, checker, and runtime semantics from Sley source
+- self-hosting status after the parser fix-constant-scalar fallback surface ID
+  slice: `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=209`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
 - latest V1 log from this pause checkpoint: `/tmp/sley-make-v1-ok-text.log`
 - latest verification refresh on 2026-05-18: `make v1` passed again after the
   public-action packet was finalized and after the WebForge / sleylang.org
@@ -154,6 +158,7 @@ The tracked code checkpoint is:
 - 97162a6 fix: source empty fix fallbacks from parser
 - 09bd4a3 fix: source unused fix fallbacks from parser
 - 3543464 fix: source constant control fix fallbacks from parser
+- 0dcf32a fix: source constant scalar fix fallbacks from parser
 
 The tracked pause documentation checkpoints are:
 
@@ -176,6 +181,7 @@ The tracked pause documentation checkpoints are:
 - d20433f docs: record fix style fallback self-hosting slice
 - cc47f3e docs: record empty fix fallback self-hosting slice
 - 72fe387 docs: record unused fix fallback self-hosting slice
+- 5f3efde docs: record constant control fallback self-hosting slice
 
 Recent self-hosting slices added:
 
@@ -257,6 +263,9 @@ Recent self-hosting slices added:
 - constant control-flow fix fallback surfaces now use Sley-owned parser
   templates while preserving the existing dry-run target surfaces when no lint
   finding is present
+- constant scalar fix fallback surfaces now use Sley-owned parser templates
+  while preserving the existing dry-run target surfaces when no lint finding is
+  present
 - diagnostics and run report root layouts moved into Sley-owned report-builder
   declarations, with the shell bootstrap supplying computed values to those
   builders
@@ -601,16 +610,37 @@ The latest continuation audit reconfirmed:
   surface ID proof slice: `bootstrap`, `strict_self_hosted=false`,
   `semantic_source_count=6`, `bootstrap_owned_by_sley=208`; remaining blockers
   are parser, checker, and runtime semantics from Sley source
+- focused constant scalar fix fallback probes against `examples/hello.sley`:
+  `bin/sley fix --json --kind simplify_constant_comparison_expression --dry-run
+  examples/hello.sley` preserved
+  `block:task:app.constant_compare_fix.main:stmt:0:expr`; `bin/sley fix
+  --json --kind simplify_constant_boolean_comparison_expression --dry-run
+  examples/hello.sley` preserved
+  `block:task:app.constant_bool_compare_fix.main:stmt:0:expr`; `bin/sley fix
+  --json --kind simplify_constant_arithmetic_expression --dry-run
+  examples/hello.sley` preserved
+  `block:task:app.constant_arithmetic_fix.main:stmt:0:expr`; `bin/sley fix
+  --json --kind simplify_absorbing_arithmetic_expression --dry-run
+  examples/hello.sley` preserved
+  `block:task:app.absorbing_arithmetic_fix.main:stmt:0:expr`; and
+  `bin/sley fix --json --kind simplify_constant_text_concatenation_expression
+  --dry-run examples/hello.sley` preserved
+  `block:task:app.constant_text_concat_fix.main:stmt:0:expr`
+- Sley self-hosting status after the parser fix-constant-scalar fallback
+  surface ID proof slice: `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=209`; remaining blockers
+  are parser, checker, and runtime semantics from Sley source
 
 ## Dirty State Notes
 
-Tracked code was committed at 3543464 before this pause document was updated.
+Tracked code was committed at 0dcf32a before this pause document was updated.
 Tracked pause documentation before this update was refreshed through 218d40c
 with parser lint surface evidence, through 26e7417 with the external comparison
 approval gate, fork audit, and helper evidence, and through aba1b03 with parser
 fix-migration fallback evidence, and through d20433f with parser fix-style
 fallback evidence, through cc47f3e with parser fix-empty fallback evidence, and
-through 72fe387 with parser fix-unused/unreachable fallback evidence.
+through 72fe387 with parser fix-unused/unreachable fallback evidence, and
+through 5f3efde with parser fix-constant-control fallback evidence.
 
 Pre-existing untracked docs were not touched and should remain outside future
 commits unless the operator explicitly asks to include them:
