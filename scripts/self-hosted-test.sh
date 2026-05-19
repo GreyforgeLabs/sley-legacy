@@ -97,6 +97,9 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_fix_constant_control_surface_id_task_execution"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("parser_fix_constant_scalar_surface_id_task_execution"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_expression_id_task_execution")) and (.bootstrap_owned_by_sley | index("parser_control_expression_id_task_execution"))'
 
 bin/sley self-hosting-status --json \
@@ -941,6 +944,21 @@ bin/sley fix --json --kind delete_constant_false_if_statement --dry-run examples
 
 bin/sley fix --json --kind delete_constant_false_while_statement --dry-run examples/hello.sley \
   | json_field '([.provenance[]?.targets[]?] | index("block:task:app.false_while_fix.main:stmt:1"))'
+
+bin/sley fix --json --kind simplify_constant_comparison_expression --dry-run examples/hello.sley \
+  | json_field '([.provenance[]?.targets[]?] | index("block:task:app.constant_compare_fix.main:stmt:0:expr"))'
+
+bin/sley fix --json --kind simplify_constant_boolean_comparison_expression --dry-run examples/hello.sley \
+  | json_field '([.provenance[]?.targets[]?] | index("block:task:app.constant_bool_compare_fix.main:stmt:0:expr"))'
+
+bin/sley fix --json --kind simplify_constant_arithmetic_expression --dry-run examples/hello.sley \
+  | json_field '([.provenance[]?.targets[]?] | index("block:task:app.constant_arithmetic_fix.main:stmt:0:expr"))'
+
+bin/sley fix --json --kind simplify_absorbing_arithmetic_expression --dry-run examples/hello.sley \
+  | json_field '([.provenance[]?.targets[]?] | index("block:task:app.absorbing_arithmetic_fix.main:stmt:0:expr"))'
+
+bin/sley fix --json --kind simplify_constant_text_concatenation_expression --dry-run examples/hello.sley \
+  | json_field '([.provenance[]?.targets[]?] | index("block:task:app.constant_text_concat_fix.main:stmt:0:expr"))'
 
 bin/sley-contract validate --schema sley.migrate.report.v0 "$migrate_report" --schemas docs/schemas --json \
   | json_field '.schema == "sley.contract.validate.v0" and .status == "passed" and .requested_schema == "sley.migrate.report.v0" and .report_schema == "sley.migrate.report.v0"'
