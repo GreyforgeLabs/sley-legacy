@@ -2,8 +2,8 @@
 
 Date: 2026-05-19
 Branch: public
-Latest code checkpoint: fe456c0
-Latest pause documentation checkpoint before this note: eefadcc
+Latest code checkpoint: 7991b7b
+Latest pause documentation checkpoint before this note: 1c5cca9
 Current pause document status: committed on `public`; use `git log` for exact
 branch head
 Remote status: `public` is ahead of `origin/public` with local self-hosting
@@ -142,10 +142,21 @@ The current local checkpoint advances the public branch to:
   slice: `bootstrap`, `strict_self_hosted=false`,
   `semantic_source_count=6`, `bootstrap_owned_by_sley=215`; remaining blockers
   are still parser, checker, and runtime semantics from Sley source
+- self-hosting status after the checker static type-name source slice:
+  `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=217`; remaining blockers are still parser, checker,
+  and runtime semantics from Sley source
+- self-hosting status after the checker host-effect table source slice:
+  `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=219`; remaining blockers are still parser, checker,
+  and runtime semantics from Sley source
+- self-hosting status after the checker gate binding-kind source slice:
+  `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=220`; remaining blockers are still parser, checker,
+  and runtime semantics from Sley source
 - latest V1 log from this pause checkpoint: `/tmp/sley-make-v1-ok-text.log`
-- latest verification refresh on 2026-05-18: `make v1` passed again after the
-  public-action packet was finalized and after the WebForge / sleylang.org
-  deploy closeout
+- latest verification refresh on 2026-05-19: `make v1` passed after the
+  checker gate binding-kind source slice
 
 The tracked code checkpoint is:
 
@@ -179,6 +190,9 @@ The tracked code checkpoint is:
 - 8c62e71 fix: source algebra boolean fix fallbacks from parser
 - e96aca7 fix: source boolean branch fix fallbacks from parser
 - fe456c0 fix: source static task fallbacks from parser
+- 8b6a831 fix: source checker static type names from checker
+- df81546 fix: source checker host effect tables from checker
+- 7991b7b fix: source checker gate binding kind from parser
 
 The tracked pause documentation checkpoints are:
 
@@ -206,6 +220,9 @@ The tracked pause documentation checkpoints are:
 - 8dc35fc docs: record constant derived fallback self-hosting slice
 - 48facb4 docs: record algebra boolean fallback self-hosting slice
 - eefadcc docs: record boolean branch fallback self-hosting slice
+- 395066b docs: record static task fallback self-hosting slice
+- b508d9a docs: record checker static type self-hosting slice
+- 1c5cca9 docs: record checker host effect self-hosting slice
 
 Recent self-hosting slices added:
 
@@ -762,10 +779,18 @@ The latest continuation audit reconfirmed:
   `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
   `bootstrap_owned_by_sley=219`; remaining blockers are still parser,
   checker, and runtime semantics from Sley source
+- focused checker gate binding-kind probes: a temp source with a `Gate<DatabaseRead>`
+  take was excluded from ordinary call arity and checked cleanly, while a temp
+  source with `Gate<FileRead>` on a task without `uses FileRead` still produced
+  `GATE_EFFECT_UNDECLARED`
+- Sley self-hosting status after the checker gate binding-kind source slice:
+  `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=220`; remaining blockers are still parser,
+  checker, and runtime semantics from Sley source
 
 ## Dirty State Notes
 
-Tracked code was committed at df81546 before this pause document was updated.
+Tracked code was committed at 7991b7b before this pause document was updated.
 Tracked pause documentation before this update was refreshed through 218d40c
 with parser lint surface evidence, through 26e7417 with the external comparison
 approval gate, fork audit, and helper evidence, and through aba1b03 with parser
@@ -778,7 +803,8 @@ through 086fbee with parser fix-constant-scalar fallback evidence, and through
 48facb4 with parser fix-algebra/boolean fallback evidence, and through
 eefadcc with parser fix-boolean-branch fallback evidence, and through 395066b
 with parser static task/block fallback evidence, and through b508d9a with
-checker static type-name evidence.
+checker static type-name evidence, and through 1c5cca9 with checker
+host-effect table evidence.
 
 Pre-existing untracked files were not touched and should remain outside future
 commits unless the operator explicitly asks to include them:
