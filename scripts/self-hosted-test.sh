@@ -441,6 +441,9 @@ bin/sley self-hosting-status --json \
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("compute_text_call_runtime_execution"))'
 
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("compute_text_call_parser_prefix_runtime_execution"))'
+
 bin/sley run --json examples/compute.sley \
   | json_field '.status == "passed" and .value.kind == "Text" and .value.value == "excellent"'
 
