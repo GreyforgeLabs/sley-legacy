@@ -2,8 +2,8 @@
 
 Date: 2026-05-19
 Branch: public
-Latest code checkpoint: 8ee342a
-Latest pause documentation checkpoint before this note: ce7b4a3
+Latest code checkpoint: f712d0b
+Latest pause documentation checkpoint before this note: 86292f3
 Current pause document status: committed on `public`; use `git log` for exact
 branch head
 Remote status: verify current `origin/public` head with
@@ -331,8 +331,12 @@ The current local checkpoint advances the public branch to:
   `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
   `bootstrap_owned_by_sley=279`; remaining blockers are still parser, checker,
   and runtime semantics from Sley source
+- self-hosting status after the checker identifier-input fallback-removal
+  slice: `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=280`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
 - latest verification refresh on 2026-05-19: `make v1` passed after the
-  checker status fallback-removal slice
+  checker identifier-input fallback-removal slice
 
 The tracked code checkpoint is:
 
@@ -413,6 +417,7 @@ The tracked code checkpoint is:
 - c2f4b01 fix: require sley checker builtin types
 - 4503769 fix: require sley checker repair hints
 - 8ee342a fix: require sley checker status
+- f712d0b fix: require sley checker identifier inputs
 
 The tracked pause documentation checkpoints are:
 
@@ -487,6 +492,7 @@ The tracked pause documentation checkpoints are:
 - ab2f7e8 docs: record lint empty finding slice
 - a9ea43f docs: record checker builtin type slice
 - ce7b4a3 docs: record checker repair hint slice
+- 86292f3 docs: record checker status slice
 
 Recent self-hosting slices added:
 
@@ -733,6 +739,9 @@ Recent self-hosting slices added:
   return repair hints
 - Checker `ok`/`error` status selection now comes from `loom.checker` without
   shell fallback status literals or shell-side diagnostic-count fallback logic
+- Checker identifier-resolution inputs now come from `loom.checker` without
+  the shell fallback JSON list, while preserving unknown-identifier rejection
+  and accepted take/binding identifier resolution
 
 ## Next Frontier
 
@@ -1923,10 +1932,28 @@ The latest continuation audit reconfirmed:
   check-fixtures fixtures/contracts --schemas docs/schemas --json`, external
   public-action packet verifier, `git diff --check`, and final `make v1` all
   passed
+- focused checker identifier-input fallback-removal probes:
+  `bin/sley self-hosting-status --json` reported
+  `checker_identifier_input_fallback_removal_task_execution` and
+  `bootstrap_owned_by_sley=280`; `fixtures/corpus/rejected/unknown_identifier.sley`
+  preserved `UNKNOWN_IDENTIFIER`; `examples/unused_take.sley` checked cleanly
+  for take-name identifier resolution; `fixtures/corpus/accepted/mutable_sum.sley`
+  checked cleanly for binding-name identifier resolution; focused grep found
+  no checker identifier-input fallback JSON or empty-list fallback branch
+- Sley self-hosting status after the checker identifier-input fallback-removal
+  slice: `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=280`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
+- latest checker identifier-input fallback-removal verification:
+  `bash -n bin/sley`, `bash -n scripts/self-hosted-test.sh`, focused checker
+  identifier-input probes, `scripts/self-hosted-test.sh`,
+  `bin/sley-contract check-fixtures fixtures/contracts --schemas docs/schemas
+  --json`, external public-action packet verifier, `git diff --check`, and
+  final `make v1` all passed
 
 ## Dirty State Notes
 
-Tracked code was committed at 8ee342a before this pause document was updated.
+Tracked code was committed at f712d0b before this pause document was updated.
 Tracked pause documentation before this update was refreshed through 218d40c
 with parser lint surface evidence, through 26e7417 with the external comparison
 approval gate, fork audit, and helper evidence, and through aba1b03 with parser
@@ -1980,7 +2007,8 @@ with runtime default-value source evidence, through 64026ae with runtime
 diagnostic fallback-removal evidence, and through ab2f7e8 with lint
 empty-finding fallback-removal evidence, and through a9ea43f with checker
 built-in type fallback-removal evidence, and through ce7b4a3 with checker
-repair-hint fallback-removal evidence.
+repair-hint fallback-removal evidence, and through 86292f3 with checker status
+fallback-removal evidence.
 
 Pre-existing untracked files were not touched and should remain outside future
 commits unless the operator explicitly asks to include them:
