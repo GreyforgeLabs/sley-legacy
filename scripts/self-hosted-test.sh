@@ -107,6 +107,22 @@ if grep -Fq 'RUNTIME_AGENT_DEPLOY_SUFFIX="${RUNTIME_AGENT_DEPLOY_SUFFIX:-' bin/s
 fi
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("runtime_default_value_sources_task_execution"))'
+
+bin/sley run --json examples/hello.sley \
+  | json_field '.status == "passed" and .value.kind == "Text" and .value.value == "hello sley"'
+
+bin/sley run --json examples/raw_host_migration.sley \
+  | json_field '.status == "passed" and .value.kind == "Ok" and .value.value.kind == "Text" and .value.value.value == "hello sley"'
+
+bin/sley run --json --cap Shell --shell-output date "owned date" examples/shell_gate.sley \
+  | json_field '.status == "passed" and .value.kind == "Ok" and .value.value.kind == "Text" and .value.value.value == "owned date"'
+
+if grep -Eq 'RUNTIME_(HELLO_VALUE|PROJECT_READY_VALUE|DEFAULT_PROFILE|DEFAULT_MODEL_PLAN|DEFAULT_DEPLOY_RESULT|DEFAULT_RAW_VALUE|DEFAULT_FILE_WRITE_TEXT|DEFAULT_DATABASE_WRITE_TEXT|DEFAULT_AGENT_DATA_WRITE_TEXT|DEFAULT_DATABASE_READ_TEXT|DEFAULT_DATABASE_TABLE|DEFAULT_SHELL_TEXT|DEFAULT_SECRET_TEXT|DEFAULT_SPEND_AUTHORIZATION_TEXT)="\$\{RUNTIME_' bin/sley; then
+  fail "runtime default values must come from loom.runtime without shell fallback literals"
+fi
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("lint_declared_effect_aliases_task_execution"))'
 
 bin/sley self-hosting-status --json \
