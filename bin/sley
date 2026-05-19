@@ -312,11 +312,29 @@ eval_checker_message_template() {
 
 eval_bootstrap_smoke_task() {
   local bootstrap_file="$SELF_HOSTED_SOURCE_ROOT/loom/bootstrap.sley"
-  local body bind_name callee alias task module source_file return_var rules_json
+  local body bind_name callee alias task module source_file return_var rules_json call_prefix call_row
   body="$(extract_sley_task_body "$bootstrap_file" smoke)"
   [[ -n "$body" ]] || return 1
-  bind_name="$(printf '%s\n' "$body" | awk '/^[ \t]*bind[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*=[ \t]*call[ \t]+/ {line=$0; sub(/^[ \t]*bind[ \t]+/, "", line); sub(/[ \t]*=.*/, "", line); print line; exit}')"
-  callee="$(printf '%s\n' "$body" | awk '/^[ \t]*bind[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*=[ \t]*call[ \t]+/ {line=$0; sub(/^.*=[ \t]*call[ \t]+/, "", line); sub(/\(\).*/, "", line); print line; exit}')"
+  call_prefix="${PARSER_CALL_EXPRESSION_PREFIX:-call }"
+  call_row="$(printf '%s\n' "$body" | awk -v call_prefix="$call_prefix" '
+    /^[ \t]*bind[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*=/ {
+      line=$0
+      bind_name=line
+      sub(/^[ \t]*bind[ \t]+/, "", bind_name)
+      sub(/[ \t]*=.*/, "", bind_name)
+      expr=line
+      sub(/^.*=[ \t]*/, "", expr)
+      if (index(expr, call_prefix) != 1) next
+      callee=substr(expr, length(call_prefix) + 1)
+      if (callee !~ /^[A-Za-z_][A-Za-z0-9_.]*\(\)[ \t]*$/) next
+      sub(/\(\).*/, "", callee)
+      print bind_name "\t" callee
+      exit
+    }
+  ')"
+  [[ -n "$call_row" ]] || return 1
+  bind_name="${call_row%%$'\t'*}"
+  callee="${call_row#*$'\t'}"
   return_var="$(printf '%s\n' "$body" | awk '/^[ \t]*return[ \t]+len\([A-Za-z_][A-Za-z0-9_]*\)/ {line=$0; sub(/^.*return[ \t]+len\(/, "", line); sub(/\).*/, "", line); print line; exit}')"
   [[ -n "$bind_name" && -n "$callee" && "$return_var" == "$bind_name" ]] || return 1
   alias="${callee%%.*}"
@@ -333,11 +351,29 @@ eval_bootstrap_smoke_task() {
 eval_bootstrap_list_count_task() {
   local task_name="$1"
   local bootstrap_file="$SELF_HOSTED_SOURCE_ROOT/loom/bootstrap.sley"
-  local body bind_name callee return_var alias task module source_file items_json
+  local body bind_name callee return_var alias task module source_file items_json call_prefix call_row
   body="$(extract_sley_task_body "$bootstrap_file" "$task_name")"
   [[ -n "$body" ]] || return 1
-  bind_name="$(printf '%s\n' "$body" | awk '/^[ \t]*bind[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*=[ \t]*call[ \t]+/ {line=$0; sub(/^[ \t]*bind[ \t]+/, "", line); sub(/[ \t]*=.*/, "", line); print line; exit}')"
-  callee="$(printf '%s\n' "$body" | awk '/^[ \t]*bind[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*=[ \t]*call[ \t]+/ {line=$0; sub(/^.*=[ \t]*call[ \t]+/, "", line); sub(/\(\).*/, "", line); print line; exit}')"
+  call_prefix="${PARSER_CALL_EXPRESSION_PREFIX:-call }"
+  call_row="$(printf '%s\n' "$body" | awk -v call_prefix="$call_prefix" '
+    /^[ \t]*bind[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*=/ {
+      line=$0
+      bind_name=line
+      sub(/^[ \t]*bind[ \t]+/, "", bind_name)
+      sub(/[ \t]*=.*/, "", bind_name)
+      expr=line
+      sub(/^.*=[ \t]*/, "", expr)
+      if (index(expr, call_prefix) != 1) next
+      callee=substr(expr, length(call_prefix) + 1)
+      if (callee !~ /^[A-Za-z_][A-Za-z0-9_.]*\(\)[ \t]*$/) next
+      sub(/\(\).*/, "", callee)
+      print bind_name "\t" callee
+      exit
+    }
+  ')"
+  [[ -n "$call_row" ]] || return 1
+  bind_name="${call_row%%$'\t'*}"
+  callee="${call_row#*$'\t'}"
   return_var="$(printf '%s\n' "$body" | awk '/^[ \t]*return[ \t]+len\([A-Za-z_][A-Za-z0-9_]*\)/ {line=$0; sub(/^.*return[ \t]+len\(/, "", line); sub(/\).*/, "", line); print line; exit}')"
   [[ -n "$bind_name" && -n "$callee" && "$return_var" == "$bind_name" ]] || return 1
   if [[ "$callee" == *.* ]]; then
