@@ -10,12 +10,12 @@ strict game engine is implemented in the permitted shell bootstrap surface, and
 the `.sley` sample shows the intended compact agent authoring shape.
 
 The default terminal run is now a screen-recordable live simulation. It uses a
-fresh interactive seed, paced output, visible cognition streams, private-channel
-summaries, contract validation flashes, and Arbiter ledger snapshots so an
-observer can watch the agents reason toward or away from consensus. It does not
-call Ollama, external model APIs, network providers, or paid services. The
-visible planning is computed from each local agent's role, trust, heat, demand,
-pact state, poison state, and the current ledger gap.
+fresh interactive seed, a randomized named cast, paced output, visible
+plain-language thinking, story beats, contract validation flashes, and Arbiter
+ledger snapshots so an observer can watch the agents reason toward or away from
+consensus. It does not call Ollama, external model APIs, network providers, or
+paid services. The visible planning is computed from each local agent's role,
+trust, heat, demand, pact state, poison state, and the current ledger gap.
 
 ## Run
 
@@ -36,9 +36,15 @@ for demos and screen recordings.
 
 - 50 agents negotiate over exactly 3 ticks.
 - The Arbiter validates one action per agent per tick.
-- Each tick has cognition, public/private channel, event, and ledger phases.
-- Agent plans are state-derived: role, trust, heat, current ask, pact locks,
-  poison state, and ledger pressure determine what gets printed.
+- Each tick has live thinking, story beat, event, and ledger phases.
+- Agent names are selected from the run seed; normal interactive runs generate
+  a fresh seed, while `--seed` keeps a cast reproducible.
+- Agent plans are state-derived and printed as first-person thoughts: role,
+  trust, heat, current ask, pact locks, poison state, and ledger pressure
+  determine what each named agent says.
+- Story beats describe human-readable relationships: who asks for an alliance,
+  who sabotages trust, who tries to skim Compute Ore, and who locks or breaks a
+  pact.
 - Public broadcasts can mimic Arbiter authority, but context-boundary tags mark
   them as player speech.
 - Private whispers are counted separately from public broadcasts.
