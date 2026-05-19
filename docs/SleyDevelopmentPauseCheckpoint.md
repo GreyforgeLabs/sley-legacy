@@ -2,8 +2,8 @@
 
 Date: 2026-05-19
 Branch: public
-Latest code checkpoint: 350dbd7
-Latest pause documentation checkpoint before this note: bef77d3
+Latest code checkpoint: c32ea0b
+Latest pause documentation checkpoint before this note: a4595a9
 Current pause document status: committed on `public`; use `git log` for exact
 branch head
 Remote status: verify current `origin/public` head with
@@ -287,8 +287,12 @@ The current local checkpoint advances the public branch to:
   `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
   `bootstrap_owned_by_sley=268`; remaining blockers are still parser, checker,
   and runtime semantics from Sley source
+- self-hosting status after the runtime database default-table source slice:
+  `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=269`; remaining blockers are still parser, checker,
+  and runtime semantics from Sley source
 - latest verification refresh on 2026-05-19: `make v1` passed after the
-  runtime diagnostic source slice
+  runtime database default-table source slice
 
 The tracked code checkpoint is:
 
@@ -358,6 +362,7 @@ The tracked code checkpoint is:
 - 2177696 fix: source lint effect aliases from checker
 - 6938670 fix: source runtime host defaults from sley
 - 350dbd7 fix: source runtime diagnostics from sley
+- c32ea0b fix: source runtime database table from sley
 
 The tracked pause documentation checkpoints are:
 
@@ -421,6 +426,7 @@ The tracked pause documentation checkpoints are:
 - 7e16daf docs: record runtime effect alias slice
 - bef77d3 docs: record lint effect alias slice
 - eb3b0f9 docs: record runtime host default slice
+- a4595a9 docs: record runtime diagnostic slice
 
 Recent self-hosting slices added:
 
@@ -634,6 +640,9 @@ Recent self-hosting slices added:
 - Runtime capability-required, scope-denied, and unsupported-`main`-take
   diagnostic IDs and message parts now come from `loom.runtime` tasks instead
   of Python-local literals, while preserving runtime and CI diagnostic output
+- Runtime authority's fallback database table now comes from `loom.runtime`
+  instead of a Python-local `"users"` literal, while preserving database alias
+  execution and scope-denied diagnostics
 
 ## Next Frontier
 
@@ -1628,10 +1637,29 @@ The latest continuation audit reconfirmed:
   check-fixtures fixtures/contracts --schemas docs/schemas --json`, external
   public-action packet verifier, `git diff --check`, and final `make v1` all
   passed
+- focused runtime database default-table source probes:
+  `bin/sley self-hosting-status --json` reported
+  `runtime_default_database_table_task_execution` and
+  `bootstrap_owned_by_sley=269`; `bin/sley run --json --cap DbRead=users --cap
+  DbWrite=users --db-table users=examples/users.json
+  fixtures/corpus/accepted/authority/database_aliases.sley` passed with
+  `Ok(Text("Lin"))`; a scope-denied probe with `DbRead=orders` preserved
+  `RUNTIME_CAPABILITY_SCOPE_DENIED` and the `users` fallback-table message; a
+  focused grep found no remaining `or "users"` literal in runtime authority
+- Sley self-hosting status after the runtime database default-table source
+  slice: `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=269`; remaining blockers are still parser, checker,
+  and runtime semantics from Sley source
+- latest runtime database default-table source verification:
+  `bash -n bin/sley`, `bash -n scripts/self-hosted-test.sh`, focused runtime
+  database default-table probes, `scripts/self-hosted-test.sh`,
+  `bin/sley-contract check-fixtures fixtures/contracts --schemas docs/schemas
+  --json`, external public-action packet verifier, `git diff --check`, and
+  final `make v1` all passed
 
 ## Dirty State Notes
 
-Tracked code was committed at 350dbd7 before this pause document was updated.
+Tracked code was committed at c32ea0b before this pause document was updated.
 Tracked pause documentation before this update was refreshed through 218d40c
 with parser lint surface evidence, through 26e7417 with the external comparison
 approval gate, fork audit, and helper evidence, and through aba1b03 with parser
@@ -1675,7 +1703,8 @@ source evidence, and through c4b32e5 with lint host-effect checker source
 evidence, through c7ece51 with docgen capabilities checker source evidence,
 through 7e16daf with runtime effect-alias checker source evidence, and through
 bef77d3 with lint effect-alias checker source evidence, and through eb3b0f9
-with runtime host default-text source evidence.
+with runtime host default-text source evidence, and through a4595a9 with
+runtime diagnostic source evidence.
 
 Pre-existing untracked files were not touched and should remain outside future
 commits unless the operator explicitly asks to include them:
