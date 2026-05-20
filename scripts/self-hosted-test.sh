@@ -389,6 +389,12 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_source_cal
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_source_bind_evaluator_execution"))'
 
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_literal_list_index_runtime_execution"))'
+
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_literal_map_index_runtime_execution"))'
+
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_literal_record_field_runtime_execution"))'
+
 if ! awk '
   /^sley_eval_source_call\(\)[ \t]*\{/ {in_fn=1}
   in_fn && /sley_eval_source_task_takes_json/ {takes=1}
