@@ -2257,6 +2257,25 @@ The latest continuation audit reconfirmed:
   `scripts/self-hosted-test.sh`, `bin/sley-contract check-fixtures
   fixtures/contracts --schemas docs/schemas --json`, external public-action
   packet verifier, `git diff --check`, and final `make v1` all passed
+- focused checker gate/effect pass probes:
+  `bin/sley self-hosting-status --json` reported
+  `checker_gate_reference_pass_task_execution`,
+  `checker_effect_authorization_pass_task_execution`, and
+  `bootstrap_owned_by_sley=297`; `gate_take_type_diags`,
+  `gate_effect_diags`, `direct_effect_diags`, and
+  `transitive_effect_diags` now run through descriptor-driven checker pass
+  families using rows from `diagnostic_pass_descriptors` in
+  `self-hosted/src/loom/checker.sley`
+- Sley self-hosting status after the checker gate/effect pass slice:
+  `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=297`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
+- latest checker gate/effect pass verification:
+  `bash -n bin/sley`, `bash -n scripts/self-hosted-test.sh`, focused
+  gate-take/gate-effect/direct-effect/transitive-effect rejected probes,
+  `scripts/self-hosted-test.sh`, `bin/sley-contract check-fixtures
+  fixtures/contracts --schemas docs/schemas --json`, external public-action
+  packet verifier, `git diff --check`, and final `make v1` all passed
 
 ## Dirty State Notes
 
