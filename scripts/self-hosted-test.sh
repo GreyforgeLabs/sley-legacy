@@ -1050,6 +1050,19 @@ if ! awk '
   fail "checker builtin type list must execute through the shared Sley source list evaluator"
 fi
 
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("checker_source_metadata_task_execution"))'
+
+if grep -Fq 'extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley"' bin/sley \
+  || grep -Fq 'extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley"' bin/sley; then
+  fail "checker metadata must execute through Sley source tasks, not raw host extractors"
+fi
+
+if ! grep -Fq 'sley_source_task loom.checker' bin/sley \
+  || ! grep -Fq 'sley_source_list_task_json loom.checker' bin/sley; then
+  fail "checker metadata source task dispatch is missing"
+fi
+
 if bin/sley check --json fixtures/corpus/rejected/type_alias_mismatch.sley >/tmp/sley-rejected-type-alias-mismatch-check.json; then
   fail "rejected type_alias_mismatch.sley passed check"
 fi
