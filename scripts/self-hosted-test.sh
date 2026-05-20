@@ -305,6 +305,19 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("graft_outcome_report_builder")) and (.bootstrap_owned_by_sley | index("graft_outcome_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("ci_report_builder")) and (.bootstrap_owned_by_sley | index("ci_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("contract_inventory_report_builder")) and (.bootstrap_owned_by_sley | index("contract_inventory_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("contract_validate_report_builder")) and (.bootstrap_owned_by_sley | index("contract_validate_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("contract_fixture_check_report_builder")) and (.bootstrap_owned_by_sley | index("contract_fixture_check_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("deploy_artifact_check_report_builder")) and (.bootstrap_owned_by_sley | index("deploy_artifact_check_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("workbench_report_builder")) and (.bootstrap_owned_by_sley | index("workbench_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("zjx_tool_report_builder")) and (.bootstrap_owned_by_sley | index("zjx_tool_report_builder_task_execution"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("reports_source_metadata_task_execution"))'
+
+if grep -Fq 'extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley"' bin/sley \
+  || grep -Fq 'extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley"' bin/sley; then
+  fail "report metadata must execute through Sley source tasks, not raw host extractors"
+fi
+
+if ! grep -Fq 'sley_source_task loom.reports' bin/sley \
+  || ! grep -Fq 'sley_source_list_task_json loom.reports' bin/sley; then
+  fail "report metadata source task dispatch is missing"
+fi
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("run_report_shape"))'
 
 bin/sley self-hosting-status --json \
