@@ -14,10 +14,15 @@ json_field() {
   jq -er "$1" >/dev/null
 }
 
+self_hosting_status_field() {
+  jq -er "$1" "$self_hosting_status_report" >/dev/null
+}
+
 bool_literal_source="$(mktemp)"
 empty_module_source="$(mktemp)"
 unknown_take_type_source="$(mktemp)"
 add_take_operation="$(mktemp)"
+self_hosting_status_report="$(mktemp)"
 artifact_dir="$(mktemp -d)"
 artifact_check_report="$(mktemp)"
 migrate_report="$(mktemp)"
@@ -29,7 +34,7 @@ zjx_tool_report="$(mktemp)"
 runtime_report="$(mktemp)"
 ast_missing_report="$(mktemp)"
 ci_report="$(mktemp)"
-trap 'rm -f "$bool_literal_source" "$empty_module_source" "$unknown_take_type_source" "$add_take_operation" "$artifact_check_report" "$migrate_report" "$docgen_report" "$workbench_report" "$sandbox_report" "$agent_bench_report" "$zjx_tool_report" "$runtime_report" "$ast_missing_report" "$ci_report"; rm -rf "$artifact_dir"' EXIT
+trap 'rm -f "$bool_literal_source" "$empty_module_source" "$unknown_take_type_source" "$add_take_operation" "$self_hosting_status_report" "$artifact_check_report" "$migrate_report" "$docgen_report" "$workbench_report" "$sandbox_report" "$agent_bench_report" "$zjx_tool_report" "$runtime_report" "$ast_missing_report" "$ci_report"; rm -rf "$artifact_dir"' EXIT
 printf '%s\n' \
   'module app.bool_literal' \
   '' \
@@ -54,28 +59,23 @@ bash -n bin/sley
 
 bin/sley --help >/dev/null
 bin/sley --version | grep -q 'self-hosting-stage2-source'
+bin/sley self-hosting-status --json > "$self_hosting_status_report"
 
-bin/sley self-hosting-status --json \
-  | json_field '.schema == "sley.self_hosting.status.v0" and .status == "bootstrap" and .strict_self_hosted == false and .source_root == "self-hosted/src" and .semantic_source_count == (.source_modules | length) and .semantic_source_count >= 6 and (.source_modules | index("loom.bootstrap")) and (.bootstrap_owned_by_sley | index("implementation_version")) and (.bootstrap_owned_by_sley | index("implementation_stage")) and (.bootstrap_owned_by_sley | index("self_hosting_status")) and (.bootstrap_owned_by_sley | index("strict_self_hosted")) and (.bootstrap_owned_by_sley | index("source_modules")) and (.bootstrap_owned_by_sley | index("semantic_source_count_task_execution")) and (.bootstrap_owned_by_sley | index("default_lint_rules")) and (.bootstrap_owned_by_sley | index("core_report_schema_ids")) and (.bootstrap_owned_by_sley | index("diagnostic_ids")) and (.bootstrap_owned_by_sley | index("runtime_seed_values")) and (.bootstrap_owned_by_sley | index("parser_expression_classifiers")) and (.bootstrap_owned_by_sley | index("parser_classifier_task_execution")) and (.bootstrap_owned_by_sley | index("parser_id_task_execution")) and (.bootstrap_owned_by_sley | index("parser_call_expression_prefix_task_execution")) and (.bootstrap_owned_by_sley | index("query_call_expression_prefix_task_execution")) and (.bootstrap_owned_by_sley | index("symbol_graph_call_expression_prefix_task_execution")) and (.bootstrap_owned_by_sley | index("parser_statement_and_binding_kinds")) and (.bootstrap_owned_by_sley | index("bootstrap_smoke_runtime")) and (.bootstrap_owned_by_sley | index("bootstrap_smoke_task_execution")) and (.bootstrap_owned_by_sley | index("checker_diagnostic_status")) and (.bootstrap_owned_by_sley | index("checker_status_task_execution")) and (.bootstrap_owned_by_sley | index("checker_builtin_type_task_execution")) and (.bootstrap_owned_by_sley | index("checker_builtin_types_task_execution")) and (.bootstrap_owned_by_sley | index("checker_static_type_names_task_execution")) and (.bootstrap_owned_by_sley | index("checker_effect_aliases_task_execution")) and (.bootstrap_owned_by_sley | index("checker_host_effect_needles_task_execution")) and (.bootstrap_owned_by_sley | index("checker_gate_binding_kind_task_execution")) and (.bootstrap_owned_by_sley | index("checker_repair_hint_kind_task_execution")) and (.bootstrap_owned_by_sley | index("checker_identifier_expr_kind_task_execution")) and (.bootstrap_owned_by_sley | index("checker_call_expression_prefix_task_execution")) and (.bootstrap_owned_by_sley | index("checker_message_task_execution")) and (.bootstrap_owned_by_sley | index("checker_unknown_type_diagnostics")) and (.bootstrap_owned_by_sley | index("checker_unknown_task_diagnostics")) and (.bootstrap_owned_by_sley | index("checker_call_diagnostics")) and (.bootstrap_owned_by_sley | index("checker_duplicate_take_diagnostics")) and (.bootstrap_owned_by_sley | index("checker_collection_diagnostics")) and (.bootstrap_owned_by_sley | index("checker_record_diagnostics")) and (.bootstrap_owned_by_sley | index("checker_namespace_diagnostics")) and (.bootstrap_owned_by_sley | index("checker_effect_diagnostics")) and (.bootstrap_owned_by_sley | index("checker_effect_propagation_diagnostics")) and (.bootstrap_owned_by_sley | index("checker_question_diagnostics")) and (.bootstrap_owned_by_sley | index("checker_identifier_resolution_inputs")) and (.bootstrap_owned_by_sley | index("lint_status_task_execution")) and (.bootstrap_owned_by_sley | index("lint_finding_messages")) and (.bootstrap_owned_by_sley | index("runtime_status_task_execution")) and (.bootstrap_owned_by_sley | index("pure_literal_runtime_execution")) and (.bootstrap_owned_by_sley | index("bool_literal_runtime_execution")) and (.bootstrap_owned_by_sley | index("text_concat_runtime_execution")) and (.bootstrap_owned_by_sley | index("list_len_runtime_task_execution")) and (.bootstrap_owned_by_sley | index("len_expression_runtime_execution")) and (.bootstrap_owned_by_sley | index("if_expression_runtime_execution")) and (.bootstrap_owned_by_sley | index("if_statement_runtime_execution")) and (.bootstrap_owned_by_sley | index("seeded_agent_deploy_task_execution")) and (.bootstrap_owned_by_sley | index("project_ready_task_execution")) and (.bootstrap_owned_by_sley | index("ast_runtime_probe_dispatch")) and (.bootstrap_owned_by_sley | index("self_hosting_report_shape")) and (.bootstrap_owned_by_sley | index("runtime_report_status_and_dispatch"))'
+self_hosting_status_field '.schema == "sley.self_hosting.status.v0" and .status == "bootstrap" and .strict_self_hosted == false and .source_root == "self-hosted/src" and .semantic_source_count == (.source_modules | length) and .semantic_source_count >= 6 and (.source_modules | index("loom.bootstrap")) and (.bootstrap_owned_by_sley | index("implementation_version")) and (.bootstrap_owned_by_sley | index("implementation_stage")) and (.bootstrap_owned_by_sley | index("self_hosting_status")) and (.bootstrap_owned_by_sley | index("strict_self_hosted")) and (.bootstrap_owned_by_sley | index("source_modules")) and (.bootstrap_owned_by_sley | index("semantic_source_count_task_execution")) and (.bootstrap_owned_by_sley | index("default_lint_rules")) and (.bootstrap_owned_by_sley | index("core_report_schema_ids")) and (.bootstrap_owned_by_sley | index("diagnostic_ids")) and (.bootstrap_owned_by_sley | index("runtime_seed_values")) and (.bootstrap_owned_by_sley | index("parser_expression_classifiers")) and (.bootstrap_owned_by_sley | index("parser_classifier_task_execution")) and (.bootstrap_owned_by_sley | index("parser_id_task_execution")) and (.bootstrap_owned_by_sley | index("parser_call_expression_prefix_task_execution")) and (.bootstrap_owned_by_sley | index("query_call_expression_prefix_task_execution")) and (.bootstrap_owned_by_sley | index("symbol_graph_call_expression_prefix_task_execution")) and (.bootstrap_owned_by_sley | index("parser_statement_and_binding_kinds")) and (.bootstrap_owned_by_sley | index("bootstrap_smoke_runtime")) and (.bootstrap_owned_by_sley | index("bootstrap_smoke_task_execution")) and (.bootstrap_owned_by_sley | index("checker_diagnostic_status")) and (.bootstrap_owned_by_sley | index("checker_status_task_execution")) and (.bootstrap_owned_by_sley | index("checker_builtin_type_task_execution")) and (.bootstrap_owned_by_sley | index("checker_builtin_types_task_execution")) and (.bootstrap_owned_by_sley | index("checker_static_type_names_task_execution")) and (.bootstrap_owned_by_sley | index("checker_effect_aliases_task_execution")) and (.bootstrap_owned_by_sley | index("checker_host_effect_needles_task_execution")) and (.bootstrap_owned_by_sley | index("checker_gate_binding_kind_task_execution")) and (.bootstrap_owned_by_sley | index("checker_repair_hint_kind_task_execution")) and (.bootstrap_owned_by_sley | index("checker_identifier_expr_kind_task_execution")) and (.bootstrap_owned_by_sley | index("checker_call_expression_prefix_task_execution")) and (.bootstrap_owned_by_sley | index("checker_message_task_execution")) and (.bootstrap_owned_by_sley | index("checker_unknown_type_diagnostics")) and (.bootstrap_owned_by_sley | index("checker_unknown_task_diagnostics")) and (.bootstrap_owned_by_sley | index("checker_call_diagnostics")) and (.bootstrap_owned_by_sley | index("checker_duplicate_take_diagnostics")) and (.bootstrap_owned_by_sley | index("checker_collection_diagnostics")) and (.bootstrap_owned_by_sley | index("checker_record_diagnostics")) and (.bootstrap_owned_by_sley | index("checker_namespace_diagnostics")) and (.bootstrap_owned_by_sley | index("checker_effect_diagnostics")) and (.bootstrap_owned_by_sley | index("checker_effect_propagation_diagnostics")) and (.bootstrap_owned_by_sley | index("checker_question_diagnostics")) and (.bootstrap_owned_by_sley | index("checker_identifier_resolution_inputs")) and (.bootstrap_owned_by_sley | index("lint_status_task_execution")) and (.bootstrap_owned_by_sley | index("lint_finding_messages")) and (.bootstrap_owned_by_sley | index("runtime_status_task_execution")) and (.bootstrap_owned_by_sley | index("pure_literal_runtime_execution")) and (.bootstrap_owned_by_sley | index("bool_literal_runtime_execution")) and (.bootstrap_owned_by_sley | index("text_concat_runtime_execution")) and (.bootstrap_owned_by_sley | index("list_len_runtime_task_execution")) and (.bootstrap_owned_by_sley | index("len_expression_runtime_execution")) and (.bootstrap_owned_by_sley | index("if_expression_runtime_execution")) and (.bootstrap_owned_by_sley | index("if_statement_runtime_execution")) and (.bootstrap_owned_by_sley | index("seeded_agent_deploy_task_execution")) and (.bootstrap_owned_by_sley | index("project_ready_task_execution")) and (.bootstrap_owned_by_sley | index("ast_runtime_probe_dispatch")) and (.bootstrap_owned_by_sley | index("self_hosting_report_shape")) and (.bootstrap_owned_by_sley | index("runtime_report_status_and_dispatch"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("bootstrap_source_metadata_task_execution")) and (.bootstrap_owned_by_sley | index("lint_source_metadata_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("bootstrap_source_metadata_task_execution")) and (.bootstrap_owned_by_sley | index("lint_source_metadata_task_execution"))'
 
 if grep -Eq 'extract_sley_[A-Za-z0-9_]+ "\$SELF_HOSTED_SOURCE_ROOT/loom/[A-Za-z_]+\.sley"' bin/sley; then
   fail "self-hosted module metadata must execute through Sley source tasks, not raw host extractors"
 fi
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("runtime_host_effect_needles_dispatch_execution")) and (.bootstrap_owned_by_sley | index("runtime_authority_host_effect_needles_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_host_effect_needles_dispatch_execution")) and (.bootstrap_owned_by_sley | index("runtime_authority_host_effect_needles_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("runtime_authority_effect_aliases_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_authority_effect_aliases_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("runtime_diagnostic_messages_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_diagnostic_messages_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("runtime_diagnostic_fallback_removal_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_diagnostic_fallback_removal_task_execution"))'
 
 if bin/sley run --json --cap DbRead=orders --db-table users=examples/users.json examples/db_gate.sley > "$runtime_report"; then
   fail "database read with a denied runtime scope should fail"
@@ -90,18 +90,15 @@ if grep -Eq 'os\.environ\.get\("SLEY_RUNTIME_(DEFAULT_DATABASE_TABLE|CAPABILITY_
   fail "runtime diagnostic values must not fall back to Python host literals"
 fi
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("runtime_default_database_table_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_default_database_table_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("runtime_value_kinds_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_value_kinds_task_execution"))'
 
 if grep -Eq 'RUNTIME_(INT|TEXT|BOOL|RAW|UNIT|OK_TEXT|OK_INT)_VALUE_KIND="\$\{RUNTIME_[A-Z_]+:-' bin/sley; then
   fail "runtime value-kind names must come from loom.runtime without shell fallback literals"
 fi
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("runtime_self_hosted_target_aliases_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_self_hosted_target_aliases_task_execution"))'
 
 bin/sley run --json self-hosted/ \
   | json_field '.status == "passed" and .value.kind == "Int" and .value.value >= 1'
@@ -113,8 +110,7 @@ if grep -Fq "RUNTIME_SELF_HOSTED_TARGETS_JSON='[\"self-hosted\"" bin/sley; then
   fail "self-hosted runtime target aliases must come from loom.runtime without shell fallback literals"
 fi
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("runtime_source_metadata_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_source_metadata_task_execution"))'
 
 if grep -Fq 'extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"' bin/sley \
   || grep -Fq 'extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"' bin/sley; then
@@ -126,8 +122,7 @@ if ! grep -Fq 'sley_source_task loom.runtime' bin/sley \
   fail "runtime metadata source task dispatch is missing"
 fi
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("runtime_status_names_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_status_names_task_execution"))'
 
 bin/sley run --json examples/hello.sley \
   | json_field '.status == "passed" and .value.kind == "Text" and .value.value == "hello sley"'
@@ -136,8 +131,7 @@ if grep -Eq 'RUNTIME_(PASSED|FAILED|SKIPPED)_STATUS="\$\{RUNTIME_(PASSED|FAILED|
   fail "runtime status names must come from loom.runtime without shell fallback literals"
 fi
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("runtime_target_probe_sources_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_target_probe_sources_task_execution"))'
 
 bin/sley run --json examples/project \
   | json_field '.status == "passed" and .value.kind == "Int" and .value.value == 42'
@@ -151,8 +145,7 @@ if grep -Fq 'RUNTIME_AGENT_DEPLOY_SUFFIX="${RUNTIME_AGENT_DEPLOY_SUFFIX:-' bin/s
   fail "runtime target probes must come from loom.runtime without shell fallback literals"
 fi
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("runtime_default_value_sources_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_default_value_sources_task_execution"))'
 
 bin/sley run --json examples/hello.sley \
   | json_field '.status == "passed" and .value.kind == "Text" and .value.value == "hello sley"'
@@ -167,31 +160,24 @@ if grep -Eq 'RUNTIME_(HELLO_VALUE|PROJECT_READY_VALUE|DEFAULT_PROFILE|DEFAULT_MO
   fail "runtime default values must come from loom.runtime without shell fallback literals"
 fi
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("runtime_run_fallback_removal_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_run_fallback_removal_task_execution"))'
 
 if grep -Eq 'eval_(seeded_agent_deploy_value|runtime_[A-Za-z0-9_]+_task|project_ready_value_task)[^\n]*\|\| printf' bin/sley \
   || grep -Eq 'eval_runtime_status_task 0 \|\| printf' bin/sley; then
   fail "runtime command values must execute through loom.runtime without host printf fallbacks"
 fi
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("lint_declared_effect_aliases_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("lint_declared_effect_aliases_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("checker_call_parser_prefix_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_call_parser_prefix_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("checker_message_parser_prefix_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_message_parser_prefix_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("checker_status_parser_prefix_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_status_parser_prefix_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("parser_classifier_parser_prefix_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_classifier_parser_prefix_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("parser_classifier_source_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_classifier_source_task_execution"))'
 
 if ! awk '
   /^eval_parser_expression_classifiers_json\(\)[ \t]*\{/ {in_fn=1}
@@ -203,11 +189,9 @@ if ! awk '
   fail "eval_parser_expression_classifiers_json must execute classify_expression through the shared Sley source task evaluator"
 fi
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("parser_source_metadata_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_source_metadata_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("parser_fallback_removal_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_fallback_removal_task_execution"))'
 
 if grep -Fq 'extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley"' bin/sley \
   || grep -Fq 'extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley"' bin/sley; then
@@ -223,140 +207,96 @@ if grep -Eq 'eval_parser_(id|message)_template [A-Za-z0-9_]+( [A-Za-z0-9_]+)? \|
   fail "parser metadata and templates must not use host fallback literals"
 fi
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("semantic_source_count_parser_prefix_task_execution")) and (.bootstrap_owned_by_sley | index("bootstrap_smoke_parser_prefix_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("semantic_source_count_parser_prefix_task_execution")) and (.bootstrap_owned_by_sley | index("bootstrap_smoke_parser_prefix_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("self_hosting_report_builder")) and (.bootstrap_owned_by_sley | index("self_hosting_report_builder_task_execution")) and ((.blockers | index("extend Sley-owned report builders across remaining command reports")) == null) and ((.blockers | index("replace shell JSON shaping with Sley-owned report builders")) == null)'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("self_hosting_report_builder")) and (.bootstrap_owned_by_sley | index("self_hosting_report_builder_task_execution")) and ((.blockers | index("extend Sley-owned report builders across remaining command reports")) == null) and ((.blockers | index("replace shell JSON shaping with Sley-owned report builders")) == null)'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("parser_declaration_id_task_execution")) and (.bootstrap_owned_by_sley | index("parser_take_id_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_declaration_id_task_execution")) and (.bootstrap_owned_by_sley | index("parser_take_id_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("parser_take_surface_id_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_take_surface_id_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("parser_module_surface_id_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_module_surface_id_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("parser_module_task_list_surface_id_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_module_task_list_surface_id_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("parser_module_declaration_list_surface_id_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_module_declaration_list_surface_id_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("parser_block_task_surface_id_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_block_task_surface_id_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("parser_block_fallback_surface_id_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_block_fallback_surface_id_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("parser_call_target_task_id_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_call_target_task_id_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("parser_call_argument_surface_id_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_call_argument_surface_id_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("parser_expression_side_surface_id_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_expression_side_surface_id_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("parser_task_statement_surface_id_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_task_statement_surface_id_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("parser_task_fallback_surface_id_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_task_fallback_surface_id_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("parser_branch_statement_surface_id_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_branch_statement_surface_id_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("parser_lint_statement_surface_id_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_lint_statement_surface_id_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("parser_migrate_surface_id_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_migrate_surface_id_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("parser_fix_migration_surface_id_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_fix_migration_surface_id_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("migrate_qualify_call_parser_prefix_task_execution")) and (.bootstrap_owned_by_sley | index("fix_qualify_call_parser_prefix_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("migrate_qualify_call_parser_prefix_task_execution")) and (.bootstrap_owned_by_sley | index("fix_qualify_call_parser_prefix_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("symbol_graph_call_arg_parser_prefix_task_execution")) and (.bootstrap_owned_by_sley | index("plan_call_arg_parser_prefix_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("symbol_graph_call_arg_parser_prefix_task_execution")) and (.bootstrap_owned_by_sley | index("plan_call_arg_parser_prefix_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("fix_update_call_sites_parser_prefix_task_execution")) and (.bootstrap_owned_by_sley | index("fix_remove_call_arg_parser_prefix_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("fix_update_call_sites_parser_prefix_task_execution")) and (.bootstrap_owned_by_sley | index("fix_remove_call_arg_parser_prefix_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("parser_fix_style_surface_id_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_fix_style_surface_id_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("parser_fix_empty_surface_id_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_fix_empty_surface_id_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("parser_fix_unused_unreachable_surface_id_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_fix_unused_unreachable_surface_id_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("parser_fix_constant_control_surface_id_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_fix_constant_control_surface_id_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("parser_fix_constant_scalar_surface_id_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_fix_constant_scalar_surface_id_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("parser_fix_constant_derived_surface_id_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_fix_constant_derived_surface_id_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("parser_fix_algebra_boolean_surface_id_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_fix_algebra_boolean_surface_id_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("parser_fix_boolean_branch_surface_id_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_fix_boolean_branch_surface_id_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("parser_expression_id_task_execution")) and (.bootstrap_owned_by_sley | index("parser_control_expression_id_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_expression_id_task_execution")) and (.bootstrap_owned_by_sley | index("parser_control_expression_id_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("diagnostics_report_builder")) and (.bootstrap_owned_by_sley | index("diagnostics_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("run_report_builder")) and (.bootstrap_owned_by_sley | index("run_report_builder_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("diagnostics_report_builder")) and (.bootstrap_owned_by_sley | index("diagnostics_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("run_report_builder")) and (.bootstrap_owned_by_sley | index("run_report_builder_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("query_report_builder")) and (.bootstrap_owned_by_sley | index("query_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("lint_report_builder")) and (.bootstrap_owned_by_sley | index("lint_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("doctor_report_builder")) and (.bootstrap_owned_by_sley | index("doctor_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("verify_report_builder")) and (.bootstrap_owned_by_sley | index("verify_report_builder_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("query_report_builder")) and (.bootstrap_owned_by_sley | index("query_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("lint_report_builder")) and (.bootstrap_owned_by_sley | index("lint_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("doctor_report_builder")) and (.bootstrap_owned_by_sley | index("doctor_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("verify_report_builder")) and (.bootstrap_owned_by_sley | index("verify_report_builder_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("parser_ast_program_report_builder")) and (.bootstrap_owned_by_sley | index("parser_ast_program_report_builder_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_ast_program_report_builder")) and (.bootstrap_owned_by_sley | index("parser_ast_program_report_builder_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("parser_expression_statement_parser_prefix_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_expression_statement_parser_prefix_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("parser_ast_node_report_builder")) and (.bootstrap_owned_by_sley | index("parser_ast_node_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("parser_ast_node_kind_task_execution")) and (.bootstrap_owned_by_sley | index("parser_ast_node_not_found_diagnostic"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_ast_node_report_builder")) and (.bootstrap_owned_by_sley | index("parser_ast_node_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("parser_ast_node_kind_task_execution")) and (.bootstrap_owned_by_sley | index("parser_ast_node_not_found_diagnostic"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("parser_ast_node_parent_id_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_ast_node_parent_id_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("parser_ast_node_not_found_message"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_ast_node_not_found_message"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("parser_large_self_source_ast_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_large_self_source_ast_execution"))'
 
 bin/sley ast --json self-hosted/src/loom/checker.sley \
   | json_field '.schema == "sley.ast.program.v0" and (.tasks | length) >= 100 and ([.tasks[]?.name] | index("diagnostic_pass_descriptors"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("parser_message_parser_prefix_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_message_parser_prefix_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("symbol_graph_report_builder")) and (.bootstrap_owned_by_sley | index("symbol_graph_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("claim_verify_report_builder")) and (.bootstrap_owned_by_sley | index("claim_verify_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("migrate_report_builder")) and (.bootstrap_owned_by_sley | index("migrate_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("docgen_report_builder")) and (.bootstrap_owned_by_sley | index("docgen_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("sandbox_report_builder")) and (.bootstrap_owned_by_sley | index("sandbox_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("agent_bench_report_builder")) and (.bootstrap_owned_by_sley | index("agent_bench_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("deploy_report_builder")) and (.bootstrap_owned_by_sley | index("deploy_report_builder_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("symbol_graph_report_builder")) and (.bootstrap_owned_by_sley | index("symbol_graph_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("claim_verify_report_builder")) and (.bootstrap_owned_by_sley | index("claim_verify_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("migrate_report_builder")) and (.bootstrap_owned_by_sley | index("migrate_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("docgen_report_builder")) and (.bootstrap_owned_by_sley | index("docgen_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("sandbox_report_builder")) and (.bootstrap_owned_by_sley | index("sandbox_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("agent_bench_report_builder")) and (.bootstrap_owned_by_sley | index("agent_bench_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("deploy_report_builder")) and (.bootstrap_owned_by_sley | index("deploy_report_builder_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("conformance_report_builder")) and (.bootstrap_owned_by_sley | index("conformance_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("conformance_coverage_report_builder")) and (.bootstrap_owned_by_sley | index("conformance_coverage_report_builder_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("conformance_report_builder")) and (.bootstrap_owned_by_sley | index("conformance_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("conformance_coverage_report_builder")) and (.bootstrap_owned_by_sley | index("conformance_coverage_report_builder_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("graft_outcome_report_builder")) and (.bootstrap_owned_by_sley | index("graft_outcome_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("ci_report_builder")) and (.bootstrap_owned_by_sley | index("ci_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("contract_inventory_report_builder")) and (.bootstrap_owned_by_sley | index("contract_inventory_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("contract_validate_report_builder")) and (.bootstrap_owned_by_sley | index("contract_validate_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("contract_fixture_check_report_builder")) and (.bootstrap_owned_by_sley | index("contract_fixture_check_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("deploy_artifact_check_report_builder")) and (.bootstrap_owned_by_sley | index("deploy_artifact_check_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("workbench_report_builder")) and (.bootstrap_owned_by_sley | index("workbench_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("zjx_tool_report_builder")) and (.bootstrap_owned_by_sley | index("zjx_tool_report_builder_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("graft_outcome_report_builder")) and (.bootstrap_owned_by_sley | index("graft_outcome_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("ci_report_builder")) and (.bootstrap_owned_by_sley | index("ci_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("contract_inventory_report_builder")) and (.bootstrap_owned_by_sley | index("contract_inventory_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("contract_validate_report_builder")) and (.bootstrap_owned_by_sley | index("contract_validate_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("contract_fixture_check_report_builder")) and (.bootstrap_owned_by_sley | index("contract_fixture_check_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("deploy_artifact_check_report_builder")) and (.bootstrap_owned_by_sley | index("deploy_artifact_check_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("workbench_report_builder")) and (.bootstrap_owned_by_sley | index("workbench_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("zjx_tool_report_builder")) and (.bootstrap_owned_by_sley | index("zjx_tool_report_builder_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("reports_source_metadata_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("reports_source_metadata_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("reports_fallback_removal_task_execution")) and (.bootstrap_owned_by_sley | index("bootstrap_status_fallback_removal_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("reports_fallback_removal_task_execution")) and (.bootstrap_owned_by_sley | index("bootstrap_status_fallback_removal_task_execution"))'
 
 if grep -Fq 'extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley"' bin/sley \
   || grep -Fq 'extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley"' bin/sley; then
@@ -382,32 +322,23 @@ if ! grep -Fq 'sley_source_task loom.reports' bin/sley \
   fail "report metadata source task dispatch is missing"
 fi
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("run_report_shape"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("run_report_shape"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("runtime_status_parser_prefix_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_status_parser_prefix_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("generic_pure_task_evaluator_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_pure_task_evaluator_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("generic_runtime_scalar_task_evaluator_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_runtime_scalar_task_evaluator_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("generic_runtime_collection_task_evaluator_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_runtime_collection_task_evaluator_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("generic_runtime_record_task_evaluator_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_runtime_record_task_evaluator_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("generic_parser_checker_template_evaluator_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_parser_checker_template_evaluator_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("generic_source_call_argument_evaluator_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_source_call_argument_evaluator_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("generic_source_bind_evaluator_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_source_bind_evaluator_execution"))'
 
 if ! awk '
   /^sley_eval_source_call\(\)[ \t]*\{/ {in_fn=1}
@@ -472,151 +403,106 @@ do
   fi
 done
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("runtime_project_probe_parser_prefix_task_execution")) and (.bootstrap_owned_by_sley | index("runtime_project_binding_parser_prefix_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_project_probe_parser_prefix_task_execution")) and (.bootstrap_owned_by_sley | index("runtime_project_binding_parser_prefix_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("runtime_project_probe_fallback_parser_prefix_task_execution")) and (.bootstrap_owned_by_sley | index("runtime_project_binding_fallback_parser_prefix_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_project_probe_fallback_parser_prefix_task_execution")) and (.bootstrap_owned_by_sley | index("runtime_project_binding_fallback_parser_prefix_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("unit_runtime_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("unit_runtime_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("unit_main_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("unit_main_runtime_execution"))'
 
 bin/sley run --json examples/declaration_hygiene.sley \
   | json_field '.status == "passed" and .value.kind == "Unit" and (.value | has("value") | not)'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("main_take_runtime_diagnostic"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("main_take_runtime_diagnostic"))'
 
 if bin/sley run --json examples/unused_take.sley > "$runtime_report"; then
   fail "main with ordinary runtime takes should not execute without arguments"
 fi
 jq -er '.schema == "sley.diagnostics.report.v0" and .status == "error" and .diagnostics[0].id == "RUNTIME_TAKE_REQUIRED" and .diagnostics[0].message == "`main` requires unsupported runtime take `value`"' "$runtime_report" >/dev/null
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("verify_report_shape"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("verify_report_shape"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("graft_outcome_report_shape"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("graft_outcome_report_shape"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("claim_verify_report_shape"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("claim_verify_report_shape"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("conformance_report_shape"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("conformance_report_shape"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("conformance_coverage_report_shape"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("conformance_coverage_report_shape"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("ci_report_shape"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("ci_report_shape"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("contract_report_shapes"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("contract_report_shapes"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("deploy_report_shape"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("deploy_report_shape"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("deploy_artifact_check_report_shape"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("deploy_artifact_check_report_shape"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("migrate_report_shape"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("migrate_report_shape"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("docgen_report_shape"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("docgen_report_shape"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("docgen_capabilities_host_effect_needles_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("docgen_capabilities_host_effect_needles_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("docgen_call_expression_prefix_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("docgen_call_expression_prefix_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("docgen_call_tail_parser_prefix_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("docgen_call_tail_parser_prefix_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("workbench_report_shape"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("workbench_report_shape"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("workbench_call_expression_prefix_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("workbench_call_expression_prefix_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("workbench_call_tail_parser_prefix_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("workbench_call_tail_parser_prefix_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("sandbox_report_shape"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("sandbox_report_shape"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("agent_bench_report_shape"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("agent_bench_report_shape"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("zjx_tool_report_shape"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("zjx_tool_report_shape"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("diagnostics_report_shape"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("diagnostics_report_shape"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("lint_status_parser_prefix_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("lint_status_parser_prefix_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("lint_report_shape"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("lint_report_shape"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("lint_declared_effect_host_needles_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("lint_declared_effect_host_needles_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("lint_call_expression_prefix_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("lint_call_expression_prefix_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("query_report_shape"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("query_report_shape"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("symbol_graph_report_shape"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("symbol_graph_report_shape"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("doctor_report_shape"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("doctor_report_shape"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("ok_int_runtime_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("ok_int_runtime_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("ok_text_runtime_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("ok_text_runtime_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("text_equal_runtime_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("text_equal_runtime_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("result_flow_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("result_flow_runtime_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("result_flow_parser_prefix_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("result_flow_parser_prefix_runtime_execution"))'
 
 bin/sley run --json fixtures/corpus/accepted/result_flow.sley \
   | json_field '.status == "passed" and .value.kind == "Ok" and .value.value.kind == "Int" and .value.value.value == 42'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("text_identity_runtime_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("text_identity_runtime_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("host_call_text_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("host_call_text_runtime_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("runtime_host_default_texts_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_host_default_texts_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("spend_prefix_runtime_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("spend_prefix_runtime_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("direct_file_read_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("direct_file_read_runtime_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("direct_file_read_parser_prefix_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("direct_file_read_parser_prefix_runtime_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("direct_file_read_result_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("direct_file_read_result_runtime_execution"))'
 
 bin/sley run --json examples/file_gate.sley \
   | json_field '.status == "passed" and .value.kind == "Text" and .value.value == "hello sley"'
@@ -645,56 +531,42 @@ bin/sley run --json --cap Spend --spend-result ads-budget authorized examples/sp
 bin/sley run --json --cap Spend --spend-result ads-budget authorized fixtures/corpus/accepted/agent_spend_authority.sley \
   | json_field '.status == "passed" and .value.kind == "Ok" and .value.value.value == "budget gate: authorized"'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("list_index_runtime_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("list_index_runtime_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("list_index_text_runtime_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("list_index_text_runtime_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("list_index_expression_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("list_index_expression_runtime_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("bound_list_index_sum_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("bound_list_index_sum_runtime_execution"))'
 
 bin/sley run --json fixtures/corpus/accepted/type_alias_transparency.sley \
   | json_field '.status == "passed" and .value.kind == "Int" and .value.value == 42'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("map_index_runtime_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("map_index_runtime_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("map_index_int_runtime_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("map_index_int_runtime_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("map_index_expression_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("map_index_expression_runtime_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("collection_index_sum_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("collection_index_sum_runtime_execution"))'
 
 bin/sley run --json fixtures/corpus/accepted/collections_indexing.sley \
   | json_field '.status == "passed" and .value.kind == "Int" and .value.value == 8'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("record_field_runtime_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("record_field_runtime_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("record_field_expression_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("record_field_expression_runtime_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("record_field_call_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("record_field_call_runtime_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("record_field_call_parser_prefix_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("record_field_call_parser_prefix_runtime_execution"))'
 
 bin/sley run --json fixtures/corpus/accepted/records_and_calls.sley \
   | json_field '.status == "passed" and .value.kind == "Text" and .value.value == "Ada"'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("local_call_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("local_call_runtime_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("local_call_parser_prefix_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("local_call_parser_prefix_runtime_execution"))'
 
 bin/sley run --json examples/unused_private_task.sley \
   | json_field '.status == "passed" and .value.kind == "Int" and .value.value == 1'
@@ -702,11 +574,9 @@ bin/sley run --json examples/unused_private_task.sley \
 bin/sley run --json examples/dead_private_tasks.sley \
   | json_field '.status == "passed" and .value.kind == "Int" and .value.value == 1'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("zero_arg_project_call_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("zero_arg_project_call_runtime_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("zero_arg_project_call_parser_prefix_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("zero_arg_project_call_parser_prefix_runtime_execution"))'
 
 bin/sley run --json examples/unused_import_project \
   | json_field '.status == "passed" and .value.kind == "Int" and .value.value == 7'
@@ -714,155 +584,112 @@ bin/sley run --json examples/unused_import_project \
 bin/sley run --json examples/duplicate_import_project \
   | json_field '.status == "passed" and .value.kind == "Text" and .value.value == "ready"'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("bool_comparison_runtime_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("bool_comparison_runtime_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("bool_comparison_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("bool_comparison_runtime_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("bool_and_runtime_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("bool_and_runtime_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("bool_and_expression_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("bool_and_expression_runtime_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("bool_not_runtime_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("bool_not_runtime_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("not_expression_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("not_expression_runtime_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("double_not_expression_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("double_not_expression_runtime_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("negated_comparison_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("negated_comparison_runtime_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("int_arithmetic_runtime_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("int_arithmetic_runtime_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("constant_arithmetic_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("constant_arithmetic_runtime_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("absorbing_arithmetic_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("absorbing_arithmetic_runtime_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("bound_arithmetic_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("bound_arithmetic_runtime_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("int_comparison_runtime_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("int_comparison_runtime_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("int_equal_runtime_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("int_equal_runtime_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("int_greater_equal_runtime_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("int_greater_equal_runtime_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("constant_comparison_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("constant_comparison_runtime_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("bool_if_runtime_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("bool_if_runtime_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("bool_if_expression_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("bool_if_expression_runtime_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("bool_if_statement_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("bool_if_statement_runtime_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("text_if_runtime_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("text_if_runtime_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("compute_text_call_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("compute_text_call_runtime_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("compute_text_call_parser_prefix_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("compute_text_call_parser_prefix_runtime_execution"))'
 
 bin/sley run --json examples/compute.sley \
   | json_field '.status == "passed" and .value.kind == "Text" and .value.value == "excellent"'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("int_if_runtime_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("int_if_runtime_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("int_if_expression_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("int_if_expression_runtime_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("int_if_statement_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("int_if_statement_runtime_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("literal_if_statement_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("literal_if_statement_runtime_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("comparison_if_statement_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("comparison_if_statement_runtime_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("constant_false_while_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("constant_false_while_runtime_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("while_list_sum_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("while_list_sum_runtime_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("while_list_sum_parser_prefix_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("while_list_sum_parser_prefix_runtime_execution"))'
 
 bin/sley run --json examples/collections.sley \
   | json_field '.status == "passed" and .value.kind == "Int" and .value.value == 10'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("state_set_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("state_set_runtime_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("tally_set_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("tally_set_runtime_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("each_sum_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("each_sum_runtime_execution"))'
 
 bin/sley run --json fixtures/corpus/accepted/mutable_sum.sley \
   | json_field '.status == "passed" and .value.kind == "Int" and .value.value == 10'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("each_map_sum_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("each_map_sum_runtime_execution"))'
 
 bin/sley run --json examples/maps_for.sley \
   | json_field '.status == "passed" and .value.kind == "Int" and .value.value == 15'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("project_call_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("project_call_runtime_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("project_call_parser_prefix_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("project_call_parser_prefix_runtime_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("unqualified_project_call_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("unqualified_project_call_runtime_execution"))'
 
 bin/sley run --json examples/unqualified_import_call_project \
   | json_field '.status == "passed" and .value.kind == "Int" and .value.value == 42'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("file_entry_project_call_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("file_entry_project_call_runtime_execution"))'
 
 bin/sley run --json examples/unqualified_import_call_project/src/app/main.sley \
   | json_field '.status == "passed" and .value.kind == "Int" and .value.value == 42'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("file_entry_runtime_authority_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("file_entry_runtime_authority_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("bound_local_call_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("bound_local_call_runtime_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("runtime_main_call_parser_prefix_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_main_call_parser_prefix_task_execution"))'
 
 bin/sley run --json fixtures/corpus/accepted/pure_main.sley \
   | json_field '.status == "passed" and .value.kind == "Int" and .value.value == 42'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("int_identity_runtime_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("int_identity_runtime_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("bound_int_return_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("bound_int_return_runtime_execution"))'
 
 bin/sley ast --json examples/hello.sley \
   | json_field '.schema == "sley.ast.program.v0" and .module == "app.hello" and .tasks[0].id == "task:app.hello.main" and .tasks[0].name == "main" and .tasks[0].body.statements[0].id == "block:task:app.hello.main:stmt:0" and .tasks[0].body.statements[0].expr.id == "block:task:app.hello.main:stmt:0:expr" and .tasks[0].body.statements[0].expr.expr_kind == "StringLiteral"'
@@ -908,8 +735,7 @@ bin/sley check --json examples/hello.sley \
 bin/sley check --json examples/hello.sley \
   | json_field 'keys == (["schema","status","diagnostics"] | sort)'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("checker_status_fallback_removal_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_status_fallback_removal_task_execution"))'
 
 if grep -Eq 'CHECK_(OK|ERROR)_STATUS="\$\{CHECK_(OK|ERROR)_STATUS:-' bin/sley; then
   fail "checker status names must come from loom.checker without shell fallback literals"
@@ -919,43 +745,33 @@ if grep -Fq 'eval_checker_status_task "$diagnostic_count" ||' bin/sley; then
   fail "checker status selection must not fall back to shell-side status logic"
 fi
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("checker_diagnostic_id_fallback_removal_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_diagnostic_id_fallback_removal_task_execution"))'
 
 if grep -Eq 'DIAG_[A-Z0-9_]+="\$\{DIAG_[A-Z0-9_]+:-' bin/sley; then
   fail "checker diagnostic ids must come from loom.checker without shell fallback literals"
 fi
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("checker_diagnostic_pass_order_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_diagnostic_pass_order_task_execution"))'
 
 if grep -Fq '[duplicate_effect_diags, duplicate_type_diags, duplicate_task_diags' bin/sley; then
   fail "checker diagnostic pass order must come from loom.checker"
 fi
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("checker_diagnostic_pass_descriptor_task_execution")) and (.bootstrap_owned_by_sley | index("checker_unknown_reference_pass_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_diagnostic_pass_descriptor_task_execution")) and (.bootstrap_owned_by_sley | index("checker_unknown_reference_pass_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("checker_gate_reference_pass_task_execution")) and (.bootstrap_owned_by_sley | index("checker_effect_authorization_pass_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_gate_reference_pass_task_execution")) and (.bootstrap_owned_by_sley | index("checker_effect_authorization_pass_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("checker_duplicate_pass_family_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_duplicate_pass_family_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("checker_record_shape_pass_family_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_record_shape_pass_family_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("checker_collection_pass_family_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_collection_pass_family_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("checker_call_pass_family_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_call_pass_family_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("checker_type_return_pass_family_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_type_return_pass_family_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("checker_identifier_resolution_pass_task_execution")) and (.bootstrap_owned_by_sley | index("checker_question_result_pass_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_identifier_resolution_pass_task_execution")) and (.bootstrap_owned_by_sley | index("checker_question_result_pass_task_execution"))'
 
 if grep -Fq '|legacy|' self-hosted/src/loom/checker.sley; then
   fail "checker diagnostic pass descriptors must not retain legacy executor rows"
@@ -1004,8 +820,7 @@ if bin/sley check --json fixtures/corpus/rejected/unknown_identifier.sley >/tmp/
 fi
 jq -er '.status == "error" and .diagnostics[0].id == "UNKNOWN_IDENTIFIER" and .diagnostics[0].message == "unknown identifier `missing`"' /tmp/sley-rejected-check.json >/dev/null
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("checker_unknown_message_fallback_removal_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_unknown_message_fallback_removal_task_execution"))'
 
 if grep -Eq 'eval_checker_message_template (unknown_identifier_message identifier_name|unknown_type_message type_name|unknown_task_message task_name) \|\| printf' bin/sley; then
   fail "checker unknown diagnostic message templates must come from loom.checker without printf fallbacks"
@@ -1019,8 +834,7 @@ if grep -Eq 'if \[\[ -z "\$UNKNOWN_(IDENTIFIER|TYPE|TASK)_MESSAGE_TEMPLATE" \]\]
   fail "checker unknown diagnostic message templates must not use empty-template shell fallback branches"
 fi
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("checker_identifier_input_fallback_removal_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_identifier_input_fallback_removal_task_execution"))'
 
 bin/sley check --json examples/unused_take.sley \
   | json_field '.status == "ok" and (.diagnostics | length) == 0'
@@ -1061,8 +875,7 @@ if bin/sley check --json fixtures/corpus/rejected/type_mismatch.sley >/tmp/sley-
 fi
 jq -er '.status == "error" and [.diagnostics[].id] == ["TYPE_MISMATCH", "RETURN_TYPE_MISMATCH"] and .diagnostics[0].message == "type mismatch `label`" and .diagnostics[1].message == "return type mismatch `corpus.rejected.main`" and [.diagnostics[1].repair_hints[].kind] == ["inspect_return_type", "replace_task_body", "replace_expression"]' /tmp/sley-rejected-type-mismatch-check.json >/dev/null
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("checker_call_type_message_fallback_removal_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_call_type_message_fallback_removal_task_execution"))'
 
 if grep -Eq 'eval_checker_message_template (call_arity_mismatch_message task_name|call_argument_type_mismatch_message task_name|type_mismatch_message binding_name|return_type_mismatch_message task_name) \|\| printf' bin/sley; then
   fail "checker call/type diagnostic message templates must come from loom.checker without printf fallbacks"
@@ -1081,18 +894,15 @@ if bin/sley check --json fixtures/corpus/rejected/missing_return.sley >/tmp/sley
 fi
 jq -er '.status == "error" and .diagnostics[0].id == "MISSING_RETURN" and .diagnostics[0].message == "missing return in task `corpus.rejected.main`" and [.diagnostics[0].repair_hints[].kind] == ["insert_return", "replace_task_body"]' /tmp/sley-rejected-missing-return-check.json >/dev/null
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("checker_repair_hint_fallback_removal_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_repair_hint_fallback_removal_task_execution"))'
 
 if grep -Eq 'CHECKER_(DECLARE_OR_IMPORT_TASK|INSPECT_RETURN_TYPE|INSERT_RETURN|REPLACE_TASK_BODY|REPLACE_EXPRESSION)_HINT_KIND="\$\{CHECKER_[A-Z_]+:-' bin/sley; then
   fail "checker repair hint kinds must come from loom.checker without shell fallback literals"
 fi
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("checker_builtin_type_fallback_removal_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_builtin_type_fallback_removal_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("checker_builtin_types_source_list_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_builtin_types_source_list_execution"))'
 
 bin/sley check --json examples/result_flow.sley \
   | json_field '.status == "ok" and (.diagnostics | length) == 0'
@@ -1115,8 +925,7 @@ if ! awk '
   fail "checker builtin type list must execute through the shared Sley source list evaluator"
 fi
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("checker_source_metadata_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_source_metadata_task_execution"))'
 
 if grep -Fq 'extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley"' bin/sley \
   || grep -Fq 'extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley"' bin/sley; then
@@ -1148,8 +957,7 @@ if bin/sley check --json fixtures/corpus/rejected/module_namespace_conflict.sley
 fi
 jq -er '.status == "error" and [.diagnostics[].id] == ["DUPLICATE_EFFECT", "DUPLICATE_TYPE", "DUPLICATE_TASK"] and .diagnostics[0].message == "duplicate effect `Audit`" and .diagnostics[1].message == "duplicate type `User`" and .diagnostics[2].message == "duplicate task `main`"' /tmp/sley-rejected-module-namespace-check.json >/dev/null
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("checker_duplicate_message_fallback_removal_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_duplicate_message_fallback_removal_task_execution"))'
 
 if grep -Eq 'eval_checker_message_template (duplicate_take_message take_name|duplicate_map_key_message key_name|duplicate_field_message field_name|duplicate_record_literal_field_message field_name|duplicate_effect_message effect_name|duplicate_type_message type_name|duplicate_task_message task_name) \|\| printf' bin/sley; then
   fail "checker duplicate diagnostic message templates must come from loom.checker without printf fallbacks"
@@ -1168,8 +976,7 @@ if bin/sley check --json fixtures/corpus/rejected/unknown_effect.sley >/tmp/sley
 fi
 jq -er '.status == "error" and .diagnostics[0].id == "UNKNOWN_EFFECT" and .diagnostics[0].message == "unknown effect `MissingEffect`"' /tmp/sley-rejected-unknown-effect-check.json >/dev/null
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("checker_builtin_effect_fallback_removal_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_builtin_effect_fallback_removal_task_execution"))'
 
 bin/sley check --json fixtures/corpus/accepted/authority/shell_run.sley \
   | json_field '.status == "ok" and (.diagnostics | length) == 0'
@@ -1185,8 +992,7 @@ if grep -Fq 'if [[ "$CHECKER_BUILTIN_EFFECTS_JSON" == "[]" ]]' bin/sley; then
   fail "checker builtin effects must not fall back when loom.checker extraction is empty"
 fi
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("checker_effect_alias_fallback_removal_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_effect_alias_fallback_removal_task_execution"))'
 
 bin/sley check --json fixtures/corpus/accepted/authority/database_aliases.sley \
   | json_field '.status == "ok" and (.diagnostics | length) == 0'
@@ -1204,8 +1010,7 @@ if grep -Fq 'if [[ "$CHECKER_EFFECT_ALIASES_JSON" == "[]" ]]' bin/sley; then
   fail "checker effect aliases must not fall back when loom.checker extraction is empty"
 fi
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("checker_host_effect_needle_fallback_removal_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_host_effect_needle_fallback_removal_task_execution"))'
 
 bin/sley check --json fixtures/corpus/accepted/agent_data_authority.sley \
   | json_field '.status == "ok" and (.diagnostics | length) == 0'
@@ -1253,14 +1058,11 @@ if bin/sley check --json fixtures/corpus/rejected/question_requires_result.sley 
 fi
 jq -er '.status == "error" and .diagnostics[0].id == "QUESTION_REQUIRES_RESULT" and .diagnostics[0].message == "question operator requires Result return in task `corpus.rejected.question_requires_result.main`"' /tmp/sley-rejected-question-result-check.json >/dev/null
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("checker_effect_message_fallback_removal_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_effect_message_fallback_removal_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("checker_return_message_fallback_removal_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_return_message_fallback_removal_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("checker_question_message_fallback_removal_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_question_message_fallback_removal_task_execution"))'
 
 if grep -Eq 'eval_checker_message_template (unknown_effect_message effect_name|gate_take_type_mismatch_message actual_type|gate_effect_undeclared_message effect_name|effect_unauthorized_message effect_name) \|\| printf' bin/sley; then
   fail "checker effect diagnostic message templates must come from loom.checker without printf fallbacks"
@@ -1346,11 +1148,9 @@ if bin/sley check --json fixtures/corpus/rejected/map_value_type_mismatch.sley >
 fi
 jq -er '.status == "error" and .diagnostics[0].id == "MAP_VALUE_TYPE_MISMATCH" and .diagnostics[0].message == "map value type mismatch `Text`"' /tmp/sley-rejected-map-value-type-check.json >/dev/null
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("checker_record_message_fallback_removal_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_record_message_fallback_removal_task_execution"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("checker_collection_message_fallback_removal_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_collection_message_fallback_removal_task_execution"))'
 
 if grep -Eq 'eval_checker_message_template (record_field_missing_message field_name|record_field_unknown_message field_name|record_field_type_mismatch_message field_name|unknown_record_field_message field_name|record_literal_non_record_type_message type_name) \|\| printf' bin/sley; then
   fail "checker record diagnostic message templates must come from loom.checker without printf fallbacks"
@@ -1450,8 +1250,7 @@ bin/sley doctor --json examples/project \
 bin/sley lint --json examples/empty_for_statement.sley \
   | json_field '.schema == "sley.lint.report.v0" and .status == "findings" and .findings[0].id == "EMPTY_FOR_STATEMENT" and (.filters.rules | index("empty_for_statement"))'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("lint_empty_finding_fallback_removal_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("lint_empty_finding_fallback_removal_task_execution"))'
 
 bin/sley lint --json --rule empty_for_statement examples/empty_for_statement.sley \
   | json_field '([.findings[]? | select(.id == "EMPTY_FOR_STATEMENT" and .rule == "empty_for_statement" and .message == "task `app.empty_for.main` has a for statement over an empty list" and .hint == "delete this never-executed for statement") | .node] | index("block:task:app.empty_for.main:stmt:1"))'
@@ -1601,8 +1400,7 @@ bin/sley run --json examples/project \
 bin/sley run --json --cap SecretRead --secret api_key redacted --cap Network --http-text https://example.test/profile "owned profile" --cap ModelCall --model-output deploy-plan "owned plan" --cap Deploy --deploy-result staging "owned stage" fixtures/corpus/accepted/agent_deploy_pipeline.sley \
   | json_field '.schema == "sley.run.report.v0" and .value.kind == "Ok" and .value.value.value == "owned profile | owned plan | owned stage"'
 
-bin/sley self-hosting-status --json \
-  | json_field '(.bootstrap_owned_by_sley | index("file_entry_agent_pipeline_runtime_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("file_entry_agent_pipeline_runtime_execution"))'
 
 if bin/sley run --json examples/agent_project/src/agent/main.sley > "$runtime_report"; then
   fail "file entry agent project should require seeded runtime authority"
