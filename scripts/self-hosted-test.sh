@@ -19,6 +19,7 @@ self_hosting_status_field() {
 }
 
 bool_literal_source="$(mktemp)"
+parser_feature_source="$(mktemp)"
 generic_source_main_source="$(mktemp)"
 generic_state_set_source="$(mktemp)"
 generic_if_assignment_source="$(mktemp)"
@@ -41,13 +42,24 @@ zjx_tool_report="$(mktemp)"
 runtime_report="$(mktemp)"
 ast_missing_report="$(mktemp)"
 ci_report="$(mktemp)"
-trap 'rm -f "$bool_literal_source" "$generic_source_main_source" "$generic_state_set_source" "$generic_if_assignment_source" "$generic_result_err_source" "$generic_each_source" "$generic_for_source" "$generic_while_source" "$empty_module_source" "$unknown_take_type_source" "$add_take_operation" "$self_hosting_status_report" "$artifact_check_report" "$migrate_report" "$docgen_report" "$workbench_report" "$sandbox_report" "$agent_bench_report" "$zjx_tool_report" "$runtime_report" "$ast_missing_report" "$ci_report"; rm -rf "$artifact_dir"' EXIT
+trap 'rm -f "$bool_literal_source" "$parser_feature_source" "$generic_source_main_source" "$generic_state_set_source" "$generic_if_assignment_source" "$generic_result_err_source" "$generic_each_source" "$generic_for_source" "$generic_while_source" "$empty_module_source" "$unknown_take_type_source" "$add_take_operation" "$self_hosting_status_report" "$artifact_check_report" "$migrate_report" "$docgen_report" "$workbench_report" "$sandbox_report" "$agent_bench_report" "$zjx_tool_report" "$runtime_report" "$ast_missing_report" "$ci_report"; rm -rf "$artifact_dir"' EXIT
 printf '%s\n' \
   'module app.bool_literal' \
   '' \
   'task main -> Bool {' \
   '  return true' \
   '}' > "$bool_literal_source"
+printf '%s\n' \
+  'module app.parser_features' \
+  '' \
+  'task main -> Text {' \
+  '  bind count = 42' \
+  '  bind text = "hello"' \
+  '  bind flag = true' \
+  '  bind names = []' \
+  '' \
+  '  return text' \
+  '}' > "$parser_feature_source"
 printf '%s\n' \
   'module app.generic_source_main' \
   '' \
@@ -274,6 +286,10 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_classifier_
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_classifier_source_task_execution"))'
 
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_feature_classifier_task_execution"))'
+
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_ast_expression_feature_dispatch_execution"))'
+
 if ! awk '
   /^eval_parser_expression_classifiers_json\(\)[ \t]*\{/ {in_fn=1}
   in_fn && /sley_eval_source_task/ {source_eval=1}
@@ -283,6 +299,19 @@ if ! awk '
 ' bin/sley; then
   fail "eval_parser_expression_classifiers_json must execute classify_expression through the shared Sley source task evaluator"
 fi
+
+if ! awk '
+  /^eval_parser_expression_feature_classifiers_json\(\)[ \t]*\{/ {in_fn=1}
+  in_fn && /sley_eval_source_task/ {source_eval=1}
+  in_fn && /extract_sley_task_body/ {body_walk=1}
+  in_fn && /^[ \t]*}/ {exit}
+  END {exit (source_eval && !body_walk) ? 0 : 1}
+' bin/sley; then
+  fail "eval_parser_expression_feature_classifiers_json must execute classify_expression_features through the shared Sley source task evaluator"
+fi
+
+bin/sley ast --json "$parser_feature_source" \
+  | json_field '[.tasks[].body.statements[]?.expr.expr_kind] as $k | ($k | index("IntLiteral")) and ($k | index("StringLiteral")) and ($k | index("BoolLiteral")) and ($k | index("ListLiteral")) and ($k | index("Identifier"))'
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_source_metadata_task_execution"))'
 

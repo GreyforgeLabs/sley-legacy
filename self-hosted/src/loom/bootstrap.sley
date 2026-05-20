@@ -55,6 +55,8 @@ export task owned_bootstrap_values -> List<Text> {
     "parser_classifier_task_execution",
     "parser_classifier_parser_prefix_task_execution",
     "parser_classifier_source_task_execution",
+    "parser_feature_classifier_task_execution",
+    "parser_ast_expression_feature_dispatch_execution",
     "parser_source_metadata_task_execution",
     "parser_fallback_removal_task_execution",
     "parser_call_prefix_fallback_removal_task_execution",
