@@ -298,6 +298,31 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("runtime_status_parser_prefix_task_execution"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("generic_pure_task_evaluator_execution"))'
+
+for source_task_eval_fn in \
+  eval_checker_status_task \
+  eval_lint_status_task \
+  eval_runtime_status_task \
+  eval_seeded_agent_deploy_value \
+  eval_runtime_spend_prefixed_value_task \
+  eval_runtime_list_len_value_task \
+  eval_runtime_int_identity_value_task \
+  eval_runtime_text_identity_value_task \
+  eval_runtime_ok_int_value_task \
+  eval_runtime_ok_text_value_task
+do
+  if ! awk -v fn="$source_task_eval_fn" '
+    $0 ~ "^" fn "\\(\\)[ \t]*\\{" {in_fn=1}
+    in_fn && /sley_eval_source_task/ {found=1}
+    in_fn && /^[ \t]*}/ {exit}
+    END {exit found ? 0 : 1}
+  ' bin/sley; then
+    fail "$source_task_eval_fn must execute through the shared Sley source task evaluator"
+  fi
+done
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("runtime_project_probe_parser_prefix_task_execution")) and (.bootstrap_owned_by_sley | index("runtime_project_binding_parser_prefix_task_execution"))'
 
 bin/sley self-hosting-status --json \

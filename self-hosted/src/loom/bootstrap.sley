@@ -173,6 +173,7 @@ export task owned_bootstrap_values -> List<Text> {
     "lint_empty_finding_fallback_removal_task_execution",
     "lint_declared_effect_host_needles_task_execution",
     "lint_call_expression_prefix_task_execution",
+    "generic_pure_task_evaluator_execution",
     "runtime_status_task_execution",
     "runtime_status_parser_prefix_task_execution",
     "runtime_project_probe_parser_prefix_task_execution",
