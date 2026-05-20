@@ -119,6 +119,35 @@ module_source_file() {
   printf '%s/%s.sley\n' "$SELF_HOSTED_SOURCE_ROOT" "${module//.//}"
 }
 
+sley_project_module_source_file() {
+  local file="$1" module="$2" dir root_rel candidate
+  [[ -f "$file" && -n "$module" ]] || return 1
+  dir="$(cd "$(dirname "$file")" && pwd)" || return 1
+  while [[ "$dir" != "/" ]]; do
+    if [[ -f "$dir/sley.toml" ]]; then
+      root_rel="$(awk -F= '/^[[:space:]]*root[[:space:]]*=/ {gsub(/^[ \t"]+|[ \t"]+$/, "", $2); print $2; exit}' "$dir/sley.toml")"
+      [[ -n "$root_rel" ]] || root_rel="src"
+      candidate="$dir/$root_rel/${module//.//}.sley"
+      if [[ -f "$candidate" ]]; then
+        printf '%s\n' "$candidate"
+        return
+      fi
+    fi
+    dir="$(dirname "$dir")"
+  done
+  return 1
+}
+
+sley_source_file_for_module() {
+  local current_file="$1" module="$2" source_file
+  source_file="$(module_source_file "$module")"
+  if [[ -f "$source_file" ]]; then
+    printf '%s\n' "$source_file"
+    return
+  fi
+  sley_project_module_source_file "$current_file" "$module"
+}
+
 sley_eval_env_lookup() {
   local env_json="$1" name="$2"
   printf '%s\n' "$env_json" | jq -er --arg name "$name" '
@@ -436,7 +465,7 @@ sley_eval_source_call_list_json() {
     task="${callee#*.}"
     module="$(resolve_sley_import_alias "$file" "$alias")"
     [[ -n "$module" ]] || return 1
-    source_file="$(module_source_file "$module")"
+    source_file="$(sley_source_file_for_module "$file" "$module")"
   else
     task="$callee"
     source_file="$file"
@@ -599,7 +628,7 @@ sley_eval_source_call() {
     task="${callee#*.}"
     module="$(resolve_sley_import_alias "$file" "$alias")"
     [[ -n "$module" ]] || return 1
-    source_file="$(module_source_file "$module")"
+    source_file="$(sley_source_file_for_module "$file" "$module")"
   else
     task="$callee"
     source_file="$file"

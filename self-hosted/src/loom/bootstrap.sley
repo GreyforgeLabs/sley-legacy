@@ -301,6 +301,7 @@ export task owned_bootstrap_values -> List<Text> {
     "database_row_source_runtime_execution",
     "seeded_host_text_source_runtime_execution",
     "gate_take_source_call_runtime_execution",
+    "project_import_source_call_runtime_execution",
     "local_call_runtime_execution",
     "local_call_parser_prefix_runtime_execution",
     "zero_arg_project_call_runtime_execution",
