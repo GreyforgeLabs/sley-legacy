@@ -6126,6 +6126,9 @@ check_json() {
       elif ($pass.diagnostic_id_task // "") == "unknown_task_id" then $unknown_task
       elif ($pass.diagnostic_id_task // "") == "call_arity_mismatch_id" then $call_arity
       elif ($pass.diagnostic_id_task // "") == "call_argument_type_mismatch_id" then $call_argument_type
+      elif ($pass.diagnostic_id_task // "") == "type_mismatch_id" then $type_mismatch
+      elif ($pass.diagnostic_id_task // "") == "return_type_mismatch_id" then $return_type_mismatch
+      elif ($pass.diagnostic_id_task // "") == "missing_return_id" then $missing_return
       elif ($pass.diagnostic_id_task // "") == "unknown_effect_id" then $unknown_effect
       elif ($pass.diagnostic_id_task // "") == "gate_take_type_mismatch_id" then $gate_take_type
       elif ($pass.diagnostic_id_task // "") == "gate_effect_undeclared_id" then $gate_effect
@@ -6153,6 +6156,9 @@ check_json() {
       elif ($pass.message_task // "") == "unknown_task_message" then $unknown_task_message_template
       elif ($pass.message_task // "") == "call_arity_mismatch_message" then $call_arity_message_template
       elif ($pass.message_task // "") == "call_argument_type_mismatch_message" then $call_argument_type_message_template
+      elif ($pass.message_task // "") == "type_mismatch_message" then $type_mismatch_message_template
+      elif ($pass.message_task // "") == "return_type_mismatch_message" then $return_type_mismatch_message_template
+      elif ($pass.message_task // "") == "missing_return_message" then $missing_return_message_template
       elif ($pass.message_task // "") == "unknown_effect_message" then $unknown_effect_message_template
       elif ($pass.message_task // "") == "gate_take_type_mismatch_message" then $gate_take_type_message_template
       elif ($pass.message_task // "") == "gate_effect_undeclared_message" then $gate_effect_message_template
@@ -6353,36 +6359,49 @@ check_json() {
         select($actual != "" and $expected != $actual) |
         {id:descriptor_diagnostic_id($pass), severity:"error", message:render_arg(descriptor_message_template($pass); ($pass.message_arg // "task_name"); $callee), node:$expr.id, span:$expr.span}
       else empty end;
-    def type_mismatch_diags:
-      $root.tasks[] as $t |
-      $t.body.statements[]? |
-      select(.kind==$binding_statement_kind) |
-      . as $stmt |
-      (declared_binding_type($stmt)) as $expected |
-      select($expected != null) |
-      select(type_known_for_compare($expected)) |
-      (expression_static_type($t; $stmt.expr)) as $actual |
-      select(type_known_for_compare($actual)) |
-      select($actual != "" and (types_compatible($expected; $actual) | not)) |
-      {id:$type_mismatch, severity:"error", message:render_arg($type_mismatch_message_template; "binding_name"; $stmt.name), node:$stmt.id, span:$stmt.span};
-    def return_type_mismatch_diags:
-      $root.tasks[] as $t |
-      ($t.return_type.name // $checker_unit_type) as $expected |
-      select(type_known_for_compare($expected)) |
-      $t.body.statements[]? |
-      select(.kind == $return_statement_kind) |
-      . as $stmt |
-      (expression_static_type($t; $stmt.expr)) as $actual |
-      select(type_known_for_compare($actual)) |
-      select($actual != "" and (types_compatible($expected; $actual) | not)) |
-      (starter_expr(normalize_type($expected))) as $replacement_expr |
-      {id:$return_type_mismatch, severity:"error", message:render_arg($return_type_mismatch_message_template; "task_name"; ($t.module + "." + $t.name)), node:$stmt.expr.id, span:$stmt.expr.span,
-        repair_hints:[
-          {kind:$inspect_return_type_hint_kind, target:$t.id, replacement:$expected},
-          {kind:$replace_task_body_hint_kind, target:$t.id, replacement:("return " + $replacement_expr)},
-          {kind:$replace_expression_hint_kind, target:$stmt.expr.id, replacement:("{\"op\":\"ReplaceExpression\",\"payload\":{\"source\":\"" + $replacement_expr + "\"},\"target\":\"" + $stmt.expr.id + "\"}")}
-        ]
-      };
+    def type_return_diags($pass):
+      if ($pass.subject // "") == "binding_type" then
+        $root.tasks[] as $t |
+        $t.body.statements[]? |
+        select(.kind==$binding_statement_kind) |
+        . as $stmt |
+        (declared_binding_type($stmt)) as $expected |
+        select($expected != null) |
+        select(type_known_for_compare($expected)) |
+        (expression_static_type($t; $stmt.expr)) as $actual |
+        select(type_known_for_compare($actual)) |
+        select($actual != "" and (types_compatible($expected; $actual) | not)) |
+        {id:descriptor_diagnostic_id($pass), severity:"error", message:render_arg(descriptor_message_template($pass); ($pass.message_arg // "binding_name"); $stmt.name), node:$stmt.id, span:$stmt.span}
+      elif ($pass.subject // "") == "return_type" then
+        $root.tasks[] as $t |
+        ($t.return_type.name // $checker_unit_type) as $expected |
+        select(type_known_for_compare($expected)) |
+        $t.body.statements[]? |
+        select(.kind == $return_statement_kind) |
+        . as $stmt |
+        (expression_static_type($t; $stmt.expr)) as $actual |
+        select(type_known_for_compare($actual)) |
+        select($actual != "" and (types_compatible($expected; $actual) | not)) |
+        (starter_expr(normalize_type($expected))) as $replacement_expr |
+        {id:descriptor_diagnostic_id($pass), severity:"error", message:render_arg(descriptor_message_template($pass); ($pass.message_arg // "task_name"); ($t.module + "." + $t.name)), node:$stmt.expr.id, span:$stmt.expr.span,
+          repair_hints:[
+            {kind:$inspect_return_type_hint_kind, target:$t.id, replacement:$expected},
+            {kind:$replace_task_body_hint_kind, target:$t.id, replacement:("return " + $replacement_expr)},
+            {kind:$replace_expression_hint_kind, target:$stmt.expr.id, replacement:("{\"op\":\"ReplaceExpression\",\"payload\":{\"source\":\"" + $replacement_expr + "\"},\"target\":\"" + $stmt.expr.id + "\"}")}
+          ]
+        }
+      elif ($pass.subject // "") == "missing_return" then
+        $root.tasks[] as $t |
+        ($t.return_type.name // $checker_unit_type) as $name |
+        select($name != $checker_unit_type) |
+        select(([$t.body.statements[]? | select(.kind == $return_statement_kind)] | length) == 0) |
+        {id:descriptor_diagnostic_id($pass), severity:"error", message:render_arg(descriptor_message_template($pass); ($pass.message_arg // "task_name"); ($t.module + "." + $t.name)), node:$t.id, span:$t.span,
+          repair_hints:[
+            {kind:$insert_return_hint_kind, target:$t.id, replacement:starter_return($name)},
+            {kind:$replace_task_body_hint_kind, target:$t.id, replacement:starter_return($name)}
+          ]
+        }
+      else empty end;
     def collection_shape_diags($pass):
       if ($pass.subject // "") == "list_literal_element_type" then
         $root.tasks[] as $t |
@@ -6471,17 +6490,6 @@ check_json() {
         select(effect_authorized($t.effects; $effect) | not) |
         {id:descriptor_diagnostic_id($pass), severity:"error", message:render_arg(descriptor_message_template($pass); ($pass.message_arg // "effect_name"); $effect), node:$expr.id, span:$expr.span}
       else empty end;
-    def missing_return_diags:
-      $root.tasks[] as $t |
-      ($t.return_type.name // $checker_unit_type) as $name |
-      select($name != $checker_unit_type) |
-      select(([$t.body.statements[]? | select(.kind == $return_statement_kind)] | length) == 0) |
-      {id:$missing_return, severity:"error", message:render_arg($missing_return_message_template; "task_name"; ($t.module + "." + $t.name)), node:$t.id, span:$t.span,
-        repair_hints:[
-          {kind:$insert_return_hint_kind, target:$t.id, replacement:starter_return($name)},
-          {kind:$replace_task_body_hint_kind, target:$t.id, replacement:starter_return($name)}
-        ]
-      };
     def diagnostic_pass($pass):
       ($pass.name // "") as $name |
       if ($pass.executor // "") == "unknown_reference" then unknown_reference_diags($pass)
@@ -6491,11 +6499,9 @@ check_json() {
       elif ($pass.executor // "") == "record_shape" then record_shape_diags($pass)
       elif ($pass.executor // "") == "collection_shape" then collection_shape_diags($pass)
       elif ($pass.executor // "") == "call_shape" then call_shape_diags($pass)
+      elif ($pass.executor // "") == "type_return" then type_return_diags($pass)
       elif $name == "task_diags" then task_diags
       elif $name == "question_requires_result_diags" then question_requires_result_diags
-      elif $name == "type_mismatch_diags" then type_mismatch_diags
-      elif $name == "return_type_mismatch_diags" then return_type_mismatch_diags
-      elif $name == "missing_return_diags" then missing_return_diags
       else empty end;
     [$diagnostic_pass_descriptors[]? | diagnostic_pass(.)]
   ')"

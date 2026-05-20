@@ -61,8 +61,8 @@ export task diagnostic_pass_descriptors -> List<Text> {
     "unknown_task_diags|call_shape|unknown_task_id|unknown_task_message|task_name|unknown_task_call|expr",
     "call_arity_diags|call_shape|call_arity_mismatch_id|call_arity_mismatch_message|task_name|call_arity|expr",
     "call_argument_type_diags|call_shape|call_argument_type_mismatch_id|call_argument_type_mismatch_message|task_name|call_argument_type|expr",
-    "type_mismatch_diags|legacy|||||",
-    "return_type_mismatch_diags|legacy|||||",
+    "type_mismatch_diags|type_return|type_mismatch_id|type_mismatch_message|binding_name|binding_type|statement",
+    "return_type_mismatch_diags|type_return|return_type_mismatch_id|return_type_mismatch_message|task_name|return_type|expr",
     "duplicate_take_diags|duplicate_name|duplicate_take_id|duplicate_take_message|take_name|task_take_name|take",
     "duplicate_map_key_diags|duplicate_name|duplicate_map_key_id|duplicate_map_key_message|key_name|map_entry_key|expr",
     "duplicate_record_field_diags|duplicate_name|duplicate_field_id|duplicate_field_message|field_name|record_type_field_name|type",
@@ -77,7 +77,7 @@ export task diagnostic_pass_descriptors -> List<Text> {
     "map_index_key_type_diags|collection_shape|index_key_type_mismatch_id|index_key_type_mismatch_message|actual_type|map_index_key_type|expr",
     "map_key_type_diags|collection_shape|map_key_type_mismatch_id|map_key_type_mismatch_message|actual_type|map_literal_key_type|expr",
     "map_value_type_diags|collection_shape|map_value_type_mismatch_id|map_value_type_mismatch_message|actual_type|map_literal_value_type|expr",
-    "missing_return_diags|legacy|||||"
+    "missing_return_diags|type_return|missing_return_id|missing_return_message|task_name|missing_return|task"
   ]
 }
 
