@@ -22,6 +22,7 @@ bool_literal_source="$(mktemp)"
 parser_feature_source="$(mktemp)"
 parser_statement_source="$(mktemp)"
 parser_binding_source="$(mktemp)"
+parser_for_payload_source="$(mktemp)"
 generic_source_main_source="$(mktemp)"
 generic_state_set_source="$(mktemp)"
 generic_if_assignment_source="$(mktemp)"
@@ -44,7 +45,7 @@ zjx_tool_report="$(mktemp)"
 runtime_report="$(mktemp)"
 ast_missing_report="$(mktemp)"
 ci_report="$(mktemp)"
-trap 'rm -f "$bool_literal_source" "$parser_feature_source" "$parser_statement_source" "$parser_binding_source" "$generic_source_main_source" "$generic_state_set_source" "$generic_if_assignment_source" "$generic_result_err_source" "$generic_each_source" "$generic_for_source" "$generic_while_source" "$empty_module_source" "$unknown_take_type_source" "$add_take_operation" "$self_hosting_status_report" "$artifact_check_report" "$migrate_report" "$docgen_report" "$workbench_report" "$sandbox_report" "$agent_bench_report" "$zjx_tool_report" "$runtime_report" "$ast_missing_report" "$ci_report"; rm -rf "$artifact_dir"' EXIT
+trap 'rm -f "$bool_literal_source" "$parser_feature_source" "$parser_statement_source" "$parser_binding_source" "$parser_for_payload_source" "$generic_source_main_source" "$generic_state_set_source" "$generic_if_assignment_source" "$generic_result_err_source" "$generic_each_source" "$generic_for_source" "$generic_while_source" "$empty_module_source" "$unknown_take_type_source" "$add_take_operation" "$self_hosting_status_report" "$artifact_check_report" "$migrate_report" "$docgen_report" "$workbench_report" "$sandbox_report" "$agent_bench_report" "$zjx_tool_report" "$runtime_report" "$ast_missing_report" "$ci_report"; rm -rf "$artifact_dir"' EXIT
 printf '%s\n' \
   'module app.bool_literal' \
   '' \
@@ -92,6 +93,15 @@ printf '%s\n' \
   '' \
   '  return seen' \
   '}' > "$parser_binding_source"
+printf '%s\n' \
+  'module app.parser_for_payload' \
+  '' \
+  'task main -> Int {' \
+  '  bind values = [1, 2]' \
+  '  for score in values {' \
+  '  }' \
+  '  return 0' \
+  '}' > "$parser_for_payload_source"
 printf '%s\n' \
   'module app.generic_source_main' \
   '' \
@@ -330,6 +340,10 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_binding_fea
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_ast_binding_feature_dispatch_execution"))'
 
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_for_statement_payload_task_execution"))'
+
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_ast_for_payload_execution"))'
+
 if ! awk '
   /^eval_parser_expression_classifiers_json\(\)[ \t]*\{/ {in_fn=1}
   in_fn && /sley_eval_source_task/ {source_eval=1}
@@ -378,6 +392,9 @@ bin/sley ast --json "$parser_statement_source" \
 
 bin/sley ast --json "$parser_binding_source" \
   | json_field '([.tasks[0].takes[]?.binding_kind] as $takes | ($takes | index("Gate")) and ($takes | index("Take"))) and ([.tasks[0].body.statements[]? | select(.kind == "Binding") | .binding_kind] as $bindings | ($bindings | index("Bind")) and ($bindings | index("State")) and ($bindings | index("Tally")))'
+
+bin/sley ast --json "$parser_for_payload_source" \
+  | json_field '.tasks[0].body.statements[] | select(.kind == "For" and .item == "score" and .collection.source == "values" and .collection.expr_kind == "Identifier" and .collection.name == "values")'
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_source_metadata_task_execution"))'
 

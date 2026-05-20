@@ -5360,6 +5360,8 @@ PARSER_STATEMENT_ID_TEMPLATE="$(eval_parser_id_template statement_id)"
 PARSER_EXPRESSION_ID_TEMPLATE="$(eval_parser_id_template expression_id)"
 PARSER_COLLECTION_EXPRESSION_ID_TEMPLATE="$(eval_parser_id_template collection_expression_id)"
 PARSER_CONDITION_EXPRESSION_ID_TEMPLATE="$(eval_parser_id_template condition_expression_id)"
+PARSER_FOR_ITEM_NAME_TEMPLATE="$(sley_source_task loom.parser for_item_name_template)"
+PARSER_FOR_COLLECTION_SOURCE_TEMPLATE="$(sley_source_task loom.parser for_collection_source_template)"
 PARSER_CALL_ARGUMENT_SURFACE_ID_TEMPLATE="$(eval_parser_id_template call_argument_surface_id)"
 PARSER_EXPRESSION_SIDE_SURFACE_ID_TEMPLATE="$(eval_parser_id_template expression_side_surface_id)"
 PARSER_RETURN_STATEMENT_KIND="$(sley_source_task loom.parser return_statement_kind)"
@@ -5831,6 +5833,8 @@ ast_json() {
     -v expression_id_template="$PARSER_EXPRESSION_ID_TEMPLATE" \
     -v collection_expression_id_template="$PARSER_COLLECTION_EXPRESSION_ID_TEMPLATE" \
     -v condition_expression_id_template="$PARSER_CONDITION_EXPRESSION_ID_TEMPLATE" \
+    -v for_item_name_template="$PARSER_FOR_ITEM_NAME_TEMPLATE" \
+    -v for_collection_source_template="$PARSER_FOR_COLLECTION_SOURCE_TEMPLATE" \
     -v call_expression_prefix="$PARSER_CALL_EXPRESSION_PREFIX" \
     -v return_statement_kind="$PARSER_RETURN_STATEMENT_KIND" \
     -v expr_statement_kind="$PARSER_EXPR_STATEMENT_KIND" \
@@ -5874,6 +5878,8 @@ ast_json() {
     function instantiate_expression_id(stmt_id, id){id=expression_id_template; id=replace_all(id, "{{statement}}", stmt_id); return id}
     function instantiate_collection_expression_id(stmt_id, id){id=collection_expression_id_template; id=replace_all(id, "{{statement}}", stmt_id); return id}
     function instantiate_condition_expression_id(stmt_id, id){id=condition_expression_id_template; id=replace_all(id, "{{statement}}", stmt_id); return id}
+    function instantiate_for_item_name(item_name, value){value=for_item_name_template; value=replace_all(value, "{{item}}", item_name); return value}
+    function instantiate_for_collection_source(collection_source, value){value=for_collection_source_template; value=replace_all(value, "{{collection}}", collection_source); return value}
     function expr_json(expr, id, line, col, value){
       expr=trim(expr)
       if(expr ~ int_pattern){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" int_kind "\",\"value\":" expr ",\"span\":" span_json(line,col) "}"}
@@ -5935,7 +5941,12 @@ ast_json() {
       } else if(index(line, call_expression_prefix) == 1) {
         add_stmt(call_feature_statement_kind, line, FNR, index(raw, call_expression_prefix))
       } else if(line ~ /^for[ \t]+/) {
-        add_stmt(for_feature_statement_kind, line, FNR, index(raw, "for"))
+        for_item="item"; for_collection="[]"; for_line=line
+        if(for_line ~ /^for[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]+in[ \t]+.*[ \t]*[{][ \t]*$/) {
+          for_item=for_line; sub(/^for[ \t]+/,"",for_item); sub(/[ \t]+in[ \t]+.*$/,"",for_item)
+          for_collection=for_line; sub(/^for[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]+in[ \t]+/,"",for_collection); sub(/[ \t]*[{][ \t]*$/,"",for_collection)
+        }
+        add_stmt(for_feature_statement_kind "|" instantiate_for_item_name(trim(for_item)), instantiate_for_collection_source(trim(for_collection)), FNR, index(raw, "for"))
       } else if(line ~ /^while[ \t]+/) {
         add_stmt(while_feature_statement_kind, line, FNR, index(raw, "while"))
       } else if(line ~ /^if[ \t]+/) {
@@ -5973,7 +5984,7 @@ ast_json() {
           else if(parts[1]==expr_statement_kind){printf "{\"id\":\"%s\",\"kind\":\"%s\",\"expr\":%s,\"span\":%s}", id, expr_statement_kind, expr_json(stmt_text[i,j], instantiate_expression_id(id), stmt_line[i,j], stmt_col[i,j]), span_json(stmt_line[i,j],stmt_col[i,j])}
           else if(parts[1]==binding_statement_kind){printf "{\"id\":\"%s\",\"kind\":\"%s\",\"binding_kind\":\"%s\",\"name\":\"%s\",\"expr\":%s,\"span\":%s}", id, binding_statement_kind, parts[2], esc(parts[3]), expr_json(stmt_text[i,j], instantiate_expression_id(id), stmt_line[i,j], stmt_col[i,j]+length(parts[3])+4), span_json(stmt_line[i,j],stmt_col[i,j])}
           else if(parts[1]==set_statement_kind){printf "{\"id\":\"%s\",\"kind\":\"%s\",\"name\":\"%s\",\"expr\":%s,\"span\":%s}", id, set_statement_kind, esc(parts[2]), expr_json(stmt_text[i,j], instantiate_expression_id(id), stmt_line[i,j], stmt_col[i,j]+length(parts[2])+4), span_json(stmt_line[i,j],stmt_col[i,j])}
-          else if(parts[1]==for_statement_kind){printf "{\"id\":\"%s\",\"kind\":\"%s\",\"item\":\"item\",\"collection\":%s,\"body\":{\"statements\":[]},\"span\":%s}", id, for_statement_kind, expr_json("[]", instantiate_collection_expression_id(id), stmt_line[i,j], stmt_col[i,j]+4), span_json(stmt_line[i,j],stmt_col[i,j])}
+          else if(parts[1]==for_statement_kind){printf "{\"id\":\"%s\",\"kind\":\"%s\",\"item\":\"%s\",\"collection\":%s,\"body\":{\"statements\":[]},\"span\":%s}", id, for_statement_kind, esc(parts[2]), expr_json(stmt_text[i,j], instantiate_collection_expression_id(id), stmt_line[i,j], stmt_col[i,j]+4), span_json(stmt_line[i,j],stmt_col[i,j])}
           else if(parts[1]==while_statement_kind){printf "{\"id\":\"%s\",\"kind\":\"%s\",\"condition\":%s,\"body\":{\"statements\":[]},\"span\":%s}", id, while_statement_kind, expr_json(stmt_text[i,j], instantiate_condition_expression_id(id), stmt_line[i,j], stmt_col[i,j]+6), span_json(stmt_line[i,j],stmt_col[i,j])}
           else if(parts[1]==if_statement_kind){printf "{\"id\":\"%s\",\"kind\":\"%s\",\"condition\":%s,\"then_block\":{\"statements\":[]},\"else_block\":{\"statements\":[]},\"span\":%s}", id, if_statement_kind, expr_json(stmt_text[i,j], instantiate_condition_expression_id(id), stmt_line[i,j], stmt_col[i,j]+3), span_json(stmt_line[i,j],stmt_col[i,j])}
           else if(parts[1]==forge_statement_kind){printf "{\"id\":\"%s\",\"kind\":\"%s\",\"body\":{\"statements\":[]},\"span\":%s}", id, forge_statement_kind, span_json(stmt_line[i,j],stmt_col[i,j])}
