@@ -565,9 +565,16 @@ sley_eval_source_apply_assignment_json() {
 }
 
 sley_eval_source_each_env_json() {
-  local file="$1" env_json="$2" loop_var="$3" list_name="$4" body="$5"
-  local item_json body_line
-  printf '%s\n' "$env_json" | jq -e --arg name "$list_name" 'type == "object" and has($name) and (.[$name] | type) == "array"' >/dev/null || return 1
+  local file="$1" env_json="$2" loop_var="$3" collection_expr="$4" body="$5"
+  local collection_json item_json body_line
+  if collection_json="$(printf '%s\n' "$env_json" | jq -ce --arg name "$collection_expr" '
+    if type == "object" and has($name) and (.[$name] | type) == "array" then .[$name] else empty end
+  ' 2>/dev/null)"; then
+    :
+  else
+    collection_json="$(sley_eval_source_bind_value_json "$file" "$env_json" "$collection_expr")" || return 1
+    printf '%s\n' "$collection_json" | jq -e 'type == "array"' >/dev/null || return 1
+  fi
   while IFS= read -r item_json || [[ -n "$item_json" ]]; do
     [[ -n "$item_json" ]] || continue
     env_json="$(jq -cn --argjson env "$env_json" --arg name "$loop_var" --argjson value "$item_json" '$env + {($name): $value}')" || return 1
@@ -575,7 +582,7 @@ sley_eval_source_each_env_json() {
       [[ -n "$body_line" ]] || continue
       env_json="$(sley_eval_source_apply_assignment_json "$file" "$env_json" "$body_line")" || return 1
     done <<< "$body"
-  done < <(printf '%s\n' "$env_json" | jq -ce --arg name "$list_name" '.[$name][]')
+  done < <(printf '%s\n' "$collection_json" | jq -ce '.[]')
   printf '%s\n' "$env_json"
 }
 
@@ -639,9 +646,9 @@ sley_eval_source_bind_env_json() {
       env_json="$(sley_eval_source_bind_env_json "$file" "$env_json" "$active_body")" || return 1
       continue
     fi
-    if [[ "$line" =~ ^each[[:space:]]+([A-Za-z_][A-Za-z0-9_]*)[[:space:]]+in[[:space:]]+([A-Za-z_][A-Za-z0-9_]*)[[:space:]]*\{[[:space:]]*$ ]]; then
-      loop_var="${BASH_REMATCH[1]}"
-      list_name="${BASH_REMATCH[2]}"
+    if [[ "$line" =~ ^(each|for)[[:space:]]+([A-Za-z_][A-Za-z0-9_]*)[[:space:]]+in[[:space:]]+(.+)[[:space:]]*\{[[:space:]]*$ ]]; then
+      loop_var="${BASH_REMATCH[2]}"
+      list_name="${BASH_REMATCH[3]}"
       loop_body=""
       while IFS= read -r raw || [[ -n "$raw" ]]; do
         line="$(printf '%s\n' "$raw" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
@@ -744,10 +751,19 @@ sley_eval_source_condition() {
 
 sley_select_source_return_expr() {
   local body="$1" env_json="$2"
-  local raw line in_if=false if_condition=false if_active=false
+  local raw line in_if=false if_condition=false if_active=false skip_depth=0 delta
   while IFS= read -r raw || [[ -n "$raw" ]]; do
     line="$(printf '%s\n' "$raw" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
     [[ -n "$line" ]] || continue
+    if [[ "$skip_depth" -gt 0 ]]; then
+      delta="$(printf '%s\n' "$line" | awk '{print gsub(/{/,"{") - gsub(/}/,"}")}')"
+      skip_depth=$((skip_depth + delta))
+      continue
+    fi
+    if [[ "$line" =~ ^(each|for|while)[[:space:]].*\{[[:space:]]*$ ]]; then
+      skip_depth=1
+      continue
+    fi
     if [[ "$line" =~ ^if[[:space:]]+(.+)[[:space:]]*\{$ ]]; then
       in_if=true
       if sley_eval_source_condition "$env_json" "${BASH_REMATCH[1]}"; then
@@ -4257,7 +4273,7 @@ sley_source_main_body_supports_generic_runtime() {
     function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
     {
       line=trim($0)
-      if(line ~ /^(for|while|forge)([ \t{]|$)/) found=1
+      if(line ~ /^(while|forge)([ \t{]|$)/) found=1
     }
     END {exit found ? 0 : 1}
   '
