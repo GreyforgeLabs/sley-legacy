@@ -218,7 +218,7 @@ sley_eval_source_call() {
 
 sley_eval_source_expr() {
   local file="$1" env_json="$2" expr="$3"
-  local call_prefix="${PARSER_CALL_EXPRESSION_PREFIX:-call }" tail callee tokens token out="" seen=false value
+  local call_prefix="${PARSER_CALL_EXPRESSION_PREFIX:-call }" tail callee tokens token out="" seen=false value left right op binary_re
   expr="$(printf '%s\n' "$expr" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
   if [[ "$expr" == "$call_prefix"* ]]; then
     tail="${expr#"$call_prefix"}"
@@ -233,6 +233,60 @@ sley_eval_source_expr() {
   fi
   if [[ "$expr" =~ ^-?[0-9]+$ || "$expr" == "true" || "$expr" == "false" ]]; then
     printf '%s\n' "$expr"
+    return 0
+  fi
+  if [[ "$expr" =~ ^!([A-Za-z_][A-Za-z0-9_]*)$ ]]; then
+    value="$(sley_eval_env_lookup "$env_json" "${BASH_REMATCH[1]}")" || return 1
+    [[ "$value" == "true" || "$value" == "false" ]] || return 1
+    if [[ "$value" == "true" ]]; then printf 'false\n'; else printf 'true\n'; fi
+    return 0
+  fi
+  binary_re='^([A-Za-z_][A-Za-z0-9_]*)[[:space:]]*(==|!=|>=|<=|&&|\+|\*|>|<)[[:space:]]*([A-Za-z_][A-Za-z0-9_]*)$'
+  if [[ "$expr" =~ $binary_re ]]; then
+    left="$(sley_eval_env_lookup "$env_json" "${BASH_REMATCH[1]}")" || return 1
+    op="${BASH_REMATCH[2]}"
+    right="$(sley_eval_env_lookup "$env_json" "${BASH_REMATCH[3]}")" || return 1
+    case "$op" in
+      "+")
+        if [[ "$left" =~ ^-?[0-9]+$ && "$right" =~ ^-?[0-9]+$ ]]; then
+          printf '%s\n' "$((left + right))"
+        else
+          printf '%s%s\n' "$left" "$right"
+        fi
+        ;;
+      "*")
+        [[ "$left" =~ ^-?[0-9]+$ && "$right" =~ ^-?[0-9]+$ ]] || return 1
+        printf '%s\n' "$((left * right))"
+        ;;
+      "==")
+        if [[ "$left" == "$right" ]]; then printf 'true\n'; else printf 'false\n'; fi
+        ;;
+      "!=")
+        if [[ "$left" != "$right" ]]; then printf 'true\n'; else printf 'false\n'; fi
+        ;;
+      "&&")
+        [[ "$left" == "true" || "$left" == "false" ]] || return 1
+        [[ "$right" == "true" || "$right" == "false" ]] || return 1
+        if [[ "$left" == "true" && "$right" == "true" ]]; then printf 'true\n'; else printf 'false\n'; fi
+        ;;
+      ">")
+        [[ "$left" =~ ^-?[0-9]+$ && "$right" =~ ^-?[0-9]+$ ]] || return 1
+        if [[ "$left" -gt "$right" ]]; then printf 'true\n'; else printf 'false\n'; fi
+        ;;
+      "<")
+        [[ "$left" =~ ^-?[0-9]+$ && "$right" =~ ^-?[0-9]+$ ]] || return 1
+        if [[ "$left" -lt "$right" ]]; then printf 'true\n'; else printf 'false\n'; fi
+        ;;
+      ">=")
+        [[ "$left" =~ ^-?[0-9]+$ && "$right" =~ ^-?[0-9]+$ ]] || return 1
+        if [[ "$left" -ge "$right" ]]; then printf 'true\n'; else printf 'false\n'; fi
+        ;;
+      "<=")
+        [[ "$left" =~ ^-?[0-9]+$ && "$right" =~ ^-?[0-9]+$ ]] || return 1
+        if [[ "$left" -le "$right" ]]; then printf 'true\n'; else printf 'false\n'; fi
+        ;;
+      *) return 1 ;;
+    esac
     return 0
   fi
   if [[ "$expr" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
@@ -791,73 +845,38 @@ eval_runtime_text_identity_value_task() {
 eval_runtime_int_binary_value_task() {
   local task_name="$1" op="$2" left="$3" right="$4"
   local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
-  local body left_take right_take return_expr
+  local env_json
   [[ "$left" =~ ^-?[0-9]+$ && "$right" =~ ^-?[0-9]+$ ]] || return 1
-  body="$(extract_sley_task_body "$runtime_file" "$task_name")"
-  [[ -n "$body" ]] || return 1
-  left_take="$(printf '%s\n' "$body" | awk '/^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Int/ {line=$0; sub(/^[ \t]*take[ \t]+/, "", line); sub(/[ \t]*:.*/, "", line); print line; exit}')"
-  right_take="$(printf '%s\n' "$body" | awk 'seen && /^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Int/ {line=$0; sub(/^[ \t]*take[ \t]+/, "", line); sub(/[ \t]*:.*/, "", line); print line; exit} /^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Int/ {seen=1}')"
-  return_expr="$(printf '%s\n' "$body" | awk '/^[ \t]*return[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*[+*][ \t]*[A-Za-z_][A-Za-z0-9_]*[ \t]*$/ {line=$0; sub(/^[ \t]*return[ \t]+/, "", line); gsub(/[ \t]+/, "", line); print line; exit}')"
-  [[ -n "$left_take" && -n "$right_take" && "$return_expr" == "$left_take$op$right_take" ]] || return 1
-  case "$op" in
-    "+") printf '%s\n' "$((left + right))" ;;
-    "*") printf '%s\n' "$((left * right))" ;;
-    *) return 1 ;;
-  esac
+  [[ "$op" == "+" || "$op" == "*" ]] || return 1
+  env_json="$(jq -cn --argjson left "$left" --argjson right "$right" '{left:$left, right:$right}')"
+  sley_eval_source_task "$runtime_file" "$task_name" "$env_json"
 }
 
 eval_runtime_int_less_than_value_task() {
   local left="$1" right="$2"
   local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
-  local body left_take right_take return_expr
+  local env_json
   [[ "$left" =~ ^-?[0-9]+$ && "$right" =~ ^-?[0-9]+$ ]] || return 1
-  body="$(extract_sley_task_body "$runtime_file" int_less_than_value)"
-  [[ -n "$body" ]] || return 1
-  left_take="$(printf '%s\n' "$body" | awk '/^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Int/ {line=$0; sub(/^[ \t]*take[ \t]+/, "", line); sub(/[ \t]*:.*/, "", line); print line; exit}')"
-  right_take="$(printf '%s\n' "$body" | awk 'seen && /^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Int/ {line=$0; sub(/^[ \t]*take[ \t]+/, "", line); sub(/[ \t]*:.*/, "", line); print line; exit} /^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Int/ {seen=1}')"
-  return_expr="$(printf '%s\n' "$body" | awk '/^[ \t]*return[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*<[ \t]*[A-Za-z_][A-Za-z0-9_]*[ \t]*$/ {line=$0; sub(/^[ \t]*return[ \t]+/, "", line); gsub(/[ \t]+/, "", line); print line; exit}')"
-  [[ -n "$left_take" && -n "$right_take" && "$return_expr" == "$left_take<$right_take" ]] || return 1
-  if (( left < right )); then
-    printf 'true\n'
-  else
-    printf 'false\n'
-  fi
+  env_json="$(jq -cn --argjson left "$left" --argjson right "$right" '{left:$left, right:$right}')"
+  sley_eval_source_task "$runtime_file" int_less_than_value "$env_json"
 }
 
 eval_runtime_int_equal_value_task() {
   local left="$1" right="$2"
   local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
-  local body left_take right_take return_expr
+  local env_json
   [[ "$left" =~ ^-?[0-9]+$ && "$right" =~ ^-?[0-9]+$ ]] || return 1
-  body="$(extract_sley_task_body "$runtime_file" int_equal_value)"
-  [[ -n "$body" ]] || return 1
-  left_take="$(printf '%s\n' "$body" | awk '/^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Int/ {line=$0; sub(/^[ \t]*take[ \t]+/, "", line); sub(/[ \t]*:.*/, "", line); print line; exit}')"
-  right_take="$(printf '%s\n' "$body" | awk 'seen && /^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Int/ {line=$0; sub(/^[ \t]*take[ \t]+/, "", line); sub(/[ \t]*:.*/, "", line); print line; exit} /^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Int/ {seen=1}')"
-  return_expr="$(printf '%s\n' "$body" | awk '/^[ \t]*return[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*==[ \t]*[A-Za-z_][A-Za-z0-9_]*[ \t]*$/ {line=$0; sub(/^[ \t]*return[ \t]+/, "", line); gsub(/[ \t]+/, "", line); print line; exit}')"
-  [[ -n "$left_take" && -n "$right_take" && "$return_expr" == "$left_take==$right_take" ]] || return 1
-  if (( left == right )); then
-    printf 'true\n'
-  else
-    printf 'false\n'
-  fi
+  env_json="$(jq -cn --argjson left "$left" --argjson right "$right" '{left:$left, right:$right}')"
+  sley_eval_source_task "$runtime_file" int_equal_value "$env_json"
 }
 
 eval_runtime_int_greater_equal_value_task() {
   local left="$1" right="$2"
   local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
-  local body left_take right_take return_expr
+  local env_json
   [[ "$left" =~ ^-?[0-9]+$ && "$right" =~ ^-?[0-9]+$ ]] || return 1
-  body="$(extract_sley_task_body "$runtime_file" int_greater_equal_value)"
-  [[ -n "$body" ]] || return 1
-  left_take="$(printf '%s\n' "$body" | awk '/^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Int/ {line=$0; sub(/^[ \t]*take[ \t]+/, "", line); sub(/[ \t]*:.*/, "", line); print line; exit}')"
-  right_take="$(printf '%s\n' "$body" | awk 'seen && /^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Int/ {line=$0; sub(/^[ \t]*take[ \t]+/, "", line); sub(/[ \t]*:.*/, "", line); print line; exit} /^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Int/ {seen=1}')"
-  return_expr="$(printf '%s\n' "$body" | awk '/^[ \t]*return[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*>=[ \t]*[A-Za-z_][A-Za-z0-9_]*[ \t]*$/ {line=$0; sub(/^[ \t]*return[ \t]+/, "", line); gsub(/[ \t]+/, "", line); print line; exit}')"
-  [[ -n "$left_take" && -n "$right_take" && "$return_expr" == "$left_take>=$right_take" ]] || return 1
-  if (( left >= right )); then
-    printf 'true\n'
-  else
-    printf 'false\n'
-  fi
+  env_json="$(jq -cn --argjson left "$left" --argjson right "$right" '{left:$left, right:$right}')"
+  sley_eval_source_task "$runtime_file" int_greater_equal_value "$env_json"
 }
 
 eval_runtime_list_index_int_value_task() {
@@ -1007,216 +1026,68 @@ eval_runtime_record_field_text_value_task() {
 eval_runtime_bool_equal_value_task() {
   local left="$1" right="$2"
   local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
-  local body left_take right_take return_expr
+  local env_json
   [[ "$left" == "true" || "$left" == "false" ]] || return 1
   [[ "$right" == "true" || "$right" == "false" ]] || return 1
-  body="$(extract_sley_task_body "$runtime_file" bool_equal_value)"
-  [[ -n "$body" ]] || return 1
-  left_take="$(printf '%s\n' "$body" | awk '/^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Bool/ {line=$0; sub(/^[ \t]*take[ \t]+/, "", line); sub(/[ \t]*:.*/, "", line); print line; exit}')"
-  right_take="$(printf '%s\n' "$body" | awk 'seen && /^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Bool/ {line=$0; sub(/^[ \t]*take[ \t]+/, "", line); sub(/[ \t]*:.*/, "", line); print line; exit} /^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Bool/ {seen=1}')"
-  return_expr="$(printf '%s\n' "$body" | awk '/^[ \t]*return[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*==[ \t]*[A-Za-z_][A-Za-z0-9_]*[ \t]*$/ {line=$0; sub(/^[ \t]*return[ \t]+/, "", line); gsub(/[ \t]+/, "", line); print line; exit}')"
-  [[ -n "$left_take" && -n "$right_take" && "$return_expr" == "$left_take==$right_take" ]] || return 1
-  if [[ "$left" == "$right" ]]; then
-    printf 'true\n'
-  else
-    printf 'false\n'
-  fi
+  env_json="$(jq -cn --argjson left "$left" --argjson right "$right" '{left:$left, right:$right}')"
+  sley_eval_source_task "$runtime_file" bool_equal_value "$env_json"
 }
 
 eval_runtime_text_equal_value_task() {
   local left="$1" right="$2"
   local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
-  local body left_take right_take return_expr
-  body="$(extract_sley_task_body "$runtime_file" text_equal_value)"
-  [[ -n "$body" ]] || return 1
-  left_take="$(printf '%s\n' "$body" | awk '/^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Text/ {line=$0; sub(/^[ \t]*take[ \t]+/, "", line); sub(/[ \t]*:.*/, "", line); print line; exit}')"
-  right_take="$(printf '%s\n' "$body" | awk 'seen && /^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Text/ {line=$0; sub(/^[ \t]*take[ \t]+/, "", line); sub(/[ \t]*:.*/, "", line); print line; exit} /^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Text/ {seen=1}')"
-  return_expr="$(printf '%s\n' "$body" | awk '/^[ \t]*return[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*==[ \t]*[A-Za-z_][A-Za-z0-9_]*[ \t]*$/ {line=$0; sub(/^[ \t]*return[ \t]+/, "", line); gsub(/[ \t]+/, "", line); print line; exit}')"
-  [[ -n "$left_take" && -n "$right_take" && "$return_expr" == "$left_take==$right_take" ]] || return 1
-  if [[ "$left" == "$right" ]]; then
-    printf 'true\n'
-  else
-    printf 'false\n'
-  fi
+  local env_json
+  env_json="$(jq -cn --arg left "$left" --arg right "$right" '{left:$left, right:$right}')"
+  sley_eval_source_task "$runtime_file" text_equal_value "$env_json"
 }
 
 eval_runtime_bool_and_value_task() {
   local left="$1" right="$2"
   local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
-  local body left_take right_take return_expr
+  local env_json
   [[ "$left" == "true" || "$left" == "false" ]] || return 1
   [[ "$right" == "true" || "$right" == "false" ]] || return 1
-  body="$(extract_sley_task_body "$runtime_file" bool_and_value)"
-  [[ -n "$body" ]] || return 1
-  left_take="$(printf '%s\n' "$body" | awk '/^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Bool/ {line=$0; sub(/^[ \t]*take[ \t]+/, "", line); sub(/[ \t]*:.*/, "", line); print line; exit}')"
-  right_take="$(printf '%s\n' "$body" | awk 'seen && /^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Bool/ {line=$0; sub(/^[ \t]*take[ \t]+/, "", line); sub(/[ \t]*:.*/, "", line); print line; exit} /^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Bool/ {seen=1}')"
-  return_expr="$(printf '%s\n' "$body" | awk '/^[ \t]*return[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*&&[ \t]*[A-Za-z_][A-Za-z0-9_]*[ \t]*$/ {line=$0; sub(/^[ \t]*return[ \t]+/, "", line); gsub(/[ \t]+/, "", line); print line; exit}')"
-  [[ -n "$left_take" && -n "$right_take" && "$return_expr" == "$left_take&&$right_take" ]] || return 1
-  if [[ "$left" == "true" && "$right" == "true" ]]; then
-    printf 'true\n'
-  else
-    printf 'false\n'
-  fi
+  env_json="$(jq -cn --argjson left "$left" --argjson right "$right" '{left:$left, right:$right}')"
+  sley_eval_source_task "$runtime_file" bool_and_value "$env_json"
 }
 
 eval_runtime_bool_not_value_task() {
   local value="$1"
   local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
-  local body false_value true_value
+  local env_json
   [[ "$value" == "true" || "$value" == "false" ]] || return 1
-  body="$(extract_sley_task_body "$runtime_file" bool_not_value)"
-  [[ -n "$body" ]] || return 1
-  false_value="$(printf '%s\n' "$body" | awk '
-    /^[ \t]*if[ \t]+value[ \t]*\{/ {in_if=1; next}
-    in_if && /^[ \t]*}/ {in_if=0}
-    in_if && /^[ \t]*return[ \t]+(true|false)[ \t]*$/ {
-      line=$0
-      sub(/^[ \t]*return[ \t]+/, "", line)
-      sub(/[ \t]*$/, "", line)
-      print line
-      exit
-    }
-  ')"
-  true_value="$(printf '%s\n' "$body" | awk '
-    /^[ \t]*if[ \t]+/ {in_if=1}
-    in_if && /^[ \t]*}/ {in_if=0; next}
-    !in_if && /^[ \t]*return[ \t]+(true|false)[ \t]*$/ {
-      line=$0
-      sub(/^[ \t]*return[ \t]+/, "", line)
-      sub(/[ \t]*$/, "", line)
-      print line
-      exit
-    }
-  ')"
-  [[ "$false_value" == "false" && "$true_value" == "true" ]] || return 1
-  if [[ "$value" == "true" ]]; then
-    printf '%s\n' "$false_value"
-  else
-    printf '%s\n' "$true_value"
-  fi
+  env_json="$(jq -cn --argjson value "$value" '{value:$value}')"
+  sley_eval_source_task "$runtime_file" bool_not_value "$env_json"
 }
 
 eval_runtime_bool_if_value_task() {
   local condition="$1" then_value="$2" else_value="$3"
   local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
-  local body condition_take then_take else_take if_return else_return
+  local env_json
   [[ "$condition" == "true" || "$condition" == "false" ]] || return 1
   [[ "$then_value" == "true" || "$then_value" == "false" ]] || return 1
   [[ "$else_value" == "true" || "$else_value" == "false" ]] || return 1
-  body="$(extract_sley_task_body "$runtime_file" bool_if_value)"
-  [[ -n "$body" ]] || return 1
-  condition_take="$(printf '%s\n' "$body" | awk '/^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Bool/ {line=$0; sub(/^[ \t]*take[ \t]+/, "", line); sub(/[ \t]*:.*/, "", line); print line; exit}')"
-  then_take="$(printf '%s\n' "$body" | awk 'seen==1 && /^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Bool/ {line=$0; sub(/^[ \t]*take[ \t]+/, "", line); sub(/[ \t]*:.*/, "", line); print line; exit} /^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Bool/ {seen++}')"
-  else_take="$(printf '%s\n' "$body" | awk 'seen==2 && /^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Bool/ {line=$0; sub(/^[ \t]*take[ \t]+/, "", line); sub(/[ \t]*:.*/, "", line); print line; exit} /^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Bool/ {seen++}')"
-  if_return="$(printf '%s\n' "$body" | awk '
-    /^[ \t]*if[ \t]+condition[ \t]*\{/ {in_if=1; next}
-    in_if && /^[ \t]*}/ {in_if=0}
-    in_if && /^[ \t]*return[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*$/ {
-      line=$0
-      sub(/^[ \t]*return[ \t]+/, "", line)
-      sub(/[ \t]*$/, "", line)
-      print line
-      exit
-    }
-  ')"
-  else_return="$(printf '%s\n' "$body" | awk '
-    /^[ \t]*if[ \t]+/ {in_if=1}
-    in_if && /^[ \t]*}/ {in_if=0; next}
-    !in_if && /^[ \t]*return[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*$/ {
-      line=$0
-      sub(/^[ \t]*return[ \t]+/, "", line)
-      sub(/[ \t]*$/, "", line)
-      print line
-      exit
-    }
-  ')"
-  [[ "$condition_take" == "condition" && "$if_return" == "$then_take" && "$else_return" == "$else_take" ]] || return 1
-  if [[ "$condition" == "true" ]]; then
-    printf '%s\n' "$then_value"
-  else
-    printf '%s\n' "$else_value"
-  fi
+  env_json="$(jq -cn --argjson condition "$condition" --argjson then_value "$then_value" --argjson else_value "$else_value" '{condition:$condition, then_value:$then_value, else_value:$else_value}')"
+  sley_eval_source_task "$runtime_file" bool_if_value "$env_json"
 }
 
 eval_runtime_int_if_value_task() {
   local condition="$1" then_value="$2" else_value="$3"
   local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
-  local body condition_take then_take else_take if_return else_return
+  local env_json
   [[ "$condition" == "true" || "$condition" == "false" ]] || return 1
   [[ "$then_value" =~ ^-?[0-9]+$ && "$else_value" =~ ^-?[0-9]+$ ]] || return 1
-  body="$(extract_sley_task_body "$runtime_file" int_if_value)"
-  [[ -n "$body" ]] || return 1
-  condition_take="$(printf '%s\n' "$body" | awk '/^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Bool/ {line=$0; sub(/^[ \t]*take[ \t]+/, "", line); sub(/[ \t]*:.*/, "", line); print line; exit}')"
-  then_take="$(printf '%s\n' "$body" | awk '/^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Int/ {line=$0; sub(/^[ \t]*take[ \t]+/, "", line); sub(/[ \t]*:.*/, "", line); print line; exit}')"
-  else_take="$(printf '%s\n' "$body" | awk 'seen && /^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Int/ {line=$0; sub(/^[ \t]*take[ \t]+/, "", line); sub(/[ \t]*:.*/, "", line); print line; exit} /^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Int/ {seen=1}')"
-  if_return="$(printf '%s\n' "$body" | awk '
-    /^[ \t]*if[ \t]+condition[ \t]*\{/ {in_if=1; next}
-    in_if && /^[ \t]*}/ {in_if=0}
-    in_if && /^[ \t]*return[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*$/ {
-      line=$0
-      sub(/^[ \t]*return[ \t]+/, "", line)
-      sub(/[ \t]*$/, "", line)
-      print line
-      exit
-    }
-  ')"
-  else_return="$(printf '%s\n' "$body" | awk '
-    /^[ \t]*if[ \t]+/ {in_if=1}
-    in_if && /^[ \t]*}/ {in_if=0; next}
-    !in_if && /^[ \t]*return[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*$/ {
-      line=$0
-      sub(/^[ \t]*return[ \t]+/, "", line)
-      sub(/[ \t]*$/, "", line)
-      print line
-      exit
-    }
-  ')"
-  [[ "$condition_take" == "condition" && "$if_return" == "$then_take" && "$else_return" == "$else_take" ]] || return 1
-  if [[ "$condition" == "true" ]]; then
-    printf '%s\n' "$then_value"
-  else
-    printf '%s\n' "$else_value"
-  fi
+  env_json="$(jq -cn --argjson condition "$condition" --argjson then_value "$then_value" --argjson else_value "$else_value" '{condition:$condition, then_value:$then_value, else_value:$else_value}')"
+  sley_eval_source_task "$runtime_file" int_if_value "$env_json"
 }
 
 eval_runtime_text_if_value_task() {
   local condition="$1" then_value="$2" else_value="$3"
   local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
-  local body condition_take then_take else_take if_return else_return
+  local env_json
   [[ "$condition" == "true" || "$condition" == "false" ]] || return 1
-  body="$(extract_sley_task_body "$runtime_file" text_if_value)"
-  [[ -n "$body" ]] || return 1
-  condition_take="$(printf '%s\n' "$body" | awk '/^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Bool/ {line=$0; sub(/^[ \t]*take[ \t]+/, "", line); sub(/[ \t]*:.*/, "", line); print line; exit}')"
-  then_take="$(printf '%s\n' "$body" | awk 'seen==0 && /^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Text/ {line=$0; sub(/^[ \t]*take[ \t]+/, "", line); sub(/[ \t]*:.*/, "", line); print line; exit} /^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Text/ {seen++}')"
-  else_take="$(printf '%s\n' "$body" | awk 'seen==1 && /^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Text/ {line=$0; sub(/^[ \t]*take[ \t]+/, "", line); sub(/[ \t]*:.*/, "", line); print line; exit} /^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Text/ {seen++}')"
-  if_return="$(printf '%s\n' "$body" | awk '
-    /^[ \t]*if[ \t]+condition[ \t]*\{/ {in_if=1; next}
-    in_if && /^[ \t]*}/ {in_if=0}
-    in_if && /^[ \t]*return[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*$/ {
-      line=$0
-      sub(/^[ \t]*return[ \t]+/, "", line)
-      sub(/[ \t]*$/, "", line)
-      print line
-      exit
-    }
-  ')"
-  else_return="$(printf '%s\n' "$body" | awk '
-    /^[ \t]*if[ \t]+/ {in_if=1}
-    in_if && /^[ \t]*}/ {in_if=0; next}
-    !in_if && /^[ \t]*return[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*$/ {
-      line=$0
-      sub(/^[ \t]*return[ \t]+/, "", line)
-      sub(/[ \t]*$/, "", line)
-      print line
-      exit
-    }
-  ')"
-  [[ "$condition_take" == "condition" && "$if_return" == "$then_take" && "$else_return" == "$else_take" ]] || return 1
-  if [[ "$condition" == "true" ]]; then
-    printf '%s\n' "$then_value"
-  else
-    printf '%s\n' "$else_value"
-  fi
+  env_json="$(jq -cn --argjson condition "$condition" --arg then_value "$then_value" --arg else_value "$else_value" '{condition:$condition, then_value:$then_value, else_value:$else_value}')"
+  sley_eval_source_task "$runtime_file" text_if_value "$env_json"
 }
 
 eval_runtime_ok_int_value_task() {
