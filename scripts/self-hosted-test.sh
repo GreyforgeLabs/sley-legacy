@@ -527,6 +527,10 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("seeded_host_result
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("database_row_source_runtime_execution"))'
 
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("seeded_host_text_source_runtime_execution"))'
+
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("gate_take_source_call_runtime_execution"))'
+
 bin/sley run --json examples/file_gate.sley \
   | json_field '.status == "passed" and .value.kind == "Text" and .value.value == "hello sley"'
 

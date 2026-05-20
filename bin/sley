@@ -165,6 +165,7 @@ sley_eval_source_task_takes_json() {
   printf '%s\n' "$body" | awk '
     function esc(s){gsub(/\\/, "\\\\", s); gsub(/"/, "\\\"", s); return s}
     BEGIN {printf "["; first=1}
+    /^[ \t]*take[ \t]+gate[ \t]+/ {next}
     /^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:/ {
       line=$0
       sub(/^[ \t]*take[ \t]+/, "", line)
@@ -288,7 +289,16 @@ sley_eval_source_host_expr() {
     runtime_file_read_seed_text "${BASH_REMATCH[1]}"
     return
   fi
+  if [[ "$expr" =~ ^fs[.]read_text\(\"([^\"]+)\"\)$ ]]; then
+    runtime_file_read_seed_text "${BASH_REMATCH[1]}"
+    return
+  fi
   if [[ "$expr" =~ ^fs[.]try_read_text\(([A-Za-z_][A-Za-z0-9_]*)\)$ ]]; then
+    path="$(sley_eval_env_lookup "$env_json" "${BASH_REMATCH[1]}")" || return 1
+    runtime_file_read_seed_text "$path"
+    return
+  fi
+  if [[ "$expr" =~ ^fs[.]read_text\(([A-Za-z_][A-Za-z0-9_]*)\)$ ]]; then
     path="$(sley_eval_env_lookup "$env_json" "${BASH_REMATCH[1]}")" || return 1
     runtime_file_read_seed_text "$path"
     return
@@ -4053,6 +4063,20 @@ eval_source_seeded_host_result_main_return() {
     runtime_value="$(eval_runtime_text_identity_value_task "$value")" || return 1
     jq -cn --arg kind "$RUNTIME_OK_TEXT_VALUE_KIND" --arg value "$runtime_value" '{kind:$kind,value:$value}'
   fi
+}
+
+eval_source_seeded_host_text_main_return() {
+  local target="$1" http_text="$2" model_text="$3" deploy_text="$4" spend_text="$5" secret_text="$6" shell_text="$7"
+  local file env_json value runtime_value
+  runtime_source_has_seeded_host_effect "$target" || return 1
+  file="$(collect_files "$target" | head -n 1)"
+  [[ -n "$file" ]] || return 1
+  grep -Eq 'task[[:space:]]+main[[:space:]]*->[[:space:]]*Text' "$file" || return 1
+  env_json="$(sley_runtime_seed_env_json "$http_text" "$model_text" "$deploy_text" "$spend_text" "$secret_text" "$shell_text")" || return 1
+  value="$(sley_eval_source_task "$file" main "$env_json")" || return 1
+  [[ -n "$value" ]] || return 1
+  runtime_value="$(eval_runtime_text_identity_value_task "$value")" || return 1
+  jq -cn --arg kind "$RUNTIME_TEXT_VALUE_KIND" --arg value "$runtime_value" '{kind:$kind,value:$value}'
 }
 
 eval_source_zero_arg_project_call_main_return() {
@@ -8232,6 +8256,9 @@ run_json() {
     value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
     value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
   elif simple_runtime="$(eval_source_seeded_host_result_main_return "$target" "$http_text" "$model_text" "$deploy_text" "$spend_text" "$secret_text" "$shell_text" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
+    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
+    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
+  elif simple_runtime="$(eval_source_seeded_host_text_main_return "$target" "$http_text" "$model_text" "$deploy_text" "$spend_text" "$secret_text" "$shell_text" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
     value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
     value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
   elif simple_runtime="$(eval_source_zero_arg_project_call_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
