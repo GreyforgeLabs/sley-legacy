@@ -2276,6 +2276,26 @@ The latest continuation audit reconfirmed:
   `scripts/self-hosted-test.sh`, `bin/sley-contract check-fixtures
   fixtures/contracts --schemas docs/schemas --json`, external public-action
   packet verifier, `git diff --check`, and final `make v1` all passed
+- focused checker duplicate pass probes:
+  `bin/sley self-hosting-status --json` reported
+  `checker_duplicate_pass_family_task_execution` and
+  `bootstrap_owned_by_sley=298`; `duplicate_effect_diags`,
+  `duplicate_type_diags`, `duplicate_task_diags`, `duplicate_take_diags`,
+  `duplicate_map_key_diags`, `duplicate_record_field_diags`, and
+  `duplicate_record_literal_field_diags` now run through one descriptor-driven
+  duplicate-name checker family using rows from `diagnostic_pass_descriptors`
+  in `self-hosted/src/loom/checker.sley`
+- Sley self-hosting status after the checker duplicate pass slice:
+  `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=298`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
+- latest checker duplicate pass verification:
+  `bash -n bin/sley`, `bash -n scripts/self-hosted-test.sh`, focused
+  module-namespace/duplicate-take/duplicate-map/duplicate-record-literal
+  rejected probes, `scripts/self-hosted-test.sh`, `bin/sley-contract
+  check-fixtures fixtures/contracts --schemas docs/schemas --json`, external
+  public-action packet verifier, `git diff --check`, and final `make v1` all
+  passed
 
 ## Dirty State Notes
 
