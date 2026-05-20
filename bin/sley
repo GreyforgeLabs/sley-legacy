@@ -6127,6 +6127,13 @@ check_json() {
       elif ($pass.diagnostic_id_task // "") == "gate_take_type_mismatch_id" then $gate_take_type
       elif ($pass.diagnostic_id_task // "") == "gate_effect_undeclared_id" then $gate_effect
       elif ($pass.diagnostic_id_task // "") == "effect_unauthorized_id" then $effect_unauthorized
+      elif ($pass.diagnostic_id_task // "") == "duplicate_effect_id" then $duplicate_effect
+      elif ($pass.diagnostic_id_task // "") == "duplicate_type_id" then $duplicate_type
+      elif ($pass.diagnostic_id_task // "") == "duplicate_task_id" then $duplicate_task
+      elif ($pass.diagnostic_id_task // "") == "duplicate_take_id" then $duplicate_take
+      elif ($pass.diagnostic_id_task // "") == "duplicate_map_key_id" then $duplicate_map_key
+      elif ($pass.diagnostic_id_task // "") == "duplicate_field_id" then $duplicate_field
+      elif ($pass.diagnostic_id_task // "") == "duplicate_record_literal_field_id" then $duplicate_record_literal_field
       else "" end;
     def descriptor_message_template($pass):
       if ($pass.message_task // "") == "unknown_type_message" then $unknown_type_message_template
@@ -6134,6 +6141,13 @@ check_json() {
       elif ($pass.message_task // "") == "gate_take_type_mismatch_message" then $gate_take_type_message_template
       elif ($pass.message_task // "") == "gate_effect_undeclared_message" then $gate_effect_message_template
       elif ($pass.message_task // "") == "effect_unauthorized_message" then $effect_unauthorized_message_template
+      elif ($pass.message_task // "") == "duplicate_effect_message" then $duplicate_effect_message_template
+      elif ($pass.message_task // "") == "duplicate_type_message" then $duplicate_type_message_template
+      elif ($pass.message_task // "") == "duplicate_task_message" then $duplicate_task_message_template
+      elif ($pass.message_task // "") == "duplicate_take_message" then $duplicate_take_message_template
+      elif ($pass.message_task // "") == "duplicate_map_key_message" then $duplicate_map_key_message_template
+      elif ($pass.message_task // "") == "duplicate_field_message" then $duplicate_field_message_template
+      elif ($pass.message_task // "") == "duplicate_record_literal_field_message" then $duplicate_record_literal_field_message_template
       else "" end;
     def unknown_reference_diags($pass):
       if ($pass.subject // "") == "task_return_type" then
@@ -6169,6 +6183,37 @@ check_json() {
         select($effect != null) |
         select(($t.effects | index($effect)) == null) |
         {id:descriptor_diagnostic_id($pass), severity:"error", message:render_arg(descriptor_message_template($pass); ($pass.message_arg // "effect_name"); $effect), node:$take.id, span:$take.span}
+      else empty end;
+    def duplicate_name_diags($pass):
+      if ($pass.subject // "") == "module_effect_name" then
+        ($root.effects | group_by(.module + "." + .name)[] | select(length > 1) | .[1:])[] as $effect |
+        {id:descriptor_diagnostic_id($pass), severity:"error", message:render_arg(descriptor_message_template($pass); ($pass.message_arg // "effect_name"); $effect.name), node:$effect.id, span:$effect.span}
+      elif ($pass.subject // "") == "module_type_name" then
+        ($root.types | group_by(.module + "." + .name)[] | select(length > 1) | .[1:])[] as $type |
+        {id:descriptor_diagnostic_id($pass), severity:"error", message:render_arg(descriptor_message_template($pass); ($pass.message_arg // "type_name"); $type.name), node:$type.id, span:$type.span}
+      elif ($pass.subject // "") == "module_task_name" then
+        ($root.tasks | group_by(.module + "." + .name)[] | select(length > 1) | .[1:])[] as $task |
+        {id:descriptor_diagnostic_id($pass), severity:"error", message:render_arg(descriptor_message_template($pass); ($pass.message_arg // "task_name"); $task.name), node:$task.id, span:$task.span}
+      elif ($pass.subject // "") == "task_take_name" then
+        $root.tasks[] as $t |
+        ($t.takes | group_by(.name)[] | select(length > 1) | .[1]) as $take |
+        {id:descriptor_diagnostic_id($pass), severity:"error", message:render_arg(descriptor_message_template($pass); ($pass.message_arg // "take_name"); $take.name), node:$take.id, span:$take.span}
+      elif ($pass.subject // "") == "map_entry_key" then
+        $root.tasks[] as $t |
+        $t.body.statements[]? |
+        select(.kind==$binding_statement_kind) |
+        . as $stmt |
+        (map_entries($stmt) | group_by(.key)[] | select(length > 1) | .[1].key | unquote_key) as $key |
+        {id:descriptor_diagnostic_id($pass), severity:"error", message:render_arg(descriptor_message_template($pass); ($pass.message_arg // "key_name"); $key), node:$stmt.expr.id, span:$stmt.expr.span}
+      elif ($pass.subject // "") == "record_type_field_name" then
+        (record_type_fields | group_by(.type_key + "." + .name)[] | select(length > 1) | .[1]) as $field |
+        ([$root.types[]? | select(.name == $field.type_name)][0]) as $type_node |
+        {id:descriptor_diagnostic_id($pass), severity:"error", message:render_arg(descriptor_message_template($pass); ($pass.message_arg // "field_name"); $field.name), node:($type_node.id // ("type:" + $field.type_name)), span:{line:$field.line,column:1}}
+      elif ($pass.subject // "") == "record_literal_field_name" then
+        $root.tasks[] as $t |
+        $t.body.statements[]?.expr? as $expr |
+        ($expr | record_literal_entries | group_by(.key)[] | select(length > 1) | .[1].key) as $key |
+        {id:descriptor_diagnostic_id($pass), severity:"error", message:render_arg(descriptor_message_template($pass); ($pass.message_arg // "field_name"); $key), node:$expr.id, span:$expr.span}
       else empty end;
     def unknown_task_diags:
       $root.tasks[] as $t |
@@ -6251,26 +6296,6 @@ check_json() {
           {kind:$replace_expression_hint_kind, target:$stmt.expr.id, replacement:("{\"op\":\"ReplaceExpression\",\"payload\":{\"source\":\"" + $replacement_expr + "\"},\"target\":\"" + $stmt.expr.id + "\"}")}
         ]
       };
-    def duplicate_take_diags:
-      $root.tasks[] as $t |
-      ($t.takes | group_by(.name)[] | select(length > 1) | .[1]) as $take |
-      {id:$duplicate_take, severity:"error", message:render_arg($duplicate_take_message_template; "take_name"; $take.name), node:$take.id, span:$take.span};
-    def duplicate_map_key_diags:
-      $root.tasks[] as $t |
-      $t.body.statements[]? |
-      select(.kind==$binding_statement_kind) |
-      . as $stmt |
-      (map_entries($stmt) | group_by(.key)[] | select(length > 1) | .[1].key | unquote_key) as $key |
-      {id:$duplicate_map_key, severity:"error", message:render_arg($duplicate_map_key_message_template; "key_name"; $key), node:$stmt.expr.id, span:$stmt.expr.span};
-    def duplicate_record_field_diags:
-      (record_type_fields | group_by(.type_key + "." + .name)[] | select(length > 1) | .[1]) as $field |
-      ([$root.types[]? | select(.name == $field.type_name)][0]) as $type_node |
-      {id:$duplicate_field, severity:"error", message:render_arg($duplicate_field_message_template; "field_name"; $field.name), node:($type_node.id // ("type:" + $field.type_name)), span:{line:$field.line,column:1}};
-    def duplicate_record_literal_field_diags:
-      $root.tasks[] as $t |
-      $t.body.statements[]?.expr? as $expr |
-      ($expr | record_literal_entries | group_by(.key)[] | select(length > 1) | .[1].key) as $key |
-      {id:$duplicate_record_literal_field, severity:"error", message:render_arg($duplicate_record_literal_field_message_template; "field_name"; $key), node:$expr.id, span:$expr.span};
     def record_field_missing_diags:
       $root.tasks[] as $t |
       $t.body.statements[]? |
@@ -6379,15 +6404,6 @@ check_json() {
       ($entry.value | literal_type) as $actual |
       select($actual != "" and $actual != $expected) |
       {id:$map_value_type_mismatch, severity:"error", message:render_arg($map_value_type_mismatch_message_template; "actual_type"; $actual), node:$stmt.expr.id, span:$stmt.expr.span};
-    def duplicate_effect_diags:
-      ($root.effects | group_by(.module + "." + .name)[] | select(length > 1) | .[1:])[] as $effect |
-      {id:$duplicate_effect, severity:"error", message:render_arg($duplicate_effect_message_template; "effect_name"; $effect.name), node:$effect.id, span:$effect.span};
-    def duplicate_type_diags:
-      ($root.types | group_by(.module + "." + .name)[] | select(length > 1) | .[1:])[] as $type |
-      {id:$duplicate_type, severity:"error", message:render_arg($duplicate_type_message_template; "type_name"; $type.name), node:$type.id, span:$type.span};
-    def duplicate_task_diags:
-      ($root.tasks | group_by(.module + "." + .name)[] | select(length > 1) | .[1:])[] as $task |
-      {id:$duplicate_task, severity:"error", message:render_arg($duplicate_task_message_template; "task_name"; $task.name), node:$task.id, span:$task.span};
     def question_requires_result_diags:
       $root.tasks[] as $t |
       ($t.return_type.name // $checker_unit_type | base_type_name) as $return_base |
@@ -6431,9 +6447,7 @@ check_json() {
       if ($pass.executor // "") == "unknown_reference" then unknown_reference_diags($pass)
       elif ($pass.executor // "") == "gate_reference" then gate_reference_diags($pass)
       elif ($pass.executor // "") == "effect_authorization" then effect_authorization_diags($pass)
-      elif $name == "duplicate_effect_diags" then duplicate_effect_diags
-      elif $name == "duplicate_type_diags" then duplicate_type_diags
-      elif $name == "duplicate_task_diags" then duplicate_task_diags
+      elif ($pass.executor // "") == "duplicate_name" then duplicate_name_diags($pass)
       elif $name == "task_diags" then task_diags
       elif $name == "question_requires_result_diags" then question_requires_result_diags
       elif $name == "unknown_task_diags" then unknown_task_diags
@@ -6441,10 +6455,6 @@ check_json() {
       elif $name == "call_argument_type_diags" then call_argument_type_diags
       elif $name == "type_mismatch_diags" then type_mismatch_diags
       elif $name == "return_type_mismatch_diags" then return_type_mismatch_diags
-      elif $name == "duplicate_take_diags" then duplicate_take_diags
-      elif $name == "duplicate_map_key_diags" then duplicate_map_key_diags
-      elif $name == "duplicate_record_field_diags" then duplicate_record_field_diags
-      elif $name == "duplicate_record_literal_field_diags" then duplicate_record_literal_field_diags
       elif $name == "record_field_missing_diags" then record_field_missing_diags
       elif $name == "record_field_unknown_diags" then record_field_unknown_diags
       elif $name == "record_field_type_mismatch_diags" then record_field_type_mismatch_diags
