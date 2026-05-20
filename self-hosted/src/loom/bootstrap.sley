@@ -273,6 +273,7 @@ export task owned_bootstrap_values -> List<Text> {
     "bool_identity_runtime_task_execution",
     "generic_source_main_runtime_execution",
     "generic_source_if_expression_runtime_execution",
+    "generic_source_state_set_runtime_execution",
     "host_call_text_runtime_execution",
     "runtime_host_default_texts_task_execution",
     "spend_prefix_runtime_task_execution",
