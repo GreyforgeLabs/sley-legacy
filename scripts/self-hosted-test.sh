@@ -21,6 +21,7 @@ self_hosting_status_field() {
 bool_literal_source="$(mktemp)"
 generic_source_main_source="$(mktemp)"
 generic_state_set_source="$(mktemp)"
+generic_each_source="$(mktemp)"
 empty_module_source="$(mktemp)"
 unknown_take_type_source="$(mktemp)"
 add_take_operation="$(mktemp)"
@@ -36,7 +37,7 @@ zjx_tool_report="$(mktemp)"
 runtime_report="$(mktemp)"
 ast_missing_report="$(mktemp)"
 ci_report="$(mktemp)"
-trap 'rm -f "$bool_literal_source" "$generic_source_main_source" "$generic_state_set_source" "$empty_module_source" "$unknown_take_type_source" "$add_take_operation" "$self_hosting_status_report" "$artifact_check_report" "$migrate_report" "$docgen_report" "$workbench_report" "$sandbox_report" "$agent_bench_report" "$zjx_tool_report" "$runtime_report" "$ast_missing_report" "$ci_report"; rm -rf "$artifact_dir"' EXIT
+trap 'rm -f "$bool_literal_source" "$generic_source_main_source" "$generic_state_set_source" "$generic_each_source" "$empty_module_source" "$unknown_take_type_source" "$add_take_operation" "$self_hosting_status_report" "$artifact_check_report" "$migrate_report" "$docgen_report" "$workbench_report" "$sandbox_report" "$agent_bench_report" "$zjx_tool_report" "$runtime_report" "$ast_missing_report" "$ci_report"; rm -rf "$artifact_dir"' EXIT
 printf '%s\n' \
   'module app.bool_literal' \
   '' \
@@ -64,6 +65,18 @@ printf '%s\n' \
   '' \
   '  return label' \
   '}' > "$generic_state_set_source"
+printf '%s\n' \
+  'module app.generic_each' \
+  '' \
+  'task main -> Text {' \
+  '  bind names = ["Ada", "Lovelace"]' \
+  '  state label = ""' \
+  '  each name in names {' \
+  '    set label = label + name' \
+  '  }' \
+  '' \
+  '  return label' \
+  '}' > "$generic_each_source"
 printf '%s\n' \
   'module app.empty' > "$empty_module_source"
 printf '%s\n' \
@@ -381,6 +394,11 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_linear_tal
 
 bin/sley run --json examples/mutable_binding_style.sley \
   | json_field '.status == "passed" and .value.kind == "Int" and .value.value == 21'
+
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_each_loop_runtime_execution"))'
+
+bin/sley run --json "$generic_each_source" \
+  | json_field '.status == "passed" and .value.kind == "Text" and .value.value == "AdaLovelace"'
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_runtime_scalar_task_evaluator_execution"))'
 
