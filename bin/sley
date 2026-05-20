@@ -6139,6 +6139,11 @@ check_json() {
       elif ($pass.diagnostic_id_task // "") == "record_field_type_mismatch_id" then $record_field_type_mismatch
       elif ($pass.diagnostic_id_task // "") == "record_literal_non_record_type_id" then $record_literal_non_record_type
       elif ($pass.diagnostic_id_task // "") == "unknown_record_field_id" then $unknown_record_field
+      elif ($pass.diagnostic_id_task // "") == "list_element_type_mismatch_id" then $list_element_type_mismatch
+      elif ($pass.diagnostic_id_task // "") == "index_not_int_id" then $index_not_int
+      elif ($pass.diagnostic_id_task // "") == "index_key_type_mismatch_id" then $index_key_type_mismatch
+      elif ($pass.diagnostic_id_task // "") == "map_key_type_mismatch_id" then $map_key_type_mismatch
+      elif ($pass.diagnostic_id_task // "") == "map_value_type_mismatch_id" then $map_value_type_mismatch
       else "" end;
     def descriptor_message_template($pass):
       if ($pass.message_task // "") == "unknown_type_message" then $unknown_type_message_template
@@ -6158,6 +6163,11 @@ check_json() {
       elif ($pass.message_task // "") == "record_field_type_mismatch_message" then $record_field_type_mismatch_message_template
       elif ($pass.message_task // "") == "record_literal_non_record_type_message" then $record_literal_non_record_type_message_template
       elif ($pass.message_task // "") == "unknown_record_field_message" then $unknown_record_field_message_template
+      elif ($pass.message_task // "") == "list_element_type_mismatch_message" then $list_element_type_mismatch_message_template
+      elif ($pass.message_task // "") == "index_not_int_message" then $index_not_int_message_template
+      elif ($pass.message_task // "") == "index_key_type_mismatch_message" then $index_key_type_mismatch_message_template
+      elif ($pass.message_task // "") == "map_key_type_mismatch_message" then $map_key_type_mismatch_message_template
+      elif ($pass.message_task // "") == "map_value_type_mismatch_message" then $map_value_type_mismatch_message_template
       else "" end;
     def unknown_reference_diags($pass):
       if ($pass.subject // "") == "task_return_type" then
@@ -6365,57 +6375,67 @@ check_json() {
           {kind:$replace_expression_hint_kind, target:$stmt.expr.id, replacement:("{\"op\":\"ReplaceExpression\",\"payload\":{\"source\":\"" + $replacement_expr + "\"},\"target\":\"" + $stmt.expr.id + "\"}")}
         ]
       };
-    def list_element_type_diags:
-      $root.tasks[] as $t |
-      $t.body.statements[]? |
-      select(.kind==$binding_statement_kind) |
-      . as $stmt |
-      (source_line($stmt.span.line) | line_list_element_type) as $expected |
-      select($expected != null) |
-      (($stmt.expr.source? // "") | capture("^\\[(?<items>.*)\\]$")? // {items:""}) as $list |
-      ($list.items | csv_items)[] as $item |
-      ($item | literal_type) as $actual |
-      select($actual != "" and $actual != $expected) |
-      {id:$list_element_type_mismatch, severity:"error", message:render_arg($list_element_type_mismatch_message_template; "actual_type"; $actual), node:$stmt.expr.id, span:$stmt.expr.span};
-    def index_diags:
-      $root.tasks[] as $t |
-      $t.body.statements[]?.expr? |
-      . as $expr |
-      ($expr | simple_index) as $idx |
-      select($idx.name != null) |
-      (binding_collection_kind($t; $idx.name)) as $kind |
-      ($idx.index | literal_type) as $actual |
-      select($actual != "") |
-      if ($kind == $checker_list_type and $actual != $checker_int_type) then
-        {id:$index_not_int, severity:"error", message:render_arg($index_not_int_message_template; "actual_type"; $actual), node:$expr.id, span:$expr.span}
-      elif ($kind == $checker_map_type and $actual != $checker_text_type) then
-        {id:$index_key_type_mismatch, severity:"error", message:render_arg($index_key_type_mismatch_message_template; "actual_type"; $actual), node:$expr.id, span:$expr.span}
+    def collection_shape_diags($pass):
+      if ($pass.subject // "") == "list_literal_element_type" then
+        $root.tasks[] as $t |
+        $t.body.statements[]? |
+        select(.kind==$binding_statement_kind) |
+        . as $stmt |
+        (source_line($stmt.span.line) | line_list_element_type) as $expected |
+        select($expected != null) |
+        (($stmt.expr.source? // "") | capture("^\\[(?<items>.*)\\]$")? // {items:""}) as $list |
+        ($list.items | csv_items)[] as $item |
+        ($item | literal_type) as $actual |
+        select($actual != "" and $actual != $expected) |
+        {id:descriptor_diagnostic_id($pass), severity:"error", message:render_arg(descriptor_message_template($pass); ($pass.message_arg // "actual_type"); $actual), node:$stmt.expr.id, span:$stmt.expr.span}
+      elif ($pass.subject // "") == "list_index_type" then
+        $root.tasks[] as $t |
+        $t.body.statements[]?.expr? |
+        . as $expr |
+        ($expr | simple_index) as $idx |
+        select($idx.name != null) |
+        (binding_collection_kind($t; $idx.name)) as $kind |
+        select($kind == $checker_list_type) |
+        ($idx.index | literal_type) as $actual |
+        select($actual != "" and $actual != $checker_int_type) |
+        {id:descriptor_diagnostic_id($pass), severity:"error", message:render_arg(descriptor_message_template($pass); ($pass.message_arg // "actual_type"); $actual), node:$expr.id, span:$expr.span}
+      elif ($pass.subject // "") == "map_index_key_type" then
+        $root.tasks[] as $t |
+        $t.body.statements[]?.expr? |
+        . as $expr |
+        ($expr | simple_index) as $idx |
+        select($idx.name != null) |
+        (binding_collection_kind($t; $idx.name)) as $kind |
+        select($kind == $checker_map_type) |
+        ($idx.index | literal_type) as $actual |
+        select($actual != "" and $actual != $checker_text_type) |
+        {id:descriptor_diagnostic_id($pass), severity:"error", message:render_arg(descriptor_message_template($pass); ($pass.message_arg // "actual_type"); $actual), node:$expr.id, span:$expr.span}
+      elif ($pass.subject // "") == "map_literal_key_type" then
+        $root.tasks[] as $t |
+        $t.body.statements[]? |
+        select(.kind==$binding_statement_kind) |
+        . as $stmt |
+        (source_line($stmt.span.line) | line_map_key_type) as $expected |
+        select($expected != null) |
+        (map_entries($stmt))[] as $entry |
+        ($entry.key | literal_type) as $actual |
+        select($actual != "" and $actual != $expected) |
+        {id:descriptor_diagnostic_id($pass), severity:"error", message:render_arg(descriptor_message_template($pass); ($pass.message_arg // "actual_type"); $actual), node:$stmt.expr.id, span:$stmt.expr.span}
+      elif ($pass.subject // "") == "map_literal_value_type" then
+        $root.tasks[] as $t |
+        $t.body.statements[]? |
+        select(.kind==$binding_statement_kind) |
+        . as $stmt |
+        (map_entries($stmt)) as $entries |
+        select(($entries | length) > 0) |
+        (source_line($stmt.span.line) | line_map_value_type) as $declared_expected |
+        ((if $declared_expected != null then $declared_expected else ([$entries[].value | literal_type | select(. != "")][0] // null) end)) as $expected |
+        select($expected != null) |
+        $entries[] as $entry |
+        ($entry.value | literal_type) as $actual |
+        select($actual != "" and $actual != $expected) |
+        {id:descriptor_diagnostic_id($pass), severity:"error", message:render_arg(descriptor_message_template($pass); ($pass.message_arg // "actual_type"); $actual), node:$stmt.expr.id, span:$stmt.expr.span}
       else empty end;
-    def map_key_type_diags:
-      $root.tasks[] as $t |
-      $t.body.statements[]? |
-      select(.kind==$binding_statement_kind) |
-      . as $stmt |
-      (source_line($stmt.span.line) | line_map_key_type) as $expected |
-      select($expected != null) |
-      (map_entries($stmt))[] as $entry |
-      ($entry.key | literal_type) as $actual |
-      select($actual != "" and $actual != $expected) |
-      {id:$map_key_type_mismatch, severity:"error", message:render_arg($map_key_type_mismatch_message_template; "actual_type"; $actual), node:$stmt.expr.id, span:$stmt.expr.span};
-    def map_value_type_diags:
-      $root.tasks[] as $t |
-      $t.body.statements[]? |
-      select(.kind==$binding_statement_kind) |
-      . as $stmt |
-      (map_entries($stmt)) as $entries |
-      select(($entries | length) > 0) |
-      (source_line($stmt.span.line) | line_map_value_type) as $declared_expected |
-      ((if $declared_expected != null then $declared_expected else ([$entries[].value | literal_type | select(. != "")][0] // null) end)) as $expected |
-      select($expected != null) |
-      $entries[] as $entry |
-      ($entry.value | literal_type) as $actual |
-      select($actual != "" and $actual != $expected) |
-      {id:$map_value_type_mismatch, severity:"error", message:render_arg($map_value_type_mismatch_message_template; "actual_type"; $actual), node:$stmt.expr.id, span:$stmt.expr.span};
     def question_requires_result_diags:
       $root.tasks[] as $t |
       ($t.return_type.name // $checker_unit_type | base_type_name) as $return_base |
@@ -6461,6 +6481,7 @@ check_json() {
       elif ($pass.executor // "") == "effect_authorization" then effect_authorization_diags($pass)
       elif ($pass.executor // "") == "duplicate_name" then duplicate_name_diags($pass)
       elif ($pass.executor // "") == "record_shape" then record_shape_diags($pass)
+      elif ($pass.executor // "") == "collection_shape" then collection_shape_diags($pass)
       elif $name == "task_diags" then task_diags
       elif $name == "question_requires_result_diags" then question_requires_result_diags
       elif $name == "unknown_task_diags" then unknown_task_diags
@@ -6468,10 +6489,6 @@ check_json() {
       elif $name == "call_argument_type_diags" then call_argument_type_diags
       elif $name == "type_mismatch_diags" then type_mismatch_diags
       elif $name == "return_type_mismatch_diags" then return_type_mismatch_diags
-      elif $name == "list_element_type_diags" then list_element_type_diags
-      elif $name == "index_diags" then index_diags
-      elif $name == "map_key_type_diags" then map_key_type_diags
-      elif $name == "map_value_type_diags" then map_value_type_diags
       elif $name == "missing_return_diags" then missing_return_diags
       else empty end;
     [$diagnostic_pass_descriptors[]? | diagnostic_pass(.)]
