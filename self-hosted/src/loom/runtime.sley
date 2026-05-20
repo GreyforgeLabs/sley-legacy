@@ -178,6 +178,13 @@ export task text_identity_value -> Text {
   return value
 }
 
+export task text_concat_value -> Text {
+  take left: Text
+  take right: Text
+
+  return left + right
+}
+
 export task bool_identity_value -> Bool {
   take value: Bool
 

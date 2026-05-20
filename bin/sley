@@ -660,7 +660,7 @@ sley_eval_source_call() {
 
 sley_eval_source_expr() {
   local file="$1" env_json="$2" expr="$3"
-  local call_prefix="${PARSER_CALL_EXPRESSION_PREFIX-}" tail callee args_text args_json tokens token out="" seen=false value left right op binary_re indexed_re field_re
+  local call_prefix="${PARSER_CALL_EXPRESSION_PREFIX-}" tail callee args_text args_json tokens token out="" seen=false string_seen=false value left right op binary_re indexed_re field_re
   expr="$(printf '%s\n' "$expr" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
   if [[ "$expr" =~ ^Ok\((.*)\)$ ]]; then
     sley_eval_source_expr "$file" "$env_json" "${BASH_REMATCH[1]}"
@@ -718,49 +718,100 @@ sley_eval_source_expr() {
     sley_eval_env_field "$env_json" "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
     return
   fi
-  binary_re='^([A-Za-z_][A-Za-z0-9_]*)[[:space:]]*(==|!=|>=|<=|&&|\+|\*|>|<)[[:space:]]*([A-Za-z_][A-Za-z0-9_]*)$'
+  binary_re='^("[^"]*"|-?[0-9]+|true|false|[A-Za-z_][A-Za-z0-9_]*)[[:space:]]*(==|!=|>=|<=|&&|\+|\*|>|<)[[:space:]]*("[^"]*"|-?[0-9]+|true|false|[A-Za-z_][A-Za-z0-9_]*)$'
   if [[ "$expr" =~ $binary_re ]]; then
-    left="$(sley_eval_env_lookup "$env_json" "${BASH_REMATCH[1]}")" || return 1
+    left="$(sley_eval_source_expr "$file" "$env_json" "${BASH_REMATCH[1]}")" || return 1
     op="${BASH_REMATCH[2]}"
-    right="$(sley_eval_env_lookup "$env_json" "${BASH_REMATCH[3]}")" || return 1
+    right="$(sley_eval_source_expr "$file" "$env_json" "${BASH_REMATCH[3]}")" || return 1
     case "$op" in
       "+")
         if [[ "$left" =~ ^-?[0-9]+$ && "$right" =~ ^-?[0-9]+$ ]]; then
-          printf '%s\n' "$((left + right))"
+          if [[ "$file" == "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" ]]; then
+            printf '%s\n' "$((left + right))"
+          else
+            eval_runtime_int_binary_value_task int_add_value "+" "$left" "$right"
+          fi
         else
-          printf '%s%s\n' "$left" "$right"
+          if [[ "$file" == "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" ]]; then
+            printf '%s%s\n' "$left" "$right"
+          else
+            eval_runtime_text_concat_value_task "$left" "$right"
+          fi
         fi
         ;;
       "*")
         [[ "$left" =~ ^-?[0-9]+$ && "$right" =~ ^-?[0-9]+$ ]] || return 1
-        printf '%s\n' "$((left * right))"
+        if [[ "$file" == "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" ]]; then
+          printf '%s\n' "$((left * right))"
+        else
+          eval_runtime_int_binary_value_task int_multiply_value "*" "$left" "$right"
+        fi
         ;;
       "==")
-        if [[ "$left" == "$right" ]]; then printf 'true\n'; else printf 'false\n'; fi
+        if [[ "$file" == "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" ]]; then
+          if [[ "$left" == "$right" ]]; then printf 'true\n'; else printf 'false\n'; fi
+        elif [[ "$left" == "true" || "$left" == "false" || "$right" == "true" || "$right" == "false" ]]; then
+          eval_runtime_bool_equal_value_task "$left" "$right"
+        elif [[ "$left" =~ ^-?[0-9]+$ && "$right" =~ ^-?[0-9]+$ ]]; then
+          eval_runtime_int_equal_value_task "$left" "$right"
+        else
+          eval_runtime_text_equal_value_task "$left" "$right"
+        fi
         ;;
       "!=")
-        if [[ "$left" != "$right" ]]; then printf 'true\n'; else printf 'false\n'; fi
+        if [[ "$file" == "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" ]]; then
+          if [[ "$left" != "$right" ]]; then printf 'true\n'; else printf 'false\n'; fi
+        elif [[ "$left" == "true" || "$left" == "false" || "$right" == "true" || "$right" == "false" ]]; then
+          value="$(eval_runtime_bool_equal_value_task "$left" "$right")" || return 1
+          eval_runtime_bool_not_value_task "$value"
+        elif [[ "$left" =~ ^-?[0-9]+$ && "$right" =~ ^-?[0-9]+$ ]]; then
+          value="$(eval_runtime_int_equal_value_task "$left" "$right")" || return 1
+          eval_runtime_bool_not_value_task "$value"
+        else
+          value="$(eval_runtime_text_equal_value_task "$left" "$right")" || return 1
+          eval_runtime_bool_not_value_task "$value"
+        fi
         ;;
       "&&")
-        [[ "$left" == "true" || "$left" == "false" ]] || return 1
-        [[ "$right" == "true" || "$right" == "false" ]] || return 1
-        if [[ "$left" == "true" && "$right" == "true" ]]; then printf 'true\n'; else printf 'false\n'; fi
+        if [[ "$file" == "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" ]]; then
+          [[ "$left" == "true" || "$left" == "false" ]] || return 1
+          [[ "$right" == "true" || "$right" == "false" ]] || return 1
+          if [[ "$left" == "true" && "$right" == "true" ]]; then printf 'true\n'; else printf 'false\n'; fi
+        else
+          eval_runtime_bool_and_value_task "$left" "$right"
+        fi
         ;;
       ">")
         [[ "$left" =~ ^-?[0-9]+$ && "$right" =~ ^-?[0-9]+$ ]] || return 1
-        if [[ "$left" -gt "$right" ]]; then printf 'true\n'; else printf 'false\n'; fi
+        if [[ "$file" == "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" ]]; then
+          if [[ "$left" -gt "$right" ]]; then printf 'true\n'; else printf 'false\n'; fi
+        else
+          eval_runtime_int_less_than_value_task "$right" "$left"
+        fi
         ;;
       "<")
         [[ "$left" =~ ^-?[0-9]+$ && "$right" =~ ^-?[0-9]+$ ]] || return 1
-        if [[ "$left" -lt "$right" ]]; then printf 'true\n'; else printf 'false\n'; fi
+        if [[ "$file" == "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" ]]; then
+          if [[ "$left" -lt "$right" ]]; then printf 'true\n'; else printf 'false\n'; fi
+        else
+          eval_runtime_int_less_than_value_task "$left" "$right"
+        fi
         ;;
       ">=")
         [[ "$left" =~ ^-?[0-9]+$ && "$right" =~ ^-?[0-9]+$ ]] || return 1
-        if [[ "$left" -ge "$right" ]]; then printf 'true\n'; else printf 'false\n'; fi
+        if [[ "$file" == "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" ]]; then
+          if [[ "$left" -ge "$right" ]]; then printf 'true\n'; else printf 'false\n'; fi
+        else
+          eval_runtime_int_greater_equal_value_task "$left" "$right"
+        fi
         ;;
       "<=")
         [[ "$left" =~ ^-?[0-9]+$ && "$right" =~ ^-?[0-9]+$ ]] || return 1
-        if [[ "$left" -le "$right" ]]; then printf 'true\n'; else printf 'false\n'; fi
+        if [[ "$file" == "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" ]]; then
+          if [[ "$left" -le "$right" ]]; then printf 'true\n'; else printf 'false\n'; fi
+        else
+          eval_runtime_int_greater_equal_value_task "$right" "$left"
+        fi
         ;;
       *) return 1 ;;
     esac
@@ -813,15 +864,22 @@ sley_eval_source_expr() {
   while IFS= read -r token || [[ -n "$token" ]]; do
     [[ -n "$token" ]] || continue
     case "$token" in
-      STRING:*) value="${token#STRING:}" ;;
+      STRING:*) value="${token#STRING:}"; string_seen=true ;;
       LITERAL:*) value="${token#LITERAL:}" ;;
       IDENT:*) value="$(sley_eval_env_lookup "$env_json" "${token#IDENT:}")" || return 1 ;;
       CALL:*) value="$(sley_eval_source_call "$file" "${token#CALL:}" "$env_json")" || return 1 ;;
       *) return 1 ;;
     esac
-    out+="$value"
+    if "$seen"; then
+      out="$(eval_runtime_text_concat_value_task "$out" "$value")" || return 1
+    else
+      out="$value"
+    fi
     seen=true
   done <<< "$tokens"
+  if [[ "$expr" == *+* && "$string_seen" != true ]]; then
+    return 1
+  fi
   [[ "$seen" == true ]] || return 1
   printf '%s\n' "$out"
 }
@@ -1066,6 +1124,14 @@ eval_runtime_text_identity_value_task() {
   local env_json
   env_json="$(jq -cn --arg value "$value" '{value:$value}')"
   sley_eval_source_task "$runtime_file" text_identity_value "$env_json"
+}
+
+eval_runtime_text_concat_value_task() {
+  local left="$1" right="$2"
+  local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
+  local env_json
+  env_json="$(jq -cn --arg left "$left" --arg right "$right" '{left:$left, right:$right}')"
+  sley_eval_source_task "$runtime_file" text_concat_value "$env_json"
 }
 
 eval_runtime_bool_identity_value_task() {
