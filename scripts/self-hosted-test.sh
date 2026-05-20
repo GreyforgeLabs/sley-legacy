@@ -1013,6 +1013,9 @@ fi
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("checker_builtin_type_fallback_removal_task_execution"))'
 
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("checker_builtin_types_source_list_execution"))'
+
 bin/sley check --json examples/result_flow.sley \
   | json_field '.status == "ok" and (.diagnostics | length) == 0'
 
@@ -1022,6 +1025,16 @@ fi
 
 if grep -Fq 'eval_checker_builtin_types_json || printf' bin/sley; then
   fail "checker builtin type list must come from loom.checker without shell fallback JSON"
+fi
+
+if ! awk '
+  /^eval_checker_builtin_types_json\(\)[ \t]*\{/ {in_fn=1}
+  in_fn && /sley_eval_source_task_list_json/ {source_list=1}
+  in_fn && /extract_sley_list_task_json/ {extract_list=1}
+  in_fn && /^[ \t]*}/ {exit}
+  END {exit (source_list && !extract_list) ? 0 : 1}
+' bin/sley; then
+  fail "checker builtin type list must execute through the shared Sley source list evaluator"
 fi
 
 if bin/sley check --json fixtures/corpus/rejected/type_alias_mismatch.sley >/tmp/sley-rejected-type-alias-mismatch-check.json; then
