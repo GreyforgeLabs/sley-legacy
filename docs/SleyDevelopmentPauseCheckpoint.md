@@ -2158,6 +2158,29 @@ The latest continuation audit reconfirmed:
   `bin/sley-contract check-fixtures fixtures/contracts --schemas docs/schemas
   --json`, external public-action packet verifier, `git diff --check`, and
   final `make v1` all passed
+- focused checker effect/return/question message fallback-removal probes:
+  `bin/sley self-hosting-status --json` reported
+  `checker_effect_message_fallback_removal_task_execution`,
+  `checker_return_message_fallback_removal_task_execution`,
+  `checker_question_message_fallback_removal_task_execution`, and
+  `bootstrap_owned_by_sley=291`; effect and gate fixtures preserved
+  `UNKNOWN_EFFECT`, `GATE_TAKE_TYPE_MISMATCH`, `GATE_EFFECT_UNDECLARED`, and
+  `EFFECT_UNAUTHORIZED` with exact messages; `missing_return.sley` preserved
+  `MISSING_RETURN` with message "missing return in task `corpus.rejected.main`";
+  `question_requires_result.sley` preserved `QUESTION_REQUIRES_RESULT` with the
+  exact question-operator message; focused grep found no effect, return, or
+  question diagnostic message printf fallbacks, prefix/suffix fallbacks, or
+  empty-template fallback branches
+- Sley self-hosting status after the checker effect/return/question message
+  fallback-removal slice: `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=291`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
+- latest checker effect/return/question message fallback-removal verification:
+  `bash -n bin/sley`, `bash -n scripts/self-hosted-test.sh`, focused checker
+  effect/return/question message probes, `scripts/self-hosted-test.sh`,
+  `bin/sley-contract check-fixtures fixtures/contracts --schemas docs/schemas
+  --json`, external public-action packet verifier, `git diff --check`, and
+  final `make v1` all passed
 
 ## Dirty State Notes
 
