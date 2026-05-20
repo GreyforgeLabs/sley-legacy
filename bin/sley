@@ -3727,7 +3727,7 @@ runtime_file_read_seed_text() {
   [[ -n "$path" && "$path" != /* ]] || return 1
   source_file="$ROOT_DIR/$path"
   [[ -f "$source_file" ]] || return 1
-  text="$(extract_sley_string_task "$source_file" main)"
+  text="$(sley_eval_source_task "$source_file" main '{}')" || return 1
   [[ -n "$text" ]] || return 1
   eval_runtime_text_identity_value_task "$text"
 }
@@ -8074,9 +8074,7 @@ run_json() {
     value="$(eval_seeded_agent_deploy_value "$profile_text" "$model_plan_text" "$deploy_result_text")"
   elif runtime_source_has_host_effect "$target" "FileRead"; then
     value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
-    value="$(extract_sley_string_task "$ROOT_DIR/examples/hello.sley" main)"
-    value="${value:-hello sley}"
-    value="$(eval_runtime_text_identity_value_task "$value")"
+    value="$(runtime_file_read_seed_text "examples/hello.sley")"
   elif runtime_source_has_host_effect "$target" "FileWrite"; then
     value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
     value="$(eval_runtime_text_identity_value_task "$RUNTIME_DEFAULT_FILE_WRITE_TEXT")"

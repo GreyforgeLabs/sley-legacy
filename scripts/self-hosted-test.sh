@@ -373,6 +373,11 @@ if grep -Fq 'eval_bootstrap_smoke_task || printf' bin/sley; then
   fail "self-hosted runtime smoke must execute through loom.bootstrap without host fallback counts"
 fi
 
+if grep -Fq 'extract_sley_string_task "$ROOT_DIR/examples/hello.sley" main' bin/sley \
+  || grep -Fq 'value="${value:-hello sley}"' bin/sley; then
+  fail "FileRead runtime seeds must execute the source file task without host fallback literals"
+fi
+
 for source_task_eval_fn in \
   eval_parser_id_template \
   eval_parser_message_template \
@@ -515,6 +520,8 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("direct_file_read_r
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("direct_file_read_parser_prefix_runtime_execution"))'
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("direct_file_read_result_runtime_execution"))'
+
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_file_read_source_task_execution"))'
 
 bin/sley run --json examples/file_gate.sley \
   | json_field '.status == "passed" and .value.kind == "Text" and .value.value == "hello sley"'
