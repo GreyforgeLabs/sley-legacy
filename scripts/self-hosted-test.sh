@@ -189,6 +189,18 @@ if ! awk '
 fi
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("parser_source_metadata_task_execution"))'
+
+if grep -Fq 'extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley"' bin/sley \
+  || grep -Fq 'extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley"' bin/sley; then
+  fail "parser metadata must execute through Sley source tasks, not raw host extractors"
+fi
+
+if ! grep -Fq 'sley_source_task loom.parser' bin/sley; then
+  fail "parser metadata source task dispatch is missing"
+fi
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("semantic_source_count_parser_prefix_task_execution")) and (.bootstrap_owned_by_sley | index("bootstrap_smoke_parser_prefix_task_execution"))'
 
 bin/sley self-hosting-status --json \
