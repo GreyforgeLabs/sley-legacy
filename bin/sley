@@ -563,50 +563,14 @@ sley_eval_source_task() {
 
 eval_parser_expression_classifiers_json() {
   local parser_file="$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley"
-  local body rows call_prefix
-  body="$(extract_sley_task_body "$parser_file" classify_expression)"
-  [[ -n "$body" ]] || return 1
-  call_prefix="${PARSER_CALL_EXPRESSION_PREFIX:-call }"
-  rows="$(printf '%s\n' "$body" | awk -v call_prefix="$call_prefix" '
-    function return_call_task(line) {
-      sub(/^[ \t]*return[ \t]+/, "", line)
-      if (index(line, call_prefix) != 1) return ""
-      line=substr(line, length(call_prefix) + 1)
-      if (line !~ /^[A-Za-z_][A-Za-z0-9_]*\(\)[ \t]*$/) return ""
-      sub(/\(\).*/, "", line)
-      return line
-    }
-    /^[ \t]*if[ \t]+source[ \t]*==[ \t]*"/ {
-      source=$0
-      sub(/^.*==[ \t]*"/, "", source)
-      sub(/".*$/, "", source)
-      in_if=1
-      next
-    }
-    in_if && /^[ \t]*return[ \t]+/ {
-      task=return_call_task($0)
-      if (task != "") {
-        print source "\t" task
-        in_if=0
-        next
-      }
-    }
-    /^[ \t]*return[ \t]+/ {
-      task=return_call_task($0)
-      if (task != "") {
-        print "__fallback__\t" task
-        exit
-      }
-    }
-  ')"
-  [[ -n "$rows" ]] || return 1
-  while IFS=$'\t' read -r source task; do
-    [[ -n "$source" && -n "$task" ]] || continue
-    local kind
-    kind="$(extract_sley_string_task "$parser_file" "$task")"
+  local source kind
+  for source in "true" "false" "[]" "__fallback__"; do
+    local probe="$source"
+    [[ "$source" == "__fallback__" ]] && probe="value"
+    kind="$(sley_eval_source_task "$parser_file" classify_expression "$(jq -cn --arg source "$probe" '{source:$source}')")" || return 1
     [[ -n "$kind" ]] || return 1
     jq -cn --arg key "$source" --arg value "$kind" '{key:$key,value:$value}'
-  done <<< "$rows" | jq -s 'from_entries'
+  done | jq -s 'from_entries'
 }
 
 eval_parser_id_template() {
