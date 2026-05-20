@@ -4638,6 +4638,7 @@ fi
 PARSER_CALL_EXPRESSION_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley" call_expression_prefix)"
 PARSER_CALL_EXPRESSION_PREFIX="${PARSER_CALL_EXPRESSION_PREFIX:-call }"
 
+CHECKER_DIAGNOSTIC_PASS_ORDER_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" diagnostic_pass_order)"
 DIAG_UNKNOWN_IDENTIFIER="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_identifier_id)"
 DIAG_UNKNOWN_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_type_id)"
 DIAG_UNKNOWN_TASK="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_task_id)"
@@ -5875,7 +5876,8 @@ check_json() {
     --argjson builtin_effects "$CHECKER_BUILTIN_EFFECTS_JSON" \
     --argjson effect_aliases "$CHECKER_EFFECT_ALIASES_JSON" \
     --argjson host_effect_needles "$CHECKER_HOST_EFFECT_NEEDLES_JSON" \
-    --argjson identifier_inputs "$CHECKER_IDENTIFIER_INPUTS_JSON" '
+    --argjson identifier_inputs "$CHECKER_IDENTIFIER_INPUTS_JSON" \
+    --argjson diagnostic_pass_order "$CHECKER_DIAGNOSTIC_PASS_ORDER_JSON" '
     . as $root |
     [$root.tasks[].name] as $all_task_names |
     [$root.tasks[] | .module + "." + .name] as $all_qualified_task_names |
@@ -6404,7 +6406,40 @@ check_json() {
           {kind:$replace_task_body_hint_kind, target:$t.id, replacement:starter_return($name)}
         ]
       };
-    [duplicate_effect_diags, duplicate_type_diags, duplicate_task_diags, task_diags, return_type_diags, take_type_diags, unknown_effect_diags, gate_take_type_diags, gate_effect_diags, question_requires_result_diags, direct_effect_diags, transitive_effect_diags, unknown_task_diags, call_arity_diags, call_argument_type_diags, type_mismatch_diags, return_type_mismatch_diags, duplicate_take_diags, duplicate_map_key_diags, duplicate_record_field_diags, duplicate_record_literal_field_diags, record_field_missing_diags, record_field_unknown_diags, record_field_type_mismatch_diags, record_literal_non_record_type_diags, unknown_record_field_diags, list_element_type_diags, index_diags, map_key_type_diags, map_value_type_diags, missing_return_diags]
+    def diagnostic_pass($name):
+      if $name == "duplicate_effect_diags" then duplicate_effect_diags
+      elif $name == "duplicate_type_diags" then duplicate_type_diags
+      elif $name == "duplicate_task_diags" then duplicate_task_diags
+      elif $name == "task_diags" then task_diags
+      elif $name == "return_type_diags" then return_type_diags
+      elif $name == "take_type_diags" then take_type_diags
+      elif $name == "unknown_effect_diags" then unknown_effect_diags
+      elif $name == "gate_take_type_diags" then gate_take_type_diags
+      elif $name == "gate_effect_diags" then gate_effect_diags
+      elif $name == "question_requires_result_diags" then question_requires_result_diags
+      elif $name == "direct_effect_diags" then direct_effect_diags
+      elif $name == "transitive_effect_diags" then transitive_effect_diags
+      elif $name == "unknown_task_diags" then unknown_task_diags
+      elif $name == "call_arity_diags" then call_arity_diags
+      elif $name == "call_argument_type_diags" then call_argument_type_diags
+      elif $name == "type_mismatch_diags" then type_mismatch_diags
+      elif $name == "return_type_mismatch_diags" then return_type_mismatch_diags
+      elif $name == "duplicate_take_diags" then duplicate_take_diags
+      elif $name == "duplicate_map_key_diags" then duplicate_map_key_diags
+      elif $name == "duplicate_record_field_diags" then duplicate_record_field_diags
+      elif $name == "duplicate_record_literal_field_diags" then duplicate_record_literal_field_diags
+      elif $name == "record_field_missing_diags" then record_field_missing_diags
+      elif $name == "record_field_unknown_diags" then record_field_unknown_diags
+      elif $name == "record_field_type_mismatch_diags" then record_field_type_mismatch_diags
+      elif $name == "record_literal_non_record_type_diags" then record_literal_non_record_type_diags
+      elif $name == "unknown_record_field_diags" then unknown_record_field_diags
+      elif $name == "list_element_type_diags" then list_element_type_diags
+      elif $name == "index_diags" then index_diags
+      elif $name == "map_key_type_diags" then map_key_type_diags
+      elif $name == "map_value_type_diags" then map_value_type_diags
+      elif $name == "missing_return_diags" then missing_return_diags
+      else empty end;
+    [$diagnostic_pass_order[]? | diagnostic_pass(.)]
   ')"
   diagnostic_count="$(printf '%s\n' "$diagnostics" | jq 'length')"
   check_status="$(eval_checker_status_task "$diagnostic_count")"
