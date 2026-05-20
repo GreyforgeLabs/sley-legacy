@@ -355,9 +355,26 @@ bin/sley self-hosting-status --json \
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("reports_source_metadata_task_execution"))'
 
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("reports_fallback_removal_task_execution")) and (.bootstrap_owned_by_sley | index("bootstrap_status_fallback_removal_task_execution"))'
+
 if grep -Fq 'extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley"' bin/sley \
   || grep -Fq 'extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley"' bin/sley; then
   fail "report metadata must execute through Sley source tasks, not raw host extractors"
+fi
+
+if grep -Eq '^(VERSION|SCHEMA_[A-Z0-9_]+|SELF_HOSTING_REPORT_SOURCE_ROOT)="\$\{[^}]+:-' bin/sley \
+  || grep -Eq '^[[:space:]]*(DEFAULT_RULES_JSON|[A-Z0-9_]+_(REPORT_)?(FIELDS|BUILDER)_JSON)='\''\[' bin/sley \
+  || grep -Eq 'if \[\[ "\$[A-Z0-9_]+_(REPORT_)?(FIELDS|BUILDER)_JSON" == "\[\]" \]\]' bin/sley; then
+  fail "bootstrap/report metadata must come from Sley source without host fallback literals"
+fi
+
+if grep -Fq "owned_json='[\"implementation_version\"" bin/sley \
+  || grep -Fq 'status="${status:-bootstrap}"' bin/sley \
+  || grep -Fq 'strict="${strict:-false}"' bin/sley \
+  || grep -Fq 'eval_bootstrap_list_count_task semantic_source_count || true' bin/sley \
+  || grep -Fq 'find "$SELF_HOSTED_SOURCE_ROOT" -type f -name' bin/sley; then
+  fail "self-hosting status metadata must come from loom.bootstrap without host fallback discovery"
 fi
 
 if ! grep -Fq 'sley_source_task loom.reports' bin/sley \
