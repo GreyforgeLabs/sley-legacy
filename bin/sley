@@ -4403,7 +4403,6 @@ if [[ "$SELF_HOSTING_STATUS_BUILDER_JSON" == "[]" ]]; then
 fi
 
 PARSER_CALL_EXPRESSION_PREFIX="$(sley_source_task loom.parser call_expression_prefix)"
-PARSER_CALL_EXPRESSION_PREFIX="${PARSER_CALL_EXPRESSION_PREFIX:-call }"
 
 CHECKER_DIAGNOSTIC_PASS_DESCRIPTORS_JSON="$(sley_source_list_task_json loom.checker diagnostic_pass_descriptors | jq 'map(split("|") | {name:.[0], executor:.[1], diagnostic_id_task:.[2], message_task:.[3], message_arg:.[4], subject:.[5], node_scope:.[6]})')"
 DIAG_UNKNOWN_IDENTIFIER="$(sley_source_task loom.checker unknown_identifier_id)"
@@ -4612,32 +4611,32 @@ PARSER_BOOL_KIND="$(sley_source_task loom.parser bool_literal_kind)"
 PARSER_IDENTIFIER_KIND="$(sley_source_task loom.parser identifier_kind)"
 PARSER_LIST_KIND="$(sley_source_task loom.parser list_literal_kind)"
 PARSER_RAW_KIND="$(sley_source_task loom.parser raw_expr_kind)"
-PARSER_CLASSIFIERS_JSON="$(eval_parser_expression_classifiers_json || printf '{}\n')"
-PARSER_TRUE_KIND="$(printf '%s\n' "$PARSER_CLASSIFIERS_JSON" | jq -r '."true" // empty')"
-PARSER_FALSE_KIND="$(printf '%s\n' "$PARSER_CLASSIFIERS_JSON" | jq -r '."false" // empty')"
-PARSER_EMPTY_LIST_KIND="$(printf '%s\n' "$PARSER_CLASSIFIERS_JSON" | jq -r '."[]" // empty')"
-PARSER_FALLBACK_KIND="$(printf '%s\n' "$PARSER_CLASSIFIERS_JSON" | jq -r '.__fallback__ // empty')"
+PARSER_CLASSIFIERS_JSON="$(eval_parser_expression_classifiers_json)"
+PARSER_TRUE_KIND="$(printf '%s\n' "$PARSER_CLASSIFIERS_JSON" | jq -er '."true"')"
+PARSER_FALSE_KIND="$(printf '%s\n' "$PARSER_CLASSIFIERS_JSON" | jq -er '."false"')"
+PARSER_EMPTY_LIST_KIND="$(printf '%s\n' "$PARSER_CLASSIFIERS_JSON" | jq -er '."[]"')"
+PARSER_FALLBACK_KIND="$(printf '%s\n' "$PARSER_CLASSIFIERS_JSON" | jq -er '.__fallback__')"
 PARSER_TASK_ID_TEMPLATE="$(eval_parser_id_template task_id_via_call)"
-PARSER_CALL_TARGET_TASK_ID_TEMPLATE="$(eval_parser_id_template call_target_task_id || printf 'task:{{module}}.{{task}}\n')"
-PARSER_IMPORT_ID_TEMPLATE="$(eval_parser_id_template import_id || printf 'import:{{module}}:{{import_module}}\n')"
-PARSER_TYPE_ID_TEMPLATE="$(eval_parser_id_template type_id || printf 'type:{{module}}.{{type}}\n')"
-PARSER_EFFECT_ID_TEMPLATE="$(eval_parser_id_template effect_id || printf 'effect:{{module}}.{{effect}}\n')"
-PARSER_TAKE_ID_TEMPLATE="$(eval_parser_id_template take_id || printf 'take:{{module}}.{{task}}.{{take}}\n')"
-PARSER_TAKE_SURFACE_ID_TEMPLATE="$(eval_parser_id_template take_surface_id || printf 'take:{{task_id}}:{{index}}:{{take}}\n')"
-PARSER_MODULE_SURFACE_ID_TEMPLATE="$(eval_parser_id_template module_surface_id || printf 'module:{{module}}\n')"
-PARSER_MODULE_TASK_LIST_SURFACE_ID_TEMPLATE="$(eval_parser_id_template module_task_list_surface_id || printf 'module:{{module}}:tasks\n')"
-PARSER_MODULE_IMPORT_LIST_SURFACE_ID_TEMPLATE="$(eval_parser_id_template module_import_list_surface_id || printf 'module:{{module}}:imports\n')"
-PARSER_MODULE_TYPE_LIST_SURFACE_ID_TEMPLATE="$(eval_parser_id_template module_type_list_surface_id || printf 'module:{{module}}:types\n')"
-PARSER_MODULE_EFFECT_LIST_SURFACE_ID_TEMPLATE="$(eval_parser_id_template module_effect_list_surface_id || printf 'module:{{module}}:effects\n')"
-PARSER_BLOCK_TASK_SURFACE_ID_TEMPLATE="$(eval_parser_id_template block_task_surface_id || printf 'block:{{task_id}}\n')"
-PARSER_TASK_STATEMENT_SURFACE_ID_TEMPLATE="$(eval_parser_id_template task_statement_surface_id || printf 'block:{{task_id}}:stmt:{{index}}\n')"
-PARSER_BRANCH_STATEMENT_SURFACE_ID_TEMPLATE="$(eval_parser_id_template branch_statement_surface_id || printf '{{statement}}:{{branch}}:stmt:{{index}}\n')"
-PARSER_STATEMENT_ID_TEMPLATE="$(eval_parser_id_template statement_id || printf 'block:task:{{module}}.{{task}}:stmt:{{index}}\n')"
-PARSER_EXPRESSION_ID_TEMPLATE="$(eval_parser_id_template expression_id || printf '{{statement}}:expr\n')"
-PARSER_COLLECTION_EXPRESSION_ID_TEMPLATE="$(eval_parser_id_template collection_expression_id || printf '{{statement}}:collection\n')"
-PARSER_CONDITION_EXPRESSION_ID_TEMPLATE="$(eval_parser_id_template condition_expression_id || printf '{{statement}}:condition\n')"
-PARSER_CALL_ARGUMENT_SURFACE_ID_TEMPLATE="$(eval_parser_id_template call_argument_surface_id || printf '{{expression}}:arg:{{index}}\n')"
-PARSER_EXPRESSION_SIDE_SURFACE_ID_TEMPLATE="$(eval_parser_id_template expression_side_surface_id || printf '{{expression}}:{{side}}\n')"
+PARSER_CALL_TARGET_TASK_ID_TEMPLATE="$(eval_parser_id_template call_target_task_id)"
+PARSER_IMPORT_ID_TEMPLATE="$(eval_parser_id_template import_id)"
+PARSER_TYPE_ID_TEMPLATE="$(eval_parser_id_template type_id)"
+PARSER_EFFECT_ID_TEMPLATE="$(eval_parser_id_template effect_id)"
+PARSER_TAKE_ID_TEMPLATE="$(eval_parser_id_template take_id)"
+PARSER_TAKE_SURFACE_ID_TEMPLATE="$(eval_parser_id_template take_surface_id)"
+PARSER_MODULE_SURFACE_ID_TEMPLATE="$(eval_parser_id_template module_surface_id)"
+PARSER_MODULE_TASK_LIST_SURFACE_ID_TEMPLATE="$(eval_parser_id_template module_task_list_surface_id)"
+PARSER_MODULE_IMPORT_LIST_SURFACE_ID_TEMPLATE="$(eval_parser_id_template module_import_list_surface_id)"
+PARSER_MODULE_TYPE_LIST_SURFACE_ID_TEMPLATE="$(eval_parser_id_template module_type_list_surface_id)"
+PARSER_MODULE_EFFECT_LIST_SURFACE_ID_TEMPLATE="$(eval_parser_id_template module_effect_list_surface_id)"
+PARSER_BLOCK_TASK_SURFACE_ID_TEMPLATE="$(eval_parser_id_template block_task_surface_id)"
+PARSER_TASK_STATEMENT_SURFACE_ID_TEMPLATE="$(eval_parser_id_template task_statement_surface_id)"
+PARSER_BRANCH_STATEMENT_SURFACE_ID_TEMPLATE="$(eval_parser_id_template branch_statement_surface_id)"
+PARSER_STATEMENT_ID_TEMPLATE="$(eval_parser_id_template statement_id)"
+PARSER_EXPRESSION_ID_TEMPLATE="$(eval_parser_id_template expression_id)"
+PARSER_COLLECTION_EXPRESSION_ID_TEMPLATE="$(eval_parser_id_template collection_expression_id)"
+PARSER_CONDITION_EXPRESSION_ID_TEMPLATE="$(eval_parser_id_template condition_expression_id)"
+PARSER_CALL_ARGUMENT_SURFACE_ID_TEMPLATE="$(eval_parser_id_template call_argument_surface_id)"
+PARSER_EXPRESSION_SIDE_SURFACE_ID_TEMPLATE="$(eval_parser_id_template expression_side_surface_id)"
 PARSER_RETURN_STATEMENT_KIND="$(sley_source_task loom.parser return_statement_kind)"
 PARSER_EXPR_STATEMENT_KIND="$(sley_source_task loom.parser expression_statement_kind)"
 PARSER_BINDING_STATEMENT_KIND="$(sley_source_task loom.parser binding_statement_kind)"
@@ -4651,83 +4650,6 @@ PARSER_GATE_BINDING_KIND="$(sley_source_task loom.parser gate_binding_kind)"
 PARSER_STATE_BINDING_KIND="$(sley_source_task loom.parser state_binding_kind)"
 PARSER_TALLY_BINDING_KIND="$(sley_source_task loom.parser tally_binding_kind)"
 PARSER_BIND_BINDING_KIND="$(sley_source_task loom.parser bind_binding_kind)"
-PARSER_INT_PATTERN="${PARSER_INT_PATTERN:--?[0-9]+}"
-PARSER_IDENTIFIER_PATTERN="${PARSER_IDENTIFIER_PATTERN:-^[A-Za-z_][A-Za-z0-9_]*$}"
-PARSER_INT_KIND="${PARSER_INT_KIND:-IntLiteral}"
-PARSER_STRING_KIND="${PARSER_STRING_KIND:-StringLiteral}"
-PARSER_BOOL_KIND="${PARSER_BOOL_KIND:-BoolLiteral}"
-PARSER_IDENTIFIER_KIND="${PARSER_IDENTIFIER_KIND:-Identifier}"
-PARSER_LIST_KIND="${PARSER_LIST_KIND:-ListLiteral}"
-PARSER_RAW_KIND="${PARSER_RAW_KIND:-Raw}"
-PARSER_CALL_EXPRESSION_PREFIX="${PARSER_CALL_EXPRESSION_PREFIX:-call }"
-PARSER_TRUE_KIND="${PARSER_TRUE_KIND:-$PARSER_BOOL_KIND}"
-PARSER_FALSE_KIND="${PARSER_FALSE_KIND:-$PARSER_BOOL_KIND}"
-PARSER_EMPTY_LIST_KIND="${PARSER_EMPTY_LIST_KIND:-$PARSER_LIST_KIND}"
-PARSER_FALLBACK_KIND="${PARSER_FALLBACK_KIND:-$PARSER_RAW_KIND}"
-if [[ -z "$PARSER_TASK_ID_TEMPLATE" ]]; then
-  PARSER_TASK_ID_TEMPLATE='task:{{module}}.{{task}}'
-fi
-if [[ -z "$PARSER_CALL_TARGET_TASK_ID_TEMPLATE" ]]; then
-  PARSER_CALL_TARGET_TASK_ID_TEMPLATE='task:{{module}}.{{task}}'
-fi
-if [[ -z "$PARSER_IMPORT_ID_TEMPLATE" ]]; then
-  PARSER_IMPORT_ID_TEMPLATE='import:{{module}}:{{import_module}}'
-fi
-if [[ -z "$PARSER_TYPE_ID_TEMPLATE" ]]; then
-  PARSER_TYPE_ID_TEMPLATE='type:{{module}}.{{type}}'
-fi
-if [[ -z "$PARSER_EFFECT_ID_TEMPLATE" ]]; then
-  PARSER_EFFECT_ID_TEMPLATE='effect:{{module}}.{{effect}}'
-fi
-if [[ -z "$PARSER_TAKE_ID_TEMPLATE" ]]; then
-  PARSER_TAKE_ID_TEMPLATE='take:{{module}}.{{task}}.{{take}}'
-fi
-if [[ -z "$PARSER_TAKE_SURFACE_ID_TEMPLATE" ]]; then
-  PARSER_TAKE_SURFACE_ID_TEMPLATE='take:{{task_id}}:{{index}}:{{take}}'
-fi
-if [[ -z "$PARSER_MODULE_SURFACE_ID_TEMPLATE" ]]; then
-  PARSER_MODULE_SURFACE_ID_TEMPLATE='module:{{module}}'
-fi
-if [[ -z "$PARSER_MODULE_TASK_LIST_SURFACE_ID_TEMPLATE" ]]; then
-  PARSER_MODULE_TASK_LIST_SURFACE_ID_TEMPLATE='module:{{module}}:tasks'
-fi
-if [[ -z "$PARSER_MODULE_IMPORT_LIST_SURFACE_ID_TEMPLATE" ]]; then
-  PARSER_MODULE_IMPORT_LIST_SURFACE_ID_TEMPLATE='module:{{module}}:imports'
-fi
-if [[ -z "$PARSER_MODULE_TYPE_LIST_SURFACE_ID_TEMPLATE" ]]; then
-  PARSER_MODULE_TYPE_LIST_SURFACE_ID_TEMPLATE='module:{{module}}:types'
-fi
-if [[ -z "$PARSER_MODULE_EFFECT_LIST_SURFACE_ID_TEMPLATE" ]]; then
-  PARSER_MODULE_EFFECT_LIST_SURFACE_ID_TEMPLATE='module:{{module}}:effects'
-fi
-if [[ -z "$PARSER_BLOCK_TASK_SURFACE_ID_TEMPLATE" ]]; then
-  PARSER_BLOCK_TASK_SURFACE_ID_TEMPLATE='block:{{task_id}}'
-fi
-if [[ -z "$PARSER_TASK_STATEMENT_SURFACE_ID_TEMPLATE" ]]; then
-  PARSER_TASK_STATEMENT_SURFACE_ID_TEMPLATE='block:{{task_id}}:stmt:{{index}}'
-fi
-if [[ -z "$PARSER_BRANCH_STATEMENT_SURFACE_ID_TEMPLATE" ]]; then
-  PARSER_BRANCH_STATEMENT_SURFACE_ID_TEMPLATE='{{statement}}:{{branch}}:stmt:{{index}}'
-fi
-if [[ -z "$PARSER_STATEMENT_ID_TEMPLATE" ]]; then
-  PARSER_STATEMENT_ID_TEMPLATE='block:task:{{module}}.{{task}}:stmt:{{index}}'
-fi
-if [[ -z "$PARSER_EXPRESSION_ID_TEMPLATE" ]]; then
-  PARSER_EXPRESSION_ID_TEMPLATE='{{statement}}:expr'
-fi
-if [[ -z "$PARSER_COLLECTION_EXPRESSION_ID_TEMPLATE" ]]; then
-  PARSER_COLLECTION_EXPRESSION_ID_TEMPLATE='{{statement}}:collection'
-fi
-if [[ -z "$PARSER_CONDITION_EXPRESSION_ID_TEMPLATE" ]]; then
-  PARSER_CONDITION_EXPRESSION_ID_TEMPLATE='{{statement}}:condition'
-fi
-if [[ -z "$PARSER_CALL_ARGUMENT_SURFACE_ID_TEMPLATE" ]]; then
-  PARSER_CALL_ARGUMENT_SURFACE_ID_TEMPLATE='{{expression}}:arg:{{index}}'
-fi
-if [[ -z "$PARSER_EXPRESSION_SIDE_SURFACE_ID_TEMPLATE" ]]; then
-  PARSER_EXPRESSION_SIDE_SURFACE_ID_TEMPLATE='{{expression}}:{{side}}'
-fi
-
 sley_template_replace() {
   local out="$1" key value needle
   shift
@@ -4770,29 +4692,11 @@ parser_task_expression_side_surface_value() {
   sley_template_replace "$PARSER_EXPRESSION_SIDE_SURFACE_ID_TEMPLATE" expression "$expression_id" side "$side_name"
 }
 
-PARSER_RETURN_STATEMENT_KIND="${PARSER_RETURN_STATEMENT_KIND:-Return}"
-PARSER_EXPR_STATEMENT_KIND="${PARSER_EXPR_STATEMENT_KIND:-Expr}"
-PARSER_BINDING_STATEMENT_KIND="${PARSER_BINDING_STATEMENT_KIND:-Binding}"
-PARSER_SET_STATEMENT_KIND="${PARSER_SET_STATEMENT_KIND:-Set}"
-PARSER_FOR_STATEMENT_KIND="${PARSER_FOR_STATEMENT_KIND:-For}"
-PARSER_WHILE_STATEMENT_KIND="${PARSER_WHILE_STATEMENT_KIND:-While}"
-PARSER_IF_STATEMENT_KIND="${PARSER_IF_STATEMENT_KIND:-If}"
-PARSER_FORGE_STATEMENT_KIND="${PARSER_FORGE_STATEMENT_KIND:-Forge}"
-PARSER_TAKE_BINDING_KIND="${PARSER_TAKE_BINDING_KIND:-Take}"
-PARSER_GATE_BINDING_KIND="${PARSER_GATE_BINDING_KIND:-Gate}"
-PARSER_STATE_BINDING_KIND="${PARSER_STATE_BINDING_KIND:-State}"
-PARSER_TALLY_BINDING_KIND="${PARSER_TALLY_BINDING_KIND:-Tally}"
-PARSER_BIND_BINDING_KIND="${PARSER_BIND_BINDING_KIND:-Bind}"
 PARSER_AST_TASK_NODE_KIND="$(sley_source_task loom.parser ast_task_node_kind)"
 PARSER_AST_STATEMENT_NODE_KIND="$(sley_source_task loom.parser ast_statement_node_kind)"
 PARSER_AST_EXPRESSION_NODE_KIND="$(sley_source_task loom.parser ast_expression_node_kind)"
 PARSER_AST_NODE_NOT_FOUND_ID="$(sley_source_task loom.parser ast_node_not_found_id)"
-PARSER_AST_NODE_NOT_FOUND_MESSAGE_TEMPLATE="$(eval_parser_message_template ast_node_not_found_message node_id || printf 'AST node not found `::node_id::`\n')"
-PARSER_AST_TASK_NODE_KIND="${PARSER_AST_TASK_NODE_KIND:-task}"
-PARSER_AST_STATEMENT_NODE_KIND="${PARSER_AST_STATEMENT_NODE_KIND:-statement}"
-PARSER_AST_EXPRESSION_NODE_KIND="${PARSER_AST_EXPRESSION_NODE_KIND:-expression}"
-PARSER_AST_NODE_NOT_FOUND_ID="${PARSER_AST_NODE_NOT_FOUND_ID:-AST_NODE_NOT_FOUND}"
-PARSER_AST_NODE_NOT_FOUND_MESSAGE_TEMPLATE="${PARSER_AST_NODE_NOT_FOUND_MESSAGE_TEMPLATE:-AST node not found \`::node_id::\`}"
+PARSER_AST_NODE_NOT_FOUND_MESSAGE_TEMPLATE="$(eval_parser_message_template ast_node_not_found_message node_id)"
 
 usage() {
   cat <<'EOF'
