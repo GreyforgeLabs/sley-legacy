@@ -22,6 +22,7 @@ bool_literal_source="$(mktemp)"
 generic_source_main_source="$(mktemp)"
 generic_state_set_source="$(mktemp)"
 generic_if_assignment_source="$(mktemp)"
+generic_result_err_source="$(mktemp)"
 generic_each_source="$(mktemp)"
 generic_for_source="$(mktemp)"
 generic_while_source="$(mktemp)"
@@ -40,7 +41,7 @@ zjx_tool_report="$(mktemp)"
 runtime_report="$(mktemp)"
 ast_missing_report="$(mktemp)"
 ci_report="$(mktemp)"
-trap 'rm -f "$bool_literal_source" "$generic_source_main_source" "$generic_state_set_source" "$generic_if_assignment_source" "$generic_each_source" "$generic_for_source" "$generic_while_source" "$empty_module_source" "$unknown_take_type_source" "$add_take_operation" "$self_hosting_status_report" "$artifact_check_report" "$migrate_report" "$docgen_report" "$workbench_report" "$sandbox_report" "$agent_bench_report" "$zjx_tool_report" "$runtime_report" "$ast_missing_report" "$ci_report"; rm -rf "$artifact_dir"' EXIT
+trap 'rm -f "$bool_literal_source" "$generic_source_main_source" "$generic_state_set_source" "$generic_if_assignment_source" "$generic_result_err_source" "$generic_each_source" "$generic_for_source" "$generic_while_source" "$empty_module_source" "$unknown_take_type_source" "$add_take_operation" "$self_hosting_status_report" "$artifact_check_report" "$migrate_report" "$docgen_report" "$workbench_report" "$sandbox_report" "$agent_bench_report" "$zjx_tool_report" "$runtime_report" "$ast_missing_report" "$ci_report"; rm -rf "$artifact_dir"' EXIT
 printf '%s\n' \
   'module app.bool_literal' \
   '' \
@@ -81,6 +82,16 @@ printf '%s\n' \
   '' \
   '  return label' \
   '}' > "$generic_if_assignment_source"
+printf '%s\n' \
+  'module app.generic_result_err' \
+  '' \
+  'task main -> Result<Text, Error> {' \
+  '  if true {' \
+  '    return Err("boom")' \
+  '  }' \
+  '' \
+  '  return Ok("ready")' \
+  '}' > "$generic_result_err_source"
 printf '%s\n' \
   'module app.generic_each' \
   '' \
@@ -176,8 +187,9 @@ fi
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_default_database_table_task_execution"))'
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_value_kinds_task_execution"))'
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("err_text_runtime_task_execution"))'
 
-if grep -Eq 'RUNTIME_(INT|TEXT|BOOL|RAW|UNIT|OK_TEXT|OK_INT)_VALUE_KIND="\$\{RUNTIME_[A-Z_]+:-' bin/sley; then
+if grep -Eq 'RUNTIME_(INT|TEXT|BOOL|RAW|UNIT|OK_TEXT|OK_INT|ERR_TEXT)_VALUE_KIND="\$\{RUNTIME_[A-Z_]+:-' bin/sley; then
   fail "runtime value-kind names must come from loom.runtime without shell fallback literals"
 fi
 
@@ -441,6 +453,11 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_if_assignm
 
 bin/sley run --json "$generic_if_assignment_source" \
   | json_field '.status == "passed" and .value.kind == "Text" and .value.value == "ready"'
+
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_result_err_runtime_execution"))'
+
+bin/sley run --json "$generic_result_err_source" \
+  | json_field '.status == "passed" and .value.kind == "Err" and .value.value.kind == "Text" and .value.value.value == "boom"'
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_linear_tally_runtime_execution"))'
 
