@@ -178,6 +178,7 @@ export task owned_bootstrap_values -> List<Text> {
     "generic_runtime_collection_task_evaluator_execution",
     "generic_runtime_record_task_evaluator_execution",
     "generic_parser_checker_template_evaluator_execution",
+    "generic_source_call_argument_evaluator_execution",
     "runtime_status_task_execution",
     "runtime_status_parser_prefix_task_execution",
     "runtime_project_probe_parser_prefix_task_execution",
