@@ -603,22 +603,33 @@ sley_eval_source_condition() {
 
 sley_select_source_return_expr() {
   local body="$1" env_json="$2"
-  local raw line in_if=false if_active=false
+  local raw line in_if=false if_condition=false if_active=false
   while IFS= read -r raw || [[ -n "$raw" ]]; do
     line="$(printf '%s\n' "$raw" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
     [[ -n "$line" ]] || continue
     if [[ "$line" =~ ^if[[:space:]]+(.+)[[:space:]]*\{$ ]]; then
       in_if=true
       if sley_eval_source_condition "$env_json" "${BASH_REMATCH[1]}"; then
+        if_condition=true
         if_active=true
       else
+        if_condition=false
         if_active=false
+      fi
+      continue
+    fi
+    if [[ "$in_if" == true && "$line" =~ ^\}[[:space:]]*else[[:space:]]*\{$ ]]; then
+      if "$if_condition"; then
+        if_active=false
+      else
+        if_active=true
       fi
       continue
     fi
     if [[ "$line" == "}" ]]; then
       if [[ "$in_if" == true ]]; then
         in_if=false
+        if_condition=false
         if_active=false
         continue
       fi
@@ -631,6 +642,28 @@ sley_select_source_return_expr() {
     fi
   done <<< "$body"
   return 1
+}
+
+sley_eval_source_if_expr() {
+  local file="$1" env_json="$2" expr="$3"
+  local condition then_expr else_expr condition_value then_value else_value
+  [[ "$expr" =~ ^if[[:space:]]+([^{}]+)[[:space:]]*\{[[:space:]]*([^{}]+)[[:space:]]*\}[[:space:]]*else[[:space:]]*\{[[:space:]]*([^{}]+)[[:space:]]*\}$ ]] || return 1
+  condition="${BASH_REMATCH[1]}"
+  then_expr="${BASH_REMATCH[2]}"
+  else_expr="${BASH_REMATCH[3]}"
+  condition_value="$(sley_eval_source_expr "$file" "$env_json" "$condition")" || return 1
+  [[ "$condition_value" == "true" || "$condition_value" == "false" ]] || return 1
+  then_value="$(sley_eval_source_expr "$file" "$env_json" "$then_expr")" || return 1
+  else_value="$(sley_eval_source_expr "$file" "$env_json" "$else_expr")" || return 1
+  if [[ "$file" == "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" ]]; then
+    if [[ "$condition_value" == "true" ]]; then printf '%s\n' "$then_value"; else printf '%s\n' "$else_value"; fi
+  elif [[ "$then_value" == "true" || "$then_value" == "false" || "$else_value" == "true" || "$else_value" == "false" ]]; then
+    eval_runtime_bool_if_value_task "$condition_value" "$then_value" "$else_value"
+  elif [[ "$then_value" =~ ^-?[0-9]+$ && "$else_value" =~ ^-?[0-9]+$ ]]; then
+    eval_runtime_int_if_value_task "$condition_value" "$then_value" "$else_value"
+  else
+    eval_runtime_text_if_value_task "$condition_value" "$then_value" "$else_value"
+  fi
 }
 
 sley_eval_source_call() {
@@ -670,6 +703,10 @@ sley_eval_source_expr() {
     return 1
   fi
   if value="$(sley_eval_source_host_expr "$file" "$env_json" "$expr" 2>/dev/null)"; then
+    printf '%s\n' "$value"
+    return
+  fi
+  if value="$(sley_eval_source_if_expr "$file" "$env_json" "$expr" 2>/dev/null)"; then
     printf '%s\n' "$value"
     return
   fi
@@ -3977,7 +4014,6 @@ sley_source_main_body_supports_generic_runtime() {
     {
       line=trim($0)
       if(line ~ /^(for|while|set|state|tally|forge)([ \t{]|$)/) found=1
-      if(line ~ /^return[ \t]+if[ \t]+/) found=1
     }
     END {exit found ? 0 : 1}
   '

@@ -52,7 +52,7 @@ printf '%s\n' \
   '}' \
   '' \
   'task main -> Text {' \
-  '  return call greet("Ada")' \
+  '  return if true { call greet("Ada") } else { "bad" }' \
   '}' > "$generic_source_main_source"
 printf '%s\n' \
   'module app.empty' > "$empty_module_source"
@@ -352,6 +352,10 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("text_concat_runtim
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("bool_identity_runtime_task_execution"))'
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_source_main_runtime_execution"))'
+
+if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_source_if_expression_runtime_execution"))'; then
+  fail "generic source if-expression runtime marker is missing"
+fi
 
 bin/sley run --json "$generic_source_main_source" \
   | json_field '.status == "passed" and .value.kind == "Text" and .value.value == "hi Ada"'
