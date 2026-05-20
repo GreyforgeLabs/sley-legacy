@@ -148,6 +148,23 @@ sley_source_file_for_module() {
   sley_project_module_source_file "$current_file" "$module"
 }
 
+sley_source_entry_file_for_target() {
+  local target="$1" entry="" root_rel="" candidate
+  if [[ -d "$target" && -f "$target/sley.toml" ]]; then
+    entry="$(awk -F= '/^[[:space:]]*entry[[:space:]]*=/ {gsub(/^[ \t"]+|[ \t"]+$/, "", $2); print $2; exit}' "$target/sley.toml")"
+    root_rel="$(awk -F= '/^[[:space:]]*root[[:space:]]*=/ {gsub(/^[ \t"]+|[ \t"]+$/, "", $2); print $2; exit}' "$target/sley.toml")"
+    [[ -n "$root_rel" ]] || root_rel="src"
+    if [[ -n "$entry" ]]; then
+      candidate="$target/$root_rel/${entry//.//}.sley"
+      if [[ -f "$candidate" ]]; then
+        printf '%s\n' "$candidate"
+        return
+      fi
+    fi
+  fi
+  collect_files "$target" | head -n 1
+}
+
 sley_eval_env_lookup() {
   local env_json="$1" name="$2"
   printf '%s\n' "$env_json" | jq -er --arg name "$name" '
@@ -1679,7 +1696,7 @@ eval_source_simple_arithmetic_int_main_return() {
 
 eval_source_bound_arithmetic_int_main_return() {
   local target="$1" file values left op right task_name runtime_value
-  file="$(collect_files "$target" | head -n 1)"
+  file="$(sley_source_entry_file_for_target "$target")"
   [[ -n "$file" ]] || return 1
   values="$(awk '
     function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
@@ -1763,7 +1780,7 @@ eval_source_list_index_int_main_return() {
 
 eval_source_bound_list_index_sum_int_main_return() {
   local target="$1" file values left_values left_index right_values right_index left_value right_value runtime_value
-  file="$(collect_files "$target" | head -n 1)"
+  file="$(sley_source_entry_file_for_target "$target")"
   [[ -n "$file" ]] || return 1
   values="$(awk '
     function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
@@ -8302,52 +8319,6 @@ run_json() {
   elif call_runtime="$(eval_main_call_int_return "$target" 2>/dev/null)" && [[ -n "$call_runtime" ]]; then
     value_kind="$(printf '%s\n' "$call_runtime" | jq -r '.kind')"
     value="$(printf '%s\n' "$call_runtime" | jq -r '.value')"
-  elif { [[ -n "$RUNTIME_AGENT_DEPLOY_SUFFIX" && "$target" == *"$RUNTIME_AGENT_DEPLOY_SUFFIX" ]] || runtime_agent_pipeline_probe_matches "$target"; }; then
-    local profile_text model_plan_text deploy_result_text
-    profile_text="${http_text:-$RUNTIME_DEFAULT_PROFILE}"
-    model_plan_text="${model_text:-$RUNTIME_DEFAULT_MODEL_PLAN}"
-    deploy_result_text="${deploy_text:-$RUNTIME_DEFAULT_DEPLOY_RESULT}"
-    value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
-    value="$(eval_seeded_agent_deploy_value "$profile_text" "$model_plan_text" "$deploy_result_text")"
-  elif runtime_source_has_host_effect "$target" "FileRead"; then
-    value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
-    value="$(runtime_file_read_seed_text "examples/hello.sley")"
-  elif runtime_source_has_host_effect "$target" "FileWrite"; then
-    value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
-    value="$(eval_runtime_text_identity_value_task "$RUNTIME_DEFAULT_FILE_WRITE_TEXT")"
-  elif runtime_source_has_host_effect "$target" "DatabaseWrite"; then
-    value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
-    if [[ "$target" == *"agent_data_authority.sley" ]]; then
-      value="$(eval_runtime_text_identity_value_task "$RUNTIME_DEFAULT_AGENT_DATA_WRITE_TEXT")"
-    else
-      value="$(eval_runtime_text_identity_value_task "$RUNTIME_DEFAULT_DATABASE_WRITE_TEXT")"
-    fi
-  elif runtime_source_has_host_effect "$target" "DatabaseRead"; then
-    value_kind="$RUNTIME_TEXT_VALUE_KIND"
-    value="$(eval_runtime_text_identity_value_task "$RUNTIME_DEFAULT_DATABASE_READ_TEXT")"
-  elif runtime_source_has_host_effect "$target" "Network"; then
-    value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
-    value="$(eval_runtime_text_identity_value_task "${http_text:-$RUNTIME_DEFAULT_PROFILE}")"
-  elif runtime_source_has_host_effect "$target" "Shell"; then
-    value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
-    value="$(eval_runtime_text_identity_value_task "${shell_text:-$RUNTIME_DEFAULT_SHELL_TEXT}")"
-  elif runtime_source_has_host_effect "$target" "ModelCall"; then
-    value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
-    value="$(eval_runtime_text_identity_value_task "${model_text:-$RUNTIME_DEFAULT_MODEL_PLAN}")"
-  elif runtime_source_has_host_effect "$target" "SecretRead"; then
-    value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
-    value="$(eval_runtime_text_identity_value_task "${secret_text:-$RUNTIME_DEFAULT_SECRET_TEXT}")"
-  elif runtime_deploy_stage_probe_matches "$target"; then
-    value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
-    value="$(eval_runtime_text_identity_value_task "${deploy_text:-$RUNTIME_DEFAULT_DEPLOY_RESULT}")"
-  elif runtime_spend_authorize_probe_matches "$target"; then
-    value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
-    spend_text="${spend_text:-$RUNTIME_DEFAULT_SPEND_AUTHORIZATION_TEXT}"
-    if runtime_spend_prefix_probe_matches "$target"; then
-      value="$(eval_runtime_spend_prefixed_value_task "$spend_text")"
-    else
-      value="$(eval_runtime_text_identity_value_task "$spend_text")"
-    fi
   elif runtime_project_ready_probe_matches "$target"; then
     value_kind="$RUNTIME_INT_VALUE_KIND"; value="$(eval_project_ready_value_task)"
   fi

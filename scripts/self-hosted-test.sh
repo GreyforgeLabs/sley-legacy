@@ -533,6 +533,18 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("gate_take_source_c
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("project_import_source_call_runtime_execution"))'
 
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("project_entry_source_runtime_execution"))'
+
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_host_effect_fallback_removal_execution"))'
+
+if grep -Eq 'elif runtime_source_has_host_effect "\$target" "(FileRead|FileWrite|DatabaseWrite|DatabaseRead|Network|Shell|ModelCall|SecretRead)"' bin/sley; then
+  fail "runtime host effects must execute through source evaluation, not generic host-effect fallbacks"
+fi
+
+if grep -Eq 'elif .*runtime_agent_pipeline_probe_matches "\$target"|elif runtime_deploy_stage_probe_matches "\$target"|elif runtime_spend_authorize_probe_matches "\$target"' bin/sley; then
+  fail "agent/deploy/spend runtime must execute through source evaluation, not probe-based fallbacks"
+fi
+
 bin/sley run --json examples/file_gate.sley \
   | json_field '.status == "passed" and .value.kind == "Text" and .value.value == "hello sley"'
 
