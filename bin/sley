@@ -4735,34 +4735,34 @@ DUPLICATE_RECORD_LITERAL_FIELD_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF
 DUPLICATE_RECORD_LITERAL_FIELD_MESSAGE_TEMPLATE="$(eval_checker_message_template duplicate_record_literal_field_message field_name)"
 RECORD_FIELD_MISSING_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" record_field_missing_message_prefix)"
 RECORD_FIELD_MISSING_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" record_field_missing_message_suffix)"
-RECORD_FIELD_MISSING_MESSAGE_TEMPLATE="$(eval_checker_message_template record_field_missing_message field_name || printf 'record field missing `::field_name::`\n')"
+RECORD_FIELD_MISSING_MESSAGE_TEMPLATE="$(eval_checker_message_template record_field_missing_message field_name)"
 RECORD_FIELD_UNKNOWN_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" record_field_unknown_message_prefix)"
 RECORD_FIELD_UNKNOWN_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" record_field_unknown_message_suffix)"
-RECORD_FIELD_UNKNOWN_MESSAGE_TEMPLATE="$(eval_checker_message_template record_field_unknown_message field_name || printf 'record field unknown `::field_name::`\n')"
+RECORD_FIELD_UNKNOWN_MESSAGE_TEMPLATE="$(eval_checker_message_template record_field_unknown_message field_name)"
 RECORD_FIELD_TYPE_MISMATCH_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" record_field_type_mismatch_message_prefix)"
 RECORD_FIELD_TYPE_MISMATCH_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" record_field_type_mismatch_message_suffix)"
-RECORD_FIELD_TYPE_MISMATCH_MESSAGE_TEMPLATE="$(eval_checker_message_template record_field_type_mismatch_message field_name || printf 'record field type mismatch `::field_name::`\n')"
+RECORD_FIELD_TYPE_MISMATCH_MESSAGE_TEMPLATE="$(eval_checker_message_template record_field_type_mismatch_message field_name)"
 UNKNOWN_RECORD_FIELD_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_record_field_message_prefix)"
 UNKNOWN_RECORD_FIELD_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_record_field_message_suffix)"
-UNKNOWN_RECORD_FIELD_MESSAGE_TEMPLATE="$(eval_checker_message_template unknown_record_field_message field_name || printf 'unknown record field `::field_name::`\n')"
+UNKNOWN_RECORD_FIELD_MESSAGE_TEMPLATE="$(eval_checker_message_template unknown_record_field_message field_name)"
 RECORD_LITERAL_NON_RECORD_TYPE_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" record_literal_non_record_type_message_prefix)"
 RECORD_LITERAL_NON_RECORD_TYPE_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" record_literal_non_record_type_message_suffix)"
-RECORD_LITERAL_NON_RECORD_TYPE_MESSAGE_TEMPLATE="$(eval_checker_message_template record_literal_non_record_type_message type_name || printf 'record literal type is not a record `::type_name::`\n')"
+RECORD_LITERAL_NON_RECORD_TYPE_MESSAGE_TEMPLATE="$(eval_checker_message_template record_literal_non_record_type_message type_name)"
 LIST_ELEMENT_TYPE_MISMATCH_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" list_element_type_mismatch_message_prefix)"
 LIST_ELEMENT_TYPE_MISMATCH_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" list_element_type_mismatch_message_suffix)"
-LIST_ELEMENT_TYPE_MISMATCH_MESSAGE_TEMPLATE="$(eval_checker_message_template list_element_type_mismatch_message actual_type || printf 'list element type mismatch `::actual_type::`\n')"
+LIST_ELEMENT_TYPE_MISMATCH_MESSAGE_TEMPLATE="$(eval_checker_message_template list_element_type_mismatch_message actual_type)"
 INDEX_NOT_INT_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" index_not_int_message_prefix)"
 INDEX_NOT_INT_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" index_not_int_message_suffix)"
-INDEX_NOT_INT_MESSAGE_TEMPLATE="$(eval_checker_message_template index_not_int_message actual_type || printf 'list index must be Int, got `::actual_type::`\n')"
+INDEX_NOT_INT_MESSAGE_TEMPLATE="$(eval_checker_message_template index_not_int_message actual_type)"
 INDEX_KEY_TYPE_MISMATCH_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" index_key_type_mismatch_message_prefix)"
 INDEX_KEY_TYPE_MISMATCH_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" index_key_type_mismatch_message_suffix)"
-INDEX_KEY_TYPE_MISMATCH_MESSAGE_TEMPLATE="$(eval_checker_message_template index_key_type_mismatch_message actual_type || printf 'map index key must be Text, got `::actual_type::`\n')"
+INDEX_KEY_TYPE_MISMATCH_MESSAGE_TEMPLATE="$(eval_checker_message_template index_key_type_mismatch_message actual_type)"
 MAP_KEY_TYPE_MISMATCH_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" map_key_type_mismatch_message_prefix)"
 MAP_KEY_TYPE_MISMATCH_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" map_key_type_mismatch_message_suffix)"
-MAP_KEY_TYPE_MISMATCH_MESSAGE_TEMPLATE="$(eval_checker_message_template map_key_type_mismatch_message actual_type || printf 'map key type mismatch `::actual_type::`\n')"
+MAP_KEY_TYPE_MISMATCH_MESSAGE_TEMPLATE="$(eval_checker_message_template map_key_type_mismatch_message actual_type)"
 MAP_VALUE_TYPE_MISMATCH_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" map_value_type_mismatch_message_prefix)"
 MAP_VALUE_TYPE_MISMATCH_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" map_value_type_mismatch_message_suffix)"
-MAP_VALUE_TYPE_MISMATCH_MESSAGE_TEMPLATE="$(eval_checker_message_template map_value_type_mismatch_message actual_type || printf 'map value type mismatch `::actual_type::`\n')"
+MAP_VALUE_TYPE_MISMATCH_MESSAGE_TEMPLATE="$(eval_checker_message_template map_value_type_mismatch_message actual_type)"
 DUPLICATE_EFFECT_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" duplicate_effect_message_prefix)"
 DUPLICATE_EFFECT_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" duplicate_effect_message_suffix)"
 DUPLICATE_EFFECT_MESSAGE_TEMPLATE="$(eval_checker_message_template duplicate_effect_message effect_name)"
@@ -4808,56 +4808,6 @@ CHECKER_ERROR_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/ch
 CHECKER_GATE_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" gate_type_name)"
 CHECKER_LIST_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" list_type_name)"
 CHECKER_MAP_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" map_type_name)"
-RECORD_FIELD_MISSING_MESSAGE_PREFIX="${RECORD_FIELD_MISSING_MESSAGE_PREFIX:-record field missing \`}"
-RECORD_FIELD_MISSING_MESSAGE_SUFFIX="${RECORD_FIELD_MISSING_MESSAGE_SUFFIX:-\`}"
-if [[ -z "$RECORD_FIELD_MISSING_MESSAGE_TEMPLATE" ]]; then
-  RECORD_FIELD_MISSING_MESSAGE_TEMPLATE='record field missing `::field_name::`'
-fi
-RECORD_FIELD_UNKNOWN_MESSAGE_PREFIX="${RECORD_FIELD_UNKNOWN_MESSAGE_PREFIX:-record field unknown \`}"
-RECORD_FIELD_UNKNOWN_MESSAGE_SUFFIX="${RECORD_FIELD_UNKNOWN_MESSAGE_SUFFIX:-\`}"
-if [[ -z "$RECORD_FIELD_UNKNOWN_MESSAGE_TEMPLATE" ]]; then
-  RECORD_FIELD_UNKNOWN_MESSAGE_TEMPLATE='record field unknown `::field_name::`'
-fi
-RECORD_FIELD_TYPE_MISMATCH_MESSAGE_PREFIX="${RECORD_FIELD_TYPE_MISMATCH_MESSAGE_PREFIX:-record field type mismatch \`}"
-RECORD_FIELD_TYPE_MISMATCH_MESSAGE_SUFFIX="${RECORD_FIELD_TYPE_MISMATCH_MESSAGE_SUFFIX:-\`}"
-if [[ -z "$RECORD_FIELD_TYPE_MISMATCH_MESSAGE_TEMPLATE" ]]; then
-  RECORD_FIELD_TYPE_MISMATCH_MESSAGE_TEMPLATE='record field type mismatch `::field_name::`'
-fi
-UNKNOWN_RECORD_FIELD_MESSAGE_PREFIX="${UNKNOWN_RECORD_FIELD_MESSAGE_PREFIX:-unknown record field \`}"
-UNKNOWN_RECORD_FIELD_MESSAGE_SUFFIX="${UNKNOWN_RECORD_FIELD_MESSAGE_SUFFIX:-\`}"
-if [[ -z "$UNKNOWN_RECORD_FIELD_MESSAGE_TEMPLATE" ]]; then
-  UNKNOWN_RECORD_FIELD_MESSAGE_TEMPLATE='unknown record field `::field_name::`'
-fi
-RECORD_LITERAL_NON_RECORD_TYPE_MESSAGE_PREFIX="${RECORD_LITERAL_NON_RECORD_TYPE_MESSAGE_PREFIX:-record literal type is not a record \`}"
-RECORD_LITERAL_NON_RECORD_TYPE_MESSAGE_SUFFIX="${RECORD_LITERAL_NON_RECORD_TYPE_MESSAGE_SUFFIX:-\`}"
-if [[ -z "$RECORD_LITERAL_NON_RECORD_TYPE_MESSAGE_TEMPLATE" ]]; then
-  RECORD_LITERAL_NON_RECORD_TYPE_MESSAGE_TEMPLATE='record literal type is not a record `::type_name::`'
-fi
-LIST_ELEMENT_TYPE_MISMATCH_MESSAGE_PREFIX="${LIST_ELEMENT_TYPE_MISMATCH_MESSAGE_PREFIX:-list element type mismatch \`}"
-LIST_ELEMENT_TYPE_MISMATCH_MESSAGE_SUFFIX="${LIST_ELEMENT_TYPE_MISMATCH_MESSAGE_SUFFIX:-\`}"
-if [[ -z "$LIST_ELEMENT_TYPE_MISMATCH_MESSAGE_TEMPLATE" ]]; then
-  LIST_ELEMENT_TYPE_MISMATCH_MESSAGE_TEMPLATE='list element type mismatch `::actual_type::`'
-fi
-INDEX_NOT_INT_MESSAGE_PREFIX="${INDEX_NOT_INT_MESSAGE_PREFIX:-list index must be Int, got \`}"
-INDEX_NOT_INT_MESSAGE_SUFFIX="${INDEX_NOT_INT_MESSAGE_SUFFIX:-\`}"
-if [[ -z "$INDEX_NOT_INT_MESSAGE_TEMPLATE" ]]; then
-  INDEX_NOT_INT_MESSAGE_TEMPLATE='list index must be Int, got `::actual_type::`'
-fi
-INDEX_KEY_TYPE_MISMATCH_MESSAGE_PREFIX="${INDEX_KEY_TYPE_MISMATCH_MESSAGE_PREFIX:-map index key must be Text, got \`}"
-INDEX_KEY_TYPE_MISMATCH_MESSAGE_SUFFIX="${INDEX_KEY_TYPE_MISMATCH_MESSAGE_SUFFIX:-\`}"
-if [[ -z "$INDEX_KEY_TYPE_MISMATCH_MESSAGE_TEMPLATE" ]]; then
-  INDEX_KEY_TYPE_MISMATCH_MESSAGE_TEMPLATE='map index key must be Text, got `::actual_type::`'
-fi
-MAP_KEY_TYPE_MISMATCH_MESSAGE_PREFIX="${MAP_KEY_TYPE_MISMATCH_MESSAGE_PREFIX:-map key type mismatch \`}"
-MAP_KEY_TYPE_MISMATCH_MESSAGE_SUFFIX="${MAP_KEY_TYPE_MISMATCH_MESSAGE_SUFFIX:-\`}"
-if [[ -z "$MAP_KEY_TYPE_MISMATCH_MESSAGE_TEMPLATE" ]]; then
-  MAP_KEY_TYPE_MISMATCH_MESSAGE_TEMPLATE='map key type mismatch `::actual_type::`'
-fi
-MAP_VALUE_TYPE_MISMATCH_MESSAGE_PREFIX="${MAP_VALUE_TYPE_MISMATCH_MESSAGE_PREFIX:-map value type mismatch \`}"
-MAP_VALUE_TYPE_MISMATCH_MESSAGE_SUFFIX="${MAP_VALUE_TYPE_MISMATCH_MESSAGE_SUFFIX:-\`}"
-if [[ -z "$MAP_VALUE_TYPE_MISMATCH_MESSAGE_TEMPLATE" ]]; then
-  MAP_VALUE_TYPE_MISMATCH_MESSAGE_TEMPLATE='map value type mismatch `::actual_type::`'
-fi
 UNKNOWN_EFFECT_MESSAGE_PREFIX="${UNKNOWN_EFFECT_MESSAGE_PREFIX:-unknown effect \`}"
 UNKNOWN_EFFECT_MESSAGE_SUFFIX="${UNKNOWN_EFFECT_MESSAGE_SUFFIX:-\`}"
 if [[ -z "$UNKNOWN_EFFECT_MESSAGE_TEMPLATE" ]]; then
