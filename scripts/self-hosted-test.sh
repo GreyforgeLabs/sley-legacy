@@ -347,6 +347,8 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_status_par
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_pure_task_evaluator_execution"))'
 
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("text_concat_runtime_task_execution"))'
+
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("bool_identity_runtime_task_execution"))'
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_source_main_runtime_execution"))'
