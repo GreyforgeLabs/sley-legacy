@@ -4126,13 +4126,26 @@ eval_main_call_int_return() {
   '
 }
 
+require_source_text() {
+  local name="$1" value="$2"
+  if [[ -z "$value" ]]; then
+    printf 'sley: required Sley source text task returned empty: %s\n' "$name" >&2
+    exit 1
+  fi
+}
+
+require_source_list() {
+  local name="$1" value="$2"
+  if [[ "$value" != \[* || "$value" == "[]" ]]; then
+    printf 'sley: required Sley source list task returned empty: %s\n' "$name" >&2
+    exit 1
+  fi
+}
+
 VERSION="$(sley_source_task loom.bootstrap implementation_version)"
-VERSION="${VERSION:-sley 0.2.0-self-hosting-stage1-bootstrap}"
+require_source_text VERSION "$VERSION"
 
 DEFAULT_RULES_JSON="$(sley_source_list_task_json loom.lint default_lint_rules)"
-if [[ "$DEFAULT_RULES_JSON" == "[]" ]]; then
-  DEFAULT_RULES_JSON='["empty_for_statement","empty_while_statement","empty_forge_statement","empty_if_statement","empty_else_statement"]'
-fi
 
 SCHEMA_AST_PROGRAM="$(sley_source_task loom.reports ast_program_schema)"
 AST_PROGRAM_REPORT_FIELDS_JSON="$(sley_source_list_task_json loom.reports ast_program_report_fields)"
@@ -4216,191 +4229,51 @@ SELF_HOSTING_REPORT_SOURCE_ROOT="$(sley_source_task loom.reports self_hosting_so
 SELF_HOSTING_STATUS_FIELDS_JSON="$(sley_source_list_task_json loom.reports self_hosting_status_fields)"
 SELF_HOSTING_STATUS_BUILDER_JSON="$(sley_source_list_task_json loom.reports self_hosting_status_builder)"
 
-SCHEMA_AST_PROGRAM="${SCHEMA_AST_PROGRAM:-sley.ast.program.v0}"
-SCHEMA_AST_NODE="${SCHEMA_AST_NODE:-sley.ast.node.v0}"
-SCHEMA_DIAGNOSTICS="${SCHEMA_DIAGNOSTICS:-sley.diagnostics.report.v0}"
-if [[ "$AST_PROGRAM_REPORT_FIELDS_JSON" == "[]" ]]; then
-  AST_PROGRAM_REPORT_FIELDS_JSON='["schema","module","imports","types","effects","tasks"]'
-fi
-if [[ "$AST_PROGRAM_REPORT_BUILDER_JSON" == "[]" ]]; then
-  AST_PROGRAM_REPORT_BUILDER_JSON='["schema|reports.ast_program_schema|Text","module|ast_program.module|Text","imports|ast_program.imports|List<Json>","types|ast_program.types|List<Json>","effects|ast_program.effects|List<Json>","tasks|ast_program.tasks|List<Json>"]'
-fi
-if [[ "$AST_NODE_REPORT_FIELDS_JSON" == "[]" ]]; then
-  AST_NODE_REPORT_FIELDS_JSON='["schema","target","id","node_kind","module","parent","value"]'
-fi
-if [[ "$AST_NODE_REPORT_BUILDER_JSON" == "[]" ]]; then
-  AST_NODE_REPORT_BUILDER_JSON='["schema|reports.ast_node_schema|Text","target|ast_node.target|Text","id|ast_node.id|Text","node_kind|ast_node.node_kind|Text","module|ast_node.module|Text","parent|ast_node.parent|Optional<Text>","value|ast_node.value|Json"]'
-fi
-if [[ "$DIAGNOSTICS_REPORT_FIELDS_JSON" == "[]" ]]; then
-  DIAGNOSTICS_REPORT_FIELDS_JSON='["schema","status","diagnostics"]'
-fi
-if [[ "$DIAGNOSTICS_REPORT_BUILDER_JSON" == "[]" ]]; then
-  DIAGNOSTICS_REPORT_BUILDER_JSON='["schema|reports.diagnostics_schema|Text","status|diagnostics.status|Text","diagnostics|diagnostics.diagnostics|List<Json>"]'
-fi
-SCHEMA_QUERY="${SCHEMA_QUERY:-sley.query.report.v0}"
-if [[ "$QUERY_REPORT_FIELDS_JSON" == "[]" ]]; then
-  QUERY_REPORT_FIELDS_JSON='["schema","kind","entry_module","filters","modules","tasks","types","effects","calls"]'
-fi
-if [[ "$QUERY_REPORT_BUILDER_JSON" == "[]" ]]; then
-  QUERY_REPORT_BUILDER_JSON='["schema|reports.query_schema|Text","kind|query.kind|Text","entry_module|query.entry_module|Text","filters|query.filters|Json","modules|query.modules|List<Json>","tasks|query.tasks|List<Json>","types|query.types|List<Json>","effects|query.effects|List<Json>","calls|query.calls|List<Json>"]'
-fi
-SCHEMA_SYMBOL_GRAPH="${SCHEMA_SYMBOL_GRAPH:-sley.symbol_graph.v0}"
-if [[ "$SYMBOL_GRAPH_REPORT_FIELDS_JSON" == "[]" ]]; then
-  SYMBOL_GRAPH_REPORT_FIELDS_JSON='["schema","entry_module","modules"]'
-fi
-if [[ "$SYMBOL_GRAPH_REPORT_BUILDER_JSON" == "[]" ]]; then
-  SYMBOL_GRAPH_REPORT_BUILDER_JSON='["schema|reports.symbol_graph_schema|Text","entry_module|symbol_graph.entry_module|Text","modules|symbol_graph.modules|List<Json>"]'
-fi
-SCHEMA_LINT="${SCHEMA_LINT:-sley.lint.report.v0}"
-if [[ "$LINT_REPORT_FIELDS_JSON" == "[]" ]]; then
-  LINT_REPORT_FIELDS_JSON='["schema","status","entry_module","filters","findings"]'
-fi
-if [[ "$LINT_REPORT_BUILDER_JSON" == "[]" ]]; then
-  LINT_REPORT_BUILDER_JSON='["schema|reports.lint_schema|Text","status|lint.status|Text","entry_module|lint.entry_module|Text","filters|lint.filters|Json","findings|lint.findings|List<Json>"]'
-fi
-SCHEMA_DOCTOR="${SCHEMA_DOCTOR:-sley.doctor.report.v0}"
-if [[ "$DOCTOR_REPORT_FIELDS_JSON" == "[]" ]]; then
-  DOCTOR_REPORT_FIELDS_JSON='["schema","status","target","entry_module","summary","diagnostics","query","lint","next_actions"]'
-fi
-if [[ "$DOCTOR_REPORT_BUILDER_JSON" == "[]" ]]; then
-  DOCTOR_REPORT_BUILDER_JSON='["schema|reports.doctor_schema|Text","status|doctor.status|Text","target|doctor.target|Text","entry_module|doctor.entry_module|Text","summary|doctor.summary|Json","diagnostics|doctor.diagnostics|List<Json>","query|doctor.query|Json","lint|doctor.lint|Json","next_actions|doctor.next_actions|List<Json>"]'
-fi
-SCHEMA_RUN="${SCHEMA_RUN:-sley.run.report.v0}"
-if [[ "$RUN_REPORT_FIELDS_JSON" == "[]" ]]; then
-  RUN_REPORT_FIELDS_JSON='["schema","status","target","value","diagnostics"]'
-fi
-if [[ "$RUN_REPORT_BUILDER_JSON" == "[]" ]]; then
-  RUN_REPORT_BUILDER_JSON='["schema|reports.run_schema|Text","status|runtime.runtime_status|Text","target|runtime.target|Text","value|runtime.value|Json","diagnostics|runtime.diagnostics|List<Json>"]'
-fi
-SCHEMA_VERIFY="${SCHEMA_VERIFY:-sley.verify.report.v0}"
-if [[ "$VERIFY_REPORT_FIELDS_JSON" == "[]" ]]; then
-  VERIFY_REPORT_FIELDS_JSON='["schema","status","target","entry_module","summary","diagnostics","query","lint","runtime","next_actions"]'
-fi
-if [[ "$VERIFY_REPORT_BUILDER_JSON" == "[]" ]]; then
-  VERIFY_REPORT_BUILDER_JSON='["schema|reports.verify_schema|Text","status|verify.status|Text","target|verify.target|Text","entry_module|verify.entry_module|Text","summary|verify.summary|Json","diagnostics|verify.diagnostics|List<Json>","query|verify.query|Json","lint|verify.lint|Json","runtime|verify.runtime|Json","next_actions|verify.next_actions|List<Json>"]'
-fi
-SCHEMA_GRAFT_OUTCOME="${SCHEMA_GRAFT_OUTCOME:-sley.graft.outcome.v0}"
-if [[ "$GRAFT_OUTCOME_REPORT_FIELDS_JSON" == "[]" ]]; then
-  GRAFT_OUTCOME_REPORT_FIELDS_JSON='["schema","status","source","diagnostics","provenance"]'
-fi
-if [[ "$GRAFT_OUTCOME_REPORT_BUILDER_JSON" == "[]" ]]; then
-  GRAFT_OUTCOME_REPORT_BUILDER_JSON='["schema|reports.graft_outcome_schema|Text","status|graft_outcome.status|Text","source|graft_outcome.source|Optional<Text>","diagnostics|graft_outcome.diagnostics|List<Json>","provenance|graft_outcome.provenance|List<Json>"]'
-fi
-SCHEMA_CLAIM_VERIFY="${SCHEMA_CLAIM_VERIFY:-sley.claim.verify.v0}"
-if [[ "$CLAIM_VERIFY_REPORT_FIELDS_JSON" == "[]" ]]; then
-  CLAIM_VERIFY_REPORT_FIELDS_JSON='["schema","status","target","manifest_schema","claim_id","check_count","passed_count","failed_count","checks","issues"]'
-fi
-if [[ "$CLAIM_VERIFY_REPORT_BUILDER_JSON" == "[]" ]]; then
-  CLAIM_VERIFY_REPORT_BUILDER_JSON='["schema|reports.claim_verify_schema|Text","status|claim_verify.status|Text","target|claim_verify.target|Text","manifest_schema|claim_verify.manifest_schema|Text","claim_id|claim_verify.claim_id|Text","check_count|claim_verify.check_count|Int","passed_count|claim_verify.passed_count|Int","failed_count|claim_verify.failed_count|Int","checks|claim_verify.checks|List<Json>","issues|claim_verify.issues|List<Json>"]'
-fi
-SCHEMA_CONFORMANCE_REPORT="${SCHEMA_CONFORMANCE_REPORT:-sley.conformance.report.v0}"
-if [[ "$CONFORMANCE_REPORT_FIELDS_JSON" == "[]" ]]; then
-  CONFORMANCE_REPORT_FIELDS_JSON='["schema","status","summary","validation","schemas","corpus","smoke","onboarding","examples","tests","editor_shims","v1_gate","readiness","release","issues"]'
-fi
-if [[ "$CONFORMANCE_REPORT_BUILDER_JSON" == "[]" ]]; then
-  CONFORMANCE_REPORT_BUILDER_JSON='["schema|reports.conformance_report_schema|Text","status|conformance.status|Text","summary|conformance.summary|Json","validation|conformance.validation|Json","schemas|conformance.schemas|Json","corpus|conformance.corpus|Json","smoke|conformance.smoke|Json","onboarding|conformance.onboarding|Json","examples|conformance.examples|Json","tests|conformance.tests|Json","editor_shims|conformance.editor_shims|Json","v1_gate|conformance.v1_gate|Json","readiness|conformance.readiness|Json","release|conformance.release|Json","issues|conformance.issues|List<Json>"]'
-fi
-SCHEMA_CONFORMANCE_COVERAGE="${SCHEMA_CONFORMANCE_COVERAGE:-sley.conformance.coverage.v0}"
-if [[ "$CONFORMANCE_COVERAGE_FIELDS_JSON" == "[]" ]]; then
-  CONFORMANCE_COVERAGE_FIELDS_JSON='["schema","status","required_tags","missing_tags","tag_inventory","issues"]'
-fi
-if [[ "$CONFORMANCE_COVERAGE_BUILDER_JSON" == "[]" ]]; then
-  CONFORMANCE_COVERAGE_BUILDER_JSON='["schema|reports.conformance_coverage_schema|Text","status|conformance_coverage.status|Text","required_tags|conformance_coverage.required_tags|List<Text>","missing_tags|conformance_coverage.missing_tags|List<Text>","tag_inventory|conformance_coverage.tag_inventory|List<Json>","issues|conformance_coverage.issues|List<Json>"]'
-fi
-SCHEMA_CI_REPORT="${SCHEMA_CI_REPORT:-sley.ci.report.v0}"
-if [[ "$CI_REPORT_FIELDS_JSON" == "[]" ]]; then
-  CI_REPORT_FIELDS_JSON='["schema","status","command","target","manifest","summary","steps","issues"]'
-fi
-if [[ "$CI_REPORT_BUILDER_JSON" == "[]" ]]; then
-  CI_REPORT_BUILDER_JSON='["schema|reports.ci_report_schema|Text","status|ci.status|Text","command|ci.command|Text","target|ci.target|Optional<Text>","manifest|ci.manifest|Optional<Text>","summary|ci.summary|Json","steps|ci.steps|List<Json>","issues|ci.issues|List<Json>"]'
-fi
-SCHEMA_CONTRACT_INVENTORY="${SCHEMA_CONTRACT_INVENTORY:-sley.contract.inventory.v0}"
-if [[ "$CONTRACT_INVENTORY_FIELDS_JSON" == "[]" ]]; then
-  CONTRACT_INVENTORY_FIELDS_JSON='["schema","status","schema_dir","schema_count","schemas"]'
-fi
-if [[ "$CONTRACT_INVENTORY_BUILDER_JSON" == "[]" ]]; then
-  CONTRACT_INVENTORY_BUILDER_JSON='["schema|reports.contract_inventory_schema|Text","status|contract_inventory.status|Text","schema_dir|contract_inventory.schema_dir|Text","schema_count|contract_inventory.schema_count|Int","schemas|contract_inventory.schemas|List<Json>"]'
-fi
-SCHEMA_CONTRACT_VALIDATE="${SCHEMA_CONTRACT_VALIDATE:-sley.contract.validate.v0}"
-if [[ "$CONTRACT_VALIDATE_FIELDS_JSON" == "[]" ]]; then
-  CONTRACT_VALIDATE_FIELDS_JSON='["schema","status","validation_level","requested_schema","report_path","schema_dir","report_schema","issues"]'
-fi
-if [[ "$CONTRACT_VALIDATE_BUILDER_JSON" == "[]" ]]; then
-  CONTRACT_VALIDATE_BUILDER_JSON='["schema|reports.contract_validate_schema|Text","status|contract_validate.status|Text","validation_level|contract_validate.validation_level|Text","requested_schema|contract_validate.requested_schema|Text","report_path|contract_validate.report_path|Text","schema_dir|contract_validate.schema_dir|Text","report_schema|contract_validate.report_schema|Optional<Text>","issues|contract_validate.issues|List<Json>"]'
-fi
-SCHEMA_CONTRACT_FIXTURE_CHECK="${SCHEMA_CONTRACT_FIXTURE_CHECK:-sley.contract.fixture_check.v0}"
-if [[ "$CONTRACT_FIXTURE_CHECK_FIELDS_JSON" == "[]" ]]; then
-  CONTRACT_FIXTURE_CHECK_FIELDS_JSON='["schema","status","validation_level","schema_dir","fixtures_dir","fixture_count","passed_count","failed_count","fixtures"]'
-fi
-if [[ "$CONTRACT_FIXTURE_CHECK_BUILDER_JSON" == "[]" ]]; then
-  CONTRACT_FIXTURE_CHECK_BUILDER_JSON='["schema|reports.contract_fixture_check_schema|Text","status|contract_fixture_check.status|Text","validation_level|contract_fixture_check.validation_level|Text","schema_dir|contract_fixture_check.schema_dir|Text","fixtures_dir|contract_fixture_check.fixtures_dir|Text","fixture_count|contract_fixture_check.fixture_count|Int","passed_count|contract_fixture_check.passed_count|Int","failed_count|contract_fixture_check.failed_count|Int","fixtures|contract_fixture_check.fixtures|List<Json>"]'
-fi
-SCHEMA_DEPLOY_REPORT="${SCHEMA_DEPLOY_REPORT:-sley.deploy.report.v0}"
-if [[ "$DEPLOY_REPORT_FIELDS_JSON" == "[]" ]]; then
-  DEPLOY_REPORT_FIELDS_JSON='["schema","status","mode","target","environment","policy","summary","verify","artifacts","next_actions"]'
-fi
-if [[ "$DEPLOY_REPORT_BUILDER_JSON" == "[]" ]]; then
-  DEPLOY_REPORT_BUILDER_JSON='["schema|reports.deploy_report_schema|Text","status|deploy.status|Text","mode|deploy.mode|Text","target|deploy.target|Text","environment|deploy.environment|Text","policy|deploy.policy|Json","summary|deploy.summary|Json","verify|deploy.verify|Json","seal|deploy.seal|Json","package|deploy.package|Json","artifacts|deploy.artifacts|Json","next_actions|deploy.next_actions|List<Json>"]'
-fi
-SCHEMA_DEPLOY_ARTIFACTS="${SCHEMA_DEPLOY_ARTIFACTS:-sley.deploy.artifacts.v0}"
-SCHEMA_DEPLOY_ARTIFACT_CHECK="${SCHEMA_DEPLOY_ARTIFACT_CHECK:-sley.deploy.artifact_check.v0}"
-if [[ "$DEPLOY_ARTIFACT_CHECK_FIELDS_JSON" == "[]" ]]; then
-  DEPLOY_ARTIFACT_CHECK_FIELDS_JSON='["schema","status","validation_level","artifacts_dir","manifest_path","manifest_schema","summary","files","issues"]'
-fi
-if [[ "$DEPLOY_ARTIFACT_CHECK_BUILDER_JSON" == "[]" ]]; then
-  DEPLOY_ARTIFACT_CHECK_BUILDER_JSON='["schema|reports.deploy_artifact_check_schema|Text","status|deploy_artifact_check.status|Text","validation_level|deploy_artifact_check.validation_level|Text","artifacts_dir|deploy_artifact_check.artifacts_dir|Text","manifest_path|deploy_artifact_check.manifest_path|Text","manifest_schema|deploy_artifact_check.manifest_schema|Optional<Text>","summary|deploy_artifact_check.summary|Json","files|deploy_artifact_check.files|List<Json>","issues|deploy_artifact_check.issues|List<Json>"]'
-fi
-SCHEMA_MIGRATE="${SCHEMA_MIGRATE:-sley.migrate.report.v0}"
-if [[ "$MIGRATE_REPORT_FIELDS_JSON" == "[]" ]]; then
-  MIGRATE_REPORT_FIELDS_JSON='["schema","status","target","source_schema","summary","migrations","schema_drift","diagnostics","issues"]'
-fi
-if [[ "$MIGRATE_REPORT_BUILDER_JSON" == "[]" ]]; then
-  MIGRATE_REPORT_BUILDER_JSON='["schema|reports.migrate_schema|Text","status|migrate.status|Text","target|migrate.target|Text","source_schema|migrate.source_schema|Text","summary|migrate.summary|Json","migrations|migrate.migrations|List<Json>","schema_drift|migrate.schema_drift|List<Json>","diagnostics|migrate.diagnostics|List<Json>","issues|migrate.issues|List<Json>"]'
-fi
-SCHEMA_DOCGEN="${SCHEMA_DOCGEN:-sley.docgen.report.v0}"
-if [[ "$DOCGEN_REPORT_FIELDS_JSON" == "[]" ]]; then
-  DOCGEN_REPORT_FIELDS_JSON='["schema","status","target","source_schema","summary","filters","documents","modules","tasks","types","effects","capabilities","diagnostics","issues"]'
-fi
-if [[ "$DOCGEN_REPORT_BUILDER_JSON" == "[]" ]]; then
-  DOCGEN_REPORT_BUILDER_JSON='["schema|reports.docgen_schema|Text","status|docgen.status|Text","target|docgen.target|Text","source_schema|docgen.source_schema|Text","summary|docgen.summary|Json","filters|docgen.filters|Json","documents|docgen.documents|List<Json>","modules|docgen.modules|List<Json>","tasks|docgen.tasks|List<Json>","types|docgen.types|List<Json>","effects|docgen.effects|List<Json>","capabilities|docgen.capabilities|List<Json>","diagnostics|docgen.diagnostics|List<Json>","issues|docgen.issues|List<Json>"]'
-fi
-SCHEMA_WORKBENCH="${SCHEMA_WORKBENCH:-sley.workbench.report.v0}"
-if [[ "$WORKBENCH_REPORT_FIELDS_JSON" == "[]" ]]; then
-  WORKBENCH_REPORT_FIELDS_JSON='["schema","status","target","summary","diagnostics","doctor","query","lint","plan","graph","graph_slice","issues"]'
-fi
-if [[ "$WORKBENCH_REPORT_BUILDER_JSON" == "[]" ]]; then
-  WORKBENCH_REPORT_BUILDER_JSON='["schema|reports.workbench_schema|Text","status|workbench.status|Text","target|workbench.target|Text","summary|workbench.summary|Json","diagnostics|workbench.diagnostics|List<Json>","doctor|workbench.doctor|Json","query|workbench.query|Json","lint|workbench.lint|Json","plan|workbench.plan|Json","graph|workbench.graph|Json","graph_slice|workbench.graph_slice|Optional<Json>","issues|workbench.issues|List<Json>"]'
-fi
-SCHEMA_SANDBOX="${SCHEMA_SANDBOX:-sley.sandbox.report.v0}"
-if [[ "$SANDBOX_REPORT_FIELDS_JSON" == "[]" ]]; then
-  SANDBOX_REPORT_FIELDS_JSON='["schema","status","manifest","manifest_schema","target","sandbox_retained","summary","verify","issues"]'
-fi
-if [[ "$SANDBOX_REPORT_BUILDER_JSON" == "[]" ]]; then
-  SANDBOX_REPORT_BUILDER_JSON='["schema|reports.sandbox_schema|Text","status|sandbox.status|Text","manifest|sandbox.manifest|Text","manifest_schema|sandbox.manifest_schema|Text","target|sandbox.target|Text","sandbox_retained|sandbox.sandbox_retained|Bool","summary|sandbox.summary|Json","verify|sandbox.verify|Json","issues|sandbox.issues|List<Json>"]'
-fi
-SCHEMA_SHADOW="${SCHEMA_SHADOW:-sley.shadow.report.v0}"
-SCHEMA_AGENT_BENCH="${SCHEMA_AGENT_BENCH:-sley.agent_bench.report.v0}"
-if [[ "$AGENT_BENCH_REPORT_FIELDS_JSON" == "[]" ]]; then
-  AGENT_BENCH_REPORT_FIELDS_JSON='["schema","status","sley_bin","case_count","passed_count","failed_count","cases","issues"]'
-fi
-if [[ "$AGENT_BENCH_REPORT_BUILDER_JSON" == "[]" ]]; then
-  AGENT_BENCH_REPORT_BUILDER_JSON='["schema|reports.agent_bench_schema|Text","status|agent_bench.status|Text","sley_bin|agent_bench.sley_bin|Text","case_count|agent_bench.case_count|Int","passed_count|agent_bench.passed_count|Int","failed_count|agent_bench.failed_count|Int","cases|agent_bench.cases|List<Json>","issues|agent_bench.issues|List<Json>"]'
-fi
-SCHEMA_ZJX_TOOL="${SCHEMA_ZJX_TOOL:-sley.zjx.tool.report.v0}"
-if [[ "$ZJX_TOOL_REPORT_FIELDS_JSON" == "[]" ]]; then
-  ZJX_TOOL_REPORT_FIELDS_JSON='["schema","status","command","envelopes","digest","diff","output_path","graph","issues"]'
-fi
-if [[ "$ZJX_TOOL_REPORT_BUILDER_JSON" == "[]" ]]; then
-  ZJX_TOOL_REPORT_BUILDER_JSON='["schema|reports.zjx_tool_schema|Text","status|zjx_tool.status|Text","command|zjx_tool.command|Text","envelopes|zjx_tool.envelopes|List<Json>","digest|zjx_tool.digest|Optional<Json>","diff|zjx_tool.diff|Optional<Json>","output_path|zjx_tool.output_path|Optional<Text>","graph|zjx_tool.graph|Optional<Json>","issues|zjx_tool.issues|List<Json>"]'
-fi
-SCHEMA_SELF_HOSTING="${SCHEMA_SELF_HOSTING:-sley.self_hosting.status.v0}"
-SELF_HOSTING_REPORT_SOURCE_ROOT="${SELF_HOSTING_REPORT_SOURCE_ROOT:-self-hosted/src}"
-if [[ "$SELF_HOSTING_STATUS_FIELDS_JSON" == "[]" ]]; then
-  SELF_HOSTING_STATUS_FIELDS_JSON='["schema","status","strict_self_hosted","source_root","semantic_source_count","source_modules","bootstrap_owned_by_sley","blockers"]'
-fi
-if [[ "$SELF_HOSTING_STATUS_BUILDER_JSON" == "[]" ]]; then
-  SELF_HOSTING_STATUS_BUILDER_JSON='["schema|reports.self_hosting_status_schema|Text","status|bootstrap.self_hosting_status|Text","strict_self_hosted|bootstrap.strict_self_hosted|Bool","source_root|reports.self_hosting_source_root|Text","semantic_source_count|bootstrap.semantic_source_count|Int","source_modules|bootstrap.source_modules|List<Text>","bootstrap_owned_by_sley|bootstrap.owned_bootstrap_values|List<Text>","blockers|bootstrap.remaining_strict_self_hosting_blockers|List<Text>"]'
-fi
+for _sley_source_text_name in \
+  SCHEMA_AST_PROGRAM SCHEMA_AST_NODE SCHEMA_DIAGNOSTICS SCHEMA_QUERY \
+  SCHEMA_SYMBOL_GRAPH SCHEMA_LINT SCHEMA_DOCTOR SCHEMA_RUN SCHEMA_VERIFY \
+  SCHEMA_GRAFT_OUTCOME SCHEMA_CLAIM_VERIFY SCHEMA_CONFORMANCE_REPORT \
+  SCHEMA_CONFORMANCE_COVERAGE SCHEMA_CI_REPORT SCHEMA_CONTRACT_INVENTORY \
+  SCHEMA_CONTRACT_VALIDATE SCHEMA_CONTRACT_FIXTURE_CHECK SCHEMA_DEPLOY_REPORT \
+  SCHEMA_DEPLOY_ARTIFACTS SCHEMA_DEPLOY_ARTIFACT_CHECK SCHEMA_MIGRATE \
+  SCHEMA_DOCGEN SCHEMA_WORKBENCH SCHEMA_SANDBOX SCHEMA_SHADOW \
+  SCHEMA_AGENT_BENCH SCHEMA_ZJX_TOOL SCHEMA_SELF_HOSTING \
+  SELF_HOSTING_REPORT_SOURCE_ROOT; do
+  require_source_text "$_sley_source_text_name" "${!_sley_source_text_name}"
+done
+
+for _sley_source_list_name in \
+  DEFAULT_RULES_JSON \
+  AST_PROGRAM_REPORT_FIELDS_JSON AST_PROGRAM_REPORT_BUILDER_JSON \
+  AST_NODE_REPORT_FIELDS_JSON AST_NODE_REPORT_BUILDER_JSON \
+  DIAGNOSTICS_REPORT_FIELDS_JSON DIAGNOSTICS_REPORT_BUILDER_JSON \
+  QUERY_REPORT_FIELDS_JSON QUERY_REPORT_BUILDER_JSON \
+  SYMBOL_GRAPH_REPORT_FIELDS_JSON SYMBOL_GRAPH_REPORT_BUILDER_JSON \
+  LINT_REPORT_FIELDS_JSON LINT_REPORT_BUILDER_JSON \
+  DOCTOR_REPORT_FIELDS_JSON DOCTOR_REPORT_BUILDER_JSON \
+  RUN_REPORT_FIELDS_JSON RUN_REPORT_BUILDER_JSON \
+  VERIFY_REPORT_FIELDS_JSON VERIFY_REPORT_BUILDER_JSON \
+  GRAFT_OUTCOME_REPORT_FIELDS_JSON GRAFT_OUTCOME_REPORT_BUILDER_JSON \
+  CLAIM_VERIFY_REPORT_FIELDS_JSON CLAIM_VERIFY_REPORT_BUILDER_JSON \
+  CONFORMANCE_REPORT_FIELDS_JSON CONFORMANCE_REPORT_BUILDER_JSON \
+  CONFORMANCE_COVERAGE_FIELDS_JSON CONFORMANCE_COVERAGE_BUILDER_JSON \
+  CI_REPORT_FIELDS_JSON CI_REPORT_BUILDER_JSON \
+  CONTRACT_INVENTORY_FIELDS_JSON CONTRACT_INVENTORY_BUILDER_JSON \
+  CONTRACT_VALIDATE_FIELDS_JSON CONTRACT_VALIDATE_BUILDER_JSON \
+  CONTRACT_FIXTURE_CHECK_FIELDS_JSON CONTRACT_FIXTURE_CHECK_BUILDER_JSON \
+  DEPLOY_REPORT_FIELDS_JSON DEPLOY_REPORT_BUILDER_JSON \
+  DEPLOY_ARTIFACT_CHECK_FIELDS_JSON DEPLOY_ARTIFACT_CHECK_BUILDER_JSON \
+  MIGRATE_REPORT_FIELDS_JSON MIGRATE_REPORT_BUILDER_JSON \
+  DOCGEN_REPORT_FIELDS_JSON DOCGEN_REPORT_BUILDER_JSON \
+  WORKBENCH_REPORT_FIELDS_JSON WORKBENCH_REPORT_BUILDER_JSON \
+  SANDBOX_REPORT_FIELDS_JSON SANDBOX_REPORT_BUILDER_JSON \
+  AGENT_BENCH_REPORT_FIELDS_JSON AGENT_BENCH_REPORT_BUILDER_JSON \
+  ZJX_TOOL_REPORT_FIELDS_JSON ZJX_TOOL_REPORT_BUILDER_JSON \
+  SELF_HOSTING_STATUS_FIELDS_JSON SELF_HOSTING_STATUS_BUILDER_JSON; do
+  require_source_list "$_sley_source_list_name" "${!_sley_source_list_name}"
+done
+unset _sley_source_text_name _sley_source_list_name
+
 
 PARSER_CALL_EXPRESSION_PREFIX="$(sley_source_task loom.parser call_expression_prefix)"
 
@@ -9203,21 +9076,7 @@ tool_conformance() {
 }
 
 source_modules_json() {
-  if [[ ! -d "$SELF_HOSTED_SOURCE_ROOT" ]]; then
-    printf '[]\n'
-    return
-  fi
-  local modules_json
-  modules_json="$(sley_source_list_task_json loom.bootstrap source_modules)"
-  if [[ "$modules_json" != "[]" ]]; then
-    printf '%s\n' "$modules_json"
-    return
-  fi
-  find "$SELF_HOSTED_SOURCE_ROOT" -type f -name '*.sley' -print | sort |
-    while IFS= read -r file; do
-      awk '/^[[:space:]]*module[[:space:]]+/ {print $2; exit}' "$file"
-    done |
-    jq -R . | jq -s .
+  sley_source_list_task_json loom.bootstrap source_modules
 }
 
 self_hosting_status_json() {
@@ -9225,18 +9084,11 @@ self_hosting_status_json() {
   modules_json="$(source_modules_json)"
   blockers_json="$(sley_source_list_task_json loom.bootstrap remaining_strict_self_hosting_blockers)"
   owned_json="$(sley_source_list_task_json loom.bootstrap owned_bootstrap_values)"
-  if [[ "$owned_json" == "[]" ]]; then
-    owned_json='["implementation_version","implementation_stage","self_hosting_status","strict_self_hosted","default_lint_rules","core_report_schema_ids","diagnostic_ids","runtime_seed_values","parser_expression_classifiers","parser_statement_and_binding_kinds","bootstrap_smoke_runtime","checker_diagnostic_status","lint_finding_messages","runtime_report_status_and_dispatch"]'
-  fi
   status="$(sley_source_task loom.bootstrap self_hosting_status)"
-  status="${status:-bootstrap}"
   strict="$(sley_source_task loom.bootstrap strict_self_hosted)"
-  strict="${strict:-false}"
-  case "$strict" in true|false) ;; *) strict=false ;; esac
-  count="$(eval_bootstrap_list_count_task semantic_source_count || true)"
-  if [[ -z "$count" ]]; then
-    count="$(find "$SELF_HOSTED_SOURCE_ROOT" -type f -name '*.sley' 2>/dev/null | wc -l | tr -d ' ')"
-  fi
+  case "$strict" in true|false) ;; *) return 1 ;; esac
+  count="$(eval_bootstrap_list_count_task semantic_source_count)"
+  [[ "$count" =~ ^[0-9]+$ ]] || return 1
   values_json="$(jq -n \
     --arg schema "$SCHEMA_SELF_HOSTING" \
     --arg status "$status" \

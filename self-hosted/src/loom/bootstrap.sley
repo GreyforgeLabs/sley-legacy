@@ -32,6 +32,8 @@ export task owned_bootstrap_values -> List<Text> {
     "lint_source_metadata_task_execution",
     "core_report_schema_ids",
     "reports_source_metadata_task_execution",
+    "reports_fallback_removal_task_execution",
+    "bootstrap_status_fallback_removal_task_execution",
     "doctor_report_shape",
     "doctor_report_builder",
     "doctor_report_builder_task_execution",
