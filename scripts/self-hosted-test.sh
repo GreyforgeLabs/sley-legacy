@@ -729,6 +729,13 @@ if grep -Fq 'eval_checker_status_task "$diagnostic_count" ||' bin/sley; then
   fail "checker status selection must not fall back to shell-side status logic"
 fi
 
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("checker_diagnostic_id_fallback_removal_task_execution"))'
+
+if grep -Eq 'DIAG_[A-Z0-9_]+="\$\{DIAG_[A-Z0-9_]+:-' bin/sley; then
+  fail "checker diagnostic ids must come from loom.checker without shell fallback literals"
+fi
+
 if bin/sley check --json fixtures/corpus/rejected/unknown_identifier.sley >/tmp/sley-rejected-check.json; then
   fail "rejected unknown_identifier.sley passed check"
 fi
