@@ -102,6 +102,8 @@ export task owned_bootstrap_values -> List<Text> {
     "checker_diagnostic_pass_order_task_execution",
     "checker_diagnostic_pass_descriptor_task_execution",
     "checker_unknown_reference_pass_task_execution",
+    "checker_gate_reference_pass_task_execution",
+    "checker_effect_authorization_pass_task_execution",
     "checker_status_task_execution",
     "checker_status_fallback_removal_task_execution",
     "checker_status_parser_prefix_task_execution",
