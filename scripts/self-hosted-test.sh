@@ -791,6 +791,21 @@ if bin/sley check --json fixtures/corpus/rejected/type_mismatch.sley >/tmp/sley-
 fi
 jq -er '.status == "error" and [.diagnostics[].id] == ["TYPE_MISMATCH", "RETURN_TYPE_MISMATCH"] and .diagnostics[0].message == "type mismatch `label`" and .diagnostics[1].message == "return type mismatch `corpus.rejected.main`" and [.diagnostics[1].repair_hints[].kind] == ["inspect_return_type", "replace_task_body", "replace_expression"]' /tmp/sley-rejected-type-mismatch-check.json >/dev/null
 
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("checker_call_type_message_fallback_removal_task_execution"))'
+
+if grep -Eq 'eval_checker_message_template (call_arity_mismatch_message task_name|call_argument_type_mismatch_message task_name|type_mismatch_message binding_name|return_type_mismatch_message task_name) \|\| printf' bin/sley; then
+  fail "checker call/type diagnostic message templates must come from loom.checker without printf fallbacks"
+fi
+
+if grep -Eq '(CALL_ARITY_MISMATCH|CALL_ARGUMENT_TYPE_MISMATCH|TYPE_MISMATCH|RETURN_TYPE_MISMATCH)_MESSAGE_(PREFIX|SUFFIX)="\$\{(CALL_ARITY_MISMATCH|CALL_ARGUMENT_TYPE_MISMATCH|TYPE_MISMATCH|RETURN_TYPE_MISMATCH)_MESSAGE_(PREFIX|SUFFIX):-' bin/sley; then
+  fail "checker call/type diagnostic message prefixes/suffixes must come from loom.checker without shell fallbacks"
+fi
+
+if grep -Eq 'if \[\[ -z "\$(CALL_ARITY_MISMATCH|CALL_ARGUMENT_TYPE_MISMATCH|TYPE_MISMATCH|RETURN_TYPE_MISMATCH)_MESSAGE_TEMPLATE" \]\]' bin/sley; then
+  fail "checker call/type diagnostic message templates must not use empty-template shell fallback branches"
+fi
+
 if bin/sley check --json fixtures/corpus/rejected/missing_return.sley >/tmp/sley-rejected-missing-return-check.json; then
   fail "rejected missing_return.sley passed check"
 fi

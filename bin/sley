@@ -4711,16 +4711,16 @@ UNKNOWN_TASK_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROO
 UNKNOWN_TASK_MESSAGE_TEMPLATE="$(eval_checker_message_template unknown_task_message task_name)"
 CALL_ARITY_MISMATCH_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" call_arity_mismatch_message_prefix)"
 CALL_ARITY_MISMATCH_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" call_arity_mismatch_message_suffix)"
-CALL_ARITY_MISMATCH_MESSAGE_TEMPLATE="$(eval_checker_message_template call_arity_mismatch_message task_name || printf 'call arity mismatch for `::task_name::`\n')"
+CALL_ARITY_MISMATCH_MESSAGE_TEMPLATE="$(eval_checker_message_template call_arity_mismatch_message task_name)"
 CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" call_argument_type_mismatch_message_prefix)"
 CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" call_argument_type_mismatch_message_suffix)"
-CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_TEMPLATE="$(eval_checker_message_template call_argument_type_mismatch_message task_name || printf 'call argument type mismatch for `::task_name::`\n')"
+CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_TEMPLATE="$(eval_checker_message_template call_argument_type_mismatch_message task_name)"
 TYPE_MISMATCH_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" type_mismatch_message_prefix)"
 TYPE_MISMATCH_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" type_mismatch_message_suffix)"
-TYPE_MISMATCH_MESSAGE_TEMPLATE="$(eval_checker_message_template type_mismatch_message binding_name || printf 'type mismatch `::binding_name::`\n')"
+TYPE_MISMATCH_MESSAGE_TEMPLATE="$(eval_checker_message_template type_mismatch_message binding_name)"
 RETURN_TYPE_MISMATCH_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" return_type_mismatch_message_prefix)"
 RETURN_TYPE_MISMATCH_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" return_type_mismatch_message_suffix)"
-RETURN_TYPE_MISMATCH_MESSAGE_TEMPLATE="$(eval_checker_message_template return_type_mismatch_message task_name || printf 'return type mismatch `::task_name::`\n')"
+RETURN_TYPE_MISMATCH_MESSAGE_TEMPLATE="$(eval_checker_message_template return_type_mismatch_message task_name)"
 DUPLICATE_TAKE_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" duplicate_take_message_prefix)"
 DUPLICATE_TAKE_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" duplicate_take_message_suffix)"
 DUPLICATE_TAKE_MESSAGE_TEMPLATE="$(eval_checker_message_template duplicate_take_message take_name || printf 'duplicate take `::take_name::`\n')"
@@ -4808,26 +4808,6 @@ CHECKER_ERROR_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/ch
 CHECKER_GATE_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" gate_type_name)"
 CHECKER_LIST_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" list_type_name)"
 CHECKER_MAP_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" map_type_name)"
-CALL_ARITY_MISMATCH_MESSAGE_PREFIX="${CALL_ARITY_MISMATCH_MESSAGE_PREFIX:-call arity mismatch for \`}"
-CALL_ARITY_MISMATCH_MESSAGE_SUFFIX="${CALL_ARITY_MISMATCH_MESSAGE_SUFFIX:-\`}"
-if [[ -z "$CALL_ARITY_MISMATCH_MESSAGE_TEMPLATE" ]]; then
-  CALL_ARITY_MISMATCH_MESSAGE_TEMPLATE='call arity mismatch for `::task_name::`'
-fi
-CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_PREFIX="${CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_PREFIX:-call argument type mismatch for \`}"
-CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_SUFFIX="${CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_SUFFIX:-\`}"
-if [[ -z "$CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_TEMPLATE" ]]; then
-  CALL_ARGUMENT_TYPE_MISMATCH_MESSAGE_TEMPLATE='call argument type mismatch for `::task_name::`'
-fi
-TYPE_MISMATCH_MESSAGE_PREFIX="${TYPE_MISMATCH_MESSAGE_PREFIX:-type mismatch \`}"
-TYPE_MISMATCH_MESSAGE_SUFFIX="${TYPE_MISMATCH_MESSAGE_SUFFIX:-\`}"
-if [[ -z "$TYPE_MISMATCH_MESSAGE_TEMPLATE" ]]; then
-  TYPE_MISMATCH_MESSAGE_TEMPLATE='type mismatch `::binding_name::`'
-fi
-RETURN_TYPE_MISMATCH_MESSAGE_PREFIX="${RETURN_TYPE_MISMATCH_MESSAGE_PREFIX:-return type mismatch \`}"
-RETURN_TYPE_MISMATCH_MESSAGE_SUFFIX="${RETURN_TYPE_MISMATCH_MESSAGE_SUFFIX:-\`}"
-if [[ -z "$RETURN_TYPE_MISMATCH_MESSAGE_TEMPLATE" ]]; then
-  RETURN_TYPE_MISMATCH_MESSAGE_TEMPLATE='return type mismatch `::task_name::`'
-fi
 DUPLICATE_TAKE_MESSAGE_PREFIX="${DUPLICATE_TAKE_MESSAGE_PREFIX:-duplicate take \`}"
 DUPLICATE_TAKE_MESSAGE_SUFFIX="${DUPLICATE_TAKE_MESSAGE_SUFFIX:-\`}"
 if [[ -z "$DUPLICATE_TAKE_MESSAGE_TEMPLATE" ]]; then
