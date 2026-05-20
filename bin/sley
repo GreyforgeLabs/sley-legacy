@@ -455,185 +455,56 @@ eval_parser_expression_classifiers_json() {
 eval_parser_id_template() {
   local task="$1"
   local parser_file="$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley"
-  local body expr
-  body="$(extract_sley_task_body "$parser_file" "$task")"
-  [[ -n "$body" ]] || return 1
-  expr="$(printf '%s\n' "$body" | awk '
-    /^[ \t]*return[ \t]+/ {
-      line=$0
-      sub(/^[ \t]*return[ \t]+/, "", line)
-      print line
-      exit
-    }
-  ')"
-  [[ -n "$expr" ]] || return 1
-  printf '%s\n' "$expr" | awk '
-    function unquote(s){sub(/^"/, "", s); sub(/"$/, "", s); return s}
-    function token_value(token) {
-      if (token ~ /^"/) return unquote(token)
-      if (token == "task_id") return "{{task_id}}"
-      if (token == "module_name") return "{{module}}"
-      if (token == "import_module") return "{{import_module}}"
-      if (token == "task_name") return "{{task}}"
-      if (token == "type_name") return "{{type}}"
-      if (token == "effect_name") return "{{effect}}"
-      if (token == "take_name") return "{{take}}"
-      if (token == "statement_id") return "{{statement}}"
-      if (token == "expression_id") return "{{expression}}"
-      if (token == "branch_name") return "{{branch}}"
-      if (token == "side_name") return "{{side}}"
-      if (token == "index") return "{{index}}"
-      exit 7
-    }
-    {
-      line=$0
-      out=""
-      seen=0
-      while (match(line, /"[^"]*"|[A-Za-z_][A-Za-z0-9_]*/)) {
-        token=substr(line, RSTART, RLENGTH)
-        out=out token_value(token)
-        seen=1
-        line=substr(line, RSTART + RLENGTH)
-      }
-      if (!seen) exit 7
-      print out
-    }
-  '
+  sley_eval_source_task "$parser_file" "$task" "$(sley_parser_template_env_json)"
+}
+
+sley_parser_template_env_json() {
+  jq -cn '{
+    task_id:"{{task_id}}",
+    module_name:"{{module}}",
+    import_module:"{{import_module}}",
+    task_name:"{{task}}",
+    type_name:"{{type}}",
+    effect_name:"{{effect}}",
+    take_name:"{{take}}",
+    statement_id:"{{statement}}",
+    expression_id:"{{expression}}",
+    branch_name:"{{branch}}",
+    side_name:"{{side}}",
+    index:"{{index}}"
+  }'
+}
+
+sley_message_template_env_json() {
+  jq -cn '{
+    identifier_name:"::identifier_name::",
+    type_name:"::type_name::",
+    task_name:"::task_name::",
+    binding_name:"::binding_name::",
+    take_name:"::take_name::",
+    key_name:"::key_name::",
+    field_name:"::field_name::",
+    actual_type:"::actual_type::",
+    effect_name:"::effect_name::",
+    node_id:"::node_id::"
+  }'
 }
 
 eval_parser_message_template() {
   local task="$1" arg_name="$2"
   local parser_file="$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley"
-  local body expr token out callee value call_prefix
-  body="$(extract_sley_task_body "$parser_file" "$task")"
-  [[ -n "$body" ]] || return 1
-  call_prefix="${PARSER_CALL_EXPRESSION_PREFIX:-call }"
-  expr="$(printf '%s\n' "$body" | awk '
-    /^[ \t]*return[ \t]+/ {
-      line=$0
-      sub(/^[ \t]*return[ \t]+/, "", line)
-      print line
-      exit
-    }
-  ')"
-  [[ -n "$expr" ]] || return 1
-  out=""
-  while IFS= read -r token; do
-    [[ -n "$token" ]] || continue
-    if [[ "$token" == CALL:* ]]; then
-      callee="${token#CALL:}"
-      value="$(extract_sley_string_task "$parser_file" "$callee")"
-      [[ -n "$value" ]] || return 1
-      out+="$value"
-    elif [[ "$token" == \"* ]]; then
-      value="${token#\"}"
-      value="${value%\"}"
-      out+="$value"
-    elif [[ "$token" == "$arg_name" ]]; then
-      out+="::$arg_name::"
-    else
-      return 1
-    fi
-  done < <(printf '%s\n' "$expr" | awk -v call_prefix="$call_prefix" '
-    function ltrim(s){sub(/^[ \t]+/, "", s); return s}
-    {
-      line=$0
-      while (length(line) > 0) {
-        line=ltrim(line)
-        if(line == "") break
-        if(index(line, call_prefix) == 1) {
-          tail=substr(line, length(call_prefix) + 1)
-          if(match(tail, /^[A-Za-z_][A-Za-z0-9_]*\(\)/)) {
-            callee=substr(tail, RSTART, RLENGTH)
-            sub(/\(\)$/, "", callee)
-            print "CALL:" callee
-            line=substr(tail, RSTART + RLENGTH)
-            continue
-          }
-        }
-        if(match(line, /^"[^"]*"/)) {
-          print substr(line, RSTART, RLENGTH)
-          line=substr(line, RSTART + RLENGTH)
-          continue
-        }
-        if(match(line, /^[A-Za-z_][A-Za-z0-9_]*/)) {
-          print substr(line, RSTART, RLENGTH)
-          line=substr(line, RSTART + RLENGTH)
-          continue
-        }
-        line=substr(line, 2)
-      }
-    }
-  ')
-  [[ -n "$out" ]] || return 1
+  local out
+  out="$(sley_eval_source_task "$parser_file" "$task" "$(sley_message_template_env_json)")" || return 1
+  [[ "$out" == *"::$arg_name::"* ]] || return 1
   printf '%s\n' "$out"
 }
 
 eval_checker_message_template() {
   local task="$1" arg_name="$2"
   local checker_file="$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley"
-  local body expr token out callee value call_prefix
-  body="$(extract_sley_task_body "$checker_file" "$task")"
-  [[ -n "$body" ]] || return 1
-  call_prefix="${PARSER_CALL_EXPRESSION_PREFIX:-call }"
-  expr="$(printf '%s\n' "$body" | awk '
-    /^[ \t]*return[ \t]+/ {
-      line=$0
-      sub(/^[ \t]*return[ \t]+/, "", line)
-      print line
-      exit
-    }
-  ')"
-  [[ -n "$expr" ]] || return 1
-  out=""
-  while IFS= read -r token; do
-    [[ -n "$token" ]] || continue
-    if [[ "$token" == CALL:* ]]; then
-      callee="${token#CALL:}"
-      value="$(extract_sley_string_task "$checker_file" "$callee")"
-      [[ -n "$value" ]] || return 1
-      out+="$value"
-    elif [[ "$token" == \"* ]]; then
-      value="${token#\"}"
-      value="${value%\"}"
-      out+="$value"
-    elif [[ "$token" == "$arg_name" ]]; then
-      out+="::$arg_name::"
-    else
-      return 1
-    fi
-  done < <(printf '%s\n' "$expr" | awk -v call_prefix="$call_prefix" '
-    function ltrim(s){sub(/^[ \t]+/, "", s); return s}
-    {
-      line=$0
-      while (length(line) > 0) {
-        line=ltrim(line)
-        if(line == "") break
-        if(index(line, call_prefix) == 1) {
-          tail=substr(line, length(call_prefix) + 1)
-          if(match(tail, /^[A-Za-z_][A-Za-z0-9_]*\(\)/)) {
-            callee=substr(tail, RSTART, RLENGTH)
-            sub(/\(\)$/, "", callee)
-            print "CALL:" callee
-            line=substr(tail, RSTART + RLENGTH)
-            continue
-          }
-        }
-        if(match(line, /^"[^"]*"/)) {
-          print substr(line, RSTART, RLENGTH)
-          line=substr(line, RSTART + RLENGTH)
-          continue
-        }
-        if(match(line, /^[A-Za-z_][A-Za-z0-9_]*/)) {
-          print substr(line, RSTART, RLENGTH)
-          line=substr(line, RSTART + RLENGTH)
-          continue
-        }
-        line=substr(line, 2)
-      }
-    }
-  ')
-  [[ -n "$out" ]] || return 1
+  local out
+  out="$(sley_eval_source_task "$checker_file" "$task" "$(sley_message_template_env_json)")" || return 1
+  [[ "$out" == *"::$arg_name::"* ]] || return 1
   printf '%s\n' "$out"
 }
 

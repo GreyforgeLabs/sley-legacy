@@ -309,7 +309,13 @@ bin/sley self-hosting-status --json \
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("generic_runtime_record_task_evaluator_execution"))'
 
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("generic_parser_checker_template_evaluator_execution"))'
+
 for source_task_eval_fn in \
+  eval_parser_id_template \
+  eval_parser_message_template \
+  eval_checker_message_template \
   eval_checker_status_task \
   eval_lint_status_task \
   eval_runtime_status_task \
