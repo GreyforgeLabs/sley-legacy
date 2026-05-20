@@ -315,6 +315,9 @@ bin/sley self-hosting-status --json \
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("generic_source_call_argument_evaluator_execution"))'
 
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("generic_source_bind_evaluator_execution"))'
+
 if ! awk '
   /^sley_eval_source_call\(\)[ \t]*\{/ {in_fn=1}
   in_fn && /sley_eval_source_task_takes_json/ {takes=1}
@@ -324,6 +327,17 @@ if ! awk '
 ' bin/sley; then
   fail "sley_eval_source_call must bind call arguments to Sley take names before task evaluation"
 fi
+
+for source_bind_eval_fn in eval_bootstrap_smoke_task eval_bootstrap_list_count_task; do
+  if ! awk -v fn="$source_bind_eval_fn" '
+    $0 ~ "^" fn "\\(\\)[ \t]*\\{" {in_fn=1}
+    in_fn && /sley_eval_source_task/ {found=1}
+    in_fn && /^[ \t]*}/ {exit}
+    END {exit found ? 0 : 1}
+  ' bin/sley; then
+    fail "$source_bind_eval_fn must execute through the shared Sley source task evaluator"
+  fi
+done
 
 for source_task_eval_fn in \
   eval_parser_id_template \

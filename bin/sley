@@ -245,6 +245,63 @@ sley_eval_source_call_env_json() {
   '
 }
 
+sley_eval_source_call_list_json() {
+  local file="$1" callee="$2" env_json="$3" args_json="${4:-[]}"
+  local alias task module source_file body takes_json call_env_json list_json
+  if [[ "$callee" == *.* ]]; then
+    alias="${callee%%.*}"
+    task="${callee#*.}"
+    module="$(resolve_sley_import_alias "$file" "$alias")"
+    [[ -n "$module" ]] || return 1
+    source_file="$(module_source_file "$module")"
+  else
+    task="$callee"
+    source_file="$file"
+  fi
+  body="$(extract_sley_task_body "$source_file" "$task")"
+  [[ -n "$body" ]] || return 1
+  takes_json="$(sley_eval_source_task_takes_json "$body")" || return 1
+  call_env_json="$(sley_eval_source_call_env_json "$env_json" "$takes_json" "$args_json")" || return 1
+  [[ -n "$call_env_json" ]] || return 1
+  list_json="$(extract_sley_list_task_json "$source_file" "$task")"
+  [[ "$list_json" != "[]" ]] || return 1
+  printf '%s\n' "$list_json"
+}
+
+sley_eval_source_bind_value_json() {
+  local file="$1" env_json="$2" expr="$3"
+  local call_prefix="${PARSER_CALL_EXPRESSION_PREFIX:-call }" tail callee args_text args_json list_json value
+  expr="$(printf '%s\n' "$expr" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+  if [[ "$expr" == "$call_prefix"* ]]; then
+    tail="${expr#"$call_prefix"}"
+    if [[ "$tail" =~ ^([A-Za-z_][A-Za-z0-9_.]*)\((.*)\)$ ]]; then
+      callee="${BASH_REMATCH[1]}"
+      args_text="${BASH_REMATCH[2]}"
+      args_json="$(sley_eval_source_args_json "$file" "$env_json" "$args_text")" || return 1
+      if list_json="$(sley_eval_source_call_list_json "$file" "$callee" "$env_json" "$args_json" 2>/dev/null)"; then
+        printf '%s\n' "$list_json"
+        return 0
+      fi
+    fi
+  fi
+  value="$(sley_eval_source_expr "$file" "$env_json" "$expr")" || return 1
+  jq -cn --arg value "$value" '$value'
+}
+
+sley_eval_source_bind_env_json() {
+  local file="$1" env_json="$2" body="$3"
+  local raw line name expr value_json
+  while IFS= read -r raw || [[ -n "$raw" ]]; do
+    line="$(printf '%s\n' "$raw" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+    [[ "$line" =~ ^bind[[:space:]]+([A-Za-z_][A-Za-z0-9_]*)[[:space:]]*=[[:space:]]*(.+)$ ]] || continue
+    name="${BASH_REMATCH[1]}"
+    expr="${BASH_REMATCH[2]}"
+    value_json="$(sley_eval_source_bind_value_json "$file" "$env_json" "$expr")" || return 1
+    env_json="$(jq -cn --argjson env "$env_json" --arg name "$name" --argjson value "$value_json" '$env + {($name): $value}')" || return 1
+  done <<< "$body"
+  printf '%s\n' "$env_json"
+}
+
 sley_eval_source_condition() {
   local env_json="$1" condition="$2"
   local name op right left
@@ -357,6 +414,12 @@ sley_eval_source_expr() {
   if [[ "$expr" =~ ^\"([^\"]*)\"$ ]]; then
     printf '%s\n' "${BASH_REMATCH[1]}"
     return 0
+  fi
+  if [[ "$expr" =~ ^len\(([A-Za-z_][A-Za-z0-9_]*)\)$ ]]; then
+    printf '%s\n' "$env_json" | jq -er --arg name "${BASH_REMATCH[1]}" '
+      if type == "object" and has($name) and (.[$name] | type) == "array" then .[$name] | length else empty end
+    '
+    return
   fi
   if [[ "$expr" =~ ^-?[0-9]+$ || "$expr" == "true" || "$expr" == "false" ]]; then
     printf '%s\n' "$expr"
@@ -493,6 +556,7 @@ sley_eval_source_task() {
   [[ -n "$env_json" ]] || env_json='{}'
   body="$(extract_sley_task_body "$file" "$task")"
   [[ -n "$body" ]] || return 1
+  env_json="$(sley_eval_source_bind_env_json "$file" "$env_json" "$body")" || return 1
   expr="$(sley_select_source_return_expr "$body" "$env_json")" || return 1
   sley_eval_source_expr "$file" "$env_json" "$expr"
 }
@@ -603,83 +667,13 @@ eval_checker_message_template() {
 
 eval_bootstrap_smoke_task() {
   local bootstrap_file="$SELF_HOSTED_SOURCE_ROOT/loom/bootstrap.sley"
-  local body bind_name callee alias task module source_file return_var rules_json call_prefix call_row
-  body="$(extract_sley_task_body "$bootstrap_file" smoke)"
-  [[ -n "$body" ]] || return 1
-  call_prefix="${PARSER_CALL_EXPRESSION_PREFIX:-call }"
-  call_row="$(printf '%s\n' "$body" | awk -v call_prefix="$call_prefix" '
-    /^[ \t]*bind[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*=/ {
-      line=$0
-      bind_name=line
-      sub(/^[ \t]*bind[ \t]+/, "", bind_name)
-      sub(/[ \t]*=.*/, "", bind_name)
-      expr=line
-      sub(/^.*=[ \t]*/, "", expr)
-      if (index(expr, call_prefix) != 1) next
-      callee=substr(expr, length(call_prefix) + 1)
-      if (callee !~ /^[A-Za-z_][A-Za-z0-9_.]*\(\)[ \t]*$/) next
-      sub(/\(\).*/, "", callee)
-      print bind_name "\t" callee
-      exit
-    }
-  ')"
-  [[ -n "$call_row" ]] || return 1
-  bind_name="${call_row%%$'\t'*}"
-  callee="${call_row#*$'\t'}"
-  return_var="$(printf '%s\n' "$body" | awk '/^[ \t]*return[ \t]+len\([A-Za-z_][A-Za-z0-9_]*\)/ {line=$0; sub(/^.*return[ \t]+len\(/, "", line); sub(/\).*/, "", line); print line; exit}')"
-  [[ -n "$bind_name" && -n "$callee" && "$return_var" == "$bind_name" ]] || return 1
-  alias="${callee%%.*}"
-  task="${callee#*.}"
-  [[ -n "$alias" && -n "$task" && "$alias" != "$task" ]] || return 1
-  module="$(resolve_sley_import_alias "$bootstrap_file" "$alias")"
-  [[ -n "$module" ]] || return 1
-  source_file="$(module_source_file "$module")"
-  rules_json="$(extract_sley_list_task_json "$source_file" "$task")"
-  [[ "$rules_json" != "[]" ]] || return 1
-  printf '%s\n' "$rules_json" | jq 'length'
+  sley_eval_source_task "$bootstrap_file" smoke '{}'
 }
 
 eval_bootstrap_list_count_task() {
   local task_name="$1"
   local bootstrap_file="$SELF_HOSTED_SOURCE_ROOT/loom/bootstrap.sley"
-  local body bind_name callee return_var alias task module source_file items_json call_prefix call_row
-  body="$(extract_sley_task_body "$bootstrap_file" "$task_name")"
-  [[ -n "$body" ]] || return 1
-  call_prefix="${PARSER_CALL_EXPRESSION_PREFIX:-call }"
-  call_row="$(printf '%s\n' "$body" | awk -v call_prefix="$call_prefix" '
-    /^[ \t]*bind[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*=/ {
-      line=$0
-      bind_name=line
-      sub(/^[ \t]*bind[ \t]+/, "", bind_name)
-      sub(/[ \t]*=.*/, "", bind_name)
-      expr=line
-      sub(/^.*=[ \t]*/, "", expr)
-      if (index(expr, call_prefix) != 1) next
-      callee=substr(expr, length(call_prefix) + 1)
-      if (callee !~ /^[A-Za-z_][A-Za-z0-9_.]*\(\)[ \t]*$/) next
-      sub(/\(\).*/, "", callee)
-      print bind_name "\t" callee
-      exit
-    }
-  ')"
-  [[ -n "$call_row" ]] || return 1
-  bind_name="${call_row%%$'\t'*}"
-  callee="${call_row#*$'\t'}"
-  return_var="$(printf '%s\n' "$body" | awk '/^[ \t]*return[ \t]+len\([A-Za-z_][A-Za-z0-9_]*\)/ {line=$0; sub(/^.*return[ \t]+len\(/, "", line); sub(/\).*/, "", line); print line; exit}')"
-  [[ -n "$bind_name" && -n "$callee" && "$return_var" == "$bind_name" ]] || return 1
-  if [[ "$callee" == *.* ]]; then
-    alias="${callee%%.*}"
-    task="${callee#*.}"
-    module="$(resolve_sley_import_alias "$bootstrap_file" "$alias")"
-    [[ -n "$module" ]] || return 1
-    source_file="$(module_source_file "$module")"
-  else
-    task="$callee"
-    source_file="$bootstrap_file"
-  fi
-  items_json="$(extract_sley_list_task_json "$source_file" "$task")"
-  [[ "$items_json" != "[]" ]] || return 1
-  printf '%s\n' "$items_json" | jq 'length'
+  sley_eval_source_task "$bootstrap_file" "$task_name" '{}'
 }
 
 eval_lint_status_task() {
