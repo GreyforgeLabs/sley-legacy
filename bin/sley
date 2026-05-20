@@ -2022,7 +2022,7 @@ eval_source_record_field_call_text_main_return() {
 
 eval_source_bool_equal_main_return() {
   local target="$1" file values left right runtime_value
-  file="$(collect_files "$target" | head -n 1)"
+  file="$(sley_source_entry_file_for_target "$target")"
   [[ -n "$file" ]] || return 1
   values="$(awk '
     function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
@@ -2076,7 +2076,7 @@ eval_source_bool_equal_main_return() {
 
 eval_source_int_less_than_main_return() {
   local target="$1" file values left right runtime_value
-  file="$(collect_files "$target" | head -n 1)"
+  file="$(sley_source_entry_file_for_target "$target")"
   [[ -n "$file" ]] || return 1
   values="$(awk '
     function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
@@ -2131,7 +2131,7 @@ eval_source_int_less_than_main_return() {
 
 eval_source_bool_and_main_return() {
   local target="$1" file values left right runtime_value
-  file="$(collect_files "$target" | head -n 1)"
+  file="$(sley_source_entry_file_for_target "$target")"
   [[ -n "$file" ]] || return 1
   values="$(awk '
     function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
@@ -2185,7 +2185,7 @@ eval_source_bool_and_main_return() {
 
 eval_source_bool_not_main_return() {
   local target="$1" file values value count runtime_value index
-  file="$(collect_files "$target" | head -n 1)"
+  file="$(sley_source_entry_file_for_target "$target")"
   [[ -n "$file" ]] || return 1
   values="$(awk '
     function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
@@ -2246,7 +2246,7 @@ eval_source_bool_not_main_return() {
 
 eval_source_negated_comparison_main_return() {
   local target="$1" file inner_value runtime_value
-  file="$(collect_files "$target" | head -n 1)"
+  file="$(sley_source_entry_file_for_target "$target")"
   [[ -n "$file" ]] || return 1
   inner_value="$(awk '
     function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
@@ -2316,7 +2316,7 @@ eval_source_negated_comparison_main_return() {
 
 eval_source_if_bool_main_return() {
   local target="$1" file values condition then_value else_value runtime_value
-  file="$(collect_files "$target" | head -n 1)"
+  file="$(sley_source_entry_file_for_target "$target")"
   [[ -n "$file" ]] || return 1
   values="$(awk '
     function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
@@ -2376,7 +2376,7 @@ eval_source_if_bool_main_return() {
 
 eval_source_if_int_expression_main_return() {
   local target="$1" file values condition then_value else_value runtime_value
-  file="$(collect_files "$target" | head -n 1)"
+  file="$(sley_source_entry_file_for_target "$target")"
   [[ -n "$file" ]] || return 1
   values="$(awk '
     function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
@@ -2485,7 +2485,7 @@ sley_count_char_text() {
 eval_source_state_set_int_main_return() {
   local target="$1" file raw line depth=0 in_main=false saw_set=false rest prefix name expr value
   declare -A state_env=()
-  file="$(collect_files "$target" | head -n 1)"
+  file="$(sley_source_entry_file_for_target "$target")"
   [[ -n "$file" ]] || return 1
   while IFS= read -r raw; do
     line="$(printf '%s\n' "$raw" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
@@ -2540,7 +2540,7 @@ eval_source_state_set_int_main_return() {
 eval_source_tally_set_int_main_return() {
   local target="$1" file raw line depth=0 in_main=false saw_tally=false saw_set=false rest prefix name expr value runtime_value
   declare -A tally_env=()
-  file="$(collect_files "$target" | head -n 1)"
+  file="$(sley_source_entry_file_for_target "$target")"
   [[ -n "$file" ]] || return 1
   while IFS= read -r raw; do
     line="$(printf '%s\n' "$raw" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
@@ -2596,7 +2596,7 @@ eval_source_tally_set_int_main_return() {
 eval_source_each_sum_int_main_return() {
   local target="$1" file spec list_values total_name total_value loop_var set_target left_token right_token return_name item left right runtime_value
   local -a items=()
-  file="$(collect_files "$target" | head -n 1)"
+  file="$(sley_source_entry_file_for_target "$target")"
   [[ -n "$file" ]] || return 1
   spec="$(awk '
     function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
@@ -2699,7 +2699,7 @@ eval_source_each_sum_int_main_return() {
 
 eval_source_each_map_sum_int_main_return() {
   local target="$1" file spec list_values map_pairs total_value list_count index list_key map_value runtime_value
-  file="$(collect_files "$target" | head -n 1)"
+  file="$(sley_source_entry_file_for_target "$target")"
   [[ -n "$file" ]] || return 1
   spec="$(awk '
     function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
@@ -2812,7 +2812,7 @@ eval_source_each_map_sum_int_main_return() {
 
 eval_source_while_list_sum_int_main_return() {
   local target="$1" file main_info list_values expected_count callee else_value body sum_info list_count condition index total item runtime_value
-  file="$(collect_files "$target" | head -n 1)"
+  file="$(sley_source_entry_file_for_target "$target")"
   [[ -n "$file" ]] || return 1
   main_info="$(awk -v call_prefix="$PARSER_CALL_EXPRESSION_PREFIX" '
     function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
@@ -2974,7 +2974,7 @@ eval_source_while_list_sum_int_main_return() {
 
 eval_source_compute_text_call_main_return() {
   local target="$1" file main_info callee arg left right arg_value body class_info threshold then_value else_value condition runtime_value call_prefix
-  file="$(collect_files "$target" | head -n 1)"
+  file="$(sley_source_entry_file_for_target "$target")"
   [[ -n "$file" ]] || return 1
   call_prefix="$PARSER_CALL_EXPRESSION_PREFIX"
   main_info="$(awk -v call_prefix="$call_prefix" '
@@ -3076,7 +3076,7 @@ eval_source_compute_text_call_main_return() {
 
 eval_source_result_flow_int_main_return() {
   local target="$1" file main_info callee call_arg add_right body parse_info bad_literal ok_value condition parsed_value result_value runtime_value call_prefix
-  file="$(collect_files "$target" | head -n 1)"
+  file="$(sley_source_entry_file_for_target "$target")"
   [[ -n "$file" ]] || return 1
   call_prefix="$PARSER_CALL_EXPRESSION_PREFIX"
   main_info="$(awk -v call_prefix="$call_prefix" '
@@ -3180,7 +3180,7 @@ eval_source_result_flow_int_main_return() {
 eval_source_bound_int_main_return() {
   local target="$1" file raw line depth=0 in_main=false rest prefix name expr value runtime_value
   declare -A int_env=()
-  file="$(collect_files "$target" | head -n 1)"
+  file="$(sley_source_entry_file_for_target "$target")"
   [[ -n "$file" ]] || return 1
   while IFS= read -r raw; do
     line="$(printf '%s\n' "$raw" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
@@ -3231,7 +3231,7 @@ eval_source_state_if_set_int_main_return() {
   local target="$1" file raw line depth=0 in_main=false in_if=false saw_if=false branch="" rest prefix name expr value condition condition_value set_name="" then_value="" else_value="" runtime_value final_value
   declare -A int_env=()
   declare -A bool_env=()
-  file="$(collect_files "$target" | head -n 1)"
+  file="$(sley_source_entry_file_for_target "$target")"
   [[ -n "$file" ]] || return 1
   while IFS= read -r raw; do
     line="$(printf '%s\n' "$raw" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
@@ -3338,7 +3338,7 @@ eval_source_state_if_set_int_main_return() {
 eval_source_bool_if_statement_main_return() {
   local target="$1" file raw line depth=0 in_main=false in_if=false branch="" rest name expr value condition condition_value then_value="" else_value="" runtime_value
   declare -A bool_env=()
-  file="$(collect_files "$target" | head -n 1)"
+  file="$(sley_source_entry_file_for_target "$target")"
   [[ -n "$file" ]] || return 1
   while IFS= read -r raw; do
     line="$(printf '%s\n' "$raw" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
@@ -3421,7 +3421,7 @@ eval_source_bool_if_statement_main_return() {
 eval_source_literal_if_int_statement_main_return() {
   local target="$1" file raw line depth=0 in_main=false in_if=false saw_if=false rest prefix name expr value condition_value then_value="" else_value="" runtime_value
   declare -A int_env=()
-  file="$(collect_files "$target" | head -n 1)"
+  file="$(sley_source_entry_file_for_target "$target")"
   [[ -n "$file" ]] || return 1
   while IFS= read -r raw; do
     line="$(printf '%s\n' "$raw" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
@@ -3484,7 +3484,7 @@ eval_source_literal_if_int_statement_main_return() {
 eval_source_comparison_if_int_statement_main_return() {
   local target="$1" file raw line depth=0 in_main=false in_if=false branch="" rest prefix name expr value condition left_token right_token left right condition_value then_value="" else_value="" runtime_value
   declare -A int_env=()
-  file="$(collect_files "$target" | head -n 1)"
+  file="$(sley_source_entry_file_for_target "$target")"
   [[ -n "$file" ]] || return 1
   while IFS= read -r raw; do
     line="$(printf '%s\n' "$raw" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
@@ -3575,7 +3575,7 @@ eval_source_comparison_if_int_statement_main_return() {
 eval_source_false_while_int_main_return() {
   local target="$1" file raw line depth=0 in_main=false in_while=false saw_while=false rest prefix name expr value body_value="" fallthrough_value="" runtime_value
   declare -A int_env=()
-  file="$(collect_files "$target" | head -n 1)"
+  file="$(sley_source_entry_file_for_target "$target")"
   [[ -n "$file" ]] || return 1
   while IFS= read -r raw; do
     line="$(printf '%s\n' "$raw" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
@@ -3636,7 +3636,7 @@ eval_source_false_while_int_main_return() {
 
 eval_source_if_int_main_return() {
   local target="$1" file
-  file="$(collect_files "$target" | head -n 1)"
+  file="$(sley_source_entry_file_for_target "$target")"
   [[ -n "$file" ]] || return 1
   awk -v int_value_kind="$RUNTIME_INT_VALUE_KIND" '
     function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
@@ -3753,7 +3753,7 @@ eval_source_if_int_main_return() {
 
 eval_source_bool_main_return() {
   local target="$1" file
-  file="$(collect_files "$target" | head -n 1)"
+  file="$(sley_source_entry_file_for_target "$target")"
   [[ -n "$file" ]] || return 1
   awk -v bool_value_kind="$RUNTIME_BOOL_VALUE_KIND" '
     function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
@@ -3848,7 +3848,7 @@ eval_source_bool_main_return() {
 
 eval_source_unit_main_return() {
   local target="$1" file matched
-  file="$(collect_files "$target" | head -n 1)"
+  file="$(sley_source_entry_file_for_target "$target")"
   [[ -n "$file" ]] || return 1
   matched="$(awk '
     function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
@@ -3880,7 +3880,7 @@ eval_source_unit_main_return() {
 
 eval_source_local_call_int_main_return() {
   local target="$1" file call_info callee body literal runtime_value call_prefix
-  file="$(collect_files "$target" | head -n 1)"
+  file="$(sley_source_entry_file_for_target "$target")"
   [[ -n "$file" ]] || return 1
   call_prefix="$PARSER_CALL_EXPRESSION_PREFIX"
   call_info="$(awk -v call_prefix="$call_prefix" '
@@ -3983,7 +3983,7 @@ resolve_project_import_prefix() {
 
 eval_source_direct_file_read_text_main_return() {
   local target="$1" file read_info callee path body text_take return_name runtime_value
-  file="$(collect_files "$target" | head -n 1)"
+  file="$(sley_source_entry_file_for_target "$target")"
   [[ -n "$file" ]] || return 1
   read_info="$(awk -v call_prefix="$PARSER_CALL_EXPRESSION_PREFIX" '
     function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
@@ -4041,7 +4041,7 @@ eval_source_direct_file_read_text_main_return() {
 
 eval_source_direct_file_read_ok_text_main_return() {
   local target="$1" file read_info path runtime_value
-  file="$(collect_files "$target" | head -n 1)"
+  file="$(sley_source_entry_file_for_target "$target")"
   [[ -n "$file" ]] || return 1
   read_info="$(awk '
     function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
@@ -5177,9 +5177,9 @@ absolute_path() {
 entry_module_for() {
   local target="$1" file
   if [[ -d "$target" && -f "$target/sley.toml" ]]; then
-    file="$(collect_files "$target" | head -n 1)"
+    file="$(sley_source_entry_file_for_target "$target")"
   else
-    file="$(collect_files "$target" | head -n 1)"
+    file="$(sley_source_entry_file_for_target "$target")"
   fi
   awk '/^[[:space:]]*module[[:space:]]+/ {print $2; found=1; exit} END {if (!found) print "main"}' "$file"
 }
