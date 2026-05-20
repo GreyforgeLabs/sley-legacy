@@ -19,6 +19,7 @@ self_hosting_status_field() {
 }
 
 bool_literal_source="$(mktemp)"
+generic_source_main_source="$(mktemp)"
 empty_module_source="$(mktemp)"
 unknown_take_type_source="$(mktemp)"
 add_take_operation="$(mktemp)"
@@ -34,13 +35,25 @@ zjx_tool_report="$(mktemp)"
 runtime_report="$(mktemp)"
 ast_missing_report="$(mktemp)"
 ci_report="$(mktemp)"
-trap 'rm -f "$bool_literal_source" "$empty_module_source" "$unknown_take_type_source" "$add_take_operation" "$self_hosting_status_report" "$artifact_check_report" "$migrate_report" "$docgen_report" "$workbench_report" "$sandbox_report" "$agent_bench_report" "$zjx_tool_report" "$runtime_report" "$ast_missing_report" "$ci_report"; rm -rf "$artifact_dir"' EXIT
+trap 'rm -f "$bool_literal_source" "$generic_source_main_source" "$empty_module_source" "$unknown_take_type_source" "$add_take_operation" "$self_hosting_status_report" "$artifact_check_report" "$migrate_report" "$docgen_report" "$workbench_report" "$sandbox_report" "$agent_bench_report" "$zjx_tool_report" "$runtime_report" "$ast_missing_report" "$ci_report"; rm -rf "$artifact_dir"' EXIT
 printf '%s\n' \
   'module app.bool_literal' \
   '' \
   'task main -> Bool {' \
   '  return true' \
   '}' > "$bool_literal_source"
+printf '%s\n' \
+  'module app.generic_source_main' \
+  '' \
+  'task greet -> Text {' \
+  '  take name: Text' \
+  '' \
+  '  return "hi " + name' \
+  '}' \
+  '' \
+  'task main -> Text {' \
+  '  return call greet("Ada")' \
+  '}' > "$generic_source_main_source"
 printf '%s\n' \
   'module app.empty' > "$empty_module_source"
 printf '%s\n' \
@@ -333,6 +346,13 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("run_report_shape")
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_status_parser_prefix_task_execution"))'
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_pure_task_evaluator_execution"))'
+
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("bool_identity_runtime_task_execution"))'
+
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_source_main_runtime_execution"))'
+
+bin/sley run --json "$generic_source_main_source" \
+  | json_field '.status == "passed" and .value.kind == "Text" and .value.value == "hi Ada"'
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_runtime_scalar_task_evaluator_execution"))'
 
