@@ -210,6 +210,14 @@ export task classify_binding_features -> Text {
   return call bind_binding_kind()
 }
 
+export task for_item_name_template -> Text {
+  return "{{item}}"
+}
+
+export task for_collection_source_template -> Text {
+  return "{{collection}}"
+}
+
 export task task_id -> Text {
   take module_name: Text
   take task_name: Text
