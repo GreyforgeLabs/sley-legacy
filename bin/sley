@@ -4774,22 +4774,22 @@ DUPLICATE_TASK_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_R
 DUPLICATE_TASK_MESSAGE_TEMPLATE="$(eval_checker_message_template duplicate_task_message task_name)"
 UNKNOWN_EFFECT_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_effect_message_prefix)"
 UNKNOWN_EFFECT_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_effect_message_suffix)"
-UNKNOWN_EFFECT_MESSAGE_TEMPLATE="$(eval_checker_message_template unknown_effect_message effect_name || printf 'unknown effect `::effect_name::`\n')"
+UNKNOWN_EFFECT_MESSAGE_TEMPLATE="$(eval_checker_message_template unknown_effect_message effect_name)"
 GATE_TAKE_TYPE_MISMATCH_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" gate_take_type_mismatch_message_prefix)"
 GATE_TAKE_TYPE_MISMATCH_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" gate_take_type_mismatch_message_suffix)"
-GATE_TAKE_TYPE_MISMATCH_MESSAGE_TEMPLATE="$(eval_checker_message_template gate_take_type_mismatch_message actual_type || printf 'gate take must use Gate<Effect>, got `::actual_type::`\n')"
+GATE_TAKE_TYPE_MISMATCH_MESSAGE_TEMPLATE="$(eval_checker_message_template gate_take_type_mismatch_message actual_type)"
 GATE_EFFECT_UNDECLARED_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" gate_effect_undeclared_message_prefix)"
 GATE_EFFECT_UNDECLARED_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" gate_effect_undeclared_message_suffix)"
-GATE_EFFECT_UNDECLARED_MESSAGE_TEMPLATE="$(eval_checker_message_template gate_effect_undeclared_message effect_name || printf 'gate effect undeclared `::effect_name::`\n')"
+GATE_EFFECT_UNDECLARED_MESSAGE_TEMPLATE="$(eval_checker_message_template gate_effect_undeclared_message effect_name)"
 EFFECT_UNAUTHORIZED_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" effect_unauthorized_message_prefix)"
 EFFECT_UNAUTHORIZED_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" effect_unauthorized_message_suffix)"
-EFFECT_UNAUTHORIZED_MESSAGE_TEMPLATE="$(eval_checker_message_template effect_unauthorized_message effect_name || printf 'effect unauthorized `::effect_name::`\n')"
+EFFECT_UNAUTHORIZED_MESSAGE_TEMPLATE="$(eval_checker_message_template effect_unauthorized_message effect_name)"
 MISSING_RETURN_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" missing_return_message_prefix)"
 MISSING_RETURN_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" missing_return_message_suffix)"
-MISSING_RETURN_MESSAGE_TEMPLATE="$(eval_checker_message_template missing_return_message task_name || printf 'missing return in task `::task_name::`\n')"
+MISSING_RETURN_MESSAGE_TEMPLATE="$(eval_checker_message_template missing_return_message task_name)"
 QUESTION_REQUIRES_RESULT_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" question_requires_result_message_prefix)"
 QUESTION_REQUIRES_RESULT_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" question_requires_result_message_suffix)"
-QUESTION_REQUIRES_RESULT_MESSAGE_TEMPLATE="$(eval_checker_message_template question_requires_result_message task_name || printf 'question operator requires Result return in task `::task_name::`\n')"
+QUESTION_REQUIRES_RESULT_MESSAGE_TEMPLATE="$(eval_checker_message_template question_requires_result_message task_name)"
 CHECKER_IDENTIFIER_INPUTS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" identifier_resolution_inputs)"
 CHECKER_BUILTIN_EFFECTS_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" builtin_effects)"
 CHECKER_EFFECT_ALIASES_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" effect_authorization_aliases)"
@@ -4808,36 +4808,6 @@ CHECKER_ERROR_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/ch
 CHECKER_GATE_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" gate_type_name)"
 CHECKER_LIST_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" list_type_name)"
 CHECKER_MAP_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" map_type_name)"
-UNKNOWN_EFFECT_MESSAGE_PREFIX="${UNKNOWN_EFFECT_MESSAGE_PREFIX:-unknown effect \`}"
-UNKNOWN_EFFECT_MESSAGE_SUFFIX="${UNKNOWN_EFFECT_MESSAGE_SUFFIX:-\`}"
-if [[ -z "$UNKNOWN_EFFECT_MESSAGE_TEMPLATE" ]]; then
-  UNKNOWN_EFFECT_MESSAGE_TEMPLATE='unknown effect `::effect_name::`'
-fi
-GATE_TAKE_TYPE_MISMATCH_MESSAGE_PREFIX="${GATE_TAKE_TYPE_MISMATCH_MESSAGE_PREFIX:-gate take must use Gate<Effect>, got \`}"
-GATE_TAKE_TYPE_MISMATCH_MESSAGE_SUFFIX="${GATE_TAKE_TYPE_MISMATCH_MESSAGE_SUFFIX:-\`}"
-if [[ -z "$GATE_TAKE_TYPE_MISMATCH_MESSAGE_TEMPLATE" ]]; then
-  GATE_TAKE_TYPE_MISMATCH_MESSAGE_TEMPLATE='gate take must use Gate<Effect>, got `::actual_type::`'
-fi
-GATE_EFFECT_UNDECLARED_MESSAGE_PREFIX="${GATE_EFFECT_UNDECLARED_MESSAGE_PREFIX:-gate effect undeclared \`}"
-GATE_EFFECT_UNDECLARED_MESSAGE_SUFFIX="${GATE_EFFECT_UNDECLARED_MESSAGE_SUFFIX:-\`}"
-if [[ -z "$GATE_EFFECT_UNDECLARED_MESSAGE_TEMPLATE" ]]; then
-  GATE_EFFECT_UNDECLARED_MESSAGE_TEMPLATE='gate effect undeclared `::effect_name::`'
-fi
-EFFECT_UNAUTHORIZED_MESSAGE_PREFIX="${EFFECT_UNAUTHORIZED_MESSAGE_PREFIX:-effect unauthorized \`}"
-EFFECT_UNAUTHORIZED_MESSAGE_SUFFIX="${EFFECT_UNAUTHORIZED_MESSAGE_SUFFIX:-\`}"
-if [[ -z "$EFFECT_UNAUTHORIZED_MESSAGE_TEMPLATE" ]]; then
-  EFFECT_UNAUTHORIZED_MESSAGE_TEMPLATE='effect unauthorized `::effect_name::`'
-fi
-MISSING_RETURN_MESSAGE_PREFIX="${MISSING_RETURN_MESSAGE_PREFIX:-missing return in task \`}"
-MISSING_RETURN_MESSAGE_SUFFIX="${MISSING_RETURN_MESSAGE_SUFFIX:-\`}"
-if [[ -z "$MISSING_RETURN_MESSAGE_TEMPLATE" ]]; then
-  MISSING_RETURN_MESSAGE_TEMPLATE='missing return in task `::task_name::`'
-fi
-QUESTION_REQUIRES_RESULT_MESSAGE_PREFIX="${QUESTION_REQUIRES_RESULT_MESSAGE_PREFIX:-question operator requires Result return in task \`}"
-QUESTION_REQUIRES_RESULT_MESSAGE_SUFFIX="${QUESTION_REQUIRES_RESULT_MESSAGE_SUFFIX:-\`}"
-if [[ -z "$QUESTION_REQUIRES_RESULT_MESSAGE_TEMPLATE" ]]; then
-  QUESTION_REQUIRES_RESULT_MESSAGE_TEMPLATE='question operator requires Result return in task `::task_name::`'
-fi
 LINT_EMPTY_FOR="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_for_statement_id)"
 LINT_EMPTY_WHILE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_while_statement_id)"
 LINT_EMPTY_FORGE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_forge_statement_id)"

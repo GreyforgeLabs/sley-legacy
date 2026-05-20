@@ -809,7 +809,7 @@ fi
 if bin/sley check --json fixtures/corpus/rejected/missing_return.sley >/tmp/sley-rejected-missing-return-check.json; then
   fail "rejected missing_return.sley passed check"
 fi
-jq -er '.status == "error" and .diagnostics[0].id == "MISSING_RETURN" and [.diagnostics[0].repair_hints[].kind] == ["insert_return", "replace_task_body"]' /tmp/sley-rejected-missing-return-check.json >/dev/null
+jq -er '.status == "error" and .diagnostics[0].id == "MISSING_RETURN" and .diagnostics[0].message == "missing return in task `corpus.rejected.main`" and [.diagnostics[0].repair_hints[].kind] == ["insert_return", "replace_task_body"]' /tmp/sley-rejected-missing-return-check.json >/dev/null
 
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("checker_repair_hint_fallback_removal_task_execution"))'
@@ -956,6 +956,39 @@ if bin/sley check --json fixtures/corpus/rejected/question_requires_result.sley 
   fail "rejected question_requires_result.sley passed check"
 fi
 jq -er '.status == "error" and .diagnostics[0].id == "QUESTION_REQUIRES_RESULT" and .diagnostics[0].message == "question operator requires Result return in task `corpus.rejected.question_requires_result.main`"' /tmp/sley-rejected-question-result-check.json >/dev/null
+
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("checker_effect_message_fallback_removal_task_execution"))'
+
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("checker_return_message_fallback_removal_task_execution"))'
+
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("checker_question_message_fallback_removal_task_execution"))'
+
+if grep -Eq 'eval_checker_message_template (unknown_effect_message effect_name|gate_take_type_mismatch_message actual_type|gate_effect_undeclared_message effect_name|effect_unauthorized_message effect_name) \|\| printf' bin/sley; then
+  fail "checker effect diagnostic message templates must come from loom.checker without printf fallbacks"
+fi
+
+if grep -Eq '(UNKNOWN_EFFECT|GATE_TAKE_TYPE_MISMATCH|GATE_EFFECT_UNDECLARED|EFFECT_UNAUTHORIZED)_MESSAGE_(PREFIX|SUFFIX)="\$\{[A-Z_]+_MESSAGE_(PREFIX|SUFFIX):-' bin/sley; then
+  fail "checker effect diagnostic message prefixes/suffixes must come from loom.checker without shell fallbacks"
+fi
+
+if grep -Eq 'if \[\[ -z "\$(UNKNOWN_EFFECT|GATE_TAKE_TYPE_MISMATCH|GATE_EFFECT_UNDECLARED|EFFECT_UNAUTHORIZED)_MESSAGE_TEMPLATE" \]\]' bin/sley; then
+  fail "checker effect diagnostic message templates must not use empty-template shell fallback branches"
+fi
+
+if grep -Eq 'eval_checker_message_template (missing_return_message task_name|question_requires_result_message task_name) \|\| printf' bin/sley; then
+  fail "checker return/question diagnostic message templates must come from loom.checker without printf fallbacks"
+fi
+
+if grep -Eq '(MISSING_RETURN|QUESTION_REQUIRES_RESULT)_MESSAGE_(PREFIX|SUFFIX)="\$\{[A-Z_]+_MESSAGE_(PREFIX|SUFFIX):-' bin/sley; then
+  fail "checker return/question diagnostic message prefixes/suffixes must come from loom.checker without shell fallbacks"
+fi
+
+if grep -Eq 'if \[\[ -z "\$(MISSING_RETURN|QUESTION_REQUIRES_RESULT)_MESSAGE_TEMPLATE" \]\]' bin/sley; then
+  fail "checker return/question diagnostic message templates must not use empty-template shell fallback branches"
+fi
 
 if bin/sley check --json fixtures/corpus/rejected/duplicate_record_field.sley >/tmp/sley-rejected-duplicate-record-field-check.json; then
   fail "rejected duplicate_record_field.sley passed check"
