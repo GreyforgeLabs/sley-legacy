@@ -732,7 +732,22 @@ fi
 if bin/sley check --json fixtures/corpus/rejected/unknown_identifier.sley >/tmp/sley-rejected-check.json; then
   fail "rejected unknown_identifier.sley passed check"
 fi
-jq -er '.status == "error" and .diagnostics[0].id == "UNKNOWN_IDENTIFIER"' /tmp/sley-rejected-check.json >/dev/null
+jq -er '.status == "error" and .diagnostics[0].id == "UNKNOWN_IDENTIFIER" and .diagnostics[0].message == "unknown identifier `missing`"' /tmp/sley-rejected-check.json >/dev/null
+
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("checker_unknown_message_fallback_removal_task_execution"))'
+
+if grep -Eq 'eval_checker_message_template (unknown_identifier_message identifier_name|unknown_type_message type_name|unknown_task_message task_name) \|\| printf' bin/sley; then
+  fail "checker unknown diagnostic message templates must come from loom.checker without printf fallbacks"
+fi
+
+if grep -Eq 'UNKNOWN_(IDENTIFIER|TYPE|TASK)_MESSAGE_(PREFIX|SUFFIX)="\$\{UNKNOWN_(IDENTIFIER|TYPE|TASK)_MESSAGE_(PREFIX|SUFFIX):-' bin/sley; then
+  fail "checker unknown diagnostic message prefixes/suffixes must come from loom.checker without shell fallbacks"
+fi
+
+if grep -Eq 'if \[\[ -z "\$UNKNOWN_(IDENTIFIER|TYPE|TASK)_MESSAGE_TEMPLATE" \]\]' bin/sley; then
+  fail "checker unknown diagnostic message templates must not use empty-template shell fallback branches"
+fi
 
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("checker_identifier_input_fallback_removal_task_execution"))'
@@ -754,7 +769,7 @@ fi
 if bin/sley check --json fixtures/corpus/rejected/unknown_type.sley >/tmp/sley-rejected-type-check.json; then
   fail "rejected unknown_type.sley passed check"
 fi
-jq -er '.status == "error" and .diagnostics[0].id == "UNKNOWN_TYPE"' /tmp/sley-rejected-type-check.json >/dev/null
+jq -er '.status == "error" and .diagnostics[0].id == "UNKNOWN_TYPE" and .diagnostics[0].message == "unknown type `MissingType`"' /tmp/sley-rejected-type-check.json >/dev/null
 
 if bin/sley check --json fixtures/corpus/rejected/unknown_task.sley >/tmp/sley-rejected-task-check.json; then
   fail "rejected unknown_task.sley passed check"

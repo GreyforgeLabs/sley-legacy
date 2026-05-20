@@ -4702,13 +4702,13 @@ CHECK_OK_STATUS="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/check
 CHECK_ERROR_STATUS="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" error_status)"
 UNKNOWN_IDENTIFIER_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_identifier_message_prefix)"
 UNKNOWN_IDENTIFIER_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_identifier_message_suffix)"
-UNKNOWN_IDENTIFIER_MESSAGE_TEMPLATE="$(eval_checker_message_template unknown_identifier_message identifier_name || printf 'unknown identifier `::identifier_name::`\n')"
+UNKNOWN_IDENTIFIER_MESSAGE_TEMPLATE="$(eval_checker_message_template unknown_identifier_message identifier_name)"
 UNKNOWN_TYPE_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_type_message_prefix)"
 UNKNOWN_TYPE_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_type_message_suffix)"
-UNKNOWN_TYPE_MESSAGE_TEMPLATE="$(eval_checker_message_template unknown_type_message type_name || printf 'unknown type `::type_name::`\n')"
+UNKNOWN_TYPE_MESSAGE_TEMPLATE="$(eval_checker_message_template unknown_type_message type_name)"
 UNKNOWN_TASK_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_task_message_prefix)"
 UNKNOWN_TASK_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_task_message_suffix)"
-UNKNOWN_TASK_MESSAGE_TEMPLATE="$(eval_checker_message_template unknown_task_message task_name || printf 'unknown task `::task_name::`\n')"
+UNKNOWN_TASK_MESSAGE_TEMPLATE="$(eval_checker_message_template unknown_task_message task_name)"
 CALL_ARITY_MISMATCH_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" call_arity_mismatch_message_prefix)"
 CALL_ARITY_MISMATCH_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" call_arity_mismatch_message_suffix)"
 CALL_ARITY_MISMATCH_MESSAGE_TEMPLATE="$(eval_checker_message_template call_arity_mismatch_message task_name || printf 'call arity mismatch for `::task_name::`\n')"
@@ -4808,21 +4808,6 @@ CHECKER_ERROR_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/ch
 CHECKER_GATE_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" gate_type_name)"
 CHECKER_LIST_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" list_type_name)"
 CHECKER_MAP_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" map_type_name)"
-UNKNOWN_IDENTIFIER_MESSAGE_PREFIX="${UNKNOWN_IDENTIFIER_MESSAGE_PREFIX:-unknown identifier \`}"
-UNKNOWN_IDENTIFIER_MESSAGE_SUFFIX="${UNKNOWN_IDENTIFIER_MESSAGE_SUFFIX:-\`}"
-if [[ -z "$UNKNOWN_IDENTIFIER_MESSAGE_TEMPLATE" ]]; then
-  UNKNOWN_IDENTIFIER_MESSAGE_TEMPLATE='unknown identifier `::identifier_name::`'
-fi
-UNKNOWN_TYPE_MESSAGE_PREFIX="${UNKNOWN_TYPE_MESSAGE_PREFIX:-unknown type \`}"
-UNKNOWN_TYPE_MESSAGE_SUFFIX="${UNKNOWN_TYPE_MESSAGE_SUFFIX:-\`}"
-if [[ -z "$UNKNOWN_TYPE_MESSAGE_TEMPLATE" ]]; then
-  UNKNOWN_TYPE_MESSAGE_TEMPLATE='unknown type `::type_name::`'
-fi
-UNKNOWN_TASK_MESSAGE_PREFIX="${UNKNOWN_TASK_MESSAGE_PREFIX:-unknown task \`}"
-UNKNOWN_TASK_MESSAGE_SUFFIX="${UNKNOWN_TASK_MESSAGE_SUFFIX:-\`}"
-if [[ -z "$UNKNOWN_TASK_MESSAGE_TEMPLATE" ]]; then
-  UNKNOWN_TASK_MESSAGE_TEMPLATE='unknown task `::task_name::`'
-fi
 CALL_ARITY_MISMATCH_MESSAGE_PREFIX="${CALL_ARITY_MISMATCH_MESSAGE_PREFIX:-call arity mismatch for \`}"
 CALL_ARITY_MISMATCH_MESSAGE_SUFFIX="${CALL_ARITY_MISMATCH_MESSAGE_SUFFIX:-\`}"
 if [[ -z "$CALL_ARITY_MISMATCH_MESSAGE_TEMPLATE" ]]; then
