@@ -842,10 +842,30 @@ if bin/sley check --json fixtures/corpus/rejected/duplicate_take.sley >/tmp/sley
 fi
 jq -er '.status == "error" and .diagnostics[0].id == "DUPLICATE_TAKE" and .diagnostics[0].message == "duplicate take `value`"' /tmp/sley-rejected-duplicate-take-check.json >/dev/null
 
+if bin/sley check --json fixtures/corpus/rejected/duplicate_map_key.sley >/tmp/sley-rejected-duplicate-map-key-check.json; then
+  fail "rejected duplicate_map_key.sley passed check"
+fi
+jq -er '.status == "error" and .diagnostics[0].id == "DUPLICATE_MAP_KEY" and .diagnostics[0].message == "duplicate map key `ada`"' /tmp/sley-rejected-duplicate-map-key-check.json >/dev/null
+
 if bin/sley check --json fixtures/corpus/rejected/module_namespace_conflict.sley >/tmp/sley-rejected-module-namespace-check.json; then
   fail "rejected module_namespace_conflict.sley passed check"
 fi
 jq -er '.status == "error" and [.diagnostics[].id] == ["DUPLICATE_EFFECT", "DUPLICATE_TYPE", "DUPLICATE_TASK"] and .diagnostics[0].message == "duplicate effect `Audit`" and .diagnostics[1].message == "duplicate type `User`" and .diagnostics[2].message == "duplicate task `main`"' /tmp/sley-rejected-module-namespace-check.json >/dev/null
+
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("checker_duplicate_message_fallback_removal_task_execution"))'
+
+if grep -Eq 'eval_checker_message_template (duplicate_take_message take_name|duplicate_map_key_message key_name|duplicate_field_message field_name|duplicate_record_literal_field_message field_name|duplicate_effect_message effect_name|duplicate_type_message type_name|duplicate_task_message task_name) \|\| printf' bin/sley; then
+  fail "checker duplicate diagnostic message templates must come from loom.checker without printf fallbacks"
+fi
+
+if grep -Eq 'DUPLICATE_(TAKE|MAP_KEY|FIELD|RECORD_LITERAL_FIELD|EFFECT|TYPE|TASK)_MESSAGE_(PREFIX|SUFFIX)="\$\{DUPLICATE_(TAKE|MAP_KEY|FIELD|RECORD_LITERAL_FIELD|EFFECT|TYPE|TASK)_MESSAGE_(PREFIX|SUFFIX):-' bin/sley; then
+  fail "checker duplicate diagnostic message prefixes/suffixes must come from loom.checker without shell fallbacks"
+fi
+
+if grep -Eq 'if \[\[ -z "\$DUPLICATE_(TAKE|MAP_KEY|FIELD|RECORD_LITERAL_FIELD|EFFECT|TYPE|TASK)_MESSAGE_TEMPLATE" \]\]' bin/sley; then
+  fail "checker duplicate diagnostic message templates must not use empty-template shell fallback branches"
+fi
 
 if bin/sley check --json fixtures/corpus/rejected/unknown_effect.sley >/tmp/sley-rejected-unknown-effect-check.json; then
   fail "rejected unknown_effect.sley passed check"
