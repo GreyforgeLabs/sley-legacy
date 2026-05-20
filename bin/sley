@@ -245,6 +245,55 @@ sley_eval_source_call_env_json() {
   '
 }
 
+sley_runtime_seed_env_json() {
+  local http_text="$1" model_text="$2" deploy_text="$3" spend_text="$4" secret_text="$5" shell_text="$6"
+  jq -cn \
+    --arg http_text "${http_text:-$RUNTIME_DEFAULT_PROFILE}" \
+    --arg model_text "${model_text:-$RUNTIME_DEFAULT_MODEL_PLAN}" \
+    --arg deploy_text "${deploy_text:-$RUNTIME_DEFAULT_DEPLOY_RESULT}" \
+    --arg spend_text "${spend_text:-$RUNTIME_DEFAULT_SPEND_AUTHORIZATION_TEXT}" \
+    --arg secret_text "${secret_text:-$RUNTIME_DEFAULT_SECRET_TEXT}" \
+    --arg shell_text "${shell_text:-$RUNTIME_DEFAULT_SHELL_TEXT}" \
+    '{
+      __runtime_http_text:$http_text,
+      __runtime_model_text:$model_text,
+      __runtime_deploy_text:$deploy_text,
+      __runtime_spend_text:$spend_text,
+      __runtime_secret_text:$secret_text,
+      __runtime_shell_text:$shell_text
+    }'
+}
+
+sley_eval_source_host_call() {
+  local env_json="$1" callee="$2" args_json="${3:-[]}" key
+  case "$callee" in
+    http.try_get_text) key="__runtime_http_text" ;;
+    shell.try_run) key="__runtime_shell_text" ;;
+    model.try_complete) key="__runtime_model_text" ;;
+    secrets.try_get) key="__runtime_secret_text" ;;
+    deploy.try_stage) key="__runtime_deploy_text" ;;
+    spend.try_authorize) key="__runtime_spend_text" ;;
+    *) return 1 ;;
+  esac
+  [[ -n "$args_json" ]] || return 1
+  sley_eval_env_lookup "$env_json" "$key"
+}
+
+sley_eval_source_host_expr() {
+  local file="$1" env_json="$2" expr="$3" path
+  expr="$(printf '%s\n' "$expr" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+  if [[ "$expr" =~ ^fs[.]try_read_text\(\"([^\"]+)\"\)$ ]]; then
+    runtime_file_read_seed_text "${BASH_REMATCH[1]}"
+    return
+  fi
+  if [[ "$expr" =~ ^fs[.]try_read_text\(([A-Za-z_][A-Za-z0-9_]*)\)$ ]]; then
+    path="$(sley_eval_env_lookup "$env_json" "${BASH_REMATCH[1]}")" || return 1
+    runtime_file_read_seed_text "$path"
+    return
+  fi
+  return 1
+}
+
 sley_select_source_return_list_expr() {
   local body="$1"
   printf '%s\n' "$body" | awk '
@@ -341,6 +390,10 @@ sley_eval_source_bind_value_json() {
   local file="$1" env_json="$2" expr="$3"
   local call_prefix="${PARSER_CALL_EXPRESSION_PREFIX-}" tail callee args_text args_json list_json value
   expr="$(printf '%s\n' "$expr" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+  if [[ "$expr" == *\? ]]; then
+    expr="${expr%\?}"
+    expr="$(printf '%s\n' "$expr" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+  fi
   if [[ -n "$call_prefix" && "$expr" == "$call_prefix"* ]]; then
     tail="${expr#"$call_prefix"}"
     if [[ "$tail" =~ ^([A-Za-z_][A-Za-z0-9_.]*)\((.*)\)$ ]]; then
@@ -378,6 +431,28 @@ sley_eval_source_condition() {
   if [[ "$condition" =~ ^([A-Za-z_][A-Za-z0-9_]*)$ ]]; then
     left="$(sley_eval_env_lookup "$env_json" "${BASH_REMATCH[1]}")" || return 1
     [[ "$left" == "true" ]]
+    return
+  fi
+  if [[ "$condition" =~ ^len\(([A-Za-z_][A-Za-z0-9_]*)\)[[:space:]]*(>=|<=|==|!=|\>|<)[[:space:]]*(-?[0-9]+)$ ]]; then
+    name="${BASH_REMATCH[1]}"
+    op="${BASH_REMATCH[2]}"
+    right="${BASH_REMATCH[3]}"
+    left="$(printf '%s\n' "$env_json" | jq -er --arg name "$name" '
+      if type == "object" and has($name) and ((.[$name] | type) == "string" or (.[$name] | type) == "array" or (.[$name] | type) == "object") then
+        .[$name] | length
+      else
+        empty
+      end
+    ')" || return 1
+    case "$op" in
+      "==") [[ "$left" -eq "$right" ]] ;;
+      "!=") [[ "$left" -ne "$right" ]] ;;
+      ">") [[ "$left" -gt "$right" ]] ;;
+      "<") [[ "$left" -lt "$right" ]] ;;
+      ">=") [[ "$left" -ge "$right" ]] ;;
+      "<=") [[ "$left" -le "$right" ]] ;;
+      *) return 1 ;;
+    esac
     return
   fi
   [[ "$condition" =~ ^([A-Za-z_][A-Za-z0-9_]*)[[:space:]]*(>=|<=|==|!=|\>|<)[[:space:]]*(.+)$ ]] || return 1
@@ -447,7 +522,11 @@ sley_select_source_return_expr() {
 
 sley_eval_source_call() {
   local file="$1" callee="$2" env_json="$3" args_json="${4:-[]}"
-  local alias task module source_file body takes_json call_env_json
+  local alias task module source_file body takes_json call_env_json value
+  if value="$(sley_eval_source_host_call "$env_json" "$callee" "$args_json" 2>/dev/null)"; then
+    printf '%s\n' "$value"
+    return
+  fi
   if [[ "$callee" == *.* ]]; then
     alias="${callee%%.*}"
     task="${callee#*.}"
@@ -470,6 +549,17 @@ sley_eval_source_expr() {
   local file="$1" env_json="$2" expr="$3"
   local call_prefix="${PARSER_CALL_EXPRESSION_PREFIX-}" tail callee args_text args_json tokens token out="" seen=false value left right op binary_re indexed_re field_re
   expr="$(printf '%s\n' "$expr" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+  if [[ "$expr" =~ ^Ok\((.*)\)$ ]]; then
+    sley_eval_source_expr "$file" "$env_json" "${BASH_REMATCH[1]}"
+    return
+  fi
+  if [[ "$expr" =~ ^Err\(.*\)$ ]]; then
+    return 1
+  fi
+  if value="$(sley_eval_source_host_expr "$file" "$env_json" "$expr" 2>/dev/null)"; then
+    printf '%s\n' "$value"
+    return
+  fi
   if [[ -n "$call_prefix" && "$expr" == "$call_prefix"* ]]; then
     tail="${expr#"$call_prefix"}"
     if [[ "$tail" =~ ^([A-Za-z_][A-Za-z0-9_.]*)\((.*)\)$ ]]; then
@@ -3875,6 +3965,33 @@ eval_source_direct_file_read_ok_text_main_return() {
   [[ -n "$path" ]] || return 1
   runtime_value="$(runtime_file_read_seed_text "$path")" || return 1
   jq -cn --arg kind "$RUNTIME_OK_TEXT_VALUE_KIND" --arg value "$runtime_value" '{kind:$kind,value:$value}'
+}
+
+runtime_source_has_seeded_host_effect() {
+  local target="$1" effect
+  for effect in FileRead FileWrite Network Shell ModelCall SecretRead Deploy Spend; do
+    runtime_source_has_host_effect "$target" "$effect" && return 0
+  done
+  return 1
+}
+
+eval_source_seeded_host_result_main_return() {
+  local target="$1" http_text="$2" model_text="$3" deploy_text="$4" spend_text="$5" secret_text="$6" shell_text="$7"
+  local file env_json value runtime_value
+  runtime_source_has_seeded_host_effect "$target" || return 1
+  file="$(collect_files "$target" | head -n 1)"
+  [[ -n "$file" ]] || return 1
+  grep -Eq 'task[[:space:]]+main[[:space:]]*->[[:space:]]*Result<' "$file" || return 1
+  env_json="$(sley_runtime_seed_env_json "$http_text" "$model_text" "$deploy_text" "$spend_text" "$secret_text" "$shell_text")" || return 1
+  value="$(sley_eval_source_task "$file" main "$env_json")" || return 1
+  [[ -n "$value" ]] || return 1
+  if [[ "$value" =~ ^-?[0-9]+$ ]]; then
+    runtime_value="$(eval_runtime_ok_int_value_task "$value")" || return 1
+    jq -cn --arg kind "$RUNTIME_OK_INT_VALUE_KIND" --arg value "$runtime_value" '{kind:$kind,value:$value}'
+  else
+    runtime_value="$(eval_runtime_text_identity_value_task "$value")" || return 1
+    jq -cn --arg kind "$RUNTIME_OK_TEXT_VALUE_KIND" --arg value "$runtime_value" '{kind:$kind,value:$value}'
+  fi
 }
 
 eval_source_zero_arg_project_call_main_return() {
@@ -8051,6 +8168,9 @@ run_json() {
     value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
     value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
   elif simple_runtime="$(eval_source_direct_file_read_text_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
+    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
+    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
+  elif simple_runtime="$(eval_source_seeded_host_result_main_return "$target" "$http_text" "$model_text" "$deploy_text" "$spend_text" "$secret_text" "$shell_text" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
     value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
     value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
   elif simple_runtime="$(eval_source_zero_arg_project_call_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then

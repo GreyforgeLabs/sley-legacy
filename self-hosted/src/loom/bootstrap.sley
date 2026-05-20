@@ -297,6 +297,7 @@ export task owned_bootstrap_values -> List<Text> {
     "direct_file_read_parser_prefix_runtime_execution",
     "direct_file_read_result_runtime_execution",
     "runtime_file_read_source_task_execution",
+    "seeded_host_result_source_runtime_execution",
     "local_call_runtime_execution",
     "local_call_parser_prefix_runtime_execution",
     "zero_arg_project_call_runtime_execution",
