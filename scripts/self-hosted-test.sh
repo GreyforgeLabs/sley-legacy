@@ -107,6 +107,19 @@ if grep -Fq "RUNTIME_SELF_HOSTED_TARGETS_JSON='[\"self-hosted\"" bin/sley; then
 fi
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("runtime_source_metadata_task_execution"))'
+
+if grep -Fq 'extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"' bin/sley \
+  || grep -Fq 'extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"' bin/sley; then
+  fail "runtime metadata must execute through Sley source tasks, not raw host extractors"
+fi
+
+if ! grep -Fq 'sley_source_task loom.runtime' bin/sley \
+  || ! grep -Fq 'sley_source_list_task_json loom.runtime' bin/sley; then
+  fail "runtime metadata source task dispatch is missing"
+fi
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("runtime_status_names_task_execution"))'
 
 bin/sley run --json examples/hello.sley \
