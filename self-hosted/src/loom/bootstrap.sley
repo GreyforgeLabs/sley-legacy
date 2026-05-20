@@ -107,6 +107,7 @@ export task owned_bootstrap_values -> List<Text> {
     "checker_duplicate_pass_family_task_execution",
     "checker_record_shape_pass_family_task_execution",
     "checker_collection_pass_family_task_execution",
+    "checker_call_pass_family_task_execution",
     "checker_status_task_execution",
     "checker_status_fallback_removal_task_execution",
     "checker_status_parser_prefix_task_execution",

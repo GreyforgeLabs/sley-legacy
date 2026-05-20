@@ -6123,6 +6123,9 @@ check_json() {
       {id:$unknown, severity:"error", message:render_arg($unknown_message_template; "identifier_name"; .expr.name), node:.expr.id, span:.expr.span};
     def descriptor_diagnostic_id($pass):
       if ($pass.diagnostic_id_task // "") == "unknown_type_id" then $unknown_type
+      elif ($pass.diagnostic_id_task // "") == "unknown_task_id" then $unknown_task
+      elif ($pass.diagnostic_id_task // "") == "call_arity_mismatch_id" then $call_arity
+      elif ($pass.diagnostic_id_task // "") == "call_argument_type_mismatch_id" then $call_argument_type
       elif ($pass.diagnostic_id_task // "") == "unknown_effect_id" then $unknown_effect
       elif ($pass.diagnostic_id_task // "") == "gate_take_type_mismatch_id" then $gate_take_type
       elif ($pass.diagnostic_id_task // "") == "gate_effect_undeclared_id" then $gate_effect
@@ -6147,6 +6150,9 @@ check_json() {
       else "" end;
     def descriptor_message_template($pass):
       if ($pass.message_task // "") == "unknown_type_message" then $unknown_type_message_template
+      elif ($pass.message_task // "") == "unknown_task_message" then $unknown_task_message_template
+      elif ($pass.message_task // "") == "call_arity_mismatch_message" then $call_arity_message_template
+      elif ($pass.message_task // "") == "call_argument_type_mismatch_message" then $call_argument_type_message_template
       elif ($pass.message_task // "") == "unknown_effect_message" then $unknown_effect_message_template
       elif ($pass.message_task // "") == "gate_take_type_mismatch_message" then $gate_take_type_message_template
       elif ($pass.message_task // "") == "gate_effect_undeclared_message" then $gate_effect_message_template
@@ -6294,57 +6300,59 @@ check_json() {
         select(($known_fields | index($access.field)) == null) |
         {id:descriptor_diagnostic_id($pass), severity:"error", message:render_arg(descriptor_message_template($pass); ($pass.message_arg // "field_name"); $access.field), node:$expr.id, span:$expr.span}
       else empty end;
-    def unknown_task_diags:
-      $root.tasks[] as $t |
-      $t.body.statements[]?.expr? |
-      select((.source? // "") | startswith($call_expression_prefix)) |
-      . as $expr |
-      (call_callee) as $callee |
-      select(task_known($callee) | not) |
-      ($expr | call_args) as $args |
-      def arg_type($arg):
-        ($arg | literal_type) as $literal |
-        if $literal != "" then $literal
-        else
-          ([$t.takes[]? | select(.name == $arg) | .type.name][0])
-          // ([$t.body.statements[]? | select(.kind==$binding_statement_kind and .name == $arg) | expression_static_type($t; .expr)][0])
-          // $checker_unit_type
-        end;
-      {id:$unknown_task, severity:"error", message:render_arg($unknown_task_message_template; "task_name"; $callee), node:$expr.id, span:$expr.span,
-        repair_hints:[{
-          kind:$declare_or_import_task_hint_kind,
-          target:$expr.id,
-          replacement:("task " + $callee + " -> " + $checker_unit_type + " {\n" + ($args | to_entries | map("  take arg" + (.key|tostring) + ": " + arg_type(.value)) | join("\n")) + (if ($args | length) > 0 then "\n" else "" end) + "}")
-        }]
-      };
-    def call_arity_diags:
-      $root.tasks[] as $t |
-      $t.body.statements[]?.expr? |
-      select((.source? // "") | startswith($call_expression_prefix)) |
-      . as $expr |
-      (call_callee) as $callee |
-      ([declared_call_task($t.module; $callee)][0]) as $target |
-      select($target != null) |
-      ($target.takes | map(select(.binding_kind != $gate_binding_kind))) as $explicit_takes |
-      ($expr | call_args) as $args |
-      select(($args | length) != ($explicit_takes | length)) |
-      {id:$call_arity, severity:"error", message:render_arg($call_arity_message_template; "task_name"; $callee), node:$expr.id, span:$expr.span};
-    def call_argument_type_diags:
-      $root.tasks[] as $t |
-      $t.body.statements[]?.expr? |
-      select((.source? // "") | startswith($call_expression_prefix)) |
-      . as $expr |
-      (call_callee) as $callee |
-      ([declared_call_task($t.module; $callee)][0]) as $target |
-      select($target != null) |
-      ($target.takes | map(select(.binding_kind != $gate_binding_kind))) as $explicit_takes |
-      ($expr | call_args) as $args |
-      select(($args | length) == ($explicit_takes | length)) |
-      $args | to_entries[] as $arg |
-      ($explicit_takes[$arg.key].type.name // $checker_unit_type) as $expected |
-      ($arg.value | literal_type) as $actual |
-      select($actual != "" and $expected != $actual) |
-      {id:$call_argument_type, severity:"error", message:render_arg($call_argument_type_message_template; "task_name"; $callee), node:$expr.id, span:$expr.span};
+    def call_shape_diags($pass):
+      if ($pass.subject // "") == "unknown_task_call" then
+        $root.tasks[] as $t |
+        $t.body.statements[]?.expr? |
+        select((.source? // "") | startswith($call_expression_prefix)) |
+        . as $expr |
+        (call_callee) as $callee |
+        select(task_known($callee) | not) |
+        ($expr | call_args) as $args |
+        def arg_type($arg):
+          ($arg | literal_type) as $literal |
+          if $literal != "" then $literal
+          else
+            ([$t.takes[]? | select(.name == $arg) | .type.name][0])
+            // ([$t.body.statements[]? | select(.kind==$binding_statement_kind and .name == $arg) | expression_static_type($t; .expr)][0])
+            // $checker_unit_type
+          end;
+        {id:descriptor_diagnostic_id($pass), severity:"error", message:render_arg(descriptor_message_template($pass); ($pass.message_arg // "task_name"); $callee), node:$expr.id, span:$expr.span,
+          repair_hints:[{
+            kind:$declare_or_import_task_hint_kind,
+            target:$expr.id,
+            replacement:("task " + $callee + " -> " + $checker_unit_type + " {\n" + ($args | to_entries | map("  take arg" + (.key|tostring) + ": " + arg_type(.value)) | join("\n")) + (if ($args | length) > 0 then "\n" else "" end) + "}")
+          }]
+        }
+      elif ($pass.subject // "") == "call_arity" then
+        $root.tasks[] as $t |
+        $t.body.statements[]?.expr? |
+        select((.source? // "") | startswith($call_expression_prefix)) |
+        . as $expr |
+        (call_callee) as $callee |
+        ([declared_call_task($t.module; $callee)][0]) as $target |
+        select($target != null) |
+        ($target.takes | map(select(.binding_kind != $gate_binding_kind))) as $explicit_takes |
+        ($expr | call_args) as $args |
+        select(($args | length) != ($explicit_takes | length)) |
+        {id:descriptor_diagnostic_id($pass), severity:"error", message:render_arg(descriptor_message_template($pass); ($pass.message_arg // "task_name"); $callee), node:$expr.id, span:$expr.span}
+      elif ($pass.subject // "") == "call_argument_type" then
+        $root.tasks[] as $t |
+        $t.body.statements[]?.expr? |
+        select((.source? // "") | startswith($call_expression_prefix)) |
+        . as $expr |
+        (call_callee) as $callee |
+        ([declared_call_task($t.module; $callee)][0]) as $target |
+        select($target != null) |
+        ($target.takes | map(select(.binding_kind != $gate_binding_kind))) as $explicit_takes |
+        ($expr | call_args) as $args |
+        select(($args | length) == ($explicit_takes | length)) |
+        $args | to_entries[] as $arg |
+        ($explicit_takes[$arg.key].type.name // $checker_unit_type) as $expected |
+        ($arg.value | literal_type) as $actual |
+        select($actual != "" and $expected != $actual) |
+        {id:descriptor_diagnostic_id($pass), severity:"error", message:render_arg(descriptor_message_template($pass); ($pass.message_arg // "task_name"); $callee), node:$expr.id, span:$expr.span}
+      else empty end;
     def type_mismatch_diags:
       $root.tasks[] as $t |
       $t.body.statements[]? |
@@ -6482,11 +6490,9 @@ check_json() {
       elif ($pass.executor // "") == "duplicate_name" then duplicate_name_diags($pass)
       elif ($pass.executor // "") == "record_shape" then record_shape_diags($pass)
       elif ($pass.executor // "") == "collection_shape" then collection_shape_diags($pass)
+      elif ($pass.executor // "") == "call_shape" then call_shape_diags($pass)
       elif $name == "task_diags" then task_diags
       elif $name == "question_requires_result_diags" then question_requires_result_diags
-      elif $name == "unknown_task_diags" then unknown_task_diags
-      elif $name == "call_arity_diags" then call_arity_diags
-      elif $name == "call_argument_type_diags" then call_argument_type_diags
       elif $name == "type_mismatch_diags" then type_mismatch_diags
       elif $name == "return_type_mismatch_diags" then return_type_mismatch_diags
       elif $name == "missing_return_diags" then missing_return_diags
