@@ -795,6 +795,31 @@ sley_runtime_int_map_json() {
   '
 }
 
+sley_runtime_text_record_json() {
+  printf '%s\n' "$1" | awk '
+    function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
+    {
+      entry_count=split($0, entries, ",")
+      for(i=1; i<=entry_count; i++) {
+        split(entries[i], fields, ":")
+        if(length(fields) != 2) exit 1
+        field_name=trim(fields[1])
+        field_value=trim(fields[2])
+        if(field_name !~ /^[A-Za-z_][A-Za-z0-9_]*$/) exit 1
+        if(field_value !~ /^"[^"]*"$/) next
+        sub(/^"/, "", field_value)
+        sub(/"$/, "", field_value)
+        print field_name "\t" field_value
+      }
+    }
+  ' | jq -Rsce '
+    [split("\n")[] | select(length > 0) | split("\t") | select(length == 2)] as $pairs |
+    if ($pairs | length) == 0 then empty else
+      reduce $pairs[] as $pair ({}; .[$pair[0]] = $pair[1])
+    end
+  '
+}
+
 eval_seeded_agent_deploy_value() {
   local profile="$1" model_plan="$2" deploy_result="$3"
   local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
@@ -924,33 +949,12 @@ eval_runtime_map_index_int_value_task() {
 eval_runtime_record_field_text_value_task() {
   local fields_source="$1" field="$2"
   local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
-  local body take_name return_expr return_field
-  body="$(extract_sley_task_body "$runtime_file" record_name_text_value)"
-  [[ -n "$body" ]] || return 1
-  take_name="$(printf '%s\n' "$body" | awk '/^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*RuntimeUser/ {line=$0; sub(/^[ \t]*take[ \t]+/, "", line); sub(/[ \t]*:.*/, "", line); print line; exit}')"
-  return_expr="$(printf '%s\n' "$body" | awk '/^[ \t]*return[ \t]+[A-Za-z_][A-Za-z0-9_]*\.[A-Za-z_][A-Za-z0-9_]*[ \t]*$/ {line=$0; sub(/^[ \t]*return[ \t]+/, "", line); sub(/[ \t]*$/, "", line); print line; exit}')"
-  [[ -n "$take_name" && "$return_expr" == "$take_name".* ]] || return 1
-  return_field="${return_expr#*.}"
-  [[ "$field" == "$return_field" ]] || return 1
-  printf '%s\n' "$fields_source" | awk -v lookup_field="$field" '
-    function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
-    function unquote(s){s=trim(s); sub(/^"/, "", s); sub(/"$/, "", s); return s}
-    {
-      field_count=split($0, entries, ",")
-      for(i=1; i<=field_count; i++) {
-        split(entries[i], fields, ":")
-        if(length(fields) != 2) exit 1
-        field_name=trim(fields[1])
-        field_value=trim(fields[2])
-        if(field_name == lookup_field) {
-          if(field_value !~ /^"[^"]*"$/) exit 1
-          print unquote(field_value)
-          exit 0
-        }
-      }
-      exit 1
-    }
-  '
+  local record_json env_json
+  [[ "$field" == "name" ]] || return 1
+  record_json="$(sley_runtime_text_record_json "$fields_source")" || return 1
+  printf '%s\n' "$record_json" | jq -e --arg field "$field" 'has($field)' >/dev/null || return 1
+  env_json="$(jq -cn --argjson user "$record_json" '{user:$user}')"
+  sley_eval_source_task "$runtime_file" record_name_text_value "$env_json"
 }
 
 eval_runtime_bool_equal_value_task() {
