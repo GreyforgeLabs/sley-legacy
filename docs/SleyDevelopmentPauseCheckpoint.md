@@ -2351,6 +2351,24 @@ The latest continuation audit reconfirmed:
   `scripts/self-hosted-test.sh`, `bin/sley-contract check-fixtures
   fixtures/contracts --schemas docs/schemas --json`, external public-action
   packet verifier, `git diff --check`, and final `make v1` all passed
+- focused checker type/return pass probes:
+  `bin/sley self-hosting-status --json` reported
+  `checker_type_return_pass_family_task_execution` and
+  `bootstrap_owned_by_sley=302`; `type_mismatch_diags`,
+  `return_type_mismatch_diags`, and `missing_return_diags` now run through one
+  descriptor-driven type/return checker family using rows from
+  `diagnostic_pass_descriptors` in `self-hosted/src/loom/checker.sley`, while
+  preserving return mismatch repair hints and missing-return repair hints
+- Sley self-hosting status after the checker type/return pass slice:
+  `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=302`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
+- latest checker type/return pass verification:
+  `bash -n bin/sley`, `bash -n scripts/self-hosted-test.sh`, focused
+  type-mismatch/type-alias/missing-return rejected probes,
+  `scripts/self-hosted-test.sh`, `bin/sley-contract check-fixtures
+  fixtures/contracts --schemas docs/schemas --json`, external public-action
+  packet verifier, `git diff --check`, and final `make v1` all passed
 
 ## Dirty State Notes
 
@@ -2417,7 +2435,8 @@ fallback-removal evidence, and through f0da3e5 with checker unknown-message
 fallback-removal evidence, and through e583ff9 with checker call/type message
 fallback-removal evidence, and through b9d0eac with checker record-shape pass
 family evidence, and through e87a0ed with checker collection/index pass family
-evidence, and through a3b3533 with checker call pass family evidence.
+evidence, and through a3b3533 with checker call pass family evidence, and
+through 46ef5da with checker type/return pass family evidence.
 
 Pre-existing untracked files were not touched and should remain outside future
 commits unless the operator explicitly asks to include them:
