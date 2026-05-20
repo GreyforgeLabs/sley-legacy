@@ -98,6 +98,7 @@ export task owned_bootstrap_values -> List<Text> {
     "bootstrap_smoke_task_execution",
     "bootstrap_smoke_parser_prefix_task_execution",
     "checker_diagnostic_status",
+    "checker_diagnostic_id_fallback_removal_task_execution",
     "checker_status_task_execution",
     "checker_status_fallback_removal_task_execution",
     "checker_status_parser_prefix_task_execution",
