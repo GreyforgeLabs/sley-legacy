@@ -1845,7 +1845,7 @@ eval_source_bound_list_index_sum_int_main_return() {
 
 eval_source_collection_index_sum_int_main_return() {
   local target="$1" file spec list_values map_pairs list_index list_count list_key map_value len_value runtime_value
-  file="$(collect_files "$target" | head -n 1)"
+  file="$(sley_source_entry_file_for_target "$target")"
   [[ -n "$file" ]] || return 1
   spec="$(awk '
     function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
@@ -1962,7 +1962,7 @@ eval_source_record_field_text_main_return() {
 
 eval_source_record_field_call_text_main_return() {
   local target="$1" file call_info callee arg record_fields body take_name return_expr field runtime_value call_prefix
-  file="$(collect_files "$target" | head -n 1)"
+  file="$(sley_source_entry_file_for_target "$target")"
   [[ -n "$file" ]] || return 1
   call_prefix="$PARSER_CALL_EXPRESSION_PREFIX"
   call_info="$(awk -v call_prefix="$call_prefix" '
@@ -4096,7 +4096,7 @@ eval_source_seeded_host_result_main_return() {
   local target="$1" http_text="$2" model_text="$3" deploy_text="$4" spend_text="$5" secret_text="$6" shell_text="$7"
   local file env_json value runtime_value
   runtime_source_has_seeded_host_effect "$target" || return 1
-  file="$(collect_files "$target" | head -n 1)"
+  file="$(sley_source_entry_file_for_target "$target")"
   [[ -n "$file" ]] || return 1
   grep -Eq 'task[[:space:]]+main[[:space:]]*->[[:space:]]*Result<' "$file" || return 1
   env_json="$(sley_runtime_seed_env_json "$http_text" "$model_text" "$deploy_text" "$spend_text" "$secret_text" "$shell_text")" || return 1
@@ -4115,7 +4115,7 @@ eval_source_seeded_host_text_main_return() {
   local target="$1" http_text="$2" model_text="$3" deploy_text="$4" spend_text="$5" secret_text="$6" shell_text="$7"
   local file env_json value runtime_value
   runtime_source_has_seeded_host_effect "$target" || return 1
-  file="$(collect_files "$target" | head -n 1)"
+  file="$(sley_source_entry_file_for_target "$target")"
   [[ -n "$file" ]] || return 1
   grep -Eq 'task[[:space:]]+main[[:space:]]*->[[:space:]]*Text' "$file" || return 1
   env_json="$(sley_runtime_seed_env_json "$http_text" "$model_text" "$deploy_text" "$spend_text" "$secret_text" "$shell_text")" || return 1

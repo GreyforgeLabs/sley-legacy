@@ -535,6 +535,17 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("project_import_sou
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("project_entry_source_runtime_execution"))'
 
+for source_entry_fn in eval_source_seeded_host_result_main_return eval_source_seeded_host_text_main_return; do
+  if awk -v fn="$source_entry_fn" '
+    $0 ~ "^" fn "\\(\\)" {in_fn=1}
+    in_fn && /collect_files "\$target" \| head -n 1/ {found=1}
+    in_fn && /^}/ {in_fn=0}
+    END {exit found ? 0 : 1}
+  ' bin/sley; then
+    fail "$source_entry_fn must use sley.toml entry files for project targets"
+  fi
+done
+
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_host_effect_fallback_removal_execution"))'
 
 if grep -Eq 'elif runtime_project_ready_probe_matches "\$target"' bin/sley; then
