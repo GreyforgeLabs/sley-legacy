@@ -6109,20 +6109,9 @@ check_json() {
       ((.source? // "") | capture("^(?<name>[A-Za-z_][A-Za-z0-9_]*)\\[(?<index>[^\\[\\]]+)\\]$")?) // {name:null,index:null};
     def gate_effect_name:
       ((. | capture("^" + $checker_gate_type + "<(?<effect>[^>]+)>$")?) // {effect:null}) | .effect;
-    def task_diags:
-      $root.tasks[] as $t |
-      ((
-        (if include_identifier_input("take_names") then [$t.takes[].name] else [] end) +
-        (if include_identifier_input("binding_names") then [$t.body.statements[]? | select(.kind==$binding_statement_kind) | .name] else [] end) +
-        (if include_identifier_input("task_names") then $all_task_names else [] end)
-      ) | unique) as $known |
-      $t.body.statements[]? |
-      . as $stmt |
-      select(.expr.expr_kind? == $identifier_expr_kind) |
-      select(($known | index($stmt.expr.name)) == null) |
-      {id:$unknown, severity:"error", message:render_arg($unknown_message_template; "identifier_name"; .expr.name), node:.expr.id, span:.expr.span};
     def descriptor_diagnostic_id($pass):
-      if ($pass.diagnostic_id_task // "") == "unknown_type_id" then $unknown_type
+      if ($pass.diagnostic_id_task // "") == "unknown_identifier_id" then $unknown
+      elif ($pass.diagnostic_id_task // "") == "unknown_type_id" then $unknown_type
       elif ($pass.diagnostic_id_task // "") == "unknown_task_id" then $unknown_task
       elif ($pass.diagnostic_id_task // "") == "call_arity_mismatch_id" then $call_arity
       elif ($pass.diagnostic_id_task // "") == "call_argument_type_mismatch_id" then $call_argument_type
@@ -6133,6 +6122,7 @@ check_json() {
       elif ($pass.diagnostic_id_task // "") == "gate_take_type_mismatch_id" then $gate_take_type
       elif ($pass.diagnostic_id_task // "") == "gate_effect_undeclared_id" then $gate_effect
       elif ($pass.diagnostic_id_task // "") == "effect_unauthorized_id" then $effect_unauthorized
+      elif ($pass.diagnostic_id_task // "") == "question_requires_result_id" then $question_requires_result
       elif ($pass.diagnostic_id_task // "") == "duplicate_effect_id" then $duplicate_effect
       elif ($pass.diagnostic_id_task // "") == "duplicate_type_id" then $duplicate_type
       elif ($pass.diagnostic_id_task // "") == "duplicate_task_id" then $duplicate_task
@@ -6152,7 +6142,8 @@ check_json() {
       elif ($pass.diagnostic_id_task // "") == "map_value_type_mismatch_id" then $map_value_type_mismatch
       else "" end;
     def descriptor_message_template($pass):
-      if ($pass.message_task // "") == "unknown_type_message" then $unknown_type_message_template
+      if ($pass.message_task // "") == "unknown_identifier_message" then $unknown_message_template
+      elif ($pass.message_task // "") == "unknown_type_message" then $unknown_type_message_template
       elif ($pass.message_task // "") == "unknown_task_message" then $unknown_task_message_template
       elif ($pass.message_task // "") == "call_arity_mismatch_message" then $call_arity_message_template
       elif ($pass.message_task // "") == "call_argument_type_mismatch_message" then $call_argument_type_message_template
@@ -6163,6 +6154,7 @@ check_json() {
       elif ($pass.message_task // "") == "gate_take_type_mismatch_message" then $gate_take_type_message_template
       elif ($pass.message_task // "") == "gate_effect_undeclared_message" then $gate_effect_message_template
       elif ($pass.message_task // "") == "effect_unauthorized_message" then $effect_unauthorized_message_template
+      elif ($pass.message_task // "") == "question_requires_result_message" then $question_requires_result_message_template
       elif ($pass.message_task // "") == "duplicate_effect_message" then $duplicate_effect_message_template
       elif ($pass.message_task // "") == "duplicate_type_message" then $duplicate_type_message_template
       elif ($pass.message_task // "") == "duplicate_task_message" then $duplicate_task_message_template
@@ -6181,6 +6173,20 @@ check_json() {
       elif ($pass.message_task // "") == "map_key_type_mismatch_message" then $map_key_type_mismatch_message_template
       elif ($pass.message_task // "") == "map_value_type_mismatch_message" then $map_value_type_mismatch_message_template
       else "" end;
+    def identifier_resolution_diags($pass):
+      if ($pass.subject // "") == "task_identifier" then
+        $root.tasks[] as $t |
+        ((
+          (if include_identifier_input("take_names") then [$t.takes[].name] else [] end) +
+          (if include_identifier_input("binding_names") then [$t.body.statements[]? | select(.kind==$binding_statement_kind) | .name] else [] end) +
+          (if include_identifier_input("task_names") then $all_task_names else [] end)
+        ) | unique) as $known |
+        $t.body.statements[]? |
+        . as $stmt |
+        select(.expr.expr_kind? == $identifier_expr_kind) |
+        select(($known | index($stmt.expr.name)) == null) |
+        {id:descriptor_diagnostic_id($pass), severity:"error", message:render_arg(descriptor_message_template($pass); ($pass.message_arg // "identifier_name"); .expr.name), node:.expr.id, span:.expr.span}
+      else empty end;
     def unknown_reference_diags($pass):
       if ($pass.subject // "") == "task_return_type" then
         $root.tasks[] as $t |
@@ -6463,13 +6469,15 @@ check_json() {
         select($actual != "" and $actual != $expected) |
         {id:descriptor_diagnostic_id($pass), severity:"error", message:render_arg(descriptor_message_template($pass); ($pass.message_arg // "actual_type"); $actual), node:$stmt.expr.id, span:$stmt.expr.span}
       else empty end;
-    def question_requires_result_diags:
-      $root.tasks[] as $t |
-      ($t.return_type.name // $checker_unit_type | base_type_name) as $return_base |
-      select($return_base != $checker_result_type) |
-      $t.body.statements[]?.expr? |
-      select(.fallible? == true) |
-      {id:$question_requires_result, severity:"error", message:render_arg($question_requires_result_message_template; "task_name"; ($t.module + "." + $t.name)), node:.id, span:.span};
+    def question_result_diags($pass):
+      if ($pass.subject // "") == "fallible_question_result" then
+        $root.tasks[] as $t |
+        ($t.return_type.name // $checker_unit_type | base_type_name) as $return_base |
+        select($return_base != $checker_result_type) |
+        $t.body.statements[]?.expr? |
+        select(.fallible? == true) |
+        {id:descriptor_diagnostic_id($pass), severity:"error", message:render_arg(descriptor_message_template($pass); ($pass.message_arg // "task_name"); ($t.module + "." + $t.name)), node:.id, span:.span}
+      else empty end;
     def effect_authorization_diags($pass):
       if ($pass.subject // "") == "direct_host_effect" then
         $root.tasks[] as $t |
@@ -6491,8 +6499,8 @@ check_json() {
         {id:descriptor_diagnostic_id($pass), severity:"error", message:render_arg(descriptor_message_template($pass); ($pass.message_arg // "effect_name"); $effect), node:$expr.id, span:$expr.span}
       else empty end;
     def diagnostic_pass($pass):
-      ($pass.name // "") as $name |
-      if ($pass.executor // "") == "unknown_reference" then unknown_reference_diags($pass)
+      if ($pass.executor // "") == "identifier_resolution" then identifier_resolution_diags($pass)
+      elif ($pass.executor // "") == "unknown_reference" then unknown_reference_diags($pass)
       elif ($pass.executor // "") == "gate_reference" then gate_reference_diags($pass)
       elif ($pass.executor // "") == "effect_authorization" then effect_authorization_diags($pass)
       elif ($pass.executor // "") == "duplicate_name" then duplicate_name_diags($pass)
@@ -6500,8 +6508,7 @@ check_json() {
       elif ($pass.executor // "") == "collection_shape" then collection_shape_diags($pass)
       elif ($pass.executor // "") == "call_shape" then call_shape_diags($pass)
       elif ($pass.executor // "") == "type_return" then type_return_diags($pass)
-      elif $name == "task_diags" then task_diags
-      elif $name == "question_requires_result_diags" then question_requires_result_diags
+      elif ($pass.executor // "") == "question_result" then question_result_diags($pass)
       else empty end;
     [$diagnostic_pass_descriptors[]? | diagnostic_pass(.)]
   ')"
