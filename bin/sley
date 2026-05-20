@@ -4723,16 +4723,16 @@ RETURN_TYPE_MISMATCH_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SO
 RETURN_TYPE_MISMATCH_MESSAGE_TEMPLATE="$(eval_checker_message_template return_type_mismatch_message task_name)"
 DUPLICATE_TAKE_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" duplicate_take_message_prefix)"
 DUPLICATE_TAKE_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" duplicate_take_message_suffix)"
-DUPLICATE_TAKE_MESSAGE_TEMPLATE="$(eval_checker_message_template duplicate_take_message take_name || printf 'duplicate take `::take_name::`\n')"
+DUPLICATE_TAKE_MESSAGE_TEMPLATE="$(eval_checker_message_template duplicate_take_message take_name)"
 DUPLICATE_MAP_KEY_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" duplicate_map_key_message_prefix)"
 DUPLICATE_MAP_KEY_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" duplicate_map_key_message_suffix)"
-DUPLICATE_MAP_KEY_MESSAGE_TEMPLATE="$(eval_checker_message_template duplicate_map_key_message key_name || printf 'duplicate map key `::key_name::`\n')"
+DUPLICATE_MAP_KEY_MESSAGE_TEMPLATE="$(eval_checker_message_template duplicate_map_key_message key_name)"
 DUPLICATE_FIELD_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" duplicate_field_message_prefix)"
 DUPLICATE_FIELD_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" duplicate_field_message_suffix)"
-DUPLICATE_FIELD_MESSAGE_TEMPLATE="$(eval_checker_message_template duplicate_field_message field_name || printf 'duplicate record field `::field_name::`\n')"
+DUPLICATE_FIELD_MESSAGE_TEMPLATE="$(eval_checker_message_template duplicate_field_message field_name)"
 DUPLICATE_RECORD_LITERAL_FIELD_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" duplicate_record_literal_field_message_prefix)"
 DUPLICATE_RECORD_LITERAL_FIELD_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" duplicate_record_literal_field_message_suffix)"
-DUPLICATE_RECORD_LITERAL_FIELD_MESSAGE_TEMPLATE="$(eval_checker_message_template duplicate_record_literal_field_message field_name || printf 'duplicate record literal field `::field_name::`\n')"
+DUPLICATE_RECORD_LITERAL_FIELD_MESSAGE_TEMPLATE="$(eval_checker_message_template duplicate_record_literal_field_message field_name)"
 RECORD_FIELD_MISSING_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" record_field_missing_message_prefix)"
 RECORD_FIELD_MISSING_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" record_field_missing_message_suffix)"
 RECORD_FIELD_MISSING_MESSAGE_TEMPLATE="$(eval_checker_message_template record_field_missing_message field_name || printf 'record field missing `::field_name::`\n')"
@@ -4765,13 +4765,13 @@ MAP_VALUE_TYPE_MISMATCH_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED
 MAP_VALUE_TYPE_MISMATCH_MESSAGE_TEMPLATE="$(eval_checker_message_template map_value_type_mismatch_message actual_type || printf 'map value type mismatch `::actual_type::`\n')"
 DUPLICATE_EFFECT_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" duplicate_effect_message_prefix)"
 DUPLICATE_EFFECT_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" duplicate_effect_message_suffix)"
-DUPLICATE_EFFECT_MESSAGE_TEMPLATE="$(eval_checker_message_template duplicate_effect_message effect_name || printf 'duplicate effect `::effect_name::`\n')"
+DUPLICATE_EFFECT_MESSAGE_TEMPLATE="$(eval_checker_message_template duplicate_effect_message effect_name)"
 DUPLICATE_TYPE_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" duplicate_type_message_prefix)"
 DUPLICATE_TYPE_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" duplicate_type_message_suffix)"
-DUPLICATE_TYPE_MESSAGE_TEMPLATE="$(eval_checker_message_template duplicate_type_message type_name || printf 'duplicate type `::type_name::`\n')"
+DUPLICATE_TYPE_MESSAGE_TEMPLATE="$(eval_checker_message_template duplicate_type_message type_name)"
 DUPLICATE_TASK_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" duplicate_task_message_prefix)"
 DUPLICATE_TASK_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" duplicate_task_message_suffix)"
-DUPLICATE_TASK_MESSAGE_TEMPLATE="$(eval_checker_message_template duplicate_task_message task_name || printf 'duplicate task `::task_name::`\n')"
+DUPLICATE_TASK_MESSAGE_TEMPLATE="$(eval_checker_message_template duplicate_task_message task_name)"
 UNKNOWN_EFFECT_MESSAGE_PREFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_effect_message_prefix)"
 UNKNOWN_EFFECT_MESSAGE_SUFFIX="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" unknown_effect_message_suffix)"
 UNKNOWN_EFFECT_MESSAGE_TEMPLATE="$(eval_checker_message_template unknown_effect_message effect_name || printf 'unknown effect `::effect_name::`\n')"
@@ -4808,26 +4808,6 @@ CHECKER_ERROR_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/ch
 CHECKER_GATE_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" gate_type_name)"
 CHECKER_LIST_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" list_type_name)"
 CHECKER_MAP_TYPE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley" map_type_name)"
-DUPLICATE_TAKE_MESSAGE_PREFIX="${DUPLICATE_TAKE_MESSAGE_PREFIX:-duplicate take \`}"
-DUPLICATE_TAKE_MESSAGE_SUFFIX="${DUPLICATE_TAKE_MESSAGE_SUFFIX:-\`}"
-if [[ -z "$DUPLICATE_TAKE_MESSAGE_TEMPLATE" ]]; then
-  DUPLICATE_TAKE_MESSAGE_TEMPLATE='duplicate take `::take_name::`'
-fi
-DUPLICATE_MAP_KEY_MESSAGE_PREFIX="${DUPLICATE_MAP_KEY_MESSAGE_PREFIX:-duplicate map key \`}"
-DUPLICATE_MAP_KEY_MESSAGE_SUFFIX="${DUPLICATE_MAP_KEY_MESSAGE_SUFFIX:-\`}"
-if [[ -z "$DUPLICATE_MAP_KEY_MESSAGE_TEMPLATE" ]]; then
-  DUPLICATE_MAP_KEY_MESSAGE_TEMPLATE='duplicate map key `::key_name::`'
-fi
-DUPLICATE_FIELD_MESSAGE_PREFIX="${DUPLICATE_FIELD_MESSAGE_PREFIX:-duplicate record field \`}"
-DUPLICATE_FIELD_MESSAGE_SUFFIX="${DUPLICATE_FIELD_MESSAGE_SUFFIX:-\`}"
-if [[ -z "$DUPLICATE_FIELD_MESSAGE_TEMPLATE" ]]; then
-  DUPLICATE_FIELD_MESSAGE_TEMPLATE='duplicate record field `::field_name::`'
-fi
-DUPLICATE_RECORD_LITERAL_FIELD_MESSAGE_PREFIX="${DUPLICATE_RECORD_LITERAL_FIELD_MESSAGE_PREFIX:-duplicate record literal field \`}"
-DUPLICATE_RECORD_LITERAL_FIELD_MESSAGE_SUFFIX="${DUPLICATE_RECORD_LITERAL_FIELD_MESSAGE_SUFFIX:-\`}"
-if [[ -z "$DUPLICATE_RECORD_LITERAL_FIELD_MESSAGE_TEMPLATE" ]]; then
-  DUPLICATE_RECORD_LITERAL_FIELD_MESSAGE_TEMPLATE='duplicate record literal field `::field_name::`'
-fi
 RECORD_FIELD_MISSING_MESSAGE_PREFIX="${RECORD_FIELD_MISSING_MESSAGE_PREFIX:-record field missing \`}"
 RECORD_FIELD_MISSING_MESSAGE_SUFFIX="${RECORD_FIELD_MISSING_MESSAGE_SUFFIX:-\`}"
 if [[ -z "$RECORD_FIELD_MISSING_MESSAGE_TEMPLATE" ]]; then
@@ -4877,21 +4857,6 @@ MAP_VALUE_TYPE_MISMATCH_MESSAGE_PREFIX="${MAP_VALUE_TYPE_MISMATCH_MESSAGE_PREFIX
 MAP_VALUE_TYPE_MISMATCH_MESSAGE_SUFFIX="${MAP_VALUE_TYPE_MISMATCH_MESSAGE_SUFFIX:-\`}"
 if [[ -z "$MAP_VALUE_TYPE_MISMATCH_MESSAGE_TEMPLATE" ]]; then
   MAP_VALUE_TYPE_MISMATCH_MESSAGE_TEMPLATE='map value type mismatch `::actual_type::`'
-fi
-DUPLICATE_EFFECT_MESSAGE_PREFIX="${DUPLICATE_EFFECT_MESSAGE_PREFIX:-duplicate effect \`}"
-DUPLICATE_EFFECT_MESSAGE_SUFFIX="${DUPLICATE_EFFECT_MESSAGE_SUFFIX:-\`}"
-if [[ -z "$DUPLICATE_EFFECT_MESSAGE_TEMPLATE" ]]; then
-  DUPLICATE_EFFECT_MESSAGE_TEMPLATE='duplicate effect `::effect_name::`'
-fi
-DUPLICATE_TYPE_MESSAGE_PREFIX="${DUPLICATE_TYPE_MESSAGE_PREFIX:-duplicate type \`}"
-DUPLICATE_TYPE_MESSAGE_SUFFIX="${DUPLICATE_TYPE_MESSAGE_SUFFIX:-\`}"
-if [[ -z "$DUPLICATE_TYPE_MESSAGE_TEMPLATE" ]]; then
-  DUPLICATE_TYPE_MESSAGE_TEMPLATE='duplicate type `::type_name::`'
-fi
-DUPLICATE_TASK_MESSAGE_PREFIX="${DUPLICATE_TASK_MESSAGE_PREFIX:-duplicate task \`}"
-DUPLICATE_TASK_MESSAGE_SUFFIX="${DUPLICATE_TASK_MESSAGE_SUFFIX:-\`}"
-if [[ -z "$DUPLICATE_TASK_MESSAGE_TEMPLATE" ]]; then
-  DUPLICATE_TASK_MESSAGE_TEMPLATE='duplicate task `::task_name::`'
 fi
 UNKNOWN_EFFECT_MESSAGE_PREFIX="${UNKNOWN_EFFECT_MESSAGE_PREFIX:-unknown effect \`}"
 UNKNOWN_EFFECT_MESSAGE_SUFFIX="${UNKNOWN_EFFECT_MESSAGE_SUFFIX:-\`}"
