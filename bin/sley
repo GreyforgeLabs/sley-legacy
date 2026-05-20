@@ -119,6 +119,192 @@ module_source_file() {
   printf '%s/%s.sley\n' "$SELF_HOSTED_SOURCE_ROOT" "${module//.//}"
 }
 
+sley_eval_env_lookup() {
+  local env_json="$1" name="$2"
+  printf '%s\n' "$env_json" | jq -er --arg name "$name" '
+    if type == "object" and has($name) then .[$name] | tostring else empty end
+  '
+}
+
+sley_eval_source_condition() {
+  local env_json="$1" condition="$2"
+  local name op right left
+  condition="$(printf '%s\n' "$condition" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+  if [[ "$condition" =~ ^([A-Za-z_][A-Za-z0-9_]*)$ ]]; then
+    left="$(sley_eval_env_lookup "$env_json" "${BASH_REMATCH[1]}")" || return 1
+    [[ "$left" == "true" ]]
+    return
+  fi
+  [[ "$condition" =~ ^([A-Za-z_][A-Za-z0-9_]*)[[:space:]]*(>=|<=|==|!=|\>|<)[[:space:]]*(.+)$ ]] || return 1
+  name="${BASH_REMATCH[1]}"
+  op="${BASH_REMATCH[2]}"
+  right="$(printf '%s\n' "${BASH_REMATCH[3]}" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+  left="$(sley_eval_env_lookup "$env_json" "$name")" || return 1
+  if [[ "$right" =~ ^\"([^\"]*)\"$ ]]; then
+    right="${BASH_REMATCH[1]}"
+  elif [[ "$right" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+    right="$(sley_eval_env_lookup "$env_json" "$right" 2>/dev/null || printf '%s\n' "$right")"
+  fi
+  case "$op" in
+    "==") [[ "$left" == "$right" ]] ;;
+    "!=") [[ "$left" != "$right" ]] ;;
+    ">")
+      [[ "$left" =~ ^-?[0-9]+$ && "$right" =~ ^-?[0-9]+$ ]] || return 1
+      [[ "$left" -gt "$right" ]]
+      ;;
+    "<")
+      [[ "$left" =~ ^-?[0-9]+$ && "$right" =~ ^-?[0-9]+$ ]] || return 1
+      [[ "$left" -lt "$right" ]]
+      ;;
+    ">=")
+      [[ "$left" =~ ^-?[0-9]+$ && "$right" =~ ^-?[0-9]+$ ]] || return 1
+      [[ "$left" -ge "$right" ]]
+      ;;
+    "<=")
+      [[ "$left" =~ ^-?[0-9]+$ && "$right" =~ ^-?[0-9]+$ ]] || return 1
+      [[ "$left" -le "$right" ]]
+      ;;
+    *) return 1 ;;
+  esac
+}
+
+sley_select_source_return_expr() {
+  local body="$1" env_json="$2"
+  local raw line in_if=false if_active=false
+  while IFS= read -r raw || [[ -n "$raw" ]]; do
+    line="$(printf '%s\n' "$raw" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+    [[ -n "$line" ]] || continue
+    if [[ "$line" =~ ^if[[:space:]]+(.+)[[:space:]]*\{$ ]]; then
+      in_if=true
+      if sley_eval_source_condition "$env_json" "${BASH_REMATCH[1]}"; then
+        if_active=true
+      else
+        if_active=false
+      fi
+      continue
+    fi
+    if [[ "$line" == "}" ]]; then
+      if [[ "$in_if" == true ]]; then
+        in_if=false
+        if_active=false
+        continue
+      fi
+    fi
+    if [[ "$line" =~ ^return[[:space:]]+(.+)$ ]]; then
+      if [[ "$in_if" != true || "$if_active" == true ]]; then
+        printf '%s\n' "${BASH_REMATCH[1]}"
+        return 0
+      fi
+    fi
+  done <<< "$body"
+  return 1
+}
+
+sley_eval_source_call() {
+  local file="$1" callee="$2" env_json="$3"
+  local alias task module source_file
+  if [[ "$callee" == *.* ]]; then
+    alias="${callee%%.*}"
+    task="${callee#*.}"
+    module="$(resolve_sley_import_alias "$file" "$alias")"
+    [[ -n "$module" ]] || return 1
+    source_file="$(module_source_file "$module")"
+  else
+    task="$callee"
+    source_file="$file"
+  fi
+  sley_eval_source_task "$source_file" "$task" "$env_json"
+}
+
+sley_eval_source_expr() {
+  local file="$1" env_json="$2" expr="$3"
+  local call_prefix="${PARSER_CALL_EXPRESSION_PREFIX:-call }" tail callee tokens token out="" seen=false value
+  expr="$(printf '%s\n' "$expr" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+  if [[ "$expr" == "$call_prefix"* ]]; then
+    tail="${expr#"$call_prefix"}"
+    if [[ "$tail" =~ ^([A-Za-z_][A-Za-z0-9_.]*)\(\)$ ]]; then
+      sley_eval_source_call "$file" "${BASH_REMATCH[1]}" "$env_json"
+      return
+    fi
+  fi
+  if [[ "$expr" =~ ^\"([^\"]*)\"$ ]]; then
+    printf '%s\n' "${BASH_REMATCH[1]}"
+    return 0
+  fi
+  if [[ "$expr" =~ ^-?[0-9]+$ || "$expr" == "true" || "$expr" == "false" ]]; then
+    printf '%s\n' "$expr"
+    return 0
+  fi
+  if [[ "$expr" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+    sley_eval_env_lookup "$env_json" "$expr"
+    return
+  fi
+  tokens="$(printf '%s\n' "$expr" | awk -v call_prefix="$call_prefix" '
+    function ltrim(s){sub(/^[ \t]+/, "", s); return s}
+    {
+      line=$0
+      while (length(line) > 0) {
+        line=ltrim(line)
+        if (line == "") break
+        if (substr(line, 1, 1) == "+") {
+          line=substr(line, 2)
+          continue
+        }
+        if (index(line, call_prefix) == 1) {
+          tail=substr(line, length(call_prefix) + 1)
+          if (match(tail, /^[A-Za-z_][A-Za-z0-9_.]*\(\)/)) {
+            callee=substr(tail, RSTART, RLENGTH)
+            sub(/\(\)$/, "", callee)
+            print "CALL:" callee
+            line=substr(tail, RSTART + RLENGTH)
+            continue
+          }
+        }
+        if (match(line, /^"[^"]*"/)) {
+          print "STRING:" substr(line, RSTART + 1, RLENGTH - 2)
+          line=substr(line, RSTART + RLENGTH)
+          continue
+        }
+        if (match(line, /^-?[0-9]+/)) {
+          print "LITERAL:" substr(line, RSTART, RLENGTH)
+          line=substr(line, RSTART + RLENGTH)
+          continue
+        }
+        if (match(line, /^[A-Za-z_][A-Za-z0-9_]*/)) {
+          print "IDENT:" substr(line, RSTART, RLENGTH)
+          line=substr(line, RSTART + RLENGTH)
+          continue
+        }
+        exit 7
+      }
+    }
+  ')" || return 1
+  while IFS= read -r token || [[ -n "$token" ]]; do
+    [[ -n "$token" ]] || continue
+    case "$token" in
+      STRING:*) value="${token#STRING:}" ;;
+      LITERAL:*) value="${token#LITERAL:}" ;;
+      IDENT:*) value="$(sley_eval_env_lookup "$env_json" "${token#IDENT:}")" || return 1 ;;
+      CALL:*) value="$(sley_eval_source_call "$file" "${token#CALL:}" "$env_json")" || return 1 ;;
+      *) return 1 ;;
+    esac
+    out+="$value"
+    seen=true
+  done <<< "$tokens"
+  [[ "$seen" == true ]] || return 1
+  printf '%s\n' "$out"
+}
+
+sley_eval_source_task() {
+  local file="$1" task="$2" env_json="${3:-}"
+  local body expr
+  [[ -n "$env_json" ]] || env_json='{}'
+  body="$(extract_sley_task_body "$file" "$task")"
+  [[ -n "$body" ]] || return 1
+  expr="$(sley_select_source_return_expr "$body" "$env_json")" || return 1
+  sley_eval_source_expr "$file" "$env_json" "$expr"
+}
+
 eval_parser_expression_classifiers_json() {
   local parser_file="$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley"
   local body rows call_prefix
@@ -436,105 +622,19 @@ eval_bootstrap_list_count_task() {
 eval_lint_status_task() {
   local finding_count="$1"
   local lint_file="$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley"
-  local body findings_task ok_task
-  body="$(extract_sley_task_body "$lint_file" lint_status)"
-  [[ -n "$body" ]] || return 1
-  findings_task="$(printf '%s\n' "$body" | awk -v call_prefix="$PARSER_CALL_EXPRESSION_PREFIX" '
-    function return_call_task(line) {
-      sub(/^[ \t]*return[ \t]+/, "", line)
-      if (index(line, call_prefix) != 1) return ""
-      line=substr(line, length(call_prefix) + 1)
-      if (line !~ /^[A-Za-z_][A-Za-z0-9_]*\(\)[ \t]*$/) return ""
-      sub(/\(\).*/, "", line)
-      return line
-    }
-    /^[ \t]*if[ \t]+finding_count[ \t]*>[ \t]*0[ \t]*\{/ {in_if=1; next}
-    in_if && /^[ \t]*}/ {in_if=0}
-    in_if && /^[ \t]*return[ \t]+/ {
-      task=return_call_task($0)
-      if (task != "") {
-        print task
-        exit
-      }
-    }
-  ')"
-  ok_task="$(printf '%s\n' "$body" | awk -v call_prefix="$PARSER_CALL_EXPRESSION_PREFIX" '
-    function return_call_task(line) {
-      sub(/^[ \t]*return[ \t]+/, "", line)
-      if (index(line, call_prefix) != 1) return ""
-      line=substr(line, length(call_prefix) + 1)
-      if (line !~ /^[A-Za-z_][A-Za-z0-9_]*\(\)[ \t]*$/) return ""
-      sub(/\(\).*/, "", line)
-      return line
-    }
-    /^[ \t]*if[ \t]+/ {in_if=1}
-    in_if && /^[ \t]*}/ {in_if=0; next}
-    !in_if && /^[ \t]*return[ \t]+/ {
-      task=return_call_task($0)
-      if (task != "") {
-        print task
-        exit
-      }
-    }
-  ')"
-  [[ -n "$findings_task" && -n "$ok_task" ]] || return 1
-  if [[ "$finding_count" -gt 0 ]]; then
-    extract_sley_string_task "$lint_file" "$findings_task"
-  else
-    extract_sley_string_task "$lint_file" "$ok_task"
-  fi
+  local env_json
+  [[ "$finding_count" =~ ^-?[0-9]+$ ]] || return 1
+  env_json="$(jq -cn --argjson finding_count "$finding_count" '{finding_count:$finding_count}')"
+  sley_eval_source_task "$lint_file" lint_status "$env_json"
 }
 
 eval_checker_status_task() {
   local error_count="$1"
   local checker_file="$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley"
-  local body error_task ok_task
-  body="$(extract_sley_task_body "$checker_file" diagnostic_status)"
-  [[ -n "$body" ]] || return 1
-  error_task="$(printf '%s\n' "$body" | awk -v call_prefix="$PARSER_CALL_EXPRESSION_PREFIX" '
-    function return_call_task(line) {
-      sub(/^[ \t]*return[ \t]+/, "", line)
-      if (index(line, call_prefix) != 1) return ""
-      line=substr(line, length(call_prefix) + 1)
-      if (line !~ /^[A-Za-z_][A-Za-z0-9_]*\(\)[ \t]*$/) return ""
-      sub(/\(\).*/, "", line)
-      return line
-    }
-    /^[ \t]*if[ \t]+error_count[ \t]*>[ \t]*0[ \t]*\{/ {in_if=1; next}
-    in_if && /^[ \t]*}/ {in_if=0}
-    in_if && /^[ \t]*return[ \t]+/ {
-      task=return_call_task($0)
-      if (task != "") {
-        print task
-        exit
-      }
-    }
-  ')"
-  ok_task="$(printf '%s\n' "$body" | awk -v call_prefix="$PARSER_CALL_EXPRESSION_PREFIX" '
-    function return_call_task(line) {
-      sub(/^[ \t]*return[ \t]+/, "", line)
-      if (index(line, call_prefix) != 1) return ""
-      line=substr(line, length(call_prefix) + 1)
-      if (line !~ /^[A-Za-z_][A-Za-z0-9_]*\(\)[ \t]*$/) return ""
-      sub(/\(\).*/, "", line)
-      return line
-    }
-    /^[ \t]*if[ \t]+/ {in_if=1}
-    in_if && /^[ \t]*}/ {in_if=0; next}
-    !in_if && /^[ \t]*return[ \t]+/ {
-      task=return_call_task($0)
-      if (task != "") {
-        print task
-        exit
-      }
-    }
-  ')"
-  [[ -n "$error_task" && -n "$ok_task" ]] || return 1
-  if [[ "$error_count" -gt 0 ]]; then
-    extract_sley_string_task "$checker_file" "$error_task"
-  else
-    extract_sley_string_task "$checker_file" "$ok_task"
-  fi
+  local env_json
+  [[ "$error_count" =~ ^-?[0-9]+$ ]] || return 1
+  env_json="$(jq -cn --argjson error_count "$error_count" '{error_count:$error_count}')"
+  sley_eval_source_task "$checker_file" diagnostic_status "$env_json"
 }
 
 eval_checker_builtin_types_json() {
@@ -560,53 +660,10 @@ eval_checker_builtin_types_json() {
 eval_runtime_status_task() {
   local diagnostic_count="$1"
   local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
-  local body failed_task passed_task
-  body="$(extract_sley_task_body "$runtime_file" runtime_status)"
-  [[ -n "$body" ]] || return 1
-  failed_task="$(printf '%s\n' "$body" | awk -v call_prefix="$PARSER_CALL_EXPRESSION_PREFIX" '
-    function return_call_task(line) {
-      sub(/^[ \t]*return[ \t]+/, "", line)
-      if (index(line, call_prefix) != 1) return ""
-      line=substr(line, length(call_prefix) + 1)
-      if (line !~ /^[A-Za-z_][A-Za-z0-9_]*\(\)[ \t]*$/) return ""
-      sub(/\(\).*/, "", line)
-      return line
-    }
-    /^[ \t]*if[ \t]+diagnostic_count[ \t]*>[ \t]*0[ \t]*\{/ {in_if=1; next}
-    in_if && /^[ \t]*}/ {in_if=0}
-    in_if && /^[ \t]*return[ \t]+/ {
-      task=return_call_task($0)
-      if (task != "") {
-        print task
-        exit
-      }
-    }
-  ')"
-  passed_task="$(printf '%s\n' "$body" | awk -v call_prefix="$PARSER_CALL_EXPRESSION_PREFIX" '
-    function return_call_task(line) {
-      sub(/^[ \t]*return[ \t]+/, "", line)
-      if (index(line, call_prefix) != 1) return ""
-      line=substr(line, length(call_prefix) + 1)
-      if (line !~ /^[A-Za-z_][A-Za-z0-9_]*\(\)[ \t]*$/) return ""
-      sub(/\(\).*/, "", line)
-      return line
-    }
-    /^[ \t]*if[ \t]+/ {in_if=1}
-    in_if && /^[ \t]*}/ {in_if=0; next}
-    !in_if && /^[ \t]*return[ \t]+/ {
-      task=return_call_task($0)
-      if (task != "") {
-        print task
-        exit
-      }
-    }
-  ')"
-  [[ -n "$failed_task" && -n "$passed_task" ]] || return 1
-  if [[ "$diagnostic_count" -gt 0 ]]; then
-    extract_sley_string_task "$runtime_file" "$failed_task"
-  else
-    extract_sley_string_task "$runtime_file" "$passed_task"
-  fi
+  local env_json
+  [[ "$diagnostic_count" =~ ^-?[0-9]+$ ]] || return 1
+  env_json="$(jq -cn --argjson diagnostic_count "$diagnostic_count" '{diagnostic_count:$diagnostic_count}')"
+  sley_eval_source_task "$runtime_file" runtime_status "$env_json"
 }
 
 eval_runtime_text_probe_task() {
@@ -683,129 +740,52 @@ eval_runtime_text_probe_task() {
 eval_seeded_agent_deploy_value() {
   local profile="$1" model_plan="$2" deploy_result="$3"
   local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
-  local body expr
-  body="$(extract_sley_task_body "$runtime_file" seeded_agent_deploy_value)"
-  [[ -n "$body" ]] || return 1
-  expr="$(printf '%s\n' "$body" | awk '
-    /^[ \t]*return[ \t]+/ {
-      line=$0
-      sub(/^[ \t]*return[ \t]+/, "", line)
-      print line
-      exit
-    }
-  ')"
-  [[ -n "$expr" ]] || return 1
-  printf '%s\n' "$expr" | awk \
-    -v profile="$profile" \
-    -v model_plan="$model_plan" \
-    -v deploy_result="$deploy_result" '
-    function unquote(s){sub(/^"/, "", s); sub(/"$/, "", s); return s}
-    function token_value(token) {
-      if (token ~ /^"/) return unquote(token)
-      if (token == "profile") return profile
-      if (token == "model_plan") return model_plan
-      if (token == "deploy_result") return deploy_result
-      exit 7
-    }
-    {
-      line=$0
-      out=""
-      seen=0
-      while (match(line, /"[^"]*"|[A-Za-z_][A-Za-z0-9_]*/)) {
-        token=substr(line, RSTART, RLENGTH)
-        out=out token_value(token)
-        seen=1
-        line=substr(line, RSTART + RLENGTH)
-      }
-      if (!seen) exit 7
-      print out
-    }
-	  '
+  local env_json
+  env_json="$(jq -cn \
+    --arg profile "$profile" \
+    --arg model_plan "$model_plan" \
+    --arg deploy_result "$deploy_result" \
+    '{profile:$profile, model_plan:$model_plan, deploy_result:$deploy_result}')"
+  sley_eval_source_task "$runtime_file" seeded_agent_deploy_value "$env_json"
 }
 
 eval_runtime_spend_prefixed_value_task() {
   local authorization="$1"
   local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
-  local body expr
-  body="$(extract_sley_task_body "$runtime_file" spend_prefixed_value)"
-  [[ -n "$body" ]] || return 1
-  expr="$(printf '%s\n' "$body" | awk '
-    /^[ \t]*return[ \t]+/ {
-      line=$0
-      sub(/^[ \t]*return[ \t]+/, "", line)
-      print line
-      exit
-    }
-  ')"
-  [[ -n "$expr" ]] || return 1
-  printf '%s\n' "$expr" | awk \
-    -v authorization="$authorization" '
-    function unquote(s){sub(/^"/, "", s); sub(/"$/, "", s); return s}
-    function token_value(token) {
-      if (token ~ /^"/) return unquote(token)
-      if (token == "authorization") return authorization
-      exit 7
-    }
-    {
-      line=$0
-      out=""
-      seen=0
-      while (match(line, /"[^"]*"|[A-Za-z_][A-Za-z0-9_]*/)) {
-        token=substr(line, RSTART, RLENGTH)
-        out=out token_value(token)
-        seen=1
-        line=substr(line, RSTART + RLENGTH)
-      }
-      if (!seen) exit 7
-      print out
-    }
-  '
+  local env_json
+  env_json="$(jq -cn --arg authorization "$authorization" '{authorization:$authorization}')"
+  sley_eval_source_task "$runtime_file" spend_prefixed_value "$env_json"
 }
 
 eval_project_ready_value_task() {
   local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
-  local value
-  value="$(extract_sley_int_task "$runtime_file" project_ready_value)"
-  [[ -n "$value" ]] || return 1
-  printf '%s\n' "$value"
+  sley_eval_source_task "$runtime_file" project_ready_value '{}'
 }
 
 eval_runtime_list_len_value_task() {
   local item_count="$1"
   local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
-  local body take_name return_name
+  local env_json
   [[ "$item_count" =~ ^[0-9]+$ ]] || return 1
-  body="$(extract_sley_task_body "$runtime_file" list_len_value)"
-  [[ -n "$body" ]] || return 1
-  take_name="$(printf '%s\n' "$body" | awk '/^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:/ {line=$0; sub(/^[ \t]*take[ \t]+/, "", line); sub(/[ \t]*:.*/, "", line); print line; exit}')"
-  return_name="$(printf '%s\n' "$body" | awk '/^[ \t]*return[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*$/ {line=$0; sub(/^[ \t]*return[ \t]+/, "", line); sub(/[ \t]*$/, "", line); print line; exit}')"
-  [[ -n "$take_name" && "$return_name" == "$take_name" ]] || return 1
-  printf '%s\n' "$item_count"
+  env_json="$(jq -cn --argjson item_count "$item_count" '{item_count:$item_count}')"
+  sley_eval_source_task "$runtime_file" list_len_value "$env_json"
 }
 
 eval_runtime_int_identity_value_task() {
   local value="$1"
   local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
-  local body take_name return_name
+  local env_json
   [[ "$value" =~ ^-?[0-9]+$ ]] || return 1
-  body="$(extract_sley_task_body "$runtime_file" int_identity_value)"
-  [[ -n "$body" ]] || return 1
-  take_name="$(printf '%s\n' "$body" | awk '/^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Int/ {line=$0; sub(/^[ \t]*take[ \t]+/, "", line); sub(/[ \t]*:.*/, "", line); print line; exit}')"
-  return_name="$(printf '%s\n' "$body" | awk '/^[ \t]*return[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*$/ {line=$0; sub(/^[ \t]*return[ \t]+/, "", line); sub(/[ \t]*$/, "", line); print line; exit}')"
-  [[ -n "$take_name" && "$return_name" == "$take_name" ]] || return 1
-  printf '%s\n' "$value"
+  env_json="$(jq -cn --argjson value "$value" '{value:$value}')"
+  sley_eval_source_task "$runtime_file" int_identity_value "$env_json"
 }
 
 eval_runtime_text_identity_value_task() {
   local value="$1"
   local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
-  local body take_name return_name
-  body="$(extract_sley_task_body "$runtime_file" text_identity_value)"
-  [[ -n "$body" ]] || return 1
-  take_name="$(printf '%s\n' "$body" | awk '/^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Text/ {line=$0; sub(/^[ \t]*take[ \t]+/, "", line); sub(/[ \t]*:.*/, "", line); print line; exit}')"
-  return_name="$(printf '%s\n' "$body" | awk '/^[ \t]*return[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*$/ {line=$0; sub(/^[ \t]*return[ \t]+/, "", line); sub(/[ \t]*$/, "", line); print line; exit}')"
-  [[ -n "$take_name" && "$return_name" == "$take_name" ]] || return 1
-  printf '%s\n' "$value"
+  local env_json
+  env_json="$(jq -cn --arg value "$value" '{value:$value}')"
+  sley_eval_source_task "$runtime_file" text_identity_value "$env_json"
 }
 
 eval_runtime_int_binary_value_task() {
@@ -1242,26 +1222,18 @@ eval_runtime_text_if_value_task() {
 eval_runtime_ok_int_value_task() {
   local value="$1"
   local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
-  local body take_name return_name
+  local env_json
   [[ "$value" =~ ^-?[0-9]+$ ]] || return 1
-  body="$(extract_sley_task_body "$runtime_file" ok_int_value)"
-  [[ -n "$body" ]] || return 1
-  take_name="$(printf '%s\n' "$body" | awk '/^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Int/ {line=$0; sub(/^[ \t]*take[ \t]+/, "", line); sub(/[ \t]*:.*/, "", line); print line; exit}')"
-  return_name="$(printf '%s\n' "$body" | awk '/^[ \t]*return[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*$/ {line=$0; sub(/^[ \t]*return[ \t]+/, "", line); sub(/[ \t]*$/, "", line); print line; exit}')"
-  [[ -n "$take_name" && "$return_name" == "$take_name" ]] || return 1
-  printf '%s\n' "$value"
+  env_json="$(jq -cn --argjson value "$value" '{value:$value}')"
+  sley_eval_source_task "$runtime_file" ok_int_value "$env_json"
 }
 
 eval_runtime_ok_text_value_task() {
   local value="$1"
   local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
-  local body take_name return_name
-  body="$(extract_sley_task_body "$runtime_file" ok_text_value)"
-  [[ -n "$body" ]] || return 1
-  take_name="$(printf '%s\n' "$body" | awk '/^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:[ \t]*Text/ {line=$0; sub(/^[ \t]*take[ \t]+/, "", line); sub(/[ \t]*:.*/, "", line); print line; exit}')"
-  return_name="$(printf '%s\n' "$body" | awk '/^[ \t]*return[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*$/ {line=$0; sub(/^[ \t]*return[ \t]+/, "", line); sub(/[ \t]*$/, "", line); print line; exit}')"
-  [[ -n "$take_name" && "$return_name" == "$take_name" ]] || return 1
-  printf '%s\n' "$value"
+  local env_json
+  env_json="$(jq -cn --arg value "$value" '{value:$value}')"
+  sley_eval_source_task "$runtime_file" ok_text_value "$env_json"
 }
 
 runtime_project_ready_probe_matches() {
