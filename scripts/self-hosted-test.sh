@@ -21,6 +21,7 @@ self_hosting_status_field() {
 bool_literal_source="$(mktemp)"
 parser_feature_source="$(mktemp)"
 parser_statement_source="$(mktemp)"
+parser_binding_source="$(mktemp)"
 generic_source_main_source="$(mktemp)"
 generic_state_set_source="$(mktemp)"
 generic_if_assignment_source="$(mktemp)"
@@ -43,7 +44,7 @@ zjx_tool_report="$(mktemp)"
 runtime_report="$(mktemp)"
 ast_missing_report="$(mktemp)"
 ci_report="$(mktemp)"
-trap 'rm -f "$bool_literal_source" "$parser_feature_source" "$parser_statement_source" "$generic_source_main_source" "$generic_state_set_source" "$generic_if_assignment_source" "$generic_result_err_source" "$generic_each_source" "$generic_for_source" "$generic_while_source" "$empty_module_source" "$unknown_take_type_source" "$add_take_operation" "$self_hosting_status_report" "$artifact_check_report" "$migrate_report" "$docgen_report" "$workbench_report" "$sandbox_report" "$agent_bench_report" "$zjx_tool_report" "$runtime_report" "$ast_missing_report" "$ci_report"; rm -rf "$artifact_dir"' EXIT
+trap 'rm -f "$bool_literal_source" "$parser_feature_source" "$parser_statement_source" "$parser_binding_source" "$generic_source_main_source" "$generic_state_set_source" "$generic_if_assignment_source" "$generic_result_err_source" "$generic_each_source" "$generic_for_source" "$generic_while_source" "$empty_module_source" "$unknown_take_type_source" "$add_take_operation" "$self_hosting_status_report" "$artifact_check_report" "$migrate_report" "$docgen_report" "$workbench_report" "$sandbox_report" "$agent_bench_report" "$zjx_tool_report" "$runtime_report" "$ast_missing_report" "$ci_report"; rm -rf "$artifact_dir"' EXIT
 printf '%s\n' \
   'module app.bool_literal' \
   '' \
@@ -78,6 +79,19 @@ printf '%s\n' \
   '  }' \
   '  return count' \
   '}' > "$parser_statement_source"
+printf '%s\n' \
+  'module app.parser_bindings' \
+  '' \
+  'task main -> Int uses FileRead {' \
+  '  take gate files: Gate<FileRead>' \
+  '  take seed: Int' \
+  '' \
+  '  bind base = seed' \
+  '  state total = base' \
+  '  tally seen = total' \
+  '' \
+  '  return seen' \
+  '}' > "$parser_binding_source"
 printf '%s\n' \
   'module app.generic_source_main' \
   '' \
@@ -312,6 +326,10 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_statement_f
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_ast_statement_feature_dispatch_execution"))'
 
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_binding_feature_classifier_task_execution"))'
+
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_ast_binding_feature_dispatch_execution"))'
+
 if ! awk '
   /^eval_parser_expression_classifiers_json\(\)[ \t]*\{/ {in_fn=1}
   in_fn && /sley_eval_source_task/ {source_eval=1}
@@ -342,11 +360,24 @@ if ! awk '
   fail "eval_parser_statement_feature_classifiers_json must execute classify_statement_features through the shared Sley source task evaluator"
 fi
 
+if ! awk '
+  /^eval_parser_binding_feature_classifiers_json\(\)[ \t]*\{/ {in_fn=1}
+  in_fn && /sley_eval_source_task/ {source_eval=1}
+  in_fn && /extract_sley_task_body/ {body_walk=1}
+  in_fn && /^[ \t]*}/ {exit}
+  END {exit (source_eval && !body_walk) ? 0 : 1}
+' bin/sley; then
+  fail "eval_parser_binding_feature_classifiers_json must execute classify_binding_features through the shared Sley source task evaluator"
+fi
+
 bin/sley ast --json "$parser_feature_source" \
   | json_field '[.tasks[].body.statements[]?.expr.expr_kind] as $k | ($k | index("IntLiteral")) and ($k | index("StringLiteral")) and ($k | index("BoolLiteral")) and ($k | index("ListLiteral")) and ($k | index("Identifier"))'
 
 bin/sley ast --json "$parser_statement_source" \
   | json_field '[.tasks[].body.statements[]?.kind] as $k | ($k | index("Binding")) and ($k | index("Set")) and ($k | index("Expr")) and ($k | index("For")) and ($k | index("While")) and ($k | index("If")) and ($k | index("Forge")) and ($k | index("Return"))'
+
+bin/sley ast --json "$parser_binding_source" \
+  | json_field '([.tasks[0].takes[]?.binding_kind] as $takes | ($takes | index("Gate")) and ($takes | index("Take"))) and ([.tasks[0].body.statements[]? | select(.kind == "Binding") | .binding_kind] as $bindings | ($bindings | index("Bind")) and ($bindings | index("State")) and ($bindings | index("Tally")))'
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_source_metadata_task_execution"))'
 

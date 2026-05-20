@@ -189,6 +189,27 @@ export task bind_binding_kind -> Text {
   return "Bind"
 }
 
+export task classify_binding_features -> Text {
+  take is_take: Bool
+  take is_gate: Bool
+  take is_state: Bool
+  take is_tally: Bool
+
+  if is_gate {
+    return call gate_binding_kind()
+  }
+  if is_take {
+    return call take_binding_kind()
+  }
+  if is_state {
+    return call state_binding_kind()
+  }
+  if is_tally {
+    return call tally_binding_kind()
+  }
+  return call bind_binding_kind()
+}
+
 export task task_id -> Text {
   take module_name: Text
   take task_name: Text
