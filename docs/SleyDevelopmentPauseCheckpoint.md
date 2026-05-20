@@ -2,8 +2,8 @@
 
 Date: 2026-05-19
 Branch: public
-Latest code checkpoint: 36d0cfb
-Latest pause documentation checkpoint before this note: 06a03df
+Latest code checkpoint: 4fe58c4
+Latest pause documentation checkpoint before this note: f0da3e5
 Current pause document status: committed on `public`; use `git log` for exact
 branch head
 Remote status: verify current `origin/public` head with
@@ -351,8 +351,12 @@ The current local checkpoint advances the public branch to:
   slice: `bootstrap`, `strict_self_hosted=false`,
   `semantic_source_count=6`, `bootstrap_owned_by_sley=284`; remaining blockers
   are still parser, checker, and runtime semantics from Sley source
+- self-hosting status after the checker call/type message fallback-removal
+  slice: `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=285`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
 - latest verification refresh on 2026-05-19: `make v1` passed after the
-  checker unknown-message fallback-removal slice
+  checker call/type message fallback-removal slice
 
 The tracked code checkpoint is:
 
@@ -438,6 +442,7 @@ The tracked code checkpoint is:
 - 83a2757 fix: require sley checker effect aliases
 - 98af85e fix: require sley checker host effect needles
 - 36d0cfb fix: require sley checker unknown messages
+- 4fe58c4 fix: require sley checker call type messages
 
 The tracked pause documentation checkpoints are:
 
@@ -517,6 +522,7 @@ The tracked pause documentation checkpoints are:
 - f6ab6dd docs: record checker builtin effect slice
 - cc10197 docs: record checker effect alias slice
 - 06a03df docs: record checker host effect needle slice
+- f0da3e5 docs: record checker unknown message slice
 
 Recent self-hosting slices added:
 
@@ -779,6 +785,10 @@ Recent self-hosting slices added:
   messages now come from `loom.checker` without shell printf, prefix/suffix, or
   empty-template fallbacks, while preserving the visible diagnostics and
   unknown-task repair hints
+- Checker call arity, call argument type, local type mismatch, and return type
+  mismatch diagnostic messages now come from `loom.checker` without shell
+  printf, prefix/suffix, or empty-template fallbacks, while preserving the
+  visible diagnostics and return-type repair hints
 
 ## Next Frontier
 
@@ -2063,10 +2073,34 @@ The latest continuation audit reconfirmed:
   `bin/sley-contract check-fixtures fixtures/contracts --schemas docs/schemas
   --json`, external public-action packet verifier, `git diff --check`, and
   final `make v1` all passed
+- focused checker call/type message fallback-removal probes:
+  `bin/sley self-hosting-status --json` reported
+  `checker_call_type_message_fallback_removal_task_execution` and
+  `bootstrap_owned_by_sley=285`;
+  `fixtures/corpus/rejected/call_arity_mismatch.sley` preserved
+  `CALL_ARITY_MISMATCH` with message "call arity mismatch for `helper`";
+  `fixtures/corpus/rejected/call_argument_type_mismatch.sley` preserved
+  `CALL_ARGUMENT_TYPE_MISMATCH` with message
+  "call argument type mismatch for `helper`";
+  `fixtures/corpus/rejected/type_mismatch.sley` preserved `TYPE_MISMATCH`
+  with message "type mismatch `label`" and `RETURN_TYPE_MISMATCH` with
+  message "return type mismatch `corpus.rejected.main`"; focused grep found no
+  call/type diagnostic message printf fallbacks, prefix/suffix fallbacks, or
+  empty-template fallback branches
+- Sley self-hosting status after the checker call/type message
+  fallback-removal slice: `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=285`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
+- latest checker call/type message fallback-removal verification:
+  `bash -n bin/sley`, `bash -n scripts/self-hosted-test.sh`, focused checker
+  call/type message probes, `scripts/self-hosted-test.sh`,
+  `bin/sley-contract check-fixtures fixtures/contracts --schemas docs/schemas
+  --json`, external public-action packet verifier, `git diff --check`, and
+  final `make v1` all passed
 
 ## Dirty State Notes
 
-Tracked code was committed at 36d0cfb before this pause document was updated.
+Tracked code was committed at 4fe58c4 before this pause document was updated.
 Tracked pause documentation before this update was refreshed through 218d40c
 with parser lint surface evidence, through 26e7417 with the external comparison
 approval gate, fork audit, and helper evidence, and through aba1b03 with parser
@@ -2125,6 +2159,7 @@ fallback-removal evidence, and through 2e42da6 with checker identifier-input
 fallback-removal evidence, and through f6ab6dd with checker built-in effect
 fallback-removal evidence, and through cc10197 with checker effect-alias
 fallback-removal evidence, and through 06a03df with checker host-effect needle
+fallback-removal evidence, and through f0da3e5 with checker unknown-message
 fallback-removal evidence.
 
 Pre-existing untracked files were not touched and should remain outside future
