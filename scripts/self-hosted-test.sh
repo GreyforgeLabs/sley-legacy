@@ -767,7 +767,10 @@ bin/sley self-hosting-status --json \
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("checker_collection_pass_family_task_execution"))'
 
-if grep -Eq 'def (return_type_diags|take_type_diags|unknown_effect_diags|gate_take_type_diags|gate_effect_diags|direct_effect_diags|transitive_effect_diags|duplicate_effect_diags|duplicate_type_diags|duplicate_task_diags|duplicate_take_diags|duplicate_map_key_diags|duplicate_record_field_diags|duplicate_record_literal_field_diags|record_field_missing_diags|record_field_unknown_diags|record_field_type_mismatch_diags|record_literal_non_record_type_diags|unknown_record_field_diags|list_element_type_diags|index_diags|map_key_type_diags|map_value_type_diags):' bin/sley; then
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("checker_call_pass_family_task_execution"))'
+
+if grep -Eq 'def (return_type_diags|take_type_diags|unknown_effect_diags|gate_take_type_diags|gate_effect_diags|direct_effect_diags|transitive_effect_diags|duplicate_effect_diags|duplicate_type_diags|duplicate_task_diags|duplicate_take_diags|duplicate_map_key_diags|duplicate_record_field_diags|duplicate_record_literal_field_diags|record_field_missing_diags|record_field_unknown_diags|record_field_type_mismatch_diags|record_literal_non_record_type_diags|unknown_record_field_diags|list_element_type_diags|index_diags|map_key_type_diags|map_value_type_diags|unknown_task_diags|call_arity_diags|call_argument_type_diags):' bin/sley; then
   fail "checker descriptor-backed diagnostics must run through Sley-owned pass descriptor engines"
 fi
 
