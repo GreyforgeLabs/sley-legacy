@@ -2135,6 +2135,29 @@ The latest continuation audit reconfirmed:
   `bin/sley-contract check-fixtures fixtures/contracts --schemas docs/schemas
   --json`, external public-action packet verifier, `git diff --check`, and
   final `make v1` all passed
+- focused checker record/collection message fallback-removal probes:
+  `bin/sley self-hosting-status --json` reported
+  `checker_record_message_fallback_removal_task_execution`,
+  `checker_collection_message_fallback_removal_task_execution`, and
+  `bootstrap_owned_by_sley=288`; record fixtures preserved
+  `RECORD_FIELD_MISSING`, `RECORD_FIELD_UNKNOWN`,
+  `RECORD_FIELD_TYPE_MISMATCH`, `RECORD_LITERAL_NON_RECORD_TYPE`, and
+  `UNKNOWN_RECORD_FIELD` with exact messages; collection fixtures preserved
+  `LIST_ELEMENT_TYPE_MISMATCH`, `INDEX_NOT_INT`,
+  `INDEX_KEY_TYPE_MISMATCH`, `MAP_KEY_TYPE_MISMATCH`, and
+  `MAP_VALUE_TYPE_MISMATCH` with exact messages; focused grep found no
+  record/collection diagnostic message printf fallbacks, prefix/suffix
+  fallbacks, or empty-template fallback branches
+- Sley self-hosting status after the checker record/collection message
+  fallback-removal slice: `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=288`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
+- latest checker record/collection message fallback-removal verification:
+  `bash -n bin/sley`, `bash -n scripts/self-hosted-test.sh`, focused checker
+  record/collection message probes, `scripts/self-hosted-test.sh`,
+  `bin/sley-contract check-fixtures fixtures/contracts --schemas docs/schemas
+  --json`, external public-action packet verifier, `git diff --check`, and
+  final `make v1` all passed
 
 ## Dirty State Notes
 
