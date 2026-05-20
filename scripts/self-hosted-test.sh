@@ -535,6 +535,10 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("project_import_sou
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("project_entry_source_runtime_execution"))'
 
+if grep -Fq 'file="$(collect_files "$target" | head -n 1)"' bin/sley; then
+  fail "source evaluators must use sley.toml entry files for project targets"
+fi
+
 for source_entry_fn in eval_source_seeded_host_result_main_return eval_source_seeded_host_text_main_return; do
   if awk -v fn="$source_entry_fn" '
     $0 ~ "^" fn "\\(\\)" {in_fn=1}
