@@ -1068,6 +1068,15 @@ eval_runtime_text_identity_value_task() {
   sley_eval_source_task "$runtime_file" text_identity_value "$env_json"
 }
 
+eval_runtime_bool_identity_value_task() {
+  local value="$1"
+  local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
+  local env_json
+  [[ "$value" == "true" || "$value" == "false" ]] || return 1
+  env_json="$(jq -cn --argjson value "$value" '{value:$value}')"
+  sley_eval_source_task "$runtime_file" bool_identity_value "$env_json"
+}
+
 eval_runtime_int_binary_value_task() {
   local task_name="$1" op="$2" left="$3" right="$4"
   local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
@@ -3876,6 +3885,79 @@ eval_source_unit_main_return() {
   ' "$file")" || return 1
   [[ "$matched" == "unit" ]] || return 1
   printf '{"kind":"%s","value":""}\n' "$RUNTIME_UNIT_VALUE_KIND"
+}
+
+sley_source_main_return_type() {
+  local file="$1"
+  awk '
+    function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
+    /^[ \t]*(export[ \t]+)?task[ \t]+main[ \t]*->[ \t]*/ {
+      line=$0
+      sub(/^[ \t]*(export[ \t]+)?task[ \t]+main[ \t]*->[ \t]*/, "", line)
+      sub(/[ \t]+uses[ \t]+.*/, "", line)
+      sub(/[ \t]*\{.*/, "", line)
+      print trim(line)
+      exit
+    }
+  ' "$file"
+}
+
+sley_source_main_body_supports_generic_runtime() {
+  local file="$1" body
+  body="$(extract_sley_task_body "$file" main)" || return 1
+  [[ -n "$body" ]] || return 1
+  ! printf '%s\n' "$body" | awk '
+    function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
+    {
+      line=trim($0)
+      if(line ~ /^(for|while|set|state|tally|forge)([ \t{]|$)/) found=1
+      if(line ~ /^return[ \t]+if[ \t]+/) found=1
+    }
+    END {exit found ? 0 : 1}
+  '
+}
+
+eval_source_generic_main_return() {
+  local target="$1" http_text="$2" model_text="$3" deploy_text="$4" spend_text="$5" secret_text="$6" shell_text="$7"
+  local file return_type result_type env_json value runtime_value
+  file="$(sley_source_entry_file_for_target "$target")"
+  [[ -n "$file" ]] || return 1
+  sley_source_main_body_supports_generic_runtime "$file" || return 1
+  return_type="$(sley_source_main_return_type "$file")"
+  [[ -n "$return_type" ]] || return 1
+  env_json="$(sley_runtime_seed_env_json "$http_text" "$model_text" "$deploy_text" "$spend_text" "$secret_text" "$shell_text")" || return 1
+  value="$(sley_eval_source_task "$file" main "$env_json")" || return 1
+  case "$return_type" in
+    Int)
+      runtime_value="$(eval_runtime_int_identity_value_task "$value")" || return 1
+      jq -cn --arg kind "$RUNTIME_INT_VALUE_KIND" --arg value "$runtime_value" '{kind:$kind,value:$value}'
+      ;;
+    Text)
+      runtime_value="$(eval_runtime_text_identity_value_task "$value")" || return 1
+      jq -cn --arg kind "$RUNTIME_TEXT_VALUE_KIND" --arg value "$runtime_value" '{kind:$kind,value:$value}'
+      ;;
+    Bool)
+      runtime_value="$(eval_runtime_bool_identity_value_task "$value")" || return 1
+      jq -cn --arg kind "$RUNTIME_BOOL_VALUE_KIND" --arg value "$runtime_value" '{kind:$kind,value:$value}'
+      ;;
+    Result\<*,*\>)
+      result_type="${return_type#Result<}"
+      result_type="${result_type%%,*}"
+      result_type="$(printf '%s\n' "$result_type" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+      case "$result_type" in
+        Int)
+          runtime_value="$(eval_runtime_ok_int_value_task "$value")" || return 1
+          jq -cn --arg kind "$RUNTIME_OK_INT_VALUE_KIND" --arg value "$runtime_value" '{kind:$kind,value:$value}'
+          ;;
+        Text)
+          runtime_value="$(eval_runtime_text_identity_value_task "$value")" || return 1
+          jq -cn --arg kind "$RUNTIME_OK_TEXT_VALUE_KIND" --arg value "$runtime_value" '{kind:$kind,value:$value}'
+          ;;
+        *) return 1 ;;
+      esac
+      ;;
+    *) return 1 ;;
+  esac
 }
 
 eval_source_local_call_int_main_return() {
@@ -8185,6 +8267,9 @@ run_json() {
   if json_list_contains_string "$RUNTIME_SELF_HOSTED_TARGETS_JSON" "$target"; then
     value_kind="$RUNTIME_INT_VALUE_KIND"; value="$(eval_bootstrap_smoke_task)"
   elif simple_runtime="$(eval_source_unit_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
+    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
+    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
+  elif simple_runtime="$(eval_source_generic_main_return "$target" "$http_text" "$model_text" "$deploy_text" "$spend_text" "$secret_text" "$shell_text" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
     value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
     value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
   elif simple_runtime="$(eval_source_result_flow_int_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then

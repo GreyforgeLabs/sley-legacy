@@ -178,6 +178,12 @@ export task text_identity_value -> Text {
   return value
 }
 
+export task bool_identity_value -> Bool {
+  take value: Bool
+
+  return value
+}
+
 export task spend_prefixed_value -> Text {
   take authorization: Text
 
