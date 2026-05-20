@@ -992,6 +992,61 @@ if bin/sley check --json fixtures/corpus/rejected/unknown_record_field.sley >/tm
 fi
 jq -er '.status == "error" and .diagnostics[0].id == "UNKNOWN_RECORD_FIELD" and .diagnostics[0].message == "unknown record field `email`"' /tmp/sley-rejected-unknown-record-field-check.json >/dev/null
 
+if bin/sley check --json fixtures/corpus/rejected/list_element_type_mismatch.sley >/tmp/sley-rejected-list-element-type-check.json; then
+  fail "rejected list_element_type_mismatch.sley passed check"
+fi
+jq -er '.status == "error" and .diagnostics[0].id == "LIST_ELEMENT_TYPE_MISMATCH" and .diagnostics[0].message == "list element type mismatch `Text`"' /tmp/sley-rejected-list-element-type-check.json >/dev/null
+
+if bin/sley check --json fixtures/corpus/rejected/list_index_non_int.sley >/tmp/sley-rejected-list-index-non-int-check.json; then
+  fail "rejected list_index_non_int.sley passed check"
+fi
+jq -er '.status == "error" and .diagnostics[0].id == "INDEX_NOT_INT" and .diagnostics[0].message == "list index must be Int, got `Text`"' /tmp/sley-rejected-list-index-non-int-check.json >/dev/null
+
+if bin/sley check --json fixtures/corpus/rejected/map_index_non_text.sley >/tmp/sley-rejected-map-index-non-text-check.json; then
+  fail "rejected map_index_non_text.sley passed check"
+fi
+jq -er '.status == "error" and .diagnostics[0].id == "INDEX_KEY_TYPE_MISMATCH" and .diagnostics[0].message == "map index key must be Text, got `Int`"' /tmp/sley-rejected-map-index-non-text-check.json >/dev/null
+
+if bin/sley check --json fixtures/corpus/rejected/map_key_type_mismatch.sley >/tmp/sley-rejected-map-key-type-check.json; then
+  fail "rejected map_key_type_mismatch.sley passed check"
+fi
+jq -er '.status == "error" and .diagnostics[0].id == "MAP_KEY_TYPE_MISMATCH" and .diagnostics[0].message == "map key type mismatch `Int`"' /tmp/sley-rejected-map-key-type-check.json >/dev/null
+
+if bin/sley check --json fixtures/corpus/rejected/map_value_type_mismatch.sley >/tmp/sley-rejected-map-value-type-check.json; then
+  fail "rejected map_value_type_mismatch.sley passed check"
+fi
+jq -er '.status == "error" and .diagnostics[0].id == "MAP_VALUE_TYPE_MISMATCH" and .diagnostics[0].message == "map value type mismatch `Text`"' /tmp/sley-rejected-map-value-type-check.json >/dev/null
+
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("checker_record_message_fallback_removal_task_execution"))'
+
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("checker_collection_message_fallback_removal_task_execution"))'
+
+if grep -Eq 'eval_checker_message_template (record_field_missing_message field_name|record_field_unknown_message field_name|record_field_type_mismatch_message field_name|unknown_record_field_message field_name|record_literal_non_record_type_message type_name) \|\| printf' bin/sley; then
+  fail "checker record diagnostic message templates must come from loom.checker without printf fallbacks"
+fi
+
+if grep -Eq '(RECORD_FIELD_MISSING|RECORD_FIELD_UNKNOWN|RECORD_FIELD_TYPE_MISMATCH|UNKNOWN_RECORD_FIELD|RECORD_LITERAL_NON_RECORD_TYPE)_MESSAGE_(PREFIX|SUFFIX)="\$\{[A-Z_]+_MESSAGE_(PREFIX|SUFFIX):-' bin/sley; then
+  fail "checker record diagnostic message prefixes/suffixes must come from loom.checker without shell fallbacks"
+fi
+
+if grep -Eq 'if \[\[ -z "\$(RECORD_FIELD_MISSING|RECORD_FIELD_UNKNOWN|RECORD_FIELD_TYPE_MISMATCH|UNKNOWN_RECORD_FIELD|RECORD_LITERAL_NON_RECORD_TYPE)_MESSAGE_TEMPLATE" \]\]' bin/sley; then
+  fail "checker record diagnostic message templates must not use empty-template shell fallback branches"
+fi
+
+if grep -Eq 'eval_checker_message_template (list_element_type_mismatch_message actual_type|index_not_int_message actual_type|index_key_type_mismatch_message actual_type|map_key_type_mismatch_message actual_type|map_value_type_mismatch_message actual_type) \|\| printf' bin/sley; then
+  fail "checker collection diagnostic message templates must come from loom.checker without printf fallbacks"
+fi
+
+if grep -Eq '(LIST_ELEMENT_TYPE_MISMATCH|INDEX_NOT_INT|INDEX_KEY_TYPE_MISMATCH|MAP_KEY_TYPE_MISMATCH|MAP_VALUE_TYPE_MISMATCH)_MESSAGE_(PREFIX|SUFFIX)="\$\{[A-Z_]+_MESSAGE_(PREFIX|SUFFIX):-' bin/sley; then
+  fail "checker collection diagnostic message prefixes/suffixes must come from loom.checker without shell fallbacks"
+fi
+
+if grep -Eq 'if \[\[ -z "\$(LIST_ELEMENT_TYPE_MISMATCH|INDEX_NOT_INT|INDEX_KEY_TYPE_MISMATCH|MAP_KEY_TYPE_MISMATCH|MAP_VALUE_TYPE_MISMATCH)_MESSAGE_TEMPLATE" \]\]' bin/sley; then
+  fail "checker collection diagnostic message templates must not use empty-template shell fallback branches"
+fi
+
 sidecar_oracle_hits="$(
   find fixtures/corpus/rejected -name '*.sley' -print | sort | while read -r rejected_fixture; do
     if bin/sley check --json "$rejected_fixture" >/tmp/sley-rejected-sidecar-oracle-check.json 2>/dev/null; then
