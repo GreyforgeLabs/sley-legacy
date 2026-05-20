@@ -1251,6 +1251,55 @@ eval_parser_expression_feature_classifiers_json() {
   done | jq -s 'from_entries'
 }
 
+eval_parser_statement_feature_classifiers_json() {
+  local parser_file="$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley"
+  local key is_return is_call_expression is_binding is_set is_for is_while is_if is_forge kind env_json
+  for key in return call_expression binding set for while if forge fallback; do
+    is_return=false
+    is_call_expression=false
+    is_binding=false
+    is_set=false
+    is_for=false
+    is_while=false
+    is_if=false
+    is_forge=false
+    case "$key" in
+      return) is_return=true ;;
+      call_expression) is_call_expression=true ;;
+      binding) is_binding=true ;;
+      set) is_set=true ;;
+      for) is_for=true ;;
+      while) is_while=true ;;
+      if) is_if=true ;;
+      forge) is_forge=true ;;
+      fallback) ;;
+      *) return 1 ;;
+    esac
+    env_json="$(jq -cn \
+      --argjson is_return "$is_return" \
+      --argjson is_call_expression "$is_call_expression" \
+      --argjson is_binding "$is_binding" \
+      --argjson is_set "$is_set" \
+      --argjson is_for "$is_for" \
+      --argjson is_while "$is_while" \
+      --argjson is_if "$is_if" \
+      --argjson is_forge "$is_forge" \
+      '{
+        is_return:$is_return,
+        is_call_expression:$is_call_expression,
+        is_binding:$is_binding,
+        is_set:$is_set,
+        is_for:$is_for,
+        is_while:$is_while,
+        is_if:$is_if,
+        is_forge:$is_forge
+      }')" || return 1
+    kind="$(sley_eval_source_task "$parser_file" classify_statement_features "$env_json")" || return 1
+    [[ -n "$kind" ]] || return 1
+    jq -cn --arg key "$key" --arg value "$kind" '{key:$key,value:$value}'
+  done | jq -s 'from_entries'
+}
+
 eval_parser_id_template() {
   local task="$1"
   local parser_file="$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley"
@@ -5288,6 +5337,16 @@ PARSER_FOR_STATEMENT_KIND="$(sley_source_task loom.parser for_statement_kind)"
 PARSER_WHILE_STATEMENT_KIND="$(sley_source_task loom.parser while_statement_kind)"
 PARSER_IF_STATEMENT_KIND="$(sley_source_task loom.parser if_statement_kind)"
 PARSER_FORGE_STATEMENT_KIND="$(sley_source_task loom.parser forge_statement_kind)"
+PARSER_STATEMENT_FEATURE_CLASSIFIERS_JSON="$(eval_parser_statement_feature_classifiers_json)"
+PARSER_FEATURE_RETURN_STATEMENT_KIND="$(printf '%s\n' "$PARSER_STATEMENT_FEATURE_CLASSIFIERS_JSON" | jq -er '.return')"
+PARSER_FEATURE_CALL_STATEMENT_KIND="$(printf '%s\n' "$PARSER_STATEMENT_FEATURE_CLASSIFIERS_JSON" | jq -er '.call_expression')"
+PARSER_FEATURE_BINDING_STATEMENT_KIND="$(printf '%s\n' "$PARSER_STATEMENT_FEATURE_CLASSIFIERS_JSON" | jq -er '.binding')"
+PARSER_FEATURE_SET_STATEMENT_KIND="$(printf '%s\n' "$PARSER_STATEMENT_FEATURE_CLASSIFIERS_JSON" | jq -er '.set')"
+PARSER_FEATURE_FOR_STATEMENT_KIND="$(printf '%s\n' "$PARSER_STATEMENT_FEATURE_CLASSIFIERS_JSON" | jq -er '.for')"
+PARSER_FEATURE_WHILE_STATEMENT_KIND="$(printf '%s\n' "$PARSER_STATEMENT_FEATURE_CLASSIFIERS_JSON" | jq -er '.while')"
+PARSER_FEATURE_IF_STATEMENT_KIND="$(printf '%s\n' "$PARSER_STATEMENT_FEATURE_CLASSIFIERS_JSON" | jq -er '.if')"
+PARSER_FEATURE_FORGE_STATEMENT_KIND="$(printf '%s\n' "$PARSER_STATEMENT_FEATURE_CLASSIFIERS_JSON" | jq -er '.forge')"
+PARSER_FEATURE_FALLBACK_STATEMENT_KIND="$(printf '%s\n' "$PARSER_STATEMENT_FEATURE_CLASSIFIERS_JSON" | jq -er '.fallback')"
 PARSER_TAKE_BINDING_KIND="$(sley_source_task loom.parser take_binding_kind)"
 PARSER_GATE_BINDING_KIND="$(sley_source_task loom.parser gate_binding_kind)"
 PARSER_STATE_BINDING_KIND="$(sley_source_task loom.parser state_binding_kind)"
@@ -5742,6 +5801,15 @@ ast_json() {
     -v while_statement_kind="$PARSER_WHILE_STATEMENT_KIND" \
     -v if_statement_kind="$PARSER_IF_STATEMENT_KIND" \
     -v forge_statement_kind="$PARSER_FORGE_STATEMENT_KIND" \
+    -v return_feature_statement_kind="$PARSER_FEATURE_RETURN_STATEMENT_KIND" \
+    -v call_feature_statement_kind="$PARSER_FEATURE_CALL_STATEMENT_KIND" \
+    -v binding_feature_statement_kind="$PARSER_FEATURE_BINDING_STATEMENT_KIND" \
+    -v set_feature_statement_kind="$PARSER_FEATURE_SET_STATEMENT_KIND" \
+    -v for_feature_statement_kind="$PARSER_FEATURE_FOR_STATEMENT_KIND" \
+    -v while_feature_statement_kind="$PARSER_FEATURE_WHILE_STATEMENT_KIND" \
+    -v if_feature_statement_kind="$PARSER_FEATURE_IF_STATEMENT_KIND" \
+    -v forge_feature_statement_kind="$PARSER_FEATURE_FORGE_STATEMENT_KIND" \
+    -v fallback_feature_statement_kind="$PARSER_FEATURE_FALLBACK_STATEMENT_KIND" \
     -v take_binding_kind="$PARSER_TAKE_BINDING_KIND" \
     -v gate_binding_kind="$PARSER_GATE_BINDING_KIND" \
     -v state_binding_kind="$PARSER_STATE_BINDING_KIND" \
@@ -5814,24 +5882,24 @@ ast_json() {
         take_name[current,take_count[current]]=trim(name); take_kind[current,take_count[current]]=kind; take_type[current,take_count[current]]=trim(typ); take_line[current,take_count[current]]=FNR
       } else if(line ~ /^(bind|state|tally)[ \t]+/) {
         kind=line; sub(/[ \t].*/,"",kind); rest=line; sub(/^[A-Za-z]+[ \t]+/,"",rest); name=rest; sub(/[ \t:=].*/,"",name); expr=rest; sub(/^.*=[ \t]*/,"",expr)
-        add_stmt(binding_statement_kind "|" binding_kind(kind) "|" trim(name), expr, FNR, index(raw, kind))
+        add_stmt(binding_feature_statement_kind "|" binding_kind(kind) "|" trim(name), expr, FNR, index(raw, kind))
       } else if(line ~ /^set[ \t]+/) {
         rest=line; sub(/^set[ \t]+/,"",rest); name=rest; sub(/[ \t]*=.*/,"",name); expr=rest; sub(/^.*=[ \t]*/,"",expr)
-        add_stmt(set_statement_kind "|" trim(name), expr, FNR, index(raw, "set"))
+        add_stmt(set_feature_statement_kind "|" trim(name), expr, FNR, index(raw, "set"))
       } else if(line ~ /^return[ \t]+/) {
-        expr=line; sub(/^return[ \t]+/,"",expr); add_stmt(return_statement_kind, expr, FNR, index(raw, "return"))
+        expr=line; sub(/^return[ \t]+/,"",expr); add_stmt(return_feature_statement_kind, expr, FNR, index(raw, "return"))
       } else if(index(line, call_expression_prefix) == 1) {
-        add_stmt(expr_statement_kind, line, FNR, index(raw, call_expression_prefix))
+        add_stmt(call_feature_statement_kind, line, FNR, index(raw, call_expression_prefix))
       } else if(line ~ /^for[ \t]+/) {
-        add_stmt(for_statement_kind, line, FNR, index(raw, "for"))
+        add_stmt(for_feature_statement_kind, line, FNR, index(raw, "for"))
       } else if(line ~ /^while[ \t]+/) {
-        add_stmt(while_statement_kind, line, FNR, index(raw, "while"))
+        add_stmt(while_feature_statement_kind, line, FNR, index(raw, "while"))
       } else if(line ~ /^if[ \t]+/) {
-        add_stmt(if_statement_kind, line, FNR, index(raw, "if"))
+        add_stmt(if_feature_statement_kind, line, FNR, index(raw, "if"))
       } else if(line ~ /^forge[ \t]*\{/) {
-        add_stmt(forge_statement_kind, line, FNR, index(raw, "forge"))
+        add_stmt(forge_feature_statement_kind, line, FNR, index(raw, "forge"))
       } else if(depth==1 && line ~ /\?$/) {
-        add_stmt(expr_statement_kind, line, FNR, index(raw, line))
+        add_stmt(fallback_feature_statement_kind, line, FNR, index(raw, line))
       }
       depth += count_char($0,"{")-count_char($0,"}")
       if(depth<=0){in_task=0; current=0}
