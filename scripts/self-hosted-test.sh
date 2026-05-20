@@ -755,8 +755,11 @@ fi
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("checker_diagnostic_pass_descriptor_task_execution")) and (.bootstrap_owned_by_sley | index("checker_unknown_reference_pass_task_execution"))'
 
-if grep -Eq 'def (return_type_diags|take_type_diags|unknown_effect_diags):' bin/sley; then
-  fail "checker unknown reference diagnostics must run through the Sley-owned pass descriptor engine"
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("checker_gate_reference_pass_task_execution")) and (.bootstrap_owned_by_sley | index("checker_effect_authorization_pass_task_execution"))'
+
+if grep -Eq 'def (return_type_diags|take_type_diags|unknown_effect_diags|gate_take_type_diags|gate_effect_diags|direct_effect_diags|transitive_effect_diags):' bin/sley; then
+  fail "checker descriptor-backed diagnostics must run through Sley-owned pass descriptor engines"
 fi
 
 if grep -Fq '$diagnostic_pass_order' bin/sley; then
@@ -772,6 +775,26 @@ if bin/sley check --json fixtures/corpus/rejected/unknown_effect.sley >/tmp/sley
   fail "rejected unknown_effect.sley passed check"
 fi
 jq -er '.status == "error" and .diagnostics[0].id == "UNKNOWN_EFFECT" and .diagnostics[0].message == "unknown effect `MissingEffect`"' /tmp/sley-rejected-effect-check.json >/dev/null
+
+if bin/sley check --json fixtures/corpus/rejected/gate_take_type_mismatch.sley >/tmp/sley-rejected-gate-take-check.json; then
+  fail "rejected gate_take_type_mismatch.sley passed check"
+fi
+jq -er '.status == "error" and .diagnostics[0].id == "GATE_TAKE_TYPE_MISMATCH" and .diagnostics[0].message == "gate take must use Gate<Effect>, got `Int`"' /tmp/sley-rejected-gate-take-check.json >/dev/null
+
+if bin/sley check --json fixtures/corpus/rejected/gate_effect_undeclared.sley >/tmp/sley-rejected-gate-effect-check.json; then
+  fail "rejected gate_effect_undeclared.sley passed check"
+fi
+jq -er '.status == "error" and .diagnostics[0].id == "GATE_EFFECT_UNDECLARED" and .diagnostics[0].message == "gate effect undeclared `FileRead`"' /tmp/sley-rejected-gate-effect-check.json >/dev/null
+
+if bin/sley check --json fixtures/corpus/rejected/authority/missing_file_read_effect.sley >/tmp/sley-rejected-direct-effect-check.json; then
+  fail "rejected missing_file_read_effect.sley passed check"
+fi
+jq -er '.status == "error" and .diagnostics[0].id == "EFFECT_UNAUTHORIZED" and .diagnostics[0].message == "effect unauthorized `FileRead`"' /tmp/sley-rejected-direct-effect-check.json >/dev/null
+
+if bin/sley check --json fixtures/corpus/rejected/authority/missing_transitive_spend_effect.sley >/tmp/sley-rejected-transitive-effect-check.json; then
+  fail "rejected missing_transitive_spend_effect.sley passed check"
+fi
+jq -er '.status == "error" and .diagnostics[0].id == "EFFECT_UNAUTHORIZED" and .diagnostics[0].message == "effect unauthorized `Spend`"' /tmp/sley-rejected-transitive-effect-check.json >/dev/null
 
 if bin/sley check --json fixtures/corpus/rejected/unknown_identifier.sley >/tmp/sley-rejected-check.json; then
   fail "rejected unknown_identifier.sley passed check"

@@ -6124,10 +6124,16 @@ check_json() {
     def descriptor_diagnostic_id($pass):
       if ($pass.diagnostic_id_task // "") == "unknown_type_id" then $unknown_type
       elif ($pass.diagnostic_id_task // "") == "unknown_effect_id" then $unknown_effect
+      elif ($pass.diagnostic_id_task // "") == "gate_take_type_mismatch_id" then $gate_take_type
+      elif ($pass.diagnostic_id_task // "") == "gate_effect_undeclared_id" then $gate_effect
+      elif ($pass.diagnostic_id_task // "") == "effect_unauthorized_id" then $effect_unauthorized
       else "" end;
     def descriptor_message_template($pass):
       if ($pass.message_task // "") == "unknown_type_message" then $unknown_type_message_template
       elif ($pass.message_task // "") == "unknown_effect_message" then $unknown_effect_message_template
+      elif ($pass.message_task // "") == "gate_take_type_mismatch_message" then $gate_take_type_message_template
+      elif ($pass.message_task // "") == "gate_effect_undeclared_message" then $gate_effect_message_template
+      elif ($pass.message_task // "") == "effect_unauthorized_message" then $effect_unauthorized_message_template
       else "" end;
     def unknown_reference_diags($pass):
       if ($pass.subject // "") == "task_return_type" then
@@ -6147,21 +6153,23 @@ check_json() {
         select(effect_known($effect) | not) |
         {id:descriptor_diagnostic_id($pass), severity:"error", message:render_arg(descriptor_message_template($pass); ($pass.message_arg // "effect_name"); $effect), node:$t.id, span:$t.span}
       else empty end;
-    def gate_take_type_diags:
-      $root.tasks[] as $t |
-      $t.takes[]? as $take |
-      select($take.binding_kind == $gate_binding_kind) |
-      ($take.type.name // $checker_unit_type) as $name |
-      select(($name | gate_effect_name) == null) |
-      {id:$gate_take_type, severity:"error", message:render_arg($gate_take_type_message_template; "actual_type"; $name), node:$take.id, span:$take.span};
-    def gate_effect_diags:
-      $root.tasks[] as $t |
-      $t.takes[]? as $take |
-      select($take.binding_kind == $gate_binding_kind) |
-      (($take.type.name // $checker_unit_type) | gate_effect_name) as $effect |
-      select($effect != null) |
-      select(($t.effects | index($effect)) == null) |
-      {id:$gate_effect, severity:"error", message:render_arg($gate_effect_message_template; "effect_name"; $effect), node:$take.id, span:$take.span};
+    def gate_reference_diags($pass):
+      if ($pass.subject // "") == "gate_take_type" then
+        $root.tasks[] as $t |
+        $t.takes[]? as $take |
+        select($take.binding_kind == $gate_binding_kind) |
+        ($take.type.name // $checker_unit_type) as $name |
+        select(($name | gate_effect_name) == null) |
+        {id:descriptor_diagnostic_id($pass), severity:"error", message:render_arg(descriptor_message_template($pass); ($pass.message_arg // "actual_type"); $name), node:$take.id, span:$take.span}
+      elif ($pass.subject // "") == "gate_effect_declared" then
+        $root.tasks[] as $t |
+        $t.takes[]? as $take |
+        select($take.binding_kind == $gate_binding_kind) |
+        (($take.type.name // $checker_unit_type) | gate_effect_name) as $effect |
+        select($effect != null) |
+        select(($t.effects | index($effect)) == null) |
+        {id:descriptor_diagnostic_id($pass), severity:"error", message:render_arg(descriptor_message_template($pass); ($pass.message_arg // "effect_name"); $effect), node:$take.id, span:$take.span}
+      else empty end;
     def unknown_task_diags:
       $root.tasks[] as $t |
       $t.body.statements[]?.expr? |
@@ -6387,24 +6395,26 @@ check_json() {
       $t.body.statements[]?.expr? |
       select(.fallible? == true) |
       {id:$question_requires_result, severity:"error", message:render_arg($question_requires_result_message_template; "task_name"; ($t.module + "." + $t.name)), node:.id, span:.span};
-    def direct_effect_diags:
-      $root.tasks[] as $t |
-      $t.body.statements[]?.expr? |
-      . as $expr |
-      ($expr | required_host_effects)[] as $effect |
-      select(effect_authorized($t.effects; $effect) | not) |
-      {id:$effect_unauthorized, severity:"error", message:render_arg($effect_unauthorized_message_template; "effect_name"; $effect), node:$expr.id, span:$expr.span};
-    def transitive_effect_diags:
-      $root.tasks[] as $t |
-      $t.body.statements[]?.expr? |
-      select((.source? // "") | startswith($call_expression_prefix)) |
-      . as $expr |
-      (call_callee) as $callee |
-      ([declared_call_task($t.module; $callee)][0]) as $target |
-      select($target != null) |
-      $target.effects[]? as $effect |
-      select(effect_authorized($t.effects; $effect) | not) |
-      {id:$effect_unauthorized, severity:"error", message:render_arg($effect_unauthorized_message_template; "effect_name"; $effect), node:$expr.id, span:$expr.span};
+    def effect_authorization_diags($pass):
+      if ($pass.subject // "") == "direct_host_effect" then
+        $root.tasks[] as $t |
+        $t.body.statements[]?.expr? |
+        . as $expr |
+        ($expr | required_host_effects)[] as $effect |
+        select(effect_authorized($t.effects; $effect) | not) |
+        {id:descriptor_diagnostic_id($pass), severity:"error", message:render_arg(descriptor_message_template($pass); ($pass.message_arg // "effect_name"); $effect), node:$expr.id, span:$expr.span}
+      elif ($pass.subject // "") == "transitive_task_effect" then
+        $root.tasks[] as $t |
+        $t.body.statements[]?.expr? |
+        select((.source? // "") | startswith($call_expression_prefix)) |
+        . as $expr |
+        (call_callee) as $callee |
+        ([declared_call_task($t.module; $callee)][0]) as $target |
+        select($target != null) |
+        $target.effects[]? as $effect |
+        select(effect_authorized($t.effects; $effect) | not) |
+        {id:descriptor_diagnostic_id($pass), severity:"error", message:render_arg(descriptor_message_template($pass); ($pass.message_arg // "effect_name"); $effect), node:$expr.id, span:$expr.span}
+      else empty end;
     def missing_return_diags:
       $root.tasks[] as $t |
       ($t.return_type.name // $checker_unit_type) as $name |
@@ -6419,15 +6429,13 @@ check_json() {
     def diagnostic_pass($pass):
       ($pass.name // "") as $name |
       if ($pass.executor // "") == "unknown_reference" then unknown_reference_diags($pass)
+      elif ($pass.executor // "") == "gate_reference" then gate_reference_diags($pass)
+      elif ($pass.executor // "") == "effect_authorization" then effect_authorization_diags($pass)
       elif $name == "duplicate_effect_diags" then duplicate_effect_diags
       elif $name == "duplicate_type_diags" then duplicate_type_diags
       elif $name == "duplicate_task_diags" then duplicate_task_diags
       elif $name == "task_diags" then task_diags
-      elif $name == "gate_take_type_diags" then gate_take_type_diags
-      elif $name == "gate_effect_diags" then gate_effect_diags
       elif $name == "question_requires_result_diags" then question_requires_result_diags
-      elif $name == "direct_effect_diags" then direct_effect_diags
-      elif $name == "transitive_effect_diags" then transitive_effect_diags
       elif $name == "unknown_task_diags" then unknown_task_diags
       elif $name == "call_arity_diags" then call_arity_diags
       elif $name == "call_argument_type_diags" then call_argument_type_diags
