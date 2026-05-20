@@ -5362,6 +5362,7 @@ PARSER_COLLECTION_EXPRESSION_ID_TEMPLATE="$(eval_parser_id_template collection_e
 PARSER_CONDITION_EXPRESSION_ID_TEMPLATE="$(eval_parser_id_template condition_expression_id)"
 PARSER_FOR_ITEM_NAME_TEMPLATE="$(sley_source_task loom.parser for_item_name_template)"
 PARSER_FOR_COLLECTION_SOURCE_TEMPLATE="$(sley_source_task loom.parser for_collection_source_template)"
+PARSER_CONDITION_SOURCE_TEMPLATE="$(sley_source_task loom.parser condition_source_template)"
 PARSER_CALL_ARGUMENT_SURFACE_ID_TEMPLATE="$(eval_parser_id_template call_argument_surface_id)"
 PARSER_EXPRESSION_SIDE_SURFACE_ID_TEMPLATE="$(eval_parser_id_template expression_side_surface_id)"
 PARSER_RETURN_STATEMENT_KIND="$(sley_source_task loom.parser return_statement_kind)"
@@ -5835,6 +5836,7 @@ ast_json() {
     -v condition_expression_id_template="$PARSER_CONDITION_EXPRESSION_ID_TEMPLATE" \
     -v for_item_name_template="$PARSER_FOR_ITEM_NAME_TEMPLATE" \
     -v for_collection_source_template="$PARSER_FOR_COLLECTION_SOURCE_TEMPLATE" \
+    -v condition_source_template="$PARSER_CONDITION_SOURCE_TEMPLATE" \
     -v call_expression_prefix="$PARSER_CALL_EXPRESSION_PREFIX" \
     -v return_statement_kind="$PARSER_RETURN_STATEMENT_KIND" \
     -v expr_statement_kind="$PARSER_EXPR_STATEMENT_KIND" \
@@ -5880,6 +5882,7 @@ ast_json() {
     function instantiate_condition_expression_id(stmt_id, id){id=condition_expression_id_template; id=replace_all(id, "{{statement}}", stmt_id); return id}
     function instantiate_for_item_name(item_name, value){value=for_item_name_template; value=replace_all(value, "{{item}}", item_name); return value}
     function instantiate_for_collection_source(collection_source, value){value=for_collection_source_template; value=replace_all(value, "{{collection}}", collection_source); return value}
+    function instantiate_condition_source(condition_source, value){value=condition_source_template; value=replace_all(value, "{{condition}}", condition_source); return value}
     function expr_json(expr, id, line, col, value){
       expr=trim(expr)
       if(expr ~ int_pattern){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" int_kind "\",\"value\":" expr ",\"span\":" span_json(line,col) "}"}
@@ -5948,9 +5951,11 @@ ast_json() {
         }
         add_stmt(for_feature_statement_kind "|" instantiate_for_item_name(trim(for_item)), instantiate_for_collection_source(trim(for_collection)), FNR, index(raw, "for"))
       } else if(line ~ /^while[ \t]+/) {
-        add_stmt(while_feature_statement_kind, line, FNR, index(raw, "while"))
+        condition=line; sub(/^while[ \t]+/,"",condition); sub(/[ \t]*[{][ \t]*$/,"",condition)
+        add_stmt(while_feature_statement_kind, instantiate_condition_source(trim(condition)), FNR, index(raw, "while"))
       } else if(line ~ /^if[ \t]+/) {
-        add_stmt(if_feature_statement_kind, line, FNR, index(raw, "if"))
+        condition=line; sub(/^if[ \t]+/,"",condition); sub(/[ \t]*[{][ \t]*$/,"",condition)
+        add_stmt(if_feature_statement_kind, instantiate_condition_source(trim(condition)), FNR, index(raw, "if"))
       } else if(line ~ /^forge[ \t]*\{/) {
         add_stmt(forge_feature_statement_kind, line, FNR, index(raw, "forge"))
       } else if(depth==1 && line ~ /\?$/) {

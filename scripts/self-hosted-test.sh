@@ -23,6 +23,7 @@ parser_feature_source="$(mktemp)"
 parser_statement_source="$(mktemp)"
 parser_binding_source="$(mktemp)"
 parser_for_payload_source="$(mktemp)"
+parser_condition_source="$(mktemp)"
 generic_source_main_source="$(mktemp)"
 generic_state_set_source="$(mktemp)"
 generic_if_assignment_source="$(mktemp)"
@@ -45,7 +46,7 @@ zjx_tool_report="$(mktemp)"
 runtime_report="$(mktemp)"
 ast_missing_report="$(mktemp)"
 ci_report="$(mktemp)"
-trap 'rm -f "$bool_literal_source" "$parser_feature_source" "$parser_statement_source" "$parser_binding_source" "$parser_for_payload_source" "$generic_source_main_source" "$generic_state_set_source" "$generic_if_assignment_source" "$generic_result_err_source" "$generic_each_source" "$generic_for_source" "$generic_while_source" "$empty_module_source" "$unknown_take_type_source" "$add_take_operation" "$self_hosting_status_report" "$artifact_check_report" "$migrate_report" "$docgen_report" "$workbench_report" "$sandbox_report" "$agent_bench_report" "$zjx_tool_report" "$runtime_report" "$ast_missing_report" "$ci_report"; rm -rf "$artifact_dir"' EXIT
+trap 'rm -f "$bool_literal_source" "$parser_feature_source" "$parser_statement_source" "$parser_binding_source" "$parser_for_payload_source" "$parser_condition_source" "$generic_source_main_source" "$generic_state_set_source" "$generic_if_assignment_source" "$generic_result_err_source" "$generic_each_source" "$generic_for_source" "$generic_while_source" "$empty_module_source" "$unknown_take_type_source" "$add_take_operation" "$self_hosting_status_report" "$artifact_check_report" "$migrate_report" "$docgen_report" "$workbench_report" "$sandbox_report" "$agent_bench_report" "$zjx_tool_report" "$runtime_report" "$ast_missing_report" "$ci_report"; rm -rf "$artifact_dir"' EXIT
 printf '%s\n' \
   'module app.bool_literal' \
   '' \
@@ -102,6 +103,16 @@ printf '%s\n' \
   '  }' \
   '  return 0' \
   '}' > "$parser_for_payload_source"
+printf '%s\n' \
+  'module app.parser_conditions' \
+  '' \
+  'task main -> Int {' \
+  '  while index < 10 {' \
+  '  }' \
+  '  if ready {' \
+  '  }' \
+  '  return 0' \
+  '}' > "$parser_condition_source"
 printf '%s\n' \
   'module app.generic_source_main' \
   '' \
@@ -344,6 +355,10 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_for_stateme
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_ast_for_payload_execution"))'
 
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_condition_payload_task_execution"))'
+
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_ast_condition_payload_execution"))'
+
 if ! awk '
   /^eval_parser_expression_classifiers_json\(\)[ \t]*\{/ {in_fn=1}
   in_fn && /sley_eval_source_task/ {source_eval=1}
@@ -395,6 +410,9 @@ bin/sley ast --json "$parser_binding_source" \
 
 bin/sley ast --json "$parser_for_payload_source" \
   | json_field '.tasks[0].body.statements[] | select(.kind == "For" and .item == "score" and .collection.source == "values" and .collection.expr_kind == "Identifier" and .collection.name == "values")'
+
+bin/sley ast --json "$parser_condition_source" \
+  | json_field '(.tasks[0].body.statements[] | select(.kind == "While" and .condition.source == "index < 10")) and (.tasks[0].body.statements[] | select(.kind == "If" and .condition.source == "ready" and .condition.expr_kind == "Identifier"))'
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_source_metadata_task_execution"))'
 
