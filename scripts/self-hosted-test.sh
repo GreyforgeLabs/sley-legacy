@@ -16,6 +16,7 @@ json_field() {
 
 bool_literal_source="$(mktemp)"
 empty_module_source="$(mktemp)"
+unknown_take_type_source="$(mktemp)"
 add_take_operation="$(mktemp)"
 artifact_dir="$(mktemp -d)"
 artifact_check_report="$(mktemp)"
@@ -28,7 +29,7 @@ zjx_tool_report="$(mktemp)"
 runtime_report="$(mktemp)"
 ast_missing_report="$(mktemp)"
 ci_report="$(mktemp)"
-trap 'rm -f "$bool_literal_source" "$empty_module_source" "$add_take_operation" "$artifact_check_report" "$migrate_report" "$docgen_report" "$workbench_report" "$sandbox_report" "$agent_bench_report" "$zjx_tool_report" "$runtime_report" "$ast_missing_report" "$ci_report"; rm -rf "$artifact_dir"' EXIT
+trap 'rm -f "$bool_literal_source" "$empty_module_source" "$unknown_take_type_source" "$add_take_operation" "$artifact_check_report" "$migrate_report" "$docgen_report" "$workbench_report" "$sandbox_report" "$agent_bench_report" "$zjx_tool_report" "$runtime_report" "$ast_missing_report" "$ci_report"; rm -rf "$artifact_dir"' EXIT
 printf '%s\n' \
   'module app.bool_literal' \
   '' \
@@ -37,6 +38,14 @@ printf '%s\n' \
   '}' > "$bool_literal_source"
 printf '%s\n' \
   'module app.empty' > "$empty_module_source"
+printf '%s\n' \
+  'module app.unknown_take_type' \
+  '' \
+  'task main -> Int {' \
+  '  take value: MissingTakeType' \
+  '' \
+  '  return 1' \
+  '}' > "$unknown_take_type_source"
 printf '%s\n' \
   '{"op":"AddTake","target":"","payload":{"name":"value","type":"Text"}}' > "$add_take_operation"
 
@@ -742,6 +751,27 @@ bin/sley self-hosting-status --json \
 if grep -Fq '[duplicate_effect_diags, duplicate_type_diags, duplicate_task_diags' bin/sley; then
   fail "checker diagnostic pass order must come from loom.checker"
 fi
+
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("checker_diagnostic_pass_descriptor_task_execution")) and (.bootstrap_owned_by_sley | index("checker_unknown_reference_pass_task_execution"))'
+
+if grep -Eq 'def (return_type_diags|take_type_diags|unknown_effect_diags):' bin/sley; then
+  fail "checker unknown reference diagnostics must run through the Sley-owned pass descriptor engine"
+fi
+
+if grep -Fq '$diagnostic_pass_order' bin/sley; then
+  fail "checker dispatch must use Sley-owned diagnostic pass descriptors, not the old order list"
+fi
+
+if bin/sley check --json "$unknown_take_type_source" >/tmp/sley-rejected-take-type-check.json; then
+  fail "rejected unknown take type source passed check"
+fi
+jq -er '.status == "error" and .diagnostics[0].id == "UNKNOWN_TYPE" and .diagnostics[0].message == "unknown type `MissingTakeType`"' /tmp/sley-rejected-take-type-check.json >/dev/null
+
+if bin/sley check --json fixtures/corpus/rejected/unknown_effect.sley >/tmp/sley-rejected-effect-check.json; then
+  fail "rejected unknown_effect.sley passed check"
+fi
+jq -er '.status == "error" and .diagnostics[0].id == "UNKNOWN_EFFECT" and .diagnostics[0].message == "unknown effect `MissingEffect`"' /tmp/sley-rejected-effect-check.json >/dev/null
 
 if bin/sley check --json fixtures/corpus/rejected/unknown_identifier.sley >/tmp/sley-rejected-check.json; then
   fail "rejected unknown_identifier.sley passed check"
