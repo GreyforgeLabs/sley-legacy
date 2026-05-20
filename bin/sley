@@ -1210,6 +1210,47 @@ eval_parser_expression_classifiers_json() {
   done | jq -s 'from_entries'
 }
 
+eval_parser_expression_feature_classifiers_json() {
+  local parser_file="$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley"
+  local key is_int is_string is_true_literal is_false_literal is_empty_list is_identifier kind env_json
+  for key in int string true false empty_list identifier fallback; do
+    is_int=false
+    is_string=false
+    is_true_literal=false
+    is_false_literal=false
+    is_empty_list=false
+    is_identifier=false
+    case "$key" in
+      int) is_int=true ;;
+      string) is_string=true ;;
+      true) is_true_literal=true ;;
+      false) is_false_literal=true ;;
+      empty_list) is_empty_list=true ;;
+      identifier) is_identifier=true ;;
+      fallback) ;;
+      *) return 1 ;;
+    esac
+    env_json="$(jq -cn \
+      --argjson is_int "$is_int" \
+      --argjson is_string "$is_string" \
+      --argjson is_true_literal "$is_true_literal" \
+      --argjson is_false_literal "$is_false_literal" \
+      --argjson is_empty_list "$is_empty_list" \
+      --argjson is_identifier "$is_identifier" \
+      '{
+        is_int:$is_int,
+        is_string:$is_string,
+        is_true_literal:$is_true_literal,
+        is_false_literal:$is_false_literal,
+        is_empty_list:$is_empty_list,
+        is_identifier:$is_identifier
+      }')" || return 1
+    kind="$(sley_eval_source_task "$parser_file" classify_expression_features "$env_json")" || return 1
+    [[ -n "$kind" ]] || return 1
+    jq -cn --arg key "$key" --arg value "$kind" '{key:$key,value:$value}'
+  done | jq -s 'from_entries'
+}
+
 eval_parser_id_template() {
   local task="$1"
   local parser_file="$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley"
@@ -5206,6 +5247,14 @@ PARSER_IDENTIFIER_KIND="$(sley_source_task loom.parser identifier_kind)"
 PARSER_LIST_KIND="$(sley_source_task loom.parser list_literal_kind)"
 PARSER_RAW_KIND="$(sley_source_task loom.parser raw_expr_kind)"
 PARSER_CLASSIFIERS_JSON="$(eval_parser_expression_classifiers_json)"
+PARSER_FEATURE_CLASSIFIERS_JSON="$(eval_parser_expression_feature_classifiers_json)"
+PARSER_FEATURE_INT_KIND="$(printf '%s\n' "$PARSER_FEATURE_CLASSIFIERS_JSON" | jq -er '.int')"
+PARSER_FEATURE_STRING_KIND="$(printf '%s\n' "$PARSER_FEATURE_CLASSIFIERS_JSON" | jq -er '.string')"
+PARSER_FEATURE_TRUE_KIND="$(printf '%s\n' "$PARSER_FEATURE_CLASSIFIERS_JSON" | jq -er '.true')"
+PARSER_FEATURE_FALSE_KIND="$(printf '%s\n' "$PARSER_FEATURE_CLASSIFIERS_JSON" | jq -er '.false')"
+PARSER_FEATURE_EMPTY_LIST_KIND="$(printf '%s\n' "$PARSER_FEATURE_CLASSIFIERS_JSON" | jq -er '.empty_list')"
+PARSER_FEATURE_IDENTIFIER_KIND="$(printf '%s\n' "$PARSER_FEATURE_CLASSIFIERS_JSON" | jq -er '.identifier')"
+PARSER_FEATURE_FALLBACK_KIND="$(printf '%s\n' "$PARSER_FEATURE_CLASSIFIERS_JSON" | jq -er '.fallback')"
 PARSER_TRUE_KIND="$(printf '%s\n' "$PARSER_CLASSIFIERS_JSON" | jq -er '."true"')"
 PARSER_FALSE_KIND="$(printf '%s\n' "$PARSER_CLASSIFIERS_JSON" | jq -er '."false"')"
 PARSER_EMPTY_LIST_KIND="$(printf '%s\n' "$PARSER_CLASSIFIERS_JSON" | jq -er '."[]"')"
@@ -5666,15 +5715,15 @@ ast_json() {
   raw_ast="$(awk -v schema="$SCHEMA_AST_PROGRAM" \
     -v int_pattern="$PARSER_INT_PATTERN" \
     -v identifier_pattern="$PARSER_IDENTIFIER_PATTERN" \
-    -v int_kind="$PARSER_INT_KIND" \
-    -v string_kind="$PARSER_STRING_KIND" \
+    -v int_kind="$PARSER_FEATURE_INT_KIND" \
+    -v string_kind="$PARSER_FEATURE_STRING_KIND" \
     -v bool_kind="$PARSER_BOOL_KIND" \
-    -v identifier_kind="$PARSER_IDENTIFIER_KIND" \
-    -v list_kind="$PARSER_EMPTY_LIST_KIND" \
+    -v identifier_kind="$PARSER_FEATURE_IDENTIFIER_KIND" \
+    -v list_kind="$PARSER_FEATURE_EMPTY_LIST_KIND" \
     -v raw_kind="$PARSER_RAW_KIND" \
-    -v true_kind="$PARSER_TRUE_KIND" \
-    -v false_kind="$PARSER_FALSE_KIND" \
-    -v fallback_kind="$PARSER_FALLBACK_KIND" \
+    -v true_kind="$PARSER_FEATURE_TRUE_KIND" \
+    -v false_kind="$PARSER_FEATURE_FALSE_KIND" \
+    -v fallback_kind="$PARSER_FEATURE_FALLBACK_KIND" \
     -v task_id_template="$PARSER_TASK_ID_TEMPLATE" \
     -v import_id_template="$PARSER_IMPORT_ID_TEMPLATE" \
     -v type_id_template="$PARSER_TYPE_ID_TEMPLATE" \

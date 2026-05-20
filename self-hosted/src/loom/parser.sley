@@ -35,6 +35,35 @@ export task classify_expression -> Text {
   return call raw_expr_kind()
 }
 
+export task classify_expression_features -> Text {
+  take is_int: Bool
+  take is_string: Bool
+  take is_true_literal: Bool
+  take is_false_literal: Bool
+  take is_empty_list: Bool
+  take is_identifier: Bool
+
+  if is_int {
+    return call int_literal_kind()
+  }
+  if is_string {
+    return call string_literal_kind()
+  }
+  if is_true_literal {
+    return call bool_literal_kind()
+  }
+  if is_false_literal {
+    return call bool_literal_kind()
+  }
+  if is_empty_list {
+    return call list_literal_kind()
+  }
+  if is_identifier {
+    return call identifier_kind()
+  }
+  return call raw_expr_kind()
+}
+
 export task int_literal_pattern -> Text {
   return "^-?[0-9]+$"
 }
