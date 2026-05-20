@@ -301,6 +301,7 @@ export task owned_bootstrap_values -> List<Text> {
     "record_field_expression_runtime_execution",
     "generic_literal_record_field_runtime_execution",
     "record_field_call_runtime_execution",
+    "generic_record_argument_runtime_execution",
     "record_field_call_parser_prefix_runtime_execution",
     "direct_file_read_runtime_execution",
     "direct_file_read_parser_prefix_runtime_execution",

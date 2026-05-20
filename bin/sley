@@ -267,7 +267,7 @@ sley_split_source_args() {
 
 sley_eval_source_args_json() {
   local file="$1" env_json="$2" args_text="$3"
-  local args_json='[]' arg value
+  local args_json='[]' arg value_json
   args_text="$(printf '%s\n' "$args_text" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
   [[ -n "$args_text" ]] || {
     printf '[]\n'
@@ -275,10 +275,21 @@ sley_eval_source_args_json() {
   }
   while IFS= read -r arg || [[ -n "$arg" ]]; do
     [[ -n "$arg" ]] || continue
-    value="$(sley_eval_source_expr "$file" "$env_json" "$arg")" || return 1
-    args_json="$(printf '%s\n' "$args_json" | jq -c --arg value "$value" '. + [$value]')" || return 1
+    value_json="$(sley_eval_source_arg_value_json "$file" "$env_json" "$arg")" || return 1
+    args_json="$(printf '%s\n' "$args_json" | jq -c --argjson value "$value_json" '. + [$value]')" || return 1
   done < <(sley_split_source_args "$args_text")
   printf '%s\n' "$args_json"
+}
+
+sley_eval_source_arg_value_json() {
+  local file="$1" env_json="$2" arg="$3" value
+  arg="$(printf '%s\n' "$arg" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+  if [[ "$arg" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] && printf '%s\n' "$env_json" | jq -e --arg name "$arg" 'type == "object" and has($name) and ((.[$name] | type) == "array" or (.[$name] | type) == "object")' >/dev/null; then
+    printf '%s\n' "$env_json" | jq -cer --arg name "$arg" '.[$name]'
+    return
+  fi
+  value="$(sley_eval_source_expr "$file" "$env_json" "$arg")" || return 1
+  jq -cn --arg value "$value" '$value'
 }
 
 sley_eval_source_call_env_json() {
@@ -513,6 +524,10 @@ sley_eval_source_bind_value_json() {
     literal_body="${literal_body#\{}"
     literal_body="${literal_body%\}}"
     printf '{%s}\n' "$literal_body" | jq -ce .
+    return
+  fi
+  if [[ "$expr" =~ ^[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\{(.*)\}$ ]]; then
+    sley_runtime_text_record_json "${BASH_REMATCH[1]}"
     return
   fi
   if value_json="$(sley_eval_source_database_bind_value_json "$env_json" "$expr" 2>/dev/null)"; then

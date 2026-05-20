@@ -400,6 +400,11 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_bound_coll
 bin/sley run --json fixtures/corpus/accepted/collections_indexing.sley \
   | json_field '.status == "passed" and .value.kind == "Int" and .value.value == 8'
 
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_record_argument_runtime_execution"))'
+
+bin/sley run --json fixtures/corpus/accepted/records_and_calls.sley \
+  | json_field '.status == "passed" and .value.kind == "Text" and .value.value == "Ada"'
+
 if ! awk '
   /^sley_eval_source_call\(\)[ \t]*\{/ {in_fn=1}
   in_fn && /sley_eval_source_task_takes_json/ {takes=1}
