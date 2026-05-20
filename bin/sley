@@ -6134,6 +6134,11 @@ check_json() {
       elif ($pass.diagnostic_id_task // "") == "duplicate_map_key_id" then $duplicate_map_key
       elif ($pass.diagnostic_id_task // "") == "duplicate_field_id" then $duplicate_field
       elif ($pass.diagnostic_id_task // "") == "duplicate_record_literal_field_id" then $duplicate_record_literal_field
+      elif ($pass.diagnostic_id_task // "") == "record_field_missing_id" then $record_field_missing
+      elif ($pass.diagnostic_id_task // "") == "record_field_unknown_id" then $record_field_unknown
+      elif ($pass.diagnostic_id_task // "") == "record_field_type_mismatch_id" then $record_field_type_mismatch
+      elif ($pass.diagnostic_id_task // "") == "record_literal_non_record_type_id" then $record_literal_non_record_type
+      elif ($pass.diagnostic_id_task // "") == "unknown_record_field_id" then $unknown_record_field
       else "" end;
     def descriptor_message_template($pass):
       if ($pass.message_task // "") == "unknown_type_message" then $unknown_type_message_template
@@ -6148,6 +6153,11 @@ check_json() {
       elif ($pass.message_task // "") == "duplicate_map_key_message" then $duplicate_map_key_message_template
       elif ($pass.message_task // "") == "duplicate_field_message" then $duplicate_field_message_template
       elif ($pass.message_task // "") == "duplicate_record_literal_field_message" then $duplicate_record_literal_field_message_template
+      elif ($pass.message_task // "") == "record_field_missing_message" then $record_field_missing_message_template
+      elif ($pass.message_task // "") == "record_field_unknown_message" then $record_field_unknown_message_template
+      elif ($pass.message_task // "") == "record_field_type_mismatch_message" then $record_field_type_mismatch_message_template
+      elif ($pass.message_task // "") == "record_literal_non_record_type_message" then $record_literal_non_record_type_message_template
+      elif ($pass.message_task // "") == "unknown_record_field_message" then $unknown_record_field_message_template
       else "" end;
     def unknown_reference_diags($pass):
       if ($pass.subject // "") == "task_return_type" then
@@ -6214,6 +6224,65 @@ check_json() {
         $t.body.statements[]?.expr? as $expr |
         ($expr | record_literal_entries | group_by(.key)[] | select(length > 1) | .[1].key) as $key |
         {id:descriptor_diagnostic_id($pass), severity:"error", message:render_arg(descriptor_message_template($pass); ($pass.message_arg // "field_name"); $key), node:$expr.id, span:$expr.span}
+      else empty end;
+    def record_shape_diags($pass):
+      if ($pass.subject // "") == "record_literal_missing_field" then
+        $root.tasks[] as $t |
+        $t.body.statements[]? |
+        select(.kind==$binding_statement_kind) |
+        . as $stmt |
+        ($stmt.expr | record_literal_type) as $type_name |
+        select($type_name != null and record_type_known($type_name)) |
+        ($stmt.expr | record_literal_entries) as $entries |
+        ($entries | map(.key)) as $actual_fields |
+        (record_fields_for($type_name))[] as $field |
+        select(($actual_fields | index($field.name)) == null) |
+        {id:descriptor_diagnostic_id($pass), severity:"error", message:render_arg(descriptor_message_template($pass); ($pass.message_arg // "field_name"); $field.name), node:$stmt.expr.id, span:$stmt.expr.span}
+      elif ($pass.subject // "") == "record_literal_unknown_field" then
+        $root.tasks[] as $t |
+        $t.body.statements[]? |
+        select(.kind==$binding_statement_kind) |
+        . as $stmt |
+        ($stmt.expr | record_literal_type) as $type_name |
+        select($type_name != null and record_type_known($type_name)) |
+        (record_fields_for($type_name) | map(.name)) as $known_fields |
+        ($stmt.expr | record_literal_entries)[] as $entry |
+        select(($known_fields | index($entry.key)) == null) |
+        {id:descriptor_diagnostic_id($pass), severity:"error", message:render_arg(descriptor_message_template($pass); ($pass.message_arg // "field_name"); $entry.key), node:$stmt.expr.id, span:$stmt.expr.span}
+      elif ($pass.subject // "") == "record_literal_field_type" then
+        $root.tasks[] as $t |
+        $t.body.statements[]? |
+        select(.kind==$binding_statement_kind) |
+        . as $stmt |
+        ($stmt.expr | record_literal_type) as $type_name |
+        select($type_name != null and record_type_known($type_name)) |
+        (record_fields_for($type_name)) as $fields |
+        ($stmt.expr | record_literal_entries)[] as $entry |
+        ([$fields[] | select(.name == $entry.key)][0]) as $field |
+        select($field != null) |
+        ($entry.value | literal_type) as $actual |
+        ($field.field_type | base_type_name) as $expected |
+        select($actual != "" and $expected != "" and $actual != $expected) |
+        {id:descriptor_diagnostic_id($pass), severity:"error", message:render_arg(descriptor_message_template($pass); ($pass.message_arg // "field_name"); $entry.key), node:$stmt.expr.id, span:$stmt.expr.span}
+      elif ($pass.subject // "") == "record_literal_non_record_type" then
+        $root.tasks[] as $t |
+        $t.body.statements[]? |
+        select(.kind==$binding_statement_kind) |
+        . as $stmt |
+        ($stmt.expr | record_literal_type) as $type_name |
+        select($type_name != null) |
+        select(type_decl_kind($type_name) == "Alias") |
+        {id:descriptor_diagnostic_id($pass), severity:"error", message:render_arg(descriptor_message_template($pass); ($pass.message_arg // "type_name"); $type_name), node:$stmt.expr.id, span:$stmt.expr.span}
+      elif ($pass.subject // "") == "record_access_unknown_field" then
+        $root.tasks[] as $t |
+        $t.body.statements[]?.expr? as $expr |
+        ($expr | field_access) as $access |
+        select($access.base != null) |
+        (record_binding_type($t; $access.base)) as $type_name |
+        select($type_name != null) |
+        (record_fields_for($type_name) | map(.name)) as $known_fields |
+        select(($known_fields | index($access.field)) == null) |
+        {id:descriptor_diagnostic_id($pass), severity:"error", message:render_arg(descriptor_message_template($pass); ($pass.message_arg // "field_name"); $access.field), node:$expr.id, span:$expr.span}
       else empty end;
     def unknown_task_diags:
       $root.tasks[] as $t |
@@ -6296,63 +6365,6 @@ check_json() {
           {kind:$replace_expression_hint_kind, target:$stmt.expr.id, replacement:("{\"op\":\"ReplaceExpression\",\"payload\":{\"source\":\"" + $replacement_expr + "\"},\"target\":\"" + $stmt.expr.id + "\"}")}
         ]
       };
-    def record_field_missing_diags:
-      $root.tasks[] as $t |
-      $t.body.statements[]? |
-      select(.kind==$binding_statement_kind) |
-      . as $stmt |
-      ($stmt.expr | record_literal_type) as $type_name |
-      select($type_name != null and record_type_known($type_name)) |
-      ($stmt.expr | record_literal_entries) as $entries |
-      ($entries | map(.key)) as $actual_fields |
-      (record_fields_for($type_name))[] as $field |
-      select(($actual_fields | index($field.name)) == null) |
-      {id:$record_field_missing, severity:"error", message:render_arg($record_field_missing_message_template; "field_name"; $field.name), node:$stmt.expr.id, span:$stmt.expr.span};
-    def record_field_unknown_diags:
-      $root.tasks[] as $t |
-      $t.body.statements[]? |
-      select(.kind==$binding_statement_kind) |
-      . as $stmt |
-      ($stmt.expr | record_literal_type) as $type_name |
-      select($type_name != null and record_type_known($type_name)) |
-      (record_fields_for($type_name) | map(.name)) as $known_fields |
-      ($stmt.expr | record_literal_entries)[] as $entry |
-      select(($known_fields | index($entry.key)) == null) |
-      {id:$record_field_unknown, severity:"error", message:render_arg($record_field_unknown_message_template; "field_name"; $entry.key), node:$stmt.expr.id, span:$stmt.expr.span};
-    def record_field_type_mismatch_diags:
-      $root.tasks[] as $t |
-      $t.body.statements[]? |
-      select(.kind==$binding_statement_kind) |
-      . as $stmt |
-      ($stmt.expr | record_literal_type) as $type_name |
-      select($type_name != null and record_type_known($type_name)) |
-      (record_fields_for($type_name)) as $fields |
-      ($stmt.expr | record_literal_entries)[] as $entry |
-      ([$fields[] | select(.name == $entry.key)][0]) as $field |
-      select($field != null) |
-      ($entry.value | literal_type) as $actual |
-      ($field.field_type | base_type_name) as $expected |
-      select($actual != "" and $expected != "" and $actual != $expected) |
-      {id:$record_field_type_mismatch, severity:"error", message:render_arg($record_field_type_mismatch_message_template; "field_name"; $entry.key), node:$stmt.expr.id, span:$stmt.expr.span};
-    def record_literal_non_record_type_diags:
-      $root.tasks[] as $t |
-      $t.body.statements[]? |
-      select(.kind==$binding_statement_kind) |
-      . as $stmt |
-      ($stmt.expr | record_literal_type) as $type_name |
-      select($type_name != null) |
-      select(type_decl_kind($type_name) == "Alias") |
-      {id:$record_literal_non_record_type, severity:"error", message:render_arg($record_literal_non_record_type_message_template; "type_name"; $type_name), node:$stmt.expr.id, span:$stmt.expr.span};
-    def unknown_record_field_diags:
-      $root.tasks[] as $t |
-      $t.body.statements[]?.expr? as $expr |
-      ($expr | field_access) as $access |
-      select($access.base != null) |
-      (record_binding_type($t; $access.base)) as $type_name |
-      select($type_name != null) |
-      (record_fields_for($type_name) | map(.name)) as $known_fields |
-      select(($known_fields | index($access.field)) == null) |
-      {id:$unknown_record_field, severity:"error", message:render_arg($unknown_record_field_message_template; "field_name"; $access.field), node:$expr.id, span:$expr.span};
     def list_element_type_diags:
       $root.tasks[] as $t |
       $t.body.statements[]? |
@@ -6448,6 +6460,7 @@ check_json() {
       elif ($pass.executor // "") == "gate_reference" then gate_reference_diags($pass)
       elif ($pass.executor // "") == "effect_authorization" then effect_authorization_diags($pass)
       elif ($pass.executor // "") == "duplicate_name" then duplicate_name_diags($pass)
+      elif ($pass.executor // "") == "record_shape" then record_shape_diags($pass)
       elif $name == "task_diags" then task_diags
       elif $name == "question_requires_result_diags" then question_requires_result_diags
       elif $name == "unknown_task_diags" then unknown_task_diags
@@ -6455,11 +6468,6 @@ check_json() {
       elif $name == "call_argument_type_diags" then call_argument_type_diags
       elif $name == "type_mismatch_diags" then type_mismatch_diags
       elif $name == "return_type_mismatch_diags" then return_type_mismatch_diags
-      elif $name == "record_field_missing_diags" then record_field_missing_diags
-      elif $name == "record_field_unknown_diags" then record_field_unknown_diags
-      elif $name == "record_field_type_mismatch_diags" then record_field_type_mismatch_diags
-      elif $name == "record_literal_non_record_type_diags" then record_literal_non_record_type_diags
-      elif $name == "unknown_record_field_diags" then unknown_record_field_diags
       elif $name == "list_element_type_diags" then list_element_type_diags
       elif $name == "index_diags" then index_diags
       elif $name == "map_key_type_diags" then map_key_type_diags
