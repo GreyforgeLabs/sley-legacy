@@ -2315,6 +2315,24 @@ The latest continuation audit reconfirmed:
   `bin/sley-contract check-fixtures fixtures/contracts --schemas docs/schemas
   --json`, external public-action packet verifier, `git diff --check`, and
   final `make v1` all passed
+- focused checker collection/index pass probes:
+  `bin/sley self-hosting-status --json` reported
+  `checker_collection_pass_family_task_execution` and
+  `bootstrap_owned_by_sley=300`; `list_element_type_diags`, `index_diags`,
+  `map_index_key_type_diags`, `map_key_type_diags`, and
+  `map_value_type_diags` now run through one descriptor-driven
+  collection-shape checker family using rows from `diagnostic_pass_descriptors`
+  in `self-hosted/src/loom/checker.sley`
+- Sley self-hosting status after the checker collection/index pass slice:
+  `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=300`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
+- latest checker collection/index pass verification:
+  `bash -n bin/sley`, `bash -n scripts/self-hosted-test.sh`, focused
+  list-element-type/list-index/map-index/map-key/map-value rejected probes,
+  `scripts/self-hosted-test.sh`, `bin/sley-contract check-fixtures
+  fixtures/contracts --schemas docs/schemas --json`, external public-action
+  packet verifier, `git diff --check`, and final `make v1` all passed
 
 ## Dirty State Notes
 
@@ -2380,7 +2398,8 @@ fallback-removal evidence, and through 06a03df with checker host-effect needle
 fallback-removal evidence, and through f0da3e5 with checker unknown-message
 fallback-removal evidence, and through e583ff9 with checker call/type message
 fallback-removal evidence, and through b9d0eac with checker record-shape pass
-family evidence.
+family evidence, and through e87a0ed with checker collection/index pass family
+evidence.
 
 Pre-existing untracked files were not touched and should remain outside future
 commits unless the operator explicitly asks to include them:
