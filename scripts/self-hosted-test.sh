@@ -858,6 +858,25 @@ if grep -Fq 'if [[ "$CHECKER_EFFECT_ALIASES_JSON" == "[]" ]]' bin/sley; then
   fail "checker effect aliases must not fall back when loom.checker extraction is empty"
 fi
 
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("checker_host_effect_needle_fallback_removal_task_execution"))'
+
+bin/sley check --json fixtures/corpus/accepted/agent_data_authority.sley \
+  | json_field '.status == "ok" and (.diagnostics | length) == 0'
+
+if bin/sley check --json fixtures/corpus/rejected/authority/missing_transitive_data_write_effect.sley >/tmp/sley-rejected-missing-transitive-data-write-effect-check.json; then
+  fail "rejected missing_transitive_data_write_effect.sley passed check"
+fi
+jq -er '.status == "error" and .diagnostics[0].id == "EFFECT_UNAUTHORIZED" and .diagnostics[0].message == "effect unauthorized `DatabaseWrite`"' /tmp/sley-rejected-missing-transitive-data-write-effect-check.json >/dev/null
+
+if grep -Fq "CHECKER_HOST_EFFECT_NEEDLES_JSON='[" bin/sley; then
+  fail "checker host-effect needles must come from loom.checker without shell fallback JSON"
+fi
+
+if grep -Fq 'if [[ "$CHECKER_HOST_EFFECT_NEEDLES_JSON" == "[]" ]]' bin/sley; then
+  fail "checker host-effect needles must not fall back when loom.checker extraction is empty"
+fi
+
 if bin/sley check --json fixtures/corpus/rejected/gate_take_type_mismatch.sley >/tmp/sley-rejected-gate-take-type-check.json; then
   fail "rejected gate_take_type_mismatch.sley passed check"
 fi

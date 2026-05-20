@@ -4958,9 +4958,6 @@ QUESTION_REQUIRES_RESULT_MESSAGE_SUFFIX="${QUESTION_REQUIRES_RESULT_MESSAGE_SUFF
 if [[ -z "$QUESTION_REQUIRES_RESULT_MESSAGE_TEMPLATE" ]]; then
   QUESTION_REQUIRES_RESULT_MESSAGE_TEMPLATE='question operator requires Result return in task `::task_name::`'
 fi
-if [[ "$CHECKER_HOST_EFFECT_NEEDLES_JSON" == "[]" ]]; then
-  CHECKER_HOST_EFFECT_NEEDLES_JSON='["DatabaseRead|db.query(","DatabaseRead|db.query_one(","DatabaseRead|db.try_query(","DatabaseRead|db.try_query_one(","DatabaseWrite|db.try_insert(","Deploy|deploy.try_stage(","FileRead|fs.read_text(","FileRead|fs.try_read_text(","FileWrite|fs.try_write_text(","FileWrite|fs.write_text(","ModelCall|model.try_complete(","Network|http.try_get_text(","SecretRead|secrets.try_get(","Shell|shell.try_run(","Spend|spend.try_authorize("]'
-fi
 LINT_EMPTY_FOR="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_for_statement_id)"
 LINT_EMPTY_WHILE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_while_statement_id)"
 LINT_EMPTY_FORGE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_forge_statement_id)"
