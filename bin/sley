@@ -497,11 +497,23 @@ sley_eval_source_call_list_json() {
 
 sley_eval_source_bind_value_json() {
   local file="$1" env_json="$2" expr="$3"
-  local call_prefix="${PARSER_CALL_EXPRESSION_PREFIX-}" tail callee args_text args_json list_json value value_json
+  local call_prefix="${PARSER_CALL_EXPRESSION_PREFIX-}" tail callee args_text args_json list_json value value_json literal_body
   expr="$(printf '%s\n' "$expr" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
   if [[ "$expr" == *\? ]]; then
     expr="${expr%\?}"
     expr="$(printf '%s\n' "$expr" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+  fi
+  if [[ "$expr" == \[*\] ]]; then
+    printf '%s\n' "$expr" | jq -ce .
+    return
+  fi
+  if [[ "$expr" == map[[:space:]]*\{* && "$expr" == *\} ]]; then
+    literal_body="${expr#map}"
+    literal_body="$(printf '%s\n' "$literal_body" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+    literal_body="${literal_body#\{}"
+    literal_body="${literal_body%\}}"
+    printf '{%s}\n' "$literal_body" | jq -ce .
+    return
   fi
   if value_json="$(sley_eval_source_database_bind_value_json "$env_json" "$expr" 2>/dev/null)"; then
     printf '%s\n' "$value_json"
@@ -528,9 +540,16 @@ sley_eval_source_bind_env_json() {
   local raw line name expr value_json
   while IFS= read -r raw || [[ -n "$raw" ]]; do
     line="$(printf '%s\n' "$raw" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
-    [[ "$line" =~ ^(bind|state|set)[[:space:]]+([A-Za-z_][A-Za-z0-9_]*)[[:space:]]*=[[:space:]]*(.+)$ ]] || continue
+    [[ "$line" =~ ^(bind|state|set)[[:space:]]+([A-Za-z_][A-Za-z0-9_]*)([[:space:]]*:[^=]+)?[[:space:]]*=[[:space:]]*(.+)$ ]] || continue
     name="${BASH_REMATCH[2]}"
-    expr="${BASH_REMATCH[3]}"
+    expr="${BASH_REMATCH[4]}"
+    if [[ "$expr" == map[[:space:]]*\{ && "$expr" != *\} ]]; then
+      while IFS= read -r raw || [[ -n "$raw" ]]; do
+        line="$(printf '%s\n' "$raw" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+        expr+=$'\n'"$line"
+        [[ "$line" == "}" ]] && break
+      done
+    fi
     value_json="$(sley_eval_source_bind_value_json "$file" "$env_json" "$expr")" || return 1
     env_json="$(jq -cn --argjson env "$env_json" --arg name "$name" --argjson value "$value_json" '$env + {($name): $value}')" || return 1
   done <<< "$body"
@@ -764,9 +783,25 @@ sley_eval_source_expr() {
     if [[ "$value" == "true" ]]; then printf 'false\n'; else printf 'true\n'; fi
     return 0
   fi
-  indexed_re='^([A-Za-z_][A-Za-z0-9_]*)\[([A-Za-z_][A-Za-z0-9_]*)\]$'
+  if [[ "$expr" =~ ^(.+)[[:space:]]\+[[:space:]](.+)$ ]]; then
+    left="$(sley_eval_source_expr "$file" "$env_json" "${BASH_REMATCH[1]}")" || return 1
+    right="$(sley_eval_source_expr "$file" "$env_json" "${BASH_REMATCH[2]}")" || return 1
+    if [[ "$left" =~ ^-?[0-9]+$ && "$right" =~ ^-?[0-9]+$ ]]; then
+      if [[ "$file" == "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" ]]; then
+        printf '%s\n' "$((left + right))"
+      else
+        eval_runtime_int_binary_value_task int_add_value "+" "$left" "$right"
+      fi
+    elif [[ "$file" == "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" ]]; then
+      printf '%s%s\n' "$left" "$right"
+    else
+      eval_runtime_text_concat_value_task "$left" "$right"
+    fi
+    return
+  fi
+  indexed_re='^([A-Za-z_][A-Za-z0-9_]*)\[(.+)\]$'
   if [[ "$expr" =~ $indexed_re ]]; then
-    value="$(sley_eval_env_lookup "$env_json" "${BASH_REMATCH[2]}")" || return 1
+    value="$(sley_eval_source_expr "$file" "$env_json" "${BASH_REMATCH[2]}")" || return 1
     sley_eval_env_index "$env_json" "${BASH_REMATCH[1]}" "$value"
     return
   fi

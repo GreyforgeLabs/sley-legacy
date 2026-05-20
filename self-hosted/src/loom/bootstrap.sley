@@ -296,6 +296,7 @@ export task owned_bootstrap_values -> List<Text> {
     "map_index_expression_runtime_execution",
     "generic_literal_map_index_runtime_execution",
     "collection_index_sum_runtime_execution",
+    "generic_bound_collection_index_runtime_execution",
     "record_field_runtime_task_execution",
     "record_field_expression_runtime_execution",
     "generic_literal_record_field_runtime_execution",
