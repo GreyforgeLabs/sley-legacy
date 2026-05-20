@@ -2369,6 +2369,25 @@ The latest continuation audit reconfirmed:
   `scripts/self-hosted-test.sh`, `bin/sley-contract check-fixtures
   fixtures/contracts --schemas docs/schemas --json`, external public-action
   packet verifier, `git diff --check`, and final `make v1` all passed
+- focused remaining checker descriptor pass probes:
+  `bin/sley self-hosting-status --json` reported
+  `checker_identifier_resolution_pass_task_execution`,
+  `checker_question_result_pass_task_execution`, and
+  `bootstrap_owned_by_sley=304`; `task_diags` and
+  `question_requires_result_diags` now run through descriptor-driven checker
+  pass executors using rows from `diagnostic_pass_descriptors`, and
+  `self-hosted/src/loom/checker.sley` no longer retains `legacy` diagnostic
+  pass descriptor rows
+- Sley self-hosting status after the remaining checker descriptor pass slice:
+  `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=304`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
+- latest remaining checker descriptor pass verification:
+  `bash -n bin/sley`, `bash -n scripts/self-hosted-test.sh`, focused
+  unknown-identifier/question-requires-result rejected probes,
+  `scripts/self-hosted-test.sh`, `bin/sley-contract check-fixtures
+  fixtures/contracts --schemas docs/schemas --json`, external public-action
+  packet verifier, `git diff --check`, and final `make v1` all passed
 
 ## Dirty State Notes
 
@@ -2436,7 +2455,8 @@ fallback-removal evidence, and through e583ff9 with checker call/type message
 fallback-removal evidence, and through b9d0eac with checker record-shape pass
 family evidence, and through e87a0ed with checker collection/index pass family
 evidence, and through a3b3533 with checker call pass family evidence, and
-through 46ef5da with checker type/return pass family evidence.
+through 46ef5da with checker type/return pass family evidence, and through
+571eaa0 with remaining checker descriptor pass evidence.
 
 Pre-existing untracked files were not touched and should remain outside future
 commits unless the operator explicitly asks to include them:
