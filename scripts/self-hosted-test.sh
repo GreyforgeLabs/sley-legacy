@@ -274,6 +274,12 @@ bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_ast_node_not_found_message"))'
 
 bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("parser_large_self_source_ast_execution"))'
+
+bin/sley ast --json self-hosted/src/loom/checker.sley \
+  | json_field '.schema == "sley.ast.program.v0" and (.tasks | length) >= 100 and ([.tasks[]?.name] | index("diagnostic_pass_descriptors"))'
+
+bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_message_parser_prefix_task_execution"))'
 
 bin/sley self-hosting-status --json \

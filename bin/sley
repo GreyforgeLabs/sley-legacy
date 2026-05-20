@@ -5177,9 +5177,11 @@ sley_assert_source_still_checks() {
 sley_report_builder_json() {
   local builder_json="$1" values_json="$2"
   jq -n \
-    --argjson values "$values_json" \
-    --argjson builder "$builder_json" \
+    --slurpfile values_file <(printf '%s\n' "$values_json") \
+    --slurpfile builder_file <(printf '%s\n' "$builder_json") \
     '
+    ($values_file[0]) as $values |
+    ($builder_file[0]) as $builder |
     def builder_slot($spec):
       ($spec | split("|")) as $parts |
       if ($parts | length) != 3 then
@@ -5242,8 +5244,8 @@ sley_report_builder_from_report_json() {
     --arg namespace "$namespace" \
     --arg schema_name "$schema_name" \
     --arg schema "$schema_value" \
-    --argjson report "$report_json" '
-    {reports:{($schema_name):$schema}} + {($namespace):$report}
+    --slurpfile report_file <(printf '%s\n' "$report_json") '
+    {reports:{($schema_name):$schema}} + {($namespace):$report_file[0]}
   ')"
   sley_report_builder_json "$builder_json" "$values_json"
 }
