@@ -377,6 +377,11 @@ bin/sley run --json "$generic_source_main_source" \
 bin/sley run --json "$generic_state_set_source" \
   | json_field '.status == "passed" and .value.kind == "Text" and .value.value == "hi Ada"'
 
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_linear_tally_runtime_execution"))'
+
+bin/sley run --json examples/mutable_binding_style.sley \
+  | json_field '.status == "passed" and .value.kind == "Int" and .value.value == 21'
+
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_runtime_scalar_task_evaluator_execution"))'
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_runtime_collection_task_evaluator_execution"))'

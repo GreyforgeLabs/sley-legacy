@@ -555,7 +555,7 @@ sley_eval_source_bind_env_json() {
   local raw line name expr value_json
   while IFS= read -r raw || [[ -n "$raw" ]]; do
     line="$(printf '%s\n' "$raw" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
-    [[ "$line" =~ ^(bind|state|set)[[:space:]]+([A-Za-z_][A-Za-z0-9_]*)([[:space:]]*:[^=]+)?[[:space:]]*=[[:space:]]*(.+)$ ]] || continue
+    [[ "$line" =~ ^(bind|state|tally|set)[[:space:]]+([A-Za-z_][A-Za-z0-9_]*)([[:space:]]*:[^=]+)?[[:space:]]*=[[:space:]]*(.+)$ ]] || continue
     name="${BASH_REMATCH[2]}"
     expr="${BASH_REMATCH[4]}"
     if [[ "$expr" == map[[:space:]]*\{ && "$expr" != *\} ]]; then
@@ -4083,9 +4083,9 @@ sley_source_main_body_supports_generic_runtime() {
     function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
     {
       line=trim($0)
-      if(line ~ /^(for|while|tally|forge)([ \t{]|$)/) found=1
+      if(line ~ /^(for|each|while|forge)([ \t{]|$)/) found=1
       if(line ~ /^if[ \t]+/) has_if=1
-      if(line ~ /^(set|state)([ \t=]|$)/) has_mutable=1
+      if(line ~ /^(set|state|tally)([ \t=]|$)/) has_mutable=1
     }
     END {exit (found || (has_if && has_mutable)) ? 0 : 1}
   '

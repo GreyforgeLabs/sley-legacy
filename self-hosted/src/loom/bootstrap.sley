@@ -346,6 +346,7 @@ export task owned_bootstrap_values -> List<Text> {
     "while_list_sum_parser_prefix_runtime_execution",
     "state_set_runtime_execution",
     "tally_set_runtime_execution",
+    "generic_linear_tally_runtime_execution",
     "each_sum_runtime_execution",
     "each_map_sum_runtime_execution",
     "if_expression_runtime_execution",
