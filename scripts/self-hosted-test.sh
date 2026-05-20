@@ -300,6 +300,9 @@ bin/sley self-hosting-status --json \
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("generic_pure_task_evaluator_execution"))'
 
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("generic_runtime_scalar_task_evaluator_execution"))'
+
 for source_task_eval_fn in \
   eval_checker_status_task \
   eval_lint_status_task \
@@ -309,6 +312,17 @@ for source_task_eval_fn in \
   eval_runtime_list_len_value_task \
   eval_runtime_int_identity_value_task \
   eval_runtime_text_identity_value_task \
+  eval_runtime_int_binary_value_task \
+  eval_runtime_int_less_than_value_task \
+  eval_runtime_int_equal_value_task \
+  eval_runtime_int_greater_equal_value_task \
+  eval_runtime_bool_equal_value_task \
+  eval_runtime_text_equal_value_task \
+  eval_runtime_bool_and_value_task \
+  eval_runtime_bool_not_value_task \
+  eval_runtime_bool_if_value_task \
+  eval_runtime_int_if_value_task \
+  eval_runtime_text_if_value_task \
   eval_runtime_ok_int_value_task \
   eval_runtime_ok_text_value_task
 do
