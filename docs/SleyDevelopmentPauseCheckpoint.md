@@ -2238,6 +2238,25 @@ The latest continuation audit reconfirmed:
   `bin/sley-contract check-fixtures fixtures/contracts --schemas docs/schemas
   --json`, external public-action packet verifier, `git diff --check`, and
   final `make v1` all passed
+- focused checker unknown-reference pass probes:
+  `bin/sley self-hosting-status --json` reported
+  `checker_diagnostic_pass_descriptor_task_execution`,
+  `checker_unknown_reference_pass_task_execution`, and
+  `bootstrap_owned_by_sley=295`; checker dispatch now consumes
+  `diagnostic_pass_descriptors` from `self-hosted/src/loom/checker.sley`, and
+  the `return_type_diags`, `take_type_diags`, and `unknown_effect_diags`
+  bodies run through one descriptor-driven unknown-reference engine instead of
+  three separate hard-coded jq pass functions
+- Sley self-hosting status after the checker unknown-reference pass slice:
+  `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=295`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
+- latest checker unknown-reference pass verification:
+  `bash -n bin/sley`, `bash -n scripts/self-hosted-test.sh`, focused
+  return-type/take-type/unknown-effect rejected probes,
+  `scripts/self-hosted-test.sh`, `bin/sley-contract check-fixtures
+  fixtures/contracts --schemas docs/schemas --json`, external public-action
+  packet verifier, `git diff --check`, and final `make v1` all passed
 
 ## Dirty State Notes
 
