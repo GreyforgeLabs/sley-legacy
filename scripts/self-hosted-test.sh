@@ -206,6 +206,9 @@ fi
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("parser_source_metadata_task_execution"))'
 
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("parser_fallback_removal_task_execution"))'
+
 if grep -Fq 'extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley"' bin/sley \
   || grep -Fq 'extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley"' bin/sley; then
   fail "parser metadata must execute through Sley source tasks, not raw host extractors"
@@ -213,6 +216,11 @@ fi
 
 if ! grep -Fq 'sley_source_task loom.parser' bin/sley; then
   fail "parser metadata source task dispatch is missing"
+fi
+
+if grep -Eq 'eval_parser_(id|message)_template [A-Za-z0-9_]+( [A-Za-z0-9_]+)? \|\| printf' bin/sley \
+  || grep -Eq 'PARSER_[A-Z0-9_]+="\$\{PARSER_[A-Z0-9_]+:-' bin/sley; then
+  fail "parser metadata and templates must not use host fallback literals"
 fi
 
 bin/sley self-hosting-status --json \
