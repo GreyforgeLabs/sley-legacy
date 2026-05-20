@@ -8319,8 +8319,6 @@ run_json() {
   elif call_runtime="$(eval_main_call_int_return "$target" 2>/dev/null)" && [[ -n "$call_runtime" ]]; then
     value_kind="$(printf '%s\n' "$call_runtime" | jq -r '.kind')"
     value="$(printf '%s\n' "$call_runtime" | jq -r '.value')"
-  elif runtime_project_ready_probe_matches "$target"; then
-    value_kind="$RUNTIME_INT_VALUE_KIND"; value="$(eval_project_ready_value_task)"
   fi
   if [[ "$value_kind" == "$RUNTIME_OK_TEXT_VALUE_KIND" ]]; then
     value="$(eval_runtime_ok_text_value_task "$value")"

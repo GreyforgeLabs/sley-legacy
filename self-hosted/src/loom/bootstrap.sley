@@ -304,6 +304,7 @@ export task owned_bootstrap_values -> List<Text> {
     "project_import_source_call_runtime_execution",
     "project_entry_source_runtime_execution",
     "runtime_host_effect_fallback_removal_execution",
+    "project_ready_runtime_fallback_removal_execution",
     "local_call_runtime_execution",
     "local_call_parser_prefix_runtime_execution",
     "zero_arg_project_call_runtime_execution",

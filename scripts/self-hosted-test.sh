@@ -537,6 +537,12 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("project_entry_sour
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_host_effect_fallback_removal_execution"))'
 
+if grep -Eq 'elif runtime_project_ready_probe_matches "\$target"' bin/sley; then
+  fail "project runtime calls must execute through source evaluation, not project-ready probe fallback"
+fi
+
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("project_ready_runtime_fallback_removal_execution"))'
+
 if grep -Eq 'elif runtime_source_has_host_effect "\$target" "(FileRead|FileWrite|DatabaseWrite|DatabaseRead|Network|Shell|ModelCall|SecretRead)"' bin/sley; then
   fail "runtime host effects must execute through source evaluation, not generic host-effect fallbacks"
 fi
