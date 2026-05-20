@@ -2333,6 +2333,24 @@ The latest continuation audit reconfirmed:
   `scripts/self-hosted-test.sh`, `bin/sley-contract check-fixtures
   fixtures/contracts --schemas docs/schemas --json`, external public-action
   packet verifier, `git diff --check`, and final `make v1` all passed
+- focused checker call pass probes:
+  `bin/sley self-hosting-status --json` reported
+  `checker_call_pass_family_task_execution` and
+  `bootstrap_owned_by_sley=301`; `unknown_task_diags`,
+  `call_arity_diags`, and `call_argument_type_diags` now run through one
+  descriptor-driven call-shape checker family using rows from
+  `diagnostic_pass_descriptors` in `self-hosted/src/loom/checker.sley`, while
+  preserving the unknown-task `declare_or_import_task` repair hint
+- Sley self-hosting status after the checker call pass slice:
+  `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=301`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
+- latest checker call pass verification:
+  `bash -n bin/sley`, `bash -n scripts/self-hosted-test.sh`, focused
+  unknown-task/call-arity/call-argument-type rejected probes,
+  `scripts/self-hosted-test.sh`, `bin/sley-contract check-fixtures
+  fixtures/contracts --schemas docs/schemas --json`, external public-action
+  packet verifier, `git diff --check`, and final `make v1` all passed
 
 ## Dirty State Notes
 
@@ -2399,7 +2417,7 @@ fallback-removal evidence, and through f0da3e5 with checker unknown-message
 fallback-removal evidence, and through e583ff9 with checker call/type message
 fallback-removal evidence, and through b9d0eac with checker record-shape pass
 family evidence, and through e87a0ed with checker collection/index pass family
-evidence.
+evidence, and through a3b3533 with checker call pass family evidence.
 
 Pre-existing untracked files were not touched and should remain outside future
 commits unless the operator explicitly asks to include them:
