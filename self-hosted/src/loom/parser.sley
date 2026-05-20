@@ -132,6 +132,43 @@ export task forge_statement_kind -> Text {
   return "Forge"
 }
 
+export task classify_statement_features -> Text {
+  take is_return: Bool
+  take is_call_expression: Bool
+  take is_binding: Bool
+  take is_set: Bool
+  take is_for: Bool
+  take is_while: Bool
+  take is_if: Bool
+  take is_forge: Bool
+
+  if is_return {
+    return call return_statement_kind()
+  }
+  if is_call_expression {
+    return call expression_statement_kind()
+  }
+  if is_binding {
+    return call binding_statement_kind()
+  }
+  if is_set {
+    return call set_statement_kind()
+  }
+  if is_for {
+    return call for_statement_kind()
+  }
+  if is_while {
+    return call while_statement_kind()
+  }
+  if is_if {
+    return call if_statement_kind()
+  }
+  if is_forge {
+    return call forge_statement_kind()
+  }
+  return call expression_statement_kind()
+}
+
 export task take_binding_kind -> Text {
   return "Take"
 }
