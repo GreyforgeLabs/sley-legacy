@@ -4126,10 +4126,10 @@ eval_main_call_int_return() {
   '
 }
 
-VERSION="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/bootstrap.sley" implementation_version)"
+VERSION="$(sley_source_task loom.bootstrap implementation_version)"
 VERSION="${VERSION:-sley 0.2.0-self-hosting-stage1-bootstrap}"
 
-DEFAULT_RULES_JSON="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" default_lint_rules)"
+DEFAULT_RULES_JSON="$(sley_source_list_task_json loom.lint default_lint_rules)"
 if [[ "$DEFAULT_RULES_JSON" == "[]" ]]; then
   DEFAULT_RULES_JSON='["empty_for_statement","empty_while_statement","empty_forge_statement","empty_if_statement","empty_else_statement"]'
 fi
@@ -4546,28 +4546,28 @@ CHECKER_ERROR_TYPE="$(sley_source_task loom.checker error_type_name)"
 CHECKER_GATE_TYPE="$(sley_source_task loom.checker gate_type_name)"
 CHECKER_LIST_TYPE="$(sley_source_task loom.checker list_type_name)"
 CHECKER_MAP_TYPE="$(sley_source_task loom.checker map_type_name)"
-LINT_EMPTY_FOR="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_for_statement_id)"
-LINT_EMPTY_WHILE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_while_statement_id)"
-LINT_EMPTY_FORGE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_forge_statement_id)"
-LINT_EMPTY_IF="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_if_statement_id)"
-LINT_EMPTY_ELSE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_else_statement_id)"
-LINT_OK_STATUS="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" ok_status)"
-LINT_FINDINGS_STATUS="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" findings_status)"
-LINT_EMPTY_FOR_RULE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_for_statement_rule)"
-LINT_EMPTY_WHILE_RULE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_while_statement_rule)"
-LINT_EMPTY_FORGE_RULE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_forge_statement_rule)"
-LINT_EMPTY_IF_RULE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_if_statement_rule)"
-LINT_EMPTY_ELSE_RULE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_else_statement_rule)"
-LINT_EMPTY_FOR_MESSAGE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_for_statement_message)"
-LINT_EMPTY_WHILE_MESSAGE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_while_statement_message)"
-LINT_EMPTY_FORGE_MESSAGE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_forge_statement_message)"
-LINT_EMPTY_IF_MESSAGE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_if_statement_message)"
-LINT_EMPTY_ELSE_MESSAGE="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_else_statement_message)"
-LINT_EMPTY_FOR_HINT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_for_statement_hint)"
-LINT_EMPTY_WHILE_HINT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_while_statement_hint)"
-LINT_EMPTY_FORGE_HINT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_forge_statement_hint)"
-LINT_EMPTY_IF_HINT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_if_statement_hint)"
-LINT_EMPTY_ELSE_HINT="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/lint.sley" empty_else_statement_hint)"
+LINT_EMPTY_FOR="$(sley_source_task loom.lint empty_for_statement_id)"
+LINT_EMPTY_WHILE="$(sley_source_task loom.lint empty_while_statement_id)"
+LINT_EMPTY_FORGE="$(sley_source_task loom.lint empty_forge_statement_id)"
+LINT_EMPTY_IF="$(sley_source_task loom.lint empty_if_statement_id)"
+LINT_EMPTY_ELSE="$(sley_source_task loom.lint empty_else_statement_id)"
+LINT_OK_STATUS="$(sley_source_task loom.lint ok_status)"
+LINT_FINDINGS_STATUS="$(sley_source_task loom.lint findings_status)"
+LINT_EMPTY_FOR_RULE="$(sley_source_task loom.lint empty_for_statement_rule)"
+LINT_EMPTY_WHILE_RULE="$(sley_source_task loom.lint empty_while_statement_rule)"
+LINT_EMPTY_FORGE_RULE="$(sley_source_task loom.lint empty_forge_statement_rule)"
+LINT_EMPTY_IF_RULE="$(sley_source_task loom.lint empty_if_statement_rule)"
+LINT_EMPTY_ELSE_RULE="$(sley_source_task loom.lint empty_else_statement_rule)"
+LINT_EMPTY_FOR_MESSAGE="$(sley_source_task loom.lint empty_for_statement_message)"
+LINT_EMPTY_WHILE_MESSAGE="$(sley_source_task loom.lint empty_while_statement_message)"
+LINT_EMPTY_FORGE_MESSAGE="$(sley_source_task loom.lint empty_forge_statement_message)"
+LINT_EMPTY_IF_MESSAGE="$(sley_source_task loom.lint empty_if_statement_message)"
+LINT_EMPTY_ELSE_MESSAGE="$(sley_source_task loom.lint empty_else_statement_message)"
+LINT_EMPTY_FOR_HINT="$(sley_source_task loom.lint empty_for_statement_hint)"
+LINT_EMPTY_WHILE_HINT="$(sley_source_task loom.lint empty_while_statement_hint)"
+LINT_EMPTY_FORGE_HINT="$(sley_source_task loom.lint empty_forge_statement_hint)"
+LINT_EMPTY_IF_HINT="$(sley_source_task loom.lint empty_if_statement_hint)"
+LINT_EMPTY_ELSE_HINT="$(sley_source_task loom.lint empty_else_statement_hint)"
 
 RUNTIME_HELLO_VALUE="$(sley_source_task loom.runtime hello_value)"
 RUNTIME_PROJECT_READY_VALUE="$(extract_sley_int_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" project_ready_value)"
@@ -9305,7 +9305,7 @@ source_modules_json() {
     return
   fi
   local modules_json
-  modules_json="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/bootstrap.sley" source_modules)"
+  modules_json="$(sley_source_list_task_json loom.bootstrap source_modules)"
   if [[ "$modules_json" != "[]" ]]; then
     printf '%s\n' "$modules_json"
     return
@@ -9320,14 +9320,14 @@ source_modules_json() {
 self_hosting_status_json() {
   local modules_json blockers_json owned_json status strict count values_json
   modules_json="$(source_modules_json)"
-  blockers_json="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/bootstrap.sley" remaining_strict_self_hosting_blockers)"
-  owned_json="$(extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/bootstrap.sley" owned_bootstrap_values)"
+  blockers_json="$(sley_source_list_task_json loom.bootstrap remaining_strict_self_hosting_blockers)"
+  owned_json="$(sley_source_list_task_json loom.bootstrap owned_bootstrap_values)"
   if [[ "$owned_json" == "[]" ]]; then
     owned_json='["implementation_version","implementation_stage","self_hosting_status","strict_self_hosted","default_lint_rules","core_report_schema_ids","diagnostic_ids","runtime_seed_values","parser_expression_classifiers","parser_statement_and_binding_kinds","bootstrap_smoke_runtime","checker_diagnostic_status","lint_finding_messages","runtime_report_status_and_dispatch"]'
   fi
-  status="$(extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/bootstrap.sley" self_hosting_status)"
+  status="$(sley_source_task loom.bootstrap self_hosting_status)"
   status="${status:-bootstrap}"
-  strict="$(extract_sley_bool_task "$SELF_HOSTED_SOURCE_ROOT/loom/bootstrap.sley" strict_self_hosted)"
+  strict="$(sley_source_task loom.bootstrap strict_self_hosted)"
   strict="${strict:-false}"
   case "$strict" in true|false) ;; *) strict=false ;; esac
   count="$(eval_bootstrap_list_count_task semantic_source_count || true)"
