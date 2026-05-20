@@ -689,6 +689,12 @@ sley_eval_source_condition() {
   local env_json="$1" condition="$2"
   local name op right left
   condition="$(printf '%s\n' "$condition" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+  if [[ "$condition" == "true" ]]; then
+    return 0
+  fi
+  if [[ "$condition" == "false" ]]; then
+    return 1
+  fi
   if [[ "$condition" =~ ^([A-Za-z_][A-Za-z0-9_]*)$ ]]; then
     left="$(sley_eval_env_lookup "$env_json" "${BASH_REMATCH[1]}")" || return 1
     [[ "$left" == "true" ]]
@@ -1608,6 +1614,14 @@ eval_runtime_ok_text_value_task() {
   local env_json
   env_json="$(jq -cn --arg value "$value" '{value:$value}')"
   sley_eval_source_task "$runtime_file" ok_text_value "$env_json"
+}
+
+eval_runtime_err_text_value_task() {
+  local value="$1"
+  local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
+  local env_json
+  env_json="$(jq -cn --arg value "$value" '{value:$value}')"
+  sley_eval_source_task "$runtime_file" err_text_value "$env_json"
 }
 
 runtime_project_ready_probe_matches() {
@@ -4281,28 +4295,41 @@ sley_source_main_body_supports_generic_runtime() {
 
 eval_source_generic_main_return() {
   local target="$1" http_text="$2" model_text="$3" deploy_text="$4" spend_text="$5" secret_text="$6" shell_text="$7"
-  local file return_type result_type env_json value runtime_value
+  local file return_type result_type env_json value runtime_value body expr err_value
   file="$(sley_source_entry_file_for_target "$target")"
   [[ -n "$file" ]] || return 1
   sley_source_main_body_supports_generic_runtime "$file" || return 1
   return_type="$(sley_source_main_return_type "$file")"
   [[ -n "$return_type" ]] || return 1
   env_json="$(sley_runtime_seed_env_json "$http_text" "$model_text" "$deploy_text" "$spend_text" "$secret_text" "$shell_text")" || return 1
-  value="$(sley_eval_source_task "$file" main "$env_json")" || return 1
   case "$return_type" in
     Int)
+      value="$(sley_eval_source_task "$file" main "$env_json")" || return 1
       runtime_value="$(eval_runtime_int_identity_value_task "$value")" || return 1
       jq -cn --arg kind "$RUNTIME_INT_VALUE_KIND" --arg value "$runtime_value" '{kind:$kind,value:$value}'
       ;;
     Text)
+      value="$(sley_eval_source_task "$file" main "$env_json")" || return 1
       runtime_value="$(eval_runtime_text_identity_value_task "$value")" || return 1
       jq -cn --arg kind "$RUNTIME_TEXT_VALUE_KIND" --arg value "$runtime_value" '{kind:$kind,value:$value}'
       ;;
     Bool)
+      value="$(sley_eval_source_task "$file" main "$env_json")" || return 1
       runtime_value="$(eval_runtime_bool_identity_value_task "$value")" || return 1
       jq -cn --arg kind "$RUNTIME_BOOL_VALUE_KIND" --arg value "$runtime_value" '{kind:$kind,value:$value}'
       ;;
     Result\<*,*\>)
+      body="$(extract_sley_task_body "$file" main)" || return 1
+      [[ -n "$body" ]] || return 1
+      env_json="$(sley_eval_source_bind_env_json "$file" "$env_json" "$body")" || return 1
+      expr="$(sley_select_source_return_expr "$body" "$env_json")" || return 1
+      if [[ "$expr" =~ ^Err\((.*)\)$ ]]; then
+        err_value="$(sley_eval_source_expr "$file" "$env_json" "${BASH_REMATCH[1]}")" || return 1
+        runtime_value="$(eval_runtime_err_text_value_task "$err_value")" || return 1
+        jq -cn --arg kind "$RUNTIME_ERR_TEXT_VALUE_KIND" --arg value "$runtime_value" '{kind:$kind,value:$value}'
+        return
+      fi
+      value="$(sley_eval_source_expr "$file" "$env_json" "$expr")" || return 1
       result_type="${return_type#Result<}"
       result_type="${result_type%%,*}"
       result_type="$(printf '%s\n' "$result_type" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
@@ -5165,6 +5192,7 @@ RUNTIME_RAW_VALUE_KIND="$(sley_source_task loom.runtime raw_value_kind)"
 RUNTIME_UNIT_VALUE_KIND="$(sley_source_task loom.runtime unit_value_kind)"
 RUNTIME_OK_TEXT_VALUE_KIND="$(sley_source_task loom.runtime ok_text_value_kind)"
 RUNTIME_OK_INT_VALUE_KIND="$(sley_source_task loom.runtime ok_int_value_kind)"
+RUNTIME_ERR_TEXT_VALUE_KIND="$(sley_source_task loom.runtime err_text_value_kind)"
 RUNTIME_SELF_HOSTED_TARGETS_JSON="$(sley_source_list_task_json loom.runtime self_hosted_target_aliases)"
 RUNTIME_AGENT_DEPLOY_SUFFIX="$(sley_source_task loom.runtime agent_deploy_target_suffix)"
 RUNTIME_PROJECT_READY_CALL_PROBE="$(eval_runtime_text_probe_task project_ready_call_probe || sley_source_task loom.runtime project_ready_call_probe)"
@@ -8781,6 +8809,7 @@ run_json() {
     --arg unit_kind "$RUNTIME_UNIT_VALUE_KIND" \
     --arg ok_text_kind "$RUNTIME_OK_TEXT_VALUE_KIND" \
     --arg ok_int_kind "$RUNTIME_OK_INT_VALUE_KIND" \
+    --arg err_text_kind "$RUNTIME_ERR_TEXT_VALUE_KIND" \
     --arg raw_kind "$RUNTIME_RAW_VALUE_KIND" '
     def val:
       if $kind == $int_kind then {kind:$int_kind, value:($value|tonumber)}
@@ -8789,6 +8818,7 @@ run_json() {
       elif $kind == $unit_kind then {kind:$unit_kind}
       elif $kind == $ok_text_kind then {kind:"Ok", value:{kind:$text_kind, value:$value}}
       elif $kind == $ok_int_kind then {kind:"Ok", value:{kind:$int_kind, value:($value|tonumber)}}
+      elif $kind == $err_text_kind then {kind:"Err", value:{kind:$text_kind, value:$value}}
       else {kind:$raw_kind, value:$value} end;
     val')"
   values_json="$(jq -n \

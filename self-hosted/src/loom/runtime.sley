@@ -140,6 +140,10 @@ export task ok_int_value_kind -> Text {
   return "OkInt"
 }
 
+export task err_text_value_kind -> Text {
+  return "ErrText"
+}
+
 export task self_hosted_target_aliases -> List<Text> {
   return [
     "self-hosted",
@@ -336,6 +340,12 @@ export task ok_int_value -> Int {
 }
 
 export task ok_text_value -> Text {
+  take value: Text
+
+  return value
+}
+
+export task err_text_value -> Text {
   take value: Text
 
   return value
