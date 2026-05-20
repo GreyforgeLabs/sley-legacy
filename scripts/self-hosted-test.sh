@@ -312,6 +312,19 @@ bin/sley self-hosting-status --json \
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("generic_parser_checker_template_evaluator_execution"))'
 
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("generic_source_call_argument_evaluator_execution"))'
+
+if ! awk '
+  /^sley_eval_source_call\(\)[ \t]*\{/ {in_fn=1}
+  in_fn && /sley_eval_source_task_takes_json/ {takes=1}
+  in_fn && /sley_eval_source_call_env_json/ {binds=1}
+  in_fn && /^[ \t]*}/ {exit}
+  END {exit (takes && binds) ? 0 : 1}
+' bin/sley; then
+  fail "sley_eval_source_call must bind call arguments to Sley take names before task evaluation"
+fi
+
 for source_task_eval_fn in \
   eval_parser_id_template \
   eval_parser_message_template \

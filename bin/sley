@@ -160,6 +160,91 @@ sley_eval_env_field() {
   '
 }
 
+sley_eval_source_task_takes_json() {
+  local body="$1"
+  printf '%s\n' "$body" | awk '
+    function esc(s){gsub(/\\/, "\\\\", s); gsub(/"/, "\\\"", s); return s}
+    BEGIN {printf "["; first=1}
+    /^[ \t]*take[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*:/ {
+      line=$0
+      sub(/^[ \t]*take[ \t]+/, "", line)
+      sub(/[ \t]*:.*/, "", line)
+      if (!first) printf ","
+      printf "\"%s\"", esc(line)
+      first=0
+    }
+    END {print "]"}
+  '
+}
+
+sley_split_source_args() {
+  local args="$1"
+  awk '
+    function emit() {
+      gsub(/^[ \t]+|[ \t]+$/, "", arg)
+      if (arg != "") print arg
+      arg=""
+    }
+    {
+      for (i = 1; i <= length($0); i++) {
+        c = substr($0, i, 1)
+        if (escape) {
+          arg = arg c
+          escape = 0
+          continue
+        }
+        if (c == "\\") {
+          arg = arg c
+          if (in_string) escape = 1
+          continue
+        }
+        if (c == "\"") {
+          in_string = !in_string
+          arg = arg c
+          continue
+        }
+        if (!in_string) {
+          if (c == "(" || c == "[" || c == "{") depth++
+          if (c == ")" || c == "]" || c == "}") depth--
+          if (c == "," && depth == 0) {
+            emit()
+            continue
+          }
+        }
+        arg = arg c
+      }
+    }
+    END {emit()}
+  ' <<< "$args"
+}
+
+sley_eval_source_args_json() {
+  local file="$1" env_json="$2" args_text="$3"
+  local args_json='[]' arg value
+  args_text="$(printf '%s\n' "$args_text" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+  [[ -n "$args_text" ]] || {
+    printf '[]\n'
+    return 0
+  }
+  while IFS= read -r arg || [[ -n "$arg" ]]; do
+    [[ -n "$arg" ]] || continue
+    value="$(sley_eval_source_expr "$file" "$env_json" "$arg")" || return 1
+    args_json="$(printf '%s\n' "$args_json" | jq -c --arg value "$value" '. + [$value]')" || return 1
+  done < <(sley_split_source_args "$args_text")
+  printf '%s\n' "$args_json"
+}
+
+sley_eval_source_call_env_json() {
+  local base_env_json="$1" takes_json="$2" args_json="$3"
+  jq -cn --argjson base "$base_env_json" --argjson takes "$takes_json" --argjson args "$args_json" '
+    if ($takes | length) != ($args | length) then
+      empty
+    else
+      reduce range(0; $takes | length) as $i ($base; . + {($takes[$i]): $args[$i]})
+    end
+  '
+}
+
 sley_eval_source_condition() {
   local env_json="$1" condition="$2"
   local name op right left
@@ -235,8 +320,8 @@ sley_select_source_return_expr() {
 }
 
 sley_eval_source_call() {
-  local file="$1" callee="$2" env_json="$3"
-  local alias task module source_file
+  local file="$1" callee="$2" env_json="$3" args_json="${4:-[]}"
+  local alias task module source_file body takes_json call_env_json
   if [[ "$callee" == *.* ]]; then
     alias="${callee%%.*}"
     task="${callee#*.}"
@@ -247,17 +332,25 @@ sley_eval_source_call() {
     task="$callee"
     source_file="$file"
   fi
-  sley_eval_source_task "$source_file" "$task" "$env_json"
+  body="$(extract_sley_task_body "$source_file" "$task")"
+  [[ -n "$body" ]] || return 1
+  takes_json="$(sley_eval_source_task_takes_json "$body")" || return 1
+  call_env_json="$(sley_eval_source_call_env_json "$env_json" "$takes_json" "$args_json")" || return 1
+  [[ -n "$call_env_json" ]] || return 1
+  sley_eval_source_task "$source_file" "$task" "$call_env_json"
 }
 
 sley_eval_source_expr() {
   local file="$1" env_json="$2" expr="$3"
-  local call_prefix="${PARSER_CALL_EXPRESSION_PREFIX:-call }" tail callee tokens token out="" seen=false value left right op binary_re indexed_re field_re
+  local call_prefix="${PARSER_CALL_EXPRESSION_PREFIX:-call }" tail callee args_text args_json tokens token out="" seen=false value left right op binary_re indexed_re field_re
   expr="$(printf '%s\n' "$expr" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
   if [[ "$expr" == "$call_prefix"* ]]; then
     tail="${expr#"$call_prefix"}"
-    if [[ "$tail" =~ ^([A-Za-z_][A-Za-z0-9_.]*)\(\)$ ]]; then
-      sley_eval_source_call "$file" "${BASH_REMATCH[1]}" "$env_json"
+    if [[ "$tail" =~ ^([A-Za-z_][A-Za-z0-9_.]*)\((.*)\)$ ]]; then
+      callee="${BASH_REMATCH[1]}"
+      args_text="${BASH_REMATCH[2]}"
+      args_json="$(sley_eval_source_args_json "$file" "$env_json" "$args_text")" || return 1
+      sley_eval_source_call "$file" "$callee" "$env_json" "$args_json"
       return
     fi
   fi
@@ -4499,7 +4592,7 @@ PARSER_TRUE_KIND="$(printf '%s\n' "$PARSER_CLASSIFIERS_JSON" | jq -r '."true" //
 PARSER_FALSE_KIND="$(printf '%s\n' "$PARSER_CLASSIFIERS_JSON" | jq -r '."false" // empty')"
 PARSER_EMPTY_LIST_KIND="$(printf '%s\n' "$PARSER_CLASSIFIERS_JSON" | jq -r '."[]" // empty')"
 PARSER_FALLBACK_KIND="$(printf '%s\n' "$PARSER_CLASSIFIERS_JSON" | jq -r '.__fallback__ // empty')"
-PARSER_TASK_ID_TEMPLATE="$(eval_parser_id_template task_id || printf 'task:{{module}}.{{task}}\n')"
+PARSER_TASK_ID_TEMPLATE="$(eval_parser_id_template task_id_via_call)"
 PARSER_CALL_TARGET_TASK_ID_TEMPLATE="$(eval_parser_id_template call_target_task_id || printf 'task:{{module}}.{{task}}\n')"
 PARSER_IMPORT_ID_TEMPLATE="$(eval_parser_id_template import_id || printf 'import:{{module}}:{{import_module}}\n')"
 PARSER_TYPE_ID_TEMPLATE="$(eval_parser_id_template type_id || printf 'type:{{module}}.{{type}}\n')"
