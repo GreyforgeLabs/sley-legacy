@@ -21,6 +21,7 @@ self_hosting_status_field() {
 bool_literal_source="$(mktemp)"
 generic_source_main_source="$(mktemp)"
 generic_state_set_source="$(mktemp)"
+generic_if_assignment_source="$(mktemp)"
 generic_each_source="$(mktemp)"
 generic_while_source="$(mktemp)"
 empty_module_source="$(mktemp)"
@@ -38,7 +39,7 @@ zjx_tool_report="$(mktemp)"
 runtime_report="$(mktemp)"
 ast_missing_report="$(mktemp)"
 ci_report="$(mktemp)"
-trap 'rm -f "$bool_literal_source" "$generic_source_main_source" "$generic_state_set_source" "$generic_each_source" "$generic_while_source" "$empty_module_source" "$unknown_take_type_source" "$add_take_operation" "$self_hosting_status_report" "$artifact_check_report" "$migrate_report" "$docgen_report" "$workbench_report" "$sandbox_report" "$agent_bench_report" "$zjx_tool_report" "$runtime_report" "$ast_missing_report" "$ci_report"; rm -rf "$artifact_dir"' EXIT
+trap 'rm -f "$bool_literal_source" "$generic_source_main_source" "$generic_state_set_source" "$generic_if_assignment_source" "$generic_each_source" "$generic_while_source" "$empty_module_source" "$unknown_take_type_source" "$add_take_operation" "$self_hosting_status_report" "$artifact_check_report" "$migrate_report" "$docgen_report" "$workbench_report" "$sandbox_report" "$agent_bench_report" "$zjx_tool_report" "$runtime_report" "$ast_missing_report" "$ci_report"; rm -rf "$artifact_dir"' EXIT
 printf '%s\n' \
   'module app.bool_literal' \
   '' \
@@ -66,6 +67,19 @@ printf '%s\n' \
   '' \
   '  return label' \
   '}' > "$generic_state_set_source"
+printf '%s\n' \
+  'module app.generic_if_assignment' \
+  '' \
+  'task main -> Text {' \
+  '  state label = ""' \
+  '  if false {' \
+  '    set label = "bad"' \
+  '  } else {' \
+  '    set label = "ready"' \
+  '  }' \
+  '' \
+  '  return label' \
+  '}' > "$generic_if_assignment_source"
 printf '%s\n' \
   'module app.generic_each' \
   '' \
@@ -410,6 +424,11 @@ bin/sley run --json "$generic_source_main_source" \
 
 bin/sley run --json "$generic_state_set_source" \
   | json_field '.status == "passed" and .value.kind == "Text" and .value.value == "hi Ada"'
+
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_if_assignment_runtime_execution"))'
+
+bin/sley run --json "$generic_if_assignment_source" \
+  | json_field '.status == "passed" and .value.kind == "Text" and .value.value == "ready"'
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_linear_tally_runtime_execution"))'
 

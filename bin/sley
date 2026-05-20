@@ -602,9 +602,43 @@ sley_eval_source_while_env_json() {
 
 sley_eval_source_bind_env_json() {
   local file="$1" env_json="$2" body="$3"
-  local raw line name expr value_json loop_var list_name loop_body condition
+  local raw line name expr value_json loop_var list_name loop_body condition then_body else_body condition_value active_body in_else
   while IFS= read -r raw || [[ -n "$raw" ]]; do
     line="$(printf '%s\n' "$raw" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+    if [[ "$line" =~ ^if[[:space:]]+(.+)[[:space:]]*\{[[:space:]]*$ ]]; then
+      condition="${BASH_REMATCH[1]}"
+      then_body=""
+      else_body=""
+      in_else=false
+      while IFS= read -r raw || [[ -n "$raw" ]]; do
+        line="$(printf '%s\n' "$raw" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+        if [[ "$line" =~ ^\}[[:space:]]*else[[:space:]]*\{[[:space:]]*$ ]]; then
+          in_else=true
+          continue
+        fi
+        [[ "$line" == "}" ]] && break
+        if "$in_else"; then
+          else_body+="$line"$'\n'
+        else
+          then_body+="$line"$'\n'
+        fi
+      done
+      if condition_value="$(sley_eval_source_expr "$file" "$env_json" "$condition" 2>/dev/null)"; then
+        :
+      elif sley_eval_source_condition "$env_json" "$condition"; then
+        condition_value="true"
+      else
+        condition_value="false"
+      fi
+      [[ "$condition_value" == "true" || "$condition_value" == "false" ]] || return 1
+      if [[ "$condition_value" == "true" ]]; then
+        active_body="$then_body"
+      else
+        active_body="$else_body"
+      fi
+      env_json="$(sley_eval_source_bind_env_json "$file" "$env_json" "$active_body")" || return 1
+      continue
+    fi
     if [[ "$line" =~ ^each[[:space:]]+([A-Za-z_][A-Za-z0-9_]*)[[:space:]]+in[[:space:]]+([A-Za-z_][A-Za-z0-9_]*)[[:space:]]*\{[[:space:]]*$ ]]; then
       loop_var="${BASH_REMATCH[1]}"
       list_name="${BASH_REMATCH[2]}"
@@ -4224,10 +4258,8 @@ sley_source_main_body_supports_generic_runtime() {
     {
       line=trim($0)
       if(line ~ /^(for|while|forge)([ \t{]|$)/) found=1
-      if(line ~ /^if[ \t]+/) has_if=1
-      if(line ~ /^(set|state|tally)([ \t=]|$)/) has_mutable=1
     }
-    END {exit (found || (has_if && has_mutable)) ? 0 : 1}
+    END {exit found ? 0 : 1}
   '
 }
 
