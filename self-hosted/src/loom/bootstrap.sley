@@ -109,6 +109,7 @@ export task owned_bootstrap_values -> List<Text> {
     "checker_effect_aliases_task_execution",
     "checker_effect_alias_fallback_removal_task_execution",
     "checker_host_effect_needles_task_execution",
+    "checker_host_effect_needle_fallback_removal_task_execution",
     "lint_declared_effect_aliases_task_execution",
     "runtime_host_effect_needles_dispatch_execution",
     "runtime_authority_host_effect_needles_execution",
