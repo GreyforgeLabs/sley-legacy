@@ -758,7 +758,10 @@ bin/sley self-hosting-status --json \
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("checker_gate_reference_pass_task_execution")) and (.bootstrap_owned_by_sley | index("checker_effect_authorization_pass_task_execution"))'
 
-if grep -Eq 'def (return_type_diags|take_type_diags|unknown_effect_diags|gate_take_type_diags|gate_effect_diags|direct_effect_diags|transitive_effect_diags):' bin/sley; then
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("checker_duplicate_pass_family_task_execution"))'
+
+if grep -Eq 'def (return_type_diags|take_type_diags|unknown_effect_diags|gate_take_type_diags|gate_effect_diags|direct_effect_diags|transitive_effect_diags|duplicate_effect_diags|duplicate_type_diags|duplicate_task_diags|duplicate_take_diags|duplicate_map_key_diags|duplicate_record_field_diags|duplicate_record_literal_field_diags):' bin/sley; then
   fail "checker descriptor-backed diagnostics must run through Sley-owned pass descriptor engines"
 fi
 
