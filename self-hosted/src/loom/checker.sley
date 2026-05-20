@@ -43,6 +43,42 @@ export task diagnostic_pass_order -> List<Text> {
   ]
 }
 
+export task diagnostic_pass_descriptors -> List<Text> {
+  return [
+    "duplicate_effect_diags|legacy|||||",
+    "duplicate_type_diags|legacy|||||",
+    "duplicate_task_diags|legacy|||||",
+    "task_diags|legacy|||||",
+    "return_type_diags|unknown_reference|unknown_type_id|unknown_type_message|type_name|task_return_type|task",
+    "take_type_diags|unknown_reference|unknown_type_id|unknown_type_message|type_name|take_type|take",
+    "unknown_effect_diags|unknown_reference|unknown_effect_id|unknown_effect_message|effect_name|task_effect|task",
+    "gate_take_type_diags|legacy|||||",
+    "gate_effect_diags|legacy|||||",
+    "question_requires_result_diags|legacy|||||",
+    "direct_effect_diags|legacy|||||",
+    "transitive_effect_diags|legacy|||||",
+    "unknown_task_diags|legacy|||||",
+    "call_arity_diags|legacy|||||",
+    "call_argument_type_diags|legacy|||||",
+    "type_mismatch_diags|legacy|||||",
+    "return_type_mismatch_diags|legacy|||||",
+    "duplicate_take_diags|legacy|||||",
+    "duplicate_map_key_diags|legacy|||||",
+    "duplicate_record_field_diags|legacy|||||",
+    "duplicate_record_literal_field_diags|legacy|||||",
+    "record_field_missing_diags|legacy|||||",
+    "record_field_unknown_diags|legacy|||||",
+    "record_field_type_mismatch_diags|legacy|||||",
+    "record_literal_non_record_type_diags|legacy|||||",
+    "unknown_record_field_diags|legacy|||||",
+    "list_element_type_diags|legacy|||||",
+    "index_diags|legacy|||||",
+    "map_key_type_diags|legacy|||||",
+    "map_value_type_diags|legacy|||||",
+    "missing_return_diags|legacy|||||"
+  ]
+}
+
 export task unknown_identifier_id -> Text {
   return "UNKNOWN_IDENTIFIER"
 }
