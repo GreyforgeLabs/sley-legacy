@@ -2,8 +2,8 @@
 
 Date: 2026-05-19
 Branch: public
-Latest code checkpoint: 4fe58c4
-Latest pause documentation checkpoint before this note: f0da3e5
+Latest code checkpoint: 156dea3
+Latest pause documentation checkpoint before this note: e583ff9
 Current pause document status: committed on `public`; use `git log` for exact
 branch head
 Remote status: verify current `origin/public` head with
@@ -355,8 +355,12 @@ The current local checkpoint advances the public branch to:
   slice: `bootstrap`, `strict_self_hosted=false`,
   `semantic_source_count=6`, `bootstrap_owned_by_sley=285`; remaining blockers
   are still parser, checker, and runtime semantics from Sley source
+- self-hosting status after the checker duplicate-message fallback-removal
+  slice: `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=286`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
 - latest verification refresh on 2026-05-19: `make v1` passed after the
-  checker call/type message fallback-removal slice
+  checker duplicate-message fallback-removal slice
 
 The tracked code checkpoint is:
 
@@ -443,6 +447,7 @@ The tracked code checkpoint is:
 - 98af85e fix: require sley checker host effect needles
 - 36d0cfb fix: require sley checker unknown messages
 - 4fe58c4 fix: require sley checker call type messages
+- 156dea3 fix: require sley checker duplicate messages
 
 The tracked pause documentation checkpoints are:
 
@@ -523,6 +528,7 @@ The tracked pause documentation checkpoints are:
 - cc10197 docs: record checker effect alias slice
 - 06a03df docs: record checker host effect needle slice
 - f0da3e5 docs: record checker unknown message slice
+- e583ff9 docs: record checker call type message slice
 
 Recent self-hosting slices added:
 
@@ -789,6 +795,11 @@ Recent self-hosting slices added:
   mismatch diagnostic messages now come from `loom.checker` without shell
   printf, prefix/suffix, or empty-template fallbacks, while preserving the
   visible diagnostics and return-type repair hints
+- Checker duplicate take, duplicate map key, duplicate field, duplicate record
+  literal field, duplicate effect, duplicate type, and duplicate task
+  diagnostic messages now come from `loom.checker` without shell printf,
+  prefix/suffix, or empty-template fallbacks, while preserving the visible
+  duplicate diagnostics
 
 ## Next Frontier
 
@@ -2097,10 +2108,37 @@ The latest continuation audit reconfirmed:
   `bin/sley-contract check-fixtures fixtures/contracts --schemas docs/schemas
   --json`, external public-action packet verifier, `git diff --check`, and
   final `make v1` all passed
+- focused checker duplicate-message fallback-removal probes:
+  `bin/sley self-hosting-status --json` reported
+  `checker_duplicate_message_fallback_removal_task_execution` and
+  `bootstrap_owned_by_sley=286`;
+  `fixtures/corpus/rejected/duplicate_take.sley` preserved `DUPLICATE_TAKE`
+  with message "duplicate take `value`";
+  `fixtures/corpus/rejected/duplicate_map_key.sley` preserved
+  `DUPLICATE_MAP_KEY` with message "duplicate map key `ada`";
+  `fixtures/corpus/rejected/duplicate_record_field.sley` preserved
+  `DUPLICATE_FIELD` with message "duplicate record field `name`";
+  `fixtures/corpus/rejected/duplicate_record_literal_field.sley` preserved
+  `DUPLICATE_RECORD_LITERAL_FIELD` with message
+  "duplicate record literal field `name`";
+  `fixtures/corpus/rejected/module_namespace_conflict.sley` preserved
+  `DUPLICATE_EFFECT`, `DUPLICATE_TYPE`, and `DUPLICATE_TASK`; focused grep
+  found no duplicate diagnostic message printf fallbacks, prefix/suffix
+  fallbacks, or empty-template fallback branches
+- Sley self-hosting status after the checker duplicate-message fallback-removal
+  slice: `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=286`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
+- latest checker duplicate-message fallback-removal verification:
+  `bash -n bin/sley`, `bash -n scripts/self-hosted-test.sh`, focused checker
+  duplicate-message probes, `scripts/self-hosted-test.sh`,
+  `bin/sley-contract check-fixtures fixtures/contracts --schemas docs/schemas
+  --json`, external public-action packet verifier, `git diff --check`, and
+  final `make v1` all passed
 
 ## Dirty State Notes
 
-Tracked code was committed at 4fe58c4 before this pause document was updated.
+Tracked code was committed at 156dea3 before this pause document was updated.
 Tracked pause documentation before this update was refreshed through 218d40c
 with parser lint surface evidence, through 26e7417 with the external comparison
 approval gate, fork audit, and helper evidence, and through aba1b03 with parser
@@ -2160,6 +2198,7 @@ fallback-removal evidence, and through f6ab6dd with checker built-in effect
 fallback-removal evidence, and through cc10197 with checker effect-alias
 fallback-removal evidence, and through 06a03df with checker host-effect needle
 fallback-removal evidence, and through f0da3e5 with checker unknown-message
+fallback-removal evidence, and through e583ff9 with checker call/type message
 fallback-removal evidence.
 
 Pre-existing untracked files were not touched and should remain outside future
