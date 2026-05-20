@@ -371,8 +371,12 @@ The current local checkpoint advances the public branch to:
   `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
   `bootstrap_owned_by_sley=292`; remaining blockers are still parser, checker,
   and runtime semantics from Sley source
+- self-hosting status after the checker diagnostic pass-order slice:
+  `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=293`; remaining blockers are still parser, checker,
+  and runtime semantics from Sley source
 - latest verification refresh on 2026-05-20: `make v1` passed after the
-  checker diagnostic-ID fallback-removal slice
+  checker diagnostic pass-order slice
 
 The tracked code checkpoint is:
 
@@ -463,6 +467,7 @@ The tracked code checkpoint is:
 - 5c5d88a fix: require sley checker record collection messages
 - b273e56 fix: require sley checker effect return messages
 - 56d1f2e fix: require sley checker diagnostic ids
+- 24ba72a fix: source checker diagnostic pass order
 
 The tracked pause documentation checkpoints are:
 
@@ -2212,6 +2217,24 @@ The latest continuation audit reconfirmed:
 - latest checker diagnostic-ID fallback-removal verification:
   `bash -n bin/sley`, `bash -n scripts/self-hosted-test.sh`, focused
   diagnostic-ID fallback grep, `scripts/self-hosted-test.sh`,
+  `bin/sley-contract check-fixtures fixtures/contracts --schemas docs/schemas
+  --json`, external public-action packet verifier, `git diff --check`, and
+  final `make v1` all passed
+- focused checker diagnostic pass-order probes:
+  `bin/sley self-hosting-status --json` reported
+  `checker_diagnostic_pass_order_task_execution` and
+  `bootstrap_owned_by_sley=293`; the checker now reads
+  `diagnostic_pass_order` from `self-hosted/src/loom/checker.sley`, and the
+  old hard-coded top-level diagnostic pass array was removed from `bin/sley`;
+  rejected fixture probes preserved `UNKNOWN_IDENTIFIER`, `TYPE_MISMATCH`, and
+  `RETURN_TYPE_MISMATCH` diagnostics before the full corpus run
+- Sley self-hosting status after the checker diagnostic pass-order slice:
+  `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=293`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
+- latest checker diagnostic pass-order verification:
+  `bash -n bin/sley`, `bash -n scripts/self-hosted-test.sh`, focused checker
+  rejected probes, `scripts/self-hosted-test.sh`,
   `bin/sley-contract check-fixtures fixtures/contracts --schemas docs/schemas
   --json`, external public-action packet verifier, `git diff --check`, and
   final `make v1` all passed
