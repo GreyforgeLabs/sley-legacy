@@ -359,8 +359,20 @@ The current local checkpoint advances the public branch to:
   slice: `bootstrap`, `strict_self_hosted=false`,
   `semantic_source_count=6`, `bootstrap_owned_by_sley=286`; remaining blockers
   are still parser, checker, and runtime semantics from Sley source
-- latest verification refresh on 2026-05-19: `make v1` passed after the
-  checker duplicate-message fallback-removal slice
+- self-hosting status after the checker record/collection message
+  fallback-removal slice: `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=288`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
+- self-hosting status after the checker effect/return/question message
+  fallback-removal slice: `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=291`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
+- self-hosting status after the checker diagnostic-ID fallback-removal slice:
+  `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=292`; remaining blockers are still parser, checker,
+  and runtime semantics from Sley source
+- latest verification refresh on 2026-05-20: `make v1` passed after the
+  checker diagnostic-ID fallback-removal slice
 
 The tracked code checkpoint is:
 
@@ -448,6 +460,9 @@ The tracked code checkpoint is:
 - 36d0cfb fix: require sley checker unknown messages
 - 4fe58c4 fix: require sley checker call type messages
 - 156dea3 fix: require sley checker duplicate messages
+- 5c5d88a fix: require sley checker record collection messages
+- b273e56 fix: require sley checker effect return messages
+- 56d1f2e fix: require sley checker diagnostic ids
 
 The tracked pause documentation checkpoints are:
 
@@ -529,6 +544,8 @@ The tracked pause documentation checkpoints are:
 - 06a03df docs: record checker host effect needle slice
 - f0da3e5 docs: record checker unknown message slice
 - e583ff9 docs: record checker call type message slice
+- 3e4fb2a docs: record checker record collection message slice
+- f77aac6 docs: record checker effect return message slice
 
 Recent self-hosting slices added:
 
@@ -2178,6 +2195,23 @@ The latest continuation audit reconfirmed:
 - latest checker effect/return/question message fallback-removal verification:
   `bash -n bin/sley`, `bash -n scripts/self-hosted-test.sh`, focused checker
   effect/return/question message probes, `scripts/self-hosted-test.sh`,
+  `bin/sley-contract check-fixtures fixtures/contracts --schemas docs/schemas
+  --json`, external public-action packet verifier, `git diff --check`, and
+  final `make v1` all passed
+- focused checker diagnostic-ID fallback-removal probes:
+  `bin/sley self-hosting-status --json` reported
+  `checker_diagnostic_id_fallback_removal_task_execution` and
+  `bootstrap_owned_by_sley=292`; focused grep found no
+  `DIAG_*="${DIAG_*:-...}"` shell fallback literals; rejected fixture coverage
+  preserved checker diagnostic IDs across unknown, call/type, duplicate,
+  record, collection, effect, return, and question groups
+- Sley self-hosting status after the checker diagnostic-ID fallback-removal
+  slice: `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=292`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source
+- latest checker diagnostic-ID fallback-removal verification:
+  `bash -n bin/sley`, `bash -n scripts/self-hosted-test.sh`, focused
+  diagnostic-ID fallback grep, `scripts/self-hosted-test.sh`,
   `bin/sley-contract check-fixtures fixtures/contracts --schemas docs/schemas
   --json`, external public-action packet verifier, `git diff --check`, and
   final `make v1` all passed
