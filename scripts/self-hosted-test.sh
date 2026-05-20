@@ -193,6 +193,8 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_source_meta
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_fallback_removal_task_execution"))'
 
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_call_prefix_fallback_removal_task_execution"))'
+
 if grep -Fq 'extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley"' bin/sley \
   || grep -Fq 'extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley"' bin/sley; then
   fail "parser metadata must execute through Sley source tasks, not raw host extractors"
@@ -205,6 +207,10 @@ fi
 if grep -Eq 'eval_parser_(id|message)_template [A-Za-z0-9_]+( [A-Za-z0-9_]+)? \|\| printf' bin/sley \
   || grep -Eq 'PARSER_[A-Z0-9_]+="\$\{PARSER_[A-Z0-9_]+:-' bin/sley; then
   fail "parser metadata and templates must not use host fallback literals"
+fi
+
+if grep -Fq '${PARSER_CALL_EXPRESSION_PREFIX:-call }' bin/sley; then
+  fail "parser call-expression prefix must come from loom.parser without host fallback literals"
 fi
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("semantic_source_count_parser_prefix_task_execution")) and (.bootstrap_owned_by_sley | index("bootstrap_smoke_parser_prefix_task_execution"))'
@@ -360,6 +366,12 @@ for source_bind_eval_fn in eval_bootstrap_smoke_task eval_bootstrap_list_count_t
     fail "$source_bind_eval_fn must execute through the shared Sley source task evaluator"
   fi
 done
+
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("bootstrap_smoke_fallback_removal_task_execution"))'
+
+if grep -Fq 'eval_bootstrap_smoke_task || printf' bin/sley; then
+  fail "self-hosted runtime smoke must execute through loom.bootstrap without host fallback counts"
+fi
 
 for source_task_eval_fn in \
   eval_parser_id_template \
