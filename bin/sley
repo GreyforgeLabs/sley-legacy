@@ -4570,7 +4570,6 @@ LINT_EMPTY_IF_HINT="$(sley_source_task loom.lint empty_if_statement_hint)"
 LINT_EMPTY_ELSE_HINT="$(sley_source_task loom.lint empty_else_statement_hint)"
 
 RUNTIME_HELLO_VALUE="$(sley_source_task loom.runtime hello_value)"
-RUNTIME_PROJECT_READY_VALUE="$(extract_sley_int_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" project_ready_value)"
 RUNTIME_DEFAULT_PROFILE="$(sley_source_task loom.runtime default_profile_text)"
 RUNTIME_DEFAULT_MODEL_PLAN="$(sley_source_task loom.runtime default_model_plan_text)"
 RUNTIME_DEFAULT_DEPLOY_RESULT="$(sley_source_task loom.runtime default_deploy_result_text)"
@@ -8294,55 +8293,55 @@ run_json() {
     model_plan_text="${model_text:-$RUNTIME_DEFAULT_MODEL_PLAN}"
     deploy_result_text="${deploy_text:-$RUNTIME_DEFAULT_DEPLOY_RESULT}"
     value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
-    value="$(eval_seeded_agent_deploy_value "$profile_text" "$model_plan_text" "$deploy_result_text" || printf '%s | %s | %s\n' "$profile_text" "$model_plan_text" "$deploy_result_text")"
+    value="$(eval_seeded_agent_deploy_value "$profile_text" "$model_plan_text" "$deploy_result_text")"
   elif runtime_source_has_host_effect "$target" "FileRead"; then
     value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
     value="$(extract_sley_string_task "$ROOT_DIR/examples/hello.sley" main)"
     value="${value:-hello sley}"
-    value="$(eval_runtime_text_identity_value_task "$value" || printf '%s\n' "$value")"
+    value="$(eval_runtime_text_identity_value_task "$value")"
   elif runtime_source_has_host_effect "$target" "FileWrite"; then
     value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
-    value="$(eval_runtime_text_identity_value_task "$RUNTIME_DEFAULT_FILE_WRITE_TEXT" || printf '%s\n' "$RUNTIME_DEFAULT_FILE_WRITE_TEXT")"
+    value="$(eval_runtime_text_identity_value_task "$RUNTIME_DEFAULT_FILE_WRITE_TEXT")"
   elif runtime_source_has_host_effect "$target" "DatabaseWrite"; then
     value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
     if [[ "$target" == *"agent_data_authority.sley" ]]; then
-      value="$(eval_runtime_text_identity_value_task "$RUNTIME_DEFAULT_AGENT_DATA_WRITE_TEXT" || printf '%s\n' "$RUNTIME_DEFAULT_AGENT_DATA_WRITE_TEXT")"
+      value="$(eval_runtime_text_identity_value_task "$RUNTIME_DEFAULT_AGENT_DATA_WRITE_TEXT")"
     else
-      value="$(eval_runtime_text_identity_value_task "$RUNTIME_DEFAULT_DATABASE_WRITE_TEXT" || printf '%s\n' "$RUNTIME_DEFAULT_DATABASE_WRITE_TEXT")"
+      value="$(eval_runtime_text_identity_value_task "$RUNTIME_DEFAULT_DATABASE_WRITE_TEXT")"
     fi
   elif runtime_source_has_host_effect "$target" "DatabaseRead"; then
     value_kind="$RUNTIME_TEXT_VALUE_KIND"
-    value="$(eval_runtime_text_identity_value_task "$RUNTIME_DEFAULT_DATABASE_READ_TEXT" || printf '%s\n' "$RUNTIME_DEFAULT_DATABASE_READ_TEXT")"
+    value="$(eval_runtime_text_identity_value_task "$RUNTIME_DEFAULT_DATABASE_READ_TEXT")"
   elif runtime_source_has_host_effect "$target" "Network"; then
     value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
-    value="$(eval_runtime_text_identity_value_task "${http_text:-$RUNTIME_DEFAULT_PROFILE}" || printf '%s\n' "${http_text:-$RUNTIME_DEFAULT_PROFILE}")"
+    value="$(eval_runtime_text_identity_value_task "${http_text:-$RUNTIME_DEFAULT_PROFILE}")"
   elif runtime_source_has_host_effect "$target" "Shell"; then
     value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
-    value="$(eval_runtime_text_identity_value_task "${shell_text:-$RUNTIME_DEFAULT_SHELL_TEXT}" || printf '%s\n' "${shell_text:-$RUNTIME_DEFAULT_SHELL_TEXT}")"
+    value="$(eval_runtime_text_identity_value_task "${shell_text:-$RUNTIME_DEFAULT_SHELL_TEXT}")"
   elif runtime_source_has_host_effect "$target" "ModelCall"; then
     value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
-    value="$(eval_runtime_text_identity_value_task "${model_text:-$RUNTIME_DEFAULT_MODEL_PLAN}" || printf '%s\n' "${model_text:-$RUNTIME_DEFAULT_MODEL_PLAN}")"
+    value="$(eval_runtime_text_identity_value_task "${model_text:-$RUNTIME_DEFAULT_MODEL_PLAN}")"
   elif runtime_source_has_host_effect "$target" "SecretRead"; then
     value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
-    value="$(eval_runtime_text_identity_value_task "${secret_text:-$RUNTIME_DEFAULT_SECRET_TEXT}" || printf '%s\n' "${secret_text:-$RUNTIME_DEFAULT_SECRET_TEXT}")"
+    value="$(eval_runtime_text_identity_value_task "${secret_text:-$RUNTIME_DEFAULT_SECRET_TEXT}")"
   elif runtime_deploy_stage_probe_matches "$target"; then
     value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
-    value="$(eval_runtime_text_identity_value_task "${deploy_text:-$RUNTIME_DEFAULT_DEPLOY_RESULT}" || printf '%s\n' "${deploy_text:-$RUNTIME_DEFAULT_DEPLOY_RESULT}")"
+    value="$(eval_runtime_text_identity_value_task "${deploy_text:-$RUNTIME_DEFAULT_DEPLOY_RESULT}")"
   elif runtime_spend_authorize_probe_matches "$target"; then
     value_kind="$RUNTIME_OK_TEXT_VALUE_KIND"
     spend_text="${spend_text:-$RUNTIME_DEFAULT_SPEND_AUTHORIZATION_TEXT}"
     if runtime_spend_prefix_probe_matches "$target"; then
-      value="$(eval_runtime_spend_prefixed_value_task "$spend_text" || printf 'budget gate: %s\n' "$spend_text")"
+      value="$(eval_runtime_spend_prefixed_value_task "$spend_text")"
     else
-      value="$(eval_runtime_text_identity_value_task "$spend_text" || printf '%s\n' "$spend_text")"
+      value="$(eval_runtime_text_identity_value_task "$spend_text")"
     fi
   elif runtime_project_ready_probe_matches "$target"; then
-    value_kind="$RUNTIME_INT_VALUE_KIND"; value="$(eval_project_ready_value_task || printf '%s\n' "$RUNTIME_PROJECT_READY_VALUE")"
+    value_kind="$RUNTIME_INT_VALUE_KIND"; value="$(eval_project_ready_value_task)"
   fi
   if [[ "$value_kind" == "$RUNTIME_OK_TEXT_VALUE_KIND" ]]; then
-    value="$(eval_runtime_ok_text_value_task "$value" || printf '%s\n' "$value")"
+    value="$(eval_runtime_ok_text_value_task "$value")"
   fi
-  runtime_status="$(eval_runtime_status_task 0 || printf '%s\n' "$RUNTIME_PASSED_STATUS")"
+  runtime_status="$(eval_runtime_status_task 0)"
   [[ -n "$runtime_status" ]] || runtime_status="$RUNTIME_PASSED_STATUS"
   run_value_json="$(jq -n \
     --arg kind "$value_kind" \

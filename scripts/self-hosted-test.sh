@@ -61,7 +61,7 @@ bin/sley self-hosting-status --json \
 bin/sley self-hosting-status --json \
   | json_field '(.bootstrap_owned_by_sley | index("bootstrap_source_metadata_task_execution")) and (.bootstrap_owned_by_sley | index("lint_source_metadata_task_execution"))'
 
-if grep -Eq 'extract_sley_(string|bool|list)_task(_json)? "\$SELF_HOSTED_SOURCE_ROOT/loom/[A-Za-z_]+\.sley"' bin/sley; then
+if grep -Eq 'extract_sley_[A-Za-z0-9_]+ "\$SELF_HOSTED_SOURCE_ROOT/loom/[A-Za-z_]+\.sley"' bin/sley; then
   fail "self-hosted module metadata must execute through Sley source tasks, not raw host extractors"
 fi
 
@@ -165,6 +165,14 @@ bin/sley run --json --cap Shell --shell-output date "owned date" examples/shell_
 
 if grep -Eq 'RUNTIME_(HELLO_VALUE|PROJECT_READY_VALUE|DEFAULT_PROFILE|DEFAULT_MODEL_PLAN|DEFAULT_DEPLOY_RESULT|DEFAULT_RAW_VALUE|DEFAULT_FILE_WRITE_TEXT|DEFAULT_DATABASE_WRITE_TEXT|DEFAULT_AGENT_DATA_WRITE_TEXT|DEFAULT_DATABASE_READ_TEXT|DEFAULT_DATABASE_TABLE|DEFAULT_SHELL_TEXT|DEFAULT_SECRET_TEXT|DEFAULT_SPEND_AUTHORIZATION_TEXT)="\$\{RUNTIME_' bin/sley; then
   fail "runtime default values must come from loom.runtime without shell fallback literals"
+fi
+
+bin/sley self-hosting-status --json \
+  | json_field '(.bootstrap_owned_by_sley | index("runtime_run_fallback_removal_task_execution"))'
+
+if grep -Eq 'eval_(seeded_agent_deploy_value|runtime_[A-Za-z0-9_]+_task|project_ready_value_task)[^\n]*\|\| printf' bin/sley \
+  || grep -Eq 'eval_runtime_status_task 0 \|\| printf' bin/sley; then
+  fail "runtime command values must execute through loom.runtime without host printf fallbacks"
 fi
 
 bin/sley self-hosting-status --json \
