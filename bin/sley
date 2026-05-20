@@ -550,11 +550,52 @@ sley_eval_source_bind_value_json() {
   jq -cn --arg value "$value" '$value'
 }
 
+sley_eval_source_apply_assignment_json() {
+  local file="$1" env_json="$2" line="$3"
+  local name expr value_json
+  line="$(printf '%s\n' "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+  [[ "$line" =~ ^(bind|state|tally|set)[[:space:]]+([A-Za-z_][A-Za-z0-9_]*)([[:space:]]*:[^=]+)?[[:space:]]*=[[:space:]]*(.+)$ ]] || {
+    printf '%s\n' "$env_json"
+    return
+  }
+  name="${BASH_REMATCH[2]}"
+  expr="${BASH_REMATCH[4]}"
+  value_json="$(sley_eval_source_bind_value_json "$file" "$env_json" "$expr")" || return 1
+  jq -cn --argjson env "$env_json" --arg name "$name" --argjson value "$value_json" '$env + {($name): $value}'
+}
+
+sley_eval_source_each_env_json() {
+  local file="$1" env_json="$2" loop_var="$3" list_name="$4" body="$5"
+  local item_json body_line
+  printf '%s\n' "$env_json" | jq -e --arg name "$list_name" 'type == "object" and has($name) and (.[$name] | type) == "array"' >/dev/null || return 1
+  while IFS= read -r item_json || [[ -n "$item_json" ]]; do
+    [[ -n "$item_json" ]] || continue
+    env_json="$(jq -cn --argjson env "$env_json" --arg name "$loop_var" --argjson value "$item_json" '$env + {($name): $value}')" || return 1
+    while IFS= read -r body_line || [[ -n "$body_line" ]]; do
+      [[ -n "$body_line" ]] || continue
+      env_json="$(sley_eval_source_apply_assignment_json "$file" "$env_json" "$body_line")" || return 1
+    done <<< "$body"
+  done < <(printf '%s\n' "$env_json" | jq -ce --arg name "$list_name" '.[$name][]')
+  printf '%s\n' "$env_json"
+}
+
 sley_eval_source_bind_env_json() {
   local file="$1" env_json="$2" body="$3"
-  local raw line name expr value_json
+  local raw line name expr value_json loop_var list_name loop_body
   while IFS= read -r raw || [[ -n "$raw" ]]; do
     line="$(printf '%s\n' "$raw" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+    if [[ "$line" =~ ^each[[:space:]]+([A-Za-z_][A-Za-z0-9_]*)[[:space:]]+in[[:space:]]+([A-Za-z_][A-Za-z0-9_]*)[[:space:]]*\{[[:space:]]*$ ]]; then
+      loop_var="${BASH_REMATCH[1]}"
+      list_name="${BASH_REMATCH[2]}"
+      loop_body=""
+      while IFS= read -r raw || [[ -n "$raw" ]]; do
+        line="$(printf '%s\n' "$raw" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+        [[ "$line" == "}" ]] && break
+        loop_body+="$line"$'\n'
+      done
+      env_json="$(sley_eval_source_each_env_json "$file" "$env_json" "$loop_var" "$list_name" "$loop_body")" || return 1
+      continue
+    fi
     [[ "$line" =~ ^(bind|state|tally|set)[[:space:]]+([A-Za-z_][A-Za-z0-9_]*)([[:space:]]*:[^=]+)?[[:space:]]*=[[:space:]]*(.+)$ ]] || continue
     name="${BASH_REMATCH[2]}"
     expr="${BASH_REMATCH[4]}"
@@ -4083,7 +4124,7 @@ sley_source_main_body_supports_generic_runtime() {
     function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
     {
       line=trim($0)
-      if(line ~ /^(for|each|while|forge)([ \t{]|$)/) found=1
+      if(line ~ /^(for|while|forge)([ \t{]|$)/) found=1
       if(line ~ /^if[ \t]+/) has_if=1
       if(line ~ /^(set|state|tally)([ \t=]|$)/) has_mutable=1
     }
