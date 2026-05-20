@@ -1300,6 +1300,39 @@ eval_parser_statement_feature_classifiers_json() {
   done | jq -s 'from_entries'
 }
 
+eval_parser_binding_feature_classifiers_json() {
+  local parser_file="$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley"
+  local key is_take is_gate is_state is_tally kind env_json
+  for key in take gate bind state tally; do
+    is_take=false
+    is_gate=false
+    is_state=false
+    is_tally=false
+    case "$key" in
+      take) is_take=true ;;
+      gate) is_gate=true ;;
+      bind) ;;
+      state) is_state=true ;;
+      tally) is_tally=true ;;
+      *) return 1 ;;
+    esac
+    env_json="$(jq -cn \
+      --argjson is_take "$is_take" \
+      --argjson is_gate "$is_gate" \
+      --argjson is_state "$is_state" \
+      --argjson is_tally "$is_tally" \
+      '{
+        is_take:$is_take,
+        is_gate:$is_gate,
+        is_state:$is_state,
+        is_tally:$is_tally
+      }')" || return 1
+    kind="$(sley_eval_source_task "$parser_file" classify_binding_features "$env_json")" || return 1
+    [[ -n "$kind" ]] || return 1
+    jq -cn --arg key "$key" --arg value "$kind" '{key:$key,value:$value}'
+  done | jq -s 'from_entries'
+}
+
 eval_parser_id_template() {
   local task="$1"
   local parser_file="$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley"
@@ -5352,6 +5385,12 @@ PARSER_GATE_BINDING_KIND="$(sley_source_task loom.parser gate_binding_kind)"
 PARSER_STATE_BINDING_KIND="$(sley_source_task loom.parser state_binding_kind)"
 PARSER_TALLY_BINDING_KIND="$(sley_source_task loom.parser tally_binding_kind)"
 PARSER_BIND_BINDING_KIND="$(sley_source_task loom.parser bind_binding_kind)"
+PARSER_BINDING_FEATURE_CLASSIFIERS_JSON="$(eval_parser_binding_feature_classifiers_json)"
+PARSER_FEATURE_TAKE_BINDING_KIND="$(printf '%s\n' "$PARSER_BINDING_FEATURE_CLASSIFIERS_JSON" | jq -er '.take')"
+PARSER_FEATURE_GATE_BINDING_KIND="$(printf '%s\n' "$PARSER_BINDING_FEATURE_CLASSIFIERS_JSON" | jq -er '.gate')"
+PARSER_FEATURE_BIND_BINDING_KIND="$(printf '%s\n' "$PARSER_BINDING_FEATURE_CLASSIFIERS_JSON" | jq -er '.bind')"
+PARSER_FEATURE_STATE_BINDING_KIND="$(printf '%s\n' "$PARSER_BINDING_FEATURE_CLASSIFIERS_JSON" | jq -er '.state')"
+PARSER_FEATURE_TALLY_BINDING_KIND="$(printf '%s\n' "$PARSER_BINDING_FEATURE_CLASSIFIERS_JSON" | jq -er '.tally')"
 sley_template_replace() {
   local out="$1" key value needle
   shift
@@ -5814,7 +5853,12 @@ ast_json() {
     -v gate_binding_kind="$PARSER_GATE_BINDING_KIND" \
     -v state_binding_kind="$PARSER_STATE_BINDING_KIND" \
     -v tally_binding_kind="$PARSER_TALLY_BINDING_KIND" \
-    -v bind_binding_kind="$PARSER_BIND_BINDING_KIND" '
+    -v bind_binding_kind="$PARSER_BIND_BINDING_KIND" \
+    -v take_feature_binding_kind="$PARSER_FEATURE_TAKE_BINDING_KIND" \
+    -v gate_feature_binding_kind="$PARSER_FEATURE_GATE_BINDING_KIND" \
+    -v bind_feature_binding_kind="$PARSER_FEATURE_BIND_BINDING_KIND" \
+    -v state_feature_binding_kind="$PARSER_FEATURE_STATE_BINDING_KIND" \
+    -v tally_feature_binding_kind="$PARSER_FEATURE_TALLY_BINDING_KIND" '
     function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
     function esc(s){gsub(/\\/, "\\\\", s); gsub(/"/, "\\\"", s); gsub(/\t/, "\\t", s); return s}
     function count_char(s, c, n, i){n=0; for(i=1;i<=length(s);i++){if(substr(s,i,1)==c)n++} return n}
@@ -5840,7 +5884,7 @@ ast_json() {
       if(expr ~ identifier_pattern){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" identifier_kind "\",\"name\":\"" esc(expr) "\",\"span\":" span_json(line,col) "}"}
       return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" fallback_kind "\",\"fallible\":" (expr ~ /\?$/ ? "true" : "false") ",\"span\":" span_json(line,col) "}"
     }
-    function binding_kind(k){return k=="state" ? state_binding_kind : (k=="tally" ? tally_binding_kind : bind_binding_kind)}
+    function binding_kind(k){return k=="state" ? state_feature_binding_kind : (k=="tally" ? tally_feature_binding_kind : bind_feature_binding_kind)}
     function add_stmt(kind, txt, line, col, id){
       stmt_count[current]++
       id=instantiate_statement_id(task_module[current], task_name[current], stmt_count[current]-1)
@@ -5876,8 +5920,8 @@ ast_json() {
     in_task {
       raw=$0; line=trim(raw)
       if(line ~ /^take[ \t]+/) {
-        take_count[current]++; t=line; sub(/^take[ \t]+/,"",t); kind=take_binding_kind
-        if(t ~ /^gate[ \t]+/){kind=gate_binding_kind; sub(/^gate[ \t]+/,"",t)}
+        take_count[current]++; t=line; sub(/^take[ \t]+/,"",t); kind=take_feature_binding_kind
+        if(t ~ /^gate[ \t]+/){kind=gate_feature_binding_kind; sub(/^gate[ \t]+/,"",t)}
         name=t; sub(/[ \t]*:.*/,"",name); typ=t; sub(/^.*:[ \t]*/,"",typ)
         take_name[current,take_count[current]]=trim(name); take_kind[current,take_count[current]]=kind; take_type[current,take_count[current]]=trim(typ); take_line[current,take_count[current]]=FNR
       } else if(line ~ /^(bind|state|tally)[ \t]+/) {
