@@ -63,6 +63,7 @@ export task owned_bootstrap_values -> List<Text> {
     "parser_ast_schema_expression_dispatch_execution",
     "parser_expression_surface_feature_classifier_task_execution",
     "parser_ast_call_expression_dispatch_execution",
+    "parser_bare_call_expression_dispatch_execution",
     "parser_ast_member_index_expression_dispatch_execution",
     "parser_declaration_feature_classifier_task_execution",
     "parser_ast_declaration_feature_dispatch_execution",

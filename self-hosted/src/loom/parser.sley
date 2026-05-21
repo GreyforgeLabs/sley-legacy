@@ -83,10 +83,14 @@ export task classify_expression_operator_features -> Text {
 
 export task classify_expression_surface_features -> Text {
   take has_call_prefix: Bool
+  take has_bare_call: Bool
   take has_field_access: Bool
   take has_index_access: Bool
 
   if has_call_prefix {
+    return call call_expression_kind()
+  }
+  if has_bare_call {
     return call call_expression_kind()
   }
   if has_field_access {

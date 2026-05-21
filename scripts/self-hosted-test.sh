@@ -419,7 +419,7 @@ if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_operat
   fail "parser binary-expression source classifier markers are missing"
 fi
 
-if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_expression_surface_feature_classifier_task_execution")) and (.bootstrap_owned_by_sley | index("parser_ast_call_expression_dispatch_execution")) and (.bootstrap_owned_by_sley | index("parser_ast_member_index_expression_dispatch_execution"))'; then
+if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_expression_surface_feature_classifier_task_execution")) and (.bootstrap_owned_by_sley | index("parser_ast_call_expression_dispatch_execution")) and (.bootstrap_owned_by_sley | index("parser_bare_call_expression_dispatch_execution")) and (.bootstrap_owned_by_sley | index("parser_ast_member_index_expression_dispatch_execution"))'; then
   fail "parser call/member/index source classifier markers are missing"
 fi
 
