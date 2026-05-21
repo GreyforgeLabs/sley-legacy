@@ -1025,6 +1025,14 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("while_list_sum_run
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("while_list_sum_parser_prefix_runtime_execution"))'
 
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_runtime_block_support_task_execution"))'
+
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_while_source_dispatch_runtime_execution"))'
+
+if grep -Fq 'line ~ /^(while|forge)([ \t{]|$)/' bin/sley; then
+  fail "generic runtime block support must be driven by loom.runtime, not a host hard-coded while/forge block list"
+fi
+
 bin/sley run --json examples/collections.sley \
   | json_field '.status == "passed" and .value.kind == "Int" and .value.value == 10'
 

@@ -152,6 +152,12 @@ export task self_hosted_target_aliases -> List<Text> {
   ]
 }
 
+export task generic_runtime_unsupported_block_prefixes -> List<Text> {
+  return [
+    "forge"
+  ]
+}
+
 export task agent_deploy_target_suffix -> Text {
   return "agent_deploy_pipeline.sley"
 }
