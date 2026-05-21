@@ -6368,6 +6368,8 @@ ast_json() {
         take_source_dispatch_count++
         take_source_dispatch_id[take_source_dispatch_count]=take_source_dispatch_parts[1]+0
         take_source_dispatch_name[take_source_dispatch_count]=take_source_dispatch_parts[2]
+        take_source_dispatch_strategy[take_source_dispatch_count]=take_source_dispatch_parts[3]
+        take_source_dispatch_match_value[take_source_dispatch_count]=take_source_dispatch_parts[4]
       }
     }
     function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
@@ -6857,14 +6859,14 @@ ast_json() {
 	      }
 	      return -1
 	    }
-	    function take_source_candidate_matches(candidate_id, source){
-	      if(candidate_id==0){return source ~ /^gate[ \t]+/}
-	      if(candidate_id==1){return source !~ /^gate[ \t]+/}
+	    function take_source_candidate_matches(candidate_id, source, strategy, match_value){
+	      if(strategy=="pattern" && match_value!=""){return source ~ match_value}
+	      if(strategy=="not_pattern" && match_value!=""){return source !~ match_value}
 	      return 0
 	    }
 	    function take_source_candidate_id(source, dispatch_index){
 	      for(dispatch_index=1; dispatch_index<=take_source_dispatch_count; dispatch_index++){
-	        if(take_source_candidate_matches(take_source_dispatch_id[dispatch_index], source)){return take_source_dispatch_id[dispatch_index]}
+	        if(take_source_candidate_matches(take_source_dispatch_id[dispatch_index], source, take_source_dispatch_strategy[dispatch_index], take_source_dispatch_match_value[dispatch_index])){return take_source_dispatch_id[dispatch_index]}
 	      }
 	      return -1
 	    }

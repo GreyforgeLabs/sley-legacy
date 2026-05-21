@@ -459,6 +459,10 @@ if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_take_s
   fail "parser take source dispatch plan markers are missing"
 fi
 
+if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_take_source_pattern_plan_task_execution")) and (.bootstrap_owned_by_sley | index("parser_ast_take_source_pattern_execution"))'; then
+  fail "parser take source pattern markers are missing"
+fi
+
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_binding_feature_classifier_task_execution"))'
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_ast_binding_feature_dispatch_execution"))'
@@ -674,6 +678,35 @@ if ! awk '
   END {exit (plan && candidate) ? 0 : 1}
 ' bin/sley; then
   fail "parser take source classification must iterate Sley-owned take source dispatch candidates"
+fi
+
+if ! awk '
+  /raw_take_source_dispatch_count=split\(take_source_dispatch_plan/ {in_parse=1}
+  in_parse && /take_source_dispatch_strategy\[take_source_dispatch_count\]=take_source_dispatch_parts\[3\]/ {strategy=1}
+  in_parse && /take_source_dispatch_match_value\[take_source_dispatch_count\]=take_source_dispatch_parts\[4\]/ {match_value=1}
+  in_parse && /^[ \t]*}/ {exit}
+  END {exit (strategy && match_value) ? 0 : 1}
+' bin/sley; then
+  fail "parser take source dispatch must parse Sley-owned matcher strategy and patterns"
+fi
+
+if ! awk '
+  /function take_source_candidate_matches\(candidate_id, source, strategy, match_value/ {in_fn=1}
+  in_fn && /source ~ match_value/ {pattern=1}
+  in_fn && /source !~ match_value/ {not_pattern=1}
+  in_fn && /^[ \t]*}/ {exit}
+  END {exit (pattern && not_pattern) ? 0 : 1}
+' bin/sley; then
+  fail "parser take source matching must evaluate Sley-owned matcher patterns"
+fi
+
+if awk '
+  /function take_source_candidate_matches\(candidate_id, source/ {in_fn=1}
+  in_fn && /candidate_id==[0-9]/ {hard_ladder=1}
+  in_fn && /^[ \t]*}/ {exit}
+  END {exit hard_ladder ? 0 : 1}
+' bin/sley; then
+  fail "parser take source dispatch must not keep a host hard-coded take matcher ladder"
 fi
 
 if awk '
