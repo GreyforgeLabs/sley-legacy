@@ -5674,7 +5674,7 @@ RUNTIME_PASSED_STATUS="$(sley_source_task loom.runtime passed_status)"
 RUNTIME_FAILED_STATUS="$(sley_source_task loom.runtime failed_status)"
 RUNTIME_SKIPPED_STATUS="$(sley_source_task loom.runtime skipped_status)"
 RUNTIME_DISPATCH_ORDER_JSON="$(sley_source_list_task_json loom.runtime runtime_dispatch_order)"
-RUNTIME_DISPATCH_PLAN_JSON="$(sley_source_list_task_json loom.runtime runtime_dispatch_plan | jq 'map(split("|") | {evaluator_id:(.[0] | tonumber), candidate:.[1]})')"
+RUNTIME_DISPATCH_PLAN_JSON="$(sley_source_list_task_json loom.runtime runtime_dispatch_plan | jq 'map(split("|") | {evaluator_id:(.[0] | tonumber), candidate:.[1], evaluator_function:.[2]})')"
 RUNTIME_CAPABILITY_REQUIRED_ID="$(sley_source_task loom.runtime capability_required_diagnostic_id)"
 RUNTIME_CAPABILITY_SCOPE_DENIED_ID="$(sley_source_task loom.runtime capability_scope_denied_diagnostic_id)"
 RUNTIME_TAKE_REQUIRED_ID="$(sley_source_task loom.runtime main_take_required_diagnostic_id)"
@@ -9785,57 +9785,21 @@ print(json.dumps({"status": "passed", "diagnostics": []}, indent=2))
 PY
 }
 
+runtime_dispatch_candidate_descriptor_json() {
+  local evaluator_id="$1"
+  printf '%s\n' "$RUNTIME_DISPATCH_PLAN_JSON" | jq -cer --argjson evaluator_id "$evaluator_id" '
+    [.[] | select(.evaluator_id == $evaluator_id)][0] // empty
+  '
+}
+
 runtime_dispatch_candidate_json() {
   local evaluator_id="$1" target="$2" http_text="$3" model_text="$4" deploy_text="$5" spend_text="$6" secret_text="$7" shell_text="$8"
-  case "$evaluator_id" in
-    0) eval_source_unit_main_return "$target" ;;
-    1) eval_source_generic_main_return "$target" "$http_text" "$model_text" "$deploy_text" "$spend_text" "$secret_text" "$shell_text" ;;
-    2) eval_source_result_flow_int_main_return "$target" ;;
-    3) eval_source_compute_text_call_main_return "$target" ;;
-    4) eval_source_while_list_sum_int_main_return "$target" ;;
-    5) eval_source_state_set_int_main_return "$target" ;;
-    6) eval_source_each_sum_int_main_return "$target" ;;
-    7) eval_source_each_map_sum_int_main_return "$target" ;;
-    8) eval_source_tally_set_int_main_return "$target" ;;
-    9) eval_source_bound_int_main_return "$target" ;;
-    10) eval_source_if_int_expression_main_return "$target" ;;
-    11) eval_source_state_if_set_int_main_return "$target" ;;
-    12) eval_source_literal_if_int_statement_main_return "$target" ;;
-    13) eval_source_comparison_if_int_statement_main_return "$target" ;;
-    14) eval_source_false_while_int_main_return "$target" ;;
-    15) eval_source_if_int_main_return "$target" ;;
-    16) eval_pure_literal_main_return "$target" ;;
-    17) eval_simple_scalar_main_return "$target" ;;
-    18) eval_source_bool_equal_main_return "$target" ;;
-    19) eval_source_int_less_than_main_return "$target" ;;
-    20) eval_source_negated_comparison_main_return "$target" ;;
-    21) eval_source_if_bool_main_return "$target" ;;
-    22) eval_source_bool_if_statement_main_return "$target" ;;
-    23) eval_source_bool_and_main_return "$target" ;;
-    24) eval_source_bool_not_main_return "$target" ;;
-    25) eval_source_bool_main_return "$target" ;;
-    26) eval_source_simple_arithmetic_int_main_return "$target" ;;
-    27) eval_source_bound_arithmetic_int_main_return "$target" ;;
-    28) eval_simple_int_main_return "$target" ;;
-    29) eval_text_concat_main_return "$target" ;;
-    30) eval_source_len_int_main_return "$target" ;;
-    31) eval_source_parenthesized_arithmetic_int_main_return "$target" ;;
-    32) eval_source_list_index_int_main_return "$target" ;;
-    33) eval_source_bound_list_index_sum_int_main_return "$target" ;;
-    34) eval_source_collection_index_sum_int_main_return "$target" ;;
-    35) eval_source_map_index_text_main_return "$target" ;;
-    36) eval_source_record_field_text_main_return "$target" ;;
-    37) eval_source_record_field_call_text_main_return "$target" ;;
-    38) eval_source_direct_file_read_ok_text_main_return "$target" ;;
-    39) eval_source_direct_file_read_text_main_return "$target" ;;
-    40) eval_source_seeded_host_result_main_return "$target" "$http_text" "$model_text" "$deploy_text" "$spend_text" "$secret_text" "$shell_text" ;;
-    41) eval_source_seeded_host_text_main_return "$target" "$http_text" "$model_text" "$deploy_text" "$spend_text" "$secret_text" "$shell_text" ;;
-    42) eval_source_zero_arg_project_call_main_return "$target" ;;
-    43) eval_source_local_call_int_main_return "$target" ;;
-    44) eval_source_project_call_int_main_return "$target" ;;
-    45) eval_main_call_int_return "$target" ;;
-    *) return 1 ;;
-  esac
+  local descriptor_json evaluator_fn
+  descriptor_json="$(runtime_dispatch_candidate_descriptor_json "$evaluator_id")" || return 1
+  evaluator_fn="$(printf '%s\n' "$descriptor_json" | jq -er '.evaluator_function')" || return 1
+  [[ "$evaluator_fn" =~ ^eval_[A-Za-z0-9_]+$ ]] || return 1
+  declare -F "$evaluator_fn" >/dev/null || return 1
+  "$evaluator_fn" "$target" "$http_text" "$model_text" "$deploy_text" "$spend_text" "$secret_text" "$shell_text"
 }
 
 run_json() {

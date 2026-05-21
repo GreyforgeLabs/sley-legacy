@@ -1357,8 +1357,8 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_while_sour
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_dispatch_order_task_execution"))'
 
-if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_dispatch_plan_task_execution")) and (.bootstrap_owned_by_sley | index("runtime_dispatch_id_map_task_execution"))'; then
-  fail "runtime dispatch plan/id-map markers are missing"
+if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_dispatch_plan_task_execution")) and (.bootstrap_owned_by_sley | index("runtime_dispatch_id_map_task_execution")) and (.bootstrap_owned_by_sley | index("runtime_dispatch_function_map_task_execution")) and (.bootstrap_owned_by_sley | index("runtime_dispatch_function_execution"))'; then
+  fail "runtime dispatch plan/id/function-map markers are missing"
 fi
 
 if grep -Fq 'elif simple_runtime="$(eval_source_unit_main_return "$target" 2>/dev/null)"' bin/sley; then
@@ -1369,7 +1369,8 @@ if ! grep -Fq 'RUNTIME_DISPATCH_ORDER_JSON="$(sley_source_list_task_json loom.ru
   fail "runtime dispatch order source task dispatch is missing"
 fi
 
-if ! grep -Fq 'RUNTIME_DISPATCH_PLAN_JSON="$(sley_source_list_task_json loom.runtime runtime_dispatch_plan' bin/sley; then
+if ! grep -Fq 'RUNTIME_DISPATCH_PLAN_JSON="$(sley_source_list_task_json loom.runtime runtime_dispatch_plan' bin/sley \
+  || ! grep -Fq 'evaluator_function:.[2]' bin/sley; then
   fail "runtime dispatch plan source task dispatch is missing"
 fi
 
@@ -1388,9 +1389,20 @@ if grep -Fq 'unit_main) eval_source_unit_main_return "$target" ;;' bin/sley \
   fail "runtime dispatch candidate execution must use Sley-owned evaluator ids, not host string branches"
 fi
 
-if ! grep -Fq '0) eval_source_unit_main_return "$target" ;;' bin/sley \
-  || ! grep -Fq 'runtime_candidate_id="$(printf' bin/sley; then
-  fail "runtime dispatch id map execution is missing"
+if grep -Fq 'case "$evaluator_id" in' bin/sley; then
+  fail "runtime dispatch candidate execution must not use a host hard-coded evaluator-id case ladder"
+fi
+
+if ! awk '
+  /^runtime_dispatch_candidate_json\(\)[ \t]*\{/ {in_fn=1}
+  in_fn && /runtime_dispatch_candidate_descriptor_json/ {descriptor=1}
+  in_fn && /evaluator_function/ {source_function=1}
+  in_fn && /declare -F "\$evaluator_fn"/ {declared=1}
+  in_fn && /"\$evaluator_fn" "\$target" "\$http_text"/ {dynamic_call=1}
+  in_fn && /^}/ {exit}
+  END {exit (descriptor && source_function && declared && dynamic_call) ? 0 : 1}
+' bin/sley; then
+  fail "runtime dispatch candidate execution must call the Sley-owned evaluator function map"
 fi
 
 if grep -Fq 'line ~ /^(while|forge)([ \t{]|$)/' bin/sley; then
