@@ -6643,70 +6643,74 @@ check_json() {
       ((.source? // "") | capture("^(?<name>[A-Za-z_][A-Za-z0-9_]*)\\[(?<index>[^\\[\\]]+)\\]$")?) // {name:null,index:null};
     def gate_effect_name:
       ((. | capture("^" + $checker_gate_type + "<(?<effect>[^>]+)>$")?) // {effect:null}) | .effect;
+    ({
+      unknown_identifier_id:$unknown,
+      unknown_type_id:$unknown_type,
+      unknown_task_id:$unknown_task,
+      call_arity_mismatch_id:$call_arity,
+      call_argument_type_mismatch_id:$call_argument_type,
+      type_mismatch_id:$type_mismatch,
+      return_type_mismatch_id:$return_type_mismatch,
+      missing_return_id:$missing_return,
+      unknown_effect_id:$unknown_effect,
+      gate_take_type_mismatch_id:$gate_take_type,
+      gate_effect_undeclared_id:$gate_effect,
+      effect_unauthorized_id:$effect_unauthorized,
+      question_requires_result_id:$question_requires_result,
+      duplicate_effect_id:$duplicate_effect,
+      duplicate_type_id:$duplicate_type,
+      duplicate_task_id:$duplicate_task,
+      duplicate_take_id:$duplicate_take,
+      duplicate_map_key_id:$duplicate_map_key,
+      duplicate_field_id:$duplicate_field,
+      duplicate_record_literal_field_id:$duplicate_record_literal_field,
+      record_field_missing_id:$record_field_missing,
+      record_field_unknown_id:$record_field_unknown,
+      record_field_type_mismatch_id:$record_field_type_mismatch,
+      record_literal_non_record_type_id:$record_literal_non_record_type,
+      unknown_record_field_id:$unknown_record_field,
+      list_element_type_mismatch_id:$list_element_type_mismatch,
+      index_not_int_id:$index_not_int,
+      index_key_type_mismatch_id:$index_key_type_mismatch,
+      map_key_type_mismatch_id:$map_key_type_mismatch,
+      map_value_type_mismatch_id:$map_value_type_mismatch
+    }) as $diagnostic_id_task_values |
+    ({
+      unknown_identifier_message:$unknown_message_template,
+      unknown_type_message:$unknown_type_message_template,
+      unknown_task_message:$unknown_task_message_template,
+      call_arity_mismatch_message:$call_arity_message_template,
+      call_argument_type_mismatch_message:$call_argument_type_message_template,
+      type_mismatch_message:$type_mismatch_message_template,
+      return_type_mismatch_message:$return_type_mismatch_message_template,
+      missing_return_message:$missing_return_message_template,
+      unknown_effect_message:$unknown_effect_message_template,
+      gate_take_type_mismatch_message:$gate_take_type_message_template,
+      gate_effect_undeclared_message:$gate_effect_message_template,
+      effect_unauthorized_message:$effect_unauthorized_message_template,
+      question_requires_result_message:$question_requires_result_message_template,
+      duplicate_effect_message:$duplicate_effect_message_template,
+      duplicate_type_message:$duplicate_type_message_template,
+      duplicate_task_message:$duplicate_task_message_template,
+      duplicate_take_message:$duplicate_take_message_template,
+      duplicate_map_key_message:$duplicate_map_key_message_template,
+      duplicate_field_message:$duplicate_field_message_template,
+      duplicate_record_literal_field_message:$duplicate_record_literal_field_message_template,
+      record_field_missing_message:$record_field_missing_message_template,
+      record_field_unknown_message:$record_field_unknown_message_template,
+      record_field_type_mismatch_message:$record_field_type_mismatch_message_template,
+      record_literal_non_record_type_message:$record_literal_non_record_type_message_template,
+      unknown_record_field_message:$unknown_record_field_message_template,
+      list_element_type_mismatch_message:$list_element_type_mismatch_message_template,
+      index_not_int_message:$index_not_int_message_template,
+      index_key_type_mismatch_message:$index_key_type_mismatch_message_template,
+      map_key_type_mismatch_message:$map_key_type_mismatch_message_template,
+      map_value_type_mismatch_message:$map_value_type_mismatch_message_template
+    }) as $message_template_task_values |
     def descriptor_diagnostic_id($pass):
-      if ($pass.diagnostic_id_task // "") == "unknown_identifier_id" then $unknown
-      elif ($pass.diagnostic_id_task // "") == "unknown_type_id" then $unknown_type
-      elif ($pass.diagnostic_id_task // "") == "unknown_task_id" then $unknown_task
-      elif ($pass.diagnostic_id_task // "") == "call_arity_mismatch_id" then $call_arity
-      elif ($pass.diagnostic_id_task // "") == "call_argument_type_mismatch_id" then $call_argument_type
-      elif ($pass.diagnostic_id_task // "") == "type_mismatch_id" then $type_mismatch
-      elif ($pass.diagnostic_id_task // "") == "return_type_mismatch_id" then $return_type_mismatch
-      elif ($pass.diagnostic_id_task // "") == "missing_return_id" then $missing_return
-      elif ($pass.diagnostic_id_task // "") == "unknown_effect_id" then $unknown_effect
-      elif ($pass.diagnostic_id_task // "") == "gate_take_type_mismatch_id" then $gate_take_type
-      elif ($pass.diagnostic_id_task // "") == "gate_effect_undeclared_id" then $gate_effect
-      elif ($pass.diagnostic_id_task // "") == "effect_unauthorized_id" then $effect_unauthorized
-      elif ($pass.diagnostic_id_task // "") == "question_requires_result_id" then $question_requires_result
-      elif ($pass.diagnostic_id_task // "") == "duplicate_effect_id" then $duplicate_effect
-      elif ($pass.diagnostic_id_task // "") == "duplicate_type_id" then $duplicate_type
-      elif ($pass.diagnostic_id_task // "") == "duplicate_task_id" then $duplicate_task
-      elif ($pass.diagnostic_id_task // "") == "duplicate_take_id" then $duplicate_take
-      elif ($pass.diagnostic_id_task // "") == "duplicate_map_key_id" then $duplicate_map_key
-      elif ($pass.diagnostic_id_task // "") == "duplicate_field_id" then $duplicate_field
-      elif ($pass.diagnostic_id_task // "") == "duplicate_record_literal_field_id" then $duplicate_record_literal_field
-      elif ($pass.diagnostic_id_task // "") == "record_field_missing_id" then $record_field_missing
-      elif ($pass.diagnostic_id_task // "") == "record_field_unknown_id" then $record_field_unknown
-      elif ($pass.diagnostic_id_task // "") == "record_field_type_mismatch_id" then $record_field_type_mismatch
-      elif ($pass.diagnostic_id_task // "") == "record_literal_non_record_type_id" then $record_literal_non_record_type
-      elif ($pass.diagnostic_id_task // "") == "unknown_record_field_id" then $unknown_record_field
-      elif ($pass.diagnostic_id_task // "") == "list_element_type_mismatch_id" then $list_element_type_mismatch
-      elif ($pass.diagnostic_id_task // "") == "index_not_int_id" then $index_not_int
-      elif ($pass.diagnostic_id_task // "") == "index_key_type_mismatch_id" then $index_key_type_mismatch
-      elif ($pass.diagnostic_id_task // "") == "map_key_type_mismatch_id" then $map_key_type_mismatch
-      elif ($pass.diagnostic_id_task // "") == "map_value_type_mismatch_id" then $map_value_type_mismatch
-      else "" end;
+      $diagnostic_id_task_values[($pass.diagnostic_id_task // "")] // "";
     def descriptor_message_template($pass):
-      if ($pass.message_task // "") == "unknown_identifier_message" then $unknown_message_template
-      elif ($pass.message_task // "") == "unknown_type_message" then $unknown_type_message_template
-      elif ($pass.message_task // "") == "unknown_task_message" then $unknown_task_message_template
-      elif ($pass.message_task // "") == "call_arity_mismatch_message" then $call_arity_message_template
-      elif ($pass.message_task // "") == "call_argument_type_mismatch_message" then $call_argument_type_message_template
-      elif ($pass.message_task // "") == "type_mismatch_message" then $type_mismatch_message_template
-      elif ($pass.message_task // "") == "return_type_mismatch_message" then $return_type_mismatch_message_template
-      elif ($pass.message_task // "") == "missing_return_message" then $missing_return_message_template
-      elif ($pass.message_task // "") == "unknown_effect_message" then $unknown_effect_message_template
-      elif ($pass.message_task // "") == "gate_take_type_mismatch_message" then $gate_take_type_message_template
-      elif ($pass.message_task // "") == "gate_effect_undeclared_message" then $gate_effect_message_template
-      elif ($pass.message_task // "") == "effect_unauthorized_message" then $effect_unauthorized_message_template
-      elif ($pass.message_task // "") == "question_requires_result_message" then $question_requires_result_message_template
-      elif ($pass.message_task // "") == "duplicate_effect_message" then $duplicate_effect_message_template
-      elif ($pass.message_task // "") == "duplicate_type_message" then $duplicate_type_message_template
-      elif ($pass.message_task // "") == "duplicate_task_message" then $duplicate_task_message_template
-      elif ($pass.message_task // "") == "duplicate_take_message" then $duplicate_take_message_template
-      elif ($pass.message_task // "") == "duplicate_map_key_message" then $duplicate_map_key_message_template
-      elif ($pass.message_task // "") == "duplicate_field_message" then $duplicate_field_message_template
-      elif ($pass.message_task // "") == "duplicate_record_literal_field_message" then $duplicate_record_literal_field_message_template
-      elif ($pass.message_task // "") == "record_field_missing_message" then $record_field_missing_message_template
-      elif ($pass.message_task // "") == "record_field_unknown_message" then $record_field_unknown_message_template
-      elif ($pass.message_task // "") == "record_field_type_mismatch_message" then $record_field_type_mismatch_message_template
-      elif ($pass.message_task // "") == "record_literal_non_record_type_message" then $record_literal_non_record_type_message_template
-      elif ($pass.message_task // "") == "unknown_record_field_message" then $unknown_record_field_message_template
-      elif ($pass.message_task // "") == "list_element_type_mismatch_message" then $list_element_type_mismatch_message_template
-      elif ($pass.message_task // "") == "index_not_int_message" then $index_not_int_message_template
-      elif ($pass.message_task // "") == "index_key_type_mismatch_message" then $index_key_type_mismatch_message_template
-      elif ($pass.message_task // "") == "map_key_type_mismatch_message" then $map_key_type_mismatch_message_template
-      elif ($pass.message_task // "") == "map_value_type_mismatch_message" then $map_value_type_mismatch_message_template
-      else "" end;
+      $message_template_task_values[($pass.message_task // "")] // "";
     def identifier_resolution_diags($pass):
       if ($pass.subject // "") == "task_identifier" then
         $root.tasks[] as $t |
