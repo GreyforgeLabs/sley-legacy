@@ -415,7 +415,7 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_feature_cla
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_ast_expression_feature_dispatch_execution"))'
 
-if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_operator_feature_classifier_task_execution")) and (.bootstrap_owned_by_sley | index("parser_ast_binary_expression_dispatch_execution"))'; then
+if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_operator_feature_classifier_task_execution")) and (.bootstrap_owned_by_sley | index("parser_ast_binary_expression_dispatch_execution")) and (.bootstrap_owned_by_sley | index("parser_binary_operator_name_task_execution")) and (.bootstrap_owned_by_sley | index("parser_ast_schema_expression_dispatch_execution"))'; then
   fail "parser binary-expression source classifier markers are missing"
 fi
 
@@ -478,6 +478,16 @@ if ! awk '
 fi
 
 if ! awk '
+  /^eval_parser_binary_operator_names_json\(\)[ \t]*\{/ {in_fn=1}
+  in_fn && /sley_eval_source_task/ {source_eval=1}
+  in_fn && /extract_sley_task_body/ {body_walk=1}
+  in_fn && /^[ \t]*}/ {exit}
+  END {exit (source_eval && !body_walk) ? 0 : 1}
+' bin/sley; then
+  fail "eval_parser_binary_operator_names_json must execute binary_operator_name through the shared Sley source task evaluator"
+fi
+
+if ! awk '
   /^eval_parser_expression_surface_classifiers_json\(\)[ \t]*\{/ {in_fn=1}
   in_fn && /sley_eval_source_task/ {source_eval=1}
   in_fn && /extract_sley_task_body/ {body_walk=1}
@@ -518,19 +528,19 @@ if ! awk '
 fi
 
 bin/sley ast --json "$parser_feature_source" \
-  | json_field '[.tasks[].body.statements[]?.expr.expr_kind] as $k | ($k | index("IntLiteral")) and ($k | index("StringLiteral")) and ($k | index("BoolLiteral")) and ($k | index("ListLiteral")) and ($k | index("Identifier")) and ($k | index("Call")) and ($k | index("IndexAccess")) and ($k | index("FieldAccess"))'
+  | json_field '[.tasks[].body.statements[]?.expr.expr_kind] as $k | ($k | index("IntLiteral")) and ($k | index("StringLiteral")) and ($k | index("BoolLiteral")) and ($k | index("ListLiteral")) and ($k | index("Identifier")) and ($k | index("Call")) and ($k | index("Index")) and ($k | index("FieldAccess"))'
 
 bin/sley ast --json "$parser_feature_source" \
-  | json_field '(.tasks[0].body.statements[] | select(.expr.expr_kind == "Call" and .expr.callee == "noop" and .expr.arguments_source == "count")) and (.tasks[0].body.statements[] | select(.expr.expr_kind == "IndexAccess" and .expr.target == "names" and .expr.index_source == "0")) and (.tasks[0].body.statements[] | select(.expr.expr_kind == "FieldAccess" and .expr.target == "profile" and .expr.field == "name"))'
+  | json_field '(.tasks[0].body.statements[] | select(.expr.expr_kind == "Call" and .expr.callee.name == "noop" and .expr.args[0].name == "count")) and (.tasks[0].body.statements[] | select(.expr.expr_kind == "Index" and .expr.collection.name == "names" and .expr.index.value == 0)) and (.tasks[0].body.statements[] | select(.expr.expr_kind == "FieldAccess" and .expr.receiver.name == "profile" and .expr.field == "name"))'
 
 bin/sley ast --json "$parser_feature_source" \
   | json_field '.module == "app.parser_features" and (.imports[] | select(.module == "app.parser_helpers" and .alias == "helpers")) and (.types[] | select(.name == "Profile" and .exported == true)) and (.effects[] | select(.name == "Audit")) and (.tasks[] | select(.name == "main"))'
 
 bin/sley ast --json examples/constant_arithmetic_expression.sley \
-  | json_field '.tasks[0].body.statements[0].expr.expr_kind == "Binary" and .tasks[0].body.statements[0].expr.operator == "+"'
+  | json_field '.tasks[0].body.statements[0].expr.expr_kind == "Binary" and .tasks[0].body.statements[0].expr.op == "Add" and .tasks[0].body.statements[0].expr.left.value == 2 and .tasks[0].body.statements[0].expr.right.value == 3'
 
 bin/sley ast --json examples/idempotent_boolean_expression.sley \
-  | json_field '.tasks[0].body.statements[1].expr.expr_kind == "Binary" and .tasks[0].body.statements[1].expr.operator == "&&"'
+  | json_field '.tasks[0].body.statements[1].expr.expr_kind == "Binary" and .tasks[0].body.statements[1].expr.op == "And"'
 
 bin/sley ast --json "$parser_statement_source" \
   | json_field '[.tasks[].body.statements[]?.kind] as $k | ($k | index("Binding")) and ($k | index("Set")) and ($k | index("Expr")) and ($k | index("For")) and ($k | index("While")) and ($k | index("If")) and ($k | index("Forge")) and ($k | index("Return"))'
@@ -1248,7 +1258,7 @@ bin/sley lint --json --rule unused_take examples/unused_take.sley \
   | json_field '.schema == "sley.lint.report.v0" and .findings[0].node == "take:task:app.takes.main:1:unused"'
 
 bin/sley ast --json examples/constant_text_concatenation_expression.sley \
-  | json_field '.schema == "sley.ast.program.v0" and .tasks[0].body.statements[0].expr.expr_kind == "Binary" and .tasks[0].body.statements[0].expr.operator == "+" and .tasks[0].body.statements[0].expr.source == "\"Sley \" + \"agents\""'
+  | json_field '.schema == "sley.ast.program.v0" and .tasks[0].body.statements[0].expr.expr_kind == "Binary" and .tasks[0].body.statements[0].expr.op == "Add" and .tasks[0].body.statements[0].expr.source == "\"Sley \" + \"agents\""'
 
 bin/sley ast --json examples/empty_for_statement.sley \
   | json_field '.schema == "sley.ast.program.v0" and .tasks[0].body.statements[1].collection.id == "block:task:app.empty_for.main:stmt:1:collection" and .tasks[0].body.statements[1].collection.expr_kind == "ListLiteral" and .tasks[0].body.statements[1].collection.items == []'

@@ -143,11 +143,47 @@ export task field_access_expression_kind -> Text {
 }
 
 export task index_access_expression_kind -> Text {
-  return "IndexAccess"
+  return "Index"
 }
 
 export task call_expression_prefix -> Text {
   return "call "
+}
+
+export task binary_operator_name -> Text {
+  take operator: Text
+
+  if operator == "||" {
+    return "Or"
+  }
+  if operator == "&&" {
+    return "And"
+  }
+  if operator == "==" {
+    return "Equal"
+  }
+  if operator == "!=" {
+    return "NotEqual"
+  }
+  if operator == "<" {
+    return "Less"
+  }
+  if operator == "<=" {
+    return "LessEqual"
+  }
+  if operator == ">" {
+    return "Greater"
+  }
+  if operator == ">=" {
+    return "GreaterEqual"
+  }
+  if operator == "+" {
+    return "Add"
+  }
+  if operator == "*" {
+    return "Multiply"
+  }
+  return call raw_expr_kind()
 }
 
 export task module_declaration_kind -> Text {
