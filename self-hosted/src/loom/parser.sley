@@ -64,6 +64,23 @@ export task classify_expression_features -> Text {
   return call raw_expr_kind()
 }
 
+export task classify_expression_operator_features -> Text {
+  take has_logical_operator: Bool
+  take has_comparison_operator: Bool
+  take has_arithmetic_operator: Bool
+
+  if has_logical_operator {
+    return call binary_expression_kind()
+  }
+  if has_comparison_operator {
+    return call binary_expression_kind()
+  }
+  if has_arithmetic_operator {
+    return call binary_expression_kind()
+  }
+  return call raw_expr_kind()
+}
+
 export task int_literal_pattern -> Text {
   return "^-?[0-9]+$"
 }
@@ -94,6 +111,10 @@ export task list_literal_kind -> Text {
 
 export task raw_expr_kind -> Text {
   return "Raw"
+}
+
+export task binary_expression_kind -> Text {
+  return "Binary"
 }
 
 export task call_expression_prefix -> Text {

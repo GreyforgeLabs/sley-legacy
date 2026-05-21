@@ -1444,6 +1444,31 @@ eval_parser_expression_feature_classifiers_json() {
   done | jq -s 'from_entries'
 }
 
+eval_parser_operator_feature_classifiers_json() {
+  local parser_file="$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley"
+  local key has_logical_operator has_comparison_operator has_arithmetic_operator kind env_json
+  for key in logical comparison arithmetic fallback; do
+    has_logical_operator=false
+    has_comparison_operator=false
+    has_arithmetic_operator=false
+    case "$key" in
+      logical) has_logical_operator=true ;;
+      comparison) has_comparison_operator=true ;;
+      arithmetic) has_arithmetic_operator=true ;;
+      fallback) ;;
+      *) return 1 ;;
+    esac
+    env_json="$(jq -cn \
+      --argjson has_logical_operator "$has_logical_operator" \
+      --argjson has_comparison_operator "$has_comparison_operator" \
+      --argjson has_arithmetic_operator "$has_arithmetic_operator" \
+      '{has_logical_operator:$has_logical_operator,has_comparison_operator:$has_comparison_operator,has_arithmetic_operator:$has_arithmetic_operator}')" || return 1
+    kind="$(sley_eval_source_task "$parser_file" classify_expression_operator_features "$env_json")" || return 1
+    [[ -n "$kind" ]] || return 1
+    jq -cn --arg key "$key" --arg value "$kind" '{key:$key,value:$value}'
+  done | jq -s 'from_entries'
+}
+
 eval_parser_statement_feature_classifiers_json() {
   local parser_file="$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley"
   local key is_return is_call_expression is_binding is_set is_for is_while is_if is_forge kind env_json
@@ -5524,6 +5549,7 @@ PARSER_LIST_KIND="$(sley_source_task loom.parser list_literal_kind)"
 PARSER_RAW_KIND="$(sley_source_task loom.parser raw_expr_kind)"
 PARSER_CLASSIFIERS_JSON="$(eval_parser_expression_classifiers_json)"
 PARSER_FEATURE_CLASSIFIERS_JSON="$(eval_parser_expression_feature_classifiers_json)"
+PARSER_OPERATOR_FEATURE_CLASSIFIERS_JSON="$(eval_parser_operator_feature_classifiers_json)"
 PARSER_FEATURE_INT_KIND="$(printf '%s\n' "$PARSER_FEATURE_CLASSIFIERS_JSON" | jq -er '.int')"
 PARSER_FEATURE_STRING_KIND="$(printf '%s\n' "$PARSER_FEATURE_CLASSIFIERS_JSON" | jq -er '.string')"
 PARSER_FEATURE_TRUE_KIND="$(printf '%s\n' "$PARSER_FEATURE_CLASSIFIERS_JSON" | jq -er '.true')"
@@ -5531,6 +5557,7 @@ PARSER_FEATURE_FALSE_KIND="$(printf '%s\n' "$PARSER_FEATURE_CLASSIFIERS_JSON" | 
 PARSER_FEATURE_EMPTY_LIST_KIND="$(printf '%s\n' "$PARSER_FEATURE_CLASSIFIERS_JSON" | jq -er '.empty_list')"
 PARSER_FEATURE_IDENTIFIER_KIND="$(printf '%s\n' "$PARSER_FEATURE_CLASSIFIERS_JSON" | jq -er '.identifier')"
 PARSER_FEATURE_FALLBACK_KIND="$(printf '%s\n' "$PARSER_FEATURE_CLASSIFIERS_JSON" | jq -er '.fallback')"
+PARSER_FEATURE_BINARY_KIND="$(printf '%s\n' "$PARSER_OPERATOR_FEATURE_CLASSIFIERS_JSON" | jq -er '.logical')"
 PARSER_TRUE_KIND="$(printf '%s\n' "$PARSER_CLASSIFIERS_JSON" | jq -er '."true"')"
 PARSER_FALSE_KIND="$(printf '%s\n' "$PARSER_CLASSIFIERS_JSON" | jq -er '."false"')"
 PARSER_EMPTY_LIST_KIND="$(printf '%s\n' "$PARSER_CLASSIFIERS_JSON" | jq -er '."[]"')"
@@ -6020,6 +6047,7 @@ ast_json() {
     -v bool_kind="$PARSER_BOOL_KIND" \
     -v identifier_kind="$PARSER_FEATURE_IDENTIFIER_KIND" \
     -v list_kind="$PARSER_FEATURE_EMPTY_LIST_KIND" \
+    -v binary_kind="$PARSER_FEATURE_BINARY_KIND" \
     -v raw_kind="$PARSER_RAW_KIND" \
     -v true_kind="$PARSER_FEATURE_TRUE_KIND" \
     -v false_kind="$PARSER_FEATURE_FALSE_KIND" \
@@ -6083,6 +6111,19 @@ ast_json() {
     function instantiate_for_item_name(item_name, value){value=for_item_name_template; value=replace_all(value, "{{item}}", item_name); return value}
     function instantiate_for_collection_source(collection_source, value){value=for_collection_source_template; value=replace_all(value, "{{collection}}", collection_source); return value}
     function instantiate_condition_source(condition_source, value){value=condition_source_template; value=replace_all(value, "{{condition}}", condition_source); return value}
+    function binary_operator(expr) {
+      if(index(expr, "||") > 0) return "||"
+      if(index(expr, "&&") > 0) return "&&"
+      if(index(expr, ">=") > 0) return ">="
+      if(index(expr, "<=") > 0) return "<="
+      if(index(expr, "==") > 0) return "=="
+      if(index(expr, "!=") > 0) return "!="
+      if(index(expr, ">") > 0) return ">"
+      if(index(expr, "<") > 0) return "<"
+      if(index(expr, "+") > 0) return "+"
+      if(index(expr, "*") > 0) return "*"
+      return ""
+    }
     function expr_json(expr, id, line, col, value){
       expr=trim(expr)
       if(expr ~ int_pattern){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" int_kind "\",\"value\":" expr ",\"span\":" span_json(line,col) "}"}
@@ -6091,6 +6132,7 @@ ast_json() {
       if(expr=="false"){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" false_kind "\",\"value\":false,\"span\":" span_json(line,col) "}"}
       if(expr=="[]"){return "{\"id\":\"" id "\",\"source\":\"[]\",\"expr_kind\":\"" list_kind "\",\"items\":[],\"span\":" span_json(line,col) "}"}
       if(expr ~ identifier_pattern){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" identifier_kind "\",\"name\":\"" esc(expr) "\",\"span\":" span_json(line,col) "}"}
+      if((value=binary_operator(expr)) != ""){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" binary_kind "\",\"operator\":\"" esc(value) "\",\"fallible\":" (expr ~ /\?$/ ? "true" : "false") ",\"span\":" span_json(line,col) "}"}
       return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" fallback_kind "\",\"fallible\":" (expr ~ /\?$/ ? "true" : "false") ",\"span\":" span_json(line,col) "}"
     }
     function binding_kind(k){return k=="state" ? state_feature_binding_kind : (k=="tally" ? tally_feature_binding_kind : bind_feature_binding_kind)}
