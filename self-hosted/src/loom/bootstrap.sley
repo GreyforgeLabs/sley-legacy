@@ -307,6 +307,7 @@ export task owned_bootstrap_values -> List<Text> {
     "int_equal_runtime_task_execution",
     "int_greater_equal_runtime_task_execution",
     "constant_comparison_runtime_execution",
+    "generic_top_level_comparison_runtime_execution",
     "list_index_runtime_task_execution",
     "list_index_text_runtime_task_execution",
     "list_index_expression_runtime_execution",
