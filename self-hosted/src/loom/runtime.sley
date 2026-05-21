@@ -176,6 +176,17 @@ export task int_binary_operator_plan -> List<Text> {
   ]
 }
 
+export task int_comparison_operator_plan -> List<Text> {
+  return [
+    "==|int_equal_value|direct|false",
+    "!=|int_equal_value|direct|true",
+    "<|int_less_than_value|direct|false",
+    ">|int_less_than_value|reverse|false",
+    ">=|int_greater_equal_value|direct|false",
+    "<=|int_greater_equal_value|reverse|false"
+  ]
+}
+
 export task runtime_dispatch_order -> List<Text> {
   return [
     "unit_main",

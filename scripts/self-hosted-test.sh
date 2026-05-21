@@ -1500,6 +1500,31 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("bound_arithmetic_r
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("int_comparison_runtime_task_execution"))'
 
+if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_int_comparison_operator_plan_task_execution")) and (.bootstrap_owned_by_sley | index("runtime_int_comparison_operator_dispatch_execution"))'; then
+  fail "runtime int comparison operator plan markers are missing"
+fi
+
+if ! grep -Fq 'RUNTIME_INT_COMPARISON_OPERATOR_PLAN_JSON="$(sley_source_list_task_json loom.runtime int_comparison_operator_plan' bin/sley; then
+  fail "runtime int comparison operator plan source task dispatch is missing"
+fi
+
+if ! grep -Fq 'runtime_int_comparison_descriptor_json()' bin/sley \
+  || ! grep -Fq 'select(.op == $op)' bin/sley \
+  || ! grep -Fq 'eval_runtime_int_comparison_operator_value_task "$op"' bin/sley; then
+  fail "runtime int comparison operator dispatch must use Sley-owned comparison plan"
+fi
+
+if awk '
+  /^sley_eval_source_comparison_value\(\)[ \t]*\{/ {in_fn=1}
+  in_fn && /eval_runtime_int_less_than_value_task/ {hard_map=1}
+  in_fn && /eval_runtime_int_greater_equal_value_task/ {hard_map=1}
+  in_fn && /eval_runtime_int_equal_value_task/ {hard_map=1}
+  in_fn && /^[ \t]*}/ {exit}
+  END {exit hard_map ? 0 : 1}
+' bin/sley; then
+  fail "generic source comparison runtime must not keep host hard-coded int comparison task map"
+fi
+
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("int_equal_runtime_task_execution"))'
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("int_greater_equal_runtime_task_execution"))'
