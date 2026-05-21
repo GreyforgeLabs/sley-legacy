@@ -114,6 +114,30 @@ resolve_sley_import_alias() {
   ' "$file"
 }
 
+resolve_sley_unqualified_imported_task_file() {
+  local file="$1" task="$2" module source_file candidate_file="" candidate_count=0
+  [[ -f "$file" && -n "$task" ]] || return 1
+  while IFS= read -r module || [[ -n "$module" ]]; do
+    [[ -n "$module" ]] || continue
+    source_file="$(sley_source_file_for_module "$file" "$module" 2>/dev/null)" || continue
+    [[ -f "$source_file" ]] || continue
+    if awk -v task="$task" '$0 ~ "^[ \t]*export[ \t]+task[ \t]+" task "([ \t({]|$)" {found=1; exit} END {exit found ? 0 : 1}' "$source_file"; then
+      candidate_file="$source_file"
+      candidate_count=$((candidate_count + 1))
+    fi
+  done < <(awk '
+    function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
+    /^[ \t]*import[ \t]+/ {
+      line=$0
+      sub(/^[ \t]*import[ \t]+/, "", line)
+      sub(/[ \t]+as[ \t]+.*$/, "", line)
+      print trim(line)
+    }
+  ' "$file")
+  [[ "$candidate_count" -eq 1 && -n "$candidate_file" ]] || return 1
+  printf '%s\n' "$candidate_file"
+}
+
 module_source_file() {
   local module="$1"
   printf '%s/%s.sley\n' "$SELF_HOSTED_SOURCE_ROOT" "${module//.//}"
@@ -487,7 +511,7 @@ sley_eval_source_list_expr_json() {
 
 sley_eval_source_call_list_json() {
   local file="$1" callee="$2" env_json="$3" args_json="${4:-[]}"
-  local alias task module source_file body takes_json call_env_json
+  local alias task module source_file body imported_file takes_json call_env_json
   if [[ "$callee" == *.* ]]; then
     alias="${callee%%.*}"
     task="${callee#*.}"
@@ -499,6 +523,11 @@ sley_eval_source_call_list_json() {
     source_file="$file"
   fi
   body="$(extract_sley_task_body "$source_file" "$task")"
+  if [[ -z "$body" && "$callee" != *.* ]]; then
+    imported_file="$(resolve_sley_unqualified_imported_task_file "$file" "$callee")" || return 1
+    source_file="$imported_file"
+    body="$(extract_sley_task_body "$source_file" "$task")"
+  fi
   [[ -n "$body" ]] || return 1
   takes_json="$(sley_eval_source_task_takes_json "$body")" || return 1
   call_env_json="$(sley_eval_source_call_env_json "$env_json" "$takes_json" "$args_json")" || return 1
@@ -832,7 +861,7 @@ sley_eval_source_if_expr() {
 
 sley_eval_source_call() {
   local file="$1" callee="$2" env_json="$3" args_json="${4:-[]}"
-  local alias task module source_file body takes_json call_env_json value
+  local alias task module source_file body imported_file takes_json call_env_json value
   if value="$(sley_eval_source_host_call "$env_json" "$callee" "$args_json" 2>/dev/null)"; then
     printf '%s\n' "$value"
     return
@@ -848,6 +877,11 @@ sley_eval_source_call() {
     source_file="$file"
   fi
   body="$(extract_sley_task_body "$source_file" "$task")"
+  if [[ -z "$body" && "$callee" != *.* ]]; then
+    imported_file="$(resolve_sley_unqualified_imported_task_file "$file" "$callee")" || return 1
+    source_file="$imported_file"
+    body="$(extract_sley_task_body "$source_file" "$task")"
+  fi
   [[ -n "$body" ]] || return 1
   takes_json="$(sley_eval_source_task_takes_json "$body")" || return 1
   call_env_json="$(sley_eval_source_call_env_json "$env_json" "$takes_json" "$args_json")" || return 1

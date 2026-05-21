@@ -1061,6 +1061,17 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("project_call_runti
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("project_call_parser_prefix_runtime_execution"))'
 
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_unqualified_import_call_runtime_execution"))'
+
+if ! awk '
+  /^sley_eval_source_call\(\)[ \t]*\{/ {in_fn=1}
+  in_fn && /resolve_sley_unqualified_imported_task_file/ {found=1}
+  in_fn && /^[ \t]*}/ {exit}
+  END {exit found ? 0 : 1}
+' bin/sley; then
+  fail "generic source call evaluator must resolve unqualified imported tasks before project-call host fallback"
+fi
+
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("unqualified_project_call_runtime_execution"))'
 
 bin/sley run --json examples/unqualified_import_call_project \
