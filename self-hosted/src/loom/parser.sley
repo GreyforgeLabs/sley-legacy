@@ -88,6 +88,8 @@ export task classify_expression_surface_features -> Text {
   take has_bare_call: Bool
   take has_field_access: Bool
   take has_index_access: Bool
+  take has_list_literal: Bool
+  take has_map_literal: Bool
   take has_record_literal: Bool
 
   if has_try_suffix {
@@ -107,6 +109,12 @@ export task classify_expression_surface_features -> Text {
   }
   if has_index_access {
     return call index_access_expression_kind()
+  }
+  if has_list_literal {
+    return call list_literal_kind()
+  }
+  if has_map_literal {
+    return call map_literal_expression_kind()
   }
   if has_record_literal {
     return call record_literal_expression_kind()
@@ -140,6 +148,10 @@ export task identifier_kind -> Text {
 
 export task list_literal_kind -> Text {
   return "ListLiteral"
+}
+
+export task map_literal_expression_kind -> Text {
+  return "MapLiteral"
 }
 
 export task raw_expr_kind -> Text {
