@@ -200,24 +200,24 @@ export task call_expression_prefix -> Text {
 
 export task expression_dispatch_plan -> List<Text> {
   return [
-    "0|int_literal",
-    "1|string_literal",
-    "2|true_literal",
-    "3|false_literal",
-    "4|empty_list",
-    "5|identifier",
-    "6|parenthesized",
-    "7|try_expression",
-    "8|if_expression",
-    "9|unary_expression",
-    "10|index_expression",
-    "11|call_expression",
-    "12|list_literal",
-    "13|map_literal",
-    "14|record_literal",
-    "15|binary_expression",
-    "16|field_access",
-    "17|raw"
+    "0|int_literal|pattern|^-?[0-9]+$",
+    "1|string_literal|string",
+    "2|true_literal|literal|true",
+    "3|false_literal|literal|false",
+    "4|empty_list|literal|[]",
+    "5|identifier|pattern|^[A-Za-z_][A-Za-z0-9_]*$",
+    "6|parenthesized|parenthesized",
+    "7|try_expression|try",
+    "8|if_expression|if",
+    "9|unary_expression|unary",
+    "10|index_expression|index",
+    "11|call_expression|call",
+    "12|list_literal|list",
+    "13|map_literal|map",
+    "14|record_literal|record",
+    "15|binary_expression|binary",
+    "16|field_access|field",
+    "17|raw|always"
   ]
 }
 

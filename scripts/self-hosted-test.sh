@@ -419,6 +419,10 @@ if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_expres
   fail "parser expression dispatch plan markers are missing"
 fi
 
+if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_expression_source_pattern_plan_task_execution")) and (.bootstrap_owned_by_sley | index("parser_ast_expression_source_pattern_execution"))'; then
+  fail "parser expression source pattern markers are missing"
+fi
+
 if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_operator_feature_classifier_task_execution")) and (.bootstrap_owned_by_sley | index("parser_ast_binary_expression_dispatch_execution")) and (.bootstrap_owned_by_sley | index("parser_binary_operator_name_task_execution")) and (.bootstrap_owned_by_sley | index("parser_unary_operator_name_task_execution")) and (.bootstrap_owned_by_sley | index("parser_unary_expression_dispatch_execution")) and (.bootstrap_owned_by_sley | index("parser_ast_schema_expression_dispatch_execution"))'; then
   fail "parser binary-expression source classifier markers are missing"
 fi
@@ -552,6 +556,37 @@ if ! awk '
   END {exit (plan && candidate) ? 0 : 1}
 ' bin/sley; then
   fail "expr_json must iterate Sley-owned parser expression dispatch candidates"
+fi
+
+if ! awk '
+  /raw_expression_dispatch_count=split\(expression_dispatch_plan/ {in_parse=1}
+  in_parse && /expression_dispatch_strategy\[expression_dispatch_count\]=expression_dispatch_parts\[3\]/ {strategy=1}
+  in_parse && /expression_dispatch_match_value\[expression_dispatch_count\]=expression_dispatch_parts\[4\]/ {match_value=1}
+  in_parse && /raw_declaration_dispatch_count=split/ {exit}
+  END {exit (strategy && match_value) ? 0 : 1}
+' bin/sley; then
+  fail "parser expression dispatch must parse Sley-owned matcher strategy and patterns"
+fi
+
+if ! awk '
+  /function expr_candidate_matches\(candidate_id, expr, strategy, match_value/ {in_fn=1}
+  in_fn && /expr ~ match_value/ {pattern=1}
+  in_fn && /expr == match_value/ {literal=1}
+  in_fn && /strategy=="binary"/ {binary=1}
+  in_fn && /strategy=="always"/ {always=1}
+  in_fn && /^[ \t]*}/ {exit}
+  END {exit (pattern && literal && binary && always) ? 0 : 1}
+' bin/sley; then
+  fail "parser expression matching must evaluate Sley-owned matcher patterns"
+fi
+
+if ! awk '
+  /function expr_candidate_json\(candidate_id, expr, id, line, col, strategy, match_value/ {in_fn=1}
+  in_fn && /expr_candidate_matches\(candidate_id, expr, strategy, match_value\)/ {matcher=1}
+  in_fn && /^[ \t]*}/ {exit}
+  END {exit matcher ? 0 : 1}
+' bin/sley; then
+  fail "parser expression candidate rendering must be guarded by Sley-owned matcher data"
 fi
 
 if grep -Fq 'if(expr ~ int_pattern){return' bin/sley; then

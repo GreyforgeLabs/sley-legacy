@@ -6328,6 +6328,8 @@ ast_json() {
         expression_dispatch_count++
         expression_dispatch_id[expression_dispatch_count]=expression_dispatch_parts[1]+0
         expression_dispatch_name[expression_dispatch_count]=expression_dispatch_parts[2]
+        expression_dispatch_strategy[expression_dispatch_count]=expression_dispatch_parts[3]
+        expression_dispatch_match_value[expression_dispatch_count]=expression_dispatch_parts[4]
       }
       raw_declaration_dispatch_count=split(declaration_dispatch_plan, declaration_dispatch_rows, "\n")
       declaration_dispatch_count=0
@@ -6719,31 +6721,50 @@ ast_json() {
       out=out "]"
       return out
     }
-    function expr_candidate_json(candidate_id, expr, id, line, col, value, left_source, right_source, op_name, callee_source){
-      if(candidate_id==0 && expr ~ int_pattern){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" int_kind "\",\"value\":" expr ",\"span\":" span_json(line,col) "}"}
-      if(candidate_id==1 && expr ~ /^"[^"]*"$/){value=expr; sub(/^"/,"",value); sub(/"$/,"",value); return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" string_kind "\",\"value\":\"" esc(value) "\",\"span\":" span_json(line,col) "}"}
-      if(candidate_id==2 && expr=="true"){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" true_kind "\",\"value\":true,\"span\":" span_json(line,col) "}"}
-      if(candidate_id==3 && expr=="false"){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" false_kind "\",\"value\":false,\"span\":" span_json(line,col) "}"}
-      if(candidate_id==4 && expr=="[]"){return "{\"id\":\"" id "\",\"source\":\"[]\",\"expr_kind\":\"" list_kind "\",\"items\":[],\"span\":" span_json(line,col) "}"}
-      if(candidate_id==5 && expr ~ identifier_pattern){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" identifier_kind "\",\"name\":\"" esc(expr) "\",\"span\":" span_json(line,col) "}"}
-      if(candidate_id==6 && is_parenthesized_expression(expr)){return expr_json(parenthesized_inner_source(expr), id, line, col + 1)}
-      if(candidate_id==7 && is_try_expression(expr)){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" try_kind "\",\"expr\":" expr_json(try_inner_source(expr), instantiate_expression_side_id(id, "try"), line, col) ",\"span\":" span_json(line,col) "}"}
-      if(candidate_id==8 && is_if_expression(expr)){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" if_expr_kind "\",\"condition\":" expr_json(if_expression_condition_source(expr), instantiate_expression_side_id(id, "condition"), line, col + 3) ",\"then_branch\":" expr_json(if_expression_then_source(expr), instantiate_expression_side_id(id, "then"), line, col) ",\"else_branch\":" expr_json(if_expression_else_source(expr), instantiate_expression_side_id(id, "else"), line, col) ",\"span\":" span_json(line,col) "}"}
-      if(candidate_id==9 && is_unary_expression(expr)){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" unary_kind "\",\"op\":\"" esc(unary_operator_name(unary_operator_source(expr))) "\",\"expr\":" expr_json(unary_operand_source(expr), instantiate_expression_side_id(id, "operand"), line, col + 1) ",\"span\":" span_json(line,col) "}"}
-      if(candidate_id==10 && is_index_access_expression(expr)){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" index_access_kind "\",\"collection\":" expr_json(index_access_target(expr), instantiate_expression_side_id(id, "collection"), line, col) ",\"index\":" expr_json(index_access_source(expr), instantiate_expression_side_id(id, "index"), line, col + length(index_access_target(expr)) + 2) ",\"span\":" span_json(line,col) "}"}
-      if(candidate_id==11 && is_any_call_expression(expr)){callee_source=call_expression_target(expr); return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" call_kind "\",\"callee\":" expr_json(callee_source, instantiate_expression_side_id(id, "callee"), line, col + (is_call_expression(expr) ? length(call_expression_prefix) : 0)) ",\"args\":" call_expression_args_json(expr, id, line, col) ",\"span\":" span_json(line,col) "}"}
-      if(candidate_id==12 && is_list_literal_expression(expr)){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" list_kind "\",\"items\":" list_literal_items_json(expr, id, line, col) ",\"span\":" span_json(line,col) "}"}
-      if(candidate_id==13 && is_map_literal_expression(expr)){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" map_literal_kind "\",\"entries\":" map_literal_entries_json(expr, id, line, col) ",\"span\":" span_json(line,col) "}"}
-      if(candidate_id==14 && is_record_literal_expression(expr)){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" record_literal_kind "\",\"type_name\":\"" esc(record_literal_type_name(expr)) "\",\"fields\":" record_literal_fields_json(expr, id, line, col) ",\"span\":" span_json(line,col) "}"}
-      if(candidate_id==15 && (value=binary_operator(expr)) != ""){left_source=binary_left_source(expr, value); right_source=binary_right_source(expr, value); op_name=binary_operator_name(value); return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" binary_kind "\",\"op\":\"" esc(op_name) "\",\"left\":" expr_json(left_source, instantiate_expression_side_id(id, "left"), line, col) ",\"right\":" expr_json(right_source, instantiate_expression_side_id(id, "right"), line, col + binary_operator_pos(expr, value) + length(value)) ",\"span\":" span_json(line,col) "}"}
-      if(candidate_id==16 && is_field_access_expression(expr)){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" field_access_kind "\",\"receiver\":" expr_json(field_access_target(expr), instantiate_expression_side_id(id, "receiver"), line, col) ",\"field\":\"" esc(field_access_field(expr)) "\",\"span\":" span_json(line,col) "}"}
+    function expr_candidate_matches(candidate_id, expr, strategy, match_value){
+      if(strategy=="pattern" && match_value!=""){return expr ~ match_value}
+      if(strategy=="string"){return expr ~ /^"[^"]*"$/}
+      if(strategy=="literal" && match_value!=""){return expr == match_value}
+      if(strategy=="parenthesized"){return is_parenthesized_expression(expr)}
+      if(strategy=="try"){return is_try_expression(expr)}
+      if(strategy=="if"){return is_if_expression(expr)}
+      if(strategy=="unary"){return is_unary_expression(expr)}
+      if(strategy=="index"){return is_index_access_expression(expr)}
+      if(strategy=="call"){return is_any_call_expression(expr)}
+      if(strategy=="list"){return is_list_literal_expression(expr)}
+      if(strategy=="map"){return is_map_literal_expression(expr)}
+      if(strategy=="record"){return is_record_literal_expression(expr)}
+      if(strategy=="binary"){return binary_operator(expr) != ""}
+      if(strategy=="field"){return is_field_access_expression(expr)}
+      if(strategy=="always"){return 1}
+      return 0
+    }
+    function expr_candidate_json(candidate_id, expr, id, line, col, strategy, match_value, value, left_source, right_source, op_name, callee_source){
+      if(!expr_candidate_matches(candidate_id, expr, strategy, match_value)){return ""}
+      if(candidate_id==0){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" int_kind "\",\"value\":" expr ",\"span\":" span_json(line,col) "}"}
+      if(candidate_id==1){value=expr; sub(/^"/,"",value); sub(/"$/,"",value); return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" string_kind "\",\"value\":\"" esc(value) "\",\"span\":" span_json(line,col) "}"}
+      if(candidate_id==2){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" true_kind "\",\"value\":true,\"span\":" span_json(line,col) "}"}
+      if(candidate_id==3){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" false_kind "\",\"value\":false,\"span\":" span_json(line,col) "}"}
+      if(candidate_id==4){return "{\"id\":\"" id "\",\"source\":\"[]\",\"expr_kind\":\"" list_kind "\",\"items\":[],\"span\":" span_json(line,col) "}"}
+      if(candidate_id==5){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" identifier_kind "\",\"name\":\"" esc(expr) "\",\"span\":" span_json(line,col) "}"}
+      if(candidate_id==6){return expr_json(parenthesized_inner_source(expr), id, line, col + 1)}
+      if(candidate_id==7){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" try_kind "\",\"expr\":" expr_json(try_inner_source(expr), instantiate_expression_side_id(id, "try"), line, col) ",\"span\":" span_json(line,col) "}"}
+      if(candidate_id==8){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" if_expr_kind "\",\"condition\":" expr_json(if_expression_condition_source(expr), instantiate_expression_side_id(id, "condition"), line, col + 3) ",\"then_branch\":" expr_json(if_expression_then_source(expr), instantiate_expression_side_id(id, "then"), line, col) ",\"else_branch\":" expr_json(if_expression_else_source(expr), instantiate_expression_side_id(id, "else"), line, col) ",\"span\":" span_json(line,col) "}"}
+      if(candidate_id==9){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" unary_kind "\",\"op\":\"" esc(unary_operator_name(unary_operator_source(expr))) "\",\"expr\":" expr_json(unary_operand_source(expr), instantiate_expression_side_id(id, "operand"), line, col + 1) ",\"span\":" span_json(line,col) "}"}
+      if(candidate_id==10){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" index_access_kind "\",\"collection\":" expr_json(index_access_target(expr), instantiate_expression_side_id(id, "collection"), line, col) ",\"index\":" expr_json(index_access_source(expr), instantiate_expression_side_id(id, "index"), line, col + length(index_access_target(expr)) + 2) ",\"span\":" span_json(line,col) "}"}
+      if(candidate_id==11){callee_source=call_expression_target(expr); return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" call_kind "\",\"callee\":" expr_json(callee_source, instantiate_expression_side_id(id, "callee"), line, col + (is_call_expression(expr) ? length(call_expression_prefix) : 0)) ",\"args\":" call_expression_args_json(expr, id, line, col) ",\"span\":" span_json(line,col) "}"}
+      if(candidate_id==12){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" list_kind "\",\"items\":" list_literal_items_json(expr, id, line, col) ",\"span\":" span_json(line,col) "}"}
+      if(candidate_id==13){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" map_literal_kind "\",\"entries\":" map_literal_entries_json(expr, id, line, col) ",\"span\":" span_json(line,col) "}"}
+      if(candidate_id==14){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" record_literal_kind "\",\"type_name\":\"" esc(record_literal_type_name(expr)) "\",\"fields\":" record_literal_fields_json(expr, id, line, col) ",\"span\":" span_json(line,col) "}"}
+      if(candidate_id==15){value=binary_operator(expr); if(value==""){return ""}; left_source=binary_left_source(expr, value); right_source=binary_right_source(expr, value); op_name=binary_operator_name(value); return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" binary_kind "\",\"op\":\"" esc(op_name) "\",\"left\":" expr_json(left_source, instantiate_expression_side_id(id, "left"), line, col) ",\"right\":" expr_json(right_source, instantiate_expression_side_id(id, "right"), line, col + binary_operator_pos(expr, value) + length(value)) ",\"span\":" span_json(line,col) "}"}
+      if(candidate_id==16){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" field_access_kind "\",\"receiver\":" expr_json(field_access_target(expr), instantiate_expression_side_id(id, "receiver"), line, col) ",\"field\":\"" esc(field_access_field(expr)) "\",\"span\":" span_json(line,col) "}"}
       if(candidate_id==17){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" fallback_kind "\",\"fallible\":" (expr ~ /\?$/ ? "true" : "false") ",\"span\":" span_json(line,col) "}"}
       return ""
     }
     function expr_json(expr, id, line, col, dispatch_index, rendered){
       expr=trim(expr)
       for(dispatch_index=1; dispatch_index<=expression_dispatch_count; dispatch_index++){
-        rendered=expr_candidate_json(expression_dispatch_id[dispatch_index], expr, id, line, col)
+        rendered=expr_candidate_json(expression_dispatch_id[dispatch_index], expr, id, line, col, expression_dispatch_strategy[dispatch_index], expression_dispatch_match_value[dispatch_index])
         if(rendered!=""){return rendered}
       }
       return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" fallback_kind "\",\"fallible\":" (expr ~ /\?$/ ? "true" : "false") ",\"span\":" span_json(line,col) "}"
