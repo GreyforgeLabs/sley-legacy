@@ -20,6 +20,7 @@ self_hosting_status_field() {
 
 bool_literal_source="$(mktemp)"
 generic_top_level_multiply_source="$(mktemp)"
+generic_top_level_comparison_source="$(mktemp)"
 generic_balanced_parentheses_source="$(mktemp)"
 generic_parenthesized_bool_and_source="$(mktemp)"
 parser_feature_source="$(mktemp)"
@@ -51,7 +52,7 @@ zjx_tool_report="$(mktemp)"
 runtime_report="$(mktemp)"
 ast_missing_report="$(mktemp)"
 ci_report="$(mktemp)"
-trap 'rm -f "$bool_literal_source" "$generic_top_level_multiply_source" "$generic_balanced_parentheses_source" "$generic_parenthesized_bool_and_source" "$parser_feature_source" "$parser_statement_source" "$parser_binding_source" "$parser_for_payload_source" "$parser_condition_source" "$parser_block_body_source" "$generic_source_main_source" "$generic_state_set_source" "$generic_if_assignment_source" "$generic_result_err_source" "$generic_each_source" "$generic_for_source" "$generic_while_source" "$qualified_task_call_source" "$empty_module_source" "$unknown_take_type_source" "$add_take_operation" "$self_hosting_status_report" "$artifact_check_report" "$migrate_report" "$docgen_report" "$workbench_report" "$sandbox_report" "$agent_bench_report" "$zjx_tool_report" "$runtime_report" "$ast_missing_report" "$ci_report"; rm -rf "$artifact_dir"' EXIT
+trap 'rm -f "$bool_literal_source" "$generic_top_level_multiply_source" "$generic_top_level_comparison_source" "$generic_balanced_parentheses_source" "$generic_parenthesized_bool_and_source" "$parser_feature_source" "$parser_statement_source" "$parser_binding_source" "$parser_for_payload_source" "$parser_condition_source" "$parser_block_body_source" "$generic_source_main_source" "$generic_state_set_source" "$generic_if_assignment_source" "$generic_result_err_source" "$generic_each_source" "$generic_for_source" "$generic_while_source" "$qualified_task_call_source" "$empty_module_source" "$unknown_take_type_source" "$add_take_operation" "$self_hosting_status_report" "$artifact_check_report" "$migrate_report" "$docgen_report" "$workbench_report" "$sandbox_report" "$agent_bench_report" "$zjx_tool_report" "$runtime_report" "$ast_missing_report" "$ci_report"; rm -rf "$artifact_dir"' EXIT
 printf '%s\n' \
   'module app.bool_literal' \
   '' \
@@ -64,6 +65,12 @@ printf '%s\n' \
   'task main -> Int {' \
   '  return 1 * (2 + 3)' \
   '}' > "$generic_top_level_multiply_source"
+printf '%s\n' \
+  'module app.generic_top_level_comparison' \
+  '' \
+  'task main -> Bool {' \
+  '  return 1 + 1 == 2' \
+  '}' > "$generic_top_level_comparison_source"
 printf '%s\n' \
   'module app.generic_balanced_parentheses' \
   '' \
@@ -1867,6 +1874,17 @@ bin/sley run --json examples/constant_record_field_access_expression.sley \
 
 bin/sley run --json examples/constant_boolean_comparison_expression.sley \
   | json_field '.schema == "sley.run.report.v0" and .value.kind == "Bool" and .value.value == false'
+
+bin/sley run --json "$generic_top_level_comparison_source" \
+  | json_field '.schema == "sley.run.report.v0" and .value.kind == "Bool" and .value.value == true'
+
+if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_top_level_comparison_runtime_execution"))'; then
+  fail "generic top-level comparison runtime marker is missing"
+fi
+
+if ! grep -Fq 'sley_split_top_level_comparison "$expr"' bin/sley; then
+  fail "generic source runtime must evaluate top-level comparison expressions directly"
+fi
 
 bin/sley run --json "$generic_balanced_parentheses_source" \
   | json_field '.schema == "sley.run.report.v0" and .value.kind == "Bool" and .value.value == true'
