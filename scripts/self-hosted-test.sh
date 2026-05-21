@@ -1183,6 +1183,8 @@ fi
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_diagnostic_pass_descriptor_task_execution")) and (.bootstrap_owned_by_sley | index("checker_unknown_reference_pass_task_execution"))'
 
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_descriptor_value_map_task_execution"))'
+
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_gate_reference_pass_task_execution")) and (.bootstrap_owned_by_sley | index("checker_effect_authorization_pass_task_execution"))'
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_duplicate_pass_family_task_execution"))'
@@ -1205,6 +1207,16 @@ fi
 
 if grep -Eq 'def (return_type_diags|take_type_diags|unknown_effect_diags|gate_take_type_diags|gate_effect_diags|direct_effect_diags|transitive_effect_diags|duplicate_effect_diags|duplicate_type_diags|duplicate_task_diags|duplicate_take_diags|duplicate_map_key_diags|duplicate_record_field_diags|duplicate_record_literal_field_diags|record_field_missing_diags|record_field_unknown_diags|record_field_type_mismatch_diags|record_literal_non_record_type_diags|unknown_record_field_diags|list_element_type_diags|index_diags|map_key_type_diags|map_value_type_diags|unknown_task_diags|call_arity_diags|call_argument_type_diags|type_mismatch_diags|return_type_mismatch_diags|missing_return_diags|task_diags|question_requires_result_diags):' bin/sley; then
   fail "checker descriptor-backed diagnostics must run through Sley-owned pass descriptor engines"
+fi
+
+if grep -Fq 'if ($pass.diagnostic_id_task // "") == "unknown_identifier_id"' bin/sley \
+  || grep -Fq 'if ($pass.message_task // "") == "unknown_identifier_message"' bin/sley; then
+  fail "checker descriptor values must use lookup maps, not host if/elif chains"
+fi
+
+if ! grep -Fq '$diagnostic_id_task_values[($pass.diagnostic_id_task // "")] // ""' bin/sley \
+  || ! grep -Fq '$message_template_task_values[($pass.message_task // "")] // ""' bin/sley; then
+  fail "checker descriptor value lookup maps are missing"
 fi
 
 if grep -Fq 'elif ($callee | contains(".")) then true' bin/sley; then
