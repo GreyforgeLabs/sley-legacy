@@ -5134,7 +5134,7 @@ PARSER_CALL_EXPRESSION_PREFIX="$(sley_source_task loom.parser call_expression_pr
 require_source_text PARSER_CALL_EXPRESSION_PREFIX "$PARSER_CALL_EXPRESSION_PREFIX"
 
 CHECKER_DIAGNOSTIC_EXECUTORS_JSON="$(sley_source_list_task_json loom.checker diagnostic_executors)"
-CHECKER_DIAGNOSTIC_PASS_DESCRIPTORS_JSON="$(sley_source_list_task_json loom.checker diagnostic_pass_descriptors | jq --argjson executors "$CHECKER_DIAGNOSTIC_EXECUTORS_JSON" 'map(split("|") as $parts | {name:$parts[0], executor:$parts[1], executor_id:($executors | index($parts[1])), diagnostic_id_task:$parts[2], message_task:$parts[3], message_arg:$parts[4], subject:$parts[5], node_scope:$parts[6]})')"
+CHECKER_DIAGNOSTIC_PASS_DESCRIPTORS_JSON="$(sley_source_list_task_json loom.checker diagnostic_pass_plan | jq 'map(split("|") as $parts | {name:$parts[0], executor_id:($parts[1] | tonumber), diagnostic_id_task:$parts[2], message_task:$parts[3], message_arg:$parts[4], subject:$parts[5], node_scope:$parts[6]})')"
 DIAG_UNKNOWN_IDENTIFIER="$(sley_source_task loom.checker unknown_identifier_id)"
 DIAG_UNKNOWN_TYPE="$(sley_source_task loom.checker unknown_type_id)"
 DIAG_UNKNOWN_TASK="$(sley_source_task loom.checker unknown_task_id)"
