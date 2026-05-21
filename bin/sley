@@ -6356,6 +6356,9 @@ ast_json() {
         statement_source_dispatch_count++
         statement_source_dispatch_id[statement_source_dispatch_count]=statement_source_dispatch_parts[1]+0
         statement_source_dispatch_name[statement_source_dispatch_count]=statement_source_dispatch_parts[2]
+        statement_source_dispatch_strategy[statement_source_dispatch_count]=statement_source_dispatch_parts[3]
+        statement_source_dispatch_match_value[statement_source_dispatch_count]=statement_source_dispatch_parts[4]
+        statement_source_dispatch_secondary_value[statement_source_dispatch_count]=statement_source_dispatch_parts[5]
       }
       raw_take_source_dispatch_count=split(take_source_dispatch_plan, take_source_dispatch_rows, "\n")
       take_source_dispatch_count=0
@@ -6842,22 +6845,15 @@ ast_json() {
 	      }
 	      return -1
 	    }
-	    function statement_source_candidate_matches(candidate_id, line, depth){
-	      if(candidate_id==0){return line ~ /^take[ \t]+/}
-	      if(candidate_id==1){return line ~ /^(bind|state|tally)[ \t]+/}
-	      if(candidate_id==2){return line ~ /^set[ \t]+/}
-	      if(candidate_id==3){return line ~ /^return[ \t]+/}
-	      if(candidate_id==4){return index(line, call_expression_prefix) == 1}
-	      if(candidate_id==5){return line ~ /^for[ \t]+/}
-	      if(candidate_id==6){return line ~ /^while[ \t]+/}
-	      if(candidate_id==7){return line ~ /^if[ \t]+/}
-	      if(candidate_id==8){return line ~ /^forge[ \t]*\{/}
-	      if(candidate_id==9){return depth==1 && line ~ /\?$/}
+	    function statement_source_candidate_matches(candidate_id, line, depth, strategy, match_value, secondary_value){
+	      if(strategy=="pattern" && match_value!=""){return line ~ match_value}
+	      if(strategy=="prefix" && match_value!=""){return index(line, match_value) == 1}
+	      if(strategy=="depth_pattern" && match_value!="" && secondary_value!=""){return depth==(match_value+0) && line ~ secondary_value}
 	      return 0
 	    }
 	    function statement_source_candidate_id(line, depth, dispatch_index){
 	      for(dispatch_index=1; dispatch_index<=statement_source_dispatch_count; dispatch_index++){
-	        if(statement_source_candidate_matches(statement_source_dispatch_id[dispatch_index], line, depth)){return statement_source_dispatch_id[dispatch_index]}
+	        if(statement_source_candidate_matches(statement_source_dispatch_id[dispatch_index], line, depth, statement_source_dispatch_strategy[dispatch_index], statement_source_dispatch_match_value[dispatch_index], statement_source_dispatch_secondary_value[dispatch_index])){return statement_source_dispatch_id[dispatch_index]}
 	      }
 	      return -1
 	    }

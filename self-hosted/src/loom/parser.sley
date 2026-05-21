@@ -408,16 +408,18 @@ export task statement_dispatch_plan -> List<Text> {
 
 export task statement_source_dispatch_plan -> List<Text> {
   return [
-    "0|take_binding",
-    "1|binding_statement",
-    "2|set_statement",
-    "3|return_statement",
-    "4|call_statement",
-    "5|for_statement",
-    "6|while_statement",
-    "7|if_statement",
-    "8|forge_statement",
-    "9|fallible_statement"
+    "0|take_binding|pattern|^take[[:space:]]+",
+    "1|bind_statement|pattern|^bind[[:space:]]+",
+    "1|state_statement|pattern|^state[[:space:]]+",
+    "1|tally_statement|pattern|^tally[[:space:]]+",
+    "2|set_statement|pattern|^set[[:space:]]+",
+    "3|return_statement|pattern|^return[[:space:]]+",
+    "4|call_statement|prefix|call ",
+    "5|for_statement|pattern|^for[[:space:]]+",
+    "6|while_statement|pattern|^while[[:space:]]+",
+    "7|if_statement|pattern|^if[[:space:]]+",
+    "8|forge_statement|pattern|^forge[[:space:]]+",
+    "9|fallible_statement|depth_pattern|1|[?]$"
   ]
 }
 

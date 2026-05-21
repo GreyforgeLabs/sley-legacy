@@ -451,6 +451,10 @@ if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_statem
   fail "parser statement source dispatch plan markers are missing"
 fi
 
+if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_statement_source_pattern_plan_task_execution")) and (.bootstrap_owned_by_sley | index("parser_ast_statement_source_pattern_execution"))'; then
+  fail "parser statement source pattern markers are missing"
+fi
+
 if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_take_source_dispatch_plan_task_execution")) and (.bootstrap_owned_by_sley | index("parser_ast_take_source_dispatch_plan_execution"))'; then
   fail "parser take source dispatch plan markers are missing"
 fi
@@ -618,6 +622,38 @@ if ! awk '
   END {exit (plan && candidate) ? 0 : 1}
 ' bin/sley; then
   fail "parser statement source classification must iterate Sley-owned source dispatch candidates"
+fi
+
+if ! awk '
+  /raw_statement_source_dispatch_count=split\(statement_source_dispatch_plan/ {in_parse=1}
+  in_parse && /statement_source_dispatch_strategy\[statement_source_dispatch_count\]=statement_source_dispatch_parts\[3\]/ {strategy=1}
+  in_parse && /statement_source_dispatch_match_value\[statement_source_dispatch_count\]=statement_source_dispatch_parts\[4\]/ {match_value=1}
+  in_parse && /statement_source_dispatch_secondary_value\[statement_source_dispatch_count\]=statement_source_dispatch_parts\[5\]/ {secondary=1}
+  in_parse && /raw_take_source_dispatch_count=split/ {exit}
+  END {exit (strategy && match_value && secondary) ? 0 : 1}
+' bin/sley; then
+  fail "parser statement source dispatch must parse Sley-owned matcher strategy and patterns"
+fi
+
+if ! awk '
+  /function statement_source_candidate_matches\(candidate_id, line, depth, strategy, match_value, secondary_value/ {in_fn=1}
+  in_fn && /line ~ match_value/ {pattern=1}
+  in_fn && /index\(line, match_value\) == 1/ {prefix=1}
+  in_fn && /line ~ secondary_value/ {depth_pattern=1}
+  in_fn && /^[ \t]*}/ {exit}
+  END {exit (pattern && prefix && depth_pattern) ? 0 : 1}
+' bin/sley; then
+  fail "parser statement source matching must evaluate Sley-owned matcher patterns"
+fi
+
+if awk '
+  /function statement_source_candidate_matches\(candidate_id, line, depth/ {in_fn=1}
+  in_fn && /candidate_id==[0-9]/ {hard_ladder=1}
+  in_fn && /call_expression_prefix/ {hard_ladder=1}
+  in_fn && /^[ \t]*}/ {exit}
+  END {exit hard_ladder ? 0 : 1}
+' bin/sley; then
+  fail "parser statement source dispatch must not keep a host hard-coded statement matcher ladder"
 fi
 
 if awk '
