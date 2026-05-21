@@ -1702,6 +1702,10 @@ if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_diagn
   fail "checker diagnostic pass plan/id-map markers are missing"
 fi
 
+if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_executor_name_map_task_execution")) and (.bootstrap_owned_by_sley | index("checker_descriptor_executor_name_validation_execution"))'; then
+  fail "checker diagnostic executor-name map markers are missing"
+fi
+
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_descriptor_value_map_task_execution"))'
 
 if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_executor_dispatch_map_task_execution"))'; then
@@ -1746,6 +1750,12 @@ if ! grep -Fq 'CHECKER_DIAGNOSTIC_PASS_DESCRIPTORS_JSON="$(sley_source_list_task
   fail "checker diagnostic pass plan source task dispatch is missing"
 fi
 
+if ! grep -Fq 'executor:$parts[2]' bin/sley \
+  || ! grep -Fq 'diagnostic_id_task:$parts[3]' bin/sley \
+  || ! grep -Fq 'node_scope:$parts[7]' bin/sley; then
+  fail "checker diagnostic pass plan must parse Sley-owned executor names"
+fi
+
 if grep -Fq 'executor_id:($executors | index' bin/sley; then
   fail "checker executor ids must come from loom.checker diagnostic_pass_plan"
 fi
@@ -1758,6 +1768,10 @@ fi
 if ! grep -Fq 'CHECKER_DIAGNOSTIC_EXECUTORS_JSON="$(sley_source_list_task_json loom.checker diagnostic_executors)"' bin/sley \
   || ! grep -Fq 'descriptor_executor_id($pass)' bin/sley; then
   fail "checker executor dispatch source map is missing"
+fi
+
+if ! grep -Fq '$diagnostic_executors[$executor_id] == ($pass.executor // "")' bin/sley; then
+  fail "checker executor ids must be validated against Sley-owned executor names"
 fi
 
 if grep -Fq 'elif ($callee | contains(".")) then true' bin/sley; then
