@@ -431,6 +431,10 @@ if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_declar
   fail "parser declaration source classifier markers are missing"
 fi
 
+if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_declaration_dispatch_plan_task_execution")) and (.bootstrap_owned_by_sley | index("parser_ast_declaration_dispatch_plan_execution"))'; then
+  fail "parser declaration dispatch plan markers are missing"
+fi
+
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_statement_feature_classifier_task_execution"))'
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_ast_statement_feature_dispatch_execution"))'
@@ -469,6 +473,19 @@ if ! grep -Fq 'PARSER_EXPRESSION_DISPATCH_PLAN_TEXT="$(eval_parser_expression_di
 fi
 
 if ! awk '
+  /^eval_parser_declaration_dispatch_plan_text\(\)[ \t]*\{/ {in_fn=1}
+  in_fn && /sley_eval_source_task_list_json "\$parser_file" declaration_dispatch_plan/ {source_eval=1}
+  in_fn && /^[ \t]*}/ {exit}
+  END {exit source_eval ? 0 : 1}
+' bin/sley; then
+  fail "eval_parser_declaration_dispatch_plan_text must execute declaration_dispatch_plan through the shared Sley source list evaluator"
+fi
+
+if ! grep -Fq 'PARSER_DECLARATION_DISPATCH_PLAN_TEXT="$(eval_parser_declaration_dispatch_plan_text)"' bin/sley; then
+  fail "parser declaration dispatch plan source task dispatch is missing"
+fi
+
+if ! awk '
   /^eval_parser_statement_dispatch_plan_text\(\)[ \t]*\{/ {in_fn=1}
   in_fn && /sley_eval_source_task_list_json "\$parser_file" statement_dispatch_plan/ {source_eval=1}
   in_fn && /^[ \t]*}/ {exit}
@@ -493,6 +510,25 @@ fi
 
 if grep -Fq 'if(expr ~ int_pattern){return' bin/sley; then
   fail "parser expression dispatch must not fall back to a host hard-coded expression ladder"
+fi
+
+if ! awk '
+  /function declaration_candidate_id\(line, dispatch_index/ {in_fn=1}
+  in_fn && /declaration_dispatch_count/ {plan=1}
+  in_fn && /declaration_candidate_matches\(declaration_dispatch_id\[dispatch_index\]/ {candidate=1}
+  in_fn && /^[ \t]*}/ {exit}
+  END {exit (plan && candidate) ? 0 : 1}
+' bin/sley; then
+  fail "parser declarations must iterate Sley-owned declaration dispatch candidates"
+fi
+
+if awk '
+  /FNR==1 \{module="main"; file_seen\[FILENAME\]=1\}/ {in_ast_decl=1}
+  in_ast_decl && /^[ \t]*\/\^\[ \\t\]\*module\[ \\t\]\+\// {hard_ladder=1}
+  in_ast_decl && /^[ \t]*in_task[ \t]*\{/ {exit}
+  END {exit hard_ladder ? 0 : 1}
+' bin/sley; then
+  fail "parser declaration dispatch must not fall back to a host hard-coded declaration pattern ladder"
 fi
 
 if ! awk '

@@ -1571,6 +1571,11 @@ eval_parser_expression_dispatch_plan_text() {
   sley_eval_source_task_list_json "$parser_file" expression_dispatch_plan '{}' | jq -r '.[]'
 }
 
+eval_parser_declaration_dispatch_plan_text() {
+  local parser_file="$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley"
+  sley_eval_source_task_list_json "$parser_file" declaration_dispatch_plan '{}' | jq -r '.[]'
+}
+
 eval_parser_statement_dispatch_plan_text() {
   local parser_file="$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley"
   sley_eval_source_task_list_json "$parser_file" statement_dispatch_plan '{}' | jq -r '.[]'
@@ -5662,6 +5667,7 @@ PARSER_DECLARATION_FEATURE_CLASSIFIERS_JSON="$(eval_parser_declaration_feature_c
 PARSER_BINARY_OPERATOR_NAMES_JSON="$(eval_parser_binary_operator_names_json)"
 PARSER_UNARY_OPERATOR_NAMES_JSON="$(eval_parser_unary_operator_names_json)"
 PARSER_EXPRESSION_DISPATCH_PLAN_TEXT="$(eval_parser_expression_dispatch_plan_text)"
+PARSER_DECLARATION_DISPATCH_PLAN_TEXT="$(eval_parser_declaration_dispatch_plan_text)"
 PARSER_STATEMENT_DISPATCH_PLAN_TEXT="$(eval_parser_statement_dispatch_plan_text)"
 PARSER_FEATURE_INT_KIND="$(printf '%s\n' "$PARSER_FEATURE_CLASSIFIERS_JSON" | jq -er '.int')"
 PARSER_FEATURE_STRING_KIND="$(printf '%s\n' "$PARSER_FEATURE_CLASSIFIERS_JSON" | jq -er '.string')"
@@ -6197,6 +6203,7 @@ ast_json() {
     -v try_kind="$PARSER_FEATURE_TRY_KIND" \
     -v if_expr_kind="$PARSER_FEATURE_IF_EXPR_KIND" \
     -v expression_dispatch_plan="$PARSER_EXPRESSION_DISPATCH_PLAN_TEXT" \
+    -v declaration_dispatch_plan="$PARSER_DECLARATION_DISPATCH_PLAN_TEXT" \
     -v statement_dispatch_plan="$PARSER_STATEMENT_DISPATCH_PLAN_TEXT" \
     -v module_declaration_kind="$PARSER_FEATURE_MODULE_DECLARATION_KIND" \
     -v import_declaration_kind="$PARSER_FEATURE_IMPORT_DECLARATION_KIND" \
@@ -6271,6 +6278,15 @@ ast_json() {
         expression_dispatch_count++
         expression_dispatch_id[expression_dispatch_count]=expression_dispatch_parts[1]+0
         expression_dispatch_name[expression_dispatch_count]=expression_dispatch_parts[2]
+      }
+      raw_declaration_dispatch_count=split(declaration_dispatch_plan, declaration_dispatch_rows, "\n")
+      declaration_dispatch_count=0
+      for(dispatch_index=1; dispatch_index<=raw_declaration_dispatch_count; dispatch_index++){
+        if(declaration_dispatch_rows[dispatch_index]==""){continue}
+        split(declaration_dispatch_rows[dispatch_index], declaration_dispatch_parts, "|")
+        declaration_dispatch_count++
+        declaration_dispatch_id[declaration_dispatch_count]=declaration_dispatch_parts[1]+0
+        declaration_dispatch_name[declaration_dispatch_count]=declaration_dispatch_parts[2]
       }
       raw_statement_dispatch_count=split(statement_dispatch_plan, statement_dispatch_rows, "\n")
       statement_dispatch_count=0
@@ -6747,40 +6763,52 @@ ast_json() {
 	        if(statement_candidate_print(statement_dispatch_id[dispatch_index], i, j, id, parts)){return}
 	      }
 	    }
+	    function declaration_candidate_matches(candidate_id, line){
+	      if(candidate_id==0){return line ~ /^module[ \t]+/}
+	      if(candidate_id==1){return line ~ /^import[ \t]+/}
+	      if(candidate_id==2){return line ~ /^(export[ \t]+)?type[ \t]+/}
+	      if(candidate_id==3){return line ~ /^(export[ \t]+)?effect[ \t]+/}
+	      if(candidate_id==4){return line ~ /^(export[ \t]+)?task[ \t]+/}
+	      return 0
+	    }
+	    function declaration_candidate_id(line, dispatch_index){
+	      for(dispatch_index=1; dispatch_index<=declaration_dispatch_count; dispatch_index++){
+	        if(declaration_candidate_matches(declaration_dispatch_id[dispatch_index], line)){return declaration_dispatch_id[dispatch_index]}
+	      }
+	      return -1
+	    }
 	    FNR==1 {module="main"; file_seen[FILENAME]=1}
-    /^[ \t]*module[ \t]+/ {
-      declaration_kind=module_declaration_kind
-      if(declaration_kind==module_declaration_kind){module=$2; if(entry=="") entry=module; modules[module]=1}
-      next
-    }
-    /^[ \t]*import[ \t]+/ {
-      declaration_kind=import_declaration_kind
-      line=trim($0); sub(/^import[ \t]+/,"",line); alias="";
-      if(line ~ /[ \t]+as[ \t]+/){alias=line; sub(/^.*[ \t]+as[ \t]+/,"",alias); sub(/[ \t]+as[ \t]+.*$/,"",line)}
-      if(declaration_kind==import_declaration_kind){import_count++; import_owner[import_count]=module; import_module[import_count]=trim(line); import_alias[import_count]=trim(alias); import_line[import_count]=FNR}
-      next
-    }
-    /^[ \t]*(export[ \t]+)?type[ \t]+/ {
-      declaration_kind=type_declaration_kind
-      line=trim($0); exported=(line ~ /^export[ \t]+/); sub(/^export[ \t]+/,"",line); sub(/^type[ \t]+/,"",line);
-      name=line; sub(/[ \t={].*$/,"",name); if(declaration_kind==type_declaration_kind){type_count++; type_module[type_count]=module; type_name[type_count]=name; type_exported[type_count]=exported; type_line[type_count]=FNR}
-      next
-    }
-    /^[ \t]*(export[ \t]+)?effect[ \t]+/ {
-      declaration_kind=effect_declaration_kind
-      line=trim($0); exported=(line ~ /^export[ \t]+/); sub(/^export[ \t]+/,"",line); sub(/^effect[ \t]+/,"",line);
-      name=line; sub(/[ \t{].*$/,"",name); if(declaration_kind==effect_declaration_kind){effect_count++; effect_module[effect_count]=module; effect_name[effect_count]=name; effect_exported[effect_count]=exported; effect_line[effect_count]=FNR}
-      next
-    }
-    /^[ \t]*(export[ \t]+)?task[ \t]+/ {
-      declaration_kind=task_declaration_kind
-      line=trim($0); exported=(line ~ /^export[ \t]+/); sub(/^export[ \t]+/,"",line); sub(/^task[ \t]+/,"",line)
-	      name=line; sub(/[ \t]*->.*/,"",name)
-	      rest=line; sub(/^.*->[ \t]*/,"",rest); ret=rest; sub(/[ \t]+uses[ \t]+.*/,"",ret); sub(/[ \t]*\{.*/,"",ret)
-	      effects=""; if(rest ~ /[ \t]+uses[ \t]+/){effects=rest; sub(/^.*[ \t]+uses[ \t]+/,"",effects); sub(/[ \t]*\{.*/,"",effects)}
-	      if(declaration_kind==task_declaration_kind){task_count++; current=task_count; task_module[current]=module; task_name[current]=trim(name); task_return[current]=trim(ret); task_exported[current]=exported; task_effects[current]=trim(effects); task_line[current]=FNR
-	        in_task=1; block_stack_count=0; depth=count_char($0,"{")-count_char($0,"}")}
-	      next
+	    !in_task {
+	      declaration_id=declaration_candidate_id(trim($0))
+	      if(declaration_id==0){
+	        module=$2; if(entry=="") entry=module; modules[module]=1
+	        next
+	      }
+	      if(declaration_id==1){
+	        line=trim($0); sub(/^import[ \t]+/,"",line); alias="";
+	        if(line ~ /[ \t]+as[ \t]+/){alias=line; sub(/^.*[ \t]+as[ \t]+/,"",alias); sub(/[ \t]+as[ \t]+.*$/,"",line)}
+	        import_count++; import_owner[import_count]=module; import_module[import_count]=trim(line); import_alias[import_count]=trim(alias); import_line[import_count]=FNR
+	        next
+	      }
+	      if(declaration_id==2){
+	        line=trim($0); exported=(line ~ /^export[ \t]+/); sub(/^export[ \t]+/,"",line); sub(/^type[ \t]+/,"",line);
+	        name=line; sub(/[ \t={].*$/,"",name); type_count++; type_module[type_count]=module; type_name[type_count]=name; type_exported[type_count]=exported; type_line[type_count]=FNR
+	        next
+	      }
+	      if(declaration_id==3){
+	        line=trim($0); exported=(line ~ /^export[ \t]+/); sub(/^export[ \t]+/,"",line); sub(/^effect[ \t]+/,"",line);
+	        name=line; sub(/[ \t{].*$/,"",name); effect_count++; effect_module[effect_count]=module; effect_name[effect_count]=name; effect_exported[effect_count]=exported; effect_line[effect_count]=FNR
+	        next
+	      }
+	      if(declaration_id==4){
+	        line=trim($0); exported=(line ~ /^export[ \t]+/); sub(/^export[ \t]+/,"",line); sub(/^task[ \t]+/,"",line)
+	        name=line; sub(/[ \t]*->.*/,"",name)
+	        rest=line; sub(/^.*->[ \t]*/,"",rest); ret=rest; sub(/[ \t]+uses[ \t]+.*/,"",ret); sub(/[ \t]*\{.*/,"",ret)
+	        effects=""; if(rest ~ /[ \t]+uses[ \t]+/){effects=rest; sub(/^.*[ \t]+uses[ \t]+/,"",effects); sub(/[ \t]*\{.*/,"",effects)}
+	        task_count++; current=task_count; task_module[current]=module; task_name[current]=trim(name); task_return[current]=trim(ret); task_exported[current]=exported; task_effects[current]=trim(effects); task_line[current]=FNR
+	        in_task=1; block_stack_count=0; depth=count_char($0,"{")-count_char($0,"}")
+	        next
+	      }
 	    }
 	    in_task {
 	      raw=$0; line=trim(raw)
