@@ -374,6 +374,7 @@ export task owned_bootstrap_values -> List<Text> {
     "if_statement_runtime_execution",
     "project_call_runtime_execution",
     "project_call_parser_prefix_runtime_execution",
+    "generic_unqualified_import_call_runtime_execution",
     "unqualified_project_call_runtime_execution",
     "file_entry_project_call_runtime_execution",
     "file_entry_runtime_authority_execution",
