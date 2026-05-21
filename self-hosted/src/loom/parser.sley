@@ -150,6 +150,51 @@ export task call_expression_prefix -> Text {
   return "call "
 }
 
+export task module_declaration_kind -> Text {
+  return "Module"
+}
+
+export task import_declaration_kind -> Text {
+  return "Import"
+}
+
+export task type_declaration_kind -> Text {
+  return "Type"
+}
+
+export task effect_declaration_kind -> Text {
+  return "Effect"
+}
+
+export task task_declaration_kind -> Text {
+  return "Task"
+}
+
+export task classify_declaration_features -> Text {
+  take is_module: Bool
+  take is_import: Bool
+  take is_type: Bool
+  take is_effect: Bool
+  take is_task: Bool
+
+  if is_module {
+    return call module_declaration_kind()
+  }
+  if is_import {
+    return call import_declaration_kind()
+  }
+  if is_type {
+    return call type_declaration_kind()
+  }
+  if is_effect {
+    return call effect_declaration_kind()
+  }
+  if is_task {
+    return call task_declaration_kind()
+  }
+  return call raw_expr_kind()
+}
+
 export task return_statement_kind -> Text {
   return "Return"
 }
