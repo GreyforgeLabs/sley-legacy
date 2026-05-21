@@ -383,6 +383,19 @@ export task classify_statement_features -> Text {
   return call expression_statement_kind()
 }
 
+export task statement_dispatch_plan -> List<Text> {
+  return [
+    "0|return_statement",
+    "1|expression_statement",
+    "2|binding_statement",
+    "3|set_statement",
+    "4|for_statement",
+    "5|while_statement",
+    "6|if_statement",
+    "7|forge_statement"
+  ]
+}
+
 export task take_binding_kind -> Text {
   return "Take"
 }
