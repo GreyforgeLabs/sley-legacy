@@ -209,6 +209,57 @@ export task runtime_dispatch_order -> List<Text> {
   ]
 }
 
+export task runtime_dispatch_plan -> List<Text> {
+  return [
+    "0|unit_main",
+    "1|generic_main",
+    "2|result_flow_int",
+    "3|compute_text_call",
+    "4|while_list_sum_int",
+    "5|state_set_int",
+    "6|each_sum_int",
+    "7|each_map_sum_int",
+    "8|tally_set_int",
+    "9|bound_int",
+    "10|if_int_expression",
+    "11|state_if_set_int",
+    "12|literal_if_int_statement",
+    "13|comparison_if_int_statement",
+    "14|false_while_int",
+    "15|if_int",
+    "16|pure_literal",
+    "17|simple_scalar",
+    "18|bool_equal",
+    "19|int_less_than",
+    "20|negated_comparison",
+    "21|if_bool",
+    "22|bool_if_statement",
+    "23|bool_and",
+    "24|bool_not",
+    "25|bool_main",
+    "26|simple_arithmetic_int",
+    "27|bound_arithmetic_int",
+    "28|simple_int",
+    "29|text_concat",
+    "30|len_int",
+    "31|parenthesized_arithmetic_int",
+    "32|list_index_int",
+    "33|bound_list_index_sum_int",
+    "34|collection_index_sum_int",
+    "35|map_index_text",
+    "36|record_field_text",
+    "37|record_field_call_text",
+    "38|direct_file_read_ok_text",
+    "39|direct_file_read_text",
+    "40|seeded_host_result",
+    "41|seeded_host_text",
+    "42|zero_arg_project_call",
+    "43|local_call_int",
+    "44|project_call_int",
+    "45|main_call_int"
+  ]
+}
+
 export task agent_deploy_target_suffix -> Text {
   return "agent_deploy_pipeline.sley"
 }
