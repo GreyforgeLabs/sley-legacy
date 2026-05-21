@@ -158,6 +158,17 @@ export task generic_runtime_unsupported_block_prefixes -> List<Text> {
   ]
 }
 
+export task generic_runtime_return_type_plan -> List<Text> {
+  return [
+    "Int|value||Int|int_identity_value",
+    "Text|value||Text|text_identity_value",
+    "Bool|value||Bool|bool_identity_value",
+    "Result|ok|Int|OkInt|ok_int_value",
+    "Result|ok|Text|OkText|ok_text_value",
+    "Result|err||ErrText|err_text_value"
+  ]
+}
+
 export task runtime_dispatch_order -> List<Text> {
   return [
     "unit_main",
