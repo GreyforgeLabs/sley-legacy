@@ -889,9 +889,65 @@ sley_eval_source_call() {
   sley_eval_source_task "$source_file" "$task" "$call_env_json"
 }
 
+sley_expr_wrapped_by_parens() {
+  local expr="$1" len="${#1}" depth=0 in_string=false i ch
+  (( len >= 2 )) || return 1
+  [[ "${expr:0:1}" == "(" && "${expr: -1}" == ")" ]] || return 1
+  for ((i = 0; i < len; i++)); do
+    ch="${expr:i:1}"
+    if [[ "$ch" == '"' ]]; then
+      if [[ "$in_string" == true ]]; then in_string=false; else in_string=true; fi
+      continue
+    fi
+    [[ "$in_string" == true ]] && continue
+    case "$ch" in
+      "(") ((depth += 1)) ;;
+      ")")
+        ((depth -= 1))
+        (( depth >= 0 )) || return 1
+        if (( depth == 0 && i < len - 1 )); then
+          return 1
+        fi
+        ;;
+      *) ;;
+    esac
+  done
+  [[ "$in_string" == false && "$depth" -eq 0 ]]
+}
+
+sley_split_top_level_token() {
+  local expr="$1" token="$2" len="${#1}" token_len="${#2}" paren_depth=0 bracket_depth=0 brace_depth=0 in_string=false i ch left right
+  (( token_len > 0 && len >= token_len )) || return 1
+  for ((i = 0; i <= len - token_len; i++)); do
+    ch="${expr:i:1}"
+    if [[ "$ch" == '"' ]]; then
+      if [[ "$in_string" == true ]]; then in_string=false; else in_string=true; fi
+      continue
+    fi
+    if [[ "$in_string" == false && "$paren_depth" -eq 0 && "$bracket_depth" -eq 0 && "$brace_depth" -eq 0 && "${expr:i:token_len}" == "$token" ]]; then
+      left="${expr:0:i}"
+      right="${expr:i+token_len}"
+      [[ -n "${left//[[:space:]]/}" && -n "${right//[[:space:]]/}" ]] || return 1
+      printf '%s\t%s\n' "$left" "$right"
+      return 0
+    fi
+    [[ "$in_string" == true ]] && continue
+    case "$ch" in
+      "(") ((paren_depth += 1)) ;;
+      ")") ((paren_depth -= 1)); (( paren_depth >= 0 )) || return 1 ;;
+      "[") ((bracket_depth += 1)) ;;
+      "]") ((bracket_depth -= 1)); (( bracket_depth >= 0 )) || return 1 ;;
+      "{") ((brace_depth += 1)) ;;
+      "}") ((brace_depth -= 1)); (( brace_depth >= 0 )) || return 1 ;;
+      *) ;;
+    esac
+  done
+  return 1
+}
+
 sley_eval_source_expr() {
   local file="$1" env_json="$2" expr="$3"
-  local call_prefix="${PARSER_CALL_EXPRESSION_PREFIX-}" tail callee args_text args_json tokens token out="" seen=false string_seen=false value left right op binary_re bool_and_re comparison_re indexed_re field_re
+  local call_prefix="${PARSER_CALL_EXPRESSION_PREFIX-}" tail callee args_text args_json tokens token out="" seen=false string_seen=false value left right op split binary_re comparison_re indexed_re field_re
   expr="$(printf '%s\n' "$expr" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
   if [[ "$expr" =~ ^Ok\((.*)\)$ ]]; then
     sley_eval_source_expr "$file" "$env_json" "${BASH_REMATCH[1]}"
@@ -908,8 +964,8 @@ sley_eval_source_expr() {
     printf '%s\n' "$value"
     return
   fi
-  if [[ "$expr" =~ ^\((.*)\)$ ]]; then
-    sley_eval_source_expr "$file" "$env_json" "${BASH_REMATCH[1]}"
+  if sley_expr_wrapped_by_parens "$expr"; then
+    sley_eval_source_expr "$file" "$env_json" "${expr:1:${#expr}-2}"
     return
   fi
   if [[ "$expr" =~ ^!(.+)$ ]]; then
@@ -975,20 +1031,9 @@ sley_eval_source_expr() {
     printf '%s\n' "$expr"
     return 0
   fi
-  if [[ "$expr" =~ ^\((.*)\)[[:space:]]\*[[:space:]](.+)$ ]]; then
-    left="$(sley_eval_source_expr "$file" "$env_json" "${BASH_REMATCH[1]}")" || return 1
-    right="$(sley_eval_source_expr "$file" "$env_json" "${BASH_REMATCH[2]}")" || return 1
-    [[ "$left" =~ ^-?[0-9]+$ && "$right" =~ ^-?[0-9]+$ ]] || return 1
-    if [[ "$file" == "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" ]]; then
-      printf '%s\n' "$((left * right))"
-    else
-      eval_runtime_int_binary_value_task int_multiply_value "*" "$left" "$right"
-    fi
-    return
-  fi
-  if [[ "$expr" =~ ^(.+)[[:space:]]\+[[:space:]](.+)$ ]]; then
-    left="$(sley_eval_source_expr "$file" "$env_json" "${BASH_REMATCH[1]}")" || return 1
-    right="$(sley_eval_source_expr "$file" "$env_json" "${BASH_REMATCH[2]}")" || return 1
+  if split="$(sley_split_top_level_token "$expr" "+")"; then
+    left="$(sley_eval_source_expr "$file" "$env_json" "${split%%$'\t'*}")" || return 1
+    right="$(sley_eval_source_expr "$file" "$env_json" "${split#*$'\t'}")" || return 1
     if [[ "$left" =~ ^-?[0-9]+$ && "$right" =~ ^-?[0-9]+$ ]]; then
       if [[ "$file" == "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" ]]; then
         printf '%s\n' "$((left + right))"
@@ -1002,10 +1047,20 @@ sley_eval_source_expr() {
     fi
     return
   fi
-  bool_and_re='^(.+)[[:space:]]&&[[:space:]](.+)$'
-  if [[ "$expr" =~ $bool_and_re ]]; then
-    left="$(sley_eval_source_expr "$file" "$env_json" "${BASH_REMATCH[1]}")" || return 1
-    right="$(sley_eval_source_expr "$file" "$env_json" "${BASH_REMATCH[2]}")" || return 1
+  if split="$(sley_split_top_level_token "$expr" "*")"; then
+    left="$(sley_eval_source_expr "$file" "$env_json" "${split%%$'\t'*}")" || return 1
+    right="$(sley_eval_source_expr "$file" "$env_json" "${split#*$'\t'}")" || return 1
+    [[ "$left" =~ ^-?[0-9]+$ && "$right" =~ ^-?[0-9]+$ ]] || return 1
+    if [[ "$file" == "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" ]]; then
+      printf '%s\n' "$((left * right))"
+    else
+      eval_runtime_int_binary_value_task int_multiply_value "*" "$left" "$right"
+    fi
+    return
+  fi
+  if split="$(sley_split_top_level_token "$expr" "&&")"; then
+    left="$(sley_eval_source_expr "$file" "$env_json" "${split%%$'\t'*}")" || return 1
+    right="$(sley_eval_source_expr "$file" "$env_json" "${split#*$'\t'}")" || return 1
     [[ "$left" == "true" || "$left" == "false" ]] || return 1
     [[ "$right" == "true" || "$right" == "false" ]] || return 1
     if [[ "$file" == "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" ]]; then
