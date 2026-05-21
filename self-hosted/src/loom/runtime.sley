@@ -158,6 +158,57 @@ export task generic_runtime_unsupported_block_prefixes -> List<Text> {
   ]
 }
 
+export task runtime_dispatch_order -> List<Text> {
+  return [
+    "unit_main",
+    "generic_main",
+    "result_flow_int",
+    "compute_text_call",
+    "while_list_sum_int",
+    "state_set_int",
+    "each_sum_int",
+    "each_map_sum_int",
+    "tally_set_int",
+    "bound_int",
+    "if_int_expression",
+    "state_if_set_int",
+    "literal_if_int_statement",
+    "comparison_if_int_statement",
+    "false_while_int",
+    "if_int",
+    "pure_literal",
+    "simple_scalar",
+    "bool_equal",
+    "int_less_than",
+    "negated_comparison",
+    "if_bool",
+    "bool_if_statement",
+    "bool_and",
+    "bool_not",
+    "bool_main",
+    "simple_arithmetic_int",
+    "bound_arithmetic_int",
+    "simple_int",
+    "text_concat",
+    "len_int",
+    "parenthesized_arithmetic_int",
+    "list_index_int",
+    "bound_list_index_sum_int",
+    "collection_index_sum_int",
+    "map_index_text",
+    "record_field_text",
+    "record_field_call_text",
+    "direct_file_read_ok_text",
+    "direct_file_read_text",
+    "seeded_host_result",
+    "seeded_host_text",
+    "zero_arg_project_call",
+    "local_call_int",
+    "project_call_int",
+    "main_call_int"
+  ]
+}
+
 export task agent_deploy_target_suffix -> Text {
   return "agent_deploy_pipeline.sley"
 }

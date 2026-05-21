@@ -5315,6 +5315,7 @@ RUNTIME_DEFAULT_SPEND_AUTHORIZATION_TEXT="$(sley_source_task loom.runtime defaul
 RUNTIME_PASSED_STATUS="$(sley_source_task loom.runtime passed_status)"
 RUNTIME_FAILED_STATUS="$(sley_source_task loom.runtime failed_status)"
 RUNTIME_SKIPPED_STATUS="$(sley_source_task loom.runtime skipped_status)"
+RUNTIME_DISPATCH_ORDER_JSON="$(sley_source_list_task_json loom.runtime runtime_dispatch_order)"
 RUNTIME_CAPABILITY_REQUIRED_ID="$(sley_source_task loom.runtime capability_required_diagnostic_id)"
 RUNTIME_CAPABILITY_SCOPE_DENIED_ID="$(sley_source_task loom.runtime capability_scope_denied_diagnostic_id)"
 RUNTIME_TAKE_REQUIRED_ID="$(sley_source_task loom.runtime main_take_required_diagnostic_id)"
@@ -8883,8 +8884,61 @@ print(json.dumps({"status": "passed", "diagnostics": []}, indent=2))
 PY
 }
 
+runtime_dispatch_candidate_json() {
+  local candidate="$1" target="$2" http_text="$3" model_text="$4" deploy_text="$5" spend_text="$6" secret_text="$7" shell_text="$8"
+  case "$candidate" in
+    unit_main) eval_source_unit_main_return "$target" ;;
+    generic_main) eval_source_generic_main_return "$target" "$http_text" "$model_text" "$deploy_text" "$spend_text" "$secret_text" "$shell_text" ;;
+    result_flow_int) eval_source_result_flow_int_main_return "$target" ;;
+    compute_text_call) eval_source_compute_text_call_main_return "$target" ;;
+    while_list_sum_int) eval_source_while_list_sum_int_main_return "$target" ;;
+    state_set_int) eval_source_state_set_int_main_return "$target" ;;
+    each_sum_int) eval_source_each_sum_int_main_return "$target" ;;
+    each_map_sum_int) eval_source_each_map_sum_int_main_return "$target" ;;
+    tally_set_int) eval_source_tally_set_int_main_return "$target" ;;
+    bound_int) eval_source_bound_int_main_return "$target" ;;
+    if_int_expression) eval_source_if_int_expression_main_return "$target" ;;
+    state_if_set_int) eval_source_state_if_set_int_main_return "$target" ;;
+    literal_if_int_statement) eval_source_literal_if_int_statement_main_return "$target" ;;
+    comparison_if_int_statement) eval_source_comparison_if_int_statement_main_return "$target" ;;
+    false_while_int) eval_source_false_while_int_main_return "$target" ;;
+    if_int) eval_source_if_int_main_return "$target" ;;
+    pure_literal) eval_pure_literal_main_return "$target" ;;
+    simple_scalar) eval_simple_scalar_main_return "$target" ;;
+    bool_equal) eval_source_bool_equal_main_return "$target" ;;
+    int_less_than) eval_source_int_less_than_main_return "$target" ;;
+    negated_comparison) eval_source_negated_comparison_main_return "$target" ;;
+    if_bool) eval_source_if_bool_main_return "$target" ;;
+    bool_if_statement) eval_source_bool_if_statement_main_return "$target" ;;
+    bool_and) eval_source_bool_and_main_return "$target" ;;
+    bool_not) eval_source_bool_not_main_return "$target" ;;
+    bool_main) eval_source_bool_main_return "$target" ;;
+    simple_arithmetic_int) eval_source_simple_arithmetic_int_main_return "$target" ;;
+    bound_arithmetic_int) eval_source_bound_arithmetic_int_main_return "$target" ;;
+    simple_int) eval_simple_int_main_return "$target" ;;
+    text_concat) eval_text_concat_main_return "$target" ;;
+    len_int) eval_source_len_int_main_return "$target" ;;
+    parenthesized_arithmetic_int) eval_source_parenthesized_arithmetic_int_main_return "$target" ;;
+    list_index_int) eval_source_list_index_int_main_return "$target" ;;
+    bound_list_index_sum_int) eval_source_bound_list_index_sum_int_main_return "$target" ;;
+    collection_index_sum_int) eval_source_collection_index_sum_int_main_return "$target" ;;
+    map_index_text) eval_source_map_index_text_main_return "$target" ;;
+    record_field_text) eval_source_record_field_text_main_return "$target" ;;
+    record_field_call_text) eval_source_record_field_call_text_main_return "$target" ;;
+    direct_file_read_ok_text) eval_source_direct_file_read_ok_text_main_return "$target" ;;
+    direct_file_read_text) eval_source_direct_file_read_text_main_return "$target" ;;
+    seeded_host_result) eval_source_seeded_host_result_main_return "$target" "$http_text" "$model_text" "$deploy_text" "$spend_text" "$secret_text" "$shell_text" ;;
+    seeded_host_text) eval_source_seeded_host_text_main_return "$target" "$http_text" "$model_text" "$deploy_text" "$spend_text" "$secret_text" "$shell_text" ;;
+    zero_arg_project_call) eval_source_zero_arg_project_call_main_return "$target" ;;
+    local_call_int) eval_source_local_call_int_main_return "$target" ;;
+    project_call_int) eval_source_project_call_int_main_return "$target" ;;
+    main_call_int) eval_main_call_int_return "$target" ;;
+    *) return 1 ;;
+  esac
+}
+
 run_json() {
-  local target="$1" http_text="" model_text="" deploy_text="" spend_text="" secret_text="" shell_text="" runtime_status literal_runtime simple_runtime call_runtime arg prev="" runtime_auth run_value_json values_json
+  local target="$1" http_text="" model_text="" deploy_text="" spend_text="" secret_text="" shell_text="" runtime_status simple_runtime runtime_candidate arg prev="" runtime_auth run_value_json values_json
   for arg in "$@"; do
     case "$prev" in
       --http-text-url) prev="--http-text-value"; continue ;;
@@ -8923,144 +8977,15 @@ run_json() {
   local value_kind="$RUNTIME_RAW_VALUE_KIND" value="$RUNTIME_DEFAULT_RAW_VALUE"
   if json_list_contains_string "$RUNTIME_SELF_HOSTED_TARGETS_JSON" "$target"; then
     value_kind="$RUNTIME_INT_VALUE_KIND"; value="$(eval_bootstrap_smoke_task)"
-  elif simple_runtime="$(eval_source_unit_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
-  elif simple_runtime="$(eval_source_generic_main_return "$target" "$http_text" "$model_text" "$deploy_text" "$spend_text" "$secret_text" "$shell_text" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
-  elif simple_runtime="$(eval_source_result_flow_int_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
-  elif simple_runtime="$(eval_source_compute_text_call_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
-  elif simple_runtime="$(eval_source_while_list_sum_int_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
-  elif simple_runtime="$(eval_source_state_set_int_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
-  elif simple_runtime="$(eval_source_each_sum_int_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
-  elif simple_runtime="$(eval_source_each_map_sum_int_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
-  elif simple_runtime="$(eval_source_tally_set_int_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
-  elif simple_runtime="$(eval_source_bound_int_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
-  elif simple_runtime="$(eval_source_if_int_expression_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
-  elif simple_runtime="$(eval_source_state_if_set_int_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
-  elif simple_runtime="$(eval_source_literal_if_int_statement_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
-  elif simple_runtime="$(eval_source_comparison_if_int_statement_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
-  elif simple_runtime="$(eval_source_false_while_int_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
-  elif simple_runtime="$(eval_source_if_int_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
-  elif literal_runtime="$(eval_pure_literal_main_return "$target" 2>/dev/null)" && [[ -n "$literal_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$literal_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$literal_runtime" | jq -r '.value')"
-  elif simple_runtime="$(eval_simple_scalar_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
-  elif simple_runtime="$(eval_source_bool_equal_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
-  elif simple_runtime="$(eval_source_int_less_than_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
-  elif simple_runtime="$(eval_source_negated_comparison_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
-  elif simple_runtime="$(eval_source_if_bool_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
-  elif simple_runtime="$(eval_source_bool_if_statement_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
-  elif simple_runtime="$(eval_source_bool_and_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
-  elif simple_runtime="$(eval_source_bool_not_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
-  elif simple_runtime="$(eval_source_bool_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
-  elif simple_runtime="$(eval_source_simple_arithmetic_int_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
-  elif simple_runtime="$(eval_source_bound_arithmetic_int_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
-  elif simple_runtime="$(eval_simple_int_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
-  elif simple_runtime="$(eval_text_concat_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
-  elif simple_runtime="$(eval_source_len_int_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
-  elif simple_runtime="$(eval_source_parenthesized_arithmetic_int_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
-  elif simple_runtime="$(eval_source_list_index_int_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
-  elif simple_runtime="$(eval_source_bound_list_index_sum_int_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
-  elif simple_runtime="$(eval_source_collection_index_sum_int_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
-  elif simple_runtime="$(eval_source_map_index_text_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
-  elif simple_runtime="$(eval_source_record_field_text_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
-  elif simple_runtime="$(eval_source_record_field_call_text_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
-  elif simple_runtime="$(eval_source_direct_file_read_ok_text_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
-  elif simple_runtime="$(eval_source_direct_file_read_text_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
-  elif simple_runtime="$(eval_source_seeded_host_result_main_return "$target" "$http_text" "$model_text" "$deploy_text" "$spend_text" "$secret_text" "$shell_text" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
-  elif simple_runtime="$(eval_source_seeded_host_text_main_return "$target" "$http_text" "$model_text" "$deploy_text" "$spend_text" "$secret_text" "$shell_text" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
-  elif simple_runtime="$(eval_source_zero_arg_project_call_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
-  elif simple_runtime="$(eval_source_local_call_int_main_return "$target" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
-  elif call_runtime="$(eval_source_project_call_int_main_return "$target" 2>/dev/null)" && [[ -n "$call_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$call_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$call_runtime" | jq -r '.value')"
-  elif call_runtime="$(eval_main_call_int_return "$target" 2>/dev/null)" && [[ -n "$call_runtime" ]]; then
-    value_kind="$(printf '%s\n' "$call_runtime" | jq -r '.kind')"
-    value="$(printf '%s\n' "$call_runtime" | jq -r '.value')"
+  else
+    while IFS= read -r runtime_candidate || [[ -n "$runtime_candidate" ]]; do
+      [[ -n "$runtime_candidate" ]] || continue
+      if simple_runtime="$(runtime_dispatch_candidate_json "$runtime_candidate" "$target" "$http_text" "$model_text" "$deploy_text" "$spend_text" "$secret_text" "$shell_text" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
+        value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
+        value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
+        break
+      fi
+    done < <(printf '%s\n' "$RUNTIME_DISPATCH_ORDER_JSON" | jq -r '.[]')
   fi
   if [[ "$value_kind" == "$RUNTIME_OK_TEXT_VALUE_KIND" ]]; then
     value="$(eval_runtime_ok_text_value_task "$value")"
