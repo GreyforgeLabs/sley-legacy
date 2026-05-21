@@ -891,7 +891,7 @@ sley_eval_source_call() {
 
 sley_eval_source_expr() {
   local file="$1" env_json="$2" expr="$3"
-  local call_prefix="${PARSER_CALL_EXPRESSION_PREFIX-}" tail callee args_text args_json tokens token out="" seen=false string_seen=false value left right op binary_re comparison_re indexed_re field_re
+  local call_prefix="${PARSER_CALL_EXPRESSION_PREFIX-}" tail callee args_text args_json tokens token out="" seen=false string_seen=false value left right op binary_re bool_and_re comparison_re indexed_re field_re
   expr="$(printf '%s\n' "$expr" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
   if [[ "$expr" =~ ^Ok\((.*)\)$ ]]; then
     sley_eval_source_expr "$file" "$env_json" "${BASH_REMATCH[1]}"
@@ -999,6 +999,19 @@ sley_eval_source_expr() {
       printf '%s%s\n' "$left" "$right"
     else
       eval_runtime_text_concat_value_task "$left" "$right"
+    fi
+    return
+  fi
+  bool_and_re='^(.+)[[:space:]]&&[[:space:]](.+)$'
+  if [[ "$expr" =~ $bool_and_re ]]; then
+    left="$(sley_eval_source_expr "$file" "$env_json" "${BASH_REMATCH[1]}")" || return 1
+    right="$(sley_eval_source_expr "$file" "$env_json" "${BASH_REMATCH[2]}")" || return 1
+    [[ "$left" == "true" || "$left" == "false" ]] || return 1
+    [[ "$right" == "true" || "$right" == "false" ]] || return 1
+    if [[ "$file" == "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" ]]; then
+      if [[ "$left" == "true" && "$right" == "true" ]]; then printf 'true\n'; else printf 'false\n'; fi
+    else
+      eval_runtime_bool_and_value_task "$left" "$right"
     fi
     return
   fi
