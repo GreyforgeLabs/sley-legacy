@@ -5133,7 +5133,8 @@ unset _sley_source_text_name _sley_source_list_name
 PARSER_CALL_EXPRESSION_PREFIX="$(sley_source_task loom.parser call_expression_prefix)"
 require_source_text PARSER_CALL_EXPRESSION_PREFIX "$PARSER_CALL_EXPRESSION_PREFIX"
 
-CHECKER_DIAGNOSTIC_PASS_DESCRIPTORS_JSON="$(sley_source_list_task_json loom.checker diagnostic_pass_descriptors | jq 'map(split("|") | {name:.[0], executor:.[1], diagnostic_id_task:.[2], message_task:.[3], message_arg:.[4], subject:.[5], node_scope:.[6]})')"
+CHECKER_DIAGNOSTIC_EXECUTORS_JSON="$(sley_source_list_task_json loom.checker diagnostic_executors)"
+CHECKER_DIAGNOSTIC_PASS_DESCRIPTORS_JSON="$(sley_source_list_task_json loom.checker diagnostic_pass_descriptors | jq --argjson executors "$CHECKER_DIAGNOSTIC_EXECUTORS_JSON" 'map(split("|") as $parts | {name:$parts[0], executor:$parts[1], executor_id:($executors | index($parts[1])), diagnostic_id_task:$parts[2], message_task:$parts[3], message_arg:$parts[4], subject:$parts[5], node_scope:$parts[6]})')"
 DIAG_UNKNOWN_IDENTIFIER="$(sley_source_task loom.checker unknown_identifier_id)"
 DIAG_UNKNOWN_TYPE="$(sley_source_task loom.checker unknown_type_id)"
 DIAG_UNKNOWN_TASK="$(sley_source_task loom.checker unknown_task_id)"
@@ -6411,6 +6412,7 @@ check_json() {
     --argjson host_effect_needles "$CHECKER_HOST_EFFECT_NEEDLES_JSON" \
     --argjson identifier_inputs "$CHECKER_IDENTIFIER_INPUTS_JSON" \
     --argjson assume_qualified_task_calls_known "$CHECKER_ASSUME_QUALIFIED_TASK_CALLS_KNOWN" \
+    --argjson diagnostic_executors "$CHECKER_DIAGNOSTIC_EXECUTORS_JSON" \
     --argjson diagnostic_pass_descriptors "$CHECKER_DIAGNOSTIC_PASS_DESCRIPTORS_JSON" '
     . as $root |
     [$root.tasks[].name] as $all_task_names |
@@ -6711,6 +6713,9 @@ check_json() {
       $diagnostic_id_task_values[($pass.diagnostic_id_task // "")] // "";
     def descriptor_message_template($pass):
       $message_template_task_values[($pass.message_task // "")] // "";
+    ($diagnostic_executors | length) as $diagnostic_executor_count |
+    def descriptor_executor_id($pass):
+      if (($pass.executor_id // -1) >= 0 and ($pass.executor_id // -1) < $diagnostic_executor_count) then ($pass.executor_id // -1) else -1 end;
     def identifier_resolution_diags($pass):
       if ($pass.subject // "") == "task_identifier" then
         $root.tasks[] as $t |
@@ -7037,16 +7042,17 @@ check_json() {
         {id:descriptor_diagnostic_id($pass), severity:"error", message:render_arg(descriptor_message_template($pass); ($pass.message_arg // "effect_name"); $effect), node:$expr.id, span:$expr.span}
       else empty end;
     def diagnostic_pass($pass):
-      if ($pass.executor // "") == "identifier_resolution" then identifier_resolution_diags($pass)
-      elif ($pass.executor // "") == "unknown_reference" then unknown_reference_diags($pass)
-      elif ($pass.executor // "") == "gate_reference" then gate_reference_diags($pass)
-      elif ($pass.executor // "") == "effect_authorization" then effect_authorization_diags($pass)
-      elif ($pass.executor // "") == "duplicate_name" then duplicate_name_diags($pass)
-      elif ($pass.executor // "") == "record_shape" then record_shape_diags($pass)
-      elif ($pass.executor // "") == "collection_shape" then collection_shape_diags($pass)
-      elif ($pass.executor // "") == "call_shape" then call_shape_diags($pass)
-      elif ($pass.executor // "") == "type_return" then type_return_diags($pass)
-      elif ($pass.executor // "") == "question_result" then question_result_diags($pass)
+      (descriptor_executor_id($pass)) as $executor |
+      if $executor == 0 then identifier_resolution_diags($pass)
+      elif $executor == 1 then unknown_reference_diags($pass)
+      elif $executor == 2 then gate_reference_diags($pass)
+      elif $executor == 3 then effect_authorization_diags($pass)
+      elif $executor == 4 then duplicate_name_diags($pass)
+      elif $executor == 5 then record_shape_diags($pass)
+      elif $executor == 6 then collection_shape_diags($pass)
+      elif $executor == 7 then call_shape_diags($pass)
+      elif $executor == 8 then type_return_diags($pass)
+      elif $executor == 9 then question_result_diags($pass)
       else empty end;
     [$diagnostic_pass_descriptors[]? | diagnostic_pass(.)]
   ')"

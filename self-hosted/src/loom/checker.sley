@@ -81,6 +81,21 @@ export task diagnostic_pass_descriptors -> List<Text> {
   ]
 }
 
+export task diagnostic_executors -> List<Text> {
+  return [
+    "identifier_resolution",
+    "unknown_reference",
+    "gate_reference",
+    "effect_authorization",
+    "duplicate_name",
+    "record_shape",
+    "collection_shape",
+    "call_shape",
+    "type_return",
+    "question_result"
+  ]
+}
+
 export task assume_qualified_task_calls_known -> Bool {
   return true
 }
