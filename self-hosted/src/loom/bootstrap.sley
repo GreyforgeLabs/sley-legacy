@@ -338,6 +338,8 @@ export task owned_bootstrap_values -> List<Text> {
     "spend_prefix_runtime_task_execution",
     "bound_int_return_runtime_execution",
     "int_arithmetic_runtime_task_execution",
+    "runtime_int_binary_operator_plan_task_execution",
+    "runtime_int_binary_operator_dispatch_execution",
     "constant_arithmetic_runtime_execution",
     "absorbing_arithmetic_runtime_execution",
     "generic_parenthesized_arithmetic_runtime_execution",

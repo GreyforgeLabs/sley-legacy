@@ -169,6 +169,13 @@ export task generic_runtime_return_type_plan -> List<Text> {
   ]
 }
 
+export task int_binary_operator_plan -> List<Text> {
+  return [
+    "+|int_add_value",
+    "*|int_multiply_value"
+  ]
+}
+
 export task runtime_dispatch_order -> List<Text> {
   return [
     "unit_main",
