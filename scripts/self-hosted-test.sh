@@ -447,6 +447,10 @@ if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_statem
   fail "parser statement source dispatch plan markers are missing"
 fi
 
+if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_take_source_dispatch_plan_task_execution")) and (.bootstrap_owned_by_sley | index("parser_ast_take_source_dispatch_plan_execution"))'; then
+  fail "parser take source dispatch plan markers are missing"
+fi
+
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_binding_feature_classifier_task_execution"))'
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_ast_binding_feature_dispatch_execution"))'
@@ -516,6 +520,19 @@ if ! grep -Fq 'PARSER_STATEMENT_SOURCE_DISPATCH_PLAN_TEXT="$(eval_parser_stateme
 fi
 
 if ! awk '
+  /^eval_parser_take_source_dispatch_plan_text\(\)[ \t]*\{/ {in_fn=1}
+  in_fn && /sley_eval_source_task_list_json "\$parser_file" take_source_dispatch_plan/ {source_eval=1}
+  in_fn && /^[ \t]*}/ {exit}
+  END {exit source_eval ? 0 : 1}
+' bin/sley; then
+  fail "eval_parser_take_source_dispatch_plan_text must execute take_source_dispatch_plan through the shared Sley source list evaluator"
+fi
+
+if ! grep -Fq 'PARSER_TAKE_SOURCE_DISPATCH_PLAN_TEXT="$(eval_parser_take_source_dispatch_plan_text)"' bin/sley; then
+  fail "parser take source dispatch plan source task dispatch is missing"
+fi
+
+if ! awk '
   /function expr_json\(expr, id, line, col/ {in_fn=1}
   in_fn && /expression_dispatch_count/ {plan=1}
   in_fn && /expr_candidate_json\(expression_dispatch_id\[dispatch_index\]/ {candidate=1}
@@ -580,6 +597,25 @@ if awk '
   END {exit hard_ladder ? 0 : 1}
 ' bin/sley; then
   fail "parser statement source classification must not fall back to a host hard-coded line ladder"
+fi
+
+if ! awk '
+  /function take_source_candidate_id\(source, dispatch_index/ {in_fn=1}
+  in_fn && /take_source_dispatch_count/ {plan=1}
+  in_fn && /take_source_candidate_matches\(take_source_dispatch_id\[dispatch_index\]/ {candidate=1}
+  in_fn && /^[ \t]*}/ {exit}
+  END {exit (plan && candidate) ? 0 : 1}
+' bin/sley; then
+  fail "parser take source classification must iterate Sley-owned take source dispatch candidates"
+fi
+
+if awk '
+  /^[ \t]*in_task[ \t]*\{/ {in_task=1}
+  in_task && /if\(t ~ \/\^gate/ {hard_ladder=1}
+  in_task && /^[ \t]*name=t/ {exit}
+  END {exit hard_ladder ? 0 : 1}
+' bin/sley; then
+  fail "parser take source classification must not fall back to a host hard-coded gate-take ladder"
 fi
 
 if ! awk '

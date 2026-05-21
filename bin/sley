@@ -1586,6 +1586,11 @@ eval_parser_statement_source_dispatch_plan_text() {
   sley_eval_source_task_list_json "$parser_file" statement_source_dispatch_plan '{}' | jq -r '.[]'
 }
 
+eval_parser_take_source_dispatch_plan_text() {
+  local parser_file="$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley"
+  sley_eval_source_task_list_json "$parser_file" take_source_dispatch_plan '{}' | jq -r '.[]'
+}
+
 eval_parser_statement_feature_classifiers_json() {
   local parser_file="$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley"
   local key is_return is_call_expression is_binding is_set is_for is_while is_if is_forge kind env_json
@@ -5675,6 +5680,7 @@ PARSER_EXPRESSION_DISPATCH_PLAN_TEXT="$(eval_parser_expression_dispatch_plan_tex
 PARSER_DECLARATION_DISPATCH_PLAN_TEXT="$(eval_parser_declaration_dispatch_plan_text)"
 PARSER_STATEMENT_DISPATCH_PLAN_TEXT="$(eval_parser_statement_dispatch_plan_text)"
 PARSER_STATEMENT_SOURCE_DISPATCH_PLAN_TEXT="$(eval_parser_statement_source_dispatch_plan_text)"
+PARSER_TAKE_SOURCE_DISPATCH_PLAN_TEXT="$(eval_parser_take_source_dispatch_plan_text)"
 PARSER_FEATURE_INT_KIND="$(printf '%s\n' "$PARSER_FEATURE_CLASSIFIERS_JSON" | jq -er '.int')"
 PARSER_FEATURE_STRING_KIND="$(printf '%s\n' "$PARSER_FEATURE_CLASSIFIERS_JSON" | jq -er '.string')"
 PARSER_FEATURE_TRUE_KIND="$(printf '%s\n' "$PARSER_FEATURE_CLASSIFIERS_JSON" | jq -er '.true')"
@@ -6212,6 +6218,7 @@ ast_json() {
     -v declaration_dispatch_plan="$PARSER_DECLARATION_DISPATCH_PLAN_TEXT" \
     -v statement_dispatch_plan="$PARSER_STATEMENT_DISPATCH_PLAN_TEXT" \
     -v statement_source_dispatch_plan="$PARSER_STATEMENT_SOURCE_DISPATCH_PLAN_TEXT" \
+    -v take_source_dispatch_plan="$PARSER_TAKE_SOURCE_DISPATCH_PLAN_TEXT" \
     -v module_declaration_kind="$PARSER_FEATURE_MODULE_DECLARATION_KIND" \
     -v import_declaration_kind="$PARSER_FEATURE_IMPORT_DECLARATION_KIND" \
     -v type_declaration_kind="$PARSER_FEATURE_TYPE_DECLARATION_KIND" \
@@ -6312,6 +6319,15 @@ ast_json() {
         statement_source_dispatch_count++
         statement_source_dispatch_id[statement_source_dispatch_count]=statement_source_dispatch_parts[1]+0
         statement_source_dispatch_name[statement_source_dispatch_count]=statement_source_dispatch_parts[2]
+      }
+      raw_take_source_dispatch_count=split(take_source_dispatch_plan, take_source_dispatch_rows, "\n")
+      take_source_dispatch_count=0
+      for(dispatch_index=1; dispatch_index<=raw_take_source_dispatch_count; dispatch_index++){
+        if(take_source_dispatch_rows[dispatch_index]==""){continue}
+        split(take_source_dispatch_rows[dispatch_index], take_source_dispatch_parts, "|")
+        take_source_dispatch_count++
+        take_source_dispatch_id[take_source_dispatch_count]=take_source_dispatch_parts[1]+0
+        take_source_dispatch_name[take_source_dispatch_count]=take_source_dispatch_parts[2]
       }
     }
     function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
@@ -6812,6 +6828,17 @@ ast_json() {
 	      }
 	      return -1
 	    }
+	    function take_source_candidate_matches(candidate_id, source){
+	      if(candidate_id==0){return source ~ /^gate[ \t]+/}
+	      if(candidate_id==1){return source !~ /^gate[ \t]+/}
+	      return 0
+	    }
+	    function take_source_candidate_id(source, dispatch_index){
+	      for(dispatch_index=1; dispatch_index<=take_source_dispatch_count; dispatch_index++){
+	        if(take_source_candidate_matches(take_source_dispatch_id[dispatch_index], source)){return take_source_dispatch_id[dispatch_index]}
+	      }
+	      return -1
+	    }
 	    FNR==1 {module="main"; file_seen[FILENAME]=1}
 	    !in_task {
 	      declaration_id=declaration_candidate_id(trim($0))
@@ -6852,10 +6879,11 @@ ast_json() {
 	      statement_source_id=statement_source_candidate_id(line, depth)
 	      if(statement_source_id==0) {
 	        take_count[current]++; t=line; sub(/^take[ \t]+/,"",t); kind=take_feature_binding_kind
-        if(t ~ /^gate[ \t]+/){kind=gate_feature_binding_kind; sub(/^gate[ \t]+/,"",t)}
-        name=t; sub(/[ \t]*:.*/,"",name); typ=t; sub(/^.*:[ \t]*/,"",typ)
-        take_name[current,take_count[current]]=trim(name); take_kind[current,take_count[current]]=kind; take_type[current,take_count[current]]=trim(typ); take_line[current,take_count[current]]=FNR
-      } else if(statement_source_id==1) {
+	        take_source_id=take_source_candidate_id(t)
+	        if(take_source_id==0){kind=gate_feature_binding_kind; sub(/^gate[ \t]+/,"",t)}
+	        name=t; sub(/[ \t]*:.*/,"",name); typ=t; sub(/^.*:[ \t]*/,"",typ)
+	        take_name[current,take_count[current]]=trim(name); take_kind[current,take_count[current]]=kind; take_type[current,take_count[current]]=trim(typ); take_line[current,take_count[current]]=FNR
+	      } else if(statement_source_id==1) {
         kind=line; sub(/[ \t].*/,"",kind); rest=line; sub(/^[A-Za-z]+[ \t]+/,"",rest); name=rest; sub(/[ \t:=].*/,"",name); expr=rest; sub(/^.*=[ \t]*/,"",expr)
         add_stmt(binding_feature_statement_kind "|" binding_kind(kind) "|" trim(name), expr, FNR, index(raw, kind))
       } else if(statement_source_id==2) {

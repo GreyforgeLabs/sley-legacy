@@ -421,6 +421,13 @@ export task statement_source_dispatch_plan -> List<Text> {
   ]
 }
 
+export task take_source_dispatch_plan -> List<Text> {
+  return [
+    "0|gate_take_binding",
+    "1|plain_take_binding"
+  ]
+}
+
 export task take_binding_kind -> Text {
   return "Take"
 }
