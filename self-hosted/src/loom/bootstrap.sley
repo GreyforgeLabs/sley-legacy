@@ -354,6 +354,7 @@ export task owned_bootstrap_values -> List<Text> {
     "negated_comparison_runtime_execution",
     "generic_not_expression_runtime_execution",
     "generic_parenthesized_bool_runtime_execution",
+    "generic_parenthesized_bool_and_runtime_execution",
     "bool_if_runtime_task_execution",
     "bool_if_expression_runtime_execution",
     "bool_if_statement_runtime_execution",
