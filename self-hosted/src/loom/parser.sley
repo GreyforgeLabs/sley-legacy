@@ -86,6 +86,7 @@ export task classify_expression_surface_features -> Text {
   take has_bare_call: Bool
   take has_field_access: Bool
   take has_index_access: Bool
+  take has_record_literal: Bool
 
   if has_call_prefix {
     return call call_expression_kind()
@@ -98,6 +99,9 @@ export task classify_expression_surface_features -> Text {
   }
   if has_index_access {
     return call index_access_expression_kind()
+  }
+  if has_record_literal {
+    return call record_literal_expression_kind()
   }
   return call raw_expr_kind()
 }
@@ -148,6 +152,10 @@ export task field_access_expression_kind -> Text {
 
 export task index_access_expression_kind -> Text {
   return "Index"
+}
+
+export task record_literal_expression_kind -> Text {
+  return "RecordLiteral"
 }
 
 export task call_expression_prefix -> Text {
