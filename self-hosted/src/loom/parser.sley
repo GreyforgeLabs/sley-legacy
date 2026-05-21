@@ -65,10 +65,14 @@ export task classify_expression_features -> Text {
 }
 
 export task classify_expression_operator_features -> Text {
+  take has_unary_operator: Bool
   take has_logical_operator: Bool
   take has_comparison_operator: Bool
   take has_arithmetic_operator: Bool
 
+  if has_unary_operator {
+    return call unary_expression_kind()
+  }
   if has_logical_operator {
     return call binary_expression_kind()
   }
@@ -162,6 +166,10 @@ export task binary_expression_kind -> Text {
   return "Binary"
 }
 
+export task unary_expression_kind -> Text {
+  return "Unary"
+}
+
 export task call_expression_kind -> Text {
   return "Call"
 }
@@ -222,6 +230,18 @@ export task binary_operator_name -> Text {
   }
   if operator == "*" {
     return "Multiply"
+  }
+  return call raw_expr_kind()
+}
+
+export task unary_operator_name -> Text {
+  take operator: Text
+
+  if operator == "!" {
+    return "Not"
+  }
+  if operator == "-" {
+    return "Negate"
   }
   return call raw_expr_kind()
 }
