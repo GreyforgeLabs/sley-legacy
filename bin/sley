@@ -1571,6 +1571,11 @@ eval_parser_expression_dispatch_plan_text() {
   sley_eval_source_task_list_json "$parser_file" expression_dispatch_plan '{}' | jq -r '.[]'
 }
 
+eval_parser_statement_dispatch_plan_text() {
+  local parser_file="$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley"
+  sley_eval_source_task_list_json "$parser_file" statement_dispatch_plan '{}' | jq -r '.[]'
+}
+
 eval_parser_statement_feature_classifiers_json() {
   local parser_file="$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley"
   local key is_return is_call_expression is_binding is_set is_for is_while is_if is_forge kind env_json
@@ -5657,6 +5662,7 @@ PARSER_DECLARATION_FEATURE_CLASSIFIERS_JSON="$(eval_parser_declaration_feature_c
 PARSER_BINARY_OPERATOR_NAMES_JSON="$(eval_parser_binary_operator_names_json)"
 PARSER_UNARY_OPERATOR_NAMES_JSON="$(eval_parser_unary_operator_names_json)"
 PARSER_EXPRESSION_DISPATCH_PLAN_TEXT="$(eval_parser_expression_dispatch_plan_text)"
+PARSER_STATEMENT_DISPATCH_PLAN_TEXT="$(eval_parser_statement_dispatch_plan_text)"
 PARSER_FEATURE_INT_KIND="$(printf '%s\n' "$PARSER_FEATURE_CLASSIFIERS_JSON" | jq -er '.int')"
 PARSER_FEATURE_STRING_KIND="$(printf '%s\n' "$PARSER_FEATURE_CLASSIFIERS_JSON" | jq -er '.string')"
 PARSER_FEATURE_TRUE_KIND="$(printf '%s\n' "$PARSER_FEATURE_CLASSIFIERS_JSON" | jq -er '.true')"
@@ -6191,6 +6197,7 @@ ast_json() {
     -v try_kind="$PARSER_FEATURE_TRY_KIND" \
     -v if_expr_kind="$PARSER_FEATURE_IF_EXPR_KIND" \
     -v expression_dispatch_plan="$PARSER_EXPRESSION_DISPATCH_PLAN_TEXT" \
+    -v statement_dispatch_plan="$PARSER_STATEMENT_DISPATCH_PLAN_TEXT" \
     -v module_declaration_kind="$PARSER_FEATURE_MODULE_DECLARATION_KIND" \
     -v import_declaration_kind="$PARSER_FEATURE_IMPORT_DECLARATION_KIND" \
     -v type_declaration_kind="$PARSER_FEATURE_TYPE_DECLARATION_KIND" \
@@ -6264,6 +6271,15 @@ ast_json() {
         expression_dispatch_count++
         expression_dispatch_id[expression_dispatch_count]=expression_dispatch_parts[1]+0
         expression_dispatch_name[expression_dispatch_count]=expression_dispatch_parts[2]
+      }
+      raw_statement_dispatch_count=split(statement_dispatch_plan, statement_dispatch_rows, "\n")
+      statement_dispatch_count=0
+      for(dispatch_index=1; dispatch_index<=raw_statement_dispatch_count; dispatch_index++){
+        if(statement_dispatch_rows[dispatch_index]==""){continue}
+        split(statement_dispatch_rows[dispatch_index], statement_dispatch_parts, "|")
+        statement_dispatch_count++
+        statement_dispatch_id[statement_dispatch_count]=statement_dispatch_parts[1]+0
+        statement_dispatch_name[statement_dispatch_count]=statement_dispatch_parts[2]
       }
     }
     function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
@@ -6688,37 +6704,47 @@ ast_json() {
 	        }
 	      }
 	    }
-	    function print_statement(i, j, id, parts, target_depth){
-	      split(stmt_kind[i,j], parts, /\|/); id=stmt_id[i,j]
-	      if(parts[1]==return_statement_kind){printf "{\"id\":\"%s\",\"kind\":\"%s\",\"expr\":%s,\"span\":%s}", id, return_statement_kind, expr_json(stmt_text[i,j], instantiate_expression_id(id), stmt_line[i,j], stmt_col[i,j]+7), span_json(stmt_line[i,j],stmt_col[i,j])}
-	      else if(parts[1]==expr_statement_kind){printf "{\"id\":\"%s\",\"kind\":\"%s\",\"expr\":%s,\"span\":%s}", id, expr_statement_kind, expr_json(stmt_text[i,j], instantiate_expression_id(id), stmt_line[i,j], stmt_col[i,j]), span_json(stmt_line[i,j],stmt_col[i,j])}
-	      else if(parts[1]==binding_statement_kind){printf "{\"id\":\"%s\",\"kind\":\"%s\",\"binding_kind\":\"%s\",\"name\":\"%s\",\"expr\":%s,\"span\":%s}", id, binding_statement_kind, parts[2], esc(parts[3]), expr_json(stmt_text[i,j], instantiate_expression_id(id), stmt_line[i,j], stmt_col[i,j]+length(parts[3])+4), span_json(stmt_line[i,j],stmt_col[i,j])}
-	      else if(parts[1]==set_statement_kind){printf "{\"id\":\"%s\",\"kind\":\"%s\",\"name\":\"%s\",\"expr\":%s,\"span\":%s}", id, set_statement_kind, esc(parts[2]), expr_json(stmt_text[i,j], instantiate_expression_id(id), stmt_line[i,j], stmt_col[i,j]+length(parts[2])+4), span_json(stmt_line[i,j],stmt_col[i,j])}
-	      else if(parts[1]==for_statement_kind){
+	    function statement_candidate_print(candidate_id, i, j, id, parts, target_depth){
+	      if(candidate_id==0 && parts[1]==return_statement_kind){printf "{\"id\":\"%s\",\"kind\":\"%s\",\"expr\":%s,\"span\":%s}", id, return_statement_kind, expr_json(stmt_text[i,j], instantiate_expression_id(id), stmt_line[i,j], stmt_col[i,j]+7), span_json(stmt_line[i,j],stmt_col[i,j]); return 1}
+	      if(candidate_id==1 && parts[1]==expr_statement_kind){printf "{\"id\":\"%s\",\"kind\":\"%s\",\"expr\":%s,\"span\":%s}", id, expr_statement_kind, expr_json(stmt_text[i,j], instantiate_expression_id(id), stmt_line[i,j], stmt_col[i,j]), span_json(stmt_line[i,j],stmt_col[i,j]); return 1}
+	      if(candidate_id==2 && parts[1]==binding_statement_kind){printf "{\"id\":\"%s\",\"kind\":\"%s\",\"binding_kind\":\"%s\",\"name\":\"%s\",\"expr\":%s,\"span\":%s}", id, binding_statement_kind, parts[2], esc(parts[3]), expr_json(stmt_text[i,j], instantiate_expression_id(id), stmt_line[i,j], stmt_col[i,j]+length(parts[3])+4), span_json(stmt_line[i,j],stmt_col[i,j]); return 1}
+	      if(candidate_id==3 && parts[1]==set_statement_kind){printf "{\"id\":\"%s\",\"kind\":\"%s\",\"name\":\"%s\",\"expr\":%s,\"span\":%s}", id, set_statement_kind, esc(parts[2]), expr_json(stmt_text[i,j], instantiate_expression_id(id), stmt_line[i,j], stmt_col[i,j]+length(parts[2])+4), span_json(stmt_line[i,j],stmt_col[i,j]); return 1}
+	      if(candidate_id==4 && parts[1]==for_statement_kind){
 	        target_depth=stmt_depth[i,j]+body_depth_offset
 	        printf "{\"id\":\"%s\",\"kind\":\"%s\",\"item\":\"%s\",\"collection\":%s,\"body\":{\"statements\":[", id, for_statement_kind, esc(parts[2]), expr_json(stmt_text[i,j], instantiate_collection_expression_id(id), stmt_line[i,j], stmt_col[i,j]+4)
 	        print_block_statements(i,j,stmt_line[i,j],stmt_body_end_line[i,j],target_depth)
 	        printf "]},\"span\":%s}", span_json(stmt_line[i,j],stmt_col[i,j])
+	        return 1
 	      }
-	      else if(parts[1]==while_statement_kind){
+	      if(candidate_id==5 && parts[1]==while_statement_kind){
 	        target_depth=stmt_depth[i,j]+body_depth_offset
 	        printf "{\"id\":\"%s\",\"kind\":\"%s\",\"condition\":%s,\"body\":{\"statements\":[", id, while_statement_kind, expr_json(stmt_text[i,j], instantiate_condition_expression_id(id), stmt_line[i,j], stmt_col[i,j]+6)
 	        print_block_statements(i,j,stmt_line[i,j],stmt_body_end_line[i,j],target_depth)
 	        printf "]},\"span\":%s}", span_json(stmt_line[i,j],stmt_col[i,j])
+	        return 1
 	      }
-	      else if(parts[1]==if_statement_kind){
+	      if(candidate_id==6 && parts[1]==if_statement_kind){
 	        target_depth=stmt_depth[i,j]+body_depth_offset
 	        printf "{\"id\":\"%s\",\"kind\":\"%s\",\"condition\":%s,\"then_block\":{\"statements\":[", id, if_statement_kind, expr_json(stmt_text[i,j], instantiate_condition_expression_id(id), stmt_line[i,j], stmt_col[i,j]+3)
 	        print_block_statements(i,j,stmt_line[i,j],stmt_then_end_line[i,j],target_depth)
 	        printf "]},\"else_block\":{\"statements\":["
 	        print_block_statements(i,j,stmt_else_start_line[i,j],stmt_else_end_line[i,j],target_depth)
 	        printf "]},\"span\":%s}", span_json(stmt_line[i,j],stmt_col[i,j])
+	        return 1
 	      }
-	      else if(parts[1]==forge_statement_kind){
+	      if(candidate_id==7 && parts[1]==forge_statement_kind){
 	        target_depth=stmt_depth[i,j]+body_depth_offset
 	        printf "{\"id\":\"%s\",\"kind\":\"%s\",\"body\":{\"statements\":[", id, forge_statement_kind
 	        print_block_statements(i,j,stmt_line[i,j],stmt_body_end_line[i,j],target_depth)
 	        printf "]},\"span\":%s}", span_json(stmt_line[i,j],stmt_col[i,j])
+	        return 1
+	      }
+	      return 0
+	    }
+	    function print_statement(i, j, id, parts, dispatch_index){
+	      split(stmt_kind[i,j], parts, /\|/); id=stmt_id[i,j]
+	      for(dispatch_index=1; dispatch_index<=statement_dispatch_count; dispatch_index++){
+	        if(statement_candidate_print(statement_dispatch_id[dispatch_index], i, j, id, parts)){return}
 	      }
 	    }
 	    FNR==1 {module="main"; file_seen[FILENAME]=1}
