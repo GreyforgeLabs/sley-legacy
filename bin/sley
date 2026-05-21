@@ -1494,6 +1494,37 @@ eval_parser_expression_surface_classifiers_json() {
   done | jq -s 'from_entries'
 }
 
+eval_parser_declaration_feature_classifiers_json() {
+  local parser_file="$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley"
+  local key is_module is_import is_type is_effect is_task kind env_json
+  for key in module import type effect task fallback; do
+    is_module=false
+    is_import=false
+    is_type=false
+    is_effect=false
+    is_task=false
+    case "$key" in
+      module) is_module=true ;;
+      import) is_import=true ;;
+      type) is_type=true ;;
+      effect) is_effect=true ;;
+      task) is_task=true ;;
+      fallback) ;;
+      *) return 1 ;;
+    esac
+    env_json="$(jq -cn \
+      --argjson is_module "$is_module" \
+      --argjson is_import "$is_import" \
+      --argjson is_type "$is_type" \
+      --argjson is_effect "$is_effect" \
+      --argjson is_task "$is_task" \
+      '{is_module:$is_module,is_import:$is_import,is_type:$is_type,is_effect:$is_effect,is_task:$is_task}')" || return 1
+    kind="$(sley_eval_source_task "$parser_file" classify_declaration_features "$env_json")" || return 1
+    [[ -n "$kind" ]] || return 1
+    jq -cn --arg key "$key" --arg value "$kind" '{key:$key,value:$value}'
+  done | jq -s 'from_entries'
+}
+
 eval_parser_statement_feature_classifiers_json() {
   local parser_file="$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley"
   local key is_return is_call_expression is_binding is_set is_for is_while is_if is_forge kind env_json
@@ -5576,6 +5607,7 @@ PARSER_CLASSIFIERS_JSON="$(eval_parser_expression_classifiers_json)"
 PARSER_FEATURE_CLASSIFIERS_JSON="$(eval_parser_expression_feature_classifiers_json)"
 PARSER_OPERATOR_FEATURE_CLASSIFIERS_JSON="$(eval_parser_operator_feature_classifiers_json)"
 PARSER_SURFACE_CLASSIFIERS_JSON="$(eval_parser_expression_surface_classifiers_json)"
+PARSER_DECLARATION_FEATURE_CLASSIFIERS_JSON="$(eval_parser_declaration_feature_classifiers_json)"
 PARSER_FEATURE_INT_KIND="$(printf '%s\n' "$PARSER_FEATURE_CLASSIFIERS_JSON" | jq -er '.int')"
 PARSER_FEATURE_STRING_KIND="$(printf '%s\n' "$PARSER_FEATURE_CLASSIFIERS_JSON" | jq -er '.string')"
 PARSER_FEATURE_TRUE_KIND="$(printf '%s\n' "$PARSER_FEATURE_CLASSIFIERS_JSON" | jq -er '.true')"
@@ -5587,6 +5619,11 @@ PARSER_FEATURE_BINARY_KIND="$(printf '%s\n' "$PARSER_OPERATOR_FEATURE_CLASSIFIER
 PARSER_FEATURE_CALL_KIND="$(printf '%s\n' "$PARSER_SURFACE_CLASSIFIERS_JSON" | jq -er '.call')"
 PARSER_FEATURE_FIELD_ACCESS_KIND="$(printf '%s\n' "$PARSER_SURFACE_CLASSIFIERS_JSON" | jq -er '.field')"
 PARSER_FEATURE_INDEX_ACCESS_KIND="$(printf '%s\n' "$PARSER_SURFACE_CLASSIFIERS_JSON" | jq -er '.index')"
+PARSER_FEATURE_MODULE_DECLARATION_KIND="$(printf '%s\n' "$PARSER_DECLARATION_FEATURE_CLASSIFIERS_JSON" | jq -er '.module')"
+PARSER_FEATURE_IMPORT_DECLARATION_KIND="$(printf '%s\n' "$PARSER_DECLARATION_FEATURE_CLASSIFIERS_JSON" | jq -er '.import')"
+PARSER_FEATURE_TYPE_DECLARATION_KIND="$(printf '%s\n' "$PARSER_DECLARATION_FEATURE_CLASSIFIERS_JSON" | jq -er '.type')"
+PARSER_FEATURE_EFFECT_DECLARATION_KIND="$(printf '%s\n' "$PARSER_DECLARATION_FEATURE_CLASSIFIERS_JSON" | jq -er '.effect')"
+PARSER_FEATURE_TASK_DECLARATION_KIND="$(printf '%s\n' "$PARSER_DECLARATION_FEATURE_CLASSIFIERS_JSON" | jq -er '.task')"
 PARSER_TRUE_KIND="$(printf '%s\n' "$PARSER_CLASSIFIERS_JSON" | jq -er '."true"')"
 PARSER_FALSE_KIND="$(printf '%s\n' "$PARSER_CLASSIFIERS_JSON" | jq -er '."false"')"
 PARSER_EMPTY_LIST_KIND="$(printf '%s\n' "$PARSER_CLASSIFIERS_JSON" | jq -er '."[]"')"
@@ -6080,6 +6117,11 @@ ast_json() {
     -v call_kind="$PARSER_FEATURE_CALL_KIND" \
     -v field_access_kind="$PARSER_FEATURE_FIELD_ACCESS_KIND" \
     -v index_access_kind="$PARSER_FEATURE_INDEX_ACCESS_KIND" \
+    -v module_declaration_kind="$PARSER_FEATURE_MODULE_DECLARATION_KIND" \
+    -v import_declaration_kind="$PARSER_FEATURE_IMPORT_DECLARATION_KIND" \
+    -v type_declaration_kind="$PARSER_FEATURE_TYPE_DECLARATION_KIND" \
+    -v effect_declaration_kind="$PARSER_FEATURE_EFFECT_DECLARATION_KIND" \
+    -v task_declaration_kind="$PARSER_FEATURE_TASK_DECLARATION_KIND" \
     -v raw_kind="$PARSER_RAW_KIND" \
     -v true_kind="$PARSER_FEATURE_TRUE_KIND" \
     -v false_kind="$PARSER_FEATURE_FALSE_KIND" \
@@ -6277,27 +6319,39 @@ ast_json() {
 	      }
 	    }
 	    FNR==1 {module="main"; file_seen[FILENAME]=1}
-    /^[ \t]*module[ \t]+/ {module=$2; if(entry=="") entry=module; modules[module]=1; next}
+    /^[ \t]*module[ \t]+/ {
+      declaration_kind=module_declaration_kind
+      if(declaration_kind==module_declaration_kind){module=$2; if(entry=="") entry=module; modules[module]=1}
+      next
+    }
     /^[ \t]*import[ \t]+/ {
+      declaration_kind=import_declaration_kind
       line=trim($0); sub(/^import[ \t]+/,"",line); alias="";
       if(line ~ /[ \t]+as[ \t]+/){alias=line; sub(/^.*[ \t]+as[ \t]+/,"",alias); sub(/[ \t]+as[ \t]+.*$/,"",line)}
-      import_count++; import_owner[import_count]=module; import_module[import_count]=trim(line); import_alias[import_count]=trim(alias); import_line[import_count]=FNR; next
+      if(declaration_kind==import_declaration_kind){import_count++; import_owner[import_count]=module; import_module[import_count]=trim(line); import_alias[import_count]=trim(alias); import_line[import_count]=FNR}
+      next
     }
     /^[ \t]*(export[ \t]+)?type[ \t]+/ {
+      declaration_kind=type_declaration_kind
       line=trim($0); exported=(line ~ /^export[ \t]+/); sub(/^export[ \t]+/,"",line); sub(/^type[ \t]+/,"",line);
-      name=line; sub(/[ \t={].*$/,"",name); type_count++; type_module[type_count]=module; type_name[type_count]=name; type_exported[type_count]=exported; type_line[type_count]=FNR; next
+      name=line; sub(/[ \t={].*$/,"",name); if(declaration_kind==type_declaration_kind){type_count++; type_module[type_count]=module; type_name[type_count]=name; type_exported[type_count]=exported; type_line[type_count]=FNR}
+      next
     }
     /^[ \t]*(export[ \t]+)?effect[ \t]+/ {
+      declaration_kind=effect_declaration_kind
       line=trim($0); exported=(line ~ /^export[ \t]+/); sub(/^export[ \t]+/,"",line); sub(/^effect[ \t]+/,"",line);
-      name=line; sub(/[ \t{].*$/,"",name); effect_count++; effect_module[effect_count]=module; effect_name[effect_count]=name; effect_exported[effect_count]=exported; effect_line[effect_count]=FNR; next
+      name=line; sub(/[ \t{].*$/,"",name); if(declaration_kind==effect_declaration_kind){effect_count++; effect_module[effect_count]=module; effect_name[effect_count]=name; effect_exported[effect_count]=exported; effect_line[effect_count]=FNR}
+      next
     }
     /^[ \t]*(export[ \t]+)?task[ \t]+/ {
+      declaration_kind=task_declaration_kind
       line=trim($0); exported=(line ~ /^export[ \t]+/); sub(/^export[ \t]+/,"",line); sub(/^task[ \t]+/,"",line)
 	      name=line; sub(/[ \t]*->.*/,"",name)
 	      rest=line; sub(/^.*->[ \t]*/,"",rest); ret=rest; sub(/[ \t]+uses[ \t]+.*/,"",ret); sub(/[ \t]*\{.*/,"",ret)
 	      effects=""; if(rest ~ /[ \t]+uses[ \t]+/){effects=rest; sub(/^.*[ \t]+uses[ \t]+/,"",effects); sub(/[ \t]*\{.*/,"",effects)}
-	      task_count++; current=task_count; task_module[current]=module; task_name[current]=trim(name); task_return[current]=trim(ret); task_exported[current]=exported; task_effects[current]=trim(effects); task_line[current]=FNR
-	      in_task=1; block_stack_count=0; depth=count_char($0,"{")-count_char($0,"}"); next
+	      if(declaration_kind==task_declaration_kind){task_count++; current=task_count; task_module[current]=module; task_name[current]=trim(name); task_return[current]=trim(ret); task_exported[current]=exported; task_effects[current]=trim(effects); task_line[current]=FNR
+	        in_task=1; block_stack_count=0; depth=count_char($0,"{")-count_char($0,"}")}
+	      next
 	    }
 	    in_task {
 	      raw=$0; line=trim(raw)

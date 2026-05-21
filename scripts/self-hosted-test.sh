@@ -93,6 +93,14 @@ printf '%s\n' \
   '}' > "$generic_bool_or_source"
 printf '%s\n' \
   'module app.parser_features' \
+  'import app.parser_helpers as helpers' \
+  '' \
+  'export type Profile = {' \
+  '  slot name: Text' \
+  '}' \
+  '' \
+  'effect Audit {' \
+  '}' \
   '' \
   'task main -> Text {' \
   '  bind count = 42' \
@@ -415,6 +423,10 @@ if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_expres
   fail "parser call/member/index source classifier markers are missing"
 fi
 
+if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_declaration_feature_classifier_task_execution")) and (.bootstrap_owned_by_sley | index("parser_ast_declaration_feature_dispatch_execution"))'; then
+  fail "parser declaration source classifier markers are missing"
+fi
+
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_statement_feature_classifier_task_execution"))'
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_ast_statement_feature_dispatch_execution"))'
@@ -476,6 +488,16 @@ if ! awk '
 fi
 
 if ! awk '
+  /^eval_parser_declaration_feature_classifiers_json\(\)[ \t]*\{/ {in_fn=1}
+  in_fn && /sley_eval_source_task/ {source_eval=1}
+  in_fn && /extract_sley_task_body/ {body_walk=1}
+  in_fn && /^[ \t]*}/ {exit}
+  END {exit (source_eval && !body_walk) ? 0 : 1}
+' bin/sley; then
+  fail "eval_parser_declaration_feature_classifiers_json must execute classify_declaration_features through the shared Sley source task evaluator"
+fi
+
+if ! awk '
   /^eval_parser_statement_feature_classifiers_json\(\)[ \t]*\{/ {in_fn=1}
   in_fn && /sley_eval_source_task/ {source_eval=1}
   in_fn && /extract_sley_task_body/ {body_walk=1}
@@ -500,6 +522,9 @@ bin/sley ast --json "$parser_feature_source" \
 
 bin/sley ast --json "$parser_feature_source" \
   | json_field '(.tasks[0].body.statements[] | select(.expr.expr_kind == "Call" and .expr.callee == "noop" and .expr.arguments_source == "count")) and (.tasks[0].body.statements[] | select(.expr.expr_kind == "IndexAccess" and .expr.target == "names" and .expr.index_source == "0")) and (.tasks[0].body.statements[] | select(.expr.expr_kind == "FieldAccess" and .expr.target == "profile" and .expr.field == "name"))'
+
+bin/sley ast --json "$parser_feature_source" \
+  | json_field '.module == "app.parser_features" and (.imports[] | select(.module == "app.parser_helpers" and .alias == "helpers")) and (.types[] | select(.name == "Profile" and .exported == true)) and (.effects[] | select(.name == "Audit")) and (.tasks[] | select(.name == "main"))'
 
 bin/sley ast --json examples/constant_arithmetic_expression.sley \
   | json_field '.tasks[0].body.statements[0].expr.expr_kind == "Binary" and .tasks[0].body.statements[0].expr.operator == "+"'
