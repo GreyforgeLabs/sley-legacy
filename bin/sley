@@ -1143,6 +1143,18 @@ sley_eval_source_expr() {
     printf '%s\n' "$expr"
     return 0
   fi
+  if split="$(sley_split_top_level_token "$expr" "||")"; then
+    left="$(sley_eval_source_expr "$file" "$env_json" "${split%%$'\t'*}")" || return 1
+    right="$(sley_eval_source_expr "$file" "$env_json" "${split#*$'\t'}")" || return 1
+    [[ "$left" == "true" || "$left" == "false" ]] || return 1
+    [[ "$right" == "true" || "$right" == "false" ]] || return 1
+    if [[ "$file" == "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" ]]; then
+      if [[ "$left" == "true" || "$right" == "true" ]]; then printf 'true\n'; else printf 'false\n'; fi
+    else
+      eval_runtime_bool_or_value_task "$left" "$right"
+    fi
+    return
+  fi
   if split="$(sley_split_top_level_token "$expr" "&&")"; then
     left="$(sley_eval_source_expr "$file" "$env_json" "${split%%$'\t'*}")" || return 1
     right="$(sley_eval_source_expr "$file" "$env_json" "${split#*$'\t'}")" || return 1
@@ -1848,6 +1860,16 @@ eval_runtime_bool_and_value_task() {
   [[ "$right" == "true" || "$right" == "false" ]] || return 1
   env_json="$(jq -cn --argjson left "$left" --argjson right "$right" '{left:$left, right:$right}')"
   sley_eval_source_task "$runtime_file" bool_and_value "$env_json"
+}
+
+eval_runtime_bool_or_value_task() {
+  local left="$1" right="$2"
+  local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
+  local env_json
+  [[ "$left" == "true" || "$left" == "false" ]] || return 1
+  [[ "$right" == "true" || "$right" == "false" ]] || return 1
+  env_json="$(jq -cn --argjson left "$left" --argjson right "$right" '{left:$left, right:$right}')"
+  sley_eval_source_task "$runtime_file" bool_or_value "$env_json"
 }
 
 eval_runtime_bool_not_value_task() {
