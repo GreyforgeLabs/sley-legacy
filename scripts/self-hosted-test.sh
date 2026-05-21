@@ -1800,6 +1800,14 @@ bin/sley run --json examples/constant_text_concatenation_expression.sley \
 bin/sley run --json examples/constant_len_expression.sley \
   | json_field '.schema == "sley.run.report.v0" and .value.kind == "Int" and .value.value == 3'
 
+if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_literal_len_runtime_execution"))'; then
+  fail "generic literal len runtime marker is missing"
+fi
+
+if ! grep -Fq 'if [[ "$expr" =~ ^len\(\[([^\]]*)\]\)$ ]]; then' bin/sley; then
+  fail "generic source runtime must evaluate literal-list len expressions directly"
+fi
+
 bin/sley run --json examples/constant_arithmetic_expression.sley \
   | json_field '.schema == "sley.run.report.v0" and .value.kind == "Int" and .value.value == 5'
 
@@ -1850,6 +1858,15 @@ bin/sley run --json examples/double_negation_expression.sley \
 
 bin/sley run --json examples/negated_comparison_expression.sley \
   | json_field '.schema == "sley.run.report.v0" and .value.kind == "Bool" and .value.value == false'
+
+if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_not_expression_runtime_execution")) and (.bootstrap_owned_by_sley | index("generic_parenthesized_bool_runtime_execution"))'; then
+  fail "generic runtime negation/parenthesized boolean markers are missing"
+fi
+
+if ! grep -Fq 'if [[ "$expr" =~ ^!(.+)$ ]]; then' bin/sley \
+  || ! grep -Fq 'if [[ "$expr" =~ ^\((.*)\)$ ]]; then' bin/sley; then
+  fail "generic source runtime must evaluate negation and parenthesized expressions directly"
+fi
 
 bin/sley run --json examples/redundant_boolean_if_expression.sley \
   | json_field '.schema == "sley.run.report.v0" and .value.kind == "Bool" and .value.value == true'
