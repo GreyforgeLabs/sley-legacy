@@ -6220,17 +6220,34 @@ ast_json() {
     function instantiate_for_item_name(item_name, value){value=for_item_name_template; value=replace_all(value, "{{item}}", item_name); return value}
     function instantiate_for_collection_source(collection_source, value){value=for_collection_source_template; value=replace_all(value, "{{collection}}", collection_source); return value}
     function instantiate_condition_source(condition_source, value){value=condition_source_template; value=replace_all(value, "{{condition}}", condition_source); return value}
-    function binary_operator(expr) {
-      if(index(expr, "||") > 0) return "||"
-      if(index(expr, "&&") > 0) return "&&"
-      if(index(expr, ">=") > 0) return ">="
-      if(index(expr, "<=") > 0) return "<="
-      if(index(expr, "==") > 0) return "=="
-      if(index(expr, "!=") > 0) return "!="
-      if(index(expr, ">") > 0) return ">"
-      if(index(expr, "<") > 0) return "<"
-      if(index(expr, "+") > 0) return "+"
-      if(index(expr, "*") > 0) return "*"
+    function top_level_operator(expr, op_list, ops, op_count, i, j, ch, op, in_string, paren_depth, bracket_depth, brace_depth){
+      op_count=split(op_list, ops, " ")
+      in_string=0; paren_depth=0; bracket_depth=0; brace_depth=0
+      for(i=1;i<=length(expr);i++){
+        ch=substr(expr,i,1)
+        if(ch=="\"" && (i==1 || substr(expr,i-1,1)!="\\")){in_string=!in_string; continue}
+        if(in_string){continue}
+        if(ch=="("){paren_depth++; continue}
+        if(ch==")"){if(paren_depth>0)paren_depth--; continue}
+        if(ch=="["){bracket_depth++; continue}
+        if(ch=="]"){if(bracket_depth>0)bracket_depth--; continue}
+        if(ch=="{"){brace_depth++; continue}
+        if(ch=="}"){if(brace_depth>0)brace_depth--; continue}
+        if(paren_depth==0 && bracket_depth==0 && brace_depth==0){
+          for(j=1;j<=op_count;j++){
+            op=ops[j]
+            if(op!="" && substr(expr,i,length(op))==op){return op}
+          }
+        }
+      }
+      return ""
+    }
+    function binary_operator(expr, value) {
+      if((value=top_level_operator(expr, "||"))!="") return value
+      if((value=top_level_operator(expr, "&&"))!="") return value
+      if((value=top_level_operator(expr, ">= <= == != > <"))!="") return value
+      if((value=top_level_operator(expr, "+"))!="") return value
+      if((value=top_level_operator(expr, "*"))!="") return value
       return ""
     }
     function binary_operator_name(op) {
@@ -6246,7 +6263,22 @@ ast_json() {
       if(op=="*") return op_multiply
       return raw_kind
     }
-    function binary_operator_pos(expr, op){return index(expr, op)}
+    function binary_operator_pos(expr, op, i, ch, in_string, paren_depth, bracket_depth, brace_depth){
+      in_string=0; paren_depth=0; bracket_depth=0; brace_depth=0
+      for(i=1;i<=length(expr);i++){
+        ch=substr(expr,i,1)
+        if(ch=="\"" && (i==1 || substr(expr,i-1,1)!="\\")){in_string=!in_string; continue}
+        if(in_string){continue}
+        if(ch=="("){paren_depth++; continue}
+        if(ch==")"){if(paren_depth>0)paren_depth--; continue}
+        if(ch=="["){bracket_depth++; continue}
+        if(ch=="]"){if(bracket_depth>0)bracket_depth--; continue}
+        if(ch=="{"){brace_depth++; continue}
+        if(ch=="}"){if(brace_depth>0)brace_depth--; continue}
+        if(paren_depth==0 && bracket_depth==0 && brace_depth==0 && substr(expr,i,length(op))==op){return i}
+      }
+      return 0
+    }
     function binary_left_source(expr, op, pos){pos=binary_operator_pos(expr, op); if(pos < 1)return ""; return trim(substr(expr, 1, pos - 1))}
     function binary_right_source(expr, op, pos){pos=binary_operator_pos(expr, op); if(pos < 1)return ""; return trim(substr(expr, pos + length(op)))}
     function is_call_expression(expr){return substr(expr, 1, length(call_expression_prefix)) == call_expression_prefix}
