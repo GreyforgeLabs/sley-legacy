@@ -908,6 +908,16 @@ sley_eval_source_expr() {
     printf '%s\n' "$value"
     return
   fi
+  if [[ "$expr" =~ ^\((.*)\)$ ]]; then
+    sley_eval_source_expr "$file" "$env_json" "${BASH_REMATCH[1]}"
+    return
+  fi
+  if [[ "$expr" =~ ^!(.+)$ ]]; then
+    value="$(sley_eval_source_expr "$file" "$env_json" "${BASH_REMATCH[1]}")" || return 1
+    [[ "$value" == "true" || "$value" == "false" ]] || return 1
+    eval_runtime_bool_not_value_task "$value"
+    return
+  fi
   if [[ -n "$call_prefix" && "$expr" == "$call_prefix"* ]]; then
     tail="${expr#"$call_prefix"}"
     if [[ "$tail" =~ ^([A-Za-z_][A-Za-z0-9_.]*)\((.*)\)$ ]]; then
@@ -926,6 +936,15 @@ sley_eval_source_expr() {
     printf '%s\n' "$env_json" | jq -er --arg name "${BASH_REMATCH[1]}" '
       if type == "object" and has($name) and (.[$name] | type) == "array" then .[$name] | length else empty end
     '
+    return
+  fi
+  if [[ "$expr" =~ ^len\(\[([^\]]*)\]\)$ ]]; then
+    value="$(printf '[%s]\n' "${BASH_REMATCH[1]}" | jq -er 'if type == "array" then length else empty end')" || return 1
+    if [[ "$file" == "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" ]]; then
+      printf '%s\n' "$value"
+    else
+      eval_runtime_list_len_value_task "$value"
+    fi
     return
   fi
   if [[ "$expr" =~ ^([A-Za-z_][A-Za-z0-9_]*)[.]text\(\"([^\"]+)\"\)$ ]]; then
@@ -954,12 +973,6 @@ sley_eval_source_expr() {
   fi
   if [[ "$expr" =~ ^-?[0-9]+$ || "$expr" == "true" || "$expr" == "false" ]]; then
     printf '%s\n' "$expr"
-    return 0
-  fi
-  if [[ "$expr" =~ ^!([A-Za-z_][A-Za-z0-9_]*)$ ]]; then
-    value="$(sley_eval_env_lookup "$env_json" "${BASH_REMATCH[1]}")" || return 1
-    [[ "$value" == "true" || "$value" == "false" ]] || return 1
-    if [[ "$value" == "true" ]]; then printf 'false\n'; else printf 'true\n'; fi
     return 0
   fi
   if [[ "$expr" =~ ^(.+)[[:space:]]\+[[:space:]](.+)$ ]]; then
