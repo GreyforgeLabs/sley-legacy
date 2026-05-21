@@ -451,6 +451,10 @@ if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_statem
   fail "parser statement dispatch plan markers are missing"
 fi
 
+if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_statement_kind_plan_task_execution")) and (.bootstrap_owned_by_sley | index("parser_ast_statement_kind_plan_execution"))'; then
+  fail "parser statement kind plan markers are missing"
+fi
+
 if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_statement_source_dispatch_plan_task_execution")) and (.bootstrap_owned_by_sley | index("parser_ast_statement_source_dispatch_plan_execution"))'; then
   fail "parser statement source dispatch plan markers are missing"
 fi
@@ -647,6 +651,33 @@ if ! awk '
   END {exit (plan && candidate) ? 0 : 1}
 ' bin/sley; then
   fail "print_statement must iterate Sley-owned parser statement dispatch candidates"
+fi
+
+if ! awk '
+  /raw_statement_dispatch_count=split\(statement_dispatch_plan/ {in_parse=1}
+  in_parse && /statement_dispatch_match_kind\[statement_dispatch_count\]=statement_dispatch_parts\[3\]/ {match_kind=1}
+  in_parse && /raw_statement_source_dispatch_count=split/ {exit}
+  END {exit match_kind ? 0 : 1}
+' bin/sley; then
+  fail "parser statement dispatch must parse Sley-owned statement kind matches"
+fi
+
+if ! awk '
+  /function statement_candidate_print\(candidate_id, i, j, id, parts, expected_kind/ {in_fn=1}
+  in_fn && /parts\[1\] != expected_kind/ {expected=1}
+  in_fn && /^[ \t]*}/ {exit}
+  END {exit expected ? 0 : 1}
+' bin/sley; then
+  fail "parser statement rendering must be guarded by Sley-owned statement kind matches"
+fi
+
+if awk '
+  /function statement_candidate_print\(candidate_id, i, j, id, parts/ {in_fn=1}
+  in_fn && /&& parts\[1\]==/ {hard_ladder=1}
+  in_fn && /^[ \t]*}/ {exit}
+  END {exit hard_ladder ? 0 : 1}
+' bin/sley; then
+  fail "parser statement dispatch must not keep host hard-coded statement kind match guards"
 fi
 
 if grep -Fq 'else if(parts[1]==expr_statement_kind)' bin/sley; then
