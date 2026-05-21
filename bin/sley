@@ -1525,6 +1525,16 @@ eval_parser_declaration_feature_classifiers_json() {
   done | jq -s 'from_entries'
 }
 
+eval_parser_binary_operator_names_json() {
+  local parser_file="$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley"
+  local operator name
+  for operator in '||' '&&' '==' '!=' '<' '<=' '>' '>=' '+' '*'; do
+    name="$(sley_eval_source_task "$parser_file" binary_operator_name "$(jq -cn --arg operator "$operator" '{operator:$operator}')")" || return 1
+    [[ -n "$name" ]] || return 1
+    jq -cn --arg key "$operator" --arg value "$name" '{key:$key,value:$value}'
+  done | jq -s 'from_entries'
+}
+
 eval_parser_statement_feature_classifiers_json() {
   local parser_file="$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley"
   local key is_return is_call_expression is_binding is_set is_for is_while is_if is_forge kind env_json
@@ -5608,6 +5618,7 @@ PARSER_FEATURE_CLASSIFIERS_JSON="$(eval_parser_expression_feature_classifiers_js
 PARSER_OPERATOR_FEATURE_CLASSIFIERS_JSON="$(eval_parser_operator_feature_classifiers_json)"
 PARSER_SURFACE_CLASSIFIERS_JSON="$(eval_parser_expression_surface_classifiers_json)"
 PARSER_DECLARATION_FEATURE_CLASSIFIERS_JSON="$(eval_parser_declaration_feature_classifiers_json)"
+PARSER_BINARY_OPERATOR_NAMES_JSON="$(eval_parser_binary_operator_names_json)"
 PARSER_FEATURE_INT_KIND="$(printf '%s\n' "$PARSER_FEATURE_CLASSIFIERS_JSON" | jq -er '.int')"
 PARSER_FEATURE_STRING_KIND="$(printf '%s\n' "$PARSER_FEATURE_CLASSIFIERS_JSON" | jq -er '.string')"
 PARSER_FEATURE_TRUE_KIND="$(printf '%s\n' "$PARSER_FEATURE_CLASSIFIERS_JSON" | jq -er '.true')"
@@ -5624,6 +5635,16 @@ PARSER_FEATURE_IMPORT_DECLARATION_KIND="$(printf '%s\n' "$PARSER_DECLARATION_FEA
 PARSER_FEATURE_TYPE_DECLARATION_KIND="$(printf '%s\n' "$PARSER_DECLARATION_FEATURE_CLASSIFIERS_JSON" | jq -er '.type')"
 PARSER_FEATURE_EFFECT_DECLARATION_KIND="$(printf '%s\n' "$PARSER_DECLARATION_FEATURE_CLASSIFIERS_JSON" | jq -er '.effect')"
 PARSER_FEATURE_TASK_DECLARATION_KIND="$(printf '%s\n' "$PARSER_DECLARATION_FEATURE_CLASSIFIERS_JSON" | jq -er '.task')"
+PARSER_OP_OR="$(printf '%s\n' "$PARSER_BINARY_OPERATOR_NAMES_JSON" | jq -er '."||"')"
+PARSER_OP_AND="$(printf '%s\n' "$PARSER_BINARY_OPERATOR_NAMES_JSON" | jq -er '."&&"')"
+PARSER_OP_EQUAL="$(printf '%s\n' "$PARSER_BINARY_OPERATOR_NAMES_JSON" | jq -er '."=="')"
+PARSER_OP_NOT_EQUAL="$(printf '%s\n' "$PARSER_BINARY_OPERATOR_NAMES_JSON" | jq -er '."!="')"
+PARSER_OP_LESS="$(printf '%s\n' "$PARSER_BINARY_OPERATOR_NAMES_JSON" | jq -er '."<"')"
+PARSER_OP_LESS_EQUAL="$(printf '%s\n' "$PARSER_BINARY_OPERATOR_NAMES_JSON" | jq -er '."<="')"
+PARSER_OP_GREATER="$(printf '%s\n' "$PARSER_BINARY_OPERATOR_NAMES_JSON" | jq -er '.">"')"
+PARSER_OP_GREATER_EQUAL="$(printf '%s\n' "$PARSER_BINARY_OPERATOR_NAMES_JSON" | jq -er '.">="')"
+PARSER_OP_ADD="$(printf '%s\n' "$PARSER_BINARY_OPERATOR_NAMES_JSON" | jq -er '."+"')"
+PARSER_OP_MULTIPLY="$(printf '%s\n' "$PARSER_BINARY_OPERATOR_NAMES_JSON" | jq -er '."*"')"
 PARSER_TRUE_KIND="$(printf '%s\n' "$PARSER_CLASSIFIERS_JSON" | jq -er '."true"')"
 PARSER_FALSE_KIND="$(printf '%s\n' "$PARSER_CLASSIFIERS_JSON" | jq -er '."false"')"
 PARSER_EMPTY_LIST_KIND="$(printf '%s\n' "$PARSER_CLASSIFIERS_JSON" | jq -er '."[]"')"
@@ -6122,6 +6143,16 @@ ast_json() {
     -v type_declaration_kind="$PARSER_FEATURE_TYPE_DECLARATION_KIND" \
     -v effect_declaration_kind="$PARSER_FEATURE_EFFECT_DECLARATION_KIND" \
     -v task_declaration_kind="$PARSER_FEATURE_TASK_DECLARATION_KIND" \
+    -v op_or="$PARSER_OP_OR" \
+    -v op_and="$PARSER_OP_AND" \
+    -v op_equal="$PARSER_OP_EQUAL" \
+    -v op_not_equal="$PARSER_OP_NOT_EQUAL" \
+    -v op_less="$PARSER_OP_LESS" \
+    -v op_less_equal="$PARSER_OP_LESS_EQUAL" \
+    -v op_greater="$PARSER_OP_GREATER" \
+    -v op_greater_equal="$PARSER_OP_GREATER_EQUAL" \
+    -v op_add="$PARSER_OP_ADD" \
+    -v op_multiply="$PARSER_OP_MULTIPLY" \
     -v raw_kind="$PARSER_RAW_KIND" \
     -v true_kind="$PARSER_FEATURE_TRUE_KIND" \
     -v false_kind="$PARSER_FEATURE_FALSE_KIND" \
@@ -6133,6 +6164,8 @@ ast_json() {
     -v take_id_template="$PARSER_TAKE_ID_TEMPLATE" \
     -v statement_id_template="$PARSER_STATEMENT_ID_TEMPLATE" \
     -v expression_id_template="$PARSER_EXPRESSION_ID_TEMPLATE" \
+    -v expression_side_surface_id_template="$PARSER_EXPRESSION_SIDE_SURFACE_ID_TEMPLATE" \
+    -v call_argument_surface_id_template="$PARSER_CALL_ARGUMENT_SURFACE_ID_TEMPLATE" \
     -v collection_expression_id_template="$PARSER_COLLECTION_EXPRESSION_ID_TEMPLATE" \
     -v condition_expression_id_template="$PARSER_CONDITION_EXPRESSION_ID_TEMPLATE" \
     -v for_item_name_template="$PARSER_FOR_ITEM_NAME_TEMPLATE" \
@@ -6180,6 +6213,8 @@ ast_json() {
     function instantiate_take_id(mod_name, task_label, take_label, id){id=take_id_template; id=replace_all(id, "{{module}}", mod_name); id=replace_all(id, "{{task}}", task_label); id=replace_all(id, "{{take}}", take_label); return id}
     function instantiate_statement_id(mod_name, task_label, stmt_index, id){id=statement_id_template; id=replace_all(id, "{{module}}", mod_name); id=replace_all(id, "{{task}}", task_label); id=replace_all(id, "{{index}}", stmt_index); return id}
     function instantiate_expression_id(stmt_id, id){id=expression_id_template; id=replace_all(id, "{{statement}}", stmt_id); return id}
+    function instantiate_expression_side_id(expr_id, side_name, id){id=expression_side_surface_id_template; id=replace_all(id, "{{expression}}", expr_id); id=replace_all(id, "{{side}}", side_name); return id}
+    function instantiate_call_argument_id(expr_id, arg_index, id){id=call_argument_surface_id_template; id=replace_all(id, "{{expression}}", expr_id); id=replace_all(id, "{{index}}", arg_index); return id}
     function instantiate_collection_expression_id(stmt_id, id){id=collection_expression_id_template; id=replace_all(id, "{{statement}}", stmt_id); return id}
     function instantiate_condition_expression_id(stmt_id, id){id=condition_expression_id_template; id=replace_all(id, "{{statement}}", stmt_id); return id}
     function instantiate_for_item_name(item_name, value){value=for_item_name_template; value=replace_all(value, "{{item}}", item_name); return value}
@@ -6198,6 +6233,22 @@ ast_json() {
       if(index(expr, "*") > 0) return "*"
       return ""
     }
+    function binary_operator_name(op) {
+      if(op=="||") return op_or
+      if(op=="&&") return op_and
+      if(op=="==") return op_equal
+      if(op=="!=") return op_not_equal
+      if(op=="<") return op_less
+      if(op=="<=") return op_less_equal
+      if(op==">") return op_greater
+      if(op==">=") return op_greater_equal
+      if(op=="+") return op_add
+      if(op=="*") return op_multiply
+      return raw_kind
+    }
+    function binary_operator_pos(expr, op){return index(expr, op)}
+    function binary_left_source(expr, op, pos){pos=binary_operator_pos(expr, op); if(pos < 1)return ""; return trim(substr(expr, 1, pos - 1))}
+    function binary_right_source(expr, op, pos){pos=binary_operator_pos(expr, op); if(pos < 1)return ""; return trim(substr(expr, pos + length(op)))}
     function is_call_expression(expr){return substr(expr, 1, length(call_expression_prefix)) == call_expression_prefix}
     function is_field_access_expression(expr){return expr ~ /^[A-Za-z_][A-Za-z0-9_]*([.][A-Za-z_][A-Za-z0-9_]*)+$/}
     function is_index_access_expression(expr){return expr ~ /^[A-Za-z_][A-Za-z0-9_.]*\[[^]]+\]$/}
@@ -6215,6 +6266,19 @@ ast_json() {
       if(open_pos < 1 || close_pos <= open_pos){return ""}
       return trim(substr(source, open_pos + 1, close_pos - open_pos - 1))
     }
+    function call_expression_args_json(expr, id, line, col, source, args, count, i, out, arg_source){
+      source=call_expression_args_source(expr)
+      if(source=="") return "[]"
+      count=split(source, args, ",")
+      out="["
+      for(i=1;i<=count;i++){
+        arg_source=trim(args[i])
+        if(i>1) out=out ","
+        out=out expr_json(arg_source, instantiate_call_argument_id(id, i-1), line, col)
+      }
+      out=out "]"
+      return out
+    }
     function field_access_field(expr, parts, count){count=split(expr, parts, "."); return parts[count]}
     function field_access_target(expr, field, target){field=field_access_field(expr); target=expr; sub("[.]" field "$", "", target); return target}
     function index_access_target(expr, open_pos){open_pos=index(expr, "["); return trim(substr(expr, 1, open_pos - 1))}
@@ -6225,7 +6289,7 @@ ast_json() {
       if(open_pos < 1 || close_pos <= open_pos){return ""}
       return trim(substr(expr, open_pos + 1, close_pos - open_pos - 1))
     }
-    function expr_json(expr, id, line, col, value){
+    function expr_json(expr, id, line, col, value, left_source, right_source, op_name, callee_source){
       expr=trim(expr)
       if(expr ~ int_pattern){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" int_kind "\",\"value\":" expr ",\"span\":" span_json(line,col) "}"}
       if(expr ~ /^"[^"]*"$/){value=expr; sub(/^"/,"",value); sub(/"$/,"",value); return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" string_kind "\",\"value\":\"" esc(value) "\",\"span\":" span_json(line,col) "}"}
@@ -6233,10 +6297,10 @@ ast_json() {
       if(expr=="false"){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" false_kind "\",\"value\":false,\"span\":" span_json(line,col) "}"}
       if(expr=="[]"){return "{\"id\":\"" id "\",\"source\":\"[]\",\"expr_kind\":\"" list_kind "\",\"items\":[],\"span\":" span_json(line,col) "}"}
       if(expr ~ identifier_pattern){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" identifier_kind "\",\"name\":\"" esc(expr) "\",\"span\":" span_json(line,col) "}"}
-      if(is_call_expression(expr)){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" call_kind "\",\"callee\":\"" esc(call_expression_target(expr)) "\",\"arguments_source\":\"" esc(call_expression_args_source(expr)) "\",\"fallible\":" (expr ~ /\?$/ ? "true" : "false") ",\"span\":" span_json(line,col) "}"}
-      if((value=binary_operator(expr)) != ""){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" binary_kind "\",\"operator\":\"" esc(value) "\",\"fallible\":" (expr ~ /\?$/ ? "true" : "false") ",\"span\":" span_json(line,col) "}"}
-      if(is_field_access_expression(expr)){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" field_access_kind "\",\"target\":\"" esc(field_access_target(expr)) "\",\"field\":\"" esc(field_access_field(expr)) "\",\"fallible\":" (expr ~ /\?$/ ? "true" : "false") ",\"span\":" span_json(line,col) "}"}
-      if(is_index_access_expression(expr)){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" index_access_kind "\",\"target\":\"" esc(index_access_target(expr)) "\",\"index_source\":\"" esc(index_access_source(expr)) "\",\"fallible\":" (expr ~ /\?$/ ? "true" : "false") ",\"span\":" span_json(line,col) "}"}
+      if(is_call_expression(expr)){callee_source=call_expression_target(expr); return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" call_kind "\",\"callee\":" expr_json(callee_source, instantiate_expression_side_id(id, "callee"), line, col + length(call_expression_prefix)) ",\"args\":" call_expression_args_json(expr, id, line, col) ",\"span\":" span_json(line,col) "}"}
+      if((value=binary_operator(expr)) != ""){left_source=binary_left_source(expr, value); right_source=binary_right_source(expr, value); op_name=binary_operator_name(value); return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" binary_kind "\",\"op\":\"" esc(op_name) "\",\"left\":" expr_json(left_source, instantiate_expression_side_id(id, "left"), line, col) ",\"right\":" expr_json(right_source, instantiate_expression_side_id(id, "right"), line, col + binary_operator_pos(expr, value) + length(value)) ",\"span\":" span_json(line,col) "}"}
+      if(is_field_access_expression(expr)){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" field_access_kind "\",\"receiver\":" expr_json(field_access_target(expr), instantiate_expression_side_id(id, "receiver"), line, col) ",\"field\":\"" esc(field_access_field(expr)) "\",\"span\":" span_json(line,col) "}"}
+      if(is_index_access_expression(expr)){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" index_access_kind "\",\"collection\":" expr_json(index_access_target(expr), instantiate_expression_side_id(id, "collection"), line, col) ",\"index\":" expr_json(index_access_source(expr), instantiate_expression_side_id(id, "index"), line, col + length(index_access_target(expr)) + 2) ",\"span\":" span_json(line,col) "}"}
       return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" fallback_kind "\",\"fallible\":" (expr ~ /\?$/ ? "true" : "false") ",\"span\":" span_json(line,col) "}"
     }
     function binding_kind(k){return k=="state" ? state_feature_binding_kind : (k=="tally" ? tally_feature_binding_kind : bind_feature_binding_kind)}
