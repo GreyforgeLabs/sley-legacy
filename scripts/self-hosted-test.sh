@@ -99,6 +99,9 @@ printf '%s\n' \
   '  bind text = "hello"' \
   '  bind flag = true' \
   '  bind names = []' \
+  '  call noop(count)' \
+  '  bind first = names[0]' \
+  '  bind title = profile.name' \
   '' \
   '  return text' \
   '}' > "$parser_feature_source"
@@ -408,6 +411,10 @@ if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_operat
   fail "parser binary-expression source classifier markers are missing"
 fi
 
+if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_expression_surface_feature_classifier_task_execution")) and (.bootstrap_owned_by_sley | index("parser_ast_call_expression_dispatch_execution")) and (.bootstrap_owned_by_sley | index("parser_ast_member_index_expression_dispatch_execution"))'; then
+  fail "parser call/member/index source classifier markers are missing"
+fi
+
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_statement_feature_classifier_task_execution"))'
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_ast_statement_feature_dispatch_execution"))'
@@ -459,6 +466,16 @@ if ! awk '
 fi
 
 if ! awk '
+  /^eval_parser_expression_surface_classifiers_json\(\)[ \t]*\{/ {in_fn=1}
+  in_fn && /sley_eval_source_task/ {source_eval=1}
+  in_fn && /extract_sley_task_body/ {body_walk=1}
+  in_fn && /^[ \t]*}/ {exit}
+  END {exit (source_eval && !body_walk) ? 0 : 1}
+' bin/sley; then
+  fail "eval_parser_expression_surface_classifiers_json must execute classify_expression_surface_features through the shared Sley source task evaluator"
+fi
+
+if ! awk '
   /^eval_parser_statement_feature_classifiers_json\(\)[ \t]*\{/ {in_fn=1}
   in_fn && /sley_eval_source_task/ {source_eval=1}
   in_fn && /extract_sley_task_body/ {body_walk=1}
@@ -479,7 +496,10 @@ if ! awk '
 fi
 
 bin/sley ast --json "$parser_feature_source" \
-  | json_field '[.tasks[].body.statements[]?.expr.expr_kind] as $k | ($k | index("IntLiteral")) and ($k | index("StringLiteral")) and ($k | index("BoolLiteral")) and ($k | index("ListLiteral")) and ($k | index("Identifier"))'
+  | json_field '[.tasks[].body.statements[]?.expr.expr_kind] as $k | ($k | index("IntLiteral")) and ($k | index("StringLiteral")) and ($k | index("BoolLiteral")) and ($k | index("ListLiteral")) and ($k | index("Identifier")) and ($k | index("Call")) and ($k | index("IndexAccess")) and ($k | index("FieldAccess"))'
+
+bin/sley ast --json "$parser_feature_source" \
+  | json_field '(.tasks[0].body.statements[] | select(.expr.expr_kind == "Call" and .expr.callee == "noop" and .expr.arguments_source == "count")) and (.tasks[0].body.statements[] | select(.expr.expr_kind == "IndexAccess" and .expr.target == "names" and .expr.index_source == "0")) and (.tasks[0].body.statements[] | select(.expr.expr_kind == "FieldAccess" and .expr.target == "profile" and .expr.field == "name"))'
 
 bin/sley ast --json examples/constant_arithmetic_expression.sley \
   | json_field '.tasks[0].body.statements[0].expr.expr_kind == "Binary" and .tasks[0].body.statements[0].expr.operator == "+"'

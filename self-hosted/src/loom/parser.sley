@@ -81,6 +81,23 @@ export task classify_expression_operator_features -> Text {
   return call raw_expr_kind()
 }
 
+export task classify_expression_surface_features -> Text {
+  take has_call_prefix: Bool
+  take has_field_access: Bool
+  take has_index_access: Bool
+
+  if has_call_prefix {
+    return call call_expression_kind()
+  }
+  if has_field_access {
+    return call field_access_expression_kind()
+  }
+  if has_index_access {
+    return call index_access_expression_kind()
+  }
+  return call raw_expr_kind()
+}
+
 export task int_literal_pattern -> Text {
   return "^-?[0-9]+$"
 }
@@ -115,6 +132,18 @@ export task raw_expr_kind -> Text {
 
 export task binary_expression_kind -> Text {
   return "Binary"
+}
+
+export task call_expression_kind -> Text {
+  return "Call"
+}
+
+export task field_access_expression_kind -> Text {
+  return "FieldAccess"
+}
+
+export task index_access_expression_kind -> Text {
+  return "IndexAccess"
 }
 
 export task call_expression_prefix -> Text {
