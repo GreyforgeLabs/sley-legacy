@@ -346,6 +346,8 @@ export task owned_bootstrap_values -> List<Text> {
     "generic_top_level_multiply_runtime_execution",
     "bound_arithmetic_runtime_execution",
     "int_comparison_runtime_task_execution",
+    "runtime_int_comparison_operator_plan_task_execution",
+    "runtime_int_comparison_operator_dispatch_execution",
     "int_equal_runtime_task_execution",
     "int_greater_equal_runtime_task_execution",
     "constant_comparison_runtime_execution",

@@ -1002,7 +1002,7 @@ sley_eval_source_comparison_value() {
       elif [[ "$left" == "true" || "$left" == "false" || "$right" == "true" || "$right" == "false" ]]; then
         eval_runtime_bool_equal_value_task "$left" "$right"
       elif [[ "$left" =~ ^-?[0-9]+$ && "$right" =~ ^-?[0-9]+$ ]]; then
-        eval_runtime_int_equal_value_task "$left" "$right"
+        eval_runtime_int_comparison_operator_value_task "$op" "$left" "$right"
       else
         eval_runtime_text_equal_value_task "$left" "$right"
       fi
@@ -1014,8 +1014,7 @@ sley_eval_source_comparison_value() {
         value="$(eval_runtime_bool_equal_value_task "$left" "$right")" || return 1
         eval_runtime_bool_not_value_task "$value"
       elif [[ "$left" =~ ^-?[0-9]+$ && "$right" =~ ^-?[0-9]+$ ]]; then
-        value="$(eval_runtime_int_equal_value_task "$left" "$right")" || return 1
-        eval_runtime_bool_not_value_task "$value"
+        eval_runtime_int_comparison_operator_value_task "$op" "$left" "$right"
       else
         value="$(eval_runtime_text_equal_value_task "$left" "$right")" || return 1
         eval_runtime_bool_not_value_task "$value"
@@ -1026,7 +1025,7 @@ sley_eval_source_comparison_value() {
       if [[ "$file" == "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" ]]; then
         if [[ "$left" -gt "$right" ]]; then printf 'true\n'; else printf 'false\n'; fi
       else
-        eval_runtime_int_less_than_value_task "$right" "$left"
+        eval_runtime_int_comparison_operator_value_task "$op" "$left" "$right"
       fi
       ;;
     "<")
@@ -1034,7 +1033,7 @@ sley_eval_source_comparison_value() {
       if [[ "$file" == "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" ]]; then
         if [[ "$left" -lt "$right" ]]; then printf 'true\n'; else printf 'false\n'; fi
       else
-        eval_runtime_int_less_than_value_task "$left" "$right"
+        eval_runtime_int_comparison_operator_value_task "$op" "$left" "$right"
       fi
       ;;
     ">=")
@@ -1042,7 +1041,7 @@ sley_eval_source_comparison_value() {
       if [[ "$file" == "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" ]]; then
         if [[ "$left" -ge "$right" ]]; then printf 'true\n'; else printf 'false\n'; fi
       else
-        eval_runtime_int_greater_equal_value_task "$left" "$right"
+        eval_runtime_int_comparison_operator_value_task "$op" "$left" "$right"
       fi
       ;;
     "<=")
@@ -1050,7 +1049,7 @@ sley_eval_source_comparison_value() {
       if [[ "$file" == "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" ]]; then
         if [[ "$left" -le "$right" ]]; then printf 'true\n'; else printf 'false\n'; fi
       else
-        eval_runtime_int_greater_equal_value_task "$right" "$left"
+        eval_runtime_int_comparison_operator_value_task "$op" "$left" "$right"
       fi
       ;;
     *) return 1 ;;
@@ -1915,6 +1914,38 @@ eval_runtime_int_binary_operator_value_task() {
   local op="$1" left="$2" right="$3" task_name
   task_name="$(runtime_int_binary_task_name "$op")" || return 1
   eval_runtime_int_binary_value_task "$task_name" "$op" "$left" "$right"
+}
+
+runtime_int_comparison_descriptor_json() {
+  local op="$1"
+  printf '%s\n' "$RUNTIME_INT_COMPARISON_OPERATOR_PLAN_JSON" | jq -cer --arg op "$op" '.[] | select(.op == $op)'
+}
+
+eval_runtime_int_comparison_operator_value_task() {
+  local op="$1" left="$2" right="$3"
+  local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
+  local descriptor task_name order negate cmp_left cmp_right env_json value
+  [[ "$left" =~ ^-?[0-9]+$ && "$right" =~ ^-?[0-9]+$ ]] || return 1
+  descriptor="$(runtime_int_comparison_descriptor_json "$op")" || return 1
+  task_name="$(printf '%s\n' "$descriptor" | jq -er '.task')" || return 1
+  order="$(printf '%s\n' "$descriptor" | jq -er '.order')" || return 1
+  negate="$(printf '%s\n' "$descriptor" | jq -er '.negate')" || return 1
+  if [[ "$order" == "reverse" ]]; then
+    cmp_left="$right"
+    cmp_right="$left"
+  else
+    [[ "$order" == "direct" ]] || return 1
+    cmp_left="$left"
+    cmp_right="$right"
+  fi
+  env_json="$(jq -cn --argjson left "$cmp_left" --argjson right "$cmp_right" '{left:$left, right:$right}')"
+  value="$(sley_eval_source_task "$runtime_file" "$task_name" "$env_json")" || return 1
+  if [[ "$negate" == "true" ]]; then
+    eval_runtime_bool_not_value_task "$value"
+  else
+    [[ "$negate" == "false" ]] || return 1
+    printf '%s\n' "$value"
+  fi
 }
 
 eval_runtime_int_less_than_value_task() {
@@ -5669,6 +5700,7 @@ RUNTIME_SKIPPED_STATUS="$(sley_source_task loom.runtime skipped_status)"
 RUNTIME_DISPATCH_ORDER_JSON="$(sley_source_list_task_json loom.runtime runtime_dispatch_order)"
 RUNTIME_DISPATCH_PLAN_JSON="$(sley_source_list_task_json loom.runtime runtime_dispatch_plan | jq 'map(split("|") | {evaluator_id:(.[0] | tonumber), candidate:.[1], evaluator_function:.[2]})')"
 RUNTIME_INT_BINARY_OPERATOR_PLAN_JSON="$(sley_source_list_task_json loom.runtime int_binary_operator_plan | jq 'map(split("|") | {op:.[0], task:.[1]})')"
+RUNTIME_INT_COMPARISON_OPERATOR_PLAN_JSON="$(sley_source_list_task_json loom.runtime int_comparison_operator_plan | jq 'map(split("|") | {op:.[0], task:.[1], order:.[2], negate:.[3]})')"
 RUNTIME_CAPABILITY_REQUIRED_ID="$(sley_source_task loom.runtime capability_required_diagnostic_id)"
 RUNTIME_CAPABILITY_SCOPE_DENIED_ID="$(sley_source_task loom.runtime capability_scope_denied_diagnostic_id)"
 RUNTIME_TAKE_REQUIRED_ID="$(sley_source_task loom.runtime main_take_required_diagnostic_id)"
