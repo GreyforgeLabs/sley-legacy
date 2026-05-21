@@ -6337,6 +6337,7 @@ ast_json() {
         declaration_dispatch_count++
         declaration_dispatch_id[declaration_dispatch_count]=declaration_dispatch_parts[1]+0
         declaration_dispatch_name[declaration_dispatch_count]=declaration_dispatch_parts[2]
+        declaration_dispatch_pattern[declaration_dispatch_count]=declaration_dispatch_parts[3]
       }
       raw_statement_dispatch_count=split(statement_dispatch_plan, statement_dispatch_rows, "\n")
       statement_dispatch_count=0
@@ -6831,17 +6832,13 @@ ast_json() {
 	        if(statement_candidate_print(statement_dispatch_id[dispatch_index], i, j, id, parts)){return}
 	      }
 	    }
-	    function declaration_candidate_matches(candidate_id, line){
-	      if(candidate_id==0){return line ~ /^module[ \t]+/}
-	      if(candidate_id==1){return line ~ /^import[ \t]+/}
-	      if(candidate_id==2){return line ~ /^(export[ \t]+)?type[ \t]+/}
-	      if(candidate_id==3){return line ~ /^(export[ \t]+)?effect[ \t]+/}
-	      if(candidate_id==4){return line ~ /^(export[ \t]+)?task[ \t]+/}
-	      return 0
+	    function declaration_candidate_matches(candidate_id, line, pattern){
+	      if(pattern==""){return 0}
+	      return line ~ pattern
 	    }
 	    function declaration_candidate_id(line, dispatch_index){
 	      for(dispatch_index=1; dispatch_index<=declaration_dispatch_count; dispatch_index++){
-	        if(declaration_candidate_matches(declaration_dispatch_id[dispatch_index], line)){return declaration_dispatch_id[dispatch_index]}
+	        if(declaration_candidate_matches(declaration_dispatch_id[dispatch_index], line, declaration_dispatch_pattern[dispatch_index])){return declaration_dispatch_id[dispatch_index]}
 	      }
 	      return -1
 	    }

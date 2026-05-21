@@ -316,11 +316,11 @@ export task classify_declaration_features -> Text {
 
 export task declaration_dispatch_plan -> List<Text> {
   return [
-    "0|module_declaration",
-    "1|import_declaration",
-    "2|type_declaration",
-    "3|effect_declaration",
-    "4|task_declaration"
+    "0|module_declaration|^module[[:space:]]+",
+    "1|import_declaration|^import[[:space:]]+",
+    "2|type_declaration|^(export[[:space:]]+)?type[[:space:]]+",
+    "3|effect_declaration|^(export[[:space:]]+)?effect[[:space:]]+",
+    "4|task_declaration|^(export[[:space:]]+)?task[[:space:]]+"
   ]
 }
 

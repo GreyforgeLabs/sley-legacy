@@ -435,6 +435,10 @@ if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_declar
   fail "parser declaration dispatch plan markers are missing"
 fi
 
+if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_declaration_source_pattern_plan_task_execution")) and (.bootstrap_owned_by_sley | index("parser_ast_declaration_source_pattern_execution"))'; then
+  fail "parser declaration source pattern markers are missing"
+fi
+
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_statement_feature_classifier_task_execution"))'
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_ast_statement_feature_dispatch_execution"))'
@@ -554,6 +558,33 @@ if ! awk '
   END {exit (plan && candidate) ? 0 : 1}
 ' bin/sley; then
   fail "parser declarations must iterate Sley-owned declaration dispatch candidates"
+fi
+
+if ! awk '
+  /raw_declaration_dispatch_count=split\(declaration_dispatch_plan/ {in_parse=1}
+  in_parse && /declaration_dispatch_pattern\[declaration_dispatch_count\]=declaration_dispatch_parts\[3\]/ {pattern=1}
+  in_parse && /raw_statement_dispatch_count=split/ {exit}
+  END {exit pattern ? 0 : 1}
+' bin/sley; then
+  fail "parser declaration dispatch must parse Sley-owned declaration source patterns"
+fi
+
+if ! awk '
+  /function declaration_candidate_matches\(candidate_id, line, pattern/ {in_fn=1}
+  in_fn && /line ~ pattern/ {pattern=1}
+  in_fn && /^[ \t]*}/ {exit}
+  END {exit pattern ? 0 : 1}
+' bin/sley; then
+  fail "parser declaration matching must evaluate Sley-owned declaration source patterns"
+fi
+
+if awk '
+  /function declaration_candidate_matches\(candidate_id, line/ {in_fn=1}
+  in_fn && /candidate_id==[0-9]/ {hard_ladder=1}
+  in_fn && /^[ \t]*}/ {exit}
+  END {exit hard_ladder ? 0 : 1}
+' bin/sley; then
+  fail "parser declaration dispatch must not keep a host hard-coded declaration matcher ladder"
 fi
 
 if awk '
