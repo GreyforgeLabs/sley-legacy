@@ -415,6 +415,10 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_feature_cla
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_ast_expression_feature_dispatch_execution"))'
 
+if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_expression_dispatch_plan_task_execution")) and (.bootstrap_owned_by_sley | index("parser_ast_expression_dispatch_plan_execution"))'; then
+  fail "parser expression dispatch plan markers are missing"
+fi
+
 if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_operator_feature_classifier_task_execution")) and (.bootstrap_owned_by_sley | index("parser_ast_binary_expression_dispatch_execution")) and (.bootstrap_owned_by_sley | index("parser_binary_operator_name_task_execution")) and (.bootstrap_owned_by_sley | index("parser_unary_operator_name_task_execution")) and (.bootstrap_owned_by_sley | index("parser_unary_expression_dispatch_execution")) and (.bootstrap_owned_by_sley | index("parser_ast_schema_expression_dispatch_execution"))'; then
   fail "parser binary-expression source classifier markers are missing"
 fi
@@ -446,6 +450,33 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_ast_conditi
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_nested_body_depth_task_execution"))'
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_ast_nested_body_payload_execution"))'
+
+if ! awk '
+  /^eval_parser_expression_dispatch_plan_text\(\)[ \t]*\{/ {in_fn=1}
+  in_fn && /sley_eval_source_task_list_json "\$parser_file" expression_dispatch_plan/ {source_eval=1}
+  in_fn && /^[ \t]*}/ {exit}
+  END {exit source_eval ? 0 : 1}
+' bin/sley; then
+  fail "eval_parser_expression_dispatch_plan_text must execute expression_dispatch_plan through the shared Sley source list evaluator"
+fi
+
+if ! grep -Fq 'PARSER_EXPRESSION_DISPATCH_PLAN_TEXT="$(eval_parser_expression_dispatch_plan_text)"' bin/sley; then
+  fail "parser expression dispatch plan source task dispatch is missing"
+fi
+
+if ! awk '
+  /function expr_json\(expr, id, line, col/ {in_fn=1}
+  in_fn && /expression_dispatch_count/ {plan=1}
+  in_fn && /expr_candidate_json\(expression_dispatch_id\[dispatch_index\]/ {candidate=1}
+  in_fn && /^[ \t]*}/ {exit}
+  END {exit (plan && candidate) ? 0 : 1}
+' bin/sley; then
+  fail "expr_json must iterate Sley-owned parser expression dispatch candidates"
+fi
+
+if grep -Fq 'if(expr ~ int_pattern){return' bin/sley; then
+  fail "parser expression dispatch must not fall back to a host hard-coded expression ladder"
+fi
 
 if ! awk '
   /^eval_parser_expression_classifiers_json\(\)[ \t]*\{/ {in_fn=1}
