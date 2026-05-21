@@ -87,6 +87,8 @@ export task owned_bootstrap_values -> List<Text> {
     "parser_ast_statement_dispatch_plan_execution",
     "parser_statement_source_dispatch_plan_task_execution",
     "parser_ast_statement_source_dispatch_plan_execution",
+    "parser_statement_source_pattern_plan_task_execution",
+    "parser_ast_statement_source_pattern_execution",
     "parser_take_source_dispatch_plan_task_execution",
     "parser_ast_take_source_dispatch_plan_execution",
     "parser_binding_feature_classifier_task_execution",
