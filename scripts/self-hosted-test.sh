@@ -32,6 +32,7 @@ generic_result_err_source="$(mktemp)"
 generic_each_source="$(mktemp)"
 generic_for_source="$(mktemp)"
 generic_while_source="$(mktemp)"
+qualified_task_call_source="$(mktemp)"
 empty_module_source="$(mktemp)"
 unknown_take_type_source="$(mktemp)"
 add_take_operation="$(mktemp)"
@@ -47,7 +48,7 @@ zjx_tool_report="$(mktemp)"
 runtime_report="$(mktemp)"
 ast_missing_report="$(mktemp)"
 ci_report="$(mktemp)"
-trap 'rm -f "$bool_literal_source" "$parser_feature_source" "$parser_statement_source" "$parser_binding_source" "$parser_for_payload_source" "$parser_condition_source" "$parser_block_body_source" "$generic_source_main_source" "$generic_state_set_source" "$generic_if_assignment_source" "$generic_result_err_source" "$generic_each_source" "$generic_for_source" "$generic_while_source" "$empty_module_source" "$unknown_take_type_source" "$add_take_operation" "$self_hosting_status_report" "$artifact_check_report" "$migrate_report" "$docgen_report" "$workbench_report" "$sandbox_report" "$agent_bench_report" "$zjx_tool_report" "$runtime_report" "$ast_missing_report" "$ci_report"; rm -rf "$artifact_dir"' EXIT
+trap 'rm -f "$bool_literal_source" "$parser_feature_source" "$parser_statement_source" "$parser_binding_source" "$parser_for_payload_source" "$parser_condition_source" "$parser_block_body_source" "$generic_source_main_source" "$generic_state_set_source" "$generic_if_assignment_source" "$generic_result_err_source" "$generic_each_source" "$generic_for_source" "$generic_while_source" "$qualified_task_call_source" "$empty_module_source" "$unknown_take_type_source" "$add_take_operation" "$self_hosting_status_report" "$artifact_check_report" "$migrate_report" "$docgen_report" "$workbench_report" "$sandbox_report" "$agent_bench_report" "$zjx_tool_report" "$runtime_report" "$ast_missing_report" "$ci_report"; rm -rf "$artifact_dir"' EXIT
 printf '%s\n' \
   'module app.bool_literal' \
   '' \
@@ -218,6 +219,12 @@ printf '%s\n' \
   '  bind names = ["Ada", "Lovelace"]' \
   '  return call join(names)' \
   '}' > "$generic_while_source"
+printf '%s\n' \
+  'module app.qualified_policy' \
+  '' \
+  'task main -> Unit {' \
+  '  call external.missing()' \
+  '}' > "$qualified_task_call_source"
 printf '%s\n' \
   'module app.empty' > "$empty_module_source"
 printf '%s\n' \
@@ -1155,6 +1162,8 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_collection
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_call_pass_family_task_execution"))'
 
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_qualified_task_call_policy_task_execution"))'
+
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_type_return_pass_family_task_execution"))'
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_identifier_resolution_pass_task_execution")) and (.bootstrap_owned_by_sley | index("checker_question_result_pass_task_execution"))'
@@ -1165,6 +1174,14 @@ fi
 
 if grep -Eq 'def (return_type_diags|take_type_diags|unknown_effect_diags|gate_take_type_diags|gate_effect_diags|direct_effect_diags|transitive_effect_diags|duplicate_effect_diags|duplicate_type_diags|duplicate_task_diags|duplicate_take_diags|duplicate_map_key_diags|duplicate_record_field_diags|duplicate_record_literal_field_diags|record_field_missing_diags|record_field_unknown_diags|record_field_type_mismatch_diags|record_literal_non_record_type_diags|unknown_record_field_diags|list_element_type_diags|index_diags|map_key_type_diags|map_value_type_diags|unknown_task_diags|call_arity_diags|call_argument_type_diags|type_mismatch_diags|return_type_mismatch_diags|missing_return_diags|task_diags|question_requires_result_diags):' bin/sley; then
   fail "checker descriptor-backed diagnostics must run through Sley-owned pass descriptor engines"
+fi
+
+if grep -Fq 'elif ($callee | contains(".")) then true' bin/sley; then
+  fail "checker qualified-task call policy must come from loom.checker"
+fi
+
+if ! grep -Fq 'CHECKER_ASSUME_QUALIFIED_TASK_CALLS_KNOWN="$(sley_source_task loom.checker assume_qualified_task_calls_known)"' bin/sley; then
+  fail "checker qualified-task call policy source task dispatch is missing"
 fi
 
 if grep -Fq '$diagnostic_pass_order' bin/sley; then
@@ -1245,6 +1262,9 @@ if bin/sley check --json fixtures/corpus/rejected/unknown_task.sley >/tmp/sley-r
   fail "rejected unknown_task.sley passed check"
 fi
 jq -er '.status == "error" and .diagnostics[0].id == "UNKNOWN_TASK" and .diagnostics[0].message == "unknown task `missing`" and .diagnostics[0].repair_hints[0].kind == "declare_or_import_task" and (.diagnostics[0].repair_hints[0].replacement | contains("take arg0: Int")) and (.diagnostics[0].repair_hints[0].replacement | contains("take arg1: Text"))' /tmp/sley-rejected-task-check.json >/dev/null
+
+bin/sley check --json "$qualified_task_call_source" \
+  | json_field '.status == "ok" and (.diagnostics | length) == 0'
 
 if bin/sley check --json fixtures/corpus/rejected/call_arity_mismatch.sley >/tmp/sley-rejected-call-arity-check.json; then
   fail "rejected call_arity_mismatch.sley passed check"

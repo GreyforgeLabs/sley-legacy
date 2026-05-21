@@ -81,6 +81,10 @@ export task diagnostic_pass_descriptors -> List<Text> {
   ]
 }
 
+export task assume_qualified_task_calls_known -> Bool {
+  return true
+}
+
 export task unknown_identifier_id -> Text {
   return "UNKNOWN_IDENTIFIER"
 }
