@@ -1471,14 +1471,16 @@ eval_parser_operator_feature_classifiers_json() {
 
 eval_parser_expression_surface_classifiers_json() {
   local parser_file="$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley"
-  local key has_call_prefix has_bare_call has_field_access has_index_access has_record_literal kind env_json
-  for key in call bare_call field index record fallback; do
+  local key has_try_suffix has_call_prefix has_bare_call has_field_access has_index_access has_record_literal kind env_json
+  for key in try_suffix call bare_call field index record fallback; do
+    has_try_suffix=false
     has_call_prefix=false
     has_bare_call=false
     has_field_access=false
     has_index_access=false
     has_record_literal=false
     case "$key" in
+      try_suffix) has_try_suffix=true ;;
       call) has_call_prefix=true ;;
       bare_call) has_bare_call=true ;;
       field) has_field_access=true ;;
@@ -1488,12 +1490,13 @@ eval_parser_expression_surface_classifiers_json() {
       *) return 1 ;;
     esac
     env_json="$(jq -cn \
+      --argjson has_try_suffix "$has_try_suffix" \
       --argjson has_call_prefix "$has_call_prefix" \
       --argjson has_bare_call "$has_bare_call" \
       --argjson has_field_access "$has_field_access" \
       --argjson has_index_access "$has_index_access" \
       --argjson has_record_literal "$has_record_literal" \
-      '{has_call_prefix:$has_call_prefix,has_bare_call:$has_bare_call,has_field_access:$has_field_access,has_index_access:$has_index_access,has_record_literal:$has_record_literal}')" || return 1
+      '{has_try_suffix:$has_try_suffix,has_call_prefix:$has_call_prefix,has_bare_call:$has_bare_call,has_field_access:$has_field_access,has_index_access:$has_index_access,has_record_literal:$has_record_literal}')" || return 1
     kind="$(sley_eval_source_task "$parser_file" classify_expression_surface_features "$env_json")" || return 1
     [[ -n "$kind" ]] || return 1
     jq -cn --arg key "$key" --arg value "$kind" '{key:$key,value:$value}'
@@ -5638,6 +5641,7 @@ PARSER_FEATURE_BARE_CALL_KIND="$(printf '%s\n' "$PARSER_SURFACE_CLASSIFIERS_JSON
 PARSER_FEATURE_FIELD_ACCESS_KIND="$(printf '%s\n' "$PARSER_SURFACE_CLASSIFIERS_JSON" | jq -er '.field')"
 PARSER_FEATURE_INDEX_ACCESS_KIND="$(printf '%s\n' "$PARSER_SURFACE_CLASSIFIERS_JSON" | jq -er '.index')"
 PARSER_FEATURE_RECORD_LITERAL_KIND="$(printf '%s\n' "$PARSER_SURFACE_CLASSIFIERS_JSON" | jq -er '.record')"
+PARSER_FEATURE_TRY_KIND="$(printf '%s\n' "$PARSER_SURFACE_CLASSIFIERS_JSON" | jq -er '.try_suffix')"
 PARSER_FEATURE_MODULE_DECLARATION_KIND="$(printf '%s\n' "$PARSER_DECLARATION_FEATURE_CLASSIFIERS_JSON" | jq -er '.module')"
 PARSER_FEATURE_IMPORT_DECLARATION_KIND="$(printf '%s\n' "$PARSER_DECLARATION_FEATURE_CLASSIFIERS_JSON" | jq -er '.import')"
 PARSER_FEATURE_TYPE_DECLARATION_KIND="$(printf '%s\n' "$PARSER_DECLARATION_FEATURE_CLASSIFIERS_JSON" | jq -er '.type')"
@@ -6147,6 +6151,7 @@ ast_json() {
     -v field_access_kind="$PARSER_FEATURE_FIELD_ACCESS_KIND" \
     -v index_access_kind="$PARSER_FEATURE_INDEX_ACCESS_KIND" \
     -v record_literal_kind="$PARSER_FEATURE_RECORD_LITERAL_KIND" \
+    -v try_kind="$PARSER_FEATURE_TRY_KIND" \
     -v module_declaration_kind="$PARSER_FEATURE_MODULE_DECLARATION_KIND" \
     -v import_declaration_kind="$PARSER_FEATURE_IMPORT_DECLARATION_KIND" \
     -v type_declaration_kind="$PARSER_FEATURE_TYPE_DECLARATION_KIND" \
@@ -6297,6 +6302,8 @@ ast_json() {
     function is_field_access_expression(expr){return expr ~ /^[A-Za-z_][A-Za-z0-9_]*([.][A-Za-z_][A-Za-z0-9_]*)+$/}
     function is_index_access_expression(expr){return expr ~ /^[A-Za-z_][A-Za-z0-9_.]*\[[^]]+\]$/}
     function is_record_literal_expression(expr){return expr ~ /^[A-Za-z_][A-Za-z0-9_]*[ \t]+[{].*[}]$/}
+    function is_try_expression(expr){return length(expr) > 1 && substr(expr, length(expr), 1) == "?"}
+    function try_inner_source(expr){return trim(substr(expr, 1, length(expr) - 1))}
     function call_expression_source(expr){
       if(is_call_expression(expr)){return substr(expr, length(call_expression_prefix) + 1)}
       return expr
@@ -6417,6 +6424,7 @@ ast_json() {
       if(expr=="false"){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" false_kind "\",\"value\":false,\"span\":" span_json(line,col) "}"}
       if(expr=="[]"){return "{\"id\":\"" id "\",\"source\":\"[]\",\"expr_kind\":\"" list_kind "\",\"items\":[],\"span\":" span_json(line,col) "}"}
       if(expr ~ identifier_pattern){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" identifier_kind "\",\"name\":\"" esc(expr) "\",\"span\":" span_json(line,col) "}"}
+      if(is_try_expression(expr)){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" try_kind "\",\"expr\":" expr_json(try_inner_source(expr), instantiate_expression_side_id(id, "try"), line, col) ",\"span\":" span_json(line,col) "}"}
       if(is_any_call_expression(expr)){callee_source=call_expression_target(expr); return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" call_kind "\",\"callee\":" expr_json(callee_source, instantiate_expression_side_id(id, "callee"), line, col + (is_call_expression(expr) ? length(call_expression_prefix) : 0)) ",\"args\":" call_expression_args_json(expr, id, line, col) ",\"span\":" span_json(line,col) "}"}
       if(is_record_literal_expression(expr)){return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" record_literal_kind "\",\"type_name\":\"" esc(record_literal_type_name(expr)) "\",\"fields\":" record_literal_fields_json(expr, id, line, col) ",\"span\":" span_json(line,col) "}"}
       if((value=binary_operator(expr)) != ""){left_source=binary_left_source(expr, value); right_source=binary_right_source(expr, value); op_name=binary_operator_name(value); return "{\"id\":\"" id "\",\"source\":\"" esc(expr) "\",\"expr_kind\":\"" binary_kind "\",\"op\":\"" esc(op_name) "\",\"left\":" expr_json(left_source, instantiate_expression_side_id(id, "left"), line, col) ",\"right\":" expr_json(right_source, instantiate_expression_side_id(id, "right"), line, col + binary_operator_pos(expr, value) + length(value)) ",\"span\":" span_json(line,col) "}"}
@@ -7537,7 +7545,7 @@ check_json() {
         ($t.return_type.name // $checker_unit_type | base_type_name) as $return_base |
         select($return_base != $checker_result_type) |
         $t.body.statements[]?.expr? |
-        select(.fallible? == true) |
+        select((.fallible? == true) or (.expr_kind? == "Try")) |
         {id:descriptor_diagnostic_id($pass), severity:"error", message:render_arg(descriptor_message_template($pass); ($pass.message_arg // "task_name"); ($t.module + "." + $t.name)), node:.id, span:.span}
       else empty end;
     def effect_authorization_diags($pass):
