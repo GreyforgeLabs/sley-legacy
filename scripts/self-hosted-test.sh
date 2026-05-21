@@ -1814,6 +1814,14 @@ bin/sley run --json examples/constant_arithmetic_expression.sley \
 bin/sley run --json examples/absorbing_arithmetic_expression.sley \
   | json_field '.schema == "sley.run.report.v0" and .value.kind == "Int" and .value.value == 0'
 
+if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_parenthesized_arithmetic_runtime_execution"))'; then
+  fail "generic parenthesized arithmetic runtime marker is missing"
+fi
+
+if ! grep -Fq 'if [[ "$expr" =~ ^\((.*)\)[[:space:]]\*[[:space:]](.+)$ ]]; then' bin/sley; then
+  fail "generic source runtime must evaluate parenthesized multiplication directly"
+fi
+
 bin/sley run --json examples/identity_binary_expression.sley \
   | json_field '.schema == "sley.run.report.v0" and .value.kind == "Int" and .value.value == 41'
 
