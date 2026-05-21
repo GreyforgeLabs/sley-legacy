@@ -65,6 +65,8 @@ export task owned_bootstrap_values -> List<Text> {
     "parser_ast_for_payload_execution",
     "parser_condition_payload_task_execution",
     "parser_ast_condition_payload_execution",
+    "parser_nested_body_depth_task_execution",
+    "parser_ast_nested_body_payload_execution",
     "parser_source_metadata_task_execution",
     "parser_fallback_removal_task_execution",
     "parser_call_prefix_fallback_removal_task_execution",
