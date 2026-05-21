@@ -83,6 +83,7 @@ export task classify_expression_operator_features -> Text {
 
 export task classify_expression_surface_features -> Text {
   take has_try_suffix: Bool
+  take has_if_expression: Bool
   take has_call_prefix: Bool
   take has_bare_call: Bool
   take has_field_access: Bool
@@ -91,6 +92,9 @@ export task classify_expression_surface_features -> Text {
 
   if has_try_suffix {
     return call try_expression_kind()
+  }
+  if has_if_expression {
+    return call if_expression_kind()
   }
   if has_call_prefix {
     return call call_expression_kind()
@@ -164,6 +168,10 @@ export task record_literal_expression_kind -> Text {
 
 export task try_expression_kind -> Text {
   return "Try"
+}
+
+export task if_expression_kind -> Text {
+  return "If"
 }
 
 export task call_expression_prefix -> Text {
