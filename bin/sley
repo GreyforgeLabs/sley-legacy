@@ -5226,6 +5226,8 @@ CHECKER_IDENTIFIER_INPUTS_JSON="$(sley_source_list_task_json loom.checker identi
 CHECKER_BUILTIN_EFFECTS_JSON="$(sley_source_list_task_json loom.checker builtin_effects)"
 CHECKER_EFFECT_ALIASES_JSON="$(sley_source_list_task_json loom.checker effect_authorization_aliases)"
 CHECKER_HOST_EFFECT_NEEDLES_JSON="$(sley_source_list_task_json loom.checker host_effect_needles)"
+CHECKER_ASSUME_QUALIFIED_TASK_CALLS_KNOWN="$(sley_source_task loom.checker assume_qualified_task_calls_known)"
+case "$CHECKER_ASSUME_QUALIFIED_TASK_CALLS_KNOWN" in true|false) ;; *) exit 1 ;; esac
 CHECKER_DECLARE_OR_IMPORT_TASK_HINT_KIND="$(sley_source_task loom.checker declare_or_import_task_hint_kind)"
 CHECKER_INSPECT_RETURN_TYPE_HINT_KIND="$(sley_source_task loom.checker inspect_return_type_hint_kind)"
 CHECKER_INSERT_RETURN_HINT_KIND="$(sley_source_task loom.checker insert_return_hint_kind)"
@@ -6373,6 +6375,7 @@ check_json() {
     --argjson effect_aliases "$CHECKER_EFFECT_ALIASES_JSON" \
     --argjson host_effect_needles "$CHECKER_HOST_EFFECT_NEEDLES_JSON" \
     --argjson identifier_inputs "$CHECKER_IDENTIFIER_INPUTS_JSON" \
+    --argjson assume_qualified_task_calls_known "$CHECKER_ASSUME_QUALIFIED_TASK_CALLS_KNOWN" \
     --argjson diagnostic_pass_descriptors "$CHECKER_DIAGNOSTIC_PASS_DESCRIPTORS_JSON" '
     . as $root |
     [$root.tasks[].name] as $all_task_names |
@@ -6427,7 +6430,7 @@ check_json() {
     def task_known($callee):
       if (($all_task_names | index($callee)) != null) then true
       elif (($all_qualified_task_names | index($callee)) != null) then true
-      elif ($callee | contains(".")) then true
+      elif ($callee | contains(".")) then $assume_qualified_task_calls_known
       else false end;
     def literal_type:
       if test("^\".*\"$") then $checker_text_type

@@ -132,6 +132,7 @@ export task owned_bootstrap_values -> List<Text> {
     "checker_record_shape_pass_family_task_execution",
     "checker_collection_pass_family_task_execution",
     "checker_call_pass_family_task_execution",
+    "checker_qualified_task_call_policy_task_execution",
     "checker_type_return_pass_family_task_execution",
     "checker_identifier_resolution_pass_task_execution",
     "checker_question_result_pass_task_execution",
