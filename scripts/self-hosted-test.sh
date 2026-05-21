@@ -419,7 +419,7 @@ if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_operat
   fail "parser binary-expression source classifier markers are missing"
 fi
 
-if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_expression_surface_feature_classifier_task_execution")) and (.bootstrap_owned_by_sley | index("parser_ast_call_expression_dispatch_execution")) and (.bootstrap_owned_by_sley | index("parser_bare_call_expression_dispatch_execution")) and (.bootstrap_owned_by_sley | index("parser_ast_member_index_expression_dispatch_execution")) and (.bootstrap_owned_by_sley | index("parser_record_literal_expression_dispatch_execution"))'; then
+if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_expression_surface_feature_classifier_task_execution")) and (.bootstrap_owned_by_sley | index("parser_ast_call_expression_dispatch_execution")) and (.bootstrap_owned_by_sley | index("parser_bare_call_expression_dispatch_execution")) and (.bootstrap_owned_by_sley | index("parser_ast_member_index_expression_dispatch_execution")) and (.bootstrap_owned_by_sley | index("parser_record_literal_expression_dispatch_execution")) and (.bootstrap_owned_by_sley | index("parser_try_expression_dispatch_execution"))'; then
   fail "parser call/member/index source classifier markers are missing"
 fi
 
@@ -1281,7 +1281,7 @@ fi
 jq -er '.schema == "sley.diagnostics.report.v0" and .diagnostics[0].id == "AST_NODE_NOT_FOUND" and .diagnostics[0].message == "AST node not found `missing`"' "$ast_missing_report" >/dev/null
 
 bin/sley ast --json fixtures/corpus/rejected/question_requires_result.sley \
-  | json_field '.tasks[0].body.statements[0].kind == "Expr" and .tasks[0].body.statements[0].expr.fallible == true'
+  | json_field '.tasks[0].body.statements[0].kind == "Expr" and .tasks[0].body.statements[0].expr.expr_kind == "Try" and .tasks[0].body.statements[0].expr.expr.expr_kind == "Call"'
 
 bin/sley check --json examples/hello.sley \
   | json_field '.schema == "sley.diagnostics.report.v0" and .status == "ok"'
