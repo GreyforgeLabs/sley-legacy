@@ -406,6 +406,21 @@ export task statement_dispatch_plan -> List<Text> {
   ]
 }
 
+export task statement_source_dispatch_plan -> List<Text> {
+  return [
+    "0|take_binding",
+    "1|binding_statement",
+    "2|set_statement",
+    "3|return_statement",
+    "4|call_statement",
+    "5|for_statement",
+    "6|while_statement",
+    "7|if_statement",
+    "8|forge_statement",
+    "9|fallible_statement"
+  ]
+}
+
 export task take_binding_kind -> Text {
   return "Take"
 }
