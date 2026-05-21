@@ -1036,6 +1036,26 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_runtime_bl
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_while_source_dispatch_runtime_execution"))'
 
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_dispatch_order_task_execution"))'
+
+if grep -Fq 'elif simple_runtime="$(eval_source_unit_main_return "$target" 2>/dev/null)"' bin/sley; then
+  fail "runtime dispatch order must come from loom.runtime, not a host hard-coded elif chain"
+fi
+
+if ! grep -Fq 'RUNTIME_DISPATCH_ORDER_JSON="$(sley_source_list_task_json loom.runtime runtime_dispatch_order)"' bin/sley; then
+  fail "runtime dispatch order source task dispatch is missing"
+fi
+
+if ! awk '
+  /^run_json\(\)[ \t]*\{/ {in_fn=1}
+  in_fn && /runtime_dispatch_candidate_json/ {candidate=1}
+  in_fn && /RUNTIME_DISPATCH_ORDER_JSON/ {order=1}
+  in_fn && /^[ \t]*}/ {exit}
+  END {exit (candidate && order) ? 0 : 1}
+' bin/sley; then
+  fail "run_json must iterate Sley-owned runtime dispatch candidates"
+fi
+
 if grep -Fq 'line ~ /^(while|forge)([ \t{]|$)/' bin/sley; then
   fail "generic runtime block support must be driven by loom.runtime, not a host hard-coded while/forge block list"
 fi
