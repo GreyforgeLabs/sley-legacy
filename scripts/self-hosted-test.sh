@@ -879,6 +879,42 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("bool_identity_runt
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_source_main_runtime_execution"))'
 
+if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_runtime_return_type_plan_task_execution")) and (.bootstrap_owned_by_sley | index("generic_runtime_return_type_dispatch_execution"))'; then
+  fail "generic runtime return-type dispatch markers are missing"
+fi
+
+if ! grep -Fq 'RUNTIME_GENERIC_RETURN_PLAN_JSON="$(sley_source_list_task_json loom.runtime generic_runtime_return_type_plan' bin/sley; then
+  fail "generic runtime return-type dispatch plan source task dispatch is missing"
+fi
+
+if ! awk '
+  /^runtime_generic_return_descriptor_json\(\)[ \t]*\{/ {in_fn=1}
+  in_fn && /RUNTIME_GENERIC_RETURN_PLAN_JSON/ {plan=1}
+  in_fn && /^[ \t]*}/ {exit}
+  END {exit plan ? 0 : 1}
+' bin/sley; then
+  fail "generic runtime return-type descriptor lookup must read the Sley-owned plan"
+fi
+
+if ! awk '
+  /^eval_source_generic_main_return\(\)[ \t]*\{/ {in_fn=1}
+  in_fn && /runtime_generic_return_descriptor_json/ {descriptor=1}
+  in_fn && /runtime_generic_eval_value_task/ {value_task=1}
+  in_fn && /^}/ {exit}
+  END {exit (descriptor && value_task) ? 0 : 1}
+' bin/sley; then
+  fail "generic runtime main evaluation must dispatch return value normalization through the Sley-owned return-type plan"
+fi
+
+if awk '
+  /^eval_source_generic_main_return\(\)[ \t]*\{/ {in_fn=1}
+  in_fn && /^[ \t]*case[ \t]+"\$return_type"[ \t]+in/ {host_case=1}
+  in_fn && /^}/ {exit}
+  END {exit host_case ? 0 : 1}
+' bin/sley; then
+  fail "generic runtime main evaluation must not use a host hard-coded return-type case ladder"
+fi
+
 if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_source_if_expression_runtime_execution"))'; then
   fail "generic source if-expression runtime marker is missing"
 fi

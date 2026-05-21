@@ -4738,6 +4738,60 @@ sley_source_main_return_type() {
   ' "$file"
 }
 
+runtime_generic_return_base() {
+  local return_type="$1"
+  if [[ "$return_type" == Result\<* ]]; then
+    printf 'Result\n'
+  else
+    printf '%s\n' "$return_type"
+  fi
+}
+
+runtime_generic_result_type() {
+  local return_type="$1" result_re='^Result<([^,>]+),'
+  if [[ "$return_type" =~ $result_re ]]; then
+    printf '%s\n' "${BASH_REMATCH[1]}" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//'
+  fi
+}
+
+runtime_generic_return_descriptor_json() {
+  local return_type="$1" result_status="$2" result_type="${3:-}" return_base
+  return_base="$(runtime_generic_return_base "$return_type")"
+  printf '%s\n' "$RUNTIME_GENERIC_RETURN_PLAN_JSON" | jq -cer \
+    --arg return_base "$return_base" \
+    --arg result_status "$result_status" \
+    --arg result_type "$result_type" '
+      [
+        .[]
+        | select(.return_base == $return_base)
+        | select(.result_status == $result_status)
+        | select((.result_type == "") or (.result_type == $result_type))
+      ][0] // empty
+    '
+}
+
+runtime_generic_value_env_json() {
+  local value_kind="$1" value="$2"
+  if [[ "$value_kind" == "$RUNTIME_INT_VALUE_KIND" || "$value_kind" == "$RUNTIME_OK_INT_VALUE_KIND" ]]; then
+    [[ "$value" =~ ^-?[0-9]+$ ]] || return 1
+    jq -cn --argjson value "$value" '{value:$value}'
+  elif [[ "$value_kind" == "$RUNTIME_BOOL_VALUE_KIND" ]]; then
+    [[ "$value" == "true" || "$value" == "false" ]] || return 1
+    jq -cn --argjson value "$value" '{value:$value}'
+  elif [[ "$value_kind" == "$RUNTIME_TEXT_VALUE_KIND" || "$value_kind" == "$RUNTIME_OK_TEXT_VALUE_KIND" || "$value_kind" == "$RUNTIME_ERR_TEXT_VALUE_KIND" ]]; then
+    jq -cn --arg value "$value" '{value:$value}'
+  else
+    return 1
+  fi
+}
+
+runtime_generic_eval_value_task() {
+  local value_kind="$1" value_task="$2" value="$3" runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" env_json
+  [[ "$value_task" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || return 1
+  env_json="$(runtime_generic_value_env_json "$value_kind" "$value")" || return 1
+  sley_eval_source_task "$runtime_file" "$value_task" "$env_json"
+}
+
 sley_source_main_body_supports_generic_runtime() {
   local file="$1" body prefix
   body="$(extract_sley_task_body "$file" main)" || return 1
@@ -4753,58 +4807,39 @@ sley_source_main_body_supports_generic_runtime() {
 
 eval_source_generic_main_return() {
   local target="$1" http_text="$2" model_text="$3" deploy_text="$4" spend_text="$5" secret_text="$6" shell_text="$7"
-  local file return_type result_type env_json value runtime_value body expr err_value
+  local file return_type return_base result_type result_status descriptor_json value_kind value_task env_json value runtime_value body expr
   file="$(sley_source_entry_file_for_target "$target")"
   [[ -n "$file" ]] || return 1
   sley_source_main_body_supports_generic_runtime "$file" || return 1
   return_type="$(sley_source_main_return_type "$file")"
   [[ -n "$return_type" ]] || return 1
   env_json="$(sley_runtime_seed_env_json "$http_text" "$model_text" "$deploy_text" "$spend_text" "$secret_text" "$shell_text")" || return 1
-  case "$return_type" in
-    Int)
-      value="$(sley_eval_source_task "$file" main "$env_json")" || return 1
-      runtime_value="$(eval_runtime_int_identity_value_task "$value")" || return 1
-      jq -cn --arg kind "$RUNTIME_INT_VALUE_KIND" --arg value "$runtime_value" '{kind:$kind,value:$value}'
-      ;;
-    Text)
-      value="$(sley_eval_source_task "$file" main "$env_json")" || return 1
-      runtime_value="$(eval_runtime_text_identity_value_task "$value")" || return 1
-      jq -cn --arg kind "$RUNTIME_TEXT_VALUE_KIND" --arg value "$runtime_value" '{kind:$kind,value:$value}'
-      ;;
-    Bool)
-      value="$(sley_eval_source_task "$file" main "$env_json")" || return 1
-      runtime_value="$(eval_runtime_bool_identity_value_task "$value")" || return 1
-      jq -cn --arg kind "$RUNTIME_BOOL_VALUE_KIND" --arg value "$runtime_value" '{kind:$kind,value:$value}'
-      ;;
-    Result\<*,*\>)
-      body="$(extract_sley_task_body "$file" main)" || return 1
-      [[ -n "$body" ]] || return 1
-      env_json="$(sley_eval_source_bind_env_json "$file" "$env_json" "$body")" || return 1
-      expr="$(sley_select_source_return_expr "$body" "$env_json")" || return 1
-      if [[ "$expr" =~ ^Err\((.*)\)$ ]]; then
-        err_value="$(sley_eval_source_expr "$file" "$env_json" "${BASH_REMATCH[1]}")" || return 1
-        runtime_value="$(eval_runtime_err_text_value_task "$err_value")" || return 1
-        jq -cn --arg kind "$RUNTIME_ERR_TEXT_VALUE_KIND" --arg value "$runtime_value" '{kind:$kind,value:$value}'
-        return
-      fi
+  return_base="$(runtime_generic_return_base "$return_type")"
+  if [[ "$return_base" == "Result" ]]; then
+    body="$(extract_sley_task_body "$file" main)" || return 1
+    [[ -n "$body" ]] || return 1
+    env_json="$(sley_eval_source_bind_env_json "$file" "$env_json" "$body")" || return 1
+    expr="$(sley_select_source_return_expr "$body" "$env_json")" || return 1
+    if [[ "$expr" =~ ^Err\((.*)\)$ ]]; then
+      result_status="err"
+      result_type=""
+      value="$(sley_eval_source_expr "$file" "$env_json" "${BASH_REMATCH[1]}")" || return 1
+    else
+      result_status="ok"
+      result_type="$(runtime_generic_result_type "$return_type")"
+      [[ -n "$result_type" ]] || return 1
       value="$(sley_eval_source_expr "$file" "$env_json" "$expr")" || return 1
-      result_type="${return_type#Result<}"
-      result_type="${result_type%%,*}"
-      result_type="$(printf '%s\n' "$result_type" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
-      case "$result_type" in
-        Int)
-          runtime_value="$(eval_runtime_ok_int_value_task "$value")" || return 1
-          jq -cn --arg kind "$RUNTIME_OK_INT_VALUE_KIND" --arg value "$runtime_value" '{kind:$kind,value:$value}'
-          ;;
-        Text)
-          runtime_value="$(eval_runtime_text_identity_value_task "$value")" || return 1
-          jq -cn --arg kind "$RUNTIME_OK_TEXT_VALUE_KIND" --arg value "$runtime_value" '{kind:$kind,value:$value}'
-          ;;
-        *) return 1 ;;
-      esac
-      ;;
-    *) return 1 ;;
-  esac
+    fi
+  else
+    result_status="value"
+    result_type=""
+    value="$(sley_eval_source_task "$file" main "$env_json")" || return 1
+  fi
+  descriptor_json="$(runtime_generic_return_descriptor_json "$return_type" "$result_status" "$result_type")" || return 1
+  value_kind="$(printf '%s\n' "$descriptor_json" | jq -er '.value_kind')" || return 1
+  value_task="$(printf '%s\n' "$descriptor_json" | jq -er '.value_task')" || return 1
+  runtime_value="$(runtime_generic_eval_value_task "$value_kind" "$value_task" "$value")" || return 1
+  jq -cn --arg kind "$value_kind" --arg value "$runtime_value" '{kind:$kind,value:$value}'
 }
 
 eval_source_local_call_int_main_return() {
@@ -5658,6 +5693,7 @@ RUNTIME_OK_INT_VALUE_KIND="$(sley_source_task loom.runtime ok_int_value_kind)"
 RUNTIME_ERR_TEXT_VALUE_KIND="$(sley_source_task loom.runtime err_text_value_kind)"
 RUNTIME_SELF_HOSTED_TARGETS_JSON="$(sley_source_list_task_json loom.runtime self_hosted_target_aliases)"
 RUNTIME_GENERIC_UNSUPPORTED_BLOCK_PREFIXES_JSON="$(sley_source_list_task_json loom.runtime generic_runtime_unsupported_block_prefixes)"
+RUNTIME_GENERIC_RETURN_PLAN_JSON="$(sley_source_list_task_json loom.runtime generic_runtime_return_type_plan | jq 'map(split("|") | {return_base:.[0], result_status:.[1], result_type:.[2], value_kind:.[3], value_task:.[4]})')"
 RUNTIME_AGENT_DEPLOY_SUFFIX="$(sley_source_task loom.runtime agent_deploy_target_suffix)"
 RUNTIME_PROJECT_READY_CALL_PROBE="$(eval_runtime_text_probe_task project_ready_call_probe || sley_source_task loom.runtime project_ready_call_probe)"
 RUNTIME_PROJECT_READY_BINDING_PROBE="$(eval_runtime_text_probe_task project_ready_binding_probe || sley_source_task loom.runtime project_ready_binding_probe)"
