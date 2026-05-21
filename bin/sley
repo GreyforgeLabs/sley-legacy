@@ -975,6 +975,17 @@ sley_eval_source_expr() {
     printf '%s\n' "$expr"
     return 0
   fi
+  if [[ "$expr" =~ ^\((.*)\)[[:space:]]\*[[:space:]](.+)$ ]]; then
+    left="$(sley_eval_source_expr "$file" "$env_json" "${BASH_REMATCH[1]}")" || return 1
+    right="$(sley_eval_source_expr "$file" "$env_json" "${BASH_REMATCH[2]}")" || return 1
+    [[ "$left" =~ ^-?[0-9]+$ && "$right" =~ ^-?[0-9]+$ ]] || return 1
+    if [[ "$file" == "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" ]]; then
+      printf '%s\n' "$((left * right))"
+    else
+      eval_runtime_int_binary_value_task int_multiply_value "*" "$left" "$right"
+    fi
+    return
+  fi
   if [[ "$expr" =~ ^(.+)[[:space:]]\+[[:space:]](.+)$ ]]; then
     left="$(sley_eval_source_expr "$file" "$env_json" "${BASH_REMATCH[1]}")" || return 1
     right="$(sley_eval_source_expr "$file" "$env_json" "${BASH_REMATCH[2]}")" || return 1
