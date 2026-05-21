@@ -359,6 +359,8 @@ export task owned_bootstrap_values -> List<Text> {
     "constant_false_while_runtime_execution",
     "while_list_sum_runtime_execution",
     "while_list_sum_parser_prefix_runtime_execution",
+    "generic_runtime_block_support_task_execution",
+    "generic_while_source_dispatch_runtime_execution",
     "state_set_runtime_execution",
     "tally_set_runtime_execution",
     "generic_linear_tally_runtime_execution",

@@ -4383,17 +4383,16 @@ sley_source_main_return_type() {
 }
 
 sley_source_main_body_supports_generic_runtime() {
-  local file="$1" body
+  local file="$1" body prefix
   body="$(extract_sley_task_body "$file" main)" || return 1
   [[ -n "$body" ]] || return 1
-  ! printf '%s\n' "$body" | awk '
-    function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
-    {
-      line=trim($0)
-      if(line ~ /^(while|forge)([ \t{]|$)/) found=1
-    }
-    END {exit found ? 0 : 1}
-  '
+  while IFS= read -r prefix || [[ -n "$prefix" ]]; do
+    [[ -n "$prefix" ]] || continue
+    if printf '%s\n' "$body" | grep -Eq "^[[:space:]]*$prefix([[:space:]{}]|$)"; then
+      return 1
+    fi
+  done < <(printf '%s\n' "$RUNTIME_GENERIC_UNSUPPORTED_BLOCK_PREFIXES_JSON" | jq -r '.[]')
+  return 0
 }
 
 eval_source_generic_main_return() {
@@ -5297,6 +5296,7 @@ RUNTIME_OK_TEXT_VALUE_KIND="$(sley_source_task loom.runtime ok_text_value_kind)"
 RUNTIME_OK_INT_VALUE_KIND="$(sley_source_task loom.runtime ok_int_value_kind)"
 RUNTIME_ERR_TEXT_VALUE_KIND="$(sley_source_task loom.runtime err_text_value_kind)"
 RUNTIME_SELF_HOSTED_TARGETS_JSON="$(sley_source_list_task_json loom.runtime self_hosted_target_aliases)"
+RUNTIME_GENERIC_UNSUPPORTED_BLOCK_PREFIXES_JSON="$(sley_source_list_task_json loom.runtime generic_runtime_unsupported_block_prefixes)"
 RUNTIME_AGENT_DEPLOY_SUFFIX="$(sley_source_task loom.runtime agent_deploy_target_suffix)"
 RUNTIME_PROJECT_READY_CALL_PROBE="$(eval_runtime_text_probe_task project_ready_call_probe || sley_source_task loom.runtime project_ready_call_probe)"
 RUNTIME_PROJECT_READY_BINDING_PROBE="$(eval_runtime_text_probe_task project_ready_binding_probe || sley_source_task loom.runtime project_ready_binding_probe)"
