@@ -2405,6 +2405,20 @@ The latest continuation audit reconfirmed:
   `scripts/self-hosted-test.sh`, `bin/sley-contract check-fixtures
   fixtures/contracts --schemas docs/schemas --json`, external public-action
   packet verifier, `git diff --check`, and final `make v1` all passed
+- focused source-task cache probe:
+  `bin/sley --version` still takes about 55 seconds on a cold source/evaluator
+  fingerprint, but a warm source-task cache brings repeated CLI startup down
+  to about 3-5 seconds; `bin/sley self-hosting-status --json` reported
+  `bootstrap`, `strict_self_hosted=false`, `semantic_source_count=6`,
+  `bootstrap_owned_by_sley=433`, and the same parser/checker/runtime strict
+  self-hosting blockers. The cache is keyed by the `bin/sley` evaluator state
+  plus the current `self-hosted/src/loom/*.sley` state and can be bypassed with
+  `SLEY_DISABLE_SOURCE_CACHE=1`.
+- Sley source-task cache verification:
+  `bash -n bin/sley`, `bin/sley --version`, `bin/sley
+  self-hosting-status --json`, `scripts/self-hosted-test.sh`, and final
+  `make v1` passed. The final `make v1` run completed with `rc=0` and
+  `elapsed=35:09.93`.
 
 ## Dirty State Notes
 
