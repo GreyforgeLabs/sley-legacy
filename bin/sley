@@ -5,6 +5,43 @@ SELF_PATH="${BASH_SOURCE[0]}"
 SELF_NAME="$(basename "$SELF_PATH")"
 ROOT_DIR="$(cd "$(dirname "$SELF_PATH")/.." && pwd)"
 SELF_HOSTED_SOURCE_ROOT="$ROOT_DIR/self-hosted/src"
+SLEY_SOURCE_CACHE_VERSION="source-task-cache-v1"
+SLEY_SOURCE_CACHE_DIR="${SLEY_SOURCE_CACHE_DIR:-${TMPDIR:-/tmp}/sley-source-cache-${UID:-user}}"
+
+sley_source_cache_fingerprint() {
+  stat -c '%n:%y:%s' "$SELF_PATH" "$SELF_HOSTED_SOURCE_ROOT"/loom/*.sley 2>/dev/null \
+    | sha256sum \
+    | awk '{print $1}'
+}
+
+SLEY_SOURCE_CACHE_FINGERPRINT="$(sley_source_cache_fingerprint)"
+
+sley_source_cache_path() {
+  local kind="$1" file="$2" task="$3" env_json="$4" key
+  key="$(printf '%s\037%s\037%s\037%s\037%s\037%s' \
+    "$SLEY_SOURCE_CACHE_VERSION" \
+    "$SLEY_SOURCE_CACHE_FINGERPRINT" \
+    "$kind" \
+    "$file" \
+    "$task" \
+    "$env_json" | sha256sum | awk '{print $1}')"
+  printf '%s/%s.cache\n' "$SLEY_SOURCE_CACHE_DIR" "$key"
+}
+
+sley_source_cache_read() {
+  local path="$1"
+  [[ "${SLEY_DISABLE_SOURCE_CACHE:-}" != "1" && -f "$path" ]] || return 1
+  cat "$path"
+}
+
+sley_source_cache_write() {
+  local path="$1" value="$2" tmp
+  [[ "${SLEY_DISABLE_SOURCE_CACHE:-}" != "1" ]] || return 0
+  mkdir -p "$SLEY_SOURCE_CACHE_DIR"
+  tmp="${path}.$$"
+  printf '%s\n' "$value" > "$tmp"
+  mv "$tmp" "$path"
+}
 
 extract_sley_string_task() {
   local file="$1" task="$2"
@@ -248,6 +285,61 @@ sley_eval_source_task_takes_json() {
   '
 }
 
+sley_eval_source_static_scalar() {
+  local body="$1"
+  local line=""
+  while IFS= read -r raw || [[ -n "$raw" ]]; do
+    raw="$(printf '%s\n' "$raw" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+    [[ -n "$raw" ]] || continue
+    [[ -z "$line" ]] || return 1
+    line="$raw"
+  done <<< "$body"
+  [[ -n "$line" ]] || return 1
+  if [[ "$line" =~ ^return[[:space:]]+\"([^\"]*)\"$ ]]; then
+    printf '%s\n' "${BASH_REMATCH[1]}"
+    return 0
+  fi
+  if [[ "$line" =~ ^return[[:space:]]+(-?[0-9]+)$ ]]; then
+    printf '%s\n' "${BASH_REMATCH[1]}"
+    return 0
+  fi
+  if [[ "$line" =~ ^return[[:space:]]+(true|false)$ ]]; then
+    printf '%s\n' "${BASH_REMATCH[1]}"
+    return 0
+  fi
+  return 1
+}
+
+sley_eval_source_static_list_json() {
+  local body="$1"
+  local line in_list=false expr="" saw_return=false
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line="$(printf '%s\n' "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+    [[ -n "$line" ]] || continue
+    if [[ "$saw_return" == false ]]; then
+      if [[ "$line" =~ ^return[[:space:]]+(\[.*\])$ ]]; then
+        sley_eval_source_list_literal_json "${BASH_REMATCH[1]}"
+        return
+      fi
+      if [[ "$line" == "return [" ]]; then
+        saw_return=true
+        in_list=true
+        expr="["
+        continue
+      fi
+      return 1
+    fi
+    [[ "$in_list" == true ]] || return 1
+    expr+=$'\n'"$line"
+    if [[ "$line" == "]" ]]; then
+      sley_eval_source_list_literal_json "$expr"
+      return
+    fi
+    [[ "$line" =~ ^\"[^\"]*\",?$ ]] || return 1
+  done <<< "$body"
+  return 1
+}
+
 sley_split_source_args() {
   local args="$1"
   awk '
@@ -470,16 +562,27 @@ sley_eval_source_list_literal_json() {
 
 sley_eval_source_task_list_json() {
   local file="$1" task="$2" env_json="${3:-}"
-  local body expr
+  local body expr list_json cache_path
   [[ -n "$env_json" ]] || env_json='{}'
+  cache_path="$(sley_source_cache_path list "$file" "$task" "$env_json")"
+  if sley_source_cache_read "$cache_path"; then
+    return
+  fi
   body="$(extract_sley_task_body "$file" "$task")"
   [[ -n "$body" ]] || return 1
+  if list_json="$(sley_eval_source_static_list_json "$body" 2>/dev/null)"; then
+    printf '%s\n' "$list_json"
+    sley_source_cache_write "$cache_path" "$list_json"
+    return
+  fi
   env_json="$(sley_eval_source_bind_env_json "$file" "$env_json" "$body")" || return 1
   expr="$(sley_select_source_return_expr "$body" "$env_json")" || return 1
   if [[ "$expr" == "[" ]]; then
     expr="$(sley_select_source_return_list_expr "$body")" || return 1
   fi
-  sley_eval_source_list_expr_json "$file" "$env_json" "$expr"
+  list_json="$(sley_eval_source_list_expr_json "$file" "$env_json" "$expr")" || return 1
+  printf '%s\n' "$list_json"
+  sley_source_cache_write "$cache_path" "$list_json"
 }
 
 sley_eval_source_list_expr_json() {
@@ -1388,13 +1491,24 @@ sley_eval_source_expr() {
 
 sley_eval_source_task() {
   local file="$1" task="$2" env_json="${3:-}"
-  local body expr
+  local body expr value cache_path
   [[ -n "$env_json" ]] || env_json='{}'
+  cache_path="$(sley_source_cache_path scalar "$file" "$task" "$env_json")"
+  if sley_source_cache_read "$cache_path"; then
+    return
+  fi
   body="$(extract_sley_task_body "$file" "$task")"
   [[ -n "$body" ]] || return 1
+  if value="$(sley_eval_source_static_scalar "$body" 2>/dev/null)"; then
+    printf '%s\n' "$value"
+    sley_source_cache_write "$cache_path" "$value"
+    return
+  fi
   env_json="$(sley_eval_source_bind_env_json "$file" "$env_json" "$body")" || return 1
   expr="$(sley_select_source_return_expr "$body" "$env_json")" || return 1
-  sley_eval_source_expr "$file" "$env_json" "$expr"
+  value="$(sley_eval_source_expr "$file" "$env_json" "$expr")" || return 1
+  printf '%s\n' "$value"
+  sley_source_cache_write "$cache_path" "$value"
 }
 
 eval_parser_expression_classifiers_json() {
