@@ -2565,6 +2565,27 @@ The latest continuation audit reconfirmed:
   targeted self-hosting, diagnostics, and run report probes,
   `git diff --check`, and `scripts/self-hosted-test.sh` passed after the
   change.
+- focused runtime bool unary operator probe:
+  `bin/sley self-hosting-status --json` reported
+  `runtime_bool_unary_operator_plan_task_execution`,
+  `runtime_bool_unary_operator_dispatch_execution`,
+  `runtime_bool_unary_call_site_plan_execution`, and
+  `bootstrap_owned_by_sley=453`; generic and focused boolean-not runtime call
+  sites now route through `eval_runtime_bool_unary_operator_value_task`, which
+  dispatches using `bool_unary_operator_plan` from
+  `self-hosted/src/loom/runtime.sley`, and the self-hosted regression guard
+  rejects direct uses of `eval_runtime_bool_not_value_task` outside its helper
+  definition.
+- Sley self-hosting status after the runtime bool unary operator slice:
+  `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=453`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source.
+- latest runtime bool unary operator verification on 2026-05-26 EDT:
+  pre-edit `make v1` passed, then `bash -n bin/sley`, `bash -n
+  scripts/self-hosted-test.sh`, the focused static bool-not call-site guard,
+  targeted boolean-not runtime probes, `bin/sley self-hosting-status --json`,
+  `git diff --check`, and `scripts/self-hosted-test.sh` passed after the
+  change.
 
 ## Dirty State Notes
 
@@ -2641,6 +2662,7 @@ evidence, and through the current slice with runtime text binary operator
 evidence, and through the current slice with runtime collection-index operator
 evidence, and through the current slice with runtime record-field access
 evidence, and through the current slice with report-builder value-type plan
+evidence, and through the current slice with runtime bool unary operator
 evidence.
 
 Pre-existing untracked files were not touched and should remain outside future

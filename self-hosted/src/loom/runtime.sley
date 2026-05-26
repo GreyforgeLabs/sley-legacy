@@ -183,6 +183,12 @@ export task bool_binary_operator_plan -> List<Text> {
   ]
 }
 
+export task bool_unary_operator_plan -> List<Text> {
+  return [
+    "!=>bool_not_value"
+  ]
+}
+
 export task text_binary_operator_plan -> List<Text> {
   return [
     "+=>text_concat_value"

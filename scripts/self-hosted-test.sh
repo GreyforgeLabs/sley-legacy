@@ -1228,6 +1228,7 @@ for source_task_eval_fn in \
   eval_runtime_record_field_access_value_task \
   eval_runtime_bool_equal_value_task \
   eval_runtime_text_equal_value_task \
+  eval_runtime_bool_unary_operator_value_task \
   eval_runtime_bool_and_value_task \
   eval_runtime_bool_or_value_task \
   eval_runtime_bool_not_value_task \
@@ -1568,6 +1569,29 @@ if awk '
   END {exit hard_call ? 0 : 1}
 ' bin/sley; then
   fail "runtime bool binary call sites must route through the Sley-owned binary operator plan"
+fi
+
+if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_bool_unary_operator_plan_task_execution")) and (.bootstrap_owned_by_sley | index("runtime_bool_unary_operator_dispatch_execution")) and (.bootstrap_owned_by_sley | index("runtime_bool_unary_call_site_plan_execution"))'; then
+  fail "runtime bool unary operator plan markers are missing"
+fi
+
+if ! grep -Fq 'RUNTIME_BOOL_UNARY_OPERATOR_PLAN_JSON="$(sley_source_list_task_json loom.runtime bool_unary_operator_plan' bin/sley; then
+  fail "runtime bool unary operator plan source task dispatch is missing"
+fi
+
+if ! grep -Fq 'runtime_bool_unary_task_name()' bin/sley \
+  || ! grep -Fq 'select(.op == $op) | .task' bin/sley \
+  || ! grep -Fq 'eval_runtime_bool_unary_operator_value_task "!"' bin/sley; then
+  fail "runtime bool unary operator dispatch must use Sley-owned operator plan"
+fi
+
+if awk '
+  /^eval_runtime_bool_not_value_task\(\)[ \t]*\{/ {in_helper=1; next}
+  in_helper && /^[ \t]*}/ {in_helper=0; next}
+  !in_helper && /eval_runtime_bool_not_value_task/ {hard_call=1}
+  END {exit hard_call ? 0 : 1}
+' bin/sley; then
+  fail "runtime bool-not call sites must route through the Sley-owned unary operator plan"
 fi
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("bool_not_runtime_task_execution"))'
