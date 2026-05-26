@@ -1225,7 +1225,7 @@ for source_task_eval_fn in \
   eval_runtime_int_equal_value_task \
   eval_runtime_int_greater_equal_value_task \
   eval_runtime_collection_index_operator_value_task \
-  eval_runtime_record_field_text_value_task \
+  eval_runtime_record_field_access_value_task \
   eval_runtime_bool_equal_value_task \
   eval_runtime_text_equal_value_task \
   eval_runtime_bool_and_value_task \
@@ -1472,6 +1472,28 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("record_field_runti
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("record_field_expression_runtime_execution"))'
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("record_field_call_runtime_execution"))'
+
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_record_field_access_plan_task_execution")) and (.bootstrap_owned_by_sley | index("runtime_record_field_access_dispatch_execution")) and (.bootstrap_owned_by_sley | index("runtime_record_field_access_call_site_plan_execution"))'
+
+if ! grep -Fq 'RUNTIME_RECORD_FIELD_ACCESS_PLAN_JSON="$(sley_source_list_task_json loom.runtime record_field_access_plan' bin/sley; then
+  fail "runtime record-field access plan must come from loom.runtime"
+fi
+
+if ! grep -Fq 'runtime_record_field_access_descriptor_json()' bin/sley \
+  || ! grep -Fq 'eval_runtime_record_field_access_value_task()' bin/sley \
+  || ! grep -Fq 'eval_runtime_record_field_access_value_task "Text"' bin/sley; then
+  fail "runtime record-field call sites must route through the Sley-owned access plan"
+fi
+
+if awk '
+  /^eval_runtime_(record_field_text_value_task|record_field_access_value_task)\(\)[ \t]*\{/ {in_helper=1; next}
+  /^runtime_record_field_access_descriptor_json\(\)[ \t]*\{/ {in_helper=1; next}
+  in_helper && /^[ \t]*}/ {in_helper=0; next}
+  !in_helper && /eval_runtime_record_field_text_value_task/ {hard_call=1}
+  END {exit hard_call ? 0 : 1}
+' bin/sley; then
+  fail "runtime record-field call sites must not call the concrete field helper directly"
+fi
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("record_field_call_parser_prefix_runtime_execution"))'
 
