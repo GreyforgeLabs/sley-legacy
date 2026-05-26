@@ -1222,19 +1222,19 @@ sley_eval_source_expr() {
     return
   fi
   if [[ "$expr" =~ ^\[([^\]]*)\]\[([0-9]+)\]$ ]]; then
-    if value="$(eval_runtime_list_index_int_value_task "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" 2>/dev/null)"; then
+    if value="$(eval_runtime_collection_index_operator_value_task "list" "Int" "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" 2>/dev/null)"; then
       printf '%s\n' "$value"
       return
     fi
-    eval_runtime_list_index_text_value_task "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
+    eval_runtime_collection_index_operator_value_task "list" "Text" "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
     return
   fi
   if [[ "$expr" =~ ^map[[:space:]]*\{(.*)\}\[\"([^\"]+)\"\]$ ]]; then
-    if value="$(eval_runtime_map_index_int_value_task "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" 2>/dev/null)"; then
+    if value="$(eval_runtime_collection_index_operator_value_task "map" "Int" "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" 2>/dev/null)"; then
       printf '%s\n' "$value"
       return
     fi
-    eval_runtime_map_index_text_value_task "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
+    eval_runtime_collection_index_operator_value_task "map" "Text" "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
     return
   fi
   if [[ "$expr" =~ ^[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\{(.*)\}[.]([A-Za-z_][A-Za-z0-9_]*)$ ]]; then
@@ -2049,42 +2049,64 @@ eval_runtime_int_greater_equal_value_task() {
   sley_eval_source_task "$runtime_file" int_greater_equal_value "$env_json"
 }
 
+runtime_collection_index_descriptor_json() {
+  local collection_kind="$1" value_kind="$2"
+  printf '%s\n' "$RUNTIME_COLLECTION_INDEX_OPERATOR_PLAN_JSON" | jq -cer \
+    --arg collection_kind "$collection_kind" \
+    --arg value_kind "$value_kind" \
+    '.[] | select(.collection_kind == $collection_kind and .value_kind == $value_kind)'
+}
+
+eval_runtime_collection_index_operator_value_task() {
+  local collection_kind="$1" value_kind="$2" collection_source="$3" key="$4"
+  local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
+  local descriptor task_name values_json env_json
+  descriptor="$(runtime_collection_index_descriptor_json "$collection_kind" "$value_kind")" || return 1
+  task_name="$(printf '%s\n' "$descriptor" | jq -er '.task')" || return 1
+  case "$collection_kind:$value_kind" in
+    list:Int)
+      [[ "$key" =~ ^[0-9]+$ ]] || return 1
+      values_json="$(sley_runtime_int_list_json "$collection_source")" || return 1
+      env_json="$(jq -cn --argjson values "$values_json" --argjson index "$key" '{values:$values, index:$index}')"
+      ;;
+    list:Text)
+      [[ "$key" =~ ^[0-9]+$ ]] || return 1
+      values_json="$(sley_runtime_text_list_json "$collection_source")" || return 1
+      env_json="$(jq -cn --argjson values "$values_json" --argjson index "$key" '{values:$values, index:$index}')"
+      ;;
+    map:Int)
+      values_json="$(sley_runtime_int_map_json "$collection_source")" || return 1
+      env_json="$(jq -cn --argjson values "$values_json" --arg key "$key" '{values:$values, key:$key}')"
+      ;;
+    map:Text)
+      values_json="$(sley_runtime_text_map_json "$collection_source")" || return 1
+      env_json="$(jq -cn --argjson values "$values_json" --arg key "$key" '{values:$values, key:$key}')"
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+  sley_eval_source_task "$runtime_file" "$task_name" "$env_json"
+}
+
 eval_runtime_list_index_int_value_task() {
   local values_source="$1" index="$2"
-  local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
-  local values_json env_json
-  [[ "$index" =~ ^[0-9]+$ ]] || return 1
-  values_json="$(sley_runtime_int_list_json "$values_source")" || return 1
-  env_json="$(jq -cn --argjson values "$values_json" --argjson index "$index" '{values:$values, index:$index}')"
-  sley_eval_source_task "$runtime_file" list_index_int_value "$env_json"
+  eval_runtime_collection_index_operator_value_task "list" "Int" "$values_source" "$index"
 }
 
 eval_runtime_list_index_text_value_task() {
   local values_source="$1" index="$2"
-  local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
-  local values_json env_json
-  [[ "$index" =~ ^[0-9]+$ ]] || return 1
-  values_json="$(sley_runtime_text_list_json "$values_source")" || return 1
-  env_json="$(jq -cn --argjson values "$values_json" --argjson index "$index" '{values:$values, index:$index}')"
-  sley_eval_source_task "$runtime_file" list_index_text_value "$env_json"
+  eval_runtime_collection_index_operator_value_task "list" "Text" "$values_source" "$index"
 }
 
 eval_runtime_map_index_text_value_task() {
   local pairs_source="$1" key="$2"
-  local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
-  local values_json env_json
-  values_json="$(sley_runtime_text_map_json "$pairs_source")" || return 1
-  env_json="$(jq -cn --argjson values "$values_json" --arg key "$key" '{values:$values, key:$key}')"
-  sley_eval_source_task "$runtime_file" map_index_text_value "$env_json"
+  eval_runtime_collection_index_operator_value_task "map" "Text" "$pairs_source" "$key"
 }
 
 eval_runtime_map_index_int_value_task() {
   local pairs_source="$1" key="$2"
-  local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
-  local values_json env_json
-  values_json="$(sley_runtime_int_map_json "$pairs_source")" || return 1
-  env_json="$(jq -cn --argjson values "$values_json" --arg key "$key" '{values:$values, key:$key}')"
-  sley_eval_source_task "$runtime_file" map_index_int_value "$env_json"
+  eval_runtime_collection_index_operator_value_task "map" "Int" "$pairs_source" "$key"
 }
 
 eval_runtime_record_field_text_value_task() {
@@ -2741,7 +2763,7 @@ eval_source_list_index_int_main_return() {
   [[ "$source" =~ ^\[(.*)\]\[([0-9]+)\]$ ]] || return 1
   values_source="${BASH_REMATCH[1]}"
   index="${BASH_REMATCH[2]}"
-  runtime_value="$(eval_runtime_list_index_int_value_task "$values_source" "$index")"
+  runtime_value="$(eval_runtime_collection_index_operator_value_task "list" "Int" "$values_source" "$index")"
   [[ -n "$runtime_value" ]] || return 1
   printf '{"kind":"%s","value":"%s"}\n' "$RUNTIME_INT_VALUE_KIND" "$runtime_value"
 }
@@ -2805,8 +2827,8 @@ eval_source_bound_list_index_sum_int_main_return() {
   right_values="$(printf '%s\n' "$values" | cut -f3)"
   right_index="$(printf '%s\n' "$values" | cut -f4)"
   [[ -n "$left_values" && "$left_index" =~ ^[0-9]+$ && -n "$right_values" && "$right_index" =~ ^[0-9]+$ ]] || return 1
-  left_value="$(eval_runtime_list_index_int_value_task "$left_values" "$left_index")" || return 1
-  right_value="$(eval_runtime_list_index_int_value_task "$right_values" "$right_index")" || return 1
+  left_value="$(eval_runtime_collection_index_operator_value_task "list" "Int" "$left_values" "$left_index")" || return 1
+  right_value="$(eval_runtime_collection_index_operator_value_task "list" "Int" "$right_values" "$right_index")" || return 1
   runtime_value="$(eval_runtime_int_binary_operator_value_task "+" "$left_value" "$right_value")" || return 1
   printf '{"kind":"%s","value":"%s"}\n' "$RUNTIME_INT_VALUE_KIND" "$runtime_value"
 }
@@ -2885,8 +2907,8 @@ eval_source_collection_index_sum_int_main_return() {
   map_pairs="$(printf '%s\n' "$spec" | cut -f2)"
   list_index="$(printf '%s\n' "$spec" | cut -f3)"
   [[ -n "$list_values" && -n "$map_pairs" && "$list_index" =~ ^[0-9]+$ ]] || return 1
-  list_key="$(eval_runtime_list_index_text_value_task "$list_values" "$list_index")" || return 1
-  map_value="$(eval_runtime_map_index_int_value_task "$map_pairs" "$list_key")" || return 1
+  list_key="$(eval_runtime_collection_index_operator_value_task "list" "Text" "$list_values" "$list_index")" || return 1
+  map_value="$(eval_runtime_collection_index_operator_value_task "map" "Int" "$map_pairs" "$list_key")" || return 1
   list_count="$(printf '%s\n' "$list_values" | count_top_level_list_items)"
   [[ "$list_count" =~ ^[0-9]+$ ]] || return 1
   len_value="$(eval_runtime_list_len_value_task "$list_count")" || return 1
@@ -2905,7 +2927,7 @@ eval_source_map_index_text_main_return() {
   [[ "$source" =~ $pattern ]] || return 1
   pairs_source="${BASH_REMATCH[1]}"
   key="${BASH_REMATCH[2]}"
-  runtime_value="$(eval_runtime_map_index_text_value_task "$pairs_source" "$key")"
+  runtime_value="$(eval_runtime_collection_index_operator_value_task "map" "Text" "$pairs_source" "$key")"
   [[ -n "$runtime_value" ]] || return 1
   jq -cn --arg kind "$RUNTIME_TEXT_VALUE_KIND" --arg value "$runtime_value" '{kind:$kind,value:$value}'
 }
@@ -3765,8 +3787,8 @@ eval_source_each_map_sum_int_main_return() {
   list_count="$(printf '%s\n' "$list_values" | count_top_level_list_items)"
   [[ "$list_count" =~ ^[0-9]+$ ]] || return 1
   for ((index = 0; index < list_count; index++)); do
-    list_key="$(eval_runtime_list_index_text_value_task "$list_values" "$index")" || return 1
-    map_value="$(eval_runtime_map_index_int_value_task "$map_pairs" "$list_key")" || return 1
+    list_key="$(eval_runtime_collection_index_operator_value_task "list" "Text" "$list_values" "$index")" || return 1
+    map_value="$(eval_runtime_collection_index_operator_value_task "map" "Int" "$map_pairs" "$list_key")" || return 1
     total_value="$(eval_runtime_int_binary_operator_value_task "+" "$total_value" "$map_value")" || return 1
   done
   runtime_value="$(eval_runtime_int_identity_value_task "$total_value")" || return 1
@@ -3927,7 +3949,7 @@ eval_source_while_list_sum_int_main_return() {
   index=0
   total=0
   while [[ "$(eval_runtime_int_comparison_operator_value_task "<" "$index" "$list_count")" == "true" ]]; do
-    item="$(eval_runtime_list_index_int_value_task "$list_values" "$index")" || return 1
+    item="$(eval_runtime_collection_index_operator_value_task "list" "Int" "$list_values" "$index")" || return 1
     total="$(eval_runtime_int_binary_operator_value_task "+" "$total" "$item")" || return 1
     index="$(eval_runtime_int_binary_operator_value_task "+" "$index" "1")" || return 1
   done
@@ -5471,6 +5493,7 @@ VERSION="$(sley_source_task loom.bootstrap implementation_version)"
 require_source_text VERSION "$VERSION"
 
 RUNTIME_TEXT_BINARY_OPERATOR_PLAN_JSON="$(sley_source_list_task_json loom.runtime text_binary_operator_plan | jq 'map(split("=>") | {op:.[0], task:.[1]})')"
+RUNTIME_COLLECTION_INDEX_OPERATOR_PLAN_JSON="$(sley_source_list_task_json loom.runtime collection_index_operator_plan | jq 'map(split("|") | {collection_kind:.[0], value_kind:.[1], task:.[2]})')"
 
 DEFAULT_RULES_JSON="$(sley_source_list_task_json loom.lint default_lint_rules)"
 

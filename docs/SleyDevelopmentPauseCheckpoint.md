@@ -2501,6 +2501,28 @@ The latest continuation audit reconfirmed:
   `bin/sley self-hosting-status --json`, `git diff --check`, and
   `scripts/self-hosted-test.sh` passed after the change. A final post-change
   `make v1` also passed.
+- focused runtime collection-index operator probe:
+  `bin/sley self-hosting-status --json` reported
+  `runtime_collection_index_operator_plan_task_execution`,
+  `runtime_collection_index_operator_dispatch_execution`,
+  `runtime_collection_index_call_site_plan_execution`, and
+  `bootstrap_owned_by_sley=444`; list and map index runtime call sites now
+  route through `eval_runtime_collection_index_operator_value_task`, which
+  dispatches using `collection_index_operator_plan` from
+  `self-hosted/src/loom/runtime.sley`, and the self-hosted regression guard
+  rejects direct uses of concrete list/map index helpers outside their helper
+  definitions.
+- Sley self-hosting status after the runtime collection-index operator slice:
+  `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=444`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source.
+- latest runtime collection-index operator verification on 2026-05-26 EDT:
+  pre-edit `make v1` passed, then `bash -n bin/sley`, `bash -n
+  scripts/self-hosted-test.sh`, the focused static collection-index call-site
+  guard, targeted collection/list/map runtime probes,
+  `bin/sley self-hosting-status --json`, `git diff --check`, and
+  `scripts/self-hosted-test.sh` passed after the change. A final post-change
+  `make v1` also passed.
 
 ## Dirty State Notes
 
@@ -2574,6 +2596,7 @@ large self-source AST evidence, through 32e028a with runtime int comparison
 call-site evidence, and through this slice with runtime int binary call-site
 evidence, and through the current slice with runtime bool binary operator
 evidence, and through the current slice with runtime text binary operator
+evidence, and through the current slice with runtime collection-index operator
 evidence.
 
 Pre-existing untracked files were not touched and should remain outside future
