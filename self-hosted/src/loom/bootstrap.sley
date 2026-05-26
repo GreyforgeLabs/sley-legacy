@@ -474,6 +474,7 @@ export task owned_bootstrap_values -> List<Text> {
     "file_entry_runtime_authority_execution",
     "bound_local_call_runtime_execution",
     "runtime_main_call_parser_prefix_task_execution",
+    "runtime_main_call_source_evaluator_execution",
     "seeded_agent_deploy_task_execution",
     "file_entry_agent_pipeline_runtime_execution",
     "project_ready_task_execution",

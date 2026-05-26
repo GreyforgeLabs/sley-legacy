@@ -2650,6 +2650,23 @@ The latest continuation audit reconfirmed:
   probes, `bin/sley self-hosting-status --json`, `git diff --check`, and
   `scripts/self-hosted-test.sh` passed after the change. Final post-change
   `make v1` passed; log: `/tmp/sley-make-v1-resume.log`.
+- focused runtime main-call source-evaluator probe:
+  `bin/sley run --json fixtures/corpus/accepted/pure_main.sley` preserved
+  `Int(42)`, and `bin/sley self-hosting-status --json` reported
+  `runtime_main_call_source_evaluator_execution` with
+  `bootstrap_owned_by_sley=463`; `eval_main_call_int_return` now delegates to
+  `sley_eval_source_task` for `main` and the Sley-owned generic runtime return
+  plan instead of embedding a host `jq` call interpreter.
+- Sley self-hosting status after the runtime main-call source-evaluator slice:
+  `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=463`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source.
+- latest runtime main-call source-evaluator verification on 2026-05-26 EDT:
+  `bash -n bin/sley`, `bash -n scripts/self-hosted-test.sh`, the focused
+  `pure_main.sley` runtime probe, `bin/sley self-hosting-status --json`,
+  `git diff --check`, and `scripts/self-hosted-test.sh` passed after the
+  change. Final post-change `make v1` passed; log:
+  `/tmp/sley-make-v1-main-call-source.log`.
 
 ## Dirty State Notes
 
@@ -2729,7 +2746,8 @@ evidence, and through the current slice with report-builder value-type plan
 evidence, and through the current slice with runtime bool unary operator
 evidence, and through the current slice with runtime equality operator
 evidence, and through the current slice with runtime if-value plan
-evidence, and through the current slice with report-builder registry evidence.
+evidence, and through the current slice with report-builder registry evidence,
+and through the current slice with runtime main-call source-evaluator evidence.
 
 Pre-existing untracked files were not touched and should remain outside future
 commits unless the operator explicitly asks to include them:

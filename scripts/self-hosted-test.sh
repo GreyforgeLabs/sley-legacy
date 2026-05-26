@@ -1918,6 +1918,30 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("bound_local_call_r
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_main_call_parser_prefix_task_execution"))'
 
+if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_main_call_source_evaluator_execution"))'; then
+  fail "runtime main-call source evaluator marker is missing"
+fi
+
+if ! awk '
+  /^eval_main_call_int_return\(\)[ \t]*\{/ {in_fn=1}
+  in_fn && /sley_eval_source_task "\$file" main/ {source_task=1}
+  in_fn && /runtime_generic_return_descriptor_json "Int" "value"/ {generic_plan=1}
+  in_fn && /runtime_generic_eval_value_task "\$value_kind" "\$value_task" "\$value"/ {generic_eval=1}
+  in_fn && /^[ \t]*}/ {exit}
+  END {exit (source_task && generic_plan && generic_eval) ? 0 : 1}
+' bin/sley; then
+  fail "runtime main-call int evaluator must route through source task execution and the Sley-owned generic return plan"
+fi
+
+if awk '
+  /^eval_main_call_int_return\(\)[ \t]*\{/ {in_fn=1}
+  in_fn && /(ast_json "\$target"|def eval_expr)/ {hardcoded=1}
+  in_fn && /^[ \t]*}/ {exit}
+  END {exit hardcoded ? 0 : 1}
+' bin/sley; then
+  fail "runtime main-call int evaluator must not keep the host jq call interpreter"
+fi
+
 bin/sley run --json fixtures/corpus/accepted/pure_main.sley \
   | json_field '.status == "passed" and .value.kind == "Int" and .value.value == 42'
 
