@@ -1412,11 +1412,87 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("direct_file_read_r
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_file_read_source_task_execution"))'
 
+if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_file_read_generic_source_execution"))'; then
+  fail "runtime FileRead evaluator generic source marker is missing"
+fi
+
+if ! awk '
+  /^eval_source_file_read_main_return\(\)[ \t]*\{/ {in_fn=1}
+  in_fn && /runtime_source_has_host_effect "\$target" "FileRead"/ {effect=1}
+  in_fn && /eval_source_return_type_matches "\$target" "\$expected_return_base"/ {type_match=1}
+  in_fn && /eval_source_generic_main_return "\$target"/ {generic=1}
+  in_fn && /^[ \t]*}/ {exit}
+  END {exit (effect && type_match && generic) ? 0 : 1}
+' bin/sley; then
+  fail "runtime FileRead evaluator must route through generic source main evaluation"
+fi
+
+if ! awk '
+  /^eval_source_direct_file_read_text_main_return\(\)[ \t]*\{/ {in_text=1}
+  in_text && /eval_source_file_read_main_return "\$1" "Text"/ {text=1}
+  in_text && /^[ \t]*}/ {in_text=0}
+  /^eval_source_direct_file_read_ok_text_main_return\(\)[ \t]*\{/ {in_result=1}
+  in_result && /eval_source_file_read_main_return "\$1" "Result"/ {result=1}
+  in_result && /^[ \t]*}/ {exit}
+  END {exit (text && result) ? 0 : 1}
+' bin/sley; then
+  fail "direct FileRead runtime wrappers must use the generic FileRead source evaluator"
+fi
+
+for file_read_eval_fn in eval_source_direct_file_read_text_main_return eval_source_direct_file_read_ok_text_main_return; do
+  if awk -v fn="$file_read_eval_fn" '
+    $0 ~ "^" fn "\\(\\)[ \t]*\\{" {in_fn=1}
+    in_fn && /(awk|read_info|extract_sley_task_body|runtime_file_read_seed_text)/ {hardcoded=1}
+    in_fn && /^[ \t]*}/ {exit}
+    END {exit hardcoded ? 0 : 1}
+  ' bin/sley; then
+    fail "$file_read_eval_fn must not keep a host-side FileRead pattern interpreter"
+  fi
+done
+
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("seeded_host_result_source_runtime_execution"))'
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("database_row_source_runtime_execution"))'
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("seeded_host_text_source_runtime_execution"))'
+
+if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_seeded_host_generic_source_execution"))'; then
+  fail "runtime seeded host generic source marker is missing"
+fi
+
+if ! awk '
+  /^eval_source_seeded_host_main_return\(\)[ \t]*\{/ {in_fn=1}
+  in_fn && /runtime_source_has_seeded_host_effect "\$target"/ {effect=1}
+  in_fn && /eval_source_return_type_matches "\$target" "\$expected_return_base"/ {type_match=1}
+  in_fn && /eval_source_generic_main_return "\$target" "\$@"/ {generic=1}
+  in_fn && /^[ \t]*}/ {exit}
+  END {exit (effect && type_match && generic) ? 0 : 1}
+' bin/sley; then
+  fail "runtime seeded host evaluator must route through generic source main evaluation"
+fi
+
+if ! awk '
+  /^eval_source_seeded_host_result_main_return\(\)[ \t]*\{/ {in_result=1}
+  in_result && /eval_source_seeded_host_main_return "\$target" "Result" "\$@"/ {result=1}
+  in_result && /^[ \t]*}/ {in_result=0}
+  /^eval_source_seeded_host_text_main_return\(\)[ \t]*\{/ {in_text=1}
+  in_text && /eval_source_seeded_host_main_return "\$target" "Text" "\$@"/ {text=1}
+  in_text && /^[ \t]*}/ {exit}
+  END {exit (result && text) ? 0 : 1}
+' bin/sley; then
+  fail "seeded host runtime wrappers must use the generic seeded host source evaluator"
+fi
+
+for seeded_host_eval_fn in eval_source_seeded_host_result_main_return eval_source_seeded_host_text_main_return; do
+  if awk -v fn="$seeded_host_eval_fn" '
+    $0 ~ "^" fn "\\(\\)[ \t]*\\{" {in_fn=1}
+    in_fn && /(sley_runtime_seed_env_json|sley_eval_source_task|eval_runtime_ok_int_value_task|eval_runtime_text_identity_value_task)/ {hardcoded=1}
+    in_fn && /^[ \t]*}/ {exit}
+    END {exit hardcoded ? 0 : 1}
+  ' bin/sley; then
+    fail "$seeded_host_eval_fn must not keep host-side seeded return normalization"
+  fi
+done
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("gate_take_source_call_runtime_execution"))'
 
