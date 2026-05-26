@@ -189,6 +189,15 @@ export task text_binary_operator_plan -> List<Text> {
   ]
 }
 
+export task collection_index_operator_plan -> List<Text> {
+  return [
+    "list|Int|list_index_int_value",
+    "list|Text|list_index_text_value",
+    "map|Int|map_index_int_value",
+    "map|Text|map_index_text_value"
+  ]
+}
+
 export task int_comparison_operator_plan -> List<Text> {
   return [
     "==|int_equal_value|direct|false",

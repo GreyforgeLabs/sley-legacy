@@ -1224,10 +1224,7 @@ for source_task_eval_fn in \
   eval_runtime_int_less_than_value_task \
   eval_runtime_int_equal_value_task \
   eval_runtime_int_greater_equal_value_task \
-  eval_runtime_list_index_int_value_task \
-  eval_runtime_list_index_text_value_task \
-  eval_runtime_map_index_text_value_task \
-  eval_runtime_map_index_int_value_task \
+  eval_runtime_collection_index_operator_value_task \
   eval_runtime_record_field_text_value_task \
   eval_runtime_bool_equal_value_task \
   eval_runtime_text_equal_value_task \
@@ -1444,6 +1441,31 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("collection_index_s
 
 bin/sley run --json fixtures/corpus/accepted/collections_indexing.sley \
   | json_field '.status == "passed" and .value.kind == "Int" and .value.value == 8'
+
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_collection_index_operator_plan_task_execution")) and (.bootstrap_owned_by_sley | index("runtime_collection_index_operator_dispatch_execution")) and (.bootstrap_owned_by_sley | index("runtime_collection_index_call_site_plan_execution"))'
+
+if ! grep -Fq 'RUNTIME_COLLECTION_INDEX_OPERATOR_PLAN_JSON="$(sley_source_list_task_json loom.runtime collection_index_operator_plan' bin/sley; then
+  fail "runtime collection-index operator plan must come from loom.runtime"
+fi
+
+if ! grep -Fq 'runtime_collection_index_descriptor_json()' bin/sley \
+  || ! grep -Fq 'eval_runtime_collection_index_operator_value_task()' bin/sley \
+  || ! grep -Fq 'eval_runtime_collection_index_operator_value_task "list" "Int"' bin/sley \
+  || ! grep -Fq 'eval_runtime_collection_index_operator_value_task "list" "Text"' bin/sley \
+  || ! grep -Fq 'eval_runtime_collection_index_operator_value_task "map" "Int"' bin/sley \
+  || ! grep -Fq 'eval_runtime_collection_index_operator_value_task "map" "Text"' bin/sley; then
+  fail "runtime collection-index call sites must route through the Sley-owned operator plan"
+fi
+
+if awk '
+  /^eval_runtime_(list_index_int_value_task|list_index_text_value_task|map_index_text_value_task|map_index_int_value_task|collection_index_operator_value_task)\(\)[ \t]*\{/ {in_helper=1; next}
+  /^runtime_collection_index_descriptor_json\(\)[ \t]*\{/ {in_helper=1; next}
+  in_helper && /^[ \t]*}/ {in_helper=0; next}
+  !in_helper && /eval_runtime_(list_index_int_value_task|list_index_text_value_task|map_index_text_value_task|map_index_int_value_task)/ {hard_call=1}
+  END {exit hard_call ? 0 : 1}
+' bin/sley; then
+  fail "runtime collection index call sites must not call concrete index helpers directly"
+fi
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("record_field_runtime_task_execution"))'
 
