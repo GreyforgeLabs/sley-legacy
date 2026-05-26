@@ -2543,6 +2543,28 @@ The latest continuation audit reconfirmed:
   guard, targeted record-field runtime probes,
   `bin/sley self-hosting-status --json`, `git diff --check`, and
   `scripts/self-hosted-test.sh` passed after the change.
+- focused report-builder value-type plan probe:
+  `bin/sley self-hosting-status --json` reported
+  `report_builder_value_type_plan_task_execution`,
+  `report_builder_value_type_dispatch_execution`,
+  `report_builder_value_type_call_site_execution`, and
+  `bootstrap_owned_by_sley=450`; `sley_report_builder_json` now dispatches
+  supported builder value-type checks through
+  `report_builder_value_type_plan` from
+  `self-hosted/src/loom/reports.sley` instead of embedding the report builder
+  value-type lattice directly in jq, and the self-hosted regression guard
+  rejects reintroducing direct `$value_type == "Text"` checks inside the
+  generic builder.
+- Sley self-hosting status after the report-builder value-type plan slice:
+  `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=450`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source.
+- latest report-builder value-type plan verification on 2026-05-26 EDT:
+  pre-edit `make v1` passed, then `bash -n bin/sley`, `bash -n
+  scripts/self-hosted-test.sh`, the focused static report-builder guard,
+  targeted self-hosting, diagnostics, and run report probes,
+  `git diff --check`, and `scripts/self-hosted-test.sh` passed after the
+  change.
 
 ## Dirty State Notes
 
@@ -2618,6 +2640,7 @@ evidence, and through the current slice with runtime bool binary operator
 evidence, and through the current slice with runtime text binary operator
 evidence, and through the current slice with runtime collection-index operator
 evidence, and through the current slice with runtime record-field access
+evidence, and through the current slice with report-builder value-type plan
 evidence.
 
 Pre-existing untracked files were not touched and should remain outside future

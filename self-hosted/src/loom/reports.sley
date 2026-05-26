@@ -1,5 +1,16 @@
 module loom.reports
 
+export task report_builder_value_type_plan -> List<Text> {
+  return [
+    "Json|any",
+    "Text|string",
+    "Bool|boolean",
+    "Int|number",
+    "List<Text>|array|string",
+    "List<Json>|array|any"
+  ]
+}
+
 export task ast_program_schema -> Text {
   return "sley.ast.program.v0"
 }
