@@ -1476,6 +1476,10 @@ if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_int_b
   fail "runtime int binary operator plan markers are missing"
 fi
 
+if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_int_binary_call_site_plan_execution"))'; then
+  fail "runtime int binary call-site plan marker is missing"
+fi
+
 if ! grep -Fq 'RUNTIME_INT_BINARY_OPERATOR_PLAN_JSON="$(sley_source_list_task_json loom.runtime int_binary_operator_plan' bin/sley; then
   fail "runtime int binary operator plan source task dispatch is missing"
 fi
@@ -1490,6 +1494,15 @@ if grep -Fq '[[ "$op" == "+" || "$op" == "*" ]]' bin/sley \
   || grep -Fq 'task_name="int_add_value"' bin/sley \
   || grep -Fq 'task_name="int_multiply_value"' bin/sley; then
   fail "runtime int binary operator dispatch must not keep host hard-coded operator map"
+fi
+
+if awk '
+  /^eval_runtime_int_binary_(value_task|operator_value_task)\(\)[ \t]*\{/ {in_helper=1; next}
+  in_helper && /^[ \t]*}/ {in_helper=0; next}
+  !in_helper && /eval_runtime_int_binary_value_task/ {hard_call=1}
+  END {exit hard_call ? 0 : 1}
+' bin/sley; then
+  fail "runtime int binary call sites must route through the Sley-owned binary operator plan"
 fi
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("constant_arithmetic_runtime_execution"))'
