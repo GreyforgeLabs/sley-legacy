@@ -2614,9 +2614,9 @@ eval_source_parenthesized_arithmetic_int_main_return() {
   left="${BASH_REMATCH[1]}"
   right="${BASH_REMATCH[2]}"
   factor="${BASH_REMATCH[3]}"
-  sum="$(eval_runtime_int_binary_value_task int_add_value "+" "$left" "$right")"
+  sum="$(eval_runtime_int_binary_operator_value_task "+" "$left" "$right")"
   [[ -n "$sum" ]] || return 1
-  runtime_value="$(eval_runtime_int_binary_value_task int_multiply_value "*" "$sum" "$factor")"
+  runtime_value="$(eval_runtime_int_binary_operator_value_task "*" "$sum" "$factor")"
   [[ -n "$runtime_value" ]] || return 1
   printf '{"kind":"%s","value":"%s"}\n' "$RUNTIME_INT_VALUE_KIND" "$runtime_value"
 }
@@ -2777,7 +2777,7 @@ eval_source_bound_list_index_sum_int_main_return() {
   [[ -n "$left_values" && "$left_index" =~ ^[0-9]+$ && -n "$right_values" && "$right_index" =~ ^[0-9]+$ ]] || return 1
   left_value="$(eval_runtime_list_index_int_value_task "$left_values" "$left_index")" || return 1
   right_value="$(eval_runtime_list_index_int_value_task "$right_values" "$right_index")" || return 1
-  runtime_value="$(eval_runtime_int_binary_value_task int_add_value "+" "$left_value" "$right_value")" || return 1
+  runtime_value="$(eval_runtime_int_binary_operator_value_task "+" "$left_value" "$right_value")" || return 1
   printf '{"kind":"%s","value":"%s"}\n' "$RUNTIME_INT_VALUE_KIND" "$runtime_value"
 }
 
@@ -2860,7 +2860,7 @@ eval_source_collection_index_sum_int_main_return() {
   list_count="$(printf '%s\n' "$list_values" | count_top_level_list_items)"
   [[ "$list_count" =~ ^[0-9]+$ ]] || return 1
   len_value="$(eval_runtime_list_len_value_task "$list_count")" || return 1
-  runtime_value="$(eval_runtime_int_binary_value_task int_add_value "+" "$map_value" "$len_value")" || return 1
+  runtime_value="$(eval_runtime_int_binary_operator_value_task "+" "$map_value" "$len_value")" || return 1
   printf '{"kind":"%s","value":"%s"}\n' "$RUNTIME_INT_VALUE_KIND" "$runtime_value"
 }
 
@@ -3624,7 +3624,7 @@ eval_source_each_sum_int_main_return() {
       "$loop_var") right="$item" ;;
       *) [[ "$right_token" =~ ^-?[0-9]+$ ]] || return 1; right="$right_token" ;;
     esac
-    total_value="$(eval_runtime_int_binary_value_task int_add_value "+" "$left" "$right")" || return 1
+    total_value="$(eval_runtime_int_binary_operator_value_task "+" "$left" "$right")" || return 1
   done
   runtime_value="$(eval_runtime_int_identity_value_task "$total_value")" || return 1
   printf '{"kind":"%s","value":"%s"}\n' "$RUNTIME_INT_VALUE_KIND" "$runtime_value"
@@ -3737,7 +3737,7 @@ eval_source_each_map_sum_int_main_return() {
   for ((index = 0; index < list_count; index++)); do
     list_key="$(eval_runtime_list_index_text_value_task "$list_values" "$index")" || return 1
     map_value="$(eval_runtime_map_index_int_value_task "$map_pairs" "$list_key")" || return 1
-    total_value="$(eval_runtime_int_binary_value_task int_add_value "+" "$total_value" "$map_value")" || return 1
+    total_value="$(eval_runtime_int_binary_operator_value_task "+" "$total_value" "$map_value")" || return 1
   done
   runtime_value="$(eval_runtime_int_identity_value_task "$total_value")" || return 1
   printf '{"kind":"%s","value":"%s"}\n' "$RUNTIME_INT_VALUE_KIND" "$runtime_value"
@@ -3898,8 +3898,8 @@ eval_source_while_list_sum_int_main_return() {
   total=0
   while [[ "$(eval_runtime_int_comparison_operator_value_task "<" "$index" "$list_count")" == "true" ]]; do
     item="$(eval_runtime_list_index_int_value_task "$list_values" "$index")" || return 1
-    total="$(eval_runtime_int_binary_value_task int_add_value "+" "$total" "$item")" || return 1
-    index="$(eval_runtime_int_binary_value_task int_add_value "+" "$index" "1")" || return 1
+    total="$(eval_runtime_int_binary_operator_value_task "+" "$total" "$item")" || return 1
+    index="$(eval_runtime_int_binary_operator_value_task "+" "$index" "1")" || return 1
   done
   runtime_value="$(eval_runtime_int_identity_value_task "$total")" || return 1
   printf '{"kind":"%s","value":"%s"}\n' "$RUNTIME_INT_VALUE_KIND" "$runtime_value"
@@ -3960,7 +3960,7 @@ eval_source_compute_text_call_main_return() {
   left="$(printf '%s\n' "$main_info" | cut -f3)"
   right="$(printf '%s\n' "$main_info" | cut -f4)"
   [[ -n "$callee" && -n "$arg" && "$left" =~ ^-?[0-9]+$ && "$right" =~ ^-?[0-9]+$ ]] || return 1
-  arg_value="$(eval_runtime_int_binary_value_task int_add_value "+" "$left" "$right")" || return 1
+  arg_value="$(eval_runtime_int_binary_operator_value_task "+" "$left" "$right")" || return 1
   body="$(extract_sley_task_body "$file" "$callee")"
   [[ -n "$body" ]] || return 1
   class_info="$(printf '%s\n' "$body" | awk '
@@ -4105,7 +4105,7 @@ eval_source_result_flow_int_main_return() {
   condition="$(eval_runtime_text_equal_value_task "$call_arg" "$bad_literal")" || return 1
   [[ "$condition" == "false" ]] || return 1
   parsed_value="$(eval_runtime_ok_int_value_task "$ok_value")" || return 1
-  result_value="$(eval_runtime_int_binary_value_task int_add_value "+" "$parsed_value" "$add_right")" || return 1
+  result_value="$(eval_runtime_int_binary_operator_value_task "+" "$parsed_value" "$add_right")" || return 1
   runtime_value="$(eval_runtime_ok_int_value_task "$result_value")" || return 1
   printf '{"kind":"%s","value":"%s"}\n' "$RUNTIME_OK_INT_VALUE_KIND" "$runtime_value"
 }

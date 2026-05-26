@@ -2438,6 +2438,25 @@ The latest continuation audit reconfirmed:
   scripts/self-hosted-test.sh`, the focused static comparison call-site guard,
   `bin/sley self-hosting-status --json`, and `scripts/self-hosted-test.sh`
   passed after the change. A final post-change `make v1` also passed.
+- focused runtime int binary call-site probe:
+  `bin/sley self-hosting-status --json` reported
+  `runtime_int_binary_call_site_plan_execution` and
+  `bootstrap_owned_by_sley=435`; remaining direct integer binary call sites now
+  route through `eval_runtime_int_binary_operator_value_task`, which dispatches
+  using `int_binary_operator_plan` from
+  `self-hosted/src/loom/runtime.sley`, and the self-hosted regression guard
+  rejects direct uses of `eval_runtime_int_binary_value_task` outside the
+  binary helper and operator wrapper definitions.
+- Sley self-hosting status after the runtime int binary call-site slice:
+  `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=435`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source.
+- latest runtime int binary call-site verification on 2026-05-25 EDT:
+  pre-edit `make v1` passed, then `bash -n bin/sley`, `bash -n
+  scripts/self-hosted-test.sh`, the focused static binary call-site guard,
+  `bin/sley self-hosting-status --json`, `git diff --check`, and
+  `scripts/self-hosted-test.sh` passed after the change. A final post-change
+  `make v1` also passed.
 
 ## Dirty State Notes
 
@@ -2506,8 +2525,10 @@ fallback-removal evidence, and through b9d0eac with checker record-shape pass
 family evidence, and through e87a0ed with checker collection/index pass family
 evidence, and through a3b3533 with checker call pass family evidence, and
 through 46ef5da with checker type/return pass family evidence, and through
-571eaa0 with remaining checker descriptor pass evidence, and through 6dc2f94
-with large self-source AST evidence.
+571eaa0 with remaining checker descriptor pass evidence, through 6dc2f94 with
+large self-source AST evidence, through 32e028a with runtime int comparison
+call-site evidence, and through this slice with runtime int binary call-site
+evidence.
 
 Pre-existing untracked files were not touched and should remain outside future
 commits unless the operator explicitly asks to include them:
