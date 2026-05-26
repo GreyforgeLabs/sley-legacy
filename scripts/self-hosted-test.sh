@@ -1566,6 +1566,33 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("local_call_runtime
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("local_call_parser_prefix_runtime_execution"))'
 
+if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("local_call_source_evaluator_execution"))'; then
+  fail "runtime local-call source evaluator marker is missing"
+fi
+
+if ! awk '
+  /^eval_source_value_main_return\(\)[ \t]*\{/ {in_helper=1}
+  in_helper && /sley_eval_source_task "\$file" main/ {source_task=1}
+  in_helper && /runtime_generic_return_descriptor_json "\$return_type" "value"/ {generic_plan=1}
+  in_helper && /runtime_generic_eval_value_task "\$value_kind" "\$value_task" "\$value"/ {generic_eval=1}
+  in_helper && /^[ \t]*}/ {in_helper=0}
+  /^eval_source_local_call_int_main_return\(\)[ \t]*\{/ {in_fn=1}
+  in_fn && /eval_source_value_main_return "\$1" "Int"/ {local_source=1}
+  in_fn && /^[ \t]*}/ {exit}
+  END {exit (source_task && generic_plan && generic_eval && local_source) ? 0 : 1}
+' bin/sley; then
+  fail "runtime local-call int evaluator must route through source task execution and the Sley-owned generic return plan"
+fi
+
+if awk '
+  /^eval_source_local_call_int_main_return\(\)[ \t]*\{/ {in_fn=1}
+  in_fn && /(awk -v call_prefix|extract_sley_task_body|eval_runtime_int_identity_value_task)/ {hardcoded=1}
+  in_fn && /^[ \t]*}/ {exit}
+  END {exit hardcoded ? 0 : 1}
+' bin/sley; then
+  fail "runtime local-call int evaluator must not keep the host call interpreter"
+fi
+
 bin/sley run --json examples/unused_private_task.sley \
   | json_field '.status == "passed" and .value.kind == "Int" and .value.value == 1'
 
@@ -1575,6 +1602,28 @@ bin/sley run --json examples/dead_private_tasks.sley \
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("zero_arg_project_call_runtime_execution"))'
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("zero_arg_project_call_parser_prefix_runtime_execution"))'
+
+if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("zero_arg_project_call_source_evaluator_execution"))'; then
+  fail "runtime zero-argument project-call source evaluator marker is missing"
+fi
+
+if ! awk '
+  /^eval_source_zero_arg_project_call_main_return\(\)[ \t]*\{/ {in_fn=1}
+  in_fn && /eval_source_value_main_return "\$1"/ {source_eval=1}
+  in_fn && /^[ \t]*}/ {exit}
+  END {exit source_eval ? 0 : 1}
+' bin/sley; then
+  fail "runtime zero-argument project-call evaluator must route through source task execution"
+fi
+
+if awk '
+  /^eval_source_zero_arg_project_call_main_return\(\)[ \t]*\{/ {in_fn=1}
+  in_fn && /(awk -v call_prefix|runtime_context_files|resolve_project_import_prefix|extract_sley_task_body|eval_runtime_(int|text)_identity_value_task)/ {hardcoded=1}
+  in_fn && /^[ \t]*}/ {exit}
+  END {exit hardcoded ? 0 : 1}
+' bin/sley; then
+  fail "runtime zero-argument project-call evaluator must not keep the host project-call interpreter"
+fi
 
 bin/sley run --json examples/unused_import_project \
   | json_field '.status == "passed" and .value.kind == "Int" and .value.value == 7'
@@ -1891,6 +1940,43 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("project_call_runti
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("project_call_parser_prefix_runtime_execution"))'
 
+if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("project_call_source_evaluator_execution"))'; then
+  fail "runtime project-call source evaluator marker is missing"
+fi
+
+if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_default_import_alias_source_resolution"))'; then
+  fail "runtime default import-alias source resolution marker is missing"
+fi
+
+if ! awk '
+  /^resolve_sley_import_alias\(\)[ \t]*\{/ {in_fn=1}
+  in_fn && /default_alias=module/ {default_alias=1}
+  in_fn && index($0, "sub(/^.*[.]/") {default_trim=1}
+  in_fn && /default_alias == alias/ {default_match=1}
+  in_fn && /^}/ {exit}
+  END {exit (default_alias && default_trim && default_match) ? 0 : 1}
+' bin/sley; then
+  fail "generic source call resolver must support default aliases from imported module names"
+fi
+
+if ! awk '
+  /^eval_source_project_call_int_main_return\(\)[ \t]*\{/ {in_fn=1}
+  in_fn && /eval_source_value_main_return "\$1" "Int"/ {source_eval=1}
+  in_fn && /^[ \t]*}/ {exit}
+  END {exit source_eval ? 0 : 1}
+' bin/sley; then
+  fail "runtime project-call int evaluator must route through source task execution"
+fi
+
+if awk '
+  /^eval_source_project_call_int_main_return\(\)[ \t]*\{/ {in_fn=1}
+  in_fn && /(awk -v call_prefix|runtime_context_files|collect_files|extract_sley_task_body|eval_runtime_int_binary_operator_value_task)/ {hardcoded=1}
+  in_fn && /^[ \t]*}/ {exit}
+  END {exit hardcoded ? 0 : 1}
+' bin/sley; then
+  fail "runtime project-call int evaluator must not keep the host project-call interpreter"
+fi
+
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_unqualified_import_call_runtime_execution"))'
 
 if ! awk '
@@ -1924,18 +2010,16 @@ fi
 
 if ! awk '
   /^eval_main_call_int_return\(\)[ \t]*\{/ {in_fn=1}
-  in_fn && /sley_eval_source_task "\$file" main/ {source_task=1}
-  in_fn && /runtime_generic_return_descriptor_json "Int" "value"/ {generic_plan=1}
-  in_fn && /runtime_generic_eval_value_task "\$value_kind" "\$value_task" "\$value"/ {generic_eval=1}
+  in_fn && /eval_source_value_main_return "\$1" "Int"/ {source_eval=1}
   in_fn && /^[ \t]*}/ {exit}
-  END {exit (source_task && generic_plan && generic_eval) ? 0 : 1}
+  END {exit source_eval ? 0 : 1}
 ' bin/sley; then
   fail "runtime main-call int evaluator must route through source task execution and the Sley-owned generic return plan"
 fi
 
 if awk '
   /^eval_main_call_int_return\(\)[ \t]*\{/ {in_fn=1}
-  in_fn && /(ast_json "\$target"|def eval_expr)/ {hardcoded=1}
+  in_fn && /(ast_json "\$target"|def eval_expr|sley_eval_source_task "\$file" main)/ {hardcoded=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit hardcoded ? 0 : 1}
 ' bin/sley; then
