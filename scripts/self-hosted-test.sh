@@ -1270,8 +1270,16 @@ jq -er '.schema == "sley.diagnostics.report.v0" and .status == "error" and .diag
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("report_builder_value_type_plan_task_execution")) and (.bootstrap_owned_by_sley | index("report_builder_value_type_dispatch_execution")) and (.bootstrap_owned_by_sley | index("report_builder_value_type_call_site_execution"))'
 
+if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("report_builder_registry_task_execution")) and (.bootstrap_owned_by_sley | index("report_builder_registry_dispatch_execution")) and (.bootstrap_owned_by_sley | index("report_builder_registry_call_site_execution"))'; then
+  fail "report builder registry markers are missing"
+fi
+
 if ! grep -Fq 'REPORT_BUILDER_VALUE_TYPE_PLAN_JSON="$(sley_source_list_task_json loom.reports report_builder_value_type_plan' bin/sley; then
   fail "report builder value type plan must come from loom.reports"
+fi
+
+if ! grep -Fq 'REPORT_BUILDER_REGISTRY_JSON="$(sley_source_list_task_json loom.reports report_builder_registry' bin/sley; then
+  fail "report builder registry must come from loom.reports"
 fi
 
 if ! awk '
@@ -1284,6 +1292,39 @@ if ! awk '
   END {exit (type_plan && descriptor && type_ok && !hardcoded) ? 0 : 1}
 ' bin/sley; then
   fail "report builder type checks must dispatch through the Sley-owned value type plan"
+fi
+
+if ! awk '
+  /^sley_report_builder_descriptor_json\(\)[ \t]*\{/ {in_fn=1}
+  in_fn && /REPORT_BUILDER_REGISTRY_JSON/ {registry=1}
+  in_fn && /select\(\.namespace == \$namespace\)/ {select_namespace=1}
+  in_fn && /^[ \t]*}/ {exit}
+  END {exit (registry && select_namespace) ? 0 : 1}
+' bin/sley; then
+  fail "report builder descriptor lookup must read the Sley-owned registry"
+fi
+
+if ! awk '
+  /^sley_report_builder_for_namespace_json\(\)[ \t]*\{/ {in_fn=1}
+  in_fn && /sley_report_builder_source_json/ {source=1}
+  in_fn && /sley_report_builder_json "\$builder_json"/ {builder=1}
+  in_fn && /^[ \t]*}/ {exit}
+  END {exit (source && builder) ? 0 : 1}
+' bin/sley; then
+  fail "report builder call sites must resolve builders through the Sley-owned registry"
+fi
+
+if awk '
+  /^sley_report_builder_for_namespace_json\(\)[ \t]*\{/ {in_helper=1; next}
+  in_helper && /^[ \t]*}/ {in_helper=0; next}
+  !in_helper && /sley_report_builder_json "\$[A-Z0-9_]+/ {hard_call=1}
+  END {exit hard_call ? 0 : 1}
+' bin/sley; then
+  fail "report builder call sites must not call concrete builder constants directly"
+fi
+
+if grep -Fq 'sley_report_builder_from_report_json' bin/sley; then
+  fail "report-from-report call sites must route through the Sley-owned report builder registry"
 fi
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("verify_report_shape"))'

@@ -5599,6 +5599,7 @@ RUNTIME_RECORD_FIELD_ACCESS_PLAN_JSON="$(sley_source_list_task_json loom.runtime
 DEFAULT_RULES_JSON="$(sley_source_list_task_json loom.lint default_lint_rules)"
 
 REPORT_BUILDER_VALUE_TYPE_PLAN_JSON="$(sley_source_list_task_json loom.reports report_builder_value_type_plan | jq 'map(split("|") | {value_type:.[0], json_type:.[1], item_type:(.[2] // "")})')"
+REPORT_BUILDER_REGISTRY_JSON="$(sley_source_list_task_json loom.reports report_builder_registry | jq 'map(split("|") | {namespace:.[0], schema_task:.[1], builder_task:.[2]})')"
 
 SCHEMA_AST_PROGRAM="$(sley_source_task loom.reports ast_program_schema)"
 AST_PROGRAM_REPORT_FIELDS_JSON="$(sley_source_list_task_json loom.reports ast_program_report_fields)"
@@ -5697,7 +5698,7 @@ done
 
 for _sley_source_list_name in \
   DEFAULT_RULES_JSON \
-  REPORT_BUILDER_VALUE_TYPE_PLAN_JSON \
+  REPORT_BUILDER_VALUE_TYPE_PLAN_JSON REPORT_BUILDER_REGISTRY_JSON \
   AST_PROGRAM_REPORT_FIELDS_JSON AST_PROGRAM_REPORT_BUILDER_JSON \
   AST_NODE_REPORT_FIELDS_JSON AST_NODE_REPORT_BUILDER_JSON \
   DIAGNOSTICS_REPORT_FIELDS_JSON DIAGNOSTICS_REPORT_BUILDER_JSON \
@@ -6320,9 +6321,34 @@ sley_report_builder_json() {
     '
 }
 
-sley_report_builder_from_report_json() {
-  local builder_json="$1" namespace="$2" schema_name="$3" schema_value="$4" report_json="$5"
-  local values_json
+sley_report_builder_descriptor_json() {
+  local namespace="$1"
+  printf '%s\n' "$REPORT_BUILDER_REGISTRY_JSON" | jq -cer \
+    --arg namespace "$namespace" \
+    '.[] | select(.namespace == $namespace)'
+}
+
+sley_report_builder_source_json() {
+  local namespace="$1"
+  local descriptor builder_task
+  descriptor="$(sley_report_builder_descriptor_json "$namespace")" || return 1
+  builder_task="$(printf '%s\n' "$descriptor" | jq -er '.builder_task')" || return 1
+  sley_source_list_task_json loom.reports "$builder_task"
+}
+
+sley_report_builder_for_namespace_json() {
+  local namespace="$1" values_json="$2"
+  local builder_json
+  builder_json="$(sley_report_builder_source_json "$namespace")" || return 1
+  sley_report_builder_json "$builder_json" "$values_json"
+}
+
+sley_report_builder_from_report_kind_json() {
+  local namespace="$1" report_json="$2"
+  local descriptor schema_name schema_value values_json
+  descriptor="$(sley_report_builder_descriptor_json "$namespace")" || return 1
+  schema_name="$(printf '%s\n' "$descriptor" | jq -er '.schema_task')" || return 1
+  schema_value="$(sley_source_task loom.reports "$schema_name")" || return 1
   values_json="$(jq -n \
     --arg namespace "$namespace" \
     --arg schema_name "$schema_name" \
@@ -6330,32 +6356,32 @@ sley_report_builder_from_report_json() {
     --slurpfile report_file <(printf '%s\n' "$report_json") '
     {reports:{($schema_name):$schema}} + {($namespace):$report_file[0]}
   ')"
-  sley_report_builder_json "$builder_json" "$values_json"
+  sley_report_builder_for_namespace_json "$namespace" "$values_json"
 }
 
 ast_program_report_from_json() {
   local report_json="$1"
-  sley_report_builder_from_report_json "$AST_PROGRAM_REPORT_BUILDER_JSON" "ast_program" "ast_program_schema" "$SCHEMA_AST_PROGRAM" "$report_json"
+  sley_report_builder_from_report_kind_json "ast_program" "$report_json"
 }
 
 ast_node_report_from_json() {
   local report_json="$1"
-  sley_report_builder_from_report_json "$AST_NODE_REPORT_BUILDER_JSON" "ast_node" "ast_node_schema" "$SCHEMA_AST_NODE" "$report_json"
+  sley_report_builder_from_report_kind_json "ast_node" "$report_json"
 }
 
 diagnostics_report_from_json() {
   local report_json="$1"
-  sley_report_builder_from_report_json "$DIAGNOSTICS_REPORT_BUILDER_JSON" "diagnostics" "diagnostics_schema" "$SCHEMA_DIAGNOSTICS" "$report_json"
+  sley_report_builder_from_report_kind_json "diagnostics" "$report_json"
 }
 
 graft_outcome_report_from_json() {
   local report_json="$1"
-  sley_report_builder_from_report_json "$GRAFT_OUTCOME_REPORT_BUILDER_JSON" "graft_outcome" "graft_outcome_schema" "$SCHEMA_GRAFT_OUTCOME" "$report_json"
+  sley_report_builder_from_report_kind_json "graft_outcome" "$report_json"
 }
 
 ci_report_from_json() {
   local report_json="$1"
-  sley_report_builder_from_report_json "$CI_REPORT_BUILDER_JSON" "ci" "ci_report_schema" "$SCHEMA_CI_REPORT" "$report_json"
+  sley_report_builder_from_report_kind_json "ci" "$report_json"
 }
 
 contract_report_from_json() {
@@ -6363,16 +6389,16 @@ contract_report_from_json() {
   schema="$(printf '%s\n' "$report_json" | jq -r '.schema? // empty' 2>/dev/null || true)"
   case "$schema" in
     "$SCHEMA_CONTRACT_INVENTORY")
-      sley_report_builder_from_report_json "$CONTRACT_INVENTORY_BUILDER_JSON" "contract_inventory" "contract_inventory_schema" "$SCHEMA_CONTRACT_INVENTORY" "$report_json"
+      sley_report_builder_from_report_kind_json "contract_inventory" "$report_json"
       ;;
     "$SCHEMA_CONTRACT_VALIDATE")
-      sley_report_builder_from_report_json "$CONTRACT_VALIDATE_BUILDER_JSON" "contract_validate" "contract_validate_schema" "$SCHEMA_CONTRACT_VALIDATE" "$report_json"
+      sley_report_builder_from_report_kind_json "contract_validate" "$report_json"
       ;;
     "$SCHEMA_CONTRACT_FIXTURE_CHECK")
-      sley_report_builder_from_report_json "$CONTRACT_FIXTURE_CHECK_BUILDER_JSON" "contract_fixture_check" "contract_fixture_check_schema" "$SCHEMA_CONTRACT_FIXTURE_CHECK" "$report_json"
+      sley_report_builder_from_report_kind_json "contract_fixture_check" "$report_json"
       ;;
     "$SCHEMA_DEPLOY_ARTIFACT_CHECK")
-      sley_report_builder_from_report_json "$DEPLOY_ARTIFACT_CHECK_BUILDER_JSON" "deploy_artifact_check" "deploy_artifact_check_schema" "$SCHEMA_DEPLOY_ARTIFACT_CHECK" "$report_json"
+      sley_report_builder_from_report_kind_json "deploy_artifact_check" "$report_json"
       ;;
     *)
       printf '%s\n' "$report_json"
@@ -6382,12 +6408,12 @@ contract_report_from_json() {
 
 workbench_report_from_json() {
   local report_json="$1"
-  sley_report_builder_from_report_json "$WORKBENCH_REPORT_BUILDER_JSON" "workbench" "workbench_schema" "$SCHEMA_WORKBENCH" "$report_json"
+  sley_report_builder_from_report_kind_json "workbench" "$report_json"
 }
 
 zjx_tool_report_from_json() {
   local report_json="$1"
-  sley_report_builder_from_report_json "$ZJX_TOOL_REPORT_BUILDER_JSON" "zjx_tool" "zjx_tool_schema" "$SCHEMA_ZJX_TOOL" "$report_json"
+  sley_report_builder_from_report_kind_json "zjx_tool" "$report_json"
 }
 
 sley_report_error_json() {
@@ -6419,7 +6445,7 @@ sley_report_error_json() {
       reports:{diagnostics_schema:$schema},
       diagnostics:{status:$status, diagnostics:$diagnostics}
     }')"
-  sley_report_builder_json "$DIAGNOSTICS_REPORT_BUILDER_JSON" "$values_json"
+  sley_report_builder_for_namespace_json "diagnostics" "$values_json"
 }
 
 collect_files() {
@@ -7413,7 +7439,7 @@ query_json() {
         calls:$report.calls
       }
     }')"
-  sley_report_builder_json "$QUERY_REPORT_BUILDER_JSON" "$values_json"
+  sley_report_builder_for_namespace_json "query" "$values_json"
 }
 
 check_json() {
@@ -8226,7 +8252,7 @@ check_json() {
       reports:{diagnostics_schema:$schema},
       diagnostics:{status:$status, diagnostics:$diagnostics}
     }')"
-  sley_report_builder_json "$DIAGNOSTICS_REPORT_BUILDER_JSON" "$values_json"
+  sley_report_builder_for_namespace_json "diagnostics" "$values_json"
 }
 
 lint_json() {
@@ -9484,7 +9510,7 @@ lint_json() {
         findings:$report.findings
       }
     }')"
-  sley_report_builder_json "$LINT_REPORT_BUILDER_JSON" "$values_json"
+  sley_report_builder_for_namespace_json "lint" "$values_json"
 }
 
 doctor_json() {
@@ -9582,7 +9608,7 @@ doctor_json() {
         next_actions:$report.next_actions
       }
     }')"
-  sley_report_builder_json "$DOCTOR_REPORT_BUILDER_JSON" "$values_json"
+  sley_report_builder_for_namespace_json "doctor" "$values_json"
 }
 
 runtime_authority_json() {
@@ -10156,7 +10182,7 @@ run_json() {
       reports:{run_schema:$schema},
       runtime:{runtime_status:$runtime_status, target:$target, value:$value, diagnostics:[]}
     }')"
-  sley_report_builder_json "$RUN_REPORT_BUILDER_JSON" "$values_json"
+  sley_report_builder_for_namespace_json "run" "$values_json"
 }
 
 verify_json() {
@@ -10298,7 +10324,7 @@ verify_json() {
         next_actions:$report.next_actions
       }
     }')"
-  sley_report_builder_json "$VERIFY_REPORT_BUILDER_JSON" "$values_json"
+  sley_report_builder_for_namespace_json "verify" "$values_json"
 }
 
 append_claim_check() {
@@ -10437,7 +10463,7 @@ claim_verify_json() {
       ($fields[9] // "issues"):($checks | map(select(.status == "failed") | {code:.id,message:.message}))
     }
   ')"
-  sley_report_builder_from_report_json "$CLAIM_VERIFY_REPORT_BUILDER_JSON" "claim_verify" "claim_verify_schema" "$SCHEMA_CLAIM_VERIFY" "$report"
+  sley_report_builder_from_report_kind_json "claim_verify" "$report"
   [[ "$failed" -eq 0 ]]
 }
 
@@ -11019,7 +11045,7 @@ tool_conformance() {
       ($fields[4] // "tag_inventory"):($tags|map({tag:.,count:1})),
       ($fields[5] // "issues"):[]
     }')"
-    sley_report_builder_from_report_json "$CONFORMANCE_COVERAGE_BUILDER_JSON" "conformance_coverage" "conformance_coverage_schema" "$SCHEMA_CONFORMANCE_COVERAGE" "$report"
+    sley_report_builder_from_report_kind_json "conformance_coverage" "$report"
     return 0
   fi
   while [[ "$#" -gt 0 ]]; do
@@ -11079,7 +11105,7 @@ tool_conformance() {
       ($fields[13] // "release"):{public_release_ready:false,blocker_count:1,blockers:[{code:"PUBLIC_RELEASE_BLOCKED",message:"public release requires operator approval, strict Sley-written parity, and a published proof bundle"}],next_actions:[{blocker_code:"PUBLIC_RELEASE_BLOCKED",owner:"operator",approval_required:true,action:"approve public release only after strict Sley-written parity and a published proof bundle are present",paths:["docs/PublicReleaseChecklist.md","docs/SleyClaimManifest.json"]}],cargo_package:{manifest:"Cargo.toml",name:null,version:null,edition:null,rust_version:null,description_present:false,readme_present:true,repository_present:false,license:null,license_file:null,publish:null,publish_restricted:true},tree_sitter_package:{package_json:"tree-sitter-sley/package.json",config:"tree-sitter-sley/tree-sitter.json",name:null,version:null,private:null,package_license:null,package_description_present:false,config_license:null,config_description_present:false},license:{file:"LICENSE",present:true,operator_decision_required:false}},
       ($fields[14] // "issues"):(if $status=="passed" then [] elif $require_ready==1 then [{code:"PUBLIC_RELEASE_BLOCKED",message:"public release requires operator approval, strict Sley-written parity, and a published proof bundle"}] else [{code:"CONFORMANCE_DECLARATION_MISMATCH",message:"declared integration test count does not match generated stage-1 count"}] end)
     }')"
-  sley_report_builder_from_report_json "$CONFORMANCE_REPORT_BUILDER_JSON" "conformance" "conformance_report_schema" "$SCHEMA_CONFORMANCE_REPORT" "$report"
+  sley_report_builder_from_report_kind_json "conformance" "$report"
   [[ "$status" == "passed" ]]
 }
 
@@ -11120,7 +11146,7 @@ self_hosting_status_json() {
         remaining_strict_self_hosting_blockers:$blockers
       }
     }')"
-  sley_report_builder_json "$SELF_HOSTING_STATUS_BUILDER_JSON" "$values_json"
+  sley_report_builder_for_namespace_json "self_hosting" "$values_json"
 }
 
 ci_simple_report() {
@@ -12459,7 +12485,7 @@ migrate_json() {
       ($fields[7] // "diagnostics"):[],
       ($fields[8] // "issues"):[]
     }')"
-  sley_report_builder_from_report_json "$MIGRATE_REPORT_BUILDER_JSON" "migrate" "migrate_schema" "$SCHEMA_MIGRATE" "$report"
+  sley_report_builder_from_report_kind_json "migrate" "$report"
 }
 
 command_migrate() {
@@ -12618,7 +12644,7 @@ docgen_json() {
       ($fields[12] // "diagnostics"):[],
       ($fields[13] // "issues"):$issues
     }')"
-  sley_report_builder_from_report_json "$DOCGEN_REPORT_BUILDER_JSON" "docgen" "docgen_schema" "$SCHEMA_DOCGEN" "$report"
+  sley_report_builder_from_report_kind_json "docgen" "$report"
 }
 
 command_docgen() {
@@ -12932,7 +12958,7 @@ sandbox_json() {
       ($fields[7] // "verify"):$verify,
       ($fields[8] // "issues"):$issues
     }')"
-  sley_report_builder_from_report_json "$SANDBOX_REPORT_BUILDER_JSON" "sandbox" "sandbox_schema" "$SCHEMA_SANDBOX" "$report"
+  sley_report_builder_from_report_kind_json "sandbox" "$report"
   [[ "$verify_status" == "passed" ]]
 }
 
@@ -12970,7 +12996,7 @@ agent_bench_json() {
         ($fields[6] // "cases"):[],
         ($fields[7] // "issues"):[{code:"AGENT_BENCH_UNKNOWN_CASE",message:("unknown agent bench case: " + $case_name)}]
       }')"
-    sley_report_builder_from_report_json "$AGENT_BENCH_REPORT_BUILDER_JSON" "agent_bench" "agent_bench_schema" "$SCHEMA_AGENT_BENCH" "$report"
+    sley_report_builder_from_report_kind_json "agent_bench" "$report"
     return 1
   fi
 
@@ -13056,7 +13082,7 @@ agent_bench_json() {
       ],
       ($fields[7] // "issues"):[]
     }')"
-  sley_report_builder_from_report_json "$AGENT_BENCH_REPORT_BUILDER_JSON" "agent_bench" "agent_bench_schema" "$SCHEMA_AGENT_BENCH" "$report"
+  sley_report_builder_from_report_kind_json "agent_bench" "$report"
 }
 
 command_agent_bench() {
@@ -13182,7 +13208,7 @@ command_graph() {
       ($fields[1] // "entry_module"):.entry_module,
       ($fields[2] // "modules"):.modules
     }')"
-    sley_report_builder_from_report_json "$SYMBOL_GRAPH_REPORT_BUILDER_JSON" "symbol_graph" "symbol_graph_schema" "$SCHEMA_SYMBOL_GRAPH" "$report"
+    sley_report_builder_from_report_kind_json "symbol_graph" "$report"
     return
   fi
   ast="$(ast_json "$target")"
@@ -13995,7 +14021,7 @@ command_deploy() {
         }
       ]
     }')"
-  report="$(sley_report_builder_from_report_json "$DEPLOY_REPORT_BUILDER_JSON" "deploy" "deploy_report_schema" "$SCHEMA_DEPLOY_REPORT" "$report")"
+  report="$(sley_report_builder_from_report_kind_json "deploy" "$report")"
   if [[ "$artifacts_requested" == true ]]; then
     if [[ -L "$artifacts_dir" ]]; then
       sley_report_error_json "DEPLOY_ARTIFACT_DIR_SYMLINK_DENIED" "refusing to write deploy artifacts through a symlinked directory" "$artifacts_dir"

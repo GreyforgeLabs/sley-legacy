@@ -2629,6 +2629,27 @@ The latest continuation audit reconfirmed:
   `bin/sley self-hosting-status --json`, `git diff --check`, and
   `scripts/self-hosted-test.sh` passed after the change; final post-change
   `make v1` passed.
+- focused report-builder registry probe:
+  `bin/sley self-hosting-status --json` reported
+  `report_builder_registry_task_execution`,
+  `report_builder_registry_dispatch_execution`,
+  `report_builder_registry_call_site_execution`, and
+  `bootstrap_owned_by_sley=462`; report construction call sites now resolve
+  builder source through `report_builder_registry` from
+  `self-hosted/src/loom/reports.sley`, and the self-hosted regression guard
+  rejects direct calls to concrete report-builder constants or the old
+  host-shaped `sley_report_builder_from_report_json` path.
+- Sley self-hosting status after the report-builder registry slice:
+  `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=462`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source.
+- latest report-builder registry verification on 2026-05-26 EDT:
+  pre-edit `make v1` passed, then `bash -n bin/sley`, `bash -n
+  scripts/self-hosted-test.sh`, focused static report-builder registry guards,
+  targeted diagnostics/query/run/claim-verify/migrate/docgen/ZJX report
+  probes, `bin/sley self-hosting-status --json`, `git diff --check`, and
+  `scripts/self-hosted-test.sh` passed after the change. Final post-change
+  `make v1` passed; log: `/tmp/sley-make-v1-resume.log`.
 
 ## Dirty State Notes
 
@@ -2708,7 +2729,7 @@ evidence, and through the current slice with report-builder value-type plan
 evidence, and through the current slice with runtime bool unary operator
 evidence, and through the current slice with runtime equality operator
 evidence, and through the current slice with runtime if-value plan
-evidence.
+evidence, and through the current slice with report-builder registry evidence.
 
 Pre-existing untracked files were not touched and should remain outside future
 commits unless the operator explicitly asks to include them:
