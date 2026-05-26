@@ -2523,6 +2523,26 @@ The latest continuation audit reconfirmed:
   `bin/sley self-hosting-status --json`, `git diff --check`, and
   `scripts/self-hosted-test.sh` passed after the change. A final post-change
   `make v1` also passed.
+- focused runtime record-field access probe:
+  `bin/sley self-hosting-status --json` reported
+  `runtime_record_field_access_plan_task_execution`,
+  `runtime_record_field_access_dispatch_execution`,
+  `runtime_record_field_access_call_site_plan_execution`, and
+  `bootstrap_owned_by_sley=447`; record-field runtime call sites now route
+  through `eval_runtime_record_field_access_value_task`, which dispatches using
+  `record_field_access_plan` from `self-hosted/src/loom/runtime.sley`, and the
+  self-hosted regression guard rejects direct uses of
+  `eval_runtime_record_field_text_value_task` outside its helper definition.
+- Sley self-hosting status after the runtime record-field access slice:
+  `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=447`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source.
+- latest runtime record-field access verification on 2026-05-26 EDT:
+  pre-edit `make v1` passed, then `bash -n bin/sley`, `bash -n
+  scripts/self-hosted-test.sh`, the focused static record-field call-site
+  guard, targeted record-field runtime probes,
+  `bin/sley self-hosting-status --json`, `git diff --check`, and
+  `scripts/self-hosted-test.sh` passed after the change.
 
 ## Dirty State Notes
 
@@ -2597,6 +2617,7 @@ call-site evidence, and through this slice with runtime int binary call-site
 evidence, and through the current slice with runtime bool binary operator
 evidence, and through the current slice with runtime text binary operator
 evidence, and through the current slice with runtime collection-index operator
+evidence, and through the current slice with runtime record-field access
 evidence.
 
 Pre-existing untracked files were not touched and should remain outside future

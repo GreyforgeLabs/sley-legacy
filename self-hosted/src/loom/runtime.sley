@@ -198,6 +198,12 @@ export task collection_index_operator_plan -> List<Text> {
   ]
 }
 
+export task record_field_access_plan -> List<Text> {
+  return [
+    "name|Text|record_name_text_value"
+  ]
+}
+
 export task int_comparison_operator_plan -> List<Text> {
   return [
     "==|int_equal_value|direct|false",

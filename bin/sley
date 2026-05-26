@@ -1238,7 +1238,7 @@ sley_eval_source_expr() {
     return
   fi
   if [[ "$expr" =~ ^[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\{(.*)\}[.]([A-Za-z_][A-Za-z0-9_]*)$ ]]; then
-    eval_runtime_record_field_text_value_task "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
+    eval_runtime_record_field_access_value_task "Text" "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
     return
   fi
   if [[ "$expr" =~ ^-?[0-9]+$ || "$expr" == "true" || "$expr" == "false" ]]; then
@@ -2109,15 +2109,36 @@ eval_runtime_map_index_int_value_task() {
   eval_runtime_collection_index_operator_value_task "map" "Int" "$pairs_source" "$key"
 }
 
+runtime_record_field_access_descriptor_json() {
+  local field="$1" value_kind="$2"
+  printf '%s\n' "$RUNTIME_RECORD_FIELD_ACCESS_PLAN_JSON" | jq -cer \
+    --arg field "$field" \
+    --arg value_kind "$value_kind" \
+    '.[] | select(.field == $field and .value_kind == $value_kind)'
+}
+
+eval_runtime_record_field_access_value_task() {
+  local value_kind="$1" fields_source="$2" field="$3"
+  local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
+  local descriptor task_name record_json env_json
+  descriptor="$(runtime_record_field_access_descriptor_json "$field" "$value_kind")" || return 1
+  task_name="$(printf '%s\n' "$descriptor" | jq -er '.task')" || return 1
+  case "$value_kind" in
+    Text)
+      record_json="$(sley_runtime_text_record_json "$fields_source")" || return 1
+      printf '%s\n' "$record_json" | jq -e --arg field "$field" 'has($field)' >/dev/null || return 1
+      env_json="$(jq -cn --argjson user "$record_json" '{user:$user}')"
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+  sley_eval_source_task "$runtime_file" "$task_name" "$env_json"
+}
+
 eval_runtime_record_field_text_value_task() {
   local fields_source="$1" field="$2"
-  local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
-  local record_json env_json
-  [[ "$field" == "name" ]] || return 1
-  record_json="$(sley_runtime_text_record_json "$fields_source")" || return 1
-  printf '%s\n' "$record_json" | jq -e --arg field "$field" 'has($field)' >/dev/null || return 1
-  env_json="$(jq -cn --argjson user "$record_json" '{user:$user}')"
-  sley_eval_source_task "$runtime_file" record_name_text_value "$env_json"
+  eval_runtime_record_field_access_value_task "Text" "$fields_source" "$field"
 }
 
 eval_runtime_bool_equal_value_task() {
@@ -2945,7 +2966,7 @@ eval_source_record_field_text_main_return() {
   fields_source="${BASH_REMATCH[2]}"
   field="${BASH_REMATCH[3]}"
   [[ -n "$record_type" ]] || return 1
-  runtime_value="$(eval_runtime_record_field_text_value_task "$fields_source" "$field")"
+  runtime_value="$(eval_runtime_record_field_access_value_task "Text" "$fields_source" "$field")"
   [[ -n "$runtime_value" ]] || return 1
   jq -cn --arg kind "$RUNTIME_TEXT_VALUE_KIND" --arg value "$runtime_value" '{kind:$kind,value:$value}'
 }
@@ -3005,7 +3026,7 @@ eval_source_record_field_call_text_main_return() {
   return_expr="$(printf '%s\n' "$body" | awk '/^[ \t]*return[ \t]+[A-Za-z_][A-Za-z0-9_]*\.[A-Za-z_][A-Za-z0-9_]*[ \t]*$/ {line=$0; sub(/^[ \t]*return[ \t]+/, "", line); sub(/[ \t]*$/, "", line); print line; exit}')"
   [[ -n "$take_name" && "$return_expr" == "$take_name".* ]] || return 1
   field="${return_expr#*.}"
-  runtime_value="$(eval_runtime_record_field_text_value_task "$record_fields" "$field")"
+  runtime_value="$(eval_runtime_record_field_access_value_task "Text" "$record_fields" "$field")"
   [[ -n "$runtime_value" ]] || return 1
   jq -cn --arg kind "$RUNTIME_TEXT_VALUE_KIND" --arg value "$runtime_value" '{kind:$kind,value:$value}'
 }
@@ -5494,6 +5515,7 @@ require_source_text VERSION "$VERSION"
 
 RUNTIME_TEXT_BINARY_OPERATOR_PLAN_JSON="$(sley_source_list_task_json loom.runtime text_binary_operator_plan | jq 'map(split("=>") | {op:.[0], task:.[1]})')"
 RUNTIME_COLLECTION_INDEX_OPERATOR_PLAN_JSON="$(sley_source_list_task_json loom.runtime collection_index_operator_plan | jq 'map(split("|") | {collection_kind:.[0], value_kind:.[1], task:.[2]})')"
+RUNTIME_RECORD_FIELD_ACCESS_PLAN_JSON="$(sley_source_list_task_json loom.runtime record_field_access_plan | jq 'map(split("|") | {field:.[0], value_kind:.[1], task:.[2]})')"
 
 DEFAULT_RULES_JSON="$(sley_source_list_task_json loom.lint default_lint_rules)"
 
