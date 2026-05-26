@@ -1289,7 +1289,7 @@ sley_eval_source_expr() {
     elif [[ "$file" == "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" ]]; then
       printf '%s%s\n' "$left" "$right"
     else
-      eval_runtime_text_concat_value_task "$left" "$right"
+      eval_runtime_text_binary_operator_value_task "+" "$left" "$right"
     fi
     return
   fi
@@ -1340,7 +1340,7 @@ sley_eval_source_expr() {
           if [[ "$file" == "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" ]]; then
             printf '%s%s\n' "$left" "$right"
           else
-            eval_runtime_text_concat_value_task "$left" "$right"
+            eval_runtime_text_binary_operator_value_task "+" "$left" "$right"
           fi
         fi
         ;;
@@ -1422,7 +1422,7 @@ sley_eval_source_expr() {
       *) return 1 ;;
     esac
     if "$seen"; then
-      out="$(eval_runtime_text_concat_value_task "$out" "$value")" || return 1
+      out="$(eval_runtime_text_binary_operator_value_task "+" "$out" "$value")" || return 1
     else
       out="$value"
     fi
@@ -1943,6 +1943,20 @@ eval_runtime_text_concat_value_task() {
   local env_json
   env_json="$(jq -cn --arg left "$left" --arg right "$right" '{left:$left, right:$right}')"
   sley_eval_source_task "$runtime_file" text_concat_value "$env_json"
+}
+
+runtime_text_binary_task_name() {
+  local op="$1"
+  printf '%s\n' "$RUNTIME_TEXT_BINARY_OPERATOR_PLAN_JSON" | jq -er --arg op "$op" '.[] | select(.op == $op) | .task'
+}
+
+eval_runtime_text_binary_operator_value_task() {
+  local op="$1" left="$2" right="$3"
+  local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
+  local task_name env_json
+  task_name="$(runtime_text_binary_task_name "$op")" || return 1
+  env_json="$(jq -cn --arg left "$left" --arg right "$right" '{left:$left, right:$right}')"
+  sley_eval_source_task "$runtime_file" "$task_name" "$env_json"
 }
 
 eval_runtime_bool_identity_value_task() {
@@ -5455,6 +5469,8 @@ require_source_list() {
 
 VERSION="$(sley_source_task loom.bootstrap implementation_version)"
 require_source_text VERSION "$VERSION"
+
+RUNTIME_TEXT_BINARY_OPERATOR_PLAN_JSON="$(sley_source_list_task_json loom.runtime text_binary_operator_plan | jq 'map(split("=>") | {op:.[0], task:.[1]})')"
 
 DEFAULT_RULES_JSON="$(sley_source_list_task_json loom.lint default_lint_rules)"
 

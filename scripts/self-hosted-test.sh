@@ -1041,6 +1041,28 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_pure_task_
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("text_concat_runtime_task_execution"))'
 
+if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_text_binary_operator_plan_task_execution")) and (.bootstrap_owned_by_sley | index("runtime_text_binary_operator_dispatch_execution")) and (.bootstrap_owned_by_sley | index("runtime_text_binary_call_site_plan_execution"))'; then
+  fail "runtime text binary operator plan markers are missing"
+fi
+
+if ! grep -Fq 'RUNTIME_TEXT_BINARY_OPERATOR_PLAN_JSON="$(sley_source_list_task_json loom.runtime text_binary_operator_plan' bin/sley; then
+  fail "runtime text binary operator plan source task dispatch is missing"
+fi
+
+if ! grep -Fq 'runtime_text_binary_task_name()' bin/sley \
+  || ! grep -Fq 'eval_runtime_text_binary_operator_value_task "+"' bin/sley; then
+  fail "runtime text binary operator dispatch must use Sley-owned operator plan"
+fi
+
+if awk '
+  /^eval_runtime_text_concat_value_task\(\)[ \t]*\{/ {in_helper=1; next}
+  in_helper && /^[ \t]*}/ {in_helper=0; next}
+  !in_helper && /eval_runtime_text_concat_value_task/ {hard_call=1}
+  END {exit hard_call ? 0 : 1}
+' bin/sley; then
+  fail "runtime text concat call sites must route through the Sley-owned text operator plan"
+fi
+
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("bool_identity_runtime_task_execution"))'
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_source_main_runtime_execution"))'
