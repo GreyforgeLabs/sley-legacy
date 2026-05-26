@@ -183,6 +183,12 @@ export task bool_binary_operator_plan -> List<Text> {
   ]
 }
 
+export task text_binary_operator_plan -> List<Text> {
+  return [
+    "+=>text_concat_value"
+  ]
+}
+
 export task int_comparison_operator_plan -> List<Text> {
   return [
     "==|int_equal_value|direct|false",
