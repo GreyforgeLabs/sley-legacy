@@ -5519,6 +5519,8 @@ RUNTIME_RECORD_FIELD_ACCESS_PLAN_JSON="$(sley_source_list_task_json loom.runtime
 
 DEFAULT_RULES_JSON="$(sley_source_list_task_json loom.lint default_lint_rules)"
 
+REPORT_BUILDER_VALUE_TYPE_PLAN_JSON="$(sley_source_list_task_json loom.reports report_builder_value_type_plan | jq 'map(split("|") | {value_type:.[0], json_type:.[1], item_type:(.[2] // "")})')"
+
 SCHEMA_AST_PROGRAM="$(sley_source_task loom.reports ast_program_schema)"
 AST_PROGRAM_REPORT_FIELDS_JSON="$(sley_source_list_task_json loom.reports ast_program_report_fields)"
 AST_PROGRAM_REPORT_BUILDER_JSON="$(sley_source_list_task_json loom.reports ast_program_report_builder)"
@@ -5616,6 +5618,7 @@ done
 
 for _sley_source_list_name in \
   DEFAULT_RULES_JSON \
+  REPORT_BUILDER_VALUE_TYPE_PLAN_JSON \
   AST_PROGRAM_REPORT_FIELDS_JSON AST_PROGRAM_REPORT_BUILDER_JSON \
   AST_NODE_REPORT_FIELDS_JSON AST_NODE_REPORT_BUILDER_JSON \
   DIAGNOSTICS_REPORT_FIELDS_JSON DIAGNOSTICS_REPORT_BUILDER_JSON \
@@ -6174,6 +6177,7 @@ sley_assert_source_still_checks() {
 sley_report_builder_json() {
   local builder_json="$1" values_json="$2"
   jq -n \
+    --argjson type_plan "$REPORT_BUILDER_VALUE_TYPE_PLAN_JSON" \
     --slurpfile values_file <(printf '%s\n' "$values_json") \
     --slurpfile builder_file <(printf '%s\n' "$builder_json") \
     '
@@ -6193,6 +6197,8 @@ sley_report_builder_json() {
           value_type:(if $optional then ($raw_type | sub("^Optional<"; "") | sub(">$"; "")) else $raw_type end)
         }
       end;
+    def type_descriptor($value_type):
+      ([$type_plan[]? | select(.value_type == $value_type)][0] // null);
     def source_lookup($source):
       ($source | split(".")) as $parts |
       if ($parts | length) != 2 then
@@ -6206,14 +6212,12 @@ sley_report_builder_json() {
         end
       end;
     def type_ok($value_type; $value):
-      if $value_type == "Json" then true
-      elif $value_type == "Text" then ($value | type) == "string"
-      elif $value_type == "Bool" then ($value | type) == "boolean"
-      elif $value_type == "Int" then ($value | type) == "number"
-      elif $value_type == "List<Text>" then
-        (($value | type) == "array" and all($value[]; type == "string"))
-      elif $value_type == "List<Json>" then
-        ($value | type) == "array"
+      (type_descriptor($value_type)) as $plan |
+      if $plan == null then false
+      elif $plan.json_type == "any" then true
+      elif ($value | type) != $plan.json_type then false
+      elif (($plan.item_type // "") == "" or $plan.item_type == "any") then true
+      elif ($value | type) == "array" then all($value[]; type == $plan.item_type)
       else false end;
     def optional_skip($slot; $found; $value):
       $slot.optional and

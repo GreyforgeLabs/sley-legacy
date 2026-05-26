@@ -1265,6 +1265,24 @@ if bin/sley run --json examples/unused_take.sley > "$runtime_report"; then
 fi
 jq -er '.schema == "sley.diagnostics.report.v0" and .status == "error" and .diagnostics[0].id == "RUNTIME_TAKE_REQUIRED" and .diagnostics[0].message == "`main` requires unsupported runtime take `value`"' "$runtime_report" >/dev/null
 
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("report_builder_value_type_plan_task_execution")) and (.bootstrap_owned_by_sley | index("report_builder_value_type_dispatch_execution")) and (.bootstrap_owned_by_sley | index("report_builder_value_type_call_site_execution"))'
+
+if ! grep -Fq 'REPORT_BUILDER_VALUE_TYPE_PLAN_JSON="$(sley_source_list_task_json loom.reports report_builder_value_type_plan' bin/sley; then
+  fail "report builder value type plan must come from loom.reports"
+fi
+
+if ! awk '
+  /^sley_report_builder_json\(\)[ \t]*\{/ {in_fn=1}
+  in_fn && /--argjson type_plan/ {type_plan=1}
+  in_fn && /def type_descriptor/ {descriptor=1}
+  in_fn && /def type_ok/ {type_ok=1}
+  in_fn && /\$value_type == "Text"/ {hardcoded=1}
+  in_fn && /^}/ {in_fn=0}
+  END {exit (type_plan && descriptor && type_ok && !hardcoded) ? 0 : 1}
+' bin/sley; then
+  fail "report builder type checks must dispatch through the Sley-owned value type plan"
+fi
+
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("verify_report_shape"))'
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("graft_outcome_report_shape"))'
