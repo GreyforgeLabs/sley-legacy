@@ -11,6 +11,37 @@ export task report_builder_value_type_plan -> List<Text> {
   ]
 }
 
+export task report_builder_registry -> List<Text> {
+  return [
+    "ast_program|ast_program_schema|ast_program_report_builder",
+    "ast_node|ast_node_schema|ast_node_report_builder",
+    "diagnostics|diagnostics_schema|diagnostics_report_builder",
+    "doctor|doctor_schema|doctor_report_builder",
+    "lint|lint_schema|lint_report_builder",
+    "query|query_schema|query_report_builder",
+    "symbol_graph|symbol_graph_schema|symbol_graph_report_builder",
+    "run|run_schema|run_report_builder",
+    "verify|verify_schema|verify_report_builder",
+    "graft_outcome|graft_outcome_schema|graft_outcome_report_builder",
+    "claim_verify|claim_verify_schema|claim_verify_report_builder",
+    "conformance|conformance_report_schema|conformance_report_builder",
+    "conformance_coverage|conformance_coverage_schema|conformance_coverage_builder",
+    "ci|ci_report_schema|ci_report_builder",
+    "contract_inventory|contract_inventory_schema|contract_inventory_builder",
+    "contract_validate|contract_validate_schema|contract_validate_builder",
+    "contract_fixture_check|contract_fixture_check_schema|contract_fixture_check_builder",
+    "deploy|deploy_report_schema|deploy_report_builder",
+    "deploy_artifact_check|deploy_artifact_check_schema|deploy_artifact_check_builder",
+    "migrate|migrate_schema|migrate_report_builder",
+    "docgen|docgen_schema|docgen_report_builder",
+    "workbench|workbench_schema|workbench_report_builder",
+    "sandbox|sandbox_schema|sandbox_report_builder",
+    "agent_bench|agent_bench_schema|agent_bench_report_builder",
+    "zjx_tool|zjx_tool_schema|zjx_tool_report_builder",
+    "self_hosting|self_hosting_status_schema|self_hosting_status_builder"
+  ]
+}
+
 export task ast_program_schema -> Text {
   return "sley.ast.program.v0"
 }
