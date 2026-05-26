@@ -5526,51 +5526,17 @@ eval_source_project_call_int_main_return() {
 }
 
 eval_main_call_int_return() {
-  local target="$1"
-  ast_json "$target" | jq -ec \
-    --arg return_kind "$PARSER_RETURN_STATEMENT_KIND" \
-    --arg call_expression_prefix "$PARSER_CALL_EXPRESSION_PREFIX" \
-    --arg int_value_kind "$RUNTIME_INT_VALUE_KIND" '
-    def trim: gsub("^[[:space:]]+|[[:space:]]+$"; "");
-    def call_source_tail($source):
-      if ($source | startswith($call_expression_prefix)) then $source[($call_expression_prefix | length):]
-      else "" end;
-    def call_parts($source):
-      call_source_tail($source) | capture("^(?<callee>[A-Za-z_][A-Za-z0-9_.]*)\\((?<args>.*)\\)\\??$")?;
-    def call_args($args):
-      if (($args | gsub("[[:space:]]"; "")) == "") then []
-      else ($args | split(",") | map(trim)) end;
-    . as $root |
-    def resolve($module; $callee):
-      if ($callee | contains(".")) then
-        ($callee | split(".")) as $parts |
-        ($parts[0]) as $prefix |
-        ([$root.imports[]? | select(.owner_module == $module and ((.alias? // "") == $prefix)) | .module][0]) as $imported |
-        if $imported then ($imported + "." + ($parts[1:] | join("."))) else $callee end
-      else $module + "." + $callee end;
-    def env($takes; $args):
-      reduce range(0; ($takes | length)) as $i ({}; . + {($takes[$i].name): ($args[$i] // "")});
-    def eval_expr($expr; $env):
-      if ($expr | test("^[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\*[[:space:]]*-?[0-9]+$")) then
-        ($expr | capture("^(?<name>[A-Za-z_][A-Za-z0-9_]*)[[:space:]]*\\*[[:space:]]*(?<factor>-?[0-9]+)$")) as $m |
-        (($env[$m.name] // empty) | tonumber) * ($m.factor | tonumber)
-      elif ($expr | test("^[A-Za-z_][A-Za-z0-9_]*$")) then
-        (($env[$expr] // empty) | tonumber)
-      else empty end;
-    ([$root.tasks[]? as $task |
-      $task.body.statements[]? |
-      select(.kind == $return_kind and ((.expr.source? // "") | startswith($call_expression_prefix))) |
-      {module:$task.module, expr:.expr}
-    ][0] // empty) as $main_call |
-    (call_parts($main_call.expr.source)) as $call |
-    (resolve($main_call.module; $call.callee)) as $target_task |
-    ([$root.tasks[]? | select((.module + "." + .name) == $target_task)][0] // empty) as $callee_task |
-    ([$callee_task.body.statements[]? | select(.kind == $return_kind) | .expr.source][0] // empty) as $return_expr |
-    (call_args($call.args)) as $args |
-    (env($callee_task.takes; $args)) as $env |
-    (eval_expr($return_expr; $env)) as $value |
-    {kind:$int_value_kind, value:($value | tostring)}
-  '
+  local target="$1" file value descriptor_json value_kind value_task runtime_value
+  file="$(sley_source_entry_file_for_target "$target")"
+  [[ -n "$file" ]] || return 1
+  value="$(sley_eval_source_task "$file" main '{}')" || return 1
+  [[ "$value" =~ ^-?[0-9]+$ ]] || return 1
+  descriptor_json="$(runtime_generic_return_descriptor_json "Int" "value")" || return 1
+  value_kind="$(printf '%s\n' "$descriptor_json" | jq -er '.value_kind')" || return 1
+  value_task="$(printf '%s\n' "$descriptor_json" | jq -er '.value_task')" || return 1
+  [[ "$value_kind" == "$RUNTIME_INT_VALUE_KIND" ]] || return 1
+  runtime_value="$(runtime_generic_eval_value_task "$value_kind" "$value_task" "$value")" || return 1
+  jq -cn --arg kind "$value_kind" --arg value "$runtime_value" '{kind:$kind,value:$value}'
 }
 
 require_source_text() {
