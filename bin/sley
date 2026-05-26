@@ -1253,7 +1253,7 @@ sley_eval_source_expr() {
     if [[ "$file" == "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" ]]; then
       if [[ "$left" == "true" || "$right" == "true" ]]; then printf 'true\n'; else printf 'false\n'; fi
     else
-      eval_runtime_bool_or_value_task "$left" "$right"
+      eval_runtime_bool_binary_operator_value_task "||" "$left" "$right"
     fi
     return
   fi
@@ -1265,7 +1265,7 @@ sley_eval_source_expr() {
     if [[ "$file" == "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" ]]; then
       if [[ "$left" == "true" && "$right" == "true" ]]; then printf 'true\n'; else printf 'false\n'; fi
     else
-      eval_runtime_bool_and_value_task "$left" "$right"
+      eval_runtime_bool_binary_operator_value_task "&&" "$left" "$right"
     fi
     return
   fi
@@ -1361,7 +1361,7 @@ sley_eval_source_expr() {
           [[ "$right" == "true" || "$right" == "false" ]] || return 1
           if [[ "$left" == "true" && "$right" == "true" ]]; then printf 'true\n'; else printf 'false\n'; fi
         else
-          eval_runtime_bool_and_value_task "$left" "$right"
+          eval_runtime_bool_binary_operator_value_task "&&" "$left" "$right"
         fi
         ;;
       *) return 1 ;;
@@ -2100,6 +2100,22 @@ eval_runtime_text_equal_value_task() {
   local env_json
   env_json="$(jq -cn --arg left "$left" --arg right "$right" '{left:$left, right:$right}')"
   sley_eval_source_task "$runtime_file" text_equal_value "$env_json"
+}
+
+runtime_bool_binary_task_name() {
+  local op="$1"
+  printf '%s\n' "$RUNTIME_BOOL_BINARY_OPERATOR_PLAN_JSON" | jq -er --arg op "$op" '.[] | select(.op == $op) | .task'
+}
+
+eval_runtime_bool_binary_operator_value_task() {
+  local op="$1" left="$2" right="$3"
+  local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
+  local task_name env_json
+  [[ "$left" == "true" || "$left" == "false" ]] || return 1
+  [[ "$right" == "true" || "$right" == "false" ]] || return 1
+  task_name="$(runtime_bool_binary_task_name "$op")" || return 1
+  env_json="$(jq -cn --argjson left "$left" --argjson right "$right" '{left:$left, right:$right}')"
+  sley_eval_source_task "$runtime_file" "$task_name" "$env_json"
 }
 
 eval_runtime_bool_and_value_task() {
@@ -3116,7 +3132,7 @@ eval_source_bool_and_main_return() {
   left="${values%%$'\t'*}"
   right="${values#*$'\t'}"
   [[ -n "$left" && -n "$right" && "$left" != "$values" ]] || return 1
-  runtime_value="$(eval_runtime_bool_and_value_task "$left" "$right")"
+  runtime_value="$(eval_runtime_bool_binary_operator_value_task "&&" "$left" "$right")"
   [[ -n "$runtime_value" ]] || return 1
   printf '{"kind":"%s","value":"%s"}\n' "$RUNTIME_BOOL_VALUE_KIND" "$runtime_value"
 }
@@ -5759,6 +5775,7 @@ RUNTIME_SKIPPED_STATUS="$(sley_source_task loom.runtime skipped_status)"
 RUNTIME_DISPATCH_ORDER_JSON="$(sley_source_list_task_json loom.runtime runtime_dispatch_order)"
 RUNTIME_DISPATCH_PLAN_JSON="$(sley_source_list_task_json loom.runtime runtime_dispatch_plan | jq 'map(split("|") | {evaluator_id:(.[0] | tonumber), candidate:.[1], evaluator_function:.[2]})')"
 RUNTIME_INT_BINARY_OPERATOR_PLAN_JSON="$(sley_source_list_task_json loom.runtime int_binary_operator_plan | jq 'map(split("|") | {op:.[0], task:.[1]})')"
+RUNTIME_BOOL_BINARY_OPERATOR_PLAN_JSON="$(sley_source_list_task_json loom.runtime bool_binary_operator_plan | jq 'map(split("=>") | {op:.[0], task:.[1]})')"
 RUNTIME_INT_COMPARISON_OPERATOR_PLAN_JSON="$(sley_source_list_task_json loom.runtime int_comparison_operator_plan | jq 'map(split("|") | {op:.[0], task:.[1], order:.[2], negate:.[3]})')"
 RUNTIME_CAPABILITY_REQUIRED_ID="$(sley_source_task loom.runtime capability_required_diagnostic_id)"
 RUNTIME_CAPABILITY_SCOPE_DENIED_ID="$(sley_source_task loom.runtime capability_scope_denied_diagnostic_id)"
