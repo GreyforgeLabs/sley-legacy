@@ -1462,6 +1462,30 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("bool_and_runtime_t
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("bool_and_expression_runtime_execution"))'
 
+if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_bool_binary_operator_plan_task_execution")) and (.bootstrap_owned_by_sley | index("runtime_bool_binary_operator_dispatch_execution")) and (.bootstrap_owned_by_sley | index("runtime_bool_binary_call_site_plan_execution"))'; then
+  fail "runtime bool binary operator plan markers are missing"
+fi
+
+if ! grep -Fq 'RUNTIME_BOOL_BINARY_OPERATOR_PLAN_JSON="$(sley_source_list_task_json loom.runtime bool_binary_operator_plan' bin/sley; then
+  fail "runtime bool binary operator plan source task dispatch is missing"
+fi
+
+if ! grep -Fq 'runtime_bool_binary_task_name()' bin/sley \
+  || ! grep -Fq 'select(.op == $op) | .task' bin/sley \
+  || ! grep -Fq 'eval_runtime_bool_binary_operator_value_task "&&"' bin/sley \
+  || ! grep -Fq 'eval_runtime_bool_binary_operator_value_task "||"' bin/sley; then
+  fail "runtime bool binary operator dispatch must use Sley-owned operator plan"
+fi
+
+if awk '
+  /^eval_runtime_bool_(and|or)_value_task\(\)[ \t]*\{/ {in_helper=1; next}
+  in_helper && /^[ \t]*}/ {in_helper=0; next}
+  !in_helper && /eval_runtime_bool_(and|or)_value_task/ {hard_call=1}
+  END {exit hard_call ? 0 : 1}
+' bin/sley; then
+  fail "runtime bool binary call sites must route through the Sley-owned binary operator plan"
+fi
+
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("bool_not_runtime_task_execution"))'
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("not_expression_runtime_execution"))'
