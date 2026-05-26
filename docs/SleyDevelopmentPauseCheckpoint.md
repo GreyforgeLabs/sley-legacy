@@ -2694,6 +2694,27 @@ The latest continuation audit reconfirmed:
   self-hosting-status --json`, and `scripts/self-hosted-test.sh` passed after
   the change. Final post-change `make v1` passed; log:
   `/tmp/sley-make-v1-source-call-fallback.log`.
+- focused runtime host-effect generic source probe:
+  `bin/sley run --json` preserved FileRead Text/Result paths for
+  `examples/file_gate.sley`, `examples/raw_host_migration.sley`,
+  `examples/host_fallibility.sley`, and
+  `fixtures/corpus/accepted/authority/file_read.sley`; seeded host-effect paths
+  still passed for `examples/network_gate.sley` and
+  `examples/agent_deploy_pipeline.sley`. Direct FileRead and seeded host-effect
+  runtime wrappers now route through `eval_source_file_read_main_return` or
+  `eval_source_seeded_host_main_return`, then `eval_source_generic_main_return`
+  and the Sley-owned generic runtime return plan instead of host-side body
+  pattern interpreters.
+- Sley self-hosting status after the runtime host-effect generic source slice:
+  `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=469`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source.
+- latest runtime host-effect generic source verification on 2026-05-26 EDT:
+  `bash -n bin/sley`, `bash -n scripts/self-hosted-test.sh`, `git diff
+  --check`, the focused FileRead/seeded-host runtime probes, `bin/sley
+  self-hosting-status --json`, and `scripts/self-hosted-test.sh` passed after
+  the change. Final post-change `make v1` passed; log:
+  `/tmp/sley-make-v1-host-effect-generic.log`.
 
 ## Dirty State Notes
 
@@ -2775,7 +2796,8 @@ evidence, and through the current slice with runtime equality operator
 evidence, and through the current slice with runtime if-value plan
 evidence, and through the current slice with report-builder registry evidence,
 through the current slice with runtime main-call source-evaluator evidence,
-and through the current slice with runtime source-call fallback evidence.
+through the current slice with runtime source-call fallback evidence, and
+through the current slice with runtime host-effect generic source evidence.
 
 Pre-existing untracked files were not touched and should remain outside future
 commits unless the operator explicitly asks to include them:
