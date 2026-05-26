@@ -1233,6 +1233,7 @@ for source_task_eval_fn in \
   eval_runtime_bool_and_value_task \
   eval_runtime_bool_or_value_task \
   eval_runtime_bool_not_value_task \
+  eval_runtime_if_value_task \
   eval_runtime_bool_if_value_task \
   eval_runtime_int_if_value_task \
   eval_runtime_text_if_value_task \
@@ -1566,6 +1567,31 @@ if awk '
   END {exit hard_call ? 0 : 1}
 ' bin/sley; then
   fail "runtime bool/text equality call sites must route through the Sley-owned equality operator plan"
+fi
+
+if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_if_value_plan_task_execution")) and (.bootstrap_owned_by_sley | index("runtime_if_value_dispatch_execution")) and (.bootstrap_owned_by_sley | index("runtime_if_value_call_site_plan_execution"))'; then
+  fail "runtime if-value plan markers are missing"
+fi
+
+if ! grep -Fq 'RUNTIME_IF_VALUE_PLAN_JSON="$(sley_source_list_task_json loom.runtime if_value_plan' bin/sley; then
+  fail "runtime if-value plan source task dispatch is missing"
+fi
+
+if ! grep -Fq 'runtime_if_value_descriptor_json()' bin/sley \
+  || ! grep -Fq 'select(.value_kind == $value_kind)' bin/sley \
+  || ! grep -Fq 'eval_runtime_if_value_task "Bool"' bin/sley \
+  || ! grep -Fq 'eval_runtime_if_value_task "Int"' bin/sley \
+  || ! grep -Fq 'eval_runtime_if_value_task "Text"' bin/sley; then
+  fail "runtime if-value dispatch must use Sley-owned value-kind plan"
+fi
+
+if awk '
+  /^eval_runtime_(bool|int|text)_if_value_task\(\)[ \t]*\{/ {in_helper=1; next}
+  in_helper && /^[ \t]*}/ {in_helper=0; next}
+  !in_helper && /eval_runtime_(bool|int|text)_if_value_task/ {hard_call=1}
+  END {exit hard_call ? 0 : 1}
+' bin/sley; then
+  fail "runtime Bool/Int/Text if call sites must route through the Sley-owned if-value plan"
 fi
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("bool_and_runtime_task_execution"))'

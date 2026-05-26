@@ -954,11 +954,11 @@ sley_eval_source_if_expr() {
   if [[ "$file" == "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" ]]; then
     if [[ "$condition_value" == "true" ]]; then printf '%s\n' "$then_value"; else printf '%s\n' "$else_value"; fi
   elif [[ "$then_value" == "true" || "$then_value" == "false" || "$else_value" == "true" || "$else_value" == "false" ]]; then
-    eval_runtime_bool_if_value_task "$condition_value" "$then_value" "$else_value"
+    eval_runtime_if_value_task "Bool" "$condition_value" "$then_value" "$else_value"
   elif [[ "$then_value" =~ ^-?[0-9]+$ && "$else_value" =~ ^-?[0-9]+$ ]]; then
-    eval_runtime_int_if_value_task "$condition_value" "$then_value" "$else_value"
+    eval_runtime_if_value_task "Int" "$condition_value" "$then_value" "$else_value"
   else
-    eval_runtime_text_if_value_task "$condition_value" "$then_value" "$else_value"
+    eval_runtime_if_value_task "Text" "$condition_value" "$then_value" "$else_value"
   fi
 }
 
@@ -2279,6 +2279,40 @@ eval_runtime_text_if_value_task() {
   sley_eval_source_task "$runtime_file" text_if_value "$env_json"
 }
 
+runtime_if_value_descriptor_json() {
+  local value_kind="$1"
+  printf '%s\n' "$RUNTIME_IF_VALUE_PLAN_JSON" | jq -cer \
+    --arg value_kind "$value_kind" \
+    '.[] | select(.value_kind == $value_kind)'
+}
+
+eval_runtime_if_value_task() {
+  local value_kind="$1" condition="$2" then_value="$3" else_value="$4"
+  local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
+  local descriptor task_name env_json
+  [[ "$condition" == "true" || "$condition" == "false" ]] || return 1
+  descriptor="$(runtime_if_value_descriptor_json "$value_kind")" || return 1
+  task_name="$(printf '%s\n' "$descriptor" | jq -er '.task')" || return 1
+  case "$value_kind" in
+    Bool)
+      [[ "$then_value" == "true" || "$then_value" == "false" ]] || return 1
+      [[ "$else_value" == "true" || "$else_value" == "false" ]] || return 1
+      env_json="$(jq -cn --argjson condition "$condition" --argjson then_value "$then_value" --argjson else_value "$else_value" '{condition:$condition, then_value:$then_value, else_value:$else_value}')"
+      ;;
+    Int)
+      [[ "$then_value" =~ ^-?[0-9]+$ && "$else_value" =~ ^-?[0-9]+$ ]] || return 1
+      env_json="$(jq -cn --argjson condition "$condition" --argjson then_value "$then_value" --argjson else_value "$else_value" '{condition:$condition, then_value:$then_value, else_value:$else_value}')"
+      ;;
+    Text)
+      env_json="$(jq -cn --argjson condition "$condition" --arg then_value "$then_value" --arg else_value "$else_value" '{condition:$condition, then_value:$then_value, else_value:$else_value}')"
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+  sley_eval_source_task "$runtime_file" "$task_name" "$env_json"
+}
+
 eval_runtime_ok_int_value_task() {
   local value="$1"
   local runtime_file="$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"
@@ -3425,7 +3459,7 @@ eval_source_if_bool_main_return() {
   then_value="$(printf '%s\n' "$values" | cut -f2)"
   else_value="$(printf '%s\n' "$values" | cut -f3)"
   [[ -n "$condition" && -n "$then_value" && -n "$else_value" ]] || return 1
-  runtime_value="$(eval_runtime_bool_if_value_task "$condition" "$then_value" "$else_value")"
+  runtime_value="$(eval_runtime_if_value_task "Bool" "$condition" "$then_value" "$else_value")"
   [[ -n "$runtime_value" ]] || return 1
   printf '{"kind":"%s","value":"%s"}\n' "$RUNTIME_BOOL_VALUE_KIND" "$runtime_value"
 }
@@ -3487,7 +3521,7 @@ eval_source_if_int_expression_main_return() {
   then_value="$(printf '%s\n' "$values" | cut -f2)"
   else_value="$(printf '%s\n' "$values" | cut -f3)"
   [[ -n "$condition" && -n "$then_value" && -n "$else_value" ]] || return 1
-  runtime_value="$(eval_runtime_int_if_value_task "$condition" "$then_value" "$else_value")"
+  runtime_value="$(eval_runtime_if_value_task "Int" "$condition" "$then_value" "$else_value")"
   [[ -n "$runtime_value" ]] || return 1
   printf '{"kind":"%s","value":"%s"}\n' "$RUNTIME_INT_VALUE_KIND" "$runtime_value"
 }
@@ -4121,7 +4155,7 @@ eval_source_compute_text_call_main_return() {
   else_value="$(printf '%s\n' "$class_info" | cut -f3)"
   [[ "$threshold" =~ ^-?[0-9]+$ && -n "$then_value" && -n "$else_value" ]] || return 1
   condition="$(eval_runtime_int_comparison_operator_value_task ">=" "$arg_value" "$threshold")" || return 1
-  runtime_value="$(eval_runtime_text_if_value_task "$condition" "$then_value" "$else_value")" || return 1
+  runtime_value="$(eval_runtime_if_value_task "Text" "$condition" "$then_value" "$else_value")" || return 1
   jq -cn --arg kind "$RUNTIME_TEXT_VALUE_KIND" --arg value "$runtime_value" '{kind:$kind,value:$value}'
 }
 
@@ -4370,7 +4404,7 @@ eval_source_state_if_set_int_main_return() {
     depth=$(( depth + $(sley_count_char_text "$raw" "{") - $(sley_count_char_text "$raw" "}") ))
     if "$in_if" && (( depth <= 1 )); then
       [[ -n "$set_name" && -n "$then_value" && -n "$else_value" ]] || return 1
-      runtime_value="$(eval_runtime_int_if_value_task "$condition_value" "$then_value" "$else_value")" || return 1
+      runtime_value="$(eval_runtime_if_value_task "Int" "$condition_value" "$then_value" "$else_value")" || return 1
       int_env["$set_name"]="$runtime_value"
       in_if=false
       branch=""
@@ -4458,7 +4492,7 @@ eval_source_bool_if_statement_main_return() {
     depth=$(( depth + $(sley_count_char_text "$raw" "{") - $(sley_count_char_text "$raw" "}") ))
     if "$in_if" && (( depth <= 1 )); then
       [[ -n "$then_value" && -n "$else_value" ]] || return 1
-      runtime_value="$(eval_runtime_bool_if_value_task "$condition_value" "$then_value" "$else_value")" || return 1
+      runtime_value="$(eval_runtime_if_value_task "Bool" "$condition_value" "$then_value" "$else_value")" || return 1
       printf '{"kind":"%s","value":"%s"}\n' "$RUNTIME_BOOL_VALUE_KIND" "$runtime_value"
       return 0
     fi
@@ -4501,7 +4535,7 @@ eval_source_literal_if_int_statement_main_return() {
         "$saw_if" || return 1
         expr="${line#return}"
         else_value="$(eval_state_set_int_expr "$expr" int_env)" || return 1
-        runtime_value="$(eval_runtime_int_if_value_task "$condition_value" "$then_value" "$else_value")" || return 1
+        runtime_value="$(eval_runtime_if_value_task "Int" "$condition_value" "$then_value" "$else_value")" || return 1
         printf '{"kind":"%s","value":"%s"}\n' "$RUNTIME_INT_VALUE_KIND" "$runtime_value"
         return 0
       elif [[ -z "$line" || "$line" == "}" ]]; then
@@ -4611,7 +4645,7 @@ eval_source_comparison_if_int_statement_main_return() {
     depth=$(( depth + $(sley_count_char_text "$raw" "{") - $(sley_count_char_text "$raw" "}") ))
     if "$in_if" && (( depth <= 1 )); then
       [[ -n "$then_value" && -n "$else_value" ]] || return 1
-      runtime_value="$(eval_runtime_int_if_value_task "$condition_value" "$then_value" "$else_value")" || return 1
+      runtime_value="$(eval_runtime_if_value_task "Int" "$condition_value" "$then_value" "$else_value")" || return 1
       printf '{"kind":"%s","value":"%s"}\n' "$RUNTIME_INT_VALUE_KIND" "$runtime_value"
       return 0
     fi
@@ -4653,7 +4687,7 @@ eval_source_false_while_int_main_return() {
         "$saw_while" || return 1
         expr="${line#return}"
         fallthrough_value="$(eval_state_set_int_expr "$expr" int_env)" || return 1
-        runtime_value="$(eval_runtime_int_if_value_task false "$body_value" "$fallthrough_value")" || return 1
+        runtime_value="$(eval_runtime_if_value_task "Int" false "$body_value" "$fallthrough_value")" || return 1
         printf '{"kind":"%s","value":"%s"}\n' "$RUNTIME_INT_VALUE_KIND" "$runtime_value"
         return 0
       elif [[ -z "$line" || "$line" == "}" ]]; then
@@ -5887,6 +5921,7 @@ RUNTIME_INT_BINARY_OPERATOR_PLAN_JSON="$(sley_source_list_task_json loom.runtime
 RUNTIME_BOOL_BINARY_OPERATOR_PLAN_JSON="$(sley_source_list_task_json loom.runtime bool_binary_operator_plan | jq 'map(split("=>") | {op:.[0], task:.[1]})')"
 RUNTIME_BOOL_UNARY_OPERATOR_PLAN_JSON="$(sley_source_list_task_json loom.runtime bool_unary_operator_plan | jq 'map(split("=>") | {op:.[0], task:.[1]})')"
 RUNTIME_EQUALITY_OPERATOR_PLAN_JSON="$(sley_source_list_task_json loom.runtime equality_operator_plan | jq 'map(split("|") | {value_kind:.[0], op:.[1], task:.[2]})')"
+RUNTIME_IF_VALUE_PLAN_JSON="$(sley_source_list_task_json loom.runtime if_value_plan | jq 'map(split("|") | {value_kind:.[0], task:.[1]})')"
 RUNTIME_INT_COMPARISON_OPERATOR_PLAN_JSON="$(sley_source_list_task_json loom.runtime int_comparison_operator_plan | jq 'map(split("|") | {op:.[0], task:.[1], order:.[2], negate:.[3]})')"
 RUNTIME_CAPABILITY_REQUIRED_ID="$(sley_source_task loom.runtime capability_required_diagnostic_id)"
 RUNTIME_CAPABILITY_SCOPE_DENIED_ID="$(sley_source_task loom.runtime capability_scope_denied_diagnostic_id)"

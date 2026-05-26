@@ -196,6 +196,14 @@ export task equality_operator_plan -> List<Text> {
   ]
 }
 
+export task if_value_plan -> List<Text> {
+  return [
+    "Bool|bool_if_value",
+    "Int|int_if_value",
+    "Text|text_if_value"
+  ]
+}
+
 export task text_binary_operator_plan -> List<Text> {
   return [
     "+=>text_concat_value"

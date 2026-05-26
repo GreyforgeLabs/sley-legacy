@@ -2607,6 +2607,28 @@ The latest continuation audit reconfirmed:
   targeted bool/text equality runtime probes,
   `bin/sley self-hosting-status --json`, `git diff --check`, and
   `scripts/self-hosted-test.sh` passed after the change.
+- focused runtime if-value plan probe:
+  `bin/sley self-hosting-status --json` reported
+  `runtime_if_value_plan_task_execution`,
+  `runtime_if_value_dispatch_execution`,
+  `runtime_if_value_call_site_plan_execution`, and
+  `bootstrap_owned_by_sley=459`; Bool/Int/Text conditional runtime call sites
+  now route through `eval_runtime_if_value_task`, which dispatches using
+  `if_value_plan` from `self-hosted/src/loom/runtime.sley`, and the
+  self-hosted regression guard rejects direct uses of
+  `eval_runtime_bool_if_value_task`, `eval_runtime_int_if_value_task`, or
+  `eval_runtime_text_if_value_task` outside their helper definitions.
+- Sley self-hosting status after the runtime if-value plan slice:
+  `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=459`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source.
+- latest runtime if-value plan verification on 2026-05-26 EDT:
+  pre-edit `make v1` passed, then `bash -n bin/sley`, `bash -n
+  scripts/self-hosted-test.sh`, the focused static if-value call-site guard,
+  targeted Bool/Int/Text conditional runtime probes,
+  `bin/sley self-hosting-status --json`, `git diff --check`, and
+  `scripts/self-hosted-test.sh` passed after the change; final post-change
+  `make v1` passed.
 
 ## Dirty State Notes
 
@@ -2685,6 +2707,7 @@ evidence, and through the current slice with runtime record-field access
 evidence, and through the current slice with report-builder value-type plan
 evidence, and through the current slice with runtime bool unary operator
 evidence, and through the current slice with runtime equality operator
+evidence, and through the current slice with runtime if-value plan
 evidence.
 
 Pre-existing untracked files were not touched and should remain outside future
