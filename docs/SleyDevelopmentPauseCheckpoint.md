@@ -2667,6 +2667,33 @@ The latest continuation audit reconfirmed:
   `git diff --check`, and `scripts/self-hosted-test.sh` passed after the
   change. Final post-change `make v1` passed; log:
   `/tmp/sley-make-v1-main-call-source.log`.
+- focused runtime source-call fallback probe:
+  `bin/sley run --json` preserved the expected values for
+  `examples/unused_private_task.sley`, `examples/dead_private_tasks.sley`,
+  `examples/unused_import_project`, `examples/duplicate_import_project`,
+  `examples/project`, `examples/unqualified_import_call_project`,
+  `examples/unqualified_import_call_project/src/app/main.sley`, and
+  `fixtures/corpus/accepted/pure_main.sley`; `bin/sley
+  self-hosting-status --json` reported
+  `local_call_source_evaluator_execution`,
+  `zero_arg_project_call_source_evaluator_execution`,
+  `project_call_source_evaluator_execution`, and
+  `runtime_default_import_alias_source_resolution` with
+  `bootstrap_owned_by_sley=467`. Local call, zero-argument project call,
+  one-argument project call, and main-call fallback evaluators now share
+  `eval_source_value_main_return`, which delegates to `sley_eval_source_task`
+  and the Sley-owned generic runtime return plan; the generic source call
+  resolver now supports default import aliases from imported module names.
+- Sley self-hosting status after the runtime source-call fallback slice:
+  `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=467`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source.
+- latest runtime source-call fallback verification on 2026-05-26 EDT:
+  `bash -n bin/sley`, `bash -n scripts/self-hosted-test.sh`, `git diff
+  --check`, the focused runtime call probes, `bin/sley
+  self-hosting-status --json`, and `scripts/self-hosted-test.sh` passed after
+  the change. Final post-change `make v1` passed; log:
+  `/tmp/sley-make-v1-source-call-fallback.log`.
 
 ## Dirty State Notes
 
@@ -2747,7 +2774,8 @@ evidence, and through the current slice with runtime bool unary operator
 evidence, and through the current slice with runtime equality operator
 evidence, and through the current slice with runtime if-value plan
 evidence, and through the current slice with report-builder registry evidence,
-and through the current slice with runtime main-call source-evaluator evidence.
+through the current slice with runtime main-call source-evaluator evidence,
+and through the current slice with runtime source-call fallback evidence.
 
 Pre-existing untracked files were not touched and should remain outside future
 commits unless the operator explicitly asks to include them:
