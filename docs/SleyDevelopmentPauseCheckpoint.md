@@ -2419,6 +2419,25 @@ The latest continuation audit reconfirmed:
   self-hosting-status --json`, `scripts/self-hosted-test.sh`, and final
   `make v1` passed. The final `make v1` run completed with `rc=0` and
   `elapsed=35:09.93`.
+- focused runtime int comparison call-site probe:
+  `bin/sley self-hosting-status --json` reported
+  `runtime_int_comparison_call_site_plan_execution` and
+  `bootstrap_owned_by_sley=434`; remaining direct integer-comparison call
+  sites now route through `eval_runtime_int_comparison_operator_value_task`,
+  which dispatches using `int_comparison_operator_plan` from
+  `self-hosted/src/loom/runtime.sley`, and the self-hosted regression guard
+  rejects direct uses of `eval_runtime_int_less_than_value_task`,
+  `eval_runtime_int_equal_value_task`, or
+  `eval_runtime_int_greater_equal_value_task` outside their helper definitions.
+- Sley self-hosting status after the runtime int comparison call-site slice:
+  `bootstrap`, `strict_self_hosted=false`,
+  `semantic_source_count=6`, `bootstrap_owned_by_sley=434`; remaining blockers
+  are still parser, checker, and runtime semantics from Sley source.
+- latest runtime int comparison call-site verification on 2026-05-25 EDT:
+  pre-edit `make v1` passed, then `bash -n bin/sley`, `bash -n
+  scripts/self-hosted-test.sh`, the focused static comparison call-site guard,
+  `bin/sley self-hosting-status --json`, and `scripts/self-hosted-test.sh`
+  passed after the change. A final post-change `make v1` also passed.
 
 ## Dirty State Notes
 

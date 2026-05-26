@@ -1504,6 +1504,10 @@ if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_int_c
   fail "runtime int comparison operator plan markers are missing"
 fi
 
+if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_int_comparison_call_site_plan_execution"))'; then
+  fail "runtime int comparison call-site plan marker is missing"
+fi
+
 if ! grep -Fq 'RUNTIME_INT_COMPARISON_OPERATOR_PLAN_JSON="$(sley_source_list_task_json loom.runtime int_comparison_operator_plan' bin/sley; then
   fail "runtime int comparison operator plan source task dispatch is missing"
 fi
@@ -1523,6 +1527,15 @@ if awk '
   END {exit hard_map ? 0 : 1}
 ' bin/sley; then
   fail "generic source comparison runtime must not keep host hard-coded int comparison task map"
+fi
+
+if awk '
+  /^eval_runtime_int_(less_than|equal|greater_equal)_value_task\(\)[ \t]*\{/ {in_helper=1; next}
+  in_helper && /^[ \t]*}/ {in_helper=0; next}
+  /eval_runtime_int_(less_than|equal|greater_equal)_value_task/ {hard_call=1}
+  END {exit hard_call ? 0 : 1}
+' bin/sley; then
+  fail "runtime int comparison call sites must route through the Sley-owned comparison operator plan"
 fi
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("int_equal_runtime_task_execution"))'

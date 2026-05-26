@@ -1352,30 +1352,8 @@ sley_eval_source_expr() {
           eval_runtime_int_binary_operator_value_task "*" "$left" "$right"
         fi
         ;;
-      "==")
-        if [[ "$file" == "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" ]]; then
-          if [[ "$left" == "$right" ]]; then printf 'true\n'; else printf 'false\n'; fi
-        elif [[ "$left" == "true" || "$left" == "false" || "$right" == "true" || "$right" == "false" ]]; then
-          eval_runtime_bool_equal_value_task "$left" "$right"
-        elif [[ "$left" =~ ^-?[0-9]+$ && "$right" =~ ^-?[0-9]+$ ]]; then
-          eval_runtime_int_equal_value_task "$left" "$right"
-        else
-          eval_runtime_text_equal_value_task "$left" "$right"
-        fi
-        ;;
-      "!=")
-        if [[ "$file" == "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" ]]; then
-          if [[ "$left" != "$right" ]]; then printf 'true\n'; else printf 'false\n'; fi
-        elif [[ "$left" == "true" || "$left" == "false" || "$right" == "true" || "$right" == "false" ]]; then
-          value="$(eval_runtime_bool_equal_value_task "$left" "$right")" || return 1
-          eval_runtime_bool_not_value_task "$value"
-        elif [[ "$left" =~ ^-?[0-9]+$ && "$right" =~ ^-?[0-9]+$ ]]; then
-          value="$(eval_runtime_int_equal_value_task "$left" "$right")" || return 1
-          eval_runtime_bool_not_value_task "$value"
-        else
-          value="$(eval_runtime_text_equal_value_task "$left" "$right")" || return 1
-          eval_runtime_bool_not_value_task "$value"
-        fi
+      "=="|"!="|">"|"<"|">="|"<=")
+        sley_eval_source_comparison_value "$file" "$left" "$op" "$right"
         ;;
       "&&")
         if [[ "$file" == "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" ]]; then
@@ -1384,38 +1362,6 @@ sley_eval_source_expr() {
           if [[ "$left" == "true" && "$right" == "true" ]]; then printf 'true\n'; else printf 'false\n'; fi
         else
           eval_runtime_bool_and_value_task "$left" "$right"
-        fi
-        ;;
-      ">")
-        [[ "$left" =~ ^-?[0-9]+$ && "$right" =~ ^-?[0-9]+$ ]] || return 1
-        if [[ "$file" == "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" ]]; then
-          if [[ "$left" -gt "$right" ]]; then printf 'true\n'; else printf 'false\n'; fi
-        else
-          eval_runtime_int_less_than_value_task "$right" "$left"
-        fi
-        ;;
-      "<")
-        [[ "$left" =~ ^-?[0-9]+$ && "$right" =~ ^-?[0-9]+$ ]] || return 1
-        if [[ "$file" == "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" ]]; then
-          if [[ "$left" -lt "$right" ]]; then printf 'true\n'; else printf 'false\n'; fi
-        else
-          eval_runtime_int_less_than_value_task "$left" "$right"
-        fi
-        ;;
-      ">=")
-        [[ "$left" =~ ^-?[0-9]+$ && "$right" =~ ^-?[0-9]+$ ]] || return 1
-        if [[ "$file" == "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" ]]; then
-          if [[ "$left" -ge "$right" ]]; then printf 'true\n'; else printf 'false\n'; fi
-        else
-          eval_runtime_int_greater_equal_value_task "$left" "$right"
-        fi
-        ;;
-      "<=")
-        [[ "$left" =~ ^-?[0-9]+$ && "$right" =~ ^-?[0-9]+$ ]] || return 1
-        if [[ "$file" == "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley" ]]; then
-          if [[ "$left" -le "$right" ]]; then printf 'true\n'; else printf 'false\n'; fi
-        else
-          eval_runtime_int_greater_equal_value_task "$right" "$left"
         fi
         ;;
       *) return 1 ;;
@@ -3116,7 +3062,7 @@ eval_source_int_less_than_main_return() {
   left="${values%%$'\t'*}"
   right="${values#*$'\t'}"
   [[ "$left" =~ ^-?[0-9]+$ && "$right" =~ ^-?[0-9]+$ && "$left" != "$values" ]] || return 1
-  runtime_value="$(eval_runtime_int_less_than_value_task "$left" "$right")"
+  runtime_value="$(eval_runtime_int_comparison_operator_value_task "<" "$left" "$right")"
   [[ -n "$runtime_value" ]] || return 1
   printf '{"kind":"%s","value":"%s"}\n' "$RUNTIME_BOOL_VALUE_KIND" "$runtime_value"
 }
@@ -3942,7 +3888,7 @@ eval_source_while_list_sum_int_main_return() {
   [[ -n "$sum_info" ]] || return 1
   list_count="$(printf '%s\n' "$list_values" | count_top_level_list_items)"
   [[ "$list_count" =~ ^[0-9]+$ ]] || return 1
-  condition="$(eval_runtime_int_equal_value_task "$list_count" "$expected_count")" || return 1
+  condition="$(eval_runtime_int_comparison_operator_value_task "==" "$list_count" "$expected_count")" || return 1
   if [[ "$condition" != "true" ]]; then
     runtime_value="$(eval_runtime_int_identity_value_task "$else_value")" || return 1
     printf '{"kind":"%s","value":"%s"}\n' "$RUNTIME_INT_VALUE_KIND" "$runtime_value"
@@ -3950,7 +3896,7 @@ eval_source_while_list_sum_int_main_return() {
   fi
   index=0
   total=0
-  while [[ "$(eval_runtime_int_less_than_value_task "$index" "$list_count")" == "true" ]]; do
+  while [[ "$(eval_runtime_int_comparison_operator_value_task "<" "$index" "$list_count")" == "true" ]]; do
     item="$(eval_runtime_list_index_int_value_task "$list_values" "$index")" || return 1
     total="$(eval_runtime_int_binary_value_task int_add_value "+" "$total" "$item")" || return 1
     index="$(eval_runtime_int_binary_value_task int_add_value "+" "$index" "1")" || return 1
@@ -4056,7 +4002,7 @@ eval_source_compute_text_call_main_return() {
   then_value="$(printf '%s\n' "$class_info" | cut -f2)"
   else_value="$(printf '%s\n' "$class_info" | cut -f3)"
   [[ "$threshold" =~ ^-?[0-9]+$ && -n "$then_value" && -n "$else_value" ]] || return 1
-  condition="$(eval_runtime_int_greater_equal_value_task "$arg_value" "$threshold")" || return 1
+  condition="$(eval_runtime_int_comparison_operator_value_task ">=" "$arg_value" "$threshold")" || return 1
   runtime_value="$(eval_runtime_text_if_value_task "$condition" "$then_value" "$else_value")" || return 1
   jq -cn --arg kind "$RUNTIME_TEXT_VALUE_KIND" --arg value "$runtime_value" '{kind:$kind,value:$value}'
 }
@@ -4514,8 +4460,7 @@ eval_source_comparison_if_int_statement_main_return() {
           right="${int_env[$right_token]}"
         fi
         case "${BASH_REMATCH[2]}" in
-          "<") condition_value="$(eval_runtime_int_less_than_value_task "$left" "$right")" ;;
-          ">") condition_value="$(eval_runtime_int_less_than_value_task "$right" "$left")" ;;
+          "<"|">") condition_value="$(eval_runtime_int_comparison_operator_value_task "${BASH_REMATCH[2]}" "$left" "$right")" ;;
           *) return 1 ;;
         esac
         [[ "$condition_value" == "true" || "$condition_value" == "false" ]] || return 1
