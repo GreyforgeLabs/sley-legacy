@@ -1228,6 +1228,7 @@ for source_task_eval_fn in \
   eval_runtime_record_field_access_value_task \
   eval_runtime_bool_equal_value_task \
   eval_runtime_text_equal_value_task \
+  eval_runtime_equality_operator_value_task \
   eval_runtime_bool_unary_operator_value_task \
   eval_runtime_bool_and_value_task \
   eval_runtime_bool_or_value_task \
@@ -1542,6 +1543,30 @@ bin/sley run --json examples/duplicate_import_project \
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("bool_comparison_runtime_task_execution"))'
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("bool_comparison_runtime_execution"))'
+
+if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_equality_operator_plan_task_execution")) and (.bootstrap_owned_by_sley | index("runtime_equality_operator_dispatch_execution")) and (.bootstrap_owned_by_sley | index("runtime_equality_call_site_plan_execution"))'; then
+  fail "runtime equality operator plan markers are missing"
+fi
+
+if ! grep -Fq 'RUNTIME_EQUALITY_OPERATOR_PLAN_JSON="$(sley_source_list_task_json loom.runtime equality_operator_plan' bin/sley; then
+  fail "runtime equality operator plan source task dispatch is missing"
+fi
+
+if ! grep -Fq 'runtime_equality_operator_descriptor_json()' bin/sley \
+  || ! grep -Fq 'select(.value_kind == $value_kind and .op == $op)' bin/sley \
+  || ! grep -Fq 'eval_runtime_equality_operator_value_task "Bool" "=="' bin/sley \
+  || ! grep -Fq 'eval_runtime_equality_operator_value_task "Text" "=="' bin/sley; then
+  fail "runtime equality operator dispatch must use Sley-owned operator plan"
+fi
+
+if awk '
+  /^eval_runtime_(bool_equal|text_equal)_value_task\(\)[ \t]*\{/ {in_helper=1; next}
+  in_helper && /^[ \t]*}/ {in_helper=0; next}
+  !in_helper && /eval_runtime_(bool_equal|text_equal)_value_task/ {hard_call=1}
+  END {exit hard_call ? 0 : 1}
+' bin/sley; then
+  fail "runtime bool/text equality call sites must route through the Sley-owned equality operator plan"
+fi
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("bool_and_runtime_task_execution"))'
 
