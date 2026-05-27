@@ -58,6 +58,11 @@ here. Dates use UTC-independent calendar dates from the local repo history.
 
 ### Changed
 
+- Report-builder value-type planning and report-builder registry dispatch now
+  execute through Sley-owned source in `self-hosted/src/loom/reports.sley`.
+- Runtime pure `main`, local/project source-call fallbacks, direct `FileRead`,
+  and deterministic seeded host return paths now route through the generic
+  source evaluator and Sley-owned runtime return plan.
 - `make v1` now runs deterministic workbench, agent-bench, migration, docgen,
   sandbox-runner, shadow, ZJX tool replays, and VS Code editor-shim validation plus
   the focused LSP integration tests, contract fixtures, conformance, corpus,

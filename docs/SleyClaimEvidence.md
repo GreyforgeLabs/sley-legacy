@@ -1,7 +1,7 @@
 # Sley Auditable Claim Evidence
 
 Status: public auditor packet
-Last updated: 2026-05-18
+Last updated: 2026-05-27
 
 ## Claim Boundary
 
@@ -53,7 +53,7 @@ structural editing.
 | The public tree has no forbidden foreign-language implementation files under the self-hosting gate. | `scripts/check-self-hosted-code.sh` | `./scripts/check-self-hosted-code.sh` |
 | Sley has a runnable stage-1 command surface. | `bin/sley`, `bin/sley-*`, `Makefile` | `bin/sley --version` |
 | Sley-owned stage-2 semantic source modules exist. | `self-hosted/src/loom/*.sley` | `bin/sley self-hosting-status --json` |
-| Bootstrap version, status fields, source modules, lint rules, schema IDs, diagnostics, runtime seed values, parser classifiers, report shapes, Sley-owned report builders for diagnostics/query/lint/doctor/run/verify/symbol graph/claim verify/conformance/migrate/docgen/sandbox/agent bench/deploy/self-hosting status, checker/lint/runtime status, selected runtime probes, and selected `Result<Text>`/host-gate output paths are read from `.sley` source. | `self-hosted/src/loom/bootstrap.sley`, `parser.sley`, `checker.sley`, `lint.sley`, `runtime.sley`, `reports.sley` | `scripts/self-hosted-test.sh` |
+| Bootstrap version, status fields, source modules, lint rules, schema IDs, diagnostics, runtime seed values, parser classifiers, report shapes, Sley-owned report builders and registry dispatch for diagnostics/query/lint/doctor/run/verify/symbol graph/claim verify/conformance/migrate/docgen/sandbox/agent bench/deploy/self-hosting status, checker/lint/runtime status, selected runtime probes, generic source-evaluator dispatch, and selected `Result<Text>`/host-gate output paths are read from `.sley` source. | `self-hosted/src/loom/bootstrap.sley`, `parser.sley`, `checker.sley`, `lint.sley`, `runtime.sley`, `reports.sley` | `scripts/self-hosted-test.sh` |
 | Structural inspection is exposed as JSON contracts. | `docs/schemas/`, `fixtures/contracts/`, `docs/contracts.md` | `bin/sley ast --json examples/hello.sley` and `bin/sley query --json --kind calls examples/project` |
 | Structural edits can be checked before mutation. | `fixtures/ci_smoke_probe/insert_statement.json` | `bin/sley graft --json --dry-run fixtures/ci_smoke_probe/graft_target.sley fixtures/ci_smoke_probe/insert_statement.json` |
 | Deterministic authority gates are modeled without live host calls. | `examples/*_gate.sley`, `scripts/self-hosted-test.sh` | `bin/sley run --json --cap SecretRead --secret api_key redacted examples/secret_gate.sley` |
@@ -121,3 +121,9 @@ gate, Sley-owned stage-2 semantic modules, compiler-exposed graph/report
 contracts, deterministic authority gates, checked graft previews, a
 machine-checkable claim manifest, and a local v1 gate. The public proof is the
 repository itself plus the commands above.
+
+As of the 2026-05-27 checkpoint, `make v1` passes with 41 schemas,
+127 contract fixtures, 23 accepted corpus cases, 43 rejected corpus cases,
+198 integration checks, and 19/19 local v1 gate checks. Strict self-hosting
+remains blocked until parser, checker, and runtime semantics execute from Sley
+source with parity evidence.
