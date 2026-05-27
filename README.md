@@ -87,8 +87,13 @@ The repo currently proves these claims from a clean checkout:
   The run report status now executes `loom.runtime.runtime_status`.
   The run report top-level field shape is read from
   `self-hosted/src/loom/reports.sley`.
+  Report-builder value-type plans and the report-builder registry now execute
+  through Sley-owned source in `self-hosted/src/loom/reports.sley`.
   Pure `main` string, integer, and boolean literal returns now execute through
   the AST-backed runtime path.
+  Generic source-evaluator dispatch now covers pure `main`, local/project
+  source-call fallbacks, direct `FileRead`, and deterministic seeded host
+  return paths through Sley-owned runtime source and the generic return plan.
   `Result<Int>` and `Result<Text>` report values now pass through Sley-owned
   runtime tasks before shell report wrapping.
   Deterministic host-gate text outputs now route through Sley-owned runtime
@@ -123,6 +128,9 @@ The repo currently proves these claims from a clean checkout:
   `bin/sley claim-verify --json docs/SleyClaimManifest.json`
 - The release gate no longer requires Cargo, Rust, Node, npm, or tree-sitter:
   `make v1`
+- The latest local v1 checkpoint on 2026-05-27 passed with 41 schemas,
+  127 contract fixtures, 23 accepted corpus cases, 43 rejected corpus cases,
+  198 integration checks, and 19/19 local v1 gate checks.
 
 This is not yet the final strict self-hosting claim. The stricter claim means
 the parser/checker/runtime implementation executes from Sley source, with the

@@ -1,7 +1,7 @@
 # Sley Public Release Checklist
 
 Status: blocked pending strict parity, proof bundle, and operator approval.
-Last checked: 2026-05-11.
+Last checked: 2026-05-27.
 
 The local executable v1 gate is:
 
@@ -33,8 +33,9 @@ The regular conformance report currently passes and records:
 - `contract_fixture_count: 127`
 - `corpus_accepted_count: 23`
 - `corpus_rejected_count: 43`
-- `integration_test_count: 197`
-- `declared_integration_test_count: 197`
+- `smoke_case_count: 5`
+- `integration_test_count: 198`
+- `declared_integration_test_count: 198`
 - `test_count_matches_declared: true`
 - `v1_gate_target_count: 19`
 
