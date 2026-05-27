@@ -2716,6 +2716,54 @@ The latest continuation audit reconfirmed:
   the change. Final post-change `make v1` passed; log:
   `/tmp/sley-make-v1-host-effect-generic.log`.
 
+## Stop Checkpoint - 2026-05-27
+
+Operator stopped active Sley development before a new implementation slice was
+started. No tracked implementation files were edited after the public/site
+checkpoint publication work.
+
+Current branch/head at stop:
+
+- branch: `public`
+- local/remote head: `1c03441 docs: refresh Sley checkpoint evidence`
+- tracked worktree: clean
+- pre-existing untracked files remain untouched:
+  `docs/SleyRoadmapAudit.md`, `docs/SleyZJX.md`, `docs/SleyZJX2.md`,
+  `docs/SleyZJXEverythingAudit.md`, and `sleyarena.txt`
+
+Current self-hosting state at stop:
+
+- `status=bootstrap`
+- `strict_self_hosted=false`
+- `semantic_source_count=6`
+- `bootstrap_owned_by_sley=469`
+- remaining strict blockers are still parser semantics, checker semantics, and
+  runtime semantics executing from Sley source
+
+Validation state at stop:
+
+- The last fully completed post-change `make v1` remains the host-effect
+  generic source checkpoint recorded above.
+- A new required pre-edit `make v1` was started on 2026-05-27 before any code
+  edit, but the operator stopped the turn while it was still running. The
+  active `make v1`, `scripts/self-hosted-test.sh`, and child `bin/sley check`
+  processes were terminated. Treat that pre-edit gate as incomplete, not as a
+  pass or failure.
+- Before the stop request, the interrupted gate had emitted repeated
+  `check failed` lines during the long validation phase. Since it was stopped
+  before exit, rerun `make v1` from a clean tracked tree before any future
+  implementation edit and inspect any real failure from a completed run.
+
+Next resume recommendation:
+
+1. Do not continue the exploratory source-evaluator probes from the interrupted
+   session.
+2. Re-run `make v1` first and let it complete.
+3. If green, resume with a narrow report-builder or parser/checker/runtime
+   source-execution slice, not another already-covered host-gate value slice.
+4. Keep each slice small, add focused self-hosted regression guards, run focused
+   probes plus `scripts/self-hosted-test.sh`, then commit.
+
 ## Dirty State Notes
 
 Tracked code was committed at 156dea3 before this pause document was updated.
