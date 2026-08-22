@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+export LC_ALL=C
 
 BRIDGE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SLEY_REPO="$(cd "$BRIDGE_DIR/.." && pwd)"
@@ -9,6 +10,8 @@ MCP_SERVER_VERSION="0.1.0"
 MAX_REQUEST_BYTES="${SLEY_MCP_MAX_REQUEST_BYTES:-1048576}"
 MAX_RESPONSE_BYTES="${SLEY_MCP_MAX_RESPONSE_BYTES:-2097152}"
 TOOL_TIMEOUT_SECONDS="${SLEY_MCP_TOOL_TIMEOUT_SECONDS:-120}"
+MAX_CONFIGURED_FRAME_BYTES=67108864
+MAX_CONFIGURED_TIMEOUT_SECONDS=3600
 REPOSITORY_ROOT=""
 STATE="created"
 
@@ -27,10 +30,14 @@ stdout is reserved for MCP messages; operational logs are written to stderr.
 EOF
 }
 
-require_positive_integer() {
-  local name="$1" value="$2"
+require_bounded_positive_integer() {
+  local name="$1" value="$2" maximum="$3"
   if [[ ! "$value" =~ ^[1-9][0-9]*$ ]]; then
     log "$name must be a positive integer"
+    exit 2
+  fi
+  if [[ "${#value}" -gt "${#maximum}" ]] || [[ "${#value}" -eq "${#maximum}" && "$value" > "$maximum" ]]; then
+    log "$name must not exceed $maximum"
     exit 2
   fi
 }
@@ -159,7 +166,7 @@ tool_result_error_json() {
 run_tool_json() {
   local tool="$1" args_json="$2" workspace="$3"
   local requested_path confined_path operation_file="" stdout_file="$workspace/stdout" stderr_file="$workspace/stderr"
-  local rc=0 response_bytes compact_report expected_schema actual_schema is_error=false
+  local rc=0 response_bytes stderr_bytes file_limit_blocks compact_report expected_schema actual_schema is_error=false
   local -a cmd=()
   requested_path="$(jq -r '.path' <<< "$args_json")"
   confined_path="$(resolve_confined_path "$requested_path")" || {
@@ -202,7 +209,11 @@ run_tool_json() {
       ;;
   esac
 
-  if timeout --signal=TERM --kill-after=2 "$TOOL_TIMEOUT_SECONDS" "${cmd[@]}" > "$stdout_file" 2> "$stderr_file"; then
+  file_limit_blocks=$(( (MAX_RESPONSE_BYTES + 1023) / 1024 ))
+  if (
+    ulimit -f "$file_limit_blocks"
+    exec timeout --signal=TERM --kill-after=2 "$TOOL_TIMEOUT_SECONDS" "${cmd[@]}"
+  ) > "$stdout_file" 2> "$stderr_file"; then
     rc=0
   else
     rc=$?
@@ -215,6 +226,15 @@ run_tool_json() {
     return
   fi
   response_bytes="$(wc -c < "$stdout_file" | tr -d '[:space:]')"
+  stderr_bytes="$(wc -c < "$stderr_file" | tr -d '[:space:]')"
+  if [[ "$rc" -eq 153 && "$response_bytes" -ge "$MAX_RESPONSE_BYTES" ]]; then
+    tool_result_error_json "SLEY_MCP_RESPONSE_TOO_LARGE" "compiler response exceeded ${MAX_RESPONSE_BYTES} bytes"
+    return
+  fi
+  if [[ "$rc" -eq 153 && "$stderr_bytes" -ge "$MAX_RESPONSE_BYTES" ]]; then
+    tool_result_error_json "SLEY_MCP_TOOL_OUTPUT_TOO_LARGE" "compiler diagnostics exceeded ${MAX_RESPONSE_BYTES} bytes"
+    return
+  fi
   if [[ "$response_bytes" -gt "$MAX_RESPONSE_BYTES" ]]; then
     tool_result_error_json "SLEY_MCP_RESPONSE_TOO_LARGE" "compiler response exceeded ${MAX_RESPONSE_BYTES} bytes"
     return
@@ -328,6 +348,7 @@ handle_notification() {
 
 main() {
   local requested_root="" root_real git_root line bytes message id_present method_present
+  local read_limit read_status discard discard_status
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
       --root) requested_root="${2:-}"; shift 2 ;;
@@ -335,9 +356,9 @@ main() {
       *) log "unknown argument: $1"; usage >&2; return 2 ;;
     esac
   done
-  require_positive_integer SLEY_MCP_MAX_REQUEST_BYTES "$MAX_REQUEST_BYTES"
-  require_positive_integer SLEY_MCP_MAX_RESPONSE_BYTES "$MAX_RESPONSE_BYTES"
-  require_positive_integer SLEY_MCP_TOOL_TIMEOUT_SECONDS "$TOOL_TIMEOUT_SECONDS"
+  require_bounded_positive_integer SLEY_MCP_MAX_REQUEST_BYTES "$MAX_REQUEST_BYTES" "$MAX_CONFIGURED_FRAME_BYTES"
+  require_bounded_positive_integer SLEY_MCP_MAX_RESPONSE_BYTES "$MAX_RESPONSE_BYTES" "$MAX_CONFIGURED_FRAME_BYTES"
+  require_bounded_positive_integer SLEY_MCP_TOOL_TIMEOUT_SECONDS "$TOOL_TIMEOUT_SECONDS" "$MAX_CONFIGURED_TIMEOUT_SECONDS"
   [[ "$requested_root" == /* && -d "$requested_root" ]] || { log "--root must name an absolute directory"; return 2; }
   root_real="$(realpath -e -- "$requested_root")" || { log "repository root does not exist"; return 2; }
   git_root="$(git -C "$root_real" rev-parse --show-toplevel 2>/dev/null)" || { log "--root is not a Git repository"; return 2; }
@@ -346,13 +367,35 @@ main() {
   REPOSITORY_ROOT="$root_real"
   log "serving read-only MCP for $REPOSITORY_ROOT"
 
-  while IFS= read -r line || [[ -n "$line" ]]; do
-    bytes="$(printf '%s' "$line" | wc -c | tr -d '[:space:]')"
+  read_limit=$((MAX_REQUEST_BYTES + 1))
+  while :; do
+    line=""
+    if IFS= read -r -n "$read_limit" line; then
+      read_status=0
+    else
+      read_status=$?
+    fi
+    bytes="${#line}"
+    if [[ "$bytes" -eq 0 && "$read_status" -ne 0 ]]; then
+      break
+    fi
     if [[ "$bytes" -eq 0 ]]; then
       jsonrpc_error null -32700 "empty JSON-RPC frame"
       continue
     fi
     if [[ "$bytes" -gt "$MAX_REQUEST_BYTES" ]]; then
+      while [[ "$bytes" -eq "$read_limit" ]]; do
+        discard=""
+        if IFS= read -r -n "$read_limit" discard; then
+          discard_status=0
+        else
+          discard_status=$?
+        fi
+        bytes="${#discard}"
+        if [[ "$bytes" -lt "$read_limit" || "$discard_status" -ne 0 ]]; then
+          break
+        fi
+      done
       jsonrpc_error null -32600 "request exceeds ${MAX_REQUEST_BYTES} bytes"
       continue
     fi

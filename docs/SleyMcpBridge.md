@@ -39,7 +39,14 @@ trace, seal, run, or arbitrary command execution.
 The default maximum request frame is 1 MiB, the default compiler response is
 2 MiB, and each compiler call has a 120-second timeout. Operators may lower or
 raise those positive-integer limits with `SLEY_MCP_MAX_REQUEST_BYTES`,
-`SLEY_MCP_MAX_RESPONSE_BYTES`, and `SLEY_MCP_TOOL_TIMEOUT_SECONDS`.
+`SLEY_MCP_MAX_RESPONSE_BYTES`, and `SLEY_MCP_TOOL_TIMEOUT_SECONDS`. Frame limits
+may not exceed 64 MiB and the timeout may not exceed 3,600 seconds.
+
+Request frames are read in bounded chunks, and an oversized frame is drained
+without retaining the complete frame before the next request is processed.
+Compiler stdout and stderr are protected by a process file-size ceiling before
+the response-size contract is evaluated, so a tool cannot fill the temporary
+workspace with an unbounded report.
 
 This bootstrap bridge processes one stdio request at a time. It recognizes and
 logs `notifications/cancelled` for inactive requests, but cannot preempt a
