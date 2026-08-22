@@ -1,0 +1,190 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DEFAULT_SLEY_BIN="$SCRIPT_DIR/sley"
+DEFAULT_CONTRACT_BIN="$SCRIPT_DIR/sley-contract"
+
+usage() {
+  cat <<'EOF'
+Usage: git-sley-guard [--repo-root PATH]
+
+Validate staged Sley sources and contract fixtures without reading mutable
+worktree copies. The guard checks each affected standalone source or enclosing
+Sley project, denies lint warnings, and validates the staged contract set when
+schemas or fixtures change.
+
+Environment:
+  SLEY_BIN           compiler command (default: adjacent bin/sley)
+  SLEY_CONTRACT_BIN  contract command (default: adjacent bin/sley-contract)
+EOF
+}
+
+die() {
+  printf '[git-sley-guard] error: %s\n' "$*" >&2
+  exit 2
+}
+
+repo_hint="."
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    --repo-root)
+      [[ "$#" -ge 2 ]] || die "--repo-root requires a path"
+      repo_hint="$2"
+      shift 2
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      die "unknown argument: $1"
+      ;;
+  esac
+done
+
+repo_root="$(git -C "$repo_hint" rev-parse --show-toplevel 2>/dev/null)" \
+  || die "$repo_hint is not inside a Git worktree"
+
+if [[ -n "$(git -C "$repo_root" ls-files --unmerged)" ]]; then
+  die "the Git index contains unresolved merge entries"
+fi
+
+changed_paths=()
+while IFS= read -r -d '' path; do
+  changed_paths+=("$path")
+done < <(git -C "$repo_root" diff --cached --name-only -z --diff-filter=ACMRD --)
+
+source_paths=()
+contracts_changed=false
+for path in "${changed_paths[@]}"; do
+  case "$path" in
+    *.sley|sley.toml|*/sley.toml)
+      source_paths+=("$path")
+      ;;
+    docs/schemas/*.schema.json|fixtures/contracts/*.json)
+      contracts_changed=true
+      ;;
+  esac
+done
+
+if [[ "${#source_paths[@]}" -eq 0 && "$contracts_changed" == false ]]; then
+  printf '[git-sley-guard] passed: no staged Sley or contract changes\n'
+  exit 0
+fi
+
+snapshot_parent="$(mktemp -d "${TMPDIR:-/tmp}/git-sley-guard.XXXXXX")"
+snapshot="$snapshot_parent/index"
+mkdir -p "$snapshot"
+cleanup() {
+  rm -rf -- "$snapshot_parent"
+}
+trap cleanup EXIT HUP INT TERM
+
+git -C "$repo_root" checkout-index --all --prefix="$snapshot/" \
+  || die "could not materialize the staged index"
+
+for path in "${changed_paths[@]}"; do
+  case "$path" in
+    *.sley|sley.toml|*/sley.toml|docs/schemas/*.schema.json|fixtures/contracts/*.json)
+      if [[ -L "$snapshot/$path" ]]; then
+        printf '[git-sley-guard] error: staged validation path is a symlink: %q\n' \
+          "$path" >&2
+        exit 2
+      fi
+      ;;
+  esac
+done
+
+sley_bin="${SLEY_BIN:-$DEFAULT_SLEY_BIN}"
+contract_bin="${SLEY_CONTRACT_BIN:-$DEFAULT_CONTRACT_BIN}"
+[[ -x "$sley_bin" ]] || die "Sley compiler is not executable: $sley_bin"
+
+targets=()
+target_labels=()
+add_target() {
+  local target="$1" label="$2" existing
+  for existing in "${targets[@]}"; do
+    [[ "$existing" == "$target" ]] && return 0
+  done
+  targets+=("$target")
+  target_labels+=("$label")
+}
+
+for path in "${source_paths[@]}"; do
+  is_manifest=false
+  if [[ "$path" == "sley.toml" || "$path" == */sley.toml ]]; then
+    is_manifest=true
+    dir="${path%/sley.toml}"
+    [[ "$dir" == "$path" || -z "$dir" ]] && dir="."
+  else
+    dir="${path%/*}"
+    [[ "$dir" == "$path" ]] && dir="."
+  fi
+
+  project_dir=""
+  candidate="$dir"
+  while :; do
+    if [[ -L "$snapshot/$candidate/sley.toml" ]]; then
+      printf '[git-sley-guard] error: project manifest is a symlink: %q\n' \
+        "$candidate/sley.toml" >&2
+      exit 2
+    fi
+    if [[ -f "$snapshot/$candidate/sley.toml" ]]; then
+      project_dir="$candidate"
+      break
+    fi
+    [[ "$candidate" == "." ]] && break
+    if [[ "$candidate" == */* ]]; then
+      candidate="${candidate%/*}"
+    else
+      candidate="."
+    fi
+  done
+
+  if [[ -n "$project_dir" ]]; then
+    add_target "$snapshot/$project_dir" "$project_dir"
+  elif [[ "$is_manifest" == true && -d "$snapshot/$dir" ]]; then
+    add_target "$snapshot/$dir" "$dir"
+  elif [[ -f "$snapshot/$path" ]]; then
+    add_target "$snapshot/$path" "$path"
+  fi
+done
+
+report_file="$snapshot_parent/report.json"
+for i in "${!targets[@]}"; do
+  target="${targets[$i]}"
+  label="${target_labels[$i]}"
+  printf '[git-sley-guard] check staged target: %q\n' "$label"
+  if ! "$sley_bin" check --json "$target" >"$report_file"; then
+    cat "$report_file"
+    printf '[git-sley-guard] failed: staged check rejected %q\n' "$label" >&2
+    exit 1
+  fi
+
+  printf '[git-sley-guard] lint staged target: %q\n' "$label"
+  if ! "$sley_bin" lint --json --deny-warnings "$target" >"$report_file"; then
+    cat "$report_file"
+    printf '[git-sley-guard] failed: staged lint rejected %q\n' "$label" >&2
+    exit 1
+  fi
+done
+
+if [[ "$contracts_changed" == true ]]; then
+  [[ -x "$contract_bin" ]] || die "Sley contract tool is not executable: $contract_bin"
+  [[ -d "$snapshot/docs/schemas" ]] \
+    || die "staged contract validation requires docs/schemas"
+  [[ -d "$snapshot/fixtures/contracts" ]] \
+    || die "staged contract validation requires fixtures/contracts"
+
+  printf '[git-sley-guard] validate staged contract fixtures\n'
+  if ! "$contract_bin" check-fixtures "$snapshot/fixtures/contracts" \
+    --schemas "$snapshot/docs/schemas" --json >"$report_file"; then
+    cat "$report_file"
+    printf '[git-sley-guard] failed: staged contract fixtures were rejected\n' >&2
+    exit 1
+  fi
+fi
+
+printf '[git-sley-guard] passed: %d target(s), contracts=%s\n' \
+  "${#targets[@]}" "$contracts_changed"

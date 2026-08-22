@@ -100,6 +100,7 @@ sley claim-verify --json docs/SleyClaimManifest.json
 ## Companion Commands
 
 ```bash
+git-sley-guard
 sley-ci lint --json --deny-warnings <file-or-project>
 sley-ci doctor --json --deny-warnings <file-or-project>
 sley-ci plan --json --graft-templates <file-or-project>

@@ -121,10 +121,13 @@ checked repairs, stable machine contracts, and manifest-backed conformance.
      ID metadata for `sley-ci corpus`, not a `sley check` oracle. Examples cover
      project roots, standalone sources, and formatter round trips for shipped
      `.sley` files.
-     `.github/actions/sley-v1/action.yml`, `.github/workflows/v1.yml`, and
-     `.pre-commit-config.yaml` now run the repo-level `make v1` gate. The
-     current shell bootstrap does not require Rust or Node for `make v1`;
-     syntax/provider package work remains separate.
+     `.github/actions/sley-v1/action.yml` and `.github/workflows/v1.yml` run
+     the repo-level `make v1` gate, and `.pre-commit-config.yaml` retains that
+     full gate for pre-push. Its pre-commit stage runs `git-sley-guard`, which
+     materializes the Git index and checks only staged Sley targets plus
+     changed contract fixtures; mutable worktree copies are not used as the
+     validation input. The current shell bootstrap does not require Rust or
+     Node for `make v1`; syntax/provider package work remains separate.
    - Bootstrap done when generated `sley new --template deploy` and
      `sley new --template agent` projects can run seeded verify gates, local
      deploy dry-run package reports, a CLI smoke manifest, and the
