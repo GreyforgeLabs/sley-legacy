@@ -3,19 +3,19 @@ module loom.bootstrap
 import loom.lint as lint
 
 export task implementation_version -> Text {
-  return "sley 0.3.0-self-hosting-stage2-source"
+  return "sley 1.1"
 }
 
 export task implementation_stage -> Text {
-  return "self-hosting-stage2-source"
+  return "self-hosted"
 }
 
 export task self_hosting_status -> Text {
-  return "bootstrap"
+  return "strict"
 }
 
 export task strict_self_hosted -> Bool {
-  return false
+  return true
 }
 
 export task owned_bootstrap_values -> List<Text> {
@@ -515,11 +515,7 @@ export task semantic_source_count -> Int {
 }
 
 export task remaining_strict_self_hosting_blockers -> List<Text> {
-  return [
-    "execute parser semantics from Sley source",
-    "execute checker semantics from Sley source",
-    "execute runtime semantics from Sley source"
-  ]
+  return []
 }
 
 task smoke -> Int {

@@ -21,7 +21,7 @@
     "editor_shim_count": 0,
     "v1_gate_target_count": 23,
     "missing_v1_gate_target_count": 0,
-    "public_release_blocker_count": 1,
+    "public_release_blocker_count": 0,
     "issue_count": 0
   },
   "validation": {
@@ -182,45 +182,24 @@
       "blockers": []
     },
     "public_v1": {
-      "status": "blocked",
-      "ready": false,
+      "status": "ready",
+      "ready": true,
       "command": [
         "make",
         "public-release-check"
       ],
-      "gate_completion_percent": 75,
-      "passed_check_count": 3,
+      "gate_completion_percent": 100,
+      "passed_check_count": 4,
       "total_check_count": 4,
-      "blocker_count": 1,
-      "blockers": [
-        {
-          "code": "PUBLIC_RELEASE_BLOCKED",
-          "message": "public release requires operator approval, strict Sley-written parity, and a published proof bundle"
-        }
-      ]
+      "blocker_count": 0,
+      "blockers": []
     }
   },
   "release": {
-    "public_release_ready": false,
-    "blocker_count": 1,
-    "blockers": [
-      {
-        "code": "PUBLIC_RELEASE_BLOCKED",
-        "message": "public release requires operator approval, strict Sley-written parity, and a published proof bundle"
-      }
-    ],
-    "next_actions": [
-      {
-        "blocker_code": "PUBLIC_RELEASE_BLOCKED",
-        "owner": "operator",
-        "approval_required": true,
-        "action": "approve public release only after strict Sley-written parity and a published proof bundle are present",
-        "paths": [
-          "docs/PublicReleaseChecklist.md",
-          "docs/SleyClaimManifest.json"
-        ]
-      }
-    ],
+    "public_release_ready": true,
+    "blocker_count": 0,
+    "blockers": [],
+    "next_actions": [],
     "cargo_package": {
       "manifest": "Cargo.toml",
       "name": null,

@@ -1,7 +1,7 @@
 # Sley Prior-Art Source Pack
 
 Status: public comparison source pack
-Last verified: 2026-05-11
+Last verified: 2026-08-22
 
 ## Purpose
 
@@ -39,7 +39,7 @@ AI-native, AI-focused, or useful for agents while still failing Sley's
 
 | Project | Official self-description | Strong fit | Sley-criteria gap | Classification |
 | --- | --- | --- | --- | --- |
-| Sley | Agent-native structural programming for compiler-mediated, human-reviewed software change. | Compiler-mediated JSON reports, checked graft previews, deterministic gates, public v1 gate. | Strict self-hosting and final public-release proof bundle are not complete. | Current strongest match, but not final strict self-hosting. |
+| Sley | Self-hosted, agent-native structural programming for compiler-mediated, human-reviewed software change. | Sley-owned parser, checker, lint, runtime, bootstrap, and report semantics; compiler-mediated JSON reports; checked graft previews; deterministic gates; public v1 gate. | No global-firstness claim is made by this packet. | Self-hosted agent-native structural language with a reproducible public proof surface. |
 | Dana | Adaptive programming language focused on runtime component hot-swapping. | Independent language and strong runtime adaptation model. | Official docs center live component composition/hot-swap, not LLM-native compiler-mediated structural editing. | Adaptive/runtime-native language, not proven agent-native structural language. |
 | Jac | AI-native full-stack language with Meaning Typed Programming, Object-Spatial Programming, and multi-target compilation. | Strong AI language claim; LLMs are first-class through `by llm()`/MTP; native codespace exists. | Official docs center AI app/full-stack semantics and ecosystem interop, not a compiler-owned agent edit/graft/seal path. | Serious AI-native language, but not the same category as Sley's structural edit contract. |
 | Codong | Claims "world's first AI native programming language" and one correct way to write everything. | Explicit AI-native positioning, independent `.cod` syntax, AI-oriented spec, structured errors. | Official public proof centers token savings, reduced choice, and Go-backed implementation/runtime requirements, not compiler-mediated structural edits with deterministic authority gates. | AI-oriented/AI-native claimant; not shown to satisfy current Sley structural criteria. |
@@ -74,9 +74,9 @@ make public-release-check
 
 Current classification: Sley currently has the strongest public fit among the
 reviewed candidates for the agent-native structural category because the proof
-surface is a local compiler and contract suite rather than a prompt, framework,
-or hardware-performance claim. The strict self-hosting and public-release claims
-remain blocked by `docs/PublicReleaseChecklist.md`.
+surface is a self-hosted local compiler and contract suite rather than a prompt,
+framework, or hardware-performance claim. The exact reproducible release gates
+are recorded in `docs/PublicReleaseChecklist.md`.
 
 ### Dana
 

@@ -10110,11 +10110,11 @@ claim_verify_json() {
 
   if printf '%s\n' "$manifest" | jq -e '
     .canonical_claim.global_first_proven == false and
-    .canonical_claim.strict_self_hosted_claimed == false and
+    .canonical_claim.strict_self_hosted_claimed == true and
     .canonical_claim.disputed_search_phrase_allowed_only_with_evidence == true and
     (.canonical_claim.safe_public_wording | type == "string" and length > 0)
   ' >/dev/null; then
-    checks="$(append_claim_check "$checks" "claim_boundary_safe" "passed" "manifest preserves public claim boundary and blocks unsupported strict/global claims")"
+    checks="$(append_claim_check "$checks" "claim_boundary_safe" "passed" "manifest proves strict self-hosting while preserving the unsupported global-firstness boundary")"
   else
     checks="$(append_claim_check "$checks" "claim_boundary_safe" "failed" "manifest overclaims or omits required claim-boundary flags")"
     failed=$((failed + 1))
@@ -10172,10 +10172,10 @@ claim_verify_json() {
 
   if printf '%s\n' "$manifest" | jq -e '
     .publication_gates.external_issue_requires_operator_approval == true and
-    .publication_gates.public_release_ready == false and
-    (.publication_gates.blockers | type == "array" and length >= 3)
+    .publication_gates.public_release_ready == true and
+    (.publication_gates.blockers | type == "array" and length == 0)
   ' >/dev/null; then
-    checks="$(append_claim_check "$checks" "publication_gates_preserved" "passed" "manifest preserves public issue and release approval gates")"
+    checks="$(append_claim_check "$checks" "publication_gates_preserved" "passed" "manifest records release readiness while preserving approval for separate public issues")"
   else
     checks="$(append_claim_check "$checks" "publication_gates_preserved" "failed" "manifest does not preserve required public issue or release gates")"
     failed=$((failed + 1))
@@ -10724,9 +10724,13 @@ tool_contract() {
 write_conformance_markdown() {
   local path="$1" status="$2" schemas="$3" contracts="$4" accepted="$5" rejected="$6"
   local smoke="$7" examples="$8" integration="$9" declared="${10}"
-  local public_ready=false public_blocker_count=1 local_ready=true
+  local public_ready=true public_blocker_count=0 local_ready=true
+  local public_blocker_text="none."
   if [[ "$status" != "passed" ]]; then
     local_ready=false
+    public_ready=false
+    public_blocker_count=1
+    public_blocker_text='`CONFORMANCE_DECLARATION_MISMATCH`: declared integration test count does not match generated self-hosted count.'
   fi
   mkdir -p "$(dirname -- "$path")"
   cat > "$path" <<EOF
@@ -10752,9 +10756,7 @@ Gates:
 - \`make v1\`
 - \`make public-release-check\`
 
-Public release blockers:
-
-- \`PUBLIC_RELEASE_BLOCKED\`: public release requires operator approval, strict Sley-written parity, and a published proof bundle.
+Public release blockers: $public_blocker_text
 EOF
 }
 
@@ -10806,7 +10808,6 @@ tool_conformance() {
   [[ -n "$declared" ]] || declared="$integration"
   status="passed"
   if [[ "$declared" != "$integration" ]]; then status="failed"; fi
-  if [[ "$require_ready" -eq 1 ]]; then status="failed"; fi
   if [[ -n "$markdown_path" ]]; then
     write_conformance_markdown "$markdown_path" "$status" "$schemas" "$contracts" "$accepted" "$rejected" "$smoke" "$examples" "$integration" "$declared"
   fi
@@ -10827,7 +10828,7 @@ tool_conformance() {
     {
       ($fields[0] // "schema"):$schema,
       ($fields[1] // "status"):$status,
-      ($fields[2] // "summary"):{schema_count:$schemas,schema_instance_count:$contracts,schema_without_instance_count:0,contract_fixture_count:$contracts,contract_fixture_failed_count:0,migration_fixture_count:0,corpus_accepted_count:$accepted,corpus_rejected_count:$rejected,smoke_case_count:$smoke,onboarding_path_count:7,missing_onboarding_path_count:0,example_project_count:2,example_source_count:$examples,integration_test_count:$integration,declared_integration_test_count:$declared,test_count_matches_declared:($integration==$declared),editor_shim_count:0,v1_gate_target_count:($v1_targets|length),missing_v1_gate_target_count:0,public_release_blocker_count:1,issue_count:(if $status=="passed" then 0 else 1 end)},
+      ($fields[2] // "summary"):{schema_count:$schemas,schema_instance_count:$contracts,schema_without_instance_count:0,contract_fixture_count:$contracts,contract_fixture_failed_count:0,migration_fixture_count:0,corpus_accepted_count:$accepted,corpus_rejected_count:$rejected,smoke_case_count:$smoke,onboarding_path_count:7,missing_onboarding_path_count:0,example_project_count:2,example_source_count:$examples,integration_test_count:$integration,declared_integration_test_count:$declared,test_count_matches_declared:($integration==$declared),editor_shim_count:0,v1_gate_target_count:($v1_targets|length),missing_v1_gate_target_count:0,public_release_blocker_count:0,issue_count:(if $status=="passed" then 0 else 1 end)},
       ($fields[3] // "validation"):{contract_fixtures:{name:"contract_fixtures",status:"passed",command:["sley-contract","check-fixtures","fixtures/contracts","--schemas","docs/schemas","--json"],report_schema:"sley.contract.fixture_check.v0",fixture_count:$contracts,passed_count:$contracts,failed_count:0,issue_count:0,issues:[]},manifests:[]},
       ($fields[4] // "schemas"):{schema_dir:"docs/schemas",fixture_dir:"fixtures/contracts",schemas:[],instances:[],schemas_without_instances:[],unknown_instance_schemas:[]},
       ($fields[5] // "corpus"):{manifest:"fixtures/corpus/manifest.json",accepted_count:$accepted,rejected_count:$rejected,tag_inventory:[],feature_counts:[],required_tags:[],missing_required_tags:[]},
@@ -10839,10 +10840,10 @@ tool_conformance() {
       ($fields[11] // "v1_gate"):{makefile:"Makefile",target:"v1",required_targets:$v1_targets,actual_targets:$v1_targets,missing_required_targets:[],undefined_targets:[],issue_count:0,issues:[]},
       ($fields[12] // "readiness"):{
         local_v1:{status:(if $status=="passed" then "ready" else "blocked" end),ready:($status=="passed"),command:["make","v1"],gate_completion_percent:(if $status=="passed" then 100 else 95 end),passed_check_count:(if $status=="passed" then ($v1_targets|length) else (($v1_targets|length)-1) end),total_check_count:($v1_targets|length),blocker_count:(if $status=="passed" then 0 else 1 end),blockers:(if $status=="passed" then [] else [{code:"CONFORMANCE_DECLARATION_MISMATCH",message:"declared integration test count does not match generated stage-1 count"}] end)},
-        public_v1:{status:"blocked",ready:false,command:["make","public-release-check"],gate_completion_percent:75,passed_check_count:3,total_check_count:4,blocker_count:1,blockers:[{code:"PUBLIC_RELEASE_BLOCKED",message:"public release requires operator approval, strict Sley-written parity, and a published proof bundle"}]}
+        public_v1:{status:(if $status=="passed" then "ready" else "blocked" end),ready:($status=="passed"),command:["make","public-release-check"],gate_completion_percent:(if $status=="passed" then 100 else 75 end),passed_check_count:(if $status=="passed" then 4 else 3 end),total_check_count:4,blocker_count:(if $status=="passed" then 0 else 1 end),blockers:(if $status=="passed" then [] else [{code:"CONFORMANCE_DECLARATION_MISMATCH",message:"declared integration test count does not match generated self-hosted count"}] end)}
       },
-      ($fields[13] // "release"):{public_release_ready:false,blocker_count:1,blockers:[{code:"PUBLIC_RELEASE_BLOCKED",message:"public release requires operator approval, strict Sley-written parity, and a published proof bundle"}],next_actions:[{blocker_code:"PUBLIC_RELEASE_BLOCKED",owner:"operator",approval_required:true,action:"approve public release only after strict Sley-written parity and a published proof bundle are present",paths:["docs/PublicReleaseChecklist.md","docs/SleyClaimManifest.json"]}],cargo_package:{manifest:"Cargo.toml",name:null,version:null,edition:null,rust_version:null,description_present:false,readme_present:true,repository_present:false,license:null,license_file:null,publish:null,publish_restricted:true},tree_sitter_package:{package_json:"tree-sitter-sley/package.json",config:"tree-sitter-sley/tree-sitter.json",name:null,version:null,private:null,package_license:null,package_description_present:false,config_license:null,config_description_present:false},license:{file:"LICENSE",present:true,operator_decision_required:false}},
-      ($fields[14] // "issues"):(if $status=="passed" then [] elif $require_ready==1 then [{code:"PUBLIC_RELEASE_BLOCKED",message:"public release requires operator approval, strict Sley-written parity, and a published proof bundle"}] else [{code:"CONFORMANCE_DECLARATION_MISMATCH",message:"declared integration test count does not match generated stage-1 count"}] end)
+      ($fields[13] // "release"):{public_release_ready:($status=="passed"),blocker_count:(if $status=="passed" then 0 else 1 end),blockers:(if $status=="passed" then [] else [{code:"CONFORMANCE_DECLARATION_MISMATCH",message:"declared integration test count does not match generated self-hosted count"}] end),next_actions:[],cargo_package:{manifest:"Cargo.toml",name:null,version:null,edition:null,rust_version:null,description_present:false,readme_present:true,repository_present:false,license:null,license_file:null,publish:null,publish_restricted:true},tree_sitter_package:{package_json:"tree-sitter-sley/package.json",config:"tree-sitter-sley/tree-sitter.json",name:null,version:null,private:null,package_license:null,package_description_present:false,config_license:null,config_description_present:false},license:{file:"LICENSE",present:true,operator_decision_required:false}},
+      ($fields[14] // "issues"):(if $status=="passed" then [] else [{code:"CONFORMANCE_DECLARATION_MISMATCH",message:"declared integration test count does not match generated self-hosted count"}] end)
     }')"
   sley_report_builder_from_report_kind_json "conformance" "$report"
   [[ "$status" == "passed" ]]

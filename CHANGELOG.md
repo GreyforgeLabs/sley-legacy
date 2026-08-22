@@ -5,6 +5,10 @@ here. Dates use UTC-independent calendar dates from the local repo history.
 
 ## Unreleased
 
+No changes yet.
+
+## v1.1 - 2026-08-22
+
 ### Added
 
 - `sley graph-diff`, a report-only three-way semantic comparison surface with
