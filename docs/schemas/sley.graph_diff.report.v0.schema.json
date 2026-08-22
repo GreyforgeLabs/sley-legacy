@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.graph_diff.report.v0",
+  "title": "Sley Three-way Graph Diff Report v0",
+  "type": "object",
+  "required": [
+    "schema",
+    "status",
+    "mode",
+    "merge_permitted",
+    "inputs",
+    "summary",
+    "identity_rules",
+    "changes",
+    "conflicts",
+    "projection_checks",
+    "next_actions",
+    "issues"
+  ],
+  "properties": {
+    "schema": {"const": "sley.graph_diff.report.v0"},
+    "status": {"enum": ["passed", "conflicted", "unsupported"]},
+    "mode": {"const": "report_only"},
+    "merge_permitted": {"const": false},
+    "inputs": {
+      "type": "object",
+      "required": ["base", "ours", "theirs"],
+      "properties": {
+        "base": {"$ref": "#/$defs/input"},
+        "ours": {"$ref": "#/$defs/input"},
+        "theirs": {"$ref": "#/$defs/input"}
+      },
+      "additionalProperties": false
+    },
+    "summary": {
+      "type": "object",
+      "required": ["node_change_count", "call_change_count", "conflict_count", "unsupported_count"],
+      "properties": {
+        "node_change_count": {"type": "integer", "minimum": 0},
+        "call_change_count": {"type": "integer", "minimum": 0},
+        "conflict_count": {"type": "integer", "minimum": 0},
+        "unsupported_count": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "identity_rules": {"type": "array", "items": {"$ref": "#/$defs/identityRule"}},
+    "changes": {"type": "array", "items": {"$ref": "#/$defs/change"}},
+    "conflicts": {"type": "array", "items": {"$ref": "#/$defs/conflict"}},
+    "projection_checks": {"type": "array", "items": {"$ref": "#/$defs/projectionCheck"}},
+    "next_actions": {"type": "array", "items": {"$ref": "#/$defs/action"}},
+    "issues": {"type": "array", "items": {"$ref": "#/$defs/issue"}}
+  },
+  "$defs": {
+    "input": {
+      "type": "object",
+      "required": ["path", "entry_module", "graph_digest", "source_digest"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "entry_module": {"type": "string"},
+        "graph_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+        "source_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+      },
+      "additionalProperties": false
+    },
+    "identityRule": {
+      "type": "object",
+      "required": ["node_kind", "rule", "stability"],
+      "properties": {
+        "node_kind": {"type": "string", "minLength": 1},
+        "rule": {"type": "string", "minLength": 1},
+        "stability": {"enum": ["stable", "stable_within_projection", "provisional_fail_closed"]}
+      },
+      "additionalProperties": false
+    },
+    "change": {
+      "type": "object",
+      "required": ["side", "identity", "node_kind", "change_kind", "before", "after", "ordering_key"],
+      "properties": {
+        "side": {"enum": ["ours", "theirs"]},
+        "identity": {"type": "string", "minLength": 1},
+        "node_kind": {"enum": ["module", "import", "type", "effect", "task", "call"]},
+        "change_kind": {"enum": ["added", "modified", "deleted"]},
+        "before": {"type": ["object", "null"]},
+        "after": {"type": ["object", "null"]},
+        "ordering_key": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "conflict": {
+      "type": "object",
+      "required": ["class", "identity", "sides", "evidence", "fail_closed_reason"],
+      "properties": {
+        "class": {"enum": ["same_node_edit", "rename_delete", "call_site_rewrite", "effect_change", "gate_change", "projection_drift", "unsupported_ambiguous"]},
+        "identity": {"type": "string", "minLength": 1},
+        "sides": {"type": "array", "minItems": 1, "items": {"enum": ["base", "ours", "theirs"]}},
+        "evidence": {"type": "object"},
+        "fail_closed_reason": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "projectionCheck": {
+      "type": "object",
+      "required": ["side", "projection", "status", "schema"],
+      "properties": {
+        "side": {"enum": ["base", "ours", "theirs"]},
+        "projection": {"enum": ["query", "graph", "ast", "slice"]},
+        "status": {"enum": ["passed", "failed", "unsupported"]},
+        "schema": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "action": {
+      "type": "object",
+      "required": ["kind", "command"],
+      "properties": {
+        "kind": {"enum": ["inspect_only", "validate_each_side"]},
+        "command": {"type": "array", "minItems": 1, "items": {"type": "string"}}
+      },
+      "additionalProperties": false
+    },
+    "issue": {
+      "type": "object",
+      "required": ["code", "message"],
+      "properties": {
+        "code": {"type": "string", "minLength": 1},
+        "message": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

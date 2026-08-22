@@ -77,6 +77,7 @@ sley ast --json <file-or-project>
 sley ast --json --node <node-id> <file-or-project>
 sley graph --json <file-or-project>
 sley graph --json --slice <node-id> <file-or-project>
+sley graph-diff --json --base <target> --ours <target> --theirs <target>
 sley query --json --kind calls <file-or-project>
 sley lint --json <file-or-project>
 sley plan --json --graft-templates <file-or-project>

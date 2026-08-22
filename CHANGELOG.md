@@ -7,6 +7,9 @@ here. Dates use UTC-independent calendar dates from the local repo history.
 
 ### Added
 
+- `sley graph-diff`, a report-only three-way semantic comparison surface with
+  stable compiler identities, deterministic change ordering, explicit
+  fail-closed conflict classes, and no merge or source-write authority.
 - `sley-mcp-bridge`, a bounded read-only MCP stdio server exposing
   compiler-owned query, lint, plan, dry-run graft, and verify reports under an
   explicitly configured Git repository root.
