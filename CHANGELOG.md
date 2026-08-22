@@ -66,6 +66,9 @@ here. Dates use UTC-independent calendar dates from the local repo history.
 
 ### Changed
 
+- `sley-mcp-bridge` now bounds request buffering, rejects configured frame
+  limits above 64 MiB, caps tool timeouts at one hour, and applies a process
+  file-size ceiling before validating compiler output.
 - Runtime dispatch now uses only the `Unit` and generic Sley source evaluators;
   multiline maps and transparent scalar return aliases execute through the
   generic path, and unsupported source fails closed instead of returning a

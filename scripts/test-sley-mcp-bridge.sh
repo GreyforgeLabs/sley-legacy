@@ -150,6 +150,17 @@ initialize_message | run_bridge request_limit env SLEY_MCP_MAX_REQUEST_BYTES=64
 jq -e '.error.code == -32600 and (.error.message | contains("request exceeds"))' "$WORK_DIR/request_limit.out" >/dev/null || fail "large request limit mismatch"
 
 {
+  printf '%080d\n' 0
+  jq -cn '{jsonrpc:"2.0",id:51,method:"ping",params:{}}'
+} | run_bridge request_limit_recovery env SLEY_MCP_MAX_REQUEST_BYTES=64
+jq -s -e 'length == 2 and .[0].error.code == -32600 and .[1].id == 51 and .[1].result == {}' "$WORK_DIR/request_limit_recovery.out" >/dev/null || fail "large request frame recovery mismatch"
+
+if SLEY_MCP_MAX_REQUEST_BYTES=67108865 "$BRIDGE" --root "$ROOT_DIR" </dev/null > "$WORK_DIR/request_limit_cap.out" 2> "$WORK_DIR/request_limit_cap.err"; then
+  fail "bridge accepted a request limit above its configured ceiling"
+fi
+rg -q 'must not exceed 67108864' "$WORK_DIR/request_limit_cap.err" || fail "request limit ceiling diagnostic mismatch"
+
+{
   initialize_message
   initialized_message
   jq -cn '{jsonrpc:"2.0",id:60,method:"tools/call",params:{name:"sley_query",arguments:{path:"self-hosted"}}}'
