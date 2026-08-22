@@ -1991,6 +1991,32 @@ if ! awk '
   fail "runtime dispatch candidate execution must call the Sley-owned evaluator function map"
 fi
 
+if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_generic_only_dispatch_execution")) and (.bootstrap_owned_by_sley | index("runtime_legacy_dispatch_fallback_removal_execution"))'; then
+  fail "generic-only runtime dispatch ownership markers are missing"
+fi
+
+if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_dispatch_miss_fail_closed_execution")) and (.bootstrap_owned_by_sley | index("generic_multiline_map_literal_runtime_execution")) and (.bootstrap_owned_by_sley | index("generic_return_type_alias_resolution_execution"))'; then
+  fail "generic runtime map/fail-closed ownership markers are missing"
+fi
+
+runtime_dispatch_source_rows() {
+  local task="$1"
+  awk -v task="$task" '
+    $0 ~ "^export task " task " -> List<Text>" {in_task=1; next}
+    in_task && /^[[:space:]]*]/ {exit}
+    in_task && match($0, /"[^"]+"/) {print substr($0, RSTART + 1, RLENGTH - 2)}
+  ' self-hosted/src/loom/runtime.sley
+}
+
+if [[ "$(runtime_dispatch_source_rows runtime_dispatch_order)" != $'unit_main\ngeneric_main' ]] \
+  || [[ "$(runtime_dispatch_source_rows runtime_dispatch_plan)" != $'0|unit_main|eval_source_unit_main_return\n1|generic_main|eval_source_generic_main_return' ]]; then
+  fail "runtime dispatch must contain only the Unit and generic Sley source evaluators"
+fi
+
+if rg -q '^\s+"[0-9]+\|(?:result_flow_int|compute_text_call|while_list_sum_int|state_set_int|each_sum_int|each_map_sum_int|tally_set_int|bound_int|if_int_expression|state_if_set_int|literal_if_int_statement|comparison_if_int_statement|false_while_int|if_int|pure_literal|simple_scalar|bool_equal|int_less_than|negated_comparison|if_bool|bool_if_statement|bool_and|bool_not|bool_main|simple_arithmetic_int|bound_arithmetic_int|simple_int|text_concat|len_int|parenthesized_arithmetic_int|list_index_int|bound_list_index_sum_int|collection_index_sum_int|map_index_text|record_field_text|record_field_call_text|direct_file_read_ok_text|direct_file_read_text|seeded_host_result|seeded_host_text|zero_arg_project_call|local_call_int|project_call_int|main_call_int)\|' self-hosted/src/loom/runtime.sley; then
+  fail "legacy compatibility evaluators must not remain in the active runtime dispatch plan"
+fi
+
 if grep -Fq 'line ~ /^(while|forge)([ \t{]|$)/' bin/sley; then
   fail "generic runtime block support must be driven by loom.runtime, not a host hard-coded while/forge block list"
 fi
@@ -2011,6 +2037,11 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("each_map_sum_runti
 
 bin/sley run --json examples/maps_for.sley \
   | json_field '.status == "passed" and .value.kind == "Int" and .value.value == 15'
+
+if bin/sley run --json examples/empty_forge_statement.sley > "$runtime_report"; then
+  fail "unsupported runtime source unexpectedly passed through the Raw fallback"
+fi
+jq -er '.status == "failed" and .diagnostics[0].id == "RUNTIME_UNSUPPORTED_SOURCE" and (.diagnostics[0].message | contains("empty_forge_statement.sley"))' "$runtime_report" >/dev/null
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("project_call_runtime_execution"))'
 

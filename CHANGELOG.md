@@ -60,6 +60,10 @@ here. Dates use UTC-independent calendar dates from the local repo history.
 
 ### Changed
 
+- Runtime dispatch now uses only the `Unit` and generic Sley source evaluators;
+  multiline maps and transparent scalar return aliases execute through the
+  generic path, and unsupported source fails closed instead of returning a
+  successful placeholder `Raw` value.
 - Report-builder value-type planning and report-builder registry dispatch now
   execute through Sley-owned source in `self-hosted/src/loom/reports.sley`.
 - Runtime pure `main`, local/project source-call fallbacks, direct `FileRead`,

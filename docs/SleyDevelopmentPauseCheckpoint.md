@@ -2867,3 +2867,36 @@ When development resumes:
 4. Start with report-builder or parser/checker/runtime source execution, not
    another already-covered host-gate value slice.
 5. Commit each coherent repair slice separately and push for continuity.
+
+## Resumed Runtime Dispatch Slice - 2026-08-22
+
+The operator resumed Sley implementation from `SleyEssentials.md`. The runtime
+dispatch plan now contains only `unit_main` and `generic_main`, removing 44
+specialized compatibility evaluators from the active path while leaving their
+dead implementations available for a later cleanup slice.
+
+The consolidation exposed two masked generic-runtime gaps and one unsafe
+fallback. The generic evaluator now accepts trailing commas in multiline map
+literals, resolves transparent scalar return aliases such as `Score = Int`,
+and emits `RUNTIME_UNSUPPORTED_SOURCE` with a nonzero CLI exit when no source
+evaluator matches instead of reporting a passed placeholder `Raw` value.
+
+Current self-hosting state after the slice:
+
+- `status=bootstrap`
+- `strict_self_hosted=false`
+- `semantic_source_count=6`
+- `bootstrap_owned_by_sley=474`
+- strict blockers remain parser, checker, and runtime semantics executing from
+  Sley source; this slice narrows the runtime blocker but does not claim it is
+  complete
+
+Validation evidence:
+
+- cache-disabled focused probes passed for multiline map iteration, transparent
+  return aliases, and fail-closed unsupported source
+- `scripts/self-hosted-test.sh` passed, including the full runtime expression,
+  authority, project-call, accepted/rejected corpus, contract, and conformance
+  assertions
+- final post-change `make v1` passed; log:
+  `/tmp/sley-make-v1-generic-dispatch.log`

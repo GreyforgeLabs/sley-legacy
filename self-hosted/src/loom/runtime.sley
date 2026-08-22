@@ -92,6 +92,10 @@ export task main_take_required_diagnostic_id -> Text {
   return "RUNTIME_TAKE_REQUIRED"
 }
 
+export task dispatch_miss_diagnostic_id -> Text {
+  return "RUNTIME_UNSUPPORTED_SOURCE"
+}
+
 export task capability_required_message_prefix -> Text {
   return "`main` requires runtime capabilities: "
 }
@@ -109,6 +113,14 @@ export task main_take_required_message_prefix -> Text {
 }
 
 export task main_take_required_message_suffix -> Text {
+  return "`"
+}
+
+export task dispatch_miss_message_prefix -> Text {
+  return "runtime source evaluator does not support `"
+}
+
+export task dispatch_miss_message_suffix -> Text {
   return "`"
 }
 
@@ -239,102 +251,14 @@ export task int_comparison_operator_plan -> List<Text> {
 export task runtime_dispatch_order -> List<Text> {
   return [
     "unit_main",
-    "generic_main",
-    "result_flow_int",
-    "compute_text_call",
-    "while_list_sum_int",
-    "state_set_int",
-    "each_sum_int",
-    "each_map_sum_int",
-    "tally_set_int",
-    "bound_int",
-    "if_int_expression",
-    "state_if_set_int",
-    "literal_if_int_statement",
-    "comparison_if_int_statement",
-    "false_while_int",
-    "if_int",
-    "pure_literal",
-    "simple_scalar",
-    "bool_equal",
-    "int_less_than",
-    "negated_comparison",
-    "if_bool",
-    "bool_if_statement",
-    "bool_and",
-    "bool_not",
-    "bool_main",
-    "simple_arithmetic_int",
-    "bound_arithmetic_int",
-    "simple_int",
-    "text_concat",
-    "len_int",
-    "parenthesized_arithmetic_int",
-    "list_index_int",
-    "bound_list_index_sum_int",
-    "collection_index_sum_int",
-    "map_index_text",
-    "record_field_text",
-    "record_field_call_text",
-    "direct_file_read_ok_text",
-    "direct_file_read_text",
-    "seeded_host_result",
-    "seeded_host_text",
-    "zero_arg_project_call",
-    "local_call_int",
-    "project_call_int",
-    "main_call_int"
+    "generic_main"
   ]
 }
 
 export task runtime_dispatch_plan -> List<Text> {
   return [
     "0|unit_main|eval_source_unit_main_return",
-    "1|generic_main|eval_source_generic_main_return",
-    "2|result_flow_int|eval_source_result_flow_int_main_return",
-    "3|compute_text_call|eval_source_compute_text_call_main_return",
-    "4|while_list_sum_int|eval_source_while_list_sum_int_main_return",
-    "5|state_set_int|eval_source_state_set_int_main_return",
-    "6|each_sum_int|eval_source_each_sum_int_main_return",
-    "7|each_map_sum_int|eval_source_each_map_sum_int_main_return",
-    "8|tally_set_int|eval_source_tally_set_int_main_return",
-    "9|bound_int|eval_source_bound_int_main_return",
-    "10|if_int_expression|eval_source_if_int_expression_main_return",
-    "11|state_if_set_int|eval_source_state_if_set_int_main_return",
-    "12|literal_if_int_statement|eval_source_literal_if_int_statement_main_return",
-    "13|comparison_if_int_statement|eval_source_comparison_if_int_statement_main_return",
-    "14|false_while_int|eval_source_false_while_int_main_return",
-    "15|if_int|eval_source_if_int_main_return",
-    "16|pure_literal|eval_pure_literal_main_return",
-    "17|simple_scalar|eval_simple_scalar_main_return",
-    "18|bool_equal|eval_source_bool_equal_main_return",
-    "19|int_less_than|eval_source_int_less_than_main_return",
-    "20|negated_comparison|eval_source_negated_comparison_main_return",
-    "21|if_bool|eval_source_if_bool_main_return",
-    "22|bool_if_statement|eval_source_bool_if_statement_main_return",
-    "23|bool_and|eval_source_bool_and_main_return",
-    "24|bool_not|eval_source_bool_not_main_return",
-    "25|bool_main|eval_source_bool_main_return",
-    "26|simple_arithmetic_int|eval_source_simple_arithmetic_int_main_return",
-    "27|bound_arithmetic_int|eval_source_bound_arithmetic_int_main_return",
-    "28|simple_int|eval_simple_int_main_return",
-    "29|text_concat|eval_text_concat_main_return",
-    "30|len_int|eval_source_len_int_main_return",
-    "31|parenthesized_arithmetic_int|eval_source_parenthesized_arithmetic_int_main_return",
-    "32|list_index_int|eval_source_list_index_int_main_return",
-    "33|bound_list_index_sum_int|eval_source_bound_list_index_sum_int_main_return",
-    "34|collection_index_sum_int|eval_source_collection_index_sum_int_main_return",
-    "35|map_index_text|eval_source_map_index_text_main_return",
-    "36|record_field_text|eval_source_record_field_text_main_return",
-    "37|record_field_call_text|eval_source_record_field_call_text_main_return",
-    "38|direct_file_read_ok_text|eval_source_direct_file_read_ok_text_main_return",
-    "39|direct_file_read_text|eval_source_direct_file_read_text_main_return",
-    "40|seeded_host_result|eval_source_seeded_host_result_main_return",
-    "41|seeded_host_text|eval_source_seeded_host_text_main_return",
-    "42|zero_arg_project_call|eval_source_zero_arg_project_call_main_return",
-    "43|local_call_int|eval_source_local_call_int_main_return",
-    "44|project_call_int|eval_source_project_call_int_main_return",
-    "45|main_call_int|eval_main_call_int_return"
+    "1|generic_main|eval_source_generic_main_return"
   ]
 }
 
