@@ -2470,6 +2470,22 @@ source_digest_for() {
   done | sha256_stream
 }
 
+structural_source_digest_for() {
+  local target="$1" target_root file file_real
+  mapfile -t files < <(collect_files "$target")
+  if [[ "${#files[@]}" -eq 1 ]]; then
+    sha256sum "${files[0]}" | awk '{print "sha256:" $1}'
+    return
+  fi
+  target_root="$(realpath -e -- "$target")"
+  for file in "${files[@]}"; do
+    file_real="$(realpath -e -- "$file")"
+    printf 'path:%s\n' "${file_real#"$target_root"/}"
+    sed -n '1,$p' "$file_real"
+    printf '\n'
+  done | sha256_stream
+}
+
 graph_json_for() {
   command_graph --json "$1"
 }
@@ -5374,6 +5390,9 @@ AGENT_BENCH_REPORT_BUILDER_JSON="$(sley_source_list_task_json loom.reports agent
 SCHEMA_ZJX_TOOL="$(sley_source_task loom.reports zjx_tool_schema)"
 ZJX_TOOL_REPORT_FIELDS_JSON="$(sley_source_list_task_json loom.reports zjx_tool_report_fields)"
 ZJX_TOOL_REPORT_BUILDER_JSON="$(sley_source_list_task_json loom.reports zjx_tool_report_builder)"
+SCHEMA_GRAPH_DIFF="$(sley_source_task loom.reports graph_diff_schema)"
+GRAPH_DIFF_REPORT_FIELDS_JSON="$(sley_source_list_task_json loom.reports graph_diff_report_fields)"
+GRAPH_DIFF_REPORT_BUILDER_JSON="$(sley_source_list_task_json loom.reports graph_diff_report_builder)"
 SCHEMA_SELF_HOSTING="$(sley_source_task loom.reports self_hosting_status_schema)"
 SELF_HOSTING_REPORT_SOURCE_ROOT="$(sley_source_task loom.reports self_hosting_source_root)"
 SELF_HOSTING_STATUS_FIELDS_JSON="$(sley_source_list_task_json loom.reports self_hosting_status_fields)"
@@ -5387,7 +5406,7 @@ for _sley_source_text_name in \
   SCHEMA_CONTRACT_VALIDATE SCHEMA_CONTRACT_FIXTURE_CHECK SCHEMA_DEPLOY_REPORT \
   SCHEMA_DEPLOY_ARTIFACTS SCHEMA_DEPLOY_ARTIFACT_CHECK SCHEMA_MIGRATE \
   SCHEMA_DOCGEN SCHEMA_WORKBENCH SCHEMA_SANDBOX SCHEMA_SHADOW \
-  SCHEMA_AGENT_BENCH SCHEMA_ZJX_TOOL SCHEMA_SELF_HOSTING \
+  SCHEMA_AGENT_BENCH SCHEMA_ZJX_TOOL SCHEMA_GRAPH_DIFF SCHEMA_SELF_HOSTING \
   SELF_HOSTING_REPORT_SOURCE_ROOT; do
   require_source_text "$_sley_source_text_name" "${!_sley_source_text_name}"
 done
@@ -5420,6 +5439,7 @@ for _sley_source_list_name in \
   SANDBOX_REPORT_FIELDS_JSON SANDBOX_REPORT_BUILDER_JSON \
   AGENT_BENCH_REPORT_FIELDS_JSON AGENT_BENCH_REPORT_BUILDER_JSON \
   ZJX_TOOL_REPORT_FIELDS_JSON ZJX_TOOL_REPORT_BUILDER_JSON \
+  GRAPH_DIFF_REPORT_FIELDS_JSON GRAPH_DIFF_REPORT_BUILDER_JSON \
   SELF_HOSTING_STATUS_FIELDS_JSON SELF_HOSTING_STATUS_BUILDER_JSON; do
   require_source_list "$_sley_source_list_name" "${!_sley_source_list_name}"
 done
@@ -5819,7 +5839,7 @@ Usage:
   sley <command> [--json] [options] <file-or-project>
 
 Commands:
-  parse, ast, check, doctor, graph, query, lint, plan, verify, run
+  parse, ast, check, doctor, graph, graph-diff, query, lint, plan, verify, run
   deploy, trace, seal, zjx, graft, fix, format, new, self-hosting-status
   claim-verify, arena
 
@@ -6113,6 +6133,11 @@ workbench_report_from_json() {
 zjx_tool_report_from_json() {
   local report_json="$1"
   sley_report_builder_from_report_kind_json "zjx_tool" "$report_json"
+}
+
+graph_diff_report_from_json() {
+  local report_json="$1"
+  sley_report_builder_from_report_kind_json "graph_diff" "$report_json"
 }
 
 sley_report_error_json() {
@@ -10736,7 +10761,7 @@ EOF
 tool_conformance() {
   local accepted rejected schemas contracts smoke examples integration declared status require_ready=0 markdown_path=""
   local v1_targets_json report
-  v1_targets_json='["fmt","diff-check","test","git-guard","mcp-bridge","contracts","conformance","claim-audit","corpus","examples","smoke","lsp","editor-shims","workbench","agent-bench","migrate","docgen","sandbox-runner","shadow","zjx-tools","arena","syntax"]'
+  v1_targets_json='["fmt","diff-check","test","git-guard","mcp-bridge","graph-diff","contracts","conformance","claim-audit","corpus","examples","smoke","lsp","editor-shims","workbench","agent-bench","migrate","docgen","sandbox-runner","shadow","zjx-tools","arena","syntax"]'
   if [[ "${1:-}" == "coverage" ]]; then
     shift
     local tags_json='[]' tag
@@ -13074,6 +13099,168 @@ command_graph() {
       outbound_calls:outbound_calls($focus),
       inbound_calls:inbound_calls($focus)
     }'
+}
+
+command_graph_diff() {
+  local base="" ours="" theirs="" base_query ours_query theirs_query base_ast ours_ast theirs_ast
+  local base_graph ours_graph theirs_graph base_digest ours_digest theirs_digest
+  local base_source_digest ours_source_digest theirs_source_digest report status
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --base) base="$2"; shift 2 ;;
+      --ours) ours="$2"; shift 2 ;;
+      --theirs) theirs="$2"; shift 2 ;;
+      --json) shift ;;
+      *) echo "unknown graph-diff argument: $1" >&2; return 2 ;;
+    esac
+  done
+  if [[ -z "$base" || -z "$ours" || -z "$theirs" ]]; then
+    echo "graph-diff requires --base, --ours, and --theirs" >&2
+    return 2
+  fi
+
+  base_query="$(query_json "$base" all)"
+  ours_query="$(query_json "$ours" all)"
+  theirs_query="$(query_json "$theirs" all)"
+  base_ast="$(ast_json "$base")"
+  ours_ast="$(ast_json "$ours")"
+  theirs_ast="$(ast_json "$theirs")"
+  base_graph="$(jq -c --arg schema "$SCHEMA_SYMBOL_GRAPH" '{schema:$schema,entry_module,modules}' <<< "$base_query")"
+  ours_graph="$(jq -c --arg schema "$SCHEMA_SYMBOL_GRAPH" '{schema:$schema,entry_module,modules}' <<< "$ours_query")"
+  theirs_graph="$(jq -c --arg schema "$SCHEMA_SYMBOL_GRAPH" '{schema:$schema,entry_module,modules}' <<< "$theirs_query")"
+  base_digest="$(printf '%s\n' "$base_graph" | json_digest_for)"
+  ours_digest="$(printf '%s\n' "$ours_graph" | json_digest_for)"
+  theirs_digest="$(printf '%s\n' "$theirs_graph" | json_digest_for)"
+  base_source_digest="$(structural_source_digest_for "$base")"
+  ours_source_digest="$(structural_source_digest_for "$ours")"
+  theirs_source_digest="$(structural_source_digest_for "$theirs")"
+
+  report="$(jq -n \
+    --arg schema "$SCHEMA_GRAPH_DIFF" \
+    --arg base_path "$base" --arg ours_path "$ours" --arg theirs_path "$theirs" \
+    --arg base_digest "$base_digest" --arg ours_digest "$ours_digest" --arg theirs_digest "$theirs_digest" \
+    --arg base_source_digest "$base_source_digest" --arg ours_source_digest "$ours_source_digest" --arg theirs_source_digest "$theirs_source_digest" \
+    --arg query_schema "$SCHEMA_QUERY" --arg graph_schema "$SCHEMA_SYMBOL_GRAPH" --arg ast_schema "$SCHEMA_AST_PROGRAM" \
+    --argjson base "$base_query" --argjson ours "$ours_query" --argjson theirs "$theirs_query" \
+    --argjson base_ast "$base_ast" --argjson ours_ast "$ours_ast" --argjson theirs_ast "$theirs_ast" \
+    --argjson base_graph "$base_graph" --argjson ours_graph "$ours_graph" --argjson theirs_graph "$theirs_graph" \
+    --argjson fields "$GRAPH_DIFF_REPORT_FIELDS_JSON" '
+    def rank($kind):
+      {module:0,import:1,type:2,effect:3,task:4,call:5}[$kind] // 99;
+    def strip_spans: walk(if type == "object" then del(.span) else . end);
+    def task_body($ast; $identity): first($ast.tasks[]? | select(.id == $identity) | .body | strip_spans) // null;
+    def nodes($q; $ast):
+      (([$q.modules[]? | {node_kind:"module",identity:("module:" + .module),value:{module:.module}}]
+      + [$q.modules[]? as $m | $m.imports[]? | {node_kind:"import",identity:.id,value:({module:.module} + (if .alias then {alias:.alias} else {} end))}]
+      + [$q.types[]? | {node_kind:"type",identity:.id,value:{name,module,qualified_name,exported,value,fields}}]
+      + [$q.effects[]? | {node_kind:"effect",identity:.id,value:{name,module,qualified_name,exported}}]
+      + [$q.tasks[]? | . as $task | {node_kind:"task",identity:.id,value:{name,module,qualified_name,exported,takes,return_type,effects,body:task_body($ast; $task.id)}}]
+      + [$q.calls[]? | {node_kind:"call",identity:("call:" + .expr_id),value:{from,from_module,expr_id,source,callee,status,target:(.target // null),candidates:(.candidates // [])}}])
+      | sort_by(rank(.node_kind), .identity));
+    def lookup($nodes; $identity): first($nodes[]? | select(.identity == $identity)) // null;
+    def side_changes($side; $base_nodes; $side_nodes):
+      [([[$base_nodes[]?.identity] + [$side_nodes[]?.identity]] | add | unique[]) as $identity |
+        (lookup($base_nodes; $identity)) as $before |
+        (lookup($side_nodes; $identity)) as $after |
+        select($before != $after) |
+        {
+          side:$side,
+          identity:$identity,
+          node_kind:($after.node_kind // $before.node_kind),
+          change_kind:(if $before == null then "added" elif $after == null then "deleted" else "modified" end),
+          before:($before.value // null),
+          after:($after.value // null),
+          ordering_key:((rank($after.node_kind // $before.node_kind) | tostring) + "|" + $identity + "|" + $side)
+        }
+      ] | sort_by(.ordering_key);
+    def gate_takes($value): [($value.takes // [])[]? | select(.binding_kind == "Gate")];
+    def conflict_class($ours_change; $theirs_change):
+      if $ours_change.change_kind == "deleted" or $theirs_change.change_kind == "deleted" then "rename_delete"
+      elif $ours_change.node_kind == "call" then "call_site_rewrite"
+      elif $ours_change.node_kind == "task" and (($ours_change.before.effects // []) != ($ours_change.after.effects // []) or ($theirs_change.before.effects // []) != ($theirs_change.after.effects // [])) then "effect_change"
+      elif $ours_change.node_kind == "task" and (gate_takes($ours_change.before) != gate_takes($ours_change.after) or gate_takes($theirs_change.before) != gate_takes($theirs_change.after)) then "gate_change"
+      else "same_node_edit" end;
+    (nodes($base; $base_ast)) as $base_nodes |
+    (nodes($ours; $ours_ast)) as $ours_nodes |
+    (nodes($theirs; $theirs_ast)) as $theirs_nodes |
+    (side_changes("ours"; $base_nodes; $ours_nodes)) as $ours_changes |
+    (side_changes("theirs"; $base_nodes; $theirs_nodes)) as $theirs_changes |
+    ($ours_changes + $theirs_changes) as $all_changes |
+    ([($ours_changes[]? | .identity)] | unique) as $ours_ids |
+    ([($theirs_changes[]? | .identity)] | unique) as $theirs_ids |
+    ([($ours_ids - ($ours_ids - $theirs_ids))[] as $identity |
+      (first($ours_changes[] | select(.identity == $identity))) as $oc |
+      (first($theirs_changes[] | select(.identity == $identity))) as $tc |
+      select($oc.after != $tc.after) |
+      {
+        class:conflict_class($oc; $tc),
+        identity:$identity,
+        sides:["ours","theirs"],
+        evidence:{base:$oc.before,ours:$oc.after,theirs:$tc.after},
+        fail_closed_reason:"both sides changed the same semantic identity differently"
+      }
+    ]) as $overlap_conflicts |
+    ([$all_changes[] | select(.change_kind == "deleted" and (.node_kind | IN("import","type","effect","task"))) | . as $deleted |
+      [$all_changes[] | select(.change_kind == "added" and .node_kind == $deleted.node_kind)] as $additions |
+      select(($additions | length) > 0) |
+      {
+        class:"rename_delete",
+        identity:$deleted.identity,
+        sides:([$deleted.side] + [$additions[].side] | unique),
+        evidence:{deleted:{side:$deleted.side,identity:$deleted.identity,node_kind:$deleted.node_kind},additions:[$additions[] | {side,identity,node_kind}]},
+        fail_closed_reason:"declaration deletion plus same-kind addition is an ambiguous rename or replacement"
+      }
+    ] | unique_by(.class,.identity)) as $rename_conflicts |
+    ([($base.calls // [])[],($ours.calls // [])[],($theirs.calls // [])[] | select(.status != "resolved") | ("call:" + .expr_id)] | unique |
+      map({class:"unsupported_ambiguous",identity:.,sides:["base","ours","theirs"],evidence:{reason:"non-resolved call identity"},fail_closed_reason:"unresolved or ambiguous calls cannot participate in structural merge research"})) as $unsupported_conflicts |
+    (if ($base.entry_module == $ours.entry_module and $base.entry_module == $theirs.entry_module) then [] else [{class:"projection_drift",identity:"entry_module",sides:["base","ours","theirs"],evidence:{base:$base.entry_module,ours:$ours.entry_module,theirs:$theirs.entry_module},fail_closed_reason:"semantic projections disagree on the entry module"}] end
+      + if ($base.schema == $query_schema and $ours.schema == $query_schema and $theirs.schema == $query_schema and $base_ast.schema == $ast_schema and $ours_ast.schema == $ast_schema and $theirs_ast.schema == $ast_schema) then [] else [{class:"projection_drift",identity:"projection_schema",sides:["base","ours","theirs"],evidence:{base_query:($base.schema // ""),ours_query:($ours.schema // ""),theirs_query:($theirs.schema // ""),base_ast:($base_ast.schema // ""),ours_ast:($ours_ast.schema // ""),theirs_ast:($theirs_ast.schema // "")},fail_closed_reason:"compiler projections did not return the required versioned schemas"}] end) as $projection_conflicts |
+    ((if $base_source_digest != $ours_source_digest and ($ours_changes | length) == 0 then [{class:"projection_drift",identity:"ours:source_projection",sides:["base","ours"],evidence:{base_source_digest:$base_source_digest,side_source_digest:$ours_source_digest},fail_closed_reason:"source changed without a corresponding semantic projection change"}] else [] end)
+      + (if $base_source_digest != $theirs_source_digest and ($theirs_changes | length) == 0 then [{class:"projection_drift",identity:"theirs:source_projection",sides:["base","theirs"],evidence:{base_source_digest:$base_source_digest,side_source_digest:$theirs_source_digest},fail_closed_reason:"source changed without a corresponding semantic projection change"}] else [] end)) as $source_projection_conflicts |
+    ($overlap_conflicts + $rename_conflicts + $unsupported_conflicts + $projection_conflicts + $source_projection_conflicts | unique_by(.class,.identity) | sort_by(.class,.identity)) as $conflicts |
+    ($ours_changes + $theirs_changes | sort_by(.ordering_key)) as $changes |
+    ([$conflicts[] | select(.class == "unsupported_ambiguous")] | length) as $unsupported_count |
+    {
+      ($fields[0] // "schema"):$schema,
+      ($fields[1] // "status"):(if $unsupported_count > 0 then "unsupported" elif ($conflicts|length) > 0 then "conflicted" else "passed" end),
+      ($fields[2] // "mode"):"report_only",
+      ($fields[3] // "merge_permitted"):false,
+      ($fields[4] // "inputs"):{
+        base:{path:$base_path,entry_module:($base.entry_module // ""),graph_digest:$base_digest,source_digest:$base_source_digest},
+        ours:{path:$ours_path,entry_module:($ours.entry_module // ""),graph_digest:$ours_digest,source_digest:$ours_source_digest},
+        theirs:{path:$theirs_path,entry_module:($theirs.entry_module // ""),graph_digest:$theirs_digest,source_digest:$theirs_source_digest}
+      },
+      ($fields[5] // "summary"):{node_change_count:($changes|length),call_change_count:([$changes[]|select(.node_kind=="call")]|length),conflict_count:($conflicts|length),unsupported_count:$unsupported_count},
+      ($fields[6] // "identity_rules"):[
+        {node_kind:"module",rule:"module:<module_name>",stability:"stable"},
+        {node_kind:"declaration",rule:"compiler declaration id",stability:"stable"},
+        {node_kind:"call",rule:"call:<expression_id>",stability:"stable_within_projection"},
+        {node_kind:"take",rule:"task id plus position/name/binding/type",stability:"provisional_fail_closed"}
+      ],
+      ($fields[7] // "changes"):$changes,
+      ($fields[8] // "conflicts"):$conflicts,
+      ($fields[9] // "projection_checks"):[
+        {side:"base",projection:"query",status:(if $base.schema==$query_schema then "passed" else "failed" end),schema:($base.schema // "")},
+        {side:"ours",projection:"query",status:(if $ours.schema==$query_schema then "passed" else "failed" end),schema:($ours.schema // "")},
+        {side:"theirs",projection:"query",status:(if $theirs.schema==$query_schema then "passed" else "failed" end),schema:($theirs.schema // "")},
+        {side:"base",projection:"ast",status:(if $base_ast.schema==$ast_schema then "passed" else "failed" end),schema:($base_ast.schema // "")},
+        {side:"ours",projection:"ast",status:(if $ours_ast.schema==$ast_schema then "passed" else "failed" end),schema:($ours_ast.schema // "")},
+        {side:"theirs",projection:"ast",status:(if $theirs_ast.schema==$ast_schema then "passed" else "failed" end),schema:($theirs_ast.schema // "")},
+        {side:"base",projection:"graph",status:(if $base_graph.schema==$graph_schema then "passed" else "failed" end),schema:($base_graph.schema // "")},
+        {side:"ours",projection:"graph",status:(if $ours_graph.schema==$graph_schema then "passed" else "failed" end),schema:($ours_graph.schema // "")},
+        {side:"theirs",projection:"graph",status:(if $theirs_graph.schema==$graph_schema then "passed" else "failed" end),schema:($theirs_graph.schema // "")}
+      ],
+      ($fields[10] // "next_actions"):[
+        {kind:"inspect_only",command:["sley","query","--json","--kind","all",$base_path]},
+        {kind:"validate_each_side",command:["sley","verify","--json",$ours_path]},
+        {kind:"validate_each_side",command:["sley","verify","--json",$theirs_path]}
+      ],
+      ($fields[11] // "issues"):[]
+    }')"
+  report="$(graph_diff_report_from_json "$report")"
+  printf '%s\n' "$report"
+  status="$(jq -r '.status' <<< "$report")"
+  [[ "$status" == "passed" ]]
 }
 
 command_plan() {
@@ -15821,6 +16008,7 @@ main_sley() {
     check) shift; command_check "$@" ;;
     doctor) shift; command_doctor "$@" ;;
     graph) shift; command_graph "$@" ;;
+    graph-diff) shift; command_graph_diff "$@" ;;
     query) shift; command_query "$@" ;;
     lint) shift; command_lint "$@" ;;
     plan) shift; command_plan "$@" ;;

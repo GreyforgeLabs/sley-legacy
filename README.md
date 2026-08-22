@@ -128,9 +128,9 @@ The repo currently proves these claims from a clean checkout:
   `bin/sley claim-verify --json docs/SleyClaimManifest.json`
 - The release gate no longer requires Cargo, Rust, Node, npm, or tree-sitter:
   `make v1`
-- The latest local v1 checkpoint on 2026-05-27 passed with 41 schemas,
-  127 contract fixtures, 23 accepted corpus cases, 43 rejected corpus cases,
-  198 integration checks, and 19/19 local v1 gate checks.
+- The latest local v1 checkpoint on 2026-08-22 passed with 42 schemas,
+  128 contract fixtures, 23 accepted corpus cases, 43 rejected corpus cases,
+  199 integration checks, and 23/23 local v1 gate checks.
 
 This is not yet the final strict self-hosting claim. The stricter claim means
 the parser/checker/runtime implementation executes from Sley source, with the
@@ -183,6 +183,7 @@ Stage-1 executable commands:
 
 - `sley ast --json <file-or-project>`
 - `sley ast --json --node <node-id> <file-or-project>`
+- `sley graph-diff --json --base <target> --ours <target> --theirs <target>`
 - `sley check --json <file-or-project>`
 - `sley query --json --kind calls <file-or-project>`
 - `sley lint --json <file-or-project>`
@@ -213,6 +214,11 @@ full `make v1` gate remains the CI and pre-push authority.
 plan, dry-run graft, and verify calls. It requires an explicitly configured Git
 repository root and confines every requested source path to that root. See
 [`docs/SleyMcpBridge.md`](docs/SleyMcpBridge.md).
+
+`sley graph-diff` is a research-only three-way semantic report. It classifies
+overlapping changes and always returns `merge_permitted=false`; it does not
+project source, write files, configure Git, or claim a safe merge. See
+[`docs/SleyGraphDiffResearch.md`](docs/SleyGraphDiffResearch.md).
 
 ## Release Rules
 

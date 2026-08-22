@@ -2,24 +2,24 @@
   "schema": "sley.conformance.report.v0",
   "status": "passed",
   "summary": {
-    "schema_count": 41,
-    "schema_instance_count": 127,
+    "schema_count": 42,
+    "schema_instance_count": 128,
     "schema_without_instance_count": 0,
-    "contract_fixture_count": 127,
+    "contract_fixture_count": 128,
     "contract_fixture_failed_count": 0,
     "migration_fixture_count": 0,
     "corpus_accepted_count": 23,
     "corpus_rejected_count": 43,
-    "smoke_case_count": 4,
+    "smoke_case_count": 5,
     "onboarding_path_count": 7,
     "missing_onboarding_path_count": 0,
     "example_project_count": 2,
-    "example_source_count": 75,
-    "integration_test_count": 197,
-    "declared_integration_test_count": 197,
+    "example_source_count": 76,
+    "integration_test_count": 199,
+    "declared_integration_test_count": 199,
     "test_count_matches_declared": true,
     "editor_shim_count": 0,
-    "v1_gate_target_count": 22,
+    "v1_gate_target_count": 23,
     "missing_v1_gate_target_count": 0,
     "public_release_blocker_count": 1,
     "issue_count": 0
@@ -37,8 +37,8 @@
         "--json"
       ],
       "report_schema": "sley.contract.fixture_check.v0",
-      "fixture_count": 127,
-      "passed_count": 127,
+      "fixture_count": 128,
+      "passed_count": 128,
       "failed_count": 0,
       "issue_count": 0,
       "issues": []
@@ -66,10 +66,10 @@
     "manifests": [
       {
         "path": "fixtures/ci_smoke_probe/manifest.json",
-        "case_count": 4
+        "case_count": 5
       }
     ],
-    "case_count": 4,
+    "case_count": 5,
     "tag_inventory": [],
     "required_tags": [],
     "missing_required_tags": []
@@ -83,13 +83,13 @@
   "examples": {
     "root": "examples",
     "project_count": 2,
-    "source_count": 75
+    "source_count": 76
   },
   "tests": {
     "integration_test_file": "scripts/self-hosted-test.sh",
-    "integration_test_count": 197,
+    "integration_test_count": 199,
     "goal_doc": "docs/contracts.md",
-    "declared_integration_test_count": 197,
+    "declared_integration_test_count": 199,
     "declared_matches_actual": true
   },
   "editor_shims": {
@@ -118,6 +118,7 @@
       "test",
       "git-guard",
       "mcp-bridge",
+      "graph-diff",
       "contracts",
       "conformance",
       "claim-audit",
@@ -142,6 +143,7 @@
       "test",
       "git-guard",
       "mcp-bridge",
+      "graph-diff",
       "contracts",
       "conformance",
       "claim-audit",
@@ -174,8 +176,8 @@
         "v1"
       ],
       "gate_completion_percent": 100,
-      "passed_check_count": 22,
-      "total_check_count": 22,
+      "passed_check_count": 23,
+      "total_check_count": 23,
       "blocker_count": 0,
       "blockers": []
     },

@@ -20,6 +20,7 @@ export task report_builder_registry -> List<Text> {
     "lint|lint_schema|lint_report_builder",
     "query|query_schema|query_report_builder",
     "symbol_graph|symbol_graph_schema|symbol_graph_report_builder",
+    "graph_diff|graph_diff_schema|graph_diff_report_builder",
     "run|run_schema|run_report_builder",
     "verify|verify_schema|verify_report_builder",
     "graft_outcome|graft_outcome_schema|graft_outcome_report_builder",
@@ -778,6 +779,44 @@ export task agent_bench_report_builder -> List<Text> {
 
 export task zjx_tool_schema -> Text {
   return "sley.zjx.tool.report.v0"
+}
+
+export task graph_diff_schema -> Text {
+  return "sley.graph_diff.report.v0"
+}
+
+export task graph_diff_report_fields -> List<Text> {
+  return [
+    "schema",
+    "status",
+    "mode",
+    "merge_permitted",
+    "inputs",
+    "summary",
+    "identity_rules",
+    "changes",
+    "conflicts",
+    "projection_checks",
+    "next_actions",
+    "issues"
+  ]
+}
+
+export task graph_diff_report_builder -> List<Text> {
+  return [
+    "schema|reports.graph_diff_schema|Text",
+    "status|graph_diff.status|Text",
+    "mode|graph_diff.mode|Text",
+    "merge_permitted|graph_diff.merge_permitted|Bool",
+    "inputs|graph_diff.inputs|Json",
+    "summary|graph_diff.summary|Json",
+    "identity_rules|graph_diff.identity_rules|List<Json>",
+    "changes|graph_diff.changes|List<Json>",
+    "conflicts|graph_diff.conflicts|List<Json>",
+    "projection_checks|graph_diff.projection_checks|List<Json>",
+    "next_actions|graph_diff.next_actions|List<Json>",
+    "issues|graph_diff.issues|List<Json>"
+  ]
 }
 
 export task zjx_tool_report_fields -> List<Text> {

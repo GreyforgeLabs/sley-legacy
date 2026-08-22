@@ -1,4 +1,4 @@
-.PHONY: fmt diff-check build-cli build-bins test git-guard mcp-bridge contracts conformance public-release-check claim-audit corpus examples smoke lsp editor-shims workbench agent-bench migrate docgen sandbox-runner shadow zjx-tools arena syntax self-hosted-cli v1
+.PHONY: fmt diff-check build-cli build-bins test git-guard mcp-bridge graph-diff contracts conformance public-release-check claim-audit corpus examples smoke lsp editor-shims workbench agent-bench migrate docgen sandbox-runner shadow zjx-tools arena syntax self-hosted-cli v1
 
 SELF_HOSTED_ARGS := --help
 export PATH := $(CURDIR)/bin:$(PATH)
@@ -16,6 +16,7 @@ fmt:
 	bash -n scripts/self-hosted-test.sh
 	bash -n scripts/test-git-sley-guard.sh
 	bash -n scripts/test-sley-mcp-bridge.sh
+	bash -n scripts/test-sley-graph-diff.sh
 
 diff-check:
 	git diff --check
@@ -48,6 +49,9 @@ git-guard:
 
 mcp-bridge:
 	scripts/test-sley-mcp-bridge.sh
+
+graph-diff:
+	scripts/test-sley-graph-diff.sh
 
 contracts:
 	sley-contract check-fixtures fixtures/contracts --schemas docs/schemas --json
@@ -121,4 +125,4 @@ syntax:
 self-hosted-cli:
 	bin/sley $(SELF_HOSTED_ARGS)
 
-v1: fmt diff-check test git-guard mcp-bridge contracts conformance claim-audit corpus examples smoke lsp editor-shims workbench agent-bench migrate docgen sandbox-runner shadow zjx-tools arena syntax
+v1: fmt diff-check test git-guard mcp-bridge graph-diff contracts conformance claim-audit corpus examples smoke lsp editor-shims workbench agent-bench migrate docgen sandbox-runner shadow zjx-tools arena syntax

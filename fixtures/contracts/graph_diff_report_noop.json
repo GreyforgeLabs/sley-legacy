@@ -1,0 +1,29 @@
+{
+  "schema": "sley.graph_diff.report.v0",
+  "status": "passed",
+  "mode": "report_only",
+  "merge_permitted": false,
+  "inputs": {
+    "base": {"path": "examples/hello.sley", "entry_module": "app.hello", "graph_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000", "source_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000"},
+    "ours": {"path": "examples/hello.sley", "entry_module": "app.hello", "graph_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000", "source_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000"},
+    "theirs": {"path": "examples/hello.sley", "entry_module": "app.hello", "graph_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000", "source_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000"}
+  },
+  "summary": {"node_change_count": 0, "call_change_count": 0, "conflict_count": 0, "unsupported_count": 0},
+  "identity_rules": [
+    {"node_kind": "module", "rule": "module:<module_name>", "stability": "stable"},
+    {"node_kind": "declaration", "rule": "compiler declaration id", "stability": "stable"},
+    {"node_kind": "call", "rule": "call:<expression_id>", "stability": "stable_within_projection"},
+    {"node_kind": "take", "rule": "task id plus position/name/binding/type", "stability": "provisional_fail_closed"}
+  ],
+  "changes": [],
+  "conflicts": [],
+  "projection_checks": [
+    {"side": "base", "projection": "query", "status": "passed", "schema": "sley.query.report.v0"},
+    {"side": "ours", "projection": "query", "status": "passed", "schema": "sley.query.report.v0"},
+    {"side": "theirs", "projection": "query", "status": "passed", "schema": "sley.query.report.v0"}
+  ],
+  "next_actions": [
+    {"kind": "inspect_only", "command": ["sley", "query", "--json", "--kind", "all", "examples/hello.sley"]}
+  ],
+  "issues": []
+}
