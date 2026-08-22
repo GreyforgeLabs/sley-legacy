@@ -38,7 +38,7 @@ OUT="${1:-/tmp/self-hosting-inventory.md}"
   echo ""
   if [ -f llms.txt ]; then
     awk '
-      /^[[:space:]]*(sley|sley-ci|sley-conformance|sley-contract|sley-lsp|sley-workbench|sley-docgen|sley-agent-bench|sley-migrate|sley-sandbox-runner|sley-zjx)[[:space:]]/ {
+      /^[[:space:]]*(sley|git-sley-guard|sley-mcp-bridge|sley-ci|sley-conformance|sley-contract|sley-lsp|sley-workbench|sley-docgen|sley-agent-bench|sley-migrate|sley-sandbox-runner|sley-shadow|sley-zjx)[[:space:]]/ {
         line=$0
         sub(/^[[:space:]]*/, "", line)
         count++

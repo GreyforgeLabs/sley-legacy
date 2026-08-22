@@ -194,6 +194,7 @@ Stage-1 executable commands:
 - `sley arena`
 - `sley graft --json --dry-run <file> <graft.json>`
 - `git-sley-guard`
+- `sley-mcp-bridge --root <absolute-git-repository-root>`
 - `sley-contract inventory --json`
 - `sley-contract check-fixtures fixtures/contracts --schemas docs/schemas --json`
 - `sley-contract validate --schema sley.conformance.manifest.v0 fixtures/corpus/manifest.json --schemas docs/schemas --json`
@@ -207,6 +208,11 @@ Compatibility wrappers also exist for the previous companion-tool names:
 index in a temporary directory, checks and lints affected staged Sley targets,
 and validates the staged contract set when schemas or fixtures change. The
 full `make v1` gate remains the CI and pre-push authority.
+
+`sley-mcp-bridge` is a read-only MCP stdio server for bounded query, lint,
+plan, dry-run graft, and verify calls. It requires an explicitly configured Git
+repository root and confines every requested source path to that root. See
+[`docs/SleyMcpBridge.md`](docs/SleyMcpBridge.md).
 
 ## Release Rules
 
