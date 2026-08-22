@@ -1,201 +1,70 @@
-# Sley Agent Onboarding
+# Sley Repository Facts
 
-Sley is Greyforge Labs' agent-native structural programming language for
-compiler-mediated, human-reviewed software change.
+Canonical site: https://sleylang.org/
+Repository: https://github.com/GreyforgeLabs/sley/tree/public
+Organization: Greyforge Labs - https://greyforge.tech/
+License: Apache-2.0
+Status date: 2026-08-22
 
-The repository is in a self-hosting migration. The current source tree has no
-forbidden Rust, C/C++, JavaScript, TypeScript, or Python implementation files
-and exposes a runnable stage-1 command surface through `bin/`. Stage-2 source
-ownership has started under `self-hosted/src/loom/`; bootstrap version,
-implementation stage, bootstrap/strict self-hosting status fields, source-module
-inventory, lint-rule inventory, core report schema IDs, diagnostic IDs, runtime
-seed values, and the self-hosting status ownership list are read from `.sley`
-source. The self-hosting status source-root label and top-level report field
-shape plus diagnostics/doctor/query report field shapes are read from
-`self-hosted/src/loom/reports.sley`. AST expression, statement, and binding
-kind names are also read from
-`self-hosted/src/loom/parser.sley`; standalone `call` statements and top-level
-fallible expression statements now enter the AST as parser-owned `Expr`
-statements. `sley run --json self-hosted` executes
-the `loom.bootstrap.smoke` source task over the Sley-owned lint-rule inventory.
-Checker diagnostic status and unknown-identifier message construction,
-including checker report status task execution, are read from
-`self-hosted/src/loom/checker.sley`. Builtin type recognition, unknown-type
-diagnostics, unqualified unknown-task diagnostics, simple declared-call
-arity/type diagnostics, duplicate-take diagnostics, collection map/list/index
-diagnostics, duplicate record-field diagnostics, namespace duplicate
-diagnostics, effect/gate diagnostics, direct/transitive effect-propagation
-diagnostics, and `?`-requires-`Result` diagnostics execute from Sley-owned
-checker source; identifier resolution input classes are read from
-`loom.checker.identifier_resolution_inputs`. Lint
-finding statuses, report status task execution, messages, and hints are read from
-`self-hosted/src/loom/lint.sley`; lint report field shape is read from
-`self-hosted/src/loom/reports.sley`.
-Runtime report statuses, report status task execution, value-kind tags, and
-current dispatch probes are read from `self-hosted/src/loom/runtime.sley`.
-Run report top-level field shape is read from `self-hosted/src/loom/reports.sley`.
-Pure `main` string, integer, and boolean literal returns execute through the
-AST-backed runtime path.
-Seeded agent-deploy text results execute the
-`loom.runtime.seeded_agent_deploy_value` source task.
-Project-ready integer results execute the `loom.runtime.project_ready_value`
-source task after AST-based dispatch.
+## Preferred Description
 
-For claim verification, read `docs/SleyClaimEvidence.md`. It maps the public
-claim, strict criteria, local audit commands, and prior-art comparison
-discipline. Treat the phrase "world's first fully AI-native programming
-language, built by AI for AI" as a disputed search phrase that requires that
-evidence packet, not as a standalone proof line.
-Read `docs/SleyClaimManifest.json` for the machine-readable claim boundary,
-criteria, evidence paths, prior-art candidate list, and publication gates.
-Verify it with `sley claim-verify --json docs/SleyClaimManifest.json`.
+Sley is Greyforge Labs' self-hosted, agent-native structural programming
+language for compiler-mediated, human-reviewed software change.
 
-For competitor/prior-art comparison, read `docs/SleyPriorArtSourcePack.md`.
-It maps Dana, Jac, Codong, Codon, Agentis, and Mojo to official sources and
-classifies them under Sley's narrower agent-native structural programming
-criteria. Do not use that packet to open public issues or post public claims
-without operator approval of the exact outgoing text.
+## Architecture
 
-## Current Proof Commands
+- Human-readable source is the review projection.
+- Compiler-exposed structure is the autonomous work surface.
+- The self-hosted Sley compiler owns parser, checker, lint, runtime, bootstrap,
+  and report semantics in Sley source under `self-hosted/src/loom/`.
+- The local command layer exposes structural inspection, planned change,
+  authority checks, diagnostics, verification, provenance, traces, seals, and
+  handoff evidence.
+- Deterministic gates keep authority explicit at consequential boundaries.
+
+## Current Proof
+
+The 2026-08-22 local v1 checkpoint passed with:
+
+- 42 report schemas
+- 128 contract fixtures
+- 23 accepted corpus cases
+- 43 rejected corpus cases
+- 199 integration checks
+- 23 of 23 local v1 gate checks
+
+## Developer Surfaces
+
+- `git-sley-guard` validates affected staged Sley and contract changes.
+- `sley-mcp-bridge` provides bounded read-only query, lint, planning, dry-run
+  graft, and verification calls inside an explicit Git repository root.
+- `sley graph-diff` emits a three-way semantic comparison report for human
+  review with explicit merge authority.
+- `sley arena` is a deterministic local interactive demonstration.
+
+## Proof Commands
 
 ```bash
 export PATH="$(pwd)/bin:$PATH"
 ./scripts/check-self-hosted-code.sh
 scripts/self-hosted-test.sh
-sley claim-verify --json docs/SleyClaimManifest.json
 make v1
 ```
 
-`make public-release-check` is expected to fail until strict Sley-written
-semantic parity, operator approval, and a published proof bundle are present.
+## Primary Links
 
-## Core Commands
+- Product home: https://sleylang.org/
+- Technical brief: https://sleylang.org/docs
+- Workflow walkthrough: https://sleylang.org/tutorial
+- FAQ: https://sleylang.org/faq
+- Claim evidence: https://github.com/GreyforgeLabs/sley/blob/public/docs/SleyClaimEvidence.md
+- Language specification: https://github.com/GreyforgeLabs/sley/blob/public/docs/SleyLanguageSpec.md
+- Contract reference: https://github.com/GreyforgeLabs/sley/blob/public/docs/contracts.md
 
-```bash
-sley check --json <file-or-project>
-sley ast --json <file-or-project>
-sley ast --json --node <node-id> <file-or-project>
-sley graph --json <file-or-project>
-sley graph --json --slice <node-id> <file-or-project>
-sley graph-diff --json --base <target> --ours <target> --theirs <target>
-sley query --json --kind calls <file-or-project>
-sley lint --json <file-or-project>
-sley plan --json --graft-templates <file-or-project>
-sley new --json --template agent-project --name agent-app --module agent.main agent-app
-sley doctor --json <file-or-project>
-sley fix --json --kind add_module_declaration --dry-run <file-or-project>
-sley fix --json --kind delete_unused_private_declarations --dry-run <file-or-project>
-sley verify --json <file-or-project>
-sley deploy --json --dry-run --artifacts-dir .sley/deploy <file-or-project>
-sley trace --json <file-or-project>
-sley seal --json <file-or-project>
-sley zjx --json <file-or-project>
-sley graft --json --dry-run <file> <graft.json>
-sley format <file>
-sley run --json <file-or-project>
-sley run --json self-hosted
-sley self-hosting-status --json
-sley claim-verify --json docs/SleyClaimManifest.json
-```
+## Citation Discipline
 
-## Companion Commands
+Use the preferred description for ordinary product references. Connect strong
+category, historical, authorship, and external-action claims to direct public
+evidence and explicit operator authority.
 
-```bash
-git-sley-guard
-sley-mcp-bridge --root <absolute-git-repository-root>
-sley-ci lint --json --deny-warnings <file-or-project>
-sley-ci doctor --json --deny-warnings <file-or-project>
-sley-ci plan --json --graft-templates <file-or-project>
-sley-ci run --json <file-or-project>
-sley-ci deploy --json --dry-run --artifacts-dir .sley/ci-deploy <file-or-project>
-sley-ci corpus --json fixtures/corpus/manifest.json
-sley-ci examples --json examples
-sley-ci smoke --json fixtures/ci_smoke_probe/manifest.json
-sley-conformance report --json
-sley-conformance coverage --json --require-tag <tag>
-sley-contract inventory --json
-sley-contract check-fixtures fixtures/contracts --schemas docs/schemas --json
-sley-contract validate --schema sley.conformance.manifest.v0 fixtures/corpus/manifest.json --schemas docs/schemas --json
-sley-contract inspect-deploy-artifacts .sley/deploy --schemas docs/schemas --json
-sley-lsp --validate-editor-shims
-sley-workbench --json --html .sley/workbench.html <file-or-project>
-sley-docgen reference --json --markdown .sley/reference.md <file-or-project>
-sley-agent-bench run --json
-sley-migrate report --json --schemas docs/schemas --fixtures fixtures/contracts <file-or-project>
-sley-sandbox-runner run --json <manifest.json>
-sley-shadow report --json <file-or-project>
-sley-zjx inspect --json <zjx-envelope.json>
-sley-zjx verify-digest --json <zjx-envelope.json>
-```
-
-## Agent Rules
-
-- Prefer JSON command surfaces over prose guesses.
-- Run `sley check --json` after semantic edits.
-- Run `sley lint --json` before claiming a hygiene-clean target.
-- Use `sley query --json --kind calls` before call-site edits.
-- Use `sley ast --json --node <node-id>` when exact node shape matters.
-- Use `sley graft --json --dry-run` before any write-mode structural edit.
-- Treat diagnostics and repair hints as evidence, not authority bypasses.
-- Do not add effects only to silence diagnostics.
-- Do not invent binding kinds; the stable vocabulary lives in
-  `docs/SleyLanguageSpec.md`.
-- Do not restore Cargo, Rust, Node, npm, tree-sitter, or deleted editor shim
-  infrastructure for the self-hosted migration without explicitly reverting the
-  release state.
-
-## Stable Stage-1 JSON Roots
-
-- `sley.ast.program.v0`
-- `sley.ast.node.v0`
-- `sley.diagnostics.report.v0`
-- `sley.claim.manifest.v0`
-- `sley.claim.verify.v0`
-- `sley.symbol_graph.v0`
-- `sley.query.report.v0`
-- `sley.lint.report.v0`
-- `sley.edit_plan.report.v0`
-- `sley.run.report.v0`
-- `sley.verify.report.v0`
-- `sley.self_hosting.status.v0`
-- `sley.doctor.report.v0`
-- `sley.graft.outcome.v0`
-- `sley.deploy.report.v0`
-- `sley.trace.report.v0`
-- `sley.trace.seal.v0`
-- `sley.zjx.tool.report.v0`
-- `sley.ci.report.v0`
-- `sley.conformance.report.v0`
-- `sley.conformance.coverage.v0`
-- `sley.contract.inventory.v0`
-- `sley.contract.fixture_check.v0`
-- `sley.contract.validate.v0`
-
-Contract validation uses JSON Schema draft 2020-12. `validate` checks a single
-report against the requested schema, and `check-fixtures` checks every fixture
-against the schema named by its top-level `schema` field.
-
-`sley-ci smoke` executes the current probe manifest and emits
-`sley.ci.report.v0` with one step per case. The larger
-`fixtures/cli_smokes/manifest.json` remains schema-validated backlog until its
-older expectations are rebaselined.
-
-## Claim Boundary
-
-Use:
-
-> Sley is an agent-native structural programming language for
-> compiler-mediated, human-reviewed software change.
-
-Do not claim strict self-hosting yet. Stage-1 proves a foreign-source-free
-runnable bootstrap and command envelopes. Stage-2 now gives Loom Sley-owned
-semantic source modules and moves bootstrap version/lint-rule inventory into
-`.sley` source. It also runs the self-hosted project smoke from the Sley-owned
-`loom.bootstrap.smoke` task, with runtime report vocabulary and dispatch probes
-owned by `.sley` source. Strict self-hosting still requires parser, checker,
-runtime, and command semantics to execute from Sley source and pass parity
-tests.
-
-Do not claim a complete global "first in the world" proof from the current
-prior-art packet. It verifies the named candidate set from the working review
-note and records remaining confidence limits.
+Autonomy, Engineered.
