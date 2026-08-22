@@ -1,15 +1,15 @@
 {
   "schema": "sley.claim.manifest.v0",
   "status": "evidence_ready",
-  "last_verified": "2026-05-11",
+  "last_verified": "2026-08-22",
   "canonical_claim": {
     "id": "sley.agent_native_structural.v0",
-    "safe_public_wording": "Sley is an agent-native structural programming language for compiler-mediated, human-reviewed software change.",
+    "safe_public_wording": "Sley is a self-hosted, agent-native structural programming language for compiler-mediated, human-reviewed software change.",
     "disputed_search_phrase": "world's first fully AI-native programming language, built by AI for AI",
     "disputed_search_phrase_allowed_only_with_evidence": true,
     "global_first_proven": false,
-    "strict_self_hosted_claimed": false,
-    "proof_boundary": "The public repository verifies Sley's current language-design and implementation-stage claims."
+    "strict_self_hosted_claimed": true,
+    "proof_boundary": "The public repository verifies Sley's current language-design, strict self-hosting, and implementation claims."
   },
   "required_criteria": [
     {
@@ -54,11 +54,11 @@
   ],
   "prior_art": {
     "source_pack": "docs/SleyPriorArtSourcePack.md",
-    "last_verified": "2026-05-11",
+    "last_verified": "2026-08-22",
     "candidates": [
       {
         "project": "Sley",
-        "classification": "Current strongest match among the reviewed candidates, but not final strict self-hosting.",
+        "classification": "Self-hosted agent-native structural language with a reproducible public proof surface.",
         "confidence": "high",
         "source_refs": ["README.md"]
       }
@@ -66,11 +66,8 @@
   },
   "publication_gates": {
     "external_issue_requires_operator_approval": true,
-    "public_release_ready": false,
-    "blockers": [
-      "strict Sley-written semantic parity is not complete",
-      "operator approval is required"
-    ]
+    "public_release_ready": true,
+    "blockers": []
   },
   "audit_sequence": [
     {

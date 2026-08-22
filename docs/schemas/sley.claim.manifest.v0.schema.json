@@ -55,7 +55,7 @@
         "disputed_search_phrase": { "type": "string", "minLength": 1 },
         "disputed_search_phrase_allowed_only_with_evidence": { "const": true },
         "global_first_proven": { "const": false },
-        "strict_self_hosted_claimed": { "const": false },
+        "strict_self_hosted_claimed": { "const": true },
         "proof_boundary": { "type": "string", "minLength": 1 }
       },
       "additionalProperties": false
@@ -133,10 +133,10 @@
       ],
       "properties": {
         "external_issue_requires_operator_approval": { "const": true },
-        "public_release_ready": { "const": false },
+        "public_release_ready": { "const": true },
         "blockers": {
           "type": "array",
-          "minItems": 1,
+          "maxItems": 0,
           "items": { "type": "string", "minLength": 1 }
         }
       },

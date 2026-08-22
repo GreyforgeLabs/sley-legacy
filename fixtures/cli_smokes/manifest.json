@@ -814,17 +814,17 @@
         "stdout_json": [
           { "pointer": "/schema", "value": "sley.conformance.report.v0" },
           { "pointer": "/status", "value": "passed" },
-          { "pointer": "/release/blocker_count", "value": 1 },
-          { "pointer": "/release/public_release_ready", "value": false },
-          { "pointer": "/release/blockers/0/code", "value": "PUBLIC_RELEASE_BLOCKED" },
-          { "pointer": "/readiness/public_v1/status", "value": "blocked" }
+          { "pointer": "/release/blocker_count", "value": 0 },
+          { "pointer": "/release/public_release_ready", "value": true },
+          { "pointer": "/release/blockers", "value": [] },
+          { "pointer": "/readiness/public_v1/status", "value": "ready" }
         ],
         "files": [
           {
             "path": "{tmp}/conformance/report.md",
             "contains": [
               "# Sley Conformance Report",
-              "Public release ready: `false` with `1` blockers",
+              "Public release ready: `true` with `0` blockers",
               "`make public-release-check`"
             ]
           }

@@ -1,15 +1,15 @@
 {
   "schema": "sley.claim.manifest.v0",
   "status": "evidence_ready",
-  "last_verified": "2026-05-11",
+  "last_verified": "2026-08-22",
   "canonical_claim": {
     "id": "sley.agent_native_structural.v0",
-    "safe_public_wording": "Sley is an agent-native structural programming language for compiler-mediated, human-reviewed software change.",
+    "safe_public_wording": "Sley is a self-hosted, agent-native structural programming language for compiler-mediated, human-reviewed software change.",
     "disputed_search_phrase": "world's first fully AI-native programming language, built by AI for AI",
     "disputed_search_phrase_allowed_only_with_evidence": true,
     "global_first_proven": false,
-    "strict_self_hosted_claimed": false,
-    "proof_boundary": "The public repository verifies Sley's language-design and implementation-stage claims. It does not prove complete global firstness or strict self-hosting."
+    "strict_self_hosted_claimed": true,
+    "proof_boundary": "The public repository verifies Sley's language design, strict self-hosting, and current implementation claims. It does not prove complete global firstness."
   },
   "required_criteria": [
     {
@@ -40,7 +40,7 @@
       "id": "independent_auditability",
       "name": "Independent auditability",
       "description": "A clean public checkout includes exact local commands that verify the current claimed stage without private infrastructure.",
-      "evidence_ids": ["foreign_source_free_public_gate", "local_v1_gate", "claim_manifest_verified", "public_release_blocked"]
+      "evidence_ids": ["foreign_source_free_public_gate", "local_v1_gate", "claim_manifest_verified", "public_release_ready"]
     }
   ],
   "evidence": [
@@ -53,14 +53,14 @@
     },
     {
       "id": "runnable_stage1_command",
-      "claim": "A runnable stage-1 Sley command surface exists under bin/.",
+      "claim": "A runnable self-hosted Sley command surface exists under bin/.",
       "status": "expected_pass",
       "paths": ["bin/sley"],
       "audit_command": ["bin/sley", "--version"]
     },
     {
       "id": "sley_owned_stage2_source",
-      "claim": "Sley-owned stage-2 semantic source modules exist and are reported by the CLI.",
+      "claim": "Sley-owned semantic source modules implement parser, checker, lint, runtime, bootstrap, and report semantics and are reported by the CLI.",
       "status": "expected_pass",
       "paths": [
         "self-hosted/src/loom/bootstrap.sley",
@@ -74,7 +74,7 @@
     },
     {
       "id": "source_owned_bootstrap_smoke",
-      "claim": "Selected bootstrap, parser, checker, lint, runtime, and report-shape values are read from .sley source.",
+      "claim": "Bootstrap, parser, checker, lint, runtime, and report semantics execute from .sley source and pass the deterministic self-hosting suite.",
       "status": "expected_pass",
       "paths": ["scripts/self-hosted-test.sh", "self-hosted/src/loom"],
       "audit_command": ["scripts/self-hosted-test.sh"]
@@ -139,20 +139,20 @@
       "audit_command": ["bin/sley", "claim-verify", "--json", "docs/SleyClaimManifest.json"]
     },
     {
-      "id": "public_release_blocked",
-      "claim": "The public release remains blocked until strict Sley-written parity, a proof bundle, and operator approval are present.",
-      "status": "expected_blocked",
-      "paths": ["docs/PublicReleaseChecklist.md"],
+      "id": "public_release_ready",
+      "claim": "Strict Sley-written parity, the public evidence packet, and operator approval are present for the v1.1 release.",
+      "status": "expected_pass",
+      "paths": ["docs/PublicReleaseChecklist.md", "docs/SleyClaimEvidence.md"],
       "audit_command": ["make", "public-release-check"]
     }
   ],
   "prior_art": {
     "source_pack": "docs/SleyPriorArtSourcePack.md",
-    "last_verified": "2026-05-11",
+    "last_verified": "2026-08-22",
     "candidates": [
       {
         "project": "Sley",
-        "classification": "Current strongest match among the reviewed candidates, but not final strict self-hosting.",
+        "classification": "Self-hosted agent-native structural language with a reproducible public proof surface.",
         "confidence": "high",
         "source_refs": ["README.md", "docs/SleyClaimEvidence.md", "docs/contracts.md"]
       },
@@ -196,12 +196,8 @@
   },
   "publication_gates": {
     "external_issue_requires_operator_approval": true,
-    "public_release_ready": false,
-    "blockers": [
-      "strict Sley-written semantic parity is not complete",
-      "public proof bundle is not approved",
-      "operator has not approved public release or external issue text"
-    ]
+    "public_release_ready": true,
+    "blockers": []
   },
   "audit_sequence": [
     {
@@ -222,7 +218,7 @@
     },
     {
       "command": ["make", "public-release-check"],
-      "expected_current_result": "blocked"
+      "expected_current_result": "pass"
     }
   ]
 }

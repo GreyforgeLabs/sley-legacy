@@ -1,25 +1,18 @@
-module loom.bootstrap
-
-import loom.lint as lint
-
-export task implementation_version -> Text {
-  return "sley 1.1"
-}
-
-export task implementation_stage -> Text {
-  return "self-hosted"
-}
-
-export task self_hosting_status -> Text {
-  return "strict"
-}
-
-export task strict_self_hosted -> Bool {
-  return true
-}
-
-export task owned_bootstrap_values -> List<Text> {
-  return [
+{
+  "schema": "sley.self_hosting.status.v0",
+  "status": "strict",
+  "strict_self_hosted": true,
+  "source_root": "self-hosted/src",
+  "semantic_source_count": 6,
+  "source_modules": [
+    "loom.bootstrap",
+    "loom.parser",
+    "loom.checker",
+    "loom.lint",
+    "loom.runtime",
+    "loom.reports"
+  ],
+  "bootstrap_owned_by_sley": [
     "implementation_version",
     "implementation_stage",
     "self_hosting_status",
@@ -494,32 +487,6 @@ export task owned_bootstrap_values -> List<Text> {
     "self_hosting_report_builder",
     "self_hosting_report_builder_task_execution",
     "runtime_report_status_and_dispatch"
-  ]
-}
-
-export task source_modules -> List<Text> {
-  return [
-    "loom.bootstrap",
-    "loom.parser",
-    "loom.checker",
-    "loom.lint",
-    "loom.runtime",
-    "loom.reports"
-  ]
-}
-
-export task semantic_source_count -> Int {
-  bind modules = call source_modules()
-
-  return len(modules)
-}
-
-export task remaining_strict_self_hosting_blockers -> List<Text> {
-  return []
-}
-
-task smoke -> Int {
-  bind rules = call lint.default_lint_rules()
-
-  return len(rules)
+  ],
+  "blockers": []
 }
