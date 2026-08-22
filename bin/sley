@@ -665,6 +665,15 @@ sley_eval_source_bind_value_json() {
     literal_body="$(printf '%s\n' "$literal_body" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
     literal_body="${literal_body#\{}"
     literal_body="${literal_body%\}}"
+    literal_body="$(printf '%s\n' "$literal_body" | awk '
+      { lines[NR]=$0 }
+      END {
+        last=NR
+        while(last > 0 && lines[last] ~ /^[ \t]*$/) last--
+        sub(/,[ \t]*$/, "", lines[last])
+        for(i=1; i<=last; i++) print lines[i]
+      }
+    ')"
     printf '{%s}\n' "$literal_body" | jq -ce .
     return
   fi
@@ -4987,6 +4996,31 @@ sley_source_main_return_type() {
   ' "$file"
 }
 
+sley_source_type_alias_target() {
+  local file="$1" type_name="$2"
+  awk -v type_name="$type_name" '
+    function trim(s){gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s}
+    $0 ~ "^[ \t]*(export[ \t]+)?type[ \t]+" type_name "[ \t]*=" {
+      line=$0
+      sub(/^[ \t]*(export[ \t]+)?type[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*=[ \t]*/, "", line)
+      print trim(line)
+      exit
+    }
+  ' "$file"
+}
+
+sley_resolve_source_return_type_alias() {
+  local file="$1" return_type="$2" alias_target depth=0
+  while [[ "$return_type" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; do
+    alias_target="$(sley_source_type_alias_target "$file" "$return_type")"
+    [[ -n "$alias_target" ]] || break
+    return_type="$alias_target"
+    depth=$((depth + 1))
+    [[ "$depth" -le 32 ]] || return 1
+  done
+  printf '%s\n' "$return_type"
+}
+
 runtime_generic_return_base() {
   local return_type="$1"
   if [[ "$return_type" == Result\<* ]]; then
@@ -5062,6 +5096,7 @@ eval_source_generic_main_return() {
   sley_source_main_body_supports_generic_runtime "$file" || return 1
   return_type="$(sley_source_main_return_type "$file")"
   [[ -n "$return_type" ]] || return 1
+  return_type="$(sley_resolve_source_return_type_alias "$file" "$return_type")" || return 1
   env_json="$(sley_runtime_seed_env_json "$http_text" "$model_text" "$deploy_text" "$spend_text" "$secret_text" "$shell_text")" || return 1
   return_base="$(runtime_generic_return_base "$return_type")"
   if [[ "$return_base" == "Result" ]]; then
@@ -5588,11 +5623,14 @@ RUNTIME_INT_COMPARISON_OPERATOR_PLAN_JSON="$(sley_source_list_task_json loom.run
 RUNTIME_CAPABILITY_REQUIRED_ID="$(sley_source_task loom.runtime capability_required_diagnostic_id)"
 RUNTIME_CAPABILITY_SCOPE_DENIED_ID="$(sley_source_task loom.runtime capability_scope_denied_diagnostic_id)"
 RUNTIME_TAKE_REQUIRED_ID="$(sley_source_task loom.runtime main_take_required_diagnostic_id)"
+RUNTIME_DISPATCH_MISS_ID="$(sley_source_task loom.runtime dispatch_miss_diagnostic_id)"
 RUNTIME_CAPABILITY_REQUIRED_MESSAGE_PREFIX="$(sley_source_task loom.runtime capability_required_message_prefix)"
 RUNTIME_CAPABILITY_SCOPE_DENIED_MESSAGE_MIDDLE="$(sley_source_task loom.runtime capability_scope_denied_message_middle)"
 RUNTIME_CAPABILITY_SCOPE_DENIED_MESSAGE_SUFFIX="$(sley_source_task loom.runtime capability_scope_denied_message_suffix)"
 RUNTIME_TAKE_REQUIRED_MESSAGE_PREFIX="$(sley_source_task loom.runtime main_take_required_message_prefix)"
 RUNTIME_TAKE_REQUIRED_MESSAGE_SUFFIX="$(sley_source_task loom.runtime main_take_required_message_suffix)"
+RUNTIME_DISPATCH_MISS_MESSAGE_PREFIX="$(sley_source_task loom.runtime dispatch_miss_message_prefix)"
+RUNTIME_DISPATCH_MISS_MESSAGE_SUFFIX="$(sley_source_task loom.runtime dispatch_miss_message_suffix)"
 RUNTIME_INT_VALUE_KIND="$(sley_source_task loom.runtime int_value_kind)"
 RUNTIME_TEXT_VALUE_KIND="$(sley_source_task loom.runtime text_value_kind)"
 RUNTIME_BOOL_VALUE_KIND="$(sley_source_task loom.runtime bool_value_kind)"
@@ -9759,6 +9797,7 @@ runtime_dispatch_candidate_json() {
 
 run_json() {
   local target="$1" http_text="" model_text="" deploy_text="" spend_text="" secret_text="" shell_text="" runtime_status simple_runtime runtime_candidate runtime_candidate_id arg prev="" runtime_auth run_value_json values_json
+  local runtime_matched=false diagnostics_json='[]'
   for arg in "$@"; do
     case "$prev" in
       --http-text-url) prev="--http-text-value"; continue ;;
@@ -9796,7 +9835,7 @@ run_json() {
   fi
   local value_kind="$RUNTIME_RAW_VALUE_KIND" value="$RUNTIME_DEFAULT_RAW_VALUE"
   if json_list_contains_string "$RUNTIME_SELF_HOSTED_TARGETS_JSON" "$target"; then
-    value_kind="$RUNTIME_INT_VALUE_KIND"; value="$(eval_bootstrap_smoke_task)"
+    value_kind="$RUNTIME_INT_VALUE_KIND"; value="$(eval_bootstrap_smoke_task)"; runtime_matched=true
   else
     while IFS= read -r runtime_candidate || [[ -n "$runtime_candidate" ]]; do
       [[ -n "$runtime_candidate" ]] || continue
@@ -9804,6 +9843,7 @@ run_json() {
       if simple_runtime="$(runtime_dispatch_candidate_json "$runtime_candidate_id" "$target" "$http_text" "$model_text" "$deploy_text" "$spend_text" "$secret_text" "$shell_text" 2>/dev/null)" && [[ -n "$simple_runtime" ]]; then
         value_kind="$(printf '%s\n' "$simple_runtime" | jq -r '.kind')"
         value="$(printf '%s\n' "$simple_runtime" | jq -r '.value')"
+        runtime_matched=true
         break
       fi
     done < <(printf '%s\n' "$RUNTIME_DISPATCH_PLAN_JSON" | jq -c '.[]')
@@ -9811,8 +9851,17 @@ run_json() {
   if [[ "$value_kind" == "$RUNTIME_OK_TEXT_VALUE_KIND" ]]; then
     value="$(eval_runtime_ok_text_value_task "$value")"
   fi
-  runtime_status="$(eval_runtime_status_task 0)"
-  [[ -n "$runtime_status" ]] || runtime_status="$RUNTIME_PASSED_STATUS"
+  if "$runtime_matched"; then
+    runtime_status="$(eval_runtime_status_task 0)"
+    [[ -n "$runtime_status" ]] || runtime_status="$RUNTIME_PASSED_STATUS"
+  else
+    runtime_status="$(eval_runtime_status_task 1)"
+    [[ -n "$runtime_status" ]] || runtime_status="$RUNTIME_FAILED_STATUS"
+    diagnostics_json="$(jq -cn \
+      --arg id "$RUNTIME_DISPATCH_MISS_ID" \
+      --arg message "$RUNTIME_DISPATCH_MISS_MESSAGE_PREFIX$target$RUNTIME_DISPATCH_MISS_MESSAGE_SUFFIX" \
+      '[{id:$id,severity:"error",message:$message,node:"task:main"}]')"
+  fi
   run_value_json="$(jq -n \
     --arg kind "$value_kind" \
     --arg value "$value" \
@@ -9839,11 +9888,15 @@ run_json() {
     --arg target "$target" \
     --arg runtime_status "$runtime_status" \
     --argjson value "$run_value_json" \
+    --argjson diagnostics "$diagnostics_json" \
     '{
       reports:{run_schema:$schema},
-      runtime:{runtime_status:$runtime_status, target:$target, value:$value, diagnostics:[]}
+      runtime:{runtime_status:$runtime_status, target:$target, value:$value, diagnostics:$diagnostics}
     }')"
   sley_report_builder_for_namespace_json "run" "$values_json"
+  if ! "$runtime_matched"; then
+    return 1
+  fi
 }
 
 verify_json() {
@@ -13575,11 +13628,15 @@ command_claim_verify() {
 }
 
 command_run() {
-  local target report
+  local target report rc
   target="$(last_path_arg "$@")"
-  report="$(run_json "$target" "$@" || true)"
+  if report="$(run_json "$target" "$@")"; then
+    rc=0
+  else
+    rc=$?
+  fi
   printf '%s\n' "$report"
-  if [[ "$(printf '%s\n' "$report" | jq -r '.schema? // ""')" == "$SCHEMA_DIAGNOSTICS" ]]; then
+  if [[ "$rc" -ne 0 ]] || [[ "$(printf '%s\n' "$report" | jq -r '.schema? // ""')" == "$SCHEMA_DIAGNOSTICS" ]]; then
     echo "operation failed" >&2
     return 1
   fi
