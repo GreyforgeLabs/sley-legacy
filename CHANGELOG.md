@@ -7,6 +7,9 @@ here. Dates use UTC-independent calendar dates from the local repo history.
 
 ### Added
 
+- `sley-mcp-bridge`, a bounded read-only MCP stdio server exposing
+  compiler-owned query, lint, plan, dry-run graft, and verify reports under an
+  explicitly configured Git repository root.
 - `git-sley-guard`, a bounded pre-commit gate over staged Sley projects and
   contract fixtures that never validates mutable worktree copies by mistake.
 - `sley-docgen reference`, a checked JSON and optional Markdown reference

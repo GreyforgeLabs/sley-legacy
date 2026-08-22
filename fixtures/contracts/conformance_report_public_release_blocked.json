@@ -19,7 +19,7 @@
     "declared_integration_test_count": 197,
     "test_count_matches_declared": true,
     "editor_shim_count": 0,
-    "v1_gate_target_count": 19,
+    "v1_gate_target_count": 22,
     "missing_v1_gate_target_count": 0,
     "public_release_blocker_count": 1,
     "issue_count": 1
@@ -116,6 +116,8 @@
       "fmt",
       "diff-check",
       "test",
+      "git-guard",
+      "mcp-bridge",
       "contracts",
       "conformance",
       "claim-audit",
@@ -131,12 +133,15 @@
       "sandbox-runner",
       "shadow",
       "zjx-tools",
+      "arena",
       "syntax"
     ],
     "actual_targets": [
       "fmt",
       "diff-check",
       "test",
+      "git-guard",
+      "mcp-bridge",
       "contracts",
       "conformance",
       "claim-audit",
@@ -152,6 +157,7 @@
       "sandbox-runner",
       "shadow",
       "zjx-tools",
+      "arena",
       "syntax"
     ],
     "missing_required_targets": [],
@@ -168,8 +174,8 @@
         "v1"
       ],
       "gate_completion_percent": 95,
-      "passed_check_count": 18,
-      "total_check_count": 19,
+      "passed_check_count": 21,
+      "total_check_count": 22,
       "blocker_count": 1,
       "blockers": [
         {

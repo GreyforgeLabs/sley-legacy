@@ -5826,7 +5826,7 @@ Commands:
 Companion tools:
   git-sley-guard, sley-ci, sley-conformance, sley-contract, sley-docgen, sley-lsp,
   sley-workbench, sley-agent-bench, sley-migrate, sley-sandbox-runner,
-  sley-shadow, sley-zjx
+  sley-shadow, sley-zjx, sley-mcp-bridge
 EOF
 }
 
@@ -10736,7 +10736,7 @@ EOF
 tool_conformance() {
   local accepted rejected schemas contracts smoke examples integration declared status require_ready=0 markdown_path=""
   local v1_targets_json report
-  v1_targets_json='["fmt","diff-check","test","contracts","conformance","claim-audit","corpus","examples","smoke","lsp","editor-shims","workbench","agent-bench","migrate","docgen","sandbox-runner","shadow","zjx-tools","syntax"]'
+  v1_targets_json='["fmt","diff-check","test","git-guard","mcp-bridge","contracts","conformance","claim-audit","corpus","examples","smoke","lsp","editor-shims","workbench","agent-bench","migrate","docgen","sandbox-runner","shadow","zjx-tools","arena","syntax"]'
   if [[ "${1:-}" == "coverage" ]]; then
     shift
     local tags_json='[]' tag

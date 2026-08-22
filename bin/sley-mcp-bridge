@@ -1,0 +1,388 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+BRIDGE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SLEY_REPO="$(cd "$BRIDGE_DIR/.." && pwd)"
+SLEY_BIN="$BRIDGE_DIR/sley"
+MCP_PROTOCOL_VERSION="2025-06-18"
+MCP_SERVER_VERSION="0.1.0"
+MAX_REQUEST_BYTES="${SLEY_MCP_MAX_REQUEST_BYTES:-1048576}"
+MAX_RESPONSE_BYTES="${SLEY_MCP_MAX_RESPONSE_BYTES:-2097152}"
+TOOL_TIMEOUT_SECONDS="${SLEY_MCP_TOOL_TIMEOUT_SECONDS:-120}"
+REPOSITORY_ROOT=""
+STATE="created"
+
+log() {
+  printf 'sley-mcp-bridge: %s\n' "$*" >&2
+}
+
+usage() {
+  cat <<'EOF'
+Run the read-only Sley MCP stdio bridge.
+
+Usage: sley-mcp-bridge --root <absolute-git-repository-root>
+
+The bridge speaks newline-delimited UTF-8 JSON-RPC on stdin/stdout. Protocol
+stdout is reserved for MCP messages; operational logs are written to stderr.
+EOF
+}
+
+require_positive_integer() {
+  local name="$1" value="$2"
+  if [[ ! "$value" =~ ^[1-9][0-9]*$ ]]; then
+    log "$name must be a positive integer"
+    exit 2
+  fi
+}
+
+jsonrpc_error() {
+  local id_json="$1" code="$2" message="$3" data_json="${4:-null}"
+  jq -cn \
+    --argjson id "$id_json" \
+    --argjson code "$code" \
+    --arg message "$message" \
+    --argjson data "$data_json" \
+    '{jsonrpc:"2.0",id:$id,error:({code:$code,message:$message} + (if $data == null then {} else {data:$data} end))}'
+}
+
+jsonrpc_result() {
+  local id_json="$1" result_json="$2"
+  jq -cn --argjson id "$id_json" --argjson result "$result_json" '{jsonrpc:"2.0",id:$id,result:$result}'
+}
+
+resolve_confined_path() {
+  local requested="$1" candidate resolved
+  [[ -n "$requested" && "$requested" != *$'\n'* && "$requested" != *$'\r'* ]] || return 1
+  if [[ "$requested" == /* ]]; then
+    candidate="$requested"
+  else
+    candidate="$REPOSITORY_ROOT/$requested"
+  fi
+  resolved="$(realpath -e -- "$candidate" 2>/dev/null)" || return 1
+  if [[ "$resolved" != "$REPOSITORY_ROOT" && "$resolved" != "$REPOSITORY_ROOT/"* ]]; then
+    return 1
+  fi
+  printf '%s\n' "$resolved"
+}
+
+tool_catalog_json() {
+  jq -n \
+    --slurpfile query_schema "$SLEY_REPO/docs/schemas/sley.query.report.v0.schema.json" \
+    --slurpfile lint_schema "$SLEY_REPO/docs/schemas/sley.lint.report.v0.schema.json" \
+    --slurpfile plan_schema "$SLEY_REPO/docs/schemas/sley.edit_plan.report.v0.schema.json" \
+    --slurpfile graft_schema "$SLEY_REPO/docs/schemas/sley.graft.outcome.v0.schema.json" \
+    --slurpfile verify_schema "$SLEY_REPO/docs/schemas/sley.verify.report.v0.schema.json" '
+    def path_property: {type:"string",minLength:1,description:"Path relative to the configured repository root, or a confined absolute path."};
+    def read_only_annotations: {readOnlyHint:true,destructiveHint:false,idempotentHint:true,openWorldHint:false};
+    [
+      {
+        name:"sley_query",
+        title:"Query Sley Structure",
+        description:"Return a bounded compiler-owned structural query report.",
+        inputSchema:{"$schema":"https://json-schema.org/draft/2020-12/schema",type:"object",additionalProperties:false,properties:{path:path_property,kind:{type:"string",enum:["all","tasks","types","effects","calls"]},module:{type:"string",minLength:1},exported_only:{type:"boolean"}},required:["path"]},
+        outputSchema:$query_schema[0],
+        annotations:read_only_annotations
+      },
+      {
+        name:"sley_lint",
+        title:"Lint Sley Source",
+        description:"Return compiler-owned lint findings without changing source.",
+        inputSchema:{"$schema":"https://json-schema.org/draft/2020-12/schema",type:"object",additionalProperties:false,properties:{path:path_property,module:{type:"string",minLength:1},rule:{type:"string",minLength:1},deny_warnings:{type:"boolean"}},required:["path"]},
+        outputSchema:$lint_schema[0],
+        annotations:read_only_annotations
+      },
+      {
+        name:"sley_plan",
+        title:"Plan Sley Grafts",
+        description:"Return compiler-owned non-mutating graft templates.",
+        inputSchema:{"$schema":"https://json-schema.org/draft/2020-12/schema",type:"object",additionalProperties:false,properties:{path:path_property,template_surface:{type:"string",minLength:1}},required:["path"]},
+        outputSchema:$plan_schema[0],
+        annotations:read_only_annotations
+      },
+      {
+        name:"sley_propose_graft",
+        title:"Dry-run Sley Graft",
+        description:"Validate and preview one graft operation without writing source.",
+        inputSchema:{"$schema":"https://json-schema.org/draft/2020-12/schema",type:"object",additionalProperties:false,properties:{path:path_property,operation:$plan_schema[0]."$defs".graftOperation},required:["path","operation"]},
+        outputSchema:$graft_schema[0],
+        annotations:read_only_annotations
+      },
+      {
+        name:"sley_verify",
+        title:"Verify Sley Target",
+        description:"Return the compiler-owned verification report without deployment or writes.",
+        inputSchema:{"$schema":"https://json-schema.org/draft/2020-12/schema",type:"object",additionalProperties:false,properties:{path:path_property,deny_warnings:{type:"boolean"}},required:["path"]},
+        outputSchema:$verify_schema[0],
+        annotations:read_only_annotations
+      }
+    ]'
+}
+
+validate_tool_arguments() {
+  local tool="$1" args_json="$2"
+  case "$tool" in
+    sley_query)
+      jq -e 'type == "object" and (.path | type == "string" and length > 0) and ((keys - ["path","kind","module","exported_only"]) | length == 0) and ((has("kind") | not) or (.kind | type == "string" and IN("all","tasks","types","effects","calls"))) and ((has("module") | not) or (.module | type == "string" and length > 0)) and ((has("exported_only") | not) or (.exported_only | type == "boolean"))' <<< "$args_json" >/dev/null
+      ;;
+    sley_lint)
+      jq -e 'type == "object" and (.path | type == "string" and length > 0) and ((keys - ["path","module","rule","deny_warnings"]) | length == 0) and ((has("module") | not) or (.module | type == "string" and length > 0)) and ((has("rule") | not) or (.rule | type == "string" and length > 0)) and ((has("deny_warnings") | not) or (.deny_warnings | type == "boolean"))' <<< "$args_json" >/dev/null
+      ;;
+    sley_plan)
+      jq -e 'type == "object" and (.path | type == "string" and length > 0) and ((keys - ["path","template_surface"]) | length == 0) and ((has("template_surface") | not) or (.template_surface | type == "string" and length > 0))' <<< "$args_json" >/dev/null
+      ;;
+    sley_propose_graft)
+      jq -e 'type == "object" and (.path | type == "string" and length > 0) and ((keys - ["path","operation"]) | length == 0) and (.operation | type == "object" and length > 0)' <<< "$args_json" >/dev/null
+      ;;
+    sley_verify)
+      jq -e 'type == "object" and (.path | type == "string" and length > 0) and ((keys - ["path","deny_warnings"]) | length == 0) and ((has("deny_warnings") | not) or (.deny_warnings | type == "boolean"))' <<< "$args_json" >/dev/null
+      ;;
+    *) return 2 ;;
+  esac
+}
+
+tool_expected_schema() {
+  case "$1" in
+    sley_query) printf 'sley.query.report.v0\n' ;;
+    sley_lint) printf 'sley.lint.report.v0\n' ;;
+    sley_plan) printf 'sley.edit_plan.report.v0\n' ;;
+    sley_propose_graft) printf 'sley.graft.outcome.v0\n' ;;
+    sley_verify) printf 'sley.verify.report.v0\n' ;;
+    *) return 1 ;;
+  esac
+}
+
+tool_result_error_json() {
+  local code="$1" message="$2"
+  jq -cn --arg code "$code" --arg message "$message" '{content:[{type:"text",text:($code + ": " + $message)}],isError:true}'
+}
+
+run_tool_json() {
+  local tool="$1" args_json="$2" workspace="$3"
+  local requested_path confined_path operation_file="" stdout_file="$workspace/stdout" stderr_file="$workspace/stderr"
+  local rc=0 response_bytes compact_report expected_schema actual_schema is_error=false
+  local -a cmd=()
+  requested_path="$(jq -r '.path' <<< "$args_json")"
+  confined_path="$(resolve_confined_path "$requested_path")" || {
+    tool_result_error_json "SLEY_MCP_PATH_DENIED" "path is missing or outside the configured repository root"
+    return
+  }
+
+  case "$tool" in
+    sley_query)
+      cmd=("$SLEY_BIN" query --json --kind "$(jq -r '.kind // "all"' <<< "$args_json")")
+      if [[ "$(jq -r '.exported_only // false' <<< "$args_json")" == true ]]; then cmd+=(--exported); fi
+      if [[ -n "$(jq -r '.module // ""' <<< "$args_json")" ]]; then cmd+=(--module "$(jq -r '.module' <<< "$args_json")"); fi
+      cmd+=("$confined_path")
+      ;;
+    sley_lint)
+      cmd=("$SLEY_BIN" lint --json)
+      if [[ -n "$(jq -r '.module // ""' <<< "$args_json")" ]]; then cmd+=(--module "$(jq -r '.module' <<< "$args_json")"); fi
+      if [[ -n "$(jq -r '.rule // ""' <<< "$args_json")" ]]; then cmd+=(--rule "$(jq -r '.rule' <<< "$args_json")"); fi
+      if [[ "$(jq -r '.deny_warnings // false' <<< "$args_json")" == true ]]; then cmd+=(--deny-warnings); fi
+      cmd+=("$confined_path")
+      ;;
+    sley_plan)
+      cmd=("$SLEY_BIN" plan --json --graft-templates)
+      if [[ -n "$(jq -r '.template_surface // ""' <<< "$args_json")" ]]; then cmd+=(--template-surface "$(jq -r '.template_surface' <<< "$args_json")"); fi
+      cmd+=("$confined_path")
+      ;;
+    sley_propose_graft)
+      operation_file="$workspace/operation.json"
+      jq -c '.operation' <<< "$args_json" > "$operation_file"
+      cmd=("$SLEY_BIN" graft --json --dry-run "$confined_path" "$operation_file")
+      ;;
+    sley_verify)
+      cmd=("$SLEY_BIN" verify --json)
+      if [[ "$(jq -r '.deny_warnings // false' <<< "$args_json")" == true ]]; then cmd+=(--deny-warnings); fi
+      cmd+=("$confined_path")
+      ;;
+    *)
+      tool_result_error_json "SLEY_MCP_UNKNOWN_TOOL" "unknown tool"
+      return
+      ;;
+  esac
+
+  if timeout --signal=TERM --kill-after=2 "$TOOL_TIMEOUT_SECONDS" "${cmd[@]}" > "$stdout_file" 2> "$stderr_file"; then
+    rc=0
+  else
+    rc=$?
+  fi
+  if [[ -s "$stderr_file" ]]; then
+    sed 's/^/tool: /' "$stderr_file" >&2
+  fi
+  if [[ "$rc" -eq 124 || "$rc" -eq 137 ]]; then
+    tool_result_error_json "SLEY_MCP_TOOL_TIMEOUT" "tool execution exceeded ${TOOL_TIMEOUT_SECONDS}s"
+    return
+  fi
+  response_bytes="$(wc -c < "$stdout_file" | tr -d '[:space:]')"
+  if [[ "$response_bytes" -gt "$MAX_RESPONSE_BYTES" ]]; then
+    tool_result_error_json "SLEY_MCP_RESPONSE_TOO_LARGE" "compiler response exceeded ${MAX_RESPONSE_BYTES} bytes"
+    return
+  fi
+  if ! jq -e -s 'length == 1' "$stdout_file" >/dev/null 2>&1 \
+    || ! compact_report="$(jq -c . "$stdout_file" 2>/dev/null)" \
+    || [[ -z "$compact_report" || "$compact_report" == *$'\n'* ]]; then
+    tool_result_error_json "SLEY_MCP_COMPILER_OUTPUT_INVALID" "compiler did not return one valid JSON report"
+    return
+  fi
+  expected_schema="$(tool_expected_schema "$tool")"
+  actual_schema="$(jq -r '.schema? // ""' <<< "$compact_report")"
+  if [[ "$rc" -ne 0 ]]; then is_error=true; fi
+  if [[ "$actual_schema" == "$expected_schema" ]]; then
+    jq -cn --arg text "$compact_report" --argjson report "$compact_report" --argjson is_error "$is_error" '{content:[{type:"text",text:$text}],structuredContent:$report,isError:$is_error}'
+  else
+    jq -cn --arg text "$compact_report" '{content:[{type:"text",text:$text}],isError:true}'
+  fi
+}
+
+handle_request() {
+  local message="$1" id_json method params_json result_json tools_json tool args_json workspace
+  id_json="$(jq -c '.id // null' <<< "$message")"
+  method="$(jq -r '.method // ""' <<< "$message")"
+  params_json="$(jq -c '.params // {}' <<< "$message")"
+
+  if ! jq -e '(.params? // {}) | type == "object"' <<< "$message" >/dev/null; then
+    jsonrpc_error "$id_json" -32602 "method parameters must be an object"
+    return
+  fi
+
+  case "$method" in
+    initialize)
+      if [[ "$STATE" != "created" ]]; then
+        jsonrpc_error "$id_json" -32600 "initialize may only be called once"
+        return
+      fi
+      if ! jq -e 'type == "object" and (.protocolVersion | type == "string") and (.capabilities | type == "object") and (.clientInfo | type == "object")' <<< "$params_json" >/dev/null; then
+        jsonrpc_error "$id_json" -32602 "invalid initialize parameters"
+        return
+      fi
+      result_json="$(jq -cn --arg version "$MCP_PROTOCOL_VERSION" --arg server_version "$MCP_SERVER_VERSION" '{protocolVersion:$version,capabilities:{tools:{listChanged:false}},serverInfo:{name:"sley-mcp-bridge",title:"Sley MCP Bridge",version:$server_version},instructions:"Read-only Sley compiler access confined to the configured repository root."}')"
+      STATE="initialized_pending"
+      jsonrpc_result "$id_json" "$result_json"
+      ;;
+    ping)
+      jsonrpc_result "$id_json" '{}'
+      ;;
+    tools/list)
+      if [[ "$STATE" != "ready" ]]; then
+        jsonrpc_error "$id_json" -32002 "server is not initialized"
+        return
+      fi
+      tools_json="$(tool_catalog_json)"
+      result_json="$(jq -cn --argjson tools "$tools_json" '{tools:$tools}')"
+      jsonrpc_result "$id_json" "$result_json"
+      ;;
+    tools/call)
+      if [[ "$STATE" != "ready" ]]; then
+        jsonrpc_error "$id_json" -32002 "server is not initialized"
+        return
+      fi
+      tool="$(jq -r '.name // ""' <<< "$params_json")"
+      args_json="$(jq -c '.arguments // {}' <<< "$params_json")"
+      if ! tool_expected_schema "$tool" >/dev/null 2>&1; then
+        jsonrpc_error "$id_json" -32602 "unknown tool: $tool"
+        return
+      fi
+      if ! validate_tool_arguments "$tool" "$args_json"; then
+        jsonrpc_error "$id_json" -32602 "invalid arguments for tool: $tool"
+        return
+      fi
+      workspace="$(mktemp -d "${TMPDIR:-/tmp}/sley-mcp-call.XXXXXXXX")"
+      if ! result_json="$(run_tool_json "$tool" "$args_json" "$workspace")"; then
+        result_json="$(tool_result_error_json "SLEY_MCP_INTERNAL_ERROR" "tool adapter failed before returning a result")"
+      fi
+      rm -rf -- "$workspace"
+      jsonrpc_result "$id_json" "$result_json"
+      ;;
+    *)
+      jsonrpc_error "$id_json" -32601 "method not found: $method"
+      ;;
+  esac
+}
+
+handle_notification() {
+  local message="$1" method request_id reason
+  method="$(jq -r '.method // ""' <<< "$message")"
+  if ! jq -e '(.params? // {}) | type == "object"' <<< "$message" >/dev/null; then
+    log "ignored notification with non-object parameters: $method"
+    return
+  fi
+  case "$method" in
+    notifications/initialized)
+      if [[ "$STATE" == "initialized_pending" ]]; then
+        STATE="ready"
+      else
+        log "ignored initialized notification in state $STATE"
+      fi
+      ;;
+    notifications/cancelled)
+      request_id="$(jq -c '.params.requestId // null' <<< "$message")"
+      reason="$(jq -r '.params.reason // ""' <<< "$message")"
+      log "ignored cancellation for inactive request $request_id${reason:+: $reason}"
+      ;;
+    *)
+      log "ignored notification $method"
+      ;;
+  esac
+}
+
+main() {
+  local requested_root="" root_real git_root line bytes message id_present method_present
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --root) requested_root="${2:-}"; shift 2 ;;
+      --help|-h|help) usage; return 0 ;;
+      *) log "unknown argument: $1"; usage >&2; return 2 ;;
+    esac
+  done
+  require_positive_integer SLEY_MCP_MAX_REQUEST_BYTES "$MAX_REQUEST_BYTES"
+  require_positive_integer SLEY_MCP_MAX_RESPONSE_BYTES "$MAX_RESPONSE_BYTES"
+  require_positive_integer SLEY_MCP_TOOL_TIMEOUT_SECONDS "$TOOL_TIMEOUT_SECONDS"
+  [[ "$requested_root" == /* && -d "$requested_root" ]] || { log "--root must name an absolute directory"; return 2; }
+  root_real="$(realpath -e -- "$requested_root")" || { log "repository root does not exist"; return 2; }
+  git_root="$(git -C "$root_real" rev-parse --show-toplevel 2>/dev/null)" || { log "--root is not a Git repository"; return 2; }
+  git_root="$(realpath -e -- "$git_root")"
+  [[ "$root_real" == "$git_root" ]] || { log "--root must be the Git repository top level"; return 2; }
+  REPOSITORY_ROOT="$root_real"
+  log "serving read-only MCP for $REPOSITORY_ROOT"
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    bytes="$(printf '%s' "$line" | wc -c | tr -d '[:space:]')"
+    if [[ "$bytes" -eq 0 ]]; then
+      jsonrpc_error null -32700 "empty JSON-RPC frame"
+      continue
+    fi
+    if [[ "$bytes" -gt "$MAX_REQUEST_BYTES" ]]; then
+      jsonrpc_error null -32600 "request exceeds ${MAX_REQUEST_BYTES} bytes"
+      continue
+    fi
+    if ! message="$(jq -ce . <<< "$line" 2>/dev/null)"; then
+      jsonrpc_error null -32700 "invalid JSON-RPC message"
+      continue
+    fi
+    if [[ "$(jq -r type <<< "$message")" != "object" ]]; then
+      jsonrpc_error null -32600 "JSON-RPC message must be an object"
+      continue
+    fi
+    if ! jq -e '.jsonrpc == "2.0" and (.method | type == "string" and length > 0)' <<< "$message" >/dev/null; then
+      jsonrpc_error null -32600 "invalid JSON-RPC request"
+      continue
+    fi
+    id_present="$(jq -r 'has("id")' <<< "$message")"
+    method_present="$(jq -r 'has("method")' <<< "$message")"
+    if [[ "$id_present" == true ]] && ! jq -e '.id == null or (.id | type == "string") or ((.id | type == "number") and (.id | floor == .))' <<< "$message" >/dev/null; then
+      jsonrpc_error null -32600 "request id must be a string, integer, or null"
+    elif [[ "$method_present" != true ]]; then
+      jsonrpc_error null -32600 "invalid JSON-RPC request"
+    elif [[ "$id_present" == true ]]; then
+      handle_request "$message"
+    else
+      case "$(jq -r '.method' <<< "$message")" in
+        initialize|ping|tools/list|tools/call) jsonrpc_error null -32600 "request method requires an id" ;;
+        *) handle_notification "$message" ;;
+      esac
+    fi
+  done
+}
+
+main "$@"

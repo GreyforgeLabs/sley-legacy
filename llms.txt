@@ -101,6 +101,7 @@ sley claim-verify --json docs/SleyClaimManifest.json
 
 ```bash
 git-sley-guard
+sley-mcp-bridge --root <absolute-git-repository-root>
 sley-ci lint --json --deny-warnings <file-or-project>
 sley-ci doctor --json --deny-warnings <file-or-project>
 sley-ci plan --json --graft-templates <file-or-project>
