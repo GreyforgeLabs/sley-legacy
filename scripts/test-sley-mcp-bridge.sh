@@ -137,7 +137,7 @@ jq -s -e 'length == 5 and ([.[1:][] | .result.isError] | all(. == true)) and ([.
   jq -cn '{jsonrpc:"2.0",id:40,method:"ping",params:{}}'
 } | run_bridge cancellation env
 jq -s -e 'length == 2 and .[1].id == 40 and .[1].result == {}' "$WORK_DIR/cancellation.out" >/dev/null || fail "cancellation notification disrupted the session"
-rg -q 'ignored cancellation for inactive request 99: test cancellation' "$WORK_DIR/cancellation.err" || fail "cancellation was not logged to stderr"
+grep -Fq 'ignored cancellation for inactive request 99: test cancellation' "$WORK_DIR/cancellation.err" || fail "cancellation was not logged to stderr"
 
 {
   initialize_message
@@ -158,7 +158,7 @@ jq -s -e 'length == 2 and .[0].error.code == -32600 and .[1].id == 51 and .[1].r
 if SLEY_MCP_MAX_REQUEST_BYTES=67108865 "$BRIDGE" --root "$ROOT_DIR" </dev/null > "$WORK_DIR/request_limit_cap.out" 2> "$WORK_DIR/request_limit_cap.err"; then
   fail "bridge accepted a request limit above its configured ceiling"
 fi
-rg -q 'must not exceed 67108864' "$WORK_DIR/request_limit_cap.err" || fail "request limit ceiling diagnostic mismatch"
+grep -Fq 'must not exceed 67108864' "$WORK_DIR/request_limit_cap.err" || fail "request limit ceiling diagnostic mismatch"
 
 {
   initialize_message

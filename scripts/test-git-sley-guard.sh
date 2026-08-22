@@ -71,7 +71,7 @@ commit_all "$repo"
 cp "$ROOT_DIR/fixtures/corpus/rejected/unknown_identifier.sley" "$repo/main.sley"
 git -C "$repo" add main.sley
 expect_fail "$repo" invalid_source
-rg -q 'staged check rejected' "$TEST_ROOT/invalid_source.err"
+grep -Fq 'staged check rejected' "$TEST_ROOT/invalid_source.err"
 
 repo="$(new_repo missing_authority)"
 cp "$ROOT_DIR/examples/hello.sley" "$repo/main.sley"
@@ -80,7 +80,7 @@ cp "$ROOT_DIR/fixtures/corpus/rejected/authority/missing_network_effect.sley" \
   "$repo/main.sley"
 git -C "$repo" add main.sley
 expect_fail "$repo" missing_authority
-rg -q 'staged check rejected' "$TEST_ROOT/missing_authority.err"
+grep -Fq 'staged check rejected' "$TEST_ROOT/missing_authority.err"
 
 repo="$(new_repo lint_warning)"
 cp "$ROOT_DIR/examples/hello.sley" "$repo/main.sley"
@@ -88,7 +88,7 @@ commit_all "$repo"
 cp "$ROOT_DIR/examples/unused_private_task.sley" "$repo/main.sley"
 git -C "$repo" add main.sley
 expect_fail "$repo" lint_warning
-rg -q 'staged lint rejected' "$TEST_ROOT/lint_warning.err"
+grep -Fq 'staged lint rejected' "$TEST_ROOT/lint_warning.err"
 
 repo="$(new_repo project_context)"
 cp -R "$ROOT_DIR/examples/project/." "$repo/"
@@ -96,14 +96,14 @@ commit_all "$repo"
 printf '\n' >>"$repo/src/app/main.sley"
 git -C "$repo" add src/app/main.sley
 expect_pass "$repo" project_context
-rg -q 'check staged target: \.' "$TEST_ROOT/project_context.out"
+grep -Fq 'check staged target: .' "$TEST_ROOT/project_context.out"
 
 repo="$(new_repo deleted_manifest)"
 cp -R "$ROOT_DIR/examples/project/." "$repo/"
 commit_all "$repo"
 git -C "$repo" rm -q sley.toml
 expect_pass "$repo" deleted_manifest
-rg -q 'check staged target: \.' "$TEST_ROOT/deleted_manifest.out"
+grep -Fq 'check staged target: .' "$TEST_ROOT/deleted_manifest.out"
 
 repo="$(new_repo symlink_escape)"
 printf 'baseline\n' >"$repo/README.md"
@@ -111,7 +111,7 @@ commit_all "$repo"
 ln -s "$ROOT_DIR/examples/hello.sley" "$repo/outside.sley"
 git -C "$repo" add outside.sley
 expect_fail "$repo" symlink_escape
-rg -q 'staged validation path is a symlink' "$TEST_ROOT/symlink_escape.err"
+grep -Fq 'staged validation path is a symlink' "$TEST_ROOT/symlink_escape.err"
 
 repo="$(new_repo invalid_contract)"
 mkdir -p "$repo/docs" "$repo/fixtures"
@@ -121,6 +121,6 @@ commit_all "$repo"
 printf '{ invalid json\n' >"$repo/fixtures/contracts/ast_minimal_program.json"
 git -C "$repo" add fixtures/contracts/ast_minimal_program.json
 expect_fail "$repo" invalid_contract
-rg -q 'staged contract fixtures were rejected' "$TEST_ROOT/invalid_contract.err"
+grep -Fq 'staged contract fixtures were rejected' "$TEST_ROOT/invalid_contract.err"
 
 printf 'git-sley-guard tests passed\n'
