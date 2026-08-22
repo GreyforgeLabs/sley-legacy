@@ -5786,7 +5786,7 @@ Commands:
   claim-verify, arena
 
 Companion tools:
-  sley-ci, sley-conformance, sley-contract, sley-docgen, sley-lsp,
+  git-sley-guard, sley-ci, sley-conformance, sley-contract, sley-docgen, sley-lsp,
   sley-workbench, sley-agent-bench, sley-migrate, sley-sandbox-runner,
   sley-shadow, sley-zjx
 EOF

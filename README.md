@@ -193,6 +193,7 @@ Stage-1 executable commands:
 - `sley claim-verify --json docs/SleyClaimManifest.json`
 - `sley arena`
 - `sley graft --json --dry-run <file> <graft.json>`
+- `git-sley-guard`
 - `sley-contract inventory --json`
 - `sley-contract check-fixtures fixtures/contracts --schemas docs/schemas --json`
 - `sley-contract validate --schema sley.conformance.manifest.v0 fixtures/corpus/manifest.json --schemas docs/schemas --json`
@@ -201,6 +202,11 @@ Stage-1 executable commands:
 Compatibility wrappers also exist for the previous companion-tool names:
 `sley-ci`, `sley-docgen`, `sley-lsp`, `sley-workbench`, `sley-agent-bench`,
 `sley-migrate`, `sley-sandbox-runner`, `sley-shadow`, and `sley-zjx`.
+
+`git-sley-guard` is the bounded pre-commit entrypoint. It materializes the Git
+index in a temporary directory, checks and lints affected staged Sley targets,
+and validates the staged contract set when schemas or fixtures change. The
+full `make v1` gate remains the CI and pre-push authority.
 
 ## Release Rules
 
