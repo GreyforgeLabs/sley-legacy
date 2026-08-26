@@ -1,0 +1,5 @@
+module bench.public.f2_012
+
+task main -> Text {
+  return if false { "primary" } else { "fallback" }
+}

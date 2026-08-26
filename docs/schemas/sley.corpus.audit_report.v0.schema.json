@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.corpus.audit_report.v0",
+  "title": "Sley Corpus Audit Report v0",
+  "type": "object",
+  "required": ["schema", "command", "status", "subject", "record_count", "summary", "checks", "issues"],
+  "properties": {
+    "schema": { "const": "sley.corpus.audit_report.v0" },
+    "command": { "enum": ["admission-check", "audit"] },
+    "status": { "enum": ["passed", "failed"] },
+    "subject": { "type": "string", "minLength": 1 },
+    "record_count": { "type": "integer", "minimum": 0 },
+    "manifest_digest": { "$ref": "#/$defs/digest" },
+    "summary": {
+      "type": "object",
+      "required": ["check_count", "passed_count", "failed_count", "issue_count"],
+      "properties": {
+        "check_count": { "type": "integer", "minimum": 0 },
+        "passed_count": { "type": "integer", "minimum": 0 },
+        "failed_count": { "type": "integer", "minimum": 0 },
+        "issue_count": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "status", "message"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._:-]*$" },
+          "status": { "enum": ["passed", "failed"] },
+          "message": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["code", "message"],
+        "properties": {
+          "code": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._:-]*$" },
+          "message": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+  }
+}

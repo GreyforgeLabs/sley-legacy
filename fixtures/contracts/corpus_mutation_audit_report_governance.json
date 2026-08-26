@@ -1,0 +1,20 @@
+{
+  "schema": "sley.corpus.mutation_audit_report.v0",
+  "command": "audit-log",
+  "status": "passed",
+  "subject": "sley-corpus-governance",
+  "log_id": "sley-corpus-governance",
+  "event_count": 0,
+  "head_digest": null,
+  "mutation_performed": false,
+  "log_digest_before": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "log_digest_after": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "summary": {
+    "check_count": 0,
+    "passed_count": 0,
+    "failed_count": 0,
+    "issue_count": 0
+  },
+  "checks": [],
+  "issues": []
+}

@@ -1,0 +1,44 @@
+{
+  "schema": "sley.agent_bench.split_manifest.v0",
+  "suite_id": "sleybench-v0",
+  "version": "0.1",
+  "state": "pinned",
+  "split_strategy": "semantic_lineage",
+  "public": {
+    "suite_id": "sleybench-v0-public",
+    "case_manifest_path": "public/case-manifest.json",
+    "case_manifest_digest": "sha256:8326af35e49635228a3ea57ce3069122601488c8bb1b10fc043b78db08a8c0c6",
+    "exclusion_ledger_path": "public/exclusions.json",
+    "exclusion_ledger_digest": "sha256:2aba5369b12d85c68908dc6cb8d7a3d3e4c28c112f11e83f764476d7023333cc",
+    "case_count": 96,
+    "family_counts": {
+      "syntax_compilation": 16,
+      "semantic_implementation": 16,
+      "diagnosis_repair": 16,
+      "translation_preservation": 16,
+      "structural_tool_use": 16,
+      "repository_patch_integration": 16
+    }
+  },
+  "private": {
+    "suite_id": "sleybench-v0-private",
+    "case_manifest_digest": "sha256:367c732dbd3230f3273d7fe6b7bb07bdd56494e8db5c567b5882ef6760933573",
+    "exclusion_ledger_digest": "sha256:7f219f4d39b0237719d742f8a086fbacfbf957afdb288d785a5dbd58743fbb34",
+    "case_count": 24,
+    "family_counts": {
+      "syntax_compilation": 4,
+      "semantic_implementation": 4,
+      "diagnosis_repair": 4,
+      "translation_preservation": 4,
+      "structural_tool_use": 4,
+      "repository_patch_integration": 4
+    },
+    "material_in_public_git": false,
+    "custody_ref": "greyforge-local:sleybench-v0-private:2026-08-23"
+  },
+  "approval": {
+    "status": "approved",
+    "reviewer": "vulcan-sleybench-v0-triage-2026-08-23",
+    "reviewed_at": "2026-08-23T17:32:39Z"
+  }
+}

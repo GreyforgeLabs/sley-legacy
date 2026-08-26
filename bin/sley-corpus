@@ -1,0 +1,928 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+exec env SLEY_CORPUS_ROOT="$ROOT_DIR" python3 - "$@" <<'PY'
+"""Deterministic Sley corpus governance, admission, and audit tooling."""
+
+from __future__ import annotations
+
+import argparse
+from collections import Counter
+from datetime import datetime
+import errno
+import fcntl
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import stat
+import sys
+from typing import Any
+
+from jsonschema import Draft202012Validator
+
+
+REPO_ROOT = Path(os.environ["SLEY_CORPUS_ROOT"]).resolve()
+MAX_JSON_BYTES = 5 * 1024 * 1024
+MAX_AUDIT_LOG_BYTES = 50 * 1024 * 1024
+MAX_AUDIT_LOG_EVENTS = 100_000
+CONSUMABLE_PARTITIONS = {"train", "development"}
+EVALUATION_PARTITIONS = {"evaluation_public", "evaluation_private"}
+DIGEST_KINDS = ("exact", "canonical", "structural", "semantic_lineage")
+GATE_NAMES = (
+    "authority",
+    "license",
+    "privacy",
+    "schema_and_digests",
+    "verification",
+    "deduplication",
+    "benchmark_exclusion",
+    "retention",
+    "review",
+)
+AUDIT_EVENT_SCHEMA = "sley.corpus.audit_event.v0"
+AUDIT_EVENT_INPUT_SCHEMA = "sley.corpus.audit_event_input.v0"
+EMPTY_DIGEST = "sha256:" + hashlib.sha256(b"").hexdigest()
+TERMINAL_STATES = {"deleted", "tombstoned", "rejected"}
+ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9._:-]{2,127}$")
+DIGEST_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
+
+
+def issue(code: str, message: str) -> dict[str, str]:
+    return {"code": code, "message": message}
+
+
+def load_json(path: Path) -> tuple[Any | None, list[dict[str, str]]]:
+    try:
+        if not path.is_file():
+            return None, [issue("file_missing", f"{path} is not a file")]
+        if path.stat().st_size > MAX_JSON_BYTES:
+            return None, [issue("json_file_too_large", f"{path} exceeds {MAX_JSON_BYTES} bytes")]
+        with path.open(encoding="utf-8") as handle:
+            return json.load(handle), []
+    except json.JSONDecodeError as exc:
+        return None, [issue("invalid_json", f"{path}: {exc}")]
+    except OSError as exc:
+        return None, [issue("file_read_failed", f"{path}: {exc}")]
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return "sha256:" + digest.hexdigest()
+
+
+def sha256_bytes(value: bytes) -> str:
+    return "sha256:" + hashlib.sha256(value).hexdigest()
+
+
+def canonical_json(value: Any) -> bytes:
+    return json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True).encode("utf-8")
+
+
+def audit_event_digest(event: dict[str, Any]) -> str:
+    digest_input = {key: value for key, value in event.items() if key != "event_digest"}
+    return sha256_bytes(canonical_json(digest_input))
+
+
+def schema_issues(document: Any, schema_id: str, schema_dir: Path) -> list[dict[str, str]]:
+    schema, problems = load_json(schema_dir / f"{schema_id}.schema.json")
+    if problems:
+        return problems
+    if not isinstance(schema, dict) or schema.get("$id") != schema_id:
+        return [issue("schema_id_mismatch", f"schema file does not declare {schema_id}")]
+    validator = Draft202012Validator(schema)
+    output = []
+    for error in sorted(validator.iter_errors(document), key=lambda item: tuple(str(part) for part in item.absolute_path)):
+        location = "/" + "/".join(str(part) for part in error.absolute_path)
+        output.append(issue("json_schema_violation", f"{location or '/'}: {error.message}"))
+    return output
+
+
+def safe_relative(root: Path, value: str) -> tuple[Path | None, list[dict[str, str]]]:
+    declared = Path(value)
+    if declared.is_absolute() or ".." in declared.parts:
+        return None, [issue("unsafe_path", f"{value!r} is not a safe relative path")]
+    try:
+        resolved_root = root.resolve(strict=True)
+        resolved = (resolved_root / declared).resolve(strict=False)
+        resolved.relative_to(resolved_root)
+    except (OSError, ValueError) as exc:
+        return None, [issue("unsafe_path", f"{value!r} cannot be resolved below {root}: {exc}")]
+    return resolved, []
+
+
+def check(checks: list[dict[str, str]], check_id: str, passed: bool, message: str) -> None:
+    checks.append({"id": check_id, "status": "passed" if passed else "failed", "message": message})
+
+
+def mutation_audit_report(command: str, log_id: str, event_count: int,
+                          head_digest: str | None, before_digest: str,
+                          after_digest: str, mutation_performed: bool,
+                          checks: list[dict[str, str]], problems: list[dict[str, str]],
+                          appended_event_digest: str | None = None) -> dict[str, Any]:
+    failed_count = sum(item["status"] == "failed" for item in checks)
+    values: dict[str, Any] = {
+        "schema": "sley.corpus.mutation_audit_report.v0",
+        "command": command,
+        "status": "failed" if failed_count or problems else "passed",
+        "subject": log_id,
+        "log_id": log_id,
+        "event_count": event_count,
+        "head_digest": head_digest,
+        "mutation_performed": mutation_performed,
+        "log_digest_before": before_digest,
+        "log_digest_after": after_digest,
+        "summary": {
+            "check_count": len(checks),
+            "passed_count": len(checks) - failed_count,
+            "failed_count": failed_count,
+            "issue_count": len(problems),
+        },
+        "checks": checks,
+        "issues": problems,
+    }
+    if appended_event_digest is not None:
+        values["appended_event_digest"] = appended_event_digest
+    return values
+
+
+def parse_timestamp(value: str) -> datetime | None:
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+    return parsed if parsed.tzinfo is not None else None
+
+
+def transition_problem(event: dict[str, Any]) -> dict[str, str] | None:
+    kind = event["kind"]
+    subject_kind = event["subject"]["kind"]
+    old_state = event["transition"]["from"]
+    new_state = event["transition"]["to"]
+    valid = False
+    if kind == "admission":
+        valid = subject_kind == "record" and old_state in {"candidate", "quarantine"} and new_state == "admitted"
+    elif kind == "reclassification":
+        valid = (
+            subject_kind in {"record", "lineage"}
+            and old_state is not None
+            and old_state not in TERMINAL_STATES
+            and new_state in {
+                "train", "development", "evaluation_public", "evaluation_private",
+                "export_eligible", "revoked", "rejected",
+            }
+            and old_state != new_state
+        )
+    elif kind == "export":
+        valid = subject_kind in {"record", "export"} and old_state == "export_eligible" and new_state == "exported"
+    elif kind == "release":
+        valid = subject_kind in {"release", "export"} and old_state == "exported" and new_state == "released"
+    elif kind == "quarantine":
+        valid = (
+            subject_kind in {"record", "lineage"}
+            and old_state is not None
+            and old_state not in TERMINAL_STATES
+            and old_state != "quarantine"
+            and new_state == "quarantine"
+        )
+    elif kind == "deletion":
+        valid = (
+            subject_kind in {"record", "lineage"}
+            and old_state is not None
+            and old_state not in TERMINAL_STATES
+            and new_state in {"deleted", "tombstoned"}
+        )
+    if valid:
+        return None
+    return issue("invalid_event_transition", f"{kind} event has an invalid subject kind or state transition")
+
+
+def inspect_audit_log(data: bytes, log_id: str, schema_dir: Path) -> tuple[
+        list[dict[str, Any]], list[dict[str, str]], list[dict[str, str]]]:
+    events: list[dict[str, Any]] = []
+    checks: list[dict[str, str]] = []
+    problems: list[dict[str, str]] = []
+    size_ok = len(data) <= MAX_AUDIT_LOG_BYTES
+    check(checks, "bounded_log_size", size_ok, "audit log is within the configured byte limit")
+    if not size_ok:
+        problems.append(issue("audit_log_too_large", f"audit log exceeds {MAX_AUDIT_LOG_BYTES} bytes"))
+        return events, checks, problems
+    try:
+        text = data.decode("utf-8")
+    except UnicodeDecodeError:
+        check(checks, "utf8_jsonl", False, "audit log is valid UTF-8 JSONL")
+        problems.append(issue("invalid_audit_log_encoding", "audit log is not valid UTF-8"))
+        return events, checks, problems
+    lines = text.splitlines()
+    bounded_count = len(lines) <= MAX_AUDIT_LOG_EVENTS
+    check(checks, "bounded_event_count", bounded_count, "audit log is within the configured event limit")
+    if not bounded_count:
+        problems.append(issue("too_many_audit_events", f"audit log exceeds {MAX_AUDIT_LOG_EVENTS} events"))
+        return events, checks, problems
+    jsonl_ok = not data or data.endswith(b"\n")
+    if data and not data.endswith(b"\n"):
+        problems.append(issue("unterminated_audit_log_line", "audit log must end with a newline"))
+    for index, line in enumerate(lines, start=1):
+        if not line:
+            jsonl_ok = False
+            problems.append(issue("blank_audit_log_line", f"event line {index} is blank"))
+            continue
+        try:
+            value = json.loads(line)
+        except json.JSONDecodeError:
+            jsonl_ok = False
+            problems.append(issue("invalid_audit_event_json", f"event line {index} is not valid JSON"))
+            continue
+        if not isinstance(value, dict):
+            jsonl_ok = False
+            problems.append(issue("invalid_audit_event_type", f"event line {index} is not an object"))
+            continue
+        events.append(value)
+    check(checks, "utf8_jsonl", jsonl_ok, "audit log is valid UTF-8 JSONL with one object per line")
+
+    schema_ok = True
+    log_ids_ok = True
+    sequence_ok = True
+    chain_ok = True
+    digests_ok = True
+    unique_ok = True
+    chronology_ok = True
+    transitions_ok = True
+    continuity_ok = True
+    event_ids: set[str] = set()
+    event_digests: set[str] = set()
+    subject_states: dict[tuple[str, str], str] = {}
+    previous_digest: str | None = None
+    previous_time: datetime | None = None
+    for index, event in enumerate(events, start=1):
+        schema_problems = schema_issues(event, AUDIT_EVENT_SCHEMA, schema_dir)
+        if schema_problems:
+            schema_ok = False
+            problems.extend(issue(item["code"], f"event {index}: {item['message']}") for item in schema_problems)
+            continue
+        if event["log_id"] != log_id:
+            log_ids_ok = False
+            problems.append(issue("audit_log_id_mismatch", f"event {index} names a different log ID"))
+        if event["sequence"] != index:
+            sequence_ok = False
+            problems.append(issue("audit_sequence_mismatch", f"event {index} has a non-contiguous sequence"))
+        if event["previous_event_digest"] != previous_digest:
+            chain_ok = False
+            problems.append(issue("audit_chain_mismatch", f"event {index} does not pin the preceding event"))
+        computed_digest = audit_event_digest(event)
+        if event["event_digest"] != computed_digest:
+            digests_ok = False
+            problems.append(issue("audit_event_digest_mismatch", f"event {index} digest does not match its canonical content"))
+        if event["event_id"] in event_ids or event["event_digest"] in event_digests:
+            unique_ok = False
+            problems.append(issue("duplicate_audit_event", f"event {index} repeats an event ID or digest"))
+        event_ids.add(event["event_id"])
+        event_digests.add(event["event_digest"])
+        occurred_at = parse_timestamp(event["occurred_at"])
+        if occurred_at is None or (previous_time is not None and occurred_at < previous_time):
+            chronology_ok = False
+            problems.append(issue("audit_chronology_failed", f"event {index} has an invalid or decreasing timestamp"))
+        if occurred_at is not None:
+            previous_time = occurred_at
+        semantic_problem = transition_problem(event)
+        if semantic_problem is not None:
+            transitions_ok = False
+            problems.append(issue(semantic_problem["code"], f"event {index}: {semantic_problem['message']}"))
+        subject_key = (event["subject"]["kind"], event["subject"]["id"])
+        if subject_key in subject_states and event["transition"]["from"] != subject_states[subject_key]:
+            continuity_ok = False
+            problems.append(issue("subject_state_discontinuity", f"event {index} does not continue its subject's recorded state"))
+        subject_states[subject_key] = event["transition"]["to"]
+        previous_digest = event["event_digest"]
+    check(checks, "event_schema", schema_ok, "every event satisfies the strict audit event contract")
+    check(checks, "log_identity", log_ids_ok, "every event names the expected logical log ID")
+    check(checks, "sequence", sequence_ok, "event sequence numbers are contiguous from one")
+    check(checks, "digest_chain", chain_ok, "every event pins the preceding event digest")
+    check(checks, "canonical_event_digests", digests_ok, "every event digest matches canonical event content")
+    check(checks, "unique_events", unique_ok, "event IDs and event digests are unique")
+    check(checks, "chronology", chronology_ok, "event timestamps are valid and nondecreasing")
+    check(checks, "transition_semantics", transitions_ok, "event kinds, subject kinds, and state transitions agree")
+    check(checks, "subject_state_continuity", continuity_ok, "repeated subjects continue their prior recorded state")
+    return events, checks, problems
+
+
+def report(command: str, subject: str, record_count: int, checks: list[dict[str, str]],
+           problems: list[dict[str, str]], manifest_digest: str | None = None) -> dict[str, Any]:
+    failed_count = sum(item["status"] == "failed" for item in checks)
+    values: dict[str, Any] = {
+        "schema": "sley.corpus.audit_report.v0",
+        "command": command,
+        "status": "failed" if failed_count or problems else "passed",
+        "subject": subject,
+        "record_count": record_count,
+        "summary": {
+            "check_count": len(checks),
+            "passed_count": len(checks) - failed_count,
+            "failed_count": failed_count,
+            "issue_count": len(problems),
+        },
+        "checks": checks,
+        "issues": problems,
+    }
+    if manifest_digest is not None:
+        values["manifest_digest"] = manifest_digest
+    return values
+
+
+def admission_checks(record: Any, record_path: Path, root: Path, ledger: Any,
+                     ledger_path: Path, schema_dir: Path, prefix: str = "") -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+    checks: list[dict[str, str]] = []
+    problems: list[dict[str, str]] = []
+    record_schema_problems = schema_issues(record, "sley.corpus.record.v0", schema_dir)
+    problems.extend(record_schema_problems)
+    check(checks, prefix + "record_schema", not record_schema_problems, "record satisfies the strict corpus record contract")
+
+    ledger_schema_problems = schema_issues(ledger, "sley.corpus.exclusion_ledger.v0", schema_dir)
+    problems.extend(ledger_schema_problems)
+    check(checks, prefix + "exclusion_ledger_schema", not ledger_schema_problems, "exclusion ledger satisfies its strict contract")
+    if record_schema_problems or ledger_schema_problems or not isinstance(record, dict) or not isinstance(ledger, dict):
+        return checks, problems
+
+    partition = record["partition"]
+    lifecycle_ok = record["lifecycle_state"] in {"candidate", "admitted"} and partition not in {"quarantine", "rejected"}
+    if partition == "evaluation_private":
+        lifecycle_ok = lifecycle_ok and record["visibility"] == "private_held_out"
+    check(checks, prefix + "lifecycle_partition", lifecycle_ok, "record lifecycle, partition, and visibility are eligible for admission")
+    if not lifecycle_ok:
+        problems.append(issue("ineligible_lifecycle_partition", "record lifecycle, partition, or visibility is not eligible"))
+
+    split_ok = partition not in CONSUMABLE_PARTITIONS or ledger["benchmark_split_status"] == "pinned"
+    check(checks, prefix + "benchmark_split", split_ok, "consumable partitions require a pinned benchmark split")
+    if not split_ok:
+        problems.append(issue("benchmark_split_incomplete", "training or development admission requires a pinned benchmark split"))
+
+    actual_ledger_digest = sha256_file(ledger_path)
+    ledger_pin_ok = record["exclusions"]["ledger_digest"] == actual_ledger_digest
+    check(checks, prefix + "exclusion_ledger_pin", ledger_pin_ok, "record pins the exact exclusion ledger")
+    if not ledger_pin_ok:
+        problems.append(issue("exclusion_ledger_digest_mismatch", "record exclusion ledger digest does not match"))
+
+    expected_ids = sorted(entry["exclusion_id"] for entry in ledger["entries"])
+    checked_ids_ok = sorted(record["exclusions"]["checked_ids"]) == expected_ids
+    check(checks, prefix + "exclusion_coverage", checked_ids_ok, "record names every exclusion entry exactly once")
+    if not checked_ids_ok:
+        problems.append(issue("exclusion_coverage_mismatch", "record checked exclusion IDs do not match the ledger"))
+
+    source_path, path_problems = safe_relative(root, record["artifacts"]["source_path"])
+    problems.extend(path_problems)
+    source_ok = False
+    if source_path is not None and source_path.is_file():
+        source_ok = sha256_file(source_path) == record["digests"]["exact"]
+    check(checks, prefix + "primary_source_digest", source_ok, "primary source exists below the record root and matches its exact digest")
+    if not source_ok:
+        problems.append(issue("primary_source_digest_mismatch", "primary source is missing, unsafe, or has a mismatched digest"))
+
+    provenance_ok = record["provenance"]["source_path"] == record["artifacts"]["source_path"]
+    evidence_path = record["license"]["evidence_path"]
+    evidence_target, evidence_path_problems = safe_relative(root, evidence_path)
+    problems.extend(evidence_path_problems)
+    evidence_sidecars = {sidecar["path"] for sidecar in record["sidecars"]}
+    provenance_ok = provenance_ok and evidence_target is not None and evidence_target.is_file() and evidence_path in evidence_sidecars
+    check(checks, prefix + "provenance_license_paths", provenance_ok, "provenance source and pinned license evidence resolve below the record root")
+    if not provenance_ok:
+        problems.append(issue("provenance_license_path_failed", "source provenance or pinned license evidence is missing or inconsistent"))
+
+    sidecars_ok = True
+    seen_sidecars: set[str] = set()
+    for sidecar in record["sidecars"]:
+        sidecar_path, sidecar_problems = safe_relative(root, sidecar["path"])
+        problems.extend(sidecar_problems)
+        if sidecar["path"] in seen_sidecars or sidecar_path is None or not sidecar_path.is_file() or sha256_file(sidecar_path) != sidecar["digest"]:
+            sidecars_ok = False
+        seen_sidecars.add(sidecar["path"])
+    check(checks, prefix + "sidecar_digests", sidecars_ok, "all sidecars are unique, bounded below the record root, and digest-pinned")
+    if not sidecars_ok:
+        problems.append(issue("sidecar_validation_failed", "one or more sidecars is duplicate, missing, unsafe, or has a mismatched digest"))
+
+    gates_ok = all(record["admission_gates"][name] == "passed" for name in GATE_NAMES)
+    evidence_ok = (
+        record["license"]["decision"] == "permitted"
+        and record["privacy"]["class"] != "prohibited"
+        and record["privacy"]["secret_scan"]["status"] == "passed"
+        and record["quality"]["verification"]["compiler"] in {"passed", "not_applicable"}
+        and record["quality"]["verification"]["oracle"] in {"passed", "not_applicable"}
+    )
+    check(checks, prefix + "admission_evidence", gates_ok and evidence_ok, "all admission gates and underlying license, privacy, and verification evidence pass")
+    if not gates_ok or not evidence_ok:
+        problems.append(issue("admission_gate_failed", "one or more admission gates or underlying evidence fields did not pass"))
+
+    excluded = {kind: set() for kind in DIGEST_KINDS}
+    for entry in ledger["entries"]:
+        for kind in DIGEST_KINDS:
+            excluded[kind].update(entry[kind])
+    collisions = [kind for kind in DIGEST_KINDS if record["digests"][kind] in excluded[kind]]
+    contamination_ok = not collisions and record["exclusions"]["decision"] == "clear"
+    check(checks, prefix + "contamination", contamination_ok, "exact, canonical, structural, and semantic lineage digests are clear")
+    if not contamination_ok:
+        problems.append(issue("benchmark_contamination", "record overlaps benchmark exclusions: " + ", ".join(collisions or ["declared decision"])))
+
+    return checks, problems
+
+
+def command_admission(args: argparse.Namespace) -> int:
+    record_path = Path(args.record)
+    ledger_path = Path(args.exclusions)
+    record, problems = load_json(record_path)
+    ledger, ledger_problems = load_json(ledger_path)
+    problems.extend(ledger_problems)
+    checks: list[dict[str, str]] = []
+    if not problems:
+        root = Path(args.root) if args.root else record_path.parent
+        checks, semantic_problems = admission_checks(record, record_path, root, ledger, ledger_path, Path(args.schemas))
+        problems.extend(semantic_problems)
+    result = report("admission-check", args.record, 1 if isinstance(record, dict) else 0, checks, problems)
+    print(json.dumps(result, indent=2))
+    return 0 if result["status"] == "passed" else 1
+
+
+def manifest_checks(manifest: Any, manifest_path: Path, root: Path, schema_dir: Path) -> tuple[list[dict[str, str]], list[dict[str, str]], int]:
+    checks: list[dict[str, str]] = []
+    problems = schema_issues(manifest, "sley.corpus.manifest.v0", schema_dir)
+    check(checks, "manifest_schema", not problems, "manifest satisfies the strict corpus manifest contract")
+    if problems or not isinstance(manifest, dict):
+        return checks, problems, 0
+
+    ledger_path, path_problems = safe_relative(root, manifest["exclusion_ledger"]["path"])
+    problems.extend(path_problems)
+    ledger = None
+    ledger_ok = False
+    if ledger_path is not None:
+        ledger, ledger_load_problems = load_json(ledger_path)
+        problems.extend(ledger_load_problems)
+        if not ledger_load_problems:
+            ledger_ok = sha256_file(ledger_path) == manifest["exclusion_ledger"]["digest"]
+    check(checks, "manifest_exclusion_ledger", ledger_ok, "manifest exclusion ledger exists and matches its digest pin")
+    if not ledger_ok:
+        problems.append(issue("manifest_exclusion_ledger_mismatch", "manifest exclusion ledger is missing, unsafe, or mismatched"))
+        return checks, problems, 0
+
+    loaded_records: list[dict[str, Any]] = []
+    entry_ids: list[str] = []
+    for index, entry in enumerate(manifest["records"]):
+        prefix = f"record-{index}."
+        entry_ids.append(entry["record_id"])
+        record_path, record_path_problems = safe_relative(root, entry["path"])
+        problems.extend(record_path_problems)
+        record = None
+        digest_ok = False
+        if record_path is not None:
+            record, record_load_problems = load_json(record_path)
+            problems.extend(record_load_problems)
+            if not record_load_problems:
+                digest_ok = sha256_file(record_path) == entry["digest"]
+        check(checks, prefix + "manifest_pin", digest_ok, "record file exists below the manifest root and matches its digest pin")
+        if not digest_ok or not isinstance(record, dict) or record_path is None:
+            problems.append(issue("record_manifest_pin_failed", f"record entry {index} is missing, unsafe, invalid, or mismatched"))
+            continue
+        identity_ok = (
+            record.get("record_id") == entry["record_id"]
+            and record.get("partition") == entry["partition"]
+            and record.get("semantic_lineage_id") == entry["semantic_lineage_id"]
+            and record.get("digests", {}).get("semantic_lineage") == entry["semantic_lineage_digest"]
+        )
+        check(checks, prefix + "identity_pin", identity_ok, "record identity, partition, and lineage match the manifest")
+        if not identity_ok:
+            problems.append(issue("record_identity_mismatch", f"record entry {index} metadata does not match its record"))
+        record_checks, record_problems = admission_checks(
+            record, record_path, root, ledger, ledger_path, schema_dir, prefix
+        )
+        checks.extend(record_checks)
+        problems.extend(record_problems)
+        loaded_records.append(record)
+
+    unique_ids_ok = len(entry_ids) == len(set(entry_ids))
+    check(checks, "unique_record_ids", unique_ids_ok, "manifest record IDs are unique")
+    if not unique_ids_ok:
+        problems.append(issue("duplicate_record_id", "manifest contains duplicate record IDs"))
+
+    actual_counts = Counter(record.get("partition") for record in loaded_records)
+    counts_ok = all(manifest["partition_counts"][name] == actual_counts[name] for name in manifest["partition_counts"])
+    lineages = {record.get("semantic_lineage_id") for record in loaded_records}
+    counts_ok = counts_ok and manifest["lineage_count"] == len(lineages)
+    check(checks, "manifest_counts", counts_ok, "partition and semantic lineage counts match loaded records")
+    if not counts_ok:
+        problems.append(issue("manifest_count_mismatch", "manifest partition or lineage counts do not match records"))
+
+    train_records = [record for record in loaded_records if record.get("partition") in CONSUMABLE_PARTITIONS]
+    eval_records = [record for record in loaded_records if record.get("partition") in EVALUATION_PARTITIONS]
+    split_ok = True
+    for training in train_records:
+        for evaluation in eval_records:
+            if training.get("semantic_lineage_id") == evaluation.get("semantic_lineage_id"):
+                split_ok = False
+            for kind in DIGEST_KINDS:
+                if training.get("digests", {}).get(kind) == evaluation.get("digests", {}).get(kind):
+                    split_ok = False
+    check(checks, "split_lineage_isolation", split_ok, "training and development records do not overlap evaluation records")
+    if not split_ok:
+        problems.append(issue("split_lineage_overlap", "a consumable record overlaps an evaluation record"))
+
+    immutable_ok = manifest["state"] != "immutable" or all(record.get("lifecycle_state") == "admitted" for record in loaded_records)
+    check(checks, "immutable_release_state", immutable_ok, "immutable manifests contain only admitted records")
+    if not immutable_ok:
+        problems.append(issue("immutable_record_not_admitted", "immutable manifest contains a record not marked admitted"))
+    return checks, problems, len(loaded_records)
+
+
+def command_audit(args: argparse.Namespace) -> int:
+    manifest_path = Path(args.manifest)
+    manifest, problems = load_json(manifest_path)
+    checks: list[dict[str, str]] = []
+    record_count = 0
+    manifest_digest = sha256_file(manifest_path) if not problems else None
+    if not problems:
+        root = Path(args.root) if args.root else manifest_path.parent
+        checks, audit_problems, record_count = manifest_checks(manifest, manifest_path, root, Path(args.schemas))
+        problems.extend(audit_problems)
+    result = report("audit", args.manifest, record_count, checks, problems, manifest_digest)
+    print(json.dumps(result, indent=2))
+    return 0 if result["status"] == "passed" else 1
+
+
+def command_deletion_plan(args: argparse.Namespace) -> int:
+    record_path = Path(args.record)
+    record, problems = load_json(record_path)
+    if not problems:
+        problems.extend(schema_issues(record, "sley.corpus.record.v0", Path(args.schemas)))
+    targets: list[dict[str, str]] = []
+    record_id = "invalid-record"
+    record_digest = "sha256:" + "0" * 64
+    if isinstance(record, dict):
+        record_id = str(record.get("record_id", record_id))
+        record_digest = sha256_file(record_path)
+        targets.append({"kind": "record", "identifier": args.record, "action": "remove"})
+        for sidecar in record.get("sidecars", []):
+            targets.append({"kind": "sidecar", "identifier": sidecar["path"], "action": "remove"})
+        for identifier in record.get("retention", {}).get("retrieval_entry_ids", []):
+            targets.append({"kind": "retrieval_entry", "identifier": identifier, "action": "remove"})
+        for identifier in record.get("retention", {}).get("export_ids", []):
+            targets.append({"kind": "export_eligibility", "identifier": identifier, "action": "revoke"})
+        targets.append({"kind": "tombstone", "identifier": record_id, "action": "write_tombstone"})
+    targets.sort(key=lambda item: (item["kind"], item["identifier"], item["action"]))
+    result = {
+        "schema": "sley.corpus.deletion_plan.v0",
+        "status": "failed" if problems else "passed",
+        "record_id": record_id,
+        "record_digest": record_digest,
+        "requested_at": args.requested_at,
+        "requested_by": args.requested_by,
+        "reason": args.reason,
+        "dry_run": True,
+        "mutation_performed": False,
+        "targets": targets,
+        "issues": problems,
+    }
+    print(json.dumps(result, indent=2))
+    return 0 if result["status"] == "passed" else 1
+
+
+def read_log_file(path: Path) -> tuple[bytes, list[dict[str, str]]]:
+    descriptor: int | None = None
+    locked = False
+    try:
+        flags = os.O_RDONLY | os.O_NONBLOCK
+        if hasattr(os, "O_NOFOLLOW"):
+            flags |= os.O_NOFOLLOW
+        descriptor = os.open(path, flags)
+        metadata = os.fstat(descriptor)
+        if not stat.S_ISREG(metadata.st_mode):
+            return b"", [issue("audit_log_not_regular", "audit log is not a regular file")]
+        if metadata.st_size > MAX_AUDIT_LOG_BYTES:
+            return b"", [issue("audit_log_too_large", f"audit log exceeds {MAX_AUDIT_LOG_BYTES} bytes")]
+        fcntl.flock(descriptor, fcntl.LOCK_SH)
+        locked = True
+        chunks = []
+        total_bytes = 0
+        while True:
+            chunk = os.read(descriptor, 1024 * 1024)
+            if not chunk:
+                break
+            chunks.append(chunk)
+            total_bytes += len(chunk)
+            if total_bytes > MAX_AUDIT_LOG_BYTES:
+                return b"", [issue("audit_log_too_large", f"audit log exceeds {MAX_AUDIT_LOG_BYTES} bytes")]
+        return b"".join(chunks), []
+    except OSError as exc:
+        if exc.errno == errno.ENOENT:
+            return b"", [issue("audit_log_missing", "audit log does not exist")]
+        if exc.errno == errno.ELOOP:
+            return b"", [issue("audit_log_symlink", "audit log must not be a symbolic link")]
+        return b"", [issue("audit_log_read_failed", "audit log could not be read")]
+    finally:
+        if descriptor is not None:
+            try:
+                if locked:
+                    fcntl.flock(descriptor, fcntl.LOCK_UN)
+            finally:
+                os.close(descriptor)
+
+
+def command_audit_log(args: argparse.Namespace) -> int:
+    data, problems = read_log_file(Path(args.log))
+    checks: list[dict[str, str]] = []
+    events: list[dict[str, Any]] = []
+    log_id_valid = ID_PATTERN.fullmatch(args.log_id) is not None
+    report_log_id = args.log_id if log_id_valid else "invalid-log-id"
+    if not log_id_valid:
+        problems.append(issue("invalid_log_id", "logical log ID does not satisfy the identifier contract"))
+    if not problems:
+        events, checks, audit_problems = inspect_audit_log(data, args.log_id, Path(args.schemas))
+        problems.extend(audit_problems)
+    digest = sha256_bytes(data)
+    head_digest = events[-1].get("event_digest") if events else None
+    result = mutation_audit_report(
+        "audit-log", report_log_id, len(events), head_digest, digest, digest,
+        False, checks, problems,
+    )
+    print(json.dumps(result, indent=2))
+    return 0 if result["status"] == "passed" else 1
+
+
+def expected_head_value(value: str) -> str | None:
+    return None if value == "none" else value
+
+
+def existing_log_state(path: Path, log_id: str, schema_dir: Path) -> tuple[int, str | None, str]:
+    data, read_problems = read_log_file(path)
+    digest = sha256_bytes(data)
+    if read_problems or not ID_PATTERN.fullmatch(log_id):
+        return 0, None, digest
+    events, _, audit_problems = inspect_audit_log(data, log_id, schema_dir)
+    head_digest = events[-1].get("event_digest") if events and not audit_problems else None
+    return len(events), head_digest, digest
+
+
+def command_append_event(args: argparse.Namespace) -> int:
+    log_id_valid = ID_PATTERN.fullmatch(args.log_id) is not None
+    report_log_id = args.log_id if log_id_valid else "invalid-log-id"
+    empty_result = mutation_audit_report(
+        "append-event", report_log_id, 0, None, EMPTY_DIGEST, EMPTY_DIGEST,
+        False, [], [],
+    )
+    existing_count, existing_head, existing_digest = existing_log_state(
+        Path(args.log), args.log_id, Path(args.schemas)
+    )
+    empty_result["event_count"] = existing_count
+    empty_result["head_digest"] = existing_head
+    empty_result["log_digest_before"] = existing_digest
+    empty_result["log_digest_after"] = existing_digest
+    if not args.confirm_append_only_audit_event:
+        empty_result["status"] = "failed"
+        empty_result["issues"] = [issue(
+            "append_confirmation_required",
+            "append-event requires --confirm-append-only-audit-event",
+        )]
+        empty_result["summary"]["issue_count"] = 1
+        print(json.dumps(empty_result, indent=2))
+        return 1
+
+    if not log_id_valid:
+        empty_result["status"] = "failed"
+        empty_result["issues"] = [issue("invalid_log_id", "logical log ID does not satisfy the identifier contract")]
+        empty_result["summary"]["issue_count"] = 1
+        print(json.dumps(empty_result, indent=2))
+        return 1
+    if args.expected_head != "none" and not DIGEST_PATTERN.fullmatch(args.expected_head):
+        empty_result["status"] = "failed"
+        empty_result["issues"] = [issue("invalid_expected_head", "expected head must be 'none' or a sha256 digest")]
+        empty_result["summary"]["issue_count"] = 1
+        print(json.dumps(empty_result, indent=2))
+        return 1
+
+    event_input, problems = load_json(Path(args.event))
+    event_path_text = str(Path(args.event))
+    for problem in problems:
+        problem["message"] = problem["message"].replace(event_path_text, "event input")
+    checks: list[dict[str, str]] = []
+    input_schema_problems = schema_issues(event_input, AUDIT_EVENT_INPUT_SCHEMA, Path(args.schemas))
+    problems.extend(input_schema_problems)
+    check(checks, "event_input_schema", not input_schema_problems, "event input satisfies the strict append contract")
+    identity_ok = isinstance(event_input, dict) and event_input.get("log_id") == args.log_id
+    check(checks, "event_input_log_identity", identity_ok, "event input names the expected logical log ID")
+    if not identity_ok:
+        problems.append(issue("event_input_log_id_mismatch", "event input names a different logical log ID"))
+    if isinstance(event_input, dict) and not input_schema_problems:
+        semantic_problem = transition_problem(event_input)
+        check(checks, "event_input_transition", semantic_problem is None, "event input kind, subject kind, and transition agree")
+        if semantic_problem is not None:
+            problems.append(semantic_problem)
+        timestamp_ok = parse_timestamp(event_input["occurred_at"]) is not None
+        check(checks, "event_input_timestamp", timestamp_ok, "event input timestamp is timezone-aware")
+        if not timestamp_ok:
+            problems.append(issue("invalid_event_timestamp", "event input timestamp must be timezone-aware"))
+    if problems:
+        empty_result["status"] = "failed"
+        empty_result["checks"] = checks
+        failed_count = sum(item["status"] == "failed" for item in checks)
+        empty_result["summary"] = {
+            "check_count": len(checks),
+            "passed_count": len(checks) - failed_count,
+            "failed_count": failed_count,
+            "issue_count": len(problems),
+        }
+        empty_result["issues"] = problems
+        print(json.dumps(empty_result, indent=2))
+        return 1
+
+    log_path = Path(args.log)
+    flags = os.O_RDWR | os.O_APPEND | os.O_NONBLOCK
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    descriptor: int | None = None
+    before_data = b""
+    file_created = False
+    write_attempted = False
+    try:
+        try:
+            descriptor = os.open(log_path, flags)
+        except FileNotFoundError:
+            if args.expected_head != "none":
+                problems.append(issue("audit_log_missing", "audit log is missing but a nonempty head was expected"))
+                raise ValueError("invalid audit log")
+            descriptor = os.open(log_path, flags | os.O_CREAT | os.O_EXCL, 0o600)
+            file_created = True
+        fcntl.flock(descriptor, fcntl.LOCK_EX)
+        metadata = os.fstat(descriptor)
+        if not stat.S_ISREG(metadata.st_mode):
+            problems.append(issue("audit_log_not_regular", "audit log is not a regular file"))
+            raise ValueError("invalid audit log")
+        if metadata.st_size > MAX_AUDIT_LOG_BYTES:
+            problems.append(issue("audit_log_too_large", f"audit log exceeds {MAX_AUDIT_LOG_BYTES} bytes"))
+            raise ValueError("invalid audit log")
+        os.lseek(descriptor, 0, os.SEEK_SET)
+        chunks = []
+        total_bytes = 0
+        while True:
+            chunk = os.read(descriptor, 1024 * 1024)
+            if not chunk:
+                break
+            chunks.append(chunk)
+            total_bytes += len(chunk)
+            if total_bytes > MAX_AUDIT_LOG_BYTES:
+                problems.append(issue("audit_log_too_large", f"audit log exceeds {MAX_AUDIT_LOG_BYTES} bytes"))
+                raise ValueError("invalid audit log")
+        data = b"".join(chunks)
+        before_data = data
+        events, audit_checks, audit_problems = inspect_audit_log(data, args.log_id, Path(args.schemas))
+        checks.extend(audit_checks)
+        problems.extend(audit_problems)
+        before_digest = sha256_bytes(data)
+        head_digest = events[-1]["event_digest"] if events and not audit_problems else None
+        expected_head = expected_head_value(args.expected_head)
+        head_ok = not problems and head_digest == expected_head
+        check(checks, "expected_head", head_ok, "declared expected head matches the locked audit log")
+        if not head_ok:
+            problems.append(issue("stale_audit_log_head", "expected head does not match the locked audit log"))
+            raise ValueError("invalid audit log")
+        assert isinstance(event_input, dict)
+        event = dict(event_input)
+        event["schema"] = AUDIT_EVENT_SCHEMA
+        event["sequence"] = len(events) + 1
+        event["previous_event_digest"] = head_digest
+        event["event_digest"] = audit_event_digest(event)
+        final_schema_problems = schema_issues(event, AUDIT_EVENT_SCHEMA, Path(args.schemas))
+        if final_schema_problems:
+            problems.extend(final_schema_problems)
+            raise ValueError("invalid generated event")
+        if events:
+            previous_time = parse_timestamp(events[-1]["occurred_at"])
+            current_time = parse_timestamp(event["occurred_at"])
+            if previous_time is None or current_time is None or current_time < previous_time:
+                problems.append(issue("audit_chronology_failed", "new event predates the audit log head"))
+                raise ValueError("invalid generated event")
+        for prior in reversed(events):
+            same_subject = (
+                prior["subject"]["kind"] == event["subject"]["kind"]
+                and prior["subject"]["id"] == event["subject"]["id"]
+            )
+            if same_subject:
+                if event["transition"]["from"] != prior["transition"]["to"]:
+                    problems.append(issue("subject_state_discontinuity", "new event does not continue its subject's recorded state"))
+                    raise ValueError("invalid generated event")
+                break
+        serialized = canonical_json(event) + b"\n"
+        if len(data) + len(serialized) > MAX_AUDIT_LOG_BYTES:
+            problems.append(issue("audit_log_too_large", "append would exceed the audit log byte limit"))
+            raise ValueError("invalid generated event")
+        if len(events) + 1 > MAX_AUDIT_LOG_EVENTS:
+            problems.append(issue("too_many_audit_events", "append would exceed the audit log event limit"))
+            raise ValueError("invalid generated event")
+        write_attempted = True
+        written = os.write(descriptor, serialized)
+        if written != len(serialized):
+            os.fsync(descriptor)
+            problems.append(issue("partial_audit_event_append", "audit event append was incomplete"))
+            raise ValueError("partial audit event append")
+        os.fsync(descriptor)
+        after_digest = sha256_bytes(data + serialized)
+        result = mutation_audit_report(
+            "append-event", args.log_id, len(events) + 1, event["event_digest"],
+            before_digest, after_digest, True, checks, [], event["event_digest"],
+        )
+        print(json.dumps(result, indent=2))
+        return 0
+    except (OSError, ValueError):
+        if not problems:
+            problems.append(issue("audit_log_open_failed", "audit log could not be safely opened or appended"))
+        after_data = b""
+        if descriptor is not None:
+            try:
+                os.lseek(descriptor, 0, os.SEEK_SET)
+                chunks = []
+                while True:
+                    chunk = os.read(descriptor, 1024 * 1024)
+                    if not chunk:
+                        break
+                    chunks.append(chunk)
+                after_data = b"".join(chunks)
+            except OSError:
+                after_data = before_data
+        else:
+            after_data, read_problems = read_log_file(log_path)
+            if read_problems:
+                after_data = b""
+        before_digest = sha256_bytes(before_data)
+        after_digest = sha256_bytes(after_data)
+        mutation_performed = file_created or (write_attempted and after_data != before_data)
+        events, _, _ = inspect_audit_log(after_data, args.log_id, Path(args.schemas))
+        failed_count = sum(item["status"] == "failed" for item in checks)
+        result = mutation_audit_report(
+            "append-event", args.log_id, len(events),
+            events[-1].get("event_digest") if events else None,
+            before_digest, after_digest, mutation_performed, checks, problems,
+        )
+        result["summary"] = {
+            "check_count": len(checks),
+            "passed_count": len(checks) - failed_count,
+            "failed_count": failed_count,
+            "issue_count": len(problems),
+        }
+        print(json.dumps(result, indent=2))
+        return 1
+    finally:
+        if descriptor is not None:
+            try:
+                fcntl.flock(descriptor, fcntl.LOCK_UN)
+            finally:
+                os.close(descriptor)
+
+
+def parser() -> argparse.ArgumentParser:
+    result = argparse.ArgumentParser(prog="sley-corpus", description=__doc__)
+    result.add_argument("--schemas", default=str(REPO_ROOT / "docs/schemas"))
+    commands = result.add_subparsers(dest="command", required=True)
+    admission = commands.add_parser("admission-check", help="fail-closed candidate admission check")
+    admission.add_argument("--record", required=True)
+    admission.add_argument("--exclusions", required=True)
+    admission.add_argument("--root")
+    admission.add_argument("--json", action="store_true", help=argparse.SUPPRESS)
+    admission.set_defaults(func=command_admission)
+    audit = commands.add_parser("audit", help="audit a content-addressed corpus manifest")
+    audit.add_argument("--manifest", required=True)
+    audit.add_argument("--root")
+    audit.add_argument("--json", action="store_true", help=argparse.SUPPRESS)
+    audit.set_defaults(func=command_audit)
+    deletion = commands.add_parser("deletion-plan", help="emit a deterministic dry-run deletion plan")
+    deletion.add_argument("--record", required=True)
+    deletion.add_argument("--requested-at", required=True)
+    deletion.add_argument("--requested-by", required=True)
+    deletion.add_argument("--reason", required=True)
+    deletion.add_argument("--json", action="store_true", help=argparse.SUPPRESS)
+    deletion.set_defaults(func=command_deletion_plan)
+    audit_log = commands.add_parser("audit-log", help="verify a chained append-only corpus audit log")
+    audit_log.add_argument("--log", required=True)
+    audit_log.add_argument("--log-id", required=True)
+    audit_log.add_argument("--json", action="store_true", help=argparse.SUPPRESS)
+    audit_log.set_defaults(func=command_audit_log)
+    append_event = commands.add_parser("append-event", help="append one confirmed event to a verified audit log")
+    append_event.add_argument("--log", required=True)
+    append_event.add_argument("--event", required=True)
+    append_event.add_argument("--log-id", required=True)
+    append_event.add_argument(
+        "--expected-head", required=True,
+        help="current sha256 event digest, or 'none' for an empty log",
+    )
+    append_event.add_argument("--confirm-append-only-audit-event", action="store_true")
+    append_event.add_argument("--json", action="store_true", help=argparse.SUPPRESS)
+    append_event.set_defaults(func=command_append_event)
+    return result
+
+
+def main() -> int:
+    args = parser().parse_args()
+    return args.func(args)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+PY

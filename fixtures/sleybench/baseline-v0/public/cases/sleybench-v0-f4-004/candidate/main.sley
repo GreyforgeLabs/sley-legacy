@@ -1,0 +1,5 @@
+module bench.public.f4_004
+
+task main -> Text {
+  return "oak" + "tree"
+}

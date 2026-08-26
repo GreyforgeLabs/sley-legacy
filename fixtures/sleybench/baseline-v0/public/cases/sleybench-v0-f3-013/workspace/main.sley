@@ -1,0 +1,5 @@
+module bench.public.f3_013
+
+task main -> Bool {
+  return call absent_bool()
+}

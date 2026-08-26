@@ -1,0 +1,231 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.operational.evidence_registry.v1",
+  "title": "Sley Operational Evidence Registry v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "release", "identity", "entries", "decision", "authority", "disclosure", "issues"],
+  "properties": {
+    "schema": {"const": "sley.operational.evidence_registry.v1"},
+    "status": {"const": "decision_recorded"},
+    "release": {"const": "1.2.0"},
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["registry_source_commit", "reference_replay_digest", "agent_workflow_comparison_digest", "agent_workflow_source_commit", "case_manifest_digest", "controller_digest", "execution_provenance_digest", "assembler_digest", "comparison_assembler_digest", "registry_schema_digest", "schema_set_digest", "operational_vocabulary_digest"],
+      "properties": {
+        "registry_source_commit": {"$ref": "#/$defs/git_commit"},
+        "reference_replay_digest": {"$ref": "#/$defs/digest"},
+        "agent_workflow_comparison_digest": {"$ref": "#/$defs/digest"},
+        "agent_workflow_source_commit": {"$ref": "#/$defs/git_commit"},
+        "case_manifest_digest": {"$ref": "#/$defs/digest"},
+        "controller_digest": {"$ref": "#/$defs/digest"},
+        "execution_provenance_digest": {"$ref": "#/$defs/digest"},
+        "assembler_digest": {"$ref": "#/$defs/digest"},
+        "comparison_assembler_digest": {"$ref": "#/$defs/digest"},
+        "registry_schema_digest": {"$ref": "#/$defs/digest"},
+        "schema_set_digest": {"$ref": "#/$defs/digest"},
+        "operational_vocabulary_digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "entries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reference_replay", "agent_workflow"],
+      "properties": {
+        "reference_replay": {"$ref": "#/$defs/reference_entry"},
+        "agent_workflow": {"$ref": "#/$defs/agent_entry"}
+      }
+    },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["w6_evidence_complete", "release_closeout_unblocked", "production_promotion", "structural_workflow_disposition", "general_claim_supported", "production_claim", "rationale"],
+      "properties": {
+        "w6_evidence_complete": {"const": true},
+        "release_closeout_unblocked": {"const": true},
+        "production_promotion": {"const": "deferred"},
+        "structural_workflow_disposition": {"enum": ["retain_for_bounded_followup", "defer_structural_interface"]},
+        "general_claim_supported": {"const": false},
+        "production_claim": {"const": false},
+        "rationale": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": {"enum": ["single_trial_only", "non_authoritative_reference", "production_evidence_missing", "structural_context_result_limited"]}
+        }
+      }
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "repository_mutation", "product_runtime_mutation", "provider_calls", "deploy", "publication", "promotion_authority"],
+      "properties": {
+        "mode": {"const": "non_authoritative_evidence_only"},
+        "repository_mutation": {"const": false},
+        "product_runtime_mutation": {"const": false},
+        "provider_calls": {"const": false},
+        "deploy": {"const": false},
+        "publication": {"const": false},
+        "promotion_authority": {"const": false}
+      }
+    },
+    "disclosure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["raw_prompts_embedded", "raw_responses_embedded", "raw_corpus_embedded", "contains_real_user_data", "contains_credentials", "training_eligible", "retrieval_eligible", "publication_authorized"],
+      "properties": {
+        "raw_prompts_embedded": {"const": false},
+        "raw_responses_embedded": {"const": false},
+        "raw_corpus_embedded": {"const": false},
+        "contains_real_user_data": {"const": false},
+        "contains_credentials": {"const": false},
+        "training_eligible": {"const": false},
+        "retrieval_eligible": {"const": false},
+        "publication_authorized": {"const": false}
+      }
+    },
+    "issues": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/issue"}
+    }
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "git_commit": {"type": "string", "pattern": "^[a-f0-9]{40}$"},
+    "issue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "message"],
+      "properties": {
+        "code": {"type": "string", "minLength": 1},
+        "message": {"type": "string", "minLength": 1}
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "path", "digest", "status"],
+      "properties": {
+        "schema": {"enum": ["sley.operational.reference_replay.v1", "sley.operational.agent_workflow_comparison.v1"]},
+        "path": {"type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"},
+        "digest": {"$ref": "#/$defs/digest"},
+        "status": {"const": "passed"}
+      }
+    },
+    "reproducibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "private_inputs_required"],
+      "properties": {
+        "command": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "private_inputs_required": {"type": "boolean"}
+      }
+    },
+    "entry_disclosure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["public_artifact", "private_evidence_required", "publication_authorized"],
+      "properties": {
+        "public_artifact": {"const": true},
+        "private_evidence_required": {"type": "boolean"},
+        "publication_authorized": {"const": false}
+      }
+    },
+    "promotion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decision", "general_claim_supported", "production_claim"],
+      "properties": {
+        "decision": {"const": "deferred"},
+        "general_claim_supported": {"const": false},
+        "production_claim": {"const": false}
+      }
+    },
+    "reference_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "workload_class", "authority_status", "artifact", "correctness", "promotion", "known_limitations", "reproducibility", "disclosure"],
+      "properties": {
+        "id": {"const": "siglum-numerology-reference-v1"},
+        "workload_class": {"const": "deterministic_reference_replay"},
+        "authority_status": {"const": "non_authoritative"},
+        "artifact": {"$ref": "#/$defs/artifact"},
+        "correctness": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["repeat_count", "case_count", "exact_match_count", "mismatch_count", "deterministic", "independent_oracle"],
+          "properties": {
+            "repeat_count": {"type": "integer", "minimum": 2},
+            "case_count": {"type": "integer", "minimum": 1},
+            "exact_match_count": {"type": "integer", "minimum": 0},
+            "mismatch_count": {"const": 0},
+            "deterministic": {"const": true},
+            "independent_oracle": {"const": true}
+          }
+        },
+        "promotion": {"$ref": "#/$defs/promotion"},
+        "known_limitations": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "reproducibility": {"$ref": "#/$defs/reproducibility"},
+        "disclosure": {"$ref": "#/$defs/entry_disclosure"}
+      }
+    },
+    "arm_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "strict_success", "accepted_change_tokens", "inference_attempts", "total_tokens", "prompt_bytes", "context_bytes_supplied", "structural_response_bytes", "tool_calls", "invalid_actions", "repair_loops", "wall_ms"],
+      "properties": {
+        "mode": {"enum": ["K1", "K3"]},
+        "strict_success": {"type": "boolean"},
+        "accepted_change_tokens": {"type": ["integer", "null"], "minimum": 0},
+        "inference_attempts": {"type": "integer", "minimum": 1, "maximum": 2},
+        "total_tokens": {"type": "integer", "minimum": 0},
+        "prompt_bytes": {"type": "integer", "minimum": 0},
+        "context_bytes_supplied": {"type": "integer", "minimum": 0},
+        "structural_response_bytes": {"type": "integer", "minimum": 0},
+        "tool_calls": {"type": "integer", "minimum": 0},
+        "invalid_actions": {"type": "integer", "minimum": 0},
+        "repair_loops": {"type": "integer", "minimum": 0},
+        "wall_ms": {"type": "integer", "minimum": 0}
+      }
+    },
+    "agent_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "workload_class", "authority_status", "artifact", "comparison", "arms", "promotion", "known_limitations", "reproducibility", "disclosure"],
+      "properties": {
+        "id": {"const": "sley-agent-project-cross-module-rename-v1"},
+        "workload_class": {"const": "controlled_agent_maintenance"},
+        "authority_status": {"const": "local_isolated_evaluation_only"},
+        "artifact": {"$ref": "#/$defs/artifact"},
+        "comparison": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["trial_count", "failures_retained", "outcome", "recommendation", "structural_context_effect"],
+          "properties": {
+            "trial_count": {"const": 1},
+            "failures_retained": {"const": true},
+            "outcome": {"enum": ["structural_advantage_observed", "both_accepted", "structural_disadvantage_observed", "both_failed"]},
+            "recommendation": {"enum": ["retain_for_bounded_followup", "defer_structural_interface"]},
+            "structural_context_effect": {"enum": ["saving", "equal", "expansion"]}
+          }
+        },
+        "arms": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["raw_source", "sley_structural"],
+          "properties": {
+            "raw_source": {"$ref": "#/$defs/arm_summary"},
+            "sley_structural": {"$ref": "#/$defs/arm_summary"}
+          }
+        },
+        "promotion": {"$ref": "#/$defs/promotion"},
+        "known_limitations": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "reproducibility": {"$ref": "#/$defs/reproducibility"},
+        "disclosure": {"$ref": "#/$defs/entry_disclosure"}
+      }
+    }
+  }
+}

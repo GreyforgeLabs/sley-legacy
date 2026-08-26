@@ -1,0 +1,56 @@
+{
+  "schema": "sley.corpus.manifest.v0",
+  "corpus_id": "sley-corpus-governance-fixture",
+  "version": "0.1.0",
+  "state": "immutable",
+  "created_at": "2026-08-23T00:00:00Z",
+  "record_schema": "sley.corpus.record.v0",
+  "sley_compatibility": {
+    "minimum": "1.1",
+    "maximum": "1.1"
+  },
+  "tool_versions": {
+    "admission": "sley-corpus-0.1",
+    "verification": "sley-1.1",
+    "deduplication": "fixture-dedup-0.1"
+  },
+  "exclusion_ledger": {
+    "path": "exclusions.json",
+    "digest": "sha256:7bb1b54187c89febecec16af64f5df9d2700c369441e7393ecf1054050c2ec98"
+  },
+  "records": [
+    {
+      "record_id": "sley-corpus-fixture-001",
+      "path": "record.json",
+      "digest": "sha256:4c313da8a055efd1d405fb2c79e71de37df24f36761482a361327965ee1733f1",
+      "partition": "train",
+      "semantic_lineage_id": "corpus-governance-lineage-001",
+      "semantic_lineage_digest": "sha256:89079d49d755140fabf0b9fa54d90f73693cde655a3ba5c68fa823e217057f48"
+    }
+  ],
+  "partition_counts": {
+    "train": 1,
+    "development": 0,
+    "evaluation_public": 0,
+    "evaluation_private": 0,
+    "quarantine": 0,
+    "rejected": 0
+  },
+  "lineage_count": 1,
+  "license_summary": [
+    "repository-license: training and redistribution permitted for fixture"
+  ],
+  "privacy_summary": [
+    "public synthetic fixture; secret scan passed"
+  ],
+  "known_limitations": [
+    "governance test fixture only; does not authorize reusable trajectory capture"
+  ],
+  "removal_history": [],
+  "intended_uses": [
+    "deterministic corpus tooling validation"
+  ],
+  "prohibited_uses": [
+    "claiming that the production SleyBench private split is pinned"
+  ]
+}

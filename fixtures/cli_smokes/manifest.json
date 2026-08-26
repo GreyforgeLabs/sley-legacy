@@ -30,7 +30,7 @@
         "stdout_json": [
           { "pointer": "/schema", "value": "sley.contract.inventory.v0" },
           { "pointer": "/status", "value": "passed" },
-          { "pointer": "/schema_count", "value": 41 }
+          { "pointer": "/schema_count", "value": 42 }
         ]
       }
     },
@@ -14673,6 +14673,67 @@
           { "pointer": "/diagnostics/0/id", "value": "RETURN_TYPE_MISMATCH" },
           { "pointer": "/diagnostics/0/repair_hints/2/kind", "value": "replace_expression" },
           { "pointer": "/diagnostics/0/repair_hints/2/replacement", "value": "{\"op\":\"ReplaceExpression\",\"payload\":{\"source\":\"0\"},\"target\":\"block:task:app.alias_bad.main:stmt:1:expr\"}" }
+        ]
+      }
+    },
+    {
+      "name": "explain_w1_diagnostic_json",
+      "args": ["explain", "--json", "--diagnostic-id", "CONTROL_FLOW_EXPRESSION_BOUNDARY"],
+      "covers": [
+        "cli:explain",
+        "json:sley.explain.report.v0",
+        "diagnostic:CONTROL_FLOW_EXPRESSION_BOUNDARY",
+        "discoverability:checked-spelling",
+        "discoverability:bootstrap-version"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.explain.report.v0" },
+          { "pointer": "/status", "value": "ok" },
+          { "pointer": "/query/kind", "value": "diagnostic_id" },
+          { "pointer": "/diagnostic_id", "value": "CONTROL_FLOW_EXPRESSION_BOUNDARY" },
+          { "pointer": "/version_context/target_release", "value": "Sley 1.2" },
+          { "pointer": "/version_context/bootstrap/version", "value": "Bootstrap 0.2" },
+          { "pointer": "/explanation/checked_spelling", "value": "return if ready { 1 } else { 0 }" },
+          { "pointer": "/explanation/repair_kind", "value": "rewrite_conditional" }
+        ]
+      }
+    },
+    {
+      "name": "explain_unknown_diagnostic_json",
+      "args": ["explain", "--json", "--diagnostic-id", "NOT_A_W1_ID"],
+      "covers": [
+        "cli:explain",
+        "json:sley.explain.report.v0",
+        "diagnostic:UNKNOWN_DIAGNOSTIC_ID"
+      ],
+      "expect": {
+        "success": false,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.explain.report.v0" },
+          { "pointer": "/status", "value": "error" },
+          { "pointer": "/diagnostics/0/id", "value": "UNKNOWN_DIAGNOSTIC_ID" }
+        ]
+      }
+    },
+    {
+      "name": "lsp_explain_command_preview_json",
+      "bin": "sley-lsp",
+      "args": ["--preview-explain", "UNSUPPORTED_RAW_EXPRESSION"],
+      "covers": [
+        "cli:sley-lsp",
+        "json:sley.lsp.command_preview.v0",
+        "discoverability:lsp-command-preview"
+      ],
+      "expect": {
+        "success": true,
+        "stdout_json": [
+          { "pointer": "/schema", "value": "sley.lsp.command_preview.v0" },
+          { "pointer": "/status", "value": "preview" },
+          { "pointer": "/preview/kind", "value": "explain_diagnostic" },
+          { "pointer": "/preview/args/0", "value": "explain" },
+          { "pointer": "/preview/args/3", "value": "UNSUPPORTED_RAW_EXPRESSION" }
         ]
       }
     },

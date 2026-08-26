@@ -1,0 +1,14 @@
+{
+  "schema": "sley.worker.event.v1",
+  "protocol": "sley.worker.v1",
+  "sequence": 2,
+  "request_id": "request:fixture-invoke",
+  "operation": "invoke",
+  "phase": "running",
+  "worker_state": "busy",
+  "code": "WORKER_REQUEST_RUNNING",
+  "details": {
+    "bounded": true,
+    "request_local_state": true
+  }
+}

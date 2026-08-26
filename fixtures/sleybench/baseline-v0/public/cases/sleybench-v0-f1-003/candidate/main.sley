@@ -1,0 +1,5 @@
+module bench.public.f1_003
+
+task main -> Bool {
+  return 8 == 8
+}

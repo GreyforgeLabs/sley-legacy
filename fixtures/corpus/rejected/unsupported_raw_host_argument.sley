@@ -1,0 +1,5 @@
+module corpus.rejected.raw_host_argument
+
+task main -> Bool uses DatabaseWrite {
+  return call db.try_insert("users", true and false)
+}

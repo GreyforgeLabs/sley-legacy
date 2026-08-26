@@ -1,0 +1,5 @@
+module corpus.rejected
+
+task double take value: Int -> Int {
+  return 0
+}

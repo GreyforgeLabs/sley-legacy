@@ -1,0 +1,26 @@
+{
+  "schema": "sley.agent_bench.run_manifest.v0",
+  "run_id": "sleybench-smoke-v0-deterministic",
+  "suite_id": "sleybench-smoke-v0",
+  "case_manifest_path": "case-manifest.json",
+  "case_manifest_digest": "sha256:41fa041e42097f7df492cea3c0b63e8e47443339e0909f927e99b4464774577f",
+  "mode": "K4",
+  "adapter": {
+    "kind": "deterministic_fixture",
+    "id": "deterministic-fixture-v0",
+    "trusted_fixtures_only": true
+  },
+  "bootstrap": {
+    "path": "SLEY_AI.md",
+    "digest": "sha256:e927738931871e709c381e6b68ad7bb17ab8b5f09c382ade562ffc5eed823f13"
+  },
+  "tool_allowlist": [
+    "ast",
+    "check",
+    "graph",
+    "plan",
+    "query",
+    "run"
+  ],
+  "retain_workspaces": false
+}

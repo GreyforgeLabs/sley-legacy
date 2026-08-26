@@ -1,0 +1,38 @@
+module test.suite
+
+export task classify -> Text {
+  take score: Int
+
+  return if score >= 90 { "excellent" } else { "steady" }
+}
+
+export task add_zero_property -> Bool {
+  take value: Int
+
+  return value + 0 == value
+}
+
+export task incumbent_score -> Int {
+  take value: Int
+
+  return value + value + 1
+}
+
+export task translated_score -> Int {
+  take value: Int
+
+  return value * 2 + 1
+}
+
+task main -> Result<Text, Error> uses SecretRead, Network, ModelCall, Deploy {
+  bind token = call secrets.try_get("api_key")?
+  bind profile = call http.try_get_text("https://example.test/profile")?
+  bind plan = call model.try_complete("deploy-plan")?
+  bind staged = call deploy.try_stage("staging")?
+
+  if len(token) > 0 {
+    return Ok(profile + " | " + plan + " | " + staged)
+  }
+
+  return Err("api_key seed was empty")
+}

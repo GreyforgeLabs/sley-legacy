@@ -1,0 +1,6 @@
+module bench.public.f3_001
+
+task main -> Int {
+  bind value = 41
+  return value
+}

@@ -1,0 +1,5 @@
+module bench.public.f3_003
+
+task main -> Missing {
+  return "ok"
+}

@@ -1,0 +1,10 @@
+module bench.public.f1_015
+
+type User = {
+  name: Text
+  age: Int
+}
+
+task main -> Text {
+  return User { name: "Ada", age: 37 }.name
+}

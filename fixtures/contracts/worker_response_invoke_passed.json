@@ -1,0 +1,51 @@
+{
+  "schema": "sley.worker.response.v1",
+  "protocol": "sley.worker.v1",
+  "request_id": "request:fixture-invoke",
+  "operation": "invoke",
+  "status": "passed",
+  "failure_class": null,
+  "retryable": false,
+  "worker": {
+    "schema": "sley.worker.session.v1",
+    "protocol": "sley.worker.v1",
+    "worker_id": "worker:fixture",
+    "worker_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "runtime_digest": "sha256:5b36de7470d015d2090552587d4f163dadbd062d87b7508320b1f1b638ad2361",
+    "state": "ready",
+    "generation": 1,
+    "request_count": 1,
+    "active_request_id": null,
+    "max_requests": 128,
+    "cache": {
+      "policy": "disabled",
+      "shared_mutable_state": false,
+      "hit_count": 0
+    },
+    "isolation": {
+      "class": "fresh_subprocess_per_invoke",
+      "fresh_process_per_invoke": true,
+      "request_local_tempdir": true,
+      "clean_environment": true,
+      "closed_inherited_fds": true,
+      "resource_limits": true,
+      "process_group_cancellation": true,
+      "namespace_isolation_enforced": false
+    }
+  },
+  "result": {
+    "adapter_status": "passed",
+    "record_digest": "sha256:457aa02889dbe54f90d8901b5637fde5ac145ae17779903fb644edc1e0d3f62b"
+  },
+  "isolation": {
+    "class": "fresh_subprocess_per_invoke",
+    "fresh_process_per_invoke": true,
+    "request_local_tempdir": true,
+    "clean_environment": true,
+    "closed_inherited_fds": true,
+    "resource_limits": true,
+    "process_group_cancellation": true,
+    "namespace_isolation_enforced": false
+  },
+  "issues": []
+}

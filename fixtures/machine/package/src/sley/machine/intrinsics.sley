@@ -1,0 +1,83 @@
+module sley.machine.text
+
+export task nfkc_trim -> Text {
+  take value: Text
+  return value
+}
+
+export task ascii_fold_en -> Text {
+  take value: Text
+  return value
+}
+
+export task utf16_length -> Int {
+  take value: Text
+  return len(value)
+}
+
+export task has_prohibited_controls -> Bool {
+  take value: Text
+  return false
+}
+
+export task characters -> List<Text> {
+  take value: Text
+  return [value]
+}
+
+export task slice -> Text {
+  take value: Text
+  take start: Int
+  take finish: Int
+  return value
+}
+
+export task to_int -> Int {
+  take value: Text
+  return 0
+}
+
+module sley.machine.int
+
+export task to_text -> Text {
+  take value: Int
+  return ""
+}
+
+export task digits -> List<Int> {
+  take value: Int
+  return [value]
+}
+
+export task modulo -> Int {
+  take value: Int
+  take divisor: Int
+  return value
+}
+
+module sley.machine.map
+
+export task has_key -> Bool {
+  take value: Map<Text, Text>
+  take key: Text
+  return false
+}
+
+export task keys -> List<Text> {
+  take value: Map<Text, Text>
+  return []
+}
+
+module sley.machine.json
+
+export task kind -> Text {
+  take value: Map<Text, Text>
+  return "Map"
+}
+
+module sley.machine.date
+
+export task is_gregorian -> Bool {
+  take value: Text
+  return false
+}

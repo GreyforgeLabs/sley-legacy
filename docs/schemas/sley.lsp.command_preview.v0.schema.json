@@ -17,7 +17,7 @@
         "schema": { "const": "sley.lsp.command_preview.v0" },
         "uri": { "type": "string", "minLength": 1 },
         "kind": {
-          "enum": ["doctor", "verify", "deploy_dry_run", "graph_slice"]
+          "enum": ["doctor", "verify", "deploy_dry_run", "graph_slice", "explain_diagnostic"]
         },
         "command": { "const": "sley" },
         "args": {

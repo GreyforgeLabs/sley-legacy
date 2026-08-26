@@ -1,0 +1,10 @@
+module bench.public.f2_015
+
+task identity -> Int {
+  take value: Int
+  return value
+}
+
+task main -> Int {
+  return call identity(33)
+}

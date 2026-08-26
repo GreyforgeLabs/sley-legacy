@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.toolchain.doctor.v1",
+  "title": "Sley Toolchain Doctor v1",
+  "type": "object",
+  "required": ["schema", "status", "sley_version", "release", "root", "dependencies", "contracts", "adapter", "path", "issues", "next_actions"],
+  "properties": {
+    "schema": {"const": "sley.toolchain.doctor.v1"},
+    "status": {"enum": ["ready", "blocked"]},
+    "sley_version": {"const": "sley 1.2.0"},
+    "release": {"const": "1.2.0"},
+    "root": {"type": "string", "minLength": 1},
+    "dependencies": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name", "minimum_version", "required", "found", "path", "version", "status"],
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "minimum_version": {"type": "string", "minLength": 1},
+          "required": {"const": true},
+          "found": {"type": "boolean"},
+          "path": {"type": ["string", "null"]},
+          "version": {"type": ["string", "null"]},
+          "status": {"enum": ["ready", "missing", "incompatible"]}
+        },
+        "additionalProperties": false
+      }
+    },
+    "contracts": {
+      "type": "object",
+      "required": ["schema_dir", "schema_count", "required", "missing", "status"],
+      "properties": {
+        "schema_dir": {"type": "string", "minLength": 1},
+        "schema_count": {"type": "integer", "minimum": 1},
+        "required": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "missing": {"type": "array", "items": {"type": "string", "minLength": 1}},
+        "status": {"enum": ["ready", "blocked"]}
+      },
+      "additionalProperties": false
+    },
+    "adapter": {
+      "type": "object",
+      "required": ["manifest_schema", "worker_protocol", "local_replay_available", "external_adapters_supported", "status"],
+      "properties": {
+        "manifest_schema": {"const": "sley.adapter.manifest.v0"},
+        "worker_protocol": {"type": "string", "minLength": 1},
+        "local_replay_available": {"type": "boolean"},
+        "external_adapters_supported": {"const": false},
+        "status": {"enum": ["ready", "blocked"]}
+      },
+      "additionalProperties": false
+    },
+    "path": {
+      "type": "object",
+      "required": ["expected_sley", "resolved_sley", "conflict", "status"],
+      "properties": {
+        "expected_sley": {"type": "string", "minLength": 1},
+        "resolved_sley": {"type": ["string", "null"]},
+        "conflict": {"type": "boolean"},
+        "status": {"enum": ["ready", "conflict"]}
+      },
+      "additionalProperties": false
+    },
+    "issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["code", "message"],
+        "properties": {
+          "code": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]+$"},
+          "message": {"type": "string", "minLength": 1}
+        },
+        "additionalProperties": false
+      }
+    },
+    "next_actions": {"type": "array", "items": {"type": "string", "minLength": 1}}
+  },
+  "additionalProperties": false
+}

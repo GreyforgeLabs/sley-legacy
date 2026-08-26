@@ -1,0 +1,167 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.change.recovery.v0",
+  "title": "Sley Change Recovery Record v0",
+  "type": "object",
+  "required": [
+    "schema", "status", "record_id", "record_digest", "phase", "transaction",
+    "authorization_ref", "grant_ref", "repository", "base", "candidate",
+    "paths", "atomicity", "replay", "revocation_ref", "metadata_policy",
+    "verification", "rollback", "mutations", "internal_mutations", "events", "issues"
+  ],
+  "properties": {
+    "schema": {"const": "sley.change.recovery.v0"},
+    "status": {"enum": ["active", "terminal"]},
+    "record_id": {"type": "string", "pattern": "^recovery:[a-f0-9]{64}$"},
+    "record_digest": {"$ref": "#/$defs/digest"},
+    "phase": {
+      "enum": [
+        "preflight_checked", "prepared", "commit_point_entered",
+        "applied_unverified", "verifying", "verified", "verification_failed",
+        "rollback_required", "rolled_back", "apply_failed", "cancelled"
+      ]
+    },
+    "transaction": {"$ref": "#/$defs/transaction"},
+    "authorization_ref": {"$ref": "sley.change.revocation_record.v0#/$defs/authorizationRef"},
+    "grant_ref": {"$ref": "sley.change.apply_authorization.v0#/$defs/grantRef"},
+    "repository": {"$ref": "sley.change.plan.v0#/$defs/transaction/properties/repository"},
+    "base": {"$ref": "sley.change.plan.v0#/$defs/transaction/properties/base"},
+    "candidate": {"$ref": "sley.change.grant.v0#/$defs/candidate"},
+    "paths": {"$ref": "#/$defs/paths"},
+    "atomicity": {"$ref": "sley.change.apply_authorization.v0#/$defs/atomicity"},
+    "replay": {"$ref": "#/$defs/replay"},
+    "revocation_ref": {"$ref": "#/$defs/revocationRef"},
+    "metadata_policy": {"$ref": "sley.change.apply_authorization.v0#/$defs/metadataPolicy"},
+    "verification": {"$ref": "#/$defs/verification"},
+    "rollback": {"$ref": "#/$defs/rollback"},
+    "mutations": {"$ref": "#/$defs/mutations"},
+    "internal_mutations": {"$ref": "#/$defs/internalMutations"},
+    "events": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/event"}},
+    "issues": {"type": "array", "items": {"$ref": "#/$defs/issue"}}
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "safePath": {"type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"},
+    "transaction": {
+      "type": "object",
+      "required": ["transaction_id", "state", "history"],
+      "properties": {
+        "transaction_id": {"$ref": "#/$defs/digest"},
+        "state": {"enum": ["approved", "applying", "applied", "verifying", "apply_failed", "verification_failed", "rolled_back", "cancelled"]},
+        "history": {
+          "type": "array", "minItems": 6, "uniqueItems": true,
+          "items": {"enum": ["opened", "inspected", "planned", "previewed", "awaiting_approval", "approved", "applying", "applied", "verifying", "apply_failed", "verification_failed", "rolled_back", "cancelled"]}
+        }
+      },
+      "additionalProperties": false
+    },
+    "paths": {
+      "type": "object",
+      "required": ["target", "common_root", "candidate_root", "transaction_state", "recovery_record", "lock", "replay", "revocation", "allowed_paths"],
+      "properties": {
+        "target": {"$ref": "#/$defs/safePath"},
+        "common_root": {"$ref": "#/$defs/safePath"},
+        "candidate_root": {"$ref": "#/$defs/safePath"},
+        "transaction_state": {"type": "string", "pattern": "^\\.sley/transactions/[a-f0-9]{64}$"},
+        "recovery_record": {"type": "string", "pattern": "^\\.sley/transactions/[a-f0-9]{64}/recovery/record\\.json$"},
+        "lock": {"const": ".sley/locks/change-apply"},
+        "replay": {"type": "string", "pattern": "^\\.sley/replay/[a-f0-9]{64}$"},
+        "revocation": {"type": "string", "pattern": "^\\.sley/revocations/[a-f0-9]{64}\\.json$"},
+        "allowed_paths": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/safePath"}}
+      },
+      "additionalProperties": false
+    },
+    "replay": {
+      "type": "object",
+      "required": ["policy", "enforcement", "replay_key", "state"],
+      "properties": {
+        "policy": {"const": "single_use_at_apply"},
+        "enforcement": {"const": "enforced_by_s12_404"},
+        "replay_key": {"$ref": "#/$defs/digest"},
+        "state": {"enum": ["available", "consumed"]}
+      },
+      "additionalProperties": false
+    },
+    "revocationRef": {
+      "type": "object",
+      "required": ["record_id", "record_digest", "state", "ledger_path"],
+      "properties": {
+        "record_id": {"type": "string", "pattern": "^revocation-record:[a-f0-9]{64}$"},
+        "record_digest": {"$ref": "#/$defs/digest"},
+        "state": {"enum": ["not_revoked", "revoked"]},
+        "ledger_path": {"type": "string", "pattern": "^\\.sley/revocations/[a-f0-9]{64}\\.json$"}
+      },
+      "additionalProperties": false
+    },
+    "check": {
+      "type": "object",
+      "required": ["kind", "status", "expected", "actual"],
+      "properties": {
+        "kind": {"enum": ["candidate_source_digest", "candidate_graph_digest", "compiler_check", "compiler_lint"]},
+        "status": {"enum": ["pending", "passed", "failed"]},
+        "expected": {"type": ["string", "null"]},
+        "actual": {"type": ["string", "null"]}
+      },
+      "additionalProperties": false
+    },
+    "verification": {
+      "type": "object",
+      "required": ["profile", "status", "checks"],
+      "properties": {
+        "profile": {"const": "compiler_apply_v0"},
+        "status": {"enum": ["pending", "passed", "failed"]},
+        "checks": {"type": "array", "maxItems": 4, "items": {"$ref": "#/$defs/check"}}
+      },
+      "additionalProperties": false
+    },
+    "rollback": {
+      "type": "object",
+      "required": ["strategy", "status", "expected_source_digest", "actual_source_digest", "expected_graph_digest", "actual_graph_digest"],
+      "properties": {
+        "strategy": {"const": "verified_exchange"},
+        "status": {"enum": ["not_required", "pending", "passed", "failed"]},
+        "expected_source_digest": {"type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$"},
+        "actual_source_digest": {"type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$"},
+        "expected_graph_digest": {"type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$"},
+        "actual_graph_digest": {"type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$"}
+      },
+      "additionalProperties": false
+    },
+    "mutations": {
+      "type": "object",
+      "required": ["repository_source", "git_index", "trace_sidecars", "external_systems", "provider_state"],
+      "properties": {
+        "repository_source": {"type": "boolean"},
+        "git_index": {"const": false},
+        "trace_sidecars": {"const": false},
+        "external_systems": {"const": false},
+        "provider_state": {"const": false}
+      },
+      "additionalProperties": false
+    },
+    "internalMutations": {
+      "type": "object",
+      "required": ["internal_transaction_state"],
+      "properties": {"internal_transaction_state": {"type": "boolean"}},
+      "additionalProperties": false
+    },
+    "event": {
+      "type": "object",
+      "required": ["sequence", "phase", "at", "detail"],
+      "properties": {
+        "sequence": {"type": "integer", "minimum": 1},
+        "phase": {"type": "string", "minLength": 1},
+        "at": {"type": "string", "format": "date-time"},
+        "detail": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "issue": {
+      "type": "object",
+      "required": ["id", "message"],
+      "properties": {"id": {"type": "string", "minLength": 1}, "message": {"type": "string", "minLength": 1}},
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

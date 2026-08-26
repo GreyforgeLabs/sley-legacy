@@ -1,0 +1,81 @@
+{
+  "schema": "sley.agent_bench.case_manifest.v0",
+  "suite_id": "sleybench-smoke-v0",
+  "tier": "smoke",
+  "version": "0.1",
+  "cases": [
+    {
+      "id": "sleybench-smoke-f1-001",
+      "family": "syntax_compilation",
+      "visibility": "public",
+      "sley_version": "1.2",
+      "prompt_path": "cases/sleybench-smoke-f1-001/prompt.md",
+      "workspace_path": "cases/sleybench-smoke-f1-001/workspace",
+      "candidate_path": "cases/sleybench-smoke-f1-001/candidate",
+      "owned_paths": [
+        "main.sley"
+      ],
+      "allowed_context": [
+        "SLEY_AI.md"
+      ],
+      "allowed_tools": [
+        "check",
+        "ast"
+      ],
+      "limits": {
+        "wall_seconds": 120,
+        "tool_calls": 8,
+        "output_bytes": 1048576,
+        "processes": 256,
+        "workspace_bytes": 1048576
+      },
+      "policy": {
+        "kind": "fixture_candidate"
+      },
+      "preflight": [],
+      "oracle": {
+        "commands": [
+          {
+            "name": "check",
+            "argv": [
+              "sley",
+              "check",
+              "--json",
+              "main.sley"
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.diagnostics.report.v0",
+            "assertions": [
+              {
+                "pointer": "/status",
+                "value": "ok"
+              }
+            ]
+          },
+          {
+            "name": "ast",
+            "argv": [
+              "sley",
+              "ast",
+              "--json",
+              "main.sley"
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.ast.program.v0",
+            "assertions": []
+          }
+        ]
+      },
+      "score_tags": [
+        "parse",
+        "compile",
+        "pass"
+      ],
+      "minimality": {
+        "max_changed_files": 1,
+        "max_changed_lines": 8
+      },
+      "training_exclusion_id": "sha256:0a7f18d1aa465c4de2664cfa1e660fdc09a73163a813a2046217ecadc318a0e7"
+    }
+  ]
+}

@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "greyforge.sleybench.mode_summary.v0",
+  "title": "Greyforge SleyBench Mode Summary v0",
+  "type": "object",
+  "required": [
+    "schema", "status", "suite_id", "mode", "model", "counts", "rates",
+    "resources", "partitions", "evidence", "issues"
+  ],
+  "properties": {
+    "schema": { "const": "greyforge.sleybench.mode_summary.v0" },
+    "status": { "const": "completed" },
+    "suite_id": { "const": "sleybench-v0" },
+    "mode": { "enum": ["K0", "K1", "K2", "K3", "K4"] },
+    "model": { "type": "string", "minLength": 1 },
+    "counts": {
+      "type": "object",
+      "required": ["case_count", "passed_count", "failed_count", "family_counts"],
+      "properties": {
+        "case_count": { "const": 120 },
+        "passed_count": { "type": "integer", "minimum": 0, "maximum": 120 },
+        "failed_count": { "type": "integer", "minimum": 0, "maximum": 120 },
+        "family_counts": {
+          "type": "object",
+          "required": [
+            "syntax_compilation", "semantic_implementation", "diagnosis_repair",
+            "translation_preservation", "structural_tool_use",
+            "repository_patch_integration"
+          ],
+          "properties": {
+            "syntax_compilation": { "const": 20 },
+            "semantic_implementation": { "const": 20 },
+            "diagnosis_repair": { "const": 20 },
+            "translation_preservation": { "const": 20 },
+            "structural_tool_use": { "const": 20 },
+            "repository_patch_integration": { "const": 20 }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "rates": {
+      "type": "object",
+      "required": [
+        "parse_at_1", "compile_at_1", "pass_at_1", "repair_at_1",
+        "repository_patch_acceptance", "regression_free_success",
+        "syntax_hallucination", "stdlib_hallucination", "invalid_tool_call"
+      ],
+      "properties": {
+        "parse_at_1": { "$ref": "#/$defs/rate" },
+        "compile_at_1": { "$ref": "#/$defs/rate" },
+        "pass_at_1": { "$ref": "#/$defs/rate" },
+        "repair_at_1": { "$ref": "#/$defs/rate" },
+        "repository_patch_acceptance": { "$ref": "#/$defs/rate" },
+        "regression_free_success": { "$ref": "#/$defs/rate" },
+        "syntax_hallucination": { "$ref": "#/$defs/rate" },
+        "stdlib_hallucination": { "$ref": "#/$defs/rate" },
+        "invalid_tool_call": { "$ref": "#/$defs/rate" }
+      },
+      "additionalProperties": false
+    },
+    "resources": {
+      "type": "object",
+      "required": [
+        "tool_calls_total", "compiler_cycles_total", "wall_ms_total",
+        "input_tokens_total", "output_tokens_total", "estimated_cost_usd_total"
+      ],
+      "properties": {
+        "tool_calls_total": { "type": "integer", "minimum": 0 },
+        "compiler_cycles_total": { "type": "integer", "minimum": 0 },
+        "wall_ms_total": { "type": "integer", "minimum": 0 },
+        "input_tokens_total": { "type": "integer", "minimum": 0 },
+        "output_tokens_total": { "type": "integer", "minimum": 0 },
+        "estimated_cost_usd_total": { "type": "number", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "partitions": {
+      "type": "object",
+      "required": ["public", "private"],
+      "properties": {
+        "public": { "$ref": "#/$defs/publicPartition" },
+        "private": { "$ref": "#/$defs/privatePartition" }
+      },
+      "additionalProperties": false
+    },
+    "evidence": {
+      "type": "object",
+      "required": [
+        "split_manifest_digest", "public_case_results_digest",
+        "private_case_results_digest"
+      ],
+      "properties": {
+        "split_manifest_digest": { "$ref": "#/$defs/digest" },
+        "public_case_results_digest": { "$ref": "#/$defs/digest" },
+        "private_case_results_digest": { "$ref": "#/$defs/digest" }
+      },
+      "additionalProperties": false
+    },
+    "issues": {
+      "type": "array",
+      "items": { "$ref": "sley.agent_bench.aggregate.v0#/$defs/issue" }
+    }
+  },
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "rate": {
+      "$ref": "sley.agent_bench.aggregate.v0#/$defs/rate"
+    },
+    "publicPartition": {
+      "type": "object",
+      "required": ["case_count", "passed_count", "aggregate_digest"],
+      "properties": {
+        "case_count": { "const": 96 },
+        "passed_count": { "type": "integer", "minimum": 0, "maximum": 96 },
+        "aggregate_digest": { "$ref": "#/$defs/digest" }
+      },
+      "additionalProperties": false
+    },
+    "privatePartition": {
+      "type": "object",
+      "required": ["case_count", "passed_count", "aggregate_digest"],
+      "properties": {
+        "case_count": { "const": 24 },
+        "passed_count": { "type": "integer", "minimum": 0, "maximum": 24 },
+        "aggregate_digest": { "$ref": "#/$defs/digest" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

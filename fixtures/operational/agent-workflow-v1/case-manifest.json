@@ -1,0 +1,232 @@
+{
+  "schema": "sley.agent_bench.case_manifest.v0",
+  "suite_id": "sley-operational-agent-workflow-v1",
+  "tier": "baseline",
+  "version": "1.0",
+  "cases": [
+    {
+      "id": "sleybench-v1-f6-001",
+      "family": "repository_patch_integration",
+      "visibility": "public",
+      "sley_version": "1.2",
+      "prompt_path": "prompt.md",
+      "workspace_path": "workspace",
+      "candidate_path": "candidate",
+      "owned_paths": [
+        "src/agent/main.sley",
+        "src/agent/pipeline.sley"
+      ],
+      "allowed_context": [
+        "SLEY_AI.md"
+      ],
+      "allowed_tools": [
+        "query"
+      ],
+      "limits": {
+        "wall_seconds": 180,
+        "tool_calls": 1,
+        "output_bytes": 1048576,
+        "processes": 32,
+        "workspace_bytes": 1048576
+      },
+      "policy": {
+        "kind": "fixture_candidate"
+      },
+      "preflight": [
+        {
+          "name": "initial-check",
+          "argv": [
+            "sley",
+            "check",
+            "--json",
+            "."
+          ],
+          "expected_exit": 0,
+          "expected_schema": "sley.diagnostics.report.v0",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "value": "ok"
+            }
+          ]
+        }
+      ],
+      "oracle": {
+        "commands": [
+          {
+            "name": "candidate-check",
+            "argv": [
+              "sley",
+              "check",
+              "--json",
+              "."
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.diagnostics.report.v0",
+            "assertions": [
+              {
+                "pointer": "/status",
+                "value": "ok"
+              }
+            ]
+          },
+          {
+            "name": "query-pipeline-tasks",
+            "argv": [
+              "sley",
+              "query",
+              "--json",
+              "--kind",
+              "tasks",
+              "--module",
+              "agent.pipeline",
+              "."
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.query.report.v0",
+            "assertions": [
+              {
+                "pointer": "/tasks",
+                "value": [
+                  {
+                    "id": "task:agent.pipeline.collect_profile",
+                    "name": "collect_profile",
+                    "module": "agent.pipeline",
+                    "qualified_name": "agent.pipeline.collect_profile",
+                    "exported": true,
+                    "takes": [
+                      {"name": "secret_name", "binding_kind": "Take", "type": "Text"},
+                      {"name": "profile_url", "binding_kind": "Take", "type": "Text"}
+                    ],
+                    "return_type": "Result<Text, Error>",
+                    "effects": ["SecretRead", "Network"],
+                    "outbound_call_count": 2,
+                    "inbound_call_count": 1
+                  },
+                  {
+                    "id": "task:agent.pipeline.compose_plan",
+                    "name": "compose_plan",
+                    "module": "agent.pipeline",
+                    "qualified_name": "agent.pipeline.compose_plan",
+                    "exported": true,
+                    "takes": [
+                      {"name": "prompt", "binding_kind": "Take", "type": "Text"}
+                    ],
+                    "return_type": "Result<Text, Error>",
+                    "effects": ["ModelCall"],
+                    "outbound_call_count": 1,
+                    "inbound_call_count": 1
+                  },
+                  {
+                    "id": "task:agent.pipeline.stage_release",
+                    "name": "stage_release",
+                    "module": "agent.pipeline",
+                    "qualified_name": "agent.pipeline.stage_release",
+                    "exported": true,
+                    "takes": [
+                      {"name": "target", "binding_kind": "Take", "type": "Text"}
+                    ],
+                    "return_type": "Result<Text, Error>",
+                    "effects": ["Deploy"],
+                    "outbound_call_count": 1,
+                    "inbound_call_count": 1
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "query-main-calls",
+            "argv": [
+              "sley",
+              "query",
+              "--json",
+              "--kind",
+              "calls",
+              "--module",
+              "agent.main",
+              "."
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.query.report.v0",
+            "assertions": [
+              {
+                "pointer": "/calls",
+                "value": [
+                  {
+                    "from": "agent.main.main",
+                    "from_module": "agent.main",
+                    "expr_id": "block:task:agent.main.main:stmt:0:expr",
+                    "source": "call pipe.collect_profile(\"api_key\", \"https://example.test/profile\")?",
+                    "callee": "pipe.collect_profile",
+                    "status": "resolved",
+                    "target": "agent.pipeline.collect_profile"
+                  },
+                  {
+                    "from": "agent.main.main",
+                    "from_module": "agent.main",
+                    "expr_id": "block:task:agent.main.main:stmt:1:expr",
+                    "source": "call pipe.compose_plan(\"deploy-plan\")?",
+                    "callee": "pipe.compose_plan",
+                    "status": "resolved",
+                    "target": "agent.pipeline.compose_plan"
+                  },
+                  {
+                    "from": "agent.main.main",
+                    "from_module": "agent.main",
+                    "expr_id": "block:task:agent.main.main:stmt:2:expr",
+                    "source": "call pipe.stage_release(\"staging\")?",
+                    "callee": "pipe.stage_release",
+                    "status": "resolved",
+                    "target": "agent.pipeline.stage_release"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "behavior-test",
+            "argv": [
+              "sley",
+              "test",
+              "--json",
+              "."
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.test.report.v1",
+            "assertions": [
+              {
+                "pointer": "/status",
+                "value": "passed"
+              },
+              {
+                "pointer": "/summary/passed_count",
+                "value": 1
+              },
+              {
+                "pointer": "/summary/failed_count",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "score_tags": [
+        "parse",
+        "compile",
+        "pass",
+        "semantic",
+        "structural",
+        "repository_patch"
+      ],
+      "minimality": {
+        "max_changed_files": 2,
+        "max_changed_lines": 4
+      },
+      "training_exclusion_id": "sha256:73d6ed0901a091668eff4e048272f515431b0a58ce3a01199f062e9b156e2ec6",
+      "candidate_digest": "sha256:eb01aa16fb64b3aed75bcc1340e0aaf8574287fb3879ebd7710f1ce72244df00",
+      "semantic_lineage_id": "sley-operational-agent-workflow-cross-module-rename-v1",
+      "semantic_lineage_digest": "sha256:ea91279dcce354e940aa1b2fbfb9860ed8f504c01bc4c7eb3548d82ff02c3e09"
+    }
+  ]
+}

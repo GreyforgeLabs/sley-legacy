@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.worker.event.v1",
+  "title": "Sley Persistent Worker Event v1",
+  "type": "object",
+  "required": [
+    "schema", "protocol", "sequence", "request_id", "operation",
+    "phase", "worker_state", "code", "details"
+  ],
+  "properties": {
+    "schema": { "const": "sley.worker.event.v1" },
+    "protocol": { "const": "sley.worker.v1" },
+    "sequence": { "type": "integer", "minimum": 0 },
+    "request_id": {
+      "oneOf": [
+        { "type": "string", "pattern": "^request:[A-Za-z0-9._-]+$" },
+        { "type": "null" }
+      ]
+    },
+    "operation": {
+      "enum": [
+        "session", "handshake", "load", "capabilities", "invoke", "cancel",
+        "reset", "drain", "health", "shutdown"
+      ]
+    },
+    "phase": {
+      "enum": [
+        "starting", "ready", "accepted", "running", "progress",
+        "completed", "failed", "cancelled", "timed_out", "draining", "stopped"
+      ]
+    },
+    "worker_state": {
+      "enum": [
+        "starting", "ready", "busy", "draining", "unhealthy",
+        "shutting_down", "stopped"
+      ]
+    },
+    "code": { "type": "string", "pattern": "^WORKER_[A-Z0-9_]+$" },
+    "details": { "type": "object" }
+  },
+  "additionalProperties": false
+}

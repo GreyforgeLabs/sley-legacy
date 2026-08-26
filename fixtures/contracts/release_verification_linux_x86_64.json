@@ -1,0 +1,16 @@
+{
+  "schema": "sley.release.verification.v1",
+  "status": "passed",
+  "release": "1.2.0",
+  "artifact_id": "sley-1.2.0-linux-x86_64",
+  "archive": "sley-1.2.0-linux-x86_64.tar.gz",
+  "source_commit": "1111111111111111111111111111111111111111",
+  "check_count": 2,
+  "passed_count": 2,
+  "failed_count": 0,
+  "checks": [
+    {"id": "ARCHIVE_DIGEST_MATCH", "status": "passed", "message": "archive digest matches checksum and provenance"},
+    {"id": "CLEAN_INSTALL_SMOKE", "status": "passed", "message": "unpacked CLI and toolchain doctor passed"}
+  ],
+  "issues": []
+}

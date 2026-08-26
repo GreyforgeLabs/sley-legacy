@@ -16,11 +16,24 @@ export task report_builder_registry -> List<Text> {
     "ast_program|ast_program_schema|ast_program_report_builder",
     "ast_node|ast_node_schema|ast_node_report_builder",
     "diagnostics|diagnostics_schema|diagnostics_report_builder",
+    "explain|explain_schema|explain_report_builder",
     "doctor|doctor_schema|doctor_report_builder",
     "lint|lint_schema|lint_report_builder",
     "query|query_schema|query_report_builder",
     "symbol_graph|symbol_graph_schema|symbol_graph_report_builder",
     "graph_diff|graph_diff_schema|graph_diff_report_builder",
+    "transaction_inspect|transaction_inspect_schema|transaction_inspect_report_builder",
+    "change_plan|change_plan_schema|change_plan_report_builder",
+    "change_preview|change_preview_schema|change_preview_report_builder",
+    "change_approval_request|change_approval_request_schema|change_approval_request_report_builder",
+    "change_grant|change_grant_schema|change_grant_report_builder",
+    "change_apply_authorization|change_apply_authorization_schema|change_apply_authorization_report_builder",
+    "change_revocation_record|change_revocation_record_schema|change_revocation_record_report_builder",
+    "change_recovery|change_recovery_schema|change_recovery_report_builder",
+    "change_apply|change_apply_schema|change_apply_report_builder",
+    "change_rollback|change_rollback_schema|change_rollback_report_builder",
+    "change_review|change_review_schema|change_review_report_builder",
+    "change_transaction_seal|change_transaction_seal_schema|change_transaction_seal_report_builder",
     "run|run_schema|run_report_builder",
     "verify|verify_schema|verify_report_builder",
     "graft_outcome|graft_outcome_schema|graft_outcome_report_builder",
@@ -37,6 +50,11 @@ export task report_builder_registry -> List<Text> {
     "docgen|docgen_schema|docgen_report_builder",
     "workbench|workbench_schema|workbench_report_builder",
     "sandbox|sandbox_schema|sandbox_report_builder",
+    "adapter|adapter_schema|adapter_report_builder",
+    "worker_response|worker_response_schema|worker_response_report_builder",
+    "test|test_schema|test_report_builder",
+    "review_packet|review_packet_schema|review_packet_report_builder",
+    "validation|validation_schema|validation_report_builder",
     "agent_bench|agent_bench_schema|agent_bench_report_builder",
     "zjx_tool|zjx_tool_schema|zjx_tool_report_builder",
     "self_hosting|self_hosting_status_schema|self_hosting_status_builder"
@@ -114,6 +132,34 @@ export task diagnostics_report_builder -> List<Text> {
     "schema|reports.diagnostics_schema|Text",
     "status|diagnostics.status|Text",
     "diagnostics|diagnostics.diagnostics|List<Json>"
+  ]
+}
+
+export task explain_schema -> Text {
+  return "sley.explain.report.v0"
+}
+
+export task explain_report_fields -> List<Text> {
+  return [
+    "schema",
+    "status",
+    "query",
+    "diagnostic_id",
+    "version_context",
+    "explanation",
+    "diagnostics"
+  ]
+}
+
+export task explain_report_builder -> List<Text> {
+  return [
+    "schema|reports.explain_schema|Text",
+    "status|explain.status|Text",
+    "query|explain.query|Json",
+    "diagnostic_id|explain.diagnostic_id|Text",
+    "version_context|explain.version_context|Json",
+    "explanation|explain.explanation|Optional<Json>",
+    "diagnostics|explain.diagnostics|List<Json>"
   ]
 }
 
@@ -743,6 +789,78 @@ export task sandbox_report_builder -> List<Text> {
   ]
 }
 
+export task adapter_schema -> Text {
+  return "sley.adapter.report.v0"
+}
+
+export task adapter_report_fields -> List<Text> {
+  return [
+    "schema",
+    "status",
+    "manifest",
+    "adapter",
+    "runtime",
+    "authority",
+    "replay",
+    "record",
+    "summary",
+    "isolation",
+    "issues"
+  ]
+}
+
+export task adapter_report_builder -> List<Text> {
+  return [
+    "schema|reports.adapter_schema|Text",
+    "status|adapter.status|Text",
+    "manifest|adapter.manifest|Json",
+    "adapter|adapter.adapter|Json",
+    "runtime|adapter.runtime|Json",
+    "authority|adapter.authority|Json",
+    "replay|adapter.replay|Json",
+    "record|adapter.record|Optional<Json>",
+    "summary|adapter.summary|Json",
+    "isolation|adapter.isolation|Json",
+    "issues|adapter.issues|List<Json>"
+  ]
+}
+
+export task worker_response_schema -> Text {
+  return "sley.worker.response.v1"
+}
+
+export task worker_response_report_fields -> List<Text> {
+  return [
+    "schema",
+    "protocol",
+    "request_id",
+    "operation",
+    "status",
+    "failure_class",
+    "retryable",
+    "worker",
+    "result",
+    "isolation",
+    "issues"
+  ]
+}
+
+export task worker_response_report_builder -> List<Text> {
+  return [
+    "schema|reports.worker_response_schema|Text",
+    "protocol|worker.protocol|Text",
+    "request_id|worker.request_id|Optional<Json>",
+    "operation|worker.operation|Text",
+    "status|worker.status|Text",
+    "failure_class|worker.failure_class|Optional<Json>",
+    "retryable|worker.retryable|Bool",
+    "worker|worker.worker|Json",
+    "result|worker.result|Optional<Json>",
+    "isolation|worker.isolation|Json",
+    "issues|worker.issues|List<Json>"
+  ]
+}
+
 export task shadow_schema -> Text {
   return "sley.shadow.report.v0"
 }
@@ -783,6 +901,682 @@ export task zjx_tool_schema -> Text {
 
 export task graph_diff_schema -> Text {
   return "sley.graph_diff.report.v0"
+}
+
+export task transaction_inspect_schema -> Text {
+  return "sley.transaction.inspect.v0"
+}
+
+export task transaction_inspect_report_fields -> List<Text> {
+  return [
+    "schema",
+    "status",
+    "transaction",
+    "inspection",
+    "mutations",
+    "next_actions",
+    "issues"
+  ]
+}
+
+export task transaction_inspect_report_builder -> List<Text> {
+  return [
+    "schema|reports.transaction_inspect_schema|Text",
+    "status|transaction_inspect.status|Text",
+    "transaction|transaction_inspect.transaction|Json",
+    "inspection|transaction_inspect.inspection|Json",
+    "mutations|transaction_inspect.mutations|Json",
+    "next_actions|transaction_inspect.next_actions|List<Json>",
+    "issues|transaction_inspect.issues|List<Json>"
+  ]
+}
+
+export task change_plan_schema -> Text {
+  return "sley.change.plan.v0"
+}
+
+export task change_plan_report_fields -> List<Text> {
+  return [
+    "schema",
+    "status",
+    "transaction",
+    "inspection",
+    "plan",
+    "mutations",
+    "next_actions",
+    "issues"
+  ]
+}
+
+export task change_plan_report_builder -> List<Text> {
+  return [
+    "schema|reports.change_plan_schema|Text",
+    "status|change_plan.status|Text",
+    "transaction|change_plan.transaction|Json",
+    "inspection|change_plan.inspection|Json",
+    "plan|change_plan.plan|Json",
+    "mutations|change_plan.mutations|Json",
+    "next_actions|change_plan.next_actions|List<Json>",
+    "issues|change_plan.issues|List<Json>"
+  ]
+}
+
+export task change_preview_schema -> Text {
+  return "sley.change.preview.v0"
+}
+
+export task change_preview_report_fields -> List<Text> {
+  return [
+    "schema",
+    "status",
+    "transaction",
+    "plan",
+    "candidate",
+    "diffs",
+    "diagnostics",
+    "focused_tests",
+    "validation",
+    "review_requirements",
+    "mutations",
+    "next_actions",
+    "issues"
+  ]
+}
+
+export task change_preview_report_builder -> List<Text> {
+  return [
+    "schema|reports.change_preview_schema|Text",
+    "status|change_preview.status|Text",
+    "transaction|change_preview.transaction|Json",
+    "plan|change_preview.plan|Json",
+    "candidate|change_preview.candidate|Json",
+    "diffs|change_preview.diffs|Json",
+    "diagnostics|change_preview.diagnostics|List<Json>",
+    "focused_tests|change_preview.focused_tests|List<Json>",
+    "validation|change_preview.validation|Json",
+    "review_requirements|change_preview.review_requirements|List<Json>",
+    "mutations|change_preview.mutations|Json",
+    "next_actions|change_preview.next_actions|List<Json>",
+    "issues|change_preview.issues|List<Json>"
+  ]
+}
+
+export task change_approval_request_schema -> Text {
+  return "sley.change.approval_request.v0"
+}
+
+export task change_approval_request_report_fields -> List<Text> {
+  return [
+    "schema",
+    "status",
+    "request_id",
+    "request_digest",
+    "transaction",
+    "preview_ref",
+    "candidate_ref",
+    "derived_scope",
+    "required_operator_fields",
+    "mutations",
+    "next_actions",
+    "issues"
+  ]
+}
+
+export task change_approval_request_report_builder -> List<Text> {
+  return [
+    "schema|reports.change_approval_request_schema|Text",
+    "status|change_approval_request.status|Text",
+    "request_id|change_approval_request.request_id|Text",
+    "request_digest|change_approval_request.request_digest|Text",
+    "transaction|change_approval_request.transaction|Json",
+    "preview_ref|change_approval_request.preview_ref|Json",
+    "candidate_ref|change_approval_request.candidate_ref|Json",
+    "derived_scope|change_approval_request.derived_scope|Json",
+    "required_operator_fields|change_approval_request.required_operator_fields|List<Text>",
+    "mutations|change_approval_request.mutations|Json",
+    "next_actions|change_approval_request.next_actions|List<Json>",
+    "issues|change_approval_request.issues|List<Json>"
+  ]
+}
+
+export task change_grant_schema -> Text {
+  return "sley.change.grant.v0"
+}
+
+export task change_grant_report_fields -> List<Text> {
+  return [
+    "schema",
+    "status",
+    "grant_id",
+    "grant_digest",
+    "transaction",
+    "approval_request_ref",
+    "issuer",
+    "principal",
+    "audience",
+    "repository",
+    "base",
+    "candidate",
+    "allowed",
+    "bounds",
+    "purpose",
+    "nonce",
+    "created_at",
+    "expires_at",
+    "replay",
+    "revocation",
+    "proofs",
+    "mutations",
+    "next_actions",
+    "issues"
+  ]
+}
+
+export task change_grant_report_builder -> List<Text> {
+  return [
+    "schema|reports.change_grant_schema|Text",
+    "status|change_grant.status|Text",
+    "grant_id|change_grant.grant_id|Text",
+    "grant_digest|change_grant.grant_digest|Text",
+    "transaction|change_grant.transaction|Json",
+    "approval_request_ref|change_grant.approval_request_ref|Json",
+    "issuer|change_grant.issuer|Json",
+    "principal|change_grant.principal|Json",
+    "audience|change_grant.audience|Json",
+    "repository|change_grant.repository|Json",
+    "base|change_grant.base|Json",
+    "candidate|change_grant.candidate|Json",
+    "allowed|change_grant.allowed|Json",
+    "bounds|change_grant.bounds|Json",
+    "purpose|change_grant.purpose|Text",
+    "nonce|change_grant.nonce|Text",
+    "created_at|change_grant.created_at|Text",
+    "expires_at|change_grant.expires_at|Text",
+    "replay|change_grant.replay|Json",
+    "revocation|change_grant.revocation|Json",
+    "proofs|change_grant.proofs|List<Json>",
+    "mutations|change_grant.mutations|Json",
+    "next_actions|change_grant.next_actions|List<Json>",
+    "issues|change_grant.issues|List<Json>"
+  ]
+}
+
+export task change_apply_authorization_schema -> Text {
+  return "sley.change.apply_authorization.v0"
+}
+
+export task change_apply_authorization_report_fields -> List<Text> {
+  return [
+    "schema",
+    "status",
+    "authorization_id",
+    "authorization_digest",
+    "transaction",
+    "grant_ref",
+    "principal",
+    "audience",
+    "repository",
+    "base",
+    "candidate",
+    "source_scope",
+    "internal_scopes",
+    "atomicity",
+    "verification",
+    "metadata_policy",
+    "mutation_authority",
+    "mutations",
+    "next_actions",
+    "issues"
+  ]
+}
+
+export task change_apply_authorization_report_builder -> List<Text> {
+  return [
+    "schema|reports.change_apply_authorization_schema|Text",
+    "status|change_apply_authorization.status|Text",
+    "authorization_id|change_apply_authorization.authorization_id|Text",
+    "authorization_digest|change_apply_authorization.authorization_digest|Text",
+    "transaction|change_apply_authorization.transaction|Json",
+    "grant_ref|change_apply_authorization.grant_ref|Json",
+    "principal|change_apply_authorization.principal|Json",
+    "audience|change_apply_authorization.audience|Json",
+    "repository|change_apply_authorization.repository|Json",
+    "base|change_apply_authorization.base|Json",
+    "candidate|change_apply_authorization.candidate|Json",
+    "source_scope|change_apply_authorization.source_scope|Json",
+    "internal_scopes|change_apply_authorization.internal_scopes|List<Json>",
+    "atomicity|change_apply_authorization.atomicity|Json",
+    "verification|change_apply_authorization.verification|Json",
+    "metadata_policy|change_apply_authorization.metadata_policy|Json",
+    "mutation_authority|change_apply_authorization.mutation_authority|Json",
+    "mutations|change_apply_authorization.mutations|Json",
+    "next_actions|change_apply_authorization.next_actions|List<Json>",
+    "issues|change_apply_authorization.issues|List<Json>"
+  ]
+}
+
+export task change_revocation_record_schema -> Text {
+  return "sley.change.revocation_record.v0"
+}
+
+export task change_revocation_record_report_fields -> List<Text> {
+  return [
+    "schema",
+    "status",
+    "record_id",
+    "record_digest",
+    "authorization_ref",
+    "grant_ref",
+    "state",
+    "issuer",
+    "reason",
+    "created_at",
+    "expires_at",
+    "ledger_path",
+    "mutations",
+    "internal_mutations",
+    "issues"
+  ]
+}
+
+export task change_revocation_record_report_builder -> List<Text> {
+  return [
+    "schema|reports.change_revocation_record_schema|Text",
+    "status|change_revocation_record.status|Text",
+    "record_id|change_revocation_record.record_id|Text",
+    "record_digest|change_revocation_record.record_digest|Text",
+    "authorization_ref|change_revocation_record.authorization_ref|Json",
+    "grant_ref|change_revocation_record.grant_ref|Json",
+    "state|change_revocation_record.state|Text",
+    "issuer|change_revocation_record.issuer|Json",
+    "reason|change_revocation_record.reason|Text",
+    "created_at|change_revocation_record.created_at|Text",
+    "expires_at|change_revocation_record.expires_at|Text",
+    "ledger_path|change_revocation_record.ledger_path|Text",
+    "mutations|change_revocation_record.mutations|Json",
+    "internal_mutations|change_revocation_record.internal_mutations|Json",
+    "issues|change_revocation_record.issues|List<Json>"
+  ]
+}
+
+export task change_recovery_schema -> Text {
+  return "sley.change.recovery.v0"
+}
+
+export task change_recovery_report_fields -> List<Text> {
+  return [
+    "schema",
+    "status",
+    "record_id",
+    "record_digest",
+    "phase",
+    "transaction",
+    "authorization_ref",
+    "grant_ref",
+    "repository",
+    "base",
+    "candidate",
+    "paths",
+    "atomicity",
+    "replay",
+    "revocation_ref",
+    "metadata_policy",
+    "verification",
+    "rollback",
+    "mutations",
+    "internal_mutations",
+    "events",
+    "issues"
+  ]
+}
+
+export task change_recovery_report_builder -> List<Text> {
+  return [
+    "schema|reports.change_recovery_schema|Text",
+    "status|change_recovery.status|Text",
+    "record_id|change_recovery.record_id|Text",
+    "record_digest|change_recovery.record_digest|Text",
+    "phase|change_recovery.phase|Text",
+    "transaction|change_recovery.transaction|Json",
+    "authorization_ref|change_recovery.authorization_ref|Json",
+    "grant_ref|change_recovery.grant_ref|Json",
+    "repository|change_recovery.repository|Json",
+    "base|change_recovery.base|Json",
+    "candidate|change_recovery.candidate|Json",
+    "paths|change_recovery.paths|Json",
+    "atomicity|change_recovery.atomicity|Json",
+    "replay|change_recovery.replay|Json",
+    "revocation_ref|change_recovery.revocation_ref|Json",
+    "metadata_policy|change_recovery.metadata_policy|Json",
+    "verification|change_recovery.verification|Json",
+    "rollback|change_recovery.rollback|Json",
+    "mutations|change_recovery.mutations|Json",
+    "internal_mutations|change_recovery.internal_mutations|Json",
+    "events|change_recovery.events|List<Json>",
+    "issues|change_recovery.issues|List<Json>"
+  ]
+}
+
+export task change_apply_schema -> Text {
+  return "sley.change.apply.v0"
+}
+
+export task change_apply_report_fields -> List<Text> {
+  return [
+    "schema",
+    "status",
+    "transaction",
+    "authorization_ref",
+    "grant_ref",
+    "candidate",
+    "atomicity",
+    "recovery_ref",
+    "replay",
+    "revocation",
+    "verification",
+    "rollback",
+    "mutations",
+    "internal_mutations",
+    "next_actions",
+    "issues"
+  ]
+}
+
+export task change_apply_report_builder -> List<Text> {
+  return [
+    "schema|reports.change_apply_schema|Text",
+    "status|change_apply.status|Text",
+    "transaction|change_apply.transaction|Json",
+    "authorization_ref|change_apply.authorization_ref|Json",
+    "grant_ref|change_apply.grant_ref|Json",
+    "candidate|change_apply.candidate|Json",
+    "atomicity|change_apply.atomicity|Json",
+    "recovery_ref|change_apply.recovery_ref|Json",
+    "replay|change_apply.replay|Json",
+    "revocation|change_apply.revocation|Json",
+    "verification|change_apply.verification|Json",
+    "rollback|change_apply.rollback|Json",
+    "mutations|change_apply.mutations|Json",
+    "internal_mutations|change_apply.internal_mutations|Json",
+    "next_actions|change_apply.next_actions|List<Json>",
+    "issues|change_apply.issues|List<Json>"
+  ]
+}
+
+export task change_rollback_schema -> Text {
+  return "sley.change.rollback.v0"
+}
+
+export task change_rollback_report_fields -> List<Text> {
+  return [
+    "schema",
+    "status",
+    "transaction",
+    "apply_ref",
+    "authorization_ref",
+    "grant_ref",
+    "atomicity",
+    "recovery_ref",
+    "verification",
+    "mutations",
+    "internal_mutations",
+    "next_actions",
+    "issues"
+  ]
+}
+
+export task change_rollback_report_builder -> List<Text> {
+  return [
+    "schema|reports.change_rollback_schema|Text",
+    "status|change_rollback.status|Text",
+    "transaction|change_rollback.transaction|Json",
+    "apply_ref|change_rollback.apply_ref|Json",
+    "authorization_ref|change_rollback.authorization_ref|Json",
+    "grant_ref|change_rollback.grant_ref|Json",
+    "atomicity|change_rollback.atomicity|Json",
+    "recovery_ref|change_rollback.recovery_ref|Json",
+    "verification|change_rollback.verification|Json",
+    "mutations|change_rollback.mutations|Json",
+    "internal_mutations|change_rollback.internal_mutations|Json",
+    "next_actions|change_rollback.next_actions|List<Json>",
+    "issues|change_rollback.issues|List<Json>"
+  ]
+}
+
+export task change_review_schema -> Text {
+  return "sley.change.review.v0"
+}
+
+export task change_review_report_fields -> List<Text> {
+  return [
+    "schema",
+    "status",
+    "review_id",
+    "review_digest",
+    "transaction",
+    "terminal_outcome",
+    "repository",
+    "base",
+    "final",
+    "artifact_refs",
+    "identity_chain",
+    "validation_summary",
+    "test_summary",
+    "trace_summary",
+    "authority_summary",
+    "adapter_summary",
+    "mutation_summary",
+    "no_mutation_boundary",
+    "outputs",
+    "next_actions",
+    "issues"
+  ]
+}
+
+export task change_review_report_builder -> List<Text> {
+  return [
+    "schema|reports.change_review_schema|Text",
+    "status|change_review.status|Text",
+    "review_id|change_review.review_id|Text",
+    "review_digest|change_review.review_digest|Text",
+    "transaction|change_review.transaction|Json",
+    "terminal_outcome|change_review.terminal_outcome|Text",
+    "repository|change_review.repository|Json",
+    "base|change_review.base|Json",
+    "final|change_review.final|Json",
+    "artifact_refs|change_review.artifact_refs|List<Json>",
+    "identity_chain|change_review.identity_chain|List<Json>",
+    "validation_summary|change_review.validation_summary|Json",
+    "test_summary|change_review.test_summary|Json",
+    "trace_summary|change_review.trace_summary|Json",
+    "authority_summary|change_review.authority_summary|Json",
+    "adapter_summary|change_review.adapter_summary|List<Json>",
+    "mutation_summary|change_review.mutation_summary|Json",
+    "no_mutation_boundary|change_review.no_mutation_boundary|Json",
+    "outputs|change_review.outputs|Json",
+    "next_actions|change_review.next_actions|List<Json>",
+    "issues|change_review.issues|List<Json>"
+  ]
+}
+
+export task change_transaction_seal_schema -> Text {
+  return "sley.change.transaction_seal.v0"
+}
+
+export task change_transaction_seal_report_fields -> List<Text> {
+  return [
+    "schema",
+    "status",
+    "seal_id",
+    "seal_digest",
+    "transaction_id",
+    "terminal_outcome",
+    "source_digest",
+    "graph_digest",
+    "trace_seal_ref",
+    "apply_ref",
+    "rollback_ref",
+    "review_ref",
+    "packet_digest",
+    "bundle_digest",
+    "zjx_digest",
+    "created_at",
+    "issues"
+  ]
+}
+
+export task change_transaction_seal_report_builder -> List<Text> {
+  return [
+    "schema|reports.change_transaction_seal_schema|Text",
+    "status|change_transaction_seal.status|Text",
+    "seal_id|change_transaction_seal.seal_id|Text",
+    "seal_digest|change_transaction_seal.seal_digest|Text",
+    "transaction_id|change_transaction_seal.transaction_id|Text",
+    "terminal_outcome|change_transaction_seal.terminal_outcome|Text",
+    "source_digest|change_transaction_seal.source_digest|Text",
+    "graph_digest|change_transaction_seal.graph_digest|Text",
+    "trace_seal_ref|change_transaction_seal.trace_seal_ref|Json",
+    "apply_ref|change_transaction_seal.apply_ref|Json",
+    "rollback_ref|change_transaction_seal.rollback_ref|Json",
+    "review_ref|change_transaction_seal.review_ref|Json",
+    "packet_digest|change_transaction_seal.packet_digest|Text",
+    "bundle_digest|change_transaction_seal.bundle_digest|Text",
+    "zjx_digest|change_transaction_seal.zjx_digest|Text",
+    "created_at|change_transaction_seal.created_at|Text",
+    "issues|change_transaction_seal.issues|List<Json>"
+  ]
+}
+
+export task test_schema -> Text {
+  return "sley.test.report.v1"
+}
+
+export task test_report_fields -> List<Text> {
+  return [
+    "schema",
+    "status",
+    "report_id",
+    "report_digest",
+    "suite",
+    "source",
+    "manifests",
+    "authority",
+    "bounds",
+    "discovery",
+    "selection",
+    "summary",
+    "cases",
+    "coverage",
+    "issues"
+  ]
+}
+
+export task test_report_builder -> List<Text> {
+  return [
+    "schema|reports.test_schema|Text",
+    "status|test.status|Text",
+    "report_id|test.report_id|Text",
+    "report_digest|test.report_digest|Text",
+    "suite|test.suite|Json",
+    "source|test.source|Json",
+    "manifests|test.manifests|List<Json>",
+    "authority|test.authority|Json",
+    "bounds|test.bounds|Json",
+    "discovery|test.discovery|Json",
+    "selection|test.selection|Json",
+    "summary|test.summary|Json",
+    "cases|test.cases|List<Json>",
+    "coverage|test.coverage|Json",
+    "issues|test.issues|List<Json>"
+  ]
+}
+
+export task review_packet_schema -> Text {
+  return "sley.review.packet.v1"
+}
+
+export task validation_schema -> Text {
+  return "sley.validation.report.v1"
+}
+
+export task validation_report_fields -> List<Text> {
+  return [
+    "schema",
+    "status",
+    "profile",
+    "target",
+    "authority",
+    "detected_changes",
+    "detected_subsystems",
+    "selected_subsystems",
+    "selected_checks",
+    "skipped_checks",
+    "selection_reasons",
+    "release_gate",
+    "cache",
+    "wall_time_ms",
+    "outcome",
+    "steps",
+    "issues"
+  ]
+}
+
+export task validation_report_builder -> List<Text> {
+  return [
+    "schema|reports.validation_schema|Text",
+    "status|validation.status|Text",
+    "profile|validation.profile|Text",
+    "target|validation.target|Text",
+    "authority|validation.authority|Json",
+    "detected_changes|validation.detected_changes|List<Json>",
+    "detected_subsystems|validation.detected_subsystems|List<Text>",
+    "selected_subsystems|validation.selected_subsystems|List<Text>",
+    "selected_checks|validation.selected_checks|List<Text>",
+    "skipped_checks|validation.skipped_checks|List<Json>",
+    "selection_reasons|validation.selection_reasons|List<Json>",
+    "release_gate|validation.release_gate|Json",
+    "cache|validation.cache|Json",
+    "wall_time_ms|validation.wall_time_ms|Int",
+    "outcome|validation.outcome|Text",
+    "steps|validation.steps|List<Json>",
+    "issues|validation.issues|List<Json>"
+  ]
+}
+
+export task review_packet_report_fields -> List<Text> {
+  return [
+    "schema",
+    "status",
+    "packet_id",
+    "packet_digest",
+    "transaction_id",
+    "terminal_outcome",
+    "final_source_digest",
+    "review_ref",
+    "seal_ref",
+    "test_ref",
+    "binding",
+    "authority",
+    "issues"
+  ]
+}
+
+export task review_packet_report_builder -> List<Text> {
+  return [
+    "schema|reports.review_packet_schema|Text",
+    "status|review_packet.status|Text",
+    "packet_id|review_packet.packet_id|Text",
+    "packet_digest|review_packet.packet_digest|Text",
+    "transaction_id|review_packet.transaction_id|Text",
+    "terminal_outcome|review_packet.terminal_outcome|Text",
+    "final_source_digest|review_packet.final_source_digest|Text",
+    "review_ref|review_packet.review_ref|Json",
+    "seal_ref|review_packet.seal_ref|Json",
+    "test_ref|review_packet.test_ref|Json",
+    "binding|review_packet.binding|Json",
+    "authority|review_packet.authority|Json",
+    "issues|review_packet.issues|List<Json>"
+  ]
 }
 
 export task graph_diff_report_fields -> List<Text> {

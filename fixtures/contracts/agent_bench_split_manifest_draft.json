@@ -1,0 +1,42 @@
+{
+  "schema": "sley.agent_bench.split_manifest.v0",
+  "suite_id": "sleybench-v0",
+  "version": "0.1",
+  "state": "draft",
+  "split_strategy": "semantic_lineage",
+  "public": {
+    "suite_id": "sleybench-v0-public",
+    "case_manifest_path": "baseline-v0/public/case-manifest.json",
+    "case_manifest_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "exclusion_ledger_path": "baseline-v0/public/exclusions.json",
+    "exclusion_ledger_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+    "case_count": 96,
+    "family_counts": {
+      "syntax_compilation": 16,
+      "semantic_implementation": 16,
+      "diagnosis_repair": 16,
+      "translation_preservation": 16,
+      "structural_tool_use": 16,
+      "repository_patch_integration": 16
+    }
+  },
+  "private": {
+    "suite_id": "sleybench-v0-private",
+    "case_manifest_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+    "exclusion_ledger_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+    "case_count": 24,
+    "family_counts": {
+      "syntax_compilation": 4,
+      "semantic_implementation": 4,
+      "diagnosis_repair": 4,
+      "translation_preservation": 4,
+      "structural_tool_use": 4,
+      "repository_patch_integration": 4
+    },
+    "material_in_public_git": false,
+    "custody_ref": "operator-controlled:sleybench-v0"
+  },
+  "approval": {
+    "status": "pending"
+  }
+}

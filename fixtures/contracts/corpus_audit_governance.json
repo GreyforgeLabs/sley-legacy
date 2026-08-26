@@ -1,0 +1,112 @@
+{
+  "schema": "sley.corpus.audit_report.v0",
+  "command": "audit",
+  "status": "passed",
+  "subject": "fixtures/corpus_governance/manifest.json",
+  "record_count": 1,
+  "summary": {
+    "check_count": 19,
+    "passed_count": 19,
+    "failed_count": 0,
+    "issue_count": 0
+  },
+  "checks": [
+    {
+      "id": "manifest_schema",
+      "status": "passed",
+      "message": "manifest satisfies the strict corpus manifest contract"
+    },
+    {
+      "id": "manifest_exclusion_ledger",
+      "status": "passed",
+      "message": "manifest exclusion ledger exists and matches its digest pin"
+    },
+    {
+      "id": "record-0.manifest_pin",
+      "status": "passed",
+      "message": "record file exists below the manifest root and matches its digest pin"
+    },
+    {
+      "id": "record-0.identity_pin",
+      "status": "passed",
+      "message": "record identity, partition, and lineage match the manifest"
+    },
+    {
+      "id": "record-0.record_schema",
+      "status": "passed",
+      "message": "record satisfies the strict corpus record contract"
+    },
+    {
+      "id": "record-0.exclusion_ledger_schema",
+      "status": "passed",
+      "message": "exclusion ledger satisfies its strict contract"
+    },
+    {
+      "id": "record-0.lifecycle_partition",
+      "status": "passed",
+      "message": "record lifecycle, partition, and visibility are eligible for admission"
+    },
+    {
+      "id": "record-0.benchmark_split",
+      "status": "passed",
+      "message": "consumable partitions require a pinned benchmark split"
+    },
+    {
+      "id": "record-0.exclusion_ledger_pin",
+      "status": "passed",
+      "message": "record pins the exact exclusion ledger"
+    },
+    {
+      "id": "record-0.exclusion_coverage",
+      "status": "passed",
+      "message": "record names every exclusion entry exactly once"
+    },
+    {
+      "id": "record-0.primary_source_digest",
+      "status": "passed",
+      "message": "primary source exists below the record root and matches its exact digest"
+    },
+    {
+      "id": "record-0.provenance_license_paths",
+      "status": "passed",
+      "message": "provenance source and pinned license evidence resolve below the record root"
+    },
+    {
+      "id": "record-0.sidecar_digests",
+      "status": "passed",
+      "message": "all sidecars are unique, bounded below the record root, and digest-pinned"
+    },
+    {
+      "id": "record-0.admission_evidence",
+      "status": "passed",
+      "message": "all admission gates and underlying license, privacy, and verification evidence pass"
+    },
+    {
+      "id": "record-0.contamination",
+      "status": "passed",
+      "message": "exact, canonical, structural, and semantic lineage digests are clear"
+    },
+    {
+      "id": "unique_record_ids",
+      "status": "passed",
+      "message": "manifest record IDs are unique"
+    },
+    {
+      "id": "manifest_counts",
+      "status": "passed",
+      "message": "partition and semantic lineage counts match loaded records"
+    },
+    {
+      "id": "split_lineage_isolation",
+      "status": "passed",
+      "message": "training and development records do not overlap evaluation records"
+    },
+    {
+      "id": "immutable_release_state",
+      "status": "passed",
+      "message": "immutable manifests contain only admitted records"
+    }
+  ],
+  "issues": [],
+  "manifest_digest": "sha256:5c3692282c09eeeb7c154f6cd7bdd4b42372d9416cc8f1c388316f585daf3385"
+}

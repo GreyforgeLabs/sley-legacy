@@ -134,6 +134,10 @@ export task identifier_pattern -> Text {
   return "^[A-Za-z_][A-Za-z0-9_]*$"
 }
 
+export task multiline_record_literal_open_pattern -> Text {
+  return "^[A-Za-z_][A-Za-z0-9_]*[[:space:]]+[{][[:space:]]*$"
+}
+
 export task int_literal_kind -> Text {
   return "IntLiteral"
 }

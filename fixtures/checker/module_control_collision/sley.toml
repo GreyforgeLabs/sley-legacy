@@ -1,0 +1,4 @@
+[project]
+name = "module-control-collision"
+root = "src"
+entry = "same"

@@ -1,0 +1,97 @@
+module loom.adapter
+
+export task manifest_schema -> Text {
+  return "sley.adapter.manifest.v0"
+}
+
+export task replay_schema -> Text {
+  return "sley.adapter.replay.v0"
+}
+
+export task report_schema -> Text {
+  return "sley.adapter.report.v0"
+}
+
+export task lifecycle_states -> List<Text> {
+  return [
+    "opened",
+    "manifest_validated",
+    "authority_bound",
+    "replaying",
+    "completed",
+    "failed",
+    "blocked",
+    "cancelled"
+  ]
+}
+
+export task replay_event_phases -> List<Text> {
+  return [
+    "opened",
+    "manifest_validated",
+    "authority_bound",
+    "seed_bound",
+    "runtime_started",
+    "adapter_called",
+    "adapter_returned",
+    "runtime_finished",
+    "replay_verified",
+    "cancellation_observed"
+  ]
+}
+
+export task failure_codes -> List<Text> {
+  return [
+    "ADAPTER_MANIFEST_INVALID",
+    "ADAPTER_AUTHORITY_DENIED",
+    "ADAPTER_SCOPE_DENIED",
+    "ADAPTER_SEED_NOT_FOUND",
+    "ADAPTER_REPLAY_MISMATCH",
+    "ADAPTER_BUDGET_EXCEEDED",
+    "ADAPTER_CANCELLED",
+    "ADAPTER_LIVE_PROVIDER_DENIED"
+  ]
+}
+
+export task deterministic_seed_families -> List<Text> {
+  return [
+    "files",
+    "db_tables",
+    "secrets",
+    "http_text",
+    "shell_outputs",
+    "model_outputs",
+    "deploy_results",
+    "spend_results"
+  ]
+}
+
+export task supported_effects -> List<Text> {
+  return [
+    "FileRead",
+    "DatabaseRead",
+    "DatabaseWrite",
+    "SecretRead",
+    "Network",
+    "Shell",
+    "ModelCall",
+    "Deploy",
+    "Spend"
+  ]
+}
+
+export task authority_mode -> Text {
+  return "local_replay_only"
+}
+
+export task replay_policy -> Text {
+  return "deterministic_record_required"
+}
+
+export task adapter_kind -> Text {
+  return "deterministic_seed"
+}
+
+export task live_execution -> Bool {
+  return false
+}

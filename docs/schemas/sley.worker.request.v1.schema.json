@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.worker.request.v1",
+  "title": "Sley Persistent Worker Request v1",
+  "type": "object",
+  "required": [
+    "schema", "protocol", "request_id", "operation", "nonce",
+    "bindings", "budgets", "payload"
+  ],
+  "properties": {
+    "schema": { "const": "sley.worker.request.v1" },
+    "protocol": { "const": "sley.worker.v1" },
+    "request_id": { "type": "string", "pattern": "^request:[A-Za-z0-9._-]+$" },
+    "operation": {
+      "enum": [
+        "handshake", "load", "capabilities", "invoke", "cancel",
+        "reset", "drain", "health", "shutdown"
+      ]
+    },
+    "nonce": { "type": "string", "pattern": "^nonce:[A-Za-z0-9._-]+$" },
+    "bindings": { "$ref": "#/$defs/bindings" },
+    "budgets": { "$ref": "#/$defs/budgets" },
+    "payload": { "$ref": "#/$defs/payload" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "bindings": {
+      "type": "object",
+      "required": [
+        "worker_digest", "runtime_digest", "package_digest", "source_digest",
+        "contract_versions", "entry_point", "authority"
+      ],
+      "properties": {
+        "worker_digest": { "$ref": "#/$defs/digest" },
+        "runtime_digest": { "$ref": "#/$defs/digest" },
+        "package_digest": { "$ref": "#/$defs/digest" },
+        "source_digest": { "$ref": "#/$defs/digest" },
+        "contract_versions": {
+          "type": "array",
+          "minItems": 7,
+          "maxItems": 7,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "sley.adapter.manifest.v0",
+              "sley.adapter.replay.v0",
+              "sley.adapter.report.v0",
+              "sley.worker.request.v1",
+              "sley.worker.response.v1",
+              "sley.worker.event.v1",
+              "sley.worker.session.v1"
+            ]
+          }
+        },
+        "entry_point": { "type": "string", "minLength": 1 },
+        "authority": {
+          "type": "object",
+          "required": ["mode", "grant_digest", "idempotency_key"],
+          "properties": {
+            "mode": { "enum": ["absent", "local_replay_only"] },
+            "grant_digest": {
+              "oneOf": [
+                { "$ref": "#/$defs/digest" },
+                { "type": "null" }
+              ]
+            },
+            "idempotency_key": {
+              "oneOf": [
+                { "type": "string", "pattern": "^idempotency:[A-Za-z0-9._-]+$" },
+                { "type": "null" }
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "budgets": {
+      "type": "object",
+      "required": [
+        "wall_clock_ms", "max_steps", "max_call_depth",
+        "max_collection_items", "max_output_bytes", "max_memory_bytes"
+      ],
+      "properties": {
+        "wall_clock_ms": { "type": "integer", "minimum": 1, "maximum": 300000 },
+        "max_steps": { "type": "integer", "minimum": 1, "maximum": 10000000 },
+        "max_call_depth": { "type": "integer", "minimum": 1, "maximum": 1024 },
+        "max_collection_items": { "type": "integer", "minimum": 1, "maximum": 10000000 },
+        "max_output_bytes": { "type": "integer", "minimum": 256, "maximum": 16777216 },
+        "max_memory_bytes": { "type": "integer", "minimum": 67108864, "maximum": 17179869184 }
+      },
+      "additionalProperties": false
+    },
+    "payload": {
+      "type": "object",
+      "properties": {
+        "manifest": { "type": "string", "minLength": 1 },
+        "record": {
+          "oneOf": [
+            { "type": "string", "minLength": 1 },
+            { "type": "null" }
+          ]
+        },
+        "target_request_id": {
+          "oneOf": [
+            { "type": "string", "pattern": "^request:[A-Za-z0-9._-]+$" },
+            { "type": "null" }
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

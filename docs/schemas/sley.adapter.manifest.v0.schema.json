@@ -1,0 +1,217 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.adapter.manifest.v0",
+  "title": "Sley Local Adapter Manifest v0",
+  "type": "object",
+  "required": [
+    "schema", "manifest_id", "manifest_digest", "target", "adapter",
+    "runtime", "authority", "capabilities", "seeds", "bounds", "replay"
+  ],
+  "properties": {
+    "schema": { "const": "sley.adapter.manifest.v0" },
+    "manifest_id": { "type": "string", "pattern": "^adapter-manifest:[A-Za-z0-9._-]+$" },
+    "manifest_digest": { "$ref": "#/$defs/digest" },
+    "target": { "type": "string", "minLength": 1 },
+    "adapter": { "$ref": "#/$defs/adapter" },
+    "runtime": { "$ref": "#/$defs/runtime" },
+    "authority": { "$ref": "#/$defs/authority" },
+    "capabilities": {
+      "type": "array",
+      "maxItems": 32,
+      "items": { "$ref": "#/$defs/capability" }
+    },
+    "seeds": { "$ref": "#/$defs/seeds" },
+    "bounds": { "$ref": "#/$defs/bounds" },
+    "replay": { "$ref": "#/$defs/replay" },
+    "cancellation": { "$ref": "#/$defs/cancellation" }
+  },
+  "$defs": {
+    "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "adapter": {
+      "type": "object",
+      "required": [
+        "id", "version", "digest", "kind", "live_execution",
+        "supported_effects", "supported_operations", "determinism",
+        "replay_support", "timeout_behavior", "concurrency",
+        "redaction_policy", "credential_requirements", "compatibility_range"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^local\\.[A-Za-z0-9._-]+$" },
+        "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+        "digest": { "$ref": "#/$defs/digest" },
+        "kind": { "const": "deterministic_seed" },
+        "live_execution": { "type": "boolean" },
+        "supported_effects": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "FileRead", "DatabaseRead", "DatabaseWrite", "SecretRead",
+              "Network", "Shell", "ModelCall", "Deploy", "Spend"
+            ]
+          }
+        },
+        "supported_operations": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "determinism": { "const": "deterministic" },
+        "replay_support": { "const": "required" },
+        "timeout_behavior": { "const": "host_bounded" },
+        "concurrency": { "const": "serial" },
+        "redaction_policy": { "const": "digest_only" },
+        "credential_requirements": { "const": "none" },
+        "compatibility_range": { "const": ">=sley-1.2" }
+      },
+      "additionalProperties": false
+    },
+    "runtime": {
+      "type": "object",
+      "required": ["id", "version", "digest"],
+      "properties": {
+        "id": { "const": "sley.loom.seeded_runtime" },
+        "version": { "const": "0.1.0" },
+        "digest": { "$ref": "#/$defs/digest" }
+      },
+      "additionalProperties": false
+    },
+    "authority": {
+      "type": "object",
+      "required": ["mode", "assertion", "external_provider_calls", "mutation_authority"],
+      "properties": {
+        "mode": { "const": "local_replay_only" },
+        "assertion": { "const": "no_external_authority" },
+        "external_provider_calls": { "type": "boolean" },
+        "mutation_authority": {
+          "type": "object",
+          "required": [
+            "repository", "index", "trace", "external", "provider",
+            "deploy", "spend", "ephemeral_runtime_state"
+          ],
+          "properties": {
+            "repository": { "type": "boolean" },
+            "index": { "type": "boolean" },
+            "trace": { "type": "boolean" },
+            "external": { "type": "boolean" },
+            "provider": { "type": "boolean" },
+            "deploy": { "type": "boolean" },
+            "spend": { "type": "boolean" },
+            "ephemeral_runtime_state": { "type": "boolean" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "capability": {
+      "type": "object",
+      "required": ["effect", "operation", "scope"],
+      "properties": {
+        "effect": {
+          "enum": [
+            "FileRead", "DatabaseRead", "DatabaseWrite", "SecretRead",
+            "Network", "Shell", "ModelCall", "Deploy", "Spend"
+          ]
+        },
+        "operation": { "type": "string", "minLength": 1 },
+        "scope": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "seeds": {
+      "type": "object",
+      "required": [
+        "files", "db_tables", "secrets", "http_text", "shell_outputs",
+        "model_outputs", "deploy_results", "spend_results"
+      ],
+      "properties": {
+        "files": { "type": "array", "items": { "$ref": "#/$defs/fileSeed" } },
+        "db_tables": { "type": "array", "items": { "$ref": "#/$defs/dbTable" } },
+        "secrets": { "type": "array", "items": { "$ref": "#/$defs/nameText" } },
+        "http_text": { "type": "array", "items": { "$ref": "#/$defs/urlText" } },
+        "shell_outputs": { "type": "array", "items": { "$ref": "#/$defs/commandText" } },
+        "model_outputs": { "type": "array", "items": { "$ref": "#/$defs/promptText" } },
+        "deploy_results": { "type": "array", "items": { "$ref": "#/$defs/targetText" } },
+        "spend_results": { "type": "array", "items": { "$ref": "#/$defs/requestText" } }
+      },
+      "additionalProperties": false
+    },
+    "fileSeed": {
+      "type": "object",
+      "required": ["path", "text"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "text": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "dbTable": {
+      "type": "object",
+      "required": ["table", "rows"],
+      "properties": {
+        "table": { "type": "string", "minLength": 1 },
+        "rows": { "type": "array", "items": { "type": "object" } }
+      },
+      "additionalProperties": false
+    },
+    "nameText": { "$ref": "#/$defs/textSeed", "unevaluatedProperties": false },
+    "urlText": { "$ref": "#/$defs/textSeed", "unevaluatedProperties": false },
+    "commandText": { "$ref": "#/$defs/textSeed", "unevaluatedProperties": false },
+    "promptText": { "$ref": "#/$defs/textSeed", "unevaluatedProperties": false },
+    "targetText": { "$ref": "#/$defs/textSeed", "unevaluatedProperties": false },
+    "requestText": { "$ref": "#/$defs/textSeed", "unevaluatedProperties": false },
+    "textSeed": {
+      "type": "object",
+      "minProperties": 2,
+      "maxProperties": 2,
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "url": { "type": "string", "minLength": 1 },
+        "command": { "type": "string", "minLength": 1 },
+        "prompt": { "type": "string", "minLength": 1 },
+        "target": { "type": "string", "minLength": 1 },
+        "request": { "type": "string", "minLength": 1 },
+        "text": { "type": "string" }
+      },
+      "required": ["text"]
+    },
+    "bounds": {
+      "type": "object",
+      "required": [
+        "max_steps", "max_calls", "max_call_depth", "max_input_bytes",
+        "max_output_bytes", "max_wall_ms"
+      ],
+      "properties": {
+        "max_steps": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+        "max_calls": { "type": "integer", "minimum": 1, "maximum": 100000 },
+        "max_call_depth": { "type": "integer", "minimum": 1, "maximum": 128 },
+        "max_input_bytes": { "type": "integer", "minimum": 1, "maximum": 5242880 },
+        "max_output_bytes": { "type": "integer", "minimum": 1, "maximum": 5242880 },
+        "max_wall_ms": { "type": "integer", "minimum": 1, "maximum": 120000 }
+      },
+      "additionalProperties": false
+    },
+    "replay": {
+      "type": "object",
+      "required": ["policy", "replay_key", "record_digest"],
+      "properties": {
+        "policy": { "const": "deterministic_record_required" },
+        "replay_key": { "type": "string", "pattern": "^replay:[A-Za-z0-9._-]+$" },
+        "record_digest": { "$ref": "#/$defs/digest" }
+      },
+      "additionalProperties": false
+    },
+    "cancellation": {
+      "type": "object",
+      "required": ["requested_at_phase"],
+      "properties": {
+        "requested_at_phase": { "enum": ["none", "before_adapter_call", "after_adapter_call"] }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

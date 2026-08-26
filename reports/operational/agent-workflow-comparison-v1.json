@@ -1,0 +1,163 @@
+{
+  "schema": "sley.operational.agent_workflow_comparison.v1",
+  "status": "passed",
+  "workflow_id": "sley-agent-project-cross-module-rename-v1",
+  "identity": {
+    "sley_commit": "54e732b1d6f47c843450c6380c30316bb1afc4d4",
+    "case_manifest_digest": "sha256:7dc95c9916a657325b3b79067157603ee96e3c1559fe7a925c77d6141589f1df",
+    "raw_run_manifest_digest": "sha256:009f9e63f2406ab8003e417db35d4a45db7c4b05150f7a5d4046536cde5a635a",
+    "structural_run_manifest_digest": "sha256:0c8b3c908b855f44c59a3c0b48e5e7f033628b5dda2083282d488bd5b28a4c09",
+    "controller_digest": "sha256:4e675d08e9eea7207abb5f67a6dc1eb0f654a633804abce79404c9306fd395a6",
+    "execution_approval_digest": "sha256:605d60a4c2344514d5f6732e6c4d128f7e8142f896b28f6988f5e936fd5d02ee",
+    "execution_provenance_digest": "sha256:deff4ad5ff64bec7b6ff6dd9dd9cbfe6f47168ae8692e718bb2fa785dd343cfd"
+  },
+  "controls": {
+    "equal_task_context_spend_budget_verified": true,
+    "same_model": true,
+    "same_task": true,
+    "same_workspace": true,
+    "same_oracle": true,
+    "same_owned_paths": true,
+    "action_budget_is_controlled_difference": true
+  },
+  "arms": {
+    "raw_source": {
+      "mode": "K1",
+      "interface": "raw_workspace",
+      "run_id": "sley-operational-agent-workflow-v1-k1",
+      "aggregate_digest": "sha256:61961f3a0f26e1374c221e0d74a23ae10d52e5c1803ae2b91c730baab08f4fc7",
+      "case_result_digest": "sha256:200dca6f610c6d9fccd1648248cf06c0d826fd2a7a334ea7da41dd003dd64c45",
+      "evidence_bundle_digest": "sha256:736f2275bdd09d47d73ce78b98f003adf95b5250b3abe466be63faba2c01ed2b",
+      "accepted_correct_change": true,
+      "strict_success": true,
+      "inference_attempts": 1,
+      "input_tokens": 3084,
+      "output_tokens": 320,
+      "total_tokens": 3404,
+      "accepted_change_tokens": 3404,
+      "prompt_bytes": 12381,
+      "response_bytes": 1251,
+      "context_files_supplied": 4,
+      "context_bytes_supplied": 4073,
+      "structural_response_bytes": 0,
+      "wall_ms": 13223,
+      "tool_calls": 0,
+      "compiler_cycles": 5,
+      "invalid_actions": 0,
+      "repair_loops": 0,
+      "changed_files": 2,
+      "changed_lines": 4,
+      "human_review_applicable": false,
+      "human_review_ms": null
+    },
+    "sley_structural": {
+      "mode": "K3",
+      "interface": "raw_workspace_plus_read_only_structure",
+      "run_id": "sley-operational-agent-workflow-v1-k3",
+      "aggregate_digest": "sha256:9475db20f33f64f41bbb36d18605cc7407675c19593be97569a30e8e1911f071",
+      "case_result_digest": "sha256:bc136f72db2934cb561a9887a06245b22f1e157e50e52813f93b8d25b68a8564",
+      "evidence_bundle_digest": "sha256:87d9f54531ae242b46956137508aa8ad5726fa4c1dc66832c4513c286e9ea7fa",
+      "accepted_correct_change": true,
+      "strict_success": true,
+      "inference_attempts": 2,
+      "input_tokens": 7162,
+      "output_tokens": 653,
+      "total_tokens": 7815,
+      "accepted_change_tokens": 7815,
+      "prompt_bytes": 28888,
+      "response_bytes": 2541,
+      "context_files_supplied": 4,
+      "context_bytes_supplied": 4073,
+      "structural_response_bytes": 2042,
+      "wall_ms": 36810,
+      "tool_calls": 1,
+      "compiler_cycles": 5,
+      "invalid_actions": 0,
+      "repair_loops": 0,
+      "changed_files": 2,
+      "changed_lines": 4,
+      "human_review_applicable": false,
+      "human_review_ms": null
+    }
+  },
+  "deltas": {
+    "inference_attempts": 1,
+    "input_tokens": 4078,
+    "output_tokens": 333,
+    "total_tokens": 4411,
+    "prompt_bytes": 16507,
+    "response_bytes": 1290,
+    "context_files_supplied": 0,
+    "context_bytes_supplied": 0,
+    "structural_response_bytes": 2042,
+    "wall_ms": 23587,
+    "tool_calls": 1,
+    "compiler_cycles": 0,
+    "invalid_actions": 0,
+    "repair_loops": 0,
+    "changed_files": 0,
+    "changed_lines": 0
+  },
+  "decision": {
+    "outcome": "both_accepted",
+    "recommendation": "retain_for_bounded_followup",
+    "structural_context_effect": "expansion",
+    "promotion_decision": "deferred",
+    "general_claim_supported": false,
+    "production_claim": false
+  },
+  "methodology": {
+    "trial_count": 1,
+    "failures_retained": true,
+    "cache_state": "fresh_per_arm",
+    "context_budget_basis": "same_model_context_window_and_spend_ceiling",
+    "manifest_limit_enforcement": "partial_controller_bounds",
+    "repair_loop_observability": "post_submit_repair_unavailable",
+    "single_trial_generalization": false
+  },
+  "environment": {
+    "scope": "comparison_host",
+    "os": "Ubuntu 24.04.4 LTS",
+    "kernel": "7.0.0-30-generic",
+    "architecture": "x86_64",
+    "logical_cpus": 12,
+    "memory_bytes": 16668655616
+  },
+  "authority": {
+    "mode": "local_isolated_evaluation_only",
+    "provider_execution_authorized": true,
+    "repository_mutation": false,
+    "product_runtime_mutation": false,
+    "deploy": false,
+    "publication": false
+  },
+  "disclosure": {
+    "raw_prompts_embedded": false,
+    "raw_responses_embedded": false,
+    "contains_real_user_data": false,
+    "contains_credentials": false,
+    "publication_authorized": false
+  },
+  "issues": [
+    {
+      "code": "SINGLE_TRIAL_ONLY",
+      "message": "One controlled trial cannot support a general model-fluency or structural-advantage claim"
+    },
+    {
+      "code": "POST_SUBMIT_REPAIR_UNAVAILABLE",
+      "message": "The one-shot controller exposes no post-submit repair loop; repair_loops is reported as zero and not inferred"
+    },
+    {
+      "code": "MANIFEST_LIMIT_ENFORCEMENT_PARTIAL",
+      "message": "Equal task, model-context, and spend budgets are verified; generic case-manifest resource-limit enforcement is not claimed"
+    },
+    {
+      "code": "PROVIDER_ORIGIN_ASSERTION_NOT_CRYPTOGRAPHIC",
+      "message": "Provider origin is bound by an exact operator and independent-review provenance assertion, not by a cryptographic provider attestation"
+    },
+    {
+      "code": "STRUCTURAL_CONTEXT_EXPANDED",
+      "message": "The structural arm consumed more prompt bytes than the raw arm; this negative context result is retained"
+    }
+  ]
+}

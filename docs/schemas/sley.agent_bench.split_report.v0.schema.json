@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.agent_bench.split_report.v0",
+  "title": "Sley Agent Bench Split Report v0",
+  "type": "object",
+  "required": [
+    "schema", "command", "status", "verification_level", "subject",
+    "suite_id", "split_state", "private_material_verified", "counts",
+    "digests", "summary", "checks", "issues"
+  ],
+  "properties": {
+    "schema": { "const": "sley.agent_bench.split_report.v0" },
+    "command": { "enum": ["verify-public", "audit"] },
+    "status": { "enum": ["passed", "failed"] },
+    "verification_level": { "enum": ["public_commitment", "full_private_audit"] },
+    "subject": { "type": "string", "minLength": 1 },
+    "suite_id": { "type": "string", "pattern": "^sleybench-v[0-9]+$" },
+    "split_state": { "enum": ["draft", "pinned", "unknown"] },
+    "private_material_verified": { "type": "boolean" },
+    "counts": {
+      "type": "object",
+      "required": ["public", "private", "total"],
+      "properties": {
+        "public": { "type": "integer", "minimum": 0 },
+        "private": { "type": "integer", "minimum": 0 },
+        "total": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "digests": {
+      "type": "object",
+      "required": ["split_manifest"],
+      "properties": {
+        "split_manifest": { "$ref": "#/$defs/digest" },
+        "public_case_manifest": { "$ref": "#/$defs/digest" },
+        "public_exclusion_ledger": { "$ref": "#/$defs/digest" },
+        "private_case_manifest": { "$ref": "#/$defs/digest" },
+        "private_exclusion_ledger": { "$ref": "#/$defs/digest" }
+      },
+      "additionalProperties": false
+    },
+    "summary": {
+      "type": "object",
+      "required": ["check_count", "passed_count", "failed_count", "issue_count"],
+      "properties": {
+        "check_count": { "type": "integer", "minimum": 0 },
+        "passed_count": { "type": "integer", "minimum": 0 },
+        "failed_count": { "type": "integer", "minimum": 0 },
+        "issue_count": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "status", "message"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._:-]*$" },
+          "status": { "enum": ["passed", "failed"] },
+          "message": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["code", "message"],
+        "properties": {
+          "code": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._:-]*$" },
+          "message": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "command": { "const": "verify-public" } } },
+      "then": {
+        "properties": {
+          "verification_level": { "const": "public_commitment" },
+          "private_material_verified": { "const": false }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": { "const": "audit" },
+          "status": { "const": "passed" }
+        },
+        "required": ["command", "status"]
+      },
+      "then": {
+        "properties": {
+          "verification_level": { "const": "full_private_audit" },
+          "private_material_verified": { "const": true }
+        }
+      },
+      "else": {
+        "properties": {
+          "private_material_verified": { "const": false }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+  }
+}

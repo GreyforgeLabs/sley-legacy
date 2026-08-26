@@ -1,0 +1,35 @@
+{
+  "schema": "sley.machine.response.v1",
+  "protocolVersion": "sley.machine.invoke.v0",
+  "requestId": "fixture-v1",
+  "status": "ok",
+  "package": {
+    "id": "machine-fixture",
+    "version": "v1"
+  },
+  "source": {
+    "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "fileCount": 1
+  },
+  "runtime": {
+    "id": "sley.stage1.machine",
+    "version": "fixture",
+    "digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "task": "machine.fixture.summarize",
+  "input": { "label": "ready" },
+  "result": { "total": 10 },
+  "digests": {
+    "input": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "result": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "payload": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+  },
+  "counters": {
+    "steps": 12,
+    "calls": 1,
+    "maxCallDepth": 1,
+    "inputBytes": 128,
+    "outputBytes": 640,
+    "batchIndex": 1
+  }
+}

@@ -1,0 +1,4 @@
+[project]
+name = "sley-user-test-fixture"
+entry = "test.suite"
+source = "src"

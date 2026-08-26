@@ -1,0 +1,12 @@
+module bench.public.f2_016
+
+task add -> Int {
+  take left: Int
+  take right: Int
+  return left + right
+}
+
+task main -> Int {
+  bind partial = call add(1, 2)
+  return call add(partial, 7)
+}

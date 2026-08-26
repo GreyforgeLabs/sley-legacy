@@ -1,0 +1,107 @@
+{
+  "schema": "sley.change.review.v0",
+  "status": "ready",
+  "review_id": "review:0000000000000000000000000000000000000000000000000000000000000001",
+  "review_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000001",
+  "transaction": {
+    "transaction_id": "sha256:0000000000000000000000000000000000000000000000000000000000000002",
+    "state": "verifying",
+    "history": ["opened", "inspected", "planned", "previewed", "awaiting_approval", "approved", "applying", "applied", "verifying"]
+  },
+  "terminal_outcome": "verified_apply",
+  "repository": {
+    "root": ".",
+    "identity_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000003"
+  },
+  "base": {
+    "mode": "working_tree",
+    "commit": "0000000000000000000000000000000000000004",
+    "source_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000005",
+    "graph_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000006",
+    "trace_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000007"
+  },
+  "final": {
+    "state": "candidate",
+    "source_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000008",
+    "graph_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000009"
+  },
+  "artifact_refs": [
+    {"kind": "preview", "schema": "sley.change.preview.v0", "locator": "input:preview", "digest": "sha256:0000000000000000000000000000000000000000000000000000000000000010"},
+    {"kind": "approval_request", "schema": "sley.change.approval_request.v0", "locator": "input:approval_request", "digest": "sha256:0000000000000000000000000000000000000000000000000000000000000011"},
+    {"kind": "grant", "schema": "sley.change.grant.v0", "locator": "input:grant", "digest": "sha256:0000000000000000000000000000000000000000000000000000000000000012"},
+    {"kind": "apply_authorization", "schema": "sley.change.apply_authorization.v0", "locator": "input:apply_authorization", "digest": "sha256:0000000000000000000000000000000000000000000000000000000000000013"},
+    {"kind": "apply", "schema": "sley.change.apply.v0", "locator": "input:apply", "digest": "sha256:0000000000000000000000000000000000000000000000000000000000000014"},
+    {"kind": "recovery", "schema": "sley.change.recovery.v0", "locator": ".sley/transactions/0000000000000000000000000000000000000000000000000000000000000002/recovery/record.json", "digest": "sha256:0000000000000000000000000000000000000000000000000000000000000015"},
+    {"kind": "zjx_evidence", "schema": "sley.zjx.envelope.v0", "locator": ".sley/transactions/0000000000000000000000000000000000000000000000000000000000000002/review/evidence.zjx.json", "digest": "sha256:0000000000000000000000000000000000000000000000000000000000000016"}
+  ],
+  "identity_chain": [
+    {"kind": "transaction", "id": "sha256:0000000000000000000000000000000000000000000000000000000000000002", "digest": "sha256:0000000000000000000000000000000000000000000000000000000000000002"},
+    {"kind": "candidate", "id": "candidate:0000000000000000000000000000000000000000000000000000000000000008", "digest": "sha256:0000000000000000000000000000000000000000000000000000000000000008"},
+    {"kind": "approval_request", "id": "approval-request:0000000000000000000000000000000000000000000000000000000000000011", "digest": "sha256:0000000000000000000000000000000000000000000000000000000000000011"},
+    {"kind": "grant", "id": "grant:0000000000000000000000000000000000000000000000000000000000000012", "digest": "sha256:0000000000000000000000000000000000000000000000000000000000000012"},
+    {"kind": "apply_authorization", "id": "apply-authorization:0000000000000000000000000000000000000000000000000000000000000013", "digest": "sha256:0000000000000000000000000000000000000000000000000000000000000013"},
+    {"kind": "recovery", "id": "recovery:0000000000000000000000000000000000000000000000000000000000000002", "digest": "sha256:0000000000000000000000000000000000000000000000000000000000000015"}
+  ],
+  "validation_summary": {
+    "profile": "compiler_apply_v0",
+    "status": "passed",
+    "checks": [
+      {"kind": "compiler_check", "status": "passed", "expected": "ok", "actual": "ok"}
+    ],
+    "rollback": {
+      "strategy": "verified_exchange",
+      "status": "not_required",
+      "expected_source_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000005",
+      "actual_source_digest": null,
+      "expected_graph_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000006",
+      "actual_graph_digest": null
+    }
+  },
+  "test_summary": {
+    "profile": "compiler_preview_v0",
+    "status": "passed",
+    "tests": [{"kind": "compiler_check", "status": "passed", "schema": "sley.diagnostics.report.v0", "issue_count": 0}]
+  },
+  "trace_summary": {
+    "schema": "sley.trace.seal.v0",
+    "seal_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000017",
+    "trace_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000018",
+    "receipt_count": 0
+  },
+  "authority_summary": {
+    "issuer": "operator:test",
+    "principal": "agent:test",
+    "audience": "sley:local",
+    "purpose": "authorize one exact candidate",
+    "grant_state_at_apply": "approved",
+    "revocation_state_at_apply": "not_revoked",
+    "replay_state": "consumed"
+  },
+  "adapter_summary": [
+    {"kind": "compiler", "name": "sley", "version": "sley 1.1", "network_used": false},
+    {"kind": "evidence_envelope", "name": "zjx-preview-json", "version": "sley.zjx.envelope.v0", "network_used": false}
+  ],
+  "mutation_summary": {
+    "attempted_change": true,
+    "repository_source_changed": true,
+    "rollback_performed": false,
+    "review_artifacts_written": true
+  },
+  "no_mutation_boundary": {
+    "repository_source": false,
+    "git_index": false,
+    "trace_sidecars": false,
+    "external_systems": false,
+    "provider_state": false
+  },
+  "outputs": {
+    "packet": ".sley/transactions/0000000000000000000000000000000000000000000000000000000000000002/review/packet.md",
+    "bundle": ".sley/transactions/0000000000000000000000000000000000000000000000000000000000000002/review/bundle.json",
+    "zjx_evidence": ".sley/transactions/0000000000000000000000000000000000000000000000000000000000000002/review/evidence.zjx.json",
+    "seal": ".sley/transactions/0000000000000000000000000000000000000000000000000000000000000002/review/seal.json"
+  },
+  "next_actions": [
+    {"kind": "inspect_transaction_seal", "reason": "inspect the terminal evidence before any release decision"}
+  ],
+  "issues": []
+}

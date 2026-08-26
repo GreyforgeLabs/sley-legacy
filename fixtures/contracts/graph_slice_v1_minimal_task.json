@@ -1,0 +1,30 @@
+{
+  "schema": "sley.symbol_graph.slice.v1",
+  "target": "task:main.main",
+  "entry_module": "main",
+  "focus": {
+    "kind": "task",
+    "id": "task:main.main",
+    "module": "main",
+    "name": "main"
+  },
+  "imports": [],
+  "types": [],
+  "effects": [],
+  "tasks": [
+    {
+      "name": "main",
+      "id": "task:main.main",
+      "exported": false
+    }
+  ],
+  "add_affordances": [],
+  "insert_affordances": [],
+  "move_affordances": [],
+  "delete_affordances": [],
+  "replace_affordances": [],
+  "call_site_affordances": [],
+  "call_arg_affordances": [],
+  "outbound_calls": [],
+  "inbound_calls": []
+}

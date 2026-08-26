@@ -1,0 +1,11 @@
+module agent.main
+
+import agent.pipeline as pipe
+
+task main -> Result<Text, Error> uses SecretRead, Network, ModelCall, Deploy {
+  bind profile = call pipe.collect_profile("api_key", "https://example.test/profile")?
+  bind plan = call pipe.draft_plan("deploy-plan")?
+  bind staged = call pipe.stage_release("staging")?
+
+  return Ok(profile + " | " + plan + " | " + staged)
+}

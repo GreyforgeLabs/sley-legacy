@@ -1,0 +1,5 @@
+module bench.public.f3_012
+
+task main -> Int {
+  return 12
+}

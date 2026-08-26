@@ -44,11 +44,14 @@ jq -s -e '
   length == 2 and
   .[0].result.protocolVersion == "2025-06-18" and
   .[0].result.capabilities.tools.listChanged == false and
-  ([.[1].result.tools[].name] == ["sley_query","sley_lint","sley_plan","sley_propose_graft","sley_verify"]) and
+  ([.[1].result.tools[].name] == ["sley_query","sley_lint","sley_plan","sley_propose_graft","sley_verify","sley_change_inspect","sley_change_plan","sley_change_preview","sley_change_approval_request","sley_change_apply_authorization","sley_change_apply","sley_change_recover","sley_change_rollback","sley_change_review"]) and
   ([.[1].result.tools[].inputSchema."$schema"] | all(. == "https://json-schema.org/draft/2020-12/schema")) and
   ([.[1].result.tools[].outputSchema."$schema"] | all(. == "https://json-schema.org/draft/2020-12/schema")) and
   (.[1].result.tools[] | select(.name == "sley_propose_graft") | .inputSchema.properties.operation.properties.op.enum | index("InsertStatement")) != null and
-  ([.[1].result.tools[].annotations.readOnlyHint] | all(. == true))
+  ([.[1].result.tools[] | select(.name | IN("sley_change_apply","sley_change_recover","sley_change_rollback")) | .annotations.destructiveHint] | all(. == true)) and
+  ([.[1].result.tools[] | select(.name | IN("sley_change_inspect","sley_change_plan","sley_change_preview","sley_change_approval_request","sley_change_apply_authorization")) | .annotations.readOnlyHint] | all(. == true)) and
+  ([.[1].result.tools[].name] | index("sley_change_approve") == null) and
+  ([.[1].result.tools[].name] | index("sley_change_revocation_record") == null)
 ' "$WORK_DIR/lifecycle.out" >/dev/null || fail "lifecycle or tool catalog mismatch"
 [[ "$(wc -l < "$WORK_DIR/lifecycle.out" | tr -d '[:space:]')" -eq 2 ]] || fail "stdout framing emitted an unexpected line count"
 while IFS= read -r line; do jq -e '.jsonrpc == "2.0"' <<< "$line" >/dev/null || fail "stdout contained a non-protocol line"; done < "$WORK_DIR/lifecycle.out"

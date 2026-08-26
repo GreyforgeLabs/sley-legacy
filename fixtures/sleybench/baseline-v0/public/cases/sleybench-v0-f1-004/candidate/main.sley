@@ -1,0 +1,6 @@
+module bench.public.f1_004
+
+task main -> Int {
+  bind total = 40
+  return total + 2
+}

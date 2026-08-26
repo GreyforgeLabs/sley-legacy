@@ -1,0 +1,37 @@
+module loom.validation
+
+export task report_schema -> Text {
+  return "sley.validation.report.v1"
+}
+
+export task profiles -> List<Text> {
+  return ["quick|make quick|false", "changed|scripts/check-changed.sh|false", "core|make core|false", "release|make v1|true"]
+}
+
+export task check_registry -> List<Text> {
+  return ["fmt|shell-tooling", "diff-check|validation-architecture", "test|core-cli", "machine-test|machine", "git-guard|git-guard", "mcp-bridge|mcp-bridge", "graph-diff|graph-diff", "contracts|contracts", "contract-compatibility|contracts", "protocol-contracts|agent-bench", "transaction-contracts|transaction-contracts", "adapter-replay|adapter-replay", "worker|worker", "worker-clients|worker-clients", "user-tests|user-tests", "validation-reports|validation-architecture", "operational-replay|operational-evidence", "operational-workflow|operational-evidence", "operational-evidence|operational-evidence", "release-contracts|release-artifact", "conformance|contracts", "claim-audit|claims", "ai-foundation|ai-foundation", "corpus-governance|corpus-governance", "corpus|corpus", "examples|examples", "smoke|smoke", "lsp|lsp-editor", "editor-shims|lsp-editor", "workbench|workbench", "agent-bench|agent-bench", "migrate|migration", "docgen|docgen", "sandbox-runner|sandbox", "shadow|shadow", "zjx-tools|zjx", "arena|arena", "syntax|self-hosted-core", "validation-planner|validation-architecture", "parser-smoke|parser", "checker-smoke|checker", "runtime-smoke|runtime", "lint-smoke|lint"]
+}
+
+export task quick_checks -> List<Text> {
+  return ["fmt", "diff-check", "syntax", "validation-planner", "ai-foundation", "parser-smoke", "checker-smoke", "runtime-smoke", "lint-smoke", "smoke"]
+}
+
+export task core_checks -> List<Text> {
+  return ["parser-smoke", "checker-smoke", "runtime-smoke", "lint-smoke", "contracts", "contract-compatibility", "protocol-contracts", "transaction-contracts", "adapter-replay", "worker", "worker-clients", "user-tests", "validation-reports", "operational-replay", "operational-workflow", "operational-evidence", "release-contracts", "conformance", "ai-foundation", "corpus-governance", "smoke", "syntax"]
+}
+
+export task release_checks -> List<Text> {
+  return ["fmt", "diff-check", "test", "git-guard", "mcp-bridge", "graph-diff", "contracts", "contract-compatibility", "protocol-contracts", "transaction-contracts", "adapter-replay", "worker", "worker-clients", "user-tests", "validation-reports", "operational-replay", "operational-workflow", "operational-evidence", "release-contracts", "conformance", "claim-audit", "ai-foundation", "corpus-governance", "corpus", "examples", "smoke", "lsp", "editor-shims", "workbench", "agent-bench", "migrate", "docgen", "sandbox-runner", "shadow", "zjx-tools", "arena", "syntax", "validation-planner"]
+}
+
+export task skip_reasons -> List<Text> {
+  return ["profile_scope", "unchanged_subsystem", "no_detected_changes", "not_part_of_release_gate"]
+}
+
+export task authority_mode -> Text {
+  return "repository_local_validation"
+}
+
+export task result_cache_policy -> Text {
+  return "disabled"
+}

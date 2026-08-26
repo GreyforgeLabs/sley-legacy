@@ -1,0 +1,10 @@
+module bench.public.f1_013
+
+task increment -> Int {
+  take value: Int
+  return value + 1
+}
+
+task main -> Int {
+  return call increment(40)
+}

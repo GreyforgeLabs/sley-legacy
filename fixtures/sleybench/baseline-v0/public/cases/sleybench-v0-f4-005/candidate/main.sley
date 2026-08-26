@@ -1,0 +1,5 @@
+module bench.public.f4_005
+
+task main -> Int {
+  return if false { 1 } else { 8 }
+}

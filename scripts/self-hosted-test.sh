@@ -289,7 +289,10 @@ bash -n bin/sley
 ./scripts/check-self-hosted-code.sh
 
 bin/sley --help >/dev/null
-bin/sley --version | grep -q '^sley 1\.1$'
+bin/sley --version | grep -q '^sley 1\.2\.0$'
+if ! bin/sley --version >/tmp/sley-version-startup.out 2>/tmp/sley-version-startup.err; then
+  fail "sley startup must evaluate every Sley-owned diagnostic message template"
+fi
 bin/sley self-hosting-status --json > "$self_hosting_status_report"
 
 self_hosting_status_field '.schema == "sley.self_hosting.status.v0" and .status == "strict" and .strict_self_hosted == true and .blockers == [] and .source_root == "self-hosted/src" and .semantic_source_count == (.source_modules | length) and .semantic_source_count >= 6 and (.source_modules | index("loom.bootstrap")) and (.bootstrap_owned_by_sley | index("implementation_version")) and (.bootstrap_owned_by_sley | index("implementation_stage")) and (.bootstrap_owned_by_sley | index("self_hosting_status")) and (.bootstrap_owned_by_sley | index("strict_self_hosted")) and (.bootstrap_owned_by_sley | index("source_modules")) and (.bootstrap_owned_by_sley | index("semantic_source_count_task_execution")) and (.bootstrap_owned_by_sley | index("default_lint_rules")) and (.bootstrap_owned_by_sley | index("core_report_schema_ids")) and (.bootstrap_owned_by_sley | index("diagnostic_ids")) and (.bootstrap_owned_by_sley | index("runtime_seed_values")) and (.bootstrap_owned_by_sley | index("parser_expression_classifiers")) and (.bootstrap_owned_by_sley | index("parser_classifier_task_execution")) and (.bootstrap_owned_by_sley | index("parser_id_task_execution")) and (.bootstrap_owned_by_sley | index("parser_call_expression_prefix_task_execution")) and (.bootstrap_owned_by_sley | index("query_call_expression_prefix_task_execution")) and (.bootstrap_owned_by_sley | index("symbol_graph_call_expression_prefix_task_execution")) and (.bootstrap_owned_by_sley | index("parser_statement_and_binding_kinds")) and (.bootstrap_owned_by_sley | index("bootstrap_smoke_runtime")) and (.bootstrap_owned_by_sley | index("bootstrap_smoke_task_execution")) and (.bootstrap_owned_by_sley | index("checker_diagnostic_status")) and (.bootstrap_owned_by_sley | index("checker_status_task_execution")) and (.bootstrap_owned_by_sley | index("checker_builtin_type_task_execution")) and (.bootstrap_owned_by_sley | index("checker_builtin_types_task_execution")) and (.bootstrap_owned_by_sley | index("checker_static_type_names_task_execution")) and (.bootstrap_owned_by_sley | index("checker_effect_aliases_task_execution")) and (.bootstrap_owned_by_sley | index("checker_host_effect_needles_task_execution")) and (.bootstrap_owned_by_sley | index("checker_gate_binding_kind_task_execution")) and (.bootstrap_owned_by_sley | index("checker_repair_hint_kind_task_execution")) and (.bootstrap_owned_by_sley | index("checker_identifier_expr_kind_task_execution")) and (.bootstrap_owned_by_sley | index("checker_call_expression_prefix_task_execution")) and (.bootstrap_owned_by_sley | index("checker_message_task_execution")) and (.bootstrap_owned_by_sley | index("checker_unknown_type_diagnostics")) and (.bootstrap_owned_by_sley | index("checker_unknown_task_diagnostics")) and (.bootstrap_owned_by_sley | index("checker_call_diagnostics")) and (.bootstrap_owned_by_sley | index("checker_duplicate_take_diagnostics")) and (.bootstrap_owned_by_sley | index("checker_collection_diagnostics")) and (.bootstrap_owned_by_sley | index("checker_record_diagnostics")) and (.bootstrap_owned_by_sley | index("checker_namespace_diagnostics")) and (.bootstrap_owned_by_sley | index("checker_effect_diagnostics")) and (.bootstrap_owned_by_sley | index("checker_effect_propagation_diagnostics")) and (.bootstrap_owned_by_sley | index("checker_question_diagnostics")) and (.bootstrap_owned_by_sley | index("checker_identifier_resolution_inputs")) and (.bootstrap_owned_by_sley | index("lint_status_task_execution")) and (.bootstrap_owned_by_sley | index("lint_finding_messages")) and (.bootstrap_owned_by_sley | index("runtime_status_task_execution")) and (.bootstrap_owned_by_sley | index("pure_literal_runtime_execution")) and (.bootstrap_owned_by_sley | index("bool_literal_runtime_execution")) and (.bootstrap_owned_by_sley | index("text_concat_runtime_execution")) and (.bootstrap_owned_by_sley | index("list_len_runtime_task_execution")) and (.bootstrap_owned_by_sley | index("len_expression_runtime_execution")) and (.bootstrap_owned_by_sley | index("if_expression_runtime_execution")) and (.bootstrap_owned_by_sley | index("if_statement_runtime_execution")) and (.bootstrap_owned_by_sley | index("seeded_agent_deploy_task_execution")) and (.bootstrap_owned_by_sley | index("project_ready_task_execution")) and (.bootstrap_owned_by_sley | index("ast_runtime_probe_dispatch")) and (.bootstrap_owned_by_sley | index("self_hosting_report_shape")) and (.bootstrap_owned_by_sley | index("runtime_report_status_and_dispatch"))'
@@ -980,6 +983,16 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_expression_
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("diagnostics_report_builder")) and (.bootstrap_owned_by_sley | index("diagnostics_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("run_report_builder")) and (.bootstrap_owned_by_sley | index("run_report_builder_task_execution"))'
 
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("target_release")) and (.bootstrap_owned_by_sley | index("ai_bootstrap_version")) and (.bootstrap_owned_by_sley | index("ai_bootstrap_path")) and (.bootstrap_owned_by_sley | index("ai_bootstrap_digest")) and (.bootstrap_owned_by_sley | index("explain_report_shape")) and (.bootstrap_owned_by_sley | index("explain_report_builder")) and (.bootstrap_owned_by_sley | index("explain_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("checker_diagnostic_explain_catalog_task_execution")) and (.bootstrap_owned_by_sley | index("checker_diagnostic_explain_unknown_task_execution"))'
+
+if ! grep -Fq 'CHECKER_DIAGNOSTIC_EXPLAIN_CATALOG_JSON="$(sley_source_list_task_json loom.checker diagnostic_explain_catalog' bin/sley \
+  || ! grep -Fq 'SCHEMA_EXPLAIN="$(sley_source_task loom.reports explain_schema)"' bin/sley \
+  || ! grep -Fq 'AI_BOOTSTRAP_DIGEST="$(sley_source_task loom.bootstrap ai_bootstrap_digest)"' bin/sley \
+  || ! grep -Fq 'DIAG_EXPLAIN_UNKNOWN="$(sley_source_task loom.checker explain_unknown_diagnostic_id)"' bin/sley \
+  || ! grep -Fq 'EXPLAIN_UNKNOWN_DIAGNOSTIC_MESSAGE_TEMPLATE="$(eval_checker_message_template explain_unknown_diagnostic_message diagnostic_id)"' bin/sley; then
+  fail "explain catalog, report schema, and Bootstrap version context must come from Sley source tasks"
+fi
+
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("query_report_builder")) and (.bootstrap_owned_by_sley | index("query_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("lint_report_builder")) and (.bootstrap_owned_by_sley | index("lint_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("doctor_report_builder")) and (.bootstrap_owned_by_sley | index("doctor_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("verify_report_builder")) and (.bootstrap_owned_by_sley | index("verify_report_builder_task_execution"))'
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_ast_program_report_builder")) and (.bootstrap_owned_by_sley | index("parser_ast_program_report_builder_task_execution"))'
@@ -1274,6 +1287,18 @@ if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("report_builde
   fail "report builder registry markers are missing"
 fi
 
+self_hosting_status_field '(.source_modules | index("loom.transaction")) and (.bootstrap_owned_by_sley | index("transaction_state_model_task_execution")) and (.bootstrap_owned_by_sley | index("transaction_inspect_report_builder_task_execution"))'
+
+self_hosting_status_field '(.source_modules | index("loom.adapter")) and (.bootstrap_owned_by_sley | index("adapter_contract_vocabulary_task_execution")) and (.bootstrap_owned_by_sley | index("adapter_report_builder_task_execution"))'
+
+self_hosting_status_field '(.source_modules | index("loom.worker")) and (.bootstrap_owned_by_sley | index("worker_protocol_vocabulary_task_execution")) and (.bootstrap_owned_by_sley | index("worker_report_builder_task_execution"))'
+
+self_hosting_status_field '(.source_modules | index("loom.testing")) and (.bootstrap_owned_by_sley | index("test_contract_vocabulary_task_execution")) and (.bootstrap_owned_by_sley | index("test_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("review_packet_report_builder_task_execution"))'
+
+self_hosting_status_field '(.source_modules | index("loom.validation")) and (.bootstrap_owned_by_sley | index("validation_contract_vocabulary_task_execution")) and (.bootstrap_owned_by_sley | index("validation_report_builder_task_execution"))'
+self_hosting_status_field '(.source_modules | index("loom.operational")) and (.bootstrap_owned_by_sley | index("operational_contract_vocabulary_task_execution"))'
+self_hosting_status_field '(.source_modules | index("loom.release")) and (.bootstrap_owned_by_sley | index("release_contract_vocabulary_task_execution"))'
+
 if ! grep -Fq 'REPORT_BUILDER_VALUE_TYPE_PLAN_JSON="$(sley_source_list_task_json loom.reports report_builder_value_type_plan' bin/sley; then
   fail "report builder value type plan must come from loom.reports"
 fi
@@ -1362,6 +1387,14 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("workbench_call_exp
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("workbench_call_tail_parser_prefix_task_execution"))'
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("sandbox_report_shape"))'
+
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("adapter_contract_vocabulary_task_execution")) and (.bootstrap_owned_by_sley | index("adapter_report_builder_task_execution"))'
+
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("worker_protocol_vocabulary_task_execution")) and (.bootstrap_owned_by_sley | index("worker_report_builder_task_execution"))'
+
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("test_contract_vocabulary_task_execution")) and (.bootstrap_owned_by_sley | index("test_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("review_packet_report_builder_task_execution"))'
+
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("validation_contract_vocabulary_task_execution")) and (.bootstrap_owned_by_sley | index("validation_report_builder_task_execution"))'
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("agent_bench_report_shape"))'
 
@@ -2237,6 +2270,8 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_qualified_
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_type_return_pass_family_task_execution"))'
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_identifier_resolution_pass_task_execution")) and (.bootstrap_owned_by_sley | index("checker_question_result_pass_task_execution"))'
+
+self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_syntax_context_diagnostics")) and (.bootstrap_owned_by_sley | index("checker_source_structure_patterns_task_execution"))'
 
 if grep -Fq '|legacy|' self-hosted/src/loom/checker.sley; then
   fail "checker diagnostic pass descriptors must not retain legacy executor rows"
@@ -3267,6 +3302,47 @@ bin/sley-contract validate --schema sley.query.report.v0 fixtures/contracts/quer
 
 bin/sley-contract validate --schema sley.query.report.v0 fixtures/contracts/query_project_tasks.json --schemas docs/schemas --json \
   | json_field 'keys == (["schema","status","validation_level","requested_schema","report_path","schema_dir","report_schema","issues"] | sort)'
+
+bin/sley explain --json --diagnostic-id UNSUPPORTED_RAW_EXPRESSION > "$artifact_dir/explain_raw.json"
+json_field '.schema == "sley.explain.report.v0" and .status == "ok" and .query == {kind:"diagnostic_id",value:"UNSUPPORTED_RAW_EXPRESSION"} and .diagnostic_id == "UNSUPPORTED_RAW_EXPRESSION" and .version_context.target_release == "Sley 1.2" and .version_context.bootstrap.version == "Bootstrap 0.2" and .version_context.bootstrap.path == "SLEY_AI.md" and .version_context.bootstrap.digest == "sha256:e0c388056373d011d80d2ecddf659390f1ebde843bd8cd9e31afef612e9fe061" and .explanation.repair_kind == "rewrite_supported_expression" and .explanation.spec_ref == "docs/SleyLanguageSpec.md#executable-syntax-recovery-and-placement" and .explanation.accepted_example == "fixtures/corpus/accepted/w2_discoverability_forms.sley" and .explanation.rejected_example == "fixtures/corpus/rejected/unsupported_raw_expression.sley" and .explanation.command == "sley explain --diagnostic-id UNSUPPORTED_RAW_EXPRESSION"' < "$artifact_dir/explain_raw.json"
+
+bin/sley explain CONTROL_FLOW_EXPRESSION_BOUNDARY \
+  | grep -Fq 'CONTROL_FLOW_EXPRESSION_BOUNDARY - Conditional expression boundary'
+
+bin/sley explain --json --diagnostic-id MODULE_CONTROL_FLOW_NOT_ALLOWED \
+  | json_field '.schema == "sley.explain.report.v0" and .status == "ok" and .explanation.repair_kind == "move_control_flow_into_task"'
+
+bin/sley explain --json --diagnostic-id INLINE_TASK_PARAMETER_PLACEMENT \
+  | json_field '.schema == "sley.explain.report.v0" and .status == "ok" and .explanation.repair_kind == "move_take_into_task_body"'
+
+if bin/sley explain --json --diagnostic-id NOT_A_W1_ID > "$artifact_dir/explain_unknown.json"; then
+  fail "sley explain accepted an unknown diagnostic id"
+fi
+json_field '.schema == "sley.explain.report.v0" and .status == "error" and .query.value == "NOT_A_W1_ID" and .version_context.bootstrap.version == "Bootstrap 0.2" and .diagnostics[0].id == "UNKNOWN_DIAGNOSTIC_ID"' < "$artifact_dir/explain_unknown.json"
+
+bin/sley-lsp --preview-explain UNSUPPORTED_RAW_EXPRESSION > "$artifact_dir/lsp_explain_preview.json"
+json_field '.schema == "sley.lsp.command_preview.v0" and .status == "preview" and .preview.kind == "explain_diagnostic" and .preview.args == ["explain","--json","--diagnostic-id","UNSUPPORTED_RAW_EXPRESSION"]' < "$artifact_dir/lsp_explain_preview.json"
+
+if bin/sley-lsp --definitely-unknown > "$artifact_dir/lsp_unknown_option.out" 2> "$artifact_dir/lsp_unknown_option.err"; then
+  fail "sley-lsp unknown options must fail closed"
+fi
+grep -Fq 'unknown sley-lsp option: --definitely-unknown' "$artifact_dir/lsp_unknown_option.err" \
+  || fail "sley-lsp unknown option must report the rejected option"
+
+if bin/sley-lsp --preview-explain UNSUPPORTED_RAW_EXPRESSION file:///tmp/main.sley extra > "$artifact_dir/lsp_explain_extra.out" 2> "$artifact_dir/lsp_explain_extra.err"; then
+  fail "sley-lsp explain preview must reject trailing arguments"
+fi
+grep -Fq 'sley-lsp --preview-explain received unexpected argument: extra' "$artifact_dir/lsp_explain_extra.err" \
+  || fail "sley-lsp explain preview must identify the trailing argument"
+
+bin/sley-contract validate --schema sley.explain.report.v0 "$artifact_dir/explain_raw.json" --schemas docs/schemas --json \
+  | json_field '.schema == "sley.contract.validate.v0" and .status == "passed" and .requested_schema == "sley.explain.report.v0" and .report_schema == "sley.explain.report.v0"'
+
+bin/sley-contract validate --schema sley.explain.report.v0 fixtures/contracts/explain_unsupported_raw_expression.json --schemas docs/schemas --json \
+  | json_field '.schema == "sley.contract.validate.v0" and .status == "passed" and .requested_schema == "sley.explain.report.v0"'
+
+bin/sley-contract validate --schema sley.lsp.command_preview.v0 fixtures/contracts/lsp_command_preview_explain_diagnostic.json --schemas docs/schemas --json \
+  | json_field '.schema == "sley.contract.validate.v0" and .status == "passed" and .requested_schema == "sley.lsp.command_preview.v0"'
 
 bin/sley-contract check-fixtures fixtures/contracts --schemas docs/schemas --json \
   | json_field '.schema == "sley.contract.fixture_check.v0" and .status == "passed" and .failed_count == 0'

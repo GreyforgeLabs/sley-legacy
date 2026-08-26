@@ -1,0 +1,25 @@
+{
+  "schema": "sley.corpus.exclusion_ledger.v0",
+  "ledger_id": "sley-corpus-governance-fixture",
+  "version": "0.1",
+  "benchmark_split_status": "pinned",
+  "entries": [
+    {
+      "exclusion_id": "sha256:05f88023345172380983b7ee8529a46efa331dfe0a82d69c21164db3a2936e93",
+      "case_id": "fixture-held-out-001",
+      "visibility": "private_held_out",
+      "exact": [
+        "sha256:061fe08a400a6bf4ee75b8e7862e5a221c793da48d29cc4bb4fc67fe4adcd5e3"
+      ],
+      "canonical": [
+        "sha256:1fc4b74b9c587131bb3478c5de4c5055616281f40f02de4cbb8ec4e7385876cf"
+      ],
+      "structural": [
+        "sha256:92b6f5ba2c833eb255ec2ae0b07f5bace0b0e5119d06d5a6ab34808cbc466087"
+      ],
+      "semantic_lineage": [
+        "sha256:5ac5753bf96f88c6d74fb1931923f2b491a943f7645aa7dd63a12dd8c6049f08"
+      ]
+    }
+  ]
+}

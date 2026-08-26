@@ -1,0 +1,177 @@
+{
+  "schema": "sley.change.apply_authorization.v0",
+  "status": "ready",
+  "authorization_id": "apply-authorization:40697cfd7dec6094f75e21444455662b69508c5e1c69459ee2280ee4be789585",
+  "authorization_digest": "sha256:40697cfd7dec6094f75e21444455662b69508c5e1c69459ee2280ee4be789585",
+  "transaction": {
+    "actor": "operator:test",
+    "base": {
+      "commit": "63a4492a861b3f998fe7b99be35374319ab419e1",
+      "graph_digest": "sha256:08d6b9145dccae451c7deaaac65976f7b54f25022aa1f3be5b80ef92171899cf",
+      "mode": "working_tree",
+      "source_digest": "sha256:6bcb8ec9b22f0bbbb1accd8ae9db83f1bd157447d3ca2500c4aaa91a14c52769",
+      "trace_digest": "sha256:37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+    },
+    "compiler": {
+      "contract_versions": {
+        "approval_request": "sley.change.approval_request.v0",
+        "diagnostics": "sley.diagnostics.report.v1",
+        "grant": "sley.change.grant.v0",
+        "graph_slice": "sley.symbol_graph.slice.v1",
+        "inspection": "sley.transaction.inspect.v0",
+        "plan": "sley.change.plan.v0",
+        "preview": "sley.change.preview.v0",
+        "verify": "sley.verify.report.v1"
+      },
+      "version": "sley 1.1"
+    },
+    "created_at": "2026-08-25T00:00:00Z",
+    "expires_at": "2099-01-01T00:00:00Z",
+    "goal": "apply one cross-module structural edit",
+    "history": [
+      "opened",
+      "inspected",
+      "planned",
+      "previewed",
+      "awaiting_approval",
+      "approved"
+    ],
+    "nonce": "w4-apply-001",
+    "repository": {
+      "identity_digest": "sha256:e635e092b1ddc8b3d2e25394b9aebfc8b70d3cb868af9e2e4477b0bd43b3e671",
+      "root": "."
+    },
+    "state": "approved",
+    "transaction_id": "sha256:f46608ae362ba0a8f8472650754bddcd792dc665a2700bb534ce51951a8dd56e"
+  },
+  "grant_ref": {
+    "schema": "sley.change.grant.v0",
+    "grant_id": "grant:4d97130bdf4aab1004b684689bc5581bc4fe8aa33cdff7ed0199b26f0f15573e",
+    "grant_digest": "sha256:4d97130bdf4aab1004b684689bc5581bc4fe8aa33cdff7ed0199b26f0f15573e",
+    "request_id": "approval-request:fe9ab9c8a3b1b3c88275fa2c4624fba13e9d3c2cb0d38f2fd0838a6e39938033",
+    "preview_digest": "sha256:b87875e9e5d9e317e59afad9d12fde8d425014809aba71de7a23c9c707a62eab",
+    "transaction_id": "sha256:f46608ae362ba0a8f8472650754bddcd792dc665a2700bb534ce51951a8dd56e",
+    "replay_key": "sha256:0dd163e37b0abee62e38d9fc7b7cdddb56e67231a540e6bc77aabc461d6cbe79"
+  },
+  "principal": {
+    "id": "agent:test"
+  },
+  "audience": {
+    "id": "sley:local"
+  },
+  "repository": {
+    "identity_digest": "sha256:e635e092b1ddc8b3d2e25394b9aebfc8b70d3cb868af9e2e4477b0bd43b3e671",
+    "root": "."
+  },
+  "base": {
+    "commit": "63a4492a861b3f998fe7b99be35374319ab419e1",
+    "graph_digest": "sha256:08d6b9145dccae451c7deaaac65976f7b54f25022aa1f3be5b80ef92171899cf",
+    "mode": "working_tree",
+    "source_digest": "sha256:6bcb8ec9b22f0bbbb1accd8ae9db83f1bd157447d3ca2500c4aaa91a14c52769",
+    "trace_digest": "sha256:37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  "candidate": {
+    "candidate_digest": "sha256:5deec67f147e4b8e73543c2e20644380451e1998a5115e9ee7bae85d10dc088c",
+    "candidate_graph_digest": "sha256:7d87e40feacf4c8d75e3471f0e6b2047578264752e3296916300c1480d3137c3",
+    "candidate_id": "candidate:5deec67f147e4b8e73543c2e20644380451e1998a5115e9ee7bae85d10dc088c",
+    "candidate_source_digest": "sha256:a8d4cdfe30055a37cf7f2074db48510747e6cbfd19277ff767d1a5f1c8eb088e",
+    "source_projection_digest": "sha256:19f41dd65e7cb79b2ae1894f4c1481f892868167488a6b7a8dc8a91b786a2a41",
+    "validation_profile": "compiler_preview_v0"
+  },
+  "source_scope": {
+    "kind": "repository_source",
+    "paths": [
+      "examples/project/src/app/main.sley",
+      "examples/project/src/app/math.sley"
+    ]
+  },
+  "internal_scopes": [
+    {
+      "kind": "transaction_state",
+      "path": ".sley/transactions/f46608ae362ba0a8f8472650754bddcd792dc665a2700bb534ce51951a8dd56e"
+    },
+    {
+      "kind": "transaction_lock",
+      "path": ".sley/locks/change-apply"
+    },
+    {
+      "kind": "replay_ledger",
+      "path": ".sley/replay/0dd163e37b0abee62e38d9fc7b7cdddb56e67231a540e6bc77aabc461d6cbe79"
+    },
+    {
+      "kind": "recovery_journal",
+      "path": ".sley/transactions/f46608ae362ba0a8f8472650754bddcd792dc665a2700bb534ce51951a8dd56e/recovery"
+    },
+    {
+      "kind": "revocation_ledger",
+      "path": ".sley/revocations/4d97130bdf4aab1004b684689bc5581bc4fe8aa33cdff7ed0199b26f0f15573e.json"
+    }
+  ],
+  "atomicity": {
+    "platform": "linux",
+    "strategy": "renameat2_exchange",
+    "topology": "same_filesystem_common_root",
+    "rollback_strategy": "verified_exchange",
+    "cancellation_point": "before_commit_point",
+    "limitations": [
+      "non_repo_root",
+      "single_common_root",
+      "no_symlinks",
+      "no_special_files",
+      "no_submodules",
+      "same_filesystem"
+    ]
+  },
+  "verification": {
+    "profile": "compiler_apply_v0",
+    "required_checks": [
+      "candidate_source_digest",
+      "candidate_graph_digest",
+      "compiler_check",
+      "compiler_lint"
+    ],
+    "rollback_on_failure": true
+  },
+  "metadata_policy": {
+    "mode": "preserve",
+    "ownership": "preserve_current_owner",
+    "timestamps": "preserve_unchanged",
+    "xattrs": "reject_if_present",
+    "special_files": "reject",
+    "submodules": "reject"
+  },
+  "mutation_authority": {
+    "repository_source": true,
+    "internal_transaction_state": true,
+    "git_index": false,
+    "trace_sidecars": false,
+    "external_systems": false,
+    "provider_state": false
+  },
+  "mutations": {
+    "repository_source": false,
+    "git_index": false,
+    "trace_sidecars": false,
+    "external_systems": false,
+    "provider_state": false
+  },
+  "next_actions": [
+    {
+      "kind": "initialize_revocation_record",
+      "reason": "create the exact local revocation ledger record before one-use apply",
+      "command": [
+        "sley",
+        "change",
+        "revocation-record",
+        "--json",
+        "--authorization",
+        "<apply-authorization.json>",
+        "--grant",
+        "<grant.json>",
+        "--repository",
+        "."
+      ]
+    }
+  ],
+  "issues": []
+}

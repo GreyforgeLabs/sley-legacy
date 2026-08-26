@@ -1,0 +1,27 @@
+{
+  "schema": "sley.agent_bench.protocol_replay.v0",
+  "protocol_version": "openclaw-one-shot-v2",
+  "case_id": "cancellation-observed",
+  "mode": "K3",
+  "owned_paths": ["main.sley"],
+  "limits": {
+    "max_turns": 2,
+    "max_tool_calls": 0,
+    "max_input_bytes": 4096,
+    "max_output_bytes": 4096,
+    "max_context_nodes": 128,
+    "max_wall_ms": 5000
+  },
+  "cancellation": {"requested": true, "observed": true, "turn": 1},
+  "turns": [
+    {
+      "number": 1,
+      "input_bytes": 40,
+      "output_bytes": 20,
+      "context_nodes": 4,
+      "elapsed_ms": 100,
+      "action": {"kind": "cancel", "reason": "operator cancellation"}
+    }
+  ],
+  "expected": {"status": "cancelled", "code": "CANCELLATION_OBSERVED"}
+}

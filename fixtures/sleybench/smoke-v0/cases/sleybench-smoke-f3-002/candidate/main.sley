@@ -1,0 +1,5 @@
+module bench.f3_002
+
+task main -> Int {
+  return 5
+}

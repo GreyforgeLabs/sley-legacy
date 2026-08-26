@@ -1,0 +1,25 @@
+{
+  "schema": "sley.verify.report.v1",
+  "status": "passed",
+  "target": "examples/project",
+  "entry_module": "app.main",
+  "summary": {
+    "error_count": 0,
+    "warning_count": 0,
+    "module_count": 2,
+    "task_count": 2,
+    "call_count": 1,
+    "lint_finding_count": 0,
+    "runtime_status": "passed"
+  },
+  "diagnostics": [],
+  "runtime": {
+    "status": "passed",
+    "value": {
+      "kind": "Int",
+      "value": 42
+    },
+    "diagnostics": []
+  },
+  "next_actions": []
+}

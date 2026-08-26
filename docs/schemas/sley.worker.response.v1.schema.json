@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.worker.response.v1",
+  "title": "Sley Persistent Worker Response v1",
+  "type": "object",
+  "required": [
+    "schema", "protocol", "request_id", "operation", "status",
+    "failure_class", "retryable", "worker", "result", "isolation", "issues"
+  ],
+  "properties": {
+    "schema": { "const": "sley.worker.response.v1" },
+    "protocol": { "const": "sley.worker.v1" },
+    "request_id": {
+      "oneOf": [
+        { "type": "string", "pattern": "^request:[A-Za-z0-9._-]+$" },
+        { "type": "null" }
+      ]
+    },
+    "operation": {
+      "enum": [
+        "handshake", "load", "capabilities", "invoke", "cancel",
+        "reset", "drain", "health", "shutdown", "unknown"
+      ]
+    },
+    "status": { "enum": ["passed", "failed", "cancelled"] },
+    "failure_class": {
+      "oneOf": [
+        {
+          "enum": [
+            "protocol_mismatch", "source_mismatch", "authority_denied",
+            "budget_exhausted", "timeout", "cancelled", "worker_unhealthy",
+            "worker_crashed", "adapter_failed", "invalid_result", "internal_error"
+          ]
+        },
+        { "type": "null" }
+      ]
+    },
+    "retryable": { "type": "boolean" },
+    "worker": { "$ref": "sley.worker.session.v1" },
+    "result": {
+      "oneOf": [
+        { "type": "object" },
+        { "type": "null" }
+      ]
+    },
+    "isolation": { "$ref": "sley.worker.session.v1#/$defs/isolation" },
+    "issues": {
+      "type": "array",
+      "maxItems": 32,
+      "items": {
+        "type": "object",
+        "required": ["code", "message"],
+        "properties": {
+          "code": { "type": "string", "pattern": "^WORKER_[A-Z0-9_]+$" },
+          "message": { "type": "string", "minLength": 1 },
+          "path": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

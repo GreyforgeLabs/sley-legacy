@@ -1,0 +1,118 @@
+{
+  "schema": "sley.test.manifest.v1",
+  "suite": {"id": "sley-user-test-fixture", "version": "1.0.0"},
+  "source": {
+    "target": ".",
+    "package": {"id": "sley-user-test-fixture", "version": "1.0.0"}
+  },
+  "authority": {
+    "mode": "local_test_only",
+    "external_provider_calls": false,
+    "mutation_authority": {
+      "repository": false,
+      "index": false,
+      "external": false,
+      "provider": false,
+      "deploy": false,
+      "spend": false
+    }
+  },
+  "bounds": {
+    "max_cases": 32,
+    "max_generated_cases": 16,
+    "max_wall_ms": 120000,
+    "max_output_bytes": 1048576
+  },
+  "coverage_scope": {
+    "tasks": [
+      "task:test.suite.add_zero_property",
+      "task:test.suite.classify",
+      "task:test.suite.incumbent_score",
+      "task:test.suite.main",
+      "task:test.suite.translated_score"
+    ],
+    "branches": [
+      "block:task:test.suite.classify:stmt:0:expr:else",
+      "block:task:test.suite.classify:stmt:0:expr:then",
+      "block:task:test.suite.main:stmt:4:else",
+      "block:task:test.suite.main:stmt:4:then"
+    ],
+    "effects": [
+      "effect:Deploy",
+      "effect:ModelCall",
+      "effect:Network",
+      "effect:SecretRead"
+    ],
+    "capabilities": [
+      "capability:Deploy=staging",
+      "capability:ModelCall=deploy-plan",
+      "capability:Network=https://example.test/profile",
+      "capability:SecretRead=api_key"
+    ]
+  },
+  "cases": [
+    {
+      "id": "adapter-replay",
+      "kind": "adapter_replay",
+      "selection_nodes": ["task:test.suite.main", "adapter:local.seeded-host"],
+      "covers": {
+        "tasks": ["task:test.suite.main"],
+        "branches": ["block:task:test.suite.main:stmt:4:then"],
+        "effects": ["effect:Deploy", "effect:ModelCall", "effect:Network", "effect:SecretRead"],
+        "capabilities": [
+          "capability:Deploy=staging",
+          "capability:ModelCall=deploy-plan",
+          "capability:Network=https://example.test/profile",
+          "capability:SecretRead=api_key"
+        ]
+      },
+      "manifest": "adapter.json",
+      "expected_record_digest": "sha256:11e4fb397e2cde2c25747f629b4f6577f309ecc455f9be872987c63874611ff7"
+    },
+    {
+      "id": "expected-diagnostic",
+      "kind": "diagnostic",
+      "selection_nodes": ["file:tests/invalid.sley"],
+      "covers": {
+        "tasks": [],
+        "branches": [],
+        "effects": [],
+        "capabilities": []
+      },
+      "target": "tests/invalid.sley",
+      "expected_ids": ["UNKNOWN_IDENTIFIER"],
+      "allow_additional": false
+    },
+    {
+      "id": "translation-differential",
+      "kind": "differential",
+      "selection_nodes": [
+        "task:test.suite.incumbent_score",
+        "task:test.suite.translated_score",
+        "translation:test.suite"
+      ],
+      "covers": {
+        "tasks": ["task:test.suite.incumbent_score", "task:test.suite.translated_score"],
+        "branches": [],
+        "effects": [],
+        "capabilities": []
+      },
+      "left": {
+        "target": ".",
+        "package": {"id": "sley-user-test-fixture", "version": "1.0.0"},
+        "task": "test.suite.incumbent_score"
+      },
+      "right": {
+        "target": ".",
+        "package": {"id": "sley-user-test-fixture", "version": "1.0.0"},
+        "task": "test.suite.translated_score"
+      },
+      "rows": [
+        {"id": "zero", "input": {"value": 0}, "branch_witnesses": []},
+        {"id": "small", "input": {"value": 2}, "branch_witnesses": []},
+        {"id": "larger", "input": {"value": 7}, "branch_witnesses": []}
+      ],
+      "comparison": "canonical_json_exact"
+    }
+  ]
+}

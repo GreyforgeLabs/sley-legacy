@@ -1,0 +1,10 @@
+module bench.f1_002
+
+task double -> Int {
+  take value: Int
+  return value * 2
+}
+
+task main -> Int {
+  return call double(4)
+}

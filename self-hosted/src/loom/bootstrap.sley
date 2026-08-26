@@ -3,11 +3,27 @@ module loom.bootstrap
 import loom.lint as lint
 
 export task implementation_version -> Text {
-  return "sley 1.1"
+  return "sley 1.2.0"
 }
 
 export task implementation_stage -> Text {
   return "self-hosted"
+}
+
+export task target_release -> Text {
+  return "Sley 1.2"
+}
+
+export task ai_bootstrap_version -> Text {
+  return "Bootstrap 0.2"
+}
+
+export task ai_bootstrap_path -> Text {
+  return "SLEY_AI.md"
+}
+
+export task ai_bootstrap_digest -> Text {
+  return "sha256:e0c388056373d011d80d2ecddf659390f1ebde843bd8cd9e31afef612e9fe061"
 }
 
 export task self_hosting_status -> Text {
@@ -22,6 +38,10 @@ export task owned_bootstrap_values -> List<Text> {
   return [
     "implementation_version",
     "implementation_stage",
+    "target_release",
+    "ai_bootstrap_version",
+    "ai_bootstrap_path",
+    "ai_bootstrap_digest",
     "self_hosting_status",
     "strict_self_hosted",
     "bootstrap_source_metadata_task_execution",
@@ -39,6 +59,22 @@ export task owned_bootstrap_values -> List<Text> {
     "report_builder_registry_task_execution",
     "report_builder_registry_dispatch_execution",
     "report_builder_registry_call_site_execution",
+    "adapter_contract_vocabulary_task_execution",
+    "adapter_report_builder_task_execution",
+    "worker_protocol_vocabulary_task_execution",
+    "worker_report_builder_task_execution",
+    "test_contract_vocabulary_task_execution",
+    "test_report_builder_task_execution",
+    "review_packet_report_builder_task_execution",
+    "validation_contract_vocabulary_task_execution",
+    "validation_report_builder_task_execution",
+    "operational_contract_vocabulary_task_execution",
+    "release_contract_vocabulary_task_execution",
+    "transaction_state_model_task_execution",
+    "transaction_inspect_report_builder_task_execution",
+    "transaction_preview_operation_plan_task_execution",
+    "change_plan_report_builder_task_execution",
+    "change_preview_report_builder_task_execution",
     "bootstrap_status_fallback_removal_task_execution",
     "doctor_report_shape",
     "doctor_report_builder",
@@ -46,6 +82,11 @@ export task owned_bootstrap_values -> List<Text> {
     "diagnostics_report_shape",
     "diagnostics_report_builder",
     "diagnostics_report_builder_task_execution",
+    "explain_report_shape",
+    "explain_report_builder",
+    "explain_report_builder_task_execution",
+    "checker_diagnostic_explain_catalog_task_execution",
+    "checker_diagnostic_explain_unknown_task_execution",
     "diagnostic_ids",
     "query_report_shape",
     "query_report_builder",
@@ -170,6 +211,8 @@ export task owned_bootstrap_values -> List<Text> {
     "checker_diagnostic_pass_order_task_execution",
     "checker_diagnostic_pass_descriptor_task_execution",
     "checker_diagnostic_pass_plan_task_execution",
+    "checker_syntax_context_diagnostics",
+    "checker_source_structure_patterns_task_execution",
     "checker_executor_id_map_task_execution",
     "checker_executor_name_map_task_execution",
     "checker_descriptor_value_map_task_execution",
@@ -203,6 +246,25 @@ export task owned_bootstrap_values -> List<Text> {
     "runtime_host_effect_needles_dispatch_execution",
     "runtime_authority_host_effect_needles_execution",
     "runtime_authority_effect_aliases_task_execution",
+    "local_change_authority_contract_task_execution",
+    "local_change_authority_scope_task_execution",
+    "local_change_authority_issuer_source_task_execution",
+    "local_change_authority_replay_task_execution",
+    "local_change_authority_revocation_task_execution",
+    "change_approval_request_report_builder_task_execution",
+    "change_grant_report_builder_task_execution",
+    "change_apply_authorization_report_builder_task_execution",
+    "change_revocation_record_report_builder_task_execution",
+    "change_recovery_report_builder_task_execution",
+    "change_apply_report_builder_task_execution",
+    "change_rollback_report_builder_task_execution",
+    "change_review_report_builder_task_execution",
+    "change_transaction_seal_report_builder_task_execution",
+    "transaction_review_contract_task_execution",
+    "atomic_apply_strategy_task_execution",
+    "atomic_apply_verification_task_execution",
+    "atomic_apply_metadata_policy_task_execution",
+    "atomic_apply_internal_scope_task_execution",
     "runtime_source_metadata_task_execution",
     "runtime_diagnostic_messages_task_execution",
     "runtime_diagnostic_fallback_removal_task_execution",
@@ -504,7 +566,14 @@ export task source_modules -> List<Text> {
     "loom.checker",
     "loom.lint",
     "loom.runtime",
-    "loom.reports"
+    "loom.reports",
+    "loom.transaction",
+    "loom.adapter",
+    "loom.worker",
+    "loom.testing",
+    "loom.validation",
+    "loom.operational",
+    "loom.release"
   ]
 }
 

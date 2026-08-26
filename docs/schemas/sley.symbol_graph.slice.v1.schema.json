@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.symbol_graph.slice.v1",
+  "title": "Sley Symbol Graph Slice v1",
+  "type": "object",
+  "required": [
+    "schema", "target", "entry_module", "focus", "imports", "types",
+    "effects", "tasks", "add_affordances", "insert_affordances",
+    "move_affordances", "delete_affordances", "replace_affordances",
+    "call_site_affordances", "call_arg_affordances", "outbound_calls",
+    "inbound_calls"
+  ],
+  "properties": {
+    "schema": { "const": "sley.symbol_graph.slice.v1" },
+    "target": { "$ref": "sley.symbol_graph.slice.v0#/properties/target" },
+    "entry_module": { "$ref": "sley.symbol_graph.slice.v0#/properties/entry_module" },
+    "focus": { "$ref": "sley.symbol_graph.slice.v0#/$defs/sliceFocus" },
+    "imports": { "$ref": "sley.symbol_graph.slice.v0#/properties/imports" },
+    "types": { "$ref": "sley.symbol_graph.slice.v0#/properties/types" },
+    "effects": { "$ref": "sley.symbol_graph.slice.v0#/properties/effects" },
+    "tasks": { "$ref": "sley.symbol_graph.slice.v0#/properties/tasks" },
+    "task": { "$ref": "sley.symbol_graph.slice.v0#/properties/task" },
+    "add_affordances": { "$ref": "sley.symbol_graph.slice.v0#/properties/add_affordances" },
+    "insert_affordances": { "$ref": "sley.symbol_graph.slice.v0#/properties/insert_affordances" },
+    "move_affordances": { "$ref": "sley.symbol_graph.slice.v0#/properties/move_affordances" },
+    "delete_affordances": { "$ref": "sley.symbol_graph.slice.v0#/properties/delete_affordances" },
+    "replace_affordances": { "$ref": "sley.symbol_graph.slice.v0#/properties/replace_affordances" },
+    "call_site_affordances": { "$ref": "sley.symbol_graph.slice.v0#/properties/call_site_affordances" },
+    "call_arg_affordances": { "$ref": "sley.symbol_graph.slice.v0#/properties/call_arg_affordances" },
+    "outbound_calls": { "$ref": "sley.symbol_graph.slice.v0#/properties/outbound_calls" },
+    "inbound_calls": { "$ref": "sley.symbol_graph.slice.v0#/properties/inbound_calls" }
+  },
+  "additionalProperties": false
+}

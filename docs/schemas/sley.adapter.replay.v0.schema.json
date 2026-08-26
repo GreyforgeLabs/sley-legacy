@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.adapter.replay.v0",
+  "title": "Sley Deterministic Adapter Replay v0",
+  "type": "object",
+  "required": [
+    "schema", "record_digest", "status", "manifest_id", "adapter", "runtime",
+    "replay_key", "authority", "redaction", "request", "result",
+    "measurements", "events", "terminal_code"
+  ],
+  "properties": {
+    "schema": { "const": "sley.adapter.replay.v0" },
+    "record_digest": { "$ref": "#/$defs/digest" },
+    "status": { "enum": ["passed", "failed", "blocked", "cancelled"] },
+    "manifest_id": { "type": "string", "minLength": 1 },
+    "adapter": { "$ref": "#/$defs/identity" },
+    "runtime": { "$ref": "#/$defs/identity" },
+    "replay_key": { "type": "string", "minLength": 1 },
+    "authority": {
+      "type": "object",
+      "required": ["mode", "capabilities_digest", "mutation_authority"],
+      "properties": {
+        "mode": { "const": "local_replay_only" },
+        "capabilities_digest": { "$ref": "#/$defs/digest" },
+        "mutation_authority": { "type": "object" }
+      },
+      "additionalProperties": false
+    },
+    "redaction": {
+      "type": "object",
+      "required": ["policy", "seed_families", "public_projection", "private_projection"],
+      "properties": {
+        "policy": { "const": "digest_only" },
+        "seed_families": {
+          "type": "array",
+          "minItems": 8,
+          "maxItems": 8,
+          "items": {
+            "type": "object",
+            "required": ["family", "count", "values_included"],
+            "properties": {
+              "family": { "type": "string", "minLength": 1 },
+              "count": { "type": "integer", "minimum": 0 },
+              "values_included": { "const": false }
+            },
+            "additionalProperties": false
+          }
+        },
+        "public_projection": { "const": "digests_and_counts_only" },
+        "private_projection": { "const": "manifest_owned_seed_values" }
+      },
+      "additionalProperties": false
+    },
+    "request": {
+      "type": "object",
+      "required": ["target_digest", "capabilities_digest", "seeds_digest"],
+      "properties": {
+        "target_digest": { "$ref": "#/$defs/digest" },
+        "capabilities_digest": { "$ref": "#/$defs/digest" },
+        "seeds_digest": { "$ref": "#/$defs/digest" }
+      },
+      "additionalProperties": false
+    },
+    "result": {
+      "type": "object",
+      "required": ["status", "output_digest", "diagnostic_codes"],
+      "properties": {
+        "status": { "type": "string", "minLength": 1 },
+        "output_digest": { "oneOf": [{ "$ref": "#/$defs/digest" }, { "type": "null" }] },
+        "diagnostic_codes": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+      },
+      "additionalProperties": false
+    },
+    "measurements": {
+      "type": "object",
+      "required": ["limits", "observed_call_count", "observed_step_count", "observed_call_depth", "output_bytes"],
+      "properties": {
+        "limits": { "type": "object" },
+        "observed_call_count": { "type": "integer", "minimum": 0 },
+        "observed_step_count": { "type": "integer", "minimum": 0 },
+        "observed_call_depth": { "type": "integer", "minimum": 0 },
+        "output_bytes": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "events": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/event" }
+    },
+    "terminal_code": { "type": "string", "minLength": 1 }
+  },
+  "$defs": {
+    "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "identity": {
+      "type": "object",
+      "required": ["id", "version", "digest"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "minLength": 1 },
+        "digest": { "$ref": "#/$defs/digest" }
+      },
+      "additionalProperties": false
+    },
+    "event": {
+      "type": "object",
+      "required": ["sequence", "phase", "adapter_id", "effect", "code"],
+      "properties": {
+        "sequence": { "type": "integer", "minimum": 0 },
+        "phase": {
+          "enum": [
+            "opened", "manifest_validated", "authority_bound", "seed_bound",
+            "runtime_started", "adapter_called", "adapter_returned",
+            "runtime_finished", "replay_verified", "cancellation_observed"
+          ]
+        },
+        "adapter_id": { "type": "string", "minLength": 1 },
+        "effect": { "type": "string", "minLength": 1 },
+        "resource": { "type": "string", "minLength": 1 },
+        "input_digest": { "$ref": "#/$defs/digest" },
+        "output_digest": { "$ref": "#/$defs/digest" },
+        "code": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,21 @@
+module corpus.accepted_discoverability
+
+task logic -> Bool {
+  return false && false
+}
+
+task choose_expression -> Int {
+  take ready: Bool
+
+  return if ready { 1 } else { 0 }
+}
+
+task choose_statement -> Int {
+  take ready: Bool
+
+  if ready {
+    return 1
+  } else {
+    return 0
+  }
+}

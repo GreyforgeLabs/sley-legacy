@@ -35,6 +35,11 @@ FOUND=0
 for ext in "${FORBIDDEN_EXTENSIONS[@]}"; do
   while IFS= read -r file; do
     if [[ -n "$file" ]]; then
+      case "$file" in
+        ./clients/generate-worker-clients.py|./clients/python/sley_worker_client/*|./clients/python/tests/*|./clients/node/index.mjs|./clients/node/index.d.ts|./clients/node/generated/*|./clients/node/test/*)
+          continue
+          ;;
+      esac
       echo "$file"
       FOUND=1
     fi
@@ -46,8 +51,8 @@ done
 if [[ "$FOUND" -eq 1 ]]; then
   echo "" >&2
   echo "Self-hosted gate failed: forbidden foreign-language source files are present." >&2
-  echo "Keep source implementation in .sley plus the permitted POSIX shell bootstrap/test surface." >&2
+  echo "Keep compiler/runtime implementation in .sley plus the permitted POSIX shell and worker-client surfaces." >&2
   exit 1
 fi
 
-echo "Self-hosted gate passed: no forbidden foreign-language source files found."
+echo "Self-hosted gate passed: no forbidden foreign-language source files outside the worker-client boundary."

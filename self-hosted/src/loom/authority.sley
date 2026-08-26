@@ -1,0 +1,101 @@
+module loom.authority
+
+export task local_grant_resource_scope_kinds -> List<Text> {
+  return [
+    "repository_source"
+  ]
+}
+
+export task local_grant_operator_fields -> List<Text> {
+  return [
+    "confirm_exact_local_grant",
+    "issuer",
+    "principal",
+    "audience",
+    "purpose",
+    "nonce",
+    "created_at",
+    "expires_at",
+    "review_acknowledgements",
+    "revocation_state",
+    "max_wall_clock_seconds"
+  ]
+}
+
+export task local_grant_issuer_sources -> List<Text> {
+  return [
+    "explicit_cli_assertion"
+  ]
+}
+
+export task local_grant_replay_policy -> Text {
+  return "single_use_at_apply"
+}
+
+export task local_grant_replay_enforcement -> Text {
+  return "deferred_until_s12_404"
+}
+
+export task local_grant_revocation_states -> List<Text> {
+  return [
+    "not_revoked",
+    "revoked",
+    "unknown"
+  ]
+}
+
+export task local_grant_issuable_revocation_states -> List<Text> {
+  return [
+    "not_revoked"
+  ]
+}
+
+export task local_grant_revocation_source_kinds -> List<Text> {
+  return [
+    "operator_assertion"
+  ]
+}
+
+export task local_grant_proof_kinds -> List<Text> {
+  return [
+    "signature",
+    "greynucleus"
+  ]
+}
+
+export task local_grant_proof_statuses -> List<Text> {
+  return [
+    "unverified"
+  ]
+}
+
+export task local_grant_max_apply_attempts -> Int {
+  return 1
+}
+
+export task apply_authorization_internal_scope_kinds -> List<Text> {
+  return [
+    "transaction_state",
+    "transaction_lock",
+    "replay_ledger",
+    "recovery_journal",
+    "revocation_ledger"
+  ]
+}
+
+export task apply_replay_enforcement -> Text {
+  return "enforced_by_s12_404"
+}
+
+export task local_revocation_record_states -> List<Text> {
+  return [
+    "not_revoked",
+    "revoked"
+  ]
+}
+
+export task local_revocation_record_sources -> List<Text> {
+  return [
+    "explicit_cli_assertion"
+  ]
+}

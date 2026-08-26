@@ -1,0 +1,42 @@
+{
+  "schema": "sley.agent_bench.run_manifest.v0",
+  "run_id": "sley-operational-agent-workflow-v1-k3",
+  "suite_id": "sley-operational-agent-workflow-v1",
+  "case_manifest_path": "case-manifest.json",
+  "case_manifest_digest": "sha256:7dc95c9916a657325b3b79067157603ee96e3c1559fe7a925c77d6141589f1df",
+  "mode": "K3",
+  "adapter": {
+    "kind": "openclaw_one_shot",
+    "id": "openclaw-one-shot-v2",
+    "provider": "openai",
+    "model": "gpt-5.6-sol",
+    "transport": "local",
+    "thinking": "low",
+    "model_measurement_applicable": true,
+    "incremental_spend_ceiling_usd": 1,
+    "pricing": {
+      "input_per_million_usd": 2,
+      "output_per_million_usd": 10,
+      "basis": "retained SleyBench comparison estimate; verify before approved execution"
+    },
+    "data_policy": {
+      "provider_training_authorized": false,
+      "persistent_provider_thread": false,
+      "local_session_persistence": false,
+      "minimum_retention": true
+    }
+  },
+  "bootstrap": {
+    "path": "SLEY_AI.md",
+    "digest": "sha256:e0c388056373d011d80d2ecddf659390f1ebde843bd8cd9e31afef612e9fe061"
+  },
+  "tool_allowlist": ["query"],
+  "system_prompt": {
+    "digest": "sha256:8a33353f992710c6423910c170064d95115646de657cdcc7b88dc487882f7c85"
+  },
+  "retrieval": {
+    "paths": [],
+    "digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "retain_workspaces": false
+}

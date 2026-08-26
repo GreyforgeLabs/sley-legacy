@@ -1,0 +1,155 @@
+{
+  "schema": "sley.operational.agent_workflow_comparison.v1",
+  "status": "passed",
+  "workflow_id": "contract-fixture-agent-workflow",
+  "identity": {
+    "sley_commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "case_manifest_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "raw_run_manifest_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "structural_run_manifest_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+    "controller_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "execution_approval_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+    "execution_provenance_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "controls": {
+    "equal_task_context_spend_budget_verified": true,
+    "same_model": true,
+    "same_task": true,
+    "same_workspace": true,
+    "same_oracle": true,
+    "same_owned_paths": true,
+    "action_budget_is_controlled_difference": true
+  },
+  "arms": {
+    "raw_source": {
+      "mode": "K1",
+      "interface": "raw_workspace",
+      "run_id": "contract-fixture-k1",
+      "aggregate_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+      "case_result_digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+      "evidence_bundle_digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+      "accepted_correct_change": true,
+      "strict_success": true,
+      "inference_attempts": 1,
+      "input_tokens": 100,
+      "output_tokens": 20,
+      "total_tokens": 120,
+      "accepted_change_tokens": 120,
+      "prompt_bytes": 4096,
+      "response_bytes": 512,
+      "context_files_supplied": 4,
+      "context_bytes_supplied": 2048,
+      "structural_response_bytes": 0,
+      "wall_ms": 1000,
+      "tool_calls": 0,
+      "compiler_cycles": 5,
+      "invalid_actions": 0,
+      "repair_loops": 0,
+      "changed_files": 2,
+      "changed_lines": 4,
+      "human_review_applicable": false,
+      "human_review_ms": null
+    },
+    "sley_structural": {
+      "mode": "K3",
+      "interface": "raw_workspace_plus_read_only_structure",
+      "run_id": "contract-fixture-k3",
+      "aggregate_digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+      "case_result_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+      "evidence_bundle_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+      "accepted_correct_change": true,
+      "strict_success": true,
+      "inference_attempts": 2,
+      "input_tokens": 150,
+      "output_tokens": 25,
+      "total_tokens": 175,
+      "accepted_change_tokens": 175,
+      "prompt_bytes": 6144,
+      "response_bytes": 768,
+      "context_files_supplied": 4,
+      "context_bytes_supplied": 2048,
+      "structural_response_bytes": 1024,
+      "wall_ms": 1200,
+      "tool_calls": 1,
+      "compiler_cycles": 5,
+      "invalid_actions": 0,
+      "repair_loops": 0,
+      "changed_files": 2,
+      "changed_lines": 4,
+      "human_review_applicable": false,
+      "human_review_ms": null
+    }
+  },
+  "deltas": {
+    "inference_attempts": 1,
+    "input_tokens": 50,
+    "output_tokens": 5,
+    "total_tokens": 55,
+    "prompt_bytes": 2048,
+    "response_bytes": 256,
+    "context_files_supplied": 0,
+    "context_bytes_supplied": 0,
+    "structural_response_bytes": 1024,
+    "wall_ms": 200,
+    "tool_calls": 1,
+    "compiler_cycles": 0,
+    "invalid_actions": 0,
+    "repair_loops": 0,
+    "changed_files": 0,
+    "changed_lines": 0
+  },
+  "decision": {
+    "outcome": "both_accepted",
+    "recommendation": "retain_for_bounded_followup",
+    "structural_context_effect": "expansion",
+    "promotion_decision": "deferred",
+    "general_claim_supported": false,
+    "production_claim": false
+  },
+  "methodology": {
+    "trial_count": 1,
+    "failures_retained": true,
+    "cache_state": "fresh_per_arm",
+    "context_budget_basis": "same_model_context_window_and_spend_ceiling",
+    "manifest_limit_enforcement": "partial_controller_bounds",
+    "repair_loop_observability": "post_submit_repair_unavailable",
+    "single_trial_generalization": false
+  },
+  "environment": {
+    "scope": "comparison_host",
+    "os": "contract fixture",
+    "kernel": "fixture",
+    "architecture": "fixture",
+    "logical_cpus": 1,
+    "memory_bytes": 1
+  },
+  "authority": {
+    "mode": "local_isolated_evaluation_only",
+    "provider_execution_authorized": true,
+    "repository_mutation": false,
+    "product_runtime_mutation": false,
+    "deploy": false,
+    "publication": false
+  },
+  "disclosure": {
+    "raw_prompts_embedded": false,
+    "raw_responses_embedded": false,
+    "contains_real_user_data": false,
+    "contains_credentials": false,
+    "publication_authorized": false
+  },
+  "issues": [
+    {
+      "code": "SYNTHETIC_CONTRACT_FIXTURE",
+      "message": "This validates report shape and is not operational evidence"
+    },
+    {
+      "code": "MANIFEST_LIMIT_ENFORCEMENT_PARTIAL",
+      "message": "Equal task, model-context, and spend budgets are verified; generic case-manifest resource-limit enforcement is not claimed"
+    },
+    {
+      "code": "PROVIDER_ORIGIN_ASSERTION_NOT_CRYPTOGRAPHIC",
+      "message": "Provider origin is asserted by reviewed private provenance rather than cryptographically attested"
+    }
+  ]
+}

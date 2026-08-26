@@ -1,0 +1,7 @@
+module bench.public.f1_014
+
+type Count = Int
+
+task main -> Count {
+  return 6
+}

@@ -1,0 +1,120 @@
+{
+  "schema": "greyforge.sleybench.mode_summary.v0",
+  "status": "completed",
+  "suite_id": "sleybench-v0",
+  "mode": "K3",
+  "model": "synthetic-contract-fixture",
+  "counts": {
+    "case_count": 120,
+    "passed_count": 120,
+    "failed_count": 0,
+    "family_counts": {
+      "syntax_compilation": 20,
+      "semantic_implementation": 20,
+      "diagnosis_repair": 20,
+      "translation_preservation": 20,
+      "structural_tool_use": 20,
+      "repository_patch_integration": 20
+    }
+  },
+  "rates": {
+    "parse_at_1": {
+      "numerator": 20,
+      "denominator": 20,
+      "rate": 1.0,
+      "wilson_95_low": 0.8,
+      "wilson_95_high": 1.0,
+      "applicable": true
+    },
+    "compile_at_1": {
+      "numerator": 100,
+      "denominator": 100,
+      "rate": 1.0,
+      "wilson_95_low": 0.96,
+      "wilson_95_high": 1.0,
+      "applicable": true
+    },
+    "pass_at_1": {
+      "numerator": 20,
+      "denominator": 20,
+      "rate": 1.0,
+      "wilson_95_low": 0.8,
+      "wilson_95_high": 1.0,
+      "applicable": true
+    },
+    "repair_at_1": {
+      "numerator": 20,
+      "denominator": 20,
+      "rate": 1.0,
+      "wilson_95_low": 0.8,
+      "wilson_95_high": 1.0,
+      "applicable": true
+    },
+    "repository_patch_acceptance": {
+      "numerator": 20,
+      "denominator": 20,
+      "rate": 1.0,
+      "wilson_95_low": 0.8,
+      "wilson_95_high": 1.0,
+      "applicable": true
+    },
+    "regression_free_success": {
+      "numerator": 120,
+      "denominator": 120,
+      "rate": 1.0,
+      "wilson_95_low": 0.96,
+      "wilson_95_high": 1.0,
+      "applicable": true
+    },
+    "syntax_hallucination": {
+      "numerator": 0,
+      "denominator": 120,
+      "rate": 0.0,
+      "wilson_95_low": 0.0,
+      "wilson_95_high": 0.04,
+      "applicable": true
+    },
+    "stdlib_hallucination": {
+      "numerator": 0,
+      "denominator": 120,
+      "rate": 0.0,
+      "wilson_95_low": 0.0,
+      "wilson_95_high": 0.04,
+      "applicable": true
+    },
+    "invalid_tool_call": {
+      "numerator": 0,
+      "denominator": 120,
+      "rate": 0.0,
+      "wilson_95_low": 0.0,
+      "wilson_95_high": 0.04,
+      "applicable": true
+    }
+  },
+  "resources": {
+    "tool_calls_total": 20,
+    "compiler_cycles_total": 120,
+    "wall_ms_total": 120000,
+    "input_tokens_total": 120000,
+    "output_tokens_total": 12000,
+    "estimated_cost_usd_total": 1.2
+  },
+  "partitions": {
+    "public": {
+      "case_count": 96,
+      "passed_count": 96,
+      "aggregate_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "private": {
+      "case_count": 24,
+      "passed_count": 24,
+      "aggregate_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    }
+  },
+  "evidence": {
+    "split_manifest_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "public_case_results_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "private_case_results_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+  },
+  "issues": []
+}

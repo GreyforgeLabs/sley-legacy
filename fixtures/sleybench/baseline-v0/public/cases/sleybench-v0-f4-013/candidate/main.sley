@@ -1,0 +1,5 @@
+module bench.public.f4_013
+
+task main -> Int {
+  return if 3 < 8 { 3 } else { 8 }
+}

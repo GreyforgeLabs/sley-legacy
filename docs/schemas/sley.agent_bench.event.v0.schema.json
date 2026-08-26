@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.agent_bench.event.v0",
+  "title": "Sley Agent Bench Event v0",
+  "type": "object",
+  "required": ["schema", "run_id", "sequence", "kind", "case_id", "payload"],
+  "properties": {
+    "schema": { "const": "sley.agent_bench.event.v0" },
+    "run_id": { "type": "string", "minLength": 1 },
+    "sequence": { "type": "integer", "minimum": 1 },
+    "kind": {
+      "enum": [
+        "run_started", "case_started", "preflight_completed",
+        "candidate_applied", "oracle_completed", "case_completed", "run_completed"
+      ]
+    },
+    "case_id": { "type": ["string", "null"] },
+    "payload": { "type": "object" }
+  },
+  "additionalProperties": false
+}

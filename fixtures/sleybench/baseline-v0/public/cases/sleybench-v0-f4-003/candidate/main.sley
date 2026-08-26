@@ -1,0 +1,5 @@
+module bench.public.f4_003
+
+task main -> Bool {
+  return 7 > 3 && 7 < 10
+}

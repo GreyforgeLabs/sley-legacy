@@ -1,0 +1,146 @@
+{
+  "schema": "sley.test.manifest.v1",
+  "suite": {"id": "sley-user-test-fixture", "version": "1.0.0"},
+  "source": {
+    "target": ".",
+    "package": {"id": "sley-user-test-fixture", "version": "1.0.0"}
+  },
+  "authority": {
+    "mode": "local_test_only",
+    "external_provider_calls": false,
+    "mutation_authority": {
+      "repository": false,
+      "index": false,
+      "external": false,
+      "provider": false,
+      "deploy": false,
+      "spend": false
+    }
+  },
+  "bounds": {
+    "max_cases": 32,
+    "max_generated_cases": 16,
+    "max_wall_ms": 120000,
+    "max_output_bytes": 1048576
+  },
+  "coverage_scope": {
+    "tasks": [
+      "task:test.suite.add_zero_property",
+      "task:test.suite.classify",
+      "task:test.suite.incumbent_score",
+      "task:test.suite.main",
+      "task:test.suite.translated_score"
+    ],
+    "branches": [
+      "block:task:test.suite.classify:stmt:0:expr:else",
+      "block:task:test.suite.classify:stmt:0:expr:then",
+      "block:task:test.suite.main:stmt:4:else",
+      "block:task:test.suite.main:stmt:4:then"
+    ],
+    "effects": [
+      "effect:Deploy",
+      "effect:ModelCall",
+      "effect:Network",
+      "effect:SecretRead"
+    ],
+    "capabilities": [
+      "capability:Deploy=staging",
+      "capability:ModelCall=deploy-plan",
+      "capability:Network=https://example.test/profile",
+      "capability:SecretRead=api_key"
+    ]
+  },
+  "cases": [
+    {
+      "id": "classify-table",
+      "kind": "table",
+      "selection_nodes": [
+        "task:test.suite.classify",
+        "block:task:test.suite.classify:stmt:0:expr:then",
+        "block:task:test.suite.classify:stmt:0:expr:else"
+      ],
+      "covers": {
+        "tasks": ["task:test.suite.classify"],
+        "branches": [],
+        "effects": [],
+        "capabilities": []
+      },
+      "task": "test.suite.classify",
+      "rows": [
+        {
+          "id": "excellent",
+          "input": {"score": 95},
+          "expected_result": "excellent",
+          "branch_witnesses": ["block:task:test.suite.classify:stmt:0:expr:then"]
+        },
+        {
+          "id": "steady",
+          "input": {"score": 40},
+          "expected_result": "steady",
+          "branch_witnesses": ["block:task:test.suite.classify:stmt:0:expr:else"]
+        }
+      ]
+    },
+    {
+      "id": "add-zero-property",
+      "kind": "property",
+      "selection_nodes": ["task:test.suite.add_zero_property"],
+      "covers": {
+        "tasks": ["task:test.suite.add_zero_property"],
+        "branches": [],
+        "effects": [],
+        "capabilities": []
+      },
+      "task": "test.suite.add_zero_property",
+      "generator": {
+        "strategy": "cartesian_v1",
+        "max_cases": 3,
+        "fields": [
+          {"name": "value", "values": [-2, 0, 7]}
+        ]
+      },
+      "expected_result": true
+    },
+    {
+      "id": "seeded-effect-mock",
+      "kind": "effect_mock",
+      "selection_nodes": [
+        "task:test.suite.main",
+        "effect:SecretRead",
+        "effect:Network",
+        "effect:ModelCall",
+        "effect:Deploy"
+      ],
+      "covers": {
+        "tasks": ["task:test.suite.main"],
+        "branches": ["block:task:test.suite.main:stmt:4:then"],
+        "effects": ["effect:Deploy", "effect:ModelCall", "effect:Network", "effect:SecretRead"],
+        "capabilities": [
+          "capability:Deploy=staging",
+          "capability:ModelCall=deploy-plan",
+          "capability:Network=https://example.test/profile",
+          "capability:SecretRead=api_key"
+        ]
+      },
+      "target": ".",
+      "capabilities": [
+        "SecretRead=api_key",
+        "Network=https://example.test/profile",
+        "ModelCall=deploy-plan",
+        "Deploy=staging"
+      ],
+      "mocks": {
+        "secrets": [{"key": "api_key", "text": "redacted"}],
+        "http_text": [{"key": "https://example.test/profile", "text": "profile ready"}],
+        "shell_outputs": [],
+        "model_outputs": [{"key": "deploy-plan", "text": "plan approved"}],
+        "deploy_results": [{"key": "staging", "text": "staged"}],
+        "spend_results": []
+      },
+      "expected_result": {
+        "kind": "Ok",
+        "value": {"kind": "Text", "value": "profile ready | plan approved | staged"}
+      }
+    }
+  ]
+}

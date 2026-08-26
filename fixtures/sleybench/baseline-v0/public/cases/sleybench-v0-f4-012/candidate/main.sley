@@ -1,0 +1,5 @@
+module bench.public.f4_012
+
+task main -> Int {
+  return if false { 3 } else { 14 }
+}

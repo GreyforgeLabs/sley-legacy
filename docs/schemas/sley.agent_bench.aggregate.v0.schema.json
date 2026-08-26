@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.agent_bench.aggregate.v0",
+  "title": "Sley Agent Bench Aggregate v0",
+  "type": "object",
+  "required": [
+    "schema", "status", "run_id", "suite_id", "tier", "mode", "adapter",
+    "sley_version", "counts", "rates", "resources", "cases", "evidence", "issues"
+  ],
+  "properties": {
+    "schema": { "const": "sley.agent_bench.aggregate.v0" },
+    "status": { "enum": ["passed", "failed"] },
+    "run_id": { "type": "string", "minLength": 1 },
+    "suite_id": { "type": "string", "minLength": 1 },
+    "tier": { "enum": ["smoke", "baseline"] },
+    "mode": { "enum": ["K0", "K1", "K2", "K3", "K4"] },
+    "adapter": {
+      "type": "object",
+      "required": ["kind", "id", "model_measurement_applicable"],
+      "properties": {
+        "kind": { "type": "string", "minLength": 1 },
+        "id": { "type": "string", "minLength": 1 },
+        "model_measurement_applicable": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "sley_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+$" },
+    "counts": {
+      "type": "object",
+      "required": ["case_count", "passed_count", "failed_count", "family_counts"],
+      "properties": {
+        "case_count": { "type": "integer", "minimum": 0 },
+        "passed_count": { "type": "integer", "minimum": 0 },
+        "failed_count": { "type": "integer", "minimum": 0 },
+        "family_counts": {
+          "type": "object",
+          "required": [
+            "syntax_compilation", "semantic_implementation", "diagnosis_repair",
+            "translation_preservation", "structural_tool_use",
+            "repository_patch_integration"
+          ],
+          "properties": {
+            "syntax_compilation": { "type": "integer", "minimum": 0 },
+            "semantic_implementation": { "type": "integer", "minimum": 0 },
+            "diagnosis_repair": { "type": "integer", "minimum": 0 },
+            "translation_preservation": { "type": "integer", "minimum": 0 },
+            "structural_tool_use": { "type": "integer", "minimum": 0 },
+            "repository_patch_integration": { "type": "integer", "minimum": 0 }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "rates": {
+      "type": "object",
+      "required": [
+        "parse_at_1", "compile_at_1", "pass_at_1", "repair_at_1",
+        "repository_patch_acceptance", "regression_free_success",
+        "syntax_hallucination", "stdlib_hallucination", "invalid_tool_call"
+      ],
+      "properties": {
+        "parse_at_1": { "$ref": "#/$defs/rate" },
+        "compile_at_1": { "$ref": "#/$defs/rate" },
+        "pass_at_1": { "$ref": "#/$defs/rate" },
+        "repair_at_1": { "$ref": "#/$defs/rate" },
+        "repository_patch_acceptance": { "$ref": "#/$defs/rate" },
+        "regression_free_success": { "$ref": "#/$defs/rate" },
+        "syntax_hallucination": { "$ref": "#/$defs/rate" },
+        "stdlib_hallucination": { "$ref": "#/$defs/rate" },
+        "invalid_tool_call": { "$ref": "#/$defs/rate" }
+      },
+      "additionalProperties": false
+    },
+    "resources": {
+      "type": "object",
+      "required": [
+        "tool_calls_total", "compiler_cycles_total", "wall_ms_total",
+        "input_tokens_total", "output_tokens_total", "estimated_cost_usd_total"
+      ],
+      "properties": {
+        "tool_calls_total": { "type": "integer", "minimum": 0 },
+        "compiler_cycles_total": { "type": "integer", "minimum": 0 },
+        "wall_ms_total": { "type": "integer", "minimum": 0 },
+        "input_tokens_total": { "type": "integer", "minimum": 0 },
+        "output_tokens_total": { "type": "integer", "minimum": 0 },
+        "estimated_cost_usd_total": { "type": "number", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "cases": {
+      "type": "array",
+      "items": { "$ref": "sley.agent_bench.case_result.v0" }
+    },
+    "evidence": {
+      "type": "object",
+      "required": [
+        "case_manifest_digest", "run_manifest_digest", "bootstrap_digest",
+        "event_stream_digest", "case_results_digest"
+      ],
+      "properties": {
+        "case_manifest_digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "run_manifest_digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "bootstrap_digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "event_stream_digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "case_results_digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+      },
+      "additionalProperties": false
+    },
+    "issues": { "type": "array", "items": { "$ref": "#/$defs/issue" } }
+  },
+  "$defs": {
+    "rate": {
+      "type": "object",
+      "required": ["numerator", "denominator", "rate", "wilson_95_low", "wilson_95_high", "applicable"],
+      "properties": {
+        "numerator": { "type": "integer", "minimum": 0 },
+        "denominator": { "type": "integer", "minimum": 0 },
+        "rate": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "wilson_95_low": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "wilson_95_high": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "applicable": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "issue": {
+      "type": "object",
+      "required": ["code", "message"],
+      "properties": {
+        "code": { "type": "string", "minLength": 1 },
+        "message": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,42 @@
+{
+  "transaction": "cross-module-preview",
+  "actor": "operator:test",
+  "mode": "all_or_nothing",
+  "ops": [
+    {
+      "op": "RenameDeclaration",
+      "target": "task:app.math.double",
+      "payload": {
+        "name": "scale"
+      }
+    },
+    {
+      "op": "UpdateCallSites",
+      "target": "task:app.math.double",
+      "payload": {
+        "from": "math.double",
+        "replacement": "math.scale",
+        "scope": "module:app.main"
+      }
+    },
+    {
+      "op": "AddTake",
+      "target": "task:app.math.scale",
+      "payload": {
+        "name": "factor",
+        "type": "Int",
+        "position": 0
+      }
+    },
+    {
+      "op": "UpdateCallArgs",
+      "target": "task:app.math.scale",
+      "payload": {
+        "from": "math.scale",
+        "source": "2",
+        "position": 0,
+        "scope": "module:app.main"
+      }
+    }
+  ]
+}

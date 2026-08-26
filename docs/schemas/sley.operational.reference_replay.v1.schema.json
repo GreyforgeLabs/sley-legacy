@@ -1,0 +1,276 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.operational.reference_replay.v1",
+  "title": "Sley Operational Reference Replay v1",
+  "type": "object",
+  "required": [
+    "schema", "status", "workload", "authority", "identity", "oracle",
+    "host_boundary", "correctness", "performance", "negative_evidence",
+    "promotion", "disclosure", "issues"
+  ],
+  "properties": {
+    "schema": {"const": "sley.operational.reference_replay.v1"},
+    "status": {"const": "passed"},
+    "workload": {
+      "type": "object",
+      "required": ["id", "version", "scope", "case_count"],
+      "properties": {
+        "id": {"const": "siglum.numerology"},
+        "version": {"const": "siglum.numerology.reference-v1"},
+        "scope": {"const": "complete_frozen_reference_corpus"},
+        "case_count": {"const": 10000}
+      },
+      "additionalProperties": false
+    },
+    "authority": {
+      "type": "object",
+      "required": [
+        "mode", "incumbent_authoritative", "candidate_authoritative",
+        "repository_mutation", "product_runtime_mutation", "network_authority",
+        "provider_calls", "deploy", "spend"
+      ],
+      "properties": {
+        "mode": {"const": "local_replay_only"},
+        "incumbent_authoritative": {"const": true},
+        "candidate_authoritative": {"const": false},
+        "repository_mutation": {"const": false},
+        "product_runtime_mutation": {"const": false},
+        "network_authority": {"const": false},
+        "provider_calls": {"const": false},
+        "deploy": {"const": false},
+        "spend": {"const": false}
+      },
+      "additionalProperties": false
+    },
+    "identity": {
+      "type": "object",
+      "required": [
+        "sley_commit", "siglum_commit", "candidate_source_digest",
+        "runtime_digest", "candidate_corpus_digest", "frozen_corpus_digest",
+        "corpus_manifest_digest", "prior_parity_report_digest",
+        "pins_digest"
+      ],
+      "properties": {
+        "sley_commit": {"$ref": "#/$defs/commit"},
+        "siglum_commit": {"$ref": "#/$defs/commit"},
+        "candidate_source_digest": {"$ref": "#/$defs/digest"},
+        "runtime_digest": {"$ref": "#/$defs/digest"},
+        "candidate_corpus_digest": {"$ref": "#/$defs/digest"},
+        "frozen_corpus_digest": {"$ref": "#/$defs/digest"},
+        "corpus_manifest_digest": {"$ref": "#/$defs/digest"},
+        "prior_parity_report_digest": {"$ref": "#/$defs/digest"},
+        "pins_digest": {"$ref": "#/$defs/digest"}
+      },
+      "additionalProperties": false
+    },
+    "oracle": {
+      "type": "object",
+      "required": ["implementation", "boundary", "contract", "independent", "frozen_outputs"],
+      "properties": {
+        "implementation": {"const": "ReferenceTypeScriptSignatureEngine.compute"},
+        "boundary": {"const": "src/lib/signature/reference-adapter.ts"},
+        "contract": {"const": "siglum.numerology.input.v1 -> siglum.numerology.result.v1"},
+        "independent": {"const": true},
+        "frozen_outputs": {"const": true}
+      },
+      "additionalProperties": false
+    },
+    "host_boundary": {
+      "type": "object",
+      "required": [
+        "kind", "protocol", "persistent_probe", "fresh_process_per_full_shard",
+        "immutable_input_pins", "process_limits_enforced", "os_network_isolation_enforced",
+        "credential_environment_scrubbed", "limits"
+      ],
+      "properties": {
+        "kind": {"const": "bounded_persistent_machine_host"},
+        "protocol": {"const": "sley.machine.invoke.v0"},
+        "persistent_probe": {"const": true},
+        "fresh_process_per_full_shard": {"const": true},
+        "immutable_input_pins": {"const": true},
+        "process_limits_enforced": {"const": true},
+        "os_network_isolation_enforced": {"const": false},
+        "credential_environment_scrubbed": {"const": true},
+        "limits": {
+          "type": "object",
+          "required": [
+            "overall_wall_ms", "shard_wall_ms", "evaluation_steps",
+            "call_depth", "collection_length", "response_bytes",
+            "shard_output_bytes", "per_process_address_space_bytes", "open_files"
+          ],
+          "properties": {
+            "overall_wall_ms": {"type": "integer", "minimum": 1},
+            "shard_wall_ms": {"type": "integer", "minimum": 1},
+            "evaluation_steps": {"type": "integer", "minimum": 1},
+            "call_depth": {"type": "integer", "minimum": 1},
+            "collection_length": {"type": "integer", "minimum": 1},
+            "response_bytes": {"type": "integer", "minimum": 1},
+            "shard_output_bytes": {"type": "integer", "minimum": 1},
+            "per_process_address_space_bytes": {"type": "integer", "minimum": 67108864},
+            "open_files": {"type": "integer", "minimum": 16}
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "correctness": {
+      "type": "object",
+      "required": ["repeat_count", "deterministic", "exact_match_count", "mismatch_count", "runs"],
+      "properties": {
+        "repeat_count": {"const": 2},
+        "deterministic": {"const": true},
+        "exact_match_count": {"const": 10000},
+        "mismatch_count": {"const": 0},
+        "runs": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {"$ref": "#/$defs/run"}
+        }
+      },
+      "additionalProperties": false
+    },
+    "performance": {
+      "type": "object",
+      "required": ["measurement_class", "probe", "full_runs"],
+      "properties": {
+        "measurement_class": {"const": "local_observation_not_benchmark"},
+        "probe": {
+          "type": "object",
+          "required": [
+            "request_count", "cold_first_response_ms", "warm_response_ms",
+            "peak_process_tree_rss_bytes", "result_digests", "deterministic"
+          ],
+          "properties": {
+            "request_count": {"type": "integer", "minimum": 3, "maximum": 32},
+            "cold_first_response_ms": {"type": "integer", "minimum": 0},
+            "warm_response_ms": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 31,
+              "items": {"type": "integer", "minimum": 0}
+            },
+            "peak_process_tree_rss_bytes": {"type": "integer", "minimum": 0},
+            "result_digests": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 32,
+              "items": {"$ref": "#/$defs/digest"}
+            },
+            "deterministic": {"const": true}
+          },
+          "additionalProperties": false
+        },
+        "full_replay_controller": {
+          "type": "object",
+          "required": [
+            "wall_ms",
+            "peak_process_tree_rss_bytes"
+          ],
+          "properties": {
+            "wall_ms": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "peak_process_tree_rss_bytes": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        },
+        "full_runs": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": "object",
+            "required": ["run_index", "elapsed_ms", "cases_per_second", "maximum_steps", "maximum_calls", "maximum_call_depth", "maximum_response_bytes"],
+            "properties": {
+              "run_index": {"type": "integer", "minimum": 1, "maximum": 2},
+              "elapsed_ms": {"type": "integer", "minimum": 1},
+              "cases_per_second": {"type": "number", "exclusiveMinimum": 0},
+              "maximum_steps": {"type": "integer", "minimum": 0},
+              "maximum_calls": {"type": "integer", "minimum": 0},
+              "maximum_call_depth": {"type": "integer", "minimum": 0},
+              "maximum_response_bytes": {"type": "integer", "minimum": 0}
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "negative_evidence": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "items": {
+        "type": "object",
+        "required": ["code", "status", "disposition", "summary"],
+        "properties": {
+          "code": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]*$"},
+          "status": {"enum": ["observed", "retained"]},
+          "disposition": {"enum": ["fixed", "open", "deferred"]},
+          "summary": {"type": "string", "minLength": 1}
+        },
+        "additionalProperties": false
+      }
+    },
+    "promotion": {
+      "type": "object",
+      "required": ["decision", "production_claim", "missing_evidence"],
+      "properties": {
+        "decision": {"const": "deferred"},
+        "production_claim": {"const": false},
+        "missing_evidence": {
+          "type": "array",
+          "minItems": 4,
+          "uniqueItems": true,
+          "items": {"enum": ["production_shadow", "production_latency", "fallback", "promotion_authority", "rollback"]}
+        }
+      },
+      "additionalProperties": false
+    },
+    "disclosure": {
+      "type": "object",
+      "required": ["contains_real_user_data", "contains_credentials", "publication_authorized", "raw_corpus_embedded"],
+      "properties": {
+        "contains_real_user_data": {"const": false},
+        "contains_credentials": {"const": false},
+        "publication_authorized": {"const": false},
+        "raw_corpus_embedded": {"const": false}
+      },
+      "additionalProperties": false
+    },
+    "issues": {"type": "array", "maxItems": 0}
+  },
+  "$defs": {
+    "commit": {"type": "string", "pattern": "^[a-f0-9]{40}$"},
+    "digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "run": {
+      "type": "object",
+      "required": [
+        "run_index", "case_count", "exact_match_count", "mismatch_count",
+        "candidate_corpus_digest", "mismatch_report_digest", "shard_digests"
+      ],
+      "properties": {
+        "run_index": {"type": "integer", "minimum": 1, "maximum": 2},
+        "case_count": {"const": 10000},
+        "exact_match_count": {"const": 10000},
+        "mismatch_count": {"const": 0},
+        "candidate_corpus_digest": {"$ref": "#/$defs/digest"},
+        "mismatch_report_digest": {"$ref": "#/$defs/digest"},
+        "shard_digests": {
+          "type": "array",
+          "minItems": 20,
+          "maxItems": 20,
+          "items": {"$ref": "#/$defs/digest"}
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

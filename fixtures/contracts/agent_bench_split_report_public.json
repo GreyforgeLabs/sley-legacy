@@ -1,0 +1,34 @@
+{
+  "schema": "sley.agent_bench.split_report.v0",
+  "command": "verify-public",
+  "status": "passed",
+  "verification_level": "public_commitment",
+  "subject": "fixtures/sleybench/baseline-v0/split-manifest.json",
+  "suite_id": "sleybench-v0",
+  "split_state": "draft",
+  "private_material_verified": false,
+  "counts": {
+    "public": 96,
+    "private": 24,
+    "total": 120
+  },
+  "digests": {
+    "split_manifest": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+    "public_case_manifest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "public_exclusion_ledger": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+  },
+  "summary": {
+    "check_count": 8,
+    "passed_count": 8,
+    "failed_count": 0,
+    "issue_count": 0
+  },
+  "checks": [
+    {
+      "id": "private_material_not_inspected",
+      "status": "passed",
+      "message": "public verification does not inspect or claim verification of held-out material"
+    }
+  ],
+  "issues": []
+}

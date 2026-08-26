@@ -1,0 +1,11 @@
+module bench.public.f5_016
+
+type Marker = Int
+
+task helper -> Int {
+  return 3
+}
+
+task main -> Int {
+  return call helper()
+}

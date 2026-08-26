@@ -1,0 +1,26 @@
+{
+  "schema": "sley.explain.report.v0",
+  "status": "error",
+  "query": {
+    "kind": "diagnostic_id",
+    "value": "NOT_A_W1_ID"
+  },
+  "diagnostic_id": "NOT_A_W1_ID",
+  "version_context": {
+    "implementation_version": "sley 1.2.0",
+    "target_release": "Sley 1.2",
+    "bootstrap": {
+      "version": "Bootstrap 0.2",
+      "path": "SLEY_AI.md",
+      "digest": "sha256:e0c388056373d011d80d2ecddf659390f1ebde843bd8cd9e31afef612e9fe061"
+    }
+  },
+  "diagnostics": [
+    {
+      "id": "UNKNOWN_DIAGNOSTIC_ID",
+      "severity": "error",
+      "message": "unknown diagnostic id `NOT_A_W1_ID`",
+      "node": "diagnostic:NOT_A_W1_ID"
+    }
+  ]
+}

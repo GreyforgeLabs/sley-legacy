@@ -1,0 +1,54 @@
+{
+  "schema": "sley.test.manifest.v1",
+  "suite": {"id": "minimal", "version": "1.0.0"},
+  "source": {
+    "target": "example.sley",
+    "package": {"id": "minimal", "version": "1.0.0"}
+  },
+  "authority": {
+    "mode": "local_test_only",
+    "external_provider_calls": false,
+    "mutation_authority": {
+      "repository": false,
+      "index": false,
+      "external": false,
+      "provider": false,
+      "deploy": false,
+      "spend": false
+    }
+  },
+  "bounds": {
+    "max_cases": 1,
+    "max_generated_cases": 1,
+    "max_wall_ms": 1000,
+    "max_output_bytes": 4096
+  },
+  "coverage_scope": {
+    "tasks": ["task:example.main"],
+    "branches": [],
+    "effects": [],
+    "capabilities": []
+  },
+  "cases": [
+    {
+      "id": "minimal-table",
+      "kind": "table",
+      "selection_nodes": ["task:example.main"],
+      "covers": {
+        "tasks": ["task:example.main"],
+        "branches": [],
+        "effects": [],
+        "capabilities": []
+      },
+      "task": "example.main",
+      "rows": [
+        {
+          "id": "one",
+          "input": {},
+          "expected_result": true,
+          "branch_witnesses": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,98 @@
+module loom.worker
+
+export task protocol_version -> Text {
+  return "sley.worker.v1"
+}
+
+export task request_schema -> Text {
+  return "sley.worker.request.v1"
+}
+
+export task response_schema -> Text {
+  return "sley.worker.response.v1"
+}
+
+export task event_schema -> Text {
+  return "sley.worker.event.v1"
+}
+
+export task session_schema -> Text {
+  return "sley.worker.session.v1"
+}
+
+export task runtime_digest -> Text {
+  return "sha256:5b36de7470d015d2090552587d4f163dadbd062d87b7508320b1f1b638ad2361"
+}
+
+export task operations -> List<Text> {
+  return [
+    "handshake",
+    "load",
+    "capabilities",
+    "invoke",
+    "cancel",
+    "reset",
+    "drain",
+    "health",
+    "shutdown"
+  ]
+}
+
+export task lifecycle_states -> List<Text> {
+  return [
+    "starting",
+    "ready",
+    "busy",
+    "draining",
+    "unhealthy",
+    "shutting_down",
+    "stopped"
+  ]
+}
+
+export task request_states -> List<Text> {
+  return [
+    "accepted",
+    "running",
+    "completed",
+    "failed",
+    "cancelled",
+    "timed_out"
+  ]
+}
+
+export task failure_classes -> List<Text> {
+  return [
+    "protocol_mismatch",
+    "source_mismatch",
+    "authority_denied",
+    "budget_exhausted",
+    "timeout",
+    "cancelled",
+    "worker_unhealthy",
+    "worker_crashed",
+    "adapter_failed",
+    "invalid_result",
+    "internal_error"
+  ]
+}
+
+export task contract_versions -> List<Text> {
+  return [
+    "sley.adapter.manifest.v0",
+    "sley.adapter.replay.v0",
+    "sley.adapter.report.v0",
+    "sley.worker.request.v1",
+    "sley.worker.response.v1",
+    "sley.worker.event.v1",
+    "sley.worker.session.v1"
+  ]
+}
+
+export task isolation_class -> Text {
+  return "fresh_subprocess_per_invoke"
+}
+
+export task cache_policy -> Text {
+  return "disabled"
+}

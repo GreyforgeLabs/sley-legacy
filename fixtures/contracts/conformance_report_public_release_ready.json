@@ -2,10 +2,10 @@
   "schema": "sley.conformance.report.v0",
   "status": "passed",
   "summary": {
-    "schema_count": 42,
-    "schema_instance_count": 128,
+    "schema_count": 58,
+    "schema_instance_count": 144,
     "schema_without_instance_count": 0,
-    "contract_fixture_count": 128,
+    "contract_fixture_count": 144,
     "contract_fixture_failed_count": 0,
     "migration_fixture_count": 0,
     "corpus_accepted_count": 23,
@@ -15,11 +15,11 @@
     "missing_onboarding_path_count": 0,
     "example_project_count": 2,
     "example_source_count": 76,
-    "integration_test_count": 199,
-    "declared_integration_test_count": 199,
+    "integration_test_count": 215,
+    "declared_integration_test_count": 215,
     "test_count_matches_declared": true,
     "editor_shim_count": 0,
-    "v1_gate_target_count": 23,
+    "v1_gate_target_count": 29,
     "missing_v1_gate_target_count": 0,
     "public_release_blocker_count": 0,
     "issue_count": 0
@@ -37,8 +37,8 @@
         "--json"
       ],
       "report_schema": "sley.contract.fixture_check.v0",
-      "fixture_count": 128,
-      "passed_count": 128,
+      "fixture_count": 144,
+      "passed_count": 144,
       "failed_count": 0,
       "issue_count": 0,
       "issues": []
@@ -87,9 +87,9 @@
   },
   "tests": {
     "integration_test_file": "scripts/self-hosted-test.sh",
-    "integration_test_count": 199,
+    "integration_test_count": 215,
     "goal_doc": "docs/contracts.md",
-    "declared_integration_test_count": 199,
+    "declared_integration_test_count": 215,
     "declared_matches_actual": true
   },
   "editor_shims": {
@@ -120,8 +120,13 @@
       "mcp-bridge",
       "graph-diff",
       "contracts",
+      "contract-compatibility",
+      "protocol-contracts",
+      "transaction-contracts",
       "conformance",
       "claim-audit",
+      "ai-foundation",
+      "corpus-governance",
       "corpus",
       "examples",
       "smoke",
@@ -135,7 +140,8 @@
       "shadow",
       "zjx-tools",
       "arena",
-      "syntax"
+      "syntax",
+      "validation-planner"
     ],
     "actual_targets": [
       "fmt",
@@ -145,8 +151,13 @@
       "mcp-bridge",
       "graph-diff",
       "contracts",
+      "contract-compatibility",
+      "protocol-contracts",
+      "transaction-contracts",
       "conformance",
       "claim-audit",
+      "ai-foundation",
+      "corpus-governance",
       "corpus",
       "examples",
       "smoke",
@@ -160,7 +171,8 @@
       "shadow",
       "zjx-tools",
       "arena",
-      "syntax"
+      "syntax",
+      "validation-planner"
     ],
     "missing_required_targets": [],
     "undefined_targets": [],
@@ -176,8 +188,8 @@
         "v1"
       ],
       "gate_completion_percent": 100,
-      "passed_check_count": 23,
-      "total_check_count": 23,
+      "passed_check_count": 29,
+      "total_check_count": 29,
       "blocker_count": 0,
       "blockers": []
     },

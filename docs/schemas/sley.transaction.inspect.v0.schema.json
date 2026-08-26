@@ -1,0 +1,208 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.transaction.inspect.v0",
+  "title": "Sley Transaction Inspection v0",
+  "type": "object",
+  "required": [
+    "schema", "status", "transaction", "inspection", "mutations",
+    "next_actions", "issues"
+  ],
+  "properties": {
+    "schema": {"const": "sley.transaction.inspect.v0"},
+    "status": {"const": "inspected"},
+    "transaction": {"$ref": "#/$defs/transaction"},
+    "inspection": {"$ref": "#/$defs/inspection"},
+    "mutations": {"$ref": "#/$defs/mutations"},
+    "next_actions": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/action"}
+    },
+    "issues": {
+      "type": "array",
+      "maxItems": 0
+    }
+  },
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "transaction": {
+      "type": "object",
+      "required": [
+        "transaction_id", "state", "history", "repository", "base",
+        "compiler", "actor", "goal", "nonce", "created_at", "expires_at"
+      ],
+      "properties": {
+        "transaction_id": {"$ref": "#/$defs/digest"},
+        "state": {"const": "inspected"},
+        "history": {
+          "type": "array",
+          "prefixItems": [
+            {"const": "opened"},
+            {"const": "inspected"}
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "repository": {
+          "type": "object",
+          "required": ["root", "identity_digest"],
+          "properties": {
+            "root": {"type": "string", "minLength": 1},
+            "identity_digest": {"$ref": "#/$defs/digest"}
+          },
+          "additionalProperties": false
+        },
+        "base": {
+          "type": "object",
+          "required": [
+            "mode", "commit", "source_digest", "graph_digest",
+            "trace_digest"
+          ],
+          "properties": {
+            "mode": {"const": "working_tree"},
+            "commit": {"type": "string", "pattern": "^[a-f0-9]{40,64}$"},
+            "source_digest": {"$ref": "#/$defs/digest"},
+            "graph_digest": {"$ref": "#/$defs/digest"},
+            "trace_digest": {"$ref": "#/$defs/digest"}
+          },
+          "additionalProperties": false
+        },
+        "compiler": {
+          "type": "object",
+          "required": ["version", "contract_versions"],
+          "properties": {
+            "version": {"type": "string", "minLength": 1},
+            "contract_versions": {
+              "type": "object",
+              "required": ["diagnostics", "graph_slice", "verify", "inspection"],
+              "properties": {
+                "diagnostics": {"const": "sley.diagnostics.report.v1"},
+                "graph_slice": {"const": "sley.symbol_graph.slice.v1"},
+                "verify": {"const": "sley.verify.report.v1"},
+                "inspection": {"const": "sley.transaction.inspect.v0"}
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "actor": {"type": "string", "minLength": 1, "maxLength": 256},
+        "goal": {"type": "string", "minLength": 1, "maxLength": 4096},
+        "nonce": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9._:-]+$"
+        },
+        "created_at": {"type": "string", "format": "date-time"},
+        "expires_at": {"type": "string", "format": "date-time"}
+      },
+      "additionalProperties": false
+    },
+    "inspection": {
+      "type": "object",
+      "required": [
+        "target", "entry_module", "summary", "target_nodes",
+        "authority_requirements", "graft_affordances", "documentation_refs",
+        "validation", "context_digest", "bounds"
+      ],
+      "properties": {
+        "target": {"type": "string", "minLength": 1},
+        "entry_module": {"type": ["string", "null"]},
+        "summary": {
+          "type": "object",
+          "required": [
+            "module_count", "task_count", "call_count", "diagnostic_count",
+            "lint_finding_count"
+          ],
+          "properties": {
+            "module_count": {"type": "integer", "minimum": 0},
+            "task_count": {"type": "integer", "minimum": 0},
+            "call_count": {"type": "integer", "minimum": 0},
+            "diagnostic_count": {"type": "integer", "minimum": 0},
+            "lint_finding_count": {"type": "integer", "minimum": 0}
+          },
+          "additionalProperties": false
+        },
+        "target_nodes": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "authority_requirements": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "graft_affordances": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "documentation_refs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "validation": {
+          "type": "object",
+          "required": ["check_schema", "check_status", "lint_schema", "lint_status"],
+          "properties": {
+            "check_schema": {"const": "sley.diagnostics.report.v0"},
+            "check_status": {"enum": ["ok", "error"]},
+            "lint_schema": {"const": "sley.lint.report.v0"},
+            "lint_status": {"enum": ["ok", "findings"]}
+          },
+          "additionalProperties": false
+        },
+        "context_digest": {"$ref": "#/$defs/digest"},
+        "bounds": {
+          "type": "object",
+          "required": ["max_target_nodes", "source_bytes", "context_bytes"],
+          "properties": {
+            "max_target_nodes": {"const": 64},
+            "source_bytes": {"type": "integer", "minimum": 0},
+            "context_bytes": {"type": "integer", "minimum": 0}
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "mutations": {
+      "type": "object",
+      "required": [
+        "repository_source", "git_index", "trace_sidecars",
+        "external_systems", "provider_state"
+      ],
+      "properties": {
+        "repository_source": {"const": false},
+        "git_index": {"const": false},
+        "trace_sidecars": {"const": false},
+        "external_systems": {"const": false},
+        "provider_state": {"const": false}
+      },
+      "additionalProperties": false
+    },
+    "action": {
+      "type": "object",
+      "required": ["kind", "reason", "command"],
+      "properties": {
+        "kind": {"enum": ["inspect_graph_slice", "plan_with_checked_primitives"]},
+        "reason": {"type": "string", "minLength": 1},
+        "command": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

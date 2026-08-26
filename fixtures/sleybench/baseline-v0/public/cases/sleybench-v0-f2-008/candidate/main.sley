@@ -1,0 +1,11 @@
+module bench.public.f2_008
+
+task add -> Int {
+  take left: Int
+  take right: Int
+  return left + right
+}
+
+task main -> Int {
+  return call add(21, 34)
+}

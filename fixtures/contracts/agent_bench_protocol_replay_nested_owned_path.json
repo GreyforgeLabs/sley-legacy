@@ -1,0 +1,51 @@
+{
+  "schema": "sley.agent_bench.protocol_replay.v0",
+  "protocol_version": "openclaw-one-shot-v2",
+  "case_id": "nested-owned-path-accepted",
+  "mode": "K3",
+  "owned_paths": ["src/app/main.sley"],
+  "limits": {
+    "max_turns": 3,
+    "max_tool_calls": 1,
+    "max_input_bytes": 4096,
+    "max_output_bytes": 4096,
+    "max_context_nodes": 128,
+    "max_wall_ms": 5000
+  },
+  "cancellation": {
+    "requested": false,
+    "observed": false,
+    "turn": null
+  },
+  "turns": [
+    {
+      "number": 1,
+      "input_bytes": 100,
+      "output_bytes": 80,
+      "context_nodes": 8,
+      "elapsed_ms": 200,
+      "action": {
+        "kind": "tool",
+        "tool": "check",
+        "target": "src/app/main.sley"
+      }
+    },
+    {
+      "number": 2,
+      "input_bytes": 80,
+      "output_bytes": 160,
+      "context_nodes": 8,
+      "elapsed_ms": 300,
+      "action": {
+        "kind": "submit",
+        "files": {
+          "src/app/main.sley": "module app.main\n\ntask main() -> Int {\n  return 42\n}\n"
+        }
+      }
+    }
+  ],
+  "expected": {
+    "status": "accepted",
+    "code": "PROTOCOL_ACCEPTED"
+  }
+}

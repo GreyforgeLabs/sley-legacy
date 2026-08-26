@@ -1,0 +1,42 @@
+{
+  "schema": "sley.agent_bench.run_manifest.v0",
+  "run_id": "sleybench-contract-openclaw-v2",
+  "suite_id": "sleybench-v0-public",
+  "case_manifest_path": "case-manifest.json",
+  "case_manifest_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+  "mode": "K3",
+  "adapter": {
+    "kind": "openclaw_one_shot",
+    "id": "openclaw-one-shot-v2",
+    "provider": "openai",
+    "model": "gpt-5.6-sol",
+    "transport": "local",
+    "thinking": "low",
+    "model_measurement_applicable": true,
+    "incremental_spend_ceiling_usd": 5,
+    "pricing": {
+      "input_per_million_usd": 2,
+      "output_per_million_usd": 10,
+      "basis": "contract fixture pricing"
+    },
+    "data_policy": {
+      "provider_training_authorized": false,
+      "persistent_provider_thread": false,
+      "local_session_persistence": false,
+      "minimum_retention": true
+    }
+  },
+  "bootstrap": {
+    "path": "SLEY_AI.md",
+    "digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+  },
+  "tool_allowlist": ["ast", "check", "graph", "lint", "plan", "query", "run"],
+  "system_prompt": {
+    "digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555"
+  },
+  "retrieval": {
+    "paths": ["docs/AgentQuickstart.md"],
+    "digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444"
+  },
+  "retain_workspaces": false
+}

@@ -1,0 +1,5 @@
+module bench.public.f1_016
+
+task main -> Result<Int, Error> {
+  return Ok(5)
+}

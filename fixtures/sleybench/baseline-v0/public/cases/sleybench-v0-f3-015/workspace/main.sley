@@ -1,0 +1,10 @@
+module bench.public.f3_015
+
+task helper -> Result<Int, Error> {
+  return Ok(9)
+}
+
+task main -> Int {
+  bind value = call helper()?
+  return value
+}

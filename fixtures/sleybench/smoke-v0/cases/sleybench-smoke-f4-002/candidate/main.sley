@@ -1,0 +1,5 @@
+module bench.f4_002
+
+task main -> Text {
+  return "forge" + "node"
+}

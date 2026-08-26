@@ -1,0 +1,2 @@
+{"kind":"tool","tool":"check","target":"main.sley"}
+{"kind":"submit","files":{"main.sley":"module main\n"}}

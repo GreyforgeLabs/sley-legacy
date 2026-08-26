@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.verify.report.v1",
+  "title": "Sley Verify Report v1",
+  "type": "object",
+  "required": [
+    "schema", "status", "target", "entry_module", "summary",
+    "diagnostics", "runtime", "next_actions"
+  ],
+  "properties": {
+    "schema": { "const": "sley.verify.report.v1" },
+    "status": { "$ref": "sley.verify.report.v0#/properties/status" },
+    "target": { "$ref": "sley.verify.report.v0#/properties/target" },
+    "entry_module": { "$ref": "sley.verify.report.v0#/properties/entry_module" },
+    "summary": { "$ref": "sley.verify.report.v0#/$defs/summary" },
+    "diagnostics": {
+      "type": "array",
+      "items": { "$ref": "sley.diagnostics.report.v0#/$defs/diagnostic" }
+    },
+    "query": { "$ref": "sley.verify.report.v0#/$defs/querySummary" },
+    "lint": { "$ref": "sley.verify.report.v0#/$defs/lintSummary" },
+    "runtime": { "$ref": "sley.verify.report.v0#/$defs/runtimeSummary" },
+    "next_actions": {
+      "type": "array",
+      "items": { "$ref": "sley.verify.report.v0#/$defs/action" }
+    }
+  },
+  "additionalProperties": false
+}

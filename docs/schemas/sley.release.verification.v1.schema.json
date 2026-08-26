@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.release.verification.v1",
+  "title": "Sley Release Verification v1",
+  "type": "object",
+  "required": ["schema", "status", "release", "artifact_id", "archive", "source_commit", "check_count", "passed_count", "failed_count", "checks", "issues"],
+  "properties": {
+    "schema": {"const": "sley.release.verification.v1"},
+    "status": {"enum": ["passed", "failed"]},
+    "release": {"const": "1.2.0"},
+    "artifact_id": {"const": "sley-1.2.0-linux-x86_64"},
+    "archive": {"const": "sley-1.2.0-linux-x86_64.tar.gz"},
+    "source_commit": {"type": ["string", "null"], "pattern": "^[0-9a-f]{40}$"},
+    "check_count": {"type": "integer", "minimum": 1},
+    "passed_count": {"type": "integer", "minimum": 0},
+    "failed_count": {"type": "integer", "minimum": 0},
+    "checks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "status", "message"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]+$"},
+          "status": {"enum": ["passed", "failed"]},
+          "message": {"type": "string", "minLength": 1}
+        },
+        "additionalProperties": false
+      }
+    },
+    "issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["code", "message"],
+        "properties": {
+          "code": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]+$"},
+          "message": {"type": "string", "minLength": 1}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,322 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.change.plan.v0",
+  "title": "Sley Change Plan v0",
+  "type": "object",
+  "required": [
+    "schema", "status", "transaction", "inspection", "plan", "mutations",
+    "next_actions", "issues"
+  ],
+  "properties": {
+    "schema": {"const": "sley.change.plan.v0"},
+    "status": {"const": "planned"},
+    "transaction": {"$ref": "#/$defs/transaction"},
+    "inspection": {"$ref": "#/$defs/inspectionReference"},
+    "plan": {"$ref": "#/$defs/plan"},
+    "mutations": {"$ref": "#/$defs/mutations"},
+    "next_actions": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/action"}
+    },
+    "issues": {"type": "array", "maxItems": 0}
+  },
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "transaction": {
+      "type": "object",
+      "required": [
+        "transaction_id", "state", "history", "repository", "base",
+        "compiler", "actor", "goal", "nonce", "created_at", "expires_at"
+      ],
+      "properties": {
+        "transaction_id": {"$ref": "#/$defs/digest"},
+        "state": {"const": "planned"},
+        "history": {
+          "type": "array",
+          "prefixItems": [
+            {"const": "opened"},
+            {"const": "inspected"},
+            {"const": "planned"}
+          ],
+          "items": false,
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "repository": {
+          "type": "object",
+          "required": ["root", "identity_digest"],
+          "properties": {
+            "root": {"type": "string", "minLength": 1},
+            "identity_digest": {"$ref": "#/$defs/digest"}
+          },
+          "additionalProperties": false
+        },
+        "base": {
+          "type": "object",
+          "required": ["mode", "commit", "source_digest", "graph_digest", "trace_digest"],
+          "properties": {
+            "mode": {"const": "working_tree"},
+            "commit": {"type": "string", "pattern": "^[a-f0-9]{40,64}$"},
+            "source_digest": {"$ref": "#/$defs/digest"},
+            "graph_digest": {"$ref": "#/$defs/digest"},
+            "trace_digest": {"$ref": "#/$defs/digest"}
+          },
+          "additionalProperties": false
+        },
+        "compiler": {
+          "type": "object",
+          "required": ["version", "contract_versions"],
+          "properties": {
+            "version": {"type": "string", "minLength": 1},
+            "contract_versions": {
+              "type": "object",
+              "required": ["diagnostics", "graph_slice", "verify", "inspection", "plan"],
+              "properties": {
+                "diagnostics": {"const": "sley.diagnostics.report.v1"},
+                "graph_slice": {"const": "sley.symbol_graph.slice.v1"},
+                "verify": {"const": "sley.verify.report.v1"},
+                "inspection": {"const": "sley.transaction.inspect.v0"},
+                "plan": {"const": "sley.change.plan.v0"}
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "actor": {"type": "string", "minLength": 1, "maxLength": 256},
+        "goal": {"type": "string", "minLength": 1, "maxLength": 4096},
+        "nonce": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9._:-]+$"
+        },
+        "created_at": {"type": "string", "format": "date-time"},
+        "expires_at": {"type": "string", "format": "date-time"}
+      },
+      "additionalProperties": false
+    },
+    "inspectionReference": {
+      "type": "object",
+      "required": ["schema", "transaction_id", "context_digest", "target"],
+      "properties": {
+        "schema": {"const": "sley.transaction.inspect.v0"},
+        "transaction_id": {"$ref": "#/$defs/digest"},
+        "context_digest": {"$ref": "#/$defs/digest"},
+        "target": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "plan": {
+      "type": "object",
+      "required": [
+        "plan_digest", "operation_digest", "requested_outcome", "assumptions",
+        "preconditions", "affected_nodes", "affected_files", "operations",
+        "expected_changes", "validation_profile", "selected_tests",
+        "non_goals", "fact_sources"
+      ],
+      "properties": {
+        "plan_digest": {"$ref": "#/$defs/digest"},
+        "operation_digest": {"$ref": "#/$defs/digest"},
+        "requested_outcome": {"type": "string", "minLength": 1, "maxLength": 4096},
+        "assumptions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1, "maxLength": 2048}
+        },
+        "preconditions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "affected_nodes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "affected_files": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"}
+        },
+        "operations": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {"$ref": "#/$defs/operation"}
+        },
+        "expected_changes": {
+          "type": "object",
+          "required": ["call_sites", "types", "effects", "authority"],
+          "properties": {
+            "call_sites": {"$ref": "#/$defs/expectations"},
+            "types": {"$ref": "#/$defs/expectations"},
+            "effects": {"$ref": "#/$defs/expectations"},
+            "authority": {"$ref": "#/$defs/expectations"}
+          },
+          "additionalProperties": false
+        },
+        "validation_profile": {
+          "type": "object",
+          "required": ["id", "required_checks"],
+          "properties": {
+            "id": {"const": "compiler_preview_v0"},
+            "required_checks": {
+              "type": "array",
+              "prefixItems": [
+                {"const": "check"},
+                {"const": "lint"},
+                {"const": "graph_diff"}
+              ],
+              "items": false,
+              "minItems": 3,
+              "maxItems": 3
+            }
+          },
+          "additionalProperties": false
+        },
+        "selected_tests": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"enum": ["compiler_check", "compiler_lint", "structural_graph_diff"]}
+        },
+        "non_goals": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1, "maxLength": 2048}
+        },
+        "fact_sources": {
+          "type": "object",
+          "required": ["compiler", "operator", "model"],
+          "properties": {
+            "compiler": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+            "operator": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+            "model": {"type": "array", "maxItems": 0}
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "operation": {
+      "type": "object",
+      "required": ["op", "target", "payload"],
+      "properties": {
+        "op": {"enum": ["RenameDeclaration", "UpdateCallSites", "AddTake", "UpdateCallArgs"]},
+        "target": {"type": "string", "pattern": "^task:[A-Za-z_][A-Za-z0-9_.]*$"},
+        "payload": {"type": "object"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"op": {"const": "RenameDeclaration"}}},
+          "then": {
+            "properties": {
+              "payload": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {"name": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"}},
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        {
+          "if": {"properties": {"op": {"const": "UpdateCallSites"}}},
+          "then": {
+            "properties": {
+              "payload": {
+                "type": "object",
+                "required": ["from", "replacement", "scope"],
+                "properties": {
+                  "from": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_.]*$"},
+                  "replacement": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_.]*$"},
+                  "scope": {"type": "string", "pattern": "^(module|task):[A-Za-z_][A-Za-z0-9_.]*$"}
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        {
+          "if": {"properties": {"op": {"const": "AddTake"}}},
+          "then": {
+            "properties": {
+              "payload": {
+                "type": "object",
+                "required": ["name", "type", "position"],
+                "properties": {
+                  "name": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"},
+                  "type": {"type": "string", "minLength": 1},
+                  "position": {"const": 0}
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        {
+          "if": {"properties": {"op": {"const": "UpdateCallArgs"}}},
+          "then": {
+            "properties": {
+              "payload": {
+                "type": "object",
+                "required": ["from", "source", "position", "scope"],
+                "properties": {
+                  "from": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_.]*$"},
+                  "source": {"type": "string", "minLength": 1, "maxLength": 4096},
+                  "position": {"const": 0},
+                  "scope": {"type": "string", "pattern": "^(module|task):[A-Za-z_][A-Za-z0-9_.]*$"}
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "expectations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["source", "description"],
+        "properties": {
+          "source": {"enum": ["compiler_derived", "operator_provided"]},
+          "description": {"type": "string", "minLength": 1}
+        },
+        "additionalProperties": false
+      }
+    },
+    "mutations": {
+      "type": "object",
+      "required": ["repository_source", "git_index", "trace_sidecars", "external_systems", "provider_state"],
+      "properties": {
+        "repository_source": {"const": false},
+        "git_index": {"const": false},
+        "trace_sidecars": {"const": false},
+        "external_systems": {"const": false},
+        "provider_state": {"const": false}
+      },
+      "additionalProperties": false
+    },
+    "action": {
+      "type": "object",
+      "required": ["kind", "reason", "command"],
+      "properties": {
+        "kind": {"const": "preview_candidate"},
+        "reason": {"type": "string", "minLength": 1},
+        "command": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

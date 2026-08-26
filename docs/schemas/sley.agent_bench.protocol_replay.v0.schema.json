@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.agent_bench.protocol_replay.v0",
+  "title": "SleyBench Agent Protocol Replay v0",
+  "type": "object",
+  "required": [
+    "schema", "protocol_version", "case_id", "mode", "owned_paths",
+    "limits", "cancellation", "turns", "expected"
+  ],
+  "properties": {
+    "schema": { "const": "sley.agent_bench.protocol_replay.v0" },
+    "protocol_version": { "const": "openclaw-one-shot-v2" },
+    "case_id": { "type": "string", "minLength": 1 },
+    "mode": { "const": "K3" },
+    "owned_paths": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/relativePath" }
+    },
+    "limits": {
+      "type": "object",
+      "required": [
+        "max_turns", "max_tool_calls", "max_input_bytes", "max_output_bytes",
+        "max_context_nodes", "max_wall_ms"
+      ],
+      "properties": {
+        "max_turns": { "type": "integer", "minimum": 1 },
+        "max_tool_calls": { "type": "integer", "minimum": 0 },
+        "max_input_bytes": { "type": "integer", "minimum": 1 },
+        "max_output_bytes": { "type": "integer", "minimum": 1 },
+        "max_context_nodes": { "type": "integer", "minimum": 1 },
+        "max_wall_ms": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "cancellation": {
+      "type": "object",
+      "required": ["requested", "observed", "turn"],
+      "properties": {
+        "requested": { "type": "boolean" },
+        "observed": { "type": "boolean" },
+        "turn": { "type": ["integer", "null"], "minimum": 1 }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "requested": { "const": false } } },
+          "then": {
+            "properties": {
+              "observed": { "const": false },
+              "turn": { "type": "null" }
+            }
+          },
+          "else": {
+            "properties": {
+              "turn": { "type": "integer", "minimum": 1 }
+            }
+          }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "turns": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/turn" }
+    },
+    "expected": {
+      "type": "object",
+      "required": ["status", "code"],
+      "properties": {
+        "status": { "enum": ["accepted", "rejected", "cancelled"] },
+        "code": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(^|/)\\.\\.?(/|$))(?!.*//)[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$"
+    },
+    "turn": {
+      "type": "object",
+      "required": [
+        "number", "input_bytes", "output_bytes", "context_nodes",
+        "elapsed_ms", "action"
+      ],
+      "properties": {
+        "number": { "type": "integer", "minimum": 1 },
+        "input_bytes": { "type": "integer", "minimum": 0 },
+        "output_bytes": { "type": "integer", "minimum": 0 },
+        "context_nodes": { "type": "integer", "minimum": 0 },
+        "elapsed_ms": { "type": "integer", "minimum": 0 },
+        "action": {
+          "oneOf": [
+            { "$ref": "#/$defs/toolAction" },
+            { "$ref": "#/$defs/submitAction" },
+            { "$ref": "#/$defs/cancelAction" }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "toolAction": {
+      "type": "object",
+      "required": ["kind", "tool", "target"],
+      "properties": {
+        "kind": { "const": "tool" },
+        "tool": { "enum": ["check", "lint", "plan", "verify"] },
+        "target": {
+          "oneOf": [
+            { "const": "." },
+            { "$ref": "#/$defs/relativePath" }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "submitAction": {
+      "type": "object",
+      "required": ["kind", "files"],
+      "properties": {
+        "kind": { "const": "submit" },
+        "files": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": { "$ref": "#/$defs/relativePath" },
+          "additionalProperties": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "cancelAction": {
+      "type": "object",
+      "required": ["kind", "reason"],
+      "properties": {
+        "kind": { "const": "cancel" },
+        "reason": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

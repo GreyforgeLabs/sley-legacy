@@ -1,0 +1,209 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.change.approval_request.v0",
+  "title": "Sley Change Approval Request v0",
+  "type": "object",
+  "required": [
+    "schema", "status", "request_id", "request_digest", "transaction",
+    "preview_ref", "candidate_ref", "derived_scope",
+    "required_operator_fields", "mutations", "next_actions", "issues"
+  ],
+  "properties": {
+    "schema": {"const": "sley.change.approval_request.v0"},
+    "status": {"const": "awaiting_approval"},
+    "request_id": {"type": "string", "pattern": "^approval-request:[a-f0-9]{64}$"},
+    "request_digest": {"$ref": "#/$defs/digest"},
+    "transaction": {"$ref": "#/$defs/transaction"},
+    "preview_ref": {"$ref": "#/$defs/previewReference"},
+    "candidate_ref": {"$ref": "#/$defs/candidateReference"},
+    "derived_scope": {"$ref": "#/$defs/derivedScope"},
+    "required_operator_fields": {
+      "type": "array",
+      "prefixItems": [
+        {"const": "confirm_exact_local_grant"},
+        {"const": "issuer"},
+        {"const": "principal"},
+        {"const": "audience"},
+        {"const": "purpose"},
+        {"const": "nonce"},
+        {"const": "created_at"},
+        {"const": "expires_at"},
+        {"const": "review_acknowledgements"},
+        {"const": "revocation_state"},
+        {"const": "max_wall_clock_seconds"}
+      ],
+      "items": false,
+      "minItems": 11,
+      "maxItems": 11
+    },
+    "mutations": {"$ref": "sley.change.plan.v0#/$defs/mutations"},
+    "next_actions": {
+      "type": "array",
+      "prefixItems": [{"$ref": "#/$defs/action"}],
+      "items": false,
+      "minItems": 1,
+      "maxItems": 1
+    },
+    "issues": {"type": "array", "maxItems": 0}
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "safePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+    },
+    "transaction": {
+      "type": "object",
+      "required": [
+        "transaction_id", "state", "history", "repository", "base",
+        "compiler", "actor", "goal", "nonce", "created_at", "expires_at"
+      ],
+      "properties": {
+        "transaction_id": {"$ref": "#/$defs/digest"},
+        "state": {"const": "awaiting_approval"},
+        "history": {
+          "type": "array",
+          "prefixItems": [
+            {"const": "opened"}, {"const": "inspected"},
+            {"const": "planned"}, {"const": "previewed"},
+            {"const": "awaiting_approval"}
+          ],
+          "items": false,
+          "minItems": 5,
+          "maxItems": 5
+        },
+        "repository": {"$ref": "sley.change.plan.v0#/$defs/transaction/properties/repository"},
+        "base": {"$ref": "sley.change.plan.v0#/$defs/transaction/properties/base"},
+        "compiler": {
+          "type": "object",
+          "required": ["version", "contract_versions"],
+          "properties": {
+            "version": {"type": "string", "minLength": 1},
+            "contract_versions": {
+              "type": "object",
+              "required": [
+                "diagnostics", "graph_slice", "verify", "inspection",
+                "plan", "preview", "approval_request"
+              ],
+              "properties": {
+                "diagnostics": {"const": "sley.diagnostics.report.v1"},
+                "graph_slice": {"const": "sley.symbol_graph.slice.v1"},
+                "verify": {"const": "sley.verify.report.v1"},
+                "inspection": {"const": "sley.transaction.inspect.v0"},
+                "plan": {"const": "sley.change.plan.v0"},
+                "preview": {"const": "sley.change.preview.v0"},
+                "approval_request": {"const": "sley.change.approval_request.v0"}
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "actor": {"type": "string", "minLength": 1, "maxLength": 256},
+        "goal": {"type": "string", "minLength": 1, "maxLength": 4096},
+        "nonce": {"type": "string", "minLength": 8, "maxLength": 128, "pattern": "^[A-Za-z0-9._:-]+$"},
+        "created_at": {"type": "string", "format": "date-time"},
+        "expires_at": {"type": "string", "format": "date-time"}
+      },
+      "additionalProperties": false
+    },
+    "previewReference": {
+      "type": "object",
+      "required": [
+        "schema", "preview_digest", "transaction_id", "plan_digest",
+        "operation_digest", "candidate_id", "candidate_digest", "base"
+      ],
+      "properties": {
+        "schema": {"const": "sley.change.preview.v0"},
+        "preview_digest": {"$ref": "#/$defs/digest"},
+        "transaction_id": {"$ref": "#/$defs/digest"},
+        "plan_digest": {"$ref": "#/$defs/digest"},
+        "operation_digest": {"$ref": "#/$defs/digest"},
+        "candidate_id": {"type": "string", "pattern": "^candidate:[a-f0-9]{64}$"},
+        "candidate_digest": {"$ref": "#/$defs/digest"},
+        "base": {"$ref": "sley.change.plan.v0#/$defs/transaction/properties/base"}
+      },
+      "additionalProperties": false
+    },
+    "candidateReference": {
+      "type": "object",
+      "required": [
+        "candidate_digest", "candidate_source_digest", "candidate_graph_digest",
+        "source_projection_digest", "owned_paths", "validation"
+      ],
+      "properties": {
+        "candidate_digest": {"$ref": "#/$defs/digest"},
+        "candidate_source_digest": {"$ref": "#/$defs/digest"},
+        "candidate_graph_digest": {"$ref": "#/$defs/digest"},
+        "source_projection_digest": {"$ref": "#/$defs/digest"},
+        "owned_paths": {
+          "type": "array", "minItems": 1, "uniqueItems": true,
+          "items": {"$ref": "#/$defs/safePath"}
+        },
+        "validation": {
+          "type": "object",
+          "required": ["profile", "required_passed"],
+          "properties": {
+            "profile": {"const": "compiler_preview_v0"},
+            "required_passed": {"const": true}
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "derivedScope": {
+      "type": "object",
+      "required": [
+        "operation_classes", "affected_nodes", "allowed_paths", "effect_changes",
+        "authority_changes", "review_requirements", "resource_scopes",
+        "max_source_bytes", "max_changed_files"
+      ],
+      "properties": {
+        "operation_classes": {
+          "type": "array", "minItems": 1, "uniqueItems": true,
+          "items": {"enum": ["RenameDeclaration", "UpdateCallSites", "AddTake", "UpdateCallArgs"]}
+        },
+        "affected_nodes": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "allowed_paths": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/safePath"}},
+        "effect_changes": {"type": "array", "items": {"$ref": "sley.change.preview.v0#/$defs/change"}},
+        "authority_changes": {"type": "array", "items": {"$ref": "sley.change.preview.v0#/$defs/change"}},
+        "review_requirements": {
+          "type": "array", "minItems": 1, "uniqueItems": true,
+          "items": {"enum": ["human_source_review", "graph_diff_review", "lint_review", "authority_review"]}
+        },
+        "resource_scopes": {
+          "type": "array",
+          "prefixItems": [{"$ref": "#/$defs/resourceScope"}],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "max_source_bytes": {"type": "integer", "minimum": 1},
+        "max_changed_files": {"type": "integer", "minimum": 1}
+      },
+      "additionalProperties": false
+    },
+    "resourceScope": {
+      "type": "object",
+      "required": ["kind", "paths"],
+      "properties": {
+        "kind": {"const": "repository_source"},
+        "paths": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/safePath"}}
+      },
+      "additionalProperties": false
+    },
+    "action": {
+      "type": "object",
+      "required": ["kind", "reason", "command"],
+      "properties": {
+        "kind": {"const": "approve_exact_candidate"},
+        "reason": {"type": "string", "minLength": 1},
+        "command": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

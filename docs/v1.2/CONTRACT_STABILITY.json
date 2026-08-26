@@ -1,0 +1,324 @@
+{
+  "schema": "sley.contract.stability_registry.v1",
+  "policy_version": "1.0",
+  "default_class": "experimental",
+  "class_policy": {
+    "stable": "The registered shape and semantics are frozen; any field addition, removal, type change, or reinterpretation requires a new schema identifier.",
+    "extensible": "Strict v0 evidence may gain a successor, but the registered shape is not weakened in place and external stability is not promised.",
+    "experimental": "In-tree and deterministic, but not a compatibility promise until explicitly promoted."
+  },
+  "entries": [
+    {
+      "id": "sley.contract.stability_registry.v1",
+      "class": "stable",
+      "rationale": "Machine-checkable source of contract stability truth."
+    },
+    {
+      "id": "sley.diagnostics.report.v1",
+      "class": "stable",
+      "rationale": "Minimum external diagnostic report root.",
+      "dependencies": ["sley.diagnostics.report.v0"]
+    },
+    {
+      "id": "sley.symbol_graph.slice.v1",
+      "class": "stable",
+      "rationale": "Minimum bounded graph context root.",
+      "dependencies": ["sley.symbol_graph.slice.v0"]
+    },
+    {
+      "id": "sley.verify.report.v1",
+      "class": "stable",
+      "rationale": "Minimum verification evidence root.",
+      "dependencies": ["sley.verify.report.v0"]
+    },
+    {
+      "id": "sley.machine.response.v1",
+      "class": "stable",
+      "rationale": "Minimum bounded machine response root.",
+      "dependencies": ["sley.machine.response.v0"]
+    },
+    {
+      "id": "sley.agent_bench.aggregate.v0",
+      "class": "extensible",
+      "rationale": "Current evaluator aggregate remains accepted while v0 evidence evolves."
+    },
+    {
+      "id": "sley.agent_bench.protocol_replay.v0",
+      "class": "extensible",
+      "rationale": "Historical controller replay surface is strict but remains v0 evidence."
+    },
+    {
+      "id": "greyforge.sleybench.mode_summary.v0",
+      "class": "extensible",
+      "rationale": "Exact retained mode-summary producer shape, registered without promotion to stable v1.",
+      "dependencies": ["sley.agent_bench.aggregate.v0"]
+    },
+    {
+      "id": "sley.transaction.inspect.v0",
+      "class": "extensible",
+      "rationale": "First W4 transaction evidence root is strict and read-only while later authority and apply contracts remain uncut.",
+      "dependencies": [
+        "sley.diagnostics.report.v1",
+        "sley.symbol_graph.slice.v1",
+        "sley.verify.report.v1"
+      ]
+    },
+    {
+      "id": "sley.change.plan.v0",
+      "class": "extensible",
+      "rationale": "Strict W4 plan evidence separates compiler facts from operator rationale without creating write authority.",
+      "dependencies": [
+        "sley.transaction.inspect.v0"
+      ]
+    },
+    {
+      "id": "sley.change.preview.v0",
+      "class": "extensible",
+      "rationale": "Strict W4 immutable candidate evidence remains non-mutating and requires an exact local grant before any future apply.",
+      "dependencies": [
+        "sley.change.plan.v0",
+        "sley.graph_diff.report.v0"
+      ]
+    },
+    {
+      "id": "sley.change.approval_request.v0",
+      "class": "extensible",
+      "rationale": "Compiler-derived W4 approval scope is strict and non-broadenable while apply enforcement remains uncut.",
+      "dependencies": [
+        "sley.change.preview.v0"
+      ]
+    },
+    {
+      "id": "sley.change.grant.v0",
+      "class": "extensible",
+      "rationale": "Exact local W4 grant evidence remains an explicit assertion artifact; S12-404 validates it again before bounded mutation.",
+      "dependencies": [
+        "sley.change.approval_request.v0"
+      ]
+    },
+    {
+      "id": "sley.change.apply_authorization.v0",
+      "class": "extensible",
+      "rationale": "Strict W4 mutation authority binds one exact grant to bounded source and internal transaction-state scopes.",
+      "dependencies": [
+        "sley.change.grant.v0"
+      ]
+    },
+    {
+      "id": "sley.change.revocation_record.v0",
+      "class": "extensible",
+      "rationale": "Strict one-way local revocation evidence is revalidated before apply and resumed forward commit.",
+      "dependencies": [
+        "sley.change.apply_authorization.v0"
+      ]
+    },
+    {
+      "id": "sley.change.recovery.v0",
+      "class": "extensible",
+      "rationale": "Durable W4 journal phases record cancellation, commit placement, verification, and verified rollback without making phase alone authoritative.",
+      "dependencies": [
+        "sley.change.apply_authorization.v0",
+        "sley.change.revocation_record.v0"
+      ]
+    },
+    {
+      "id": "sley.change.apply.v0",
+      "class": "extensible",
+      "rationale": "Strict W4 terminal evidence reports verified apply or verified automatic and crash-recovered rollback outcomes.",
+      "dependencies": [
+        "sley.change.recovery.v0"
+      ]
+    },
+    {
+      "id": "sley.change.rollback.v0",
+      "class": "extensible",
+      "rationale": "Strict W4 operator-confirmed rollback evidence binds exact verified apply and restored base digests.",
+      "dependencies": [
+        "sley.change.apply.v0",
+        "sley.change.recovery.v0"
+      ]
+    },
+    {
+      "id": "sley.change.review.v0",
+      "class": "extensible",
+      "rationale": "Strict W4 terminal review evidence summarizes exact apply or rollback outcomes without copying source content into the human packet.",
+      "dependencies": [
+        "sley.change.apply.v0",
+        "sley.change.rollback.v0",
+        "sley.change.recovery.v0",
+        "sley.trace.seal.v0",
+        "sley.zjx.envelope.v0"
+      ]
+    },
+    {
+      "id": "sley.change.transaction_seal.v0",
+      "class": "extensible",
+      "rationale": "Content-addressed W4 terminal seal binds final source and graph truth to the review, trace, apply, rollback, and evidence digests.",
+      "dependencies": [
+        "sley.change.review.v0",
+        "sley.trace.seal.v0"
+      ]
+    },
+    {
+      "id": "sley.adapter.manifest.v0",
+      "class": "extensible",
+      "rationale": "Strict S12-501 local-only authority, seed, identity, and budget input remains a v0 boundary while the isolated worker is uncut."
+    },
+    {
+      "id": "sley.adapter.replay.v0",
+      "class": "extensible",
+      "rationale": "Deterministic redacted replay evidence is strict and content-addressed without claiming live provider or worker compatibility.",
+      "dependencies": [
+        "sley.adapter.manifest.v0",
+        "sley.verify.report.v1"
+      ]
+    },
+    {
+      "id": "sley.adapter.report.v0",
+      "class": "extensible",
+      "rationale": "Typed local replay outcomes remain v0 evidence while the stable worker protocol transports them without changing their semantics.",
+      "dependencies": [
+        "sley.adapter.manifest.v0",
+        "sley.adapter.replay.v0"
+      ]
+    },
+    {
+      "id": "sley.worker.request.v1",
+      "class": "stable",
+      "rationale": "Minimum GA worker request envelope binds protocol, worker/runtime/package/source identities, contracts, authority, budgets, entry point, and nonce.",
+      "dependencies": [
+        "sley.adapter.manifest.v0"
+      ]
+    },
+    {
+      "id": "sley.worker.session.v1",
+      "class": "stable",
+      "rationale": "Minimum GA worker lifecycle, cache, and truthful process-isolation state."
+    },
+    {
+      "id": "sley.worker.event.v1",
+      "class": "stable",
+      "rationale": "Bounded progress and lifecycle events use one ordered worker stream.",
+      "dependencies": [
+        "sley.worker.request.v1",
+        "sley.worker.session.v1"
+      ]
+    },
+    {
+      "id": "sley.worker.response.v1",
+      "class": "stable",
+      "rationale": "Typed terminal worker outcomes preserve retryability, deterministic failure classes, isolation evidence, and embedded adapter reports.",
+      "dependencies": [
+        "sley.worker.request.v1",
+        "sley.worker.session.v1",
+        "sley.adapter.report.v0"
+      ]
+    },
+    {
+      "id": "sley.test.manifest.v1",
+      "class": "stable",
+      "rationale": "Minimum GA syntax-neutral test suite input binds deterministic discovery, authority, bounds, case kinds, selection nodes, and exact coverage inventory."
+    },
+    {
+      "id": "sley.test.report.v1",
+      "class": "stable",
+      "rationale": "Minimum GA test evidence root preserves ordered outcomes and truthful observed, declared, unsupported, unknown, credited, and uncovered coverage.",
+      "dependencies": [
+        "sley.test.manifest.v1",
+        "sley.adapter.report.v0",
+        "sley.machine.response.v1"
+      ]
+    },
+    {
+      "id": "sley.review.packet.v1",
+      "class": "stable",
+      "rationale": "Read-only GA successor envelope binds exact passing tests to frozen terminal review and transaction-seal evidence without changing either v0 contract.",
+      "dependencies": [
+        "sley.test.report.v1",
+        "sley.change.review.v0",
+        "sley.change.transaction_seal.v0"
+      ]
+    },
+    {
+      "id": "sley.validation.report.v1",
+      "class": "stable",
+      "rationale": "Minimum GA validation evidence preserves detected changes, selected and skipped checks, release authority, cache truth, bounded execution evidence, wall time, and outcome."
+    },
+    {
+      "id": "sley.operational.reference_pins.v1",
+      "class": "stable",
+      "rationale": "Minimum GA operational replay input pins the independent oracle commit, artifact identities, frozen corpus, candidate source, and retained evidence without embedding the raw corpus."
+    },
+    {
+      "id": "sley.operational.reference_replay.v1",
+      "class": "stable",
+      "rationale": "Minimum GA operational replay evidence preserves exact correctness, cold and warm host observations, resource ceilings, authority, negative evidence, disclosure state, and explicit production deferral.",
+      "dependencies": [
+        "sley.operational.reference_pins.v1",
+        "sley.machine.response.v1"
+      ]
+    },
+    {
+      "id": "sley.operational.agent_workflow_plan.v1",
+      "class": "extensible",
+      "rationale": "Approval-gated W6 comparison plan pins one public task, equal controls, the mode-specific interface difference, and the private controller digest without authorizing provider execution.",
+      "dependencies": [
+        "sley.agent_bench.case_manifest.v0",
+        "sley.agent_bench.run_manifest.v0"
+      ]
+    },
+    {
+      "id": "sley.operational.agent_workflow_comparison.v1",
+      "class": "extensible",
+      "rationale": "Scrubbed W6 comparison evidence retains strict success, ACT, context, structural response, invalid-action, failure-denominator, authority, and single-trial limitation truth without embedding private prompts or responses.",
+      "dependencies": [
+        "sley.operational.agent_workflow_plan.v1",
+        "sley.agent_bench.aggregate.v0"
+      ]
+    },
+    {
+      "id": "sley.operational.evidence_registry.v1",
+      "class": "extensible",
+      "rationale": "Fail-closed W6 decision evidence binds the independent reference replay and one real controlled agent comparison while retaining limitations and deferring every production or general claim.",
+      "dependencies": [
+        "sley.operational.reference_replay.v1",
+        "sley.operational.agent_workflow_comparison.v1"
+      ]
+    },
+    {
+      "id": "sley.release.manifest.v1",
+      "class": "stable",
+      "rationale": "Supported Sley 1.2 Linux archive identity, payload inventory, toolchain, entrypoints, metadata, and non-public authority boundary."
+    },
+    {
+      "id": "sley.release.license_inventory.v1",
+      "class": "stable",
+      "rationale": "Release license inventory identifies bundled Sley components and unbundled host-tool dependencies.",
+      "dependencies": ["sley.release.manifest.v1"]
+    },
+    {
+      "id": "sley.release.provenance.v1",
+      "class": "stable",
+      "rationale": "External provenance binds the archive checksum to source, manifest, license inventory, and SPDX SBOM without claiming a signature.",
+      "dependencies": ["sley.release.manifest.v1", "sley.release.license_inventory.v1"]
+    },
+    {
+      "id": "sley.release.verification.v1",
+      "class": "stable",
+      "rationale": "Clean-install verification reports archive safety, digest, metadata, payload, scrub, toolchain, and worker-client results.",
+      "dependencies": ["sley.release.manifest.v1", "sley.release.provenance.v1"]
+    },
+    {
+      "id": "sley.toolchain.doctor.v1",
+      "class": "stable",
+      "rationale": "Supported installation readiness report covers required tools, contracts, local adapter availability, and PATH conflicts."
+    }
+  ],
+  "reserved_namespaces": [
+    {
+      "prefix": "sley.provider_adapter.*",
+      "wave": "W5",
+      "purpose": "Provider-specific transport without semantic ownership."
+    }
+  ]
+}

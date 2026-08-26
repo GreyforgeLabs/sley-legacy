@@ -1,0 +1,95 @@
+{
+  "schema": "sley.operational.agent_workflow_plan.v1",
+  "status": "ready_for_approval",
+  "workflow_id": "contract-fixture-agent-workflow",
+  "identity": {
+    "sley_commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "case_manifest_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "workspace_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "candidate_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "prompt_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "bootstrap_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "controller_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+  },
+  "task": {
+    "case_id": "sleybench-v1-f6-001",
+    "suite_id": "contract-fixture-suite",
+    "owned_paths": ["src/main.sley"],
+    "oracle_commands": [["sley", "check", "--json", "."]]
+  },
+  "arms": [
+    {
+      "id": "raw_source",
+      "mode": "K1",
+      "interface": "raw_workspace",
+      "run_id": "contract-fixture-k1",
+      "run_manifest_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "model": "gpt-fixture",
+      "thinking": "low",
+      "tool_allowlist": ["query"],
+      "spend_ceiling_usd": 1,
+      "max_inference_turns": 1,
+      "read_only_tool_turns": 0
+    },
+    {
+      "id": "sley_structural",
+      "mode": "K3",
+      "interface": "raw_workspace_plus_read_only_structure",
+      "run_id": "contract-fixture-k3",
+      "run_manifest_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "model": "gpt-fixture",
+      "thinking": "low",
+      "tool_allowlist": ["query"],
+      "spend_ceiling_usd": 1,
+      "max_inference_turns": 2,
+      "read_only_tool_turns": 1
+    }
+  ],
+  "equal_controls": {
+    "verified": true,
+    "fields": [
+      "model",
+      "thinking",
+      "context_window",
+      "task",
+      "prompt",
+      "workspace",
+      "bootstrap",
+      "retrieval",
+      "oracle",
+      "owned_paths",
+      "spend_ceiling"
+    ]
+  },
+  "controlled_difference": {
+    "raw_source_tool_turns": 0,
+    "structural_tool_turns": 1,
+    "raw_source_inference_turns": 1,
+    "structural_inference_turns": 2,
+    "same_model_context_window": true,
+    "same_total_spend_ceiling": true,
+    "observed_context_consumption_measured": true,
+    "manifest_limits_fully_enforced": false
+  },
+  "authority": {
+    "mode": "local_isolated_evaluation_only",
+    "provider_execution_authorized": false,
+    "repository_mutation": false,
+    "product_runtime_mutation": false,
+    "deploy": false,
+    "publication": false,
+    "approval_required": true
+  },
+  "disclosure": {
+    "public_fixture": true,
+    "contains_real_user_data": false,
+    "contains_credentials": false,
+    "training_eligible": false
+  },
+  "issues": [
+    {
+      "code": "MANIFEST_LIMIT_ENFORCEMENT_PARTIAL",
+      "message": "The private controller enforces its fixed interface and spend ledger but does not generically enforce every declared case-manifest resource limit"
+    }
+  ]
+}

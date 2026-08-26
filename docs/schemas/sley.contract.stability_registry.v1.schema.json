@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.contract.stability_registry.v1",
+  "title": "Sley Contract Stability Registry v1",
+  "type": "object",
+  "required": [
+    "schema", "policy_version", "default_class", "class_policy",
+    "entries", "reserved_namespaces"
+  ],
+  "properties": {
+    "schema": {"const": "sley.contract.stability_registry.v1"},
+    "policy_version": {"const": "1.0"},
+    "default_class": {"const": "experimental"},
+    "class_policy": {
+      "type": "object",
+      "required": ["stable", "extensible", "experimental"],
+      "properties": {
+        "stable": {"type": "string", "minLength": 1},
+        "extensible": {"type": "string", "minLength": 1},
+        "experimental": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "entries": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "class", "rationale"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "class": {"enum": ["stable", "extensible"]},
+          "rationale": {"type": "string", "minLength": 1},
+          "dependencies": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {"type": "string", "minLength": 1}
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "reserved_namespaces": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["prefix", "wave", "purpose"],
+        "properties": {
+          "prefix": {"type": "string", "pattern": "^[a-z0-9_.]+\\.\\*$"},
+          "wave": {"enum": ["W4", "W5"]},
+          "purpose": {"type": "string", "minLength": 1}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

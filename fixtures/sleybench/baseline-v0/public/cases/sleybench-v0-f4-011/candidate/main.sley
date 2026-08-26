@@ -1,0 +1,5 @@
+module bench.public.f4_011
+
+task main -> Bool {
+  return false || true
+}

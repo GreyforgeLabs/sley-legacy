@@ -1,0 +1,40 @@
+{
+  "schema": "sley.change.revocation_record.v0",
+  "status": "active",
+  "record_id": "revocation-record:51b0bf155b14e8199d2081fae65c6f4888ae4f0b9d924ebdaac7441a9a4af890",
+  "record_digest": "sha256:51b0bf155b14e8199d2081fae65c6f4888ae4f0b9d924ebdaac7441a9a4af890",
+  "authorization_ref": {
+    "schema": "sley.change.apply_authorization.v0",
+    "authorization_id": "apply-authorization:40697cfd7dec6094f75e21444455662b69508c5e1c69459ee2280ee4be789585",
+    "authorization_digest": "sha256:40697cfd7dec6094f75e21444455662b69508c5e1c69459ee2280ee4be789585"
+  },
+  "grant_ref": {
+    "grant_digest": "sha256:4d97130bdf4aab1004b684689bc5581bc4fe8aa33cdff7ed0199b26f0f15573e",
+    "grant_id": "grant:4d97130bdf4aab1004b684689bc5581bc4fe8aa33cdff7ed0199b26f0f15573e",
+    "preview_digest": "sha256:b87875e9e5d9e317e59afad9d12fde8d425014809aba71de7a23c9c707a62eab",
+    "replay_key": "sha256:0dd163e37b0abee62e38d9fc7b7cdddb56e67231a540e6bc77aabc461d6cbe79",
+    "request_id": "approval-request:fe9ab9c8a3b1b3c88275fa2c4624fba13e9d3c2cb0d38f2fd0838a6e39938033",
+    "schema": "sley.change.grant.v0",
+    "transaction_id": "sha256:f46608ae362ba0a8f8472650754bddcd792dc665a2700bb534ce51951a8dd56e"
+  },
+  "state": "not_revoked",
+  "issuer": {
+    "id": "operator:test",
+    "source": "explicit_cli_assertion"
+  },
+  "reason": "grant remains locally active",
+  "created_at": "2026-08-25T00:00:02Z",
+  "expires_at": "2098-01-01T00:00:00Z",
+  "ledger_path": ".sley/revocations/4d97130bdf4aab1004b684689bc5581bc4fe8aa33cdff7ed0199b26f0f15573e.json",
+  "mutations": {
+    "repository_source": false,
+    "git_index": false,
+    "trace_sidecars": false,
+    "external_systems": false,
+    "provider_state": false
+  },
+  "internal_mutations": {
+    "internal_transaction_state": true
+  },
+  "issues": []
+}

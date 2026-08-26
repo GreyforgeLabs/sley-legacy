@@ -1,0 +1,5 @@
+module bench.public.f1_012
+
+task main -> Text {
+  return "red" + "wood"
+}

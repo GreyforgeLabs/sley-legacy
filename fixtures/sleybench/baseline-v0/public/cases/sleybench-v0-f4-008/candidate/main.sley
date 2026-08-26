@@ -1,0 +1,5 @@
+module bench.public.f4_008
+
+task main -> Bool {
+  return !(4 == 5)
+}

@@ -1,0 +1,204 @@
+module loom.transaction
+
+export task lifecycle_states -> List<Text> {
+  return [
+    "opened",
+    "inspected",
+    "planned",
+    "previewed",
+    "awaiting_approval",
+    "approved",
+    "applying",
+    "applied",
+    "verifying",
+    "sealed"
+  ]
+}
+
+export task failure_states -> List<Text> {
+  return [
+    "rejected",
+    "stale",
+    "denied",
+    "apply_failed",
+    "verification_failed",
+    "rolled_back",
+    "cancelled",
+    "expired"
+  ]
+}
+
+export task allowed_transition_plan -> List<Text> {
+  return [
+    "opened|inspected",
+    "inspected|planned",
+    "planned|previewed",
+    "previewed|awaiting_approval",
+    "awaiting_approval|approved",
+    "approved|applying",
+    "applying|applied",
+    "applied|verifying",
+    "verifying|sealed",
+    "verification_failed|rolled_back"
+  ]
+}
+
+export task base_modes -> List<Text> {
+  return [
+    "working_tree"
+  ]
+}
+
+export task mutation_boundaries -> List<Text> {
+  return [
+    "repository_source",
+    "git_index",
+    "trace_sidecars",
+    "external_systems",
+    "provider_state"
+  ]
+}
+
+export task preview_operation_plan -> List<Text> {
+  return [
+    "RenameDeclaration|transaction_preview_rename_declaration",
+    "UpdateCallSites|transaction_preview_update_call_sites",
+    "AddTake|transaction_preview_add_take",
+    "UpdateCallArgs|transaction_preview_update_call_args"
+  ]
+}
+
+export task plan_validation_profiles -> List<Text> {
+  return [
+    "compiler_preview_v0"
+  ]
+}
+
+export task candidate_workspace_kinds -> List<Text> {
+  return [
+    "isolated_ephemeral_copy"
+  ]
+}
+
+export task preview_review_requirement_kinds -> List<Text> {
+  return [
+    "human_source_review",
+    "graph_diff_review",
+    "lint_review",
+    "authority_review"
+  ]
+}
+
+export task apply_record_phases -> List<Text> {
+  return [
+    "preflight_checked",
+    "prepared",
+    "commit_point_entered",
+    "applied_unverified",
+    "verifying",
+    "verified",
+    "verification_failed",
+    "rollback_required",
+    "rolled_back",
+    "apply_failed",
+    "cancelled"
+  ]
+}
+
+export task apply_rejection_reasons -> List<Text> {
+  return [
+    "stale_source",
+    "stale_graph",
+    "stale_base",
+    "scope_mismatch",
+    "time_expired",
+    "revoked",
+    "revocation_unknown",
+    "replay_used",
+    "unsupported_resource_scope",
+    "unsupported_filesystem_topology",
+    "unsupported_atomic_strategy"
+  ]
+}
+
+export task atomic_apply_strategies -> List<Text> {
+  return [
+    "renameat2_exchange"
+  ]
+}
+
+export task atomic_apply_topologies -> List<Text> {
+  return [
+    "same_filesystem_common_root"
+  ]
+}
+
+export task atomic_rollback_strategies -> List<Text> {
+  return [
+    "verified_exchange"
+  ]
+}
+
+export task apply_cancellation_points -> List<Text> {
+  return [
+    "before_commit_point"
+  ]
+}
+
+export task apply_verification_profiles -> List<Text> {
+  return [
+    "compiler_apply_v0"
+  ]
+}
+
+export task apply_verification_required_checks -> List<Text> {
+  return [
+    "candidate_source_digest",
+    "candidate_graph_digest",
+    "compiler_check",
+    "compiler_lint"
+  ]
+}
+
+export task apply_metadata_policy -> List<Text> {
+  return [
+    "mode|preserve",
+    "ownership|preserve_current_owner",
+    "timestamps|preserve_unchanged",
+    "xattrs|reject_if_present",
+    "special_files|reject",
+    "submodules|reject"
+  ]
+}
+
+export task internal_mutation_boundaries -> List<Text> {
+  return [
+    "internal_transaction_state"
+  ]
+}
+
+export task review_terminal_outcomes -> List<Text> {
+  return [
+    "verified_apply",
+    "verified_rollback"
+  ]
+}
+
+export task review_artifact_names -> List<Text> {
+  return [
+    "packet.md",
+    "bundle.json",
+    "evidence.zjx.json",
+    "seal.json"
+  ]
+}
+
+export task review_no_mutation_boundaries -> List<Text> {
+  return [
+    "repository_source",
+    "git_index",
+    "trace_sidecars",
+    "external_systems",
+    "provider_state"
+  ]
+}

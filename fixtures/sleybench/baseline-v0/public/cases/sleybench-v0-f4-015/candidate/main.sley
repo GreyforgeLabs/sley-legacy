@@ -1,0 +1,10 @@
+module bench.public.f4_015
+
+type Person = {
+  name: Text
+  active: Bool
+}
+
+task main -> Text {
+  return Person { name: "Mira", active: true }.name
+}

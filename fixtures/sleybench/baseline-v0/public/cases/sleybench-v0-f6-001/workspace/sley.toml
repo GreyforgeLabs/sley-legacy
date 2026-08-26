@@ -1,0 +1,4 @@
+[project]
+name = "sleybench-public"
+root = "src"
+entry = "app.main"

@@ -1,0 +1,9 @@
+module bench.f2_002
+
+task main -> Int {
+  if true {
+    return 9
+  } else {
+    return 0
+  }
+}

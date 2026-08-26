@@ -1,0 +1,38 @@
+{
+  "schema": "sley.operational.reference_pins.v1",
+  "workload": {
+    "id": "siglum.numerology",
+    "version": "siglum.numerology.reference-v1",
+    "authority": "non_authoritative"
+  },
+  "siglum_commit": "2721acb64c6c2961c9942cd6755f96f21d480e2a",
+  "paths": {
+    "candidate_package": "rules/sley/siglum-numerology-reference-v1",
+    "corpus_root": "corpora/golden/siglum-numerology-reference-v1",
+    "parity_test": "tests/corpus/sley-numerology-parity.test.ts",
+    "prior_report": "reports/sley-numerology-parity-0.json"
+  },
+  "artifacts": [
+    {"id": "candidate_manifest", "path": "rules/sley/siglum-numerology-reference-v1/sley.toml", "digest": "sha256:14450563e081a3d0507fc5c66c6d5e7a1fb0177a4e7452b1c4a14c884a1aa6e2"},
+    {"id": "candidate_main", "path": "rules/sley/siglum-numerology-reference-v1/src/siglum/numerology/main.sley", "digest": "sha256:79d075e78781546cce9f9a114473c76eb65069fb7092205141c1bfc1d4ffd59b"},
+    {"id": "candidate_intrinsics", "path": "rules/sley/siglum-numerology-reference-v1/src/sley/machine/intrinsics.sley", "digest": "sha256:aa46bd955bd43876b8db3c001d2d2e6ecb3c0dbc81b3a41440de62069501612c"},
+    {"id": "corpus_hashes", "path": "corpora/golden/siglum-numerology-reference-v1/hashes.json", "digest": "sha256:00826a24079d81525977697a91979298ce118c987d0469cea21c1bcd624846c0"},
+    {"id": "corpus_manifest", "path": "corpora/golden/siglum-numerology-reference-v1/manifest.json", "digest": "sha256:963f6b06d2fc994070eec0b88ca47bb92dee7fe4190236f3d095f4b7889931ee"},
+    {"id": "normative_spec", "path": "docs/rulesets/siglum-numerology-reference-v1.md", "digest": "sha256:f4fa90c6723f638c55e089f1d121ce044374edafa009c9e6de29fff9516afffa"},
+    {"id": "oracle_boundary", "path": "src/lib/signature/numerology-reference-v1.ts", "digest": "sha256:447f1ed4532fa36be58f53a3ff0b67acf6dfb787197e54ea495348f3b29c8522"},
+    {"id": "oracle_engine_adapter", "path": "src/lib/signature/reference-adapter.ts", "digest": "sha256:eb6f0fea8dd93594cfc49dc1c2a5f4288a2d8e1d9e7be8e3d5532ce2a9d00368"},
+    {"id": "parity_harness", "path": "tests/corpus/sley-numerology-parity.test.ts", "digest": "sha256:a3315931144d3054aa4e22f0a20dc2eb73bc9e37712fa1192124589dff5df40b"},
+    {"id": "prior_parity_report", "path": "reports/sley-numerology-parity-0.json", "digest": "sha256:17bec37cdfd36ecffa42bb47f202703c48802f74db5db7c00288ee29efca42fe"},
+    {"id": "ruleset", "path": "rulesets/siglum.numerology.reference-v1.json", "digest": "sha256:c89fc8eaa80e5b41c474aa6a1c7e85587dd98785a468db68561f483c804f41a0"}
+  ],
+  "expected": {
+    "case_count": 10000,
+    "candidate_source_digest": "sha256:b98f1d73acf4a8bb64b53424398084fecddd9f95bdd0a9c138121bb8f7f867f4",
+    "candidate_corpus_digest": "sha256:624ba495f68505c0bf8e5bc39200e5250dca95f25216d7c888c81b1d52e6ecb1",
+    "frozen_corpus_digest": "sha256:e3f4ecf5abbf9d4af10594f6ed9111edb1596dc077023b0d87a8f5b5bb19662d",
+    "retained_runtime_digest": "sha256:5b92641d5de105113db08ed338856a28c55fc5e9c9a4eb5dfa317323300024f6",
+    "retained_repeat_count": 2,
+    "retained_exact_match_count": 10000,
+    "retained_mismatch_count": 0
+  }
+}

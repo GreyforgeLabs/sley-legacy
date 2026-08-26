@@ -1,0 +1,5 @@
+module test.invalid
+
+task main -> Int {
+  return missing_value
+}

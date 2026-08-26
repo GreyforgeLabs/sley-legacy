@@ -1,0 +1,2073 @@
+{
+  "schema": "sley.agent_bench.case_manifest.v0",
+  "suite_id": "sleybench-smoke-v0",
+  "tier": "smoke",
+  "version": "0.1",
+  "cases": [
+    {
+      "id": "sleybench-smoke-f1-001",
+      "family": "syntax_compilation",
+      "visibility": "public",
+      "sley_version": "1.2",
+      "prompt_path": "cases/sleybench-smoke-f1-001/prompt.md",
+      "workspace_path": "cases/sleybench-smoke-f1-001/workspace",
+      "candidate_path": "cases/sleybench-smoke-f1-001/candidate",
+      "owned_paths": [
+        "main.sley"
+      ],
+      "allowed_context": [
+        "SLEY_AI.md"
+      ],
+      "allowed_tools": [
+        "check",
+        "ast"
+      ],
+      "limits": {
+        "wall_seconds": 120,
+        "tool_calls": 8,
+        "output_bytes": 1048576,
+        "processes": 256,
+        "workspace_bytes": 1048576
+      },
+      "policy": {
+        "kind": "fixture_candidate"
+      },
+      "preflight": [],
+      "oracle": {
+        "commands": [
+          {
+            "name": "check",
+            "argv": [
+              "sley",
+              "check",
+              "--json",
+              "main.sley"
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.diagnostics.report.v0",
+            "assertions": [
+              {
+                "pointer": "/status",
+                "value": "ok"
+              }
+            ]
+          },
+          {
+            "name": "ast",
+            "argv": [
+              "sley",
+              "ast",
+              "--json",
+              "main.sley"
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.ast.program.v0",
+            "assertions": []
+          }
+        ]
+      },
+      "score_tags": [
+        "parse",
+        "compile",
+        "pass"
+      ],
+      "minimality": {
+        "max_changed_files": 1,
+        "max_changed_lines": 8
+      },
+      "training_exclusion_id": "sha256:0a7f18d1aa465c4de2664cfa1e660fdc09a73163a813a2046217ecadc318a0e7"
+    },
+    {
+      "id": "sleybench-smoke-f1-002",
+      "family": "syntax_compilation",
+      "visibility": "public",
+      "sley_version": "1.2",
+      "prompt_path": "cases/sleybench-smoke-f1-002/prompt.md",
+      "workspace_path": "cases/sleybench-smoke-f1-002/workspace",
+      "candidate_path": "cases/sleybench-smoke-f1-002/candidate",
+      "owned_paths": [
+        "main.sley"
+      ],
+      "allowed_context": [
+        "SLEY_AI.md"
+      ],
+      "allowed_tools": [
+        "check",
+        "ast"
+      ],
+      "limits": {
+        "wall_seconds": 120,
+        "tool_calls": 8,
+        "output_bytes": 1048576,
+        "processes": 256,
+        "workspace_bytes": 1048576
+      },
+      "policy": {
+        "kind": "fixture_candidate"
+      },
+      "preflight": [],
+      "oracle": {
+        "commands": [
+          {
+            "name": "check",
+            "argv": [
+              "sley",
+              "check",
+              "--json",
+              "main.sley"
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.diagnostics.report.v0",
+            "assertions": [
+              {
+                "pointer": "/status",
+                "value": "ok"
+              }
+            ]
+          },
+          {
+            "name": "ast",
+            "argv": [
+              "sley",
+              "ast",
+              "--json",
+              "main.sley"
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.ast.program.v0",
+            "assertions": []
+          }
+        ]
+      },
+      "score_tags": [
+        "parse",
+        "compile",
+        "pass"
+      ],
+      "minimality": {
+        "max_changed_files": 1,
+        "max_changed_lines": 12
+      },
+      "training_exclusion_id": "sha256:e6dbdb53c8422472215050363ffcec7407024a10e4a4c3ab99e981fbca22e878"
+    },
+    {
+      "id": "sleybench-smoke-f1-003",
+      "family": "syntax_compilation",
+      "visibility": "public",
+      "sley_version": "1.2",
+      "prompt_path": "cases/sleybench-smoke-f1-003/prompt.md",
+      "workspace_path": "cases/sleybench-smoke-f1-003/workspace",
+      "candidate_path": "cases/sleybench-smoke-f1-003/candidate",
+      "owned_paths": [
+        "main.sley"
+      ],
+      "allowed_context": [
+        "SLEY_AI.md"
+      ],
+      "allowed_tools": [
+        "check",
+        "ast"
+      ],
+      "limits": {
+        "wall_seconds": 120,
+        "tool_calls": 8,
+        "output_bytes": 1048576,
+        "processes": 256,
+        "workspace_bytes": 1048576
+      },
+      "policy": {
+        "kind": "fixture_candidate"
+      },
+      "preflight": [],
+      "oracle": {
+        "commands": [
+          {
+            "name": "check",
+            "argv": [
+              "sley",
+              "check",
+              "--json",
+              "main.sley"
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.diagnostics.report.v0",
+            "assertions": [
+              {
+                "pointer": "/status",
+                "value": "ok"
+              }
+            ]
+          },
+          {
+            "name": "ast",
+            "argv": [
+              "sley",
+              "ast",
+              "--json",
+              "main.sley"
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.ast.program.v0",
+            "assertions": []
+          }
+        ]
+      },
+      "score_tags": [
+        "parse",
+        "compile",
+        "pass"
+      ],
+      "minimality": {
+        "max_changed_files": 1,
+        "max_changed_lines": 9
+      },
+      "training_exclusion_id": "sha256:21ca659472465c451ae984c02816abb4989a27421773e6341bb398f94be85ebb"
+    },
+    {
+      "id": "sleybench-smoke-f1-004",
+      "family": "syntax_compilation",
+      "visibility": "public",
+      "sley_version": "1.2",
+      "prompt_path": "cases/sleybench-smoke-f1-004/prompt.md",
+      "workspace_path": "cases/sleybench-smoke-f1-004/workspace",
+      "candidate_path": "cases/sleybench-smoke-f1-004/candidate",
+      "owned_paths": [
+        "main.sley"
+      ],
+      "allowed_context": [
+        "SLEY_AI.md"
+      ],
+      "allowed_tools": [
+        "check",
+        "ast"
+      ],
+      "limits": {
+        "wall_seconds": 120,
+        "tool_calls": 8,
+        "output_bytes": 1048576,
+        "processes": 256,
+        "workspace_bytes": 1048576
+      },
+      "policy": {
+        "kind": "fixture_candidate"
+      },
+      "preflight": [],
+      "oracle": {
+        "commands": [
+          {
+            "name": "check",
+            "argv": [
+              "sley",
+              "check",
+              "--json",
+              "main.sley"
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.diagnostics.report.v0",
+            "assertions": [
+              {
+                "pointer": "/status",
+                "value": "ok"
+              }
+            ]
+          },
+          {
+            "name": "ast",
+            "argv": [
+              "sley",
+              "ast",
+              "--json",
+              "main.sley"
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.ast.program.v0",
+            "assertions": []
+          }
+        ]
+      },
+      "score_tags": [
+        "parse",
+        "compile",
+        "pass"
+      ],
+      "minimality": {
+        "max_changed_files": 1,
+        "max_changed_lines": 8
+      },
+      "training_exclusion_id": "sha256:318d148e6825aa55e3da2b54c135478ab3cdf2d2385613f4bdb5d87d83249309"
+    },
+    {
+      "id": "sleybench-smoke-f2-001",
+      "family": "semantic_implementation",
+      "visibility": "public",
+      "sley_version": "1.2",
+      "prompt_path": "cases/sleybench-smoke-f2-001/prompt.md",
+      "workspace_path": "cases/sleybench-smoke-f2-001/workspace",
+      "candidate_path": "cases/sleybench-smoke-f2-001/candidate",
+      "owned_paths": [
+        "main.sley"
+      ],
+      "allowed_context": [
+        "SLEY_AI.md"
+      ],
+      "allowed_tools": [
+        "check",
+        "run"
+      ],
+      "limits": {
+        "wall_seconds": 120,
+        "tool_calls": 8,
+        "output_bytes": 1048576,
+        "processes": 256,
+        "workspace_bytes": 1048576
+      },
+      "policy": {
+        "kind": "fixture_candidate"
+      },
+      "preflight": [],
+      "oracle": {
+        "commands": [
+          {
+            "name": "check",
+            "argv": [
+              "sley",
+              "check",
+              "--json",
+              "main.sley"
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.diagnostics.report.v0",
+            "assertions": [
+              {
+                "pointer": "/status",
+                "value": "ok"
+              }
+            ]
+          },
+          {
+            "name": "run",
+            "argv": [
+              "sley",
+              "run",
+              "--json",
+              "main.sley"
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.run.report.v0",
+            "assertions": [
+              {
+                "pointer": "/status",
+                "value": "passed"
+              },
+              {
+                "pointer": "/value/kind",
+                "value": "Int"
+              },
+              {
+                "pointer": "/value/value",
+                "value": 42
+              }
+            ]
+          }
+        ]
+      },
+      "score_tags": [
+        "compile",
+        "pass",
+        "semantic"
+      ],
+      "minimality": {
+        "max_changed_files": 1,
+        "max_changed_lines": 12
+      },
+      "training_exclusion_id": "sha256:debea5b61694707640ae9c40dd3dc97c1daf003def24169d49133815ad217332"
+    },
+    {
+      "id": "sleybench-smoke-f2-002",
+      "family": "semantic_implementation",
+      "visibility": "public",
+      "sley_version": "1.2",
+      "prompt_path": "cases/sleybench-smoke-f2-002/prompt.md",
+      "workspace_path": "cases/sleybench-smoke-f2-002/workspace",
+      "candidate_path": "cases/sleybench-smoke-f2-002/candidate",
+      "owned_paths": [
+        "main.sley"
+      ],
+      "allowed_context": [
+        "SLEY_AI.md"
+      ],
+      "allowed_tools": [
+        "check",
+        "run"
+      ],
+      "limits": {
+        "wall_seconds": 120,
+        "tool_calls": 8,
+        "output_bytes": 1048576,
+        "processes": 256,
+        "workspace_bytes": 1048576
+      },
+      "policy": {
+        "kind": "fixture_candidate"
+      },
+      "preflight": [],
+      "oracle": {
+        "commands": [
+          {
+            "name": "check",
+            "argv": [
+              "sley",
+              "check",
+              "--json",
+              "main.sley"
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.diagnostics.report.v0",
+            "assertions": [
+              {
+                "pointer": "/status",
+                "value": "ok"
+              }
+            ]
+          },
+          {
+            "name": "run",
+            "argv": [
+              "sley",
+              "run",
+              "--json",
+              "main.sley"
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.run.report.v0",
+            "assertions": [
+              {
+                "pointer": "/status",
+                "value": "passed"
+              },
+              {
+                "pointer": "/value/kind",
+                "value": "Int"
+              },
+              {
+                "pointer": "/value/value",
+                "value": 9
+              }
+            ]
+          }
+        ]
+      },
+      "score_tags": [
+        "compile",
+        "pass",
+        "semantic"
+      ],
+      "minimality": {
+        "max_changed_files": 1,
+        "max_changed_lines": 12
+      },
+      "training_exclusion_id": "sha256:1807affc9a24400fe9b1b936d487df834c6458c591cb1dbccefb4253d9d04d59"
+    },
+    {
+      "id": "sleybench-smoke-f2-003",
+      "family": "semantic_implementation",
+      "visibility": "public",
+      "sley_version": "1.2",
+      "prompt_path": "cases/sleybench-smoke-f2-003/prompt.md",
+      "workspace_path": "cases/sleybench-smoke-f2-003/workspace",
+      "candidate_path": "cases/sleybench-smoke-f2-003/candidate",
+      "owned_paths": [
+        "main.sley"
+      ],
+      "allowed_context": [
+        "SLEY_AI.md"
+      ],
+      "allowed_tools": [
+        "check",
+        "run"
+      ],
+      "limits": {
+        "wall_seconds": 120,
+        "tool_calls": 8,
+        "output_bytes": 1048576,
+        "processes": 256,
+        "workspace_bytes": 1048576
+      },
+      "policy": {
+        "kind": "fixture_candidate"
+      },
+      "preflight": [],
+      "oracle": {
+        "commands": [
+          {
+            "name": "check",
+            "argv": [
+              "sley",
+              "check",
+              "--json",
+              "main.sley"
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.diagnostics.report.v0",
+            "assertions": [
+              {
+                "pointer": "/status",
+                "value": "ok"
+              }
+            ]
+          },
+          {
+            "name": "run",
+            "argv": [
+              "sley",
+              "run",
+              "--json",
+              "main.sley"
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.run.report.v0",
+            "assertions": [
+              {
+                "pointer": "/status",
+                "value": "passed"
+              },
+              {
+                "pointer": "/value/kind",
+                "value": "Text"
+              },
+              {
+                "pointer": "/value/value",
+                "value": "SleyBench"
+              }
+            ]
+          }
+        ]
+      },
+      "score_tags": [
+        "compile",
+        "pass",
+        "semantic"
+      ],
+      "minimality": {
+        "max_changed_files": 1,
+        "max_changed_lines": 8
+      },
+      "training_exclusion_id": "sha256:24cbc8b4b18a42929e95b3a294fc9e51853b71ab69d16501bb44db449a366e21"
+    },
+    {
+      "id": "sleybench-smoke-f2-004",
+      "family": "semantic_implementation",
+      "visibility": "public",
+      "sley_version": "1.2",
+      "prompt_path": "cases/sleybench-smoke-f2-004/prompt.md",
+      "workspace_path": "cases/sleybench-smoke-f2-004/workspace",
+      "candidate_path": "cases/sleybench-smoke-f2-004/candidate",
+      "owned_paths": [
+        "main.sley"
+      ],
+      "allowed_context": [
+        "SLEY_AI.md"
+      ],
+      "allowed_tools": [
+        "check",
+        "run"
+      ],
+      "limits": {
+        "wall_seconds": 120,
+        "tool_calls": 8,
+        "output_bytes": 1048576,
+        "processes": 256,
+        "workspace_bytes": 1048576
+      },
+      "policy": {
+        "kind": "fixture_candidate"
+      },
+      "preflight": [],
+      "oracle": {
+        "commands": [
+          {
+            "name": "check",
+            "argv": [
+              "sley",
+              "check",
+              "--json",
+              "main.sley"
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.diagnostics.report.v0",
+            "assertions": [
+              {
+                "pointer": "/status",
+                "value": "ok"
+              }
+            ]
+          },
+          {
+            "name": "run",
+            "argv": [
+              "sley",
+              "run",
+              "--json",
+              "main.sley"
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.run.report.v0",
+            "assertions": [
+              {
+                "pointer": "/status",
+                "value": "passed"
+              },
+              {
+                "pointer": "/value/kind",
+                "value": "Bool"
+              },
+              {
+                "pointer": "/value/value",
+                "value": true
+              }
+            ]
+          }
+        ]
+      },
+      "score_tags": [
+        "compile",
+        "pass",
+        "semantic"
+      ],
+      "minimality": {
+        "max_changed_files": 1,
+        "max_changed_lines": 7
+      },
+      "training_exclusion_id": "sha256:886263e4d95519f60a99a7e8d325788d0fc68039e6091a8be524e12b52efd3eb"
+    },
+    {
+      "id": "sleybench-smoke-f3-001",
+      "family": "diagnosis_repair",
+      "visibility": "public",
+      "sley_version": "1.2",
+      "prompt_path": "cases/sleybench-smoke-f3-001/prompt.md",
+      "workspace_path": "cases/sleybench-smoke-f3-001/workspace",
+      "candidate_path": "cases/sleybench-smoke-f3-001/candidate",
+      "owned_paths": [
+        "main.sley"
+      ],
+      "allowed_context": [
+        "SLEY_AI.md"
+      ],
+      "allowed_tools": [
+        "check",
+        "run"
+      ],
+      "limits": {
+        "wall_seconds": 120,
+        "tool_calls": 8,
+        "output_bytes": 1048576,
+        "processes": 256,
+        "workspace_bytes": 1048576
+      },
+      "policy": {
+        "kind": "fixture_candidate"
+      },
+      "preflight": [
+        {
+          "name": "diagnose",
+          "argv": [
+            "sley",
+            "check",
+            "--json",
+            "main.sley"
+          ],
+          "expected_exit": 1,
+          "expected_schema": "sley.diagnostics.report.v0",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "value": "error"
+            },
+            {
+              "pointer": "/diagnostics/0/id",
+              "value": "MISSING_RETURN"
+            }
+          ]
+        }
+      ],
+      "oracle": {
+        "commands": [
+          {
+            "name": "check",
+            "argv": [
+              "sley",
+              "check",
+              "--json",
+              "main.sley"
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.diagnostics.report.v0",
+            "assertions": [
+              {
+                "pointer": "/status",
+                "value": "ok"
+              }
+            ]
+          },
+          {
+            "name": "run",
+            "argv": [
+              "sley",
+              "run",
+              "--json",
+              "main.sley"
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.run.report.v0",
+            "assertions": [
+              {
+                "pointer": "/status",
+                "value": "passed"
+              },
+              {
+                "pointer": "/value/kind",
+                "value": "Int"
+              },
+              {
+                "pointer": "/value/value",
+                "value": 41
+              }
+            ]
+          }
+        ]
+      },
+      "score_tags": [
+        "compile",
+        "pass",
+        "repair"
+      ],
+      "minimality": {
+        "max_changed_files": 1,
+        "max_changed_lines": 2
+      },
+      "training_exclusion_id": "sha256:1731f71cff1b209b755a1a32da4f47c5bfd2f762ff13a884d6ba2ee753a3bd52"
+    },
+    {
+      "id": "sleybench-smoke-f3-002",
+      "family": "diagnosis_repair",
+      "visibility": "public",
+      "sley_version": "1.2",
+      "prompt_path": "cases/sleybench-smoke-f3-002/prompt.md",
+      "workspace_path": "cases/sleybench-smoke-f3-002/workspace",
+      "candidate_path": "cases/sleybench-smoke-f3-002/candidate",
+      "owned_paths": [
+        "main.sley"
+      ],
+      "allowed_context": [
+        "SLEY_AI.md"
+      ],
+      "allowed_tools": [
+        "check",
+        "run"
+      ],
+      "limits": {
+        "wall_seconds": 120,
+        "tool_calls": 8,
+        "output_bytes": 1048576,
+        "processes": 256,
+        "workspace_bytes": 1048576
+      },
+      "policy": {
+        "kind": "fixture_candidate"
+      },
+      "preflight": [
+        {
+          "name": "diagnose",
+          "argv": [
+            "sley",
+            "check",
+            "--json",
+            "main.sley"
+          ],
+          "expected_exit": 1,
+          "expected_schema": "sley.diagnostics.report.v0",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "value": "error"
+            },
+            {
+              "pointer": "/diagnostics/0/id",
+              "value": "UNKNOWN_IDENTIFIER"
+            }
+          ]
+        }
+      ],
+      "oracle": {
+        "commands": [
+          {
+            "name": "check",
+            "argv": [
+              "sley",
+              "check",
+              "--json",
+              "main.sley"
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.diagnostics.report.v0",
+            "assertions": [
+              {
+                "pointer": "/status",
+                "value": "ok"
+              }
+            ]
+          },
+          {
+            "name": "run",
+            "argv": [
+              "sley",
+              "run",
+              "--json",
+              "main.sley"
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.run.report.v0",
+            "assertions": [
+              {
+                "pointer": "/status",
+                "value": "passed"
+              },
+              {
+                "pointer": "/value/kind",
+                "value": "Int"
+              },
+              {
+                "pointer": "/value/value",
+                "value": 5
+              }
+            ]
+          }
+        ]
+      },
+      "score_tags": [
+        "compile",
+        "pass",
+        "repair"
+      ],
+      "minimality": {
+        "max_changed_files": 1,
+        "max_changed_lines": 2
+      },
+      "training_exclusion_id": "sha256:33f739dc739b5677293ea404cd45d341f488a8c23947ad4344e357cac7765497"
+    },
+    {
+      "id": "sleybench-smoke-f3-003",
+      "family": "diagnosis_repair",
+      "visibility": "public",
+      "sley_version": "1.2",
+      "prompt_path": "cases/sleybench-smoke-f3-003/prompt.md",
+      "workspace_path": "cases/sleybench-smoke-f3-003/workspace",
+      "candidate_path": "cases/sleybench-smoke-f3-003/candidate",
+      "owned_paths": [
+        "main.sley"
+      ],
+      "allowed_context": [
+        "SLEY_AI.md"
+      ],
+      "allowed_tools": [
+        "check",
+        "run"
+      ],
+      "limits": {
+        "wall_seconds": 120,
+        "tool_calls": 8,
+        "output_bytes": 1048576,
+        "processes": 256,
+        "workspace_bytes": 1048576
+      },
+      "policy": {
+        "kind": "fixture_candidate"
+      },
+      "preflight": [
+        {
+          "name": "diagnose",
+          "argv": [
+            "sley",
+            "check",
+            "--json",
+            "main.sley"
+          ],
+          "expected_exit": 1,
+          "expected_schema": "sley.diagnostics.report.v0",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "value": "error"
+            },
+            {
+              "pointer": "/diagnostics/0/id",
+              "value": "UNKNOWN_TYPE"
+            }
+          ]
+        }
+      ],
+      "oracle": {
+        "commands": [
+          {
+            "name": "check",
+            "argv": [
+              "sley",
+              "check",
+              "--json",
+              "main.sley"
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.diagnostics.report.v0",
+            "assertions": [
+              {
+                "pointer": "/status",
+                "value": "ok"
+              }
+            ]
+          },
+          {
+            "name": "run",
+            "argv": [
+              "sley",
+              "run",
+              "--json",
+              "main.sley"
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.run.report.v0",
+            "assertions": [
+              {
+                "pointer": "/status",
+                "value": "passed"
+              },
+              {
+                "pointer": "/value/kind",
+                "value": "Int"
+              },
+              {
+                "pointer": "/value/value",
+                "value": 3
+              }
+            ]
+          }
+        ]
+      },
+      "score_tags": [
+        "compile",
+        "pass",
+        "repair"
+      ],
+      "minimality": {
+        "max_changed_files": 1,
+        "max_changed_lines": 2
+      },
+      "training_exclusion_id": "sha256:c132dc35b45f7f2d4e5b7842db1eb3bd92c46a2d6dba80290cc35d0308e14207"
+    },
+    {
+      "id": "sleybench-smoke-f3-004",
+      "family": "diagnosis_repair",
+      "visibility": "public",
+      "sley_version": "1.2",
+      "prompt_path": "cases/sleybench-smoke-f3-004/prompt.md",
+      "workspace_path": "cases/sleybench-smoke-f3-004/workspace",
+      "candidate_path": "cases/sleybench-smoke-f3-004/candidate",
+      "owned_paths": [
+        "main.sley"
+      ],
+      "allowed_context": [
+        "SLEY_AI.md"
+      ],
+      "allowed_tools": [
+        "check",
+        "run"
+      ],
+      "limits": {
+        "wall_seconds": 120,
+        "tool_calls": 8,
+        "output_bytes": 1048576,
+        "processes": 256,
+        "workspace_bytes": 1048576
+      },
+      "policy": {
+        "kind": "fixture_candidate"
+      },
+      "preflight": [
+        {
+          "name": "diagnose",
+          "argv": [
+            "sley",
+            "check",
+            "--json",
+            "main.sley"
+          ],
+          "expected_exit": 1,
+          "expected_schema": "sley.diagnostics.report.v0",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "value": "error"
+            },
+            {
+              "pointer": "/diagnostics/0/id",
+              "value": "CALL_ARITY_MISMATCH"
+            }
+          ]
+        }
+      ],
+      "oracle": {
+        "commands": [
+          {
+            "name": "check",
+            "argv": [
+              "sley",
+              "check",
+              "--json",
+              "main.sley"
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.diagnostics.report.v0",
+            "assertions": [
+              {
+                "pointer": "/status",
+                "value": "ok"
+              }
+            ]
+          },
+          {
+            "name": "run",
+            "argv": [
+              "sley",
+              "run",
+              "--json",
+              "main.sley"
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.run.report.v0",
+            "assertions": [
+              {
+                "pointer": "/status",
+                "value": "passed"
+              },
+              {
+                "pointer": "/value/kind",
+                "value": "Int"
+              },
+              {
+                "pointer": "/value/value",
+                "value": 6
+              }
+            ]
+          }
+        ]
+      },
+      "score_tags": [
+        "compile",
+        "pass",
+        "repair"
+      ],
+      "minimality": {
+        "max_changed_files": 1,
+        "max_changed_lines": 2
+      },
+      "training_exclusion_id": "sha256:72648709ea4df7158c619523e5cbfe9a704d285ff0cf7494f72ca155352dcaf7"
+    },
+    {
+      "id": "sleybench-smoke-f4-001",
+      "family": "translation_preservation",
+      "visibility": "public",
+      "sley_version": "1.2",
+      "prompt_path": "cases/sleybench-smoke-f4-001/prompt.md",
+      "workspace_path": "cases/sleybench-smoke-f4-001/workspace",
+      "candidate_path": "cases/sleybench-smoke-f4-001/candidate",
+      "owned_paths": [
+        "main.sley"
+      ],
+      "allowed_context": [
+        "SLEY_AI.md"
+      ],
+      "allowed_tools": [
+        "check",
+        "run"
+      ],
+      "limits": {
+        "wall_seconds": 120,
+        "tool_calls": 8,
+        "output_bytes": 1048576,
+        "processes": 256,
+        "workspace_bytes": 1048576
+      },
+      "policy": {
+        "kind": "fixture_candidate"
+      },
+      "preflight": [],
+      "oracle": {
+        "commands": [
+          {
+            "name": "check",
+            "argv": [
+              "sley",
+              "check",
+              "--json",
+              "main.sley"
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.diagnostics.report.v0",
+            "assertions": [
+              {
+                "pointer": "/status",
+                "value": "ok"
+              }
+            ]
+          },
+          {
+            "name": "run",
+            "argv": [
+              "sley",
+              "run",
+              "--json",
+              "main.sley"
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.run.report.v0",
+            "assertions": [
+              {
+                "pointer": "/status",
+                "value": "passed"
+              },
+              {
+                "pointer": "/value/kind",
+                "value": "Int"
+              },
+              {
+                "pointer": "/value/value",
+                "value": 42
+              }
+            ]
+          }
+        ]
+      },
+      "score_tags": [
+        "compile",
+        "pass",
+        "semantic"
+      ],
+      "minimality": {
+        "max_changed_files": 1,
+        "max_changed_lines": 7
+      },
+      "training_exclusion_id": "sha256:f4da992706c7a7cdd10e4ad34d25a47134fb145d23d75f0686aca534a6f68396"
+    },
+    {
+      "id": "sleybench-smoke-f4-002",
+      "family": "translation_preservation",
+      "visibility": "public",
+      "sley_version": "1.2",
+      "prompt_path": "cases/sleybench-smoke-f4-002/prompt.md",
+      "workspace_path": "cases/sleybench-smoke-f4-002/workspace",
+      "candidate_path": "cases/sleybench-smoke-f4-002/candidate",
+      "owned_paths": [
+        "main.sley"
+      ],
+      "allowed_context": [
+        "SLEY_AI.md"
+      ],
+      "allowed_tools": [
+        "check",
+        "run"
+      ],
+      "limits": {
+        "wall_seconds": 120,
+        "tool_calls": 8,
+        "output_bytes": 1048576,
+        "processes": 256,
+        "workspace_bytes": 1048576
+      },
+      "policy": {
+        "kind": "fixture_candidate"
+      },
+      "preflight": [],
+      "oracle": {
+        "commands": [
+          {
+            "name": "check",
+            "argv": [
+              "sley",
+              "check",
+              "--json",
+              "main.sley"
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.diagnostics.report.v0",
+            "assertions": [
+              {
+                "pointer": "/status",
+                "value": "ok"
+              }
+            ]
+          },
+          {
+            "name": "run",
+            "argv": [
+              "sley",
+              "run",
+              "--json",
+              "main.sley"
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.run.report.v0",
+            "assertions": [
+              {
+                "pointer": "/status",
+                "value": "passed"
+              },
+              {
+                "pointer": "/value/kind",
+                "value": "Text"
+              },
+              {
+                "pointer": "/value/value",
+                "value": "forgenode"
+              }
+            ]
+          }
+        ]
+      },
+      "score_tags": [
+        "compile",
+        "pass",
+        "semantic"
+      ],
+      "minimality": {
+        "max_changed_files": 1,
+        "max_changed_lines": 7
+      },
+      "training_exclusion_id": "sha256:111ef600ec570b7da60fac5421c2095efe4a244b11adb30a36006b9d60c443d8"
+    },
+    {
+      "id": "sleybench-smoke-f4-003",
+      "family": "translation_preservation",
+      "visibility": "public",
+      "sley_version": "1.2",
+      "prompt_path": "cases/sleybench-smoke-f4-003/prompt.md",
+      "workspace_path": "cases/sleybench-smoke-f4-003/workspace",
+      "candidate_path": "cases/sleybench-smoke-f4-003/candidate",
+      "owned_paths": [
+        "main.sley"
+      ],
+      "allowed_context": [
+        "SLEY_AI.md"
+      ],
+      "allowed_tools": [
+        "check",
+        "run"
+      ],
+      "limits": {
+        "wall_seconds": 120,
+        "tool_calls": 8,
+        "output_bytes": 1048576,
+        "processes": 256,
+        "workspace_bytes": 1048576
+      },
+      "policy": {
+        "kind": "fixture_candidate"
+      },
+      "preflight": [],
+      "oracle": {
+        "commands": [
+          {
+            "name": "check",
+            "argv": [
+              "sley",
+              "check",
+              "--json",
+              "main.sley"
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.diagnostics.report.v0",
+            "assertions": [
+              {
+                "pointer": "/status",
+                "value": "ok"
+              }
+            ]
+          },
+          {
+            "name": "run",
+            "argv": [
+              "sley",
+              "run",
+              "--json",
+              "main.sley"
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.run.report.v0",
+            "assertions": [
+              {
+                "pointer": "/status",
+                "value": "passed"
+              },
+              {
+                "pointer": "/value/kind",
+                "value": "Bool"
+              },
+              {
+                "pointer": "/value/value",
+                "value": true
+              }
+            ]
+          }
+        ]
+      },
+      "score_tags": [
+        "compile",
+        "pass",
+        "semantic"
+      ],
+      "minimality": {
+        "max_changed_files": 1,
+        "max_changed_lines": 7
+      },
+      "training_exclusion_id": "sha256:13bf1ff203b455835ee077708dce86a74ad58951eefe1a2cdf480e6ef62b0e5f"
+    },
+    {
+      "id": "sleybench-smoke-f4-004",
+      "family": "translation_preservation",
+      "visibility": "public",
+      "sley_version": "1.2",
+      "prompt_path": "cases/sleybench-smoke-f4-004/prompt.md",
+      "workspace_path": "cases/sleybench-smoke-f4-004/workspace",
+      "candidate_path": "cases/sleybench-smoke-f4-004/candidate",
+      "owned_paths": [
+        "main.sley"
+      ],
+      "allowed_context": [
+        "SLEY_AI.md"
+      ],
+      "allowed_tools": [
+        "check",
+        "run"
+      ],
+      "limits": {
+        "wall_seconds": 120,
+        "tool_calls": 8,
+        "output_bytes": 1048576,
+        "processes": 256,
+        "workspace_bytes": 1048576
+      },
+      "policy": {
+        "kind": "fixture_candidate"
+      },
+      "preflight": [],
+      "oracle": {
+        "commands": [
+          {
+            "name": "check",
+            "argv": [
+              "sley",
+              "check",
+              "--json",
+              "main.sley"
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.diagnostics.report.v0",
+            "assertions": [
+              {
+                "pointer": "/status",
+                "value": "ok"
+              }
+            ]
+          },
+          {
+            "name": "run",
+            "argv": [
+              "sley",
+              "run",
+              "--json",
+              "main.sley"
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.run.report.v0",
+            "assertions": [
+              {
+                "pointer": "/status",
+                "value": "passed"
+              },
+              {
+                "pointer": "/value/kind",
+                "value": "Int"
+              },
+              {
+                "pointer": "/value/value",
+                "value": 12
+              }
+            ]
+          }
+        ]
+      },
+      "score_tags": [
+        "compile",
+        "pass",
+        "semantic"
+      ],
+      "minimality": {
+        "max_changed_files": 1,
+        "max_changed_lines": 12
+      },
+      "training_exclusion_id": "sha256:b543bbd9af8eaf810aee15a1778cedee4dcd0a9da8c86fe7efc1ac273e27867c"
+    },
+    {
+      "id": "sleybench-smoke-f5-001",
+      "family": "structural_tool_use",
+      "visibility": "public",
+      "sley_version": "1.2",
+      "prompt_path": "cases/sleybench-smoke-f5-001/prompt.md",
+      "workspace_path": "cases/sleybench-smoke-f5-001/workspace",
+      "candidate_path": "cases/sleybench-smoke-f5-001/candidate",
+      "owned_paths": [
+        "main.sley"
+      ],
+      "allowed_context": [
+        "SLEY_AI.md"
+      ],
+      "allowed_tools": [
+        "ast"
+      ],
+      "limits": {
+        "wall_seconds": 120,
+        "tool_calls": 8,
+        "output_bytes": 1048576,
+        "processes": 256,
+        "workspace_bytes": 1048576
+      },
+      "policy": {
+        "kind": "fixture_candidate"
+      },
+      "preflight": [],
+      "oracle": {
+        "commands": [
+          {
+            "name": "ast",
+            "argv": [
+              "sley",
+              "ast",
+              "--json",
+              "main.sley"
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.ast.program.v0",
+            "assertions": []
+          }
+        ]
+      },
+      "score_tags": [
+        "pass",
+        "structural"
+      ],
+      "minimality": {
+        "max_changed_files": 0,
+        "max_changed_lines": 0
+      },
+      "training_exclusion_id": "sha256:dfe4829d7ae140f870f6f548c1076a25eb563fd2075391a43d1cea996897e58b"
+    },
+    {
+      "id": "sleybench-smoke-f5-002",
+      "family": "structural_tool_use",
+      "visibility": "public",
+      "sley_version": "1.2",
+      "prompt_path": "cases/sleybench-smoke-f5-002/prompt.md",
+      "workspace_path": "cases/sleybench-smoke-f5-002/workspace",
+      "candidate_path": "cases/sleybench-smoke-f5-002/candidate",
+      "owned_paths": [
+        "main.sley"
+      ],
+      "allowed_context": [
+        "SLEY_AI.md"
+      ],
+      "allowed_tools": [
+        "query"
+      ],
+      "limits": {
+        "wall_seconds": 120,
+        "tool_calls": 8,
+        "output_bytes": 1048576,
+        "processes": 256,
+        "workspace_bytes": 1048576
+      },
+      "policy": {
+        "kind": "fixture_candidate"
+      },
+      "preflight": [],
+      "oracle": {
+        "commands": [
+          {
+            "name": "query",
+            "argv": [
+              "sley",
+              "query",
+              "--json",
+              "--kind",
+              "tasks",
+              "main.sley"
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.query.report.v0",
+            "assertions": [
+              {
+                "pointer": "/tasks/0/name",
+                "value": "helper"
+              }
+            ]
+          }
+        ]
+      },
+      "score_tags": [
+        "pass",
+        "structural"
+      ],
+      "minimality": {
+        "max_changed_files": 0,
+        "max_changed_lines": 0
+      },
+      "training_exclusion_id": "sha256:db39b283cf147feeffd0bd02346187a50620f37191ea188f4dc620baa4d9c2aa"
+    },
+    {
+      "id": "sleybench-smoke-f5-003",
+      "family": "structural_tool_use",
+      "visibility": "public",
+      "sley_version": "1.2",
+      "prompt_path": "cases/sleybench-smoke-f5-003/prompt.md",
+      "workspace_path": "cases/sleybench-smoke-f5-003/workspace",
+      "candidate_path": "cases/sleybench-smoke-f5-003/candidate",
+      "owned_paths": [
+        "main.sley"
+      ],
+      "allowed_context": [
+        "SLEY_AI.md"
+      ],
+      "allowed_tools": [
+        "graph"
+      ],
+      "limits": {
+        "wall_seconds": 120,
+        "tool_calls": 8,
+        "output_bytes": 1048576,
+        "processes": 256,
+        "workspace_bytes": 1048576
+      },
+      "policy": {
+        "kind": "fixture_candidate"
+      },
+      "preflight": [],
+      "oracle": {
+        "commands": [
+          {
+            "name": "graph",
+            "argv": [
+              "sley",
+              "graph",
+              "--json",
+              "main.sley"
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.symbol_graph.v0",
+            "assertions": []
+          }
+        ]
+      },
+      "score_tags": [
+        "pass",
+        "structural"
+      ],
+      "minimality": {
+        "max_changed_files": 0,
+        "max_changed_lines": 0
+      },
+      "training_exclusion_id": "sha256:8062e670502770bc6941d2d1ec73079f4ab71ea11fdf55da4ce65d61893c50de"
+    },
+    {
+      "id": "sleybench-smoke-f5-004",
+      "family": "structural_tool_use",
+      "visibility": "public",
+      "sley_version": "1.2",
+      "prompt_path": "cases/sleybench-smoke-f5-004/prompt.md",
+      "workspace_path": "cases/sleybench-smoke-f5-004/workspace",
+      "candidate_path": "cases/sleybench-smoke-f5-004/candidate",
+      "owned_paths": [
+        "main.sley"
+      ],
+      "allowed_context": [
+        "SLEY_AI.md"
+      ],
+      "allowed_tools": [
+        "plan"
+      ],
+      "limits": {
+        "wall_seconds": 120,
+        "tool_calls": 8,
+        "output_bytes": 1048576,
+        "processes": 256,
+        "workspace_bytes": 1048576
+      },
+      "policy": {
+        "kind": "fixture_candidate"
+      },
+      "preflight": [],
+      "oracle": {
+        "commands": [
+          {
+            "name": "plan",
+            "argv": [
+              "sley",
+              "plan",
+              "--json",
+              "--graft-templates",
+              "main.sley"
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.edit_plan.report.v0",
+            "assertions": [
+              {
+                "pointer": "/status",
+                "value": "ready"
+              }
+            ]
+          }
+        ]
+      },
+      "score_tags": [
+        "pass",
+        "structural"
+      ],
+      "minimality": {
+        "max_changed_files": 0,
+        "max_changed_lines": 0
+      },
+      "training_exclusion_id": "sha256:6c3415d58e20d8236a094f01fff896bb7077a6e705db35124691a8804c98ebf7"
+    },
+    {
+      "id": "sleybench-smoke-f6-001",
+      "family": "repository_patch_integration",
+      "visibility": "public",
+      "sley_version": "1.2",
+      "prompt_path": "cases/sleybench-smoke-f6-001/prompt.md",
+      "workspace_path": "cases/sleybench-smoke-f6-001/workspace",
+      "candidate_path": "cases/sleybench-smoke-f6-001/candidate",
+      "owned_paths": [
+        "src/app/main.sley"
+      ],
+      "allowed_context": [
+        "SLEY_AI.md"
+      ],
+      "allowed_tools": [
+        "check",
+        "run",
+        "query"
+      ],
+      "limits": {
+        "wall_seconds": 120,
+        "tool_calls": 8,
+        "output_bytes": 1048576,
+        "processes": 256,
+        "workspace_bytes": 1048576
+      },
+      "policy": {
+        "kind": "fixture_candidate"
+      },
+      "preflight": [],
+      "oracle": {
+        "commands": [
+          {
+            "name": "project-check",
+            "argv": [
+              "sley",
+              "check",
+              "--json",
+              "."
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.diagnostics.report.v0",
+            "assertions": [
+              {
+                "pointer": "/status",
+                "value": "ok"
+              }
+            ]
+          },
+          {
+            "name": "project-run",
+            "argv": [
+              "sley",
+              "run",
+              "--json",
+              "."
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.run.report.v0",
+            "assertions": [
+              {
+                "pointer": "/status",
+                "value": "passed"
+              },
+              {
+                "pointer": "/value/kind",
+                "value": "Int"
+              },
+              {
+                "pointer": "/value/value",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "name": "project-query",
+            "argv": [
+              "sley",
+              "query",
+              "--json",
+              "--kind",
+              "tasks",
+              "."
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.query.report.v0",
+            "assertions": [
+              {
+                "pointer": "/tasks/0/name",
+                "value": "main"
+              }
+            ]
+          }
+        ]
+      },
+      "score_tags": [
+        "compile",
+        "pass",
+        "repository_patch"
+      ],
+      "minimality": {
+        "max_changed_files": 1,
+        "max_changed_lines": 2
+      },
+      "training_exclusion_id": "sha256:094c8e0450d6a6fc39ee53d7247d2e937d2409e3211ba5a26f78c15de5267c61"
+    },
+    {
+      "id": "sleybench-smoke-f6-002",
+      "family": "repository_patch_integration",
+      "visibility": "public",
+      "sley_version": "1.2",
+      "prompt_path": "cases/sleybench-smoke-f6-002/prompt.md",
+      "workspace_path": "cases/sleybench-smoke-f6-002/workspace",
+      "candidate_path": "cases/sleybench-smoke-f6-002/candidate",
+      "owned_paths": [
+        "src/app/main.sley"
+      ],
+      "allowed_context": [
+        "SLEY_AI.md"
+      ],
+      "allowed_tools": [
+        "check",
+        "run",
+        "query"
+      ],
+      "limits": {
+        "wall_seconds": 120,
+        "tool_calls": 8,
+        "output_bytes": 1048576,
+        "processes": 256,
+        "workspace_bytes": 1048576
+      },
+      "policy": {
+        "kind": "fixture_candidate"
+      },
+      "preflight": [],
+      "oracle": {
+        "commands": [
+          {
+            "name": "project-check",
+            "argv": [
+              "sley",
+              "check",
+              "--json",
+              "."
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.diagnostics.report.v0",
+            "assertions": [
+              {
+                "pointer": "/status",
+                "value": "ok"
+              }
+            ]
+          },
+          {
+            "name": "project-run",
+            "argv": [
+              "sley",
+              "run",
+              "--json",
+              "."
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.run.report.v0",
+            "assertions": [
+              {
+                "pointer": "/status",
+                "value": "passed"
+              },
+              {
+                "pointer": "/value/kind",
+                "value": "Int"
+              },
+              {
+                "pointer": "/value/value",
+                "value": 9
+              }
+            ]
+          },
+          {
+            "name": "project-query",
+            "argv": [
+              "sley",
+              "query",
+              "--json",
+              "--kind",
+              "tasks",
+              "."
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.query.report.v0",
+            "assertions": [
+              {
+                "pointer": "/tasks/0/name",
+                "value": "main"
+              }
+            ]
+          }
+        ]
+      },
+      "score_tags": [
+        "compile",
+        "pass",
+        "repository_patch"
+      ],
+      "minimality": {
+        "max_changed_files": 1,
+        "max_changed_lines": 2
+      },
+      "training_exclusion_id": "sha256:c814039992305ee3e7e1bdc9e8f697af195501fa21d4f2d4dff3c31f3dcb67b0"
+    },
+    {
+      "id": "sleybench-smoke-f6-003",
+      "family": "repository_patch_integration",
+      "visibility": "public",
+      "sley_version": "1.2",
+      "prompt_path": "cases/sleybench-smoke-f6-003/prompt.md",
+      "workspace_path": "cases/sleybench-smoke-f6-003/workspace",
+      "candidate_path": "cases/sleybench-smoke-f6-003/candidate",
+      "owned_paths": [
+        "src/app/main.sley"
+      ],
+      "allowed_context": [
+        "SLEY_AI.md"
+      ],
+      "allowed_tools": [
+        "check",
+        "run",
+        "query"
+      ],
+      "limits": {
+        "wall_seconds": 120,
+        "tool_calls": 8,
+        "output_bytes": 1048576,
+        "processes": 256,
+        "workspace_bytes": 1048576
+      },
+      "policy": {
+        "kind": "fixture_candidate"
+      },
+      "preflight": [],
+      "oracle": {
+        "commands": [
+          {
+            "name": "project-check",
+            "argv": [
+              "sley",
+              "check",
+              "--json",
+              "."
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.diagnostics.report.v0",
+            "assertions": [
+              {
+                "pointer": "/status",
+                "value": "ok"
+              }
+            ]
+          },
+          {
+            "name": "project-run",
+            "argv": [
+              "sley",
+              "run",
+              "--json",
+              "."
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.run.report.v0",
+            "assertions": [
+              {
+                "pointer": "/status",
+                "value": "passed"
+              },
+              {
+                "pointer": "/value/kind",
+                "value": "Int"
+              },
+              {
+                "pointer": "/value/value",
+                "value": 8
+              }
+            ]
+          },
+          {
+            "name": "project-query",
+            "argv": [
+              "sley",
+              "query",
+              "--json",
+              "--kind",
+              "tasks",
+              "."
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.query.report.v0",
+            "assertions": [
+              {
+                "pointer": "/tasks/0/name",
+                "value": "main"
+              }
+            ]
+          }
+        ]
+      },
+      "score_tags": [
+        "compile",
+        "pass",
+        "repository_patch"
+      ],
+      "minimality": {
+        "max_changed_files": 0,
+        "max_changed_lines": 0
+      },
+      "training_exclusion_id": "sha256:b120ea664990833b3cdbbeccd4df07e5ae1f19b8a2a7963c08525f00f710692f"
+    },
+    {
+      "id": "sleybench-smoke-f6-004",
+      "family": "repository_patch_integration",
+      "visibility": "public",
+      "sley_version": "1.2",
+      "prompt_path": "cases/sleybench-smoke-f6-004/prompt.md",
+      "workspace_path": "cases/sleybench-smoke-f6-004/workspace",
+      "candidate_path": "cases/sleybench-smoke-f6-004/candidate",
+      "owned_paths": [
+        "src/app/main.sley"
+      ],
+      "allowed_context": [
+        "SLEY_AI.md"
+      ],
+      "allowed_tools": [
+        "check",
+        "run",
+        "query"
+      ],
+      "limits": {
+        "wall_seconds": 120,
+        "tool_calls": 8,
+        "output_bytes": 1048576,
+        "processes": 256,
+        "workspace_bytes": 1048576
+      },
+      "policy": {
+        "kind": "fixture_candidate"
+      },
+      "preflight": [],
+      "oracle": {
+        "commands": [
+          {
+            "name": "project-check",
+            "argv": [
+              "sley",
+              "check",
+              "--json",
+              "."
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.diagnostics.report.v0",
+            "assertions": [
+              {
+                "pointer": "/status",
+                "value": "ok"
+              }
+            ]
+          },
+          {
+            "name": "project-run",
+            "argv": [
+              "sley",
+              "run",
+              "--json",
+              "."
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.run.report.v0",
+            "assertions": [
+              {
+                "pointer": "/status",
+                "value": "passed"
+              },
+              {
+                "pointer": "/value/kind",
+                "value": "Int"
+              },
+              {
+                "pointer": "/value/value",
+                "value": 10
+              }
+            ]
+          },
+          {
+            "name": "project-query",
+            "argv": [
+              "sley",
+              "query",
+              "--json",
+              "--kind",
+              "tasks",
+              "."
+            ],
+            "expected_exit": 0,
+            "expected_schema": "sley.query.report.v0",
+            "assertions": [
+              {
+                "pointer": "/tasks/0/name",
+                "value": "main"
+              }
+            ]
+          }
+        ]
+      },
+      "score_tags": [
+        "compile",
+        "pass",
+        "repository_patch"
+      ],
+      "minimality": {
+        "max_changed_files": 1,
+        "max_changed_lines": 2
+      },
+      "training_exclusion_id": "sha256:75c57c4e07a6c5fa2f4fe7c1db856f646319ea447401c3f14d0593628c41e0e5"
+    }
+  ]
+}

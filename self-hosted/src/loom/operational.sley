@@ -1,0 +1,115 @@
+module loom.operational
+
+export task agent_workflow_plan_schema -> Text {
+  return "sley.operational.agent_workflow_plan.v1"
+}
+
+export task agent_workflow_comparison_schema -> Text {
+  return "sley.operational.agent_workflow_comparison.v1"
+}
+
+export task agent_workflow_id -> Text {
+  return "sley-agent-project-cross-module-rename-v1"
+}
+
+export task agent_workflow_modes -> List<Text> {
+  return [
+    "raw_source|K1",
+    "sley_structural|K3"
+  ]
+}
+
+export task agent_workflow_equal_controls -> List<Text> {
+  return [
+    "model",
+    "thinking",
+    "context_window",
+    "task",
+    "prompt",
+    "workspace",
+    "bootstrap",
+    "retrieval",
+    "oracle",
+    "owned_paths",
+    "spend_ceiling"
+  ]
+}
+
+export task agent_workflow_required_metrics -> List<Text> {
+  return [
+    "strict_success",
+    "accepted_change_tokens",
+    "inference_attempts",
+    "input_tokens",
+    "output_tokens",
+    "prompt_bytes",
+    "response_bytes",
+    "context_files_supplied",
+    "context_bytes_supplied",
+    "structural_response_bytes",
+    "wall_ms",
+    "tool_calls",
+    "compiler_cycles",
+    "invalid_actions",
+    "repair_loops",
+    "changed_files",
+    "changed_lines"
+  ]
+}
+
+export task agent_workflow_authority_mode -> Text {
+  return "local_isolated_evaluation_only"
+}
+
+export task agent_workflow_decisions -> List<Text> {
+  return [
+    "structural_advantage_observed",
+    "both_accepted",
+    "structural_disadvantage_observed",
+    "both_failed"
+  ]
+}
+
+export task agent_workflow_oracle_steps -> List<Text> {
+  return [
+    "candidate-check",
+    "query-pipeline-tasks",
+    "query-main-calls",
+    "behavior-test"
+  ]
+}
+
+export task agent_workflow_controlled_difference -> List<Text> {
+  return [
+    "K1|raw_workspace|0|1",
+    "K3|raw_workspace_plus_read_only_structure|1|2"
+  ]
+}
+
+export task evidence_registry_schema -> Text {
+  return "sley.operational.evidence_registry.v1"
+}
+
+export task evidence_registry_release -> Text {
+  return "1.2.0"
+}
+
+export task evidence_registry_authority_mode -> Text {
+  return "non_authoritative_evidence_only"
+}
+
+export task evidence_registry_entry_ids -> List<Text> {
+  return [
+    "siglum-numerology-reference-v1",
+    "sley-agent-project-cross-module-rename-v1"
+  ]
+}
+
+export task evidence_registry_decision_rationale -> List<Text> {
+  return [
+    "single_trial_only",
+    "non_authoritative_reference",
+    "production_evidence_missing",
+    "structural_context_result_limited"
+  ]
+}

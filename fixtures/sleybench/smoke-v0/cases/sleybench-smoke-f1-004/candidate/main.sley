@@ -1,0 +1,5 @@
+module bench.f1_004
+
+task main -> Text {
+  return "Sley" + "Bench"
+}

@@ -1,0 +1,9 @@
+module bench.f5_002
+
+task helper -> Int {
+  return 2
+}
+
+task main -> Int {
+  return call helper()
+}

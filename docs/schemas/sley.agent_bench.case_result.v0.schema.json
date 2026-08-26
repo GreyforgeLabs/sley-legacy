@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.agent_bench.case_result.v0",
+  "title": "Sley Agent Bench Case Result v0",
+  "type": "object",
+  "required": [
+    "schema", "run_id", "case_id", "family", "mode", "adapter_id",
+    "status", "score_tags", "scores", "measurements", "workspace",
+    "evidence", "steps", "issues"
+  ],
+  "properties": {
+    "schema": { "const": "sley.agent_bench.case_result.v0" },
+    "run_id": { "type": "string", "minLength": 1 },
+    "case_id": { "type": "string", "minLength": 1 },
+    "family": {
+      "enum": [
+        "syntax_compilation", "semantic_implementation", "diagnosis_repair",
+        "translation_preservation", "structural_tool_use",
+        "repository_patch_integration"
+      ]
+    },
+    "mode": { "enum": ["K0", "K1", "K2", "K3", "K4"] },
+    "adapter_id": { "type": "string", "minLength": 1 },
+    "status": { "enum": ["passed", "failed"] },
+    "score_tags": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": ["parse", "compile", "pass", "repair", "semantic", "structural", "repository_patch"]
+      }
+    },
+    "scores": {
+      "type": "object",
+      "required": [
+        "prompt_accepted", "parse_passed", "check_passed",
+        "oracle_tests_passed", "semantic_output_matched",
+        "expected_diagnosis_identified", "repair_minimal",
+        "scope_precise", "required_evidence_produced"
+      ],
+      "properties": {
+        "prompt_accepted": { "type": "boolean" },
+        "parse_passed": { "type": "boolean" },
+        "check_passed": { "type": "boolean" },
+        "oracle_tests_passed": { "type": "boolean" },
+        "semantic_output_matched": { "type": "boolean" },
+        "expected_diagnosis_identified": { "type": "boolean" },
+        "repair_minimal": { "type": "boolean" },
+        "scope_precise": { "type": "boolean" },
+        "required_evidence_produced": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "measurements": {
+      "type": "object",
+      "required": [
+        "tool_calls", "compiler_cycles", "input_tokens", "output_tokens",
+        "wall_ms", "estimated_cost_usd", "changed_files", "changed_lines",
+        "syntax_hallucination", "stdlib_hallucination", "invalid_tool_call",
+        "model_measurement_applicable"
+      ],
+      "properties": {
+        "tool_calls": { "type": "integer", "minimum": 0 },
+        "compiler_cycles": { "type": "integer", "minimum": 0 },
+        "input_tokens": { "type": "integer", "minimum": 0 },
+        "output_tokens": { "type": "integer", "minimum": 0 },
+        "wall_ms": { "type": "integer", "minimum": 0 },
+        "estimated_cost_usd": { "type": "number", "minimum": 0 },
+        "changed_files": { "type": "integer", "minimum": 0 },
+        "changed_lines": { "type": "integer", "minimum": 0 },
+        "syntax_hallucination": { "type": "boolean" },
+        "stdlib_hallucination": { "type": "boolean" },
+        "invalid_tool_call": { "type": "boolean" },
+        "model_measurement_applicable": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "workspace": {
+      "type": "object",
+      "required": ["retained", "clean_before", "path_exposed", "trusted_fixture", "os_isolation"],
+      "properties": {
+        "retained": { "type": "boolean" },
+        "clean_before": { "type": "boolean" },
+        "path_exposed": { "type": "boolean" },
+        "trusted_fixture": { "type": "boolean" },
+        "os_isolation": { "const": false }
+      },
+      "additionalProperties": false
+    },
+    "evidence": {
+      "type": "object",
+      "required": [
+        "training_exclusion_id", "initial_tree_digest", "candidate_digest",
+        "final_tree_digest", "prompt_digest", "step_evidence_digest"
+      ],
+      "properties": {
+        "training_exclusion_id": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "initial_tree_digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "candidate_digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "final_tree_digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "prompt_digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "step_evidence_digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+      },
+      "additionalProperties": false
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name", "phase", "argv", "expected_exit", "actual_exit", "status",
+          "stdout_schema", "assertion_count", "assertion_passed_count",
+          "output_bytes", "stdout_digest", "stderr_digest", "issues"
+        ],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "phase": { "enum": ["preflight", "oracle"] },
+          "argv": { "type": "array", "items": { "type": "string" } },
+          "expected_exit": { "type": "integer", "minimum": 0, "maximum": 255 },
+          "actual_exit": { "type": "integer", "minimum": 0, "maximum": 255 },
+          "status": { "enum": ["passed", "failed"] },
+          "stdout_schema": { "type": ["string", "null"] },
+          "assertion_count": { "type": "integer", "minimum": 0 },
+          "assertion_passed_count": { "type": "integer", "minimum": 0 },
+          "output_bytes": { "type": "integer", "minimum": 0 },
+          "stdout_digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+          "stderr_digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+          "issues": { "type": "array", "items": { "$ref": "#/$defs/issue" } }
+        },
+        "additionalProperties": false
+      }
+    },
+    "issues": { "type": "array", "items": { "$ref": "#/$defs/issue" } }
+  },
+  "$defs": {
+    "issue": {
+      "type": "object",
+      "required": ["code", "message"],
+      "properties": {
+        "code": { "type": "string", "minLength": 1 },
+        "message": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

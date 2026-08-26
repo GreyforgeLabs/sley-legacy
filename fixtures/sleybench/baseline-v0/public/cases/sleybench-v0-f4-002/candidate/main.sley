@@ -1,0 +1,5 @@
+module bench.public.f4_002
+
+task main -> Int {
+  return 9 * 5
+}

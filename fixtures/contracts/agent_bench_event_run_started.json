@@ -1,0 +1,10 @@
+{
+  "schema": "sley.agent_bench.event.v0",
+  "run_id": "fixture-run",
+  "sequence": 1,
+  "kind": "run_started",
+  "case_id": null,
+  "payload": {
+    "suite_id": "fixture-suite"
+  }
+}
